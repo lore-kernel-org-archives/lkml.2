@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab0FWIMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 04:12:54 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:56135 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751209Ab0FWIMv (ORCPT
+	id S1752168Ab0FWINU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 04:13:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29503 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751209Ab0FWINR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 04:12:51 -0400
-Message-ID: <4C21C1C3.5050708@euromail.se>
-Date: Wed, 23 Jun 2010 10:11:47 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Wed, 23 Jun 2010 04:13:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,466,1272870000"; 
+   d="scan'208";a="632812267"
+From: "Dong, Eddie" <eddie.dong@intel.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+CC: Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>,
+       "Dong, Eddie" <eddie.dong@intel.com>
+Date: Wed, 23 Jun 2010 16:09:40 +0800
+Subject: RE: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Thread-Topic: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Thread-Index: AcsODzkxPK6uVz5GQIqMA0G8bjeaHAAlw28gAQEiYkA=
+Message-ID: <1A42CE6F5F474C41B63392A5F80372B21F58CD9A@shsmsx501.ccr.corp.intel.com>
+References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
+ <20100606161348.427822fb@nehalam>
+ <20100608052744.GA21547@gondor.apana.org.au>
+ <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com>
+ <20100611052112.GA25649@gondor.apana.org.au>
+ <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com>
+ <20100617112119.GB1515@gondor.apana.org.au>
+ <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com>
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jiri Kosina <jkosina@suse.cz>, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>
-Subject: Re: [PATCH] input: evdev: Use multi-reader buffer to save space (rev5)
-References: <1277059734-2939-1-git-send-email-rydberg@euromail.se> <20100623061939.GB11187@core.coreip.homeip.net>
-In-Reply-To: <20100623061939.GB11187@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1ORL42-0003tG-5s.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1ORL42-0003tG-5s 591bf1e449466b0e3b1f316d89a36764
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote:
-> Hi Henrik,
+
+> 3) As I have mentioned above, with this idea, netdev_alloc_skb() will
+> allocate 
+> as usual, the data pointed by skb->data will be copied into the first
+> guest buffer. 
+> That means we should reserve sufficient room in guest buffer. For PS
+> mode 
+> supported driver (for example ixgbe), the room will be more than 128.
+> After 128bytes, 
+> we will put the first frag data. Look into virtio-net.c the function
+> page_to_skb() 
+> and receive_mergeable(), that means we should modify guest virtio-net
+> driver to 
+> compute the offset as the parameter for skb_set_frag().
 > 
-> On Sun, Jun 20, 2010 at 08:48:54PM +0200, Henrik Rydberg wrote:
->> @@ -149,11 +148,29 @@ static int evdev_grab(struct evdev *evdev, struct evdev_client *client)
->>  
->>  static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
->>  {
->> +	struct input_dev *dev = evdev->handle.dev;
->> +	int head, tail;
->> +
->>  	if (evdev->grab != client)
->>  		return  -EINVAL;
->>  
->> +	spin_lock_irq(&dev->event_lock);
->> +
->> +	head = client->head;
->> +	tail = client->tail;
->> +
->> +	rcu_read_lock();
->> +	list_for_each_entry_rcu(client, &evdev->client_list, node) {
->> +		client->head = head;
->> +		client->tail = tail;
->> +	}
->> +	rcu_read_unlock();
->> +
->>  	rcu_assign_pointer(evdev->grab, NULL);
->>  	synchronize_rcu();
+> How do you think about this? Attached is a patch to how to modify the
+> guest driver. 
+> I reserve 512 bytes as an example, and transfer the header len of the
+> skb in hdr->hdr_len. 
 > 
-> You may not call synchronize_rcu() while holding spinlock and with
-> interrupts off.
-
-Thanks.
-
->> +
->> +	spin_unlock_irq(&dev->event_lock);
->> +
->>  	input_release_device(&evdev->handle);
->>  
->>  	return 0;
->> @@ -162,6 +179,7 @@ static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
->>  static void evdev_attach_client(struct evdev *evdev,
->>  				struct evdev_client *client)
->>  {
->> +	client->head = client->tail = evdev->head;
->>  	spin_lock(&evdev->client_lock);
-> 
-> So what happens if we advance evdev->head here but before we added the
-> new client to the list? I guess we'll have to wait till next event and
-> then client will read both of them...
-
-Right...
-
-> Overall I am starting getting concerned about proper isolation between
-> clients. Right now, if one client stops reading events and another one
-> issues grab then the first client will only get events that were
-> accumulated before grab tookm place. With the new shared buffer the
-> first client may get "grabbed" events if it stop for long enough for
-> buffer to wrap around.
-
-Doing some research, the semantics of ioctl have obviously been discussed
-before, and I believe this points to another such issue. When grabbing a device,
-are we guaranteeing that the device no longer sends events to other clients, or
-are we guaranteeing that other clients can no longer read the device? If the
-latter, clearing all client buffers in conjunction with a grab would be
-appropriate, and would solve this issue.
-
-> Do we really same that much memory here? We normally do not have that
-> many users connected to event devices at once...
-
-Ok, let's scratch this. Although I think the idea of multi-reader buffers is
-sound, it is obviously sufficiently incompatible with the current approach to
-produce distastefully complex patches. I will return with a new set which only
-fixes the buffer resize problem, and leaves the rest for later.
-
-Thanks,
-Henrik
-
+Xiaohui & Herbert:
+	Mixing copy of head & 0-copy of bulk data imposes additional challange to find the guest buffer. The backend driver may be unable to find a spare guest buffer from virtqueue at that time which may block the receiving process then.
+	Can't we completely eliminate netdev_alloc_skb here? Assigning guest buffer at this time makes life much easier.
+Thx, Eddie
