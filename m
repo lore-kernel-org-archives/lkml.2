@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab0FWTzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 15:55:33 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:46702 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab0FWTza (ORCPT
+	id S1753683Ab0FWT4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 15:56:09 -0400
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:54351 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab0FWT4H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 15:55:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=j3+rW1N22UVs+ULNBS7WZLNuteYVTx07+wId0JKCYZZgbfxB9uec/QfplGOiSS6aaC
-         1j9DWMXRoMXmlTqijJujcze0k6/G0FmHSR3cBdrX+ed8sCunop+wjQdRuVmwJXG4mcru
-         h1QYu9j3TCb4KGwKcoteC3+aTHKtlHdy/6LYg=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1006131208470.18415@ayla.of.borg>
-References: <alpine.DEB.2.00.1006131208470.18415@ayla.of.borg>
-Date: Wed, 23 Jun 2010 21:55:27 +0200
-X-Google-Sender-Auth: WQJLduFbs-eq2xEcmTPoQHqqju4
-Message-ID: <AANLkTikdDZf1zvgtu3DjuMoabHBo43zY6H_AUKn0Q5Qz@mail.gmail.com>
-Subject: Re: [PATCH] rtc: rp5c01 - Add NVRAM support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alessandro Zummo <a.zummo@towertech.it>,
-       Arno Griffioen <arno.griffioen@ieee.org>
-Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>, rtc-linux@googlegroups.com,
-       Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 Jun 2010 15:56:07 -0400
+Subject: Re: [RFC] tpm_tis: Fix subsequent suspend failures
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+In-Reply-To: <20100623121850.e000ac8b.akpm@linux-foundation.org>
+Date: Wed, 23 Jun 2010 16:55:54 -0300
+Cc: Helmut Schaa <helmut.schaa@googlemail.com>,
+       tpmdd-devel@lists.sourceforge.net,
+       Debora Velarde <debora@linux.vnet.ibm.com>,
+       David Safford <safford@watson.ibm.com>, jmorris@namei.org,
+       linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5204AD54-F4BF-49A8-9168-3FCA112AAA2B@linux.vnet.ibm.com>
+References: <201006091227.15729.helmut.schaa@googlemail.com> <201006091511.09810.helmut.schaa@googlemail.com> <1277176124.32011.4.camel@blackbox.ibm.com> <20100623121850.e000ac8b.akpm@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 13, 2010 at 12:12, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> The Ricoh RP5C01 RTC contains 26 x 4 bits of NVRAM.
-> Provide access to it via a sysfs "nvram" attribute file.
 
-I also created a small tool to correct NVRAM checksums, interprete the
-contents, and
-modify individual NVRAM fields on Amiga 3000/4000.
-You can find it at
-git://git.kernel.org/pub/scm/linux/kernel/git/geert/amiga-nvram.git.
+On Jun 23, 2010, at 4:18 PM, Andrew Morton wrote:
 
-BTW, does anyone (Arno?) know the meaning of the AMIX-specific bits (32-63)?
-battmembitsamix.h just says "See Amix documentation for these bit definitions".
-I also couldn't find anything about it at http://www.amigaunix.com/.
+> On Tue, 22 Jun 2010 00:08:44 -0300
+> Rajiv Andrade <srajiv@linux.vnet.ibm.com> wrote:
+> 
+>> On Wed, 2010-06-09 at 15:11 +0200, Helmut Schaa wrote:
+>>> Fix subsequent suspends by issuing tpm_continue_selftest during resume.
+>>> Otherwise, the tpm chip seems to be not fully initialized and will reject
+>>> the save state command during suspend, thus preventing the whole system
+>>> to suspend.
+>>> 
+>>> Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+>>> ---
+>>> 
+>>> Not sure if the platform resume method should be fixed in the same way.
+>>> Plase review.
+>>> 
+>>> Thanks,
+>>> Helmut
+>>> 
+>>> drivers/char/tpm/tpm_tis.c |    9 ++++++++-
+>>> 1 files changed, 8 insertions(+), 1 deletions(-)
+>>> 
+>>> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+>>> index 24314a9..1030f84 100644
+>>> --- a/drivers/char/tpm/tpm_tis.c
+>>> +++ b/drivers/char/tpm/tpm_tis.c
+>>> @@ -623,7 +623,14 @@ static int tpm_tis_pnp_suspend(struct pnp_dev *dev, pm_message_t msg)
+>>> 
+>>> static int tpm_tis_pnp_resume(struct pnp_dev *dev)
+>>> {
+>>> -	return tpm_pm_resume(&dev->dev);
+>>> +	struct tpm_chip *chip = pnp_get_drvdata(dev);
+>>> +	int ret;
+>>> +
+>>> +	ret = tpm_pm_resume(&dev->dev);
+>>> +	if (!ret)
+>>> +		tpm_continue_selftest(chip);
+>>> +
+>>> +	return ret;
+>>> }
+>>> 
+>>> static struct pnp_device_id tpm_pnp_tbl[] __devinitdata = {
+>> 
+>> Sorry the ones on CC, previous message got messed up by the mail client.
+>> 
+>> This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=16256
+>> 
+>> Link to original post given it wasn't submitted to LKML originally:
+>> http://marc.info/?l=tpmdd-devel&m=127609160616162&w=2
+>> 
+>> Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+>> 
+> 
+> (top-posting repaired.  Please don't do that).
+> 
+> This wasn't a very good way to send a patch.  I edited the diff,
+> reconstructed the patch and then assembled a decent-looking changelog. 
+> I also changed your acked-by to the required signed-off-by, because you
+> were on the patch's delivery path.
+> 
+> Pretty please: next time, prepare a proper mergeable patch with the
+> correct attributions and signoffs?  Thanks.
 
-Thx!
+Sure, sorry. I was just not certain if I could just resent Helmut's patch to LKML without messing with his authorship.
 
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Thanks,
+Rajiv
