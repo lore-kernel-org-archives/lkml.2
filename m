@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab0FWW16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 18:27:58 -0400
-Received: from mail.perches.com ([173.55.12.10]:1260 "EHLO mail.perches.com"
+	id S1753884Ab0FWW2B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 18:28:01 -0400
+Received: from kroah.org ([198.145.64.141]:37753 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753939Ab0FWW1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 18:27:55 -0400
-Subject: Re: [PATCH] MAINTAINERS: Add an entry for the input MT protocol
-From: Joe Perches <joe@perches.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <1277330664-13884-1-git-send-email-rydberg@euromail.se>
-References: <1277330664-13884-1-git-send-email-rydberg@euromail.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Jun 2010 15:27:52 -0700
-Message-ID: <1277332072.31591.92.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753886Ab0FWW1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 18:27:37 -0400
+Date: Wed, 23 Jun 2010 15:23:20 -0700
+From: Greg KH <greg@kroah.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: ss@aao.gov.au, gregkh@suse.de, devel@driverdev.osuosl.org,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Staging: dt3155: Cleanup memory mapped i/o access
+Message-ID: <20100623222317.GA14659@kroah.com>
+References: <201006221638.50754.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006221638.50754.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-24 at 00:04 +0200, Henrik Rydberg wrote:
-> This patch adds a maintainer for the input multitouch (MT) protocol,
-> such that get_maintainer.pl selects it whenever an MT event is present
-> in the patch.
+On Tue, Jun 22, 2010 at 04:38:50PM -0700, H Hartley Sweeten wrote:
+> The macros ReadMReg and WriteMReg are really just private versions of
+> the kernel's readl and writel functions.  Use the kernel's functions
+> instead.  And since ioremap returns a (void __iomem *) not a (u8 *),
+> change all the uses of dt3155_lbase to reflect this.
 
-> +MULTITOUCH INPUT MT PROTOCOL
-> +M:	Henrik Rydberg <rydberg@euromail.se>
-> +L:	linux-input@vger.kernel.org
-> +S:	Maintained
-> +F:	Documentation/input/multi-touch-protocol.txt
-> +K:	ABS_MT
+<snip>
 
-That doesn't seem to match anything other than multitouch
-stuff, but it's probably best to specify the pattern as
-much as possible.
+Whatever you did to fix the email client issue up, it worked, thanks.
 
-If you didn't know, K: entries can be entered as perl regex,
-so maybe something like:
-
-K:	\b(ABS|SYN)_MT_
-
-
+greg k-h
