@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab0FWPgo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 11:36:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26647 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250Ab0FWPgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 11:36:43 -0400
-Message-ID: <4C2229DB.6060706@redhat.com>
-Date: Wed, 23 Jun 2010 18:35:55 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: virtualization@lists.linux-foundation.org,
-       Anthony Liguori <aliguori@us.ibm.com>, linux-pci@vger.kernel.org,
-       Matt Carlson <mcarlson@broadcom.com>, linux-kernel@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>
-Subject: Re: [PATCH for-2.6.35] virtio-pci: disable msi at startup
-References: <20100610152252.GA3510@redhat.com> <4C22132F.4060307@redhat.com> <20100623135946.GA30526@redhat.com> <4C221871.6020509@redhat.com> <20100623144307.GB30526@redhat.com> <4C222508.2060804@redhat.com> <20100623152633.GC30526@redhat.com>
-In-Reply-To: <20100623152633.GC30526@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753702Ab0FWPpB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 11:45:01 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:52825 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753411Ab0FWPo7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 11:44:59 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Ek/K0i1gIv9dGiR3N1q/JdJ+RsokJUHB2HhZn+Nm3bMwtjBH527jqhWgaKt01/10fSclpA8aKjNHxUIvDFlnMsJYdFuPzyQoRtK8yn+rayDsSqEniVeIJid+XnLH7Zcs;
+Date: Wed, 23 Jun 2010 08:43:05 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: linux-fbdev@vger.kernel.org, dri-devel@lists.sf.net,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vt/console: try harder to print output when panicing
+Message-ID: <20100623084305.033df51e@virtuousgeek.org>
+In-Reply-To: <1277262779-19338-1-git-send-email-airlied@gmail.com>
+References: <1277262779-19338-1-git-send-email-airlied@gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 06:26 PM, Michael S. Tsirkin wrote:
->
->
->>>
->>>        
->>>>>> Shouldn't a reset be equivalent to power cycling?
->>>>>>
->>>>>>
->>>>>>              
->>>>> If we did this, driver would need to restore registers
->>>>> such as BAR etc.
->>>>>
->>>>>
->>>>>            
->>>> We could save/restore the registers we care about.
->>>>
->>>>          
->>> It seems easier to clear registers we care about.
->>>        
->> We know the registers we care about, we don't know the ones we don't.
->>      
-> If/when we use more registers, we can update driver to clear them on start.
->    
+On Wed, 23 Jun 2010 13:12:59 +1000
+Dave Airlie <airlied@gmail.com> wrote:
 
-The kdump kernel may not load drivers for those extra devices.
+> From: Jesse Barnes <jbarnes@virtuousgeek.org>
+> 
+> Jesse's initial patch commit said:
+> 
+> "At panic time (i.e. when oops_in_progress is set) we should try a bit
+> harder to update the screen and make sure output gets to the VT, since
+> some drivers are capable of flipping back to it.
+> 
+> So make sure we try to unblank and update the display if called from a
+> panic context."
+> 
+> I've enhanced this to add a flag to the vc that console layer can set
+> to indicate they want this behaviour to occur. This also adds support
+> to fbcon for that flag and adds an fb flag for drivers to indicate
+> they want to use the support. It enables this for KMS drivers.
+> 
+> Signed-off-by: Dave Airlie <airlied@redhat.com>
+> ---
 
->> I'm talking about FLRing all cards, not just those you want to use.
->>      
-> reset using FLR/PM is complex because of the need to save/restore
-> config space. Doing this on a crashing kernel sounds scary.
->    
+Yeah this looks a little nicer, thanks.
 
-Well, you only need to save/restore for the devices you use.  The rest 
-you reset and forget.
-
-I don't really see why copying some config space is crazy.
-
->>>     It's also too late
->>> now: changing behaviour will break old drivers.
->>>
->>>        
->> Why?  the FLR is triggered by the guest kernel, so all drivers will be
->> aware it was FLRed.
->>      
-> Not for FLR. Too late to reset on PA write.
->
->    
-
-What's PA write?
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Jesse Barnes, Intel Open Source Technology Center
