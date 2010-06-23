@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab0FWDIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 23:08:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44344 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab0FWDII (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 23:08:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ncsvqv0/949qinNQKUjZnPCw7PIDWx9SYwCk12LP2o4wIfICGCqoIBklIJUXJH1/7F
-         c3nTwvlNSx18JXQCb0xVkIRE0x/Dt7fZObUC8wIxA5kXsFqxuWn/tgF74suQR8fRwWmu
-         eurdj2Y2Y6bHFFTK3TFvsT6/YeaJ78zTkLSSU=
-Date: Wed, 23 Jun 2010 05:08:12 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-       Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-       David Miller <davem@davemloft.net>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf: Fix argument of perf_arch_fetch_caller_regs
-Message-ID: <20100623030810.GA5242@nowhere>
-References: <AANLkTinKKFKEBQrZ3Hkj-XCaMwaTqulb-XnFzqEYiFRr@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinKKFKEBQrZ3Hkj-XCaMwaTqulb-XnFzqEYiFRr@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752052Ab0FWDIt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 23:08:49 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56315 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994Ab0FWDIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 23:08:47 -0400
+Date: Wed, 23 Jun 2010 13:08:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       Adrian Hunter <adrian.hunter@nokia.com>,
+       "linux-mmc" <linux-mmc@vger.kernel.org>,
+       "linux-pm" <linux-pm@lists.linux-foundation.org>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>,
+       Philip Langdale <philipl@overt.org>,
+       Pierre Ossman <drzeus-list@drzeus.cx>
+Subject: MMC tree (Was: Re: [PATCH 1/2] MMC: fix all hangs related to mmc/sd
+ card insert/removal during suspend/resume.)
+Message-Id: <20100623130837.eaa40f99.sfr@canb.auug.org.au>
+In-Reply-To: <20100622152006.d0ec0cef.akpm@linux-foundation.org>
+References: <1276809695.28201.13.camel@maxim-laptop>
+	<201006221119.06210.rjw@sisk.pl>
+	<1277241450.10907.4.camel@maxim-laptop>
+	<201006222353.21349.rjw@sisk.pl>
+	<20100622152006.d0ec0cef.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__23_Jun_2010_13_08_37_+1000_Z8FcY.AGmnt+_+eV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 09:17:53AM +0900, Nobuhiro Iwamatsu wrote:
-> "struct regs" was set to argument of perf_arch_fetch_caller_regs.
-> "struct pt_regs" is correct.
-> 
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+--Signature=_Wed__23_Jun_2010_13_08_37_+1000_Z8FcY.AGmnt+_+eV
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Andrew,
 
+On Tue, 22 Jun 2010 15:20:06 -0700 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
+>
+> On Tue, 22 Jun 2010 23:53:21 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrot=
+e:
+> >
+> > Andrew, who's maintaining MMC now?
+>=20
+> Pierre stopped doing it, so I'm now pretending to.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+So I guess I should remove the mmc tree (currently empty) from
+linux-next, then?
 
-This may fix CONFIG_PERF_EVENTS=y with archs that don't implement
-perf_arch_fetch_caller_regs, namely ARM, alpha, frv, parisc, s390 and sh.
+> I actually pretend to maintain a huge number of subsystems and should
+> sprinkle akpms all over MAINTAINERS so stuff doesn't get lost.
 
-Ingo, can you please queue this for .36? (it only fixes perf/core)
+How about splitting these subsystems out of -mm and adding them to
+linux-next?
 
-Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__23_Jun_2010_13_08_37_+1000_Z8FcY.AGmnt+_+eV
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iEYEARECAAYFAkwherUACgkQjjKRsyhoI8yeXgCeJcv3/agHa9Ob0z3v1l7dYu6Y
+olgAn29DzJRIBKtmuE4GV9WMWmECG5T7
+=yUFg
+-----END PGP SIGNATURE-----
 
-> ---
->  include/linux/perf_event.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 9073bde..b65736d 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -934,7 +934,7 @@ extern void __perf_sw_event(u32, u64, int, struct
-> pt_regs *, u64);
-> 
->  #ifndef perf_arch_fetch_caller_regs
->  static inline void
-> -perf_arch_fetch_caller_regs(struct regs *regs, unsigned long ip) { }
-> +perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip) { }
->  #endif
-> 
->  /*
-> -- 
-> 1.7.1
-
+--Signature=_Wed__23_Jun_2010_13_08_37_+1000_Z8FcY.AGmnt+_+eV--
