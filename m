@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab0FWUvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:51:08 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48329 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403Ab0FWUvG (ORCPT
+	id S1753091Ab0FWU4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:56:55 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:2531 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab0FWU4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:51:06 -0400
-Subject: Re: [PATCH] ASoC: DaVinci: Added support for stereo I2S
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Raffaele Recalcati <lamiaposta71@gmail.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-       Raffaele Recalcati <raffaele.recalcati@bticino.it>,
-       Davide Bonfanti <davide.bonfanti@bticino.it>,
-       Russell King <linux@arm.linux.org.uk>,
-       Chaithrika U S <chaithrika@ti.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Troy Kisky <troy.kisky@boundarydevices.com>,
-       Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       alsa-devel@alsa-project.org
-In-Reply-To: <1277303635-5675-1-git-send-email-lamiaposta71@gmail.com>
-References: <1277303635-5675-1-git-send-email-lamiaposta71@gmail.com>
+	Wed, 23 Jun 2010 16:56:53 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6022"; a="45178710"
+Subject: Re: [RFC] [PATCH] timer: Added usleep[_range][_interruptable] timer
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, sboyd@codeaurora.org, tglx@linutronix.de,
+       mingo@elte.hu, heiko.carstens@de.ibm.com, eranian@google.com,
+       schwidefsky@de.ibm.com, linux-arm-msm@vger.kernel.org
+In-Reply-To: <4C226CCA.20601@codeaurora.org>
+References: <4C225EED.5040600@codeaurora.org>
+	 <1277323537.15159.30.camel@c-dwalke-linux.qualcomm.com>
+	 <4C226CCA.20601@codeaurora.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Jun 2010 21:50:59 +0100
-Message-ID: <1277326259.31686.57.camel@vega>
+Date: Wed, 23 Jun 2010 13:56:45 -0700
+Message-ID: <1277326605.15159.70.camel@c-dwalke-linux.qualcomm.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -32,332 +28,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-23 at 16:33 +0200, Raffaele Recalcati wrote:
-> From: Raffaele Recalcati <raffaele.recalcati@bticino.it>
+On Wed, 2010-06-23 at 13:21 -0700, Patrick Pannuto wrote:
+> Daniel Walker wrote:
+> > On Wed, 2010-06-23 at 12:22 -0700, Patrick Pannuto wrote:
+> >> *** INTRO ***
+> >>
+> >> As discussed here ( http://lkml.org/lkml/2007/8/3/250 ), msleep(1) is not
+> >> precise enough for many drivers (yes, sleep precision is an unfair notion,
+> >> but consistently sleeping for ~an order of magnitude greater than requested
+> >> is worth fixing). This patch adds a usleep API so that udelay does not have
+> >> to be used. Obviously not every udelay can be replaced (those in atomic
+> >> contexts or being used for simple bitbanging come to mind), but there are
+> >> many, many examples of
+> >>
+> >> mydriver_write(...)
+> >> /* Wait for hardware to latch */
+> >> udelay(100)
+> >>
+> >> in various drivers where a busy-wait loop is neither beneficial nor
+> >> necessary, but msleep simply does not provide enough precision and people
+> >> are using a busy-wait loop instead.
+> > 
+> > I think one thing for you to answer would be, why do you think udelay is
+> > a problem? I don't honestly see that many udelay()'s around, and
+> > especially not in important code paths .. Instead of adding a new API
+> > like this you might just rework the problem areas.
+> > 
+> > Are you approaching this from performance? or battery life? or what?
 > 
-> 	Added audio playback support with [frame sync master - clock master] mode
-> 	and with [frame sync master - clock slave].
-> 	Clock slave can be important when the external codec need system clock
-> 	and bit clock synchronized.
-> 	In the clock master case there is a FIXME message in the source code, because we
-> 	(Davide and myself) have guessed a frequency of 122000000 that seems the base
-> 	to be divided.
-> 	This patch has been developed against the
-> 		http://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git
-> 	git tree and has been tested on bmx board (similar to dm365 evm, but using
-> 	uda1345 as external audio codec).
+> First and foremost: power. If switching from udelay to usleep lets the processor
+> go to a lower C-state once in awhile, then I would consider this a win.
+
+It's not clear if your changes would actually do that tho.. Since your
+adding little tiny length timers instead of super long timers.. You want
+more long length timers to get into a lower power state.
+
+> > 
+> >> *** SOME QUANTIFIABLE (?) NUMBERS ***
+> >>
+> > 
+> >> then averaged the results to see if there was any benefit:
+> >>
+> >> === ORIGINAL (99 samples) ========================================= ORIGINAL ===
+> >>     Avg: 188.760000 wakeups in 9.911010 secs (19.045486 wkups/sec) [18876 total]
+> >> Wakeups: Min - 179, Max - 208, Mean - 190.666667, Stdev - 6.601194
+> >>
+> >> === USLEEP (99 samples) ============================================= USLEEP ===
+> >>     Avg: 188.200000 wakeups in 9.911230 secs (18.988561 wkups/sec) [18820 total]
+> >> Wakeups: Min - 181, Max - 213, Mean - 190.101010, Stdev - 6.950757
+> >>
+> >> While not particularly rigorous, the results seem to indicate that there may be
+> >> some benefit from pursuing this.
+> > 
+> > This is sort of ambiguous .. I don't think you replaced enough of these
+> > for it to have much of an impact. It's actually counter intuitive
+> > because your changes add more timers, yet they reduced average wakeups
+> > by a tiny amount .. Why do you think that is ?
+> > 
 > 
-> Signed-off-by: Raffaele Recalcati <raffaele.recalcati@bticino.it>
-> Signed-off-by: Davide Bonfanti <davide.bonfanti@bticino.it>
+> Yes, this test was leftover from a different project that involved refactoring
+> timers, so it was available and easy.  My guess for the reduction in number of
+> wakeups is that the processor is able to do other work during the 100us it was
+> previously busy-waiting, and thus had to wake up less often.
 
-Had a quick check, it looks like you have made some unintended
-formatting changes that make the patch look more complex than necessary.
+As I said in the prior email the udelay()'s don't preclude other types
+of work since you can get preempted.
 
-> ---
->  arch/arm/mach-davinci/include/mach/asp.h |    7 ++
->  sound/soc/davinci/davinci-i2s.c          |  141 ++++++++++++++++++++++++++----
->  2 files changed, 129 insertions(+), 19 deletions(-)
+I think your results are just showing noise ..
+
+> I don't know a good way to test this, if you do, please advise and I will
+> happily pursue it.
+
+You could test residency in specific power states .. Since you want to
+test if your reducing power consumption .. However, I'd replace a ton
+more of these udelay()'s , I don't think you'll get a decent results
+with out that.
+
+> >> *** HOW MUCH BENEFIT? ***
+> >>
+> >> Somewhat arbitrarily choosing 100 as a cut-off for udelay VS usleep:
+> >>
+> >> 	git grep 'udelay([[:digit:]]\+)' | 
+> >> 		perl -F"[\(\)]" -anl -e 'print if $F[1] >= 100' | wc -l
+> >>
+> >> yeilds 1093 on Linus's tree. There are 313 instances of >= 1000 and still
+> >> another 53 >= 10000us of busy wait! (If AVOID_POPS is configured in, the
+> >> es18xx driver will udelay(100000) or *0.1 seconds of busy wait*)
+> > 
+> > I'd say a better question is how often do they run?
 > 
-> diff --git a/arch/arm/mach-davinci/include/mach/asp.h b/arch/arm/mach-davinci/include/mach/asp.h
-> index 834725f..b1faeb9 100644
-> --- a/arch/arm/mach-davinci/include/mach/asp.h
-> +++ b/arch/arm/mach-davinci/include/mach/asp.h
-> @@ -63,6 +63,13 @@ struct snd_platform_data {
->  	unsigned sram_size_playback;
->  	unsigned sram_size_capture;
->  
-> +	/*
-> +	 * This define works when both clock and FS are output for the cpu
-> +	 * and makes clock very fast (FS is not simmetrical, but sampling
-> +	 * frequency is better approximated
-> +	 */
-> +	int i2s_fast_clock;
-> +
->  	/* McASP specific fields */
->  	int tdm_slots;
->  	u8 op_mode;
-> diff --git a/sound/soc/davinci/davinci-i2s.c b/sound/soc/davinci/davinci-i2s.c
-> index adadcd3..8811d25 100644
-> --- a/sound/soc/davinci/davinci-i2s.c
-> +++ b/sound/soc/davinci/davinci-i2s.c
-> @@ -68,16 +68,23 @@
->  #define DAVINCI_MCBSP_RCR_RDATDLY(v)	((v) << 16)
->  #define DAVINCI_MCBSP_RCR_RFIG		(1 << 18)
->  #define DAVINCI_MCBSP_RCR_RWDLEN2(v)	((v) << 21)
-> +#define DAVINCI_MCBSP_RCR_RFRLEN2(v)	((v) << 24)
-> +#define DAVINCI_MCBSP_RCR_RPHASE		(1 << 31)
->  
->  #define DAVINCI_MCBSP_XCR_XWDLEN1(v)	((v) << 5)
->  #define DAVINCI_MCBSP_XCR_XFRLEN1(v)	((v) << 8)
->  #define DAVINCI_MCBSP_XCR_XDATDLY(v)	((v) << 16)
->  #define DAVINCI_MCBSP_XCR_XFIG		(1 << 18)
->  #define DAVINCI_MCBSP_XCR_XWDLEN2(v)	((v) << 21)
-> +#define DAVINCI_MCBSP_XCR_XFRLEN2(v)	((v) << 24)
-> +#define DAVINCI_MCBSP_XCR_XPHASE	(1 << 31)
->  
-> +
-> +#define CLKGDV(v)				(v)     /* Bits 0:7 */
+> The i2c guys will get hit any time there is contention / heavy traffic on the
+> i2c bus (they're in the i2c_poll_notbusy path, also the i2c_poll_writeready),
+> so any time there is a lot of peripheral traffic (e.g. the phone is probably
+> doing a lot of stuff), then there are long (ish) busy-wait loops that are
+> unnecessary.
 
-Should you not have a DAVINCI prefix here too ?
+If the phone is "doing a lot of stuff" then pretty good chance power
+saving is at a minimum anyway. Try to be more specific .. For example,
+is there some specific app that is causes power problems, and maybe that
+app eventually gets into those i2c calls.
 
->  #define DAVINCI_MCBSP_SRGR_FWID(v)	((v) << 8)
->  #define DAVINCI_MCBSP_SRGR_FPER(v)	((v) << 16)
->  #define DAVINCI_MCBSP_SRGR_FSGM		(1 << 28)
-> +#define DAVINCI_MCBSP_SRGR_CLKSM	(1 << 29)
->  
->  #define DAVINCI_MCBSP_PCR_CLKRP		(1 << 0)
->  #define DAVINCI_MCBSP_PCR_CLKXP		(1 << 1)
-> @@ -144,8 +151,17 @@ struct davinci_mcbsp_dev {
->  	 * won't end up being swapped because of the underrun.
->  	 */
->  	unsigned enable_channel_combine:1;
-> +
-> +	int i2s_fast_clock;
-> +};
-> +
-> +struct davinci_mcbsp_data {
-> +	unsigned int	fmt;
-> +	int             clk_div;
->  };
->  
-> +static struct davinci_mcbsp_data mcbsp_data;
-> +
+> I haven't researched extensively, but I imagine there are a fair number of
+> other code paths like this; udelays polling until devices aren't busy - and
+> devices are generally only busy under some degree of load, not a good time
+> to busy wait if you don't have to IMHO
 
-This struct should be part of the dai private data.
 
->  static inline void davinci_mcbsp_write_reg(struct davinci_mcbsp_dev *dev,
->  					   int reg, u32 val)
->  {
-> @@ -255,24 +271,27 @@ static int davinci_i2s_set_dai_fmt(struct snd_soc_dai *cpu_dai,
->  	unsigned int pcr;
->  	unsigned int srgr;
->  	srgr = DAVINCI_MCBSP_SRGR_FSGM |
-> -		DAVINCI_MCBSP_SRGR_FPER(DEFAULT_BITPERSAMPLE * 2 - 1) |
-> -		DAVINCI_MCBSP_SRGR_FWID(DEFAULT_BITPERSAMPLE - 1);
-> +	       DAVINCI_MCBSP_SRGR_FPER(DEFAULT_BITPERSAMPLE * 2 - 1) |
-> +	       DAVINCI_MCBSP_SRGR_FWID(DEFAULT_BITPERSAMPLE - 1);
-> +	/* Attention srgr is updated by hw_params! */
->  
-> +	mcbsp_data.fmt = fmt;
->  	/* set master/slave audio interface */
->  	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-> +	case SND_SOC_DAIFMT_CBS_CFM:
->  	case SND_SOC_DAIFMT_CBS_CFS:
->  		/* cpu is master */
->  		pcr = DAVINCI_MCBSP_PCR_FSXM |
-> -			DAVINCI_MCBSP_PCR_FSRM |
-> -			DAVINCI_MCBSP_PCR_CLKXM |
-> -			DAVINCI_MCBSP_PCR_CLKRM;
-> +		      DAVINCI_MCBSP_PCR_FSRM |
-> +		      DAVINCI_MCBSP_PCR_CLKXM |
-> +		      DAVINCI_MCBSP_PCR_CLKRM;
->  		break;
->  	case SND_SOC_DAIFMT_CBM_CFS:
->  		/* McBSP CLKR pin is the input for the Sample Rate Generator.
->  		 * McBSP FSR and FSX are driven by the Sample Rate Generator. */
->  		pcr = DAVINCI_MCBSP_PCR_SCLKME |
-> -			DAVINCI_MCBSP_PCR_FSXM |
-> -			DAVINCI_MCBSP_PCR_FSRM;
-> +		      DAVINCI_MCBSP_PCR_FSXM |
-> +		      DAVINCI_MCBSP_PCR_FSRM;
+The busy waits your replacing are small in length on average .. If you
+have timers that trigger in small intervals then your not going to
+increase residency in any _lower_ power states .. It's possible that you
+could increase residency in the top level power state, but it seem like
+it would be really marginal .. You need to show that udelay()'s have an
+outside of noise impact on something ..
 
-These two just look like unintended formatting changes.
+> > 
+> > Another thing is that your usleep() can't replace udelay() in critical
+> > sections. However, if your doing udelay() in non-critical areas, I don't
+> > think there is anything stopping preemption during the udelay() .. So
+> > udelay() doesn't really cut off the whole system when it runs unless it
+> > _is_ in a critical section.
+> > 
+> 
+> I mentioned elsewhere that this can't replace all udelays; as for those that
+> can be pre-empted, it seems like only a win to give up your time slice to
+> something that will do real work (or sleep at a lower c-state and use less
+> power) than to sit and loop. Yes, you *could* be pre-empted from doing
+> absolutely nothing, but I don't think you should *have* to be for the
+> system to make a more productive use of those cycles.
 
->  		break;
->  	case SND_SOC_DAIFMT_CBM_CFM:
->  		/* codec is master */
-> @@ -372,6 +391,17 @@ static int davinci_i2s_set_dai_fmt(struct snd_soc_dai *cpu_dai,
->  	return 0;
->  }
->  
-> +static int davinci_i2s_dai_set_clkdiv(struct snd_soc_dai *cpu_dai,
-> +				int div_id, int div)
-> +{
-> +	struct davinci_mcbsp_dev *dev = cpu_dai->private_data;
-> +	int srgr;
-> +
-> +	mcbsp_data.clk_div = div;
-> +	return 0;
-> +}
-> +
-> +
->  static int davinci_i2s_hw_params(struct snd_pcm_substream *substream,
->  				 struct snd_pcm_hw_params *params,
->  				 struct snd_soc_dai *dai)
-> @@ -380,11 +410,12 @@ static int davinci_i2s_hw_params(struct snd_pcm_substream *substream,
->  	struct davinci_pcm_dma_params *dma_params =
->  					&dev->dma_params[substream->stream];
->  	struct snd_interval *i = NULL;
-> -	int mcbsp_word_length;
-> -	unsigned int rcr, xcr, srgr;
-> +	int mcbsp_word_length, master;
-> +	unsigned int rcr, xcr, srgr, clk_div, freq, framesize;
->  	u32 spcr;
->  	snd_pcm_format_t fmt;
->  	unsigned element_cnt = 1;
-> +	struct clk *clk;
->  
->  	/* general line settings */
->  	spcr = davinci_mcbsp_read_reg(dev, DAVINCI_MCBSP_SPCR_REG);
-> @@ -396,12 +427,60 @@ static int davinci_i2s_hw_params(struct snd_pcm_substream *substream,
->  		davinci_mcbsp_write_reg(dev, DAVINCI_MCBSP_SPCR_REG, spcr);
->  	}
->  
-> -	i = hw_param_interval(params, SNDRV_PCM_HW_PARAM_SAMPLE_BITS);
-> -	srgr = DAVINCI_MCBSP_SRGR_FSGM;
-> -	srgr |= DAVINCI_MCBSP_SRGR_FWID(snd_interval_value(i) - 1);
-> +	master = mcbsp_data.fmt & SND_SOC_DAIFMT_MASTER_MASK;
-> +	fmt = params_format(params);
-> +	mcbsp_word_length = asp_word_length[fmt];
->  
-> -	i = hw_param_interval(params, SNDRV_PCM_HW_PARAM_FRAME_BITS);
-> -	srgr |= DAVINCI_MCBSP_SRGR_FPER(snd_interval_value(i) - 1);
-> +	if (master == SND_SOC_DAIFMT_CBS_CFS) {
-> +		clk = clk_get(NULL, "pll1_sysclk6");
-> +		if (clk)
-> +			freq = clk_get_rate(clk);
-> +		freq = 122000000; /* FIXME ask to Texas */
+I think you need to do some more research on what your actually doing to
+the system. From what your showing us one could make a lot of different
+arguments as to what this change will actually do. You really need some
+sort of test that doesn't leave a lot of room for argument.
 
-This frequency should either be passed in as platform data or by your
-machine driver calling snd_soc_dai_set_sysclk(). 
+Daniel
 
-> +		if (dev->i2s_fast_clock) {
-> +			clk_div = 256;
-> +			do {
-> +				framesize = (freq / (--clk_div)) /
-> +					    params->rate_num *
-> +					    params->rate_den;
-> +			} while (((framesize < 33) || (framesize > 4095)) &&
-> +				 (clk_div));
-> +			clk_div--;
-> +			srgr = DAVINCI_MCBSP_SRGR_FSGM |
-> +			       DAVINCI_MCBSP_SRGR_CLKSM;
-> +			srgr |= DAVINCI_MCBSP_SRGR_FWID(mcbsp_word_length *
-> +							8 - 1);
-> +			srgr |= DAVINCI_MCBSP_SRGR_FPER(framesize - 1);
-> +		} else {
-> +			/* simmetric waveforms */
-
-symmetric
-
-> +			srgr = DAVINCI_MCBSP_SRGR_FSGM |
-> +			       DAVINCI_MCBSP_SRGR_CLKSM;
-> +			srgr |= DAVINCI_MCBSP_SRGR_FWID(mcbsp_word_length *
-> +							8 - 1);
-> +			srgr |= DAVINCI_MCBSP_SRGR_FPER(mcbsp_word_length *
-> +							16 - 1);
-> +			clk_div = freq / (mcbsp_word_length * 16) /
-> +				  params->rate_num * params->rate_den;
-> +		}
-> +		clk_div &= 0xFF;
-> +		srgr |= clk_div;
-> +	} else if (master == SND_SOC_DAIFMT_CBS_CFM) {
-> +		/* Clock given on CLKS */
-> +		srgr = DAVINCI_MCBSP_SRGR_FSGM;
-> +		clk_div = mcbsp_data.clk_div - 1;
-> +		srgr |= DAVINCI_MCBSP_SRGR_FWID(mcbsp_word_length * 8 - 1);
-> +		srgr |= DAVINCI_MCBSP_SRGR_FPER(mcbsp_word_length * 16 - 1);
-> +		clk_div &= 0xFF;
-> +		srgr |= clk_div;
-> +	} else {
-> +		i = hw_param_interval(params, SNDRV_PCM_HW_PARAM_SAMPLE_BITS);
-> +		srgr = DAVINCI_MCBSP_SRGR_FSGM;
-> +		srgr |= DAVINCI_MCBSP_SRGR_FWID(snd_interval_value(i) - 1);
-> +		pr_debug("%s - %d  FWID set: re-read srgr = %X\n",
-> +			__func__, __LINE__, snd_interval_value(i) - 1);
-> +
-> +		i = hw_param_interval(params, SNDRV_PCM_HW_PARAM_FRAME_BITS);
-> +		srgr |= DAVINCI_MCBSP_SRGR_FPER(snd_interval_value(i) - 1);
-> +	}
->  	davinci_mcbsp_write_reg(dev, DAVINCI_MCBSP_SRGR_REG, srgr);
->  
->  	rcr = DAVINCI_MCBSP_RCR_RFIG;
-> @@ -426,22 +505,45 @@ static int davinci_i2s_hw_params(struct snd_pcm_substream *substream,
->  			element_cnt = 1;
->  			fmt = double_fmt[fmt];
->  		}
-> +		if (master == SND_SOC_DAIFMT_CBS_CFS ||
-> +				master == SND_SOC_DAIFMT_CBS_CFM) {
-> +			rcr |= DAVINCI_MCBSP_RCR_RFRLEN2(0);
-> +			xcr |= DAVINCI_MCBSP_XCR_XFRLEN2(0);
-> +			rcr |= DAVINCI_MCBSP_RCR_RPHASE;
-> +			xcr |= DAVINCI_MCBSP_XCR_XPHASE;
-> +		} else {
-> +			/* FIXME ask to Texas */
-> +			rcr |= DAVINCI_MCBSP_RCR_RFRLEN2(element_cnt - 1);
-> +			xcr |= DAVINCI_MCBSP_XCR_XFRLEN2(element_cnt - 1);
-> +		}
->  	}
->  	dma_params->acnt = dma_params->data_type = data_type[fmt];
->  	dma_params->fifo_level = 0;
->  	mcbsp_word_length = asp_word_length[fmt];
-> -	rcr |= DAVINCI_MCBSP_RCR_RFRLEN1(element_cnt - 1);
-> -	xcr |= DAVINCI_MCBSP_XCR_XFRLEN1(element_cnt - 1);
-> +
-> +	if (master == SND_SOC_DAIFMT_CBS_CFS ||
-> +			master == SND_SOC_DAIFMT_CBS_CFM) {
-> +		rcr |= DAVINCI_MCBSP_RCR_RFRLEN1(0);
-> +		xcr |= DAVINCI_MCBSP_XCR_XFRLEN1(0);
-> +	} else {
-> +		/* FIXME ask to Texas */
-> +		rcr |= DAVINCI_MCBSP_RCR_RFRLEN1(element_cnt - 1);
-> +		xcr |= DAVINCI_MCBSP_XCR_XFRLEN1(element_cnt - 1);
-> +	}
->  
->  	rcr |= DAVINCI_MCBSP_RCR_RWDLEN1(mcbsp_word_length) |
-> -		DAVINCI_MCBSP_RCR_RWDLEN2(mcbsp_word_length);
-> +	       DAVINCI_MCBSP_RCR_RWDLEN2(mcbsp_word_length);
-
-more unintended formatting ?
-
->  	xcr |= DAVINCI_MCBSP_XCR_XWDLEN1(mcbsp_word_length) |
-> -		DAVINCI_MCBSP_XCR_XWDLEN2(mcbsp_word_length);
-> +	       DAVINCI_MCBSP_XCR_XWDLEN2(mcbsp_word_length);
-
-ditto
-
->  
->  	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
->  		davinci_mcbsp_write_reg(dev, DAVINCI_MCBSP_XCR_REG, xcr);
->  	else
->  		davinci_mcbsp_write_reg(dev, DAVINCI_MCBSP_RCR_REG, rcr);
-> +
-> +	pr_debug("%s - %d  srgr=%X\n", __func__, __LINE__, srgr);
-> +	pr_debug("%s - %d  xcr=%X\n", __func__, __LINE__, xcr);
-> +	pr_debug("%s - %d  rcr=%X\n", __func__, __LINE__, rcr);
->  	return 0;
->  }
->  
-> @@ -500,7 +602,7 @@ static struct snd_soc_dai_ops davinci_i2s_dai_ops = {
->  	.trigger	= davinci_i2s_trigger,
->  	.hw_params	= davinci_i2s_hw_params,
->  	.set_fmt	= davinci_i2s_set_dai_fmt,
-> -
-> +	.set_clkdiv = davinci_i2s_dai_set_clkdiv,
-
-the formatting is different to rest of struct here.
-
->  };
->  
->  struct snd_soc_dai davinci_i2s_dai = {
-> @@ -548,6 +650,7 @@ static int davinci_i2s_probe(struct platform_device *pdev)
->  	}
->  	if (pdata) {
->  		dev->enable_channel_combine = pdata->enable_channel_combine;
-> +		dev->i2s_fast_clock = pdata->i2s_fast_clock;
->  		dev->dma_params[SNDRV_PCM_STREAM_PLAYBACK].sram_size =
->  			pdata->sram_size_playback;
->  		dev->dma_params[SNDRV_PCM_STREAM_CAPTURE].sram_size =
-
-The subject of the patch looks wrong as I can't really see where you are
-adding stereo support to  the DAI. This patch looks likes it adds more
-clocking options only,
-
-Thanks
-
-Liam
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
