@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab0FWKH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 06:07:26 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:51616 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab0FWKEg (ORCPT
+	id S1752915Ab0FWKEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 06:04:34 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37772 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab0FWKEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 06:04:36 -0400
+	Wed, 23 Jun 2010 06:04:31 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
 Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
@@ -14,12 +14,10 @@ Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Paul Mackerras <paulus@samba.org>,
        Michael Ellerman <michael@ellerman.id.au>,
-       Ian Munsie <imunsie@au1.ibm.com>, Rusty Russell <rusty@rustcorp.com.au>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Tejun Heo <tj@kernel.org>
-Subject: [PATCH 30/40] trace syscalls: Convert remaining kernel/compat.c syscalls to COMPAT_SYSCALL_DEFINE
-Date: Wed, 23 Jun 2010 20:03:11 +1000
-Message-Id: <1277287401-28571-31-git-send-email-imunsie@au1.ibm.com>
+       Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 25/40] trace syscalls: Refactor syscall metadata creation
+Date: Wed, 23 Jun 2010 20:03:06 +1000
+Message-Id: <1277287401-28571-26-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
 References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
@@ -29,104 +27,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-This patch converts the remaining system calls from kernel/compat.c to
-use the COMPAT_SYSCALL_DEFINE family of macros.
+The syscall metadata creation macros are a bit convoluted with some
+duplicated code - particularly the duplication in SYSCALL_DEFINE0 with
+SYSCALL_METADATA and related macros.
 
-The particular system calls in question did not originally have the
-asmlinkage tag which will be added by this conversion.
+As demonstrated by the compat syscalls, there may be needs to introduce
+additional high level *_SYSCALL_DEFINE[0-6] macros with subtle
+differences from the existing ones. This patch aims to make the macros
+more atomic, move more of the complexity of the macros down, and remove
+some duplicated code without changing existing functionality so that
+defining new high level macros is easier.
+
+In particular, certain system calls on PowerPC access the state of the
+registers, through the use of some assembly that places the registers on
+the stack in the place of the 7th argument to the function. These system
+calls require specialised macros to record their metadata and this patch
+greatly simplifies their implementation.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- kernel/compat.c |   34 +++++++++++++++++-----------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+ include/linux/syscalls.h |   77 ++++++++++++++++------------------------------
+ 1 files changed, 27 insertions(+), 50 deletions(-)
 
-diff --git a/kernel/compat.c b/kernel/compat.c
-index 7ab99e1..81762e4 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -535,9 +535,9 @@ int put_compat_itimerspec(struct compat_itimerspec __user *dst,
- 	return 0;
- }
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 55a9f2b..a608565 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -153,7 +153,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 		.data			= (void *)&__syscall_meta_##sname,\
+ 	}
  
--long compat_sys_timer_create(clockid_t which_clock,
--			struct compat_sigevent __user *timer_event_spec,
--			timer_t __user *created_timer_id)
-+COMPAT_SYSCALL_DEFINE3(timer_create, clockid_t, which_clock,
-+			struct compat_sigevent __user *, timer_event_spec,
-+			timer_t __user *, created_timer_id)
- {
- 	struct sigevent __user *event = NULL;
+-#define SYSCALL_METADATA(rname, sname, nb, event_class)		\
++#define SYSCALL_METADATA(rname, sname, nb, event_class, stypes, sargs)\
+ 	SYSCALL_TRACE_ENTER_EVENT(sname, event_class);		\
+ 	SYSCALL_TRACE_EXIT_EVENT(sname, event_class);		\
+ 	static struct syscall_metadata __used			\
+@@ -162,9 +162,10 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	  __syscall_meta_##sname = {				\
+ 		.name 		= #rname,			\
+ 		.syscall_nr	= -1,	/* Filled in at boot */	\
++		.compat_syscall_nr = -1,/* Filled in at boot */	\
+ 		.nb_args 	= nb,				\
+-		.types		= types_##sname,		\
+-		.args		= args_##sname,			\
++		.types		= stypes,			\
++		.args		= sargs,			\
+ 		.ftrace_enter	= 0,				\
+ 		.ftrace_exit	= 0,				\
+ 		.perf_enter	= 0,				\
+@@ -175,29 +176,22 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 		.exit_fields	= LIST_HEAD_INIT(__syscall_meta_##sname.exit_fields), \
+ 	};
  
-@@ -553,9 +553,9 @@ long compat_sys_timer_create(clockid_t which_clock,
- 	return sys_timer_create(which_clock, event, created_timer_id);
- }
+-#define SYSCALL_DEFINE0(sname)					\
+-	SYSCALL_TRACE_ENTER_EVENT(sys_##sname, syscall);	\
+-	SYSCALL_TRACE_EXIT_EVENT(sys_##sname, syscall);		\
+-	static struct syscall_metadata __used			\
+-	  __attribute__((__aligned__(4)))			\
+-	  __attribute__((section("__syscalls_metadata")))	\
+-	  __syscall_meta_sys_##sname = {			\
+-		.name 		= "sys_"#sname,			\
+-		.syscall_nr	= -1,	/* Filled in at boot */	\
+-		.nb_args 	= 0,				\
+-		.ftrace_enter	= 0,				\
+-		.ftrace_exit	= 0,				\
+-		.perf_enter	= 0,				\
+-		.perf_exit	= 0,				\
+-		.enter_event	= &event_enter_sys_##sname,	\
+-		.exit_event	= &event_exit_sys_##sname,	\
+-		.enter_fields	= LIST_HEAD_INIT(__syscall_meta__##sname.enter_fields), \
+-		.exit_fields	= LIST_HEAD_INIT(__syscall_meta__##sname.exit_fields), \
++#define SYSCALL_METADATAx(rname, sname, nb, event_class, ...)	\
++	static const char *types_##sname[] = {			\
++		__SC_STR_TDECL##nb(__VA_ARGS__)			\
+ 	};							\
+-	asmlinkage long sys_##sname(void)
+-#else
+-#define SYSCALL_DEFINE0(name)	   asmlinkage long sys_##name(void)
+-#endif
++	static const char *args_##sname[] = {			\
++		__SC_STR_ADECL##nb(__VA_ARGS__)			\
++	};							\
++	SYSCALL_METADATA(rname, sname, nb, event_class, types_##sname, args_##sname)
++
++#define SYSCALL_METADATA0(rname, sname, event_class)			\
++	SYSCALL_METADATA(rname, sname, 0, event_class, NULL, NULL)
++
++#else /* !CONFIG_FTRACE_SYSCALLS */
++#define SYSCALL_METADATAx(...)
++#define SYSCALL_METADATA0(...)
++#endif /* CONFIG_FTRACE_SYSCALLS */
  
--long compat_sys_timer_settime(timer_t timer_id, int flags,
--			  struct compat_itimerspec __user *new,
--			  struct compat_itimerspec __user *old)
-+COMPAT_SYSCALL_DEFINE4(timer_settime, timer_t, timer_id, int, flags,
-+			  struct compat_itimerspec __user *, new,
-+			  struct compat_itimerspec __user *, old)
- {
- 	long err;
- 	mm_segment_t oldfs;
-@@ -576,8 +576,8 @@ long compat_sys_timer_settime(timer_t timer_id, int flags,
- 	return err;
- }
+ #define SYSCALL_DEFINE1(name, ...) SYSCALL_DEFINEx(1, _##name, __VA_ARGS__)
+ #define SYSCALL_DEFINE2(name, ...) SYSCALL_DEFINEx(2, _##name, __VA_ARGS__)
+@@ -222,22 +216,12 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ #define COMPAT_SYSCALL_DEFINE5(name, ...) COMPAT_SYSCALL_DEFINEx(5, compat_sys_##name, name, __VA_ARGS__)
+ #define COMPAT_SYSCALL_DEFINE6(name, ...) COMPAT_SYSCALL_DEFINEx(6, compat_sys_##name, name, __VA_ARGS__)
  
--long compat_sys_timer_gettime(timer_t timer_id,
--		struct compat_itimerspec __user *setting)
-+COMPAT_SYSCALL_DEFINE2(timer_gettime, timer_t, timer_id,
-+		struct compat_itimerspec __user *, setting)
- {
- 	long err;
- 	mm_segment_t oldfs;
-@@ -593,8 +593,8 @@ long compat_sys_timer_gettime(timer_t timer_id,
- 	return err;
- }
+-#ifdef CONFIG_COMPAT_FTRACE_SYSCALLS
+ #define COMPAT_SYSCALL_DEFINEx(x, syscall, sname, ...)			\
+-	static const char *types_compat_sys_##sname[] = {		\
+-		__SC_STR_TDECL##x(__VA_ARGS__)				\
+-	};								\
+-	static const char *args_compat_sys_##sname[] = {		\
+-		__SC_STR_ADECL##x(__VA_ARGS__)				\
+-	};								\
+-	SYSCALL_METADATA(syscall, compat_sys_##sname, x, compat_syscall);\
++	SYSCALL_METADATAx(syscall, compat_sys_##sname, x, compat_syscall, __VA_ARGS__);\
+ 	asmlinkage long syscall(__SC_DECL##x(__VA_ARGS__))
+-#else
+-#define COMPAT_SYSCALL_DEFINEx(x, syscall, sname, ...)			\
+-	asmlinkage long syscall(__SC_DECL##x(__VA_ARGS__))
+-#endif
  
--long compat_sys_clock_settime(clockid_t which_clock,
--		struct compat_timespec __user *tp)
-+COMPAT_SYSCALL_DEFINE2(clock_settime, clockid_t, which_clock,
-+		struct compat_timespec __user *, tp)
- {
- 	long err;
- 	mm_segment_t oldfs;
-@@ -610,8 +610,8 @@ long compat_sys_clock_settime(clockid_t which_clock,
- 	return err;
- }
+-#endif
++#endif /* CONFIG_COMPAT */
++
  
--long compat_sys_clock_gettime(clockid_t which_clock,
--		struct compat_timespec __user *tp)
-+COMPAT_SYSCALL_DEFINE2(clock_gettime, clockid_t, which_clock,
-+		struct compat_timespec __user *, tp)
- {
- 	long err;
- 	mm_segment_t oldfs;
-@@ -627,8 +627,8 @@ long compat_sys_clock_gettime(clockid_t which_clock,
- 	return err;
- }
+ #ifdef CONFIG_PPC64
+ #define SYSCALL_ALIAS(alias, name)					\
+@@ -253,20 +237,13 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ #endif
+ #endif
  
--long compat_sys_clock_getres(clockid_t which_clock,
--		struct compat_timespec __user *tp)
-+COMPAT_SYSCALL_DEFINE2(clock_getres, clockid_t, which_clock,
-+		struct compat_timespec __user *, tp)
- {
- 	long err;
- 	mm_segment_t oldfs;
-@@ -668,9 +668,9 @@ static long compat_clock_nanosleep_restart(struct restart_block *restart)
- 	return err;
- }
+-#ifdef CONFIG_FTRACE_SYSCALLS
+-#define SYSCALL_DEFINEx(x, sname, ...)				\
+-	static const char *types_sys##sname[] = {		\
+-		__SC_STR_TDECL##x(__VA_ARGS__)			\
+-	};							\
+-	static const char *args_sys##sname[] = {		\
+-		__SC_STR_ADECL##x(__VA_ARGS__)			\
+-	};							\
+-	SYSCALL_METADATA(sys##sname, sys##sname, x, syscall);	\
+-	__SYSCALL_DEFINEx(x, sname, __VA_ARGS__)
+-#else
+ #define SYSCALL_DEFINEx(x, sname, ...)				\
++	SYSCALL_METADATAx(sys##sname, sys##sname, x, syscall, __VA_ARGS__);\
+ 	__SYSCALL_DEFINEx(x, sname, __VA_ARGS__)
+-#endif
++
++#define SYSCALL_DEFINE0(name)					\
++	SYSCALL_METADATA0(sys_##name, name, syscall)		\
++	asmlinkage long sys_##name(void)
  
--long compat_sys_clock_nanosleep(clockid_t which_clock, int flags,
--			    struct compat_timespec __user *rqtp,
--			    struct compat_timespec __user *rmtp)
-+COMPAT_SYSCALL_DEFINE4(clock_nanosleep, clockid_t, which_clock, int, flags,
-+			    struct compat_timespec __user *, rqtp,
-+			    struct compat_timespec __user *, rmtp)
- {
- 	long err;
- 	mm_segment_t oldfs;
+ #ifdef CONFIG_HAVE_SYSCALL_WRAPPERS
+ 
 -- 
 1.7.1
 
