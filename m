@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab0FWKEl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 06:04:41 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:50609 "EHLO
+	id S1753160Ab0FWKEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 06:04:45 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:50630 "EHLO
 	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949Ab0FWKEh (ORCPT
+	with ESMTP id S1752949Ab0FWKEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 06:04:37 -0400
+	Wed, 23 Jun 2010 06:04:42 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
 Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
@@ -14,15 +14,10 @@ Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Paul Mackerras <paulus@samba.org>,
        Michael Ellerman <michael@ellerman.id.au>,
-       Ian Munsie <imunsie@au1.ibm.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Christoph Hellwig <hch@lst.de>,
-       Chase Douglas <cndougla@linux.vnet.ibm.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 29/40] trace syscalls, PPC: Convert ppc32_ syscalls to ARCH_COMPAT_SYSCALL_DEFINE
-Date: Wed, 23 Jun 2010 20:03:10 +1000
-Message-Id: <1277287401-28571-30-git-send-email-imunsie@au1.ibm.com>
+       Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 33/40] trace syscalls: Infrastructure for syscalls different return types
+Date: Wed, 23 Jun 2010 20:03:14 +1000
+Message-Id: <1277287401-28571-34-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
 References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
@@ -32,56 +27,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-This patch renames the 32bit compat syscalls prefixed with ppc32_ to
-sys32_ and uses the ARCH_COMPAT_SYSCALL_DEFINE macros to record their
-metadata for tracing.
+A number of syscalls have return types other than long, which the
+existing SYSCALL_DEFINE macros assumed. This patch adds aditional macros
+that specify the return types (semantics of existing high level macros are
+unchanged) for use with system calls with other return types.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- arch/powerpc/include/asm/systbl.h |    4 ++--
- arch/powerpc/kernel/sys_ppc32.c   |    8 ++++----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ include/linux/syscalls.h |  102 +++++++++++++++++++++++++++++-----------------
+ 1 files changed, 64 insertions(+), 38 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index 228eecb..bbcc700 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -236,9 +236,9 @@ COMPAT_SYS_SPU(io_getevents)
- COMPAT_SYS_SPU(io_submit)
- SYSCALL_SPU(io_cancel)
- SYSCALL(set_tid_address)
--SYSX_SPU(sys_fadvise64,ppc32_fadvise64,sys_fadvise64)
-+SYSX_SPU(sys_fadvise64,sys32_fadvise64,sys_fadvise64)
- SYSCALL(exit_group)
--SYSX(sys_lookup_dcookie,ppc32_lookup_dcookie,sys_lookup_dcookie)
-+SYSX(sys_lookup_dcookie,sys32_lookup_dcookie,sys_lookup_dcookie)
- SYSCALL_SPU(epoll_create)
- SYSCALL_SPU(epoll_ctl)
- SYSCALL_SPU(epoll_wait)
-diff --git a/arch/powerpc/kernel/sys_ppc32.c b/arch/powerpc/kernel/sys_ppc32.c
-index 27cf460..cf18164 100644
---- a/arch/powerpc/kernel/sys_ppc32.c
-+++ b/arch/powerpc/kernel/sys_ppc32.c
-@@ -594,15 +594,15 @@ asmlinkage int compat_sys_ftruncate64(unsigned int fd, u32 reg4, unsigned long h
- 	return sys_ftruncate(fd, (high << 32) | low);
- }
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index d7eaa4b..0cef707 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -193,36 +193,62 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ #define SYSCALL_METADATA0(...)
+ #endif /* CONFIG_FTRACE_SYSCALLS */
  
--long ppc32_lookup_dcookie(u32 cookie_high, u32 cookie_low, char __user *buf,
--			  size_t len)
-+ARCH_COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, cookie_high, u32, cookie_low,
-+		char __user *, buf, size_t, len)
- {
- 	return sys_lookup_dcookie((u64)cookie_high << 32 | cookie_low,
- 				  buf, len);
- }
+-#define SYSCALL_DEFINE1(name, ...) SYSCALL_DEFINEx(1, _##name, __VA_ARGS__)
+-#define SYSCALL_DEFINE2(name, ...) SYSCALL_DEFINEx(2, _##name, __VA_ARGS__)
+-#define SYSCALL_DEFINE3(name, ...) SYSCALL_DEFINEx(3, _##name, __VA_ARGS__)
+-#define SYSCALL_DEFINE4(name, ...) SYSCALL_DEFINEx(4, _##name, __VA_ARGS__)
+-#define SYSCALL_DEFINE5(name, ...) SYSCALL_DEFINEx(5, _##name, __VA_ARGS__)
+-#define SYSCALL_DEFINE6(name, ...) SYSCALL_DEFINEx(6, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE0(name) SYSCALL_DEFINE0_RET(long, name)
++#define SYSCALL_DEFINE1(name, ...) SYSCALL_DEFINEx(1, long, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE2(name, ...) SYSCALL_DEFINEx(2, long, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE3(name, ...) SYSCALL_DEFINEx(3, long, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE4(name, ...) SYSCALL_DEFINEx(4, long, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE5(name, ...) SYSCALL_DEFINEx(5, long, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE6(name, ...) SYSCALL_DEFINEx(6, long, _##name, __VA_ARGS__)
++
++#define SYSCALL_DEFINE1_RET(ret, name, ...) SYSCALL_DEFINEx(1, ret, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE2_RET(ret, name, ...) SYSCALL_DEFINEx(2, ret, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE3_RET(ret, name, ...) SYSCALL_DEFINEx(3, ret, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE4_RET(ret, name, ...) SYSCALL_DEFINEx(4, ret, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE5_RET(ret, name, ...) SYSCALL_DEFINEx(5, ret, _##name, __VA_ARGS__)
++#define SYSCALL_DEFINE6_RET(ret, name, ...) SYSCALL_DEFINEx(6, ret, _##name, __VA_ARGS__)
  
--long ppc32_fadvise64(int fd, u32 unused, u32 offset_high, u32 offset_low,
--		     size_t len, int advice)
-+ARCH_COMPAT_SYSCALL_DEFINE6(fadvise64, int, fd, u32, unused, u32, offset_high,
-+		u32, offset_low, size_t, len, int, advice)
- {
- 	return sys_fadvise64(fd, (u64)offset_high << 32 | offset_low, len,
- 			     advice);
+ #ifdef CONFIG_COMPAT
+ 
+-#define ARCH_COMPAT_SYSCALL_DEFINE1(name, ...) COMPAT_SYSCALL_DEFINEx(1, sys32_##name, name, __VA_ARGS__)
+-#define ARCH_COMPAT_SYSCALL_DEFINE2(name, ...) COMPAT_SYSCALL_DEFINEx(2, sys32_##name, name, __VA_ARGS__)
+-#define ARCH_COMPAT_SYSCALL_DEFINE3(name, ...) COMPAT_SYSCALL_DEFINEx(3, sys32_##name, name, __VA_ARGS__)
+-#define ARCH_COMPAT_SYSCALL_DEFINE4(name, ...) COMPAT_SYSCALL_DEFINEx(4, sys32_##name, name, __VA_ARGS__)
+-#define ARCH_COMPAT_SYSCALL_DEFINE5(name, ...) COMPAT_SYSCALL_DEFINEx(5, sys32_##name, name, __VA_ARGS__)
+-#define ARCH_COMPAT_SYSCALL_DEFINE6(name, ...) COMPAT_SYSCALL_DEFINEx(6, sys32_##name, name, __VA_ARGS__)
+-
+-#define COMPAT_SYSCALL_DEFINE1(name, ...) COMPAT_SYSCALL_DEFINEx(1, compat_sys_##name, name, __VA_ARGS__)
+-#define COMPAT_SYSCALL_DEFINE2(name, ...) COMPAT_SYSCALL_DEFINEx(2, compat_sys_##name, name, __VA_ARGS__)
+-#define COMPAT_SYSCALL_DEFINE3(name, ...) COMPAT_SYSCALL_DEFINEx(3, compat_sys_##name, name, __VA_ARGS__)
+-#define COMPAT_SYSCALL_DEFINE4(name, ...) COMPAT_SYSCALL_DEFINEx(4, compat_sys_##name, name, __VA_ARGS__)
+-#define COMPAT_SYSCALL_DEFINE5(name, ...) COMPAT_SYSCALL_DEFINEx(5, compat_sys_##name, name, __VA_ARGS__)
+-#define COMPAT_SYSCALL_DEFINE6(name, ...) COMPAT_SYSCALL_DEFINEx(6, compat_sys_##name, name, __VA_ARGS__)
+-
+-#define COMPAT_SYSCALL_DEFINEx(x, syscall, sname, ...)			\
++#define ARCH_COMPAT_SYSCALL_DEFINE0(name) COMPAT_SYSCALL_DEFINE0_RET(long, sys32_##name, name)
++#define ARCH_COMPAT_SYSCALL_DEFINE1(name, ...) COMPAT_SYSCALL_DEFINEx(1, long, sys32_##name, name, __VA_ARGS__)
++#define ARCH_COMPAT_SYSCALL_DEFINE2(name, ...) COMPAT_SYSCALL_DEFINEx(2, long, sys32_##name, name, __VA_ARGS__)
++#define ARCH_COMPAT_SYSCALL_DEFINE3(name, ...) COMPAT_SYSCALL_DEFINEx(3, long, sys32_##name, name, __VA_ARGS__)
++#define ARCH_COMPAT_SYSCALL_DEFINE4(name, ...) COMPAT_SYSCALL_DEFINEx(4, long, sys32_##name, name, __VA_ARGS__)
++#define ARCH_COMPAT_SYSCALL_DEFINE5(name, ...) COMPAT_SYSCALL_DEFINEx(5, long, sys32_##name, name, __VA_ARGS__)
++#define ARCH_COMPAT_SYSCALL_DEFINE6(name, ...) COMPAT_SYSCALL_DEFINEx(6, long, sys32_##name, name, __VA_ARGS__)
++
++#define ARCH_COMPAT_SYSCALL_DEFINE0_RET(ret, name) COMPAT_SYSCALL_DEFINE0_RET(0, ret, sys32_##name, name)
++#define ARCH_COMPAT_SYSCALL_DEFINE1_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(1, ret, sys32_##name, name, __VA_ARGS__)
++#define ARCH_COMPAT_SYSCALL_DEFINE2_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(2, ret, sys32_##name, name, __VA_ARGS__)
++#define ARCH_COMPAT_SYSCALL_DEFINE3_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(3, ret, sys32_##name, name, __VA_ARGS__)
++#define ARCH_COMPAT_SYSCALL_DEFINE4_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(4, ret, sys32_##name, name, __VA_ARGS__)
++#define ARCH_COMPAT_SYSCALL_DEFINE5_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(5, ret, sys32_##name, name, __VA_ARGS__)
++#define ARCH_COMPAT_SYSCALL_DEFINE6_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(6, ret, sys32_##name, name, __VA_ARGS__)
++
++#define COMPAT_SYSCALL_DEFINE0(name) COMPAT_SYSCALL_DEFINE0_RET(long, compat_sys_##name, name)
++#define COMPAT_SYSCALL_DEFINE1(name, ...) COMPAT_SYSCALL_DEFINEx(1, long, compat_sys_##name, name, __VA_ARGS__)
++#define COMPAT_SYSCALL_DEFINE2(name, ...) COMPAT_SYSCALL_DEFINEx(2, long, compat_sys_##name, name, __VA_ARGS__)
++#define COMPAT_SYSCALL_DEFINE3(name, ...) COMPAT_SYSCALL_DEFINEx(3, long, compat_sys_##name, name, __VA_ARGS__)
++#define COMPAT_SYSCALL_DEFINE4(name, ...) COMPAT_SYSCALL_DEFINEx(4, long, compat_sys_##name, name, __VA_ARGS__)
++#define COMPAT_SYSCALL_DEFINE5(name, ...) COMPAT_SYSCALL_DEFINEx(5, long, compat_sys_##name, name, __VA_ARGS__)
++#define COMPAT_SYSCALL_DEFINE6(name, ...) COMPAT_SYSCALL_DEFINEx(6, long, compat_sys_##name, name, __VA_ARGS__)
++
++#define COMPAT_SYSCALL_DEFINE0_RET(ret, name) __COMPAT_SYSCALL_DEFINE0(ret, compat_sys_##name, name)
++#define COMPAT_SYSCALL_DEFINE1_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(1, ret, compat_sys_##name, name, __VA_ARGS__)
++#define COMPAT_SYSCALL_DEFINE2_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(2, ret, compat_sys_##name, name, __VA_ARGS__)
++#define COMPAT_SYSCALL_DEFINE3_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(3, ret, compat_sys_##name, name, __VA_ARGS__)
++#define COMPAT_SYSCALL_DEFINE4_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(4, ret, compat_sys_##name, name, __VA_ARGS__)
++#define COMPAT_SYSCALL_DEFINE5_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(5, ret, compat_sys_##name, name, __VA_ARGS__)
++#define COMPAT_SYSCALL_DEFINE6_RET(ret, name, ...) COMPAT_SYSCALL_DEFINEx(6, ret, compat_sys_##name, name, __VA_ARGS__)
++
++#define COMPAT_SYSCALL_DEFINEx(x, ret, syscall, sname, ...)		\
+ 	SYSCALL_METADATAx(syscall, compat_sys_##sname, x, compat_syscall, __VA_ARGS__);\
+-	asmlinkage long syscall(__SC_DECL##x(__VA_ARGS__))
++	asmlinkage ret syscall(__SC_DECL##x(__VA_ARGS__))
+ 
+-#define COMPAT_SYSCALL_DEFINE0(name)					\
+-	SYSCALL_METADATA0(compat_sys_##name, name, compat_syscall)	\
+-	asmlinkage long compat_sys_##name()
++#define __COMPAT_SYSCALL_DEFINE0_RET(ret, syscall, name)		\
++	SYSCALL_METADATA0(syscall, name, compat_syscall)		\
++	asmlinkage ret syscall()
+ 
+ #endif /* CONFIG_COMPAT */
+ 
+@@ -241,13 +267,13 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ #endif
+ #endif
+ 
+-#define SYSCALL_DEFINEx(x, sname, ...)				\
++#define SYSCALL_DEFINEx(x, ret, sname, ...)				\
+ 	SYSCALL_METADATAx(sys##sname, sys##sname, x, syscall, __VA_ARGS__);\
+-	__SYSCALL_DEFINEx(x, sname, __VA_ARGS__)
++	__SYSCALL_DEFINEx(x, ret, sname, __VA_ARGS__)
+ 
+-#define SYSCALL_DEFINE0(name)					\
+-	SYSCALL_METADATA0(sys_##name, name, syscall)		\
+-	asmlinkage long sys_##name(void)
++#define SYSCALL_DEFINE0_RET(ret, name)					\
++	SYSCALL_METADATA0(sys_##name, name, syscall)			\
++	asmlinkage ret sys_##name(void)
+ 
+ #ifdef CONFIG_HAVE_SYSCALL_WRAPPERS
+ 
+@@ -255,16 +281,16 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	SYSCALL_METADATAx(sys_##name, sys_##name, x, syscall, __VA_ARGS__);\
+ 	static inline long SYSC_##name(__SC_DECL##x(__VA_ARGS__))
+ 
+-#define __SYSCALL_DEFINEx(x, name, ...)					\
+-	asmlinkage long sys##name(__SC_DECL##x(__VA_ARGS__));		\
+-	static inline long SYSC##name(__SC_DECL##x(__VA_ARGS__));	\
+-	asmlinkage long SyS##name(__SC_LONG##x(__VA_ARGS__))		\
++#define __SYSCALL_DEFINEx(x, ret, name, ...)				\
++	asmlinkage ret sys##name(__SC_DECL##x(__VA_ARGS__));		\
++	static inline ret SYSC##name(__SC_DECL##x(__VA_ARGS__));	\
++	asmlinkage ret SyS##name(__SC_LONG##x(__VA_ARGS__))		\
+ 	{								\
+ 		__SC_TEST##x(__VA_ARGS__);				\
+-		return (long) SYSC##name(__SC_CAST##x(__VA_ARGS__));	\
++		return (ret) SYSC##name(__SC_CAST##x(__VA_ARGS__));	\
+ 	}								\
+ 	SYSCALL_ALIAS(sys##name, SyS##name);				\
+-	static inline long SYSC##name(__SC_DECL##x(__VA_ARGS__))
++	static inline ret SYSC##name(__SC_DECL##x(__VA_ARGS__))
+ 
+ #else /* CONFIG_HAVE_SYSCALL_WRAPPERS */
+ 
+@@ -272,8 +298,8 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	SYSCALL_METADATAx(sys_##name, sys_##name, x, syscall, __VA_ARGS__);\
+ 	asmlinkage long sys_##name(__SC_DECL##x(__VA_ARGS__))
+ 
+-#define __SYSCALL_DEFINEx(x, name, ...)					\
+-	asmlinkage long sys##name(__SC_DECL##x(__VA_ARGS__))
++#define __SYSCALL_DEFINEx(x, ret, name, ...)				\
++	asmlinkage ret sys##name(__SC_DECL##x(__VA_ARGS__))
+ 
+ #endif /* CONFIG_HAVE_SYSCALL_WRAPPERS */
+ 
 -- 
 1.7.1
 
