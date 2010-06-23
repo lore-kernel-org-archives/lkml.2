@@ -1,147 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab0FWP0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 11:26:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752547Ab0FWP0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 11:26:22 -0400
-Date: Wed, 23 Jun 2010 17:24:21 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Mandeep Singh Baines <msb@google.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: while_each_thread() under rcu_read_lock() is broken?
-Message-ID: <20100623152421.GA8445@redhat.com>
-References: <20100618190251.GA17297@redhat.com> <20100618193403.GA17314@redhat.com> <20100618223354.GL2365@linux.vnet.ibm.com> <20100621170919.GA13826@redhat.com> <20100621205128.GI2354@linux.vnet.ibm.com> <20100622212357.GA19670@redhat.com> <20100622221226.GP2290@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100622221226.GP2290@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753487Ab0FWP0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 11:26:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39437 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753358Ab0FWP03 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 11:26:29 -0400
+X-Authority-Analysis: v=1.1 cv=CRXretTPUtnO3YxfLBAQPdv2BUzevxUrVWgTW+Y28TY= c=1 sm=0 a=IdOwrB8lMGEA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=nf-zp79boe1UZuaW8YMA:9 a=JK5eNJezOygYmBU9u50A:7 a=6dPkz42Sqh1dSHIFFYHaRqvU3lUA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 10/40] tracing: add tracing support for compat syscalls
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       Jason Baron <jbaron@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Michael Ellerman <michael@ellerman.id.au>,
+       "David S. Miller" <davem@davemloft.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Arnd Bergmann <arnd@arndb.de>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>
+In-Reply-To: <1277287401-28571-11-git-send-email-imunsie@au1.ibm.com>
+References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
+	 <1277287401-28571-11-git-send-email-imunsie@au1.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 23 Jun 2010 11:26:26 -0400
+Message-ID: <1277306786.9181.51.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22, Paul E. McKenney wrote:
->
-> On Tue, Jun 22, 2010 at 11:23:57PM +0200, Oleg Nesterov wrote:
-> > On 06/21, Paul E. McKenney wrote:
-> > >
-> > > Yeah, would be good to avoid this.  Not sure it can be avoided, though.
-> >
-> > Why? I think next_thread_careful() from
-> > 	http://marc.info/?l=linux-kernel&m=127714242731448
-> > should work.
-> >
-> > If the caller holds tasklist or siglock, this change has no effect.
-> >
-> > If the caller does while_each_thread() under rcu_read_lock(), then
-> > it is OK to break the loop earlier than we do now. The lockless
-> > while_each_thread() works in a "best effort" manner anyway, if it
-> > races with exit_group() or exec() it can miss some/most/all sub-threads
-> > (including the new leader) with or without this change.
-> >
-> > Yes, zap_threads() needs additional fixes. But I think it is better
-> > to complicate a couple of lockless callers (or just change them
-> > to take tasklist) which must not miss an "interesting" thread.
->
-> Is it the case that creating a new group leader from an existing group
-> always destroys the old group?  It certainly is the case for exec().
+On Wed, 2010-06-23 at 20:02 +1000, Ian Munsie wrote:
+> From: Jason Baron <jbaron@redhat.com>
+> 
+> Add core support to event tracing for compat syscalls. The basic idea is that we
+> check if we have a compat task via 'is_compat_task()'. If so, we lookup in the
+> new compat_syscalls_metadata table, the corresponding struct syscall_metadata, to
+> check syscall arguments and whether or not we are enabled.
+> 
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> ---
+>  include/linux/compat.h        |    2 +
+>  include/trace/syscall.h       |    4 ++
+>  kernel/trace/trace.h          |    2 +
+>  kernel/trace/trace_syscalls.c |   86 +++++++++++++++++++++++++++++++++++++----
+>  4 files changed, 86 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/compat.h b/include/linux/compat.h
+> index ab638e9..a94f13d 100644
+> --- a/include/linux/compat.h
+> +++ b/include/linux/compat.h
+> @@ -363,6 +363,8 @@ extern ssize_t compat_rw_copy_check_uvector(int type,
+>  
+>  #else /* CONFIG_COMPAT */
+>  
+> +#define NR_syscalls_compat 0
+> +
+>  static inline int is_compat_task(void)
+>  {
+>  	return 0;
+> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+> index 75f3dce..67d4e64 100644
+> --- a/include/trace/syscall.h
+> +++ b/include/trace/syscall.h
+> @@ -22,6 +22,7 @@
+>  struct syscall_metadata {
+>  	const char	*name;
+>  	int		syscall_nr;
+> +	int		compat_syscall_nr;
 
-Yes. And only exec() can change the leader.
+This is also bloating the kernel. I don't like to add fields to the
+syscall_metadata lightly.
 
-> Anyway, if creating a new thread group implies destroying the old one,
-> and if the thread group leader cannot be concurrently creating a new
-> thread group and traversing the old one, then yes, I do believe your
-> code at http://marc.info/?l=linux-kernel&m=127714242731448 will work.
->
-> Assuming that the call to next_thread_careful(t) in the definition of
-> while_each_thread() is replaced with next_thread_careful(g,t).
+You're adding 4 more bytes to this structure to handle a few items. Find
+a better way to do this.
 
-Great.
+>  	int		nb_args;
+>  	const char	**types;
+>  	const char	**args;
+> @@ -38,6 +39,9 @@ struct syscall_metadata {
+>  
+>  #ifdef CONFIG_FTRACE_SYSCALLS
+>  extern unsigned long arch_syscall_addr(int nr);
+> +#ifdef CONFIG_COMPAT
+> +extern unsigned long arch_compat_syscall_addr(int nr);
+> +#endif
+>  extern int init_syscall_trace(struct ftrace_event_call *call);
+>  
+>  extern int reg_event_syscall_enter(struct ftrace_event_call *call);
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 01ce088..53ace4b 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -79,12 +79,14 @@ enum trace_type {
+>  struct syscall_trace_enter {
+>  	struct trace_entry	ent;
+>  	int			nr;
+> +	int			compat;
 
-> And give or take memory barriers.
->
-> The implied memory barrier mentioned in the comment in your example code
-> is the spin_lock_irqsave() and spin_unlock_irqrestore()
+You're adding 4 bytes to a trace (taking up precious buffer space) for a
+single flag. If anything, set the 31st bit of nr if it is compat.
 
-Argh. No, no, no. I meant unlock + lock, not lock + unlock. But when
-I look at __change_pid() now I do not see the 2nd lock() after
-unlock(pidmap_lock). I was wrong, thanks.
+-- Steve
 
-And, even if I was correct it is not nice to rely on the internals
-of detach_pid(). If we use next_thread_careful(), __unhash_process()
-needs wmb.
+>  	unsigned long		args[];
+>  };
+>  
+>  struct syscall_trace_exit {
+>  	struct trace_entry	ent;
+>  	int			nr;
+> +	int			compat;
+>  	long			ret;
+>  };
+>  
 
-Thanks!
-
-> > And. Whatever we do with de_thread(), this can't fix the lockless
-> > while_each_thread(not_a_group_leader, t). I do not know if there is
-> > any user which does this though.
-> > fastpath_timer_check()->thread_group_cputimer() does this, but this
-> > is wrong and we already have the patch which removes it.
->
-> Indeed.  Suppose that the starting task is the one immediately preceding
-> the task group leader.  You get a pointer to the task in question
-> and traverse to the next task (the task group leader), during which
-> time the thread group leader does exec() and maybe a pthread_create()
-> or two.  Oops!  You are now now traversing the wrong thread group!
-
-Yes, but there is another more simple and much more feasible race.
-while_each_thread(non_leader, t) will loop forever if non_leader
-simply exits and passes __unhash_process(). After that next_thread(t)
-can never return non_leader.
-
-> There are ways of fixing this, but all the ones I know of require more
-> fields in the task structure,
-
-Just in case, I hope that next_thread_careful() handles this case too.
-
-> so best if we don't need to start somewhere
-> other than a group leader.
-
-(I assume, you mean the lockless case)
-
-I am not sure. Because it is not trivial to enforce this rule even if
-we add a fat comment. Please look at check_hung_uninterruptible_tasks().
-It does do_each_thread/while_each_thread and thus it always starts at
-the leader. But in fact this is not true due to rcu_lock_break().
-
-Or proc_task_readdir(). It finds the leader, does get_task_struct(leader)
-and drops rcu lock. After that first_tid() takes rcu_read_lock() again
-and does the open coded while_each_thread(). At first glance this case
-looks fine, "for (pos = leader; nr > 0; --nr)" can't loop forever.
-But in fact it is not:
-
-	- proc_task_readdir() finds the leader L, does get_task_struct()
-	  and drops rcu lock.
-
-	  Suppose that filp->f_pos >= 2.
-          Suppose also that the previous tid cached in filp->f_version
-          is no longer valid.
-
-	  The caller is preempted.
-
-	- a sub-thread T does exec, and does release_task(L).
-
-	  But L->thread_group->next == T, so far everything is good
-
-	- T spawns other sub-threads (so that get_nr_threads() > nr)
-	  and exits.
-
-	- grace period passes, T's task_struct is freed/unmapped/reused
-
-	- proc_task_readdir() resumes and calls first_tid(L).
-
-	  next_thread(L) returns T == nowhere
-
-It is very possible that I missed something here, my only point is
-that I think it would be safer to assume nothing about the leaderness.
-
-Oleg.
 
