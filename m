@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab0FWNG1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 09:06:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26628 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423Ab0FWNGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 09:06:25 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Tao Ma <tao.ma@oracle.com>
-Cc: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3 v5][RFC] ext3/4: enhance fsync performance when using CFQ
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
-	<4C21D442.8080703@oracle.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 23 Jun 2010 09:06:18 -0400
-In-Reply-To: <4C21D442.8080703@oracle.com> (Tao Ma's message of "Wed, 23 Jun
-	2010 17:30:42 +0800")
-Message-ID: <x49iq59q4ol.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753080Ab0FWNKR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 09:10:17 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:54093 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751217Ab0FWNKN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 09:10:13 -0400
+X-Greylist: delayed 593 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jun 2010 09:10:13 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAPKhIUxLd/sX/2dsb2JhbAAHgxbNVJEfgSaDBXAEhks
+X-IronPort-AV: E=Sophos;i="4.53,466,1272859200"; 
+   d="scan'208";a="68704499"
+Message-ID: <4C22055E.5060705@teksavvy.com>
+Date: Wed, 23 Jun 2010 09:00:14 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>, Tejun Heo <tj@kernel.org>,
+       linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Colin Tuckley <colin.tuckley@arm.com>, Jeff Garzik <jeff@garzik.org>,
+       linux-arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH v2] sata_sil24: Use memory barriers before issuing commands
+References: <20100610160212.18091.29856.stgit@e102109-lin.cambridge.arm.com>	 <4C110EDD.2010409@kernel.org> <1276187002.24535.88.camel@e102109-lin.cambridge.arm.com> <4C118697.9090305@gmail.com>
+In-Reply-To: <4C118697.9090305@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tao Ma <tao.ma@oracle.com> writes:
+On 10/06/10 08:43 PM, Robert Hancock wrote:
+..
+> My memory is fuzzy but I thought this came up before on PPC and I also
+> thought the conclusion was that the platform code (for writel, etc.)
+> should enforce ordering of MMIO accesses with respect to normal RAM
+> accesses. (Or maybe it was just MMIO accesses with respect to each
+> other?) I don't think the answer to that question has been clearly
+> documented anywhere, which is somewhat unfortunate.
+..
 
-> Hi Jeff,
->
-> On 06/23/2010 05:34 AM, Jeff Moyer wrote:
->> Hi,
->>
->> Running iozone with the fsync flag, or fs_mark, the performance of CFQ is
->> far worse than that of deadline for enterprise class storage when dealing
->> with file sizes of 8MB or less.  I used the following command line as a
->> representative test case:
->>
->>    fs_mark -S 1 -D 10000 -N 100000 -d /mnt/test/fs_mark -s 65536 -t 1 -w 4096 -F
->>
->> When run using the deadline I/O scheduler, an average of the first 5 numbers
->> will give you 448.4 files / second.  CFQ will yield only 106.7.  With
->> this patch series applied (and the two patches I sent yesterday), CFQ now
->> achieves 462.5 files / second.
-> which 2 patches? Could you paste the link or the subject? Just want to
-> make my test env like yours. ;)
-> As Joel mentioned in another mail, ocfs2 also use jbd/jbd2, so I'd
-> like to give it a try and give you some feedback about the test.
+Different problem.  That discussion was for PIO reads into the page cache,
+and ensuring coherency from all of that.
 
-http://lkml.org/lkml/2010/6/21/307:
-
-[PATCH 1/2] cfq: always return false from should_idle if slice_idle is
-set to zero
-[PATCH 2/2] cfq: allow dispatching of both sync and async I/O together
-
-Thanks in advance for the testing!
-
--Jeff
+Whereas this patch is just ordinary low-level chipset programming,
+and ensuring the descriptors are visible before issuing the "go" command.
