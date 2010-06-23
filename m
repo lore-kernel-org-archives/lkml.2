@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab0FWNj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 09:39:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60514 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721Ab0FWNj0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 09:39:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,467,1272870000"; 
-   d="scan'208";a="632882922"
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: "Williams, Dan J" <dan.j.williams@intel.com>,
-       Alan Cox <alan@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Jun 2010 19:09:12 +0530
-Subject: RE: [PATCH] intel_mid: Add Mrst & Mfld DMA Drivers
-Thread-Topic: [PATCH] intel_mid: Add Mrst & Mfld DMA Drivers
-Thread-Index: AcsSbL0+DjH/Yh8wQ76zE0X7kDeAHQAbA6CA
-Message-ID: <438BB0150E931F4B9CE701519A446301049B1BBE16@bgsmsx502.gar.corp.intel.com>
-References: <20100618155149.1356.84206.stgit@localhost.localdomain>
- <AANLkTilvD6KKEY3GE2Q0q3z4gu6K6RwkMWbRaRPl9_pU@mail.gmail.com>
-In-Reply-To: <AANLkTilvD6KKEY3GE2Q0q3z4gu6K6RwkMWbRaRPl9_pU@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1752684Ab0FWNk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 09:40:26 -0400
+Received: from n9.bullet.mail.ac4.yahoo.com ([76.13.13.237]:24839 "HELO
+	n9.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751794Ab0FWNkY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 09:40:24 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 425039.25513.bm@omp125.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=Wyq8C2iaDMdUxqf3TxVqtmkCCRiy4EAaBa/uzb2I+2eiKYlsDwgQ8erWx/OEkB8UGTUo8NUpgdJrhxDcB/0n3Czrgg/LhY1zw1kQJN5VFgNKNFCcfCWqgpRoqRMLSHNMPMAJnSYYoCkI6AI/RR2HMeTeKxGBnpEERCv5GJGoQT0=;
+Message-ID: <294115.59939.qm@web180308.mail.gq1.yahoo.com>
+X-YMail-OSG: CCsgNqYVM1mdcqVTEvXmkB9hNYBA1MMTHsLoBc525qiXue6
+ Kkm_g8VGZZAdEDDSXarb5FUu_Lg8G_18Oeqlsq0YnLr5tdtzb6sZusQhGSI7
+ ZZuaBK1WgErVi293HG69xNhvk_C4UB_lCw5S29GW4LYkp1c8HFxdPR2z_ycc
+ AAz4X25po0HHawjQsi3sFpkcs8J2e2xPw90.TwX315PNRHHzHQble_dICl3T
+ UgUZJyiP.tXCCMvByDjDZG0JsF29wECTejnbsUpzC6BUJVNPfVtUXen3FwGG
+ _ziLapUzKvXNSoc6YEccAc.zi4qoRbE1RHNXOVgZNKCnzlYtS3Q--
+X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.104.274457
+Date: Wed, 23 Jun 2010 06:39:09 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: gpiolib and sleeping gpios
+To: Jani Nikula <ext-jani.1.nikula@nokia.com>
+Cc: Ryan Mallon <ryan@bluewatersys.com>,
+       linux kernel <linux-kernel@vger.kernel.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       "gregkh@suse.de" <gregkh@suse.de>,
+       =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+In-Reply-To: <alpine.DEB.2.00.1006231601310.7850@wnav-qrfxgbc>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [..]
-> > ++ *    midc_do_start           begin a transaction
-> > ++ *    @midc: channel
-> > ++ *    @first: first descriptor of series
-> > ++ *
-> > ++ *    Load a transaction into the engine. This must be called with dwc->lock
-> > ++ *    held and bh disabled.
-> > ++ */
-> > +static void midc_dostart(struct intel_mid_dma_chan *midc, struct
-> intel_mid_dma_desc
-> 
-> (nit) The function name does not match the kernel doc, and I don't
-> know if those extra "+" characters will throw off the kernel-doc
-> scripts.  They also show up on midc_put_desc, but not
-> midc_scan_descriptors.
-Okay, will remove extra "+" char
-
-> > +       /*tx is complete*/
-> > +       list_for_each_entry_safe(desc, _desc, &midc->active_list, desc_node) {
-> > +               if (desc == NULL)
-> > +                       continue;
-> 
-> How do we ever get desc == NULL at this point?
-Yes we won't, will remove
-
-> [..]
-> > +#define _dma_printk(level, format, arg...)  \
-> > +       printk(level "LNW_DMA: %s %d " format, __func__, __LINE__, ## arg)
-> > +
-> > +#ifdef CONFIG_LNW_DMA_DEBUG
-> > +#define dma_dbg(format, arg...) _dma_printk(KERN_DEBUG, "DBG " format , ## arg)
-> > +#else
-> > +#define dma_dbg(format, arg...) do {} while (0);
-> > +#endif
-> 
-> This makes us lose compile coverage of the debug statements so they
-> bitrot until someone needs to debug a problem.
-This was just for debug purposes, will be removed
 
 
- 
-> Any advantage to having a default callback in the slave configuration?
->  Why not let the client specify the callback on each operation, is it
-> a callback that the client does not know about?
-txd callback is enough, no need to keep here, will be removed
+--- On Wed, 6/23/10, Jani Nikula <ext-jani.1.nikula@nokia.com> wrote:
 
-Thanks
-Vinod
+> -    WARN_ON(extra_checks &&
+> chip->can_sleep);
+> +    might_sleep_if(chip->can_sleep);
+
+ That looks like the right track.  For
+those cases the "extra_checks" should
+not be optional ... thanks.
+
+- Dave
+
+
