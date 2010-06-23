@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab0FWGAI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 02:00:08 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:50508 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab0FWGAF (ORCPT
+	id S1751372Ab0FWGQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 02:16:56 -0400
+Received: from antispam01.maxim-ic.com ([205.153.101.182]:36649 "EHLO
+	antispam01.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab0FWGQz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 02:00:05 -0400
-Message-ID: <4C21A39C.6040406@ontolinux.com>
-Date: Wed, 23 Jun 2010 08:03:08 +0200
-From: Christian Stroetmann <stroetmann@ontolinux.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	Wed, 23 Jun 2010 02:16:55 -0400
+X-Greylist: delayed 1119 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jun 2010 02:16:55 EDT
+X-ASG-Debug-ID: 1277272695-071ef9e10001-xx1T2L
+X-Barracuda-Envelope-From: Dayananda.HB@maxim-ic.com
+From: "Dayananda H.B." <Dayananda.HB@maxim-ic.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Dayananda H.B." <Dayananda.HB@maxim-ic.com>,
+       "dayananda.hb@gmail.com" <dayananda.hb@gmail.com>
+Date: Wed, 23 Jun 2010 00:58:34 -0500
+X-ASG-Orig-Subj: USB Low speed device not working with full speed HUB connected to
+ the USB OTG controller-1.1
+Subject: USB Low speed device not working with full speed HUB connected to
+ the USB OTG controller-1.1
+Thread-Topic: USB Low speed device not working with full speed HUB connected
+ to the USB OTG controller-1.1
+Thread-Index: AQHLEpkRfBbMEAAwiEG7pSo5guuY9w==
+Message-ID: <265A5FBCF63E4F4986A5C262DADBE85205376B9414@ITDALEX06.it.maxim-ic.internal>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: ext Kees Cook <kees.cook@canonical.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linux File System ML <linux-fsdevel@vger.kernel.org>,
-       Linux Security Module ML 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] security: Yama LSM
-References: <20100621213424.GG24749@outflux.net> <201006220028.o5M0Sbx7062650@www262.sakura.ne.jp> <20100622011452.GN24749@outflux.net> <4C20ABC0.5050908@nokia.com> <20100622160613.GC5876@outflux.net>
-In-Reply-To: <20100622160613.GC5876@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX18f0i/MQEO0ft3FsStG9W+vUN9Qzi2s8gU2dvg
- v6kQOGcD6K/hhrP2xlAoMJhyiSrCRRt8ECxtu0BMEwQVVu09ps
- KvdSDoHIDNlfFinPM+QFg==
+X-OriginalArrivalTime: 23 Jun 2010 05:58:37.0235 (UTC) FILETIME=[1F2A4030:01CB1299]
+X-Barracuda-Connect: terlingua.dalsemi.com[180.0.34.46]
+X-Barracuda-Start-Time: 1277272695
+X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.06.2010 18:06, ext Kees Cook wrote:
-> Hi Dmitry,
->
-> On Tue, Jun 22, 2010 at 03:25:36PM +0300, Dmitry Kasatkin wrote:
->    
->> What is YAMA?
->>      
-> "Yama" is just the name of the LSM.  It's inspired by:
-> http://en.wikipedia.org/wiki/Yama
->    
+Dear All,
 
-Really?
->    
->> Where is the tree?
->>      
-> At the moment:
-> http://kernel.ubuntu.com/git?p=kees/linux-2.6.git;a=shortlog;h=refs/heads/yama
->
-> -Kees
->    
+I am facing an issue as below, I have USB OTG Host controller-1.1 and I have connected the full speed HUB-2.0 is connected to the Host controller and then the low speed device (In my case Logitech Mouse) is connected. But as soon as I connect the low speed device
+to the HUB, HUB gets reset continuously and it goes to infinite loop and ultimately  it is impossible to enumerate the Low speed device. 
 
-"You've already had those suggestions some days ago. Use a security 
-module, either by using something like SELinux (where you can do this 
-just fine as far as I can see including exceptions by label for problem 
-apps)", [Alan Cox, 2010-06-08], or integrate it into an already existing 
-solution eg. grsecurity (www.grsecurity.net).
+I have taken the data log of the USB analyzer and I found Host controller sends the extra bytes(more than 30 bytes 0xFF) after the ACK(0xD2)
+in the Get Device Descriptor request for IN TOKEN packet. HOST controller recieves 8 bytes data in the IN token and after that it sends
+ACK (0xD2) and about 30 bytes of (0xFF) extra data.
 
-Christian Stroetmann
+If anybody knows this issue is coming from the USB stack (I am using the Linux-2.6.26 kernel) or the OTG HOST controller 1.1 or PRE amble PID/split packets please let me know.
+
+Please CC while replying to mail.
+
+
+Thanks and Regards
+Dayananda
