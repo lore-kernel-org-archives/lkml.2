@@ -1,142 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab0FWVor (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 17:44:47 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54358 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab0FWVop (ORCPT
+	id S1753561Ab0FWVww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 17:52:52 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:37296 "EHLO
+	mail.pripojeni.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751617Ab0FWVwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 17:44:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=bZrJpGA20OMg3bPdGRzqCRzRh7KE4BOFLAG7WAi222zVxAdSXrKFfd4z0IGVEmtPe+
-         bXbMgX/nSgJszZcOd/hj2YOXS38UlpV7VgduNJQ3Yh5nOq69PI6y79UL0lDpYLcWTYRb
-         k+40kC/iLwq6UyvYgzEOGerarbSZWJzoToSOo=
-Message-ID: <4C22805A.3080307@gmail.com>
-Date: Wed, 23 Jun 2010 14:44:58 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: =?UTF-8?B?VGltbyBUZXLDpHM=?= <timo.teras@iki.fi>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-       "John W.Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       davem@davemloft.net
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
-References: <AANLkTilf41JrFwN1veRDifNA78S2LQ6SO0g3YLOONd2W@mail.gmail.com>	 <20100623141622.GC15205@tuxdriver.com>  <4C223DCA.5090704@gmail.com> <1277314167.2469.1144.camel@edumazet-laptop> <4C224E06.40806@iki.fi> <4C22508A.8060002@gmail.com> <4C226FCA.2030604@iki.fi>
-In-Reply-To: <4C226FCA.2030604@iki.fi>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 23 Jun 2010 17:52:49 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: jirislaby@gmail.com
+Cc: Oleg Nesterov <oleg@redhat.com>, akpm@linux-foundation.org,
+       adobriyan@gmail.com, nhorman@tuxdriver.com,
+       Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+       Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
+       Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH v4 07/12] rlimits: do security check under task_lock
+Date: Wed, 23 Jun 2010 23:52:08 +0200
+Message-Id: <1277329933-8139-7-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
+References: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 01:34 PM, Timo Teräs wrote:
-> On 06/23/2010 09:20 PM, Justin P. Mattock wrote:
->> On 06/23/10 11:10, Timo Teräs wrote:
->>> On 06/23/2010 08:29 PM, Eric Dumazet wrote:
->>>
->>>> Le mercredi 23 juin 2010 à 10:00 -0700, Justin P. Mattock a écrit :
->>>>
->>>>> o.k. the bisect is pointing to the below results..
->>>>> (I tried git revert xxx but this commit is too big
->>>>> so I'll(hopefully)manually revert it on the latest HEAD to
->>>>> see if this is the actual problem im experiencing)
->>>>>
->>>>> 80c802f3073e84c956846e921e8a0b02dfa3755f is the first bad commit
->>>>> commit 80c802f3073e84c956846e921e8a0b02dfa3755f
->>>>> Author: Timo TerÃ¤s<timo.teras@iki.fi>
->>>>> Date:   Wed Apr 7 00:30:05 2010 +0000
->>>>>
->>>>>        xfrm: cache bundles instead of policies for outgoing flows
->>>>>
->>>>>        __xfrm_lookup() is called for each packet transmitted out of
->>>>>        system. The xfrm_find_bundle() does a linear search which can
->>>>>        kill system performance depending on how many bundles are
->>>>>        required per policy.
->>>>>
->>>>>        This modifies __xfrm_lookup() to store bundles directly in
->>>>>        the flow cache. If we did not get a hit, we just create a new
->>>>>        bundle instead of doing slow search. This means that we can now
->>>>>        get multiple xfrm_dst's for same flow (on per-cpu basis).
->>>>>
->>>>>        Signed-off-by: Timo Teras<timo.teras@iki.fi>
->>>>>        Signed-off-by: David S. Miller<davem@davemloft.net>
->>>>>
->>>>> :040000 040000 d8e60f5fa4c1329f450d9c7cdf98b34e6a177f22
->>>>> 9f576e68e5bf4ce357d7f0305aee5f410250dfe2 M      include
->>>>> :040000 040000 f2876df688ee36907af7b4123eea96592faaed3e
->>>>> a3f6f6f94f0309106856cd99b38ec90b024eb016 M      net
->>>>>
->>>> Thanks a lot for bisecting Jutin, this is really appreciated.
->>>>
->>>> crash is in xfrm_bundle_ok()
->>>>
->>>> if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
->>>>      return 0;
->>>>
->>>> xdst->pols[0] contains a NULL pointer
->>>>
->>> That does not really make sense, if we get this far; there's a valid
->>> xfrm_state with the bundle. This means that there existed a policy with
->>> it too.
->>>
->>> I'll take a deeper look at this tomorrow. Would it be possible to see
->>> your xfrm policies?
->>>
->>> - Timo
->>>
->>>
->>
->> @Eric sure no problem doing the bisect...
->>
->> as for the xfrm policy here is the link that I used to setup ipsec:
->> http://www.linuxfromscratch.org/hints/downloads/files/ipsec.txt
->> (just change the keys if doing real world work..(but for me just testing).
->>
->> below is a temporary fix for me to get this working, tcpdump reports
->> everything is doing what it should be
->> 11:16:32.496166 IP xxxxx>  xxxxx: AH(spi=0x00000200,seq=0x1090):
->> ESP(spi=0x00000201,seq=0x1090), length 56
->> 11:16:32.496212 IP xxxxx>  xxxxx: AH(spi=0x00000200,seq=0x1091):
->> ESP(spi=0x00000201,seq=0x1091), length 56
->> 11:16:32.496259 IP xxxxx>  xxxxx: AH(spi=0x00000200,seq=0x1092):
->> ESP(spi=0x00000201,seq=0x1092), length 56
->>
->> (tested a few mins ago, but not the right fix..)
->
-> Yes, that would break some other obscure scenarios.
->
-> Looks like it's ah inside esp. So you get chain of bundles. And only the
-> first bundle gets a policy. Should have thought of that. Does the below
-> fix it for you?
->
-> diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-> index 4bf27d9..af1c173 100644
-> --- a/net/xfrm/xfrm_policy.c
-> +++ b/net/xfrm/xfrm_policy.c
-> @@ -2300,7 +2300,8 @@ int xfrm_bundle_ok(struct xfrm_policy *pol, struct
-> xfrm_dst *first,
->   			return 0;
->   		if (xdst->xfrm_genid != dst->xfrm->genid)
->   			return 0;
-> -		if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
-> +		if (xdst->num_pols>  0&&
-> +		    xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
->   			return 0;
->
->   		if (strict&&  fl&&
->
->
+Do security_task_setrlimit under task_lock. Other tasks may change
+limits under our hands while we are checking limits inside the
+function. From now on, they can't.
+
+Note that all the security work is done under a spinlock here now.
+Security hooks count with that, they are called from interrupt context
+(like security_task_kill) and with spinlocks already held (e.g.
+capable->security_capable).
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Acked-by: James Morris <jmorris@namei.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ kernel/sys.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 9dbcbbc..c762eeb 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1277,7 +1277,7 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
+ 		struct rlimit *new_rlim)
+ {
+ 	struct rlimit *old_rlim;
+-	int retval;
++	int retval = 0;
+ 
+ 	if (resource >= RLIM_NLIMITS)
+ 		return -EINVAL;
+@@ -1293,9 +1293,14 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
+ 		goto out;
+ 	}
+ 
+-	retval = security_task_setrlimit(tsk->group_leader, resource, new_rlim);
+-	if (retval)
+-		goto out;
++	old_rlim = tsk->signal->rlim + resource;
++	task_lock(tsk->group_leader);
++	if (new_rlim->rlim_max > old_rlim->rlim_max &&
++			!capable(CAP_SYS_RESOURCE))
++		retval = -EPERM;
++	if (!retval)
++		retval = security_task_setrlimit(tsk->group_leader, resource,
++				new_rlim);
+ 
+ 	if (resource == RLIMIT_CPU && new_rlim->rlim_cur == 0) {
+ 		/*
+@@ -1307,12 +1312,7 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
+ 		new_rlim->rlim_cur = 1;
+ 	}
+ 
+-	old_rlim = tsk->signal->rlim + resource;
+-	task_lock(tsk->group_leader);
+-	if (new_rlim->rlim_max > old_rlim->rlim_max &&
+-			!capable(CAP_SYS_RESOURCE))
+-		retval = -EPERM;
+-	else
++	if (!retval)
+ 		*old_rlim = *new_rlim;
+ 	task_unlock(tsk->group_leader);
+ 
+-- 
+1.7.1
 
 
-yeah this works.. I can see AH and ESP showing up with tcpdump..
-looks good..
-
-Reported-Bisected-By: Justin P. Mattock <justinmattock@gmail.com>
-
-cheers,
-
-Justin P. Mattock
