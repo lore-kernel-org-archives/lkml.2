@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab0FWAuY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 20:50:24 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34762 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750777Ab0FWAuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 20:50:22 -0400
-Date: Wed, 23 Jun 2010 10:50:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree (tip tree
- related)
-Message-Id: <20100623105011.d4df34ba.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__23_Jun_2010_10_50_11_+1000_oq/qAvmBhzKtsVkS"
+	id S1753081Ab0FWA4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 20:56:52 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:18784 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab0FWA4v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 20:56:51 -0400
+Date: Wed, 23 Jun 2010 09:56:52 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: [GIT PULL linux-next] Samsung S5P SoCs
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+       linux-kernel@vger.kernel.org, sfr@canb.auug.org.au
+Cc: ben-linux@fluff.org
+Message-id: <000d01cb126e$fa193690$ee4ba3b0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=US-ASCII
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcsSbvd03G7ev5gzQJ2jnDhit5wiXQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_Jun_2010_10_50_11_+1000_oq/qAvmBhzKtsVkS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Dear Stephen Rothwell,
 
-Hi all,
+Could you please pull the following into linux-next?
 
-After merging the  tree, today's linux-next build (i386 allmodconfig)
-failed like this:
+git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git#for-ne
+xt
 
-  VDSO    arch/x86/vdso/vdso32-int80.so.dbg
-/scratch/kisskb/src/arch/x86/vdso/checkundef.sh: line 4: ccache /opt/crosst=
-ool/gcc-4.4.3-nolibc/i386-linux/bin/i386-linux-nm: No such file or directory
-  VDSO    arch/x86/vdso/vdso32-sysenter.so.dbg
-/scratch/kisskb/src/arch/x86/vdso/checkundef.sh: line 4: ccache /opt/crosst=
-ool/gcc-4.4.3-nolibc/i386-linux/bin/i386-linux-nm: No such file or directory
+This tree is for next- Samsung S5P SoCs such as S5P6440, S5P6442, S5PC100,
+and S5PV210/S5PC110.
 
-Caused by commit 05d0b0889ca9d033a960542af7f8a13b3ad4f630 ("x86, vdso:
-Error out if the vdso contains external references") interacting with a
-cross build that also uses ccache.
+Of course, Ben Dooks' 'next-samsung' is appropriate for next- Samsung common
+and S3C SoCs.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks.
 
---Signature=_Wed__23_Jun_2010_10_50_11_+1000_oq/qAvmBhzKtsVkS
-Content-Type: application/pgp-signature
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwhWkMACgkQjjKRsyhoI8xQ8wCeMVGkf2Ir4xtq0diXDxcrj1Cl
-bf8Anjzm+rl2jvCPBuNm3t2qul00QGGH
-=MwON
------END PGP SIGNATURE-----
-
---Signature=_Wed__23_Jun_2010_10_50_11_+1000_oq/qAvmBhzKtsVkS--
