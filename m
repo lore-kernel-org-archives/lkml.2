@@ -1,70 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab0FWUlx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:41:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753152Ab0FWUlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:41:52 -0400
-Date: Wed, 23 Jun 2010 16:41:19 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tao Ma <tao.ma@oracle.com>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-       Christoph Hellwig <hch@lst.de>, stable@kernel.org
-Subject: Re: block: Don't count_vm_events for discard bio in submit_bio.
-Message-ID: <20100623204118.GB31560@redhat.com>
-References: <1277263491-4068-1-git-send-email-tao.ma@oracle.com>
- <20100623124046.4dec96d1.akpm@linux-foundation.org>
+	id S1753601Ab0FWUmP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:42:15 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:62346 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478Ab0FWUmN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 16:42:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=mcfdirfKrp2RzU8h9rLHGj/IywWt/wDNki8AhPz2yGCoPraIgKGWl89IC5sb6/VdM7
+         si4fmpySNfK5hGyJTqpyD+ZCjyOlgSHVyfxxCwA7BQR5nKdNecK2rNHa0t0L6vb5mpA2
+         yNDGeFzSakNyZp2j4uznaAdCWpcNB7RG04bIA=
+Message-ID: <4C226FCA.2030604@iki.fi>
+Date: Wed, 23 Jun 2010 23:34:18 +0300
+From: =?UTF-8?B?VGltbyBUZXLDpHM=?= <timo.teras@iki.fi>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100623124046.4dec96d1.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+       "John W.Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       davem@davemloft.net
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
+References: <AANLkTilf41JrFwN1veRDifNA78S2LQ6SO0g3YLOONd2W@mail.gmail.com>	 <20100623141622.GC15205@tuxdriver.com>  <4C223DCA.5090704@gmail.com> <1277314167.2469.1144.camel@edumazet-laptop> <4C224E06.40806@iki.fi> <4C22508A.8060002@gmail.com>
+In-Reply-To: <4C22508A.8060002@gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23 2010 at  3:40pm -0400,
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Wed, 23 Jun 2010 11:24:51 +0800
-> Tao Ma <tao.ma@oracle.com> wrote:
+On 06/23/2010 09:20 PM, Justin P. Mattock wrote:
+> On 06/23/10 11:10, Timo Teräs wrote:
+>> On 06/23/2010 08:29 PM, Eric Dumazet wrote:
+>>   
+>>> Le mercredi 23 juin 2010 à 10:00 -0700, Justin P. Mattock a écrit :
+>>>     
+>>>> o.k. the bisect is pointing to the below results..
+>>>> (I tried git revert xxx but this commit is too big
+>>>> so I'll(hopefully)manually revert it on the latest HEAD to
+>>>> see if this is the actual problem im experiencing)
+>>>>
+>>>> 80c802f3073e84c956846e921e8a0b02dfa3755f is the first bad commit
+>>>> commit 80c802f3073e84c956846e921e8a0b02dfa3755f
+>>>> Author: Timo TerÃ¤s<timo.teras@iki.fi>
+>>>> Date:   Wed Apr 7 00:30:05 2010 +0000
+>>>>
+>>>>       xfrm: cache bundles instead of policies for outgoing flows
+>>>>
+>>>>       __xfrm_lookup() is called for each packet transmitted out of
+>>>>       system. The xfrm_find_bundle() does a linear search which can
+>>>>       kill system performance depending on how many bundles are
+>>>>       required per policy.
+>>>>
+>>>>       This modifies __xfrm_lookup() to store bundles directly in
+>>>>       the flow cache. If we did not get a hit, we just create a new
+>>>>       bundle instead of doing slow search. This means that we can now
+>>>>       get multiple xfrm_dst's for same flow (on per-cpu basis).
+>>>>
+>>>>       Signed-off-by: Timo Teras<timo.teras@iki.fi>
+>>>>       Signed-off-by: David S. Miller<davem@davemloft.net>
+>>>>
+>>>> :040000 040000 d8e60f5fa4c1329f450d9c7cdf98b34e6a177f22
+>>>> 9f576e68e5bf4ce357d7f0305aee5f410250dfe2 M      include
+>>>> :040000 040000 f2876df688ee36907af7b4123eea96592faaed3e
+>>>> a3f6f6f94f0309106856cd99b38ec90b024eb016 M      net
+>>>>        
+>>> Thanks a lot for bisecting Jutin, this is really appreciated.
+>>>
+>>> crash is in xfrm_bundle_ok()
+>>>
+>>> if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
+>>>     return 0;
+>>>
+>>> xdst->pols[0] contains a NULL pointer
+>>>      
+>> That does not really make sense, if we get this far; there's a valid
+>> xfrm_state with the bundle. This means that there existed a policy with
+>> it too.
+>>
+>> I'll take a deeper look at this tomorrow. Would it be possible to see
+>> your xfrm policies?
+>>
+>> - Timo
+>>
+>>    
 > 
-> > In submit_bio, we count vm events by check READ/WRITE.
-> > But actually DISCARD_NOBARRIER also has the WRITE flag set.
-> > It looks as if in blkdev_issue_discard, we also add a
-> > page as the payload and the bio_has_data check isn't enough.
-> > So add another check for discard bio.
-> > 
-> > Cc: Jens Axboe <axboe@kernel.dk>
-> > Signed-off-by: Tao Ma <tao.ma@oracle.com>
-> > ---
-> >  block/blk-core.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/block/blk-core.c b/block/blk-core.c
-> > index f84cce4..a725602 100644
-> > --- a/block/blk-core.c
-> > +++ b/block/blk-core.c
-> > @@ -1586,7 +1586,7 @@ void submit_bio(int rw, struct bio *bio)
-> >  	 * If it's a regular read/write or a barrier with data attached,
-> >  	 * go through the normal accounting stuff before submission.
-> >  	 */
-> > -	if (bio_has_data(bio)) {
-> > +	if (bio_has_data(bio) && !(rw & BIO_RW_DISCARD)) {
-> >  		if (rw & WRITE) {
-> >  			count_vm_events(PGPGOUT, count);
-> >  		} else {
+> @Eric sure no problem doing the bisect...
 > 
-> Yes, that's a buglet.
+> as for the xfrm policy here is the link that I used to setup ipsec:
+> http://www.linuxfromscratch.org/hints/downloads/files/ipsec.txt
+> (just change the keys if doing real world work..(but for me just testing).
 > 
-> Note that Christoph's "[PATCH, RFC] block: don't allocate a payload for
-> discard request" will fix it in a better way.
+> below is a temporary fix for me to get this working, tcpdump reports
+> everything is doing what it should be
+> 11:16:32.496166 IP xxxxx > xxxxx: AH(spi=0x00000200,seq=0x1090):
+> ESP(spi=0x00000201,seq=0x1090), length 56
+> 11:16:32.496212 IP xxxxx > xxxxx: AH(spi=0x00000200,seq=0x1091):
+> ESP(spi=0x00000201,seq=0x1091), length 56
+> 11:16:32.496259 IP xxxxx > xxxxx: AH(spi=0x00000200,seq=0x1092):
+> ESP(spi=0x00000201,seq=0x1092), length 56
+> 
+> (tested a few mins ago, but not the right fix..)
 
-Oddly, even with Christoph's patch, bio_has_data() is still true once
-the discard bio gets to DM.
+Yes, that would break some other obscure scenarios.
 
-Figuring out why is on my near-term TODO.
+Looks like it's ah inside esp. So you get chain of bundles. And only the
+first bundle gets a policy. Should have thought of that. Does the below
+fix it for you?
 
-Mike
+diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+index 4bf27d9..af1c173 100644
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -2300,7 +2300,8 @@ int xfrm_bundle_ok(struct xfrm_policy *pol, struct
+xfrm_dst *first,
+ 			return 0;
+ 		if (xdst->xfrm_genid != dst->xfrm->genid)
+ 			return 0;
+-		if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
++		if (xdst->num_pols > 0 &&
++		    xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
+ 			return 0;
+
+ 		if (strict && fl &&
+
