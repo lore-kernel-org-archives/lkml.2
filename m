@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab0FWTlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 15:41:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46432 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752611Ab0FWTlN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 15:41:13 -0400
-Date: Wed, 23 Jun 2010 12:40:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tao Ma <tao.ma@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
-       Mike Snitzer <snitzer@redhat.com>, stable@kernel.org
-Subject: Re: [PATCH] block: Don't count_vm_events for discard bio in
- submit_bio.
-Message-Id: <20100623124046.4dec96d1.akpm@linux-foundation.org>
-In-Reply-To: <1277263491-4068-1-git-send-email-tao.ma@oracle.com>
-References: <1277263491-4068-1-git-send-email-tao.ma@oracle.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753630Ab0FWToG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 15:44:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11054 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752441Ab0FWToD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 15:44:03 -0400
+Date: Wed, 23 Jun 2010 21:41:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] sanitize task->comm to avoid leaking escape codes
+Message-ID: <20100623194145.GA19628@redhat.com>
+References: <20100623181129.GM5876@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100623181129.GM5876@outflux.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jun 2010 11:24:51 +0800
-Tao Ma <tao.ma@oracle.com> wrote:
-
-> In submit_bio, we count vm events by check READ/WRITE.
-> But actually DISCARD_NOBARRIER also has the WRITE flag set.
-> It looks as if in blkdev_issue_discard, we also add a
-> page as the payload and the bio_has_data check isn't enough.
-> So add another check for discard bio.
-> 
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Signed-off-by: Tao Ma <tao.ma@oracle.com>
-> ---
->  block/blk-core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index f84cce4..a725602 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -1586,7 +1586,7 @@ void submit_bio(int rw, struct bio *bio)
->  	 * If it's a regular read/write or a barrier with data attached,
->  	 * go through the normal accounting stuff before submission.
+On 06/23, Kees Cook wrote:
+>
+> @@ -956,7 +957,15 @@ void set_task_comm(struct task_struct *tsk, char *buf)
 >  	 */
-> -	if (bio_has_data(bio)) {
-> +	if (bio_has_data(bio) && !(rw & BIO_RW_DISCARD)) {
->  		if (rw & WRITE) {
->  			count_vm_events(PGPGOUT, count);
->  		} else {
+>  	memset(tsk->comm, 0, TASK_COMM_LEN);
+>  	wmb();
 
-Yes, that's a buglet.
+Off-topic. I'd wish I could understand this barrier. Since the lockless
+reader doesn't do rmb() I don't see how this can help. OTOH, I don't
+understand why it is needed, we never change ->comm[TASK_COMM_LEN-1] == '0'.
 
-Note that Christoph's "[PATCH, RFC] block: don't allocate a payload for
-discard request" will fix it in a better way.  That patch is in
-linux-next now, but I expect it will be taken out again (quickly,
-please) because Mike has found a number of problems with it.  
+> -	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
+> +
+> +	/* sanitize non-printable characters */
+> +	for (i = 0; buf[i] && i < (sizeof(tsk->comm) - 1); i++) {
+> +		if (!isprint(buf[i]))
+> +			tsk->comm[i] = '?';
+> +		else
+> +			tsk->comm[i] = buf[i];
+> +	}
 
-Your patch looks like a decent temporary fix for mainline, and a
-permanent one for -stable.
+Personally I think this makes sense.
+
+> -extern char *get_task_comm(char *to, struct task_struct *tsk);
+> +#define get_task_comm(buf, task) get_task_comm_size(buf, sizeof(buf), task)
+> +extern char *get_task_comm_size(char *to, size_t len, struct task_struct *tsk);
+
+Oh, but this means that get_task_comm(ptr, task) doesn't work?
+
+Oleg.
+
