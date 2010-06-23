@@ -1,61 +1,646 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620Ab0FWGkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 02:40:14 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:58173 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab0FWGkM (ORCPT
+	id S1751523Ab0FWGpm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 02:45:42 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45353 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab0FWGpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 02:40:12 -0400
-Message-ID: <4C21AD07.5050201@ontolinux.com>
-Date: Wed, 23 Jun 2010 08:43:19 +0200
-From: Christian Stroetmann <stroetmann@ontolinux.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] security: Yama LSM
-References: <20100621213424.GG24749@outflux.net> <201006220028.o5M0Sbx7062650@www262.sakura.ne.jp> <20100622011452.GN24749@outflux.net> <4C20ABC0.5050908@nokia.com> <20100622160613.GC5876@outflux.net> <4C21A39C.6040406@ontolinux.com> <20100623062242.GG5876@outflux.net>
-In-Reply-To: <20100623062242.GG5876@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1/o+Dcht+NZQp6DxFcpm1/cd1yPL8OcwGransL
- zyzjBokPkl5ALy22mSn4Seae3x/1kxt5d2R6PZXf018a+EkZK2
- h4G6owKrLmMSyP7fZ5wug==
+	Wed, 23 Jun 2010 02:45:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=nu8QHlwqe+xVlJA6SLK0gliDRfMlYsPsD9hNWK6TmOY1Q0wlb8AP96lgM2lEqlPu0h
+         QPOsK//YvXuZIIy+rVX2e5AG0ZqrOmDEMz2NpkpJ8XxEyjyAsyAdk5qRMyJv0XmsGgUM
+         Z6cPUshD9dDiWQJ3rIzAniFWGmo4UrfZEfDXc=
+From: "Prashant P. Shah" <pshah.mumbai@gmail.com>
+To: gregkh@suse.de
+Cc: pe1dnn@amsat.org, akpm@linux-foundation.org, tj@kernel.org,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       "Prashant P. Shah" <pshah.mumbai@gmail.com>
+Subject: [PATCH] [staging-next] [1] Staging: wl_cs.c: converted space to tabs in wl_cs.c
+Date: Wed, 23 Jun 2010 12:15:06 +0530
+Message-Id: <1277275506-6289-1-git-send-email-pshah.mumbai@gmail.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.06.2010 08:22, Kees Cook wrote:
-> On Wed, Jun 23, 2010 at 08:03:08AM +0200, Christian Stroetmann wrote:
->    
->> "You've already had those suggestions some days ago. Use a security
->> module, either by using something like SELinux (where you can do
->> this just fine as far as I can see including exceptions by label for
->> problem apps)", [Alan Cox, 2010-06-08], or integrate it into an
->> already existing solution eg. grsecurity (www.grsecurity.net).
->>      
-> You appear to be quoting[1], but you left off a bit.  To edit it a bit:
->
->    "Use a security module, either by using something like SELinux (...),
->    or write your own little security module that does it."
->
-> I have done the latter.
->
-> I don't need to integrate this into grsecurity because grsecurity already
-> has these protections.  It is Openwall and grsecurity that I'm using as the
-> starting point for this attempt at upstreaming the protections.
->    
+This is a patch to the wl_cs.c file that converts spaces to
+tabs style issues found by the checkpatch.pl tool.
 
-So, this sounds as if you are porting functionalities from grsecurtiy 
-into LSM. But [1].
-> -Kees
->
-> [1] http://lkml.org/lkml/2010/6/8/56
->
->    
-[1] http://www.grsecurity.net/lsm.php
+Signed-off-by: Prashant P. Shah <pshah.mumbai@gmail.com>
+---
+ drivers/staging/wlags49_h2/wl_cs.c |  434 ++++++++++++++++++------------------
+ 1 files changed, 217 insertions(+), 217 deletions(-)
 
-Chrisitan Stroetmann
+diff --git a/drivers/staging/wlags49_h2/wl_cs.c b/drivers/staging/wlags49_h2/wl_cs.c
+index 5b569e1..f855537 100644
+--- a/drivers/staging/wlags49_h2/wl_cs.c
++++ b/drivers/staging/wlags49_h2/wl_cs.c
+@@ -133,35 +133,35 @@ extern dbg_info_t *DbgInfo;
+  ******************************************************************************/
+ static int wl_adapter_attach(struct pcmcia_device *link)
+ {
+-    struct net_device   *dev;
+-    struct wl_private	*lp;
+-    /*------------------------------------------------------------------------*/
+-
+-    DBG_FUNC("wl_adapter_attach");
+-    DBG_ENTER(DbgInfo);
+-
+-    dev = wl_device_alloc();
+-    if (dev == NULL) {
+-        DBG_ERROR(DbgInfo, "wl_device_alloc returned NULL\n");
+-	return -ENOMEM;
+-    }
+-
+-    link->io.NumPorts1      = HCF_NUM_IO_PORTS;
+-    link->io.Attributes1    = IO_DATA_PATH_WIDTH_16;
+-    link->io.IOAddrLines    = 6;
+-    link->conf.Attributes   = CONF_ENABLE_IRQ;
+-    link->conf.IntType      = INT_MEMORY_AND_IO;
+-    link->conf.ConfigIndex  = 5;
+-    link->conf.Present      = PRESENT_OPTION;
+-
+-    link->priv = dev;
+-    lp = wl_priv(dev);
+-    lp->link = link;
+-
+-    wl_adapter_insert(link);
+-
+-    DBG_LEAVE(DbgInfo);
+-    return 0;
++	struct net_device   *dev;
++	struct wl_private   *lp;
++	/*------------------------------------------------------------------------*/
++
++	DBG_FUNC("wl_adapter_attach");
++	DBG_ENTER(DbgInfo);
++
++	dev = wl_device_alloc();
++	if (dev == NULL) {
++		DBG_ERROR(DbgInfo, "wl_device_alloc returned NULL\n");
++		return -ENOMEM;
++	}
++
++	link->io.NumPorts1      = HCF_NUM_IO_PORTS;
++	link->io.Attributes1    = IO_DATA_PATH_WIDTH_16;
++	link->io.IOAddrLines    = 6;
++	link->conf.Attributes   = CONF_ENABLE_IRQ;
++	link->conf.IntType      = INT_MEMORY_AND_IO;
++	link->conf.ConfigIndex  = 5;
++	link->conf.Present      = PRESENT_OPTION;
++
++	link->priv = dev;
++	lp = wl_priv(dev);
++	lp->link = link;
++
++	wl_adapter_insert(link);
++
++	DBG_LEAVE(DbgInfo);
++	return 0;
+ } // wl_adapter_attach
+ /*============================================================================*/
+ 
+@@ -190,24 +190,24 @@ static int wl_adapter_attach(struct pcmcia_device *link)
+  ******************************************************************************/
+ static void wl_adapter_detach(struct pcmcia_device *link)
+ {
+-    struct net_device   *dev = link->priv;
+-    /*------------------------------------------------------------------------*/
++	struct net_device   *dev = link->priv;
++	/*------------------------------------------------------------------------*/
+ 
+ 
+-    DBG_FUNC("wl_adapter_detach");
+-    DBG_ENTER(DbgInfo);
+-    DBG_PARAM(DbgInfo, "link", "0x%p", link);
++	DBG_FUNC("wl_adapter_detach");
++	DBG_ENTER(DbgInfo);
++	DBG_PARAM(DbgInfo, "link", "0x%p", link);
+ 
+-    wl_adapter_release(link);
++	wl_adapter_release(link);
+ 
+-    if (dev) {
+-	unregister_wlags_sysfs(dev);
+-	unregister_netdev(dev);
+-    }
++	if (dev) {
++		unregister_wlags_sysfs(dev);
++		unregister_netdev(dev);
++	}
+ 
+-    wl_device_dealloc(dev);
++	wl_device_dealloc(dev);
+ 
+-    DBG_LEAVE(DbgInfo);
++	DBG_LEAVE(DbgInfo);
+ } // wl_adapter_detach
+ /*============================================================================*/
+ 
+@@ -234,30 +234,30 @@ static void wl_adapter_detach(struct pcmcia_device *link)
+  ******************************************************************************/
+ void wl_adapter_release(struct pcmcia_device *link)
+ {
+-    DBG_FUNC("wl_adapter_release");
+-    DBG_ENTER(DbgInfo);
+-    DBG_PARAM(DbgInfo, "link", "0x%p", link);
++	DBG_FUNC("wl_adapter_release");
++	DBG_ENTER(DbgInfo);
++	DBG_PARAM(DbgInfo, "link", "0x%p", link);
+ 
+-    /* Stop hardware */
+-    wl_remove(link->priv);
++	/* Stop hardware */
++	wl_remove(link->priv);
+ 
+-    pcmcia_disable_device(link);
++	pcmcia_disable_device(link);
+ 
+-    DBG_LEAVE(DbgInfo);
++	DBG_LEAVE(DbgInfo);
+ } // wl_adapter_release
+ /*============================================================================*/
+ 
+ static int wl_adapter_suspend(struct pcmcia_device *link)
+ {
+-    struct net_device *dev = link->priv;
++	struct net_device *dev = link->priv;
+ 
+-    //if (link->open) {
++	//if (link->open) {
+ 	netif_device_detach(dev);
+ 	wl_suspend(dev);
+-//// CHECK!            pcmcia_release_configuration(link->handle);
+-    //}
++	//// CHECK! pcmcia_release_configuration(link->handle);
++	//}
+ 
+-    return 0;
++	return 0;
+ } // wl_adapter_suspend
+ 
+ static int wl_adapter_resume(struct pcmcia_device *link)
+@@ -293,57 +293,57 @@ static int wl_adapter_resume(struct pcmcia_device *link)
+  ******************************************************************************/
+ void wl_adapter_insert(struct pcmcia_device *link)
+ {
+-    struct net_device       *dev;
+-    int i;
+-    int                     ret;
+-    /*------------------------------------------------------------------------*/
++	struct net_device *dev;
++	int i;
++	int ret;
++	/*------------------------------------------------------------------------*/
+ 
+-    DBG_FUNC("wl_adapter_insert");
+-    DBG_ENTER(DbgInfo);
+-    DBG_PARAM(DbgInfo, "link", "0x%p", link);
++	DBG_FUNC("wl_adapter_insert");
++	DBG_ENTER(DbgInfo);
++	DBG_PARAM(DbgInfo, "link", "0x%p", link);
+ 
+-    dev     = link->priv;
++	dev     = link->priv;
+ 
+-    /* Do we need to allocate an interrupt? */
+-    link->conf.Attributes |= CONF_ENABLE_IRQ;
++	/* Do we need to allocate an interrupt? */
++	link->conf.Attributes |= CONF_ENABLE_IRQ;
+ 
+-    ret = pcmcia_request_io(link, &link->io);
+-    if (ret != 0)
+-        goto failed;
++	ret = pcmcia_request_io(link, &link->io);
++	if (ret != 0)
++		goto failed;
+ 
+-    ret = pcmcia_request_irq(link, (void *) wl_isr);
+-    if (ret != 0)
+-        goto failed;
++	ret = pcmcia_request_irq(link, (void *) wl_isr);
++	if (ret != 0)
++		goto failed;
+ 
+-    ret = pcmcia_request_configuration(link, &link->conf);
+-    if (ret != 0)
+-        goto failed;
++	ret = pcmcia_request_configuration(link, &link->conf);
++	if (ret != 0)
++		goto failed;
+ 
+-    dev->irq        = link->irq;
+-    dev->base_addr  = link->io.BasePort1;
++	dev->irq        = link->irq;
++	dev->base_addr  = link->io.BasePort1;
+ 
+-    SET_NETDEV_DEV(dev, &link->dev);
+-    if (register_netdev(dev) != 0) {
+-	printk("%s: register_netdev() failed\n", MODULE_NAME);
+-	goto failed;
+-    }
++	SET_NETDEV_DEV(dev, &link->dev);
++	if (register_netdev(dev) != 0) {
++		printk("%s: register_netdev() failed\n", MODULE_NAME);
++		goto failed;
++	}
+ 
+-    register_wlags_sysfs(dev);
++	register_wlags_sysfs(dev);
+ 
+-    printk(KERN_INFO "%s: Wireless, io_addr %#03lx, irq %d, ""mac_address ",
+-               dev->name, dev->base_addr, dev->irq);
+-    for (i = 0; i < ETH_ALEN; i++) {
+-        printk("%02X%c", dev->dev_addr[i], ((i < (ETH_ALEN-1)) ? ':' : '\n'));
+-    }
++	printk(KERN_INFO "%s: Wireless, io_addr %#03lx, irq %d, ""mac_address ",
++		dev->name, dev->base_addr, dev->irq);
++	for (i = 0; i < ETH_ALEN; i++) {
++		printk("%02X%c", dev->dev_addr[i], ((i < (ETH_ALEN-1)) ? ':' : '\n'));
++	}
+ 
+-    DBG_LEAVE(DbgInfo);
+-    return;
++	DBG_LEAVE(DbgInfo);
++	return;
+ 
+ failed:
+-    wl_adapter_release(link);
++	wl_adapter_release(link);
+ 
+-    DBG_LEAVE(DbgInfo);
+-    return;
++	DBG_LEAVE(DbgInfo);
++	return;
+ } // wl_adapter_insert
+ /*============================================================================*/
+ 
+@@ -369,35 +369,35 @@ failed:
+  ******************************************************************************/
+ int wl_adapter_open(struct net_device *dev)
+ {
+-    struct wl_private *lp = wl_priv(dev);
+-    struct pcmcia_device *link = lp->link;
+-    int         result = 0;
+-    int         hcf_status = HCF_SUCCESS;
+-    /*------------------------------------------------------------------------*/
++	struct wl_private *lp = wl_priv(dev);
++	struct pcmcia_device *link = lp->link;
++	int result = 0;
++	int hcf_status = HCF_SUCCESS;
++	/*------------------------------------------------------------------------*/
+ 
+ 
+-    DBG_FUNC("wl_adapter_open");
+-    DBG_ENTER(DbgInfo);
++	DBG_FUNC("wl_adapter_open");
++	DBG_ENTER(DbgInfo);
+ 	DBG_PRINT("%s\n", VERSION_INFO);
+-    DBG_PARAM(DbgInfo, "dev", "%s (0x%p)", dev->name, dev);
++	DBG_PARAM(DbgInfo, "dev", "%s (0x%p)", dev->name, dev);
+ 
+-    if (!pcmcia_dev_present(link))
+-    {
+-        DBG_LEAVE(DbgInfo);
+-        return -ENODEV;
+-    }
++	if (!pcmcia_dev_present(link))
++	{
++		DBG_LEAVE(DbgInfo);
++		return -ENODEV;
++	}
+ 
+-    link->open++;
++	link->open++;
+ 
+-    hcf_status = wl_open(dev);
++	hcf_status = wl_open(dev);
+ 
+-    if (hcf_status != HCF_SUCCESS) {
+-        link->open--;
+-        result = -ENODEV;
+-    }
++	if (hcf_status != HCF_SUCCESS) {
++		link->open--;
++		result = -ENODEV;
++	}
+ 
+-    DBG_LEAVE(DbgInfo);
+-    return result;
++	DBG_LEAVE(DbgInfo);
++	return result;
+ } // wl_adapter_open
+ /*============================================================================*/
+ 
+@@ -423,27 +423,27 @@ int wl_adapter_open(struct net_device *dev)
+  ******************************************************************************/
+ int wl_adapter_close(struct net_device *dev)
+ {
+-    struct wl_private *lp = wl_priv(dev);
+-    struct pcmcia_device *link = lp->link;
+-    /*------------------------------------------------------------------------*/
++	struct wl_private *lp = wl_priv(dev);
++	struct pcmcia_device *link = lp->link;
++	/*------------------------------------------------------------------------*/
+ 
+ 
+-    DBG_FUNC("wl_adapter_close");
+-    DBG_ENTER(DbgInfo);
+-    DBG_PARAM(DbgInfo, "dev", "%s (0x%p)", dev->name, dev);
++	DBG_FUNC("wl_adapter_close");
++	DBG_ENTER(DbgInfo);
++	DBG_PARAM(DbgInfo, "dev", "%s (0x%p)", dev->name, dev);
+ 
+-    if (link == NULL) {
+-        DBG_LEAVE(DbgInfo);
+-        return -ENODEV;
+-    }
++	if (link == NULL) {
++		DBG_LEAVE(DbgInfo);
++		return -ENODEV;
++	}
+ 
+-    DBG_TRACE(DbgInfo, "%s: Shutting down adapter.\n", dev->name);
+-    wl_close(dev);
++	DBG_TRACE(DbgInfo, "%s: Shutting down adapter.\n", dev->name);
++	wl_close(dev);
+ 
+-    link->open--;
++	link->open--;
+ 
+-    DBG_LEAVE(DbgInfo);
+-    return 0;
++	DBG_LEAVE(DbgInfo);
++	return 0;
+ } // wl_adapter_close
+ /*============================================================================*/
+ 
+@@ -451,26 +451,26 @@ static struct pcmcia_device_id wl_adapter_ids[] = {
+ #if ! ((HCF_TYPE) & HCF_TYPE_HII5)
+ 	PCMCIA_DEVICE_MANF_CARD(0x0156, 0x0003),
+ 	PCMCIA_DEVICE_PROD_ID12("Agere Systems", "Wireless PC Card Model 0110",
+-			    0x33103a9b, 0xe175b0dd),
++				0x33103a9b, 0xe175b0dd),
+ #else
+ 	PCMCIA_DEVICE_MANF_CARD(0x0156, 0x0004),
+ 	PCMCIA_DEVICE_PROD_ID12("Linksys", "WCF54G_Wireless-G_CompactFlash_Card",
+-                            0x0733cc81, 0x98a599e1),
++				0x0733cc81, 0x98a599e1),
+ #endif  // (HCF_TYPE) & HCF_TYPE_HII5
+ 	PCMCIA_DEVICE_NULL,
+-	};
++};
+ MODULE_DEVICE_TABLE(pcmcia, wl_adapter_ids);
+ 
+ static struct pcmcia_driver wlags49_driver = {
+-    .owner          = THIS_MODULE,
+-    .drv            = {
+-	.name   = DRIVER_NAME,
+-    },
+-    .probe	= wl_adapter_attach,
+-    .remove	= wl_adapter_detach,
+-    .id_table	= wl_adapter_ids,
+-    .suspend	= wl_adapter_suspend,
+-    .resume	= wl_adapter_resume,
++	.owner	    = THIS_MODULE,
++	.drv	    = {
++		.name = DRIVER_NAME,
++	},
++	.probe	    = wl_adapter_attach,
++	.remove	    = wl_adapter_detach,
++	.id_table   = wl_adapter_ids,
++	.suspend    = wl_adapter_suspend,
++	.resume	    = wl_adapter_resume,
+ };
+ 
+ 
+@@ -495,18 +495,18 @@ static struct pcmcia_driver wlags49_driver = {
+  ******************************************************************************/
+ int wl_adapter_init_module(void)
+ {
+-    int ret;
+-    /*------------------------------------------------------------------------*/
++	int ret;
++	/*------------------------------------------------------------------------*/
+ 
+ 
+-    DBG_FUNC("wl_adapter_init_module");
+-    DBG_ENTER(DbgInfo);
+-    DBG_TRACE(DbgInfo, "wl_adapter_init_module() -- PCMCIA\n");
++	DBG_FUNC("wl_adapter_init_module");
++	DBG_ENTER(DbgInfo);
++	DBG_TRACE(DbgInfo, "wl_adapter_init_module() -- PCMCIA\n");
+ 
+-    ret = pcmcia_register_driver(&wlags49_driver);
++	ret = pcmcia_register_driver(&wlags49_driver);
+ 
+-    DBG_LEAVE(DbgInfo);
+-    return ret;
++	DBG_LEAVE(DbgInfo);
++	return ret;
+ } // wl_adapter_init_module
+ /*============================================================================*/
+ 
+@@ -530,15 +530,15 @@ int wl_adapter_init_module(void)
+  ******************************************************************************/
+ void wl_adapter_cleanup_module(void)
+ {
+-    DBG_FUNC("wl_adapter_cleanup_module");
+-    DBG_ENTER(DbgInfo);
+-    DBG_TRACE(DbgInfo, "wl_adapter_cleanup_module() -- PCMCIA\n");
++	DBG_FUNC("wl_adapter_cleanup_module");
++	DBG_ENTER(DbgInfo);
++	DBG_TRACE(DbgInfo, "wl_adapter_cleanup_module() -- PCMCIA\n");
+ 
+ 
+-    pcmcia_unregister_driver(&wlags49_driver);
++	pcmcia_unregister_driver(&wlags49_driver);
+ 
+-    DBG_LEAVE(DbgInfo);
+-    return;
++	DBG_LEAVE(DbgInfo);
++	return;
+ } // wl_adapter_cleanup_module
+ /*============================================================================*/
+ 
+@@ -564,14 +564,14 @@ void wl_adapter_cleanup_module(void)
+  ******************************************************************************/
+ int wl_adapter_is_open(struct net_device *dev)
+ {
+-    struct wl_private *lp = wl_priv(dev);
+-    struct pcmcia_device *link = lp->link;
++	struct wl_private *lp = wl_priv(dev);
++	struct pcmcia_device *link = lp->link;
+ 
+-    if (!pcmcia_dev_present(link)) {
+-        return 0;
+-    }
++	if (!pcmcia_dev_present(link)) {
++		return 0;
++	}
+ 
+-    return(link->open);
++	return(link->open);
+ } // wl_adapter_is_open
+ /*============================================================================*/
+ 
+@@ -598,94 +598,94 @@ int wl_adapter_is_open(struct net_device *dev)
+  ******************************************************************************/
+ const char* DbgEvent(int mask)
+ {
+-    static char DbgBuffer[256];
+-    char *pBuf;
+-    /*------------------------------------------------------------------------*/
++	static char DbgBuffer[256];
++	char *pBuf;
++	/*------------------------------------------------------------------------*/
+ 
+ 
+-    pBuf    = DbgBuffer;
+-    *pBuf   = '\0';
++	pBuf    = DbgBuffer;
++	*pBuf   = '\0';
+ 
+ 
+-    if (mask & CS_EVENT_WRITE_PROTECT)
+-        strcat(pBuf, "WRITE_PROTECT ");
++	if (mask & CS_EVENT_WRITE_PROTECT)
++		strcat(pBuf, "WRITE_PROTECT ");
+ 
+-    if (mask & CS_EVENT_CARD_LOCK)
+-        strcat(pBuf, "CARD_LOCK ");
++	if (mask & CS_EVENT_CARD_LOCK)
++		strcat(pBuf, "CARD_LOCK ");
+ 
+-    if (mask & CS_EVENT_CARD_INSERTION)
+-        strcat(pBuf, "CARD_INSERTION ");
++	if (mask & CS_EVENT_CARD_INSERTION)
++		strcat(pBuf, "CARD_INSERTION ");
+ 
+-    if (mask & CS_EVENT_CARD_REMOVAL)
+-        strcat(pBuf, "CARD_REMOVAL ");
++	if (mask & CS_EVENT_CARD_REMOVAL)
++		strcat(pBuf, "CARD_REMOVAL ");
+ 
+-    if (mask & CS_EVENT_BATTERY_DEAD)
+-        strcat(pBuf, "BATTERY_DEAD ");
++	if (mask & CS_EVENT_BATTERY_DEAD)
++		strcat(pBuf, "BATTERY_DEAD ");
+ 
+-    if (mask & CS_EVENT_BATTERY_LOW)
+-        strcat(pBuf, "BATTERY_LOW ");
++	if (mask & CS_EVENT_BATTERY_LOW)
++		strcat(pBuf, "BATTERY_LOW ");
+ 
+-    if (mask & CS_EVENT_READY_CHANGE)
+-        strcat(pBuf, "READY_CHANGE ");
++	if (mask & CS_EVENT_READY_CHANGE)
++		strcat(pBuf, "READY_CHANGE ");
+ 
+-    if (mask & CS_EVENT_CARD_DETECT)
+-        strcat(pBuf, "CARD_DETECT ");
++	if (mask & CS_EVENT_CARD_DETECT)
++		strcat(pBuf, "CARD_DETECT ");
+ 
+-    if (mask & CS_EVENT_RESET_REQUEST)
+-        strcat(pBuf, "RESET_REQUEST ");
++	if (mask & CS_EVENT_RESET_REQUEST)
++		strcat(pBuf, "RESET_REQUEST ");
+ 
+-    if (mask & CS_EVENT_RESET_PHYSICAL)
+-        strcat(pBuf, "RESET_PHYSICAL ");
++	if (mask & CS_EVENT_RESET_PHYSICAL)
++		strcat(pBuf, "RESET_PHYSICAL ");
+ 
+-    if (mask & CS_EVENT_CARD_RESET)
+-        strcat(pBuf, "CARD_RESET ");
++	if (mask & CS_EVENT_CARD_RESET)
++		strcat(pBuf, "CARD_RESET ");
+ 
+-    if (mask & CS_EVENT_REGISTRATION_COMPLETE)
+-        strcat(pBuf, "REGISTRATION_COMPLETE ");
++	if (mask & CS_EVENT_REGISTRATION_COMPLETE)
++		strcat(pBuf, "REGISTRATION_COMPLETE ");
+ 
+-    // if(mask & CS_EVENT_RESET_COMPLETE)
+-    //     strcat( pBuf, "RESET_COMPLETE " );
++	// if (mask & CS_EVENT_RESET_COMPLETE)
++		// strcat(pBuf, "RESET_COMPLETE ");
+ 
+-    if (mask & CS_EVENT_PM_SUSPEND)
+-        strcat(pBuf, "PM_SUSPEND ");
++	if (mask & CS_EVENT_PM_SUSPEND)
++		strcat(pBuf, "PM_SUSPEND ");
+ 
+-    if (mask & CS_EVENT_PM_RESUME)
+-        strcat(pBuf, "PM_RESUME ");
++	if (mask & CS_EVENT_PM_RESUME)
++		strcat(pBuf, "PM_RESUME ");
+ 
+-    if (mask & CS_EVENT_INSERTION_REQUEST)
+-        strcat(pBuf, "INSERTION_REQUEST ");
++	if (mask & CS_EVENT_INSERTION_REQUEST)
++		strcat(pBuf, "INSERTION_REQUEST ");
+ 
+-    if (mask & CS_EVENT_EJECTION_REQUEST)
+-        strcat(pBuf, "EJECTION_REQUEST ");
++	if (mask & CS_EVENT_EJECTION_REQUEST)
++		strcat(pBuf, "EJECTION_REQUEST ");
+ 
+-    if (mask & CS_EVENT_MTD_REQUEST)
+-        strcat(pBuf, "MTD_REQUEST ");
++	if (mask & CS_EVENT_MTD_REQUEST)
++		strcat(pBuf, "MTD_REQUEST ");
+ 
+-    if (mask & CS_EVENT_ERASE_COMPLETE)
+-        strcat(pBuf, "ERASE_COMPLETE ");
++	if (mask & CS_EVENT_ERASE_COMPLETE)
++		strcat(pBuf, "ERASE_COMPLETE ");
+ 
+-    if (mask & CS_EVENT_REQUEST_ATTENTION)
+-        strcat(pBuf, "REQUEST_ATTENTION ");
++	if (mask & CS_EVENT_REQUEST_ATTENTION)
++		strcat(pBuf, "REQUEST_ATTENTION ");
+ 
+-    if (mask & CS_EVENT_CB_DETECT)
+-        strcat(pBuf, "CB_DETECT ");
++	if (mask & CS_EVENT_CB_DETECT)
++		strcat(pBuf, "CB_DETECT ");
+ 
+-    if (mask & CS_EVENT_3VCARD)
+-        strcat(pBuf, "3VCARD ");
++	if (mask & CS_EVENT_3VCARD)
++		strcat(pBuf, "3VCARD ");
+ 
+-    if (mask & CS_EVENT_XVCARD)
+-        strcat(pBuf, "XVCARD ");
++	if (mask & CS_EVENT_XVCARD)
++		strcat(pBuf, "XVCARD ");
+ 
+ 
+-    if (*pBuf) {
+-        pBuf[strlen(pBuf) - 1] = '\0';
+-    } else {
+-        if (mask != 0x0) {
+-            sprintf(pBuf, "<<0x%08x>>", mask);
+-        }
+-    }
++	if (*pBuf) {
++		pBuf[strlen(pBuf) - 1] = '\0';
++	} else {
++		if (mask != 0x0) {
++			sprintf(pBuf, "<<0x%08x>>", mask);
++		}
++	}
+ 
+-    return pBuf;
++	return pBuf;
+ } // DbgEvent
+ /*============================================================================*/
+ 
+-- 
+1.6.0.4
+
