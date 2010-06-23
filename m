@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217Ab0FWJUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 05:20:37 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54815 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab0FWJUg (ORCPT
+	id S1751327Ab0FWJXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 05:23:24 -0400
+Received: from relay01.mx.bawue.net ([193.7.176.67]:42409 "EHLO
+	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab0FWJXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 05:20:36 -0400
-Date: Wed, 23 Jun 2010 05:20:28 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3 v5][RFC] ext3/4: enhance fsync performance when using
- CFQ
-Message-ID: <20100623092028.GA13900@infradead.org>
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
+	Wed, 23 Jun 2010 05:23:22 -0400
+Date: Wed, 23 Jun 2010 11:23:16 +0200
+From: Nils Radtke <lkml@Think-Future.de>
+To: laurent.pinchart@skynet.be
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       stable@kernel.org
+Subject: [2.6.33.4 PATCH] V4L/uvcvideo: Add support for Suyin Corp. Lenovo
+ Webcam
+Message-ID: <20100623092316.GA13364@localhost>
+Reply-To: Nils Radtke <lkml@Think-Future.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Url: http://www.Think-Future.de
+X-Editor: Vi it! http://www.vim.org
+X-Bkp: p2mi
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 05:34:59PM -0400, Jeff Moyer wrote:
-> Hi,
-> 
-> Running iozone with the fsync flag, or fs_mark, the performance of CFQ is
-> far worse than that of deadline for enterprise class storage when dealing
-> with file sizes of 8MB or less.  I used the following command line as a
-> representative test case:
-> 
->   fs_mark -S 1 -D 10000 -N 100000 -d /mnt/test/fs_mark -s 65536 -t 1 -w 4096 -F
-> 
-> When run using the deadline I/O scheduler, an average of the first 5 numbers
-> will give you 448.4 files / second.  CFQ will yield only 106.7.  With
-> this patch series applied (and the two patches I sent yesterday), CFQ now
-> achieves 462.5 files / second.
-> 
-> This patch set is still an RFC.  I'd like to make it perform better when
-> there is a competing sequential reader present.  For now, I've addressed
-> the concerns voiced about the previous posting.
+From: Nils Radtke <lkml@Think-Future.de>
 
-What happened to the initial idea of just using the BIO_RW_META flag
-for log writes?  In the end log writes are the most important writes you
-have in a journaled filesystem, and they should not be effect to any
-kind of queue idling logic or other interruption.  Log I/O is usually
-very little (unless you use old XFS code with a worst-case directory
-manipulation workload), and very latency sensitive.
+This patch adds support for the Suyin Corp. Lenovo Webcam.
+lsusb: ID 064e:a102 Suyin Corp. Lenovo Webcam
+
+It is available as built-in webcam i.e. in ACER timeline 1810t 
+notebooks.
+
+The note in uvc_driver.c about Logitech cameras applies the same 
+to the Suyin web cam: it doesn't announce itself as UVC devices 
+but is compliant.
+
+Signed-off-by: Nils Radtke <lkml@Think-Future.de>
+
+---
+
+  Thank you,
+
+                    Nils
+
+ uvc_driver.c |    8 ++++++++
+  1 file changed, 8 insertions(+)
+
+
+Index: linux/drivers/media/video/uvc/uvc_driver.c
+===================================================================
+--- linux.orig/drivers/media/video/uvc/uvc_driver.c	2010-06-23 10:37:03.000000000 +0200
++++ linux/drivers/media/video/uvc/uvc_driver.c	2010-06-23 10:37:07.000000000 +0200
+@@ -2153,6 +2153,14 @@
+ 	  .bInterfaceProtocol	= 0,
+ 	  .driver_info		= UVC_QUIRK_PROBE_MINMAX
+ 				| UVC_QUIRK_IGNORE_SELECTOR_UNIT },
++	/* Suyin Corp. Lenovo Webcam */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x064e,
++	  .idProduct		= 0xa102,
++	  .bInterfaceClass	= USB_CLASS_VENDOR_SPEC,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0 },
+ 	/* Generic USB Video Class */
+ 	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, 0) },
+ 	{}
+
