@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab0FWKKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 06:10:24 -0400
-Received: from www.tglx.de ([62.245.132.106]:43844 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552Ab0FWKKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 06:10:21 -0400
-From: John Ogness <john.ogness@linutronix.de>
-To: Ivo Clarysse <ivo.clarysse@gmail.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-       Sascha Hauer <kernel@pengutronix.de>,
-       linux-arm-kernel@lists.infradead.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 4/5] mtd: mxc_nand fixups
-References: <804oh0b7gx.fsf@merkur.tec.linutronix.de>
-	<20100618205401.GA12115@pengutronix.de>
-	<80sk4ivkga.fsf@merkur.tec.linutronix.de>
-	<AANLkTimA7Rbm_nHpVYpEPqaPCjrOse9s8YyiInWlhfEK@mail.gmail.com>
-	<80tyoyhxey.fsf_-_@merkur.tec.linutronix.de>
-	<AANLkTikRj_dMkKLyFhW78yld9jIYAIFncfPaPAF8WqUY@mail.gmail.com>
-	<80iq5bqd07.fsf_-_@merkur.tec.linutronix.de>
-	<AANLkTimJKNEwOoKldq4a4_ufxNY6IY7r6tAfAM055hlW@mail.gmail.com>
-	<80vd9ab0d2.fsf@merkur.tec.linutronix.de>
-	<AANLkTinVaXjCneg-XpxB7YNlmGOwQFTnm5RUcetPdToI@mail.gmail.com>
-Date: Wed, 23 Jun 2010 12:10:08 +0200
-In-Reply-To: <AANLkTinVaXjCneg-XpxB7YNlmGOwQFTnm5RUcetPdToI@mail.gmail.com>
-	(Ivo Clarysse's message of "Wed, 23 Jun 2010 11:23:55 +0200")
-Message-ID: <80lja6awlb.fsf@merkur.tec.linutronix.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752694Ab0FWKEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 06:04:23 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37648 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab0FWKEH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 06:04:07 -0400
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Michael Ellerman <michael@ellerman.id.au>,
+       Ian Munsie <imunsie@au1.ibm.com>, Randy Dunlap <rdunlap@xenotime.net>,
+       Mike Frysinger <vapier@gentoo.org>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, linux-doc@vger.kernel.org
+Subject: [PATCH 02/40] ftrace syscalls: Make arch_syscall_addr weak
+Date: Wed, 23 Jun 2010 20:02:43 +1000
+Message-Id: <1277287401-28571-3-git-send-email-imunsie@au1.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
+References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-06-23, Ivo Clarysse <ivo.clarysse@gmail.com> wrote:
-> But is it OK to use a regular (non-volatile) variable to communicate
-> between interrupt context and the non-interrupt context ?
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-In this case, yes.
+Some architectures use non-trivial system call tables and will not work
+with the generic arch_syscall_addr code. For example, PowerPC64 uses a
+table of twin long longs.
 
-> My original patch for i.MX21 used completions instead:
->
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2010-April/012694.html
+This patch makes the generic arch_syscall_addr weak to allow
+architectures with non-trivial system call tables to override it.
 
-Ah. It seems you've been through all this before. I wish I had noticed
-that thread before. I will need to check more carefully in the future.
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+ Documentation/trace/ftrace-design.txt |    3 +++
+ kernel/trace/trace_syscalls.c         |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
-Yes, your original patch achieves the exact same thing. Whether we use
-wait_event() with a flag or wait_completion() really is the same
-thing. So I guess Sascha can decide what we should do there.
+diff --git a/Documentation/trace/ftrace-design.txt b/Documentation/trace/ftrace-design.txt
+index f1f81af..8369a1c 100644
+--- a/Documentation/trace/ftrace-design.txt
++++ b/Documentation/trace/ftrace-design.txt
+@@ -244,6 +244,9 @@ You need very few things to get the syscalls tracing in an arch.
+ - Support the TIF_SYSCALL_TRACEPOINT thread flags.
+ - Put the trace_sys_enter() and trace_sys_exit() tracepoints calls from ptrace
+   in the ptrace syscalls tracing path.
++- If the system call table on this arch is more complicated than a simple array
++  of addresses of the system calls, implement an arch_syscall_addr to return
++  the address of a given system call.
+ - Tag this arch as HAVE_SYSCALL_TRACEPOINTS.
+ 
+ 
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 82246ce..e2b657e 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -453,7 +453,7 @@ int init_syscall_trace(struct ftrace_event_call *call)
+ 	return id;
+ }
+ 
+-unsigned long __init arch_syscall_addr(int nr)
++unsigned long __init __weak arch_syscall_addr(int nr)
+ {
+ 	return (unsigned long)sys_call_table[nr];
+ }
+-- 
+1.7.1
 
-What I like about your original patch is that only the i.MX21 has the
-cost of constantly enabling/disabling the irq line. It adds 5
-cpu_is_mx21() blocks to the code, but will lead to less work for the CPU
-on non-i.MX21 boards.
-
-John Ogness
