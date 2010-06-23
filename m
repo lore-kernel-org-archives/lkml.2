@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab0FWHBa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 03:01:30 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:39569 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708Ab0FWHB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 03:01:28 -0400
-Date: Wed, 23 Jun 2010 00:01:25 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Christian Stroetmann <stroetmann@ontolinux.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] security: Yama LSM
-Message-ID: <20100623070125.GI5876@outflux.net>
-References: <20100621213424.GG24749@outflux.net>
- <201006220028.o5M0Sbx7062650@www262.sakura.ne.jp>
- <20100622011452.GN24749@outflux.net>
- <4C20ABC0.5050908@nokia.com>
- <20100622160613.GC5876@outflux.net>
- <4C21A39C.6040406@ontolinux.com>
- <20100623062242.GG5876@outflux.net>
- <4C21AD07.5050201@ontolinux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C21AD07.5050201@ontolinux.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1751620Ab0FWHT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 03:19:26 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53002 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab0FWHTZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 03:19:25 -0400
+Subject: Re: FW: sched_setaffinity not working with kernel 2.6.32.15
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: =?UTF-8?Q?=CE=91=CE=BB=CE=AD=CE=BE=CE=B1=CE=BD=CE=B4=CF=81=CE=BF=CF=82_?=
+	 =?UTF-8?Q?=CE=A0=CE=B1=CF=80=CE=B1=CE=B4=CE=BF=CE=B3=CE=B9=CE=B1=CE=BD?=
+	 =?UTF-8?Q?=CE=BD=CE=AC=CE=BA=CE=B7=CF=82?= <psxlover@hotmail.com>,
+       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20100622171622.fc9d04c1.akpm@linux-foundation.org>
+References: <COL124-W1850C30E9FF3BFB06DF5BFD6C20@phx.gbl>
+	 <20100622171622.fc9d04c1.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 23 Jun 2010 09:19:17 +0200
+Message-ID: <1277277558.1875.745.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 08:43:19AM +0200, Christian Stroetmann wrote:
-> On 23.06.2010 08:22, Kees Cook wrote:
-> >On Wed, Jun 23, 2010 at 08:03:08AM +0200, Christian Stroetmann wrote:
-> >>"You've already had those suggestions some days ago. Use a security
-> >>module, either by using something like SELinux (where you can do
-> >>this just fine as far as I can see including exceptions by label for
-> >>problem apps)", [Alan Cox, 2010-06-08], or integrate it into an
-> >>already existing solution eg. grsecurity (www.grsecurity.net).
-> >You appear to be quoting[1], but you left off a bit.  To edit it a bit:
-> >
-> >   "Use a security module, either by using something like SELinux (...),
-> >   or write your own little security module that does it."
-> >
-> >I have done the latter.
-> >
-> >I don't need to integrate this into grsecurity because grsecurity already
-> >has these protections.  It is Openwall and grsecurity that I'm using as the
-> >starting point for this attempt at upstreaming the protections.
+On Tue, 2010-06-22 at 17:16 -0700, Andrew Morton wrote:
+> On Sun, 20 Jun 2010 22:10:18 +0300
+> ____________________ ______________________________  <psxlover@hotmail.com> wrote:
 > 
-> So, this sounds as if you are porting functionalities from
-> grsecurtiy into LSM. But [1].
-> [1] http://www.grsecurity.net/lsm.php
+> > 
+> > From: psxlover@hotmail.com
+> > To: mingo@elte.hu; peterz@infradead.org
+> > Subject:
+> >  sched_setaffinity not working with kernel 2.6.32.15
+> > Date: Sun, 20 
+> > Jun 2010 17:14:12 +0300
+> 
+> I assume from this that you initially sent the email privately to
+> Peter&Ingo, then forwarded it to the list without cc'ing Peter&Ingo. 
+> So if they're already responded to the inital email, I'm wasting my
+> time.  Ho hum.
 
-grsecurity is not in mainline.  I want a few specific features but not the
-entire patchset, therefore, I must port functionalities from grsecurity
-into mainline.  Since these features have been rejected from the core, they
-must go into an LSM.  Luckily for me, there are hooks to handle the 3
-protections I am currently interested in.  :)
+My private copy seems to have gone missing..
 
-If you can, please come to the Linux Security Summit[1], where things
-like the future of LSM will be discussed.
+> > ...
+> 
+> That's a great bug report - fully bisected and it includes a testcase. 
+> Thanks.
+> 
+> However I think your testcase is buggy.  You have main() racing against
+> print_affinity().  If a sub-thread runs print_affinity() before main()
+> has run set_threadaffinity(), print_affinity() will obviously print
+> main()'s affinity.
+> 
+> Between 2.6.18 and 2.6.35-rc3 the timing changed a bit - in the later
+> kernel the sub-threads are running before main() is able to change
+> their affinity.  In the earlier kernel the sub-threads run first.
+> 
+> In both kernels, all CPU consumption is on CPU 0 as desired.
+> 
+> Re-enabling the sleep(1) in threadCode() fixes the print_affinity()
+> output, confirming that it's a userspace race.
 
--Kees
-
-[1] https://security.wiki.kernel.org/index.php/LinuxSecuritySummit2010/Schedule
-
--- 
-Kees Cook
-Ubuntu Security Team
+Andrew is right, your program is buggy. 
