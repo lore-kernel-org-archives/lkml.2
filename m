@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab0FWGrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 02:47:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49951 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab0FWGrP (ORCPT
+	id S1751932Ab0FWGrr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 02:47:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44798 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab0FWGrp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 02:47:15 -0400
-Date: Wed, 23 Jun 2010 08:47:07 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: John Ogness <john.ogness@linutronix.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>, linux-arm-kernel@lists.infradead.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] mtd: mxc_nand fixups
-Message-ID: <20100623064707.GN12115@pengutronix.de>
-References: <80ljacb7l8.fsf@merkur.tec.linutronix.de>
+	Wed, 23 Jun 2010 02:47:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=udpmu3Tbuxi8yrcxIPYyxs5BZfwWueUIfr6yKXBv/Ri2Q6vG+lHgcA+11PzwvIrkUh
+         ydET/c2/+ByCQI3EfwIBF/pLgNSqQH0/8Q+Gr+trhxecVoCdokeZBEn8lRd5Q+uxjFbq
+         kIJiGOqWtmPmiZ8Dj2Vtrm2M9NHp7cO9tcvG4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <80ljacb7l8.fsf@merkur.tec.linutronix.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:45:58 up 15 days, 23:13, 45 users,  load average: 2.70, 2.72,
-	1.60
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.64.1006071312060.12965@axis700.grange>
+References: <Pine.LNX.4.64.1006071312060.12965@axis700.grange>
+Date: Wed, 23 Jun 2010 08:47:43 +0200
+Message-ID: <AANLkTikndTP49meKLd1bh7De04wUHrFovpgwbIrpYGF9@mail.gmail.com>
+Subject: Re: [PATCH] initialise DMA engine before MMC
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org,
+       "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+       Dan Williams <dan.j.williams@intel.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>, linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 06:58:59PM +0200, John Ogness wrote:
-> Hi,
-> 
-> The following 5 patches fix several issues with the MXC NFC
-> driver. These changes were tested using an i.MX35 with a 16-bit flash
-> chip (2K pages, 64 pages per eraseblock).
+2010/6/7 Guennadi Liakhovetski <g.liakhovetski@gmx.de>:
 
-All Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+> To use DMA engine based DMA with MMC in a non-modular build, the DMA
+> engine has to initialise before MMC.
+>
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index 91874e0..b713e75 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -92,6 +92,7 @@ obj-$(CONFIG_EISA)            += eisa/
+>  obj-y                          += lguest/
+>  obj-$(CONFIG_CPU_FREQ)         += cpufreq/
+>  obj-$(CONFIG_CPU_IDLE)         += cpuidle/
+> +obj-$(CONFIG_DMA_ENGINE)       += dma/
+>  obj-$(CONFIG_MMC)              += mmc/
+>  obj-$(CONFIG_MEMSTICK)         += memstick/
+>  obj-$(CONFIG_NEW_LEDS)         += leds/
+> @@ -102,7 +103,6 @@ obj-$(CONFIG_CRYPTO)                += crypto/
+>  obj-$(CONFIG_SUPERH)           += sh/
+>  obj-$(CONFIG_ARCH_SHMOBILE)    += sh/
+>  obj-$(CONFIG_GENERIC_TIME)     += clocksource/
+> -obj-$(CONFIG_DMA_ENGINE)       += dma/
+>  obj-$(CONFIG_DCA)              += dca/
+>  obj-$(CONFIG_HID)              += hid/
+>  obj-$(CONFIG_PPC_PS3)          += ps3/
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+What I did was to move my DMA engines to subsystem_initcall(), with this
+approach I would have had to rearrange a lot of subsystems I think.
+
+But if it's easier for you this way by all means do it.
+
+Yours,
+Linus Walleij
