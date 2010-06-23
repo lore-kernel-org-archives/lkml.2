@@ -1,110 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab0FWX5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 19:57:40 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:49761 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab0FWX5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 19:57:38 -0400
-Date: Thu, 24 Jun 2010 00:57:26 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Edward Shishkin <edward@redhat.com>
-Cc: Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Chris Mason <chris.mason@oracle.com>, Ric Wheeler <rwheeler@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Btrfs: broken file system design (was Unbound(?) internal fragmentation in Btrfs)
-Message-ID: <20100623235726.GG7058@shareable.org>
-References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com> <4C1B7560.1000806@gmail.com> <20100618155653.GC10919@shareable.org> <4C1BC924.30604@redhat.com>
+	id S1753742Ab0FWX7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 19:59:24 -0400
+Received: from tundra.namei.org ([65.99.196.166]:41836 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751Ab0FWX7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 19:59:23 -0400
+Date: Thu, 24 Jun 2010 09:58:45 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Jiri Slaby <jslaby@suse.cz>
+cc: jirislaby@gmail.com, Oleg Nesterov <oleg@redhat.com>,
+       akpm@linux-foundation.org, adobriyan@gmail.com, nhorman@tuxdriver.com,
+       Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 01/12] rlimits: security, add task_struct to
+ setrlimit
+In-Reply-To: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
+Message-ID: <alpine.LRH.2.00.1006240957350.1601@tundra.namei.org>
+References: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1BC924.30604@redhat.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Edward Shishkin wrote:
-> I'll try to help, but I am rather pessimistic here: working out
-> algorithms is something, which doesn't like timelines..
+On Wed, 23 Jun 2010, Jiri Slaby wrote:
 
-Nonsense.  Working out algorithms is just work to an algorithm
-designer, just like programming is work to a programmer.  Sure, some
-things are harder than others, and there's an element of creativity.
-But lots of it is just cranking the handle, even in algorithm design.
-
-> >Note that it's not necessarily a problem to have a few nodes with low
-> >utilisation.  Deliberate violation of the classic balancing heuristic
-> >is often useful for performance.[*]
+> From: Jiri Slaby <jirislaby@gmail.com>
 > 
-> Ok, let's violate this, but not in the detriment of utilisation:
-> Internal fragmentation is a horror for file systems, the enemy #1
-> (which is completely defeated in the last century BTW).
+> Add task_struct to task_setrlimit of security_operations to be able to set
+> rlimit of task other than current.
+
+Given the scope of the changes, I'm not sure which tree these should go 
+into.  They affect the security API, so possibly mine.
+
+
 > 
-> >  The problem you've found is only a
-> >real problem when there are _too many_ nodes with low utilisation.
+> Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
+> Acked-by: Eric Paris <eparis@redhat.com>
+> Acked-by: James Morris <jmorris@namei.org>
+> ---
+>  include/linux/security.h |    9 ++++++---
+>  kernel/sys.c             |    2 +-
+>  security/capability.c    |    3 ++-
+>  security/security.c      |    5 +++--
+>  security/selinux/hooks.c |    7 ++++---
+>  5 files changed, 16 insertions(+), 10 deletions(-)
 > 
-> IMHO this is a problem, as we can not estimate number of such nodes.
-> Do you have any sane upper boundary for this number? I don't know such one.
-> Maybe I have missed something?
-
-Well, I don't know if btrfs maintains enough statistics or other
-implicit processes to guarantee a sane upper boundary for this.  The
-impression I'm getting from the thread is that it relies on heuristic
-behaviour which is usually sufficient (and perhaps a bit faster than
-updating statistics on the disk would be), but that it does not
-provide a hard upper boundary.  I'm really not sure, though.  I
-haven't read the code.
-
-> >[*] For example when filling a tree by inserting contiguously
-> >ascending keys, the classic "split into two when full" heuristic gives
-> >the worst possible results (50% lost space), and deliberately
-> >underfilling the most actively updated nodes, which is not permitted
-> >at all by the classic algorithm, gives denser packing in the end
-> >(almost zero lost space).
+> diff --git a/include/linux/security.h b/include/linux/security.h
+> index 5bcb395..a22219a 100644
+> --- a/include/linux/security.h
+> +++ b/include/linux/security.h
+> @@ -1499,7 +1499,8 @@ struct security_operations {
+>  	int (*task_setnice) (struct task_struct *p, int nice);
+>  	int (*task_setioprio) (struct task_struct *p, int ioprio);
+>  	int (*task_getioprio) (struct task_struct *p);
+> -	int (*task_setrlimit) (unsigned int resource, struct rlimit *new_rlim);
+> +	int (*task_setrlimit) (struct task_struct *p, unsigned int resource,
+> +			struct rlimit *new_rlim);
+>  	int (*task_setscheduler) (struct task_struct *p, int policy,
+>  				  struct sched_param *lp);
+>  	int (*task_getscheduler) (struct task_struct *p);
+> @@ -1749,7 +1750,8 @@ void security_task_getsecid(struct task_struct *p, u32 *secid);
+>  int security_task_setnice(struct task_struct *p, int nice);
+>  int security_task_setioprio(struct task_struct *p, int ioprio);
+>  int security_task_getioprio(struct task_struct *p);
+> -int security_task_setrlimit(unsigned int resource, struct rlimit *new_rlim);
+> +int security_task_setrlimit(struct task_struct *p, unsigned int resource,
+> +		struct rlimit *new_rlim);
+>  int security_task_setscheduler(struct task_struct *p,
+>  				int policy, struct sched_param *lp);
+>  int security_task_getscheduler(struct task_struct *p);
+> @@ -2311,7 +2313,8 @@ static inline int security_task_getioprio(struct task_struct *p)
+>  	return 0;
+>  }
+>  
+> -static inline int security_task_setrlimit(unsigned int resource,
+> +static inline int security_task_setrlimit(struct task_struct *p,
+> +					  unsigned int resource,
+>  					  struct rlimit *new_rlim)
+>  {
+>  	return 0;
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index e83ddbb..1ba4522 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -1290,7 +1290,7 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+>  	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
+>  		return -EPERM;
+>  
+> -	retval = security_task_setrlimit(resource, &new_rlim);
+> +	retval = security_task_setrlimit(current, resource, &new_rlim);
+>  	if (retval)
+>  		return retval;
+>  
+> diff --git a/security/capability.c b/security/capability.c
+> index 4aeb699..830a213 100644
+> --- a/security/capability.c
+> +++ b/security/capability.c
+> @@ -411,7 +411,8 @@ static int cap_task_getioprio(struct task_struct *p)
+>  	return 0;
+>  }
+>  
+> -static int cap_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
+> +static int cap_task_setrlimit(struct task_struct *p, unsigned int resource,
+> +		struct rlimit *new_rlim)
+>  {
+>  	return 0;
+>  }
+> diff --git a/security/security.c b/security/security.c
+> index 7461b1b..c53949f 100644
+> --- a/security/security.c
+> +++ b/security/security.c
+> @@ -780,9 +780,10 @@ int security_task_getioprio(struct task_struct *p)
+>  	return security_ops->task_getioprio(p);
+>  }
+>  
+> -int security_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
+> +int security_task_setrlimit(struct task_struct *p, unsigned int resource,
+> +		struct rlimit *new_rlim)
+>  {
+> -	return security_ops->task_setrlimit(resource, new_rlim);
+> +	return security_ops->task_setrlimit(p, resource, new_rlim);
+>  }
+>  
+>  int security_task_setscheduler(struct task_struct *p,
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index 5c9f25b..e3ce6b4 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -3371,16 +3371,17 @@ static int selinux_task_getioprio(struct task_struct *p)
+>  	return current_has_perm(p, PROCESS__GETSCHED);
+>  }
+>  
+> -static int selinux_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
+> +static int selinux_task_setrlimit(struct task_struct *p, unsigned int resource,
+> +		struct rlimit *new_rlim)
+>  {
+> -	struct rlimit *old_rlim = current->signal->rlim + resource;
+> +	struct rlimit *old_rlim = p->signal->rlim + resource;
+>  
+>  	/* Control the ability to change the hard limit (whether
+>  	   lowering or raising it), so that the hard limit can
+>  	   later be used as a safe reset point for the soft limit
+>  	   upon context transitions.  See selinux_bprm_committing_creds. */
+>  	if (old_rlim->rlim_max != new_rlim->rlim_max)
+> -		return current_has_perm(current, PROCESS__SETRLIMIT);
+> +		return current_has_perm(p, PROCESS__SETRLIMIT);
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.7.1
 > 
-> At the end of what?
+> 
 
-At the end of inserting keys in ascending order.  Just think about the
-classic B-tree when that is done: Node[1] fills to 100% utilisation,
-then is split into two nodes at 50% (call them node[1] and node[2]).
-Node[2] fills to 100%, then splits into node[2] at 50% and node[3].
-Etc etc: Result is a million nodes at 50% utilisation, except the last
-one.
-
-If instead you fill node[1], then *don't* split it but permit node[2]
-to have 0% to start with, let that fill to 100%, then don't split
-node[2] and let node[3] start with 0%, etc. etc: Result is half a
-million nodes at 100% utilisation, except the last one.
-
-Both fit the desired bounds, but the second is more desirable in
-practice, especially as it's common behaviour to fill with contiguous,
-ascending keys in a filesystem (or blob-filled database) where data
-extents are part of the tree :-)
-
-To handle the cases of multiple independent ascending runs of keys
-being written in parallel, you generalise to maintain more than one
-below-50% block, near the "active insertion heads".
-
-The above describes classic B-trees where updates are assumed to be
-written immediately.  Things are different when there's a memory cache
-and delayed allocation/writing, and packing can be reorganised in
-memory before sending to storage.
-
-> I hope you don't speak about on-line defragmentation?
-
-No, not at all.
-
-> Can you point me to the paper (if any)?
-
-Sorry, no, I haven't seen this described in a paper.  Imho it's
-obvious when you think about it.  But maybe it's not obvious to
-everyone - perhaps this is even the heuristic modification missing
-from btrfs which it would need to avoid the scenario which started
-this thread?
-
--- Jamie
+-- 
+James Morris
+<jmorris@namei.org>
