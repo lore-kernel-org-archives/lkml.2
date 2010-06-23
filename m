@@ -1,116 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab0FWVyO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 17:54:14 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:37329 "EHLO
-	mail.pripojeni.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753868Ab0FWVxR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 17:53:17 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: jirislaby@gmail.com
-Cc: Oleg Nesterov <oleg@redhat.com>, akpm@linux-foundation.org,
-       adobriyan@gmail.com, nhorman@tuxdriver.com,
-       Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-       Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 10/12] rlimits: switch more rlimit syscalls to do_prlimit
-Date: Wed, 23 Jun 2010 23:52:11 +0200
-Message-Id: <1277329933-8139-10-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
-References: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
+	id S1754063Ab0FWVy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 17:54:26 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:34400 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753868Ab0FWVyW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 17:54:22 -0400
+From: Linus WALLEIJ <linus.walleij@stericsson.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Jun 2010 23:54:12 +0200
+Subject: Regression in next-20100618
+Thread-Topic: Regression in next-20100618
+Thread-Index: AcsTHp2q2vRCHXl7RIiFdKLkF7P6ww==
+Message-ID: <CEE6BB42CAD6E947908279175AF8470A025FD0D260@EXDCVYMBSTM006.EQ1STM.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jirislaby@gmail.com>
+Hi Alan,
 
-After we added more generic do_prlimit, switch sys_getrlimit to that.
-Also switch compat handling, so we can get rid of ugly __user casts
-and avoid setting process' address limit to kernel data and back.
+I have a regression in the next tree from 20100618, the prompt
+freezes on the U8500. Drilling down with git bisecting found:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- kernel/compat.c |   17 +++--------------
- kernel/sys.c    |   17 ++++++++---------
- 2 files changed, 11 insertions(+), 23 deletions(-)
+34ffc9670d67fe068f9d8582dd4d2a18d9a61205
+Author: Alan Cox <alan@linux.intel.com>
+Date:   Tue Jun 1 22:53:00 2010 +0200
 
-diff --git a/kernel/compat.c b/kernel/compat.c
-index 5adab05..e167efc 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -279,11 +279,6 @@ asmlinkage long compat_sys_setrlimit(unsigned int resource,
- 		struct compat_rlimit __user *rlim)
- {
- 	struct rlimit r;
--	int ret;
--	mm_segment_t old_fs = get_fs ();
--
--	if (resource >= RLIM_NLIMITS)
--		return -EINVAL;
- 
- 	if (!access_ok(VERIFY_READ, rlim, sizeof(*rlim)) ||
- 	    __get_user(r.rlim_cur, &rlim->rlim_cur) ||
-@@ -294,10 +289,7 @@ asmlinkage long compat_sys_setrlimit(unsigned int resource,
- 		r.rlim_cur = RLIM_INFINITY;
- 	if (r.rlim_max == COMPAT_RLIM_INFINITY)
- 		r.rlim_max = RLIM_INFINITY;
--	set_fs(KERNEL_DS);
--	ret = sys_setrlimit(resource, (struct rlimit __user *) &r);
--	set_fs(old_fs);
--	return ret;
-+	return do_prlimit(current, resource, &r, NULL);
- }
- 
- #ifdef COMPAT_RLIM_OLD_INFINITY
-@@ -329,16 +321,13 @@ asmlinkage long compat_sys_old_getrlimit(unsigned int resource,
- 
- #endif
- 
--asmlinkage long compat_sys_getrlimit (unsigned int resource,
-+asmlinkage long compat_sys_getrlimit(unsigned int resource,
- 		struct compat_rlimit __user *rlim)
- {
- 	struct rlimit r;
- 	int ret;
--	mm_segment_t old_fs = get_fs();
- 
--	set_fs(KERNEL_DS);
--	ret = sys_getrlimit(resource, (struct rlimit __user *) &r);
--	set_fs(old_fs);
-+	ret = do_prlimit(current, resource, NULL, &r);
- 	if (!ret) {
- 		if (r.rlim_cur > COMPAT_RLIM_INFINITY)
- 			r.rlim_cur = COMPAT_RLIM_INFINITY;
-diff --git a/kernel/sys.c b/kernel/sys.c
-index bc7d1be..9da98dd 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1236,15 +1236,14 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
- 
- SYSCALL_DEFINE2(getrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- {
--	if (resource >= RLIM_NLIMITS)
--		return -EINVAL;
--	else {
--		struct rlimit value;
--		task_lock(current->group_leader);
--		value = current->signal->rlim[resource];
--		task_unlock(current->group_leader);
--		return copy_to_user(rlim, &value, sizeof(*rlim)) ? -EFAULT : 0;
--	}
-+	struct rlimit value;
-+	int ret;
-+
-+	ret = do_prlimit(current, resource, NULL, &value);
-+	if (!ret)
-+		ret = copy_to_user(rlim, &value, sizeof(*rlim)) ? -EFAULT : 0;
-+
-+	return ret;
- }
- 
- #ifdef __ARCH_WANT_SYS_OLD_GETRLIMIT
--- 
-1.7.1
+    serial: Use block_til_ready helper
 
+    Our code now rather closely resembles the helper, so switch to it.
 
+    Signed-off-by: Alan Cox <alan@linux.intel.com>
+    Cc: Arnd Bergmann <arnd@arndb.de>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+Reverting the commit makes the problem go away.
+
+This platform is using drivers/serial/amba-pl011.c
+
+Any ideas I could try out to help troubleshooting this one?
+It could be that you're provoking some bug in amba-pl011.c.
+
+Yours,
+Linus Walleij
