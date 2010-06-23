@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab0FWKPF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 06:15:05 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:45404 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab0FWKPD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 06:15:03 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Wed, 23 Jun 2010 12:16:03 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv7 06/11] USB: gadget: g_multi: code clean up and refactoring
-In-reply-to: <20100621214534.GC25511@kroah.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <op.veqz41wf7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <caa6546b6691e75a7248415a4d50d681e4f8705d.1277119876.git.m.nazarewicz@samsung.com>
- <20100621214534.GC25511@kroah.com>
+	id S1752666Ab0FWKPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 06:15:23 -0400
+Received: from verein.lst.de ([213.95.11.210]:56361 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752547Ab0FWKPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 06:15:20 -0400
+Date: Wed, 23 Jun 2010 12:14:02 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, x86@kernel.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Jason Baron <jbaron@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Greg Ungerer <gerg@uclinux.org>, Steven Rostedt <rostedt@goodmis.org>,
+       Christoph Hellwig <hch@lst.de>, Ingo Molnar <mingo@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 12/40] x86, compat: convert ia32 layer to use
+Message-ID: <20100623101402.GA10564@lst.de>
+References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com> <1277287401-28571-13-git-send-email-imunsie@au1.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277287401-28571-13-git-send-email-imunsie@au1.ibm.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: -0.001 () BAYES_44,UPPERCASE_25_50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Jun 21, 2010 at 01:57:03PM +0200, Michal Nazarewicz wrote:
->> Lets hope seventh time is really a charm. ;)
+Any reason we need to differenciate between COMPAT_SYSCALL_DEFINE and
+ARCH_COMPAT_SYSCALL_DEFINE?  We don't need this for native system calls,
+so I can't see the reason to do it for compat system calls.
 
-On Mon, 21 Jun 2010 23:45:34 +0200, Greg KH <greg@kroah.com> wrote:
-> Your 8th patch was a bit messed up,
-
-That's bizarre...
-
-> but I fixed it up by hand and applied all of them :)
-
-Great, thanks!
-
-> thanks for being persistent.
-
-Thanks for not adding me to kill file. :P
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
