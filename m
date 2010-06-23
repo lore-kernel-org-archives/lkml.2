@@ -1,131 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab0FWPLO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 11:11:14 -0400
-Received: from sh.osrg.net ([192.16.179.4]:39446 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753441Ab0FWPLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 11:11:09 -0400
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-To: axboe@kernel.dk, James.Bottomley@HansenPartnership.com
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-       fujita.tomonori@lab.ntt.co.jp
-Subject: [PATCH 3/3] use REQ_TYPE_FS for flush request
-Date: Thu, 24 Jun 2010 00:07:32 +0900
-Message-Id: <1277305652-2306-4-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1277305652-2306-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1277305652-2306-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 24 Jun 2010 00:10:58 +0900 (JST)
+	id S1753497Ab0FWPQt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 11:16:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47272 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab0FWPQr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 11:16:47 -0400
+X-Authority-Analysis: v=1.1 cv=zLGBfXKW/yOQN1c4qTdQUWouaSiWOaUUjRgOJi1LSJI= c=1 sm=0 a=VT3f0z-SXmYA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=XMks3MzYvKDOQ8yePNkA:9 a=F7xT-reSfErCYt-4KDgA:7 a=EzP48Fp8-FcQJvIPPiRxLcIV1qMA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 08/40] tracing: remove syscall bitmaps in preparation
+ for compat support
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       Jason Baron <jbaron@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Michael Ellerman <michael@ellerman.id.au>, Ingo Molnar <mingo@elte.hu>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+In-Reply-To: <1277287401-28571-9-git-send-email-imunsie@au1.ibm.com>
+References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
+	 <1277287401-28571-9-git-send-email-imunsie@au1.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 23 Jun 2010 11:16:44 -0400
+Message-ID: <1277306204.9181.43.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scsi-ml uses REQ_TYPE_BLOCK_PC for flush requests from file
-systems. The definition of REQ_TYPE_BLOCK_PC is that we don't retry
-requests even when we can (e.g. UNIT ATTENTION) and we send the
-response to the callers (then the callers can decide what they want).
-We need a workaround such as the commit
-77a4229719e511a0d38d9c355317ae1469adeb54 to retry BLOCK_PC flush
-requests. We will need the similar workaround for discard requests too
-since SCSI-ml handle them as BLOCK_PC internally.
+On Wed, 2010-06-23 at 20:02 +1000, Ian Munsie wrote:
+> From: Jason Baron <jbaron@redhat.com>
+> 
+> In preparation for compat syscall tracing support, let's store the enabled
+> syscalls, with the struct syscall_metadata itself. That way we don't duplicate
+> enabled information when the compat table points to an entry in the regular
+> syscall table. Also, allows us to remove the bitmap data structures completely.
+> 
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> ---
+>  include/linux/syscalls.h      |    8 +++++++
+>  include/trace/syscall.h       |    4 +++
+>  kernel/trace/trace_syscalls.c |   42 +++++++++++++++++++---------------------
+>  3 files changed, 32 insertions(+), 22 deletions(-)
+> 
+> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+> index 86f082b..755d05b 100644
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -163,6 +163,10 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+>  		.nb_args 	= nb,				\
+>  		.types		= types_##sname,		\
+>  		.args		= args_##sname,			\
+> +		.ftrace_enter	= 0,				\
+> +		.ftrace_exit	= 0,				\
+> +		.perf_enter	= 0,				\
+> +		.perf_exit	= 0,				\
 
-This uses REQ_TYPE_FS for flush requests from file systems instead of
-REQ_TYPE_BLOCK_PC.
+I really hate this change!
 
-scsi-ml retries only REQ_TYPE_FS requests that have data to
-transfer when we can retry them (e.g. UNIT_ATTENTION). However, we
-also need to retry REQ_TYPE_FS requests without data because the
-callers don't.
+You just removed a nice compressed bitmap (1 bit per syscall) to add 4
+bytes per syscall. On my box I have 308 syscalls being traced. That was
+308 bits per bitmask = 39 bytes * 2 = 78 * 2 (perf and ftrace) = 156.
 
-This also changes scsi_check_sense() to retry all the REQ_TYPE_FS
-requests when appropriate. Thanks to scsi_noretry_cmd(),
-REQ_TYPE_BLOCK_PC requests don't be retried as before.
+Now we have 8 bytes per syscall (enter and exit), which is 1232 bytes.
 
-Note that basically, this reverts the commit
-77a4229719e511a0d38d9c355317ae1469adeb54 since now we use REQ_TYPE_FS
-for flush requests.
+Thus this change added 1076 bytes.
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- drivers/scsi/scsi_error.c |   19 ++++---------------
- drivers/scsi/sd.c         |   19 +++++++++++++------
- 2 files changed, 17 insertions(+), 21 deletions(-)
+This may not seem as much, but the change is not worth 1K. Can't we just
+add another bitmask or something for the compat case?
 
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index 1b88af8..2768bf6 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -307,20 +307,7 @@ static int scsi_check_sense(struct scsi_cmnd *scmd)
- 		    (sshdr.asc == 0x04) && (sshdr.ascq == 0x02))
- 			return FAILED;
- 
--		if (scmd->request->cmd_flags & REQ_HARDBARRIER)
--			/*
--			 * barrier requests should always retry on UA
--			 * otherwise block will get a spurious error
--			 */
--			return NEEDS_RETRY;
--		else
--			/*
--			 * for normal (non barrier) commands, pass the
--			 * UA upwards for a determination in the
--			 * completion functions
--			 */
--			return SUCCESS;
--
-+		return NEEDS_RETRY;
- 		/* these three are not supported */
- 	case COPY_ABORTED:
- 	case VOLUME_OVERFLOW:
-@@ -1336,7 +1323,9 @@ int scsi_noretry_cmd(struct scsi_cmnd *scmd)
- 		 * assume caller has checked sense and determinted
- 		 * the check condition was retryable.
- 		 */
--		return (scmd->request->cmd_flags & REQ_FAILFAST_DEV);
-+		if (scmd->request->cmd_flags & REQ_FAILFAST_DEV ||
-+		    scmd->request->cmd_type == REQ_TYPE_BLOCK_PC)
-+			return 1;
- 	}
- 
- 	return 0;
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 86da819..d447726 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -488,11 +488,18 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
- 	int ret, host_dif;
- 	unsigned char protect;
- 
--	/*
--	 * Discard request come in as REQ_TYPE_FS but we turn them into
--	 * block PC requests to make life easier.
--	 */
--	if (rq->cmd_flags & REQ_DISCARD) {
-+	if (rq->cmd_flags & REQ_FLUSH) {
-+		/*
-+		 * Flush request is REQ_TYPE_FS but we initialize them
-+		 * as REQ_TYPE_BLOCK_PC.
-+		 */
-+		ret = scsi_setup_blk_pc_cmnd(sdp, rq);
-+		goto out;
-+	} else if (rq->cmd_flags & REQ_DISCARD) {
-+		/*
-+		 * Discard request come in as REQ_TYPE_FS but we turn
-+		 * them into block PC requests to make life easier.
-+		 */
- 		ret = scsi_setup_discard_cmnd(sdp, rq);
- 		goto out;
- 	} else if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
-@@ -1046,7 +1053,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
- 
- static void sd_prepare_flush(struct request_queue *q, struct request *rq)
- {
--	rq->cmd_type = REQ_TYPE_BLOCK_PC;
-+	rq->cmd_type = REQ_TYPE_FS;
- 	rq->timeout = SD_TIMEOUT;
- 	rq->retries = SD_MAX_RETRIES;
- 	rq->cmd[0] = SYNCHRONIZE_CACHE;
--- 
-1.6.5
+I also hate the moving of ftrace and perf internal data to an external
+interface.
+
+-- Steve
+
+>  		.enter_event	= &event_enter_##sname,		\
+>  		.exit_event	= &event_exit_##sname,		\
+>  		.enter_fields	= LIST_HEAD_INIT(__syscall_meta_##sname.enter_fields), \
+> @@ -179,6 +183,10 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+>  		.name 		= "sys_"#sname,			\
+>  		.syscall_nr	= -1,	/* Filled in at boot */	\
+>  		.nb_args 	= 0,				\
+> +		.ftrace_enter	= 0,				\
+> +		.ftrace_exit	= 0,				\
+> +		.perf_enter	= 0,				\
+> +		.perf_exit	= 0,				\
+>  		.enter_event	= &event_enter__##sname,	\
+>  		.exit_event	= &event_exit__##sname,		\
+>  		.enter_fields	= LIST_HEAD_INIT(__syscall_meta__##sname.enter_fields), \
+
 
