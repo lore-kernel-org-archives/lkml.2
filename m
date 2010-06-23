@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab0FWToG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 15:44:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11054 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752441Ab0FWToD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 15:44:03 -0400
-Date: Wed, 23 Jun 2010 21:41:45 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] sanitize task->comm to avoid leaking escape codes
-Message-ID: <20100623194145.GA19628@redhat.com>
-References: <20100623181129.GM5876@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100623181129.GM5876@outflux.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753495Ab0FWTpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 15:45:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37052 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684Ab0FWTpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 15:45:50 -0400
+X-Authority-Analysis: v=1.1 cv=4GK1Slht3WUdSXXcSOu+TCe3GQnvEFDsQSvVHKX2gdo= c=1 sm=0 a=VT3f0z-SXmYA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=ijvh-uqoNxbpdy8Ix98A:9 a=Aa-osqySh_7p6KDs9HOUXalZZcQA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 08/40] tracing: remove syscall bitmaps in preparation
+ for compat support
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Jason Baron <jbaron@redhat.com>
+Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Michael Ellerman <michael@ellerman.id.au>, Ingo Molnar <mingo@elte.hu>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+In-Reply-To: <20100623193455.GE2680@redhat.com>
+References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
+	 <1277287401-28571-9-git-send-email-imunsie@au1.ibm.com>
+	 <1277306204.9181.43.camel@gandalf.stny.rr.com>
+	 <20100623191454.GC2680@redhat.com>  <20100623193455.GE2680@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 23 Jun 2010 15:45:47 -0400
+Message-ID: <1277322347.9181.54.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23, Kees Cook wrote:
->
-> @@ -956,7 +957,15 @@ void set_task_comm(struct task_struct *tsk, char *buf)
->  	 */
->  	memset(tsk->comm, 0, TASK_COMM_LEN);
->  	wmb();
+On Wed, 2010-06-23 at 15:34 -0400, Jason Baron wrote:
 
-Off-topic. I'd wish I could understand this barrier. Since the lockless
-reader doesn't do rmb() I don't see how this can help. OTOH, I don't
-understand why it is needed, we never change ->comm[TASK_COMM_LEN-1] == '0'.
+> Actually, looking at this further, what we probably want to do change
+> the "int nb_args" field, which is already in syscall_metadata into a bit
+> field. nb_args I think can be at most 6, or 3 bits, and we only need 4
+> bits for storing the enabled/disabled data, so we could even make it a
+> char. Thus, actually saving space with this patch :) (at least as far as
+> the syscall_metadata field is concerned).
 
-> -	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
-> +
-> +	/* sanitize non-printable characters */
-> +	for (i = 0; buf[i] && i < (sizeof(tsk->comm) - 1); i++) {
-> +		if (!isprint(buf[i]))
-> +			tsk->comm[i] = '?';
-> +		else
-> +			tsk->comm[i] = buf[i];
-> +	}
+Yeah, I'm fine with turning that into a count/flags field.
 
-Personally I think this makes sense.
+-- Steve
 
-> -extern char *get_task_comm(char *to, struct task_struct *tsk);
-> +#define get_task_comm(buf, task) get_task_comm_size(buf, sizeof(buf), task)
-> +extern char *get_task_comm_size(char *to, size_t len, struct task_struct *tsk);
-
-Oh, but this means that get_task_comm(ptr, task) doesn't work?
-
-Oleg.
 
