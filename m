@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751209Ab0FWFet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 01:34:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58263 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab0FWFes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 01:34:48 -0400
-Message-ID: <4C219CEF.5000003@suse.de>
-Date: Wed, 23 Jun 2010 11:04:39 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091130 SUSE/3.0.0-1.1.1 Thunderbird/3.0
-MIME-Version: 1.0
-To: Jeff Layton <jlayton@poochiereds.net>
-Cc: Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       David Howells <dhowells@redhat.com>
-Subject: Re: [RFC][PATCH 04/10] cifs: define server-level cache index objects
- and register them with FS-Cache
-References: <yes>	<1277220198-3522-1-git-send-email-sjayaraman@suse.de> <20100622175214.4c56234f@corrin.poochiereds.net>
-In-Reply-To: <20100622175214.4c56234f@corrin.poochiereds.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1751208Ab0FWFhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 01:37:11 -0400
+Received: from amavis-smtp.knology.net ([75.76.199.6]:49637 "EHLO
+	amavis-smtp.knology.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab0FWFhJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 01:37:09 -0400
+Subject: Re: PROBLEM: SIS7019 stops recording after 42 min
+From: David Dillow <dave@thedillows.org>
+To: linux@schou.dk
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+In-Reply-To: <1277262047.10818.9.camel@obelisk.thedillows.org>
+References: <AANLkTimO5PXmJiIPDw82MTA53mLSl-OC0e1SOEh7v8pH@mail.gmail.com>
+	 <1276972298.22889.16.camel@obelisk.thedillows.org>
+	 <AANLkTimwZFNLBNJWODyzKXwx9CbIorg3OCA53XZchkeN@mail.gmail.com>
+	 <1277043970.22889.45.camel@obelisk.thedillows.org>
+	 <AANLkTikBTMq3d-Ov65wYLJ_Vw-7Jde4AOwfXcEPB0wLr@mail.gmail.com>
+	 <1277129180.22889.64.camel@obelisk.thedillows.org>
+	 <AANLkTikW71h7ABVXY21pLL9AeOlmRTfVaSTjJ_6Ma0_R@mail.gmail.com>
+	 <AANLkTikCGzUKe9Fy1d0xhberqGFe71lvrQbg5gkQzgf1@mail.gmail.com>
+	 <AANLkTikPW9j4H15gq7nl0Tb213R15uIQAnSDi_cTOJre@mail.gmail.com>
+	 <1277262047.10818.9.camel@obelisk.thedillows.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Jun 2010 01:36:59 -0400
+Message-ID: <1277271419.10818.22.camel@obelisk.thedillows.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-8.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 03:22 AM, Jeff Layton wrote:
-> On Tue, 22 Jun 2010 20:53:18 +0530
-> Suresh Jayaraman <sjayaraman@suse.de> wrote:
+On Tue, 2010-06-22 at 23:00 -0400, David Dillow wrote:
+> On Mon, 2010-06-21 at 22:10 +0200, Hans Schou wrote:
+> > 2010/6/21 Hans Schou <linux@schou.dk>:
+> > 
+> > > I have just started:
+> > >  arecord -B 1000000 -F 500000 -c 1 -r 44100 -f S16 -M -D hw:0,0 -v arec.wav
+> > 
+> > It gave a file size of 258822944 bytes. Almost 50 min:
+> >   echo "258822944/(2*60*44100)" | bc -ql
+> > 48.90
+> > 
+> > This is the longest recording I have made on this hardware.
+> > 
+> > I have this running now:
+> > + arecord -B 200000 -F 100000 -c 1 -r 44100 -f S16 -M -D hw:0,0 -v arec.wav
 > 
->> Define server-level cache index objects (as managed by TCP_ServerInfo structs).
->> Each server object is created in the CIFS top-level index object and is itself
->> an index into which superblock-level objects are inserted.
->>
->> Currently, the server objects are keyed by hostname.
->>
->> Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
->> ---
->>  fs/cifs/Makefile   |    2 +-
->>  fs/cifs/cache.c    |   25 +++++++++++++++++++++++++
->>  fs/cifs/cifsglob.h |    3 +++
->>  fs/cifs/connect.c  |    4 ++++
->>  fs/cifs/fscache.c  |   47 +++++++++++++++++++++++++++++++++++++++++++++++
->>  fs/cifs/fscache.h  |   12 ++++++++++++
->>  6 files changed, 92 insertions(+), 1 deletion(-)
->>  create mode 100644 fs/cifs/fscache.c
->>
->> Index: cifs-2.6/fs/cifs/Makefile
->> ===================================================================
->> --- cifs-2.6.orig/fs/cifs/Makefile
->> +++ cifs-2.6/fs/cifs/Makefile
->> @@ -12,4 +12,4 @@ cifs-$(CONFIG_CIFS_UPCALL) += cifs_spneg
->>  
->>  cifs-$(CONFIG_CIFS_DFS_UPCALL) += dns_resolve.o cifs_dfs_ref.o
->>  
->> -cifs-$(CONFIG_CIFS_FSCACHE) += cache.o
->> +cifs-$(CONFIG_CIFS_FSCACHE) += fscache.o cache.o
->> Index: cifs-2.6/fs/cifs/cache.c
->> ===================================================================
->> --- cifs-2.6.orig/fs/cifs/cache.c
->> +++ cifs-2.6/fs/cifs/cache.c
->> @@ -51,3 +51,28 @@ void cifs_fscache_unregister(void)
->>  	fscache_unregister_netfs(&cifs_fscache_netfs);
->>  }
->>  
->> +/*
->> + * Server object currently keyed by hostname
->> + */
->> +static uint16_t cifs_server_get_key(const void *cookie_netfs_data,
->> +				   void *buffer, uint16_t maxbuf)
->> +{
->> +	const struct TCP_Server_Info *server = cookie_netfs_data;
->> +	uint16_t len = strnlen(server->hostname, sizeof(server->hostname));
->> +
-> 
-> Would a tuple of address/family/port be a better choice here? Imagine I
-> mount "foo" and then later mount "foor.bar.baz". If they are the same
-> address and only the UNC differs, then you won't get the benefit of
-> the cache, right?
-> 
+> Ok, it seems something is definately funky with the driver in general,
+> and gets worse when we're using more than 2 periods per buffer.
 
-Good point. I'll fix it up when I do a respin.
+The driver's funkiness may be limited to the more than 2 periods per
+buffer/10 second pause issue.
 
-Thanks,
+> I don't have any overruns, nor does it go into the 10-second pause mode.
+> I do see an odd alternating pattern of one period taking 1.4ms to
+> capture, and the next taking 732ms. The period should be about 371ms, so
+> the lumpyness of the timing is likely making it easier to hit overruns.
 
--- 
-Suresh Jayaraman
+I can reproduce the alternating pattern of periods using a different
+device, so this may be something in the core code of ALSA.
+
+Hardware PCM card 0 'HDA Intel' device 0 subdevice 0
+Its setup is:
+  stream       : CAPTURE
+  access       : RW_INTERLEAVED
+  format       : S16_LE
+  subformat    : STD
+  channels     : 2
+  rate         : 44100
+  exact rate   : 44100 (44100/1)
+  msbits       : 16
+  buffer_size  : 32768
+  period_size  : 16384
+  period_time  : 371519
+  tstamp_mode  : NONE
+  period_step  : 1
+  avail_min    : 16384
+  period_event : 0
+  start_threshold  : 1
+  stop_threshold   : 32768
+  silence_threshold: 0
+  silence_size : 0
+  boundary     : 4611686018427387904
+  appl_ptr     : 0
+  hw_ptr       : 0
+
+strace -T gives:
+ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.371672>
+write(1, ..., 65536) = 65536 <0.000035>
+ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.742746>
+write(1, ..., 65536) = 65536 <0.000013>
+ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.000027>
+write(1, ..., 65536) = 65536 <0.000016>
+ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.742694>
+write(1, ..., 65536) = 65536 <0.000011>
+ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.000038>
+write(1, ..., 65536) = 65536 <0.000024>
+ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.742600>
+
+The first period gets clocked out close to the expected time --
+371.672ms actual vs 371.519 ms expected -- but then we're either running
+almost a full buffer -- 742.746ms actual vs 743.038ms buffer -- or very,
+very short at 0.027ms.
+
+Since this problem is not related to the SiS7019 driver, I'll leave it
+to later -- or for others to investigate. Using three periods per buffer
+sees a similar pattern, but one has an extra period time to work
+within. 
+
+Dave
+
+
+
+
+
+
+
