@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab0FXG3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 02:29:10 -0400
-Received: from mga14.intel.com ([143.182.124.37]:26170 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751842Ab0FXG3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 02:29:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,472,1272870000"; 
-   d="scan'208";a="292457557"
-Subject: Re: [PATCH] perf: close the opened directories.
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: acme@ghostprotocols.net, mingo@elte.hu,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C1C3F7C.4030607@cn.fujitsu.com>
-References: <4C1C3F7C.4030607@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 24 Jun 2010 14:29:25 +0800
-Message-Id: <1277360965.2096.881.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1753268Ab0FXGcU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 02:32:20 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:9029 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab0FXGcT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 02:32:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RZvtysw0KfrkoayTpTkCH/mbciwKB1vGLlRDeqkNPUZ92U2554eXPUYwHSbAuGwCHh
+         VRKQSO04oW8aONiYBnGTyDOJV7B71crX2DrHj8T2nZzmsjAvX3tGPlUfuAC9XA2uvUA1
+         ZmRQ8a1zeslGUN0g7jfZNYkPBTFrl88W2olmM=
+Date: Thu, 24 Jun 2010 08:32:25 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Paul Mackerras <paulus@samba.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       "K.Prasad" <prasad@linux.vnet.ibm.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Hitting WARN_ON in hw_breakpoint code
+Message-ID: <20100624063223.GA5313@nowhere>
+References: <20100623125740.GA3368@brick.ozlabs.ibm.com> <20100623174918.GH5242@nowhere> <20100623235309.GA17441@brick.ozlabs.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100623235309.GA17441@brick.ozlabs.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-06-19 at 11:54 +0800, Gui Jianfeng wrote:
-> When I ran "perf kvm ... top", I encountered the following error output.
+On Thu, Jun 24, 2010 at 09:53:09AM +1000, Paul Mackerras wrote:
+> On Wed, Jun 23, 2010 at 07:49:20PM +0200, Frederic Weisbecker wrote:
 > 
->   Error: perfcounter syscall returned with -1 (Too many open files)
+> > Indeed. I'm suprised I've never seen this problem before while the
+> > bug is quite obvious.
+> > 
+> > Anyway I'm cooking a fix, thanks for this report!
 > 
->   Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-> 
-> Looking into perf, I found perf opens too many direcotries at initialization
-> time, but forgets to close them. Here is the fix.
-Good catch!
+> If you haven't been seeing it on x86, I think I'll look a bit closer.
+> I would have thought that the perf_event would have a reference to the
+> context, so the context shouldn't have gone away while the perf_event
+> still exists.
 
-> 
-> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-> ---
->  tools/perf/util/symbol.c |   18 +++++++++++-------
->  1 files changed, 11 insertions(+), 7 deletions(-)
-> 
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index 7fd6b15..a00dcad 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -1443,6 +1443,7 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
->  {
->  	struct dirent *dent;
->  	DIR *dir = opendir(dir_name);
-> +	int ret = 0;
->  
->  	if (!dir) {
->  		pr_debug("%s: cannot open %s dir\n", __func__, dir_name);
-> @@ -1465,8 +1466,10 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
->  
->  			snprintf(path, sizeof(path), "%s/%s",
->  				 dir_name, dent->d_name);
-> -			if (map_groups__set_modules_path_dir(self, path) < 0)
-> -				goto failure;
-> +			if (map_groups__set_modules_path_dir(self, path) < 0) {
-> +				ret = -1;
-> +				goto out;
-> +			}
-How about changing above to:
-			ret = map_groups__set_modules_path_dir(self, path);
-			if (ret < 0)
-				goto out;
+
+The context is still alive and available from event->ctx.
+But it is detached from the task. ie: task->perf_event_ctxp = NULL
 
 
 
->  		} else {
->  			char *dot = strrchr(dent->d_name, '.'),
->  			     dso_name[PATH_MAX];
-> @@ -1487,17 +1490,18 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
->  				 dir_name, dent->d_name);
->  
->  			long_name = strdup(path);
-> -			if (long_name == NULL)
-> -				goto failure;
-> +			if (long_name == NULL) {
-> +				ret = -1;
-> +				goto out;
-> +			}
->  			dso__set_long_name(map->dso, long_name);
->  			dso__kernel_module_get_build_id(map->dso, "");
->  		}
->  	}
->  
-> -	return 0;
-> -failure:
-> +out:
->  	closedir(dir);
-> -	return -1;
-> +	return ret;
->  }
->  
->  static char *get_kernel_version(const char *root_dir)
+>  It may be something we're doing differently on ppc64.
 
+
+Not really. I just tested and encountered the warning in x86. The problem
+is that I use to test my kernels on a testbox through ssh, so I don't see
+the warnings directly, I need to run dmesg for that and sometimes I
+forget to do it.
+
+I'm actually observing that the code that keeps track of the per task
+breakpoints is utterly broken anyway.
+
+When a child task exits: every events are removed from its context and the
+ctx removed from the task. The ctx is still alive though, it's just it has
+no more events attached and it's not attached to the task anymore. So
+counting the number of events in this context after that is totally
+buggy.
+
+If we are unlucky, this can also happen to the parent if it exits before
+the child.
+
+I have a fix, will post it very soon.
+
+Thanks.
 
