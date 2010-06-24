@@ -1,96 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab0FXDV7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 23:21:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45142 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab0FXDVz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 23:21:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=CXPU2akbkn6mpIzM5aXvk97n30CmuO+KUj8TLIhbydaPfNqkwAj8pB+pwBC3XLP3Ih
-         5PmQSpvWNvvfwZTGMHeGMVffRiClAT5e5rum83Qe3xbDMmpqgZQ2TDBwZwcSJukFHYlx
-         /PhIW9JDDv6QMIC9EegJnPgzjF/FqFLNuSxU4=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, James Simmons <jsimmons@infradead.org>,
-       linux-fbdev@vger.kernel.org, Denys Vlasenko <vda.linux@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, Denys Vlasenko <vda.linux@googlemail.com>
-Subject: [PATCH] fbcon: deinline four foo_update_attr() functions
-Date: Thu, 24 Jun 2010 05:21:46 +0200
-Message-Id: <1277349706-5195-1-git-send-email-vda.linux@googlemail.com>
-X-Mailer: git-send-email 1.6.2.5
+	id S1754710Ab0FXDWY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 23:22:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48504 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754326Ab0FXDQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 23:16:08 -0400
+Message-Id: <20100624030731.264836909@suse.de>
+User-Agent: quilt/0.48-4.4
+Date: Thu, 24 Jun 2010 13:02:47 +1000
+From: npiggin@suse.de
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+Subject: [patch 35/52] fs: icache factor hash lock into functions
+References: <20100624030212.676457061@suse.de>
+Content-Disposition: inline; filename=fs-inode_lock-scale-8.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch deinlines four similar functions, foo_update_attr(),
-in four fbcon-related files.
-These functions contain loops, two of theam have _hested_ loops,
-and they have more than one callsite each.
-I think they should not be inlined.
+Make inode_hash_lock private by adding a function __remove_inode_hash
+that can be used by filesystems defining their own drop_inode functions.
 
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+Signed-off-by: Nick Piggin <npiggin@suse.de>
 ---
- drivers/video/console/bitblit.c   |    2 +-
- drivers/video/console/fbcon_ccw.c |    2 +-
- drivers/video/console/fbcon_cw.c  |    2 +-
- drivers/video/console/fbcon_ud.c  |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ fs/inode.c                |   42 +++++++++++++++++++++++++++---------------
+ include/linux/fs.h        |    1 +
+ include/linux/writeback.h |    1 -
+ 3 files changed, 28 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/video/console/bitblit.c b/drivers/video/console/bitblit.c
-index af88651..28b1a83 100644
---- a/drivers/video/console/bitblit.c
-+++ b/drivers/video/console/bitblit.c
-@@ -22,7 +22,7 @@
+Index: linux-2.6/fs/inode.c
+===================================================================
+--- linux-2.6.orig/fs/inode.c
++++ linux-2.6/fs/inode.c
+@@ -107,7 +107,7 @@ static struct hlist_head *inode_hashtabl
+  */
+ DEFINE_SPINLOCK(sb_inode_list_lock);
+ DEFINE_SPINLOCK(wb_inode_list_lock);
+-DEFINE_SPINLOCK(inode_hash_lock);
++static DEFINE_SPINLOCK(inode_hash_lock);
+ 
  /*
-  * Accelerated handlers.
-  */
--static inline void update_attr(u8 *dst, u8 *src, int attribute,
-+static void update_attr(u8 *dst, u8 *src, int attribute,
- 			       struct vc_data *vc)
- {
- 	int i, offset = (vc->vc_font.height < 10) ? 1 : 2;
-diff --git a/drivers/video/console/fbcon_ccw.c b/drivers/video/console/fbcon_ccw.c
-index d135671..41b32ae 100644
---- a/drivers/video/console/fbcon_ccw.c
-+++ b/drivers/video/console/fbcon_ccw.c
-@@ -22,7 +22,7 @@
-  * Rotation 270 degrees
-  */
+  * iprune_sem provides exclusion between the kswapd or try_to_free_pages
+@@ -377,9 +377,7 @@ static void dispose_list(struct list_hea
  
--static inline void ccw_update_attr(u8 *dst, u8 *src, int attribute,
-+static void ccw_update_attr(u8 *dst, u8 *src, int attribute,
- 				  struct vc_data *vc)
- {
- 	int i, j, offset = (vc->vc_font.height < 10) ? 1 : 2;
-diff --git a/drivers/video/console/fbcon_cw.c b/drivers/video/console/fbcon_cw.c
-index 126110f..6a73782 100644
---- a/drivers/video/console/fbcon_cw.c
-+++ b/drivers/video/console/fbcon_cw.c
-@@ -22,7 +22,7 @@
-  * Rotation 90 degrees
-  */
+ 		spin_lock(&sb_inode_list_lock);
+ 		spin_lock(&inode->i_lock);
+-		spin_lock(&inode_hash_lock);
+-		hlist_del_init(&inode->i_hash);
+-		spin_unlock(&inode_hash_lock);
++		__remove_inode_hash(inode);
+ 		list_del_init(&inode->i_sb_list);
+ 		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&sb_inode_list_lock);
+@@ -1280,6 +1278,20 @@ void __insert_inode_hash(struct inode *i
+ EXPORT_SYMBOL(__insert_inode_hash);
  
--static inline void cw_update_attr(u8 *dst, u8 *src, int attribute,
-+static void cw_update_attr(u8 *dst, u8 *src, int attribute,
- 				  struct vc_data *vc)
+ /**
++ *	__remove_inode_hash - remove an inode from the hash
++ *	@inode: inode to unhash
++ *
++ *	Remove an inode from the superblock. inode->i_lock must be
++ *	held.
++ */
++void __remove_inode_hash(struct inode *inode)
++{
++	spin_lock(&inode_hash_lock);
++	hlist_del_init(&inode->i_hash);
++	spin_unlock(&inode_hash_lock);
++}
++
++/**
+  *	remove_inode_hash - remove an inode from the hash
+  *	@inode: inode to unhash
+  *
+@@ -1288,9 +1300,7 @@ EXPORT_SYMBOL(__insert_inode_hash);
+ void remove_inode_hash(struct inode *inode)
  {
- 	int i, j, offset = (vc->vc_font.height < 10) ? 1 : 2;
-diff --git a/drivers/video/console/fbcon_ud.c b/drivers/video/console/fbcon_ud.c
-index 93a3e73..ff0872c 100644
---- a/drivers/video/console/fbcon_ud.c
-+++ b/drivers/video/console/fbcon_ud.c
-@@ -22,7 +22,7 @@
-  * Rotation 180 degrees
-  */
+ 	spin_lock(&inode->i_lock);
+-	spin_lock(&inode_hash_lock);
+-	hlist_del_init(&inode->i_hash);
+-	spin_unlock(&inode_hash_lock);
++	__remove_inode_hash(inode);
+ 	spin_unlock(&inode->i_lock);
+ }
+ EXPORT_SYMBOL(remove_inode_hash);
+@@ -1332,11 +1342,15 @@ void generic_delete_inode(struct inode *
+ 		truncate_inode_pages(&inode->i_data, 0);
+ 		clear_inode(inode);
+ 	}
+-	spin_lock(&inode->i_lock);
+-	spin_lock(&inode_hash_lock);
+-	hlist_del_init(&inode->i_hash);
+-	spin_unlock(&inode_hash_lock);
+-	spin_unlock(&inode->i_lock);
++	/*
++	 * i_lock not required to delete from hash. If there was a
++	 * concurrency window, then it would be possible for the other
++	 * thread to touch the inode after it has been freed, with
++	 * destroy_inode.
++	 * XXX: yes it is because find_inode_fast checks it. Maybe we
++	 * can avoid it though...
++	 */
++	remove_inode_hash(inode);
+ 	wake_up_inode(inode);
+ 	BUG_ON(inode->i_state != I_CLEAR);
+ 	destroy_inode(inode);
+@@ -1377,9 +1391,7 @@ int generic_detach_inode(struct inode *i
+ 		spin_lock(&inode->i_lock);
+ 		WARN_ON(inode->i_state & I_NEW);
+ 		inode->i_state &= ~I_WILL_FREE;
+-		spin_lock(&inode_hash_lock);
+-		hlist_del_init(&inode->i_hash);
+-		spin_unlock(&inode_hash_lock);
++		__remove_inode_hash(inode);
+ 		atomic_dec(&inodes_stat.nr_unused);
+ 	}
+ 	spin_lock(&wb_inode_list_lock);
+Index: linux-2.6/include/linux/fs.h
+===================================================================
+--- linux-2.6.orig/include/linux/fs.h
++++ linux-2.6/include/linux/fs.h
+@@ -2181,6 +2181,7 @@ extern int should_remove_suid(struct den
+ extern int file_remove_suid(struct file *);
  
--static inline void ud_update_attr(u8 *dst, u8 *src, int attribute,
-+static void ud_update_attr(u8 *dst, u8 *src, int attribute,
- 				  struct vc_data *vc)
- {
- 	int i, offset = (vc->vc_font.height < 10) ? 1 : 2;
--- 
-1.6.2.5
+ extern void __insert_inode_hash(struct inode *, unsigned long hashval);
++extern void __remove_inode_hash(struct inode *);
+ extern void remove_inode_hash(struct inode *);
+ static inline void insert_inode_hash(struct inode *inode) {
+ 	__insert_inode_hash(inode, inode->i_ino);
+Index: linux-2.6/include/linux/writeback.h
+===================================================================
+--- linux-2.6.orig/include/linux/writeback.h
++++ linux-2.6/include/linux/writeback.h
+@@ -11,7 +11,6 @@ struct backing_dev_info;
+ 
+ extern spinlock_t sb_inode_list_lock;
+ extern spinlock_t wb_inode_list_lock;
+-extern spinlock_t inode_hash_lock;
+ extern struct list_head inode_in_use;
+ extern struct list_head inode_unused;
+ 
+
 
