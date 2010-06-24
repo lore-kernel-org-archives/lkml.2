@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab0FXMCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 08:02:30 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:42469 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab0FXMC3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 08:02:29 -0400
-Date: Thu, 24 Jun 2010 14:02:26 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
-       Ingo Molnar <mingo@elte.hu>, "H.PeterA" <"nvin hpa"@zytor.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] irq_work
-Message-ID: <20100624120226.GH578@basil.fritz.box>
-References: <20100624102725.GA578@basil.fritz.box>
- <1277375409.1875.943.camel@laptop>
- <20100624105254.GB578@basil.fritz.box>
- <1277377121.1875.948.camel@laptop>
- <20100624110830.GC578@basil.fritz.box>
- <1277377852.1875.950.camel@laptop>
- <20100624112040.GD578@basil.fritz.box>
- <1277379204.1875.957.camel@laptop>
- <20100624115520.GF578@basil.fritz.box>
- <1277380649.1875.962.camel@laptop>
+	id S1755278Ab0FXMCu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 08:02:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51295 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752642Ab0FXMCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 08:02:49 -0400
+Message-ID: <4C234961.4060109@suse.cz>
+Date: Thu, 24 Jun 2010 14:02:41 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277380649.1875.962.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       Jason Baron <jbaron@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Michael Ellerman <michael@ellerman.id.au>,
+       WANG Cong <xiyou.wangcong@gmail.com>, John Kacur <jkacur@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Stefani Seibold <stefani@seibold.net>
+Subject: Re: [PATCH 16/40] tags: recognize compat syscalls
+References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com> <1277287401-28571-17-git-send-email-imunsie@au1.ibm.com>
+In-Reply-To: <1277287401-28571-17-git-send-email-imunsie@au1.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 01:57:29PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-06-24 at 13:55 +0200, Andi Kleen wrote:
-> > > but we don't have anything else that does that.
-> > 
-> > Actually we do, audit in syscalls and scheduling in interrupts and signals 
-> > all work this way. Probably more at some point adding more code to this
-> > path was very popular. 
+On 23.6.2010 12:02, Ian Munsie wrote:
+> From: Jason Baron <jbaron@redhat.com>
 > 
-> That's the return to user path, nothing to do with softirqs. Add a TIF
-> flag and call your function there.
+> make tags.sh recognize the new syscall macros:
+> 
+> COMPAT_SYSCALL_DEFINE#N()
+> ARCH_COMPAT_SYSCALL_DEFINE#N()
+> 
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 
-It does that, but there are some cases where it's not enough.
+Acked-by: Michal Marek <mmarek@suse.cz>
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Michal
