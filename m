@@ -1,263 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab0FXD1O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 23:27:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35982 "EHLO mx2.suse.de"
+	id S1755166Ab0FXD1Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 23:27:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35981 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753639Ab0FXDPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753631Ab0FXDPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Jun 2010 23:15:42 -0400
-Message-Id: <20100624030725.718438579@suse.de>
+Message-Id: <20100624030726.053670212@suse.de>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 24 Jun 2010 13:02:13 +1000
+Date: Thu, 24 Jun 2010 13:02:15 +1000
 From: npiggin@suse.de
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: [patch 01/52] kernel: add bl_list
+Subject: [patch 03/52] fs: fs_struct rwlock to spinlock
 References: <20100624030212.676457061@suse.de>
-Content-Disposition: inline; filename=list-bitlock.patch
+Content-Disposition: inline; filename=fs-rwlock-to-spinlock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a type of hlist that can support the use of the lowest bit in the
-hlist_head. This will be subsequently used to implement per-bucket bit spinlock
-for inode and dentry hashes.
+struct fs_struct.lock is an rwlock with the read-side used to protect
+root and pwd members while taking references to them. Taking a reference
+to a path typically requires just 2 atomic ops, so the critical section
+is very small. Parallel read-side operations would have cacheline contention
+on the lock, the dentry, and the vfsmount cachelines, so the rwlock is
+unlikely to ever give a real parallelism increase.
+
+Replace it with a spinlock to avoid one or two atomic operations in
+typical path lookup fastpath.
 
 Signed-off-by: Nick Piggin <npiggin@suse.de>
-
 ---
- include/linux/list_bl.h    |   99 +++++++++++++++++++++++++++++++++++++
- include/linux/rculist_bl.h |  120 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 219 insertions(+)
+ drivers/staging/pohmelfs/path_entry.c |    8 +++----
+ fs/cachefiles/daemon.c                |    8 +++----
+ fs/dcache.c                           |    8 +++----
+ fs/exec.c                             |    4 +--
+ fs/fs_struct.c                        |   36 +++++++++++++++++-----------------
+ fs/namei.c                            |    8 +++----
+ fs/namespace.c                        |    4 +--
+ fs/proc/base.c                        |    4 +--
+ include/linux/fs_struct.h             |    2 -
+ kernel/auditsc.c                      |    4 +--
+ kernel/fork.c                         |   10 ++++-----
+ 11 files changed, 48 insertions(+), 48 deletions(-)
 
-Index: linux-2.6/include/linux/list_bl.h
+Index: linux-2.6/fs/dcache.c
 ===================================================================
---- /dev/null
-+++ linux-2.6/include/linux/list_bl.h
-@@ -0,0 +1,99 @@
-+#ifndef _LINUX_LIST_BL_H
-+#define _LINUX_LIST_BL_H
-+
-+#include <linux/list.h>
-+
-+/*
-+ * Special version of lists, where head of the list has a bit spinlock
-+ * in the lowest bit. This is useful for scalable hash tables without
-+ * increasing memory footprint overhead.
-+ */
-+
-+struct hlist_bl_head {
-+	struct hlist_bl_node *first;
-+};
-+
-+struct hlist_bl_node {
-+	struct hlist_bl_node *next, **pprev;
-+};
-+#define INIT_HLIST_BL_HEAD(ptr) \
-+	((ptr)->first = NULL)
-+
-+static inline void INIT_HLIST_BL_NODE(struct hlist_bl_node *h)
-+{
-+	h->next = NULL;
-+	h->pprev = NULL;
-+}
-+
-+#define hlist_bl_entry(ptr, type, member) container_of(ptr,type,member)
-+
-+static inline int hlist_bl_unhashed(const struct hlist_bl_node *h)
-+{
-+	return !h->pprev;
-+}
-+
-+static inline struct hlist_bl_node *hlist_bl_first(struct hlist_bl_head *h)
-+{
-+	return (struct hlist_bl_node *)((unsigned long)h->first & ~1UL);
-+}
-+
-+static inline void hlist_bl_set_first(struct hlist_bl_head *h, struct hlist_bl_node *n)
-+{
-+	h->first = (struct hlist_bl_node *)((unsigned long)n | ((unsigned long)h->first & 1UL));
-+}
-+
-+static inline int hlist_bl_empty(const struct hlist_bl_head *h)
-+{
-+	return !((unsigned long)h->first & ~1UL);
-+}
-+
-+static inline void hlist_bl_add_head(struct hlist_bl_node *n,
-+					struct hlist_bl_head *h)
-+{
-+	struct hlist_bl_node *first = hlist_bl_first(h);
-+
-+	n->next = first;
-+	if (first)
-+		first->pprev = &n->next;
-+	n->pprev = &h->first;
-+	hlist_bl_set_first(h, n);
-+}
-+
-+static inline void __hlist_bl_del(struct hlist_bl_node *n)
-+{
-+	struct hlist_bl_node *next = n->next;
-+	struct hlist_bl_node **pprev = n->pprev;
-+	*pprev = (struct hlist_bl_node *)((unsigned long)next | ((unsigned long)*pprev & 1UL));
-+	if (next)
-+		next->pprev = pprev;
-+}
-+
-+static inline void hlist_bl_del(struct hlist_bl_node *n)
-+{
-+	__hlist_bl_del(n);
-+	n->pprev = LIST_POISON2;
-+}
-+
-+static inline void hlist_bl_del_init(struct hlist_bl_node *n)
-+{
-+	if (!hlist_bl_unhashed(n)) {
-+		__hlist_bl_del(n);
-+		INIT_HLIST_BL_NODE(n);
-+	}
-+}
-+
-+/**
-+ * hlist_bl_for_each_entry	- iterate over list of given type
-+ * @tpos:	the type * to use as a loop cursor.
-+ * @pos:	the &struct hlist_node to use as a loop cursor.
-+ * @head:	the head for your list.
-+ * @member:	the name of the hlist_node within the struct.
-+ *
-+ */
-+#define hlist_bl_for_each_entry(tpos, pos, head, member)			\
-+	for (pos = hlist_bl_first(head);					\
-+	     pos &&								\
-+		({ tpos = hlist_bl_entry(pos, typeof(*tpos), member); 1;});	\
-+	     pos = pos->next)
-+
-+#endif
-Index: linux-2.6/include/linux/rculist_bl.h
+--- linux-2.6.orig/fs/dcache.c
++++ linux-2.6/fs/dcache.c
+@@ -2012,10 +2012,10 @@ char *d_path(const struct path *path, ch
+ 	if (path->dentry->d_op && path->dentry->d_op->d_dname)
+ 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+ 
+-	read_lock(&current->fs->lock);
++	spin_lock(&current->fs->lock);
+ 	root = current->fs->root;
+ 	path_get(&root);
+-	read_unlock(&current->fs->lock);
++	spin_unlock(&current->fs->lock);
+ 	spin_lock(&dcache_lock);
+ 	tmp = root;
+ 	res = __d_path(path, &tmp, buf, buflen);
+@@ -2110,12 +2110,12 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+-	read_lock(&current->fs->lock);
++	spin_lock(&current->fs->lock);
+ 	pwd = current->fs->pwd;
+ 	path_get(&pwd);
+ 	root = current->fs->root;
+ 	path_get(&root);
+-	read_unlock(&current->fs->lock);
++	spin_unlock(&current->fs->lock);
+ 
+ 	error = -ENOENT;
+ 	spin_lock(&dcache_lock);
+Index: linux-2.6/fs/fs_struct.c
 ===================================================================
---- /dev/null
-+++ linux-2.6/include/linux/rculist_bl.h
-@@ -0,0 +1,120 @@
-+#ifndef _LINUX_RCULIST_BL_H
-+#define _LINUX_RCULIST_BL_H
-+
-+#ifdef __KERNEL__
-+
-+/*
-+ * RCU-protected list version
-+ */
-+#include <linux/list_bl.h>
-+#include <linux/rcupdate.h>
-+
-+static inline void hlist_bl_set_first_rcu(struct hlist_bl_head *h, struct hlist_bl_node *n)
-+{
-+	rcu_assign_pointer(h->first, (struct hlist_bl_node *)((unsigned long)n | ((unsigned long)h->first & 1UL)));
-+}
-+
-+static inline struct hlist_bl_node *hlist_bl_first_rcu(struct hlist_bl_head *h)
-+{
-+	return (struct hlist_bl_node *)((unsigned long)rcu_dereference(h->first) & ~1UL);
-+}
-+
-+/**
-+ * hlist_bl_del_init_rcu - deletes entry from hash list with re-initialization
-+ * @n: the element to delete from the hash list.
-+ *
-+ * Note: hlist_bl_unhashed() on the node return true after this. It is
-+ * useful for RCU based read lockfree traversal if the writer side
-+ * must know if the list entry is still hashed or already unhashed.
-+ *
-+ * In particular, it means that we can not poison the forward pointers
-+ * that may still be used for walking the hash list and we can only
-+ * zero the pprev pointer so list_unhashed() will return true after
-+ * this.
-+ *
-+ * The caller must take whatever precautions are necessary (such as
-+ * holding appropriate locks) to avoid racing with another
-+ * list-mutation primitive, such as hlist_bl_add_head_rcu() or
-+ * hlist_bl_del_rcu(), running on this same list.  However, it is
-+ * perfectly legal to run concurrently with the _rcu list-traversal
-+ * primitives, such as hlist_bl_for_each_entry_rcu().
-+ */
-+static inline void hlist_bl_del_init_rcu(struct hlist_bl_node *n)
-+{
-+	if (!hlist_bl_unhashed(n)) {
-+		__hlist_bl_del(n);
-+		n->pprev = NULL;
-+	}
-+}
-+
-+/**
-+ * hlist_bl_del_rcu - deletes entry from hash list without re-initialization
-+ * @n: the element to delete from the hash list.
-+ *
-+ * Note: hlist_bl_unhashed() on entry does not return true after this,
-+ * the entry is in an undefined state. It is useful for RCU based
-+ * lockfree traversal.
-+ *
-+ * In particular, it means that we can not poison the forward
-+ * pointers that may still be used for walking the hash list.
-+ *
-+ * The caller must take whatever precautions are necessary
-+ * (such as holding appropriate locks) to avoid racing
-+ * with another list-mutation primitive, such as hlist_bl_add_head_rcu()
-+ * or hlist_bl_del_rcu(), running on this same list.
-+ * However, it is perfectly legal to run concurrently with
-+ * the _rcu list-traversal primitives, such as
-+ * hlist_bl_for_each_entry().
-+ */
-+static inline void hlist_bl_del_rcu(struct hlist_bl_node *n)
-+{
-+	__hlist_bl_del(n);
-+	n->pprev = LIST_POISON2;
-+}
-+
-+/**
-+ * hlist_bl_add_head_rcu
-+ * @n: the element to add to the hash list.
-+ * @h: the list to add to.
-+ *
-+ * Description:
-+ * Adds the specified element to the specified hlist_bl,
-+ * while permitting racing traversals.
-+ *
-+ * The caller must take whatever precautions are necessary
-+ * (such as holding appropriate locks) to avoid racing
-+ * with another list-mutation primitive, such as hlist_bl_add_head_rcu()
-+ * or hlist_bl_del_rcu(), running on this same list.
-+ * However, it is perfectly legal to run concurrently with
-+ * the _rcu list-traversal primitives, such as
-+ * hlist_bl_for_each_entry_rcu(), used to prevent memory-consistency
-+ * problems on Alpha CPUs.  Regardless of the type of CPU, the
-+ * list-traversal primitive must be guarded by rcu_read_lock().
-+ */
-+static inline void hlist_bl_add_head_rcu(struct hlist_bl_node *n,
-+					struct hlist_bl_head *h)
-+{
-+	struct hlist_bl_node *first = hlist_bl_first(h);
-+
-+	n->next = first;
-+	if (first)
-+		first->pprev = &n->next;
-+	n->pprev = &h->first;
-+	hlist_bl_set_first_rcu(h, n);
-+}
-+/**
-+ * hlist_bl_for_each_entry_rcu - iterate over rcu list of given type
-+ * @tpos:	the type * to use as a loop cursor.
-+ * @pos:	the &struct hlist_bl_node to use as a loop cursor.
-+ * @head:	the head for your list.
-+ * @member:	the name of the hlist_bl_node within the struct.
-+ *
-+ */
-+#define hlist_bl_for_each_entry_rcu(tpos, pos, head, member)			\
-+	for (pos = hlist_bl_first_rcu(head);					\
-+		pos &&								\
-+		({ tpos = hlist_bl_entry(pos, typeof(*tpos), member); 1; });	\
-+		pos = rcu_dereference_raw(pos->next))
-+
-+#endif
-+#endif
+--- linux-2.6.orig/fs/fs_struct.c
++++ linux-2.6/fs/fs_struct.c
+@@ -13,11 +13,11 @@ void set_fs_root(struct fs_struct *fs, s
+ {
+ 	struct path old_root;
+ 
+-	write_lock(&fs->lock);
++	spin_lock(&fs->lock);
+ 	old_root = fs->root;
+ 	fs->root = *path;
+ 	path_get(path);
+-	write_unlock(&fs->lock);
++	spin_unlock(&fs->lock);
+ 	if (old_root.dentry)
+ 		path_put(&old_root);
+ }
+@@ -30,11 +30,11 @@ void set_fs_pwd(struct fs_struct *fs, st
+ {
+ 	struct path old_pwd;
+ 
+-	write_lock(&fs->lock);
++	spin_lock(&fs->lock);
+ 	old_pwd = fs->pwd;
+ 	fs->pwd = *path;
+ 	path_get(path);
+-	write_unlock(&fs->lock);
++	spin_unlock(&fs->lock);
+ 
+ 	if (old_pwd.dentry)
+ 		path_put(&old_pwd);
+@@ -51,7 +51,7 @@ void chroot_fs_refs(struct path *old_roo
+ 		task_lock(p);
+ 		fs = p->fs;
+ 		if (fs) {
+-			write_lock(&fs->lock);
++			spin_lock(&fs->lock);
+ 			if (fs->root.dentry == old_root->dentry
+ 			    && fs->root.mnt == old_root->mnt) {
+ 				path_get(new_root);
+@@ -64,7 +64,7 @@ void chroot_fs_refs(struct path *old_roo
+ 				fs->pwd = *new_root;
+ 				count++;
+ 			}
+-			write_unlock(&fs->lock);
++			spin_unlock(&fs->lock);
+ 		}
+ 		task_unlock(p);
+ 	} while_each_thread(g, p);
+@@ -87,10 +87,10 @@ void exit_fs(struct task_struct *tsk)
+ 	if (fs) {
+ 		int kill;
+ 		task_lock(tsk);
+-		write_lock(&fs->lock);
++		spin_lock(&fs->lock);
+ 		tsk->fs = NULL;
+ 		kill = !--fs->users;
+-		write_unlock(&fs->lock);
++		spin_unlock(&fs->lock);
+ 		task_unlock(tsk);
+ 		if (kill)
+ 			free_fs_struct(fs);
+@@ -104,14 +104,14 @@ struct fs_struct *copy_fs_struct(struct
+ 	if (fs) {
+ 		fs->users = 1;
+ 		fs->in_exec = 0;
+-		rwlock_init(&fs->lock);
++		spin_lock_init(&fs->lock);
+ 		fs->umask = old->umask;
+-		read_lock(&old->lock);
++		spin_lock(&old->lock);
+ 		fs->root = old->root;
+ 		path_get(&old->root);
+ 		fs->pwd = old->pwd;
+ 		path_get(&old->pwd);
+-		read_unlock(&old->lock);
++		spin_unlock(&old->lock);
+ 	}
+ 	return fs;
+ }
+@@ -126,10 +126,10 @@ int unshare_fs_struct(void)
+ 		return -ENOMEM;
+ 
+ 	task_lock(current);
+-	write_lock(&fs->lock);
++	spin_lock(&fs->lock);
+ 	kill = !--fs->users;
+ 	current->fs = new_fs;
+-	write_unlock(&fs->lock);
++	spin_unlock(&fs->lock);
+ 	task_unlock(current);
+ 
+ 	if (kill)
+@@ -148,7 +148,7 @@ EXPORT_SYMBOL(current_umask);
+ /* to be mentioned only in INIT_TASK */
+ struct fs_struct init_fs = {
+ 	.users		= 1,
+-	.lock		= __RW_LOCK_UNLOCKED(init_fs.lock),
++	.lock		= __SPIN_LOCK_UNLOCKED(init_fs.lock),
+ 	.umask		= 0022,
+ };
+ 
+@@ -161,14 +161,14 @@ void daemonize_fs_struct(void)
+ 
+ 		task_lock(current);
+ 
+-		write_lock(&init_fs.lock);
++		spin_lock(&init_fs.lock);
+ 		init_fs.users++;
+-		write_unlock(&init_fs.lock);
++		spin_unlock(&init_fs.lock);
+ 
+-		write_lock(&fs->lock);
++		spin_lock(&fs->lock);
+ 		current->fs = &init_fs;
+ 		kill = !--fs->users;
+-		write_unlock(&fs->lock);
++		spin_unlock(&fs->lock);
+ 
+ 		task_unlock(current);
+ 		if (kill)
+Index: linux-2.6/fs/namei.c
+===================================================================
+--- linux-2.6.orig/fs/namei.c
++++ linux-2.6/fs/namei.c
+@@ -486,10 +486,10 @@ static __always_inline void set_root(str
+ {
+ 	if (!nd->root.mnt) {
+ 		struct fs_struct *fs = current->fs;
+-		read_lock(&fs->lock);
++		spin_lock(&fs->lock);
+ 		nd->root = fs->root;
+ 		path_get(&nd->root);
+-		read_unlock(&fs->lock);
++		spin_unlock(&fs->lock);
+ 	}
+ }
+ 
+@@ -1017,10 +1017,10 @@ static int path_init(int dfd, const char
+ 		path_get(&nd->root);
+ 	} else if (dfd == AT_FDCWD) {
+ 		struct fs_struct *fs = current->fs;
+-		read_lock(&fs->lock);
++		spin_lock(&fs->lock);
+ 		nd->path = fs->pwd;
+ 		path_get(&fs->pwd);
+-		read_unlock(&fs->lock);
++		spin_unlock(&fs->lock);
+ 	} else {
+ 		struct dentry *dentry;
+ 
+Index: linux-2.6/fs/namespace.c
+===================================================================
+--- linux-2.6.orig/fs/namespace.c
++++ linux-2.6/fs/namespace.c
+@@ -2208,10 +2208,10 @@ SYSCALL_DEFINE2(pivot_root, const char _
+ 		goto out1;
+ 	}
+ 
+-	read_lock(&current->fs->lock);
++	spin_lock(&current->fs->lock);
+ 	root = current->fs->root;
+ 	path_get(&current->fs->root);
+-	read_unlock(&current->fs->lock);
++	spin_unlock(&current->fs->lock);
+ 	down_write(&namespace_sem);
+ 	mutex_lock(&old.dentry->d_inode->i_mutex);
+ 	error = -EINVAL;
+Index: linux-2.6/include/linux/fs_struct.h
+===================================================================
+--- linux-2.6.orig/include/linux/fs_struct.h
++++ linux-2.6/include/linux/fs_struct.h
+@@ -5,7 +5,7 @@
+ 
+ struct fs_struct {
+ 	int users;
+-	rwlock_t lock;
++	spinlock_t lock;
+ 	int umask;
+ 	int in_exec;
+ 	struct path root, pwd;
+Index: linux-2.6/fs/exec.c
+===================================================================
+--- linux-2.6.orig/fs/exec.c
++++ linux-2.6/fs/exec.c
+@@ -1117,7 +1117,7 @@ int check_unsafe_exec(struct linux_binpr
+ 	bprm->unsafe = tracehook_unsafe_exec(p);
+ 
+ 	n_fs = 1;
+-	write_lock(&p->fs->lock);
++	spin_lock(&p->fs->lock);
+ 	rcu_read_lock();
+ 	for (t = next_thread(p); t != p; t = next_thread(t)) {
+ 		if (t->fs == p->fs)
+@@ -1134,7 +1134,7 @@ int check_unsafe_exec(struct linux_binpr
+ 			res = 1;
+ 		}
+ 	}
+-	write_unlock(&p->fs->lock);
++	spin_unlock(&p->fs->lock);
+ 
+ 	return res;
+ }
+Index: linux-2.6/fs/proc/base.c
+===================================================================
+--- linux-2.6.orig/fs/proc/base.c
++++ linux-2.6/fs/proc/base.c
+@@ -156,10 +156,10 @@ static int get_fs_path(struct task_struc
+ 	task_lock(task);
+ 	fs = task->fs;
+ 	if (fs) {
+-		read_lock(&fs->lock);
++		spin_lock(&fs->lock);
+ 		*path = root ? fs->root : fs->pwd;
+ 		path_get(path);
+-		read_unlock(&fs->lock);
++		spin_unlock(&fs->lock);
+ 		result = 0;
+ 	}
+ 	task_unlock(task);
+Index: linux-2.6/kernel/fork.c
+===================================================================
+--- linux-2.6.orig/kernel/fork.c
++++ linux-2.6/kernel/fork.c
+@@ -752,13 +752,13 @@ static int copy_fs(unsigned long clone_f
+ 	struct fs_struct *fs = current->fs;
+ 	if (clone_flags & CLONE_FS) {
+ 		/* tsk->fs is already what we want */
+-		write_lock(&fs->lock);
++		spin_lock(&fs->lock);
+ 		if (fs->in_exec) {
+-			write_unlock(&fs->lock);
++			spin_unlock(&fs->lock);
+ 			return -EAGAIN;
+ 		}
+ 		fs->users++;
+-		write_unlock(&fs->lock);
++		spin_unlock(&fs->lock);
+ 		return 0;
+ 	}
+ 	tsk->fs = copy_fs_struct(fs);
+@@ -1675,13 +1675,13 @@ SYSCALL_DEFINE1(unshare, unsigned long,
+ 
+ 		if (new_fs) {
+ 			fs = current->fs;
+-			write_lock(&fs->lock);
++			spin_lock(&fs->lock);
+ 			current->fs = new_fs;
+ 			if (--fs->users)
+ 				new_fs = NULL;
+ 			else
+ 				new_fs = fs;
+-			write_unlock(&fs->lock);
++			spin_unlock(&fs->lock);
+ 		}
+ 
+ 		if (new_mm) {
+Index: linux-2.6/drivers/staging/pohmelfs/path_entry.c
+===================================================================
+--- linux-2.6.orig/drivers/staging/pohmelfs/path_entry.c
++++ linux-2.6/drivers/staging/pohmelfs/path_entry.c
+@@ -44,9 +44,9 @@ int pohmelfs_construct_path_string(struc
+ 		return -ENOENT;
+ 	}
+ 
+-	read_lock(&current->fs->lock);
++	spin_lock(&current->fs->lock);
+ 	path.mnt = mntget(current->fs->root.mnt);
+-	read_unlock(&current->fs->lock);
++	spin_unlock(&current->fs->lock);
+ 
+ 	path.dentry = d;
+ 
+@@ -91,9 +91,9 @@ int pohmelfs_path_length(struct pohmelfs
+ 		return -ENOENT;
+ 	}
+ 
+-	read_lock(&current->fs->lock);
++	spin_lock(&current->fs->lock);
+ 	root = dget(current->fs->root.dentry);
+-	read_unlock(&current->fs->lock);
++	spin_unlock(&current->fs->lock);
+ 
+ 	spin_lock(&dcache_lock);
+ 
+Index: linux-2.6/fs/cachefiles/daemon.c
+===================================================================
+--- linux-2.6.orig/fs/cachefiles/daemon.c
++++ linux-2.6/fs/cachefiles/daemon.c
+@@ -574,9 +574,9 @@ static int cachefiles_daemon_cull(struct
+ 
+ 	/* extract the directory dentry from the cwd */
+ 	fs = current->fs;
+-	read_lock(&fs->lock);
++	spin_lock(&fs->lock);
+ 	dir = dget(fs->pwd.dentry);
+-	read_unlock(&fs->lock);
++	spin_unlock(&fs->lock);
+ 
+ 	if (!S_ISDIR(dir->d_inode->i_mode))
+ 		goto notdir;
+@@ -650,9 +650,9 @@ static int cachefiles_daemon_inuse(struc
+ 
+ 	/* extract the directory dentry from the cwd */
+ 	fs = current->fs;
+-	read_lock(&fs->lock);
++	spin_lock(&fs->lock);
+ 	dir = dget(fs->pwd.dentry);
+-	read_unlock(&fs->lock);
++	spin_unlock(&fs->lock);
+ 
+ 	if (!S_ISDIR(dir->d_inode->i_mode))
+ 		goto notdir;
+Index: linux-2.6/kernel/auditsc.c
+===================================================================
+--- linux-2.6.orig/kernel/auditsc.c
++++ linux-2.6/kernel/auditsc.c
+@@ -1838,10 +1838,10 @@ void __audit_getname(const char *name)
+ 	context->names[context->name_count].osid = 0;
+ 	++context->name_count;
+ 	if (!context->pwd.dentry) {
+-		read_lock(&current->fs->lock);
++		spin_lock(&current->fs->lock);
+ 		context->pwd = current->fs->pwd;
+ 		path_get(&current->fs->pwd);
+-		read_unlock(&current->fs->lock);
++		spin_unlock(&current->fs->lock);
+ 	}
+ 
+ }
 
 
