@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab0FXNBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 09:01:37 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:35433 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754810Ab0FXNB0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755388Ab0FXNB0 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 24 Jun 2010 09:01:26 -0400
-Date: Thu, 24 Jun 2010 18:31:09 +0530
-From: Rabin VINCENT <rabin.vincent@stericsson.com>
-To: Luotao Fu <l.fu@pengutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
-Subject: Re: [PATCH 6/6 V4] input: STMPE touch controller support
-Message-ID: <20100624130108.GE26189@bnru02.bnr.st.com>
-References: <20100622135635.GA30720@bnru02.bnr.st.com>
- <1277378021-16802-7-git-send-email-l.fu@pengutronix.de>
- <20100624123153.GB26189@bnru02.bnr.st.com>
- <20100624124210.GC3988@pengutronix.de>
+Received: from mx1.redhat.com ([209.132.183.28]:25248 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755214Ab0FXNBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 09:01:25 -0400
+Date: Thu, 24 Jun 2010 14:59:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [PATCH 1/1] pid_ns: move pid_ns_release_proc() from
+	proc_flush_task() to zap_pid_ns_processes()
+Message-ID: <20100624125933.GA7257@redhat.com>
+References: <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <20100623203652.GA25298@redhat.com> <20100623203735.GB25298@redhat.com> <20100624063630.GB3016@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100624124210.GC3988@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100624063630.GB3016@us.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 14:42:10 +0200, Luotao Fu wrote:
-> On Thu, Jun 24, 2010 at 06:01:53PM +0530, Rabin VINCENT wrote:
-> > On Thu, Jun 24, 2010 at 13:13:41 +0200, Luotao Fu wrote:
-> > > +       ret = stmpe_set_bits(stmpe, STMPE_REG_TSC_FRACTION_Z,
-> > > +                       FRACTION_Z(ts->fraction_z),
-> > > +                       FRACTION_Z(ts->fraction_z));
-> > 
-> > I think your earlier revisions had this same behaviour, but this only
-> > writes the bits you are trying to set, and it may be a problem if there
-> > are other bits already set in this field.  I don't know if this is a
-> > concern with this block, but if it is, you can do something like the
-> > following to clear out the field before writing:
-> > 
-> 
-> This is done intentionally to leave the bits alone which I don't want.
-> Most of the registers here are used exclusively for the touchscreen.
-> Some others are shared with the ADC. The ADC however doesn't have any
-> own configuration and has to go with the configuration of the touch
-> screen. Hence it's OK, even probably better not to touch the bits we
-> don't need.
+On 06/23, Sukadev Bhattiprolu wrote:
+>
+> Oleg Nesterov [oleg@redhat.com] wrote:
+> | This is mostly cleanup and optimization, but also fixes the bug.
+> |
+> | proc_flush_task() checks upid->nr == 1 to detect the case when
+> | a sub-namespace exits. However, this doesn't work in case when
+> | a multithreaded init execs and calls release_task(old_leader),
+> | the old leader has the same pid 1.
+> |
+> | Move pid_ns_release_proc() to zap_pid_ns_processes(), it is called
+> | when we know for sure that init is exiting.
+>
+> Hmm, I almost agreed, but have a question :-)
+>
+> Yes, we know that the container-init is exiting. But if its parent (in
+> the parent ns) waits on it and calls release_task(), won't we call
+> proc_flush_task_mnt() on this container-init ? This would happen after
+> dropping the mnt in zap_pid_ns_processes() no ?
 
-I meant something like: let's say you want to change the "count of the
-fractional part" (I quote from your platdata).  It (the FRACTION_Z
-field, I assume) has a default value of (say) 2.  Say you want to change
-the count to 1.  The above write will change it to 3 instead.  If this
-is really the behaviour you need, it should be OK then.
+Indeed. Thanks!
 
-Rabin
+Somehow I forgot that init itself has not passed proc_flush_task().
+
+Oleg.
+
