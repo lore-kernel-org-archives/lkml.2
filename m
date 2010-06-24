@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab0FXOlF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 10:41:05 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59435 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755568Ab0FXOiw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 10:38:52 -0400
-Message-Id: <20100624142804.431553874@chello.nl>
-User-Agent: quilt/0.47-1
-Date: Thu, 24 Jun 2010 16:28:04 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 00/11] perf pmu interface -v2
+	id S1755634Ab0FXOmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 10:42:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57244 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755464Ab0FXOme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 10:42:34 -0400
+Date: Fri, 25 Jun 2010 00:42:28 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 01/52] kernel: add bl_list
+Message-ID: <20100624144228.GC10441@laptop>
+References: <20100624030212.676457061@suse.de>
+ <20100624030725.718438579@suse.de>
+ <1277359462.3471.1156.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1277359462.3471.1156.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches prepare the perf code for multiple pmus (no user
-interface yet, Lin Ming is working on that). These patches remove all
-weak functions and rework the struct pmu interface.
+On Thu, Jun 24, 2010 at 08:04:22AM +0200, Eric Dumazet wrote:
+> Le jeudi 24 juin 2010 à 13:02 +1000, npiggin@suse.de a écrit :
+> > +static inline void hlist_bl_set_first(struct hlist_bl_head *h, struct hlist_bl_node *n)
+> > +{
+> > +	h->first = (struct hlist_bl_node *)((unsigned long)n | ((unsigned long)h->first & 1UL));
+> 
+> Hmm, shouldnt hlist_bl_set_first() be used only with bit lock held ?
+> 
+> 	h->first = (struct hlist_bl_node *)((unsigned long)n | 1UL);
+> > +}
 
-The patches are boot tested on x86_64 and compile tested on: powerpc
-(!fsl, what config is that?), sparc and arm (sorry no SH compiler)
+I had it that way but changed it for some reason. Thinking about it
+again though, you're right I'm sure (it could have been some other
+bug in my code making me think I needed it).
 
-On x86 perf stat and record with both software and hardware events still worked.
+Thanks.
 
-I changed all (hardware) pmu implementations so there's a fair chance I messed
-something up, please have a look at it.
+> > +static inline void hlist_bl_set_first_rcu(struct hlist_bl_head *h, struct hlist_bl_node *n)
+> > +{
+> > +	rcu_assign_pointer(h->first, (struct hlist_bl_node *)((unsigned long)n | ((unsigned long)h->first & 1UL)));
+> 
+> Same question here.
+> 
+> > +}
+> > +
+> > +static inline struct hlist_bl_node *hlist_bl_first_rcu(struct hlist_bl_head *h)
+> > +{
+> > +	return (struct hlist_bl_node *)((unsigned long)rcu_dereference(h->first) & ~1UL);
+> > +}
+> 
+> 
+> Looks really nice Nick, maybe we should push this so that other
+> subsystem can start using it.
 
-If people agree with this, I'll continue with the per-pmu context stuff I
-talked about last time, which should get us the hardware write batching back.
+Sure, if you have an interest in using it, it will be trivial to send
+upstream. Should we merge it before any users appear? I don't know...
 
