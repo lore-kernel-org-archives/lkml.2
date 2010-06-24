@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab0FXRTB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 13:19:01 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:63889 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab0FXRTA (ORCPT
+	id S1754634Ab0FXRWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 13:22:22 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:42150 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab0FXRWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 13:19:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=t9+ziWFGw3f2eTDYBe4N8NHREjXwAtIwGmbjcXAuE0iGC2gOXTy5qzpgS3QO3IzxHy
-         xt77gRfdl3Z0JRhu9F+DV1skmzDMhFJu1hlsnUeVYx7m7RiFc5tTWKeNANgGE6z0vfpT
-         /7/HYfB2USSKVSVZq47kb4A4aXXOsVLiLelo8=
-Subject: RE: TCP stream performance regression due to
- c377411f2494a931ff7facdbb3a6839b1266bcf6
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Zhang, Yanmin" <yanmin.zhang@intel.com>
-Cc: "Shi, Alex" <alex.shi@intel.com>, davem@davemloft.net,
-       "Chen, Tim C" <tim.c.chen@intel.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <33AB447FBD802F4E932063B962385B351F483A15@shsmsx501.ccr.corp.intel.com>
-References: <1276845448.2118.346.camel@debian>
-	 <33AB447FBD802F4E932063B962385B351F483A15@shsmsx501.ccr.corp.intel.com>
+	Thu, 24 Jun 2010 13:22:21 -0400
+Subject: Re: [patch 16/52] fs: dcache RCU for multi-step operaitons
+From: john stultz <johnstul@us.ibm.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Frank Mayhar <fmayhar@google.com>
+In-Reply-To: <20100624150334.GE10441@laptop>
+References: <20100624030212.676457061@suse.de>
+	 <20100624030728.129875799@suse.de> <1277366290.1875.891.camel@laptop>
+	 <20100624150334.GE10441@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Jun 2010 19:18:54 +0200
-Message-ID: <1277399934.2816.659.camel@edumazet-laptop>
+Date: Thu, 24 Jun 2010 10:22:11 -0700
+Message-ID: <1277400131.15264.29.camel@work-vm>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 18 juin 2010 à 16:26 +0800, Zhang, Yanmin a écrit :
-> More info about the testing:
-> It's a loopback testing. We start one client netperf process to communicate with netserver process in a stream TCP testing. To reduce the cpu cache effect, we bind the 2 processes on 2 different physical cpus.
-> #taskset -c 0 ./netserver
-> #taskset -c 15 ./netperf -t TCP_STREAM -l 60 -H 127.0.0.1 -i 50,3 -I 99,5 -- -s 57344 -S 57344 -m 4096
+On Fri, 2010-06-25 at 01:03 +1000, Nick Piggin wrote:
+> On Thu, Jun 24, 2010 at 09:58:10AM +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-06-24 at 13:02 +1000, npiggin@suse.de wrote:
+> > > plain text document attachment (fs-dcache_lock-multi-step.patch)
+> > > The remaining usages for dcache_lock is to allow atomic, multi-step read-side
+> > > operations over the directory tree by excluding modifications to the tree.
+> > > Also, to walk in the leaf->root direction in the tree where we don't have
+> > > a natural d_lock ordering.
+> > > 
+> > > This could be accomplished by taking every d_lock, but this would mean a
+> > > huge number of locks and actually gets very tricky.
+> > > 
+> > > Solve this instead by using the rename seqlock for multi-step read-side
+> > > operations. Insert operations are not serialised. Delete operations are
+> > > tricky when walking up the directory our parent might have been deleted
+> > > when dropping locks so also need to check and retry for that.
+> > > 
+> > > XXX: hmm, we could of course just take the rename lock if there is any worry
+> > > about livelock. Most of these are slow paths.
+> > 
+> > 
+> > Ah, does this address John's issue? 
 > 
+> This is where John's issue is introduced. I actually again couldn't
+> see the problem (thought I saw a problem, then lost it!).
 
-Thanks guys
+Ok. So I need to review this new set in full, but the issue we tripped
+with the patches in -rt was the following:
 
-We corrected a proven vulnerability in network stack.
+In select parent, when it does the dentry ascending, it has to release
+the current dentry lock so it can aquire the parents dentry (for proper
+ordering). At the point it released the lock, before it grabs the
+parent's lock, there is nothing that is preventing dput from being
+called on the next dentry, it grabbing the parent and dentry's d_lock
+and killing it. Then back in select_parent, when we try to lock the next
+entry, it no longer exists and we oops.
 
-If you want better netperf results, just increase size of your sockets
-buffers.  57344 is _very_ low for localhost communication, given lo MTU
-is 16436.
-
-As we also increased skb->truesize lately, you might also increase
-buffer size regardless of this (net: sk_add_backlog() take rmem_alloc
-into account) commit.
-
-In my case, I saw following improvement :
-
-Under huge stress from a multiqueue/RPS enabled NIC, a single flow udp
-receiver can now process ~200.000 pps (instead of ~100 pps before the
-patch) on a 8 core machine.
-
-Thats a 200.000 % increase, in a situation no tuning was possible ;)
+So I can't see anything that is protecting the dentry (or even the new
+parent dentry, should everything be killed under it) at this point. The
+dentries d_count might be zero, we don't hold the d_lock, and we don't
+hold the parent's d_lock. What am I missing here?
 
 
-> >>-----Original Message-----
-> >>From: Shi, Alex
-> >>Sent: 2010年6月18日 15:17
-> >>To: eric.dumazet@gmail.com; davem@davemloft.net
-> >>Cc: Chen, Tim C; Zhang, Yanmin; linux-kernel@vger.kernel.org
-> >>Subject: TCP stream performance regression due to
-> >>c377411f2494a931ff7facdbb3a6839b1266bcf6
-> >>
-> >>In our netperf testing, TCP_STREAM56 shows about 20% or more performance
-> >>regression on WSM/NHM and tigerton machines. The testing boot up both
-> >>netserver and client on localhost. The testing command like this:
-> >>./snapshot_script_net TC_STREAM56 127.0.0.1
-> >>
-> >>We found the following commit causes this issue.
-> >>c377411f2494a931ff7facdbb3a6839b1266bcf6
-> >>Revert this commit will recover this regression on all machine.
-> >>
-> >>Regards!
-> >>Alex
-> 
+> Got to think about it and test more... I couldn't reproduce the problem
+> mind you, but I was testing mainline wheras bug was seen on -rt.
+
+Yea, -rt may be allowing the race to more easily occur (I only found I
+could trigger it on a UP machine) since we can be preempted right after
+we released the dentry lock as we tried to grab the parent. Then dput
+would jump in and wreck things. I had some pretty clear trace logs that
+were easily repeated (well, took about an hour or two to trigger), that
+showed about the same order of operations every time.
+
+I don't remember if there's another lock being held at the point
+select_parent is called, so on mainline it might be harder to trigger
+(having to actually get the dput race on another cpu timed right).
+
+
+thanks
+-john
 
 
