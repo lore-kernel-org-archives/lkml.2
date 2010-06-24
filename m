@@ -1,117 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab0FXPj4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 11:39:56 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54706 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab0FXPjy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 11:39:54 -0400
-Date: Thu, 24 Jun 2010 17:41:24 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Huang Ying <ying.huang@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Borislav Petkov <petkovbb@googlemail.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mauro@elte.hu" <mauro@elte.hu>
-Subject: Re: [RFC][PATCH] irq_work
-Message-ID: <20100624154124.GA6647@aftab>
-References: <20100624110830.GC578@basil.fritz.box>
- <1277377852.1875.950.camel@laptop>
- <20100624112340.GA13502@elte.hu>
- <1277379294.1875.959.camel@laptop>
- <20100624123537.GA28884@elte.hu>
- <20100624130234.GM578@basil.fritz.box>
- <20100624132032.GA4474@kryptos.osrc.amd.com>
- <20100624133323.GN578@basil.fritz.box>
- <20100624134609.GB30323@elte.hu>
- <20100624140143.GO578@basil.fritz.box>
+	id S1755925Ab0FXPkY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 11:40:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51899 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755891Ab0FXPkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 11:40:22 -0400
+Date: Thu, 24 Jun 2010 17:40:02 +0200 (CEST)
+From: John Kacur <jkacur@redhat.com>
+X-X-Sender: jkacur@localhost.localdomain
+To: Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       john stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
+cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Subject: lockdep "splat" on v2.6.33.5-rt23
+Message-ID: <alpine.LFD.2.00.1006241725550.22940@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100624140143.GO578@basil.fritz.box>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <andi@firstfloor.org>
-Date: Thu, Jun 24, 2010 at 10:01:43AM -0400
+I believe this is related to the dcache scale discussion thread. I've 
+shown this to Peter privately, but thought it would be useful to share it 
+with everyone so we all have the same info.
+The kernel is from tip/rt/2.6.33 up to commit 
+faf35813f204901f85dd0c6b3c5092e0064c6c2f
+It has a lot of debug options enabled, but is not modified.
+The "splat" is very easy to reproduce, it simply occurs when I 
+boot the kernel on my T500.
 
-> > Please, as Peter and Boris asked you already, quote a concrete, specific 
-> > example:
-> 
-> It was already in my answer to Peter.
-> 
-> > 
-> >   'Specific event X occurs, kernel wants/needs to do Y. This cannot be done
-> >    via the suggested method due to Z.'
-> > 
-> > Your generic arguments look wrong (to the extent they are specified) and it 
-> > makes it much easier and faster to address your points if you dont blur them 
-> > by vagaries.
-> 
-> It's one of the fundamental properties of recoverable errors.
-> 
-> Error happens.
-> Machine check or NMI or other exception happens. 
-> 	That exception runs on the exception stack
-> 	The error is not fatal, but recoverable.
-> For example you want to kill a process or call hwpoison or do some other
-> 	recovery action. These generally have to sleep to do anything
-> 	interesting.
-> You cannot do the sleeping on the exception stack, so you push it to
-> another context.
-> 
-> Now just because an error is recoverable doesn't mean it's not critical
-> (I think that was the mistake Boris made).
+=============================================
+[ INFO: possible recursive locking detected ]
+2.6.33.5-rt23-tip-debug #3
+---------------------------------------------
+init/1 is trying to acquire lock:
+ (&dentry->d_lock/1){+.+...}, at: [<ffffffff811981be>] 
+shrink_dcache_parent+0x10f/0x2eb
 
-It wasn't a mistake - I was simply trying to lure you into giving a more
-concrete example so that we all land on the same page and we know what
-the heck you/we/all are talking about.
+but task is already holding lock:
+ (&dentry->d_lock/1){+.+...}, at: [<ffffffff811981be>] 
+shrink_dcache_parent+0x10f/0x2eb
 
-> If you don't do something
-> (like killing or recovery) you could end up in a loop or consume
-> corrupted data or something else bad. 
-> 
-> So the error has to have a fail safe path from detection to handling.
+other info that might help us debug this:
+2 locks held by init/1:
+ #0:  (&dentry->d_lock){+.+...}, at: [<ffffffff8119818e>] 
+shrink_dcache_parent+0xdf/0x2eb
+ #1:  (&dentry->d_lock/1){+.+...}, at: [<ffffffff811981be>] 
+shrink_dcache_parent+0x10f/0x2eb
 
-So we are talking about a more involved and "could-sleep" error
-recovery.
+stack backtrace:
+Pid: 1, comm: init Not tainted 2.6.33.5-rt23-tip-debug #3
+Call Trace:
+ [<ffffffff810a68e2>] __lock_acquire+0xcb9/0xd35
+ [<ffffffff811981be>] ? shrink_dcache_parent+0x10f/0x2eb
+ [<ffffffff810a701c>] lock_acquire+0xd4/0xf1
+ [<ffffffff811981be>] ? shrink_dcache_parent+0x10f/0x2eb
+ [<ffffffff81521006>] rt_spin_lock_nested+0x3d/0x44
+ [<ffffffff811981be>] ? shrink_dcache_parent+0x10f/0x2eb
+ [<ffffffff81193456>] ? dentry_lru_del_init+0x3e/0xa8
+ [<ffffffff8119818e>] ? shrink_dcache_parent+0xdf/0x2eb
+ [<ffffffff811981be>] shrink_dcache_parent+0x10f/0x2eb
+ [<ffffffff811f59a4>] proc_flush_task+0xd4/0x26f
+ [<ffffffff81065ea7>] release_task+0x47/0x650
+ [<ffffffff81066e6a>] wait_consider_task+0x9ba/0x10b4
+ [<ffffffff810676e1>] do_wait+0x17d/0x38b
+ [<ffffffff810679e5>] sys_wait4+0xf6/0x119
+ [<ffffffff810037cc>] ? sysret_check+0x27/0x62
+ [<ffffffff810652a4>] ? child_wait_callback+0x0/0xa5
+ [<ffffffff8100379b>] system_call_fastpath+0x16/0x1b
 
-> That's quite different from logging or performance counting etc.
-> where dropping events on overload is normal and expected.
+[jkacur@tycho tip-rt-2.6.33]$ addr2line -e vmlinux ffffffff811981be
+/home/jkacur/rt.linux.git/fs/dcache.c:1033
+[jkacur@tycho tip-rt-2.6.33]$ addr2line -e vmlinux ffffffff8119818e
+/home/jkacur/rt.linux.git/fs/dcache.c:1023
 
-So I went back and reread the whole thread, and correct me if I'm
-wrong but the whole run softirq after NMI has one use case for now -
-"could-sleep" error handling for MCEs _only_ on x86. So you're changing
-a bunch of generic and x86 kernel code just for error handling. Hmm,
-that's a kinda big hammer in my book.
+So that is function static int select_parent(struct dentry * parent)
 
-A slimmer solution is a much better way to go, IMHO. I think Peter said
-something about irq_exit(), which should be just fine.
+line 1023 is
+spin_lock(&this_parent->d_lock);
 
-But AFAICT an arch-specific solution would be even better, e.g.
-if you call into your deferred work helper from paranoid_exit in
-<arch/x86/kernel/entry_64.S>. I.e, something like
+and lines 1032 and 1033 are
+spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+dentry_lru_del_init(dentry);
 
-#ifdef CONFIG_X86_MCE
-testl $_TIF_NEED_POST_NMI,%ebx
-jnz do_post_nmi_work
-#endif
+If there is any other info I can provide to help solve this, or testing 
+etc, pls let me know!
 
-Or even slimmer, rewrite the paranoidzeroentry to a MCE-specific variant
-which does the added functionality. But that wouldn't be extensible if
-other entities want post-NMI work later.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+John Kacur
