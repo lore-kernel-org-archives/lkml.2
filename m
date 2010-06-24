@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab0FXOiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 10:38:52 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59393 "EHLO
+	id S1755670Ab0FXOlF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 10:41:05 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59435 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755470Ab0FXOiv (ORCPT
+	with ESMTP id S1755568Ab0FXOiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 10:38:51 -0400
-Message-Id: <20100624143406.993794468@chello.nl>
+	Thu, 24 Jun 2010 10:38:52 -0400
+Message-Id: <20100624142804.431553874@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Thu, 24 Jun 2010 16:28:13 +0200
+Date: Thu, 24 Jun 2010 16:28:04 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
        Robert Richter <robert.richter@amd.com>,
@@ -20,113 +20,23 @@ To: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
        David Miller <davem@davemloft.net>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 09/11] perf: Default PMU ops
-References: <20100624142804.431553874@chello.nl>
-Content-Disposition: inline; filename=perf-default-ops.patch
+Subject: [RFC][PATCH 00/11] perf pmu interface -v2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide default implementations for the pmu txn methods, this allows
-us to remove some conditional code.
+These patches prepare the perf code for multiple pmus (no user
+interface yet, Lin Ming is working on that). These patches remove all
+weak functions and rework the struct pmu interface.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/perf_event.c |   48 ++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 36 insertions(+), 12 deletions(-)
+The patches are boot tested on x86_64 and compile tested on: powerpc
+(!fsl, what config is that?), sparc and arm (sorry no SH compiler)
 
-Index: linux-2.6/kernel/perf_event.c
-===================================================================
---- linux-2.6.orig/kernel/perf_event.c
-+++ linux-2.6/kernel/perf_event.c
-@@ -656,21 +656,14 @@ group_sched_in(struct perf_event *group_
- {
- 	struct perf_event *event, *partial_group = NULL;
- 	struct pmu *pmu = group_event->pmu;
--	bool txn = false;
- 
- 	if (group_event->state == PERF_EVENT_STATE_OFF)
- 		return 0;
- 
--	/* Check if group transaction availabe */
--	if (pmu->start_txn)
--		txn = true;
--
--	if (txn)
--		pmu->start_txn(pmu);
-+	pmu->start_txn(pmu);
- 
- 	if (event_sched_in(group_event, cpuctx, ctx)) {
--		if (txn)
--			pmu->cancel_txn(pmu);
-+		pmu->cancel_txn(pmu);
- 		return -EAGAIN;
- 	}
- 
-@@ -684,7 +677,7 @@ group_sched_in(struct perf_event *group_
- 		}
- 	}
- 
--	if (!txn || !pmu->commit_txn(pmu))
-+	if (!pmu->commit_txn(pmu))
- 		return 0;
- 
- group_error:
-@@ -699,8 +692,7 @@ group_error:
- 	}
- 	event_sched_out(group_event, cpuctx, ctx);
- 
--	if (txn)
--		pmu->cancel_txn(pmu);
-+	pmu->cancel_txn(pmu);
- 
- 	return -EAGAIN;
- }
-@@ -4755,6 +4747,26 @@ static struct list_head pmus;
- static DEFINE_MUTEX(pmus_lock);
- static struct srcu_struct pmus_srcu;
- 
-+static void perf_pmu_nop(struct pmu *pmu)
-+{
-+}
-+
-+static void perf_pmu_start_txn(struct pmu *pmu)
-+{
-+	perf_pmu_disable(pmu);
-+}
-+
-+static int perf_pmu_commit_txn(struct pmu *pmu)
-+{
-+	perf_pmu_enable(pmu);
-+	return 0;
-+}
-+
-+static void perf_pmu_cancel_txn(struct pmu *pmu)
-+{
-+	perf_pmu_enable(pmu);
-+}
-+
- int perf_pmu_register(struct pmu *pmu)
- {
- 	int ret;
-@@ -4764,6 +4776,18 @@ int perf_pmu_register(struct pmu *pmu)
- 	pmu->pmu_disable_count = alloc_percpu(int);
- 	if (!pmu->pmu_disable_count)
- 		goto unlock;
-+
-+	if (!pmu->pmu_enable) {
-+		pmu->pmu_enable  = perf_pmu_nop;
-+		pmu->pmu_disable = perf_pmu_nop;
-+	}
-+
-+	if (!pmu->start_txn) {
-+		pmu->start_txn  = perf_pmu_start_txn;
-+		pmu->commit_txn = perf_pmu_commit_txn;
-+		pmu->cancel_txn = perf_pmu_cancel_txn;
-+	}
-+
- 	list_add_rcu(&pmu->entry, &pmus);
- 	ret = 0;
- unlock:
+On x86 perf stat and record with both software and hardware events still worked.
 
+I changed all (hardware) pmu implementations so there's a fair chance I messed
+something up, please have a look at it.
+
+If people agree with this, I'll continue with the per-pmu context stuff I
+talked about last time, which should get us the hardware write batching back.
 
