@@ -1,91 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab0FXHpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 03:45:11 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64819 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab0FXHpI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 03:45:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=B8WZUDvldX1r2GHZb0vvzHWpsrXbmQ+YL+C/0r7r0budNBUu1HzgGXeLXJPl09BW+t
-         L6mnE64+0Mxlyv5qzjClTBkIJvgt16kMc9Lh84DdlqREFb4n0T/LR9rBUQRsa4Zno/yy
-         WzdQtNHHc7eWmTk1mt0TKKIvW3NCyFkT/kmas=
-MIME-Version: 1.0
-In-Reply-To: <4C2305F9.5010306@gmail.com>
-References: <AANLkTimYUy0tCvGHf_Qtz0tUG7XVms9i3MOz03m28Jin@mail.gmail.com>
-	<AANLkTilXIkZM8tHX3QCP9A9LpVbmezaa5_PJdQfVU-w7@mail.gmail.com>
-	<4C2305F9.5010306@gmail.com>
-Date: Thu, 24 Jun 2010 15:45:07 +0800
-Message-ID: <AANLkTik5H_rQ2tPO6h3UtslOVzGQo-qoKW_YD8hULAA3@mail.gmail.com>
-Subject: Re: 2.6.35-rc3 -- kernel BUG at mm/vmalloc.c:216! - invalid opcode: 
-	0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>, Cliff Wickman <cpw@sgi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754003Ab0FXHsv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 03:48:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51604 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753372Ab0FXHsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 03:48:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,472,1272870000"; 
+   d="scan'208";a="811020738"
+Subject: [PATCH] ACPI, APEI, Rename CPER and GHES severity constants
+ (resend)
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>, Andi Kleen <ak@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Jun 2010 15:48:48 +0800
+Message-ID: <1277365728.3947.80.camel@yhuang-dev.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 3:15 PM, Tejun Heo <htejun@gmail.com> wrote:
-> Hello,
->
-> On 06/24/2010 07:22 AM, Xiaotian Feng wrote:
->> I can reproduce it with the same ...
->>
->>> [ 1046.984453] kernel BUG at mm/vmalloc.c:216!
->>> [ 1046.984463] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->>> [ 1046.984484] last sysfs file: /sys/devices/system/cpu/cpu1/crash_notes
->>> [ 1046.984495] Modules linked in: aes_i586 aes_generic binfmt_misc
->>> ipv6 snd_hda_codec_realtek arc4 snd_hda_intel ecb snd_hda_codec ath9k
->>> snd_hwdep snd_pcm_oss ath9k_common snd_mixer_oss ath9k_hw snd_pcm
->>> snd_seq_dummy ath snd_seq_oss snd_seq_midi snd_rawmidi mac80211
->>> snd_seq_midi_event snd_seq snd_timer cfg80211 snd_seq_device rtc_cmos
->>> snd rtc_core rtc_lib snd_page_alloc rng_core led_class processor
->>> battery ac sg uhci_hcd ehci_hcd sd_mod usbcore thermal
->>> [ 1046.984668]
->>> [ 1046.984680] Pid: 15038, comm: head Not tainted 2.6.35-rc3 #1 1000HE/1000HE
->>> [ 1046.984691] EIP: 0060:[<c10985de>] EFLAGS: 00010246 CPU: 0
->>> [ 1046.984705] EIP is at vmalloc_to_page+0x16/0xd1
->>> [ 1046.984714] EAX: 00000000 EBX: c1527000 ECX: c6e0b2a8 EDX: f7ffe000
->>> [ 1046.984725] ESI: c6e0b2a8 EDI: c133234c EBP: d6645f20 ESP: d6645f18
->>> [ 1046.984736]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
->>> [ 1046.984748] Process head (pid: 15038, ti=d6645000 task=ca6c6900
->>> task.ti=d6645000)
->>> [ 1046.984757] Stack:
->>> [ 1046.984764]  d6644000 c6e0341c d6645f28 c10a3423 d6645f34 c1204bf8
->>> c1204bdc d6645f44
->>> [ 1046.984800] <0> c1201ebc c93ea400 f70a12c0 d6645f70 c10e594f
->>> c112b2df 00002000 bfa194ec
->>> [ 1046.984840] <0> 00000000 c93ea414 c133234c e07cd600 bfa194ec
->>> c10e58c1 d6645f8c c10a6223
->>> [ 1046.984883] Call Trace:
->>> [ 1046.984902]  [<c10a3423>] ? per_cpu_ptr_to_phys+0x5b/0x74
->>> [ 1046.984920]  [<c1204bf8>] ? show_crash_notes+0x1c/0x30
->
-> It's probably the same bug Cliff Wickman reported.
-> per_cpu_ptr_to_phys() was using wrong first chunk match logic which
-> ends up passing wrong addresses to vmalloc_to_page().  I have the
-> following fix patch queued in percpu#for-linus branch and was waiting
-> for Linus to come back.
->
->  http://git.kernel.org/?p=linux/kernel/git/tj/percpu.git;a=commitdiff_plain;h=9983b6f0cf8263e51bcf4c8a9dc0c1ef175b3c60;hp=a92d3ff9e5dbd958d8008a3e7a573e988e370ca3
->
-> Can you please verify the above patch fixes the problem?
+The abbreviation of severity should be SEV instead of SER, so the CPER
+severity constants are renamed accordingly. GHES severity constants
+are renamed in the same way too.
 
-Yes, that patch fixes the problem on my box, thanks.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce-apei.c |    4 ++--
+ drivers/acpi/apei/ghes.c              |   32 ++++++++++++++++----------------
+ include/linux/cper.h                  |    8 ++++----
+ 3 files changed, 22 insertions(+), 22 deletions(-)
 
->
-> Thanks.
->
-> --
-> tejun
->
+--- a/arch/x86/kernel/cpu/mcheck/mce-apei.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
+@@ -80,7 +80,7 @@ int apei_write_mce(struct mce *m)
+ 	rcd.hdr.revision = CPER_RECORD_REV;
+ 	rcd.hdr.signature_end = CPER_SIG_END;
+ 	rcd.hdr.section_count = 1;
+-	rcd.hdr.error_severity = CPER_SER_FATAL;
++	rcd.hdr.error_severity = CPER_SEV_FATAL;
+ 	/* timestamp, platform_id, partition_id are all invalid */
+ 	rcd.hdr.validation_bits = 0;
+ 	rcd.hdr.record_length = sizeof(rcd);
+@@ -96,7 +96,7 @@ int apei_write_mce(struct mce *m)
+ 	rcd.sec_hdr.validation_bits = 0;
+ 	rcd.sec_hdr.flags = CPER_SEC_PRIMARY;
+ 	rcd.sec_hdr.section_type = CPER_SECTION_TYPE_MCE;
+-	rcd.sec_hdr.section_severity = CPER_SER_FATAL;
++	rcd.sec_hdr.section_severity = CPER_SEV_FATAL;
+ 
+ 	memcpy(&rcd.mce, m, sizeof(*m));
+ 
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -132,26 +132,26 @@ static void ghes_fini(struct ghes *ghes)
+ }
+ 
+ enum {
+-	GHES_SER_NO = 0x0,
+-	GHES_SER_CORRECTED = 0x1,
+-	GHES_SER_RECOVERABLE = 0x2,
+-	GHES_SER_PANIC = 0x3,
++	GHES_SEV_NO = 0x0,
++	GHES_SEV_CORRECTED = 0x1,
++	GHES_SEV_RECOVERABLE = 0x2,
++	GHES_SEV_PANIC = 0x3,
+ };
+ 
+ static inline int ghes_severity(int severity)
+ {
+ 	switch (severity) {
+-	case CPER_SER_INFORMATIONAL:
+-		return GHES_SER_NO;
+-	case CPER_SER_CORRECTED:
+-		return GHES_SER_CORRECTED;
+-	case CPER_SER_RECOVERABLE:
+-		return GHES_SER_RECOVERABLE;
+-	case CPER_SER_FATAL:
+-		return GHES_SER_PANIC;
++	case CPER_SEV_INFORMATIONAL:
++		return GHES_SEV_NO;
++	case CPER_SEV_CORRECTED:
++		return GHES_SEV_CORRECTED;
++	case CPER_SEV_RECOVERABLE:
++		return GHES_SEV_RECOVERABLE;
++	case CPER_SEV_FATAL:
++		return GHES_SEV_PANIC;
+ 	default:
+ 		/* Unkown, go panic */
+-		return GHES_SER_PANIC;
++		return GHES_SEV_PANIC;
+ 	}
+ }
+ 
+@@ -237,16 +237,16 @@ static void ghes_clear_estatus(struct gh
+ 
+ static void ghes_do_proc(struct ghes *ghes)
+ {
+-	int ser, processed = 0;
++	int sev, processed = 0;
+ 	struct acpi_hest_generic_data *gdata;
+ 
+-	ser = ghes_severity(ghes->estatus->error_severity);
++	sev = ghes_severity(ghes->estatus->error_severity);
+ 	apei_estatus_for_each_section(ghes->estatus, gdata) {
+ #ifdef CONFIG_X86_MCE
+ 		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
+ 				 CPER_SEC_PLATFORM_MEM)) {
+ 			apei_mce_report_mem_error(
+-				ser == GHES_SER_CORRECTED,
++				sev == GHES_SEV_CORRECTED,
+ 				(struct cper_sec_mem_err *)(gdata+1));
+ 			processed = 1;
+ 		}
+--- a/include/linux/cper.h
++++ b/include/linux/cper.h
+@@ -39,10 +39,10 @@
+  * Severity difinition for error_severity in struct cper_record_header
+  * and section_severity in struct cper_section_descriptor
+  */
+-#define CPER_SER_RECOVERABLE			0x0
+-#define CPER_SER_FATAL				0x1
+-#define CPER_SER_CORRECTED			0x2
+-#define CPER_SER_INFORMATIONAL			0x3
++#define CPER_SEV_RECOVERABLE			0x0
++#define CPER_SEV_FATAL				0x1
++#define CPER_SEV_CORRECTED			0x2
++#define CPER_SEV_INFORMATIONAL			0x3
+ 
+ /*
+  * Validation bits difinition for validation_bits in struct
+
+
+
