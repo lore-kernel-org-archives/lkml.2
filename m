@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab0FXFpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 01:45:53 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:38578 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab0FXFpw (ORCPT
+	id S1751926Ab0FXFuf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 01:50:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35244 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab0FXFue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 01:45:52 -0400
+	Thu, 24 Jun 2010 01:50:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references:mime-version:content-type:content-transfer-encoding;
-        b=F17/SZHQWNzp8pL4jE7+j1XeuaOT25siEWp7yLLqJIFzfK9wNsqpiIuIYo5C5Tw2UV
-         9VB4aNMytYSK+YddmPDex3VNB+Mlwr3kDq6D+A1/IEaStnThIWJGEpc66hFbtGNMAdS5
-         DJzydxdC1CTeJkiHJvApMRz3xqXIdWcYjDf2g=
-From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
-To: netdev@vger.kernel.org, "Justin P. Mattock" <justinmattock@gmail.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "John W.Linville" <linville@tuxdriver.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       davem@davemloft.net
-Cc: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
-Subject: [PATCH] xfrm: check bundle policy existance before dereferencing it
-Date: Thu, 24 Jun 2010 08:45:19 +0300
-Message-Id: <1277358319-9868-1-git-send-email-timo.teras@iki.fi>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <4C22805A.3080307@gmail.com>
-References: <4C22805A.3080307@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HGnYiLSDrljbBWTbGtPZjmSVb1oxcOhSRvxNZbXwZt5BmHw0M2mcD53Syazbsps15O
+         XE6J/+92NM3VRxelDdgBaPsYSkuLU3WXv1+Ul+XFcpIUYTpFluEJpl0Llb8yFCCumYD4
+         F+q/Qy9bTm/dsCFlhD5W2dAL60NfXV63p7TLM=
+Subject: Re: 2.6.35-rc3 -- kernel BUG at mm/vmalloc.c:216! - invalid
+ opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+In-Reply-To: <AANLkTilNYZryQNy037Eiaw1WxBN_WLLUdY6gxk3KaBBS@mail.gmail.com>
+References: <AANLkTimYUy0tCvGHf_Qtz0tUG7XVms9i3MOz03m28Jin@mail.gmail.com>
+	 <AANLkTilNYZryQNy037Eiaw1WxBN_WLLUdY6gxk3KaBBS@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Jun 2010 07:50:28 +0200
+Message-ID: <1277358628.3471.1149.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the bundle validation code to not assume having a valid policy.
-When we have multiple transformations for a xfrm policy, the bundle
-instance will be a chain of bundles with only the first one having
-the policy reference. When policy_genid is bumped it will expire the
-first bundle in the chain which is equivalent of expiring the whole
-chain.
+Le jeudi 24 juin 2010 à 13:30 +0800, Xiaotian Feng a écrit :
+> On Thu, Jun 24, 2010 at 1:11 PM, Miles Lane <miles.lane@gmail.com> wrote:
+> > I ran:  "find /sys | xargs head"
+> >
+> 
+> It goes from "cat /sys/devices/system/cpu/cpux/crash_notes" ...
 
-Reported-bisected-and-tested-by: Justin P. Mattock <justinmattock@gmail.com>
-Signed-off-by: Timo Teräs <timo.teras@iki.fi>
----
- net/xfrm/xfrm_policy.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Thanks, but could you please avoid sending huge mails, if you only add
+on line each round ?
 
-diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-index 4bf27d9..af1c173 100644
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -2300,7 +2300,8 @@ int xfrm_bundle_ok(struct xfrm_policy *pol, struct xfrm_dst *first,
- 			return 0;
- 		if (xdst->xfrm_genid != dst->xfrm->genid)
- 			return 0;
--		if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
-+		if (xdst->num_pols > 0 &&
-+		    xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
- 			return 0;
- 
- 		if (strict && fl &&
--- 
-1.7.0.4
+
 
