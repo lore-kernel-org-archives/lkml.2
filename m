@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab0FXVlB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 17:41:01 -0400
+	id S1756084Ab0FXVmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 17:42:12 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:37451 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843Ab0FXVk5 (ORCPT
+	with ESMTP id S1755866Ab0FXVk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 17:40:57 -0400
+	Thu, 24 Jun 2010 17:40:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=b3vHAs1yiGFRnPkYhxnI9TaG96KVSwOdpnQRgkqazYNCMK/mRFv26doQZVQ2irACWm
-         sAkMAriUPQIZyAf6RlvsV7SyglxyFiAcvk41+1j7g7u3LbbEfCalROUI0So1FXpQw60t
-         lKWft3TIs+ylnSL8CEHjNDBfW/mi8cK71V4M0=
+        b=ucMhRQIT3+CFnlZQzV1EMIagH8z+6Z9kX7t3qKja0GHtktsdNekmO3u4UxuSXRZ/y3
+         E6kz+RFO9VJZt4UeVtesWsfvpckbz5bYJf53aYravv/IfZ+Yx9nzWWFUEb0a3Rh8IuA+
+         EkLztL9TSa19p3tRcLwp85k7eQhSGjtuAU35o=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-       Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/7] perf: Fix argument of perf_arch_fetch_caller_regs
-Date: Thu, 24 Jun 2010 23:40:53 +0200
-Message-Id: <1277415658-10036-3-git-send-regression-fweisbec@gmail.com>
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Will Deacon <will.deacon@arm.com>, Prasad <prasad@linux.vnet.ibm.com>,
+       Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+       Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 3/7] x86: Set resume bit before returning from breakpoint exception
+Date: Thu, 24 Jun 2010 23:40:54 +0200
+Message-Id: <1277415658-10036-4-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1277415658-10036-1-git-send-regression-fweisbec@gmail.com>
@@ -33,50 +33,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Instruction breakpoints trigger before the instruction executes,
+and returning back from the breakpoint handler brings us again
+to the instruction that breakpointed. This naturally bring to
+a breakpoint recursion.
 
-"struct regs" was set to argument of perf_arch_fetch_caller_regs
-off-case. It should be "struct pt_regs".
+To solve this, x86 has the Resume Bit trick. When the cpu flags
+have the RF flag set, the next instruction won't trigger any
+instruction breakpoint, and once this instruction is executed,
+RF is cleared back.
 
-This fixes various build errors in archs that have CONFIG_PERF_EVENTS=y
-but no overriden implementation of perf_arch_fetch_caller_regs.
+This let's us jump back to the instruction that triggered the
+breakpoint without recursion.
 
-cc1: warnings being treated as errors
-In file included from include/linux/ftrace_event.h:8,
-                 from include/trace/syscall.h:6,
-                 from include/linux/syscalls.h:75,
-                 from arch/sh/kernel/sys_sh32.c:9:
-include/linux/perf_event.h:937: error: 'struct regs' declared inside parameter list
-include/linux/perf_event.h:937: error: its scope is only this definition or declaration, which is probably not what you want
-include/linux/perf_event.h: In function 'perf_fetch_caller_regs':
-include/linux/perf_event.h:952: error: passing argument 1 of 'perf_arch_fetch_caller_regs' from incompatible pointer type
+Use this when an instruction breakpoint triggers.
 
-Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-LKML-Reference: <AANLkTinKKFKEBQrZ3Hkj-XCaMwaTqulb-XnFzqEYiFRr@mail.gmail.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Prasad <prasad@linux.vnet.ibm.com>
+Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jason Wessel <jason.wessel@windriver.com>
 ---
- include/linux/perf_event.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/hw_breakpoint.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 0dd5f8a..937495c 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -936,7 +936,7 @@ extern void __perf_sw_event(u32, u64, int, struct pt_regs *, u64);
+diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
+index a8f1b80..eaa6ae2 100644
+--- a/arch/x86/kernel/hw_breakpoint.c
++++ b/arch/x86/kernel/hw_breakpoint.c
+@@ -466,6 +466,13 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
  
- #ifndef perf_arch_fetch_caller_regs
- static inline void
--perf_arch_fetch_caller_regs(struct regs *regs, unsigned long ip) { }
-+perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip) { }
- #endif
+ 		perf_bp_event(bp, args->regs);
  
- /*
++		/*
++		 * Set up resume flag to avoid breakpoint recursion when
++		 * returning back to origin.
++		 */
++		if (bp->hw.info.type == X86_BREAKPOINT_EXECUTE)
++			args->regs->flags |= X86_EFLAGS_RF;
++
+ 		rcu_read_unlock();
+ 	}
+ 	/*
 -- 
 1.6.2.3
 
