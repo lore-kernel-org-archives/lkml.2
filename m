@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab0FXSMZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 14:12:25 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:45121 "EHLO e4.ny.us.ibm.com"
+	id S1756005Ab0FXSLy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 14:11:54 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:37517 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756144Ab0FXSMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 14:12:19 -0400
+	id S1754327Ab0FXSLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 14:11:49 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -13,9 +13,9 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
        James Morris <jmorris@namei.org>,
        David Safford <safford@watson.ibm.com>,
        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 15/15] ima: appraise measurement required
-Date: Thu, 24 Jun 2010 14:10:31 -0400
-Message-Id: <1277403031-3080-16-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH 10/15] fs: add evm_inode_post_init calls
+Date: Thu, 24 Jun 2010 14:10:26 -0400
+Message-Id: <1277403031-3080-11-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1277403031-3080-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1277403031-3080-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -23,68 +23,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if allowed to update security.ima, reset the appraisal
-flags, forcing re-appraisal.
+After creating the initial LSM security extended attribute, call
+evm_inode_post_init_security() to create the 'security.evm'
+extended attribute.
+
+(Support for other fs still needed.)
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Acked-by: Serge Hallyn <serue@us.ibm.com>
 ---
- security/integrity/ima/ima_main.c |   33 +++++++++++++++++++++++++++++++--
- 1 files changed, 31 insertions(+), 2 deletions(-)
+ fs/ext2/xattr_security.c |   31 ++++++++++++++++++++++++-------
+ fs/ext3/xattr_security.c |   30 +++++++++++++++++++++++-------
+ fs/ext4/xattr_security.c |   30 +++++++++++++++++++++++-------
+ 3 files changed, 70 insertions(+), 21 deletions(-)
 
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 62a7cf6..44fd452 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -385,18 +385,47 @@ int ima_protect_xattr(struct dentry *dentry, const char *xattr_name,
- 	return 0;
+diff --git a/fs/ext2/xattr_security.c b/fs/ext2/xattr_security.c
+index 3004e15..bb460ed 100644
+--- a/fs/ext2/xattr_security.c
++++ b/fs/ext2/xattr_security.c
+@@ -9,6 +9,7 @@
+ #include <linux/fs.h>
+ #include <linux/ext2_fs.h>
+ #include <linux/security.h>
++#include <linux/evm.h>
+ #include "xattr.h"
+ 
+ static size_t
+@@ -50,21 +51,37 @@ int
+ ext2_init_security(struct inode *inode, struct inode *dir)
+ {
+ 	int err;
+-	size_t len;
+-	void *value;
+-	char *name;
++	struct xattr lsm_xattr;
++	struct xattr evm_xattr;
+ 
+-	err = security_inode_init_security(inode, dir, &name, &value, &len);
++	err = security_inode_init_security(inode, dir, &lsm_xattr.name,
++					   &lsm_xattr.value,
++					   &lsm_xattr.value_len);
+ 	if (err) {
+ 		if (err == -EOPNOTSUPP)
+ 			return 0;
+ 		return err;
+ 	}
+ 	err = ext2_xattr_set(inode, EXT2_XATTR_INDEX_SECURITY,
+-			     name, value, len, 0);
+-	kfree(name);
+-	kfree(value);
++			     lsm_xattr.name, lsm_xattr.value,
++			     lsm_xattr.value_len, 0);
++	if (err < 0)
++		goto out;
++
++	err = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
++	if (err)
++		goto out;
++	err = ext2_xattr_set(inode, EXT2_XATTR_INDEX_SECURITY,
++			     evm_xattr.name, evm_xattr.value,
++			     evm_xattr.value_len, 0);
++	kfree(evm_xattr.value);
++out:
++	kfree(lsm_xattr.name);
++	kfree(lsm_xattr.value);
++	if (err == -EOPNOTSUPP)
++		return 0;
+ 	return err;
++
  }
  
-+static void ima_reset_appraise_flags(struct inode *inode)
-+{
-+	struct integrity_iint_cache *iint;
-+
-+	if (!ima_initialized || !ima_appraise || !S_ISREG(inode->i_mode))
-+		return;
-+
-+	iint = integrity_iint_find_get(inode);
-+	if (!iint)
-+		return;
-+
-+	mutex_lock(&iint->mutex);
-+	iint->flags &= ~(IMA_COLLECTED | IMA_APPRAISED | IMA_MEASURED);
-+	mutex_unlock(&iint->mutex);
-+	kref_put(&iint->refcount, iint_free);
-+	return;
-+}
-+
- int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- 		       const void *xattr_value, size_t xattr_value_len)
+ const struct xattr_handler ext2_xattr_security_handler = {
+diff --git a/fs/ext3/xattr_security.c b/fs/ext3/xattr_security.c
+index 03a99bf..6e44368 100644
+--- a/fs/ext3/xattr_security.c
++++ b/fs/ext3/xattr_security.c
+@@ -10,6 +10,7 @@
+ #include <linux/ext3_jbd.h>
+ #include <linux/ext3_fs.h>
+ #include <linux/security.h>
++#include <linux/evm.h>
+ #include "xattr.h"
+ 
+ static size_t
+@@ -52,20 +53,35 @@ int
+ ext3_init_security(handle_t *handle, struct inode *inode, struct inode *dir)
  {
--	return ima_protect_xattr(dentry, xattr_name, xattr_value,
-+	int result;
+ 	int err;
+-	size_t len;
+-	void *value;
+-	char *name;
++	struct xattr lsm_xattr;
++	struct xattr evm_xattr;
+ 
+-	err = security_inode_init_security(inode, dir, &name, &value, &len);
++	err = security_inode_init_security(inode, dir, &lsm_xattr.name,
++					   &lsm_xattr.value,
++					   &lsm_xattr.value_len);
+ 	if (err) {
+ 		if (err == -EOPNOTSUPP)
+ 			return 0;
+ 		return err;
+ 	}
+ 	err = ext3_xattr_set_handle(handle, inode, EXT3_XATTR_INDEX_SECURITY,
+-				    name, value, len, 0);
+-	kfree(name);
+-	kfree(value);
++				    lsm_xattr.name, lsm_xattr.value,
++				    lsm_xattr.value_len, 0);
++	if (err < 0)
++		goto out;
 +
-+	result = ima_protect_xattr(dentry, xattr_name, xattr_value,
- 				 xattr_value_len);
-+	if (!result)
-+		ima_reset_appraise_flags(dentry->d_inode);
-+	return result;
++	err = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
++	if (err)
++		goto out;
++	err = ext3_xattr_set_handle(handle, inode, EXT3_XATTR_INDEX_SECURITY,
++				    evm_xattr.name, evm_xattr.value,
++				    evm_xattr.value_len, 0);
++	kfree(evm_xattr.value);
++out:
++	kfree(lsm_xattr.name);
++	kfree(lsm_xattr.value);
++	if (err == -EOPNOTSUPP)
++		return 0;
+ 	return err;
  }
  
- int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name)
+diff --git a/fs/ext4/xattr_security.c b/fs/ext4/xattr_security.c
+index 9b21268..8998fda 100644
+--- a/fs/ext4/xattr_security.c
++++ b/fs/ext4/xattr_security.c
+@@ -8,6 +8,7 @@
+ #include <linux/fs.h>
+ #include <linux/security.h>
+ #include <linux/slab.h>
++#include <linux/evm.h>
+ #include "ext4_jbd2.h"
+ #include "ext4.h"
+ #include "xattr.h"
+@@ -52,20 +53,35 @@ int
+ ext4_init_security(handle_t *handle, struct inode *inode, struct inode *dir)
  {
--	return ima_protect_xattr(dentry, xattr_name, NULL, 0);
-+	int result;
+ 	int err;
+-	size_t len;
+-	void *value;
+-	char *name;
++	struct xattr lsm_xattr;
++	struct xattr evm_xattr;
+ 
+-	err = security_inode_init_security(inode, dir, &name, &value, &len);
++	err = security_inode_init_security(inode, dir, &lsm_xattr.name,
++					   &lsm_xattr.value,
++					   &lsm_xattr.value_len);
+ 	if (err) {
+ 		if (err == -EOPNOTSUPP)
+ 			return 0;
+ 		return err;
+ 	}
+ 	err = ext4_xattr_set_handle(handle, inode, EXT4_XATTR_INDEX_SECURITY,
+-				    name, value, len, 0);
+-	kfree(name);
+-	kfree(value);
++				    lsm_xattr.name, lsm_xattr.value,
++				    lsm_xattr.value_len, 0);
++	if (err < 0)
++		goto out;
 +
-+	result = ima_protect_xattr(dentry, xattr_name, NULL, 0);
-+	if (!result)
-+		ima_reset_appraise_flags(dentry->d_inode);
-+	return result;
++	err = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
++	if (err)
++		goto out;
++	err = ext4_xattr_set_handle(handle, inode, EXT4_XATTR_INDEX_SECURITY,
++				    evm_xattr.name, evm_xattr.value,
++				    evm_xattr.value_len, 0);
++	kfree(evm_xattr.value);
++out:
++	kfree(lsm_xattr.name);
++	kfree(lsm_xattr.value);
++	if (err == -EOPNOTSUPP)
++		return 0;
+ 	return err;
  }
  
-+
- static int __init init_ima(void)
- {
- 	int error;
 -- 
 1.6.6.1
 
