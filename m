@@ -1,129 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab0FXMmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 08:42:14 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42914 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456Ab0FXMmN (ORCPT
+	id S1755366Ab0FXMns (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 08:43:48 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:34704 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755017Ab0FXMnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 08:42:13 -0400
-Date: Thu, 24 Jun 2010 14:42:10 +0200
-From: Luotao Fu <l.fu@pengutronix.de>
-To: Rabin VINCENT <rabin.vincent@stericsson.com>
-Cc: Luotao Fu <l.fu@pengutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
+	Thu, 24 Jun 2010 08:43:47 -0400
+Date: Thu, 24 Jun 2010 18:13:07 +0530
+From: Rabin VINCENT <rabin.vincent@stericsson.com>
+To: Luotao Fu <l.fu@pengutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
        Linus WALLEIJ <linus.walleij@stericsson.com>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
-Subject: Re: [PATCH 6/6 V4] input: STMPE touch controller support
-Message-ID: <20100624124210.GC3988@pengutronix.de>
-Mail-Followup-To: Rabin VINCENT <rabin.vincent@stericsson.com>,
-	Luotao Fu <l.fu@pengutronix.de>,
-	Samuel Ortiz <sameo@linux.intel.com>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Linus WALLEIJ <linus.walleij@stericsson.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-	STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
+Subject: Re: [PATCH 1/6] gpio/stmpe-gpio: set GPIO alternate function while
+ requesting
+Message-ID: <20100624124307.GD26189@bnru02.bnr.st.com>
 References: <20100622135635.GA30720@bnru02.bnr.st.com>
- <1277378021-16802-7-git-send-email-l.fu@pengutronix.de>
- <20100624123153.GB26189@bnru02.bnr.st.com>
+ <1277378021-16802-2-git-send-email-l.fu@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JgQwtEuHJzHdouWu"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100624123153.GB26189@bnru02.bnr.st.com>
-X-PGP-Key-ID: 0xE5325261
-X-URL: http://www.pengutronix.de/
-X-Sent-From: Pengutronix Hildesheim
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 14:38:48 up  6:20, 12 users,  load average: 0.00, 0.00, 0.00
+In-Reply-To: <1277378021-16802-2-git-send-email-l.fu@pengutronix.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:250:baff:feac:3723
-X-SA-Exim-Mail-From: l.fu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 24, 2010 at 13:13:36 +0200, Luotao Fu wrote:
+> add reuqest hook to the gpio chip, so that we can make sure that the GPIO pin is
+> setted to the correct GPIO alternate function after we have requested the GPIO
+> pin.
+> 
+> Signed-off-by: Luotao Fu <l.fu@pengutronix.de>
 
---JgQwtEuHJzHdouWu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Rabin,
-
-On Thu, Jun 24, 2010 at 06:01:53PM +0530, Rabin VINCENT wrote:
-> On Thu, Jun 24, 2010 at 13:13:41 +0200, Luotao Fu wrote:
-> > +       adc_ctrl1 =3D SAMPLE_TIME(ts->sample_time) | MOD_12B(ts->mod_12=
-b) |
-> > +               REF_SEL(ts->ref_sel);
-> > +       ret =3D stmpe_set_bits(stmpe, STMPE_REG_ADC_CTRL1,
-> > +                       adc_ctrl1, adc_ctrl1);
-> > +       if (ret) {
-> > +               dev_err(&pdev->dev, "Could not setup ADC\n");
-> > +               goto err_free_irq;
-> > +       }
-> > +
-> > +       ret =3D stmpe_set_bits(stmpe, STMPE_REG_ADC_CTRL2,
-> > +                       ADC_FREQ(ts->adc_freq), ADC_FREQ(ts->adc_freq));
-> > +       if (ret) {
-> > +               dev_err(&pdev->dev, "Could not setup ADC\n");
-> > +               goto err_free_irq;
-> > +       }
-> > +
-> > +       tsc_cfg =3D AVE_CTRL(ts->ave_ctrl) | DET_DELAY(ts->touch_det_de=
-lay) |
-> > +                       SETTLING(ts->settling);
-> > +       ret =3D stmpe_set_bits(stmpe, STMPE_REG_TSC_CFG, tsc_cfg, tsc_c=
-fg);
-> > +       if (ret) {
-> > +               dev_err(&pdev->dev, "Could not config touch\n");
-> > +               goto err_free_irq;
-> > +       }
-> > +
-> > +       ret =3D stmpe_set_bits(stmpe, STMPE_REG_TSC_FRACTION_Z,
-> > +                       FRACTION_Z(ts->fraction_z),
-> > +                       FRACTION_Z(ts->fraction_z));
->=20
-> I think your earlier revisions had this same behaviour, but this only
-> writes the bits you are trying to set, and it may be a problem if there
-> are other bits already set in this field.  I don't know if this is a
-> concern with this block, but if it is, you can do something like the
-> following to clear out the field before writing:
->=20
-
-This is done intentionally to leave the bits alone which I don't want.
-Most of the registers here are used exclusively for the touchscreen.
-Some others are shared with the ADC. The ADC however doesn't have any
-own configuration and has to go with the configuration of the touch
-screen. Hence it's OK, even probably better not to touch the bits we
-don't need.
-
-cheers
-Luotao Fu
---=20
-Pengutronix e.K.                           | Dipl.-Ing. Luotao Fu        |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
---JgQwtEuHJzHdouWu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwjUqIACgkQkLuxfMCkDTY0OQCfSWKqykE8tmOPCrWydGSVBUP7
-2KcAn0DO60cliXv7gIGfy+2540mcq40g
-=TPmf
------END PGP SIGNATURE-----
-
---JgQwtEuHJzHdouWu--
+Acked-by: Rabin Vincent <rabin.vincent@stericsson.com>
