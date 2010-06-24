@@ -1,94 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab0FXGR4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 02:17:56 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52474 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273Ab0FXGRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 02:17:55 -0400
-Message-ID: <4C22F82F.10106@cn.fujitsu.com>
-Date: Thu, 24 Jun 2010 14:16:15 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752854Ab0FXGZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 02:25:38 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:54487 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab0FXGZh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 02:25:37 -0400
+Date: Wed, 23 Jun 2010 23:36:30 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [PATCH 1/1] pid_ns: move pid_ns_release_proc() from
+	proc_flush_task() to zap_pid_ns_processes()
+Message-ID: <20100624063630.GB3016@us.ibm.com>
+References: <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <20100623203652.GA25298@redhat.com> <20100623203735.GB25298@redhat.com>
 MIME-Version: 1.0
-To: acme@ghostprotocols.net
-CC: mingo@elte.hu, Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       a.p.zijlstra@chello.nl, paulus@samba.org
-Subject: Re: [PATCH] perf: close the opened directories.
-References: <4C1C3F7C.4030607@cn.fujitsu.com>
-In-Reply-To: <4C1C3F7C.4030607@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100623203735.GB25298@redhat.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gui Jianfeng wrote:
-> When I ran "perf kvm ... top", I encountered the following error output.
-> 
->   Error: perfcounter syscall returned with -1 (Too many open files)
-> 
->   Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-> 
-> Looking into perf, I found perf opens too many direcotries at initialization
-> time, but forgets to close them. Here is the fix.
+Oleg Nesterov [oleg@redhat.com] wrote:
+| This is mostly cleanup and optimization, but also fixes the bug.
+| 
+| proc_flush_task() checks upid->nr == 1 to detect the case when
+| a sub-namespace exits. However, this doesn't work in case when
+| a multithreaded init execs and calls release_task(old_leader),
+| the old leader has the same pid 1.
+| 
+| Move pid_ns_release_proc() to zap_pid_ns_processes(), it is called
+| when we know for sure that init is exiting.
 
-Ping.
+Hmm, I almost agreed, but have a question :-)
 
-> 
-> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-> ---
->  tools/perf/util/symbol.c |   18 +++++++++++-------
->  1 files changed, 11 insertions(+), 7 deletions(-)
-> 
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index 7fd6b15..a00dcad 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -1443,6 +1443,7 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
->  {
->  	struct dirent *dent;
->  	DIR *dir = opendir(dir_name);
-> +	int ret = 0;
->  
->  	if (!dir) {
->  		pr_debug("%s: cannot open %s dir\n", __func__, dir_name);
-> @@ -1465,8 +1466,10 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
->  
->  			snprintf(path, sizeof(path), "%s/%s",
->  				 dir_name, dent->d_name);
-> -			if (map_groups__set_modules_path_dir(self, path) < 0)
-> -				goto failure;
-> +			if (map_groups__set_modules_path_dir(self, path) < 0) {
-> +				ret = -1;
-> +				goto out;
-> +			}
->  		} else {
->  			char *dot = strrchr(dent->d_name, '.'),
->  			     dso_name[PATH_MAX];
-> @@ -1487,17 +1490,18 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
->  				 dir_name, dent->d_name);
->  
->  			long_name = strdup(path);
-> -			if (long_name == NULL)
-> -				goto failure;
-> +			if (long_name == NULL) {
-> +				ret = -1;
-> +				goto out;
-> +			}
->  			dso__set_long_name(map->dso, long_name);
->  			dso__kernel_module_get_build_id(map->dso, "");
->  		}
->  	}
->  
-> -	return 0;
-> -failure:
-> +out:
->  	closedir(dir);
-> -	return -1;
-> +	return ret;
->  }
->  
->  static char *get_kernel_version(const char *root_dir)
+Yes, we know that the container-init is exiting. But if its parent (in
+the parent ns) waits on it and calls release_task(), won't we call
+proc_flush_task_mnt() on this container-init ? This would happen after
+dropping the mnt in zap_pid_ns_processes() no ?
 
+At the time zap_pid_ns_processes() is called, the container-init is still
+not in EXIT_ZOMBIE state right ? (Or does your statement below include
+EXIT_DEAD and EXIT_ZOMBIE tasks ?)
+
+| 
+| Note: with or without this change this mntput() can happen before the
+| EXIT_DEAD tasks not visible to do_wait() have passed proc_flush_task().
+| We need more fixes.
+| 
+
+Sukadev
