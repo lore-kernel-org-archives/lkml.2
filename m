@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab0FXPki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 11:40:38 -0400
-Received: from lider.pardus.org.tr ([193.140.100.216]:37093 "EHLO
-	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755928Ab0FXPkf (ORCPT
+	id S1755914Ab0FXPoy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 11:44:54 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47626 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754241Ab0FXPox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 11:40:35 -0400
-Message-ID: <4C237C70.70409@pardus.org.tr>
-Date: Thu, 24 Jun 2010 18:40:32 +0300
-From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Thu, 24 Jun 2010 11:44:53 -0400
+Date: Thu, 24 Jun 2010 11:44:51 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Florian Mickler <florian@mickler.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [update 2] Re: [RFC][PATCH] PM: Avoid losing wakeup events during
+ suspend
+In-Reply-To: <201006241513.06116.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1006241111110.1654-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [BISECTED] Suspend regression in v2.6.31 with Lenovo 3000 v200
-References: <Pine.LNX.4.44L0.1006241004430.1654-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1006241004430.1654-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Stern wrote:
+On Thu, 24 Jun 2010, Rafael J. Wysocki wrote:
 
+> > > And what happens if the device gets a second wakeup event before the timer
+> > > for the first one expires?
+> > 
+> > Good question.  I don't have an answer to it at the moment, but it seems to
+> > arise from using a single timer for all events.
+> > 
+> > It looks like it's simpler to make pm_wakeup_event() allocate a timer for each
+> > event and make the timer function remove it.  That would cause suspend to
+> > be blocked until the timer expires without a way to cancel it earlier, though.
 > 
-> The content of the power/wakeup file depends on two values: the 
-> can_wakeup flag and the should_wakeup flag.  If can_wakeup is false 
-> then the file will be empty; otherwise it will contain "disabled" or 
-> "enabled" according to the value of should_wakeup.
+> So, I decided to try this after all.
 > 
-> Now, device_init_wakeup() sets both flags whereas 
-> device_set_wakeup_capable() affects only the can_wakeup flag.  After 
-> this change is made there should be nothing in the kernel that turns on 
-> the should_wakeup flag, and consequently remote wakeup should remain 
-> disabled.
+> Below is a new version of the patch.  It introduces pm_stay_awake(dev) and
+> pm_relax() that play the roles of the "old" pm_wakeup_begin() and
+> pm_wakeup_end().
 > 
-> You can check this by grepping for occurrences of "should_wakeup" or 
-> "dev_set_wakeup_enable" (which affects the should_wakeup flag).
+> pm_wakeup_event() now takes an extra timeout argument and uses it for
+> deferred execution of pm_relax().  So, one can either use the
+> pm_stay_awake(dev) / pm_relax() pair, or use pm_wakeup_event(dev, timeout)
+> if the ending is under someone else's control.
 > 
-> Alan Stern
+> In addition to that, pm_get_wakeup_count() blocks until events_in_progress is
+> zero.
 > 
+> Please tell me what you think.
 
-Okay the patch fixed the issue for the users. Thanks again for all your
-helps, 
+This is slightly different from the wakelock design.  Each call to
+pm_stay_awake() must be paired with a call to pm_relax(), allowing one
+device to have multiple concurrent critical sections, whereas calls to
+pm_wakeup_event() must not be paired with anything.  With wakelocks,
+you couldn't have multiple pending events for the same device.  I'm not
+sure which model is better in practice.  No doubt the Android people 
+will prefer their way.
 
-Regards,
-Ozan Caglayan
+This requires you to define an explicit PCI_WAKEUP_COOLDOWN delay.  I 
+think that's okay; I had to do something similar with USB and SCSI.  
+(And I still think it would be a good idea to prevent workqueue threads 
+from freezing until their queues are empty.)
+
+Instead of allocating the work structures dynamically, would you be 
+better off using a memory pool?
+
+Alan Stern
+
