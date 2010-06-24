@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab0FXPuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 11:50:09 -0400
-Received: from lider.pardus.org.tr ([193.140.100.216]:50107 "EHLO
-	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab0FXPuH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 11:50:07 -0400
-Message-ID: <4C237EAE.3000908@pardus.org.tr>
-Date: Thu, 24 Jun 2010 18:50:06 +0300
-From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755965Ab0FXPwv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 11:52:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60033 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755862Ab0FXPwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 11:52:50 -0400
+Date: Fri, 25 Jun 2010 01:52:43 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>,
+       Eric Dumazet <dada1@cosmosbay.com>
+Subject: Re: [patch 42/52] fs: icache per-cpu last_ino allocator
+Message-ID: <20100624155243.GI10441@laptop>
+References: <20100624030212.676457061@suse.de>
+ <20100624030732.402670838@suse.de>
+ <87tyosahia.fsf@basil.nowhere.org>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-       Linux ACPI <linux-acpi@vger.kernel.org>
-Subject: Ubuntu patch enabling speedstep for sonoma processors
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87tyosahia.fsf@basil.nowhere.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jun 24, 2010 at 11:48:13AM +0200, Andi Kleen wrote:
+> npiggin@suse.de writes:
+> 
+> > From: Eric Dumazet <dada1@cosmosbay.com>
+> >
+> > new_inode() dirties a contended cache line to get increasing inode numbers.
+> >
+> > Solve this problem by providing to each cpu a per_cpu variable, feeded by the
+> > shared last_ino, but once every 1024 allocations.
+> 
+> Most file systems don't even need this because they 
+> allocate their own inode numbers, right?. So perhaps it could be turned
+> off for all of those, e.g. with a superblock flag.
 
-The following patch enables speedstep for sonoma processors:
-http://kernel.ubuntu.com/git?p=ubuntu/ubuntu-maverick.git;a=blobdiff;f=arch/x86/kernel/cpu/cpufreq/speedstep-centrino.c;h=ee4e9f8050752923f9671f61ffbea662bc9ad12a;hp=9b1ff37de46ae6a729f48d2d94ad30548806884d;hb=23120eb5ae5a12924565e8af3d946a015e1caaf9;hpb=215cc71ef0b26b9434404f387681d9bd173d2434
+That's right. More or less it just requires alloc_inode to be exported,
+adding more branches in new_inode would not be a good way to go.
 
-The patch never got accepted by upstream after some discussions:
+But I didn't want to start microoptimisations in filesystems just yet.
 
-http://linux.derkeiler.com/Mailing-Lists/Kernel/2008-06/msg01078.html
+ 
+> I guess the main customer is sockets only.
 
-"""
-This patch has been floating around for years.
-So long, I've forgotten the original reason it wasn't accepted.
-It had something to do with it working for some users, but not others,
-and we can't detect the 'not working' case.
+I guess. Sockets and ram based filesystems. Interestingly I don't know
+really what it's for (in socket code it's mostly for reporting and
+hashing it seems). It sure isn't guaranteed to be unique.
 
-speedstep-centrino is also deprecated in favour of acpi-cpufreq for some time.
-If acpi isn't working on these machines, we should find out why.
+Anyway it's outside the scope of this patchset to change functionality
+at all.
 
-Dave Jones
-"""
+ 
+> > +#ifdef CONFIG_SMP
+> > +/*
+> > + * Each cpu owns a range of 1024 numbers.
+> > + * 'shared_last_ino' is dirtied only once out of 1024 allocations,
+> > + * to renew the exhausted range.
+> > + *
+> > + * On a 32bit, non LFS stat() call, glibc will generate an EOVERFLOW
+> > + * error if st_ino won't fit in target struct field. Use 32bit counter
+> > + * here to attempt to avoid that.
+> 
+> I don't understand how the 32bit counter should prevent that.
+ 
+Well I think glibc will convert 64 bit stat struct to 32bit for
+old apps. It detects if the ino can't fit in 32 bits.
 
-"""
-My recollection is that we had no way to work out which voltage table
-was appropriate for a given CPU, so there was a risk of us either over-
-or under-volting the chip. Doing it via ACPI is safe.
 
-Matthew Garrett
-"""
+> > +static DEFINE_PER_CPU(int, last_ino);
+> > +static atomic_t shared_last_ino;
+> 
+> With the 1024 skip, isn't overflow much more likely, just scaling
+> with the number of CPUs on a large CPU number systems, even if there
+> aren't that many new inodes?
 
-I have bug report from a user which complains that frequency scaling is not available
-on its computer. This patch fixes the issue but seen the discussions there should be a
-better and more correct way to fix the issue.
+Well EOVERFLOW should never happen with only the low 32 significant
+bits set in the inode. If you are worried about wrapping the counter,
+then no I don't think it is much more likely.
 
-What should I do in order to debug and try to fix it?
+Because each CPU will only reserve another 1024 inode interval after
+it has already allocated 1024 numbers. So the most wastage you will
+get is (1024-1)*NR_CPUS -- somewhere around 1/1000th of the available
+range.
 
-And also seen that Ubuntu carries this patch for a relatively long time, did you see
-any negative effect like the aforementioned risk of over/under-volting the chip?
+I guess overflow will be more common now because it will be possible
+to allocate inodes much faster on such a huge machine :)
 
-Thanks
-Ozan Caglayan
+ 
+> > +static int last_ino_get(void)
+> > +{
+> > +	int *p = &get_cpu_var(last_ino);
+> > +	int res = *p;
+> > +
+> > +	if (unlikely((res & 1023) == 0))
+> > +		res = atomic_add_return(1024, &shared_last_ino) - 1024;
+> 
+> The magic numbers really want to be defines? 
 
+Sure OK.
 
