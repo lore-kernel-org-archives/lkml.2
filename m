@@ -1,105 +1,379 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab0FXPVF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 11:21:05 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:35687 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab0FXPVD convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Thu, 24 Jun 2010 11:21:03 -0400
-X-Greylist: delayed 1208 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jun 2010 11:21:03 EDT
-Message-Id: <4C238F6002000078000080CC@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 24 Jun 2010 16:01:20 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <arozansk@redhat.com>, <mchehab@redhat.com>,
-       <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: fix section mismatch from
-	 pcibios_scan_specific_bus()
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755657Ab0FXPWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 11:22:39 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46157 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755298Ab0FXPWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 11:22:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 1/9] PM / Hibernate: swap, switch to hibernate_io_handle
+Date: Thu, 24 Jun 2010 17:20:52 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com
+References: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006241720.52879.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This so far non-__devinit function calling a __devinit one
-(pci_scan_bus_on_node()) isn't correct, but since it is being exported
-it also cannot itself be made __devinit unconditionally. Short of being
-able to think of a better solution, and short of making the whole call
-tree (reaching into the arch-independent part of the PCI subsystem)
-non-__devinit, export the symbol only when HOTPLUG is enabled (which
-is always the case for non-embedded configurations), use section
-mismatch avoidance annotations for (knowing that __devinit functions
-will not be discarded in) that case, and mark the symbol __devinit only
-in the !HOTPLUG case.
+On Wednesday, June 02, 2010, Jiri Slaby wrote:
+> Hi,
 
-Consequently, EDAC_I7CORE (consuming the export) then has to depend on
-HOTPLUG.
+Hi,
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Aristeu Sergio <arozansk@redhat.com>
+> I addressed the comments I got on the previous RFC.
 
----
- arch/x86/pci/legacy.c |   21 ++++++++++++++++++---
- drivers/edac/Kconfig  |    2 +-
- 2 files changed, 19 insertions(+), 4 deletions(-)
+Well, some of them. :-)
 
---- linux-2.6.35-rc3/arch/x86/pci/legacy.c
-+++ 2.6.35-rc3-x86-pci-legacy-sections/arch/x86/pci/legacy.c
-@@ -36,7 +36,23 @@ int __init pci_legacy_init(void)
- 	return 0;
- }
- 
--void pcibios_scan_specific_bus(int busn)
-+#ifdef CONFIG_HOTPLUG
-+static void __ref
-+#else
-+static inline void
-+#endif
-+_pci_scan_bus_on_node(int busno, int node)
-+{
-+	pci_scan_bus_on_node(busno, &pci_root_ops, node);
-+}
-+
-+#ifdef CONFIG_HOTPLUG
-+EXPORT_SYMBOL_GPL(pcibios_scan_specific_bus);
-+void
-+#else
-+void __devinit
-+#endif
-+pcibios_scan_specific_bus(int busn)
- {
- 	int devfn;
- 	long node;
-@@ -51,12 +67,11 @@ void pcibios_scan_specific_bus(int busn)
- 		    l != 0x0000 && l != 0xffff) {
- 			DBG("Found device at %02x:%02x [%04x]\n", busn, devfn, l);
- 			printk(KERN_INFO "PCI: Discovered peer bus %02x\n", busn);
--			pci_scan_bus_on_node(busn, &pci_root_ops, node);
-+			_pci_scan_bus_on_node(busn, node);
- 			return;
- 		}
- 	}
- }
--EXPORT_SYMBOL_GPL(pcibios_scan_specific_bus);
- 
- int __init pci_subsys_init(void)
- {
---- linux-2.6.35-rc3/drivers/edac/Kconfig
-+++ 2.6.35-rc3-x86-pci-legacy-sections/drivers/edac/Kconfig
-@@ -171,7 +171,7 @@ config EDAC_I5400
- 
- config EDAC_I7CORE
- 	tristate "Intel i7 Core (Nehalem) processors"
--	depends on EDAC_MM_EDAC && PCI && X86
-+	depends on EDAC_MM_EDAC && PCI && X86 && HOTPLUG
- 	select EDAC_MCE
- 	help
- 	  Support for error detection and correction the Intel
+> I left the handles in place, the functions in hibernate_io_ops now works on
+> them. Further I got rid of the memory barriers and minimized global variables
+> as much as possible. Comments welcome.
 
+One general comment first.  Can we just simply assume that the kernel won't
+do _any_ transformations of image data in the case when s2disk is used?
 
+I think that's going to simplify things quite a bit.
+
+> --
+> 
+> Some code, which will be moved out of swap.c, will know nothing about
+> swap. There will be also other than swap writers later, so that it
+> won't make sense at all.
+> 
+> So introduce a new structure called hibernate_io_handle which
+> currently contains only a pointer to private data, but is independent
+> on I/O reader/writer actually used. Private data are swap_map_handle
+> for now.
+> 
+> This structure is allocated in _start and freed in _finish. This will
+> correspond to the later introduction of hibernate_io_ops where users
+> will do handle=start->repeat{read/write(handle)}->finish(handle).
+> I.e. they will operate on handle instead of global variables.
+
+OK
+
+This one looks good.
+
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> ---
+>  kernel/power/power.h |   24 ++++++++++
+>  kernel/power/swap.c  |  114 +++++++++++++++++++++++++++++++------------------
+>  2 files changed, 96 insertions(+), 42 deletions(-)
+> 
+> diff --git a/kernel/power/power.h b/kernel/power/power.h
+> index 006270f..7427d54 100644
+> --- a/kernel/power/power.h
+> +++ b/kernel/power/power.h
+> @@ -1,3 +1,4 @@
+> +#include <linux/slab.h> /* kzalloc */
+>  #include <linux/suspend.h>
+>  #include <linux/suspend_ioctls.h>
+>  #include <linux/utsname.h>
+> @@ -115,6 +116,29 @@ struct snapshot_handle {
+>   */
+>  #define data_of(handle)	((handle).buffer)
+>  
+> +/**
+> + * struct hibernate_io_handle - handle for image I/O processing
+> + *
+> + * @priv: private data for each processor (swap_map_handle etc.)
+> + */
+> +struct hibernate_io_handle {
+> +	void *priv;
+> +};
+> +
+> +/**
+> + * hib_io_handle_alloc - allocate io handle with priv_size for private data
+> + *
+> + * @priv_size: the sie to allocate behind hibernate_io_handle for private use
+> + */
+> +static inline struct hibernate_io_handle *hib_io_handle_alloc(size_t priv_size)
+> +{
+> +	struct hibernate_io_handle *ret;
+> +	ret = kzalloc(sizeof(*ret) + priv_size, GFP_KERNEL);
+> +	if (ret)
+> +		ret->priv = ret + 1;
+> +	return ret;
+> +}
+> +
+>  extern unsigned int snapshot_additional_pages(struct zone *zone);
+>  extern unsigned long snapshot_get_image_size(void);
+>  extern int snapshot_read_next(struct snapshot_handle *handle);
+> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+> index b0bb217..7096d20 100644
+> --- a/kernel/power/swap.c
+> +++ b/kernel/power/swap.c
+> @@ -268,8 +268,10 @@ static void release_swap_writer(struct swap_map_handle *handle)
+>  	handle->cur = NULL;
+>  }
+>  
+> -static int get_swap_writer(struct swap_map_handle *handle)
+> +static struct hibernate_io_handle *get_swap_writer(void)
+>  {
+> +	struct hibernate_io_handle *io_handle;
+> +	struct swap_map_handle *handle;
+>  	int ret;
+>  
+>  	ret = swsusp_swap_check();
+> @@ -277,12 +279,18 @@ static int get_swap_writer(struct swap_map_handle *handle)
+>  		if (ret != -ENOSPC)
+>  			printk(KERN_ERR "PM: Cannot find swap device, try "
+>  					"swapon -a.\n");
+> -		return ret;
+> +		return ERR_PTR(ret);
+>  	}
+> +	io_handle = hib_io_handle_alloc(sizeof(*handle));
+> +	if (!io_handle) {
+> +		ret = -ENOMEM;
+> +		goto err_close;
+> +	}
+> +	handle = io_handle->priv;
+>  	handle->cur = (struct swap_map_page *)get_zeroed_page(GFP_KERNEL);
+>  	if (!handle->cur) {
+>  		ret = -ENOMEM;
+> -		goto err_close;
+> +		goto err_free;
+>  	}
+>  	handle->cur_swap = alloc_swapdev_block(root_swap);
+>  	if (!handle->cur_swap) {
+> @@ -291,17 +299,20 @@ static int get_swap_writer(struct swap_map_handle *handle)
+>  	}
+>  	handle->k = 0;
+>  	handle->first_sector = handle->cur_swap;
+> -	return 0;
+> +	return io_handle;
+>  err_rel:
+>  	release_swap_writer(handle);
+>  err_close:
+>  	swsusp_close(FMODE_WRITE);
+> -	return ret;
+> +err_free:
+> +	kfree(io_handle);
+> +	return ERR_PTR(ret);
+>  }
+>  
+> -static int swap_write_page(struct swap_map_handle *handle, void *buf,
+> -				struct bio **bio_chain)
+> +static int swap_write_page(struct hibernate_io_handle *io_handle, void *buf,
+> +		struct bio **bio_chain)
+>  {
+> +	struct swap_map_handle *handle = io_handle->priv;
+>  	int error = 0;
+>  	sector_t offset;
+>  
+> @@ -339,9 +350,11 @@ static int flush_swap_writer(struct swap_map_handle *handle)
+>  		return -EINVAL;
+>  }
+>  
+> -static int swap_writer_finish(struct swap_map_handle *handle,
+> +static int swap_writer_finish(struct hibernate_io_handle *io_handle,
+>  		unsigned int flags, int error)
+>  {
+> +	struct swap_map_handle *handle = io_handle->priv;
+> +
+>  	if (!error) {
+>  		flush_swap_writer(handle);
+>  		printk(KERN_INFO "PM: S");
+> @@ -352,6 +365,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+>  	if (error)
+>  		free_all_swap_pages(root_swap);
+>  	release_swap_writer(handle);
+> +	kfree(io_handle);
+>  	swsusp_close(FMODE_WRITE);
+>  
+>  	return error;
+> @@ -361,8 +375,8 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+>   *	save_image - save the suspend image data
+>   */
+>  
+> -static int save_image(struct swap_map_handle *handle,
+> -                      struct snapshot_handle *snapshot,
+> +static int save_image(struct hibernate_io_handle *io_handle,
+> +		      struct snapshot_handle *snapshot,
+>                        unsigned int nr_to_write)
+>  {
+>  	unsigned int m;
+> @@ -385,7 +399,7 @@ static int save_image(struct swap_map_handle *handle,
+>  		ret = snapshot_read_next(snapshot);
+>  		if (ret <= 0)
+>  			break;
+> -		ret = swap_write_page(handle, data_of(*snapshot), &bio);
+> +		ret = swap_write_page(io_handle, data_of(*snapshot), &bio);
+>  		if (ret)
+>  			break;
+>  		if (!(nr_pages % m))
+> @@ -431,17 +445,17 @@ static int enough_swap(unsigned int nr_pages)
+>  
+>  int swsusp_write(unsigned int flags)
+>  {
+> -	struct swap_map_handle handle;
+> +	struct hibernate_io_handle *io_handle;
+>  	struct snapshot_handle snapshot;
+>  	struct swsusp_info *header;
+>  	unsigned long pages;
+>  	int error;
+>  
+>  	pages = snapshot_get_image_size();
+> -	error = get_swap_writer(&handle);
+> -	if (error) {
+> +	io_handle = get_swap_writer();
+> +	if (IS_ERR(io_handle)) {
+>  		printk(KERN_ERR "PM: Cannot get swap writer\n");
+> -		return error;
+> +		return PTR_ERR(io_handle);
+>  	}
+>  	if (!enough_swap(pages)) {
+>  		printk(KERN_ERR "PM: Not enough free swap\n");
+> @@ -457,11 +471,11 @@ int swsusp_write(unsigned int flags)
+>  		goto out_finish;
+>  	}
+>  	header = (struct swsusp_info *)data_of(snapshot);
+> -	error = swap_write_page(&handle, header, NULL);
+> +	error = swap_write_page(io_handle, header, NULL);
+>  	if (!error)
+> -		error = save_image(&handle, &snapshot, pages - 1);
+> +		error = save_image(io_handle, &snapshot, pages - 1);
+>  out_finish:
+> -	error = swap_writer_finish(&handle, flags, error);
+> +	error = swap_writer_finish(io_handle, flags, error);
+>  	return error;
+>  }
+>  
+> @@ -477,32 +491,43 @@ static void release_swap_reader(struct swap_map_handle *handle)
+>  	handle->cur = NULL;
+>  }
+>  
+> -static int get_swap_reader(struct swap_map_handle *handle,
+> -		unsigned int *flags_p)
+> +static struct hibernate_io_handle *get_swap_reader(unsigned int *flags_p)
+>  {
+> +	struct hibernate_io_handle *io_handle;
+> +	struct swap_map_handle *handle;
+>  	int error;
+>  
+>  	*flags_p = swsusp_header->flags;
+>  
+>  	if (!swsusp_header->image) /* how can this happen? */
+> -		return -EINVAL;
+> +		return ERR_PTR(-EINVAL);
+>  
+> +	io_handle = hib_io_handle_alloc(sizeof(*handle));
+> +	if (!io_handle)
+> +		return ERR_PTR(-ENOMEM);
+> +	handle = io_handle->priv;
+>  	handle->cur = (struct swap_map_page *)get_zeroed_page(__GFP_WAIT | __GFP_HIGH);
+> -	if (!handle->cur)
+> -		return -ENOMEM;
+> +	if (!handle->cur) {
+> +		error = -ENOMEM;
+> +		goto err_free;
+> +	}
+>  
+>  	error = hib_bio_read_page(swsusp_header->image, handle->cur, NULL);
+> -	if (error) {
+> -		release_swap_reader(handle);
+> -		return error;
+> -	}
+> +	if (error)
+> +		goto err_rel;
+>  	handle->k = 0;
+> -	return 0;
+> +	return io_handle;
+> +err_rel:
+> +	release_swap_reader(handle);
+> +err_free:
+> +	kfree(io_handle);
+> +	return ERR_PTR(error);
+>  }
+>  
+> -static int swap_read_page(struct swap_map_handle *handle, void *buf,
+> -				struct bio **bio_chain)
+> +static int swap_read_page(struct hibernate_io_handle *io_handle, void *buf,
+> +		struct bio **bio_chain)
+>  {
+> +	struct swap_map_handle *handle = io_handle->priv;
+>  	sector_t offset;
+>  	int error;
+>  
+> @@ -526,22 +551,25 @@ static int swap_read_page(struct swap_map_handle *handle, void *buf,
+>  	return error;
+>  }
+>  
+> -static int swap_reader_finish(struct swap_map_handle *handle)
+> +static int swap_reader_finish(struct hibernate_io_handle *io_handle)
+>  {
+> +	struct swap_map_handle *handle = io_handle->priv;
+> +
+>  	release_swap_reader(handle);
+> +	kfree(io_handle);
+>  
+>  	return 0;
+>  }
+>  
+>  /**
+> - *	load_image - load the image using the swap map handle
+> + *	load_image - load the image
+>   *	@handle and the snapshot handle @snapshot
+>   *	(assume there are @nr_pages pages to load)
+>   */
+>  
+> -static int load_image(struct swap_map_handle *handle,
+> -                      struct snapshot_handle *snapshot,
+> -                      unsigned int nr_to_read)
+> +static int load_image(struct hibernate_io_handle *io_handle,
+> +		      struct snapshot_handle *snapshot,
+> +		      unsigned int nr_to_read)
+>  {
+>  	unsigned int m;
+>  	int error = 0;
+> @@ -563,7 +591,7 @@ static int load_image(struct swap_map_handle *handle,
+>  		error = snapshot_write_next(snapshot);
+>  		if (error <= 0)
+>  			break;
+> -		error = swap_read_page(handle, data_of(*snapshot), &bio);
+> +		error = swap_read_page(io_handle, data_of(*snapshot), &bio);
+>  		if (error)
+>  			break;
+>  		if (snapshot->sync_read)
+> @@ -598,7 +626,7 @@ static int load_image(struct swap_map_handle *handle,
+>  int swsusp_read(unsigned int *flags_p)
+>  {
+>  	int error;
+> -	struct swap_map_handle handle;
+> +	struct hibernate_io_handle *io_handle;
+>  	struct snapshot_handle snapshot;
+>  	struct swsusp_info *header;
+>  
+> @@ -607,14 +635,16 @@ int swsusp_read(unsigned int *flags_p)
+>  	if (error < PAGE_SIZE)
+>  		return error < 0 ? error : -EFAULT;
+>  	header = (struct swsusp_info *)data_of(snapshot);
+> -	error = get_swap_reader(&handle, flags_p);
+> -	if (error)
+> +	io_handle = get_swap_reader(flags_p);
+> +	if (IS_ERR(io_handle)) {
+> +		error = PTR_ERR(io_handle);
+>  		goto end;
+> +	}
+>  	if (!error)
+> -		error = swap_read_page(&handle, header, NULL);
+> +		error = swap_read_page(io_handle, header, NULL);
+>  	if (!error)
+> -		error = load_image(&handle, &snapshot, header->pages - 1);
+> -	swap_reader_finish(&handle);
+> +		error = load_image(io_handle, &snapshot, header->pages - 1);
+> +	swap_reader_finish(io_handle);
+>  end:
+>  	if (!error)
+>  		pr_debug("PM: Image successfully loaded\n");
+> 
 
