@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab0FXQJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 12:09:44 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:59113 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171Ab0FXQJn (ORCPT
+	id S1755833Ab0FXQPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 12:15:10 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:47322 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755083Ab0FXQPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 12:09:43 -0400
-Date: Thu, 24 Jun 2010 18:09:37 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Huang Ying <ying.huang@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Borislav Petkov <petkovbb@googlemail.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mauro@elte.hu" <mauro@elte.hu>
-Subject: Re: [RFC][PATCH] irq_work
-Message-ID: <20100624160937.GQ578@basil.fritz.box>
-References: <1277377852.1875.950.camel@laptop>
- <20100624112340.GA13502@elte.hu>
- <1277379294.1875.959.camel@laptop>
- <20100624123537.GA28884@elte.hu>
- <20100624130234.GM578@basil.fritz.box>
- <20100624132032.GA4474@kryptos.osrc.amd.com>
- <20100624133323.GN578@basil.fritz.box>
- <20100624134609.GB30323@elte.hu>
- <20100624140143.GO578@basil.fritz.box>
- <20100624154124.GA6647@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100624154124.GA6647@aftab>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 24 Jun 2010 12:15:08 -0400
+Subject: Re: [rfc] Describe events in a structured way via sysfs
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+       Greg KH <greg@kroah.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <20100624093625.GA26931@elte.hu>
+References: <20100520231229.GB8335@kroah.com>
+	 <1274429038.1674.1684.camel@laptop> <20100521094053.GA4658@elte.hu>
+	 <AANLkTimf1Z0N9cv2Pu2qTTUscn4utC37zOPelCbqQoPv@mail.gmail.com>
+	 <1277110509.18390.28.camel@minggr.sh.intel.com>
+	 <1277112858.3618.16.camel@jlt3.sipsolutions.net>
+	 <1277187920.4467.3.camel@minggr.sh.intel.com>
+	 <1277189971.3637.5.camel@jlt3.sipsolutions.net>
+	 <1277191359.5025.4.camel@minggr.sh.intel.com>
+	 <1277192007.3637.8.camel@jlt3.sipsolutions.net>
+	 <20100624093625.GA26931@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Jun 2010 18:14:13 +0200
+Message-ID: <1277396053.3870.16.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 05:41:24PM +0200, Borislav Petkov wrote:
-> > If you don't do something
-> > (like killing or recovery) you could end up in a loop or consume
-> > corrupted data or something else bad. 
-> > 
-> > So the error has to have a fail safe path from detection to handling.
+On Thu, 2010-06-24 at 11:36 +0200, Ingo Molnar wrote:
+
+> That's probably best achieved via a TRACE_EVENT() variant, by passing in the 
+> sysfs location.
 > 
-> So we are talking about a more involved and "could-sleep" error
-> recovery.
+> It might even make sense to make this a part of TRACE_EVENT() itself and make 
+> 'NULL' the current default, non-sysfs-enumerated behavior. That way we can 
+> gradually (and non-intrusively) find all the right sysfs places for events.
 
-That's one case, there are other too.
+No, this doesn't work. A lot of events are multi-instance. Say you have
+an event for each USB device. This event would have to show up in many
+places in sysfs, and each trace_foo() invocation needs to get the struct
+device pointer, not just the TRACE_EVENT() definition. Additionally, to
+create/destroy the sysfs pieces we need something like
+init_trace_foo(dev) and destroy_trace_foo(dev) be called when the sysfs
+points for the device should be created/destroyed.
 
-> 
-> > That's quite different from logging or performance counting etc.
-> > where dropping events on overload is normal and expected.
-> 
-> So I went back and reread the whole thread, and correct me if I'm
-> wrong but the whole run softirq after NMI has one use case for now -
-> "could-sleep" error handling for MCEs _only_ on x86. So you're changing
+The TRACE_EVENT() just defines the template, but such multi-instance
+events really should be standardised in terms of their struct device (or
+maybe kobject).
 
-Nope, there are multiple use cases. Today it's background MCE
-and possibly perf if it ever decides to share code
-with the rest of the kernel instead of wanting to be Bork of Linux. 
-Future ones would be more MCE errors and also non MCE errors like NMIs.
+I think that needs some TRACE_DEVICE_EVENT macro that creates the
+required inlines etc, and including the init/destroy that are called
+when the event should show up in sysfs.
 
-> a bunch of generic and x86 kernel code just for error handling. Hmm,
-> that's a kinda big hammer in my book.
+There's no way you can have the event show up in sysfs at the right spot
+with _just_ a TRACE_EVENT macro, since at define time in the header file
+you don't even have a valid struct device pointer.
 
-Actually no, it would just make the current code slightly cleaner
-and somewhat more general.  But for most cases it works without it.
-> 
-> A slimmer solution is a much better way to go, IMHO. I think Peter said
-> something about irq_exit(), which should be just fine.
+johannes
 
-The "slimmer solution" is there, but it has some limitations.
-I merely said that softirqs would be useful for solving these limitations
-(but are not strictly needed)
-
-Anyways slimmer solution was even originally proposed, 
-just some of the earlier review proposed softirqs instead.
-So Ying posts softirqs and then he gets now flamed for posting
-softirqs.  Overall there wasn't much consistency in the suggestions,
-three different reviewers suggested three incompatible approaches.
-
-Anyways if there are no softirqs that's fine too, the error
-handler can probably live with not having that.
-
-> But AFAICT an arch-specific solution would be even better, e.g.
-> if you call into your deferred work helper from paranoid_exit in
-> <arch/x86/kernel/entry_64.S>. I.e, something like
-
-Yes that helps for part of the error handling (in fact this
-has been implemented), but that does not solve the self interrupt
-problem which requires delaying until next cli.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
