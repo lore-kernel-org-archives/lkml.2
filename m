@@ -1,129 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab0FXGgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 02:36:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43362 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174Ab0FXGgE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 02:36:04 -0400
-Subject: [RFC][PATCH] irq_work
-From: Peter Zijlstra <peterz@infradead.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H.PeterA" <"nvin hpa"@zytor.com>,
-       linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
-References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 24 Jun 2010 08:35:52 +0200
-Message-ID: <1277361352.1875.838.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753445Ab0FXGif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 02:38:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32964 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751398Ab0FXGid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 02:38:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,472,1272870000"; 
+   d="scan'208";a="579408130"
+Date: Thu, 24 Jun 2010 14:38:29 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <srostedt@redhat.com>
+Subject: Re: perf regression: failed to stat syscalls events
+Message-ID: <20100624063829.GA6501@localhost>
+References: <20100624013915.GA16965@localhost>
+ <20100624014422.GA17476@localhost>
+ <1277359125.1875.828.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277359125.1875.828.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 24, 2010 at 01:58:45PM +0800, Peter Zijlstra wrote:
+> On Thu, 2010-06-24 at 09:44 +0800, Wu Fengguang wrote:
+> > On Thu, Jun 24, 2010 at 09:39:15AM +0800, Wu Fengguang wrote:
+> > > Greetings,
+> > > 
+> > > I noticed that
+> > > 
+> > >         # perf stat -e syscalls:sys_enter_mmap true
+> > > 
+> > > refuse to work on 2.6.35-rc1. The last working kernel is 2.6.34.
+> > 
+> > Other events like lock:* or block:* or whatever continue to work.
+> > So this is a problem specific to syscalls:*.
+> 
+> Does your tree contain:
 
-Something like this, but filled out with some arch code that does the
-self-ipi and calls irq_work_run() should do.
+Thanks, it worked!  This patch is missing from linux-2.6.git for now.
 
-No need to molest the softirq code, no need for limited vectors of any
-kind.
+Thanks,
+Fengguang
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- include/linux/irq_callback.h |   13 ++++++++
- kernel/irq_callback.c        |   66 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 79 insertions(+)
 
-Index: linux-2.6/include/linux/irq_callback.h
-===================================================================
---- /dev/null
-+++ linux-2.6/include/linux/irq_callback.h
-@@ -0,0 +1,13 @@
-+#ifndef _LINUX_IRQ_CALLBACK_H
-+#define _LINUX_IRQ_CALLBACK_H
-+
-+struct irq_work {
-+	struct irq_work *next;
-+	void (*func)(struct irq_work *);
-+};
-+
-+int irq_work_queue(struct irq_work *entry, void (*func)(struct irq_work *));
-+void irq_work_run(void);
-+void irq_work_sync(struct irq_work *entry);
-+
-+#endif /* _LINUX_IRQ_CALLBACK_H */
-Index: linux-2.6/kernel/irq_callback.c
-===================================================================
---- /dev/null
-+++ linux-2.6/kernel/irq_callback.c
-@@ -0,0 +1,66 @@
-+
-+#include <linux/irq_callback.h>
-+
-+#define CALLBACK_TAIL ((struct irq_work *)-1UL)
-+
-+static DEFINE_PER_CPU(struct irq_work *, irq_work_list) = {
-+	CALLBACK_TAIL,
-+};
-+
-+int irq_work_queue(struct irq_work *entry, void (*func)(struct irq_work *))
-+{
-+	struct irq_work **head;
-+
-+	if (cmpxchg(&entry->next, NULL, CALLBACK_TAIL) != NULL)
-+		return 0;
-+
-+	entry->func = func;
-+
-+	head = &get_cpu_var(irq_work_list);
-+
-+	do {
-+		entry->next = *head;
-+	} while (cmpxchg(head, entry->next, entry) != entry->next);
-+
-+	if (entry->next == CALLBACK_TAIL)
-+		arch_self_ipi();
-+
-+	put_cpu_var(irq_work_list);
-+	return 1;
-+}
-+
-+void irq_work_run(void)
-+{
-+	struct irq_work *list;
-+
-+	list = xchg(&__get_cpu_var(irq_work_list), CALLBACK_TAIL);
-+	while (list != CALLBACK_TAIL) {
-+		struct irq_work *entry = list;
-+
-+		list = list->next;
-+		entry->func(entry);
-+
-+		entry->next = NULL;
-+		/*
-+		 * matches the mb in cmpxchg() in irq_work_queue()
-+		 */
-+		smp_wmb();
-+	}
-+}
-+
-+static int irq_work_pending(struct irq_work *entry)
-+{
-+	/*
-+	 * matches the wmb in irq_work_run
-+	 */
-+	smp_rmb();
-+	return entry->next != NULL;
-+}
-+
-+void irq_work_sync(struct irq_work *entry)
-+{
-+	WARN_ON_ONCE(irqs_disabled());
-+
-+	while (irq_work_pending(entry))
-+		cpu_relax();
-+}
-
+> ---
+> commit a8fb2608053547bc3152ea61a5ec7cdfce5d942c
+> Author: Steven Rostedt <srostedt@redhat.com>
+> Date:   Thu Jun 10 14:53:16 2010 -0400
+> 
+>     perf/tracing: Fix regression of perf losing kprobe events
+>     
+>     With the addition of the code to shrink the kernel tracepoint
+>     infrastructure, we lost kprobes being traced by perf. The reason
+>     is that I tested if the "tp_event->class->perf_probe" existed before
+>     enabling it. This prevents "ftrace only" events (like the function
+>     trace events) from being enabled by perf.
+>     
+>     Unfortunately, kprobe events do not use perf_probe. This causes
+>     kprobes to be missed by perf. To fix this, we add the test to
+>     see if "tp_event->class->reg" exists as well as perf_probe.
+>     
+>     Normal trace events have only "perf_probe" but no "reg" function,
+>     and kprobes and syscalls have the "reg" but no "perf_probe".
+>     The ftrace unique events do not have either, so this is a valid
+>     test. If a kprobe or syscall is not to be probed by perf, the
+>     "reg" function is called anyway, and will return a failure and
+>     prevent perf from probing it.
+>     
+>     Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>     Tested-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>     Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>     Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+> index e6f6588..8a2b73f 100644
+> --- a/kernel/trace/trace_event_perf.c
+> +++ b/kernel/trace/trace_event_perf.c
+> @@ -96,7 +96,9 @@ int perf_trace_init(struct perf_event *p_event)
+>  	mutex_lock(&event_mutex);
+>  	list_for_each_entry(tp_event, &ftrace_events, list) {
+>  		if (tp_event->event.type == event_id &&
+> -		    tp_event->class && tp_event->class->perf_probe &&
+> +		    tp_event->class &&
+> +		    (tp_event->class->perf_probe ||
+> +		     tp_event->class->reg) &&
+>  		    try_module_get(tp_event->mod)) {
+>  			ret = perf_trace_event_init(tp_event, p_event);
+>  			break;
+> 
