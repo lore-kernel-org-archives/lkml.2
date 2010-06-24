@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab0FXXIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 19:08:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47129 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882Ab0FXXII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 19:08:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [update 2] Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Date: Fri, 25 Jun 2010 01:06:41 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Florian Mickler <florian@mickler.org>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-References: <Pine.LNX.4.44L0.1006241257410.1654-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1006241257410.1654-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006250106.41855.rjw@sisk.pl>
+	id S1754284Ab0FXXNl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 19:13:41 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:50001 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738Ab0FXXNj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 19:13:39 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.0 c=1 a=7yc1YO-cavgA:10 a=q8OS1GolVHwA:10 a=VphdPIyG4kEA:10
+ a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=R-pH_Scea3RLsBqJXwoA:9
+ a=ogZ5tRl8enG2rw_Riw6IbnUwxWcA:4 a=CjuIK1q_8ugA:10
+Subject: Re: [rfc] new stat*fs-like syscall?
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20100624131455.GA10441@laptop>
+Date: Thu, 24 Jun 2010 17:13:38 -0600
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Al Viro <viro@ZenIV.linux.org.uk>, Ulrich Drepper <drepper@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A57010D3-065B-41B1-85E6-8B9C61970D37@dilger.ca>
+References: <20100624131455.GA10441@laptop>
+To: Nick Piggin <npiggin@suse.de>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 24, 2010, Alan Stern wrote:
-> On Thu, 24 Jun 2010, Rafael J. Wysocki wrote:
-> 
-> > > This is slightly different from the wakelock design.  Each call to
-> > > pm_stay_awake() must be paired with a call to pm_relax(), allowing one
-> > > device to have multiple concurrent critical sections, whereas calls to
-> > > pm_wakeup_event() must not be paired with anything.  With wakelocks,
-> > > you couldn't have multiple pending events for the same device.
-> > 
-> > You could, but you needed to define multiple wakelocks for the same device for
-> > this purpose.
-> 
-> Yeah, okay, but who's going to do that?
-> 
-> > > I'm not sure which model is better in practice.  No doubt the Android people 
-> > > will prefer their way.
-> > 
-> > I suppose so.
-> 
-> It may not make a significant difference in the end.  You can always
-> emulate the wakelock approach by not calling pm_stay_awake() when you
-> know there is an earlier call still pending.
-> 
-> > > This requires you to define an explicit PCI_WAKEUP_COOLDOWN delay.  I 
-> > > think that's okay; I had to do something similar with USB and SCSI.  
-> > > (And I still think it would be a good idea to prevent workqueue threads 
-> > > from freezing until their queues are empty.)
-> > 
-> > I guess you mean the freezable ones?
-> 
-> Yes.  The unfreezable workqueue threads don't have to worry about 
-> getting frozen while their queues are non-empty.  :-)
-> 
-> >  I'm not sure if that helps a lot, because
-> > new work items may still be added after the workqueue thread has been frozen.
-> 
-> That's not the point.  If a wakeup handler queues a work item (for
-> example, by calling pm_request_resume) then it wouldn't need to guess a
-> timeout.  The work item would be guaranteed to run before the system
-> could suspend again.
+On 2010-06-24, at 07:14, Nick Piggin wrote:
+> This means glibc has to provide f_flag support by parsing /proc/mounts
+> and stat(2)ing mount points. This is really slow, and /proc/mounts is
+> hard for the kernel to provide.
 
-You seem to be referring to the PM workqueue specifically.  Perhaps it would be
-better to special-case it and stop it by adding a barrier work during suspend
-instead of just freezing?  Then, it wouldn't need to be singlethread any more.
+Not only that, but if a mountpoint is broken (e.g. remote NFS server) then the glibc stat of all the mountpoints can hang the statvfs() call even if there is no interest in that particular filesystem.
 
-Still, I think the timeout is necessary anyway in case the driver simply
-doesn't handle the event and user space needs time to catch up.  Unfortunately,
-the PCI wakeup code doesn't know what happens next in advance.
+> It's actually the last scalability bottleneck in the core vfs for dbench (samba) after my patches.
+> 
+> Not only that, but it's racy.
+> 
+> Other than types, other differences are:
+> - statvfs(2) has is f_frsize, which seems fairly useless.
 
-Rafael
+Actually, we were just lamenting the fact that f_frsize is currently broken, because Lustre wants to export the IO size as 1MB for good RPC performance, but the underlying blocksize is 4kB (ext3 blocksize).  Similarly, NFS might want to export the rsize/wsize of 32kB or 64kB even if the underlying filesystem blocksize is smaller.
+
+> - statvfs(2) has f_favail.
+> - statfs(2) f_bsize is optimal transfer block, statvfs(2) f_bsize is fs
+>  block size. The latter could be useful for disk space algorithms.
+>  Both can be ill defned.
+
+According to POSIX, "f_bsize" is the blocksize, but unfortunately this was botched in the earlier Linux implementations so currently they are both set to the same value, and using anything other than that breaks userspace programs that get them mixed up.
+
+> - statvfs(2) lacks f_type.
+> 
+> Is there anything more we should add here? Samba wants a capabilities
+> field, with things like sparse files, quotas, compression, encryption,
+> case preserving/sensitive.
+
+It wouldn't be a bad idea, but then you could get into issues of what exactly the above flags mean.  That said, I think it is better to have broad categories of features that may be slightly ill-defined than having nothing at all.
+
+Cheers, Andreas
+
+
+
+
+
