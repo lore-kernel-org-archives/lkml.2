@@ -1,450 +1,488 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab0FXDWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 23:22:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48501 "EHLO mx1.suse.de"
+	id S1754771Ab0FXDWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 23:22:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36077 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754324Ab0FXDQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 23:16:08 -0400
-Message-Id: <20100624030730.419497214@suse.de>
+	id S1754298Ab0FXDQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 23:16:06 -0400
+Message-Id: <20100624030727.967668299@suse.de>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 24 Jun 2010 13:02:42 +1000
+Date: Thu, 24 Jun 2010 13:02:27 +1000
 From: npiggin@suse.de
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: [patch 30/52] fs: icache lock lru/writeback lists
+Subject: [patch 15/52] fs: dcache scale inode alias list
 References: <20100624030212.676457061@suse.de>
-Content-Disposition: inline; filename=fs-inode_lock-scale-6.patch
+Content-Disposition: inline; filename=fs-dcache-scale-i_dentry.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new lock, wb_inode_list_lock, to protect i_list and various lists
-which the inode can be put onto.
+Add a new lock, dcache_inode_lock, to protect the inode's i_dentry list
+from concurrent modification. d_alias is also protected by d_lock.
 
 Signed-off-by: Nick Piggin <npiggin@suse.de>
 ---
- fs/fs-writeback.c         |   40 ++++++++++++++++++++++++++++++++++++++--
- fs/inode.c                |   43 +++++++++++++++++++++++++++++++++++--------
- include/linux/writeback.h |    1 +
- mm/backing-dev.c          |    4 ++++
- 4 files changed, 78 insertions(+), 10 deletions(-)
+ fs/affs/amigaffs.c          |    2 +
+ fs/dcache.c                 |   56 +++++++++++++++++++++++++++++++++++++++-----
+ fs/exportfs/expfs.c         |    4 +++
+ fs/nfs/getroot.c            |    4 +++
+ fs/notify/fsnotify.c        |    2 +
+ fs/notify/inotify/inotify.c |    2 +
+ fs/ocfs2/dcache.c           |    3 +-
+ fs/sysfs/dir.c              |    3 ++
+ include/linux/dcache.h      |    1 
+ 9 files changed, 70 insertions(+), 7 deletions(-)
 
-Index: linux-2.6/fs/fs-writeback.c
+Index: linux-2.6/fs/dcache.c
 ===================================================================
---- linux-2.6.orig/fs/fs-writeback.c
-+++ linux-2.6/fs/fs-writeback.c
-@@ -287,6 +287,7 @@ static void redirty_tail(struct inode *i
- {
- 	struct bdi_writeback *wb = &inode_to_bdi(inode)->wb;
+--- linux-2.6.orig/fs/dcache.c
++++ linux-2.6/fs/dcache.c
+@@ -37,6 +37,8 @@
  
-+	assert_spin_locked(&wb_inode_list_lock);
- 	if (!list_empty(&wb->b_dirty)) {
- 		struct inode *tail;
- 
-@@ -304,6 +305,7 @@ static void requeue_io(struct inode *ino
- {
- 	struct bdi_writeback *wb = &inode_to_bdi(inode)->wb;
- 
-+	assert_spin_locked(&wb_inode_list_lock);
- 	list_move(&inode->i_list, &wb->b_more_io);
- }
- 
-@@ -344,6 +346,7 @@ static void move_expired_inodes(struct l
- 	struct inode *inode;
- 	int do_sb_sort = 0;
- 
-+	assert_spin_locked(&wb_inode_list_lock);
- 	while (!list_empty(delaying_queue)) {
- 		inode = list_entry(delaying_queue->prev, struct inode, i_list);
- 		if (older_than_this &&
-@@ -399,11 +402,13 @@ static void inode_wait_for_writeback(str
- 
- 	wqh = bit_waitqueue(&inode->i_state, __I_SYNC);
- 	while (inode->i_state & I_SYNC) {
-+		spin_unlock(&wb_inode_list_lock);
- 		spin_unlock(&inode->i_lock);
- 		spin_unlock(&inode_lock);
- 		__wait_on_bit(wqh, &wq, inode_wait, TASK_UNINTERRUPTIBLE);
- 		spin_lock(&inode_lock);
- 		spin_lock(&inode->i_lock);
-+		spin_lock(&wb_inode_list_lock);
- 	}
- }
- 
-@@ -457,6 +462,7 @@ writeback_single_inode(struct inode *ino
- 	/* Set I_SYNC, reset I_DIRTY_PAGES */
- 	inode->i_state |= I_SYNC;
- 	inode->i_state &= ~I_DIRTY_PAGES;
-+	spin_unlock(&wb_inode_list_lock);
- 	spin_unlock(&inode->i_lock);
- 	spin_unlock(&inode_lock);
- 
-@@ -493,6 +499,7 @@ writeback_single_inode(struct inode *ino
- 
- 	spin_lock(&inode_lock);
- 	spin_lock(&inode->i_lock);
-+	spin_lock(&wb_inode_list_lock);
- 	inode->i_state &= ~I_SYNC;
- 	if (!(inode->i_state & (I_FREEING | I_CLEAR))) {
- 		if ((inode->i_state & I_DIRTY_PAGES) && wbc->for_kupdate) {
-@@ -623,23 +630,31 @@ static int writeback_sb_inodes(struct su
- 			       struct bdi_writeback *wb,
- 			       struct writeback_control *wbc)
- {
-+again:
- 	while (!list_empty(&wb->b_io)) {
- 		long pages_skipped;
- 		struct inode *inode = list_entry(wb->b_io.prev,
- 						 struct inode, i_list);
-+		if (!spin_trylock(&inode->i_lock)) {
-+			spin_unlock(&wb_inode_list_lock);
-+			spin_lock(&wb_inode_list_lock);
-+			goto again;
-+		}
- 		if (wbc->sb && sb != inode->i_sb) {
- 			/* super block given and doesn't
- 			   match, skip this inode */
- 			redirty_tail(inode);
-+			spin_unlock(&inode->i_lock);
- 			continue;
- 		}
--		if (sb != inode->i_sb)
-+		if (sb != inode->i_sb) {
- 			/* finish with this superblock */
-+			spin_unlock(&inode->i_lock);
- 			return 0;
--		spin_lock(&inode->i_lock);
-+		}
- 		if (inode->i_state & (I_NEW | I_WILL_FREE)) {
--			spin_unlock(&inode->i_lock);
- 			requeue_io(inode);
-+			spin_unlock(&inode->i_lock);
- 			continue;
- 		}
- 		/*
-@@ -662,11 +677,13 @@ static int writeback_sb_inodes(struct su
- 			 */
- 			redirty_tail(inode);
- 		}
-+		spin_unlock(&wb_inode_list_lock);
- 		spin_unlock(&inode->i_lock);
- 		spin_unlock(&inode_lock);
- 		iput(inode);
- 		cond_resched();
- 		spin_lock(&inode_lock);
-+		spin_lock(&wb_inode_list_lock);
- 		if (wbc->nr_to_write <= 0) {
- 			wbc->more_io = 1;
- 			return 1;
-@@ -685,6 +702,9 @@ static void writeback_inodes_wb(struct b
- 
- 	wbc->wb_start = jiffies; /* livelock avoidance */
- 	spin_lock(&inode_lock);
-+again:
-+	spin_lock(&wb_inode_list_lock);
-+
- 	if (!wbc->for_kupdate || list_empty(&wb->b_io))
- 		queue_io(wb, wbc->older_than_this);
- 
-@@ -697,13 +717,23 @@ static void writeback_inodes_wb(struct b
- 		if (wbc->sb && sb != wbc->sb) {
- 			/* super block given and doesn't
- 			   match, skip this inode */
-+			if (!spin_trylock(&inode->i_lock)) {
-+				spin_unlock(&wb_inode_list_lock);
-+				goto again;
-+			}
- 			redirty_tail(inode);
-+			spin_unlock(&inode->i_lock);
- 			continue;
- 		}
- 		state = pin_sb_for_writeback(wbc, sb);
- 
- 		if (state == SB_PIN_FAILED) {
-+			if (!spin_trylock(&inode->i_lock)) {
-+				spin_unlock(&wb_inode_list_lock);
-+				goto again;
-+			}
- 			requeue_io(inode);
-+			spin_unlock(&inode->i_lock);
- 			continue;
- 		}
- 		ret = writeback_sb_inodes(sb, wb, wbc);
-@@ -713,6 +743,7 @@ static void writeback_inodes_wb(struct b
- 		if (ret)
- 			break;
- 	}
-+	spin_unlock(&wb_inode_list_lock);
- 	spin_unlock(&inode_lock);
- 	/* Leave any unwritten inodes on b_io */
- }
-@@ -825,12 +856,21 @@ static long wb_writeback(struct bdi_writ
- 		 * become available for writeback. Otherwise
- 		 * we'll just busyloop.
- 		 */
-+retry:
- 		spin_lock(&inode_lock);
-+		spin_lock(&wb_inode_list_lock);
- 		if (!list_empty(&wb->b_more_io))  {
- 			inode = list_entry(wb->b_more_io.prev,
- 						struct inode, i_list);
-+			if (!spin_trylock(&inode->i_lock)) {
-+				spin_unlock(&wb_inode_list_lock);
-+				spin_unlock(&inode_lock);
-+				goto retry;
-+			}
- 			inode_wait_for_writeback(inode);
-+			spin_unlock(&inode->i_lock);
- 		}
-+		spin_unlock(&wb_inode_list_lock);
- 		spin_unlock(&inode_lock);
- 	}
- 
-@@ -1142,7 +1182,9 @@ void __mark_inode_dirty(struct inode *in
- 			}
- 
- 			inode->dirtied_when = jiffies;
-+			spin_lock(&wb_inode_list_lock);
- 			list_move(&inode->i_list, &wb->b_dirty);
-+			spin_unlock(&wb_inode_list_lock);
- 		}
- 	}
- out:
-@@ -1306,7 +1348,9 @@ int write_inode_now(struct inode *inode,
- 	might_sleep();
- 	spin_lock(&inode_lock);
- 	spin_lock(&inode->i_lock);
-+	spin_lock(&wb_inode_list_lock);
- 	ret = writeback_single_inode(inode, &wbc);
-+	spin_unlock(&wb_inode_list_lock);
- 	spin_unlock(&inode->i_lock);
- 	spin_unlock(&inode_lock);
- 	if (sync)
-@@ -1332,7 +1376,9 @@ int sync_inode(struct inode *inode, stru
- 
- 	spin_lock(&inode_lock);
- 	spin_lock(&inode->i_lock);
-+	spin_lock(&wb_inode_list_lock);
- 	ret = writeback_single_inode(inode, wbc);
-+	spin_unlock(&wb_inode_list_lock);
- 	spin_unlock(&inode->i_lock);
- 	spin_unlock(&inode_lock);
- 	return ret;
-Index: linux-2.6/fs/inode.c
-===================================================================
---- linux-2.6.orig/fs/inode.c
-+++ linux-2.6/fs/inode.c
-@@ -32,6 +32,8 @@
-  *   s_inodes, i_sb_list
-  * inode_hash_lock protects:
-  *   inode hash table, i_hash
-+ * wb_inode_list_lock protects:
-+ *   inode_in_use, inode_unused, b_io, b_more_io, b_dirty, i_list
-  * inode->i_lock protects:
-  *   i_state, i_count
+ /*
+  * Usage:
++ * dcache_inode_lock protects:
++ *   - i_dentry, d_alias, d_inode
+  * dcache_hash_lock protects:
+  *   - the dcache hash table
+  * dcache_lru_lock protects:
+@@ -49,12 +51,14 @@
+  *   - d_unhashed()
+  *   - d_parent and d_subdirs
+  *   - childrens' d_child and d_parent
++ *   - d_alias, d_inode
   *
-@@ -39,6 +41,7 @@
-  * inode_lock
-  *   sb_inode_list_lock
-  *     inode->i_lock
-+ *       wb_inode_list_lock
-  *       inode_hash_lock
-  */
- /*
-@@ -100,6 +103,7 @@ static struct hlist_head *inode_hashtabl
-  */
- DEFINE_SPINLOCK(inode_lock);
- DEFINE_SPINLOCK(sb_inode_list_lock);
-+DEFINE_SPINLOCK(wb_inode_list_lock);
- DEFINE_SPINLOCK(inode_hash_lock);
+  * Ordering:
+  * dcache_lock
+- *   dentry->d_lock
+- *     dcache_lru_lock
+- *     dcache_hash_lock
++ *   dcache_inode_lock
++ *     dentry->d_lock
++ *       dcache_lru_lock
++ *       dcache_hash_lock
+  *
+  * If there is an ancestor relationship:
+  * dentry->d_parent->...->d_parent->d_lock
+@@ -70,11 +74,13 @@
+ int sysctl_vfs_cache_pressure __read_mostly = 100;
+ EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
  
- /*
-@@ -309,8 +313,11 @@ void __iget(struct inode *inode)
- 	if (inode->i_count > 1)
- 		return;
++__cacheline_aligned_in_smp DEFINE_SPINLOCK(dcache_inode_lock);
+ __cacheline_aligned_in_smp DEFINE_SPINLOCK(dcache_hash_lock);
+ static __cacheline_aligned_in_smp DEFINE_SPINLOCK(dcache_lru_lock);
+ __cacheline_aligned_in_smp DEFINE_SPINLOCK(dcache_lock);
+ __cacheline_aligned_in_smp DEFINE_SEQLOCK(rename_lock);
  
--	if (!(inode->i_state & (I_DIRTY|I_SYNC)))
-+	if (!(inode->i_state & (I_DIRTY|I_SYNC))) {
-+		spin_lock(&wb_inode_list_lock);
- 		list_move(&inode->i_list, &inode_in_use);
-+		spin_unlock(&wb_inode_list_lock);
-+	}
- 	inodes_stat.nr_unused--;
++EXPORT_SYMBOL(dcache_inode_lock);
+ EXPORT_SYMBOL(dcache_hash_lock);
+ EXPORT_SYMBOL(dcache_lock);
+ 
+@@ -139,6 +145,7 @@ static void d_free(struct dentry *dentry
+  */
+ static void dentry_iput(struct dentry * dentry)
+ 	__releases(dentry->d_lock)
++	__releases(dcache_inode_lock)
+ 	__releases(dcache_lock)
+ {
+ 	struct inode *inode = dentry->d_inode;
+@@ -146,6 +153,7 @@ static void dentry_iput(struct dentry *
+ 		dentry->d_inode = NULL;
+ 		list_del_init(&dentry->d_alias);
+ 		spin_unlock(&dentry->d_lock);
++		spin_unlock(&dcache_inode_lock);
+ 		spin_unlock(&dcache_lock);
+ 		if (!inode->i_nlink)
+ 			fsnotify_inoderemove(inode);
+@@ -155,6 +163,7 @@ static void dentry_iput(struct dentry *
+ 			iput(inode);
+ 	} else {
+ 		spin_unlock(&dentry->d_lock);
++		spin_unlock(&dcache_inode_lock);
+ 		spin_unlock(&dcache_lock);
+ 	}
+ }
+@@ -226,6 +235,7 @@ static void dentry_lru_del_init(struct d
+  */
+ static struct dentry *d_kill(struct dentry *dentry)
+ 	__releases(dentry->d_lock)
++	__releases(dcache_inode_lock)
+ 	__releases(dcache_lock)
+ {
+ 	struct dentry *parent;
+@@ -290,15 +300,20 @@ repeat:
+ 			 * want to reduce dcache_lock anyway so this will
+ 			 * get improved.
+ 			 */
++drop1:
+ 			spin_unlock(&dentry->d_lock);
+ 			goto repeat;
+ 		}
++		if (!spin_trylock(&dcache_inode_lock)) {
++drop2:
++			spin_unlock(&dcache_lock);
++			goto drop1;
++		}
+ 		parent = dentry->d_parent;
+ 		if (parent && parent != dentry) {
+ 			if (!spin_trylock(&parent->d_lock)) {
+-				spin_unlock(&dentry->d_lock);
+-				spin_unlock(&dcache_lock);
+-				goto repeat;
++				spin_unlock(&dcache_inode_lock);
++				goto drop2;
+ 			}
+ 		}
+ 	}
+@@ -328,6 +343,7 @@ repeat:
+  	spin_unlock(&dentry->d_lock);
+ 	if (parent && parent != dentry)
+ 		spin_unlock(&parent->d_lock);
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ 	return;
+ 
+@@ -510,7 +526,9 @@ struct dentry * d_find_alias(struct inod
+ 
+ 	if (!list_empty(&inode->i_dentry)) {
+ 		spin_lock(&dcache_lock);
++		spin_lock(&dcache_inode_lock);
+ 		de = __d_find_alias(inode, 0);
++		spin_unlock(&dcache_inode_lock);
+ 		spin_unlock(&dcache_lock);
+ 	}
+ 	return de;
+@@ -526,18 +544,21 @@ void d_prune_aliases(struct inode *inode
+ 	struct dentry *dentry;
+ restart:
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 	list_for_each_entry(dentry, &inode->i_dentry, d_alias) {
+ 		spin_lock(&dentry->d_lock);
+ 		if (!dentry->d_count) {
+ 			__dget_locked_dlock(dentry);
+ 			__d_drop(dentry);
+ 			spin_unlock(&dentry->d_lock);
++			spin_unlock(&dcache_inode_lock);
+ 			spin_unlock(&dcache_lock);
+ 			dput(dentry);
+ 			goto restart;
+ 		}
+ 		spin_unlock(&dentry->d_lock);
+ 	}
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ }
+ EXPORT_SYMBOL(d_prune_aliases);
+@@ -566,6 +587,7 @@ static void prune_one_dentry(struct dent
+ 		struct dentry *parent = NULL;
+ 
+ 		spin_lock(&dcache_lock);
++		spin_lock(&dcache_inode_lock);
+ again:
+ 		spin_lock(&dentry->d_lock);
+ 		if (dentry->d_parent && dentry != dentry->d_parent) {
+@@ -580,6 +602,7 @@ again:
+ 			if (parent)
+ 				spin_unlock(&parent->d_lock);
+ 			spin_unlock(&dentry->d_lock);
++			spin_unlock(&dcache_inode_lock);
+ 			spin_unlock(&dcache_lock);
+ 			return;
+ 		}
+@@ -650,6 +673,7 @@ restart:
+ 	spin_unlock(&dcache_lru_lock);
+ 
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ again:
+ 	spin_lock(&dcache_lru_lock); /* lru_lock also protects tmp list */
+ 	while (!list_empty(&tmp)) {
+@@ -681,8 +705,10 @@ again1:
+ 		prune_one_dentry(dentry);
+ 		/* dcache_lock and dentry->d_lock dropped */
+ 		spin_lock(&dcache_lock);
++		spin_lock(&dcache_inode_lock);
+ 		spin_lock(&dcache_lru_lock);
+ 	}
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ 
+ 	if (count == NULL && !list_empty(&sb->s_dentry_lru))
+@@ -1198,9 +1224,11 @@ EXPORT_SYMBOL(d_alloc_name);
+ /* the caller must hold dcache_lock */
+ static void __d_instantiate(struct dentry *dentry, struct inode *inode)
+ {
++	spin_lock(&dentry->d_lock);
+ 	if (inode)
+ 		list_add(&dentry->d_alias, &inode->i_dentry);
+ 	dentry->d_inode = inode;
++	spin_unlock(&dentry->d_lock);
+ 	fsnotify_d_instantiate(dentry, inode);
  }
  
-@@ -413,7 +420,9 @@ static int invalidate_list(struct list_h
- 		}
- 		invalidate_inode_buffers(inode);
- 		if (!inode->i_count) {
-+			spin_lock(&wb_inode_list_lock);
- 			list_move(&inode->i_list, dispose);
-+			spin_unlock(&wb_inode_list_lock);
- 			WARN_ON(inode->i_state & I_NEW);
- 			inode->i_state |= I_FREEING;
- 			spin_unlock(&inode->i_lock);
-@@ -492,6 +501,8 @@ static void prune_icache(int nr_to_scan)
- 
- 	down_read(&iprune_sem);
- 	spin_lock(&inode_lock);
-+again:
-+	spin_lock(&wb_inode_list_lock);
- 	for (nr_scanned = 0; nr_scanned < nr_to_scan; nr_scanned++) {
- 		struct inode *inode;
- 
-@@ -500,13 +511,17 @@ static void prune_icache(int nr_to_scan)
- 
- 		inode = list_entry(inode_unused.prev, struct inode, i_list);
- 
--		spin_lock(&inode->i_lock);
-+		if (!spin_trylock(&inode->i_lock)) {
-+			spin_unlock(&wb_inode_list_lock);
-+			goto again;
-+		}
- 		if (inode->i_state || inode->i_count) {
- 			list_move(&inode->i_list, &inode_unused);
- 			spin_unlock(&inode->i_lock);
- 			continue;
- 		}
- 		if (inode_has_buffers(inode) || inode->i_data.nrpages) {
-+			spin_unlock(&wb_inode_list_lock);
- 			__iget(inode);
- 			spin_unlock(&inode->i_lock);
- 			spin_unlock(&inode_lock);
-@@ -515,11 +530,16 @@ static void prune_icache(int nr_to_scan)
- 								0, -1);
- 			iput(inode);
- 			spin_lock(&inode_lock);
-+again2:
-+			spin_lock(&wb_inode_list_lock);
- 
- 			if (inode != list_entry(inode_unused.next,
- 						struct inode, i_list))
- 				continue;	/* wrong inode or list_empty */
--			spin_lock(&inode->i_lock);
-+			if (!spin_trylock(&inode->i_lock)) {
-+				spin_unlock(&wb_inode_list_lock);
-+				goto again2;
-+			}
- 			if (!can_unuse(inode)) {
- 				spin_unlock(&inode->i_lock);
- 				continue;
-@@ -537,6 +557,7 @@ static void prune_icache(int nr_to_scan)
- 	else
- 		__count_vm_events(PGINODESTEAL, reap);
- 	spin_unlock(&inode_lock);
-+	spin_unlock(&wb_inode_list_lock);
- 
- 	dispose_list(&freeable);
- 	up_read(&iprune_sem);
-@@ -660,7 +681,9 @@ __inode_add_to_lists(struct super_block
- 	spin_lock(&sb_inode_list_lock);
- 	list_add(&inode->i_sb_list, &sb->s_inodes);
- 	spin_unlock(&sb_inode_list_lock);
-+	spin_lock(&wb_inode_list_lock);
- 	list_add(&inode->i_list, &inode_in_use);
-+	spin_unlock(&wb_inode_list_lock);
- 	if (head) {
- 		spin_lock(&inode_hash_lock);
- 		hlist_add_head(&inode->i_hash, head);
-@@ -1290,7 +1313,9 @@ void generic_delete_inode(struct inode *
+@@ -1223,7 +1251,9 @@ void d_instantiate(struct dentry *entry,
  {
- 	const struct super_operations *op = inode->i_sb->s_op;
+ 	BUG_ON(!list_empty(&entry->d_alias));
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 	__d_instantiate(entry, inode);
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ 	security_d_instantiate(entry, inode);
+ }
+@@ -1284,7 +1314,9 @@ struct dentry *d_instantiate_unique(stru
+ 	BUG_ON(!list_empty(&entry->d_alias));
  
-+	spin_lock(&wb_inode_list_lock);
- 	list_del_init(&inode->i_list);
-+	spin_unlock(&wb_inode_list_lock);
- 	list_del_init(&inode->i_sb_list);
- 	spin_unlock(&sb_inode_list_lock);
- 	WARN_ON(inode->i_state & I_NEW);
-@@ -1335,8 +1360,11 @@ int generic_detach_inode(struct inode *i
- 	struct super_block *sb = inode->i_sb;
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 	result = __d_instantiate_unique(entry, inode);
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
  
- 	if (!hlist_unhashed(&inode->i_hash)) {
--		if (!(inode->i_state & (I_DIRTY|I_SYNC)))
-+		if (!(inode->i_state & (I_DIRTY|I_SYNC))) {
-+			spin_lock(&wb_inode_list_lock);
- 			list_move(&inode->i_list, &inode_unused);
-+			spin_unlock(&wb_inode_list_lock);
-+		}
- 		inodes_stat.nr_unused++;
- 		if (sb->s_flags & MS_ACTIVE) {
- 			spin_unlock(&inode->i_lock);
-@@ -1360,7 +1388,9 @@ int generic_detach_inode(struct inode *i
- 		hlist_del_init(&inode->i_hash);
- 		spin_unlock(&inode_hash_lock);
- 	}
-+	spin_lock(&wb_inode_list_lock);
- 	list_del_init(&inode->i_list);
-+	spin_unlock(&wb_inode_list_lock);
- 	list_del_init(&inode->i_sb_list);
- 	spin_unlock(&sb_inode_list_lock);
- 	WARN_ON(inode->i_state & I_NEW);
-@@ -1432,17 +1462,17 @@ void iput(struct inode *inode)
- 	if (inode) {
- 		BUG_ON(inode->i_state == I_CLEAR);
+ 	if (!result) {
+@@ -1375,8 +1407,10 @@ struct dentry *d_obtain_alias(struct ino
+ 	tmp->d_parent = tmp; /* make sure dput doesn't croak */
  
--retry:
-+retry1:
- 		spin_lock(&inode->i_lock);
- 		if (inode->i_count == 1) {
- 			if (!spin_trylock(&inode_lock)) {
-+retry2:
- 				spin_unlock(&inode->i_lock);
--				goto retry;
-+				goto retry1;
- 			}
- 			if (!spin_trylock(&sb_inode_list_lock)) {
- 				spin_unlock(&inode_lock);
--				spin_unlock(&inode->i_lock);
--				goto retry;
-+				goto retry2;
- 			}
- 			inode->i_count--;
- 			iput_final(inode);
-Index: linux-2.6/include/linux/writeback.h
-===================================================================
---- linux-2.6.orig/include/linux/writeback.h
-+++ linux-2.6/include/linux/writeback.h
-@@ -11,6 +11,7 @@ struct backing_dev_info;
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 	res = __d_find_alias(inode, 0);
+ 	if (res) {
++		spin_unlock(&dcache_inode_lock);
+ 		spin_unlock(&dcache_lock);
+ 		dput(tmp);
+ 		goto out_iput;
+@@ -1391,6 +1425,7 @@ struct dentry *d_obtain_alias(struct ino
+ 	list_add(&tmp->d_alias, &inode->i_dentry);
+ 	hlist_add_head(&tmp->d_hash, &inode->i_sb->s_anon);
+ 	spin_unlock(&tmp->d_lock);
++	spin_unlock(&dcache_inode_lock);
  
- extern spinlock_t inode_lock;
- extern spinlock_t sb_inode_list_lock;
-+extern spinlock_t wb_inode_list_lock;
- extern spinlock_t inode_hash_lock;
- extern struct list_head inode_in_use;
- extern struct list_head inode_unused;
-Index: linux-2.6/mm/backing-dev.c
-===================================================================
---- linux-2.6.orig/mm/backing-dev.c
-+++ linux-2.6/mm/backing-dev.c
-@@ -78,6 +78,7 @@ static int bdi_debug_stats_show(struct s
+ 	spin_unlock(&dcache_lock);
+ 	return tmp;
+@@ -1423,9 +1458,11 @@ struct dentry *d_splice_alias(struct ino
+ 
+ 	if (inode && S_ISDIR(inode->i_mode)) {
+ 		spin_lock(&dcache_lock);
++		spin_lock(&dcache_inode_lock);
+ 		new = __d_find_alias(inode, 1);
+ 		if (new) {
+ 			BUG_ON(!(new->d_flags & DCACHE_DISCONNECTED));
++			spin_unlock(&dcache_inode_lock);
+ 			spin_unlock(&dcache_lock);
+ 			security_d_instantiate(new, inode);
+ 			d_move(new, dentry);
+@@ -1433,6 +1470,7 @@ struct dentry *d_splice_alias(struct ino
+ 		} else {
+ 			/* already taking dcache_lock, so d_add() by hand */
+ 			__d_instantiate(dentry, inode);
++			spin_unlock(&dcache_inode_lock);
+ 			spin_unlock(&dcache_lock);
+ 			security_d_instantiate(dentry, inode);
+ 			d_rehash(dentry);
+@@ -1507,8 +1545,10 @@ struct dentry *d_add_ci(struct dentry *d
+ 	 * already has a dentry.
  	 */
- 	nr_wb = nr_dirty = nr_io = nr_more_io = 0;
- 	spin_lock(&inode_lock);
-+	spin_lock(&wb_inode_list_lock);
- 	list_for_each_entry(wb, &bdi->wb_list, list) {
- 		nr_wb++;
- 		list_for_each_entry(inode, &wb->b_dirty, i_list)
-@@ -87,6 +88,7 @@ static int bdi_debug_stats_show(struct s
- 		list_for_each_entry(inode, &wb->b_more_io, i_list)
- 			nr_more_io++;
- 	}
-+	spin_unlock(&wb_inode_list_lock);
- 	spin_unlock(&inode_lock);
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 	if (!S_ISDIR(inode->i_mode) || list_empty(&inode->i_dentry)) {
+ 		__d_instantiate(found, inode);
++		spin_unlock(&dcache_inode_lock);
+ 		spin_unlock(&dcache_lock);
+ 		security_d_instantiate(found, inode);
+ 		return found;
+@@ -1520,6 +1560,7 @@ struct dentry *d_add_ci(struct dentry *d
+ 	 */
+ 	new = list_entry(inode->i_dentry.next, struct dentry, d_alias);
+ 	dget_locked(new);
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ 	security_d_instantiate(found, inode);
+ 	d_move(new, found);
+@@ -1738,6 +1779,7 @@ void d_delete(struct dentry * dentry)
+ 	 * Are we the only user?
+ 	 */
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 	spin_lock(&dentry->d_lock);
+ 	isdir = S_ISDIR(dentry->d_inode->i_mode);
+ 	if (dentry->d_count == 1) {
+@@ -1751,6 +1793,7 @@ void d_delete(struct dentry * dentry)
+ 		__d_drop(dentry);
  
- 	get_dirty_limits(&background_thresh, &dirty_thresh, &bdi_thresh, bdi);
-@@ -712,9 +714,11 @@ void bdi_destroy(struct backing_dev_info
- 		struct bdi_writeback *dst = &default_backing_dev_info.wb;
+ 	spin_unlock(&dentry->d_lock);
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
  
- 		spin_lock(&inode_lock);
-+		spin_lock(&wb_inode_list_lock);
- 		list_splice(&bdi->wb.b_dirty, &dst->b_dirty);
- 		list_splice(&bdi->wb.b_io, &dst->b_io);
- 		list_splice(&bdi->wb.b_more_io, &dst->b_more_io);
-+		spin_unlock(&wb_inode_list_lock);
- 		spin_unlock(&inode_lock);
+ 	fsnotify_nameremove(dentry, isdir);
+@@ -2003,6 +2046,7 @@ out_unalias:
+ 	d_move_locked(alias, dentry);
+ 	ret = alias;
+ out_err:
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ 	if (m2)
+ 		mutex_unlock(m2);
+@@ -2068,6 +2112,7 @@ struct dentry *d_materialise_unique(stru
+ 	BUG_ON(!d_unhashed(dentry));
+ 
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 
+ 	if (!inode) {
+ 		actual = dentry;
+@@ -2111,6 +2156,7 @@ found:
+ 	_d_rehash(actual);
+ 	spin_unlock(&dcache_hash_lock);
+ 	spin_unlock(&actual->d_lock);
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ out_nolock:
+ 	if (actual == dentry) {
+@@ -2122,6 +2168,7 @@ out_nolock:
+ 	return actual;
+ 
+ shouldnt_be_hashed:
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ 	BUG();
+ }
+Index: linux-2.6/include/linux/dcache.h
+===================================================================
+--- linux-2.6.orig/include/linux/dcache.h
++++ linux-2.6/include/linux/dcache.h
+@@ -188,6 +188,7 @@ d_iput:		no		no		no       yes
+ 
+ #define DCACHE_CANT_MOUNT	0x0100
+ 
++extern spinlock_t dcache_inode_lock;
+ extern spinlock_t dcache_hash_lock;
+ extern spinlock_t dcache_lock;
+ extern seqlock_t rename_lock;
+Index: linux-2.6/fs/notify/inotify/inotify.c
+===================================================================
+--- linux-2.6.orig/fs/notify/inotify/inotify.c
++++ linux-2.6/fs/notify/inotify/inotify.c
+@@ -182,6 +182,7 @@ static void set_dentry_child_flags(struc
+ 	struct dentry *alias;
+ 
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 	list_for_each_entry(alias, &inode->i_dentry, d_alias) {
+ 		struct dentry *child;
+ 
+@@ -199,6 +200,7 @@ static void set_dentry_child_flags(struc
+ 		}
+ 		spin_unlock(&alias->d_lock);
  	}
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ }
+ 
+Index: linux-2.6/fs/exportfs/expfs.c
+===================================================================
+--- linux-2.6.orig/fs/exportfs/expfs.c
++++ linux-2.6/fs/exportfs/expfs.c
+@@ -48,8 +48,10 @@ find_acceptable_alias(struct dentry *res
+ 		return result;
+ 
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 	list_for_each_entry(dentry, &result->d_inode->i_dentry, d_alias) {
+ 		dget_locked(dentry);
++		spin_unlock(&dcache_inode_lock);
+ 		spin_unlock(&dcache_lock);
+ 		if (toput)
+ 			dput(toput);
+@@ -58,8 +60,10 @@ find_acceptable_alias(struct dentry *res
+ 			return dentry;
+ 		}
+ 		spin_lock(&dcache_lock);
++		spin_lock(&dcache_inode_lock);
+ 		toput = dentry;
+ 	}
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ 
+ 	if (toput)
+Index: linux-2.6/fs/affs/amigaffs.c
+===================================================================
+--- linux-2.6.orig/fs/affs/amigaffs.c
++++ linux-2.6/fs/affs/amigaffs.c
+@@ -129,6 +129,7 @@ affs_fix_dcache(struct dentry *dentry, u
+ 	struct list_head *head, *next;
+ 
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 	head = &inode->i_dentry;
+ 	next = head->next;
+ 	while (next != head) {
+@@ -139,6 +140,7 @@ affs_fix_dcache(struct dentry *dentry, u
+ 		}
+ 		next = next->next;
+ 	}
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ }
+ 
+Index: linux-2.6/fs/ocfs2/dcache.c
+===================================================================
+--- linux-2.6.orig/fs/ocfs2/dcache.c
++++ linux-2.6/fs/ocfs2/dcache.c
+@@ -152,7 +152,7 @@ struct dentry *ocfs2_find_local_alias(st
+ 	struct dentry *dentry = NULL;
+ 
+ 	spin_lock(&dcache_lock);
+-
++	spin_lock(&dcache_inode_lock);
+ 	list_for_each(p, &inode->i_dentry) {
+ 		dentry = list_entry(p, struct dentry, d_alias);
+ 
+@@ -170,6 +170,7 @@ struct dentry *ocfs2_find_local_alias(st
+ 		dentry = NULL;
+ 	}
+ 
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ 
+ 	return dentry;
+Index: linux-2.6/fs/nfs/getroot.c
+===================================================================
+--- linux-2.6.orig/fs/nfs/getroot.c
++++ linux-2.6/fs/nfs/getroot.c
+@@ -65,7 +65,11 @@ static int nfs_superblock_set_dummy_root
+ 		 * Oops, since the test for IS_ROOT() will fail.
+ 		 */
+ 		spin_lock(&dcache_lock);
++		spin_lock(&dcache_inode_lock);
++		spin_lock(&sb->s_root->d_lock);
+ 		list_del_init(&sb->s_root->d_alias);
++		spin_unlock(&sb->s_root->d_lock);
++		spin_unlock(&dcache_inode_lock);
+ 		spin_unlock(&dcache_lock);
+ 	}
+ 	return 0;
+Index: linux-2.6/fs/notify/fsnotify.c
+===================================================================
+--- linux-2.6.orig/fs/notify/fsnotify.c
++++ linux-2.6/fs/notify/fsnotify.c
+@@ -54,6 +54,7 @@ void __fsnotify_update_child_dentry_flag
+ 	watched = fsnotify_inode_watches_children(inode);
+ 
+ 	spin_lock(&dcache_lock);
++	spin_lock(&dcache_inode_lock);
+ 	/* run all of the dentries associated with this inode.  Since this is a
+ 	 * directory, there damn well better only be one item on this list */
+ 	list_for_each_entry(alias, &inode->i_dentry, d_alias) {
+@@ -76,6 +77,7 @@ void __fsnotify_update_child_dentry_flag
+ 		}
+ 		spin_unlock(&alias->d_lock);
+ 	}
++	spin_unlock(&dcache_inode_lock);
+ 	spin_unlock(&dcache_lock);
+ }
  
 
 
