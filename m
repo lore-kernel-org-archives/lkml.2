@@ -1,118 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab0FXJTj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 05:19:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56210 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab0FXJTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 05:19:37 -0400
-Message-ID: <4C232324.7070305@redhat.com>
-Date: Thu, 24 Jun 2010 12:19:32 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Nick Piggin <npiggin@suse.de>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Slow vmalloc in 2.6.35-rc3
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754648Ab0FXJ1s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 05:27:48 -0400
+Received: from fg-out-1718.google.com ([72.14.220.154]:31807 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753789Ab0FXJ1q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 05:27:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:mime-version:content-type:from:in-reply-to:date:cc
+         :content-transfer-encoding:message-id:references:to:x-mailer;
+        b=GdP8o7RCoN1rqYEnZWbgxF/wid5XbSirEbn5cmakIIAzmDqfFeN+T8O9HqzvlAg+qM
+         0mfZcUce4gZuuflgjYzefBiyR1blIcni5/Gijk+CA/a5s0j7FiEOoF6saJMc9u56isH2
+         ocl7B0syeswokZQz53iOWDx4o3rooKRHHLp4s=
+Subject: Re: [PATCH 1/2] Staging: memrar: Moved memrar_allocator struct to memrar_allocator.c
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: "=?iso-8859-1?Q?Henri_H=E4kkinen?=" <henrih81@gmail.com>
+In-Reply-To: <20100624101618.51dea6d5@lxorguk.ukuu.org.uk>
+Date: Thu, 24 Jun 2010 12:27:43 +0300
+Cc: gregkh@suse.de, ossama.othman@intel.com,
+       Matti Lammi <mattij.lammi@gmail.com>, randy.dunlap@oracle.com,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0F091BB6-3DD4-48F2-B8AF-EDC02ECC4DE8@gmail.com>
+References: <1277363386-4817-1-git-send-email-henuxd@gmail.com> <20100624101618.51dea6d5@lxorguk.ukuu.org.uk>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I see really slow vmalloc performance on 2.6.35-rc3:
+On 24.6.2010, at 12.16, Alan Cox wrote:
 
-# tracer: function_graph
-#
-# CPU  DURATION                  FUNCTION CALLS
-# |     |   |                     |   |   |   |
-  3)   3.581 us    |  vfree();
-  3)               |  msr_io() {
-  3) ! 523.880 us  |    vmalloc();
-  3)   1.702 us    |    vfree();
-  3) ! 529.960 us  |  }
-  3)               |  msr_io() {
-  3) ! 564.200 us  |    vmalloc();
-  3)   1.429 us    |    vfree();
-  3) ! 568.080 us  |  }
-  3)               |  msr_io() {
-  3) ! 578.560 us  |    vmalloc();
-  3)   1.697 us    |    vfree();
-  3) ! 584.791 us  |  }
-  3)               |  msr_io() {
-  3) ! 559.657 us  |    vmalloc();
-  3)   1.566 us    |    vfree();
-  3) ! 575.948 us  |  }
-  3)               |  msr_io() {
-  3) ! 536.558 us  |    vmalloc();
-  3)   1.553 us    |    vfree();
-  3) ! 542.243 us  |  }
-  3)               |  msr_io() {
-  3) ! 560.086 us  |    vmalloc();
-  3)   1.448 us    |    vfree();
-  3) ! 569.387 us  |  }
+>> +size_t memrar_allocator_largest_free_area(struct memrar_allocator *allocator)
+>> +{
+>> +	if (allocator == NULL)
+>> +		return 0;
+>> +	return allocator->largest_free_area;
+>> +}
+> 
+> static ?
 
-msr_io() is from arch/x86/kvm/x86.c, allocating at most 4K (yes it 
-should use kmalloc()).  The memory is immediately vfree()ed.  There are 
-96 entries in /proc/vmallocinfo, and the whole thing is single threaded 
-so there should be no contention.
-
-Here's the perf report:
-
-     63.97%             qemu  
-[kernel]                                            [k] rb_next
-                        |
-                        --- rb_next
-                           |
-                           |--70.75%-- alloc_vmap_area
-                           |          __get_vm_area_node
-                           |          __vmalloc_node
-                           |          vmalloc
-                           |          |
-                           |          |--99.15%-- msr_io
-                           |          |          kvm_arch_vcpu_ioctl
-                           |          |          kvm_vcpu_ioctl
-                           |          |          vfs_ioctl
-                           |          |          do_vfs_ioctl
-                           |          |          sys_ioctl
-                           |          |          system_call
-                           |          |          __GI_ioctl
-                           |          |          |
-                           |          |           --100.00%-- 
-0x1dfc4a8878e71362
-                           |          |
-                           |           --0.85%-- __kvm_set_memory_region
-                           |                     kvm_set_memory_region
-                           |                     
-kvm_vm_ioctl_set_memory_region
-                           |                     kvm_vm_ioctl
-                           |                     vfs_ioctl
-                           |                     do_vfs_ioctl
-                           |                     sys_ioctl
-                           |                     system_call
-                           |                     __GI_ioctl
-                           |
-                            --29.25%-- __get_vm_area_node
-                                      __vmalloc_node
-                                      vmalloc
-                                      |
-                                      |--98.89%-- msr_io
-                                      |          kvm_arch_vcpu_ioctl
-                                      |          kvm_vcpu_ioctl
-                                      |          vfs_ioctl
-                                      |          do_vfs_ioctl
-                                      |          sys_ioctl
-                                      |          system_call
-                                      |          __GI_ioctl
-                                      |          |
-                                      |           --100.00%-- 
-0x1dfc4a8878e71362
-
-
-It seems completely wrong - iterating 8 levels of a binary tree 
-shouldn't take half a millisecond.
-
--- 
-error compiling committee.c: too many arguments to function
+The entire point of these two patches was to hide the memrar_allocator structure by moving it to memrar_allocator.c, forward declaring it in memrar_allocator.h and then providing accessor functions memrar_allocator_largest_free_area and memrar_allocator_capacity (this was the #2 issue for memrar_allocator.[ch] in the TODO file). By defining memrar_allocator_largest_free_area function as static (this is what you mean, right?) would make no sense.
 
