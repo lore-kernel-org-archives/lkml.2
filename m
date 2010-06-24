@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab0FXOTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 10:19:18 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:53868 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058Ab0FXOTQ (ORCPT
+	id S1755449Ab0FXOUh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 10:20:37 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:50708 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab0FXOUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 10:19:16 -0400
-To: Andy Lutomirski <luto@mit.edu>
-CC: npiggin@suse.de, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk,
-       drepper@redhat.com, torvalds@linux-foundation.org
-In-reply-to: <4C2366F7.5010200@mit.edu> (message from Andy Lutomirski on Thu,
-	24 Jun 2010 10:08:55 -0400)
-Subject: Re: [rfc] new stat*fs-like syscall?
-References: <20100624131455.GA10441@laptop> <4C2366F7.5010200@mit.edu>
-Message-Id: <E1ORnGc-0008CL-Uo@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 24 Jun 2010 16:18:58 +0200
+	Thu, 24 Jun 2010 10:20:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:message-id:x-mailer;
+        b=S1Pdo92raIax7rKzhY0ABd5NzAZQ/Q8dl4s69dPwFl93HZdKWteuUe8tQ45kXigV4w
+         mWDEaGux47yVFGR/5TajLA6C8BQX+JunWXPOMWgaFWPvNaF7G3eDtH2mKfC9hyEqndLb
+         zffQmqcLTp9dbfvpQY1PUzYat2nahmhwq3yxI=
+From: =?UTF-8?q?Diego=20Elio=20=27Flameeyes=27=20Petten=C3=B2?= 
+	<flameeyes@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-sctp@vger.kernel.org
+Subject: [PATCH] sctp: implement SIOCINQ ioctl() (take 2)
+Date: Thu, 24 Jun 2010 16:16:53 +0200
+Message-Id: <1277389013-14765-1-git-send-email-flameeyes@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jun 2010, Andy Lutomirski wrote:
-> Something like fsid but actually specified to uniquely identify a 
-> superblock.  (Currently, fsid seems to be set by the filesystem, and 
-> nothing in particular ensures that two different filesystems couldn't 
-> have collisions.)  We could guarantee (or have a flag guaranteeing) that 
-> (fsid, st_inode) actually uniquely identifies an inode.
-> 
-> Similarly, something like fsid that uniquely identifies the vfsmount 
-> could be useful, although I don't know how easy that would be to provide 
-> for fstat?fs.
-> 
-> If we could expose the complete set of filesystem mount options so that 
-> mount(1) didn't have to look at /proc/self/mounts or /etc/mtab, then 
-> playing with chroots would be that much easier.
-> 
-> Should we expose superblock and vfsmount options separately?  We have 
-> read-only bind mounts now, but the way they work is rather inscrutable, 
-> and if stat?fs could say "superblock is read-write but vfsmount is 
-> readonly" then people might be able to make more sense of what's going on.
+This simple patch copies the current approach for SIOCINQ ioctl() from DCCP
+into SCTP so that the userland code working with SCTP can use a similar
+interface across different protocols to know how much space to allocate for
+a buffer.
+---
+ net/sctp/socket.c |   35 ++++++++++++++++++++++++++++++++++-
+ 1 files changed, 34 insertions(+), 1 deletions(-)
 
-You'll find all of those things in /proc/self/mountinfo.
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 44a1ab0..f339383 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -3595,7 +3595,40 @@ out:
+ /* The SCTP ioctl handler. */
+ SCTP_STATIC int sctp_ioctl(struct sock *sk, int cmd, unsigned long arg)
+ {
+-	return -ENOIOCTLCMD;
++	int rc = -ENOTCONN;
++
++	sctp_lock_sock(sk);
++
++	/*
++	 * SEQPACKET-style sockets in LISTENING state are valid, for
++	 * SCTP, so only discard TCP-style sockets in LISTENING state.
++	 */
++	if (sctp_style(sk, TCP) && sctp_sstate(sk, LISTENING))
++		goto out;
++
++	switch (cmd) {
++	case SIOCINQ: {
++		struct sk_buff *skb;
++		unsigned long amount = 0;
++
++		skb = skb_peek(&sk->sk_receive_queue);
++		if (skb != NULL) {
++			/*
++			 * We will only return the amount of this packet since
++			 * that is all that will be read.
++			 */
++			amount = skb->len;
++		}
++		rc = put_user(amount, (int __user *)arg);
++	}
++		break;
++	default:
++		rc = -ENOIOCTLCMD;
++		break;
++	}
++out:
++	sctp_release_sock(sk);
++	return rc;
+ }
+ 
+ /* This is the function which gets called during socket creation to
+-- 
+1.7.1
 
-Thanks,
-Miklos
