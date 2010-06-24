@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab0FXJhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 05:37:19 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49438 "EHLO mx2.mail.elte.hu"
+	id S1754713Ab0FXJnR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 05:43:17 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56185 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab0FXJhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 05:37:16 -0400
-Date: Thu, 24 Jun 2010 11:36:25 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-       Greg KH <greg@kroah.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [rfc] Describe events in a structured way via sysfs
-Message-ID: <20100624093625.GA26931@elte.hu>
-References: <20100520231229.GB8335@kroah.com>
- <1274429038.1674.1684.camel@laptop>
- <20100521094053.GA4658@elte.hu>
- <AANLkTimf1Z0N9cv2Pu2qTTUscn4utC37zOPelCbqQoPv@mail.gmail.com>
- <1277110509.18390.28.camel@minggr.sh.intel.com>
- <1277112858.3618.16.camel@jlt3.sipsolutions.net>
- <1277187920.4467.3.camel@minggr.sh.intel.com>
- <1277189971.3637.5.camel@jlt3.sipsolutions.net>
- <1277191359.5025.4.camel@minggr.sh.intel.com>
- <1277192007.3637.8.camel@jlt3.sipsolutions.net>
+	id S1754562Ab0FXJnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 05:43:15 -0400
+Date: Thu, 24 Jun 2010 09:42:47 GMT
+From: tip-bot for Andres Salomon <dilinger@queued.net>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       dilinger@queued.net, tglx@linutronix.de, hpa@linux.intel.com,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       dilinger@queued.net, tglx@linutronix.de, hpa@linux.intel.com,
+       mingo@elte.hu
+In-Reply-To: <20100618174653.7755a39a@dev.queued.net>
+References: <20100618174653.7755a39a@dev.queued.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/olpc] x86, olpc: Add comment about implicit optimization barrier
+Message-ID: <tip-75a9cac430a1bd2a5219c74508ca01b0ddfddc9a@git.kernel.org>
+Git-Commit-ID: 75a9cac430a1bd2a5219c74508ca01b0ddfddc9a
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1277192007.3637.8.camel@jlt3.sipsolutions.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0159]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 24 Jun 2010 09:42:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  75a9cac430a1bd2a5219c74508ca01b0ddfddc9a
+Gitweb:     http://git.kernel.org/tip/75a9cac430a1bd2a5219c74508ca01b0ddfddc9a
+Author:     Andres Salomon <dilinger@queued.net>
+AuthorDate: Wed, 23 Jun 2010 20:27:00 -0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 24 Jun 2010 11:40:47 +0200
 
-* Johannes Berg <johannes@sipsolutions.net> wrote:
+x86, olpc: Add comment about implicit optimization barrier
 
-> On Tue, 2010-06-22 at 15:22 +0800, Lin Ming wrote:
-> 
-> > > > net/wlan0/events/
-> > > > net/waln1/events/
-> > > > ....
-> > > > net/walnN/events/
-> > > 
-> > > That's not appropriate either though since you may have multiple network 
-> > > interfaces on the same hardware :)
-> > 
-> > Doesn't net/wlan0...wlanN mean multiple network interfaces on the same 
-> > hardware?
-> 
-> Yes, but the trace points aren't per network interface but rather per 
-> hardware piece.
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+LKML-Reference: <20100618174653.7755a39a@dev.queued.net>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/olpc_ofw.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Yeah - we generally want events to live at their 'natural' source in sysfs.
-
-So if it's a per device hardware event, it should live with the hardware 
-piece. If it's a higher level chipset event, it should live where the chipset 
-driver is in sysfs. If it's a subsystem level event then it should live there.
-
-I think what you mentioned in your other posting makes the most sense: give 
-flexibility to tracepoint authors to place the event in the most sensible 
-sysfs place. It is them who define the tracepoints and the events so any 
-second guessing by a generic layer will probably get in the way. The generic 
-tool layer will be content with having the event_source class in sysfs, to see 
-'all' event sources ttheir topological structure.
-
-That's probably best achieved via a TRACE_EVENT() variant, by passing in the 
-sysfs location.
-
-It might even make sense to make this a part of TRACE_EVENT() itself and make 
-'NULL' the current default, non-sysfs-enumerated behavior. That way we can 
-gradually (and non-intrusively) find all the right sysfs places for events.
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
+index 469ee43..f5d499f 100644
+--- a/arch/x86/kernel/olpc_ofw.c
++++ b/arch/x86/kernel/olpc_ofw.c
+@@ -35,6 +35,8 @@ void __init setup_olpc_ofw_pgd(void)
+ 
+ 	/* install OFW's PDE permanently into the kernel's pgtable */
+ 	set_pgd(&swapper_pg_dir[OLPC_OFW_PDE_NR], *ofw_pde);
++	/* implicit optimization barrier here due to uninline function return */
++
+ 	early_iounmap(base, sizeof(olpc_ofw_pgd) * PTRS_PER_PGD);
+ }
+ 
