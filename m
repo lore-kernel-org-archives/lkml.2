@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab0FXRq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 13:46:27 -0400
-Received: from cifronik.21th.com ([62.16.86.116]:33128 "EHLO cifronik.21th.com"
+	id S1755530Ab0FXRqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 13:46:45 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28574 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755285Ab0FXRq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 13:46:26 -0400
-X-Greylist: delayed 897 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jun 2010 13:46:26 EDT
-From: Sergey Temerkhanov <temerkhanov@cifronik.ru>
-To: Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH][RFC] AIO: always reinitialize iocb->ki_run_list at the end of aio_run_iocb()
-Date: Thu, 24 Jun 2010 21:31:21 +0400
-User-Agent: KMail/1.12.4 (Linux/2.6.34-41-desktop; KDE/4.3.5; x86_64; ; )
-Cc: Sergey Temerkhanov <temerkhanov@yandex.ru>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-aio" <linux-aio@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Benjamin LaHaise <bcrl@kvack.org>, Zach Brown <zach.brown@oracle.com>,
-       Suparna Bhattacharya <suparna@in.ibm.com>
-References: <201004280251.43430.temerkhanov@yandex.ru> <201005271406.36489.temerkhanov@yandex.ru> <x49iq62lak7.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49iq62lak7.fsf@segfault.boston.devel.redhat.com>
-Organization: Cifronic ZAO
+	id S1755466Ab0FXRqo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 13:46:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,475,1272870000"; 
+   d="scan'208";a="579582858"
+From: "Othman, Ossama" <ossama.othman@intel.com>
+To: =?iso-8859-1?Q?Henri_H=E4kkinen?= <henrih81@gmail.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "gregkh@suse.de" <gregkh@suse.de>, Matti Lammi <mattij.lammi@gmail.com>,
+       "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 24 Jun 2010 10:46:41 -0700
+Subject: RE: [PATCH] Staging: memrar: Moved memrar_allocator struct into
+ memrar_allocator.c
+Thread-Topic: [PATCH] Staging: memrar: Moved memrar_allocator struct into
+ memrar_allocator.c
+Thread-Index: AcsTgJGrQ3V5Mec5QqGxLkkVe91amgAQ2pEQ
+Message-ID: <A5FE05C4C76E4C4CAB15D9962B96FC950CEA181645@orsmsx510.amr.corp.intel.com>
+References: <A5FE05C4C76E4C4CAB15D9962B96FC950CEA180A03@orsmsx510.amr.corp.intel.com>
+ <1C8E6A7A-45FE-4862-A6AD-397548588F96@gmail.com>
+In-Reply-To: <1C8E6A7A-45FE-4862-A6AD-397548588F96@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006242131.21463.temerkhanov@cifronik.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 June 2010 01:14:48 Jeff Moyer wrote:
-> Sergey Temerkhanov <temerkhanov@yandex.ru> writes:
-> > On Wednesday 26 May 2010 23:38:35 Jeff Moyer wrote:
-> > ...
-> OK, you tried two aio_put_req() calls, and it worked, but you thought
-> 
-> maybe it wasn't the right approach.  So:
-> > So, I've tried another approach (hack) - requeue the kiocb with
-> > kick_iocb() before calling aio_put_req() in the ki_cancel() callback
-> > (that's because aio_run_iocb() takes some special actions for the
-> > canceled kiocbs). And I've found out that kick_iocb() fails because
-> > aio_run_iocb() does this:
-> > 	iocb->ki_run_list.next = iocb->ki_run_list.prev = NULL;
-> > and only reinitializes iocb->ki_run_list when iocb->ki_retry() returns
-> > -EIOCBRETRY but kick_iocb() is exported and looks like intended for usage
-> > (though not recommended).
-> 
-> You implemented this other hack, and ran into troubles, so you're
-> modifying the aio core to fix it.  Am I wrong in concluding that if you
-> keep your first solution above, you no longer need this second?
+Hi,
 
-Well, let's forget the reference counting for now since failing kick_iocb() is 
-generally not related to it. I've just described how I've run into it 
-- I could run into it somehow else.
-
-The problem with kick_iocb() is exactly as this: If retry() method 
-returns -EIOCBQUEUED to aio_run_iocb() then any subsequent call to 
-kick_iocb() results in failure. Is it expected behavior?
-
+> >> size_t memrar_allocator_largest_free_area(struct memrar_allocator
+> *allocator)
+> >> {
+> >> -	if (allocator == NULL)
+> >> -		return 0;
+> >> -	return allocator->largest_free_area;
+> >> +	size_t tmp = 0;
+> >> +
+> >> +	if (allocator != NULL) {
+> >> +		mutex_lock(&allocator->lock);
+> >> +		tmp = allocator->largest_free_area;
+> >> +		mutex_unlock(&allocator->lock);
+> >
+> > This doesn't seem to make any sense (in either version). The moment
+> you
+> > drop the lock the value in "tmp" becomes stale as the allocator could
+> > change it. ?
+> >
 > 
-> You may also find the following an interesting read:
-> 
-> http://permalink.gmane.org/gmane.linux.kernel.aio.general/2571
-> 
-> Cheers,
-> Jeff
-> 
+> The idea was proposed by Ossama Othman in his earlier reply.
 
+:-) 
 
--- 
-Regards, Sergey Temerkhanov,
-Cifronic ZAO
+[OO] > > Certainly the allocator->largest_free_area value could be updated
+> after the lock is released and by the time it is returned to the user
+> (for statistical purposes), but at least the internal allocator state
+> would remain consistent in the presences of multiple threads.
+
+My suggestion focused solely on hiding the allocator lock from the caller.  The TOCTOU race I alluded to above exists in the current version of the code, and was not introduced with the change I proposed to your patch.
+
+HTH,
+-Ossama
