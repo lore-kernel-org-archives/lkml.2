@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab0FXQuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 12:50:09 -0400
-Received: from web51007.mail.re2.yahoo.com ([206.190.38.138]:41009 "HELO
-	web51007.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754272Ab0FXQuH (ORCPT
+	id S1756101Ab0FXQvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 12:51:25 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:60637 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936Ab0FXQvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 12:50:07 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jun 2010 12:50:07 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
-  b=kk9FwjRNqs4X6ypc/+lU2VodY7kbnUegwf2MsGooISo1QYB4PfYo/SkyOi69cQewNkl1hW+9iyE99EswVALV4+MHL8+3AOx05ScexcEVGDfGBafUqRdU7W0XDc3+7tpyfiGxXIjpmYgQc/cwkKZ+9lmwCjH53HUTmfvt7ka3zK0=;
-Message-ID: <898714.83943.qm@web51007.mail.re2.yahoo.com>
-X-YMail-OSG: tau8UFkVM1mqN5Yf8kb2huZFsbKWotMaIGPbQ9a6LURSpF2
- 84TSRQmF67wcgGAjrhOe4X15Ew.Fc3I3hb1zWwJa0eDwyHOsspjogPepCTfg
- 2Sj7n8LqanKnv96iTFd7SnAj9s2gqQgWJzkL.TwUqSH3JoML7xYsb_z0GFpt
- TC2s7dybaZ7sXbtI5G6.ny4XQWUaAncgKS86l4lmGyFXSvpnlDREhiRxwmgX
- bUsGLSF4Ny2FIXTZd3Zsxjuz9edpM4etI7.kiP9XC2y5Y0blfZ0TinLyaVgl
- qUPmf.bo6kefpHqwsm4sIXdXgOinXZZKSU.hSwbEdA3L11P3OFQ--
-X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.104.274457
-Date: Thu, 24 Jun 2010 09:43:25 -0700 (PDT)
-From: Fabio Estevam <fabioestevam@yahoo.com>
-Subject: [PATCH] watchdog docs: add an entry for imx2_wdt
-To: linux-kernel@vger.kernel.org
-Cc: wim@iguana.be, rdunlap@xenotime.net, s.hauer@pengutronix.de,
-       w.sang@pengutronix.de
+	Thu, 24 Jun 2010 12:51:24 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6023"; a="45268946"
+Message-ID: <4C238D09.5050200@codeaurora.org>
+Date: Thu, 24 Jun 2010 09:51:21 -0700
+From: Patrick Pannuto <ppannuto@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, sboyd@codeaurora.org, tglx@linutronix.de,
+       mingo@elte.hu, heiko.carstens@de.ibm.com, eranian@google.com,
+       schwidefsky@de.ibm.com
+Subject: Re: [RFC] [PATCH] timer: Added usleep[_range][_interruptable] timer
+References: <4C225EED.5040600@codeaurora.org> <871vbwafwu.fsf@basil.nowhere.org>
+In-Reply-To: <871vbwafwu.fsf@basil.nowhere.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an entry for imx2_wdt in watchdog-parameters.txt
+Andi Kleen wrote:
+> Patrick Pannuto <ppannuto@codeaurora.org> writes:
+> 
+> Overall it seems like a good improvement.
+> 
+>> +
+>> +static inline void usleep(unsigned long usecs)
+>> +{
+>> +	usleep_range(usecs, usecs);
+>> +}
+>> +
+>> +static inline unsigned long usleep_interruptible(unsigned long usecs)
+> 
+> Is the interruptible case even needed?  I assume most drivers won't
+> bother with that and not being interruptible for a few usecs is not a
+> big issue.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- Documentation/watchdog/watchdog-parameters.txt |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Honestly, I don't think so, but I was mirroring the msleep API when
+I wrote it so I included it for completeness.  I can't think of a use
+case where it is necessary / useful. I will remove it unless anyone
+can think of an application for it?
 
-diff --git a/Documentation/watchdog/watchdog-parameters.txt b/Documentation/watchdog/watchdog-parameters.txt
-index 41c95cc..17ddd82 100644
---- a/Documentation/watchdog/watchdog-parameters.txt
-+++ b/Documentation/watchdog/watchdog-parameters.txt
-@@ -125,6 +125,11 @@ ibmasr:
- nowayout: Watchdog cannot be stopped once started
- 	(default=kernel config parameter)
- -------------------------------------------------
-+imx2_wdt:
-+timeout: Watchdog timeout in seconds (default 60 s)
-+nowayout: Watchdog cannot be stopped once started
-+	(default=kernel config parameter)
-+-------------------------------------------------
- indydog:
- nowayout: Watchdog cannot be stopped once started
- 	(default=kernel config parameter)
--- 
-1.6.0.4
-
-
-
-
-      
