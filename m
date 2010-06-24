@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab0FXGuq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 02:50:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16340 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751398Ab0FXGup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 02:50:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,472,1272870000"; 
-   d="scan'208";a="633141210"
-Subject: Re: [RFC][PATCH] irq_work
-From: Huang Ying <ying.huang@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H.PeterA" <"nvin hpa"@zytor.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <1277362073.1875.839.camel@laptop>
-References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
-	 <1277361352.1875.838.camel@laptop>
-	 <1277361791.3947.11.camel@yhuang-dev.sh.intel.com>
-	 <1277362073.1875.839.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Jun 2010 14:50:43 +0800
-Message-ID: <1277362243.3947.20.camel@yhuang-dev.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1754155Ab0FXGuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 02:50:54 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62515 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754002Ab0FXGuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 02:50:52 -0400
+Message-ID: <4C22FFE8.5050507@cn.fujitsu.com>
+Date: Thu, 24 Jun 2010 14:49:12 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+CC: acme@ghostprotocols.net, mingo@elte.hu,
+       linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: close the opened directories.
+References: <4C1C3F7C.4030607@cn.fujitsu.com> <1277360965.2096.881.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1277360965.2096.881.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-24 at 14:47 +0800, Peter Zijlstra wrote:
-> On Thu, 2010-06-24 at 14:43 +0800, Huang Ying wrote:
-> > Hi, Peter,
+Zhang, Yanmin wrote:
+> On Sat, 2010-06-19 at 11:54 +0800, Gui Jianfeng wrote:
+>> When I ran "perf kvm ... top", I encountered the following error output.
+>>
+>>   Error: perfcounter syscall returned with -1 (Too many open files)
+>>
+>>   Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+>>
+>> Looking into perf, I found perf opens too many direcotries at initialization
+>> time, but forgets to close them. Here is the fix.
+> Good catch!
 > 
-> > I fact I uses exactly the similar method in my patches, just trigger it
-> > with soft_irq instead of IRQ. Please take a look at
-> > nmi_return_notifier_schedule in
+>> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+>> ---
+>>  tools/perf/util/symbol.c |   18 +++++++++++-------
+>>  1 files changed, 11 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+>> index 7fd6b15..a00dcad 100644
+>> --- a/tools/perf/util/symbol.c
+>> +++ b/tools/perf/util/symbol.c
+>> @@ -1443,6 +1443,7 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
+>>  {
+>>  	struct dirent *dent;
+>>  	DIR *dir = opendir(dir_name);
+>> +	int ret = 0;
+>>  
+>>  	if (!dir) {
+>>  		pr_debug("%s: cannot open %s dir\n", __func__, dir_name);
+>> @@ -1465,8 +1466,10 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
+>>  
+>>  			snprintf(path, sizeof(path), "%s/%s",
+>>  				 dir_name, dent->d_name);
+>> -			if (map_groups__set_modules_path_dir(self, path) < 0)
+>> -				goto failure;
+>> +			if (map_groups__set_modules_path_dir(self, path) < 0) {
+>> +				ret = -1;
+>> +				goto out;
+>> +			}
+> How about changing above to:
+> 			ret = map_groups__set_modules_path_dir(self, path);
+> 			if (ret < 0)
+> 				goto out;
+
+Sure, will change.
+
+Thanks,
+Gui
+
 > 
-> But then why still use softirq? Once you have this its completely
-> useless.
-
-Some systems have no self interrupt, for example the system without
-APIC. We need to provide a fallback for them. soft_irq can help here.
-
-Best Regards,
-Huang Ying
-
-
+> 
+> 
+>>  		} else {
+>>  			char *dot = strrchr(dent->d_name, '.'),
+>>  			     dso_name[PATH_MAX];
+>> @@ -1487,17 +1490,18 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
+>>  				 dir_name, dent->d_name);
+>>  
+>>  			long_name = strdup(path);
+>> -			if (long_name == NULL)
+>> -				goto failure;
+>> +			if (long_name == NULL) {
+>> +				ret = -1;
+>> +				goto out;
+>> +			}
+>>  			dso__set_long_name(map->dso, long_name);
+>>  			dso__kernel_module_get_build_id(map->dso, "");
+>>  		}
+>>  	}
+>>  
+>> -	return 0;
+>> -failure:
+>> +out:
+>>  	closedir(dir);
+>> -	return -1;
+>> +	return ret;
+>>  }
+>>  
+>>  static char *get_kernel_version(const char *root_dir)
+> 
+> 
+> 
+> 
