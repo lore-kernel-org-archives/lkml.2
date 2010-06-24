@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab0FXJ4S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 05:56:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43802 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565Ab0FXJ4Q convert rfc822-to-8bit (ORCPT
+	id S1754793Ab0FXJ47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 05:56:59 -0400
+Received: from smtp1.extricom.com ([212.235.17.194]:55692 "HELO
+	smtp.extricom.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with SMTP id S1754565Ab0FXJ45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 05:56:16 -0400
-Subject: Re: [PATCH 00/28] mm: preemptibility -v3
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>,
-       "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1277115718.1875.490.camel@laptop>
-References: <20100607110654.606530953@chello.nl>
-	 <1276134311.2096.438.camel@ymzhang.sh.intel.com>
-	 <1276152750.2046.2485.camel@twins>
-	 <1276153198.2096.465.camel@ymzhang.sh.intel.com>
-	 <1277115718.1875.490.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 24 Jun 2010 11:55:31 +0200
-Message-ID: <1277373331.1875.940.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 24 Jun 2010 05:56:57 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jun 2010 05:56:56 EDT
+Message-ID: <4C232B13.5000706@extricom.com>
+Date: Thu, 24 Jun 2010 12:53:23 +0300
+From: Eran Liberty <liberty@extricom.com>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: LKML <linux-kernel@vger.kernel.org>, galak@kernel.crashing.org
+Subject: [PATCH] gainfar.c : skb_over_panic (kernel-2.6.32.15)
+Content-Type: multipart/mixed;
+ boundary="------------030703000907050303010204"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-21 at 12:21 +0200, Peter Zijlstra wrote:
-> On Thu, 2010-06-10 at 14:59 +0800, Zhang, Yanmin wrote:
-> 
-> > > > I applied it against 2.6.35-rc2 on x86_64 machine, but kernel booting panic.
-> 
-> <snip panic>
-> 
-> > > Oi, that's no good. Happen to have your .config handy, I didn't actually
-> > > see my machine do that.
-> 
-> > See the attachment.
-> 
-> That .config build and booted on my x86_64 machine, no funnies there.
-> 
-> I pushed a git tree out to kernel.org but somehow its refusing to show
-> up on git.kernel.org..
+This is a multi-part message in MIME format.
+--------------030703000907050303010204
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-mmu_preempt.git mmu_preempt
+Fix possible skb_over_panic event in Freescale's "gianfar" driver. 
+
+The skb_over_panic occurs due to calling skb_put() within 
+gfar_clean_rx_ring(). This happens if (and only if) shortly prior to the 
+event and a few lined above the skb_put(), an skb was queued back to the 
+priv->rx_recycle queue due to RXBD_LAST or RXBD_ERR status.
+The skb is queued without properly re-setting its state.
+
+The patch properly reset the skb state.
+
+I have tested this patch on MPC8548 based product and asserted it avoided the skb_over_panic event.
+
+Signed-off-by: Eran Liberty <liberty@extricom.com>
+
+---
+
+
+
+
+
+
+--------------030703000907050303010204
+Content-Type: text/x-diff;
+ name="gianfar_skb_over_panic.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="gianfar_skb_over_panic.patch"
+
+---
+ drivers/net/gianfar.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+--- a/drivers/net/gianfar.c
++++ b/drivers/net/gianfar.c
+@@ -1854,14 +1854,9 @@
+ 			if (unlikely(!newskb))
+ 				newskb = skb;
+ 			else if (skb) {
+-				/*
+-				 * We need to reset ->data to what it
+-				 * was before gfar_new_skb() re-aligned
+-				 * it to an RXBUF_ALIGNMENT boundary
+-				 * before we put the skb back on the
+-				 * recycle list.
+-				 */
+ 				skb->data = skb->head + NET_SKB_PAD;
++				skb->len = 0;
++				skb_reset_tail_pointer(skb);
+ 				__skb_queue_head(&priv->rx_recycle, skb);
+ 			}
+ 		} else {
+
+--------------030703000907050303010204--
