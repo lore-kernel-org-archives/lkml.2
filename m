@@ -1,76 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab0FXD25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 23:28:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64860 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483Ab0FXD2z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 23:28:55 -0400
-Date: Wed, 23 Jun 2010 20:28:15 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-       devel@driverdev.osuosl.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] staging: fix wlan-ng depends
-Message-Id: <20100623202815.6f19f851.randy.dunlap@oracle.com>
-In-Reply-To: <20100623154531.0a4b02e1.sfr@canb.auug.org.au>
-References: <20100623154531.0a4b02e1.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1754559Ab0FXDfk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 23:35:40 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30430 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754116Ab0FXDfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 23:35:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,471,1272870000"; 
+   d="scan'208";a="529716383"
+Subject: Re: [PATCH V2 3/5] ara virt interface of perf to support kvm guest
+ os statistics collection in guest os
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Alexander Graf <agraf@suse.de>,
+       Carsten Otte <carsteno@de.ibm.com>,
+       "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <4C21A0FB.7030509@redhat.com>
+References: <1277112703.2096.511.camel@ymzhang.sh.intel.com>
+	 <4C1F5C21.7070902@redhat.com>
+	 <1277176333.2096.650.camel@ymzhang.sh.intel.com>
+	 <4C207475.9010006@redhat.com>
+	 <1277262774.2096.838.camel@ymzhang.sh.intel.com>
+	 <4C21A0FB.7030509@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 24 Jun 2010 11:36:00 +0800
+Message-Id: <1277350560.2096.878.camel@ymzhang.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090202.4C22D0EF.0148:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, 2010-06-23 at 08:51 +0300, Avi Kivity wrote:
+> On 06/23/2010 06:12 AM, Zhang, Yanmin wrote:
+> >>>
+> >>> This design is to deal with a task context perf collection in guest os.
+> >>> Scenario 1:
+> >>> 1) guest os starts to collect statistics of process A on vcpu 0;
+> >>> 2) process A is scheduled to vcpu 1. Then, the perf_event at host side need
+> >>> to be moved to VCPU 1 's thread. With the per KVM instance design, we needn't
+> >>> move host_perf_shadow among vcpus.
+> >>>
+> >>>        
+> >> First, the guest already knows how to deal with per-cpu performance
+> >> monitors, since that's how most (all) hardware works.  So we aren't
+> >> making the guest more complex, and on the other hand we simplify the host.
+> >>      
+> > I agree that we need keep things simple.
+> >
+> >    
+> >> Second, if process A is migrated, and the guest uses per-process
+> >> counters, the guest will need to stop/start the counter during the
+> >> migration.  This will cause the host to migrate the counter,
+> >>      
+> > Agree. My patches do so.
+> >
+> > Question: Where does host migrate the counter?
+> > The perf event at host side is bound to specific vcpu thread.
+> >    
+> 
+> If the perf event is bound to the vm, not a vcpu, then on guest process 
+> migration you will have to disable it on one vcpu and enable it on the 
+> other, no?
+I found we start from different points. This patch is to implement a para virt
+interface based on current perf implementation in kernel.
 
-drivers/built-in.o: In function `wlan_free_wiphy':
-(.text+0x3f5eb5): undefined reference to `wiphy_unregister'
-drivers/built-in.o: In function `wlan_free_wiphy':
-(.text+0x3f5ec4): undefined reference to `wiphy_free'
-drivers/built-in.o: In function `wlan_create_wiphy':
-(.text+0x3f5f76): undefined reference to `wiphy_new'
-drivers/built-in.o: In function `wlan_create_wiphy':
-(.text+0x3f6024): undefined reference to `wiphy_register'
-drivers/built-in.o: In function `prism2_roamed':
-(.text+0x3f61f7): undefined reference to `cfg80211_roamed'
-drivers/built-in.o: In function `prism2_disconnected':
-(.text+0x3f6223): undefined reference to `cfg80211_disconnected'
-drivers/built-in.o: In function `prism2_connect_result':
-(.text+0x3f626d): undefined reference to `cfg80211_connect_result'
-drivers/built-in.o: In function `prism2_connect':
-(.text+0x3f62b6): undefined reference to `ieee80211_frequency_to_channel'
-drivers/built-in.o: In function `prism2_scan':
-(.text+0x3f6679): undefined reference to `ieee80211_frequency_to_channel'
-drivers/built-in.o: In function `prism2_scan':
-(.text+0x3f6873): undefined reference to `__ieee80211_get_channel'
-drivers/built-in.o: In function `prism2_scan':
-(.text+0x3f68cc): undefined reference to `cfg80211_inform_bss'
-drivers/built-in.o: In function `prism2_scan':
-(.text+0x3f6942): undefined reference to `cfg80211_scan_done'
+Here is a diagram about perf implementation layers. Below picture is not precise,
+but it could show perf layers. Ingo and Peter could correct me if something is wrong.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	devel@driverdev.osuosl.org
----
- drivers/staging/wlan-ng/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+		-------------------------------------------------
+		|  Perf Generic Layer				|
+		-------------------------------------------------
+		|  PMU Abstraction Layer	|	  
+		|  (a couple of callbacks)	|	  
+		-------------------------------------------------
+		|  x86_pmu				   	|
+		|  (operate real PMU hardware)			|
+		-------------------------------------------------
 
---- linux-next-20100623.orig/drivers/staging/wlan-ng/Kconfig
-+++ linux-next-20100623/drivers/staging/wlan-ng/Kconfig
-@@ -1,6 +1,6 @@
- config PRISM2_USB
- 	tristate "Prism2.5/3 USB driver"
--	depends on WLAN && USB
-+	depends on WLAN && USB && CFG80211
- 	select WIRELESS_EXT
- 	select WEXT_PRIV
- 	default n
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+The upper layer is perf generic layer. The 3rd layer is x86_pmu which really
+manipulate PMU hardware. Sometimes, 1st calls 3rd directly at event initialization
+and enable/disable all events.
+
+My patch implements a kvm_pmu at the 2nd layer in guest os, to call hypercall to vmexit
+to host. At host side, mostly it would go through the 3 layers till accessing real
+hardware.
+
+Most of your comments don't agree with the kvm_pmu design. Although you didn't say
+directly, I know that perhaps you want to implement para virt interface at 3rd layer
+in guest os. That means guest os maintains a mapping between guest event and PMU counters.
+That's why you strongly prefer per-vcpu event managements and idx reference to event.
+If we implement it at 3rd layer (or something like that although you might say I don't
+like that layer...) in guest, we need bypass 1st and 2nd layers in host kernel when
+processing guest os event. Eventually, we almost add a new layer under x86_pmu to arbitrate
+between perf PMU request and KVM guest event request.
+
+My current patch arranges the calling to go through the whole perf stack at host side.
+The upper layer arranges perf event scheduling on PMU hardware. Applications don't know
+when its event will be really scheduled to real hardware as they needn't know.
+
+
+> 
+> >>   so while we
+> >> didn't move the counter to a different vcpu,
+> >>      
+> > Disagree here. If process A on vcpu 0 in guest os is migrated to vcpu 1,
+> > host has to move process A's perf_event to vcpu 1 thread.
+> >    
+> 
+> Sorry, I'm confused now (lost track of our example).  But whatever we 
+> do, if a guest process is migrated, the host will have to migrate the 
+> perf event, yes?
+> 
+
+
