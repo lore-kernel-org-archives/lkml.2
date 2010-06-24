@@ -1,286 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab0FXPMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 11:12:50 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:47110 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754063Ab0FXPMs (ORCPT
+	id S1755753Ab0FXPNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 11:13:44 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:43630 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754176Ab0FXPNn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 11:12:48 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-       <linux-kernel@vger.kernel.org>
-Cc: <akpm@linux-foundation.org>, Linus Walleij <linus.walleij@stericsson.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Tony Lindgren <tony@atomide.com>,
-       Adrian Hunter <adrian.hunter@nokia.com>,
-       Robert Jarzmik <robert.jarzmik@free.fr>,
-       Sundar Iyer <sundar.iyer@stericsson.com>,
-       Bengt Jonsson <bengt.jonsson@stericsson.com>
-Subject: [PATCH] MMC: remove regulator refcount fiddling in mmc core
-Date: Thu, 24 Jun 2010 17:12:17 +0200
-Message-ID: <1277392337-27627-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 24 Jun 2010 11:13:43 -0400
+Subject: Re: [patch 30/52] fs: icache lock lru/writeback lists
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nick Piggin <npiggin@suse.de>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+In-Reply-To: <20100624150908.GG10441@laptop>
+References: <20100624030212.676457061@suse.de>
+	 <20100624030730.419497214@suse.de> <1277369888.1875.929.camel@laptop>
+	 <20100624150908.GG10441@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 24 Jun 2010 17:13:32 +0200
+Message-ID: <1277392412.1875.976.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the mmc_regulator_set_ocr() fiddles with the regulator
-refcount by selectively calling regulator_[enable|disable]
-depending on the state of the regulator. This will confuse the
-reference count if case the regulator is for example shared with
-other MMC slots or user for other stuff than the MMC card.
+On Fri, 2010-06-25 at 01:09 +1000, Nick Piggin wrote:
+> On Thu, Jun 24, 2010 at 10:58:08AM +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-06-24 at 13:02 +1000, npiggin@suse.de wrote:
+> > > +       assert_spin_locked(&wb_inode_list_lock);
+> > 
+> > There's also lockdep_assert_held() which also validates we're the owner.
+> 
+> These locks should have such miniscule contention now that they
+> effectively mean the same thing :) But no that's a good suggestion
+> thanks. I guess _most_ assert_spin_locked could be changed over.
 
-Push regulator_[enable|disable] out into the MMC host drivers
-and remove this from the MMC core so the reference count can be
-trusted.
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Adrian Hunter <adrian.hunter@nokia.com>
-Cc: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Sundar Iyer <sundar.iyer@stericsson.com>
-Cc: Bengt Jonsson <bengt.jonsson@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
-This has been regression compiled for U300, OMAP3, PXA3XX
-defconfigs, tested on U300.
-
-We're facing problems with our regulator reference counters if
-this is not fixed.
----
- drivers/mmc/core/core.c       |   66 ++++++++++++++++++-----------------------
- drivers/mmc/host/mmci.c       |   10 ++++--
- drivers/mmc/host/omap_hsmmc.c |   40 ++++++++++++++++++------
- drivers/mmc/host/pxamci.c     |   17 ++++++++--
- 4 files changed, 78 insertions(+), 55 deletions(-)
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 569e94d..904f245 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -784,47 +784,39 @@ int mmc_regulator_set_ocr(struct regulator *supply, unsigned short vdd_bit)
- {
- 	int			result = 0;
- 	int			min_uV, max_uV;
--	int			enabled;
-+	int			tmp;
-+	int			voltage;
- 
--	enabled = regulator_is_enabled(supply);
--	if (enabled < 0)
--		return enabled;
--
--	if (vdd_bit) {
--		int		tmp;
--		int		voltage;
--
--		/* REVISIT mmc_vddrange_to_ocrmask() may have set some
--		 * bits this regulator doesn't quite support ... don't
--		 * be too picky, most cards and regulators are OK with
--		 * a 0.1V range goof (it's a small error percentage).
--		 */
--		tmp = vdd_bit - ilog2(MMC_VDD_165_195);
--		if (tmp == 0) {
--			min_uV = 1650 * 1000;
--			max_uV = 1950 * 1000;
--		} else {
--			min_uV = 1900 * 1000 + tmp * 100 * 1000;
--			max_uV = min_uV + 100 * 1000;
--		}
--
--		/* avoid needless changes to this voltage; the regulator
--		 * might not allow this operation
--		 */
--		voltage = regulator_get_voltage(supply);
--		if (voltage < 0)
--			result = voltage;
--		else if (voltage < min_uV || voltage > max_uV)
--			result = regulator_set_voltage(supply, min_uV, max_uV);
--		else
--			result = 0;
-+	if (!vdd_bit)
-+		return 0;
- 
--		if (result == 0 && !enabled)
--			result = regulator_enable(supply);
--	} else if (enabled) {
--		result = regulator_disable(supply);
-+	/*
-+	 * REVISIT mmc_vddrange_to_ocrmask() may have set some
-+	 * bits this regulator doesn't quite support ... don't
-+	 * be too picky, most cards and regulators are OK with
-+	 * a 0.1V range goof (it's a small error percentage).
-+	 */
-+	tmp = vdd_bit - ilog2(MMC_VDD_165_195);
-+	if (tmp == 0) {
-+		min_uV = 1650 * 1000;
-+		max_uV = 1950 * 1000;
-+	} else {
-+		min_uV = 1900 * 1000 + tmp * 100 * 1000;
-+		max_uV = min_uV + 100 * 1000;
- 	}
- 
-+	/*
-+	 * Avoid needless changes to this voltage; the regulator
-+	 * might not allow this operation
-+	 */
-+	voltage = regulator_get_voltage(supply);
-+	if (voltage < 0)
-+		result = voltage;
-+	else if (voltage < min_uV || voltage > max_uV)
-+		result = regulator_set_voltage(supply, min_uV, max_uV);
-+	else
-+		result = 0;
-+
- 	return result;
- }
- EXPORT_SYMBOL(mmc_regulator_set_ocr);
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 4917af9..5f530b1 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -467,15 +467,17 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 
- 	switch (ios->power_mode) {
- 	case MMC_POWER_OFF:
--		if(host->vcc &&
--		   regulator_is_enabled(host->vcc))
-+		if (host->vcc)
- 			regulator_disable(host->vcc);
- 		break;
- 	case MMC_POWER_UP:
- #ifdef CONFIG_REGULATOR
--		if (host->vcc)
--			/* This implicitly enables the regulator */
-+		if (host->vcc) {
-+			if (regulator_enable(host->vcc))
-+				dev_err(mmc_dev(mmc),
-+					"could not enable regulator\n");
- 			mmc_regulator_set_ocr(host->vcc, ios->vdd);
-+		}
- #endif
- 		/*
- 		 * The translate_vdd function is not used if you have
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index b032828..d8d07e1 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -247,10 +247,17 @@ static int omap_hsmmc_1_set_power(struct device *dev, int slot, int power_on,
- 	if (mmc_slot(host).before_set_reg)
- 		mmc_slot(host).before_set_reg(dev, slot, power_on, vdd);
- 
--	if (power_on)
--		ret = mmc_regulator_set_ocr(host->vcc, vdd);
--	else
--		ret = mmc_regulator_set_ocr(host->vcc, 0);
-+	if (power_on) {
-+		ret = regulator_enable(host->vcc);
-+		if (ret)
-+			dev_err(dev, "could not enable regulator\n");
-+		else
-+			ret = mmc_regulator_set_ocr(host->vcc, vdd);
-+	} else {
-+		ret = regulator_disable(host->vcc);
-+		if (ret)
-+			dev_err(dev, "could not disable regulator\n");
-+	}
- 
- 	if (mmc_slot(host).after_set_reg)
- 		mmc_slot(host).after_set_reg(dev, slot, power_on, vdd);
-@@ -289,7 +296,11 @@ static int omap_hsmmc_23_set_power(struct device *dev, int slot, int power_on,
- 	 * chips/cards need an interface voltage rail too.
- 	 */
- 	if (power_on) {
--		ret = mmc_regulator_set_ocr(host->vcc, vdd);
-+		ret = regulator_enable(host->vcc);
-+		if (ret < 0)
-+			dev_err(dev, "could not enable regulator\n");
-+		else
-+			ret = mmc_regulator_set_ocr(host->vcc, vdd);
- 		/* Enable interface voltage rail, if needed */
- 		if (ret == 0 && host->vcc_aux) {
- 			ret = regulator_enable(host->vcc_aux);
-@@ -297,10 +308,15 @@ static int omap_hsmmc_23_set_power(struct device *dev, int slot, int power_on,
- 				ret = mmc_regulator_set_ocr(host->vcc, 0);
- 		}
- 	} else {
-+		/* Shut down the rail */
- 		if (host->vcc_aux)
- 			ret = regulator_disable(host->vcc_aux);
--		if (ret == 0)
--			ret = mmc_regulator_set_ocr(host->vcc, 0);
-+		if (ret == 0) {
-+			/* Then proeeed to shut down the local regulator */
-+			ret = regulator_disable(host->vcc);
-+			if (ret == 0)
-+				ret = mmc_regulator_set_ocr(host->vcc, 0);
-+		}
- 	}
- 
- 	if (mmc_slot(host).after_set_reg)
-@@ -340,10 +356,14 @@ static int omap_hsmmc_23_set_sleep(struct device *dev, int slot, int sleep,
- 
- 	if (cardsleep) {
- 		/* VCC can be turned off if card is asleep */
--		if (sleep)
--			err = mmc_regulator_set_ocr(host->vcc, 0);
--		else
-+		if (sleep) {
-+			err = regulator_disable(host->vcc);
-+		} else {
-+			err = regulator_enable(host->vcc);
-+			if (err)
-+				return err;
- 			err = mmc_regulator_set_ocr(host->vcc, vdd);
-+		}
- 	} else
- 		err = regulator_set_mode(host->vcc, mode);
- 	if (err)
-diff --git a/drivers/mmc/host/pxamci.c b/drivers/mmc/host/pxamci.c
-index 0a4e43f..b7e0216 100644
---- a/drivers/mmc/host/pxamci.c
-+++ b/drivers/mmc/host/pxamci.c
-@@ -99,13 +99,22 @@ static inline void pxamci_init_ocr(struct pxamci_host *host)
- 	}
- }
- 
--static inline void pxamci_set_power(struct pxamci_host *host, unsigned int vdd)
-+static inline void pxamci_set_power(struct pxamci_host *host,
-+				    unsigned char power_mode,
-+				    unsigned int vdd)
- {
- 	int on;
- 
- #ifdef CONFIG_REGULATOR
--	if (host->vcc)
--		mmc_regulator_set_ocr(host->vcc, vdd);
-+	if (host->vcc) {
-+		if (power_mode == MMC_POWER_UP) {
-+			if (regulator_enable(host->vcc))
-+				dev_err(mmc_dev(host->mmc),
-+					"could not enable regulator\n");
-+			mmc_regulator_set_ocr(host->vcc, vdd);
-+		} else if (power_mode == MMC_POWER_OFF)
-+			regulator_disable(host->vcc);
-+	}
- #endif
- 	if (!host->vcc && host->pdata &&
- 	    gpio_is_valid(host->pdata->gpio_power)) {
-@@ -492,7 +501,7 @@ static void pxamci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 	if (host->power_mode != ios->power_mode) {
- 		host->power_mode = ios->power_mode;
- 
--		pxamci_set_power(host, ios->vdd);
-+		pxamci_set_power(host, ios->power_mode, ios->vdd);
- 
- 		if (ios->power_mode == MMC_POWER_ON)
- 			host->cmdat |= CMDAT_INIT;
--- 
-1.6.3.3
-
+Probably, I just haven't felt like actually visiting all sites to
+check ;-)
