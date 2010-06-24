@@ -1,135 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab0FXPOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 11:14:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58565 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755410Ab0FXPOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 11:14:36 -0400
-Date: Fri, 25 Jun 2010 01:14:27 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Slow vmalloc in 2.6.35-rc3
-Message-ID: <20100624151427.GH10441@laptop>
-References: <4C232324.7070305@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755591Ab0FXPVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 11:21:05 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:35687 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298Ab0FXPVD convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:1>);
+	Thu, 24 Jun 2010 11:21:03 -0400
+X-Greylist: delayed 1208 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jun 2010 11:21:03 EDT
+Message-Id: <4C238F6002000078000080CC@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 24 Jun 2010 16:01:20 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <arozansk@redhat.com>, <mchehab@redhat.com>,
+       <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: fix section mismatch from
+	 pcibios_scan_specific_bus()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <4C232324.7070305@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 12:19:32PM +0300, Avi Kivity wrote:
-> I see really slow vmalloc performance on 2.6.35-rc3:
+This so far non-__devinit function calling a __devinit one
+(pci_scan_bus_on_node()) isn't correct, but since it is being exported
+it also cannot itself be made __devinit unconditionally. Short of being
+able to think of a better solution, and short of making the whole call
+tree (reaching into the arch-independent part of the PCI subsystem)
+non-__devinit, export the symbol only when HOTPLUG is enabled (which
+is always the case for non-embedded configurations), use section
+mismatch avoidance annotations for (knowing that __devinit functions
+will not be discarded in) that case, and mark the symbol __devinit only
+in the !HOTPLUG case.
 
-Can you try this patch?
-http://userweb.kernel.org/~akpm/mmotm/broken-out/mm-vmap-area-cache.patch
+Consequently, EDAC_I7CORE (consuming the export) then has to depend on
+HOTPLUG.
 
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Aristeu Sergio <arozansk@redhat.com>
+
+---
+ arch/x86/pci/legacy.c |   21 ++++++++++++++++++---
+ drivers/edac/Kconfig  |    2 +-
+ 2 files changed, 19 insertions(+), 4 deletions(-)
+
+--- linux-2.6.35-rc3/arch/x86/pci/legacy.c
++++ 2.6.35-rc3-x86-pci-legacy-sections/arch/x86/pci/legacy.c
+@@ -36,7 +36,23 @@ int __init pci_legacy_init(void)
+ 	return 0;
+ }
  
-> # tracer: function_graph
-> #
-> # CPU  DURATION                  FUNCTION CALLS
-> # |     |   |                     |   |   |   |
->  3)   3.581 us    |  vfree();
->  3)               |  msr_io() {
->  3) ! 523.880 us  |    vmalloc();
->  3)   1.702 us    |    vfree();
->  3) ! 529.960 us  |  }
->  3)               |  msr_io() {
->  3) ! 564.200 us  |    vmalloc();
->  3)   1.429 us    |    vfree();
->  3) ! 568.080 us  |  }
->  3)               |  msr_io() {
->  3) ! 578.560 us  |    vmalloc();
->  3)   1.697 us    |    vfree();
->  3) ! 584.791 us  |  }
->  3)               |  msr_io() {
->  3) ! 559.657 us  |    vmalloc();
->  3)   1.566 us    |    vfree();
->  3) ! 575.948 us  |  }
->  3)               |  msr_io() {
->  3) ! 536.558 us  |    vmalloc();
->  3)   1.553 us    |    vfree();
->  3) ! 542.243 us  |  }
->  3)               |  msr_io() {
->  3) ! 560.086 us  |    vmalloc();
->  3)   1.448 us    |    vfree();
->  3) ! 569.387 us  |  }
-> 
-> msr_io() is from arch/x86/kvm/x86.c, allocating at most 4K (yes it
-> should use kmalloc()).  The memory is immediately vfree()ed.  There
-> are 96 entries in /proc/vmallocinfo, and the whole thing is single
-> threaded so there should be no contention.
-
-Yep, it should use kmalloc.
-
+-void pcibios_scan_specific_bus(int busn)
++#ifdef CONFIG_HOTPLUG
++static void __ref
++#else
++static inline void
++#endif
++_pci_scan_bus_on_node(int busno, int node)
++{
++	pci_scan_bus_on_node(busno, &pci_root_ops, node);
++}
++
++#ifdef CONFIG_HOTPLUG
++EXPORT_SYMBOL_GPL(pcibios_scan_specific_bus);
++void
++#else
++void __devinit
++#endif
++pcibios_scan_specific_bus(int busn)
+ {
+ 	int devfn;
+ 	long node;
+@@ -51,12 +67,11 @@ void pcibios_scan_specific_bus(int busn)
+ 		    l != 0x0000 && l != 0xffff) {
+ 			DBG("Found device at %02x:%02x [%04x]\n", busn, devfn, l);
+ 			printk(KERN_INFO "PCI: Discovered peer bus %02x\n", busn);
+-			pci_scan_bus_on_node(busn, &pci_root_ops, node);
++			_pci_scan_bus_on_node(busn, node);
+ 			return;
+ 		}
+ 	}
+ }
+-EXPORT_SYMBOL_GPL(pcibios_scan_specific_bus);
  
-> Here's the perf report:
-> 
->     63.97%             qemu  [kernel]
-> [k] rb_next
->                        |
->                        --- rb_next
->                           |
->                           |--70.75%-- alloc_vmap_area
->                           |          __get_vm_area_node
->                           |          __vmalloc_node
->                           |          vmalloc
->                           |          |
->                           |          |--99.15%-- msr_io
->                           |          |          kvm_arch_vcpu_ioctl
->                           |          |          kvm_vcpu_ioctl
->                           |          |          vfs_ioctl
->                           |          |          do_vfs_ioctl
->                           |          |          sys_ioctl
->                           |          |          system_call
->                           |          |          __GI_ioctl
->                           |          |          |
->                           |          |           --100.00%--
-> 0x1dfc4a8878e71362
->                           |          |
->                           |           --0.85%-- __kvm_set_memory_region
->                           |                     kvm_set_memory_region
->                           |
-> kvm_vm_ioctl_set_memory_region
->                           |                     kvm_vm_ioctl
->                           |                     vfs_ioctl
->                           |                     do_vfs_ioctl
->                           |                     sys_ioctl
->                           |                     system_call
->                           |                     __GI_ioctl
->                           |
->                            --29.25%-- __get_vm_area_node
->                                      __vmalloc_node
->                                      vmalloc
->                                      |
->                                      |--98.89%-- msr_io
->                                      |          kvm_arch_vcpu_ioctl
->                                      |          kvm_vcpu_ioctl
->                                      |          vfs_ioctl
->                                      |          do_vfs_ioctl
->                                      |          sys_ioctl
->                                      |          system_call
->                                      |          __GI_ioctl
->                                      |          |
->                                      |           --100.00%--
-> 0x1dfc4a8878e71362
-> 
-> 
-> It seems completely wrong - iterating 8 levels of a binary tree
-> shouldn't take half a millisecond.
+ int __init pci_subsys_init(void)
+ {
+--- linux-2.6.35-rc3/drivers/edac/Kconfig
++++ 2.6.35-rc3-x86-pci-legacy-sections/drivers/edac/Kconfig
+@@ -171,7 +171,7 @@ config EDAC_I5400
+ 
+ config EDAC_I7CORE
+ 	tristate "Intel i7 Core (Nehalem) processors"
+-	depends on EDAC_MM_EDAC && PCI && X86
++	depends on EDAC_MM_EDAC && PCI && X86 && HOTPLUG
+ 	select EDAC_MCE
+ 	help
+ 	  Support for error detection and correction the Intel
 
-It's not iterating down the tree, it's iterating through the
-nodes to find a free area. Slows down because lazy vunmap means
-that quite a lot of little areas build up right at the start of
-our search start address. The vmap cache should hopefully fix
-it up.
 
-Thanks,
-Nick
 
