@@ -1,301 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab0FXQ3G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 12:29:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46368 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755750Ab0FXQ3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 12:29:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 3/9] PM / Hibernate: user, implement user_ops writer
-Date: Thu, 24 Jun 2010 18:27:34 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, jirislaby@gmail.com
-References: <1275468768-28229-1-git-send-email-jslaby@suse.cz> <1275468768-28229-3-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1275468768-28229-3-git-send-email-jslaby@suse.cz>
+	id S1756055Ab0FXQaU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 12:30:20 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56150 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab0FXQaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 12:30:18 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>,
+       V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [V9fs-developer] [GIT PULL] 9p file system bug fixes for 2.6.35-rc2
+In-Reply-To: <87pqzrexon.fsf@linux.vnet.ibm.com>
+References: <AANLkTik3ax1SlAKRo6laMfACdzh6IUKLGSvMK4Gp9GY9@mail.gmail.com> <alpine.LFD.2.00.1006071654290.4506@i5.linux-foundation.org> <20100608004102.GQ31073@ZenIV.linux.org.uk> <87pqzrexon.fsf@linux.vnet.ibm.com>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Thu, 24 Jun 2010 22:00:10 +0530
+Message-ID: <871vbwe6lp.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006241827.34871.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 02, 2010, Jiri Slaby wrote:
-> Switch /dev/snapshot writer to hibernate_io_ops approach so that we
-> can do whatever we want with snapshot processing code. All the later
-> code changes will be transparent and needn't care about different
-> readers/writers.
-
-Well.  I don't want image data to undergo _any_ transformations within the
-kernel before going to s2disk.  In fact, s2disk is supposed to do whatever it
-wants with the image data (that are supposed to be _raw_ image data).
-
-So, I don't think we need to "switch" /dev/snapshot to anything adding
-complexity in the process.
-
-> In this patch only writer is implemented -- for better bisectability
-> if something breaks. (The development was easier too, because one
-> could break only one part, not both.)
+On Wed, 16 Jun 2010 22:12:32 +0530, "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> On Tue, 8 Jun 2010 01:41:02 +0100, Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> > On Mon, Jun 07, 2010 at 05:08:19PM -0700, Linus Torvalds wrote:
+> > 
+> > > In fact, the other thing that I find doing that whole "dentry->d_parent" 
+> > > thing seems to literally be broken. If you look at v9fs_fid_lookup(), 
+> > > you'll notice how it walks up the d_parent chain, and at that point you do 
+> > > NOT own the directory i_mutex, so at that point d_parent really _can_ be 
+> > > changing wildly due to concurrent renames or whatever.
+> > 
+> > Eh...  It's bogus, all right, but i_mutex is not the correct solution.
+> > You'd have to take it on a lot of inodes along the way to root *and*
+> > you'd violate the ordering in process (ancestors first).
+> > 
+> > I'm not sure what's the right thing to do there, actually - s_vfs_rename_sem
+> > also won't do, since it'll give you ordering problems of its own (it's
+> > taken before i_mutex in VFS, so trying to take it under i_mutex would not
+> > do).
 > 
-> Also, when using this interface, switch to the ops on open/release,
-> so they are used.
+> Can we use dcache_lock in v9fs_fid_lookup ? Since we are holding
+> parent directory inode->i_mutex in other places where we refer
+> dentry->d_parent I guess those access are ok ?. And for v9fs_fid_lookup we
+> can hold dcache_lock, walk the parent, build the full path name and use
+> that for TWALK ? 
 > 
-> There are explicit barriers protecting to_do_buffer, because it is
-> all done in a producer-consumer fashion:
-> PRODUCER (snapshot layer)
-> 1) to_do_buffer is set
-> 2) set TODO bit
-> 3) wake CONSUMER
-> 4) wait for TODO bit _clear_
-> 
-> CONSUMER (fops->read)
-> 1) wait for TODO bit
-> 2) pass to_do_buffer to userspace
-> 3) clear TODO bit
-> 4) wake PRODUCER
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> ---
->  kernel/power/user.c |  140 ++++++++++++++++++++++++++++++++++++++++++++++++---
->  1 files changed, 132 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/power/user.c b/kernel/power/user.c
-> index e819e17..b4610c3 100644
-> --- a/kernel/power/user.c
-> +++ b/kernel/power/user.c
-> @@ -23,6 +23,8 @@
->  #include <linux/console.h>
->  #include <linux/cpu.h>
->  #include <linux/freezer.h>
-> +#include <linux/mutex.h>
-> +#include <linux/wait.h>
->  #include <scsi/scsi_scan.h>
->  
->  #include <asm/uaccess.h>
-> @@ -61,10 +63,93 @@ static struct snapshot_data {
->  	char frozen;
->  	char ready;
->  	char platform_support;
-> +	struct hibernate_io_ops *prev_ops;
->  } snapshot_state;
->  
->  atomic_t snapshot_device_available = ATOMIC_INIT(1);
->  
-> +static struct {
-> +	void *buffer; /* buffer to pass through */
-> +	struct workqueue_struct *worker; /* the thread initiating read/write */
-> +	wait_queue_head_t wait; /* wait for buffer */
-> +	wait_queue_head_t done; /* read/write done? */
-> +	struct mutex lock; /* protection for buffer */
-> +
-> +#define TODO_WORK	1
-> +#define TODO_FINISH	2
-> +#define TODO_CLOSED	3
-> +#define TODO_ERROR	4
-> +	DECLARE_BITMAP(flags, 10); /* TODO_* flags defined above */
-> +} to_do;
-> +
-> +static unsigned long user_free_space(void)
-> +{
-> +	return ~0UL; /* we have no idea, maybe we will fail later */
-> +}
-> +
-> +static struct hibernate_io_handle *user_writer_start(void)
-> +{
-> +	return hib_io_handle_alloc(0) ? : ERR_PTR(-ENOMEM);
-> +}
-> +
-> +static int user_write_page(struct hibernate_io_handle *io_handle, void *buf,
-> +		struct bio **bio_chain)
-> +{
-> +	int err = 0;
-> +
-> +	if (test_bit(TODO_CLOSED, to_do.flags))
-> +		return -EIO;
-> +
-> +	mutex_lock(&to_do.lock);
-> +	to_do.buffer = buf;
-> +	mutex_unlock(&to_do.lock);
-> +	set_bit(TODO_WORK, to_do.flags);
-> +	wake_up_interruptible(&to_do.wait);
-> +
-> +	wait_event(to_do.done, !test_bit(TODO_WORK, to_do.flags) ||
-> +			(err = test_bit(TODO_CLOSED, to_do.flags)));
-> +
-> +	return err ? -EIO : 0;
-> +}
-> +
-> +static int user_writer_finish(struct hibernate_io_handle *io_handle,
-> +		unsigned int flags, int error)
-> +{
-> +	int err = 0;
-> +
-> +	if (error)
-> +		set_bit(TODO_ERROR, to_do.flags);
-> +	set_bit(TODO_FINISH, to_do.flags);
-> +	wake_up_interruptible(&to_do.wait);
-> +
-> +	wait_event(to_do.done, !test_bit(TODO_FINISH, to_do.flags) ||
-> +			(err = test_bit(TODO_CLOSED, to_do.flags)));
-> +
-> +	if (!error && err)
-> +		error = -EIO;
-> +
-> +	return error;
-> +}
-> +
-> +struct hibernate_io_ops user_ops = {
-> +	.free_space = user_free_space,
-> +
-> +	.writer_start = user_writer_start,
-> +	.writer_finish = user_writer_finish,
-> +	.write_page = user_write_page,
-> +};
-> +
-> +static void snapshot_writer(struct work_struct *work)
-> +{
-> +	int ret;
-> +
-> +	ret = swsusp_write(0);
-> +	if (ret)
-> +		printk(KERN_ERR "PM: write failed with %d\n", ret);
-> +}
-> +
-> +static DECLARE_WORK(snapshot_writer_w, snapshot_writer);
-> +
->  static int snapshot_open(struct inode *inode, struct file *filp)
->  {
->  	struct snapshot_data *data;
-> @@ -115,9 +200,17 @@ static int snapshot_open(struct inode *inode, struct file *filp)
->  	}
->  	if (error)
->  		atomic_inc(&snapshot_device_available);
-> +	else {
-> +		data->prev_ops = hibernate_io_ops;
-> +		hibernate_io_ops = &user_ops;
-> +	}
->  	data->frozen = 0;
->  	data->ready = 0;
->  	data->platform_support = 0;
-> +	memset(to_do.flags, 0, sizeof(*to_do.flags));
-> +	init_waitqueue_head(&to_do.wait);
-> +	init_waitqueue_head(&to_do.done);
-> +	mutex_init(&to_do.lock);
->  
->   Unlock:
->  	mutex_unlock(&pm_mutex);
-> @@ -131,6 +224,10 @@ static int snapshot_release(struct inode *inode, struct file *filp)
->  
->  	mutex_lock(&pm_mutex);
->  
-> +	set_bit(TODO_CLOSED, to_do.flags);
-> +	wake_up(&to_do.done);
-> +	flush_workqueue(to_do.worker);
-> +
->  	swsusp_free();
->  	free_basic_memory_bitmaps();
->  	data = filp->private_data;
-> @@ -139,6 +236,7 @@ static int snapshot_release(struct inode *inode, struct file *filp)
->  		thaw_processes();
->  	pm_notifier_call_chain(data->mode == O_WRONLY ?
->  			PM_POST_HIBERNATION : PM_POST_RESTORE);
-> +	hibernate_io_ops = data->prev_ops;
->  	atomic_inc(&snapshot_device_available);
->  
->  	mutex_unlock(&pm_mutex);
-> @@ -152,6 +250,7 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
->  	struct snapshot_data *data;
->  	ssize_t res;
->  	loff_t pg_offp = *offp & ~PAGE_MASK;
-> +	int fin = 0;
->  
->  	mutex_lock(&pm_mutex);
->  
-> @@ -161,18 +260,31 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
->  		goto Unlock;
->  	}
->  	if (!pg_offp) { /* on page boundary? */
-> -		res = snapshot_read_next(&data->handle);
+> Another option is we deny a cross directory rename when
+> doing fid_lookup. That is we can introduce a per superblock v9fs
+> specific rwlock that get taken (in write mode) in a cross directory
+> rename and in fid_lookup we take them in read mode ? We will have to set
+> FS_RENAME_DOES_D_MOVE for 9p.
 
-I really don't understand why you're willing to do this.  In the s2disk case we
-have an image in memory and we only want to trasfer it to user space
-page-by-page, where user space decides when each page is going to be
-transferred.  snapshot_read_next() is for that and while you can modify it
-however you like, I don't think it's really worth it.
+something like this ?
 
-> -		if (res <= 0)
-> +		res = wait_event_interruptible(to_do.wait,
-> +			test_bit(TODO_WORK, to_do.flags) ||
-> +			(fin = test_and_clear_bit(TODO_FINISH, to_do.flags)));
-> +		if (res)
->  			goto Unlock;
-> -	} else {
-> -		res = PAGE_SIZE - pg_offp;
-> +		if (test_bit(TODO_ERROR, to_do.flags)) {
-> +			res = -EIO;
-> +			goto Unlock;
-> +		}
-> +		if (fin)
-> +			goto wake;
->  	}
-> +	res = PAGE_SIZE - pg_offp;
->  
-> -	res = simple_read_from_buffer(buf, count, &pg_offp,
-> -			data_of(data->handle), res);
-> +	mutex_lock(&to_do.lock);
-> +	res = simple_read_from_buffer(buf, count, &pg_offp, to_do.buffer, res);
-> +	mutex_unlock(&to_do.lock);
->  	if (res > 0)
->  		*offp += res;
->  
-> +	if (!(pg_offp & ~PAGE_MASK)) {
-> +		clear_bit(TODO_WORK, to_do.flags);
-> +wake:
-> +		wake_up(&to_do.done);
-> +	}
->   Unlock:
->  	mutex_unlock(&pm_mutex);
->  
-> @@ -278,8 +390,11 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
->  		error = hibernation_snapshot(data->platform_support);
->  		if (!error)
->  			error = put_user(in_suspend, (int __user *)arg);
-> -		if (!error)
-> +		if (!error) {
-> +			if (in_suspend)
-> +				queue_work(to_do.worker, &snapshot_writer_w);
->  			data->ready = 1;
-> +		}
->  		break;
->  
->  	case SNAPSHOT_ATOMIC_RESTORE:
-> @@ -473,7 +588,16 @@ static struct miscdevice snapshot_device = {
->  
->  static int __init snapshot_device_init(void)
->  {
-> -	return misc_register(&snapshot_device);
-> +	int ret;
-> +
-> +	to_do.worker = create_singlethread_workqueue("suspend_worker");
-> +	if (!to_do.worker)
-> +		return -ENOMEM;
-> +
-> +	ret = misc_register(&snapshot_device);
-> +	if (ret)
-> +		destroy_workqueue(to_do.worker);
-> +	return ret;
->  };
->  
->  device_initcall(snapshot_device_init);
+commit 86c06ad7506e7e05dd4e1e1b8cee28e19703c4f6
+Author: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Date:   Mon Jun 21 21:50:07 2010 +0530
 
-And using a special workqueue for this purpose is seriously over the top IMnshO.
+    fs/9p: Prevent parallel rename when doing fid_lookup
+    
+    During fid lookup we need to make sure that the dentry->d_parent doesn't
+    change so that we can safely walk the parent dentries. To ensure that
+    we need to prevent cross directory rename during fid_lookup. Add a
+    per superblock rename_lock rwlock to prevent parallel fid lookup and rename.
+    
+    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-Why don't you just regard s2disk as a special case and don't touch it
-(or modify it only so much to prevent it from getting in the way)?
-
-Rafael
+diff --git a/fs/9p/fid.c b/fs/9p/fid.c
+index 7317b39..14b542a 100644
+--- a/fs/9p/fid.c
++++ b/fs/9p/fid.c
+@@ -139,14 +139,19 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
+ 	fid = v9fs_fid_find(dentry, uid, any);
+ 	if (fid)
+ 		return fid;
+-
++	/*
++	 * we don't have a matching fid. To do a TWALK we need
++	 * parent fid. We need to prevent rename when we want to
++	 * look at the parent.
++	 */
++	read_lock(&v9ses->rename_lock);
+ 	ds = dentry->d_parent;
+ 	fid = v9fs_fid_find(ds, uid, any);
+ 	if (!fid) { /* walk from the root */
+ 		n = 0;
+ 		for (ds = dentry; !IS_ROOT(ds); ds = ds->d_parent)
+ 			n++;
+-
++		read_unlock(&v9ses->rename_lock);
+ 		fid = v9fs_fid_find(ds, uid, any);
+ 		if (!fid) { /* the user is not attached to the fs yet */
+ 			if (access == V9FS_ACCESS_SINGLE)
+@@ -165,9 +170,11 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
+ 
+ 			v9fs_fid_add(ds, fid);
+ 		}
+-	} else /* walk from the parent */
++	} else  {
++		/* walk from the parent */
+ 		n = 1;
+-
++		read_unlock(&v9ses->rename_lock);
++	}
+ 	if (ds == dentry)
+ 		return fid;
+ 
+@@ -175,8 +182,10 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
+ 	if (!wnames)
+ 		return ERR_PTR(-ENOMEM);
+ 
++	read_lock(&v9ses->rename_lock);
+ 	for (d = dentry, i = (n-1); i >= 0; i--, d = d->d_parent)
+ 		wnames[i] = (char *) d->d_name.name;
++	read_unlock(&v9ses->rename_lock);
+ 
+ 	clone = 1;
+ 	i = 0;
+@@ -199,7 +208,6 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
+ 		i += l;
+ 		clone = 0;
+ 	}
+-
+ 	kfree(wnames);
+ 	v9fs_fid_add(dentry, fid);
+ 	return fid;
+diff --git a/fs/9p/v9fs.c b/fs/9p/v9fs.c
+index f8b86e9..6839fca 100644
+--- a/fs/9p/v9fs.c
++++ b/fs/9p/v9fs.c
+@@ -237,6 +237,7 @@ struct p9_fid *v9fs_session_init(struct v9fs_session_info *v9ses,
+ 		__putname(v9ses->uname);
+ 		return ERR_PTR(-ENOMEM);
+ 	}
++	rwlock_init(&v9ses->rename_lock);
+ 
+ 	rc = bdi_setup_and_register(&v9ses->bdi, "9p", BDI_CAP_MAP_COPY);
+ 	if (rc) {
+diff --git a/fs/9p/v9fs.h b/fs/9p/v9fs.h
+index bec4d0b..dee4f26 100644
+--- a/fs/9p/v9fs.h
++++ b/fs/9p/v9fs.h
+@@ -104,6 +104,7 @@ struct v9fs_session_info {
+ 	struct p9_client *clnt;	/* 9p client */
+ 	struct list_head slist; /* list of sessions registered with v9fs */
+ 	struct backing_dev_info bdi;
++	rwlock_t rename_lock;
+ };
+ 
+ struct p9_fid *v9fs_session_init(struct v9fs_session_info *, const char *,
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index 4331b3b..be39035 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -678,6 +678,7 @@ static struct dentry *v9fs_vfs_lookup(struct inode *dir, struct dentry *dentry,
+ 
+ 	sb = dir->i_sb;
+ 	v9ses = v9fs_inode2v9ses(dir);
++	/* We can walk d_parent because we hold the dir->i_mutex */
+ 	dfid = v9fs_fid_lookup(dentry->d_parent);
+ 	if (IS_ERR(dfid))
+ 		return ERR_CAST(dfid);
+@@ -763,7 +764,7 @@ v9fs_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct p9_fid *olddirfid;
+ 	struct p9_fid *newdirfid;
+ 	struct p9_wstat wstat;
+-	int retval;
++	int retval, cross_dir_rename;
+ 
+ 	P9_DPRINTK(P9_DEBUG_VFS, "\n");
+ 	retval = 0;
+@@ -784,7 +785,7 @@ v9fs_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		retval = PTR_ERR(newdirfid);
+ 		goto clunk_olddir;
+ 	}
+-
++	cross_dir_rename = (old_dentry->d_parent != new_dentry->d_parent);
+ 	if (v9fs_proto_dotl(v9ses)) {
+ 		retval = p9_client_rename(oldfid, newdirfid,
+ 					(char *) new_dentry->d_name.name);
+@@ -806,6 +807,11 @@ v9fs_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	retval = p9_client_wstat(oldfid, &wstat);
+ 
+ clunk_newdir:
++	if (cross_dir_rename)
++		write_lock(&v9ses->rename_lock);
++	d_move(old_dentry, new_dentry);
++	if (cross_dir_rename)
++		write_unlock(&v9ses->rename_lock);
+ 	p9_client_clunk(newdirfid);
+ 
+ clunk_olddir:
+diff --git a/fs/9p/vfs_super.c b/fs/9p/vfs_super.c
+index be74d02..0f6d06d 100644
+--- a/fs/9p/vfs_super.c
++++ b/fs/9p/vfs_super.c
+@@ -278,4 +278,5 @@ struct file_system_type v9fs_fs_type = {
+ 	.get_sb = v9fs_get_sb,
+ 	.kill_sb = v9fs_kill_super,
+ 	.owner = THIS_MODULE,
++	.fs_flags = FS_RENAME_DOES_D_MOVE,
+ };
