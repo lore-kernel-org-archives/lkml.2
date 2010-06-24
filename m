@@ -1,161 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab0FXAq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 20:46:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20404 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753955Ab0FXAq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 20:46:26 -0400
-Date: Wed, 23 Jun 2010 20:46:22 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/3] block: Implement a blk_yield function to voluntarily
- give up the I/O scheduler.
-Message-ID: <20100624004622.GA3297@redhat.com>
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
- <1277242502-9047-2-git-send-email-jmoyer@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277242502-9047-2-git-send-email-jmoyer@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754191Ab0FXBgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 21:36:06 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:51562 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754134Ab0FXBgD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 21:36:03 -0400
+X-Sasl-enc: LrcAkzcC5j+qVh5RNPEyolV/0fDlNsED04Z/aDqyIQJW 1277343360
+Subject: Re: [autofs] [PATCH 04/38] autofs4: Save autofs trigger's vfsmount
+ in super block info
+From: Ian Kent <raven@themaw.net>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@zeniv.linux.org.uk,
+       vaurora@redhat.com, autofs@linux.kernel.org,
+       linux-kernel@vger.kernel.org, hch@infradead.org,
+       linux-fsdevel@vger.kernel.org, jblunck@suse.de
+In-Reply-To: <9219.1277258833@jrobl>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
+	 <1276627208-17242-5-git-send-email-vaurora@redhat.com>
+	 <1276661043.2339.35.camel@localhost> <1277091579.3827.9.camel@localhost>
+	 <E1OQghj-0001Bt-RU@pomaz-ex.szeredi.hu> <1277181999.2829.2.camel@localhost>
+	 <26799.1277185756@jrobl> <1277256214.2848.17.camel@localhost>
+	 <9219.1277258833@jrobl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Jun 2010 09:35:50 +0800
+Message-ID: <1277343350.2841.33.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 05:35:00PM -0400, Jeff Moyer wrote:
+On Wed, 2010-06-23 at 11:07 +0900, J. R. Okajima wrote:
+> Ian Kent:
+> > I may be missing something about this, but why is it safe to use
+> > iterate_mounts(), since it doesn't take the vfsmount_lock when
+> > traversing the list of mounts?
+> 
+> The sample code was not correct.
+> We need to acquire vfsmount_lock or down_read(namespace_sem).
 
-[..]
-> @@ -1614,6 +1620,15 @@ __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
->  	cfq_clear_cfqq_wait_request(cfqq);
->  	cfq_clear_cfqq_wait_busy(cfqq);
->  
-> +	if (!cfq_cfqq_yield(cfqq)) {
-> +		struct cfq_rb_root *st;
-> +		st = service_tree_for(cfqq->cfqg,
-> +				      cfqq_prio(cfqq), cfqq_type(cfqq));
-> +		st->last_expiry = jiffies;
-> +		st->last_pid = cfqq->pid;
-> +	}
-> +	cfq_clear_cfqq_yield(cfqq);
+This is looking more and more suspect the more I dig.
 
-Jeff, I think cfqq is still on service tree at this point of time. If yes,
-then we can simply use cfqq->service_tree, instead of calling
-service_tree_for().
+The only place iterate_mounts() is called is within the audit subsystem
+AFAICS, and I don't see where vfsmount_lock is taken in that code. OTOH,
+in fs/namespace.c it is pretty clear that vfsmount->mnt_list is
+protected by the vfsmount_lock.
 
-No clearing of cfqq->yield_to field?
+Ummm ... that's gota be broken but maybe someone can give a reason why
+it isn't?
 
-[..]
->  /*
->   * Select a queue for service. If we have a current active queue,
->   * check whether to continue servicing it, or retrieve and set a new one.
-> @@ -2187,6 +2232,10 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
->  		 * have been idling all along on this queue and it should be
->  		 * ok to wait for this request to complete.
->  		 */
-> +		if (cfq_cfqq_yield(cfqq) &&
-> +		    cfq_should_yield_now(cfqq, &new_cfqq))
-> +			goto expire;
-> +
+Ian
 
-I think we can get rid of this condition here and move the yield check
-above outside above if condition. This if condition waits for request to
-complete from this queue and waits for queue to get busy before slice
-expiry. If we have decided to yield the queue, there is no point in
-waiting for next request for queue to get busy.
 
->  		if (cfqq->cfqg->nr_cfqq == 1 && RB_EMPTY_ROOT(&cfqq->sort_list)
->  		    && cfqq->dispatched && cfq_should_idle(cfqd, cfqq)) {
->  			cfqq = NULL;
-> @@ -2215,6 +2264,9 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
->  		goto expire;
->  	}
->  
-> +	if (cfq_cfqq_yield(cfqq) && cfq_should_yield_now(cfqq, &new_cfqq))
-> +		goto expire;
-> +
-
-We can move this check up.
- 
-[..]
-> +static void cfq_yield(struct request_queue *q, struct task_struct *tsk)
-> +{
-> +	struct cfq_data *cfqd = q->elevator->elevator_data;
-> +	struct cfq_io_context *cic, *new_cic;
-> +	struct cfq_queue *cfqq;
-> +
-> +	cic = cfq_cic_lookup(cfqd, current->io_context);
-> +	if (!cic)
-> +		return;
-> +
-> +	task_lock(tsk);
-> +	new_cic = cfq_cic_lookup(cfqd, tsk->io_context);
-> +	atomic_long_inc(&tsk->io_context->refcount);
-> +	task_unlock(tsk);
-> +	if (!new_cic)
-> +		goto out_dec;
-> +
-> +	spin_lock_irq(q->queue_lock);
-> +
-> +	cfqq = cic_to_cfqq(cic, 1);
-> +	if (!cfqq)
-> +		goto out_unlock;
-> +
-> +	/*
-> +	 * If we are currently servicing the SYNC_NOIDLE_WORKLOAD, and we
-> +	 * are idling on the last queue in that workload, *and* there are no
-> +	 * potential dependent readers running currently, then go ahead and
-> +	 * yield the queue.
-> +	 */
-> +	if (cfqd->active_queue == cfqq &&
-> +	    cfqd->serving_type == SYNC_NOIDLE_WORKLOAD) {
-> +		/*
-> +		 * If there's been no I/O from another process in the idle
-> +		 * slice time, then there is by definition no dependent
-> +		 * read going on for this service tree.
-> +		 */
-> +		if (expiry_data_valid(cfqq->service_tree) &&
-> +		    time_before(cfqq->service_tree->last_expiry +
-> +				cfq_slice_idle, jiffies) &&
-> +		    cfqq->service_tree->last_pid != cfqq->pid)
-> +			goto out_unlock;
-> +	}
-> +
-> +	cfq_log_cfqq(cfqd, cfqq, "yielding queue to %d", tsk->pid);
-> +	cfqq->yield_to = new_cic;
-
-We are stashing away a pointer to cic without taking reference?
-
-> +	cfq_mark_cfqq_yield(cfqq);
-> +
-> +out_unlock:
-> +	spin_unlock_irq(q->queue_lock);
-> +out_dec:
-> +	put_io_context(tsk->io_context);
-> +}
-> +
->  static int __cfq_forced_dispatch_cfqq(struct cfq_queue *cfqq)
->  {
->  	int dispatched = 0;
-> @@ -3123,6 +3234,13 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
->  	if (!cfqq)
->  		return false;
->  
-> +	/*
-> +	 * If the active queue yielded its timeslice to this queue, let
-> +	 * it preempt.
-> +	 */
-> +	if (cfq_cfqq_yield(cfqq) && RQ_CIC(rq) == cfqq->yield_to)
-> +		return true;
-> +
-
-I think we need to again if if we are sync-noidle workload then allow
-preemption only if no dependent read is currently on, otherwise
-sync-noidle service tree loses share.
-
-This version looks much simpler than previous one and is much easier
-to understand. I will do some testing on friday and provide you feedback.
-
-Thanks
-Vivek
