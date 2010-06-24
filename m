@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab0FXSMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 14:12:09 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:43762 "EHLO e6.ny.us.ibm.com"
+	id S1755863Ab0FXSLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 14:11:47 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:43713 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327Ab0FXSMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 14:12:01 -0400
+	id S1755902Ab0FXSLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 14:11:43 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -13,9 +13,9 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
        James Morris <jmorris@namei.org>,
        David Safford <safford@watson.ibm.com>,
        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 12/15] ima: appraise default rules
-Date: Thu, 24 Jun 2010 14:10:28 -0400
-Message-Id: <1277403031-3080-13-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH 09/15] evm: inode_post_init
+Date: Thu, 24 Jun 2010 14:10:25 -0400
+Message-Id: <1277403031-3080-10-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1277403031-3080-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1277403031-3080-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -23,195 +23,175 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the IMA measurement policy, the appraise policy can not be
-dependent on runtime process information, such as the task uid,
-as the 'security.ima' xattr is written on file close and must
-be updated each time the file changes, regardless of the current
-task uid. The appraise default policy appraises all files owned
-by root.
+Initialize 'security.evm' for new files. Reduce number of arguments
+by defining 'struct xattr'.
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Acked-by: Serge Hallyn <serue@us.ibm.com>
 ---
- security/integrity/ima/ima.h          |    2 +
- security/integrity/ima/ima_appraise.c |   14 +++++++-
- security/integrity/ima/ima_policy.c   |   61 +++++++++++++++++++++++++++++++-
- 3 files changed, 74 insertions(+), 3 deletions(-)
+ include/linux/evm.h                 |   11 ++++++++++
+ include/linux/xattr.h               |    6 +++++
+ security/integrity/evm/evm.h        |    3 ++
+ security/integrity/evm/evm_crypto.c |   19 ++++++++++++++++++
+ security/integrity/evm/evm_main.c   |   36 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 75 insertions(+), 0 deletions(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index aabd615..7cc028d 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -122,6 +122,8 @@ void iint_rcu_free(struct rcu_head *rcu);
- enum ima_hooks { FILE_CHECK = 1, FILE_MMAP, BPRM_CHECK, POST_SETATTR };
+diff --git a/include/linux/evm.h b/include/linux/evm.h
+index 8626263..3602bd1 100644
+--- a/include/linux/evm.h
++++ b/include/linux/evm.h
+@@ -9,6 +9,7 @@
+ #define _LINUX_EVM_H
  
- int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask);
-+int ima_match_appraise_policy(struct inode *inode, enum ima_hooks func,
-+			      int mask);
- void ima_init_policy(void);
- void ima_update_policy(void);
- ssize_t ima_parse_add_rule(char *);
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 423a5a4..fb402fa 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -28,7 +28,19 @@ __setup("ima_appraise=", default_appraise_setup);
- int ima_must_appraise(struct integrity_iint_cache *iint, struct inode *inode,
- 		      enum ima_hooks func, int mask)
- {
--	return 0;
-+	int must_appraise, rc = 0;
-+
-+	if (!ima_appraise || !inode->i_op->getxattr)
-+		return 0;
-+	else if (iint->flags & IMA_APPRAISED)
-+		return 0;
-+
-+	must_appraise = ima_match_appraise_policy(inode, func, mask);
-+	if (must_appraise) {
-+		iint->flags |= IMA_APPRAISE;
-+		rc = 1;
-+	}
-+	return rc;
+ #include <linux/integrity.h>
++#include <linux/xattr.h>
+ 
+ #ifdef CONFIG_EVM
+ extern enum integrity_status evm_verifyxattr(struct dentry *dentry,
+@@ -25,6 +26,9 @@ extern void evm_inode_post_setxattr(struct dentry *dentry,
+ extern int evm_inode_removexattr(struct dentry *dentry, const char *xattr_name);
+ extern void evm_inode_post_removexattr(struct dentry *dentry,
+ 				       const char *xattr_name);
++extern int evm_inode_post_init_security(struct inode *inode,
++					const struct xattr *new,
++					struct xattr *evm);
+ #else
+ static enum integrity_status evm_verifyxattr(struct dentry *dentry,
+ 					     char *xattr_name,
+@@ -65,5 +69,12 @@ static inline void evm_inode_post_removexattr(struct dentry *dentry,
+ 	return;
  }
  
- static void ima_fix_xattr(struct dentry *dentry,
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index aef8c0a..7fd84af 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -24,8 +24,11 @@
- #define IMA_MASK 	0x0002
- #define IMA_FSMAGIC	0x0004
- #define IMA_UID		0x0008
-+#define IMA_OWNER	0x0010
- 
--enum ima_action { UNKNOWN = -1, DONT_MEASURE = 0, MEASURE };
-+enum ima_action { UNKNOWN = -1,
-+		  DONT_MEASURE = 0, MEASURE,
-+		  DONT_APPRAISE, APPRAISE};
- 
- #define MAX_LSM_RULES 6
- enum lsm_rule_types { LSM_OBJ_USER, LSM_OBJ_ROLE, LSM_OBJ_TYPE,
-@@ -40,6 +43,7 @@ struct ima_measure_rule_entry {
- 	int mask;
- 	unsigned long fsmagic;
- 	uid_t uid;
-+	uid_t owner;
- 	struct {
- 		void *rule;	/* LSM file metadata specific */
- 		int type;	/* audit type */
-@@ -48,7 +52,7 @@ struct ima_measure_rule_entry {
- 
- /*
-  * Without LSM specific knowledge, the default policy can only be
-- * written in terms of .action, .func, .mask, .fsmagic, and .uid
-+ * written in terms of .action, .func, .mask, .fsmagic, .uid, and .owner
-  */
- 
- /*
-@@ -70,6 +74,13 @@ static struct ima_measure_rule_entry default_rules[] = {
- 	 .flags = IMA_FUNC | IMA_MASK},
- 	{.action = MEASURE,.func = FILE_CHECK,.mask = MAY_READ,.uid = 0,
- 	 .flags = IMA_FUNC | IMA_MASK | IMA_UID},
-+	{.action = DONT_APPRAISE,.fsmagic = PROC_SUPER_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = DONT_APPRAISE,.fsmagic = SELINUX_MAGIC,.flags = IMA_FSMAGIC},
-+	{.action = APPRAISE,.owner = 0,.flags = IMA_OWNER},
++static inline int evm_inode_post_init_security(struct inode *inode,
++					       const struct xattr *new,
++					       struct xattr *evm)
++{
++	return -EOPNOTSUPP;
++}
++
+ #endif /* CONFIG_EVM_H */
+ #endif /* LINUX_EVM_H */
+diff --git a/include/linux/xattr.h b/include/linux/xattr.h
+index 3b6421b..4d974d6 100644
+--- a/include/linux/xattr.h
++++ b/include/linux/xattr.h
+@@ -60,6 +60,12 @@ struct xattr_handler {
+ 		   size_t size, int flags, int handler_flags);
  };
  
- static LIST_HEAD(measure_default_rules);
-@@ -110,6 +121,8 @@ static bool ima_match_rules(struct ima_measure_rule_entry *rule,
- 		return false;
- 	if ((rule->flags & IMA_UID) && rule->uid != tsk->cred->uid)
- 		return false;
-+	if ((rule->flags & IMA_OWNER) && rule->owner != inode->i_uid)
-+		return false;
- 	for (i = 0; i < MAX_LSM_RULES; i++) {
- 		int rc = 0;
- 		u32 osid, sid;
-@@ -166,6 +179,9 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask)
- 	list_for_each_entry(entry, ima_measure, list) {
- 		bool rc;
++struct xattr {
++	char *name;
++	void *value;
++	size_t value_len;
++};
++
+ ssize_t xattr_getsecurity(struct inode *, const char *, void *, size_t);
+ ssize_t vfs_getxattr(struct dentry *, const char *, void *, size_t);
+ ssize_t vfs_listxattr(struct dentry *d, char *list, size_t size);
+diff --git a/security/integrity/evm/evm.h b/security/integrity/evm/evm.h
+index 0b6f7b2..a4b6907 100644
+--- a/security/integrity/evm/evm.h
++++ b/security/integrity/evm/evm.h
+@@ -12,6 +12,7 @@
+  * File: evm.h
+  *
+  */
++#include <linux/xattr.h>
+ #include <linux/security.h>
+ #include "../integrity.h"
  
-+		if ((entry->action == APPRAISE) ||
-+		    (entry->action == DONT_APPRAISE))
-+			continue;
- 		rc = ima_match_rules(entry, inode, func, mask);
- 		if (rc)
- 			return entry->action;
-@@ -173,6 +189,28 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask)
- 	return 0;
+@@ -31,5 +32,7 @@ extern int evm_update_evmxattr(struct dentry *dentry,
+ extern int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
+ 			 const char *req_xattr_value,
+ 			 size_t req_xattr_value_len, char *digest);
++extern int evm_init_hmac(struct inode *inode, struct xattr *xattr,
++			 char *hmac_val);
+ extern int evm_init_secfs(void);
+ extern void evm_cleanup_secfs(void);
+diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
+index 4f1be71..5fe322d 100644
+--- a/security/integrity/evm/evm_crypto.c
++++ b/security/integrity/evm/evm_crypto.c
+@@ -150,6 +150,25 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
+ 	return rc;
  }
  
-+int ima_match_appraise_policy(struct inode *inode, enum ima_hooks func,
-+			      int mask)
++int evm_init_hmac(struct inode *inode, struct xattr *lsm_xattr, char *hmac_val)
 +{
-+	struct ima_measure_rule_entry *entry;
++	struct hash_desc desc;
++	struct scatterlist sg[1];
++	int error;
 +
-+	list_for_each_entry(entry, ima_measure, list) {
-+		bool rc;
-+
-+		if ((entry->action == MEASURE) ||
-+		    (entry->action == DONT_MEASURE))
-+			continue;
-+		rc = ima_match_rules(entry, inode, func, mask);
-+		if (rc) {
-+			if (entry->action == DONT_APPRAISE)
-+				return 0;
-+			if (entry->action == APPRAISE)
-+				return 1;
-+		}
++	error = init_desc(&desc);
++	if (error != 0) {
++		printk(KERN_INFO "init_desc failed\n");
++		return error;
 +	}
++
++	sg_init_one(sg, lsm_xattr->value, lsm_xattr->value_len);
++	crypto_hash_update(&desc, sg, lsm_xattr->value_len);
++	hmac_add_misc(&desc, inode, hmac_val);
++	crypto_free_hash(desc.tfm);
 +	return 0;
 +}
 +
- /**
-  * ima_init_policy - initialize the default measure rules.
-  *
-@@ -220,6 +258,7 @@ void ima_update_policy(void)
- enum {
- 	Opt_err = -1,
- 	Opt_measure = 1, Opt_dont_measure,
-+	Opt_appraise, Opt_dont_appraise,
- 	Opt_obj_user, Opt_obj_role, Opt_obj_type,
- 	Opt_subj_user, Opt_subj_role, Opt_subj_type,
- 	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid
-@@ -228,6 +267,8 @@ enum {
- static match_table_t policy_tokens = {
- 	{Opt_measure, "measure"},
- 	{Opt_dont_measure, "dont_measure"},
-+	{Opt_appraise, "appraise"},
-+	{Opt_dont_appraise, "dont_appraise"},
- 	{Opt_obj_user, "obj_user=%s"},
- 	{Opt_obj_role, "obj_role=%s"},
- 	{Opt_obj_type, "obj_type=%s"},
-@@ -300,6 +341,22 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
- 
- 			entry->action = DONT_MEASURE;
+ /*
+  * Get the key from the TPM for the SHA1-HMAC
+  */
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index 59dc148..acc5176 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -96,6 +96,12 @@ static int evm_protected_xattr(const char *req_xattr_name)
+ 			found = 1;
  			break;
-+		case Opt_appraise:
-+			ima_log_string(ab, "%s ", "appraise");
-+
-+			if (entry->action != UNKNOWN)
-+				result = -EINVAL;
-+
-+			entry->action = APPRAISE;
+ 		}
++		if (strncmp(req_xattr_name,
++			    *xattrname + XATTR_SECURITY_PREFIX_LEN,
++			    strlen(req_xattr_name)) == 0) {
++			found = 1;
 +			break;
-+		case Opt_dont_appraise:
-+			ima_log_string(ab, "%s ", "dont_appraise");
-+
-+			if (entry->action != UNKNOWN)
-+				result = -EINVAL;
-+
-+			entry->action = DONT_APPRAISE;
-+			break;
- 		case Opt_func:
- 			ima_log_string(ab, "func", args[0].from);
++		}
+ 	}
+ 	return found;
+ }
+@@ -256,6 +262,36 @@ void evm_inode_post_setattr(struct dentry *dentry, int ia_valid)
+ 	return;
+ }
  
++/*
++ * evm_inode_post_init_security - initializes security.evm
++ */
++int evm_inode_post_init_security(struct inode *inode, struct xattr *lsm_xattr,
++				 struct xattr *evm_xattr)
++{
++	u8 *hmac_val;
++	int rc;
++
++	if (!evm_initialized || !evm_protected_xattr(lsm_xattr->name))
++		return -EOPNOTSUPP;
++
++	hmac_val = kzalloc(MAX_DIGEST_SIZE, GFP_NOFS);
++	if (!hmac_val)
++		return -ENOMEM;
++
++	rc = evm_init_hmac(inode, lsm_xattr, hmac_val);
++	if (rc < 0)
++		goto out;
++
++	evm_xattr->value = hmac_val;
++	evm_xattr->value_len = evm_hmac_size;
++	evm_xattr->name = XATTR_EVM_SUFFIX;
++	return 0;
++out:
++	kfree(hmac_val);
++	return rc;
++}
++EXPORT_SYMBOL_GPL(evm_inode_post_init_security);
++
+ static struct crypto_hash *tfm_hmac;	/* preload crypto alg */
+ static int __init init_evm(void)
+ {
 -- 
 1.6.6.1
 
