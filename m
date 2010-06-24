@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab0FXJ47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 05:56:59 -0400
-Received: from smtp1.extricom.com ([212.235.17.194]:55692 "HELO
-	smtp.extricom.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with SMTP id S1754565Ab0FXJ45 (ORCPT
+	id S1754748Ab0FXKAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 06:00:38 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60811 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754526Ab0FXKAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 05:56:57 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jun 2010 05:56:56 EDT
-Message-ID: <4C232B13.5000706@extricom.com>
-Date: Thu, 24 Jun 2010 12:53:23 +0300
-From: Eran Liberty <liberty@extricom.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+	Thu, 24 Jun 2010 06:00:36 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC 4/5] x86, Use NMI return notifier in MCE
+References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
+	<1277348698-17311-4-git-send-email-ying.huang@intel.com>
+Date: Thu, 24 Jun 2010 12:00:34 +0200
+In-Reply-To: <1277348698-17311-4-git-send-email-ying.huang@intel.com> (Huang
+	Ying's message of "Thu, 24 Jun 2010 11:04:57 +0800")
+Message-ID: <87eifwagxp.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: LKML <linux-kernel@vger.kernel.org>, galak@kernel.crashing.org
-Subject: [PATCH] gainfar.c : skb_over_panic (kernel-2.6.32.15)
-Content-Type: multipart/mixed;
- boundary="------------030703000907050303010204"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030703000907050303010204
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Huang Ying <ying.huang@intel.com> writes:
 
-Fix possible skb_over_panic event in Freescale's "gianfar" driver. 
+Hi Ying,
 
-The skb_over_panic occurs due to calling skb_put() within 
-gfar_clean_rx_ring(). This happens if (and only if) shortly prior to the 
-event and a few lined above the skb_put(), an skb was queued back to the 
-priv->rx_recycle queue due to RXBD_LAST or RXBD_ERR status.
-The skb is queued without properly re-setting its state.
+>  {
+>  	if (regs->flags & (X86_VM_MASK|X86_EFLAGS_IF)) {
+> -		mce_notify_irq();
+> -		/*
+> -		 * Triggering the work queue here is just an insurance
+> -		 * policy in case the syscall exit notify handler
+> -		 * doesn't run soon enough or ends up running on the
+> -		 * wrong CPU (can happen when audit sleeps)
+> -		 */
+> -		mce_schedule_work();
+> +		__mce_report_event(NULL);
 
-The patch properly reset the skb state.
+Do we still handle the CPU switch case correctly?
 
-I have tested this patch on MPC8548 based product and asserted it avoided the skb_over_panic event.
+The backend handler needs to run on the same CPU to process the per
+CPU mce pfns.
 
-Signed-off-by: Eran Liberty <liberty@extricom.com>
+-Andi
 
----
-
-
-
-
-
-
---------------030703000907050303010204
-Content-Type: text/x-diff;
- name="gianfar_skb_over_panic.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="gianfar_skb_over_panic.patch"
-
----
- drivers/net/gianfar.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
-
---- a/drivers/net/gianfar.c
-+++ b/drivers/net/gianfar.c
-@@ -1854,14 +1854,9 @@
- 			if (unlikely(!newskb))
- 				newskb = skb;
- 			else if (skb) {
--				/*
--				 * We need to reset ->data to what it
--				 * was before gfar_new_skb() re-aligned
--				 * it to an RXBUF_ALIGNMENT boundary
--				 * before we put the skb back on the
--				 * recycle list.
--				 */
- 				skb->data = skb->head + NET_SKB_PAD;
-+				skb->len = 0;
-+				skb_reset_tail_pointer(skb);
- 				__skb_queue_head(&priv->rx_recycle, skb);
- 			}
- 		} else {
-
---------------030703000907050303010204--
+-- 
+ak@linux.intel.com -- Speaking for myself only.
