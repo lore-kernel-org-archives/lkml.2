@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab0FXLLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 07:11:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59423 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932Ab0FXLLD convert rfc822-to-8bit (ORCPT
+	id S1755150Ab0FXLOS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 07:14:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52565 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754983Ab0FXLOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 07:11:03 -0400
-Subject: Re: [RFC][PATCH] irq_work
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       "H.PeterA" <"nvin hpa"@zytor.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100624110830.GC578@basil.fritz.box>
-References: <1277362243.3947.20.camel@yhuang-dev.sh.intel.com>
-	 <1277362680.1875.845.camel@laptop>
-	 <1277363069.3947.30.camel@yhuang-dev.sh.intel.com>
-	 <1277363993.1875.847.camel@laptop>
-	 <1277364453.3947.64.camel@yhuang-dev.sh.intel.com>
-	 <1277364727.1875.857.camel@laptop> <20100624102725.GA578@basil.fritz.box>
-	 <1277375409.1875.943.camel@laptop> <20100624105254.GB578@basil.fritz.box>
-	 <1277377121.1875.948.camel@laptop>  <20100624110830.GC578@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 24 Jun 2010 13:10:52 +0200
-Message-ID: <1277377852.1875.950.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 24 Jun 2010 07:14:11 -0400
+From: Luotao Fu <l.fu@pengutronix.de>
+To: Rabin VINCENT <rabin.vincent@stericsson.com>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+       Luotao Fu <l.fu@pengutronix.de>
+Subject: [PATCH 2/6] gpio/stmpe-gpio: fix set direction input
+Date: Thu, 24 Jun 2010 13:13:37 +0200
+Message-Id: <1277378021-16802-3-git-send-email-l.fu@pengutronix.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100622135635.GA30720@bnru02.bnr.st.com>
+References: <20100622135635.GA30720@bnru02.bnr.st.com>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: l.fu@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-24 at 13:08 +0200, Andi Kleen wrote:
-> > And I really want hardirq context for perf callbacks, some code actually
-> > relies on it (I used to have the fallback in the timer softirq and that
-> 
-> Surely that could be fixed?  *requiring* hard irq context sounds weird.
+to set an GPIO pin to input, the corresponding bit in GPDR needs to be cleared
+instead of set. fixed with this patch.
 
-possibly, but there is no reason what so ever to use softirq here.
+Signed-off-by: Luotao Fu <l.fu@pengutronix.de>
+---
+ drivers/gpio/stmpe-gpio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> > broke thing at some point).
-> 
-> I have one case that needs to sleep (but only when interrupting user code)
-> They key thing in it really is to switch stacks back to process.
+diff --git a/drivers/gpio/stmpe-gpio.c b/drivers/gpio/stmpe-gpio.c
+index a4de271..4e1f1b9 100644
+--- a/drivers/gpio/stmpe-gpio.c
++++ b/drivers/gpio/stmpe-gpio.c
+@@ -88,7 +88,7 @@ static int stmpe_gpio_direction_input(struct gpio_chip *chip,
+ 	u8 reg = stmpe->regs[STMPE_IDX_GPDR_LSB] - (offset / 8);
+ 	u8 mask = 1 << (offset % 8);
+ 
+-	return stmpe_set_bits(stmpe, reg, mask, mask);
++	return stmpe_set_bits(stmpe, reg, mask, 0);
+ }
+ 
+ static int stmpe_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+-- 
+1.7.1
 
-softirq can't sleep either, you need a trampoline anyway.
