@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab0FXRd6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 13:33:58 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47025 "EHLO mx2.mail.elte.hu"
+	id S1754892Ab0FXRgQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 13:36:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34918 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754173Ab0FXRd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 13:33:57 -0400
-Date: Thu, 24 Jun 2010 19:33:15 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-       Greg KH <greg@kroah.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [rfc] Describe events in a structured way via sysfs
-Message-ID: <20100624173315.GA30403@elte.hu>
-References: <20100521094053.GA4658@elte.hu>
- <AANLkTimf1Z0N9cv2Pu2qTTUscn4utC37zOPelCbqQoPv@mail.gmail.com>
- <1277110509.18390.28.camel@minggr.sh.intel.com>
- <1277112858.3618.16.camel@jlt3.sipsolutions.net>
- <1277187920.4467.3.camel@minggr.sh.intel.com>
- <1277189971.3637.5.camel@jlt3.sipsolutions.net>
- <1277191359.5025.4.camel@minggr.sh.intel.com>
- <1277192007.3637.8.camel@jlt3.sipsolutions.net>
- <20100624093625.GA26931@elte.hu>
- <1277396053.3870.16.camel@jlt3.sipsolutions.net>
+	id S1751799Ab0FXRgP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 13:36:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,475,1272870000"; 
+   d="scan'208";a="579579919"
+From: "Othman, Ossama" <ossama.othman@intel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>, "henuxd@gmail.com" <henuxd@gmail.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+       "alan@linux.intel.com" <alan@linux.intel.com>,
+       "mattij.lammi@gmail.com" <mattij.lammi@gmail.com>,
+       "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 24 Jun 2010 10:36:10 -0700
+Subject: RE: [PATCH 2/2] Staging: memrar: Fixed memrar_handler.c
+Thread-Topic: [PATCH 2/2] Staging: memrar: Fixed memrar_handler.c
+Thread-Index: AcsTfFPWcbOtW/hwQhqn3KUOrttiUgARcNXg
+Message-ID: <A5FE05C4C76E4C4CAB15D9962B96FC950CEA181604@orsmsx510.amr.corp.intel.com>
+References: <1277363386-4817-1-git-send-email-henuxd@gmail.com>
+	<1277363386-4817-2-git-send-email-henuxd@gmail.com>
+ <20100624100948.6446f8bd@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100624100948.6446f8bd@lxorguk.ukuu.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277396053.3870.16.camel@jlt3.sipsolutions.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.2304]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Alan,
 
-* Johannes Berg <johannes@sipsolutions.net> wrote:
-
-> On Thu, 2010-06-24 at 11:36 +0200, Ingo Molnar wrote:
+> >  size_t memrar_allocator_largest_free_area(struct memrar_allocator
+> *allocator)
+> >  {
+> > -	if (allocator == NULL)
+> > -		return 0;
+> > -	return allocator->largest_free_area;
+> > +	size_t tmp = 0;
+> > +
+> > +	if (allocator != NULL) {
+> > +		mutex_lock(&allocator->lock);
+> > +		tmp = allocator->largest_free_area;
+> > +		mutex_unlock(&allocator->lock);
 > 
-> > That's probably best achieved via a TRACE_EVENT() variant, by passing in the 
-> > sysfs location.
-> > 
-> > It might even make sense to make this a part of TRACE_EVENT() itself and make 
-> > 'NULL' the current default, non-sysfs-enumerated behavior. That way we can 
-> > gradually (and non-intrusively) find all the right sysfs places for events.
-> 
-> No, this doesn't work. A lot of events are multi-instance. Say you have an 
-> event for each USB device. This event would have to show up in many places 
-> in sysfs, and each trace_foo() invocation needs to get the struct device 
-> pointer, not just the TRACE_EVENT() definition. Additionally, to 
-> create/destroy the sysfs pieces we need something like init_trace_foo(dev) 
-> and destroy_trace_foo(dev) be called when the sysfs points for the device 
-> should be created/destroyed.
+> This doesn't seem to make any sense (in either version). The moment you
+> drop the lock the value in "tmp" becomes stale as the allocator could
+> change it. ?
 
-Yes - but even this could be expressed via TRACE_EVENT(): by giving it a 
-device-specific function pointer and then instantiating individual events from 
-a single, central place in sysfs.
+Agreed, but I don't think there's anything we can do about it with the current interface.  We will always have a time-of-check-time-of-use TOCTOU race with this function as it stands.  I pointed out the issue in my response to Henri as well, but I focused more on hiding the lock from the caller.  The TOCTOU race exists in both versions, i.e. the old code and proposed new code.  The value returned from this function in this particular case will ultimately be passed to the user when the user issues a RAR_HANDLER_STAT ioctl to the /dev/memrar device.  For the most part, this function is only used for debugging.  It is not needed for general operation of the memrar_allocator or the memrar_handler (/dev/memrar).
 
-That is the place where we already know where it ends up in sysfs, and where 
-the event-specific function can match up whether that particular node belongs 
-to it and whether an additional event directory should be created for that 
-particular sysfs node.
+-Ossama
 
-> The TRACE_EVENT() just defines the template, but such multi-instance events 
-> really should be standardised in terms of their struct device (or maybe 
-> kobject).
-> 
-> I think that needs some TRACE_DEVICE_EVENT macro that creates the required 
-> inlines etc, and including the init/destroy that are called when the event 
-> should show up in sysfs.
-> 
-> There's no way you can have the event show up in sysfs at the right spot 
-> with _just_ a TRACE_EVENT macro, since at define time in the header file you 
-> don't even have a valid struct device pointer.
-
-That would be another possible way to do it - to explicitly create the events 
-directory. It looks a bit simpler as we wouldnt have to touch TRACE_EVENT() 
-and because it directly expresses the 'this node has an events directory' 
-property at the place where we create the device node.
-
-Thanks,
-
-	Ingo
