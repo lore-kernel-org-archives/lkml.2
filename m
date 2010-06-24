@@ -1,114 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab0FXXmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 19:42:39 -0400
-Received: from imr1.ericy.com ([198.24.6.9]:48020 "EHLO imr1.ericy.com"
+	id S1754029Ab0FXXpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 19:45:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:1290 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab0FXXmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 19:42:38 -0400
-X-Greylist: delayed 2113 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Jun 2010 19:42:38 EDT
-Date: Thu, 24 Jun 2010 16:40:58 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-CC: Randy Dunlap <rdunlap@xenotime.net>, Jean Delvare <khali@linux-fr.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Hans de Goede <hdegoede@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v3 3/4] hwmon: Update sysfs-interface to include new
- attributes
-Message-ID: <20100624234058.GA25719@ericsson.com>
-References: <1277416861-32494-1-git-send-email-guenter.roeck@ericsson.com>
- <1277416861-32494-4-git-send-email-guenter.roeck@ericsson.com>
- <20100624233240.GA9934@ovro.caltech.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100624233240.GA9934@ovro.caltech.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753789Ab0FXXpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 19:45:06 -0400
+Subject: [PATCH net-next] MAINTAINERS: b43 updates
+From: Joe Perches <joe@perches.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+       Stefano Brivio <stefano.brivio@polimi.it>,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, mb@bu3sch.de, zajec5@gmail.com
+In-Reply-To: <4C23B877.4060209@lwfinger.net>
+References: <cover.1276988387.git.joe@perches.com>
+	 <20100624185339.GC2368@tuxdriver.com>
+	 <1277408432.1654.80.camel@Joe-Laptop.home>  <4C23B877.4060209@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Jun 2010 16:45:02 -0700
+Message-ID: <1277423102.1654.107.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 07:32:40PM -0400, Ira W. Snyder wrote:
-> On Thu, Jun 24, 2010 at 03:01:00PM -0700, Guenter Roeck wrote:
-> > Added _lcrit and _crit to voltage attributes. 
-> > Added _lcrit to temperature attributes.
-> > 
-> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> > ---
-> >  Documentation/hwmon/sysfs-interface |   21 ++++++++++++++++++++-
-> >  1 files changed, 20 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/Documentation/hwmon/sysfs-interface b/Documentation/hwmon/sysfs-interface
-> > index d4e2917..7f60c0d 100644
-> > --- a/Documentation/hwmon/sysfs-interface
-> > +++ b/Documentation/hwmon/sysfs-interface
-> > @@ -107,10 +107,24 @@ in[0-*]_min	Voltage min value.
-> >  		Unit: millivolt
-> >  		RW
-> >  		
-> > +in[0-*]_lcrit	Voltage critical min value.
-> > +		Unit: millivolt
-> > +		RW
-> > +		If voltage drops to or below this limit, the system may
-> > +		take drastic action such as power down or reset. At the very
-> > +		least, it should report a fault.
-> > +
-> >  in[0-*]_max	Voltage max value.
-> >  		Unit: millivolt
-> >  		RW
-> >  		
-> > +in[0-*]_crit	Voltage critical max value.
-> > +		Unit: millivolt
-> > +		RW
-> > +		If voltage reaches or exceeds this limit, the system may
-> > +		take drastic action such as power down or reset. At the very
-> > +		least, it should report a fault.
-> > +
-> 
-> The critical voltages API looks good to me.
-> 
-> I have a hwmon chip driver for the TI INA209 (which Jean NAK'd) that
-> could use these limits. I'll submit it again soon with changes to use
-> this new set of sysfs attributes.
-> 
-> It would be great to see a patch to libsensors and the sensors program
-> to allow it to display these limits too.
-> 
-I am working on it. I'll send the patch to Jean as soon as the kernel changes
-have been approved. 
+On Thu, 2010-06-24 at 14:56 -0500, Larry Finger wrote:
+> The primary arbitrator for patches to the subtle parts of b43 is Michael
+> Buesch; however, he is no longer an official MAINTAINER. I can ACK some
+> things; however, any changes that are associated with my reverse
+> engineering of the Broadcom drivers are off limits.
 
-Guenter
+Add Stefano Brivio's name and email address to CREDITS
+Removed Stefano Brivio's from B43 MAINTAINERS
+Added the b43 development mailing lists
+Changed B43 status to "Odd Fixes"
 
-> Thanks,
-> Ira
-> 
-> >  in[0-*]_input	Voltage input value.
-> >  		Unit: millivolt
-> >  		RO
-> > @@ -284,11 +298,16 @@ temp[1-*]_input Temperature input value.
-> >  		Unit: millidegree Celsius
-> >  		RO
-> >  
-> > -temp[1-*]_crit	Temperature critical value, typically greater than
-> > +temp[1-*]_crit	Temperature critical max value, typically greater than
-> >  		corresponding temp_max values.
-> >  		Unit: millidegree Celsius
-> >  		RW
-> >  
-> > +temp[1-*]_lcrit	Temperature critical min value, typically lower than
-> > +		corresponding temp_min values.
-> > +		Unit: millidegree Celsius
-> > +		RW
-> > +
-> >  temp[1-*]_crit_hyst
-> >  		Temperature hysteresis value for critical limit.
-> >  		Unit: millidegree Celsius
-> > -- 
-> > 1.7.0.87.g0901d
-> > 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ CREDITS     |    4 ++++
+ MAINTAINERS |    5 +++--
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/CREDITS b/CREDITS
+index 72b4878..30215f0 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -495,6 +495,10 @@ S: Kopmansg 2
+ S: 411 13  Goteborg
+ S: Sweden
+ 
++N: Stefano Brivio
++E: stefano.brivio@polimi.it
++D: B43 wireless driver
++
+ N: Paul Bristow
+ E: paul@paulbristow.net
+ W: http://paulbristow.net/linux/idefloppy.html
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6d119c9..5bc296c 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1225,16 +1225,17 @@ F:	include/net/ax25.h
+ F:	net/ax25/
+ 
+ B43 WIRELESS DRIVER
+-M:	Stefano Brivio <stefano.brivio@polimi.it>
+ L:	linux-wireless@vger.kernel.org
++L:	b43-dev@lists.infradead.org
+ W:	http://linuxwireless.org/en/users/Drivers/b43
+-S:	Maintained
++S:	Odd Fixes
+ F:	drivers/net/wireless/b43/
+ 
+ B43LEGACY WIRELESS DRIVER
+ M:	Larry Finger <Larry.Finger@lwfinger.net>
+ M:	Stefano Brivio <stefano.brivio@polimi.it>
+ L:	linux-wireless@vger.kernel.org
++L:	b43-dev@lists.infradead.org
+ W:	http://linuxwireless.org/en/users/Drivers/b43
+ S:	Maintained
+ F:	drivers/net/wireless/b43legacy/
+
+
