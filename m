@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab0FXOey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 10:34:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58310 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511Ab0FXOew (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 10:34:52 -0400
-Message-ID: <4C236C93.1020407@oracle.com>
-Date: Thu, 24 Jun 2010 07:32:51 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1755457Ab0FXOgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 10:36:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57070 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754511Ab0FXOga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 10:36:30 -0400
+Date: Fri, 25 Jun 2010 00:36:25 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       viro@ZenIV.linux.org.uk, drepper@redhat.com,
+       torvalds@linux-foundation.org
+Subject: Re: [rfc] new stat*fs-like syscall?
+Message-ID: <20100624143625.GB10441@laptop>
+References: <20100624131455.GA10441@laptop>
+ <E1ORn1F-00088t-9N@pomaz-ex.szeredi.hu>
 MIME-Version: 1.0
-To: ngupta@vflare.org
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, devel@driverdev.osuosl.org,
-       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       gregkh@suse.de
-Subject: Re: [PATCH -next] zram: fix build errors, depends on BLOCK
-References: <20100623154531.0a4b02e1.sfr@canb.auug.org.au> <20100623202709.4ecb798c.randy.dunlap@oracle.com> <4C22E0B3.60203@vflare.org>
-In-Reply-To: <4C22E0B3.60203@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090204.4C236D01.017B:SCFMA4539811,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1ORn1F-00088t-9N@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/10 21:36, Nitin Gupta wrote:
-> On 06/24/2010 08:57 AM, Randy Dunlap wrote:
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> Fix 49 zram build errors in one swoop.  Examples:
->>
->> drivers/staging/zram/zram_drv.c:225: error: dereferencing pointer to incomplete type
->> drivers/staging/zram/zram_drv.c:226: error: implicit declaration of function 'bio_for_each_segment'
->> drivers/staging/zram/zram_drv.c:226: error: expected ';' before '{' token
->> drivers/staging/zram/zram_drv.c:281: error: implicit declaration of function 'bio_endio'
->> drivers/staging/zram/zram_drv.c:285: error: implicit declaration of function 'bio_io_error'
->> drivers/staging/zram/zram_drv.c:545: error: implicit declaration of function 'set_capacity'
->> drivers/staging/zram/zram_drv.c:548: error: implicit declaration of function 'queue_flag_set_unlocked'
->> drivers/staging/zram/zram_drv.c:548: error: 'QUEUE_FLAG_NONROT' undeclared (first use in this function)
->> drivers/staging/zram/zram_drv.c:548: error: dereferencing pointer to incomplete type
->>
+On Thu, Jun 24, 2010 at 04:03:05PM +0200, Miklos Szeredi wrote:
+> On Thu, 24 Jun 2010, Nick Piggin wrote:
+> > This has come up a few times in the past, and I'd like to try to get
+> > an agreement on it. statvfs(2) importantly contains f_flag (mount
+> > flags), and is encouraged to use rather than statfs(2). The kernel
+> > provides a statfs syscall only.
+> > 
+> > This means glibc has to provide f_flag support by parsing /proc/mounts
+> > and stat(2)ing mount points. This is really slow, and /proc/mounts is
+> > hard for the kernel to provide. It's actually the last scalability
+> > bottleneck in the core vfs for dbench (samba) after my patches.
+> > 
+> > Not only that, but it's racy.
+> > 
+> > Other than types, other differences are:
+> > - statvfs(2) has is f_frsize, which seems fairly useless.
 > 
+> statfs(2) also has f_frsize since 2.6.0, only it hasn't been
+> documented (should be fixed now).
 > 
-> Thanks for the fix. Strangely, I didn't get any of these
-> errors when I compiled against mainline.
+> > - statvfs(2) has f_favail.
+> > - statfs(2) f_bsize is optimal transfer block, statvfs(2) f_bsize is fs
+> >   block size. The latter could be useful for disk space algorithms.
+> >   Both can be ill defned.
+> 
+> They are the same, only the documentation is different.
+> 
+> > - statvfs(2) lacks f_type.
+> > 
+> > Is there anything more we should add here? Samba wants a capabilities
+> > field, with things like sparse files, quotas, compression, encryption,
+> > case preserving/sensitive.
+> > 
+> > Any thoughts?
+> 
+> "struct statfs" and "struct statfs64" have spare fields.  We could put
+> the f_flag in there including a magic "this is a valid f_flag" flag,
+> that distinguishes from the default zero value.
 
-This patch isn't against mainline, it's against linux-next.
-See subject's "[PATCH -next]" hint.
+Ah so it does. We have 5 words spare. So we should have a version
+number rather than just do a per-word hack each time. We could
+probably pack the version number into a few bits of f_flag though.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
