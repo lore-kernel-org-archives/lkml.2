@@ -1,82 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab0FXIab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 04:30:31 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:18444 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab0FXIaa (ORCPT
+	id S1753950Ab0FXIiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 04:38:10 -0400
+Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:36048 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab0FXIiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 04:30:30 -0400
-Date: Thu, 24 Jun 2010 11:29:42 +0300 (EEST)
-From: Jani Nikula <ext-jani.1.nikula@nokia.com>
-To: ext Jon Povey <Jon.Povey@racelogic.co.uk>
-cc: Ryan Mallon <ryan@bluewatersys.com>, David Brownell <david-b@pacbell.net>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       "gregkh@suse.de" <gregkh@suse.de>,
-       linux kernel <linux-kernel@vger.kernel.org>,
-       =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
+	Thu, 24 Jun 2010 04:38:07 -0400
+From: Louis Rilling <louis.rilling@kerlabs.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "\\\"Eric W. Biederman\\\"" <ebiederm@xmission.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC PATCH] Rework gpio cansleep (was Re: gpiolib and
- sleepinggpios)
-In-Reply-To: <70E876B0EA86DD4BAF101844BC814DFE08E0855B97@Cloud.RL.local>
-Message-ID: <alpine.DEB.2.00.1006241101240.11148@wnav-qrfxgbc>
-References: <70E876B0EA86DD4BAF101844BC814DFE08E0855B97@Cloud.RL.local>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
-X-OriginalArrivalTime: 24 Jun 2010 08:29:43.0173 (UTC) FILETIME=[654C5B50:01CB1377]
-X-Nokia-AV: Clean
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org, Louis Rilling <louis.rilling@kerlabs.com>
+Subject: [PATCH] pid_ns: Fix proc_flush_task() accessing freed proc_mnt
+Date: Thu, 24 Jun 2010 10:37:43 +0200
+Message-Id: <1277368663-32705-1-git-send-email-louis.rilling@kerlabs.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <20100623203652.GA25298@redhat.com>
+References: <20100623203652.GA25298@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Thu, 24 Jun 2010, ext Jon Povey wrote:
-
-> Ryan Mallon wrote:
+On 06/19, Oleg Nesterov wrote:
+> And the last one on top of this series, before I go away from this
+> thread ;)
 >
->> If we strip my patch back to just introducing gpio_request_cansleep, 
->> which would be used in any driver where all of the calls are 
->> gpio_(set/get)_cansleep, and make gpio_request only allow non-sleeping 
->> gpios then incorrect use of gpios would be caught at request time and 
->> returned to the caller as an error.
+> Since my further fixes were not approved, I think at least it makes
+> sense to cleanup pid_ns_release_proc() logic a bit.
+
+It's completely untested and could be split into three patches. But I think that
+it solves the issues found so far, and that it will work with Eric's
+unshare(CLONE_NEWPID) too.
+
+What do you think about this approach?
+
+Thanks,
+
+Louis
+
+On 20/06/10 20:06 +0200, Oleg Nesterov wrote:
+> pid_namespace holds ns->proc_mnt, while this vfsmount has a referene to
+> the namespace via PROC_I(sb->s_root->d_inode)->pid. To break this circle
+> /sbin/init does mntput() in pid_ns_release_proc(). See 6f4e6433.
 >
-> It seems like a good idea to catch these at request time. There is 
-> support in the API for this already (gpio_cansleep), but driver writers 
-> are not steered towards checking and thinking in these ways by the 
-> current API or documentation. Perhaps a documentation change with some 
-> cut and paste boilerplate would be enough, but I think some API 
-> enforcement/encouragement would be helpful.
+> But we have the following problems:
 >
-> I think this agrees with you, Ryan:
+>         - Nobody does mntput() if copy_process() fails after
+>           pid_ns_prepare_proc().
 >
-> gpio_request_cansleep would be the same as current gpio_request
-> gpio_request changes to error if this is a sleepy gpio.
+>         - proc_flush_task() checks upid->nr == 1 to verify we are init,
+>           this is wrong if a multi-threaded init does exec.
 >
-> Imagine a situation where GPIOs are being assigned and passed around 
-> between drivers in some dynamic way, or some way unpredictable to the 
-> driver writer. In development only non-sleeping GPIOs have been seen and 
-> everything is fine. One day someone feeds it a GPIO on an I2C expander 
-> and the driver crashes. If gpio_request had this built-in check the 
-> driver could gracefuly fail to load instead with an appropriate error 
-> message.
+>         - As Louis pointed out, this namespace can have the detached
+>           EXIT_DEAD tasks which can use ns->proc_mnt after this mntput().
 
-Hi -
+This patch does four things:
+- defer pid_ns_release_proc()->mntput() to a worqueue context, so that
+  pid_ns_release_proc() can be called in atomic context;
+- introduce pid_ns->nr_pids, so that we can count the number of pids
+  allocated by alloc_pidmap();
+- move the call to pid_ns_prepare_proc() to alloc_pid(), where we know
+  when the first pid of a namespace is allocated;
+- move the call to pid_ns_release_proc() to free_pid(), where we are now
+  able to know when the last pid of a namespace is detached.
 
-There's no need to imagine such situations. It's not at all uncommon to 
-request GPIOs in board files, and pass the already requested GPIO numbers 
-to drivers. Replacing gpio_request() with gpio_request_cansleep() (or 
-gpio_request_atomic() as suggested in another mail) in the board files 
-does *nothing* to help such drivers use the correct gpio get/set calls. 
-The driver will need to know what it's doing, in what contexts. Some 
-drivers might not work with "sleepy" GPIOs, and that's fine - they can 
-check using gpio_cansleep() and fail gracefully.
+This solves the missing mntput() in copy_process() cleanup path, since
+free_pid() is called to cleanup alloc_pid().
 
-I'd just improve the documentation of the various calls and have gpiolib.c 
-emit more warnings about incorrect use.
+This solves the multi-threaded init doing exec issue, since all
+sub-threads including former leader have called proc_flush_task() when the
+last pid is detached.
 
+This solves the EXIT_DEAD tasks issue for the same reason.
 
-BR,
-Jani.
+Signed-off-by: Louis Rilling <louis.rilling@kerlabs.com>
+---
+ fs/proc/base.c                |    4 ----
+ fs/proc/root.c                |   11 ++++++++++-
+ include/linux/pid_namespace.h |    3 +++
+ kernel/fork.c                 |    6 ------
+ kernel/pid.c                  |   16 +++++++++++++---
+ kernel/pid_namespace.c        |    1 +
+ 6 files changed, 27 insertions(+), 14 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index acb7ef8..455b109 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2745,10 +2745,6 @@ void proc_flush_task(struct task_struct *task)
+ 		proc_flush_task_mnt(upid->ns->proc_mnt, upid->nr,
+ 					tgid->numbers[i].nr);
+ 	}
+-
+-	upid = &pid->numbers[pid->level];
+-	if (upid->nr == 1)
+-		pid_ns_release_proc(upid->ns);
+ }
+ 
+ static struct dentry *proc_pid_instantiate(struct inode *dir,
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index 4258384..9876cd9 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -215,7 +215,16 @@ int pid_ns_prepare_proc(struct pid_namespace *ns)
+ 	return 0;
+ }
+ 
+-void pid_ns_release_proc(struct pid_namespace *ns)
++static void do_pid_ns_release_proc(struct work_struct *work)
+ {
++	struct pid_namespace *ns;
++
++	ns = container_of(work, struct pid_namespace, release_proc_work);
+ 	mntput(ns->proc_mnt);
+ }
++
++void pid_ns_release_proc(struct pid_namespace *ns)
++{
++	INIT_WORK(&ns->release_proc_work, do_pid_ns_release_proc);
++	schedule_work(&ns->release_proc_work);
++}
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index 38d1032..1010733 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -4,6 +4,7 @@
+ #include <linux/sched.h>
+ #include <linux/mm.h>
+ #include <linux/threads.h>
++#include <linux/workqueue.h>
+ #include <linux/nsproxy.h>
+ #include <linux/kref.h>
+ 
+@@ -19,6 +20,7 @@ struct bsd_acct_struct;
+ struct pid_namespace {
+ 	struct kref kref;
+ 	struct pidmap pidmap[PIDMAP_ENTRIES];
++	atomic_t nr_pids;
+ 	int last_pid;
+ 	struct task_struct *child_reaper;
+ 	struct kmem_cache *pid_cachep;
+@@ -26,6 +28,7 @@ struct pid_namespace {
+ 	struct pid_namespace *parent;
+ #ifdef CONFIG_PROC_FS
+ 	struct vfsmount *proc_mnt;
++	struct work_struct release_proc_work;
+ #endif
+ #ifdef CONFIG_BSD_PROCESS_ACCT
+ 	struct bsd_acct_struct *bacct;
+diff --git a/kernel/fork.c b/kernel/fork.c
+index b6cce14..b063a9c 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1154,12 +1154,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 		pid = alloc_pid(p->nsproxy->pid_ns);
+ 		if (!pid)
+ 			goto bad_fork_cleanup_io;
+-
+-		if (clone_flags & CLONE_NEWPID) {
+-			retval = pid_ns_prepare_proc(p->nsproxy->pid_ns);
+-			if (retval < 0)
+-				goto bad_fork_free_pid;
+-		}
+ 	}
+ 
+ 	p->pid = pid_nr(pid);
+diff --git a/kernel/pid.c b/kernel/pid.c
+index e9fd8c1..fdb73e1 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -34,6 +34,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/hash.h>
+ #include <linux/pid_namespace.h>
++#include <linux/proc_fs.h>
+ #include <linux/init_task.h>
+ #include <linux/syscalls.h>
+ 
+@@ -112,7 +113,7 @@ EXPORT_SYMBOL(is_container_init);
+ 
+ static  __cacheline_aligned_in_smp DEFINE_SPINLOCK(pidmap_lock);
+ 
+-static void free_pidmap(struct upid *upid)
++static bool free_pidmap(struct upid *upid)
+ {
+ 	int nr = upid->nr;
+ 	struct pidmap *map = upid->ns->pidmap + nr / BITS_PER_PAGE;
+@@ -120,6 +121,7 @@ static void free_pidmap(struct upid *upid)
+ 
+ 	clear_bit(offset, map->page);
+ 	atomic_inc(&map->nr_free);
++	return atomic_dec_and_test(&upid->ns->nr_pids);
+ }
+ 
+ static int alloc_pidmap(struct pid_namespace *pid_ns)
+@@ -154,6 +156,7 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ 			do {
+ 				if (!test_and_set_bit(offset, map->page)) {
+ 					atomic_dec(&map->nr_free);
++					atomic_inc(&pid_ns->nr_pids);
+ 					pid_ns->last_pid = pid;
+ 					return pid;
+ 				}
+@@ -226,6 +229,7 @@ static void delayed_put_pid(struct rcu_head *rhp)
+ void free_pid(struct pid *pid)
+ {
+ 	/* We can be called with write_lock_irq(&tasklist_lock) held */
++	struct upid *upid;
+ 	int i;
+ 	unsigned long flags;
+ 
+@@ -234,8 +238,11 @@ void free_pid(struct pid *pid)
+ 		hlist_del_rcu(&pid->numbers[i].pid_chain);
+ 	spin_unlock_irqrestore(&pidmap_lock, flags);
+ 
+-	for (i = 0; i <= pid->level; i++)
+-		free_pidmap(pid->numbers + i);
++	for (i = 0; i <= pid->level; i++) {
++		upid = pid->numbers + i;
++		if (free_pidmap(upid))
++			pid_ns_release_proc(upid->ns);
++	}
+ 
+ 	call_rcu(&pid->rcu, delayed_put_pid);
+ }
+@@ -276,6 +283,9 @@ struct pid *alloc_pid(struct pid_namespace *ns)
+ 				&pid_hash[pid_hashfn(upid->nr, upid->ns)]);
+ 	spin_unlock_irq(&pidmap_lock);
+ 
++	if (pid->numbers[pid->level].nr == 1)
++		pid_ns_prepare_proc(ns);
++
+ out:
+ 	return pid;
+ 
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index a5aff94..beba2b4 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -92,6 +92,7 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
+ 
+ 	set_bit(0, ns->pidmap[0].page);
+ 	atomic_set(&ns->pidmap[0].nr_free, BITS_PER_PAGE - 1);
++	atomic_set(&ns->nr_pids, 0);
+ 
+ 	for (i = 1; i < PIDMAP_ENTRIES; i++)
+ 		atomic_set(&ns->pidmap[i].nr_free, BITS_PER_PAGE);
+-- 
+1.5.6.5
+
