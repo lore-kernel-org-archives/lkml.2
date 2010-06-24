@@ -1,1192 +1,884 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab0FXDWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 23:22:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36075 "EHLO mx2.suse.de"
+	id S1754789Ab0FXDXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 23:23:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36071 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754299Ab0FXDQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 23:16:06 -0400
-Message-Id: <20100624030727.818410048@suse.de>
+	id S1754296Ab0FXDQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 23:16:05 -0400
+Message-Id: <20100624030731.109899538@suse.de>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 24 Jun 2010 13:02:26 +1000
+Date: Thu, 24 Jun 2010 13:02:46 +1000
 From: npiggin@suse.de
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: [patch 14/52] fs: dcache scale subdirs
+Subject: [patch 34/52] fs: icache remove inode_lock
 References: <20100624030212.676457061@suse.de>
-Content-Disposition: inline; filename=fs-dcache-scale-d_subdirs.patch
+Content-Disposition: inline; filename=fs-inode_lock-scale-7.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Protect d_subdirs and d_child with d_lock, except in filesystems that aren't
-using dcache_lock for these anyway (eg. using i_mutex).
-
-XXX: probably don't need parent lock in inotify (because child lock
-should stabilize parent). Also, possibly some filesystems don't need so
-much locking (eg. of child dentry when modifying d_child, so long as
-parent is locked)... but be on the safe side. Hmm, maybe we should just
-say d_child list is protected by d_parent->d_lock. d_parent could remain
-protected with d_lock.
-
-XXX: leave dcache_lock in there until remove dcache_lock patch
+Remove the global inode_lock, as it doesn't protect anything.
 
 Signed-off-by: Nick Piggin <npiggin@suse.de>
 ---
- drivers/usb/core/inode.c     |    8 +-
- fs/autofs4/expire.c          |   87 +++++++++++++++-------
- fs/autofs4/root.c            |    6 +
- fs/ceph/dir.c                |    6 +
- fs/ceph/inode.c              |    8 +-
- fs/coda/cache.c              |    2 
- fs/dcache.c                  |  164 ++++++++++++++++++++++++++++++++++---------
- fs/libfs.c                   |   40 ++++++----
- fs/ncpfs/dir.c               |    3 
- fs/ncpfs/ncplib_kernel.h     |    4 +
- fs/notify/fsnotify.c         |    4 -
- fs/notify/inotify/inotify.c  |    4 -
- fs/smbfs/cache.c             |    4 +
- include/linux/dcache.h       |    1 
- kernel/cgroup.c              |   19 ++++
- security/selinux/selinuxfs.c |   12 ++-
- 16 files changed, 283 insertions(+), 89 deletions(-)
+ fs/buffer.c                 |    2 -
+ fs/drop_caches.c            |    4 --
+ fs/fs-writeback.c           |   35 ++++-------------------
+ fs/hugetlbfs/inode.c        |    2 -
+ fs/inode.c                  |   65 ++------------------------------------------
+ fs/notify/inode_mark.c      |   14 +++++----
+ fs/notify/inotify/inotify.c |   16 ++++++----
+ fs/quota/dquot.c            |    6 ----
+ include/linux/writeback.h   |    1 
+ mm/backing-dev.c            |    4 --
+ 10 files changed, 30 insertions(+), 119 deletions(-)
 
-Index: linux-2.6/fs/dcache.c
+Index: linux-2.6/fs/buffer.c
 ===================================================================
---- linux-2.6.orig/fs/dcache.c
-+++ linux-2.6/fs/dcache.c
-@@ -47,6 +47,8 @@
-  *   - d_lru
-  *   - d_count
-  *   - d_unhashed()
-+ *   - d_parent and d_subdirs
-+ *   - childrens' d_child and d_parent
+--- linux-2.6.orig/fs/buffer.c
++++ linux-2.6/fs/buffer.c
+@@ -1144,7 +1144,7 @@ __getblk_slow(struct block_device *bdev,
+  * inode list.
   *
-  * Ordering:
-  * dcache_lock
-@@ -219,7 +221,8 @@ static void dentry_lru_del_init(struct d
-  *
-  * If this is the root of the dentry tree, return NULL.
-  *
-- * dcache_lock and d_lock must be held by caller, are dropped by d_kill.
-+ * dcache_lock and d_lock and d_parent->d_lock must be held by caller, and
-+ * are dropped by d_kill.
+  * mark_buffer_dirty() is atomic.  It takes bh->b_page->mapping->private_lock,
+- * mapping->tree_lock and the global inode_lock.
++ * and mapping->tree_lock.
   */
- static struct dentry *d_kill(struct dentry *dentry)
- 	__releases(dentry->d_lock)
-@@ -228,12 +231,14 @@ static struct dentry *d_kill(struct dent
- 	struct dentry *parent;
- 
- 	list_del(&dentry->d_u.d_child);
--	/*drops the locks, at that point nobody can reach this dentry */
--	dentry_iput(dentry);
-+	if (dentry->d_parent && dentry != dentry->d_parent)
-+		spin_unlock(&dentry->d_parent->d_lock);
- 	if (IS_ROOT(dentry))
- 		parent = NULL;
- 	else
- 		parent = dentry->d_parent;
-+	/*drops the locks, at that point nobody can reach this dentry */
-+	dentry_iput(dentry);
- 	d_free(dentry);
- 	return parent;
- }
-@@ -269,6 +274,7 @@ static struct dentry *d_kill(struct dent
- 
- void dput(struct dentry *dentry)
+ void mark_buffer_dirty(struct buffer_head *bh)
  {
-+	struct dentry *parent = NULL;
- 	if (!dentry)
- 		return;
- 
-@@ -287,10 +293,20 @@ repeat:
- 			spin_unlock(&dentry->d_lock);
- 			goto repeat;
- 		}
-+		parent = dentry->d_parent;
-+		if (parent && parent != dentry) {
-+			if (!spin_trylock(&parent->d_lock)) {
-+				spin_unlock(&dentry->d_lock);
-+				spin_unlock(&dcache_lock);
-+				goto repeat;
-+			}
-+		}
- 	}
- 	dentry->d_count--;
- 	if (dentry->d_count) {
- 		spin_unlock(&dentry->d_lock);
-+		if (parent && parent != dentry)
-+			spin_unlock(&parent->d_lock);
- 		spin_unlock(&dcache_lock);
- 		return;
- 	}
-@@ -310,6 +326,8 @@ repeat:
- 		dentry_lru_add(dentry);
-   	}
-  	spin_unlock(&dentry->d_lock);
-+	if (parent && parent != dentry)
-+		spin_unlock(&parent->d_lock);
- 	spin_unlock(&dcache_lock);
- 	return;
- 
-@@ -545,10 +563,22 @@ static void prune_one_dentry(struct dent
- 	 * because dcache_lock needs to be taken anyway.
- 	 */
- 	while (dentry) {
-+		struct dentry *parent = NULL;
-+
- 		spin_lock(&dcache_lock);
-+again:
- 		spin_lock(&dentry->d_lock);
-+		if (dentry->d_parent && dentry != dentry->d_parent) {
-+			if (!spin_trylock(&dentry->d_parent->d_lock)) {
-+				spin_unlock(&dentry->d_lock);
-+				goto again;
-+			}
-+ 			parent = dentry->d_parent;
-+		}
- 		dentry->d_count--;
- 		if (dentry->d_count) {
-+			if (parent)
-+				spin_unlock(&parent->d_lock);
- 			spin_unlock(&dentry->d_lock);
- 			spin_unlock(&dcache_lock);
- 			return;
-@@ -626,20 +656,27 @@ again:
- 		dentry = list_entry(tmp.prev, struct dentry, d_lru);
- 
- 		if (!spin_trylock(&dentry->d_lock)) {
-+again1:
- 			spin_unlock(&dcache_lru_lock);
- 			goto again;
- 		}
--		__dentry_lru_del_init(dentry);
- 		/*
- 		 * We found an inuse dentry which was not removed from
- 		 * the LRU because of laziness during lookup.  Do not free
- 		 * it - just keep it off the LRU list.
- 		 */
- 		if (dentry->d_count) {
-+			__dentry_lru_del_init(dentry);
- 			spin_unlock(&dentry->d_lock);
- 			continue;
- 		}
--
-+		if (dentry->d_parent && dentry->d_parent != dentry) {
-+			if (!spin_trylock(&dentry->d_parent->d_lock)) {
-+				spin_unlock(&dentry->d_lock);
-+				goto again1;
-+			}
-+		}
-+		__dentry_lru_del_init(dentry);
- 		spin_unlock(&dcache_lru_lock);
- 		prune_one_dentry(dentry);
- 		/* dcache_lock and dentry->d_lock dropped */
-@@ -776,14 +813,15 @@ static void shrink_dcache_for_umount_sub
- 			/* this is a branch with children - detach all of them
- 			 * from the system in one go */
- 			spin_lock(&dcache_lock);
-+			spin_lock(&dentry->d_lock);
- 			list_for_each_entry(loop, &dentry->d_subdirs,
- 					    d_u.d_child) {
--				spin_lock(&loop->d_lock);
-+				spin_lock_nested(&loop->d_lock, DENTRY_D_LOCK_NESTED);
- 				dentry_lru_del_init(loop);
- 				__d_drop(loop);
- 				spin_unlock(&loop->d_lock);
--				cond_resched_lock(&dcache_lock);
- 			}
-+			spin_unlock(&dentry->d_lock);
- 			spin_unlock(&dcache_lock);
- 
- 			/* move to the first child */
-@@ -811,16 +849,17 @@ static void shrink_dcache_for_umount_sub
- 				BUG();
- 			}
- 
--			if (IS_ROOT(dentry))
-+			if (IS_ROOT(dentry)) {
- 				parent = NULL;
--			else {
-+				list_del(&dentry->d_u.d_child);
-+			} else {
- 				parent = dentry->d_parent;
- 				spin_lock(&parent->d_lock);
- 				parent->d_count--;
-+				list_del(&dentry->d_u.d_child);
- 				spin_unlock(&parent->d_lock);
- 			}
- 
--			list_del(&dentry->d_u.d_child);
- 			detached++;
- 
- 			inode = dentry->d_inode;
-@@ -905,6 +944,7 @@ int have_submounts(struct dentry *parent
- 	spin_lock(&dcache_lock);
- 	if (d_mountpoint(parent))
- 		goto positive;
-+	spin_lock(&this_parent->d_lock);
- repeat:
- 	next = this_parent->d_subdirs.next;
- resume:
-@@ -912,22 +952,34 @@ resume:
- 		struct list_head *tmp = next;
- 		struct dentry *dentry = list_entry(tmp, struct dentry, d_u.d_child);
- 		next = tmp->next;
-+
-+		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
- 		/* Have we found a mount point ? */
--		if (d_mountpoint(dentry))
-+		if (d_mountpoint(dentry)) {
-+			spin_unlock(&dentry->d_lock);
-+			spin_unlock(&this_parent->d_lock);
- 			goto positive;
-+		}
- 		if (!list_empty(&dentry->d_subdirs)) {
-+			spin_unlock(&this_parent->d_lock);
-+			spin_release(&dentry->d_lock.dep_map, 1, _RET_IP_);
- 			this_parent = dentry;
-+			spin_acquire(&this_parent->d_lock.dep_map, 0, 1, _RET_IP_);
- 			goto repeat;
- 		}
-+		spin_unlock(&dentry->d_lock);
- 	}
- 	/*
- 	 * All done at this level ... ascend and resume the search.
- 	 */
- 	if (this_parent != parent) {
- 		next = this_parent->d_u.d_child.next;
-+		spin_unlock(&this_parent->d_lock);
- 		this_parent = this_parent->d_parent;
-+		spin_lock(&this_parent->d_lock);
- 		goto resume;
- 	}
-+	spin_unlock(&this_parent->d_lock);
- 	spin_unlock(&dcache_lock);
- 	return 0; /* No mount points found in tree */
- positive:
-@@ -957,6 +1009,7 @@ static int select_parent(struct dentry *
- 	int found = 0;
- 
- 	spin_lock(&dcache_lock);
-+	spin_lock(&this_parent->d_lock);
- repeat:
- 	next = this_parent->d_subdirs.next;
- resume:
-@@ -964,8 +1017,9 @@ resume:
- 		struct list_head *tmp = next;
- 		struct dentry *dentry = list_entry(tmp, struct dentry, d_u.d_child);
- 		next = tmp->next;
-+		BUG_ON(this_parent == dentry);
- 
--		spin_lock(&dentry->d_lock);
-+		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
- 		dentry_lru_del_init(dentry);
- 		/* 
- 		 * move only zero ref count dentries to the end 
-@@ -975,33 +1029,45 @@ resume:
- 			dentry_lru_add_tail(dentry);
- 			found++;
- 		}
--		spin_unlock(&dentry->d_lock);
- 
- 		/*
- 		 * We can return to the caller if we have found some (this
- 		 * ensures forward progress). We'll be coming back to find
- 		 * the rest.
- 		 */
--		if (found && need_resched())
-+		if (found && need_resched()) {
-+			spin_unlock(&dentry->d_lock);
- 			goto out;
-+		}
- 
- 		/*
- 		 * Descend a level if the d_subdirs list is non-empty.
- 		 */
- 		if (!list_empty(&dentry->d_subdirs)) {
-+			spin_unlock(&this_parent->d_lock);
-+			spin_release(&dentry->d_lock.dep_map, 1, _RET_IP_);
- 			this_parent = dentry;
-+			spin_acquire(&this_parent->d_lock.dep_map, 0, 1, _RET_IP_);
- 			goto repeat;
- 		}
-+
-+		spin_unlock(&dentry->d_lock);
- 	}
- 	/*
- 	 * All done at this level ... ascend and resume the search.
- 	 */
- 	if (this_parent != parent) {
-+		struct dentry *tmp;
- 		next = this_parent->d_u.d_child.next;
--		this_parent = this_parent->d_parent;
-+		tmp = this_parent->d_parent;
-+		spin_unlock(&this_parent->d_lock);
-+		BUG_ON(tmp == this_parent);
-+		this_parent = tmp;
-+		spin_lock(&this_parent->d_lock);
- 		goto resume;
- 	}
- out:
-+	spin_unlock(&this_parent->d_lock);
- 	spin_unlock(&dcache_lock);
- 	return found;
- }
-@@ -1098,19 +1164,20 @@ struct dentry *d_alloc(struct dentry * p
- 	INIT_LIST_HEAD(&dentry->d_lru);
- 	INIT_LIST_HEAD(&dentry->d_subdirs);
- 	INIT_LIST_HEAD(&dentry->d_alias);
--
--	if (parent) {
--		dentry->d_parent = dget(parent);
--		dentry->d_sb = parent->d_sb;
--	} else {
--		INIT_LIST_HEAD(&dentry->d_u.d_child);
--	}
-+	INIT_LIST_HEAD(&dentry->d_u.d_child);
- 
- 	if (parent) {
- 		spin_lock(&dcache_lock);
-+		spin_lock(&parent->d_lock);
-+		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-+		dentry->d_parent = dget_dlock(parent);
-+		dentry->d_sb = parent->d_sb;
- 		list_add(&dentry->d_u.d_child, &parent->d_subdirs);
-+		spin_unlock(&dentry->d_lock);
-+		spin_unlock(&parent->d_lock);
- 		spin_unlock(&dcache_lock);
- 	}
-+
- 	atomic_inc(&dentry_stat.nr_dentry);
- 
- 	return dentry;
-@@ -1802,15 +1869,26 @@ static void d_move_locked(struct dentry
- 	/*
- 	 * XXXX: do we really need to take target->d_lock?
- 	 */
--	if (d_ancestor(dentry, target)) {
--		spin_lock(&dentry->d_lock);
--		spin_lock_nested(&target->d_lock, DENTRY_D_LOCK_NESTED);
--	} else if (d_ancestor(target, dentry) || target < dentry) {
--		spin_lock(&target->d_lock);
--		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
--	} else {
--		spin_lock(&dentry->d_lock);
--		spin_lock_nested(&target->d_lock, DENTRY_D_LOCK_NESTED);
-+	BUG_ON(d_ancestor(dentry, target));
-+	BUG_ON(d_ancestor(target, dentry));
-+
-+	if (dentry->d_parent == target->d_parent)
-+		spin_lock(&dentry->d_parent->d_lock);
-+	else {
-+		if (d_ancestor(dentry->d_parent, target->d_parent)) {
-+			spin_lock(&dentry->d_parent->d_lock);
-+			spin_lock_nested(&target->d_parent->d_lock, DENTRY_D_LOCK_NESTED);
-+		} else {
-+			spin_lock(&target->d_parent->d_lock);
-+			spin_lock_nested(&dentry->d_parent->d_lock, DENTRY_D_LOCK_NESTED);
-+		}
-+	}
-+	if (target < dentry) {
-+		spin_lock_nested(&target->d_lock, 2);
-+		spin_lock_nested(&dentry->d_lock, 3);
-+ 	} else {
-+		spin_lock_nested(&dentry->d_lock, 2);
-+		spin_lock_nested(&target->d_lock, 3);
- 	}
- 
- 	/* Move the dentry to the target hash queue, if on different bucket */
-@@ -1843,6 +1921,10 @@ static void d_move_locked(struct dentry
- 	}
- 
- 	list_add(&dentry->d_u.d_child, &dentry->d_parent->d_subdirs);
-+	if (target->d_parent != dentry->d_parent)
-+		spin_unlock(&dentry->d_parent->d_lock);
-+	if (target->d_parent != target)
-+		spin_unlock(&target->d_parent->d_lock);
- 	spin_unlock(&target->d_lock);
- 	fsnotify_d_move(dentry);
- 	spin_unlock(&dentry->d_lock);
-@@ -1943,6 +2025,13 @@ static void __d_materialise_dentry(struc
- 	dparent = dentry->d_parent;
- 	aparent = anon->d_parent;
- 
-+	/* XXX: hack */
-+	/* returns with anon->d_lock held! */
-+	spin_lock(&aparent->d_lock);
-+	spin_lock(&dparent->d_lock);
-+	spin_lock(&dentry->d_lock);
-+	spin_lock(&anon->d_lock);
-+
- 	dentry->d_parent = (aparent == anon) ? dentry : aparent;
- 	list_del(&dentry->d_u.d_child);
- 	if (!IS_ROOT(dentry))
-@@ -1957,6 +2046,10 @@ static void __d_materialise_dentry(struc
- 	else
- 		INIT_LIST_HEAD(&anon->d_u.d_child);
- 
-+	spin_unlock(&dentry->d_lock);
-+	spin_unlock(&dparent->d_lock);
-+	spin_unlock(&aparent->d_lock);
-+
- 	anon->d_flags &= ~DCACHE_DISCONNECTED;
- }
- 
-@@ -1992,7 +2085,6 @@ struct dentry *d_materialise_unique(stru
- 			/* Is this an anonymous mountpoint that we could splice
- 			 * into our tree? */
- 			if (IS_ROOT(alias)) {
--				spin_lock(&alias->d_lock);
- 				__d_materialise_dentry(dentry, alias);
- 				__d_drop(alias);
- 				goto found;
-@@ -2396,6 +2488,7 @@ void d_genocide(struct dentry *root)
- 	struct list_head *next;
- 
- 	spin_lock(&dcache_lock);
-+	spin_lock(&this_parent->d_lock);
- repeat:
- 	next = this_parent->d_subdirs.next;
- resume:
-@@ -2409,8 +2502,10 @@ resume:
- 			continue;
- 		}
- 		if (!list_empty(&dentry->d_subdirs)) {
--			spin_unlock(&dentry->d_lock);
-+			spin_unlock(&this_parent->d_lock);
-+			spin_release(&dentry->d_lock.dep_map, 1, _RET_IP_);
- 			this_parent = dentry;
-+			spin_acquire(&this_parent->d_lock.dep_map, 0, 1, _RET_IP_);
- 			goto repeat;
- 		}
- 		dentry->d_count--;
-@@ -2418,12 +2513,13 @@ resume:
- 	}
- 	if (this_parent != root) {
- 		next = this_parent->d_u.d_child.next;
--		spin_lock(&this_parent->d_lock);
- 		this_parent->d_count--;
- 		spin_unlock(&this_parent->d_lock);
- 		this_parent = this_parent->d_parent;
-+		spin_lock(&this_parent->d_lock);
- 		goto resume;
- 	}
-+	spin_unlock(&this_parent->d_lock);
- 	spin_unlock(&dcache_lock);
- }
- 
-Index: linux-2.6/fs/libfs.c
+Index: linux-2.6/fs/drop_caches.c
 ===================================================================
---- linux-2.6.orig/fs/libfs.c
-+++ linux-2.6/fs/libfs.c
-@@ -81,7 +81,8 @@ int dcache_dir_close(struct inode *inode
- 
- loff_t dcache_dir_lseek(struct file *file, loff_t offset, int origin)
+--- linux-2.6.orig/fs/drop_caches.c
++++ linux-2.6/fs/drop_caches.c
+@@ -16,7 +16,6 @@ static void drop_pagecache_sb(struct sup
  {
--	mutex_lock(&file->f_path.dentry->d_inode->i_mutex);
-+	struct dentry *dentry = file->f_path.dentry;
-+	mutex_lock(&dentry->d_inode->i_mutex);
- 	switch (origin) {
- 		case 1:
- 			offset += file->f_pos;
-@@ -89,7 +90,7 @@ loff_t dcache_dir_lseek(struct file *fil
- 			if (offset >= 0)
- 				break;
- 		default:
--			mutex_unlock(&file->f_path.dentry->d_inode->i_mutex);
-+			mutex_unlock(&dentry->d_inode->i_mutex);
- 			return -EINVAL;
- 	}
- 	if (offset != file->f_pos) {
-@@ -99,23 +100,27 @@ loff_t dcache_dir_lseek(struct file *fil
- 			struct dentry *cursor = file->private_data;
- 			loff_t n = file->f_pos - 2;
+ 	struct inode *inode, *toput_inode = NULL;
  
--			spin_lock(&dcache_lock);
-+			spin_lock(&dentry->d_lock);
-+			spin_lock_nested(&cursor->d_lock, DENTRY_D_LOCK_NESTED);
- 			list_del(&cursor->d_u.d_child);
--			p = file->f_path.dentry->d_subdirs.next;
--			while (n && p != &file->f_path.dentry->d_subdirs) {
-+			spin_unlock(&cursor->d_lock);
-+			p = dentry->d_subdirs.next;
-+			while (n && p != &dentry->d_subdirs) {
- 				struct dentry *next;
- 				next = list_entry(p, struct dentry, d_u.d_child);
--				spin_lock(&next->d_lock);
-+				spin_lock_nested(&next->d_lock, DENTRY_D_LOCK_NESTED);
- 				if (simple_positive(next))
- 					n--;
- 				spin_unlock(&next->d_lock);
- 				p = p->next;
- 			}
-+			spin_lock_nested(&cursor->d_lock, DENTRY_D_LOCK_NESTED);
- 			list_add_tail(&cursor->d_u.d_child, p);
--			spin_unlock(&dcache_lock);
-+			spin_unlock(&cursor->d_lock);
-+			spin_unlock(&dentry->d_lock);
+-	spin_lock(&inode_lock);
+ 	spin_lock(&sb_inode_list_lock);
+ 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
+ 		spin_lock(&inode->i_lock);
+@@ -28,15 +27,12 @@ static void drop_pagecache_sb(struct sup
+ 		__iget(inode);
+ 		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&sb_inode_list_lock);
+-		spin_unlock(&inode_lock);
+ 		invalidate_mapping_pages(inode->i_mapping, 0, -1);
+ 		iput(toput_inode);
+ 		toput_inode = inode;
+-		spin_lock(&inode_lock);
+ 		spin_lock(&sb_inode_list_lock);
+ 	}
+ 	spin_unlock(&sb_inode_list_lock);
+-	spin_unlock(&inode_lock);
+ 	iput(toput_inode);
+ }
+ 
+Index: linux-2.6/fs/fs-writeback.c
+===================================================================
+--- linux-2.6.orig/fs/fs-writeback.c
++++ linux-2.6/fs/fs-writeback.c
+@@ -312,7 +312,7 @@ static void requeue_io(struct inode *ino
+ static void inode_sync_complete(struct inode *inode)
+ {
+ 	/*
+-	 * Prevent speculative execution through spin_unlock(&inode_lock);
++	 * Prevent speculative execution through spin_unlock(&inode->i_lock);
+ 	 */
+ 	smp_mb();
+ 	wake_up_bit(&inode->i_state, __I_SYNC);
+@@ -404,9 +404,7 @@ static void inode_wait_for_writeback(str
+ 	while (inode->i_state & I_SYNC) {
+ 		spin_unlock(&wb_inode_list_lock);
+ 		spin_unlock(&inode->i_lock);
+-		spin_unlock(&inode_lock);
+ 		__wait_on_bit(wqh, &wq, inode_wait, TASK_UNINTERRUPTIBLE);
+-		spin_lock(&inode_lock);
+ 		spin_lock(&inode->i_lock);
+ 		spin_lock(&wb_inode_list_lock);
+ 	}
+@@ -464,7 +462,6 @@ writeback_single_inode(struct inode *ino
+ 	inode->i_state &= ~I_DIRTY_PAGES;
+ 	spin_unlock(&wb_inode_list_lock);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ 
+ 	ret = do_writepages(mapping, wbc);
+ 
+@@ -484,12 +481,10 @@ writeback_single_inode(struct inode *ino
+ 	 * due to delalloc, clear dirty metadata flags right before
+ 	 * write_inode()
+ 	 */
+-	spin_lock(&inode_lock);
+ 	spin_lock(&inode->i_lock);
+ 	dirty = inode->i_state & I_DIRTY;
+ 	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ 	/* Don't write the inode if only I_DIRTY_PAGES was set */
+ 	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
+ 		int err = write_inode(inode, wbc);
+@@ -497,7 +492,6 @@ writeback_single_inode(struct inode *ino
+ 			ret = err;
+ 	}
+ 
+-	spin_lock(&inode_lock);
+ 	spin_lock(&inode->i_lock);
+ 	spin_lock(&wb_inode_list_lock);
+ 	inode->i_state &= ~I_SYNC;
+@@ -679,10 +673,8 @@ again:
  		}
- 	}
--	mutex_unlock(&file->f_path.dentry->d_inode->i_mutex);
-+	mutex_unlock(&dentry->d_inode->i_mutex);
- 	return offset;
- }
- 
-@@ -155,9 +160,12 @@ int dcache_readdir(struct file * filp, v
- 			i++;
- 			/* fallthrough */
- 		default:
--			spin_lock(&dcache_lock);
--			if (filp->f_pos == 2)
-+			spin_lock(&dentry->d_lock);
-+			if (filp->f_pos == 2) {
-+				spin_lock_nested(&cursor->d_lock, DENTRY_D_LOCK_NESTED);
- 				list_move(q, &dentry->d_subdirs);
-+				spin_unlock(&cursor->d_lock);
-+			}
- 
- 			for (p=q->next; p != &dentry->d_subdirs; p=p->next) {
- 				struct dentry *next;
-@@ -169,19 +177,21 @@ int dcache_readdir(struct file * filp, v
- 				}
- 
- 				spin_unlock(&next->d_lock);
--				spin_unlock(&dcache_lock);
-+				spin_unlock(&dentry->d_lock);
- 				if (filldir(dirent, next->d_name.name, 
- 					    next->d_name.len, filp->f_pos, 
- 					    next->d_inode->i_ino, 
- 					    dt_type(next->d_inode)) < 0)
- 					return 0;
--				spin_lock(&dcache_lock);
-+				spin_lock(&dentry->d_lock);
-+				spin_lock_nested(&next->d_lock, DENTRY_D_LOCK_NESTED);
- 				/* next is still alive */
- 				list_move(q, p);
-+				spin_unlock(&next->d_lock);
- 				p = q;
- 				filp->f_pos++;
- 			}
--			spin_unlock(&dcache_lock);
-+			spin_unlock(&dentry->d_lock);
- 	}
- 	return 0;
- }
-@@ -278,7 +288,7 @@ int simple_empty(struct dentry *dentry)
- 	struct dentry *child;
+ 		spin_unlock(&wb_inode_list_lock);
+ 		spin_unlock(&inode->i_lock);
+-		spin_unlock(&inode_lock);
+ 		iput(inode);
+ 		cond_resched();
+-		spin_lock(&inode_lock);
+ 		spin_lock(&wb_inode_list_lock);
+ 		if (wbc->nr_to_write <= 0) {
+ 			wbc->more_io = 1;
+@@ -701,7 +693,6 @@ static void writeback_inodes_wb(struct b
  	int ret = 0;
  
--	spin_lock(&dcache_lock);
-+	spin_lock(&dentry->d_lock);
- 	list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child) {
- 		spin_lock_nested(&child->d_lock, DENTRY_D_LOCK_NESTED);
- 		if (simple_positive(child)) {
-@@ -289,7 +299,7 @@ int simple_empty(struct dentry *dentry)
+ 	wbc->wb_start = jiffies; /* livelock avoidance */
+-	spin_lock(&inode_lock);
+ again:
+ 	spin_lock(&wb_inode_list_lock);
+ 
+@@ -744,7 +735,6 @@ again:
+ 			break;
  	}
- 	ret = 1;
- out:
--	spin_unlock(&dcache_lock);
-+	spin_unlock(&dentry->d_lock);
- 	return ret;
+ 	spin_unlock(&wb_inode_list_lock);
+-	spin_unlock(&inode_lock);
+ 	/* Leave any unwritten inodes on b_io */
  }
  
+@@ -857,21 +847,18 @@ static long wb_writeback(struct bdi_writ
+ 		 * we'll just busyloop.
+ 		 */
+ retry:
+-		spin_lock(&inode_lock);
+ 		spin_lock(&wb_inode_list_lock);
+ 		if (!list_empty(&wb->b_more_io))  {
+ 			inode = list_entry(wb->b_more_io.prev,
+ 						struct inode, i_list);
+ 			if (!spin_trylock(&inode->i_lock)) {
+ 				spin_unlock(&wb_inode_list_lock);
+-				spin_unlock(&inode_lock);
+ 				goto retry;
+ 			}
+ 			inode_wait_for_writeback(inode);
+ 			spin_unlock(&inode->i_lock);
+ 		}
+ 		spin_unlock(&wb_inode_list_lock);
+-		spin_unlock(&inode_lock);
+ 	}
+ 
+ 	return wrote;
+@@ -1141,7 +1128,6 @@ void __mark_inode_dirty(struct inode *in
+ 	if (unlikely(block_dump))
+ 		block_dump___mark_inode_dirty(inode);
+ 
+-	spin_lock(&inode_lock);
+ 	spin_lock(&inode->i_lock);
+ 	if ((inode->i_state & flags) != flags) {
+ 		const int was_dirty = inode->i_state & I_DIRTY;
+@@ -1190,7 +1176,6 @@ void __mark_inode_dirty(struct inode *in
+ 	}
+ out:
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ }
+ EXPORT_SYMBOL(__mark_inode_dirty);
+ 
+@@ -1221,7 +1206,6 @@ static void wait_sb_inodes(struct super_
+ 	 */
+ 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+ 
+-	spin_lock(&inode_lock);
+ 	spin_lock(&sb_inode_list_lock);
+ 
+ 	/*
+@@ -1246,14 +1230,12 @@ static void wait_sb_inodes(struct super_
+ 		__iget(inode);
+ 		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&sb_inode_list_lock);
+-		spin_unlock(&inode_lock);
+ 		/*
+-		 * We hold a reference to 'inode' so it couldn't have
+-		 * been removed from s_inodes list while we dropped the
+-		 * inode_lock.  We cannot iput the inode now as we can
+-		 * be holding the last reference and we cannot iput it
+-		 * under inode_lock. So we keep the reference and iput
+-		 * it later.
++		 * We hold a reference to 'inode' so it couldn't have been
++		 * removed from s_inodes list while we dropped the
++		 * sb_inode_list_lock.  We cannot iput the inode now as we can
++		 * be holding the last reference and we cannot iput it under
++		 * spinlock. So we keep the reference and iput it later.
+ 		 */
+ 		iput(old_inode);
+ 		old_inode = inode;
+@@ -1262,11 +1244,9 @@ static void wait_sb_inodes(struct super_
+ 
+ 		cond_resched();
+ 
+-		spin_lock(&inode_lock);
+ 		spin_lock(&sb_inode_list_lock);
+ 	}
+ 	spin_unlock(&sb_inode_list_lock);
+-	spin_unlock(&inode_lock);
+ 	iput(old_inode);
+ }
+ 
+@@ -1348,13 +1328,11 @@ int write_inode_now(struct inode *inode,
+ 		wbc.nr_to_write = 0;
+ 
+ 	might_sleep();
+-	spin_lock(&inode_lock);
+ 	spin_lock(&inode->i_lock);
+ 	spin_lock(&wb_inode_list_lock);
+ 	ret = writeback_single_inode(inode, &wbc);
+ 	spin_unlock(&wb_inode_list_lock);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ 	if (sync)
+ 		inode_sync_wait(inode);
+ 	return ret;
+@@ -1376,13 +1354,11 @@ int sync_inode(struct inode *inode, stru
+ {
+ 	int ret;
+ 
+-	spin_lock(&inode_lock);
+ 	spin_lock(&inode->i_lock);
+ 	spin_lock(&wb_inode_list_lock);
+ 	ret = writeback_single_inode(inode, wbc);
+ 	spin_unlock(&wb_inode_list_lock);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(sync_inode);
+Index: linux-2.6/fs/hugetlbfs/inode.c
+===================================================================
+--- linux-2.6.orig/fs/hugetlbfs/inode.c
++++ linux-2.6/fs/hugetlbfs/inode.c
+@@ -377,7 +377,7 @@ static void hugetlbfs_delete_inode(struc
+ 	clear_inode(inode);
+ }
+ 
+-static void hugetlbfs_forget_inode(struct inode *inode) __releases(inode_lock)
++static void hugetlbfs_forget_inode(struct inode *inode)
+ {
+ 	if (generic_detach_inode(inode)) {
+ 		truncate_hugepages(inode, 0);
+Index: linux-2.6/fs/inode.c
+===================================================================
+--- linux-2.6.orig/fs/inode.c
++++ linux-2.6/fs/inode.c
+@@ -105,7 +105,6 @@ static struct hlist_head *inode_hashtabl
+  * NOTE! You also have to own the lock if you change
+  * the i_state of an inode while it is in use..
+  */
+-DEFINE_SPINLOCK(inode_lock);
+ DEFINE_SPINLOCK(sb_inode_list_lock);
+ DEFINE_SPINLOCK(wb_inode_list_lock);
+ DEFINE_SPINLOCK(inode_hash_lock);
+@@ -376,16 +375,14 @@ static void dispose_list(struct list_hea
+ 			truncate_inode_pages(&inode->i_data, 0);
+ 		clear_inode(inode);
+ 
+-		spin_lock(&inode_lock);
+ 		spin_lock(&sb_inode_list_lock);
+ 		spin_lock(&inode->i_lock);
+ 		spin_lock(&inode_hash_lock);
+ 		hlist_del_init(&inode->i_hash);
+ 		spin_unlock(&inode_hash_lock);
+ 		list_del_init(&inode->i_sb_list);
+-		spin_unlock(&sb_inode_list_lock);
+ 		spin_unlock(&inode->i_lock);
+-		spin_unlock(&inode_lock);
++		spin_unlock(&sb_inode_list_lock);
+ 
+ 		wake_up_inode(inode);
+ 		destroy_inode(inode);
+@@ -413,7 +410,6 @@ static int invalidate_list(struct list_h
+ 		 * change during umount anymore, and because iprune_sem keeps
+ 		 * shrink_icache_memory() away.
+ 		 */
+-		cond_resched_lock(&inode_lock);
+ 		cond_resched_lock(&sb_inode_list_lock);
+ 
+ 		next = next->next;
+@@ -458,13 +454,11 @@ int invalidate_inodes(struct super_block
+ 	LIST_HEAD(throw_away);
+ 
+ 	down_write(&iprune_sem);
+-	spin_lock(&inode_lock);
+ 	spin_lock(&sb_inode_list_lock);
+ 	inotify_unmount_inodes(&sb->s_inodes);
+ 	fsnotify_unmount_inodes(&sb->s_inodes);
+ 	busy = invalidate_list(&sb->s_inodes, &throw_away);
+ 	spin_unlock(&sb_inode_list_lock);
+-	spin_unlock(&inode_lock);
+ 
+ 	dispose_list(&throw_away);
+ 	up_write(&iprune_sem);
+@@ -507,7 +501,6 @@ static void prune_icache(int nr_to_scan)
+ 	unsigned long reap = 0;
+ 
+ 	down_read(&iprune_sem);
+-	spin_lock(&inode_lock);
+ again:
+ 	spin_lock(&wb_inode_list_lock);
+ 	for (nr_scanned = 0; nr_scanned < nr_to_scan; nr_scanned++) {
+@@ -531,12 +524,10 @@ again:
+ 			spin_unlock(&wb_inode_list_lock);
+ 			__iget(inode);
+ 			spin_unlock(&inode->i_lock);
+-			spin_unlock(&inode_lock);
+ 			if (remove_inode_buffers(inode))
+ 				reap += invalidate_mapping_pages(&inode->i_data,
+ 								0, -1);
+ 			iput(inode);
+-			spin_lock(&inode_lock);
+ again2:
+ 			spin_lock(&wb_inode_list_lock);
+ 
+@@ -563,7 +554,6 @@ again2:
+ 		__count_vm_events(KSWAPD_INODESTEAL, reap);
+ 	else
+ 		__count_vm_events(PGINODESTEAL, reap);
+-	spin_unlock(&inode_lock);
+ 	spin_unlock(&wb_inode_list_lock);
+ 
+ 	dispose_list(&freeable);
+@@ -714,12 +704,10 @@ void inode_add_to_lists(struct super_blo
+ {
+ 	struct hlist_head *head = inode_hashtable + hash(sb, inode->i_ino);
+ 
+-	spin_lock(&inode_lock);
+ 	spin_lock(&sb_inode_list_lock);
+ 	spin_lock(&inode->i_lock);
+ 	__inode_add_to_lists(sb, head, inode);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ }
+ EXPORT_SYMBOL_GPL(inode_add_to_lists);
+ 
+@@ -745,18 +733,14 @@ struct inode *new_inode(struct super_blo
+ 	static atomic_t last_ino = ATOMIC_INIT(0);
+ 	struct inode *inode;
+ 
+-	spin_lock_prefetch(&inode_lock);
+-
+ 	inode = alloc_inode(sb);
+ 	if (inode) {
+-		spin_lock(&inode_lock);
+ 		spin_lock(&sb_inode_list_lock);
+ 		spin_lock(&inode->i_lock);
+ 		inode->i_ino = atomic_inc_return(&last_ino);
+ 		inode->i_state = 0;
+ 		__inode_add_to_lists(sb, NULL, inode);
+ 		spin_unlock(&inode->i_lock);
+-		spin_unlock(&inode_lock);
+ 	}
+ 	return inode;
+ }
+@@ -815,7 +799,6 @@ static struct inode *get_new_inode(struc
+ 	if (inode) {
+ 		struct inode *old;
+ 
+-		spin_lock(&inode_lock);
+ 		/* We released the lock, so.. */
+ 		old = find_inode(sb, head, test, data);
+ 		if (!old) {
+@@ -827,7 +810,6 @@ static struct inode *get_new_inode(struc
+ 			inode->i_state = I_NEW;
+ 			__inode_add_to_lists(sb, head, inode);
+ 			spin_unlock(&inode->i_lock);
+-			spin_unlock(&inode_lock);
+ 
+ 			/* Return the locked inode with I_NEW set, the
+ 			 * caller is responsible for filling in the contents
+@@ -842,7 +824,6 @@ static struct inode *get_new_inode(struc
+ 		 */
+ 		__iget(old);
+ 		spin_unlock(&old->i_lock);
+-		spin_unlock(&inode_lock);
+ 		destroy_inode(inode);
+ 		inode = old;
+ 		wait_on_inode(inode);
+@@ -852,7 +833,6 @@ static struct inode *get_new_inode(struc
+ set_failed:
+ 	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&sb_inode_list_lock);
+-	spin_unlock(&inode_lock);
+ 	destroy_inode(inode);
+ 	return NULL;
+ }
+@@ -870,7 +850,6 @@ static struct inode *get_new_inode_fast(
+ 	if (inode) {
+ 		struct inode *old;
+ 
+-		spin_lock(&inode_lock);
+ 		/* We released the lock, so.. */
+ 		old = find_inode_fast(sb, head, ino);
+ 		if (!old) {
+@@ -880,7 +859,6 @@ static struct inode *get_new_inode_fast(
+ 			inode->i_state = I_NEW;
+ 			__inode_add_to_lists(sb, head, inode);
+ 			spin_unlock(&inode->i_lock);
+-			spin_unlock(&inode_lock);
+ 
+ 			/* Return the locked inode with I_NEW set, the
+ 			 * caller is responsible for filling in the contents
+@@ -895,7 +873,6 @@ static struct inode *get_new_inode_fast(
+ 		 */
+ 		__iget(old);
+ 		spin_unlock(&old->i_lock);
+-		spin_unlock(&inode_lock);
+ 		destroy_inode(inode);
+ 		inode = old;
+ 		wait_on_inode(inode);
+@@ -945,7 +922,6 @@ ino_t iunique(struct super_block *sb, in
+ 	struct hlist_head *head;
+ 	ino_t res;
+ 
+-	spin_lock(&inode_lock);
+ 	spin_lock(&unique_lock);
+ 	do {
+ 		if (counter <= max_reserved)
+@@ -954,7 +930,6 @@ ino_t iunique(struct super_block *sb, in
+ 		head = inode_hashtable + hash(sb, res);
+ 	} while (!test_inode_iunique(sb, head, res));
+ 	spin_unlock(&unique_lock);
+-	spin_unlock(&inode_lock);
+ 
+ 	return res;
+ }
+@@ -964,7 +939,6 @@ struct inode *igrab(struct inode *inode)
+ {
+ 	struct inode *ret = inode;
+ 
+-	spin_lock(&inode_lock);
+ 	spin_lock(&inode->i_lock);
+ 	if (!(inode->i_state & (I_FREEING|I_CLEAR|I_WILL_FREE)))
+ 		__iget(inode);
+@@ -976,7 +950,6 @@ struct inode *igrab(struct inode *inode)
+ 		 */
+ 		ret = NULL;
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ 
+ 	return ret;
+ }
+@@ -1007,17 +980,14 @@ static struct inode *ifind(struct super_
+ {
+ 	struct inode *inode;
+ 
+-	spin_lock(&inode_lock);
+ 	inode = find_inode(sb, head, test, data);
+ 	if (inode) {
+ 		__iget(inode);
+ 		spin_unlock(&inode->i_lock);
+-		spin_unlock(&inode_lock);
+ 		if (likely(wait))
+ 			wait_on_inode(inode);
+ 		return inode;
+ 	}
+-	spin_unlock(&inode_lock);
+ 	return NULL;
+ }
+ 
+@@ -1041,16 +1011,13 @@ static struct inode *ifind_fast(struct s
+ {
+ 	struct inode *inode;
+ 
+-	spin_lock(&inode_lock);
+ 	inode = find_inode_fast(sb, head, ino);
+ 	if (inode) {
+ 		__iget(inode);
+ 		spin_unlock(&inode->i_lock);
+-		spin_unlock(&inode_lock);
+ 		wait_on_inode(inode);
+ 		return inode;
+ 	}
+-	spin_unlock(&inode_lock);
+ 	return NULL;
+ }
+ 
+@@ -1214,7 +1181,6 @@ int insert_inode_locked(struct inode *in
+ 		struct hlist_node *node;
+ 		struct inode *old = NULL;
+ 
+-		spin_lock(&inode_lock);
+ repeat:
+ 		spin_lock(&inode_hash_lock);
+ 		hlist_for_each_entry(old, node, head, i_hash) {
+@@ -1233,13 +1199,11 @@ repeat:
+ 		if (likely(!node)) {
+ 			hlist_add_head(&inode->i_hash, head);
+ 			spin_unlock(&inode_hash_lock);
+-			spin_unlock(&inode_lock);
+ 			return 0;
+ 		}
+ 		spin_unlock(&inode_hash_lock);
+ 		__iget(old);
+ 		spin_unlock(&old->i_lock);
+-		spin_unlock(&inode_lock);
+ 		wait_on_inode(old);
+ 		if (unlikely(!hlist_unhashed(&old->i_hash))) {
+ 			iput(old);
+@@ -1262,7 +1226,6 @@ int insert_inode_locked4(struct inode *i
+ 		struct hlist_node *node;
+ 		struct inode *old = NULL;
+ 
+-		spin_lock(&inode_lock);
+ repeat:
+ 		spin_lock(&inode_hash_lock);
+ 		hlist_for_each_entry(old, node, head, i_hash) {
+@@ -1281,13 +1244,11 @@ repeat:
+ 		if (likely(!node)) {
+ 			hlist_add_head(&inode->i_hash, head);
+ 			spin_unlock(&inode_hash_lock);
+-			spin_unlock(&inode_lock);
+ 			return 0;
+ 		}
+ 		spin_unlock(&inode_hash_lock);
+ 		__iget(old);
+ 		spin_unlock(&old->i_lock);
+-		spin_unlock(&inode_lock);
+ 		wait_on_inode(old);
+ 		if (unlikely(!hlist_unhashed(&old->i_hash))) {
+ 			iput(old);
+@@ -1310,13 +1271,11 @@ void __insert_inode_hash(struct inode *i
+ {
+ 	struct hlist_head *head = inode_hashtable + hash(inode->i_sb, hashval);
+ 
+-	spin_lock(&inode_lock);
+ 	spin_lock(&inode->i_lock);
+ 	spin_lock(&inode_hash_lock);
+ 	hlist_add_head(&inode->i_hash, head);
+ 	spin_unlock(&inode_hash_lock);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ }
+ EXPORT_SYMBOL(__insert_inode_hash);
+ 
+@@ -1328,13 +1287,11 @@ EXPORT_SYMBOL(__insert_inode_hash);
+  */
+ void remove_inode_hash(struct inode *inode)
+ {
+-	spin_lock(&inode_lock);
+ 	spin_lock(&inode->i_lock);
+ 	spin_lock(&inode_hash_lock);
+ 	hlist_del_init(&inode->i_hash);
+ 	spin_unlock(&inode_hash_lock);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ }
+ EXPORT_SYMBOL(remove_inode_hash);
+ 
+@@ -1362,7 +1319,6 @@ void generic_delete_inode(struct inode *
+ 	WARN_ON(inode->i_state & I_NEW);
+ 	inode->i_state |= I_FREEING;
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ 	atomic_dec(&inodes_stat.nr_inodes);
+ 
+ 	if (op->delete_inode) {
+@@ -1376,13 +1332,11 @@ void generic_delete_inode(struct inode *
+ 		truncate_inode_pages(&inode->i_data, 0);
+ 		clear_inode(inode);
+ 	}
+-	spin_lock(&inode_lock);
+ 	spin_lock(&inode->i_lock);
+ 	spin_lock(&inode_hash_lock);
+ 	hlist_del_init(&inode->i_hash);
+ 	spin_unlock(&inode_hash_lock);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ 	wake_up_inode(inode);
+ 	BUG_ON(inode->i_state != I_CLEAR);
+ 	destroy_inode(inode);
+@@ -1412,16 +1366,13 @@ int generic_detach_inode(struct inode *i
+ 		if (sb->s_flags & MS_ACTIVE) {
+ 			spin_unlock(&inode->i_lock);
+ 			spin_unlock(&sb_inode_list_lock);
+-			spin_unlock(&inode_lock);
+ 			return 0;
+ 		}
+ 		WARN_ON(inode->i_state & I_NEW);
+ 		inode->i_state |= I_WILL_FREE;
+ 		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&sb_inode_list_lock);
+-		spin_unlock(&inode_lock);
+ 		write_inode_now(inode, 1);
+-		spin_lock(&inode_lock);
+ 		spin_lock(&sb_inode_list_lock);
+ 		spin_lock(&inode->i_lock);
+ 		WARN_ON(inode->i_state & I_NEW);
+@@ -1439,7 +1390,6 @@ int generic_detach_inode(struct inode *i
+ 	WARN_ON(inode->i_state & I_NEW);
+ 	inode->i_state |= I_FREEING;
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ 	atomic_dec(&inodes_stat.nr_inodes);
+ 	return 1;
+ }
+@@ -1505,17 +1455,12 @@ void iput(struct inode *inode)
+ 	if (inode) {
+ 		BUG_ON(inode->i_state == I_CLEAR);
+ 
+-retry1:
++retry:
+ 		spin_lock(&inode->i_lock);
+ 		if (inode->i_count == 1) {
+-			if (!spin_trylock(&inode_lock)) {
+-retry2:
+-				spin_unlock(&inode->i_lock);
+-				goto retry1;
+-			}
+ 			if (!spin_trylock(&sb_inode_list_lock)) {
+-				spin_unlock(&inode_lock);
+-				goto retry2;
++				spin_unlock(&inode->i_lock);
++				goto retry;
+ 			}
+ 			inode->i_count--;
+ 			iput_final(inode);
+@@ -1713,10 +1658,8 @@ static void __wait_on_freeing_inode(stru
+ 	wq = bit_waitqueue(&inode->i_state, __I_NEW);
+ 	prepare_to_wait(wq, &wait.wait, TASK_UNINTERRUPTIBLE);
+ 	spin_unlock(&inode->i_lock);
+-	spin_unlock(&inode_lock);
+ 	schedule();
+ 	finish_wait(wq, &wait.wait);
+-	spin_lock(&inode_lock);
+ }
+ 
+ static __initdata unsigned long ihash_entries;
 Index: linux-2.6/fs/notify/inotify/inotify.c
 ===================================================================
 --- linux-2.6.orig/fs/notify/inotify/inotify.c
 +++ linux-2.6/fs/notify/inotify/inotify.c
-@@ -185,17 +185,19 @@ static void set_dentry_child_flags(struc
- 	list_for_each_entry(alias, &inode->i_dentry, d_alias) {
- 		struct dentry *child;
+@@ -390,13 +390,16 @@ void inotify_unmount_inodes(struct list_
+ 		struct inode *need_iput_tmp;
+ 		struct list_head *watches;
  
-+		spin_lock(&alias->d_lock);
- 		list_for_each_entry(child, &alias->d_subdirs, d_u.d_child) {
- 			if (!child->d_inode)
- 				continue;
- 
--			spin_lock(&child->d_lock);
-+			spin_lock_nested(&child->d_lock, DENTRY_D_LOCK_NESTED);
- 			if (watched)
- 				child->d_flags |= DCACHE_INOTIFY_PARENT_WATCHED;
- 			else
- 				child->d_flags &=~DCACHE_INOTIFY_PARENT_WATCHED;
- 			spin_unlock(&child->d_lock);
- 		}
-+		spin_unlock(&alias->d_lock);
- 	}
- 	spin_unlock(&dcache_lock);
- }
-Index: linux-2.6/include/linux/dcache.h
-===================================================================
---- linux-2.6.orig/include/linux/dcache.h
-+++ linux-2.6/include/linux/dcache.h
-@@ -342,6 +342,7 @@ static inline struct dentry *dget_dlock(
- 	}
- 	return dentry;
- }
-+
- static inline struct dentry *dget(struct dentry *dentry)
- {
- 	if (dentry) {
-Index: linux-2.6/drivers/usb/core/inode.c
-===================================================================
---- linux-2.6.orig/drivers/usb/core/inode.c
-+++ linux-2.6/drivers/usb/core/inode.c
-@@ -348,18 +348,20 @@ static int usbfs_empty (struct dentry *d
- 	struct list_head *list;
- 
- 	spin_lock(&dcache_lock);
--
-+	spin_lock(&dentry->d_lock);
- 	list_for_each(list, &dentry->d_subdirs) {
- 		struct dentry *de = list_entry(list, struct dentry, d_u.d_child);
--		spin_lock(&de->d_lock);
-+
-+		spin_lock_nested(&de->d_lock, DENTRY_D_LOCK_NESTED);
- 		if (usbfs_positive(de)) {
- 			spin_unlock(&de->d_lock);
-+			spin_unlock(&dentry->d_lock);
- 			spin_unlock(&dcache_lock);
- 			return 0;
- 		}
- 		spin_unlock(&de->d_lock);
- 	}
--
-+	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&dcache_lock);
- 	return 1;
- }
-Index: linux-2.6/fs/autofs4/expire.c
-===================================================================
---- linux-2.6.orig/fs/autofs4/expire.c
-+++ linux-2.6/fs/autofs4/expire.c
-@@ -93,22 +93,59 @@ done:
- /*
-  * Calculate next entry in top down tree traversal.
-  * From next_mnt in namespace.c - elegant.
-+ *
-+ * How is this supposed to work if we drop dcache_lock between calls anyway?
-+ * How does it cope with renames?
-+ * And also callers dput the returned dentry before taking dcache_lock again
-+ * so what prevents it from being freed??
-  */
--static struct dentry *next_dentry(struct dentry *p, struct dentry *root)
-+static struct dentry *get_next_positive_dentry(struct dentry *p,
-+						struct dentry *root)
- {
--	struct list_head *next = p->d_subdirs.next;
-+	struct list_head *next;
-+	struct dentry *ret;
- 
-+	spin_lock(&dcache_lock);
-+again:
-+	spin_lock(&p->d_lock);
-+	next = p->d_subdirs.next;
- 	if (next == &p->d_subdirs) {
- 		while (1) {
--			if (p == root)
-+			struct dentry *parent;
-+
-+			if (p == root) {
-+				spin_unlock(&p->d_lock);
-+				spin_unlock(&dcache_lock);
- 				return NULL;
-+			}
-+
-+			parent = p->d_parent;
-+			if (!spin_trylock(&parent->d_lock)) {
-+				spin_unlock(&p->d_lock);
-+				goto again;
-+			}
-+			spin_unlock(&p->d_lock);
- 			next = p->d_u.d_child.next;
--			if (next != &p->d_parent->d_subdirs)
-+			p = parent;
-+			if (next != &parent->d_subdirs)
- 				break;
--			p = p->d_parent;
- 		}
- 	}
--	return list_entry(next, struct dentry, d_u.d_child);
-+	ret = list_entry(next, struct dentry, d_u.d_child);
-+
-+	spin_lock_nested(&ret->d_lock, DENTRY_D_LOCK_NESTED);
-+	/* Negative dentry - try next */
-+	if (!simple_positive(ret)) {
-+		spin_unlock(&ret->d_lock);
-+		p = ret;
-+		goto again;
-+	}
-+	dget_dlock(ret);
-+	spin_unlock(&ret->d_lock);
-+	spin_unlock(&p->d_lock);
-+	spin_unlock(&dcache_lock);
-+
-+	return ret;
- }
- 
- /*
-@@ -158,18 +195,11 @@ static int autofs4_tree_busy(struct vfsm
- 	if (!simple_positive(top))
- 		return 1;
- 
--	spin_lock(&dcache_lock);
--	for (p = top; p; p = next_dentry(p, top)) {
--		/* Negative dentry - give up */
--		if (!simple_positive(p))
--			continue;
-+	for (p = dget(top); p; p = get_next_positive_dentry(p, top)) {
- 
- 		DPRINTK("dentry %p %.*s",
- 			p, (int) p->d_name.len, p->d_name.name);
- 
--		p = dget(p);
--		spin_unlock(&dcache_lock);
--
++		spin_lock(&inode->i_lock);
  		/*
- 		 * Is someone visiting anywhere in the subtree ?
- 		 * If there's no mount we need to check the usage
-@@ -205,9 +235,7 @@ static int autofs4_tree_busy(struct vfsm
- 			}
- 		}
- 		dput(p);
--		spin_lock(&dcache_lock);
- 	}
--	spin_unlock(&dcache_lock);
- 
- 	/* Timeout of a tree mount is ultimately determined by its top dentry */
- 	if (!autofs4_can_expire(top, timeout, do_now))
-@@ -226,18 +254,11 @@ static struct dentry *autofs4_check_leav
- 	DPRINTK("parent %p %.*s",
- 		parent, (int)parent->d_name.len, parent->d_name.name);
- 
--	spin_lock(&dcache_lock);
--	for (p = parent; p; p = next_dentry(p, parent)) {
--		/* Negative dentry - give up */
--		if (!simple_positive(p))
--			continue;
-+	for (p = dget(parent); p; p = get_next_positive_dentry(p, parent)) {
- 
- 		DPRINTK("dentry %p %.*s",
- 			p, (int) p->d_name.len, p->d_name.name);
- 
--		p = dget(p);
--		spin_unlock(&dcache_lock);
--
- 		if (d_mountpoint(p)) {
- 			/* Can we umount this guy */
- 			if (autofs4_mount_busy(mnt, p))
-@@ -249,9 +270,7 @@ static struct dentry *autofs4_check_leav
- 		}
- cont:
- 		dput(p);
--		spin_lock(&dcache_lock);
- 	}
--	spin_unlock(&dcache_lock);
- 	return NULL;
- }
- 
-@@ -294,6 +313,8 @@ struct dentry *autofs4_expire_direct(str
-  * A tree is eligible if :-
-  *  - it is unused by any user process
-  *  - it has been unused for exp_timeout time
-+ * This seems to be racy dropping dcache_lock and asking for next->next after
-+ * the lock has been dropped.
-  */
- struct dentry *autofs4_expire_indirect(struct super_block *sb,
- 				       struct vfsmount *mnt,
-@@ -316,6 +337,7 @@ struct dentry *autofs4_expire_indirect(s
- 	timeout = sbi->exp_timeout;
- 
- 	spin_lock(&dcache_lock);
-+	spin_lock(&root->d_lock);
- 	next = root->d_subdirs.next;
- 
- 	/* On exit from the loop expire is set to a dgot dentry
-@@ -329,7 +351,10 @@ struct dentry *autofs4_expire_indirect(s
+ 		 * We cannot __iget() an inode in state I_CLEAR, I_FREEING,
+ 		 * I_WILL_FREE, or I_NEW which is fine because by that point
+ 		 * the inode cannot have any associated watches.
+ 		 */
+-		if (inode->i_state & (I_CLEAR|I_FREEING|I_WILL_FREE|I_NEW))
++		if (inode->i_state & (I_CLEAR|I_FREEING|I_WILL_FREE|I_NEW)) {
++			spin_unlock(&inode->i_lock);
  			continue;
- 		}
++		}
  
--		dentry = dget(dentry);
-+		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-+		dentry = dget_dlock(dentry);
-+		spin_unlock(&dentry->d_lock);
-+		spin_unlock(&root->d_lock);
- 		spin_unlock(&dcache_lock);
- 
- 		spin_lock(&sbi->fs_lock);
-@@ -396,8 +421,10 @@ next:
- 		spin_unlock(&sbi->fs_lock);
- 		dput(dentry);
- 		spin_lock(&dcache_lock);
-+		spin_lock(&root->d_lock);
- 		next = next->next;
- 	}
-+	spin_unlock(&root->d_lock);
- 	spin_unlock(&dcache_lock);
- 	return NULL;
- 
-@@ -409,7 +436,11 @@ found:
- 	init_completion(&ino->expire_complete);
- 	spin_unlock(&sbi->fs_lock);
- 	spin_lock(&dcache_lock);
--	list_move(&expired->d_parent->d_subdirs, &expired->d_u.d_child);
-+	spin_lock(&expired->d_parent->d_lock);
-+	spin_lock_nested(&expired->d_lock, DENTRY_D_LOCK_NESTED);
-+  	list_move(&expired->d_parent->d_subdirs, &expired->d_u.d_child);
-+	spin_unlock(&expired->d_lock);
-+	spin_unlock(&expired->d_parent->d_lock);
- 	spin_unlock(&dcache_lock);
- 	return expired;
- }
-Index: linux-2.6/fs/autofs4/root.c
-===================================================================
---- linux-2.6.orig/fs/autofs4/root.c
-+++ linux-2.6/fs/autofs4/root.c
-@@ -135,10 +135,13 @@ static int autofs4_dir_open(struct inode
- 	 * it.
- 	 */
- 	spin_lock(&dcache_lock);
-+	spin_lock(&dentry->d_lock);
- 	if (!d_mountpoint(dentry) && list_empty(&dentry->d_subdirs)) {
-+		spin_unlock(&dentry->d_lock);
- 		spin_unlock(&dcache_lock);
- 		return -ENOENT;
- 	}
-+	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&dcache_lock);
- 
- out:
-@@ -246,7 +249,9 @@ static void *autofs4_follow_link(struct
- 	lookup_type = autofs4_need_mount(nd->flags);
- 	spin_lock(&sbi->fs_lock);
- 	spin_lock(&dcache_lock);
-+	spin_lock(&dentry->d_lock);
- 	if (!(lookup_type || ino->flags & AUTOFS_INF_PENDING)) {
-+		spin_unlock(&dentry->d_lock);
- 		spin_unlock(&dcache_lock);
- 		spin_unlock(&sbi->fs_lock);
- 		goto follow;
-@@ -268,6 +273,7 @@ static void *autofs4_follow_link(struct
- 
- 		goto follow;
- 	}
-+	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&dcache_lock);
- 	spin_unlock(&sbi->fs_lock);
- follow:
-Index: linux-2.6/fs/coda/cache.c
-===================================================================
---- linux-2.6.orig/fs/coda/cache.c
-+++ linux-2.6/fs/coda/cache.c
-@@ -87,6 +87,7 @@ static void coda_flag_children(struct de
- 	struct dentry *de;
- 
- 	spin_lock(&dcache_lock);
-+	spin_lock(&parent->d_lock);
- 	list_for_each(child, &parent->d_subdirs)
- 	{
- 		de = list_entry(child, struct dentry, d_u.d_child);
-@@ -95,6 +96,7 @@ static void coda_flag_children(struct de
+ 		/*
+ 		 * If i_count is zero, the inode cannot have any watches and
+@@ -404,18 +407,21 @@ void inotify_unmount_inodes(struct list_
+ 		 * evict all inodes with zero i_count from icache which is
+ 		 * unnecessarily violent and may in fact be illegal to do.
+ 		 */
+-		if (!inode->i_count)
++		if (!inode->i_count) {
++			spin_unlock(&inode->i_lock);
  			continue;
- 		coda_flag_inode(de->d_inode, flag);
- 	}
-+	spin_unlock(&parent->d_lock);
- 	spin_unlock(&dcache_lock);
- 	return; 
- }
-Index: linux-2.6/fs/ncpfs/dir.c
-===================================================================
---- linux-2.6.orig/fs/ncpfs/dir.c
-+++ linux-2.6/fs/ncpfs/dir.c
-@@ -365,6 +365,7 @@ ncp_dget_fpos(struct dentry *dentry, str
++		}
  
- 	/* If a pointer is invalid, we search the dentry. */
- 	spin_lock(&dcache_lock);
-+	spin_lock(&parent->d_lock);
- 	next = parent->d_subdirs.next;
- 	while (next != &parent->d_subdirs) {
- 		dent = list_entry(next, struct dentry, d_u.d_child);
-@@ -373,11 +374,13 @@ ncp_dget_fpos(struct dentry *dentry, str
- 				dget_locked(dent);
- 			else
- 				dent = NULL;
-+			spin_unlock(&parent->d_lock);
- 			spin_unlock(&dcache_lock);
- 			goto out;
- 		}
- 		next = next->next;
- 	}
-+	spin_unlock(&parent->d_lock);
- 	spin_unlock(&dcache_lock);
- 	return NULL;
- 
-Index: linux-2.6/fs/ncpfs/ncplib_kernel.h
-===================================================================
---- linux-2.6.orig/fs/ncpfs/ncplib_kernel.h
-+++ linux-2.6/fs/ncpfs/ncplib_kernel.h
-@@ -193,6 +193,7 @@ ncp_renew_dentries(struct dentry *parent
- 	struct dentry *dentry;
- 
- 	spin_lock(&dcache_lock);
-+	spin_lock(&parent->d_lock);
- 	next = parent->d_subdirs.next;
- 	while (next != &parent->d_subdirs) {
- 		dentry = list_entry(next, struct dentry, d_u.d_child);
-@@ -204,6 +205,7 @@ ncp_renew_dentries(struct dentry *parent
- 
- 		next = next->next;
- 	}
-+	spin_unlock(&parent->d_lock);
- 	spin_unlock(&dcache_lock);
- }
- 
-@@ -215,6 +217,7 @@ ncp_invalidate_dircache_entries(struct d
- 	struct dentry *dentry;
- 
- 	spin_lock(&dcache_lock);
-+	spin_lock(&parent->d_lock);
- 	next = parent->d_subdirs.next;
- 	while (next != &parent->d_subdirs) {
- 		dentry = list_entry(next, struct dentry, d_u.d_child);
-@@ -222,6 +225,7 @@ ncp_invalidate_dircache_entries(struct d
- 		ncp_age_dentry(server, dentry);
- 		next = next->next;
- 	}
-+	spin_unlock(&parent->d_lock);
- 	spin_unlock(&dcache_lock);
- }
- 
-Index: linux-2.6/fs/smbfs/cache.c
-===================================================================
---- linux-2.6.orig/fs/smbfs/cache.c
-+++ linux-2.6/fs/smbfs/cache.c
-@@ -63,6 +63,7 @@ smb_invalidate_dircache_entries(struct d
- 	struct dentry *dentry;
- 
- 	spin_lock(&dcache_lock);
-+	spin_lock(&parent->d_lock);
- 	next = parent->d_subdirs.next;
- 	while (next != &parent->d_subdirs) {
- 		dentry = list_entry(next, struct dentry, d_u.d_child);
-@@ -70,6 +71,7 @@ smb_invalidate_dircache_entries(struct d
- 		smb_age_dentry(server, dentry);
- 		next = next->next;
- 	}
-+	spin_unlock(&parent->d_lock);
- 	spin_unlock(&dcache_lock);
- }
- 
-@@ -97,6 +99,7 @@ smb_dget_fpos(struct dentry *dentry, str
- 
- 	/* If a pointer is invalid, we search the dentry. */
- 	spin_lock(&dcache_lock);
-+	spin_lock(&parent->d_lock);
- 	next = parent->d_subdirs.next;
- 	while (next != &parent->d_subdirs) {
- 		dent = list_entry(next, struct dentry, d_u.d_child);
-@@ -111,6 +114,7 @@ smb_dget_fpos(struct dentry *dentry, str
- 	}
- 	dent = NULL;
- out_unlock:
-+	spin_unlock(&parent->d_lock);
- 	spin_unlock(&dcache_lock);
- 	return dent;
- }
-Index: linux-2.6/kernel/cgroup.c
-===================================================================
---- linux-2.6.orig/kernel/cgroup.c
-+++ linux-2.6/kernel/cgroup.c
-@@ -870,23 +870,31 @@ static void cgroup_clear_directory(struc
- 
- 	BUG_ON(!mutex_is_locked(&dentry->d_inode->i_mutex));
- 	spin_lock(&dcache_lock);
-+	spin_lock(&dentry->d_lock);
- 	node = dentry->d_subdirs.next;
- 	while (node != &dentry->d_subdirs) {
- 		struct dentry *d = list_entry(node, struct dentry, d_u.d_child);
+ 		need_iput_tmp = need_iput;
+ 		need_iput = NULL;
+ 		/* In case inotify_remove_watch_locked() drops a reference. */
+ 		if (inode != need_iput_tmp) {
+-			spin_lock(&inode->i_lock);
+ 			__iget(inode);
+-			spin_unlock(&inode->i_lock);
+ 		} else
+ 			need_iput_tmp = NULL;
 +
-+		spin_lock_nested(&d->d_lock, DENTRY_D_LOCK_NESTED);
- 		list_del_init(node);
- 		if (d->d_inode) {
- 			/* This should never be called on a cgroup
- 			 * directory with child cgroups */
- 			BUG_ON(d->d_inode->i_mode & S_IFDIR);
--			d = dget_locked(d);
-+			dget_locked_dlock(d);
-+			spin_unlock(&d->d_lock);
-+			spin_unlock(&dentry->d_lock);
- 			spin_unlock(&dcache_lock);
- 			d_delete(d);
- 			simple_unlink(dentry->d_inode, d);
- 			dput(d);
- 			spin_lock(&dcache_lock);
--		}
-+			spin_lock(&dentry->d_lock);
-+		} else
-+			spin_unlock(&d->d_lock);
- 		node = dentry->d_subdirs.next;
- 	}
-+	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&dcache_lock);
- }
++		spin_unlock(&inode->i_lock);
++
+ 		/* In case the dropping of a reference would nuke next_i. */
+ 		if (&next_i->i_sb_list != list) {
+ 			spin_lock(&next_i->i_lock);
+@@ -435,7 +441,6 @@ void inotify_unmount_inodes(struct list_
+ 		 * iprune_mutex keeps shrink_icache_memory() away.
+ 		 */
+ 		spin_unlock(&sb_inode_list_lock);
+-		spin_unlock(&inode_lock);
  
-@@ -895,10 +903,17 @@ static void cgroup_clear_directory(struc
-  */
- static void cgroup_d_remove_dir(struct dentry *dentry)
+ 		if (need_iput_tmp)
+ 			iput(need_iput_tmp);
+@@ -455,7 +460,6 @@ void inotify_unmount_inodes(struct list_
+ 		mutex_unlock(&inode->inotify_mutex);
+ 		iput(inode);		
+ 
+-		spin_lock(&inode_lock);
+ 		spin_lock(&sb_inode_list_lock);
+ 	}
+ }
+Index: linux-2.6/include/linux/writeback.h
+===================================================================
+--- linux-2.6.orig/include/linux/writeback.h
++++ linux-2.6/include/linux/writeback.h
+@@ -9,7 +9,6 @@
+ 
+ struct backing_dev_info;
+ 
+-extern spinlock_t inode_lock;
+ extern spinlock_t sb_inode_list_lock;
+ extern spinlock_t wb_inode_list_lock;
+ extern spinlock_t inode_hash_lock;
+Index: linux-2.6/fs/quota/dquot.c
+===================================================================
+--- linux-2.6.orig/fs/quota/dquot.c
++++ linux-2.6/fs/quota/dquot.c
+@@ -883,7 +883,6 @@ static void add_dquot_ref(struct super_b
+ 	int reserved = 0;
+ #endif
+ 
+-	spin_lock(&inode_lock);
+ 	spin_lock(&sb_inode_list_lock);
+ 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
+ 		spin_lock(&inode->i_lock);
+@@ -907,7 +906,6 @@ static void add_dquot_ref(struct super_b
+ 		__iget(inode);
+ 		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&sb_inode_list_lock);
+-		spin_unlock(&inode_lock);
+ 
+ 		iput(old_inode);
+ 		__dquot_initialize(inode, type);
+@@ -917,11 +915,9 @@ static void add_dquot_ref(struct super_b
+ 		 * reference and we cannot iput it under inode_lock. So we
+ 		 * keep the reference and iput it later. */
+ 		old_inode = inode;
+-		spin_lock(&inode_lock);
+ 		spin_lock(&sb_inode_list_lock);
+ 	}
+ 	spin_unlock(&sb_inode_list_lock);
+-	spin_unlock(&inode_lock);
+ 	iput(old_inode);
+ 
+ #ifdef CONFIG_QUOTA_DEBUG
+@@ -999,7 +995,6 @@ static void remove_dquot_ref(struct supe
  {
-+	struct dentry *parent;
-+
- 	cgroup_clear_directory(dentry);
+ 	struct inode *inode;
  
- 	spin_lock(&dcache_lock);
-+	parent = dentry->d_parent;
-+	spin_lock(&parent->d_lock);
-+	spin_lock(&dentry->d_lock);
- 	list_del_init(&dentry->d_u.d_child);
-+	spin_unlock(&dentry->d_lock);
-+	spin_unlock(&parent->d_lock);
- 	spin_unlock(&dcache_lock);
- 	remove_dir(dentry);
+-	spin_lock(&inode_lock);
+ 	spin_lock(&sb_inode_list_lock);
+ 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
+ 		/*
+@@ -1012,7 +1007,6 @@ static void remove_dquot_ref(struct supe
+ 			remove_inode_dquot_ref(inode, type, tofree_head);
+ 	}
+ 	spin_unlock(&sb_inode_list_lock);
+-	spin_unlock(&inode_lock);
  }
-Index: linux-2.6/security/selinux/selinuxfs.c
+ 
+ /* Gather all references from inodes and drop them */
+Index: linux-2.6/fs/notify/inode_mark.c
 ===================================================================
---- linux-2.6.orig/security/selinux/selinuxfs.c
-+++ linux-2.6/security/selinux/selinuxfs.c
-@@ -942,22 +942,30 @@ static void sel_remove_entries(struct de
- 	struct list_head *node;
+--- linux-2.6.orig/fs/notify/inode_mark.c
++++ linux-2.6/fs/notify/inode_mark.c
+@@ -368,13 +368,16 @@ void fsnotify_unmount_inodes(struct list
+ 	list_for_each_entry_safe(inode, next_i, list, i_sb_list) {
+ 		struct inode *need_iput_tmp;
  
- 	spin_lock(&dcache_lock);
-+	spin_lock(&de->d_lock);
- 	node = de->d_subdirs.next;
- 	while (node != &de->d_subdirs) {
- 		struct dentry *d = list_entry(node, struct dentry, d_u.d_child);
-+
-+		spin_lock_nested(&d->d_lock, DENTRY_D_LOCK_NESTED);
- 		list_del_init(node);
++		spin_lock(&inode->i_lock);
+ 		/*
+ 		 * We cannot __iget() an inode in state I_CLEAR, I_FREEING,
+ 		 * I_WILL_FREE, or I_NEW which is fine because by that point
+ 		 * the inode cannot have any associated watches.
+ 		 */
+-		if (inode->i_state & (I_CLEAR|I_FREEING|I_WILL_FREE|I_NEW))
++		if (inode->i_state & (I_CLEAR|I_FREEING|I_WILL_FREE|I_NEW)) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
++		}
  
- 		if (d->d_inode) {
--			d = dget_locked(d);
-+			dget_locked_dlock(d);
-+			spin_unlock(&de->d_lock);
-+			spin_unlock(&d->d_lock);
- 			spin_unlock(&dcache_lock);
- 			d_delete(d);
- 			simple_unlink(de->d_inode, d);
- 			dput(d);
- 			spin_lock(&dcache_lock);
--		}
-+			spin_lock(&de->d_lock);
-+		} else
-+			spin_unlock(&d->d_lock);
- 		node = de->d_subdirs.next;
+ 		/*
+ 		 * If i_count is zero, the inode cannot have any watches and
+@@ -382,19 +385,20 @@ void fsnotify_unmount_inodes(struct list
+ 		 * evict all inodes with zero i_count from icache which is
+ 		 * unnecessarily violent and may in fact be illegal to do.
+ 		 */
+-		if (!inode->i_count)
++		if (!inode->i_count) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
++		}
+ 
+ 		need_iput_tmp = need_iput;
+ 		need_iput = NULL;
+ 
+ 		/* In case fsnotify_inode_delete() drops a reference. */
+ 		if (inode != need_iput_tmp) {
+-			spin_lock(&inode->i_lock);
+ 			__iget(inode);
+-			spin_unlock(&inode->i_lock);
+ 		} else
+ 			need_iput_tmp = NULL;
++		spin_unlock(&inode->i_lock);
+ 
+ 		/* In case the dropping of a reference would nuke next_i. */
+ 		if (&next_i->i_sb_list != list) {
+@@ -415,7 +419,6 @@ void fsnotify_unmount_inodes(struct list
+ 		 * iprune_mutex keeps shrink_icache_memory() away.
+ 		 */
+ 		spin_unlock(&sb_inode_list_lock);
+-		spin_unlock(&inode_lock);
+ 
+ 		if (need_iput_tmp)
+ 			iput(need_iput_tmp);
+@@ -427,7 +430,6 @@ void fsnotify_unmount_inodes(struct list
+ 
+ 		iput(inode);
+ 
+-		spin_lock(&inode_lock);
+ 		spin_lock(&sb_inode_list_lock);
+ 	}
+ }
+Index: linux-2.6/mm/backing-dev.c
+===================================================================
+--- linux-2.6.orig/mm/backing-dev.c
++++ linux-2.6/mm/backing-dev.c
+@@ -77,7 +77,6 @@ static int bdi_debug_stats_show(struct s
+ 	 * RCU on the reader side
+ 	 */
+ 	nr_wb = nr_dirty = nr_io = nr_more_io = 0;
+-	spin_lock(&inode_lock);
+ 	spin_lock(&wb_inode_list_lock);
+ 	list_for_each_entry(wb, &bdi->wb_list, list) {
+ 		nr_wb++;
+@@ -89,7 +88,6 @@ static int bdi_debug_stats_show(struct s
+ 			nr_more_io++;
+ 	}
+ 	spin_unlock(&wb_inode_list_lock);
+-	spin_unlock(&inode_lock);
+ 
+ 	get_dirty_limits(&background_thresh, &dirty_thresh, &bdi_thresh, bdi);
+ 
+@@ -713,13 +711,11 @@ void bdi_destroy(struct backing_dev_info
+ 	if (bdi_has_dirty_io(bdi)) {
+ 		struct bdi_writeback *dst = &default_backing_dev_info.wb;
+ 
+-		spin_lock(&inode_lock);
+ 		spin_lock(&wb_inode_list_lock);
+ 		list_splice(&bdi->wb.b_dirty, &dst->b_dirty);
+ 		list_splice(&bdi->wb.b_io, &dst->b_io);
+ 		list_splice(&bdi->wb.b_more_io, &dst->b_more_io);
+ 		spin_unlock(&wb_inode_list_lock);
+-		spin_unlock(&inode_lock);
  	}
  
-+	spin_unlock(&de->d_lock);
- 	spin_unlock(&dcache_lock);
- }
- 
-Index: linux-2.6/fs/notify/fsnotify.c
-===================================================================
---- linux-2.6.orig/fs/notify/fsnotify.c
-+++ linux-2.6/fs/notify/fsnotify.c
-@@ -62,17 +62,19 @@ void __fsnotify_update_child_dentry_flag
- 		/* run all of the children of the original inode and fix their
- 		 * d_flags to indicate parental interest (their parent is the
- 		 * original inode) */
-+		spin_lock(&alias->d_lock);
- 		list_for_each_entry(child, &alias->d_subdirs, d_u.d_child) {
- 			if (!child->d_inode)
- 				continue;
- 
--			spin_lock(&child->d_lock);
-+			spin_lock_nested(&child->d_lock, DENTRY_D_LOCK_NESTED);
- 			if (watched)
- 				child->d_flags |= DCACHE_FSNOTIFY_PARENT_WATCHED;
- 			else
- 				child->d_flags &= ~DCACHE_FSNOTIFY_PARENT_WATCHED;
- 			spin_unlock(&child->d_lock);
- 		}
-+		spin_unlock(&alias->d_lock);
- 	}
- 	spin_unlock(&dcache_lock);
- }
-Index: linux-2.6/fs/ceph/dir.c
-===================================================================
---- linux-2.6.orig/fs/ceph/dir.c
-+++ linux-2.6/fs/ceph/dir.c
-@@ -112,6 +112,7 @@ static int __dcache_readdir(struct file
- 	     last);
- 
- 	spin_lock(&dcache_lock);
-+	spin_lock(&parent->d_lock);
- 
- 	/* start at beginning? */
- 	if (filp->f_pos == 2 || (last &&
-@@ -135,7 +136,7 @@ more:
- 			fi->at_end = 1;
- 			goto out_unlock;
- 		}
--		spin_lock(&dentry->d_lock);
-+		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
- 		if (!d_unhashed(dentry) && dentry->d_inode &&
- 		    ceph_snap(dentry->d_inode) != CEPH_SNAPDIR &&
- 		    ceph_ino(dentry->d_inode) != CEPH_INO_CEPH &&
-@@ -153,6 +154,7 @@ more:
- 
- 	dget_dlock(dentry);
- 	spin_unlock(&dentry->d_lock);
-+	spin_unlock(&parent->d_lock);
- 	spin_unlock(&dcache_lock);
- 	spin_unlock(&inode->i_lock);
- 
-@@ -177,6 +179,7 @@ more:
- 
- 	spin_lock(&inode->i_lock);
- 	spin_lock(&dcache_lock);
-+	spin_lock(&parent->d_lock);
- 
- 	last = dentry;
- 
-@@ -193,6 +196,7 @@ more:
- 	err = -EAGAIN;
- 
- out_unlock:
-+	spin_unlock(&parent->d_lock);
- 	spin_unlock(&dcache_lock);
- 
- 	if (last) {
-Index: linux-2.6/fs/ceph/inode.c
-===================================================================
---- linux-2.6.orig/fs/ceph/inode.c
-+++ linux-2.6/fs/ceph/inode.c
-@@ -826,11 +826,13 @@ static void ceph_set_dentry_offset(struc
- 	spin_unlock(&inode->i_lock);
- 
- 	spin_lock(&dcache_lock);
--	spin_lock(&dn->d_lock);
-+	spin_lock(&dir->d_lock);
-+	spin_lock_nested(&dn->d_lock, DENTRY_D_LOCK_NESTED);
- 	list_move(&dn->d_u.d_child, &dir->d_subdirs);
- 	dout("set_dentry_offset %p %lld (%p %p)\n", dn, di->offset,
- 	     dn->d_u.d_child.prev, dn->d_u.d_child.next);
- 	spin_unlock(&dn->d_lock);
-+	spin_unlock(&dir->d_lock);
- 	spin_unlock(&dcache_lock);
- }
- 
-@@ -1212,9 +1214,11 @@ retry_lookup:
- 		} else {
- 			/* reorder parent's d_subdirs */
- 			spin_lock(&dcache_lock);
--			spin_lock(&dn->d_lock);
-+			spin_lock(&parent->d_lock);
-+			spin_lock_nested(&dn->d_lock, DENTRY_D_LOCK_NESTED);
- 			list_move(&dn->d_u.d_child, &parent->d_subdirs);
- 			spin_unlock(&dn->d_lock);
-+			spin_unlock(&parent->d_lock);
- 			spin_unlock(&dcache_lock);
- 		}
- 
+ 	bdi_unregister(bdi);
 
 
