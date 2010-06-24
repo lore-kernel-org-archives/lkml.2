@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab0FXKMZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 06:12:25 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:47839 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754628Ab0FXKMX (ORCPT
+	id S1754780Ab0FXKNc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 06:13:32 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:52848 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391Ab0FXKNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 06:12:23 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>,
-       Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] MAINTAINERS: Add an entry for the input MT protocol
-Date: Thu, 24 Jun 2010 12:12:01 +0200
-Message-Id: <1277374321-19358-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.6.3.3
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1ORjPj-0007Zi-Bw.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1ORjPj-0007Zi-Bw d6b64e071f8ec89b28c9d0b7f26ec0cf
+	Thu, 24 Jun 2010 06:13:30 -0400
+Date: Thu, 24 Jun 2010 13:18:05 +0300
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Catalin Marinas <catalin.marinas@arm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Russell King <rmk@arm.linux.org.uk>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20100624101805.GM17639@pcarmody-desktop>
+References: <20100624021949.62910287.sfr@canb.auug.org.au> <20100624103619.46a88a63.sfr@canb.auug.org.au> <1277370056.30452.9.camel@e102109-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277370056.30452.9.camel@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 24 Jun 2010 10:13:00.0226 (UTC) FILETIME=[D3079A20:01CB1385]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a maintainer for the input multitouch (MT) protocol,
-such that get_maintainer.pl selects it whenever an MT event is present
-in the patch.
+On 24/06/10 11:00 +0200, ext Catalin Marinas wrote:
+> On Thu, 2010-06-24 at 10:36 +1000, Stephen Rothwell wrote:
+> > Hi Russell,
+> > 
+> > On Thu, 24 Jun 2010 02:19:49 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > >
+> > > After merging the final tree, the next-20100616 and later linux-next
+> > > builds for most arm configs (including versatile_defconfig) failed like this:
+> > > 
+> > > In file included from include/linux/module.h:23,
+> > >                  from include/linux/device.h:23,
+> > >                  from include/linux/dma-mapping.h:4,
+> > >                  from arch/arm/kernel/asm-offsets.c:15:
+> > > include/trace/events/module.h:11: error: two or more data types in declaration 
+> > > 
+> > > Reverting commit f0028612a8ffedcdafa8b7ae83ab090d8b0318b4 ("ARM: 6171/1:
+> > > module - simplify unwind table handling") (and
+> > > cecaa4c6b8173b02c9f7ecfdbbc81f573a7a9f33 ("ARM: 6172/1: module -
+> > > additional unwind tables for exit/devexit sections") that depends on it)
+> > > fixes this build error.
+> > 
+> > I have reverted those 2 commits in linux-next today.
+> 
+> Thanks. Stephen, do you build with just the standard defconfig for
+> ARCH=arm?
+> 
+> The problem is commit f0028612a8f which contains the hunk below for
+> the !ARM_UNWIND case):
+> 
+> +struct mod_arch_specific {
+> +}
+> 
+> Phil, could you please add a semicolon after '}' and send Russell a
+> patch?
 
-Cc: Joe Perches <joe@perches.com>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- MAINTAINERS |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Such a patch has already been sent by Peter Huewe, last week:
+http://lkml.org/lkml/2010/6/17/73
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6d119c9..603413b 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2887,6 +2887,13 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git
- S:	Maintained
- F:	drivers/input/
- 
-+INPUT MULTITOUCH (MT) PROTOCOL
-+M:	Henrik Rydberg <rydberg@euromail.se>
-+L:	linux-input@vger.kernel.org
-+S:	Maintained
-+F:	Documentation/input/multi-touch-protocol.txt
-+K:	\b(ABS|SYN)_MT_
-+
- INTEL IDLE DRIVER
- M:	Len Brown <lenb@kernel.org>
- L:	linux-pm@lists.linux-foundation.org
--- 
-1.6.3.3
 
+Phil
