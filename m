@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab0FXQF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 12:05:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60487 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754229Ab0FXQF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 12:05:28 -0400
-Date: Fri, 25 Jun 2010 02:05:24 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-       Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 24/52] fs: dcache reduce d_parent locking
-Message-ID: <20100624160524.GM10441@laptop>
-References: <20100624030212.676457061@suse.de>
- <20100624030729.395195069@suse.de>
- <1277369062.1875.928.camel@laptop>
- <20100624150706.GF10441@laptop>
- <20100624153218.GC2373@linux.vnet.ibm.com>
+	id S1755996Ab0FXQG4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 12:06:56 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:39874 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299Ab0FXQGy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 12:06:54 -0400
+Message-ID: <4C2382AF.2030807@vflare.org>
+Date: Thu, 24 Jun 2010 21:37:11 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100624153218.GC2373@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, devel@driverdev.osuosl.org,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       gregkh@suse.de
+Subject: Re: [PATCH -next] zram: fix build errors, depends on BLOCK
+References: <20100623154531.0a4b02e1.sfr@canb.auug.org.au> <20100623202709.4ecb798c.randy.dunlap@oracle.com> <4C22E0B3.60203@vflare.org> <4C236C93.1020407@oracle.com> <4C237E12.9020903@vflare.org> <4C237F75.70603@oracle.com>
+In-Reply-To: <4C237F75.70603@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 08:32:18AM -0700, Paul E. McKenney wrote:
-> On Fri, Jun 25, 2010 at 01:07:06AM +1000, Nick Piggin wrote:
-> > On Thu, Jun 24, 2010 at 10:44:22AM +0200, Peter Zijlstra wrote:
-> > > On Thu, 2010-06-24 at 13:02 +1000, npiggin@suse.de wrote:
-> > > > Use RCU property of dcache to simplify locking in some places where we
-> > > > take d_parent and d_lock.
-> > > > 
-> > > > Comment: don't need rcu_deref because we take the spinlock and recheck it.
-> > > 
-> > > But does the LOCK barrier imply a DATA DEPENDENCY barrier? (It does on
-> > > x86, and the compiler barrier implied by spin_lock() suffices to replace
-> > > ACCESS_ONCE()).
-> > 
-> > Well the dependency we care about is from loading the parent pointer
-> > to acquiring its spinlock. But we can't possibly have stale data given
-> > to the spin lock operation itself because it is a RMW.
+On 06/24/2010 09:23 PM, Randy Dunlap wrote:
+> On 06/24/10 08:47, Nitin Gupta wrote:
+>> On 06/24/2010 08:02 PM, Randy Dunlap wrote:
+>>> On 06/23/10 21:36, Nitin Gupta wrote:
+>>>> On 06/24/2010 08:57 AM, Randy Dunlap wrote:
+>>>>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>>>>
+>>>>> Fix 49 zram build errors in one swoop.  Examples:
+>>>>>
+>>>>> drivers/staging/zram/zram_drv.c:225: error: dereferencing pointer to incomplete type
+>>>>> drivers/staging/zram/zram_drv.c:226: error: implicit declaration of function 'bio_for_each_segment'
+>>>>> drivers/staging/zram/zram_drv.c:226: error: expected ';' before '{' token
+>>>>> drivers/staging/zram/zram_drv.c:281: error: implicit declaration of function 'bio_endio'
+>>>>> drivers/staging/zram/zram_drv.c:285: error: implicit declaration of function 'bio_io_error'
+>>>>> drivers/staging/zram/zram_drv.c:545: error: implicit declaration of function 'set_capacity'
+>>>>> drivers/staging/zram/zram_drv.c:548: error: implicit declaration of function 'queue_flag_set_unlocked'
+>>>>> drivers/staging/zram/zram_drv.c:548: error: 'QUEUE_FLAG_NONROT' undeclared (first use in this function)
+>>>>> drivers/staging/zram/zram_drv.c:548: error: dereferencing pointer to incomplete type
+>>>>>
+>>>>
+>>>>
+>>>> Thanks for the fix. Strangely, I didn't get any of these
+>>>> errors when I compiled against mainline.
+>>>
+>>> This patch isn't against mainline, it's against linux-next.
+>>> See subject's "[PATCH -next]" hint.
+>>>
+>>
+>> Randy, I understood that your patch is against linux-next. I was just wondering
+>> why the error did not come up when I applied and tested this whole zram thing
+>> against linux mainline.
 > 
-> As long as you check for the structure being valid after acquiring the
-> lock, I agree.  Otherwise, I would be concerned about the following
-> sequence of events:
-> 
-> 1.	CPU 0 picks up a pointer to a given data element.
-> 
-> 2.	CPU 1 removes this element from the list, drops any locks that
-> 	it might have, and starts waiting for a grace period to
-> 	elapse.
-> 
-> 3.	CPU 0 acquires the lock, does some operation that would
-> 	be appropriate had the element not been removed, then
-> 	releases the lock.
-> 
-> 4.	After the grace period, CPU 1 frees the element, negating
-> 	CPU 0's hard work.
-> 
-> The usual approach is to have a "deleted" flag or some such in the
-> element that CPU 0 would set when removing the element and that CPU 1
-> would check after acquiring the lock.  Which you might well already
-> be doing!  ;-)
+> Did you test a build with CONFIG_BLOCK disabled?
+>
 
-Thanks, yep it's done under RCU, and after taking the lock it rechecks
-to see that it is still reachable by the same pointer (and if not,
-unlocks and retries) so it should be fine.
+Ah, now I got it.    No, I didn't test with CONFIG_BLOCK disabled.
 
 Thanks,
-Nick
+Nitin
+
+
+
 
