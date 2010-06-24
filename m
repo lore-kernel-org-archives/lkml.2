@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab0FXQBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 12:01:08 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47852 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756013Ab0FXQBF (ORCPT
+	id S1755907Ab0FXQCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 12:02:00 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:41629 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab0FXQB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 12:01:05 -0400
-Subject: Re: [PATCH 3/11] device driver for DA9052
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: dd.diasemi@gmail.com
-Cc: linux-kernel@vger.kernel.org,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Samuel Ortiz <sameo@linux.intel.com>
-In-Reply-To: <1277394947.3100.217.camel@odin>
-References: <1277393751.6703.16.camel@sw-eng-lt-dc-vm2>
-	 <1277394947.3100.217.camel@odin>
+	Thu, 24 Jun 2010 12:01:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Ro+ZBYNUuFAhyYlY+9Doe7bYLgIS83XmBHQsM2EplN/nIA4b81pG5OT0MAOKj6gC7e
+         6vTF468y5opfa13JVRYtggDz1XFx51lYv6i6YP5qVAD5mBKiNHN9o2HuTKvFzwLJ2tTG
+         cuTsQHBx2S6LRaJQBdX3nzPCnZKqtuLoWbPWY=
+Subject: Re: [patch 01/52] kernel: add bl_list
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+In-Reply-To: <20100624144228.GC10441@laptop>
+References: <20100624030212.676457061@suse.de>
+	 <20100624030725.718438579@suse.de>
+	 <1277359462.3471.1156.camel@edumazet-laptop>
+	 <20100624144228.GC10441@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Jun 2010 17:01:03 +0100
-Message-ID: <1277395263.3100.220.camel@odin>
+Date: Thu, 24 Jun 2010 18:01:53 +0200
+Message-ID: <1277395313.2816.606.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-24 at 16:55 +0100, Liam Girdwood wrote:
-> On Thu, 2010-06-24 at 17:35 +0200, dd diasemi wrote:
-> > Initial submission of power REGULATOR control module of the device
-> > driver for DA9052 power management device from Dialog Semiconductor.
-> > 
-> > Linux Kernel Version: 2.6.34
-> > 
-> > Signed-off-by: D. Chen <dchen@diasemi.com>
+Le vendredi 25 juin 2010 à 00:42 +1000, Nick Piggin a écrit :
+
+> Sure, if you have an interest in using it, it will be trivial to send
+> upstream. Should we merge it before any users appear? I don't know...
 > 
-> It looks like your mailer has screwed up all the formatting. Can you
-> resend and please also CC Mark and Samuel.
 
-Oh, please also add a patch version number in your email subject line (I
-think this is probably the 3rd attempt for this one now) and also list
-the changes between the versions.
+I'll work on using this for ip route cache, as you suggested.
 
-Thanks
+BTW, I think we could care about this 0 bit only if it could possibly
+set, ie :
 
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
+
+since bit_spin_lock() wont set it anyway if CONFIG_SMP=n and
+CONFIG_DEBUG_SPINLOCK=n
+
+
 
