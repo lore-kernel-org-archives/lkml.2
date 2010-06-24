@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab0FXSLr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 14:11:47 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:43713 "EHLO e6.ny.us.ibm.com"
+	id S1756083Ab0FXSMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 14:12:25 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:45121 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755902Ab0FXSLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 14:11:43 -0400
+	id S1756144Ab0FXSMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 14:12:19 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -13,9 +13,9 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
        James Morris <jmorris@namei.org>,
        David Safford <safford@watson.ibm.com>,
        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 09/15] evm: inode_post_init
-Date: Thu, 24 Jun 2010 14:10:25 -0400
-Message-Id: <1277403031-3080-10-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH 15/15] ima: appraise measurement required
+Date: Thu, 24 Jun 2010 14:10:31 -0400
+Message-Id: <1277403031-3080-16-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1277403031-3080-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1277403031-3080-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -23,175 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize 'security.evm' for new files. Reduce number of arguments
-by defining 'struct xattr'.
+Even if allowed to update security.ima, reset the appraisal
+flags, forcing re-appraisal.
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
 ---
- include/linux/evm.h                 |   11 ++++++++++
- include/linux/xattr.h               |    6 +++++
- security/integrity/evm/evm.h        |    3 ++
- security/integrity/evm/evm_crypto.c |   19 ++++++++++++++++++
- security/integrity/evm/evm_main.c   |   36 +++++++++++++++++++++++++++++++++++
- 5 files changed, 75 insertions(+), 0 deletions(-)
+ security/integrity/ima/ima_main.c |   33 +++++++++++++++++++++++++++++++--
+ 1 files changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/evm.h b/include/linux/evm.h
-index 8626263..3602bd1 100644
---- a/include/linux/evm.h
-+++ b/include/linux/evm.h
-@@ -9,6 +9,7 @@
- #define _LINUX_EVM_H
- 
- #include <linux/integrity.h>
-+#include <linux/xattr.h>
- 
- #ifdef CONFIG_EVM
- extern enum integrity_status evm_verifyxattr(struct dentry *dentry,
-@@ -25,6 +26,9 @@ extern void evm_inode_post_setxattr(struct dentry *dentry,
- extern int evm_inode_removexattr(struct dentry *dentry, const char *xattr_name);
- extern void evm_inode_post_removexattr(struct dentry *dentry,
- 				       const char *xattr_name);
-+extern int evm_inode_post_init_security(struct inode *inode,
-+					const struct xattr *new,
-+					struct xattr *evm);
- #else
- static enum integrity_status evm_verifyxattr(struct dentry *dentry,
- 					     char *xattr_name,
-@@ -65,5 +69,12 @@ static inline void evm_inode_post_removexattr(struct dentry *dentry,
- 	return;
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 62a7cf6..44fd452 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -385,18 +385,47 @@ int ima_protect_xattr(struct dentry *dentry, const char *xattr_name,
+ 	return 0;
  }
  
-+static inline int evm_inode_post_init_security(struct inode *inode,
-+					       const struct xattr *new,
-+					       struct xattr *evm)
++static void ima_reset_appraise_flags(struct inode *inode)
 +{
-+	return -EOPNOTSUPP;
++	struct integrity_iint_cache *iint;
++
++	if (!ima_initialized || !ima_appraise || !S_ISREG(inode->i_mode))
++		return;
++
++	iint = integrity_iint_find_get(inode);
++	if (!iint)
++		return;
++
++	mutex_lock(&iint->mutex);
++	iint->flags &= ~(IMA_COLLECTED | IMA_APPRAISED | IMA_MEASURED);
++	mutex_unlock(&iint->mutex);
++	kref_put(&iint->refcount, iint_free);
++	return;
 +}
 +
- #endif /* CONFIG_EVM_H */
- #endif /* LINUX_EVM_H */
-diff --git a/include/linux/xattr.h b/include/linux/xattr.h
-index 3b6421b..4d974d6 100644
---- a/include/linux/xattr.h
-+++ b/include/linux/xattr.h
-@@ -60,6 +60,12 @@ struct xattr_handler {
- 		   size_t size, int flags, int handler_flags);
- };
- 
-+struct xattr {
-+	char *name;
-+	void *value;
-+	size_t value_len;
-+};
-+
- ssize_t xattr_getsecurity(struct inode *, const char *, void *, size_t);
- ssize_t vfs_getxattr(struct dentry *, const char *, void *, size_t);
- ssize_t vfs_listxattr(struct dentry *d, char *list, size_t size);
-diff --git a/security/integrity/evm/evm.h b/security/integrity/evm/evm.h
-index 0b6f7b2..a4b6907 100644
---- a/security/integrity/evm/evm.h
-+++ b/security/integrity/evm/evm.h
-@@ -12,6 +12,7 @@
-  * File: evm.h
-  *
-  */
-+#include <linux/xattr.h>
- #include <linux/security.h>
- #include "../integrity.h"
- 
-@@ -31,5 +32,7 @@ extern int evm_update_evmxattr(struct dentry *dentry,
- extern int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
- 			 const char *req_xattr_value,
- 			 size_t req_xattr_value_len, char *digest);
-+extern int evm_init_hmac(struct inode *inode, struct xattr *xattr,
-+			 char *hmac_val);
- extern int evm_init_secfs(void);
- extern void evm_cleanup_secfs(void);
-diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
-index 4f1be71..5fe322d 100644
---- a/security/integrity/evm/evm_crypto.c
-+++ b/security/integrity/evm/evm_crypto.c
-@@ -150,6 +150,25 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
- 	return rc;
- }
- 
-+int evm_init_hmac(struct inode *inode, struct xattr *lsm_xattr, char *hmac_val)
-+{
-+	struct hash_desc desc;
-+	struct scatterlist sg[1];
-+	int error;
-+
-+	error = init_desc(&desc);
-+	if (error != 0) {
-+		printk(KERN_INFO "init_desc failed\n");
-+		return error;
-+	}
-+
-+	sg_init_one(sg, lsm_xattr->value, lsm_xattr->value_len);
-+	crypto_hash_update(&desc, sg, lsm_xattr->value_len);
-+	hmac_add_misc(&desc, inode, hmac_val);
-+	crypto_free_hash(desc.tfm);
-+	return 0;
-+}
-+
- /*
-  * Get the key from the TPM for the SHA1-HMAC
-  */
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index 59dc148..acc5176 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -96,6 +96,12 @@ static int evm_protected_xattr(const char *req_xattr_name)
- 			found = 1;
- 			break;
- 		}
-+		if (strncmp(req_xattr_name,
-+			    *xattrname + XATTR_SECURITY_PREFIX_LEN,
-+			    strlen(req_xattr_name)) == 0) {
-+			found = 1;
-+			break;
-+		}
- 	}
- 	return found;
- }
-@@ -256,6 +262,36 @@ void evm_inode_post_setattr(struct dentry *dentry, int ia_valid)
- 	return;
- }
- 
-+/*
-+ * evm_inode_post_init_security - initializes security.evm
-+ */
-+int evm_inode_post_init_security(struct inode *inode, struct xattr *lsm_xattr,
-+				 struct xattr *evm_xattr)
-+{
-+	u8 *hmac_val;
-+	int rc;
-+
-+	if (!evm_initialized || !evm_protected_xattr(lsm_xattr->name))
-+		return -EOPNOTSUPP;
-+
-+	hmac_val = kzalloc(MAX_DIGEST_SIZE, GFP_NOFS);
-+	if (!hmac_val)
-+		return -ENOMEM;
-+
-+	rc = evm_init_hmac(inode, lsm_xattr, hmac_val);
-+	if (rc < 0)
-+		goto out;
-+
-+	evm_xattr->value = hmac_val;
-+	evm_xattr->value_len = evm_hmac_size;
-+	evm_xattr->name = XATTR_EVM_SUFFIX;
-+	return 0;
-+out:
-+	kfree(hmac_val);
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(evm_inode_post_init_security);
-+
- static struct crypto_hash *tfm_hmac;	/* preload crypto alg */
- static int __init init_evm(void)
+ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 		       const void *xattr_value, size_t xattr_value_len)
  {
+-	return ima_protect_xattr(dentry, xattr_name, xattr_value,
++	int result;
++
++	result = ima_protect_xattr(dentry, xattr_name, xattr_value,
+ 				 xattr_value_len);
++	if (!result)
++		ima_reset_appraise_flags(dentry->d_inode);
++	return result;
+ }
+ 
+ int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name)
+ {
+-	return ima_protect_xattr(dentry, xattr_name, NULL, 0);
++	int result;
++
++	result = ima_protect_xattr(dentry, xattr_name, NULL, 0);
++	if (!result)
++		ima_reset_appraise_flags(dentry->d_inode);
++	return result;
+ }
+ 
++
+ static int __init init_ima(void)
+ {
+ 	int error;
 -- 
 1.6.6.1
 
