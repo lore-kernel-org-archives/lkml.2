@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab0FXOjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 10:39:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51307 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755612Ab0FXOiz (ORCPT
+	id S1755639Ab0FXOjA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 10:39:00 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59474 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755601Ab0FXOiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 10:38:55 -0400
-Message-Id: <20100624143406.704342440@chello.nl>
+	Thu, 24 Jun 2010 10:38:54 -0400
+Message-Id: <20100624143406.883017082@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Thu, 24 Jun 2010 16:28:08 +0200
+Date: Thu, 24 Jun 2010 16:28:11 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
        Robert Richter <robert.richter@amd.com>,
@@ -20,382 +20,422 @@ To: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
        David Miller <davem@davemloft.net>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 04/11] perf: deconstify struct pmu
+Subject: [RFC][PATCH 07/11] perf: Reduce perf_disable() usage
 References: <20100624142804.431553874@chello.nl>
-Content-Disposition: inline; filename=perf-deconst-pmu.patch
+Content-Disposition: inline; filename=perf-less-disable-1.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sed -ie 's/const struct pmu\>/struct pmu/g' `git grep -l "const struct pmu\>"`
+Since the current perf_disable() usage is only an optimization, remove
+it for now. This eases the removal of the weak hw_perf_enable
+interface.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- arch/arm/kernel/perf_event.c             |    2 +-
- arch/powerpc/kernel/perf_event.c         |    8 ++++----
- arch/powerpc/kernel/perf_event_fsl_emb.c |    2 +-
- arch/sh/kernel/perf_event.c              |    4 ++--
- arch/sparc/kernel/perf_event.c           |   10 +++++-----
- arch/x86/kernel/cpu/perf_event.c         |   14 +++++++-------
- include/linux/perf_event.h               |   10 +++++-----
- kernel/perf_event.c                      |   26 +++++++++++++-------------
- 8 files changed, 38 insertions(+), 38 deletions(-)
+ arch/powerpc/kernel/perf_event.c         |    3 ++
+ arch/powerpc/kernel/perf_event_fsl_emb.c |    8 +++++-
+ arch/sparc/kernel/perf_event.c           |    3 ++
+ arch/x86/kernel/cpu/perf_event.c         |   22 +++++++++++-------
+ include/linux/perf_event.h               |   20 ++++++++--------
+ kernel/perf_event.c                      |   37 -------------------------------
+ 6 files changed, 37 insertions(+), 56 deletions(-)
 
-Index: linux-2.6/arch/arm/kernel/perf_event.c
+Index: linux-2.6/include/linux/perf_event.h
 ===================================================================
---- linux-2.6.orig/arch/arm/kernel/perf_event.c
-+++ linux-2.6/arch/arm/kernel/perf_event.c
-@@ -491,7 +491,7 @@ __hw_perf_event_init(struct perf_event *
- 	return err;
+--- linux-2.6.orig/include/linux/perf_event.h
++++ linux-2.6/include/linux/perf_event.h
+@@ -562,26 +562,26 @@ struct pmu {
+ 	struct list_head		entry;
+ 
+ 	/*
+-	 * Should return -ENOENT when the @event doesn't match this pmu
++	 * Should return -ENOENT when the @event doesn't match this PMU.
+ 	 */
+ 	int (*event_init)		(struct perf_event *event);
+ 
+-	int (*enable)			(struct perf_event *event);
++	int  (*enable)			(struct perf_event *event);
+ 	void (*disable)			(struct perf_event *event);
+-	int (*start)			(struct perf_event *event);
++	int  (*start)			(struct perf_event *event);
+ 	void (*stop)			(struct perf_event *event);
+ 	void (*read)			(struct perf_event *event);
+ 	void (*unthrottle)		(struct perf_event *event);
+ 
+ 	/*
+-	 * Group events scheduling is treated as a transaction, add group
+-	 * events as a whole and perform one schedulability test. If the test
+-	 * fails, roll back the whole group
++	 * Group events scheduling is treated as a transaction, add
++	 * group events as a whole and perform one schedulability test.
++	 * If the test fails, roll back the whole group
+ 	 */
+ 
+ 	/*
+-	 * Start the transaction, after this ->enable() doesn't need
+-	 * to do schedulability tests.
++	 * Start the transaction, after this ->enable() doesn't need to
++	 * do schedulability tests.
+ 	 */
+ 	void (*start_txn)	(struct pmu *pmu);
+ 	/*
+@@ -592,8 +592,8 @@ struct pmu {
+ 	 */
+ 	int  (*commit_txn)	(struct pmu *pmu);
+ 	/*
+-	 * Will cancel the transaction, assumes ->disable() is called for
+-	 * each successfull ->enable() during the transaction.
++	 * Will cancel the transaction, assumes ->disable() is called
++	 * for each successfull ->enable() during the transaction.
+ 	 */
+ 	void (*cancel_txn)	(struct pmu *pmu);
+ };
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -460,11 +460,6 @@ static void __perf_event_remove_from_con
+ 		return;
+ 
+ 	raw_spin_lock(&ctx->lock);
+-	/*
+-	 * Protect the list operation against NMI by disabling the
+-	 * events on a global level.
+-	 */
+-	perf_disable();
+ 
+ 	event_sched_out(event, cpuctx, ctx);
+ 
+@@ -480,7 +475,6 @@ static void __perf_event_remove_from_con
+ 			    perf_max_events - perf_reserved_percpu);
+ 	}
+ 
+-	perf_enable();
+ 	raw_spin_unlock(&ctx->lock);
  }
  
--const struct pmu *
-+struct pmu *
- hw_perf_event_init(struct perf_event *event)
- {
- 	int err = 0;
-Index: linux-2.6/arch/powerpc/kernel/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/kernel/perf_event.c
-+++ linux-2.6/arch/powerpc/kernel/perf_event.c
-@@ -854,7 +854,7 @@ static void power_pmu_unthrottle(struct 
-  * Set the flag to make pmu::enable() not perform the
-  * schedulability test, it will be performed at commit time
-  */
--void power_pmu_start_txn(const struct pmu *pmu)
-+void power_pmu_start_txn(struct pmu *pmu)
- {
- 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+@@ -785,12 +779,6 @@ static void __perf_install_in_context(vo
+ 	ctx->is_active = 1;
+ 	update_context_time(ctx);
  
-@@ -867,7 +867,7 @@ void power_pmu_start_txn(const struct pm
-  * Clear the flag and pmu::enable() will perform the
-  * schedulability test.
-  */
--void power_pmu_cancel_txn(const struct pmu *pmu)
-+void power_pmu_cancel_txn(struct pmu *pmu)
- {
- 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+-	/*
+-	 * Protect the list operation against NMI by disabling the
+-	 * events on a global level. NOP for non NMI based events.
+-	 */
+-	perf_disable();
+-
+ 	add_event_to_ctx(event, ctx);
  
-@@ -879,7 +879,7 @@ void power_pmu_cancel_txn(const struct p
-  * Perform the group schedulability test as a whole
-  * Return 0 if success
-  */
--int power_pmu_commit_txn(const struct pmu *pmu)
-+int power_pmu_commit_txn(struct pmu *pmu)
- {
- 	struct cpu_hw_events *cpuhw;
- 	long i, n;
-@@ -1011,7 +1011,7 @@ static int hw_perf_cache_event(u64 confi
- 	return 0;
+ 	if (event->cpu != -1 && event->cpu != smp_processor_id())
+@@ -832,8 +820,6 @@ static void __perf_install_in_context(vo
+ 		cpuctx->max_pertask--;
+ 
+ unlock:
+-	perf_enable();
+-
+ 	raw_spin_unlock(&ctx->lock);
  }
  
--const struct pmu *hw_perf_event_init(struct perf_event *event)
-+struct pmu *hw_perf_event_init(struct perf_event *event)
- {
- 	u64 ev;
- 	unsigned long flags;
+@@ -954,12 +940,10 @@ static void __perf_event_enable(void *in
+ 	if (!group_can_go_on(event, cpuctx, 1)) {
+ 		err = -EEXIST;
+ 	} else {
+-		perf_disable();
+ 		if (event == leader)
+ 			err = group_sched_in(event, cpuctx, ctx);
+ 		else
+ 			err = event_sched_in(event, cpuctx, ctx);
+-		perf_enable();
+ 	}
+ 
+ 	if (err) {
+@@ -1072,9 +1056,8 @@ static void ctx_sched_out(struct perf_ev
+ 		goto out;
+ 	update_context_time(ctx);
+ 
+-	perf_disable();
+ 	if (!ctx->nr_active)
+-		goto out_enable;
++		goto out;
+ 
+ 	if (event_type & EVENT_PINNED) {
+ 		list_for_each_entry(event, &ctx->pinned_groups, group_entry)
+@@ -1085,9 +1068,6 @@ static void ctx_sched_out(struct perf_ev
+ 		list_for_each_entry(event, &ctx->flexible_groups, group_entry)
+ 			group_sched_out(event, cpuctx, ctx);
+ 	}
+-
+- out_enable:
+-	perf_enable();
+ out:
+ 	raw_spin_unlock(&ctx->lock);
+ }
+@@ -1346,8 +1326,6 @@ ctx_sched_in(struct perf_event_context *
+ 
+ 	ctx->timestamp = perf_clock();
+ 
+-	perf_disable();
+-
+ 	/*
+ 	 * First go through the list and put on any pinned groups
+ 	 * in order to give them the best chance of going on.
+@@ -1359,7 +1337,6 @@ ctx_sched_in(struct perf_event_context *
+ 	if (event_type & EVENT_FLEXIBLE)
+ 		ctx_flexible_sched_in(ctx, cpuctx);
+ 
+-	perf_enable();
+ out:
+ 	raw_spin_unlock(&ctx->lock);
+ }
+@@ -1407,8 +1384,6 @@ void perf_event_task_sched_in(struct tas
+ 	if (cpuctx->task_ctx == ctx)
+ 		return;
+ 
+-	perf_disable();
+-
+ 	/*
+ 	 * We want to keep the following priority order:
+ 	 * cpu pinned (that don't need to move), task pinned,
+@@ -1421,8 +1396,6 @@ void perf_event_task_sched_in(struct tas
+ 	ctx_sched_in(ctx, cpuctx, EVENT_FLEXIBLE);
+ 
+ 	cpuctx->task_ctx = ctx;
+-
+-	perf_enable();
+ }
+ 
+ #define MAX_INTERRUPTS (~0ULL)
+@@ -1537,11 +1510,9 @@ static void perf_adjust_period(struct pe
+ 	hwc->sample_period = sample_period;
+ 
+ 	if (local64_read(&hwc->period_left) > 8*sample_period) {
+-		perf_disable();
+ 		perf_event_stop(event);
+ 		local64_set(&hwc->period_left, 0);
+ 		perf_event_start(event);
+-		perf_enable();
+ 	}
+ }
+ 
+@@ -1570,15 +1541,12 @@ static void perf_ctx_adjust_freq(struct 
+ 		 */
+ 		if (interrupts == MAX_INTERRUPTS) {
+ 			perf_log_throttle(event, 1);
+-			perf_disable();
+ 			event->pmu->unthrottle(event);
+-			perf_enable();
+ 		}
+ 
+ 		if (!event->attr.freq || !event->attr.sample_freq)
+ 			continue;
+ 
+-		perf_disable();
+ 		event->pmu->read(event);
+ 		now = local64_read(&event->count);
+ 		delta = now - hwc->freq_count_stamp;
+@@ -1586,7 +1554,6 @@ static void perf_ctx_adjust_freq(struct 
+ 
+ 		if (delta > 0)
+ 			perf_adjust_period(event, TICK_NSEC, delta);
+-		perf_enable();
+ 	}
+ 	raw_spin_unlock(&ctx->lock);
+ }
+@@ -1629,7 +1596,6 @@ void perf_event_task_tick(struct task_st
+ 	if (!rotate)
+ 		return;
+ 
+-	perf_disable();
+ 	cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
+ 	if (ctx)
+ 		task_ctx_sched_out(ctx, EVENT_FLEXIBLE);
+@@ -1641,7 +1607,6 @@ void perf_event_task_tick(struct task_st
+ 	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE);
+ 	if (ctx)
+ 		task_ctx_sched_in(curr, EVENT_FLEXIBLE);
+-	perf_enable();
+ }
+ 
+ static int event_enable_on_exec(struct perf_event *event,
 Index: linux-2.6/arch/powerpc/kernel/perf_event_fsl_emb.c
 ===================================================================
 --- linux-2.6.orig/arch/powerpc/kernel/perf_event_fsl_emb.c
 +++ linux-2.6/arch/powerpc/kernel/perf_event_fsl_emb.c
-@@ -428,7 +428,7 @@ static int hw_perf_cache_event(u64 confi
- 	return 0;
+@@ -262,7 +262,7 @@ static int collect_events(struct perf_ev
+ 	return n;
  }
  
--const struct pmu *hw_perf_event_init(struct perf_event *event)
-+struct pmu *hw_perf_event_init(struct perf_event *event)
+-/* perf must be disabled, context locked on entry */
++/* context locked on entry */
+ static int fsl_emb_pmu_enable(struct perf_event *event)
  {
- 	u64 ev;
- 	struct perf_event *events[MAX_HWEVENTS];
-Index: linux-2.6/arch/sh/kernel/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/sh/kernel/perf_event.c
-+++ linux-2.6/arch/sh/kernel/perf_event.c
-@@ -257,13 +257,13 @@ static void sh_pmu_read(struct perf_even
- 	sh_perf_event_update(event, &event->hw, event->hw.idx);
+ 	struct cpu_hw_events *cpuhw;
+@@ -271,6 +271,7 @@ static int fsl_emb_pmu_enable(struct per
+ 	u64 val;
+ 	int i;
+ 
++	perf_disable();
+ 	cpuhw = &get_cpu_var(cpu_hw_events);
+ 
+ 	if (event->hw.config & FSL_EMB_EVENT_RESTRICTED)
+@@ -310,15 +311,17 @@ static int fsl_emb_pmu_enable(struct per
+ 	ret = 0;
+  out:
+ 	put_cpu_var(cpu_hw_events);
++	perf_enable();
+ 	return ret;
  }
  
--static const struct pmu pmu = {
-+static struct pmu pmu = {
- 	.enable		= sh_pmu_enable,
- 	.disable	= sh_pmu_disable,
- 	.read		= sh_pmu_read,
- };
+-/* perf must be disabled, context locked on entry */
++/* context locked on entry */
+ static void fsl_emb_pmu_disable(struct perf_event *event)
+ {
+ 	struct cpu_hw_events *cpuhw;
+ 	int i = event->hw.idx;
  
--const struct pmu *hw_perf_event_init(struct perf_event *event)
-+struct pmu *hw_perf_event_init(struct perf_event *event)
- {
- 	int err = __hw_perf_event_init(event);
- 	if (unlikely(err)) {
-Index: linux-2.6/arch/sparc/kernel/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/sparc/kernel/perf_event.c
-+++ linux-2.6/arch/sparc/kernel/perf_event.c
-@@ -1098,7 +1098,7 @@ static int __hw_perf_event_init(struct p
-  * Set the flag to make pmu::enable() not perform the
-  * schedulability test, it will be performed at commit time
-  */
--static void sparc_pmu_start_txn(const struct pmu *pmu)
-+static void sparc_pmu_start_txn(struct pmu *pmu)
- {
- 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
++	perf_disable();
+ 	if (i < 0)
+ 		goto out;
  
-@@ -1110,7 +1110,7 @@ static void sparc_pmu_start_txn(const st
-  * Clear the flag and pmu::enable() will perform the
-  * schedulability test.
-  */
--static void sparc_pmu_cancel_txn(const struct pmu *pmu)
-+static void sparc_pmu_cancel_txn(struct pmu *pmu)
- {
- 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+@@ -346,6 +349,7 @@ static void fsl_emb_pmu_disable(struct p
+ 	cpuhw->n_events--;
  
-@@ -1122,7 +1122,7 @@ static void sparc_pmu_cancel_txn(const s
-  * Perform the group schedulability test as a whole
-  * Return 0 if success
-  */
--static int sparc_pmu_commit_txn(const struct pmu *pmu)
-+static int sparc_pmu_commit_txn(struct pmu *pmu)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	int n;
-@@ -1141,7 +1141,7 @@ static int sparc_pmu_commit_txn(const st
- 	return 0;
+  out:
++	perf_enable();
+ 	put_cpu_var(cpu_hw_events);
  }
- 
--static const struct pmu pmu = {
-+static struct pmu pmu = {
- 	.enable		= sparc_pmu_enable,
- 	.disable	= sparc_pmu_disable,
- 	.read		= sparc_pmu_read,
-@@ -1151,7 +1151,7 @@ static const struct pmu pmu = {
- 	.commit_txn	= sparc_pmu_commit_txn,
- };
- 
--const struct pmu *hw_perf_event_init(struct perf_event *event)
-+struct pmu *hw_perf_event_init(struct perf_event *event)
- {
- 	int err = __hw_perf_event_init(event);
  
 Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
 ===================================================================
 --- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
 +++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
-@@ -618,7 +618,7 @@ static void x86_pmu_enable_all(int added
- 	}
- }
+@@ -969,10 +969,11 @@ static int x86_pmu_enable(struct perf_ev
  
--static const struct pmu pmu;
-+static struct pmu pmu;
+ 	hwc = &event->hw;
  
- static inline int is_x86_event(struct perf_event *event)
- {
-@@ -1394,7 +1394,7 @@ static inline void x86_pmu_read(struct p
-  * Set the flag to make pmu::enable() not perform the
-  * schedulability test, it will be performed at commit time
-  */
--static void x86_pmu_start_txn(const struct pmu *pmu)
-+static void x86_pmu_start_txn(struct pmu *pmu)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	perf_disable();
+ 	n0 = cpuc->n_events;
+-	n = collect_events(cpuc, event, false);
+-	if (n < 0)
+-		return n;
++	ret = n = collect_events(cpuc, event, false);
++	if (ret < 0)
++		goto out;
  
-@@ -1407,7 +1407,7 @@ static void x86_pmu_start_txn(const stru
-  * Clear the flag and pmu::enable() will perform the
-  * schedulability test.
-  */
--static void x86_pmu_cancel_txn(const struct pmu *pmu)
-+static void x86_pmu_cancel_txn(struct pmu *pmu)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 
-@@ -1424,7 +1424,7 @@ static void x86_pmu_cancel_txn(const str
-  * Perform the group schedulability test as a whole
-  * Return 0 if success
-  */
--static int x86_pmu_commit_txn(const struct pmu *pmu)
-+static int x86_pmu_commit_txn(struct pmu *pmu)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	int assign[X86_PMC_IDX_MAX];
-@@ -1450,7 +1450,7 @@ static int x86_pmu_commit_txn(const stru
- 	return 0;
- }
- 
--static const struct pmu pmu = {
-+static struct pmu pmu = {
- 	.enable		= x86_pmu_enable,
- 	.disable	= x86_pmu_disable,
- 	.start		= x86_pmu_start,
-@@ -1536,9 +1536,9 @@ out:
- 	return ret;
- }
- 
--const struct pmu *hw_perf_event_init(struct perf_event *event)
-+struct pmu *hw_perf_event_init(struct perf_event *event)
- {
--	const struct pmu *tmp;
-+	struct pmu *tmp;
- 	int err;
- 
- 	err = __hw_perf_event_init(event);
-Index: linux-2.6/include/linux/perf_event.h
-===================================================================
---- linux-2.6.orig/include/linux/perf_event.h
-+++ linux-2.6/include/linux/perf_event.h
-@@ -576,19 +576,19 @@ struct pmu {
- 	 * Start the transaction, after this ->enable() doesn't need
- 	 * to do schedulability tests.
- 	 */
--	void (*start_txn)	(const struct pmu *pmu);
-+	void (*start_txn)	(struct pmu *pmu);
  	/*
- 	 * If ->start_txn() disabled the ->enable() schedulability test
- 	 * then ->commit_txn() is required to perform one. On success
- 	 * the transaction is closed. On error the transaction is kept
- 	 * open until ->cancel_txn() is called.
+ 	 * If group events scheduling transaction was started,
+@@ -980,23 +981,26 @@ static int x86_pmu_enable(struct perf_ev
+ 	 * at commit time(->commit_txn) as a whole
  	 */
--	int  (*commit_txn)	(const struct pmu *pmu);
-+	int  (*commit_txn)	(struct pmu *pmu);
+ 	if (cpuc->group_flag & PERF_EVENT_TXN)
+-		goto out;
++		goto done_collect;
+ 
+ 	ret = x86_pmu.schedule_events(cpuc, n, assign);
+ 	if (ret)
+-		return ret;
++		goto out;
  	/*
- 	 * Will cancel the transaction, assumes ->disable() is called for
- 	 * each successfull ->enable() during the transaction.
+ 	 * copy new assignment, now we know it is possible
+ 	 * will be used by hw_perf_enable()
  	 */
--	void (*cancel_txn)	(const struct pmu *pmu);
-+	void (*cancel_txn)	(struct pmu *pmu);
- };
+ 	memcpy(cpuc->assign, assign, n*sizeof(int));
  
- /**
-@@ -667,7 +667,7 @@ struct perf_event {
- 	int				nr_siblings;
- 	int				group_flags;
- 	struct perf_event		*group_leader;
--	const struct pmu		*pmu;
-+	struct pmu		*pmu;
+-out:
++done_collect:
+ 	cpuc->n_events = n;
+ 	cpuc->n_added += n - n0;
+ 	cpuc->n_txn += n - n0;
  
- 	enum perf_event_active_state	state;
- 	unsigned int			attach_state;
-@@ -845,7 +845,7 @@ struct perf_output_handle {
-  */
- extern int perf_max_events;
+-	return 0;
++	ret = 0;
++out:
++	perf_enable();
++	return ret;
+ }
  
--extern const struct pmu *hw_perf_event_init(struct perf_event *event);
-+extern struct pmu *hw_perf_event_init(struct perf_event *event);
+ static int x86_pmu_start(struct perf_event *event)
+@@ -1399,6 +1403,7 @@ static void x86_pmu_start_txn(struct pmu
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
  
- extern void perf_event_task_sched_in(struct task_struct *task);
- extern void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next);
-Index: linux-2.6/kernel/perf_event.c
-===================================================================
---- linux-2.6.orig/kernel/perf_event.c
-+++ linux-2.6/kernel/perf_event.c
-@@ -75,7 +75,7 @@ static DEFINE_SPINLOCK(perf_resource_loc
++	perf_disable();
+ 	cpuc->group_flag |= PERF_EVENT_TXN;
+ 	cpuc->n_txn = 0;
+ }
+@@ -1418,6 +1423,7 @@ static void x86_pmu_cancel_txn(struct pm
+ 	 */
+ 	cpuc->n_added -= cpuc->n_txn;
+ 	cpuc->n_events -= cpuc->n_txn;
++	perf_enable();
+ }
+ 
  /*
-  * Architecture provided APIs - weak aliases:
-  */
--extern __weak const struct pmu *hw_perf_event_init(struct perf_event *event)
-+extern __weak struct pmu *hw_perf_event_init(struct perf_event *event)
- {
- 	return NULL;
- }
-@@ -673,7 +673,7 @@ group_sched_in(struct perf_event *group_
- 	       struct perf_event_context *ctx)
- {
- 	struct perf_event *event, *partial_group = NULL;
--	const struct pmu *pmu = group_event->pmu;
-+	struct pmu *pmu = group_event->pmu;
- 	bool txn = false;
+@@ -1447,7 +1453,7 @@ static int x86_pmu_commit_txn(struct pmu
+ 	memcpy(cpuc->assign, assign, n*sizeof(int));
  
- 	if (group_event->state == PERF_EVENT_STATE_OFF)
-@@ -4291,7 +4291,7 @@ static int perf_swevent_int(struct perf_
+ 	cpuc->group_flag &= ~PERF_EVENT_TXN;
+-
++	perf_enable();
  	return 0;
  }
  
--static const struct pmu perf_ops_generic = {
-+static struct pmu perf_ops_generic = {
- 	.enable		= perf_swevent_enable,
- 	.disable	= perf_swevent_disable,
- 	.start		= perf_swevent_int,
-@@ -4404,7 +4404,7 @@ static void cpu_clock_perf_event_read(st
- 	cpu_clock_perf_event_update(event);
- }
- 
--static const struct pmu perf_ops_cpu_clock = {
-+static struct pmu perf_ops_cpu_clock = {
- 	.enable		= cpu_clock_perf_event_enable,
- 	.disable	= cpu_clock_perf_event_disable,
- 	.read		= cpu_clock_perf_event_read,
-@@ -4461,7 +4461,7 @@ static void task_clock_perf_event_read(s
- 	task_clock_perf_event_update(event, time);
- }
- 
--static const struct pmu perf_ops_task_clock = {
-+static struct pmu perf_ops_task_clock = {
- 	.enable		= task_clock_perf_event_enable,
- 	.disable	= task_clock_perf_event_disable,
- 	.read		= task_clock_perf_event_read,
-@@ -4575,7 +4575,7 @@ static int swevent_hlist_get(struct perf
- 
- #ifdef CONFIG_EVENT_TRACING
- 
--static const struct pmu perf_ops_tracepoint = {
-+static struct pmu perf_ops_tracepoint = {
- 	.enable		= perf_trace_enable,
- 	.disable	= perf_trace_disable,
- 	.start		= perf_swevent_int,
-@@ -4639,7 +4639,7 @@ static void tp_perf_event_destroy(struct
- 	perf_trace_destroy(event);
- }
- 
--static const struct pmu *tp_perf_event_init(struct perf_event *event)
-+static struct pmu *tp_perf_event_init(struct perf_event *event)
+Index: linux-2.6/arch/powerpc/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/kernel/perf_event.c
++++ linux-2.6/arch/powerpc/kernel/perf_event.c
+@@ -858,6 +858,7 @@ void power_pmu_start_txn(struct pmu *pmu
  {
- 	int err;
+ 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
  
-@@ -4686,7 +4686,7 @@ static void perf_event_free_filter(struc
- 
- #else
- 
--static const struct pmu *tp_perf_event_init(struct perf_event *event)
-+static struct pmu *tp_perf_event_init(struct perf_event *event)
- {
- 	return NULL;
++	perf_disable();
+ 	cpuhw->group_flag |= PERF_EVENT_TXN;
+ 	cpuhw->n_txn_start = cpuhw->n_events;
  }
-@@ -4708,7 +4708,7 @@ static void bp_perf_event_destroy(struct
- 	release_bp_slot(event);
+@@ -872,6 +873,7 @@ void power_pmu_cancel_txn(struct pmu *pm
+ 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+ 
+ 	cpuhw->group_flag &= ~PERF_EVENT_TXN;
++	perf_enable();
  }
  
--static const struct pmu *bp_perf_event_init(struct perf_event *bp)
-+static struct pmu *bp_perf_event_init(struct perf_event *bp)
- {
- 	int err;
+ /*
+@@ -898,6 +900,7 @@ int power_pmu_commit_txn(struct pmu *pmu
+ 		cpuhw->event[i]->hw.config = cpuhw->events[i];
  
-@@ -4732,7 +4732,7 @@ void perf_bp_event(struct perf_event *bp
- 		perf_swevent_add(bp, 1, 1, &sample, regs);
- }
- #else
--static const struct pmu *bp_perf_event_init(struct perf_event *bp)
-+static struct pmu *bp_perf_event_init(struct perf_event *bp)
- {
- 	return NULL;
- }
-@@ -4754,9 +4754,9 @@ static void sw_perf_event_destroy(struct
- 	swevent_hlist_put(event);
+ 	cpuhw->group_flag &= ~PERF_EVENT_TXN;
++	perf_enable();
+ 	return 0;
  }
  
--static const struct pmu *sw_perf_event_init(struct perf_event *event)
-+static struct pmu *sw_perf_event_init(struct perf_event *event)
+Index: linux-2.6/arch/sparc/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/arch/sparc/kernel/perf_event.c
++++ linux-2.6/arch/sparc/kernel/perf_event.c
+@@ -1112,6 +1112,7 @@ static void sparc_pmu_start_txn(struct p
  {
--	const struct pmu *pmu = NULL;
-+	struct pmu *pmu = NULL;
- 	u64 event_id = event->attr.config;
+ 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
  
- 	/*
-@@ -4818,7 +4818,7 @@ perf_event_alloc(struct perf_event_attr 
- 		   perf_overflow_handler_t overflow_handler,
- 		   gfp_t gfpflags)
- {
--	const struct pmu *pmu;
-+	struct pmu *pmu;
- 	struct perf_event *event;
- 	struct hw_perf_event *hwc;
- 	long err;
++	perf_disable();
+ 	cpuhw->group_flag |= PERF_EVENT_TXN;
+ }
+ 
+@@ -1125,6 +1126,7 @@ static void sparc_pmu_cancel_txn(struct 
+ 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+ 
+ 	cpuhw->group_flag &= ~PERF_EVENT_TXN;
++	perf_enable();
+ }
+ 
+ /*
+@@ -1148,6 +1150,7 @@ static int sparc_pmu_commit_txn(struct p
+ 		return -EAGAIN;
+ 
+ 	cpuc->group_flag &= ~PERF_EVENT_TXN;
++	perf_enable();
+ 	return 0;
+ }
+ 
 
 
