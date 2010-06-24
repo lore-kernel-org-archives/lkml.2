@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab0FXMfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 08:35:48 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33941 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab0FXMfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 08:35:47 -0400
-Date: Thu, 24 Jun 2010 14:35:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Borislav Petkov <petkovbb@googlemail.com>, linux-kernel@vger.kernel.org,
-       mauro@elte.hu
-Subject: Re: [RFC][PATCH] irq_work
-Message-ID: <20100624123537.GA28884@elte.hu>
-References: <1277364453.3947.64.camel@yhuang-dev.sh.intel.com>
- <1277364727.1875.857.camel@laptop>
- <20100624102725.GA578@basil.fritz.box>
- <1277375409.1875.943.camel@laptop>
- <20100624105254.GB578@basil.fritz.box>
- <1277377121.1875.948.camel@laptop>
- <20100624110830.GC578@basil.fritz.box>
- <1277377852.1875.950.camel@laptop>
- <20100624112340.GA13502@elte.hu>
- <1277379294.1875.959.camel@laptop>
+	id S1755370Ab0FXMf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 08:35:56 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:43235 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755332Ab0FXMfy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 08:35:54 -0400
+Date: Thu, 24 Jun 2010 18:05:42 +0530
+From: Rabin VINCENT <rabin.vincent@stericsson.com>
+To: Luotao Fu <l.fu@pengutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linus WALLEIJ <linus.walleij@stericsson.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
+Subject: Re: [PATCH 5/6 V2] mfd/stmpexxx: fix stmpe811 enable hook
+Message-ID: <20100624123542.GC26189@bnru02.bnr.st.com>
+References: <1277378021-16802-7-git-send-email-l.fu@pengutronix.de>
+ <1277382466-23603-1-git-send-email-l.fu@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1277379294.1875.959.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 1.0
-X-ELTE-SpamLevel: s
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
-	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
-	[score: 0.4583]
+In-Reply-To: <1277382466-23603-1-git-send-email-l.fu@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 24, 2010 at 14:27:46 +0200, Luotao Fu wrote:
+> diff --git a/drivers/mfd/stmpe-devices.c b/drivers/mfd/stmpe-devices.c
+> index 3e21c26..ded9dcb 100644
+> --- a/drivers/mfd/stmpe-devices.c
+> +++ b/drivers/mfd/stmpe-devices.c
+> @@ -117,8 +117,8 @@ static int stmpe811_enable(struct stmpe *stmpe, unsigned int blocks,
+>  	if (blocks & STMPE_BLOCK_ADC)
+>  		mask |= STMPE811_SYS_CTRL2_ADC_OFF;
+>  
+> -	if (blocks & STMPE_BLOCK_KEYPAD)
+> -		mask |= STMPE811_SYS_CTRL2_TSC_OFF;
+> +	if (blocks & STMPE_BLOCK_TOUCHSCREEN)
+> +		mask |= STMPE811_SYS_CTRL2_ADC_OFF;
+>  
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+You shouldn't be changing TSC_OFF to ADC_OFF, since you're making this
+for the touchscreen.
 
-> On Thu, 2010-06-24 at 13:23 +0200, Ingo Molnar wrote:
-> 
-> > What might make sense is to offer two types of callbacks: one that is 
-> > immediate whenever an event triggers - and another that is sleepable and is 
-> > executed from process context.
-> 
-> Trouble is waking that thread, you cannot wake tasks from NMI context,
-> so whatever you do, you'll end up with a trampoline.
-> 
-> You could of course offer that trampoline nicely packaged, but I'm not
-> sure that's really worth the effort.
-
-Right, so there's basically three clean solutions to the 'sleepable callback' 
-problem, in order of amount of state that needs to be passed to it:
-
- - State-less (or idempotent) events/callbacks: use a hardirq callback to wake
-   up a well-known process context.
-
- - If we want the task that generates an event to execute a sleeping callback:
-   use a TIF flag and state in the task itself to pass along the info.
-
- - In the most generic case, if there's arbitrary target task and arbitrary
-   state that needs to be queued, then to achieve sleepable callbacks the
-   following solution can be used: the task allocates a perf ring-buffer and
-   uses a TIF flag to trigger consumption of it.
-
-   All memory allocation, wakeup, etc. is handled already by the regular perf
-   events and ring-buffer codepaths.
-
-No special, open-coded trampolining needed - the ring-buffer is the trampoline 
-and the ring-buffer consumer can key off the events it receives. (and there 
-can be multiple consumers of the same event source so we can have in-task 
-kernel based action combined with a user-space daemon that get an event stream 
-as well.)
-
-All of these solutions use the fact that perf events are a generic event 
-framework. If there's any missing details somewhere then fixes/enhancements 
-can be added - right now our in-kernel event consumers are simple. But the 
-design is sound.
-
-And none of these solutions involves the incestous low level raping of 
-softirqs.
-
-Thanks,
-
-	Ingo
+Rabin
