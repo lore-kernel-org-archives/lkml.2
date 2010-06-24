@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab0FXLON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 07:14:13 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52558 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754942Ab0FXLOL (ORCPT
+	id S1755132Ab0FXLUo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 07:20:44 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:47536 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754952Ab0FXLUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 07:14:11 -0400
-From: Luotao Fu <l.fu@pengutronix.de>
-To: Rabin VINCENT <rabin.vincent@stericsson.com>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Luotao Fu <l.fu@pengutronix.de>
-Subject: [PATCH 1/6] gpio/stmpe-gpio: set GPIO alternate function while requesting
-Date: Thu, 24 Jun 2010 13:13:36 +0200
-Message-Id: <1277378021-16802-2-git-send-email-l.fu@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100622135635.GA30720@bnru02.bnr.st.com>
-References: <20100622135635.GA30720@bnru02.bnr.st.com>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: l.fu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 24 Jun 2010 07:20:43 -0400
+Date: Thu, 24 Jun 2010 13:20:41 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
+       Ingo Molnar <mingo@elte.hu>, "H.PeterA" <"nvin hpa"@zytor.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] irq_work
+Message-ID: <20100624112040.GD578@basil.fritz.box>
+References: <1277363069.3947.30.camel@yhuang-dev.sh.intel.com>
+ <1277363993.1875.847.camel@laptop>
+ <1277364453.3947.64.camel@yhuang-dev.sh.intel.com>
+ <1277364727.1875.857.camel@laptop>
+ <20100624102725.GA578@basil.fritz.box>
+ <1277375409.1875.943.camel@laptop>
+ <20100624105254.GB578@basil.fritz.box>
+ <1277377121.1875.948.camel@laptop>
+ <20100624110830.GC578@basil.fritz.box>
+ <1277377852.1875.950.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277377852.1875.950.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add reuqest hook to the gpio chip, so that we can make sure that the GPIO pin is
-setted to the correct GPIO alternate function after we have requested the GPIO
-pin.
+On Thu, Jun 24, 2010 at 01:10:52PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-06-24 at 13:08 +0200, Andi Kleen wrote:
+> > > And I really want hardirq context for perf callbacks, some code actually
+> > > relies on it (I used to have the fallback in the timer softirq and that
+> > 
+> > Surely that could be fixed?  *requiring* hard irq context sounds weird.
+> 
+> possibly, but there is no reason what so ever to use softirq here.
 
-Signed-off-by: Luotao Fu <l.fu@pengutronix.de>
----
- drivers/gpio/stmpe-gpio.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+Ok so going back to the original self-irq patchkit. Unfortunately the other
+reviewer hated that. How to get out of that deadlock?
 
-diff --git a/drivers/gpio/stmpe-gpio.c b/drivers/gpio/stmpe-gpio.c
-index bd49a3a..a4de271 100644
---- a/drivers/gpio/stmpe-gpio.c
-+++ b/drivers/gpio/stmpe-gpio.c
-@@ -98,6 +98,14 @@ static int stmpe_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
- 	return stmpe_gpio->irq_base + offset;
- }
- 
-+static int stmpe_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct stmpe_gpio *stmpe_gpio = to_stmpe_gpio(chip);
-+	struct stmpe *stmpe = stmpe_gpio->stmpe;
-+
-+	return stmpe_set_altfunc(stmpe, 1 << offset, STMPE_BLOCK_GPIO);
-+}
-+
- static struct gpio_chip template_chip = {
- 	.label			= "stmpe",
- 	.owner			= THIS_MODULE,
-@@ -106,6 +114,7 @@ static struct gpio_chip template_chip = {
- 	.direction_output	= stmpe_gpio_direction_output,
- 	.set			= stmpe_gpio_set,
- 	.to_irq			= stmpe_gpio_to_irq,
-+	.request		= stmpe_gpio_request,
- 	.can_sleep		= 1,
- };
- 
+
+> > > broke thing at some point).
+> > 
+> > I have one case that needs to sleep (but only when interrupting user code)
+> > They key thing in it really is to switch stacks back to process.
+> 
+> softirq can't sleep either, you need a trampoline anywa
+
+Not true, when you interrupt ring 3 it can sleep. You just need to make
+sure to run on the right stack and fix up any irq counters.
+
+Anyways this can be solved in a different way too, it would just fit
+in there too.
+
+-Andi
+
 -- 
-1.7.1
-
+ak@linux.intel.com -- Speaking for myself only.
