@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab0FXNkz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 09:40:55 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:17395 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329Ab0FXNky (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 09:40:54 -0400
-Message-ID: <4C236063.9050302@hp.com>
-Date: Thu, 24 Jun 2010 09:40:51 -0400
-From: Vlad Yasevich <vladislav.yasevich@hp.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1755521Ab0FXNnH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 09:43:07 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52037 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754822Ab0FXNnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 09:43:04 -0400
+Date: Thu, 24 Jun 2010 15:42:45 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <peterz@infradead.org>,
+       Huang Ying <ying.huang@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Borislav Petkov <petkovbb@googlemail.com>, linux-kernel@vger.kernel.org,
+       mauro@elte.hu
+Subject: Re: [RFC][PATCH] irq_work
+Message-ID: <20100624134245.GA30323@elte.hu>
+References: <20100624105254.GB578@basil.fritz.box>
+ <1277377121.1875.948.camel@laptop>
+ <20100624110830.GC578@basil.fritz.box>
+ <1277377852.1875.950.camel@laptop>
+ <20100624112340.GA13502@elte.hu>
+ <1277379294.1875.959.camel@laptop>
+ <20100624123537.GA28884@elte.hu>
+ <20100624130234.GM578@basil.fritz.box>
+ <20100624132032.GA4474@kryptos.osrc.amd.com>
+ <20100624133323.GN578@basil.fritz.box>
 MIME-Version: 1.0
-To: =?UTF-8?B?RGllZ28gRWxpbyDigJxGbGFtZWV5ZXPigJ0gUGV0dGVuw7I=?= 
-	<flameeyes@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-sctp@vger.kernel.org
-Subject: Re: [PATCH] sctp: implement SIOCINQ ioctl()
-References: <1277329060-21543-1-git-send-email-flameeyes@gmail.com>	 <4C235B75.2000807@hp.com> <1277385636.13544.67.camel@yamato.local>
-In-Reply-To: <1277385636.13544.67.camel@yamato.local>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAQAAAAI=
-X-Whitelist: TRUE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100624133323.GN578@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 1.0
+X-ELTE-SpamLevel: s
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
+	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
+	[score: 0.4940]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Andi,
 
-Diego Elio “Flameeyes” Pettenò wrote:
-> Il giorno gio, 24/06/2010 alle 09.19 -0400, Vlad Yasevich ha scritto:
->> This should add a check for sctp_style(sk, TCP), since one can't read
->> from
->> a TCP style listening sockets, but can do so from UDP-style
->> (SOCK_SEQPACKET). 
-> 
-> I don't want to sound arrogant but... are you sure?
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-Yes, I am sure. :)
+> > If its a critical error you do all the handling in the kernel and you
 
-> 
-> I ask because the simple testcase I wrote to make sure I didn't get it
-> wrong opened the socket as SOCK_STREAM, and yet all of this worked fine
-> (I'm attaching the source, for the sake of it)...
-> 
-> I sure hope you're mistaken here and it is _supposed_ to work here as
-> well, as we cannot use SOCK_SEQPACKET in the software I'm writing this
-> for (feng, from the lscube project) as accept() fails on SOCK_SEQPACKET
-> (EOPNOTSUPP) -- which itslef is strange given that the man page for
-> accept(2) reports it's supported on SOCK_STREAM and SOCK_SEQPACKET.
-> 
+Sidenote: could you please stop doing this special new email style of cutting 
+out the portion from your emails which shows whom you replied to?
 
-You don't call accept() on an SCTP SEQPACKET socket.  You can just read from it.
-SCTP uses SOCK_SEQPACKET to implement 1-to-many semantics, where you can have
-multiple associations all serviced by the same socket.  In that case, the socket
-is placed into the listening state and then the application may simply read
-from it.
+Doing that:
 
-Thus your code that just returns the size of the first skb should take that into
-consideration.
+ - Shows disrespect towards the person you are replying to. If you feel the
+   content worth quoting then you should pay respect to the person having
+   written that email as well, and quote his name.
 
-So the condition really is:
-  if (sctp_style(sk, TCP) && sctp_state(sk, LISTENING))
-	goto out;
+ - Makes the thread flow much harder to follow to me as i dont see it from the 
+   mail text whom you replied to.
 
-This way, you'll ignore listening SOCK_STREAM sockets which will not have any
-data anyway, but you'll check out listening SOCK_SEQPACKET sockets that may have
-data waiting on them.
+Thanks,
 
--vlad
+	Ingo
