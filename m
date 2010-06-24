@@ -1,123 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab0FXHHN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 03:07:13 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:52289 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842Ab0FXHHK (ORCPT
+	id S1754157Ab0FXHJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 03:09:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40196 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab0FXHJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 03:07:10 -0400
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Louis Rilling <louis.rilling@kerlabs.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org,
-       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com>
-	<20100617212003.GA4182@redhat.com>
-	<20100618082033.GD16877@hawkmoon.kerlabs.com>
-	<20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com>
-	<20100618173320.GG16877@hawkmoon.kerlabs.com>
-	<20100618175541.GA13680@redhat.com>
-	<20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com>
-	<20100623203652.GA25298@redhat.com>
-	<20100623203735.GB25298@redhat.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 24 Jun 2010 00:06:57 -0700
-In-Reply-To: <20100623203735.GB25298@redhat.com> (Oleg Nesterov's message of "Wed\, 23 Jun 2010 22\:37\:35 +0200")
-Message-ID: <m1zkykgb8u.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Thu, 24 Jun 2010 03:09:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: oleg@redhat.com, sukadev@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, containers@lists.osdl.org, xemul@openvz.org, louis.rilling@kerlabs.com, akpm@linux-foundation.org
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: Re: [PATCH 1/1] pid_ns: move pid_ns_release_proc() from proc_flush_task() to zap_pid_ns_processes()
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+X-Originating-IP: [79.183.119.242]
+In-Reply-To: <AANLkTinNSUXZkFhEhf5nRzlNGDkm_-OsOGtqfgs32717@mail.gmail.com>
+References: <1277298125-17991-1-git-send-email-ohad@wizery.com> 
+	<1277298125-17991-7-git-send-email-ohad@wizery.com> <AANLkTinNSUXZkFhEhf5nRzlNGDkm_-OsOGtqfgs32717@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 24 Jun 2010 10:09:00 +0300
+Message-ID: <AANLkTimdDuce7ZCVGhmMpbY5vKO_2AB7Ew3gTAYW77QW@mail.gmail.com>
+Subject: Re: [PATCH 06/11] staging: ti dspbridge: add generic utilities
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+       linux-omap@vger.kernel.org, Hebbar Shivananda <x0hebbar@ti.com>,
+       Ramos Falcon Ernesto <ernesto@ti.com>, Anna Suman <s-anna@ti.com>,
+       Kanigeri Hari <h-kanigeri2@ti.com>,
+       Felipe Contreras <felipe.contreras@gmail.com>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Hiroshi DOYU <Hiroshi.DOYU@nokia.com>, Gupta Ramesh <grgupta@ti.com>,
+       Guzman Lugo Fernando <fernando.lugo@ti.com>,
+       Tony Lindgren <tony@atomide.com>,
+       Ameya Palande <ameya.palande@nokia.com>,
+       Gomez Castellanos Ivan <ivan.gomez@ti.com>,
+       Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+       Armando Uribe De Leon <x0095078@ti.com>,
+       Deepak Chitriki <deepak.chitriki@ti.com>, Menon Nishanth <nm@ti.com>,
+       Phil Carmody <ext-phil.2.carmody@nokia.com>,
+       Pitney Gilbert <gpitney@ti.com>, Bhavin Shah <bshah@ti.com>,
+       Omar Ramirez Luna <omar.ramirez@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
+On Wed, Jun 23, 2010 at 6:43 PM, Andy Shevchenko
+<andy.shevchenko@gmail.com> wrote:
 
-> This is mostly cleanup and optimization, but also fixes the bug.
+> ... I could prepare patch in standard form, if you want to
 
-Oleg with respect to your other patches I think they are some of
-the best ones we have on the table.
-
-> proc_flush_task() checks upid->nr == 1 to detect the case when
-> a sub-namespace exits. However, this doesn't work in case when
-> a multithreaded init execs and calls release_task(old_leader),
-> the old leader has the same pid 1.
->
-> Move pid_ns_release_proc() to zap_pid_ns_processes(), it is called
-> when we know for sure that init is exiting.
-
-This actually guarantees a use after free for the namespace init:
-
-do_exit()
-   exit_notify()
-      forget_original_parent()
-         find_new_reaper()
-            zap_pid_ns_processes()
-release_task()
-   proc_flush_task()
-
-> Note: with or without this change this mntput() can happen before the
-> EXIT_DEAD tasks not visible to do_wait() have passed proc_flush_task().
-> We need more fixes.
-
-I agree.
-
-Eric
-
-
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->
->  fs/proc/base.c         |    4 ----
->  kernel/pid_namespace.c |    2 ++
->  2 files changed, 2 insertions(+), 4 deletions(-)
->
-> --- 35-rc3/fs/proc/base.c~PNS_5_MOVE_MNTPUT_TO_ZAP	2010-06-23 22:06:01.000000000 +0200
-> +++ 35-rc3/fs/proc/base.c	2010-06-23 22:10:26.000000000 +0200
-> @@ -2745,10 +2745,6 @@ void proc_flush_task(struct task_struct 
->  		proc_flush_task_mnt(upid->ns->proc_mnt, upid->nr,
->  					tgid->numbers[i].nr);
->  	}
-> -
-> -	upid = &pid->numbers[pid->level];
-> -	if (upid->nr == 1)
-> -		pid_ns_release_proc(upid->ns);
->  }
->  
->  static struct dentry *proc_pid_instantiate(struct inode *dir,
-> --- 35-rc3/kernel/pid_namespace.c~PNS_5_MOVE_MNTPUT_TO_ZAP	2010-06-23 22:13:07.000000000 +0200
-> +++ 35-rc3/kernel/pid_namespace.c	2010-06-23 22:13:55.000000000 +0200
-> @@ -189,6 +189,8 @@ void zap_pid_ns_processes(struct pid_nam
->  	} while (rc != -ECHILD);
->  
->  	acct_exit_ns(pid_ns);
-> +	pid_ns_release_proc(pid_ns);
-> +
->  	return;
->  }
->  
+That could be great, thanks !
