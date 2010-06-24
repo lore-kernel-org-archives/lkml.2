@@ -1,161 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab0FWX7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 19:59:24 -0400
-Received: from tundra.namei.org ([65.99.196.166]:41836 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751Ab0FWX7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 19:59:23 -0400
-Date: Thu, 24 Jun 2010 09:58:45 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Jiri Slaby <jslaby@suse.cz>
-cc: jirislaby@gmail.com, Oleg Nesterov <oleg@redhat.com>,
-       akpm@linux-foundation.org, adobriyan@gmail.com, nhorman@tuxdriver.com,
-       Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 01/12] rlimits: security, add task_struct to
- setrlimit
-In-Reply-To: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
-Message-ID: <alpine.LRH.2.00.1006240957350.1601@tundra.namei.org>
-References: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753335Ab0FXADf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 20:03:35 -0400
+Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:54675 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751458Ab0FXADe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 20:03:34 -0400
+Date: Thu, 24 Jun 2010 10:02:46 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Michael Rubin <mrubin@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, jack@suse.cz, akpm@linux-foundation.org, hch@lst.de,
+       axboe@kernel.dk
+Subject: Re: [PATCH 0/3] writeback visibility
+Message-ID: <20100624000246.GQ6590@dastard>
+References: <1276907415-504-1-git-send-email-mrubin@google.com>
+ <20100620231017.GI6590@dastard>
+ <AANLkTikem5aW2MChCwmluUveB-F3zv5B9Tj0TtXPcfxm@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikem5aW2MChCwmluUveB-F3zv5B9Tj0TtXPcfxm@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jun 2010, Jiri Slaby wrote:
-
-> From: Jiri Slaby <jirislaby@gmail.com>
+On Mon, Jun 21, 2010 at 10:09:24AM -0700, Michael Rubin wrote:
+> Thanks for looking at this.
 > 
-> Add task_struct to task_setrlimit of security_operations to be able to set
-> rlimit of task other than current.
-
-Given the scope of the changes, I'm not sure which tree these should go 
-into.  They affect the security API, so possibly mine.
-
-
+> On Sun, Jun 20, 2010 at 4:10 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >> Michael Rubin (3):
+> >>   writeback: Creating /sys/kernel/mm/writeback/writeback
+> >>   writeback: per bdi monitoring
+> >>   writeback: tracking subsystems causing writeback
+> >
+> > I'm not sure we want to export statistics that represent internal
+> > implementation details into a fixed userspace API. Who, other than
+> > developers, are going to understand and be able to make use of this
+> > information?
 > 
-> Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
-> Acked-by: Eric Paris <eparis@redhat.com>
-> Acked-by: James Morris <jmorris@namei.org>
-> ---
->  include/linux/security.h |    9 ++++++---
->  kernel/sys.c             |    2 +-
->  security/capability.c    |    3 ++-
->  security/security.c      |    5 +++--
->  security/selinux/hooks.c |    7 ++++---
->  5 files changed, 16 insertions(+), 10 deletions(-)
+> I think there are varying degrees of internal exposure on the patches.
 > 
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index 5bcb395..a22219a 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -1499,7 +1499,8 @@ struct security_operations {
->  	int (*task_setnice) (struct task_struct *p, int nice);
->  	int (*task_setioprio) (struct task_struct *p, int ioprio);
->  	int (*task_getioprio) (struct task_struct *p);
-> -	int (*task_setrlimit) (unsigned int resource, struct rlimit *new_rlim);
-> +	int (*task_setrlimit) (struct task_struct *p, unsigned int resource,
-> +			struct rlimit *new_rlim);
->  	int (*task_setscheduler) (struct task_struct *p, int policy,
->  				  struct sched_param *lp);
->  	int (*task_getscheduler) (struct task_struct *p);
-> @@ -1749,7 +1750,8 @@ void security_task_getsecid(struct task_struct *p, u32 *secid);
->  int security_task_setnice(struct task_struct *p, int nice);
->  int security_task_setioprio(struct task_struct *p, int ioprio);
->  int security_task_getioprio(struct task_struct *p);
-> -int security_task_setrlimit(unsigned int resource, struct rlimit *new_rlim);
-> +int security_task_setrlimit(struct task_struct *p, unsigned int resource,
-> +		struct rlimit *new_rlim);
->  int security_task_setscheduler(struct task_struct *p,
->  				int policy, struct sched_param *lp);
->  int security_task_getscheduler(struct task_struct *p);
-> @@ -2311,7 +2313,8 @@ static inline int security_task_getioprio(struct task_struct *p)
->  	return 0;
->  }
->  
-> -static inline int security_task_setrlimit(unsigned int resource,
-> +static inline int security_task_setrlimit(struct task_struct *p,
-> +					  unsigned int resource,
->  					  struct rlimit *new_rlim)
->  {
->  	return 0;
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index e83ddbb..1ba4522 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -1290,7 +1290,7 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
->  	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
->  		return -EPERM;
->  
-> -	retval = security_task_setrlimit(resource, &new_rlim);
-> +	retval = security_task_setrlimit(current, resource, &new_rlim);
->  	if (retval)
->  		return retval;
->  
-> diff --git a/security/capability.c b/security/capability.c
-> index 4aeb699..830a213 100644
-> --- a/security/capability.c
-> +++ b/security/capability.c
-> @@ -411,7 +411,8 @@ static int cap_task_getioprio(struct task_struct *p)
->  	return 0;
->  }
->  
-> -static int cap_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
-> +static int cap_task_setrlimit(struct task_struct *p, unsigned int resource,
-> +		struct rlimit *new_rlim)
->  {
->  	return 0;
->  }
-> diff --git a/security/security.c b/security/security.c
-> index 7461b1b..c53949f 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -780,9 +780,10 @@ int security_task_getioprio(struct task_struct *p)
->  	return security_ops->task_getioprio(p);
->  }
->  
-> -int security_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
-> +int security_task_setrlimit(struct task_struct *p, unsigned int resource,
-> +		struct rlimit *new_rlim)
->  {
-> -	return security_ops->task_setrlimit(resource, new_rlim);
-> +	return security_ops->task_setrlimit(p, resource, new_rlim);
->  }
->  
->  int security_task_setscheduler(struct task_struct *p,
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index 5c9f25b..e3ce6b4 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -3371,16 +3371,17 @@ static int selinux_task_getioprio(struct task_struct *p)
->  	return current_has_perm(p, PROCESS__GETSCHED);
->  }
->  
-> -static int selinux_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
-> +static int selinux_task_setrlimit(struct task_struct *p, unsigned int resource,
-> +		struct rlimit *new_rlim)
->  {
-> -	struct rlimit *old_rlim = current->signal->rlim + resource;
-> +	struct rlimit *old_rlim = p->signal->rlim + resource;
->  
->  	/* Control the ability to change the hard limit (whether
->  	   lowering or raising it), so that the hard limit can
->  	   later be used as a safe reset point for the soft limit
->  	   upon context transitions.  See selinux_bprm_committing_creds. */
->  	if (old_rlim->rlim_max != new_rlim->rlim_max)
-> -		return current_has_perm(current, PROCESS__SETRLIMIT);
-> +		return current_has_perm(p, PROCESS__SETRLIMIT);
->  
->  	return 0;
->  }
-> -- 
-> 1.7.1
-> 
-> 
+> >>   writeback: Creating /sys/kernel/mm/writeback/writeback
+> This one seems to not expose any new internals. We already expose the
+> concept of "dirty", "writeback" and thresholds in /proc/meminfo.
 
+I don't see any probems with these stats - no matter the
+implementation, they'll still be relevant.
+
+> >>  writeback: per bdi monitoring
+> 
+> Looking at it again. I think this one is somewhat of a mixed bag.
+> BDIReclaimable, BdiWriteback, and the dirty thresholds seems safe to
+> export.While I agree the rest should stay in debugfs. Would that be
+> amenable?
+
+I'd much prefer all the bdi stats in the one spot. It's hard enough
+to find what you're looking for without splitting them into multiple
+locations.
+
+The other thing to consider is that tracing requires debugfѕ to be
+mounted. Hence most kernels are going to have the debug stats
+available, anyway....
+
+> >> writeback: tracking subsystems causing writeback
+> 
+> I definitely agree that this one is too revealing and needs to be
+> redone. But I think we might want to add the details for concepts
+> which we already expose.
+> The idea of a "periodic writeback" is already exposed in /proc/sys/vm/
+> and I don't see that changing in the kernel as a method to deal with
+> buffered IO. Neither will sync.
+
+I don't see much value in exposing this information outside of
+development environments. I think it's much better to add trace
+points for events like this so that we do fine-grained analysis of
+when the events occur during problematic workloads....
+
+> The laptop stuff and the names of
+> "balance_dirty_pages" are bad, but maybe we can come up with something
+> more high level. Like "writeback due to low memory"
+> 
+> > FWIW, I've got to resend the writeback tracing patches to Jens that I
+> > have that give better visibility into the writeback behaviour.
+> > Perhaps those tracing events are a better basis for tracking down
+> > writeback problems - the bugs I found with the tracing could not
+> > have been found with these statistics...
+> 
+> Yeah I have been watching the tracing stuff you have posted and I
+> think it will help. There were some other trace points I wanted to add
+> to this patch but was waiting to learn from your submission on the
+> best way to integrate them.
+
+I've got more work to do on them first.... :/
+
+> > That's really why I'm asking - if the stats are just there to help
+> > development and debugging, then I think that improving the writeback
+> > tracing is a better approach to improving visibility of writeback
+> > behaviour...
+> 
+> Maybe I should not have put all these patches in one series. The first
+> one with the /sys/kernel/vm file is very useful for user space
+> developers. System Administrators who are trying to classify IO
+> problems often need to know if the disk is bad
+
+These stats aren't the place for observing that a disk is bad ;)
+
+> or if the buffered data
+> is not even being written to disk over time..
+
+I think this can be obtained from the existing info in /proc/meminfo.
+I'm not saying the new stats aren't necessary, just that we already
+have the high level information available for this....
+
+> Also at Google we tend
+> to run our jobs with very little unused RAM. Pushing things close to
+> their limits results in many surprises and writeback is often one of
+> them. Knowing the thresholds and rate of dirty and cleaning of pages
+> can help systems do the right thing.
+
+Yes, I hear this all the time from appliance developers that cache
+everything they need in userspace - they just want the kernel to
+stay out of the way and not use the unused RAM for caching stuff that
+doesn't matter to the application. Normally the issue is unbounded
+growth of the inode and dentry caches, but I can see how exceeding
+writeback limits can be just as much of a problem.
+
+Cheers,
+
+Dave.
 -- 
-James Morris
-<jmorris@namei.org>
+Dave Chinner
+david@fromorbit.com
