@@ -1,208 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab0FXQaU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 12:30:20 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56150 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab0FXQaS (ORCPT
+	id S1756065Ab0FXQcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 12:32:00 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58945 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755502Ab0FXQb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 12:30:18 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>,
-       V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [V9fs-developer] [GIT PULL] 9p file system bug fixes for 2.6.35-rc2
-In-Reply-To: <87pqzrexon.fsf@linux.vnet.ibm.com>
-References: <AANLkTik3ax1SlAKRo6laMfACdzh6IUKLGSvMK4Gp9GY9@mail.gmail.com> <alpine.LFD.2.00.1006071654290.4506@i5.linux-foundation.org> <20100608004102.GQ31073@ZenIV.linux.org.uk> <87pqzrexon.fsf@linux.vnet.ibm.com>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Thu, 24 Jun 2010 22:00:10 +0530
-Message-ID: <871vbwe6lp.fsf@linux.vnet.ibm.com>
+	Thu, 24 Jun 2010 12:31:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hLIFWX14hxyGrpVSbXE09f/L312dCcrtLVnRo3HbfZ50iytRfR4+1EE1QLG3gtdCIv
+         /WVpepZnhWvebBikuKyGvAPEm5yHWrtFl8/Ds7+6NSaF5beQDYiPtyTY8kxD7oZthzuc
+         TyzdQxdKAr3yZYJ8x9e5x9z+gTQtoQqqJ1HC4=
+Date: Thu, 24 Jun 2010 09:24:07 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Luotao Fu <l.fu@pengutronix.de>
+Cc: Rabin VINCENT <rabin.vincent@stericsson.com>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Linus WALLEIJ <linus.walleij@stericsson.com>,
+       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
+Subject: Re: [PATCH 5/5] input: STMPE touch controller support
+Message-ID: <20100624162407.GA18899@core.coreip.homeip.net>
+References: <1277382530-23734-1-git-send-email-l.fu@pengutronix.de>
+ <1277389575-574-1-git-send-email-l.fu@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277389575-574-1-git-send-email-l.fu@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jun 2010 22:12:32 +0530, "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> On Tue, 8 Jun 2010 01:41:02 +0100, Al Viro <viro@ZenIV.linux.org.uk> wrote:
-> > On Mon, Jun 07, 2010 at 05:08:19PM -0700, Linus Torvalds wrote:
-> > 
-> > > In fact, the other thing that I find doing that whole "dentry->d_parent" 
-> > > thing seems to literally be broken. If you look at v9fs_fid_lookup(), 
-> > > you'll notice how it walks up the d_parent chain, and at that point you do 
-> > > NOT own the directory i_mutex, so at that point d_parent really _can_ be 
-> > > changing wildly due to concurrent renames or whatever.
-> > 
-> > Eh...  It's bogus, all right, but i_mutex is not the correct solution.
-> > You'd have to take it on a lot of inodes along the way to root *and*
-> > you'd violate the ordering in process (ancestors first).
-> > 
-> > I'm not sure what's the right thing to do there, actually - s_vfs_rename_sem
-> > also won't do, since it'll give you ordering problems of its own (it's
-> > taken before i_mutex in VFS, so trying to take it under i_mutex would not
-> > do).
+Hi Luotao,
+
+On Thu, Jun 24, 2010 at 04:26:15PM +0200, Luotao Fu wrote:
+> diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+> index 497964a..2691c62 100644
+> --- a/drivers/input/touchscreen/Makefile
+> +++ b/drivers/input/touchscreen/Makefile
+> @@ -47,3 +47,4 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)	+= mainstone-wm97xx.o
+>  obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
+>  obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
+>  obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
+> +obj-$(CONFIG_TOUCHSCREEN_STMPE)		+= stmpe-ts.o
+
+Please keep Makefile ordered alphabetically, it makes it easier to merge
+stuff. Might try to do the same for Kconfig as well.
+
+> +
+> +static int inline __stmpe_reset_fifo(struct stmpe *stmpe)
+
+Do not mark private function inline unless absolutely necessary - let
+compiler figure out whether it makes sense to inline and what.
+
+> +{
+> +	int ret;
+> +
+> +	ret = stmpe_set_bits(stmpe, STMPE_REG_FIFO_STA,
+> +			STMPE_FIFO_STA_RESET, STMPE_FIFO_STA_RESET);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return stmpe_set_bits(stmpe, STMPE_REG_FIFO_STA,
+> +			STMPE_FIFO_STA_RESET, 0);
+> +}
+> +
+> +static void stmpe_work(struct work_struct *work)
+> +{
+> +	int int_sta;
+> +	u32 timeout = 40;
+> +
+> +	struct stmpe_touch *ts =
+> +	    container_of(work, struct stmpe_touch, work.work);
+> +
+> +	int_sta = stmpe_reg_read(ts->stmpe, STMPE_REG_INT_STA);
+> +
+> +	/* touch_det sometimes get desasserted or just get stuck. This appears
+> +	 * to be a silicon bug, We still have to clearify this with the
+> +	 * manufacture. As a workaround We release the key anyway if the
+> +	 * touch_det keeps coming in after 4ms, while the FIFO contains no value
+> +	 * during the whole time. */
+
+I would appreciate if we could maintain the following format for
+multiline comments (within input at least):
+
+/*
+ * This is a long long
+ * long comment.
+ */
+
+> +	while ((int_sta & (1 << STMPE_IRQ_TOUCH_DET)) && (timeout > 0)) {
+> +		timeout--;
+> +		int_sta = stmpe_reg_read(ts->stmpe, STMPE_REG_INT_STA);
+> +		udelay(100);
+> +	}
+> +
+> +	/* reset the FIFO before we report release event */
+> +	__stmpe_reset_fifo(ts->stmpe);
+> +
+> +	input_report_abs(ts->idev, ABS_PRESSURE, 0);
+> +	input_sync(ts->idev);
+
+Hmm, this function appears to be always reporting release, no matter
+what the state of hardware is. I do not think this was the intention...
+or was it?
+
+> +}
+> +
+> +static irqreturn_t stmpe_ts_handler(int irq, void *data)
+> +{
+> +	u8 data_set[4];
+> +	int x, y, z;
+> +	struct stmpe_touch *ts = data;
+> +
+> +	/* Cancel scheduled polling for release if we have new value
+> +	 * available. Wait if the polling is already running. */
+> +	cancel_delayed_work_sync(&ts->work);
+> +
+> +	/*
+> +	 * The FIFO sometimes just crashes and stops generating interrupts. This
+> +	 * appears to be a silicon bug. We still have to clearify this with
+> +	 * the manufacture. As a workaround we disable the TSC while we are
+> +	 * collecting data and flush the FIFO after reading
+> +	 */
+> +	stmpe_set_bits(ts->stmpe, STMPE_REG_TSC_CTRL,
+> +				STMPE_TSC_CTRL_TSC_EN, 0);
+> +
+> +	stmpe_block_read(ts->stmpe, STMPE_REG_TSC_DATA_XYZ, 4, data_set);
+> +
+> +	x = (data_set[0] << 4) | (data_set[1] >> 4);
+> +	y = ((data_set[1] & 0xf) << 8) | data_set[2];
+> +	z = data_set[3];
+> +
+> +	input_report_abs(ts->idev, ABS_X, x);
+> +	input_report_abs(ts->idev, ABS_Y, y);
+> +	input_report_abs(ts->idev, ABS_PRESSURE, z);
+> +	input_sync(ts->idev);
+> +
+> +       /* flush the FIFO after we have read out our values. */
+> +	__stmpe_reset_fifo(ts->stmpe);
+> +
+> +	/* reenable the tsc */
+> +	stmpe_set_bits(ts->stmpe, STMPE_REG_TSC_CTRL,
+> +			STMPE_TSC_CTRL_TSC_EN, STMPE_TSC_CTRL_TSC_EN);
+> +
+> +	/* start polling for touch_det to detect release */
+> +	schedule_delayed_work(&ts->work, HZ / 50);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int stmpe_ts_open(struct input_dev *dev)
+> +{
+> +	struct stmpe_touch *ts = input_get_drvdata(dev);
+> +	int ret = 0;
+> +
+> +	ret = __stmpe_reset_fifo(ts->stmpe);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return stmpe_set_bits(ts->stmpe, STMPE_REG_TSC_CTRL,
+> +			STMPE_TSC_CTRL_TSC_EN, STMPE_TSC_CTRL_TSC_EN);
+> +}
+> +
+> +static void stmpe_ts_close(struct input_dev *dev)
+> +{
+> +	struct stmpe_touch *ts = input_get_drvdata(dev);
+> +
+> +	stmpe_set_bits(ts->stmpe, STMPE_REG_TSC_CTRL,
+> +			STMPE_TSC_CTRL_TSC_EN, 0);
+> +}
+> +
+> +static int __devinit stmpe_input_probe(struct platform_device *pdev)
+> +{
+> +	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
+> +	struct stmpe_platform_data *pdata = stmpe->pdata;
+> +	struct stmpe_touch *ts;
+> +	struct input_dev *idev;
+> +	struct stmpe_ts_platform_data *ts_pdata = NULL;
+> +	int ret = 0;
+> +	unsigned int ts_irq;
+> +	u8 adc_ctrl1, adc_ctrl1_mask, tsc_cfg, tsc_cfg_mask;
+> +
+> +	ts_irq = platform_get_irq_byname(pdev, "FIFO_TH");
+> +	if (ts_irq < 0)
+> +		return ts_irq;
+> +
+> +	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
+> +	if (!ts)
+> +		goto err_out;
+> +
+> +	idev = input_allocate_device();
+> +	if (!idev)
+> +		goto err_free_ts;
+> +
+> +	platform_set_drvdata(pdev, ts);
+> +	ts->stmpe = stmpe;
+> +	ts->idev = idev;
+> +
+> +	if (pdata)
+> +		ts_pdata = pdata->ts;
+> +
+> +	if (ts_pdata) {
+> +		ts->sample_time = ts_pdata->sample_time;
+> +		ts->mod_12b = ts_pdata->mod_12b;
+> +		ts->ref_sel = ts_pdata->ref_sel;
+> +		ts->adc_freq = ts_pdata->adc_freq;
+> +		ts->ave_ctrl = ts_pdata->ave_ctrl;
+> +		ts->touch_det_delay = ts_pdata->touch_det_delay;
+> +		ts->settling = ts_pdata->settling;
+> +		ts->fraction_z = ts_pdata->fraction_z;
+> +		ts->i_drive = ts_pdata->i_drive;
+> +	}
+> +
+> +	INIT_DELAYED_WORK(&ts->work, stmpe_work);
+> +
+> +	ret = request_threaded_irq(ts_irq, NULL, stmpe_ts_handler,
+> +			IRQF_ONESHOT, STMPE_TS_NAME, ts);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to request IRQ %d\n", ts_irq);
+> +		goto err_free_input;
+> +	}
+> +
+> +	ret = stmpe_enable(stmpe, STMPE_BLOCK_TOUCHSCREEN | STMPE_BLOCK_ADC);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not enable clock for ADC and TS\n");
+> +		goto err_free_irq;
+> +	}
+> +
+> +	adc_ctrl1 = SAMPLE_TIME(ts->sample_time) | MOD_12B(ts->mod_12b) |
+> +		REF_SEL(ts->ref_sel);
+> +	adc_ctrl1_mask = SAMPLE_TIME(0xff) | MOD_12B(0xff) | REF_SEL(0xff);
+> +	ret = stmpe_set_bits(stmpe, STMPE_REG_ADC_CTRL1,
+> +			adc_ctrl1_mask, adc_ctrl1);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not setup ADC\n");
+> +		goto err_free_irq;
+> +	}
+> +
+> +	ret = stmpe_set_bits(stmpe, STMPE_REG_ADC_CTRL2,
+> +			ADC_FREQ(0xff), ADC_FREQ(ts->adc_freq));
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not setup ADC\n");
+> +		goto err_free_irq;
+> +	}
+> +
+> +	tsc_cfg = AVE_CTRL(ts->ave_ctrl) | DET_DELAY(ts->touch_det_delay) |
+> +			SETTLING(ts->settling);
+> +	tsc_cfg_mask = AVE_CTRL(0xff) | DET_DELAY(0xff) | SETTLING(0xff);
+> +
+> +	ret = stmpe_set_bits(stmpe, STMPE_REG_TSC_CFG, tsc_cfg_mask, tsc_cfg);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not config touch\n");
+> +		goto err_free_irq;
+> +	}
+> +
+> +	ret = stmpe_set_bits(stmpe, STMPE_REG_TSC_FRACTION_Z,
+> +			FRACTION_Z(0xff), FRACTION_Z(ts->fraction_z));
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not config touch\n");
+> +		goto err_free_irq;
+> +	}
+> +
+> +	ret = stmpe_set_bits(stmpe, STMPE_REG_TSC_I_DRIVE,
+> +			I_DRIVE(0xff), I_DRIVE(ts->i_drive));
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not config touch\n");
+> +		goto err_free_irq;
+> +	}
+> +
+> +	/* set FIFO to 1 for single point reading */
+> +	ret = stmpe_reg_write(stmpe, STMPE_REG_FIFO_TH, 1);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not set FIFO\n");
+> +		goto err_free_irq;
+> +	}
+> +
+> +	ret = stmpe_set_bits(stmpe, STMPE_REG_TSC_CTRL,
+> +			OP_MODE(0xff), OP_MODE(OP_MOD_XYZ));
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not set mode\n");
+> +		goto err_free_irq;
+> +	}
+
+
+Could we pull all these stmpe_set_bits(...) settig up the hardware into
+a separate function?
+
+> +
+> +	idev->name = STMPE_TS_NAME;
+> +	idev->id.bustype = BUS_I2C;
+> +	idev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+> +	idev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
+> +
+> +	idev->open = stmpe_ts_open;
+> +	idev->close = stmpe_ts_close;
+> +
+> +	input_set_drvdata(idev, ts);
+> +
+> +	ret = input_register_device(idev);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Could not register input device\n");
+> +		goto err_free_irq;
+> +	}
+> +
+> +	input_set_abs_params(idev, ABS_X, 0, XY_MASK, 0, 0);
+> +	input_set_abs_params(idev, ABS_Y, 0, XY_MASK, 0, 0);
+> +	input_set_abs_params(idev, ABS_PRESSURE, 0x0, 0xff, 0, 0);
+
+These calls better happen before registering the device.
+
+> +
+> +	return ret;
+> +
+> +err_free_irq:
+> +	free_irq(ts_irq, ts);
+> +err_free_input:
+> +	input_free_device(idev);
+> +	platform_set_drvdata(pdev, NULL);
+> +err_free_ts:
+> +	kfree(ts);
+> +err_out:
+> +	return ret;
+> +}
+> +
+> +static int __devexit stmpe_ts_remove(struct platform_device *pdev)
+> +{
+> +	struct stmpe_touch *ts = platform_get_drvdata(pdev);
+> +	unsigned int ts_irq = platform_get_irq_byname(pdev, "FIFO_TH");
+> +
+> +	cancel_delayed_work(&ts->work);
+
+cancel_delayed_work_sync().
+
+> +
+> +	stmpe_reg_write(ts->stmpe, STMPE_REG_FIFO_TH, 0);
+> +
+> +	stmpe_disable(ts->stmpe, STMPE_BLOCK_TOUCHSCREEN);
+> +
+
+I'd expect the 3 calls above being part of stmpe_ts_close().
+
+> +	free_irq(ts_irq, ts);
+> +
+> +	platform_set_drvdata(pdev, NULL);
+> +
+> +	input_unregister_device(ts->idev);
+> +	input_free_device(ts->idev);
+> +
+> +	kfree(ts);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver stmpe_ts_driver = {
+> +	.driver = {
+> +		   .name = STMPE_TS_NAME,
+
+		.owner = THIS_MODULE,
+
+> +		   },
+> +	.probe = stmpe_input_probe,
+> +	.remove = __devexit_p(stmpe_ts_remove),
+
+No PM? Or simply not yet?
+
+> +};
+> +
+> +static int __init stmpe_ts_init(void)
+> +{
+> +	return platform_driver_register(&stmpe_ts_driver);
+> +}
+> +
+> +module_init(stmpe_ts_init);
+> +
+> +static void __exit stmpe_ts_exit(void)
+> +{
+> +	platform_driver_unregister(&stmpe_ts_driver);
+> +}
+> +
+> +module_exit(stmpe_ts_exit);
+> +
+> +MODULE_AUTHOR("Luotao Fu <l.fu@pengutronix.de>");
+> +MODULE_DESCRIPTION("STMPEXXX touchscreen driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:" STMPE_TS_NAME);
+> -- 
+> 1.7.1
 > 
-> Can we use dcache_lock in v9fs_fid_lookup ? Since we are holding
-> parent directory inode->i_mutex in other places where we refer
-> dentry->d_parent I guess those access are ok ?. And for v9fs_fid_lookup we
-> can hold dcache_lock, walk the parent, build the full path name and use
-> that for TWALK ? 
-> 
-> Another option is we deny a cross directory rename when
-> doing fid_lookup. That is we can introduce a per superblock v9fs
-> specific rwlock that get taken (in write mode) in a cross directory
-> rename and in fid_lookup we take them in read mode ? We will have to set
-> FS_RENAME_DOES_D_MOVE for 9p.
 
-something like this ?
+Thanks.
 
-commit 86c06ad7506e7e05dd4e1e1b8cee28e19703c4f6
-Author: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Date:   Mon Jun 21 21:50:07 2010 +0530
-
-    fs/9p: Prevent parallel rename when doing fid_lookup
-    
-    During fid lookup we need to make sure that the dentry->d_parent doesn't
-    change so that we can safely walk the parent dentries. To ensure that
-    we need to prevent cross directory rename during fid_lookup. Add a
-    per superblock rename_lock rwlock to prevent parallel fid lookup and rename.
-    
-    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-
-diff --git a/fs/9p/fid.c b/fs/9p/fid.c
-index 7317b39..14b542a 100644
---- a/fs/9p/fid.c
-+++ b/fs/9p/fid.c
-@@ -139,14 +139,19 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
- 	fid = v9fs_fid_find(dentry, uid, any);
- 	if (fid)
- 		return fid;
--
-+	/*
-+	 * we don't have a matching fid. To do a TWALK we need
-+	 * parent fid. We need to prevent rename when we want to
-+	 * look at the parent.
-+	 */
-+	read_lock(&v9ses->rename_lock);
- 	ds = dentry->d_parent;
- 	fid = v9fs_fid_find(ds, uid, any);
- 	if (!fid) { /* walk from the root */
- 		n = 0;
- 		for (ds = dentry; !IS_ROOT(ds); ds = ds->d_parent)
- 			n++;
--
-+		read_unlock(&v9ses->rename_lock);
- 		fid = v9fs_fid_find(ds, uid, any);
- 		if (!fid) { /* the user is not attached to the fs yet */
- 			if (access == V9FS_ACCESS_SINGLE)
-@@ -165,9 +170,11 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
- 
- 			v9fs_fid_add(ds, fid);
- 		}
--	} else /* walk from the parent */
-+	} else  {
-+		/* walk from the parent */
- 		n = 1;
--
-+		read_unlock(&v9ses->rename_lock);
-+	}
- 	if (ds == dentry)
- 		return fid;
- 
-@@ -175,8 +182,10 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
- 	if (!wnames)
- 		return ERR_PTR(-ENOMEM);
- 
-+	read_lock(&v9ses->rename_lock);
- 	for (d = dentry, i = (n-1); i >= 0; i--, d = d->d_parent)
- 		wnames[i] = (char *) d->d_name.name;
-+	read_unlock(&v9ses->rename_lock);
- 
- 	clone = 1;
- 	i = 0;
-@@ -199,7 +208,6 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
- 		i += l;
- 		clone = 0;
- 	}
--
- 	kfree(wnames);
- 	v9fs_fid_add(dentry, fid);
- 	return fid;
-diff --git a/fs/9p/v9fs.c b/fs/9p/v9fs.c
-index f8b86e9..6839fca 100644
---- a/fs/9p/v9fs.c
-+++ b/fs/9p/v9fs.c
-@@ -237,6 +237,7 @@ struct p9_fid *v9fs_session_init(struct v9fs_session_info *v9ses,
- 		__putname(v9ses->uname);
- 		return ERR_PTR(-ENOMEM);
- 	}
-+	rwlock_init(&v9ses->rename_lock);
- 
- 	rc = bdi_setup_and_register(&v9ses->bdi, "9p", BDI_CAP_MAP_COPY);
- 	if (rc) {
-diff --git a/fs/9p/v9fs.h b/fs/9p/v9fs.h
-index bec4d0b..dee4f26 100644
---- a/fs/9p/v9fs.h
-+++ b/fs/9p/v9fs.h
-@@ -104,6 +104,7 @@ struct v9fs_session_info {
- 	struct p9_client *clnt;	/* 9p client */
- 	struct list_head slist; /* list of sessions registered with v9fs */
- 	struct backing_dev_info bdi;
-+	rwlock_t rename_lock;
- };
- 
- struct p9_fid *v9fs_session_init(struct v9fs_session_info *, const char *,
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index 4331b3b..be39035 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -678,6 +678,7 @@ static struct dentry *v9fs_vfs_lookup(struct inode *dir, struct dentry *dentry,
- 
- 	sb = dir->i_sb;
- 	v9ses = v9fs_inode2v9ses(dir);
-+	/* We can walk d_parent because we hold the dir->i_mutex */
- 	dfid = v9fs_fid_lookup(dentry->d_parent);
- 	if (IS_ERR(dfid))
- 		return ERR_CAST(dfid);
-@@ -763,7 +764,7 @@ v9fs_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	struct p9_fid *olddirfid;
- 	struct p9_fid *newdirfid;
- 	struct p9_wstat wstat;
--	int retval;
-+	int retval, cross_dir_rename;
- 
- 	P9_DPRINTK(P9_DEBUG_VFS, "\n");
- 	retval = 0;
-@@ -784,7 +785,7 @@ v9fs_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		retval = PTR_ERR(newdirfid);
- 		goto clunk_olddir;
- 	}
--
-+	cross_dir_rename = (old_dentry->d_parent != new_dentry->d_parent);
- 	if (v9fs_proto_dotl(v9ses)) {
- 		retval = p9_client_rename(oldfid, newdirfid,
- 					(char *) new_dentry->d_name.name);
-@@ -806,6 +807,11 @@ v9fs_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	retval = p9_client_wstat(oldfid, &wstat);
- 
- clunk_newdir:
-+	if (cross_dir_rename)
-+		write_lock(&v9ses->rename_lock);
-+	d_move(old_dentry, new_dentry);
-+	if (cross_dir_rename)
-+		write_unlock(&v9ses->rename_lock);
- 	p9_client_clunk(newdirfid);
- 
- clunk_olddir:
-diff --git a/fs/9p/vfs_super.c b/fs/9p/vfs_super.c
-index be74d02..0f6d06d 100644
---- a/fs/9p/vfs_super.c
-+++ b/fs/9p/vfs_super.c
-@@ -278,4 +278,5 @@ struct file_system_type v9fs_fs_type = {
- 	.get_sb = v9fs_get_sb,
- 	.kill_sb = v9fs_kill_super,
- 	.owner = THIS_MODULE,
-+	.fs_flags = FS_RENAME_DOES_D_MOVE,
- };
+-- 
+Dmitry
