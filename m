@@ -1,89 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab0FXWGj convert rfc822-to-quoted-printable (ORCPT
-	<rfc822;w@1wt.eu>); Thu, 24 Jun 2010 18:06:39 -0400
-Received: from wdscspam2.wdc.com ([129.253.170.131]:25763 "EHLO
-	wdscspam2.wdc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756024Ab0FXWGP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 18:06:15 -0400
-X-IronPort-AV: E=Sophos;i="4.53,476,1272870000"; 
-   d="scan'208";a="112238286"
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1755988Ab0FXWGM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 18:06:12 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:39702 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751898Ab0FXWGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 18:06:07 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Randy Dunlap <rdunlap@xenotime.net>, Jean Delvare <khali@linux-fr.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Ira W. Snyder" <iws@ovro.caltech.edu>,
+       Hans de Goede <hdegoede@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       linux-doc@vger.kernel.org, Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH v3 2/4] hwmon: SMM665 driver documentation
+Date: Thu, 24 Jun 2010 15:00:59 -0700
+Message-ID: <1277416861-32494-3-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.0.87.g0901d
+In-Reply-To: <1277416861-32494-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1277416861-32494-1-git-send-email-guenter.roeck@ericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Subject: RE: Btrfs: broken file system design (was Unbound(?) internal fragmentation in Btrfs)
-Date: Thu, 24 Jun 2010 15:06:03 -0700
-Message-ID: <469D2D911E4BF043BFC8AD32E8E30F5B24AEBB@wdscexbe07.sc.wdc.com>
-In-Reply-To: <AANLkTil5Gl0-rWClRsLZby_c37bQu5RB_tCgHsxTFshO@mail.gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Btrfs: broken file system design (was Unbound(?) internal fragmentation in Btrfs)
-Thread-Index: AcsTWOMivVY/QmR7TuS+ofSXimlFogAjwrcg
-References: <4C07C321.8010000@redhat.com><AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com><4C1B7560.1000806@gmail.com><AANLkTilQm8VGAvc1XNW4EaHd1FLd6dXIXwJ9-yT-joQ8@mail.gmail.com><4C1BA3E5.7020400@gmail.com><20100623234031.GF7058@shareable.org><469D2D911E4BF043BFC8AD32E8E30F5B24AEBA@wdscexbe07.sc.wdc.com> <AANLkTil5Gl0-rWClRsLZby_c37bQu5RB_tCgHsxTFshO@mail.gmail.com>
-From: "Daniel Taylor" <Daniel.Taylor@wdc.com>
-To: "Mike Fedyk" <mfedyk@mikefedyk.com>
-Cc: "Daniel J Blueman" <daniel.blueman@gmail.com>,
-       "Mat" <jackdachef@gmail.com>, "LKML" <linux-kernel@vger.kernel.org>,
-       <linux-fsdevel@vger.kernel.org>, "Chris Mason" <chris.mason@oracle.com>,
-       "Ric Wheeler" <rwheeler@redhat.com>,
-       "Andrew Morton" <akpm@linux-foundation.org>,
-       "Linus Torvalds" <torvalds@linux-foundation.org>,
-       "The development of BTRFS" <linux-btrfs@vger.kernel.org>
-X-OriginalArrivalTime: 24 Jun 2010 22:06:12.0154 (UTC) FILETIME=[7501A1A0:01CB13E9]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-=20
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+ Documentation/hwmon/smm665 |  126 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 126 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/hwmon/smm665
 
-> -----Original Message-----
-> From: mikefedyk@gmail.com [mailto:mikefedyk@gmail.com] On=20
-> Behalf Of Mike Fedyk
-> Sent: Wednesday, June 23, 2010 9:51 PM
-> To: Daniel Taylor
-> Cc: Daniel J Blueman; Mat; LKML;=20
-> linux-fsdevel@vger.kernel.org; Chris Mason; Ric Wheeler;=20
-> Andrew Morton; Linus Torvalds; The development of BTRFS
-> Subject: Re: Btrfs: broken file system design (was Unbound(?)=20
-> internal fragmentation in Btrfs)
->=20
-> On Wed, Jun 23, 2010 at 8:43 PM, Daniel Taylor=20
-> <Daniel.Taylor@wdc.com> wrote:
-> > Just an FYI reminder. =A0The original test (2K files) is utterly
-> > pathological for disk drives with 4K physical sectors, such as
-> > those now shipping from WD, Seagate, and others. =A0Some of the
-> > SSDs have larger (16K0 or smaller blocks (2K). =A0There is also
-> > the issue of btrfs over RAID (which I know is not entirely
-> > sensible, but which will happen).
-> >
-> > The absolute minimum allocation size for data should be the same
-> > as, and aligned with, the underlying disk block size. =A0If that
-> > results in underutilization, I think that's a good thing for
-> > performance, compared to read-modify-write cycles to update
-> > partial disk blocks.
->=20
-> Block size =3D 4k
->=20
-> Btrfs packs smaller objects into the blocks in certain cases.
->=20
+diff --git a/Documentation/hwmon/smm665 b/Documentation/hwmon/smm665
+new file mode 100644
+index 0000000..4a4bfde
+--- /dev/null
++++ b/Documentation/hwmon/smm665
+@@ -0,0 +1,126 @@
++Kernel driver smm665
++====================
++
++Supported chips:
++  * Summit Microelectronics SMM465
++    Prefix: 'smm465'
++    Addresses scanned: -
++    Datasheet: Publicly available at the Summit Microelectronics website.
++  * Summit Microelectronics SMM665, SMM665B
++    Prefix: 'smm665'
++    Addresses scanned: -
++    Datasheet: Publicly available at the Summit Microelectronics website.
++  * Summit Microelectronics SMM665C
++    Prefix: 'smm665c'
++    Addresses scanned: -
++    Datasheet: Publicly available at the Summit Microelectronics website.
++  * Summit Microelectronics SMM764
++    Prefix: 'smm764'
++    Addresses scanned: -
++    Datasheet: Publicly available at the Summit Microelectronics website.
++  * Summit Microelectronics SMM766
++    Prefix: 'smm766'
++    Addresses scanned: -
++    Datasheet: Publicly available at the Summit Microelectronics website.
++
++Author: Guenter Roeck <guenter.roeck@ericsson.com>
++
++
++Module Parameters
++-----------------
++
++* vref: int
++  Default: 1250 (mV)
++  Reference voltage on VREF_ADC pin in mV. It should not be necessary to set
++  this parameter unless a non-default reference voltage is used.
++
++
++Description
++-----------
++
++[From datasheet] The SMM665 is an Active DC Output power supply Controller
++that monitors, margins and cascade sequences power. The part monitors six
++power supply channels as well as VDD, 12V input, two general-purpose analog
++inputs and an internal temperature sensor using a 10-bit ADC.
++
++Each monitored channel has its own high and low limits, plus a critical
++limit.
++
++Support for SMM465, SMM764, and SMM766 has been implemented but is untested.
++
++
++Usage Notes
++-----------
++
++This driver does not probe for devices, since there is no register which
++can be safely used to identify the chip. You will have to instantiate
++the devices explicitly. When instantiating the device, you have to specify
++its configuration register address.
++
++Example: the following will load the driver for an SMM665 at address 0x57
++on I2C bus #1:
++$ modprobe smm665
++$ echo smm665 0x57 > /sys/bus/i2c/devices/i2c-1/new_device
++
++
++Sysfs entries
++-------------
++
++This driver uses the values in the datasheet to convert ADC register values
++into the values specified in the sysfs-interface document. All attributes are
++read only.
++
++Min and max values are used by the chip to trigger external signals and/or other
++activity. Triggered signals can include HEALTHY, RST, Power Off, or Fault depending
++on the chip configuration. For details please see the SMM665 datasheet.
++
++For SMM465 and SMM764, values for Channel E and F are reported but undefined.
++
++in1_input		12V input voltage (mV)
++in2_input		3.3V (VDD) input voltage (mV)
++in3_input		Channel A voltage (mV)
++in4_input		Channel B voltage (mV)
++in5_input		Channel C voltage (mV)
++in6_input		Channel D voltage (mV)
++in7_input		Channel E voltage (mV)
++in8_input		Channel F voltage (mV)
++in9_input		AIN1 voltage (mV)
++in10_input		AIN2 voltage (mV)
++
++in1_min			12v input minimum voltage (mV)
++in2_min			3.3V (VDD) input minimum voltage (mV)
++in3_min			Channel A minimum voltage (mV)
++in4_min			Channel B minimum voltage (mV)
++in5_min			Channel C minimum voltage (mV)
++in6_min			Channel D minimum voltage (mV)
++in7_min			Channel E minimum voltage (mV)
++in8_min			Channel F minimum voltage (mV)
++in9_min			AIN1 minimum voltage (mV)
++in10_min		AIN2 minimum voltage (mV)
++
++in1_max			12v input maximum voltage (mV)
++in2_max			3.3V (VDD) input maximum voltage (mV)
++in3_max			Channel A maximum voltage (mV)
++in4_max			Channel B maximum voltage (mV)
++in5_max			Channel C maximum voltage (mV)
++in6_max			Channel D maximum voltage (mV)
++in7_max			Channel E maximum voltage (mV)
++in8_max			Channel F maximum voltage (mV)
++in9_max			AIN1 maximum voltage (mV)
++in10_max		AIN2 maximum voltage (mV)
++
++in1_fault		12v input fault
++in2_fault		3.3V (VDD) input fault
++in3_fault		Channel A fault
++in4_fault		Channel B fault
++in5_fault		Channel C fault
++in6_fault		Channel D fault
++in7_fault		Channel E fault
++in8_fault		Channel F fault
++in9_fault		AIN1 fault
++in10_fault		AIN2 fault
++
++temp1_input		Chip tempererature
++temp1_min		Mimimum chip tempererature
++temp1_max		Maximum chip tempererature
++temp1_crit		Critical chip tempererature
+-- 
+1.7.0.87.g0901d
 
-As long as no object smaller than the disk block size is ever
-flushed to media, and all flushed objects are aligned to the disk
-blocks, there should be no real performance hit from that.
-
-Otherwise we end up with the damage for the ext[234] family, where
-the file blocks can be aligned, but the 1K inode updates cause
-the read-modify-write (RMW) cycles and and cost >10% performance
-hit for creation/update of large numbers of files.
-
-An RMW cycle costs at least a full rotation (11 msec on a 5400 RPM
-drive), which is painful.
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel"=
- in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
