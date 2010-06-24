@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab0FXRCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 13:02:44 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:49231 "EHLO smtp.outflux.net"
+	id S1756024Ab0FXRDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 13:03:49 -0400
+Received: from kroah.org ([198.145.64.141]:51477 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab0FXRCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 13:02:43 -0400
-Date: Thu, 24 Jun 2010 10:02:40 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v3] security: Yama LSM
-Message-ID: <20100624170240.GE4809@outflux.net>
-References: <20100623182054.GN5876@outflux.net>
- <20100624002859.GA4841@hallyn.com>
+	id S1751083Ab0FXRDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 13:03:48 -0400
+Date: Thu, 24 Jun 2010 10:00:18 -0700
+From: Greg KH <greg@kroah.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Cliff Wickman <cpw@sgi.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org
+Subject: Re: [stable] 2.6.35-rc3 -- kernel BUG at mm/vmalloc.c:216! -
+ invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Message-ID: <20100624170018.GA5801@kroah.com>
+References: <AANLkTimYUy0tCvGHf_Qtz0tUG7XVms9i3MOz03m28Jin@mail.gmail.com>
+ <AANLkTilXIkZM8tHX3QCP9A9LpVbmezaa5_PJdQfVU-w7@mail.gmail.com>
+ <4C2305F9.5010306@gmail.com>
+ <AANLkTik5H_rQ2tPO6h3UtslOVzGQo-qoKW_YD8hULAA3@mail.gmail.com>
+ <4C230E3F.4020107@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100624002859.GA4841@hallyn.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <4C230E3F.4020107@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 07:28:59PM -0500, Serge E. Hallyn wrote:
-> > +==============================================================
-> > diff --git a/fs/exec.c b/fs/exec.c
-> > index e19de6a..85092e3 100644
-> > --- a/fs/exec.c
-> > +++ b/fs/exec.c
-> > @@ -55,6 +55,7 @@
-> >  #include <linux/fsnotify.h>
-> >  #include <linux/fs_struct.h>
-> >  #include <linux/pipe_fs_i.h>
-> > +#include <linux/ctype.h>
-> >  
-> >  #include <asm/uaccess.h>
-> >  #include <asm/mmu_context.h>
+On Thu, Jun 24, 2010 at 09:50:23AM +0200, Tejun Heo wrote:
+> On 06/24/2010 09:45 AM, Xiaotian Feng wrote:
+> >> It's probably the same bug Cliff Wickman reported.
+> >> per_cpu_ptr_to_phys() was using wrong first chunk match logic which
+> >> ends up passing wrong addresses to vmalloc_to_page().  I have the
+> >> following fix patch queued in percpu#for-linus branch and was waiting
+> >> for Linus to come back.
+> >>
+> >>  http://git.kernel.org/?p=linux/kernel/git/tj/percpu.git;a=commitdiff_plain;h=9983b6f0cf8263e51bcf4c8a9dc0c1ef175b3c60;hp=a92d3ff9e5dbd958d8008a3e7a573e988e370ca3
+> >>
+> >> Can you please verify the above patch fixes the problem?
+> > 
+> > Yes, that patch fixes the problem on my box, thanks.
 > 
-> Can you explain the fs/exec.c hunk?
+> Thanks for verifying.  Greg, we'll have to wait till Linus comes back
+> for mainline but maybe it's a good idea to put this into -stable queue
+> early?  It's a rather straight forward bug fix and unlikely to be
+> contentious.
 
-Argh.  This is a mis-rebase when I was working on the get_task_comm patch.
-This belongs there.  I will resend both.
+Sorry, I need to wait until the patch is in Linus's tree.
 
-> > +		while (walker->pid > 0) {
-> > +			if (walker == current)
-> > +				break;
-> > +			walker = walker->real_parent;
-> > +		}
-> > +		if (walker->pid == 0)
-> > +			rc = -EPERM;
-> 
-> Don't recall whether I ended up sending the email addressing this
-> last time, but task->pid is the global pid, so pid==0 does mean
-> what you think it does regardless of pid namespaces.
+thanks,
 
-Okay, good, thanks.
-
-> > +	/* owner and follower match? */
-> > +	cred = current_cred();
-> > +	inode = dentry->d_inode;
-> > +	if (cred->fsuid == inode->i_uid)
-> > +		return 0;
-> 
-> This'll need user-namespace luvin' at some point, but that's my problem,
-> not yours.
-
-That's going to be quite a patch.  :)  I'm looking forward to it!
-
--Kees
-
--- 
-Kees Cook
-Ubuntu Security Team
+greg k-h
