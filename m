@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab0FXOBq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 10:01:46 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56348 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276Ab0FXOBp (ORCPT
+	id S1755511Ab0FXODS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 10:03:18 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:50792 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755235Ab0FXODQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 10:01:45 -0400
-Date: Thu, 24 Jun 2010 16:01:43 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@amd64.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Huang Ying <ying.huang@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Borislav Petkov <petkovbb@googlemail.com>, linux-kernel@vger.kernel.org,
-       mauro@elte.hu
-Subject: Re: [RFC][PATCH] irq_work
-Message-ID: <20100624140143.GO578@basil.fritz.box>
-References: <1277377121.1875.948.camel@laptop>
- <20100624110830.GC578@basil.fritz.box>
- <1277377852.1875.950.camel@laptop>
- <20100624112340.GA13502@elte.hu>
- <1277379294.1875.959.camel@laptop>
- <20100624123537.GA28884@elte.hu>
- <20100624130234.GM578@basil.fritz.box>
- <20100624132032.GA4474@kryptos.osrc.amd.com>
- <20100624133323.GN578@basil.fritz.box>
- <20100624134609.GB30323@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100624134609.GB30323@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 24 Jun 2010 10:03:16 -0400
+To: Nick Piggin <npiggin@suse.de>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       viro@ZenIV.linux.org.uk, drepper@redhat.com,
+       torvalds@linux-foundation.org
+In-reply-to: <20100624131455.GA10441@laptop> (message from Nick Piggin on Thu,
+	24 Jun 2010 23:14:55 +1000)
+Subject: Re: [rfc] new stat*fs-like syscall?
+References: <20100624131455.GA10441@laptop>
+Message-Id: <E1ORn1F-00088t-9N@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 24 Jun 2010 16:03:05 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please, as Peter and Boris asked you already, quote a concrete, specific 
-> example:
-
-It was already in my answer to Peter.
-
+On Thu, 24 Jun 2010, Nick Piggin wrote:
+> This has come up a few times in the past, and I'd like to try to get
+> an agreement on it. statvfs(2) importantly contains f_flag (mount
+> flags), and is encouraged to use rather than statfs(2). The kernel
+> provides a statfs syscall only.
 > 
->   'Specific event X occurs, kernel wants/needs to do Y. This cannot be done
->    via the suggested method due to Z.'
+> This means glibc has to provide f_flag support by parsing /proc/mounts
+> and stat(2)ing mount points. This is really slow, and /proc/mounts is
+> hard for the kernel to provide. It's actually the last scalability
+> bottleneck in the core vfs for dbench (samba) after my patches.
 > 
-> Your generic arguments look wrong (to the extent they are specified) and it 
-> makes it much easier and faster to address your points if you dont blur them 
-> by vagaries.
+> Not only that, but it's racy.
+> 
+> Other than types, other differences are:
+> - statvfs(2) has is f_frsize, which seems fairly useless.
 
-It's one of the fundamental properties of recoverable errors.
+statfs(2) also has f_frsize since 2.6.0, only it hasn't been
+documented (should be fixed now).
 
-Error happens.
-Machine check or NMI or other exception happens. 
-	That exception runs on the exception stack
-	The error is not fatal, but recoverable.
-For example you want to kill a process or call hwpoison or do some other
-	recovery action. These generally have to sleep to do anything
-	interesting.
-You cannot do the sleeping on the exception stack, so you push it to
-another context.
+> - statvfs(2) has f_favail.
+> - statfs(2) f_bsize is optimal transfer block, statvfs(2) f_bsize is fs
+>   block size. The latter could be useful for disk space algorithms.
+>   Both can be ill defned.
 
-Now just because an error is recoverable doesn't mean it's not critical
-(I think that was the mistake Boris made). If you don't do something
-(like killing or recovery) you could end up in a loop or consume
-corrupted data or something else bad. 
+They are the same, only the documentation is different.
 
-So the error has to have a fail safe path from detection to handling.
+> - statvfs(2) lacks f_type.
+> 
+> Is there anything more we should add here? Samba wants a capabilities
+> field, with things like sparse files, quotas, compression, encryption,
+> case preserving/sensitive.
+> 
+> Any thoughts?
 
-That's quite different from logging or performance counting etc.
-where dropping events on overload is normal and expected.
+"struct statfs" and "struct statfs64" have spare fields.  We could put
+the f_flag in there including a magic "this is a valid f_flag" flag,
+that distinguishes from the default zero value.
 
-Normally it can be only done by using dedicated resources.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Thanks,
+Miklos
