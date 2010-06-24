@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab0FXMSO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 08:18:14 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42858 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab0FXMSN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 08:18:13 -0400
-Subject: Re: [RFC][PATCH] irq_work
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       "H.PeterA" <"nvin hpa"@zytor.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100624120226.GH578@basil.fritz.box>
-References: <20100624102725.GA578@basil.fritz.box>
-	 <1277375409.1875.943.camel@laptop> <20100624105254.GB578@basil.fritz.box>
-	 <1277377121.1875.948.camel@laptop> <20100624110830.GC578@basil.fritz.box>
-	 <1277377852.1875.950.camel@laptop> <20100624112040.GD578@basil.fritz.box>
-	 <1277379204.1875.957.camel@laptop> <20100624115520.GF578@basil.fritz.box>
-	 <1277380649.1875.962.camel@laptop>  <20100624120226.GH578@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 24 Jun 2010 14:18:07 +0200
-Message-ID: <1277381887.1875.966.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755282Ab0FXMWY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 08:22:24 -0400
+Received: from 8bytes.org ([88.198.83.132]:38429 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753829Ab0FXMWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 08:22:23 -0400
+Date: Thu, 24 Jun 2010 14:22:19 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Tom Lyon <pugs@lyon-about.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, randy.dunlap@oracle.com,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       hjk@linutronix.de, avi@redhat.com, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100624122219.GD20761@8bytes.org>
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com> <201006111515.53562.pugs@lyon-about.com> <20100613102339.GB4191@redhat.com> <201006171414.00878.pugs@lyon-about.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006171414.00878.pugs@lyon-about.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-24 at 14:02 +0200, Andi Kleen wrote:
-> On Thu, Jun 24, 2010 at 01:57:29PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2010-06-24 at 13:55 +0200, Andi Kleen wrote:
-> > > > but we don't have anything else that does that.
-> > > 
-> > > Actually we do, audit in syscalls and scheduling in interrupts and signals 
-> > > all work this way. Probably more at some point adding more code to this
-> > > path was very popular. 
-> > 
-> > That's the return to user path, nothing to do with softirqs. Add a TIF
-> > flag and call your function there.
-> 
-> It does that, but there are some cases where it's not enough.
+On Thu, Jun 17, 2010 at 02:14:00PM -0700, Tom Lyon wrote:
+> On Sunday 13 June 2010 03:23:39 am Michael S. Tsirkin wrote:
 
-care to expand on that?
+> OK, after more investigation, I realize you are right.
+> We definitely need the IOMMU protection for interrupts, and
+> if we have it, a lot of the code for config space protection is pointless.
+> It does seem that the Intel  intr_remapping code does what we want
+> (accidentally) but that the AMD iommu code does not yet do any
+> interrupt remapping.  Joerg - can you comment? On the roadmap?
+
+Work on this is planned, but not at a high priority by now. I can
+re-prioritize this item if needed.
+
+	Joerg
+
