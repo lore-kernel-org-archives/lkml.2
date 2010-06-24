@@ -1,67 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab0FXJJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 05:09:40 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36512 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754375Ab0FXJJj (ORCPT
+	id S1754676Ab0FXJL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 05:11:28 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54068 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754340Ab0FXJL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 05:09:39 -0400
-Date: Thu, 24 Jun 2010 10:09:17 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Phil Carmody <ext-phil.2.carmody@nokia.com>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-ID: <20100624090917.GA25508@flint.arm.linux.org.uk>
-References: <20100624021949.62910287.sfr@canb.auug.org.au> <20100624103619.46a88a63.sfr@canb.auug.org.au> <1277370056.30452.9.camel@e102109-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277370056.30452.9.camel@e102109-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 24 Jun 2010 05:11:27 -0400
+Date: Thu, 24 Jun 2010 10:16:18 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Henri =?ISO-8859-14?B?SORra2luZW4=?= <henuxd@gmail.com>
+Cc: gregkh@suse.de, ossama.othman@intel.com, alan@linux.intel.com,
+       mattij.lammi@gmail.com, randy.dunlap@oracle.com,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Staging: memrar: Moved memrar_allocator struct to
+ memrar_allocator.c
+Message-ID: <20100624101618.51dea6d5@lxorguk.ukuu.org.uk>
+In-Reply-To: <1277363386-4817-1-git-send-email-henuxd@gmail.com>
+References: <1277363386-4817-1-git-send-email-henuxd@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 10:00:56AM +0100, Catalin Marinas wrote:
-> On Thu, 2010-06-24 at 10:36 +1000, Stephen Rothwell wrote:
-> > Hi Russell,
-> > 
-> > On Thu, 24 Jun 2010 02:19:49 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > >
-> > > After merging the final tree, the next-20100616 and later linux-next
-> > > builds for most arm configs (including versatile_defconfig) failed like this:
-> > > 
-> > > In file included from include/linux/module.h:23,
-> > >                  from include/linux/device.h:23,
-> > >                  from include/linux/dma-mapping.h:4,
-> > >                  from arch/arm/kernel/asm-offsets.c:15:
-> > > include/trace/events/module.h:11: error: two or more data types in declaration 
-> > > 
-> > > Reverting commit f0028612a8ffedcdafa8b7ae83ab090d8b0318b4 ("ARM: 6171/1:
-> > > module - simplify unwind table handling") (and
-> > > cecaa4c6b8173b02c9f7ecfdbbc81f573a7a9f33 ("ARM: 6172/1: module -
-> > > additional unwind tables for exit/devexit sections") that depends on it)
-> > > fixes this build error.
-> > 
-> > I have reverted those 2 commits in linux-next today.
-> 
-> Thanks. Stephen, do you build with just the standard defconfig for
-> ARCH=arm?
+> +size_t memrar_allocator_largest_free_area(struct memrar_allocator *allocator)
+> +{
+> +	if (allocator == NULL)
+> +		return 0;
+> +	return allocator->largest_free_area;
+> +}
 
-The linux-next website has all the build results for all the defconfigs.
-You can get to the ARM build results via:
-
-  http://kisskb.ellerman.id.au/kisskb/compiler/11/
-
-> Phil, could you please add a semicolon after '}' and send Russell a
-> patch?
-
-... and also test the result before sending.
-
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+static ?
