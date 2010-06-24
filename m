@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab0FXHVs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 03:21:48 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:47213 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab0FXHVr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 03:21:47 -0400
-Subject: Re: [PATCH v2] perf: close the opened directories.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>, acme@ghostprotocols.net,
-       mingo@elte.hu, linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       paulus@samba.org
-In-Reply-To: <4C230362.5080704@cn.fujitsu.com>
-References: <4C1C3F7C.4030607@cn.fujitsu.com>
-	 <1277360965.2096.881.camel@ymzhang.sh.intel.com>
-	 <4C230362.5080704@cn.fujitsu.com>
+	id S1753970Ab0FXH1g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 03:27:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50842 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018Ab0FXH1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 03:27:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,472,1272870000"; 
+   d="scan'208";a="811015566"
+Subject: Re: [RFC][PATCH] irq_work
+From: Huang Ying <ying.huang@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H.PeterA" <"nvin hpa"@zytor.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <1277363993.1875.847.camel@laptop>
+References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
+	 <1277361352.1875.838.camel@laptop>
+	 <1277361791.3947.11.camel@yhuang-dev.sh.intel.com>
+	 <1277362073.1875.839.camel@laptop>
+	 <1277362243.3947.20.camel@yhuang-dev.sh.intel.com>
+	 <1277362680.1875.845.camel@laptop>
+	 <1277363069.3947.30.camel@yhuang-dev.sh.intel.com>
+	 <1277363993.1875.847.camel@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 24 Jun 2010 09:21:34 +0200
-Message-ID: <1277364094.1875.848.camel@laptop>
+Date: Thu, 24 Jun 2010 15:27:33 +0800
+Message-ID: <1277364453.3947.64.camel@yhuang-dev.sh.intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-24 at 15:04 +0800, Gui Jianfeng wrote:
-> When I ran "perf kvm ... top", I encountered the following error output.
+On Thu, 2010-06-24 at 15:19 +0800, Peter Zijlstra wrote:
+> On Thu, 2010-06-24 at 15:04 +0800, Huang Ying wrote:
 > 
->   Error: perfcounter syscall returned with -1 (Too many open files)
+> > Yes. NMI is there from 8259 age.
 > 
->   Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+> But do we really care about such systems?
 > 
-> Looking into perf, I found perf opens too many direcotries at initialization
-> time, but forgets to close them. Here is the fix.
+> > That is possible. But in NO_HZ system, we have no tick to rely on.
 > 
-> Signef-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+> Of course you have, you can delay the NO_HZ state when there's pending
+> callbacks, that's all of 1 line.
+> 
+> > soft_irq is better here, because it will be triggered for any interrupt.
+> 
+> Well, you can do the callbacks from irq_exit() as well, that's no
+> problem.
 
-Looks good to me, Arnaldo, will you pick this up?
+I think it is not a good idea to add overhead in such a hot path if the
+overhead can be avoided.
+
+Best Regards,
+Huang Ying
+
+
