@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab0FXSLB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 14:11:01 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:44843 "EHLO e4.ny.us.ibm.com"
+	id S1755659Ab0FXSLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 14:11:08 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:44863 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755016Ab0FXSK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 14:10:57 -0400
+	id S1755193Ab0FXSLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 14:11:03 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -13,9 +13,9 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
        James Morris <jmorris@namei.org>,
        David Safford <safford@watson.ibm.com>,
        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 02/15] security: move LSM xattrnames to xattr.h
-Date: Thu, 24 Jun 2010 14:10:18 -0400
-Message-Id: <1277403031-3080-3-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH 03/15] xattr: define vfs_getxattr_alloc and vfs_xattr_cmp
+Date: Thu, 24 Jun 2010 14:10:19 -0400
+Message-Id: <1277403031-3080-4-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1277403031-3080-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1277403031-3080-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -23,81 +23,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the security extended attributes names global.
+vfs_getxattr_alloc() and vfs_xattr_cmp() are two new kernel xattr
+helper functions.  vfs_getxattr_alloc() first allocates memory for
+the requested xattr and then retrieves it. vfs_xattr_cmp() compares
+a given value with the contents of an extended attribute.
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- include/linux/capability.h |    3 ---
- include/linux/xattr.h      |   10 ++++++++++
- security/selinux/hooks.c   |    3 ---
- security/smack/smack.h     |    2 --
- 4 files changed, 10 insertions(+), 8 deletions(-)
+ fs/xattr.c            |   58 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/xattr.h |    5 +++-
+ 2 files changed, 62 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index 39e5ff5..90012b9 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -49,9 +49,6 @@ typedef struct __user_cap_data_struct {
- } __user *cap_user_data_t;
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 01bb813..e1f6b8b 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -159,6 +159,64 @@ out_noalloc:
+ }
+ EXPORT_SYMBOL_GPL(xattr_getsecurity);
  
- 
--#define XATTR_CAPS_SUFFIX "capability"
--#define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
--
- #define VFS_CAP_REVISION_MASK	0xFF000000
- #define VFS_CAP_REVISION_SHIFT	24
- #define VFS_CAP_FLAGS_MASK	~VFS_CAP_REVISION_MASK
++/*
++ * vfs_getxattr_alloc - allocate memory, if necessary, before calling getxattr
++ *
++ * Allocate memory, if not already allocated, or re-allocate correct size,
++ * before retrieving the extended attribute.
++ *
++ * Returns the result of alloc, if failed, or the getxattr operation.
++ */
++ssize_t
++vfs_getxattr_alloc(struct dentry *dentry, const char *name, char **xattr_value,
++		   size_t xattr_size, gfp_t flags)
++{
++	struct inode *inode = dentry->d_inode;
++	char *value = *xattr_value;
++	int error;
++
++	error = xattr_permission(inode, name, MAY_READ);
++	if (error)
++		return error;
++
++	if (!inode->i_op->getxattr)
++		return -EOPNOTSUPP;
++
++	error = inode->i_op->getxattr(dentry, name, NULL, 0);
++	if (error < 0)
++		return error;
++
++	if (!value || (error > xattr_size)) {
++		value = krealloc(*xattr_value, error + 1, flags);
++		if (!value)
++			return -ENOMEM;
++		memset(value, 0, error + 1);
++	}
++
++	error = inode->i_op->getxattr(dentry, name, value, error);
++	*xattr_value = value;
++	return error;
++}
++
++/* Compare an extended attribute value with the given value */
++int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
++		  const char *value, size_t size, gfp_t flags)
++{
++	char *xattr_value = NULL;
++	int rc;
++
++	rc = vfs_getxattr_alloc(dentry, xattr_name, &xattr_value, 0, flags);
++	if (rc < 0)
++		return rc;
++
++	if ((rc != size) || (memcmp(xattr_value, value, rc) != 0))
++		rc = -EINVAL;
++	else
++		rc = 0;
++	kfree(xattr_value);
++	return rc;
++}
++
+ ssize_t
+ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
+ {
 diff --git a/include/linux/xattr.h b/include/linux/xattr.h
-index 0cfa1e9..62ca853 100644
+index 62ca853..f921a4f 100644
 --- a/include/linux/xattr.h
 +++ b/include/linux/xattr.h
-@@ -33,6 +33,16 @@
- #define XATTR_USER_PREFIX "user."
- #define XATTR_USER_PREFIX_LEN (sizeof (XATTR_USER_PREFIX) - 1)
- 
-+/* Security namespace */
-+#define XATTR_SELINUX_SUFFIX "selinux"
-+#define XATTR_NAME_SELINUX XATTR_SECURITY_PREFIX XATTR_SELINUX_SUFFIX
-+
-+#define XATTR_SMACK_SUFFIX "SMACK64"
-+#define XATTR_NAME_SMACK XATTR_SECURITY_PREFIX XATTR_SMACK_SUFFIX
-+
-+#define XATTR_CAPS_SUFFIX "capability"
-+#define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
-+
- struct inode;
- struct dentry;
- 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 0f524b7..85338f0 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -87,9 +87,6 @@
- #include "netlabel.h"
- #include "audit.h"
- 
--#define XATTR_SELINUX_SUFFIX "selinux"
--#define XATTR_NAME_SELINUX XATTR_SECURITY_PREFIX XATTR_SELINUX_SUFFIX
+@@ -68,7 +68,10 @@ ssize_t generic_getxattr(struct dentry *dentry, const char *name, void *buffer,
+ ssize_t generic_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size);
+ int generic_setxattr(struct dentry *dentry, const char *name, const void *value, size_t size, int flags);
+ int generic_removexattr(struct dentry *dentry, const char *name);
 -
- #define NUM_SEL_MNT_OPTS 5
++ssize_t vfs_getxattr_alloc(struct dentry *dentry, const char *name,
++			   char **xattr_value, size_t size, gfp_t flags);
++int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
++		  const char *value, size_t size, gfp_t flags);
+ #endif  /*  __KERNEL__  */
  
- extern int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm);
-diff --git a/security/smack/smack.h b/security/smack/smack.h
-index c6e9aca..9c773e3 100644
---- a/security/smack/smack.h
-+++ b/security/smack/smack.h
-@@ -126,10 +126,8 @@ struct smack_known {
- /*
-  * xattr names
-  */
--#define XATTR_SMACK_SUFFIX	"SMACK64"
- #define XATTR_SMACK_IPIN	"SMACK64IPIN"
- #define XATTR_SMACK_IPOUT	"SMACK64IPOUT"
--#define XATTR_NAME_SMACK	XATTR_SECURITY_PREFIX XATTR_SMACK_SUFFIX
- #define XATTR_NAME_SMACKIPIN	XATTR_SECURITY_PREFIX XATTR_SMACK_IPIN
- #define XATTR_NAME_SMACKIPOUT	XATTR_SECURITY_PREFIX XATTR_SMACK_IPOUT
- 
+ #endif	/* _LINUX_XATTR_H */
 -- 
 1.6.6.1
 
