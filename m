@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab0FXImH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 04:42:07 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:47823 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab0FXImF (ORCPT
+	id S1754375Ab0FXIoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 04:44:21 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:45952 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375Ab0FXIoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 04:42:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=rPlBY6QhkJYIX1V65lsfTksDk4ubn51aDMI3hwvjMcUdMl1u29s5fylOpVbbpTinj6
-         agdNlkKDRaAlhPiUS+GY4wDn9cBGMlT1imNQk4smB6DH02vFDXqdrU/aVlY6OPqBcUC8
-         Qma75evBK5gmRrgQmHju/TPxB7x7sP72RF8Dk=
-Message-ID: <4C231A40.20401@gmail.com>
-Date: Thu, 24 Jun 2010 16:41:36 +0800
-From: Wan ZongShun <mcuos.com@gmail.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       rtc-linux <rtc-linux@googlegroups.com>,
-       Alessandro Zummo <a.zummo@towertech.it>
-Subject: [PATCH 1/3] RTC/nuc900: make returning time checking function valid
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Jun 2010 04:44:19 -0400
+From: Adrian Hunter <adrian.hunter@nokia.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Adrian Hunter <adrian.hunter@nokia.com>, Jens Axboe <axboe@kernel.dk>,
+       Kyungmin Park <kmpark@infradead.org>,
+       Madhusudhan Chikkature <madhu.cr@ti.com>,
+       linux-mmc Mailing List <linux-mmc@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>,
+       linux-kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 24 Jun 2010 11:43:51 +0300
+Message-Id: <20100624084351.25444.30143.sendpatchset@ahunter-work.research.nokia.com>
+Subject: [PATCH V3 0/5] Add MMC erase and secure erase V3
+X-OriginalArrivalTime: 24 Jun 2010 08:43:58.0204 (UTC) FILETIME=[62EFBBC0:01CB1379]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to make returning time checking function valid.
-In spite of using the 'rtc_valid_tm', nevertheless, the read time function
-omits its returning value, that means the 'rtc_valid_tm' is useless here.
+Hi
 
-Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
+Add ability to do MMC erase and secure erase operations from userspace,
+using the BLKDISCARD ioctl and a newly created BLKSECDISCARD ioctl.
 
----
- drivers/rtc/rtc-nuc900.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+This is version 3 of these patches.
 
-diff --git a/drivers/rtc/rtc-nuc900.c b/drivers/rtc/rtc-nuc900.c
-index 20bc70b..84336d1 100644
---- a/drivers/rtc/rtc-nuc900.c
-+++ b/drivers/rtc/rtc-nuc900.c
-@@ -102,7 +102,7 @@ static int *check_rtc_access_enable(struct nuc900_rtc *nuc900_rtc)
- 	return 0;
- }
+Changes from V2
 
--static void nuc900_rtc_bcd2bin(unsigned int timereg,
-+static int nuc900_rtc_bcd2bin(unsigned int timereg,
- 				unsigned int calreg, struct rtc_time *tm)
- {
- 	tm->tm_mday	= bcd2bin(calreg >> 0);
-@@ -113,7 +113,7 @@ static void nuc900_rtc_bcd2bin(unsigned int timereg,
- 	tm->tm_min	= bcd2bin(timereg >> 8);
- 	tm->tm_hour	= bcd2bin(timereg >> 16);
+- move the addition of BLKSECDISCARD to a separate patch and implement it
+using I/O requests
+- move the MMC support of secure discard to a separate patch and support
+the secure discard I/O request
 
--	rtc_valid_tm(tm);
-+	return rtc_valid_tm(tm);
- }
+Changes from V1
 
- static void nuc900_rtc_bin2bcd(struct device *dev, struct rtc_time *settm,
-@@ -170,9 +170,7 @@ static int nuc900_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 	timeval = __raw_readl(rtc->rtc_reg + REG_RTC_TLR);
- 	clrval	= __raw_readl(rtc->rtc_reg + REG_RTC_CLR);
+- use discard I/O requests instead of implementing BLKDISCARD in mmc_block
+- do not validate erase size for MMC erases, instead round to erase size
+- rename MMC max_erase to pref_erase and expose it through sysfs as
+preferred_erase_size
 
--	nuc900_rtc_bcd2bin(timeval, clrval, tm);
--
--	return 0;
-+	return nuc900_rtc_bcd2bin(timeval, clrval, tm);
- }
 
- static int nuc900_rtc_set_time(struct device *dev, struct rtc_time *tm)
-@@ -205,9 +203,7 @@ static int nuc900_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
- 	timeval = __raw_readl(rtc->rtc_reg + REG_RTC_TAR);
- 	carval	= __raw_readl(rtc->rtc_reg + REG_RTC_CAR);
+Adrian Hunter (5):
+      mmc: Add erase, secure erase, trim and secure trim operations
+      mmc_block: Add discard support
+      omap_hsmmc: Add erase capability
+      block: Add secure discard
+      mmc_block: Add support for secure discard
 
--	nuc900_rtc_bcd2bin(timeval, carval, &alrm->time);
--
--	return 0;
-+	return nuc900_rtc_bcd2bin(timeval, carval, &alrm->time);
- }
+ block/blk-core.c              |    6 +-
+ block/blk-lib.c               |    6 +
+ block/compat_ioctl.c          |    1 +
+ block/elevator.c              |    4 +
+ block/ioctl.c                 |   15 ++-
+ drivers/mmc/card/block.c      |   82 ++++++++++-
+ drivers/mmc/card/queue.c      |   19 ++-
+ drivers/mmc/core/core.c       |  346 +++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/core/core.h       |    2 +
+ drivers/mmc/core/mmc.c        |   47 ++++++-
+ drivers/mmc/core/sd.c         |   82 ++++++++++
+ drivers/mmc/core/sd_ops.c     |   48 ++++++
+ drivers/mmc/core/sd_ops.h     |    1 +
+ drivers/mmc/host/omap_hsmmc.c |   13 ++-
+ include/linux/bio.h           |    7 +-
+ include/linux/blkdev.h        |   10 +-
+ include/linux/fs.h            |    2 +
+ include/linux/mmc/card.h      |   19 +++
+ include/linux/mmc/core.h      |   19 +++
+ include/linux/mmc/host.h      |    1 +
+ include/linux/mmc/mmc.h       |   24 ++-
+ include/linux/mmc/sd.h        |    5 +
+ kernel/trace/blktrace.c       |    8 +
+ 23 files changed, 746 insertions(+), 21 deletions(-)
 
- static int nuc900_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
--- 
-1.6.3.3
+ 
+Regards
+Adrian
+
