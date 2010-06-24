@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab0FXNxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 09:53:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33586 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754822Ab0FXNxJ (ORCPT
+	id S1755410Ab0FXN6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 09:58:34 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:16406 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822Ab0FXN6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 09:53:09 -0400
-Date: Thu, 24 Jun 2010 10:52:27 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>, mingo@elte.hu,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       a.p.zijlstra@chello.nl, paulus@samba.org
-Subject: Re: [PATCH v2] perf: close the opened directories.
-Message-ID: <20100624135227.GA4784@ghostprotocols.net>
-References: <4C1C3F7C.4030607@cn.fujitsu.com>
- <1277360965.2096.881.camel@ymzhang.sh.intel.com>
- <4C230362.5080704@cn.fujitsu.com>
+	Thu, 24 Jun 2010 09:58:32 -0400
+Message-ID: <4C236486.5070708@hp.com>
+Date: Thu, 24 Jun 2010 09:58:30 -0400
+From: Vlad Yasevich <vladislav.yasevich@hp.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C230362.5080704@cn.fujitsu.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: =?UTF-8?B?RGllZ28gRWxpbyDigJxGbGFtZWV5ZXPigJ0gUGV0dGVuw7I=?= 
+	<flameeyes@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-sctp@vger.kernel.org
+Subject: Re: [PATCH] sctp: implement SIOCINQ ioctl()
+References: <1277329060-21543-1-git-send-email-flameeyes@gmail.com>	 <4C235B75.2000807@hp.com> <1277385636.13544.67.camel@yamato.local>	 <4C236063.9050302@hp.com> <1277387081.13544.75.camel@yamato.local>
+In-Reply-To: <1277387081.13544.75.camel@yamato.local>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAQAAAAI=
+X-Whitelist: TRUE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jun 24, 2010 at 03:04:02PM +0800, Gui Jianfeng escreveu:
-> When I ran "perf kvm ... top", I encountered the following error output.
-> 
->   Error: perfcounter syscall returned with -1 (Too many open files)
-> 
->   Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-> 
-> Looking into perf, I found perf opens too many direcotries at initialization
-> time, but forgets to close them. Here is the fix.
-> 
-> Signef-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
 
-Thanks, will apply.
 
-- Arnaldo
+Diego Elio “Flameeyes” Pettenò wrote:
+> Il giorno gio, 24/06/2010 alle 09.40 -0400, Vlad Yasevich ha scritto:
+>> You don't call accept() on an SCTP SEQPACKET socket.  You can just
+>> read from it.
+> 
+> Okay I guess I'll send a patch to the man page to fix that then.
+
+I don't think the man page needs an update.  This is just an SCTP-ism.
+There are other protocols using SOCK_SEQPACKET that implement and support
+accept() call.
+
+The SCTP api spec decided that it wouldn't support accept() and we have to
+follow it.
+
+
+> 
+>> This way, you'll ignore listening SOCK_STREAM sockets which will not
+>> have any
+>> data anyway, but you'll check out listening SOCK_SEQPACKET sockets
+>> that may have
+>> data waiting on them. 
+> 
+> Ah I think I see what you mean here: SIOCINQ would work for TCP-style
+> ESTABLISHED sockets _and_ SEQPACKET LISTENING sockets, right?
+
+Right.
+
+-vlad
+
+> 
+> Will send the updated patch in a moment.
+> 
