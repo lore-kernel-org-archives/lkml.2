@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab0FXAaT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 20:30:19 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36572 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006Ab0FXAaR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 20:30:17 -0400
-From: Tao Ma <tao.ma@oracle.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, hch@lst.de,
-       axboe@kernel.dk, linux-fsdevel@vger.kernel.org,
-       Tao Ma <tao.ma@oracle.com>
-Subject: [PATCH v2] block: Don't count_vm_events for discard bio in submit_bio.
-Date: Thu, 24 Jun 2010 08:28:15 +0800
-Message-Id: <1277339295-6524-1-git-send-email-tao.ma@oracle.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20100623124046.4dec96d1.akpm@linux-foundation.org>
-References: <20100623124046.4dec96d1.akpm@linux-foundation.org>
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4C22A6D9.0146:SCFMA922111,ss=1,fgs=0
+	id S1754078Ab0FXAgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 20:36:33 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57222 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753883Ab0FXAgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 20:36:32 -0400
+Date: Thu, 24 Jun 2010 10:36:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Phil Carmody <ext-phil.2.carmody@nokia.com>,
+       Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-Id: <20100624103619.46a88a63.sfr@canb.auug.org.au>
+In-Reply-To: <20100624021949.62910287.sfr@canb.auug.org.au>
+References: <20100624021949.62910287.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__24_Jun_2010_10_36_19_+1000_yfFDc_G8Ubg4ra0V"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-> Yes, that's a buglet.
+--Signature=_Thu__24_Jun_2010_10_36_19_+1000_yfFDc_G8Ubg4ra0V
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Russell,
+
+On Thu, 24 Jun 2010 02:19:49 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
-> Note that Christoph's "[PATCH, RFC] block: don't allocate a payload for
-> discard request" will fix it in a better way.  That patch is in
-> linux-next now, but I expect it will be taken out again (quickly,
-> please) because Mike has found a number of problems with it.  
-ok, I haven't noticed that. thanks for the info.
->
-> Your patch looks like a decent temporary fix for mainline, and a
-> permanent one for -stable.
-I am sorry, but I made a mistake. BIO_RW_DISCARD is a enum for bit offset.
-So the right check should be rw & (1 << BIO_RW_DISCARD).
-I have regenerated the patch. Sorry for the inconvenience.
+> After merging the final tree, the next-20100616 and later linux-next
+> builds for most arm configs (including versatile_defconfig) failed like t=
+his:
+>=20
+> In file included from include/linux/module.h:23,
+>                  from include/linux/device.h:23,
+>                  from include/linux/dma-mapping.h:4,
+>                  from arch/arm/kernel/asm-offsets.c:15:
+> include/trace/events/module.h:11: error: two or more data types in declar=
+ation=20
+>=20
+> Reverting commit f0028612a8ffedcdafa8b7ae83ab090d8b0318b4 ("ARM: 6171/1:
+> module - simplify unwind table handling") (and
+> cecaa4c6b8173b02c9f7ecfdbbc81f573a7a9f33 ("ARM: 6172/1: module -
+> additional unwind tables for exit/devexit sections") that depends on it)
+> fixes this build error.
 
-Regards,
-Tao
+I have reverted those 2 commits in linux-next today.
 
->From 060630d842a987a518c648ff65160639100c9a1b Mon Sep 17 00:00:00 2001
-From: Tao Ma <tao.ma@oracle.com>
-Date: Thu, 24 Jun 2010 07:43:57 +0800
-Subject: [PATCH v2] block: Don't count_vm_events for discard bio in submit_bio.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-In submit_bio, we count vm events by check READ/WRITE.
-But actually DISCARD_NOBARRIER also has the WRITE flag set.
-It looks as if in blkdev_issue_discard, we also add a
-page as the payload and the bio_has_data check isn't enough.
-So add another check for discard bio.
+--Signature=_Thu__24_Jun_2010_10_36_19_+1000_yfFDc_G8Ubg4ra0V
+Content-Type: application/pgp-signature
 
-Signed-off-by: Tao Ma <tao.ma@oracle.com>
----
- block/blk-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index f84cce4..26aa542 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1586,7 +1586,7 @@ void submit_bio(int rw, struct bio *bio)
- 	 * If it's a regular read/write or a barrier with data attached,
- 	 * go through the normal accounting stuff before submission.
- 	 */
--	if (bio_has_data(bio)) {
-+	if (bio_has_data(bio) && !(rw & (1 << BIO_RW_DISCARD))) {
- 		if (rw & WRITE) {
- 			count_vm_events(PGPGOUT, count);
- 		} else {
--- 
-1.5.5
+iEYEARECAAYFAkwiqIMACgkQjjKRsyhoI8wTYgCfS6hmOlWHGWuuJxHqN14qecFx
+5e8AnjDUXhaF3PaGmmquvdAP+7lIScTk
+=6snl
+-----END PGP SIGNATURE-----
 
+--Signature=_Thu__24_Jun_2010_10_36_19_+1000_yfFDc_G8Ubg4ra0V--
