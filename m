@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab0FXQDv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 12:03:51 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52732 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab0FXQDu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 12:03:50 -0400
-Subject: Re: [PATCH 3/11] device driver for DA9052
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: dd.diasemi@gmail.com
-Cc: linux-kernel@vger.kernel.org,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Samuel Ortiz <sameo@linux.intel.com>
-In-Reply-To: <1277393751.6703.16.camel@sw-eng-lt-dc-vm2>
-References: <1277393751.6703.16.camel@sw-eng-lt-dc-vm2>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Jun 2010 16:55:47 +0100
-Message-ID: <1277394947.3100.217.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755810Ab0FXQF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 12:05:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60487 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754229Ab0FXQF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 12:05:28 -0400
+Date: Fri, 25 Jun 2010 02:05:24 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+       Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 24/52] fs: dcache reduce d_parent locking
+Message-ID: <20100624160524.GM10441@laptop>
+References: <20100624030212.676457061@suse.de>
+ <20100624030729.395195069@suse.de>
+ <1277369062.1875.928.camel@laptop>
+ <20100624150706.GF10441@laptop>
+ <20100624153218.GC2373@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100624153218.GC2373@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-24 at 17:35 +0200, dd diasemi wrote:
-> Initial submission of power REGULATOR control module of the device
-> driver for DA9052 power management device from Dialog Semiconductor.
+On Thu, Jun 24, 2010 at 08:32:18AM -0700, Paul E. McKenney wrote:
+> On Fri, Jun 25, 2010 at 01:07:06AM +1000, Nick Piggin wrote:
+> > On Thu, Jun 24, 2010 at 10:44:22AM +0200, Peter Zijlstra wrote:
+> > > On Thu, 2010-06-24 at 13:02 +1000, npiggin@suse.de wrote:
+> > > > Use RCU property of dcache to simplify locking in some places where we
+> > > > take d_parent and d_lock.
+> > > > 
+> > > > Comment: don't need rcu_deref because we take the spinlock and recheck it.
+> > > 
+> > > But does the LOCK barrier imply a DATA DEPENDENCY barrier? (It does on
+> > > x86, and the compiler barrier implied by spin_lock() suffices to replace
+> > > ACCESS_ONCE()).
+> > 
+> > Well the dependency we care about is from loading the parent pointer
+> > to acquiring its spinlock. But we can't possibly have stale data given
+> > to the spin lock operation itself because it is a RMW.
 > 
-> Linux Kernel Version: 2.6.34
+> As long as you check for the structure being valid after acquiring the
+> lock, I agree.  Otherwise, I would be concerned about the following
+> sequence of events:
 > 
-> Signed-off-by: D. Chen <dchen@diasemi.com>
+> 1.	CPU 0 picks up a pointer to a given data element.
+> 
+> 2.	CPU 1 removes this element from the list, drops any locks that
+> 	it might have, and starts waiting for a grace period to
+> 	elapse.
+> 
+> 3.	CPU 0 acquires the lock, does some operation that would
+> 	be appropriate had the element not been removed, then
+> 	releases the lock.
+> 
+> 4.	After the grace period, CPU 1 frees the element, negating
+> 	CPU 0's hard work.
+> 
+> The usual approach is to have a "deleted" flag or some such in the
+> element that CPU 0 would set when removing the element and that CPU 1
+> would check after acquiring the lock.  Which you might well already
+> be doing!  ;-)
 
-It looks like your mailer has screwed up all the formatting. Can you
-resend and please also CC Mark and Samuel.
+Thanks, yep it's done under RCU, and after taking the lock it rechecks
+to see that it is still reachable by the same pointer (and if not,
+unlocks and retries) so it should be fine.
 
-Thanks
-
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+Thanks,
+Nick
 
