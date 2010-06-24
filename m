@@ -1,103 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab0FXDQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 23:16:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48463 "EHLO mx1.suse.de"
+	id S1754736Ab0FXDQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 23:16:47 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48455 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754183Ab0FXDPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 23:15:51 -0400
-Message-Id: <20100624030728.766241107@suse.de>
+	id S1754159Ab0FXDPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 23:15:49 -0400
+Message-Id: <20100624030725.885831564@suse.de>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 24 Jun 2010 13:02:32 +1000
+Date: Thu, 24 Jun 2010 13:02:14 +1000
 From: npiggin@suse.de
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: [patch 20/52] fs: dcache reduce dcache_inode_lock
+Subject: [patch 02/52] fs: fix superblock iteration race
 References: <20100624030212.676457061@suse.de>
-Content-Disposition: inline; filename=fs-dcache-d_delete-less-lock.patch
+Content-Disposition: inline; filename=fs-fix-iterate.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dcache_inode_lock can be avoided in d_delete() and d_materialise_unique()
-in cases where it is not required.
+list_for_each_entry_safe is not suitable to protect against concurrent
+modification of the list. 6754af6 introduced a race in sb walking.
+
+list_for_each_entry can use the trick of pinning the current entry in
+the list before we drop and retake the lock because it subsequently
+follows cur->next. However list_for_each_entry_safe saves n=cur->next
+for following before entering the loop body, so when the lock is
+dropped, n may be deleted.
 
 Signed-off-by: Nick Piggin <npiggin@suse.de>
 ---
- fs/dcache.c |   23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
+ fs/dcache.c          |    2 ++
+ fs/super.c           |    6 ++++++
+ include/linux/list.h |   15 +++++++++++++++
+ 3 files changed, 23 insertions(+)
 
 Index: linux-2.6/fs/dcache.c
 ===================================================================
 --- linux-2.6.orig/fs/dcache.c
 +++ linux-2.6/fs/dcache.c
-@@ -1789,10 +1789,15 @@ void d_delete(struct dentry * dentry)
- 	/*
- 	 * Are we the only user?
- 	 */
--	spin_lock(&dcache_inode_lock);
-+again:
- 	spin_lock(&dentry->d_lock);
- 	isdir = S_ISDIR(dentry->d_inode->i_mode);
- 	if (dentry->d_count == 1) {
-+		if (!spin_trylock(&dcache_inode_lock)) {
-+			spin_unlock(&dentry->d_lock);
-+			cpu_relax();
-+			goto again;
-+		}
- 		dentry->d_flags &= ~DCACHE_CANT_MOUNT;
- 		dentry_iput(dentry);
- 		fsnotify_nameremove(dentry, isdir);
-@@ -1803,7 +1808,6 @@ void d_delete(struct dentry * dentry)
- 		__d_drop(dentry);
+@@ -590,6 +590,8 @@ static void prune_dcache(int count)
+ 			up_read(&sb->s_umount);
+ 		}
+ 		spin_lock(&sb_lock);
++		/* lock was dropped, must reset next */
++		list_safe_reset_next(sb, n, s_list);
+ 		count -= pruned;
+ 		__put_super(sb);
+ 		/* more work left to do? */
+Index: linux-2.6/fs/super.c
+===================================================================
+--- linux-2.6.orig/fs/super.c
++++ linux-2.6/fs/super.c
+@@ -374,6 +374,8 @@ void sync_supers(void)
+ 			up_read(&sb->s_umount);
  
- 	spin_unlock(&dentry->d_lock);
--	spin_unlock(&dcache_inode_lock);
- 
- 	fsnotify_nameremove(dentry, isdir);
- }
-@@ -2116,14 +2120,15 @@ struct dentry *d_materialise_unique(stru
- 
- 	BUG_ON(!d_unhashed(dentry));
- 
--	spin_lock(&dcache_inode_lock);
--
- 	if (!inode) {
- 		actual = dentry;
- 		__d_instantiate(dentry, NULL);
--		goto found_lock;
-+		d_rehash(actual);
-+		goto out_nolock;
+ 			spin_lock(&sb_lock);
++			/* lock was dropped, must reset next */
++			list_safe_reset_next(sb, n, s_list);
+ 			__put_super(sb);
+ 		}
  	}
+@@ -405,6 +407,8 @@ void iterate_supers(void (*f)(struct sup
+ 		up_read(&sb->s_umount);
  
-+	spin_lock(&dcache_inode_lock);
+ 		spin_lock(&sb_lock);
++		/* lock was dropped, must reset next */
++		list_safe_reset_next(sb, n, s_list);
+ 		__put_super(sb);
+ 	}
+ 	spin_unlock(&sb_lock);
+@@ -585,6 +589,8 @@ static void do_emergency_remount(struct
+ 		}
+ 		up_write(&sb->s_umount);
+ 		spin_lock(&sb_lock);
++		/* lock was dropped, must reset next */
++		list_safe_reset_next(sb, n, s_list);
+ 		__put_super(sb);
+ 	}
+ 	spin_unlock(&sb_lock);
+Index: linux-2.6/include/linux/list.h
+===================================================================
+--- linux-2.6.orig/include/linux/list.h
++++ linux-2.6/include/linux/list.h
+@@ -544,6 +544,21 @@ static inline void list_splice_tail_init
+ 	     &pos->member != (head); 					\
+ 	     pos = n, n = list_entry(n->member.prev, typeof(*n), member))
+ 
++/**
++ * list_safe_reset_next - reset a stale list_for_each_entry_safe loop
++ * @pos:	the loop cursor used in the list_for_each_entry_safe loop
++ * @n:		temporary storage used in list_for_each_entry_safe
++ * @member:	the name of the list_struct within the struct.
++ *
++ * list_safe_reset_next is not safe to use in general if the list may be
++ * modified concurrently (eg. the lock is dropped in the loop body). An
++ * exception to this is if the cursor element (pos) is pinned in the list,
++ * and list_safe_reset_next is called after re-taking the lock and before
++ * completing the current iteration of the loop body.
++ */
++#define list_safe_reset_next(pos, n, member)				\
++	n = list_entry(pos->member.next, typeof(*pos), member)
 +
- 	if (S_ISDIR(inode->i_mode)) {
- 		struct dentry *alias;
- 
-@@ -2150,10 +2155,9 @@ struct dentry *d_materialise_unique(stru
- 	actual = __d_instantiate_unique(dentry, inode);
- 	if (!actual)
- 		actual = dentry;
--	else if (unlikely(!d_unhashed(actual)))
--		goto shouldnt_be_hashed;
-+	else
-+		BUG_ON(!d_unhashed(actual));
- 
--found_lock:
- 	spin_lock(&actual->d_lock);
- found:
- 	_d_rehash(actual);
-@@ -2167,10 +2171,6 @@ out_nolock:
- 
- 	iput(inode);
- 	return actual;
--
--shouldnt_be_hashed:
--	spin_unlock(&dcache_inode_lock);
--	BUG();
- }
- EXPORT_SYMBOL_GPL(d_materialise_unique);
- 
+ /*
+  * Double linked lists with a single pointer list head.
+  * Mostly useful for hash tables where the two pointer list head is
 
 
