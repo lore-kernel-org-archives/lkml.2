@@ -1,156 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab0FXTPU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 15:15:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49196 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754642Ab0FXTPS (ORCPT
+	id S1755714Ab0FXTRw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 15:17:52 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41285 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab0FXTRu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 15:15:18 -0400
-X-Authority-Analysis: v=1.1 cv=fhltGCNqn7I0vuW4QMEj3LCOhQQl14bnXIhcDW1W0Bg= c=1 sm=0 a=D2APlSkXLPIA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=gu6fZOg2AAAA:8 a=omOdbC7AAAAA:8 a=CmTFC2cQjkUvqy1l-pQA:9 a=r35PwZhVVKA4cVkBjn8A:7 a=yf7yYGwF_7rRiBNTA5-SEFI1QOEA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [RFC PATCH v2 1/5] irq: add tracepoint to softirq_raise
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, scott.a.mcmillan@intel.com,
-       kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+	Thu, 24 Jun 2010 15:17:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=whwlnDCP0BSAjxyZVC6xIh7XftUl+nqQQVDUa7ofjQEXGe7LZm1IEvTxv/tNIkh/+p
+         N80zkg8usAgshHwajjFF9ABmLRxD5c5FKPuJ+5i6+iSCDziP/N6tL+mjo5ADjjvMH5nl
+         ix7FWhU1oiVEfKowrMUTXdbiHOGv/gm/FnWlA=
+MIME-Version: 1.0
+In-Reply-To: <20100624191218.GC6031@tux>
+References: <AANLkTimb7rP0rS0OU8nan5uNEhHx_kEYL99ImZ3c8o0D@mail.gmail.com>
+	<1277189909-16376-1-git-send-email-sankar.curiosity@gmail.com>
+	<20100622165509.GB11336@tux>
+	<AANLkTikHiPKPD5myvn8bycPAS4f9rBkPvbag6if7p23O@mail.gmail.com>
+	<20100624185614.GA6031@tux>
+	<AANLkTim4mjw0BFshK_4RS6oDLLQMH_BF7BklU7EhETSj@mail.gmail.com>
+	<20100624191218.GC6031@tux>
+Date: Fri, 25 Jun 2010 00:47:49 +0530
+Message-ID: <AANLkTimVb6kAxvVdtTcxlofYqu1m24XEBlvYY8OKBgFu@mail.gmail.com>
+Subject: Re: [PATCH] mm: kmemleak: Change kmemleak default buffer size
+From: Sankar P <sankar.curiosity@gmail.com>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+       Vasanth Thiagarajan <Vasanth.Thiagarajan@atheros.com>,
+       Sujith Manoharan <Sujith.Manoharan@atheros.com>,
+       Senthil Balasubramanian <senthilkumar@atheros.com>, mcgrof@gmail.com,
        linux-kernel@vger.kernel.org
-In-Reply-To: <4C23145B.30805@jp.fujitsu.com>
-References: <4C2312A8.9060903@jp.fujitsu.com>
-	 <4C23145B.30805@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 24 Jun 2010 15:15:14 -0400
-Message-ID: <1277406914.9181.67.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Koki,
+On Fri, Jun 25, 2010 at 12:42 AM, Luis R. Rodriguez
+<lrodriguez@atheros.com> wrote:
+> On Thu, Jun 24, 2010 at 12:01:51PM -0700, Sankar P wrote:
+>> On Fri, Jun 25, 2010 at 12:26 AM, Luis R. Rodriguez
+>> <lrodriguez@atheros.com> wrote:
+>> > On Thu, Jun 24, 2010 at 12:31:11AM -0700, Sankar P wrote:
+>> >> On Tue, Jun 22, 2010 at 10:25 PM, Luis R. Rodriguez
+>> >> <lrodriguez@atheros.com> wrote:
+>> >> > On Mon, Jun 21, 2010 at 11:58:29PM -0700, Sankar P wrote:
+>> >> >> If we try to find the memory leaks in kernel that is
+>> >> >> compiled with 'make defconfig', the default buffer size
+>> >> >> seem to be inadequate. Change the buffer size from
+>> >> >> 400 to 1000, which is sufficient in most cases.
+>> >> >>
+>> >> >> Signed-off-by: Sankar P <sankar.curiosity@gmail.com>
+>> >> >
+>> >> > What's your full name? Please read the "Developer's Certificate of Origin 1.1"
+>> >> > It says:
+>> >> >
+>> >> > then you just add a line saying
+>> >> >
+>> >> >        Signed-off-by: Random J Developer <random@developer.example.org>
+>> >> >
+>> >> > using your real name (sorry, no pseudonyms or anonymous contributions.)
+>> >> >
+>> >> >
+>> >> > Also you may want to post on a new thread instead of using this old thread
+>> >> > unless the maintainer is reading this and wants to pick it up.
+>> >> >
+>> >>
+>> >> In our part of the world, we dont have lastnames. We just use the
+>> >> first letter of our father's name as the last name.
+>> >
+>> > Oh wow, what part of the world is that? Interesting.
+>> >
+>>
+>>
+>> It is in a place called "Tamil Nadu" in India. See
+>> http://en.wikipedia.org/wiki/Indian_name (First paragraph end)
+>
+> Odd, I visited Tamil Nadu for a while and met quite a few folks who
+> have full last names, like the ones Cc'd. Does this differ between
+> area or what?
+>
 
-Your subject says 1/5 but I do not see any other patches.
+Thiagarajan, Manoharan, Balasubramanian <= these are all first names.
+Probably they are using their Father's full name as their last name.
 
+>> >> I will send the updated patch as a new mail, I thought it will be
+>> >> easier to follow if all mails belongs to the same thread.
+>> >
+>> > It does help in-thread, but patches should be sent separately unless
+>> > you know for sure the maintainer *will* read this.
+>> >
+>>
+>> Okay I will take care next time. Thanks for the advice.
+>>
+>> Sent this off-thread as I was not sure if people might like talking
+>> about "Names"  in LKML.
+>
+> Actually it is important since the SOB is part of the development
+> process. If we cannot gaurantee names on the SOB then that needs
+> to be known too.
+>
 
-On Thu, 2010-06-24 at 17:16 +0900, Koki Sanagi wrote:
-> This patch adds a tracepoint to raising of softirq.
-> This is useful if you want to detect which hard interrupt raise softirq
-> and lets you know a time between raising softirq and performing softirq.
-> Combinating with other tracepoint, it lets us know a process of packets
-> (See patch 0/5).
-> 
->           <idle>-0     [001] 241229.957184: softirq_raise: vec=3 [action=NET_RX]
->           <idle>-0     [000] 241229.993399: softirq_raise: vec=1 [action=TIMER]
->           <idle>-0     [000] 241229.993400: softirq_raise: vec=9 [action=RCU]
-> 
-> This is a same patch Lai Jiangshan submitted.
-> http://marc.info/?l=linux-kernel&m=126026122728732&w=2
-> 
-> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-> ---
->  include/linux/interrupt.h  |    8 +++++++-
->  include/trace/events/irq.h |   34 +++++++++++++++++++++++++++++++---
->  2 files changed, 38 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-> index c233113..1cb5726 100644
-> --- a/include/linux/interrupt.h
-> +++ b/include/linux/interrupt.h
-> @@ -18,6 +18,7 @@
->  #include <asm/atomic.h>
->  #include <asm/ptrace.h>
->  #include <asm/system.h>
-> +#include <trace/events/irq.h>
->  
->  /*
->   * These correspond to the IORESOURCE_IRQ_* defines in
-> @@ -402,7 +403,12 @@ asmlinkage void do_softirq(void);
->  asmlinkage void __do_softirq(void);
->  extern void open_softirq(int nr, void (*action)(struct softirq_action *));
->  extern void softirq_init(void);
-> -#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
-> +static inline void __raise_softirq_irqoff(unsigned int nr)
-> +{
-> +	trace_softirq_raise(nr);
-> +	or_softirq_pending(1UL << nr);
-> +}
-> +
->  extern void raise_softirq_irqoff(unsigned int nr);
->  extern void raise_softirq(unsigned int nr);
->  extern void wakeup_softirqd(void);
-> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-> index 0e4cfb6..7cb7435 100644
-> --- a/include/trace/events/irq.h
-> +++ b/include/trace/events/irq.h
-> @@ -5,7 +5,9 @@
->  #define _TRACE_IRQ_H
->  
->  #include <linux/tracepoint.h>
-> -#include <linux/interrupt.h>
-> +
-> +struct irqaction;
-> +struct softirq_action;
->  
->  #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
->  #define show_softirq_name(val)				\
-> @@ -82,6 +84,32 @@ TRACE_EVENT(irq_handler_exit,
->  		  __entry->irq, __entry->ret ? "handled" : "unhandled")
->  );
->  
-> +/**
-> + * softirq_raise - called immediately when a softirq is raised
-> + * @nr: softirq vector number
-> + *
-> + * Tracepoint for tracing when softirq action is raised.
-> + * Also, when used in combination with the softirq_entry tracepoint
-> + * we can determine the softirq raise latency.
-> + */
-> +TRACE_EVENT(softirq_raise,
-> +
-> +	TP_PROTO(unsigned int nr),
-> +
-> +	TP_ARGS(nr),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	unsigned int,	vec	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->vec	= nr;
-> +	),
-> +
-> +	TP_printk("vec=%d [action=%s]", __entry->vec,
-> +		show_softirq_name(__entry->vec))
-
-Hmm, is there a way to reuse a DECLARE_EVENT_CLASS here?
-
-> +);
-> +
->  DECLARE_EVENT_CLASS(softirq,
->  
->  	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
-> @@ -89,11 +117,11 @@ DECLARE_EVENT_CLASS(softirq,
->  	TP_ARGS(h, vec),
->  
->  	TP_STRUCT__entry(
-> -		__field(	int,	vec			)
-> +		__field(	unsigned int,	vec	)
->  	),
->  
->  	TP_fast_assign(
-> -		__entry->vec = (int)(h - vec);
-> +		__entry->vec = (unsigned int)(h - vec);
-
-Just curious, did you see the original as a bug?
-
--- Steve
-
->  	),
->  
->  	TP_printk("vec=%d [action=%s]", __entry->vec,
+okay.
 
 
+-- 
+Sankar P
+http://psankar.blogspot.com
