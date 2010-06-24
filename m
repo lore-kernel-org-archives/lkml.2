@@ -1,257 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab0FXRHy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 13:07:54 -0400
-Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:46620 "EHLO
-	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab0FXRHx (ORCPT
+	id S1754634Ab0FXRJa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 13:09:30 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:33723 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750970Ab0FXRJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 13:07:53 -0400
-From: Louis Rilling <louis.rilling@kerlabs.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH] pid_ns: Fix proc_flush_task() accessing freed proc_mnt
-Date: Thu, 24 Jun 2010 19:08:49 +0200
-Message-Id: <1277399329-18087-1-git-send-email-louis.rilling@kerlabs.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <20100623203652.GA25298@redhat.com>
-References: <20100623203652.GA25298@redhat.com>
+	Thu, 24 Jun 2010 13:09:28 -0400
+Date: Thu, 24 Jun 2010 13:09:27 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Florian Mickler <florian@mickler.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [update 2] Re: [RFC][PATCH] PM: Avoid losing wakeup events during
+ suspend
+In-Reply-To: <201006241819.25055.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1006241257410.1654-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Resending because of buggy quotes in Eric's address. Sorry for the noise. ]
+On Thu, 24 Jun 2010, Rafael J. Wysocki wrote:
 
-On 06/19, Oleg Nesterov wrote:
-> And the last one on top of this series, before I go away from this
-> thread ;)
->
-> Since my further fixes were not approved, I think at least it makes
-> sense to cleanup pid_ns_release_proc() logic a bit.
+> > This is slightly different from the wakelock design.  Each call to
+> > pm_stay_awake() must be paired with a call to pm_relax(), allowing one
+> > device to have multiple concurrent critical sections, whereas calls to
+> > pm_wakeup_event() must not be paired with anything.  With wakelocks,
+> > you couldn't have multiple pending events for the same device.
+> 
+> You could, but you needed to define multiple wakelocks for the same device for
+> this purpose.
 
-It's completely untested and could be split into three patches. But I think that
-it solves the issues found so far, and that it will work with Eric's
-unshare(CLONE_NEWPID) too.
+Yeah, okay, but who's going to do that?
 
-What do you think about this approach?
+> > I'm not sure which model is better in practice.  No doubt the Android people 
+> > will prefer their way.
+> 
+> I suppose so.
 
-Thanks,
+It may not make a significant difference in the end.  You can always
+emulate the wakelock approach by not calling pm_stay_awake() when you
+know there is an earlier call still pending.
 
-Louis
+> > This requires you to define an explicit PCI_WAKEUP_COOLDOWN delay.  I 
+> > think that's okay; I had to do something similar with USB and SCSI.  
+> > (And I still think it would be a good idea to prevent workqueue threads 
+> > from freezing until their queues are empty.)
+> 
+> I guess you mean the freezable ones?
 
-On 20/06/10 20:06 +0200, Oleg Nesterov wrote:
-> pid_namespace holds ns->proc_mnt, while this vfsmount has a referene to
-> the namespace via PROC_I(sb->s_root->d_inode)->pid. To break this circle
-> /sbin/init does mntput() in pid_ns_release_proc(). See 6f4e6433.
->
-> But we have the following problems:
->
->         - Nobody does mntput() if copy_process() fails after
->           pid_ns_prepare_proc().
->
->         - proc_flush_task() checks upid->nr == 1 to verify we are init,
->           this is wrong if a multi-threaded init does exec.
->
->         - As Louis pointed out, this namespace can have the detached
->           EXIT_DEAD tasks which can use ns->proc_mnt after this mntput().
+Yes.  The unfreezable workqueue threads don't have to worry about 
+getting frozen while their queues are non-empty.  :-)
 
-This patch does four things:
-- defer pid_ns_release_proc()->mntput() to a worqueue context, so that
-  pid_ns_release_proc() can be called in atomic context;
-- introduce pid_ns->nr_pids, so that we can count the number of pids
-  allocated by alloc_pidmap();
-- move the call to pid_ns_prepare_proc() to alloc_pid(), where we know
-  when the first pid of a namespace is allocated;
-- move the call to pid_ns_release_proc() to free_pid(), where we are now
-  able to know when the last pid of a namespace is detached.
+>  I'm not sure if that helps a lot, because
+> new work items may still be added after the workqueue thread has been frozen.
 
-This solves the missing mntput() in copy_process() cleanup path, since
-free_pid() is called to cleanup alloc_pid().
+That's not the point.  If a wakeup handler queues a work item (for
+example, by calling pm_request_resume) then it wouldn't need to guess a
+timeout.  The work item would be guaranteed to run before the system
+could suspend again.
 
-This solves the multi-threaded init doing exec issue, since all
-sub-threads including former leader have called proc_flush_task() when the
-last pid is detached.
+> > Instead of allocating the work structures dynamically, would you be 
+> > better off using a memory pool?
+> 
+> Well, it would be kind of equivalent to defining my own slab cache for that,
+> wouldn't it?
 
-This solves the EXIT_DEAD tasks issue for the same reason.
+I suppose so.  It would make the GFP_ATOMIC allocations a little more 
+reliable.
 
-Signed-off-by: Louis Rilling <louis.rilling@kerlabs.com>
----
- fs/proc/base.c                |    4 ----
- fs/proc/root.c                |   11 ++++++++++-
- include/linux/pid_namespace.h |    3 +++
- kernel/fork.c                 |    6 ------
- kernel/pid.c                  |   16 +++++++++++++---
- kernel/pid_namespace.c        |    1 +
- 6 files changed, 27 insertions(+), 14 deletions(-)
-
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index acb7ef8..455b109 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2745,10 +2745,6 @@ void proc_flush_task(struct task_struct *task)
- 		proc_flush_task_mnt(upid->ns->proc_mnt, upid->nr,
- 					tgid->numbers[i].nr);
- 	}
--
--	upid = &pid->numbers[pid->level];
--	if (upid->nr == 1)
--		pid_ns_release_proc(upid->ns);
- }
- 
- static struct dentry *proc_pid_instantiate(struct inode *dir,
-diff --git a/fs/proc/root.c b/fs/proc/root.c
-index 4258384..9876cd9 100644
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -215,7 +215,16 @@ int pid_ns_prepare_proc(struct pid_namespace *ns)
- 	return 0;
- }
- 
--void pid_ns_release_proc(struct pid_namespace *ns)
-+static void do_pid_ns_release_proc(struct work_struct *work)
- {
-+	struct pid_namespace *ns;
-+
-+	ns = container_of(work, struct pid_namespace, release_proc_work);
- 	mntput(ns->proc_mnt);
- }
-+
-+void pid_ns_release_proc(struct pid_namespace *ns)
-+{
-+	INIT_WORK(&ns->release_proc_work, do_pid_ns_release_proc);
-+	schedule_work(&ns->release_proc_work);
-+}
-diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-index 38d1032..1010733 100644
---- a/include/linux/pid_namespace.h
-+++ b/include/linux/pid_namespace.h
-@@ -4,6 +4,7 @@
- #include <linux/sched.h>
- #include <linux/mm.h>
- #include <linux/threads.h>
-+#include <linux/workqueue.h>
- #include <linux/nsproxy.h>
- #include <linux/kref.h>
- 
-@@ -19,6 +20,7 @@ struct bsd_acct_struct;
- struct pid_namespace {
- 	struct kref kref;
- 	struct pidmap pidmap[PIDMAP_ENTRIES];
-+	atomic_t nr_pids;
- 	int last_pid;
- 	struct task_struct *child_reaper;
- 	struct kmem_cache *pid_cachep;
-@@ -26,6 +28,7 @@ struct pid_namespace {
- 	struct pid_namespace *parent;
- #ifdef CONFIG_PROC_FS
- 	struct vfsmount *proc_mnt;
-+	struct work_struct release_proc_work;
- #endif
- #ifdef CONFIG_BSD_PROCESS_ACCT
- 	struct bsd_acct_struct *bacct;
-diff --git a/kernel/fork.c b/kernel/fork.c
-index b6cce14..b063a9c 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1154,12 +1154,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 		pid = alloc_pid(p->nsproxy->pid_ns);
- 		if (!pid)
- 			goto bad_fork_cleanup_io;
--
--		if (clone_flags & CLONE_NEWPID) {
--			retval = pid_ns_prepare_proc(p->nsproxy->pid_ns);
--			if (retval < 0)
--				goto bad_fork_free_pid;
--		}
- 	}
- 
- 	p->pid = pid_nr(pid);
-diff --git a/kernel/pid.c b/kernel/pid.c
-index e9fd8c1..fdb73e1 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -34,6 +34,7 @@
- #include <linux/bootmem.h>
- #include <linux/hash.h>
- #include <linux/pid_namespace.h>
-+#include <linux/proc_fs.h>
- #include <linux/init_task.h>
- #include <linux/syscalls.h>
- 
-@@ -112,7 +113,7 @@ EXPORT_SYMBOL(is_container_init);
- 
- static  __cacheline_aligned_in_smp DEFINE_SPINLOCK(pidmap_lock);
- 
--static void free_pidmap(struct upid *upid)
-+static bool free_pidmap(struct upid *upid)
- {
- 	int nr = upid->nr;
- 	struct pidmap *map = upid->ns->pidmap + nr / BITS_PER_PAGE;
-@@ -120,6 +121,7 @@ static void free_pidmap(struct upid *upid)
- 
- 	clear_bit(offset, map->page);
- 	atomic_inc(&map->nr_free);
-+	return atomic_dec_and_test(&upid->ns->nr_pids);
- }
- 
- static int alloc_pidmap(struct pid_namespace *pid_ns)
-@@ -154,6 +156,7 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
- 			do {
- 				if (!test_and_set_bit(offset, map->page)) {
- 					atomic_dec(&map->nr_free);
-+					atomic_inc(&pid_ns->nr_pids);
- 					pid_ns->last_pid = pid;
- 					return pid;
- 				}
-@@ -226,6 +229,7 @@ static void delayed_put_pid(struct rcu_head *rhp)
- void free_pid(struct pid *pid)
- {
- 	/* We can be called with write_lock_irq(&tasklist_lock) held */
-+	struct upid *upid;
- 	int i;
- 	unsigned long flags;
- 
-@@ -234,8 +238,11 @@ void free_pid(struct pid *pid)
- 		hlist_del_rcu(&pid->numbers[i].pid_chain);
- 	spin_unlock_irqrestore(&pidmap_lock, flags);
- 
--	for (i = 0; i <= pid->level; i++)
--		free_pidmap(pid->numbers + i);
-+	for (i = 0; i <= pid->level; i++) {
-+		upid = pid->numbers + i;
-+		if (free_pidmap(upid))
-+			pid_ns_release_proc(upid->ns);
-+	}
- 
- 	call_rcu(&pid->rcu, delayed_put_pid);
- }
-@@ -276,6 +283,9 @@ struct pid *alloc_pid(struct pid_namespace *ns)
- 				&pid_hash[pid_hashfn(upid->nr, upid->ns)]);
- 	spin_unlock_irq(&pidmap_lock);
- 
-+	if (pid->numbers[pid->level].nr == 1)
-+		pid_ns_prepare_proc(ns);
-+
- out:
- 	return pid;
- 
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index a5aff94..beba2b4 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -92,6 +92,7 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
- 
- 	set_bit(0, ns->pidmap[0].page);
- 	atomic_set(&ns->pidmap[0].nr_free, BITS_PER_PAGE - 1);
-+	atomic_set(&ns->nr_pids, 0);
- 
- 	for (i = 1; i < PIDMAP_ENTRIES; i++)
- 		atomic_set(&ns->pidmap[i].nr_free, BITS_PER_PAGE);
--- 
-1.5.6.5
+Alan Stern
 
