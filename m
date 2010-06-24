@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab0FXNCh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 09:02:37 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58323 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754810Ab0FXNCg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 09:02:36 -0400
-Date: Thu, 24 Jun 2010 15:02:34 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Huang Ying <ying.huang@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Borislav Petkov <petkovbb@googlemail.com>, linux-kernel@vger.kernel.org,
-       mauro@elte.hu
-Subject: Re: [RFC][PATCH] irq_work
-Message-ID: <20100624130234.GM578@basil.fritz.box>
-References: <1277364727.1875.857.camel@laptop>
- <20100624102725.GA578@basil.fritz.box>
- <1277375409.1875.943.camel@laptop>
- <20100624105254.GB578@basil.fritz.box>
- <1277377121.1875.948.camel@laptop>
- <20100624110830.GC578@basil.fritz.box>
- <1277377852.1875.950.camel@laptop>
- <20100624112340.GA13502@elte.hu>
- <1277379294.1875.959.camel@laptop>
- <20100624123537.GA28884@elte.hu>
+	id S1755423Ab0FXNDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 09:03:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3535 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754810Ab0FXNDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 09:03:47 -0400
+Date: Thu, 24 Jun 2010 15:01:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Louis Rilling <louis.rilling@kerlabs.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org,
+       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/1] pid_ns: move pid_ns_release_proc() from
+	proc_flush_task() to zap_pid_ns_processes()
+Message-ID: <20100624130111.GB7257@redhat.com>
+References: <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <20100623203652.GA25298@redhat.com> <20100623203735.GB25298@redhat.com> <m1zkykgb8u.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100624123537.GA28884@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <m1zkykgb8u.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 02:35:37PM +0200, Ingo Molnar wrote:
-> All of these solutions use the fact that perf events are a generic event 
-> framework. If there's any missing details somewhere then fixes/enhancements 
-> can be added - right now our in-kernel event consumers are simple. But the 
-> design is sound.
+On 06/24, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > This is mostly cleanup and optimization, but also fixes the bug.
+>
+> Oleg with respect to your other patches I think they are some of
+> the best ones we have on the table.
+>
+> > proc_flush_task() checks upid->nr == 1 to detect the case when
+> > a sub-namespace exits. However, this doesn't work in case when
+> > a multithreaded init execs and calls release_task(old_leader),
+> > the old leader has the same pid 1.
+> >
+> > Move pid_ns_release_proc() to zap_pid_ns_processes(), it is called
+> > when we know for sure that init is exiting.
+>
+> This actually guarantees a use after free for the namespace init:
 
-One immediate problem that comes to mind with the proposal 
-is that if the event is of a type that cannot be dropped (e.g. an error 
-that needs to be handled) then a shared ring buffer cannot guarantee that.
+Yes, thanks. I am stupid.
 
--Andi
+Please ignore the patch.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Oleg.
+
