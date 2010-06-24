@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab0FXQTw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 12:19:52 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:60772 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754788Ab0FXQTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 12:19:51 -0400
-Date: Thu, 24 Jun 2010 18:19:49 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-       Frank Mayhar <fmayhar@google.com>, Eric Dumazet <dada1@cosmosbay.com>
-Subject: Re: [patch 42/52] fs: icache per-cpu last_ino allocator
-Message-ID: <20100624161949.GR578@basil.fritz.box>
-References: <20100624030212.676457061@suse.de>
- <20100624030732.402670838@suse.de>
- <87tyosahia.fsf@basil.nowhere.org>
- <20100624155243.GI10441@laptop>
+	id S1755960Ab0FXQVS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 12:21:18 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46340 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755644Ab0FXQVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 12:21:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [update 2] Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Date: Thu, 24 Jun 2010 18:19:24 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Florian Mickler <florian@mickler.org>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+References: <Pine.LNX.4.44L0.1006241111110.1654-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1006241111110.1654-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100624155243.GI10441@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006241819.25055.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 25, 2010 at 01:52:43AM +1000, Nick Piggin wrote:
+On Thursday, June 24, 2010, Alan Stern wrote:
+> On Thu, 24 Jun 2010, Rafael J. Wysocki wrote:
 > 
-> That's right. More or less it just requires alloc_inode to be exported,
-> adding more branches in new_inode would not be a good way to go.
-
-One test/branch shouldn't hurt much. 
-
-> > I guess the main customer is sockets only.
+> > > > And what happens if the device gets a second wakeup event before the timer
+> > > > for the first one expires?
+> > > 
+> > > Good question.  I don't have an answer to it at the moment, but it seems to
+> > > arise from using a single timer for all events.
+> > > 
+> > > It looks like it's simpler to make pm_wakeup_event() allocate a timer for each
+> > > event and make the timer function remove it.  That would cause suspend to
+> > > be blocked until the timer expires without a way to cancel it earlier, though.
+> > 
+> > So, I decided to try this after all.
+> > 
+> > Below is a new version of the patch.  It introduces pm_stay_awake(dev) and
+> > pm_relax() that play the roles of the "old" pm_wakeup_begin() and
+> > pm_wakeup_end().
+> > 
+> > pm_wakeup_event() now takes an extra timeout argument and uses it for
+> > deferred execution of pm_relax().  So, one can either use the
+> > pm_stay_awake(dev) / pm_relax() pair, or use pm_wakeup_event(dev, timeout)
+> > if the ending is under someone else's control.
+> > 
+> > In addition to that, pm_get_wakeup_count() blocks until events_in_progress is
+> > zero.
+> > 
+> > Please tell me what you think.
 > 
-> I guess. Sockets and ram based filesystems. Interestingly I don't know
-> really what it's for (in socket code it's mostly for reporting and
-> hashing it seems). It sure isn't guaranteed to be unique.
+> This is slightly different from the wakelock design.  Each call to
+> pm_stay_awake() must be paired with a call to pm_relax(), allowing one
+> device to have multiple concurrent critical sections, whereas calls to
+> pm_wakeup_event() must not be paired with anything.  With wakelocks,
+> you couldn't have multiple pending events for the same device.
 
-Maybe it could be generated lazily on access for those?
-I suppose stat on a socket is relatively rare.
-The only problem is would need an accessor.
+You could, but you needed to define multiple wakelocks for the same device for
+this purpose.
 
-But ok out of scope.
+> I'm not sure which model is better in practice.  No doubt the Android people 
+> will prefer their way.
 
-> Well I think glibc will convert 64 bit stat struct to 32bit for
-> old apps. It detects if the ino can't fit in 32 bits.
+I suppose so.
 
-... and will fail the stat.
+> This requires you to define an explicit PCI_WAKEUP_COOLDOWN delay.  I 
+> think that's okay; I had to do something similar with USB and SCSI.  
+> (And I still think it would be a good idea to prevent workqueue threads 
+> from freezing until their queues are empty.)
 
--Andi
+I guess you mean the freezable ones?  I'm not sure if that helps a lot, because
+new work items may still be added after the workqueue thread has been frozen.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+> Instead of allocating the work structures dynamically, would you be 
+> better off using a memory pool?
+
+Well, it would be kind of equivalent to defining my own slab cache for that,
+wouldn't it?
+
+Rafael
