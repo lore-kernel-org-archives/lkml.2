@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab0FXOhz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 10:37:55 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48212 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511Ab0FXOhx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 10:37:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=guM8zRBAvYRDk1VauRO+e8qebKW9RMJ3rYXS4sqdtz+fTnkSxdwPwBsZkEyo4bDSJU
-         clMWMrUrBaUpF5FO5Y098DlcesUWKZoAXfKPulNVkjGmDgpUjAEZJ1js8KQmreroXxDf
-         A3NjNdbJW5y/MFjGeIffryHxTtJgm8a1J9Brg=
-MIME-Version: 1.0
-In-Reply-To: <E1ORnGc-0008CL-Uo@pomaz-ex.szeredi.hu>
-References: <20100624131455.GA10441@laptop> <4C2366F7.5010200@mit.edu> 
-	<E1ORnGc-0008CL-Uo@pomaz-ex.szeredi.hu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 24 Jun 2010 10:37:31 -0400
-X-Google-Sender-Auth: twpvqqtD8Gv9XB3SfRqrgiDgJ6U
-Message-ID: <AANLkTikKTtNlWEgAL1s2uxIFDPZWn2FDYDQg96mpDsv8@mail.gmail.com>
-Subject: Re: [rfc] new stat*fs-like syscall?
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: npiggin@suse.de, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-       drepper@redhat.com, torvalds@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755559Ab0FXOiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 10:38:20 -0400
+Received: from verein.lst.de ([213.95.11.210]:47742 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754511Ab0FXOiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 10:38:19 -0400
+Date: Thu, 24 Jun 2010 16:37:17 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jason Baron <jbaron@redhat.com>, x86@kernel.org,
+       linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+       linuxppc-dev@ozlabs.org, Ingo Molnar <mingo@redhat.com>,
+       Paul Mackerras <paulus@samba.org>, Ian Munsie <imunsie@au1.ibm.com>,
+       Greg Ungerer <gerg@uclinux.org>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 12/40] x86, compat: convert ia32 layer to use
+Message-ID: <20100624143717.GA7565@lst.de>
+References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com> <1277287401-28571-13-git-send-email-imunsie@au1.ibm.com> <20100623101402.GA10564@lst.de> <20100623103619.GC5242@nowhere> <20100623104603.GB11845@lst.de> <20100623114116.GE5242@nowhere> <4C225F40.8000008@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C225F40.8000008@zytor.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 10:18 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Thu, 24 Jun 2010, Andy Lutomirski wrote:
->> Something like fsid but actually specified to uniquely identify a
->> superblock.  (Currently, fsid seems to be set by the filesystem, and
->> nothing in particular ensures that two different filesystems couldn't
->> have collisions.)  We could guarantee (or have a flag guaranteeing) that
->> (fsid, st_inode) actually uniquely identifies an inode.
->>
->> Similarly, something like fsid that uniquely identifies the vfsmount
->> could be useful, although I don't know how easy that would be to provide
->> for fstat?fs.
->>
->> If we could expose the complete set of filesystem mount options so that
->> mount(1) didn't have to look at /proc/self/mounts or /etc/mtab, then
->> playing with chroots would be that much easier.
->>
->> Should we expose superblock and vfsmount options separately?  We have
->> read-only bind mounts now, but the way they work is rather inscrutable,
->> and if stat?fs could say "superblock is read-write but vfsmount is
->> readonly" then people might be able to make more sense of what's going on.
->
-> You'll find all of those things in /proc/self/mountinfo.
+On Wed, Jun 23, 2010 at 12:23:44PM -0700, H. Peter Anvin wrote:
+> >> arch/s390/kernel/sys_s390.c:SYSCALL_DEFINE(s390_fallocate)(int fd, int mode, loff_t offset,
+> >> arch/sparc/kernel/sys_sparc_64.c:SYSCALL_DEFINE1(sparc_pipe_real, struct pt_regs *, regs)
+> > 
+> > In fact we sort of wanted to standardize the name of arch overriden compat
+> > syscalls, so that userspace programs playing with syscalls tracing won't have
+> > to deal with arch naming differences.
+> > 
+> 
+> That seems totally wrong in so many ways.
+> 
+> What userspace sees is the system call name, e.g. fallocate or pipe.  It
+> should *not* be visible to userspace that there is an arch-specici
+> implementation.
 
-Wasn't the point that /proc/self/mounts (and presumably
-/proc/self/mountinfo) isn't scalable and we wanted a syscall to query
-it efficiently (and racelessly)?
+This is really just the in-kernel name.  With tracing we export it to
+userspace, so agreed that we should stay consistent.  We need a good
+way to override both native and compat system calls with arch version
+to always export the sys_ / compat_sys names.
 
---Andy
