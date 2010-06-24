@@ -1,411 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab0FXD1Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 23:27:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35981 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753631Ab0FXDPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 23:15:42 -0400
-Message-Id: <20100624030726.053670212@suse.de>
-User-Agent: quilt/0.48-4.4
-Date: Thu, 24 Jun 2010 13:02:15 +1000
-From: npiggin@suse.de
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: [patch 03/52] fs: fs_struct rwlock to spinlock
-References: <20100624030212.676457061@suse.de>
-Content-Disposition: inline; filename=fs-rwlock-to-spinlock.patch
+	id S1755088Ab0FXD1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 23:27:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63278 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754304Ab0FXD1m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 23:27:42 -0400
+Date: Wed, 23 Jun 2010 20:27:09 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Nitin Gupta <ngupta@vflare.org>,
+       devel@driverdev.osuosl.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       gregkh@suse.de
+Subject: [PATCH -next] zram: fix build errors, depends on BLOCK
+Message-Id: <20100623202709.4ecb798c.randy.dunlap@oracle.com>
+In-Reply-To: <20100623154531.0a4b02e1.sfr@canb.auug.org.au>
+References: <20100623154531.0a4b02e1.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090204.4C22D0A5.0059:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct fs_struct.lock is an rwlock with the read-side used to protect
-root and pwd members while taking references to them. Taking a reference
-to a path typically requires just 2 atomic ops, so the critical section
-is very small. Parallel read-side operations would have cacheline contention
-on the lock, the dentry, and the vfsmount cachelines, so the rwlock is
-unlikely to ever give a real parallelism increase.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Replace it with a spinlock to avoid one or two atomic operations in
-typical path lookup fastpath.
+Fix 49 zram build errors in one swoop.  Examples:
 
-Signed-off-by: Nick Piggin <npiggin@suse.de>
+drivers/staging/zram/zram_drv.c:225: error: dereferencing pointer to incomplete type
+drivers/staging/zram/zram_drv.c:226: error: implicit declaration of function 'bio_for_each_segment'
+drivers/staging/zram/zram_drv.c:226: error: expected ';' before '{' token
+drivers/staging/zram/zram_drv.c:281: error: implicit declaration of function 'bio_endio'
+drivers/staging/zram/zram_drv.c:285: error: implicit declaration of function 'bio_io_error'
+drivers/staging/zram/zram_drv.c:545: error: implicit declaration of function 'set_capacity'
+drivers/staging/zram/zram_drv.c:548: error: implicit declaration of function 'queue_flag_set_unlocked'
+drivers/staging/zram/zram_drv.c:548: error: 'QUEUE_FLAG_NONROT' undeclared (first use in this function)
+drivers/staging/zram/zram_drv.c:548: error: dereferencing pointer to incomplete type
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:	devel@driverdev.osuosl.org
+Cc:	Nitin Gupta <ngupta@vflare.org>
 ---
- drivers/staging/pohmelfs/path_entry.c |    8 +++----
- fs/cachefiles/daemon.c                |    8 +++----
- fs/dcache.c                           |    8 +++----
- fs/exec.c                             |    4 +--
- fs/fs_struct.c                        |   36 +++++++++++++++++-----------------
- fs/namei.c                            |    8 +++----
- fs/namespace.c                        |    4 +--
- fs/proc/base.c                        |    4 +--
- include/linux/fs_struct.h             |    2 -
- kernel/auditsc.c                      |    4 +--
- kernel/fork.c                         |   10 ++++-----
- 11 files changed, 48 insertions(+), 48 deletions(-)
+ drivers/staging/zram/Kconfig    |    1 +
+ drivers/staging/zram/zram_drv.c |    1 +
+ 2 files changed, 2 insertions(+)
 
-Index: linux-2.6/fs/dcache.c
-===================================================================
---- linux-2.6.orig/fs/dcache.c
-+++ linux-2.6/fs/dcache.c
-@@ -2012,10 +2012,10 @@ char *d_path(const struct path *path, ch
- 	if (path->dentry->d_op && path->dentry->d_op->d_dname)
- 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+--- linux-next-20100623.orig/drivers/staging/zram/Kconfig
++++ linux-next-20100623/drivers/staging/zram/Kconfig
+@@ -1,5 +1,6 @@
+ config ZRAM
+ 	tristate "Compressed RAM block device support"
++	depends on BLOCK
+ 	select LZO_COMPRESS
+ 	select LZO_DECOMPRESS
+ 	default n
+--- linux-next-20100623.orig/drivers/staging/zram/zram_drv.c
++++ linux-next-20100623/drivers/staging/zram/zram_drv.c
+@@ -17,6 +17,7 @@
  
--	read_lock(&current->fs->lock);
-+	spin_lock(&current->fs->lock);
- 	root = current->fs->root;
- 	path_get(&root);
--	read_unlock(&current->fs->lock);
-+	spin_unlock(&current->fs->lock);
- 	spin_lock(&dcache_lock);
- 	tmp = root;
- 	res = __d_path(path, &tmp, buf, buflen);
-@@ -2110,12 +2110,12 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 	if (!page)
- 		return -ENOMEM;
- 
--	read_lock(&current->fs->lock);
-+	spin_lock(&current->fs->lock);
- 	pwd = current->fs->pwd;
- 	path_get(&pwd);
- 	root = current->fs->root;
- 	path_get(&root);
--	read_unlock(&current->fs->lock);
-+	spin_unlock(&current->fs->lock);
- 
- 	error = -ENOENT;
- 	spin_lock(&dcache_lock);
-Index: linux-2.6/fs/fs_struct.c
-===================================================================
---- linux-2.6.orig/fs/fs_struct.c
-+++ linux-2.6/fs/fs_struct.c
-@@ -13,11 +13,11 @@ void set_fs_root(struct fs_struct *fs, s
- {
- 	struct path old_root;
- 
--	write_lock(&fs->lock);
-+	spin_lock(&fs->lock);
- 	old_root = fs->root;
- 	fs->root = *path;
- 	path_get(path);
--	write_unlock(&fs->lock);
-+	spin_unlock(&fs->lock);
- 	if (old_root.dentry)
- 		path_put(&old_root);
- }
-@@ -30,11 +30,11 @@ void set_fs_pwd(struct fs_struct *fs, st
- {
- 	struct path old_pwd;
- 
--	write_lock(&fs->lock);
-+	spin_lock(&fs->lock);
- 	old_pwd = fs->pwd;
- 	fs->pwd = *path;
- 	path_get(path);
--	write_unlock(&fs->lock);
-+	spin_unlock(&fs->lock);
- 
- 	if (old_pwd.dentry)
- 		path_put(&old_pwd);
-@@ -51,7 +51,7 @@ void chroot_fs_refs(struct path *old_roo
- 		task_lock(p);
- 		fs = p->fs;
- 		if (fs) {
--			write_lock(&fs->lock);
-+			spin_lock(&fs->lock);
- 			if (fs->root.dentry == old_root->dentry
- 			    && fs->root.mnt == old_root->mnt) {
- 				path_get(new_root);
-@@ -64,7 +64,7 @@ void chroot_fs_refs(struct path *old_roo
- 				fs->pwd = *new_root;
- 				count++;
- 			}
--			write_unlock(&fs->lock);
-+			spin_unlock(&fs->lock);
- 		}
- 		task_unlock(p);
- 	} while_each_thread(g, p);
-@@ -87,10 +87,10 @@ void exit_fs(struct task_struct *tsk)
- 	if (fs) {
- 		int kill;
- 		task_lock(tsk);
--		write_lock(&fs->lock);
-+		spin_lock(&fs->lock);
- 		tsk->fs = NULL;
- 		kill = !--fs->users;
--		write_unlock(&fs->lock);
-+		spin_unlock(&fs->lock);
- 		task_unlock(tsk);
- 		if (kill)
- 			free_fs_struct(fs);
-@@ -104,14 +104,14 @@ struct fs_struct *copy_fs_struct(struct
- 	if (fs) {
- 		fs->users = 1;
- 		fs->in_exec = 0;
--		rwlock_init(&fs->lock);
-+		spin_lock_init(&fs->lock);
- 		fs->umask = old->umask;
--		read_lock(&old->lock);
-+		spin_lock(&old->lock);
- 		fs->root = old->root;
- 		path_get(&old->root);
- 		fs->pwd = old->pwd;
- 		path_get(&old->pwd);
--		read_unlock(&old->lock);
-+		spin_unlock(&old->lock);
- 	}
- 	return fs;
- }
-@@ -126,10 +126,10 @@ int unshare_fs_struct(void)
- 		return -ENOMEM;
- 
- 	task_lock(current);
--	write_lock(&fs->lock);
-+	spin_lock(&fs->lock);
- 	kill = !--fs->users;
- 	current->fs = new_fs;
--	write_unlock(&fs->lock);
-+	spin_unlock(&fs->lock);
- 	task_unlock(current);
- 
- 	if (kill)
-@@ -148,7 +148,7 @@ EXPORT_SYMBOL(current_umask);
- /* to be mentioned only in INIT_TASK */
- struct fs_struct init_fs = {
- 	.users		= 1,
--	.lock		= __RW_LOCK_UNLOCKED(init_fs.lock),
-+	.lock		= __SPIN_LOCK_UNLOCKED(init_fs.lock),
- 	.umask		= 0022,
- };
- 
-@@ -161,14 +161,14 @@ void daemonize_fs_struct(void)
- 
- 		task_lock(current);
- 
--		write_lock(&init_fs.lock);
-+		spin_lock(&init_fs.lock);
- 		init_fs.users++;
--		write_unlock(&init_fs.lock);
-+		spin_unlock(&init_fs.lock);
- 
--		write_lock(&fs->lock);
-+		spin_lock(&fs->lock);
- 		current->fs = &init_fs;
- 		kill = !--fs->users;
--		write_unlock(&fs->lock);
-+		spin_unlock(&fs->lock);
- 
- 		task_unlock(current);
- 		if (kill)
-Index: linux-2.6/fs/namei.c
-===================================================================
---- linux-2.6.orig/fs/namei.c
-+++ linux-2.6/fs/namei.c
-@@ -486,10 +486,10 @@ static __always_inline void set_root(str
- {
- 	if (!nd->root.mnt) {
- 		struct fs_struct *fs = current->fs;
--		read_lock(&fs->lock);
-+		spin_lock(&fs->lock);
- 		nd->root = fs->root;
- 		path_get(&nd->root);
--		read_unlock(&fs->lock);
-+		spin_unlock(&fs->lock);
- 	}
- }
- 
-@@ -1017,10 +1017,10 @@ static int path_init(int dfd, const char
- 		path_get(&nd->root);
- 	} else if (dfd == AT_FDCWD) {
- 		struct fs_struct *fs = current->fs;
--		read_lock(&fs->lock);
-+		spin_lock(&fs->lock);
- 		nd->path = fs->pwd;
- 		path_get(&fs->pwd);
--		read_unlock(&fs->lock);
-+		spin_unlock(&fs->lock);
- 	} else {
- 		struct dentry *dentry;
- 
-Index: linux-2.6/fs/namespace.c
-===================================================================
---- linux-2.6.orig/fs/namespace.c
-+++ linux-2.6/fs/namespace.c
-@@ -2208,10 +2208,10 @@ SYSCALL_DEFINE2(pivot_root, const char _
- 		goto out1;
- 	}
- 
--	read_lock(&current->fs->lock);
-+	spin_lock(&current->fs->lock);
- 	root = current->fs->root;
- 	path_get(&current->fs->root);
--	read_unlock(&current->fs->lock);
-+	spin_unlock(&current->fs->lock);
- 	down_write(&namespace_sem);
- 	mutex_lock(&old.dentry->d_inode->i_mutex);
- 	error = -EINVAL;
-Index: linux-2.6/include/linux/fs_struct.h
-===================================================================
---- linux-2.6.orig/include/linux/fs_struct.h
-+++ linux-2.6/include/linux/fs_struct.h
-@@ -5,7 +5,7 @@
- 
- struct fs_struct {
- 	int users;
--	rwlock_t lock;
-+	spinlock_t lock;
- 	int umask;
- 	int in_exec;
- 	struct path root, pwd;
-Index: linux-2.6/fs/exec.c
-===================================================================
---- linux-2.6.orig/fs/exec.c
-+++ linux-2.6/fs/exec.c
-@@ -1117,7 +1117,7 @@ int check_unsafe_exec(struct linux_binpr
- 	bprm->unsafe = tracehook_unsafe_exec(p);
- 
- 	n_fs = 1;
--	write_lock(&p->fs->lock);
-+	spin_lock(&p->fs->lock);
- 	rcu_read_lock();
- 	for (t = next_thread(p); t != p; t = next_thread(t)) {
- 		if (t->fs == p->fs)
-@@ -1134,7 +1134,7 @@ int check_unsafe_exec(struct linux_binpr
- 			res = 1;
- 		}
- 	}
--	write_unlock(&p->fs->lock);
-+	spin_unlock(&p->fs->lock);
- 
- 	return res;
- }
-Index: linux-2.6/fs/proc/base.c
-===================================================================
---- linux-2.6.orig/fs/proc/base.c
-+++ linux-2.6/fs/proc/base.c
-@@ -156,10 +156,10 @@ static int get_fs_path(struct task_struc
- 	task_lock(task);
- 	fs = task->fs;
- 	if (fs) {
--		read_lock(&fs->lock);
-+		spin_lock(&fs->lock);
- 		*path = root ? fs->root : fs->pwd;
- 		path_get(path);
--		read_unlock(&fs->lock);
-+		spin_unlock(&fs->lock);
- 		result = 0;
- 	}
- 	task_unlock(task);
-Index: linux-2.6/kernel/fork.c
-===================================================================
---- linux-2.6.orig/kernel/fork.c
-+++ linux-2.6/kernel/fork.c
-@@ -752,13 +752,13 @@ static int copy_fs(unsigned long clone_f
- 	struct fs_struct *fs = current->fs;
- 	if (clone_flags & CLONE_FS) {
- 		/* tsk->fs is already what we want */
--		write_lock(&fs->lock);
-+		spin_lock(&fs->lock);
- 		if (fs->in_exec) {
--			write_unlock(&fs->lock);
-+			spin_unlock(&fs->lock);
- 			return -EAGAIN;
- 		}
- 		fs->users++;
--		write_unlock(&fs->lock);
-+		spin_unlock(&fs->lock);
- 		return 0;
- 	}
- 	tsk->fs = copy_fs_struct(fs);
-@@ -1675,13 +1675,13 @@ SYSCALL_DEFINE1(unshare, unsigned long,
- 
- 		if (new_fs) {
- 			fs = current->fs;
--			write_lock(&fs->lock);
-+			spin_lock(&fs->lock);
- 			current->fs = new_fs;
- 			if (--fs->users)
- 				new_fs = NULL;
- 			else
- 				new_fs = fs;
--			write_unlock(&fs->lock);
-+			spin_unlock(&fs->lock);
- 		}
- 
- 		if (new_mm) {
-Index: linux-2.6/drivers/staging/pohmelfs/path_entry.c
-===================================================================
---- linux-2.6.orig/drivers/staging/pohmelfs/path_entry.c
-+++ linux-2.6/drivers/staging/pohmelfs/path_entry.c
-@@ -44,9 +44,9 @@ int pohmelfs_construct_path_string(struc
- 		return -ENOENT;
- 	}
- 
--	read_lock(&current->fs->lock);
-+	spin_lock(&current->fs->lock);
- 	path.mnt = mntget(current->fs->root.mnt);
--	read_unlock(&current->fs->lock);
-+	spin_unlock(&current->fs->lock);
- 
- 	path.dentry = d;
- 
-@@ -91,9 +91,9 @@ int pohmelfs_path_length(struct pohmelfs
- 		return -ENOENT;
- 	}
- 
--	read_lock(&current->fs->lock);
-+	spin_lock(&current->fs->lock);
- 	root = dget(current->fs->root.dentry);
--	read_unlock(&current->fs->lock);
-+	spin_unlock(&current->fs->lock);
- 
- 	spin_lock(&dcache_lock);
- 
-Index: linux-2.6/fs/cachefiles/daemon.c
-===================================================================
---- linux-2.6.orig/fs/cachefiles/daemon.c
-+++ linux-2.6/fs/cachefiles/daemon.c
-@@ -574,9 +574,9 @@ static int cachefiles_daemon_cull(struct
- 
- 	/* extract the directory dentry from the cwd */
- 	fs = current->fs;
--	read_lock(&fs->lock);
-+	spin_lock(&fs->lock);
- 	dir = dget(fs->pwd.dentry);
--	read_unlock(&fs->lock);
-+	spin_unlock(&fs->lock);
- 
- 	if (!S_ISDIR(dir->d_inode->i_mode))
- 		goto notdir;
-@@ -650,9 +650,9 @@ static int cachefiles_daemon_inuse(struc
- 
- 	/* extract the directory dentry from the cwd */
- 	fs = current->fs;
--	read_lock(&fs->lock);
-+	spin_lock(&fs->lock);
- 	dir = dget(fs->pwd.dentry);
--	read_unlock(&fs->lock);
-+	spin_unlock(&fs->lock);
- 
- 	if (!S_ISDIR(dir->d_inode->i_mode))
- 		goto notdir;
-Index: linux-2.6/kernel/auditsc.c
-===================================================================
---- linux-2.6.orig/kernel/auditsc.c
-+++ linux-2.6/kernel/auditsc.c
-@@ -1838,10 +1838,10 @@ void __audit_getname(const char *name)
- 	context->names[context->name_count].osid = 0;
- 	++context->name_count;
- 	if (!context->pwd.dentry) {
--		read_lock(&current->fs->lock);
-+		spin_lock(&current->fs->lock);
- 		context->pwd = current->fs->pwd;
- 		path_get(&current->fs->pwd);
--		read_unlock(&current->fs->lock);
-+		spin_unlock(&current->fs->lock);
- 	}
- 
- }
-
-
+ #include <linux/module.h>
+ #include <linux/kernel.h>
++#include <linux/bio.h>
+ #include <linux/bitops.h>
+ #include <linux/blkdev.h>
+ #include <linux/buffer_head.h>
