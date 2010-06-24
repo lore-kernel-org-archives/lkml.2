@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393Ab0FXMtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 08:49:39 -0400
-Received: from ppsw-31.csi.cam.ac.uk ([131.111.8.131]:45960 "EHLO
-	ppsw-31.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab0FXMti (ORCPT
+	id S1755417Ab0FXNBh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 09:01:37 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:35433 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754810Ab0FXNB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 08:49:38 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C235523.6000204@jic23.retrosnub.co.uk>
-Date: Thu, 24 Jun 2010 13:52:51 +0100
-From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
+	Thu, 24 Jun 2010 09:01:26 -0400
+Date: Thu, 24 Jun 2010 18:31:09 +0530
+From: Rabin VINCENT <rabin.vincent@stericsson.com>
+To: Luotao Fu <l.fu@pengutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linus WALLEIJ <linus.walleij@stericsson.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
+Subject: Re: [PATCH 6/6 V4] input: STMPE touch controller support
+Message-ID: <20100624130108.GE26189@bnru02.bnr.st.com>
+References: <20100622135635.GA30720@bnru02.bnr.st.com>
+ <1277378021-16802-7-git-send-email-l.fu@pengutronix.de>
+ <20100624123153.GB26189@bnru02.bnr.st.com>
+ <20100624124210.GC3988@pengutronix.de>
 MIME-Version: 1.0
-To: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Christoph Mair <christoph.mair@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] BMP085  : Change the macro to swap
-References: <0680EC522D0CC943BC586913CF3768C003B3553D0C@dbde02.ent.ti.com>
-In-Reply-To: <0680EC522D0CC943BC586913CF3768C003B3553D0C@dbde02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100624124210.GC3988@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/10 13:41, Datta, Shubhrajyoti wrote:
+On Thu, Jun 24, 2010 at 14:42:10 +0200, Luotao Fu wrote:
+> On Thu, Jun 24, 2010 at 06:01:53PM +0530, Rabin VINCENT wrote:
+> > On Thu, Jun 24, 2010 at 13:13:41 +0200, Luotao Fu wrote:
+> > > +       ret = stmpe_set_bits(stmpe, STMPE_REG_TSC_FRACTION_Z,
+> > > +                       FRACTION_Z(ts->fraction_z),
+> > > +                       FRACTION_Z(ts->fraction_z));
+> > 
+> > I think your earlier revisions had this same behaviour, but this only
+> > writes the bits you are trying to set, and it may be a problem if there
+> > are other bits already set in this field.  I don't know if this is a
+> > concern with this block, but if it is, you can do something like the
+> > following to clear out the field before writing:
+> > 
 > 
-> Changing the macro to swap the bytes as the reason that the first byte is the MSB and the next is LSB.
-Are you sure on this one?
+> This is done intentionally to leave the bits alone which I don't want.
+> Most of the registers here are used exclusively for the touchscreen.
+> Some others are shared with the ADC. The ADC however doesn't have any
+> own configuration and has to go with the configuration of the touch
+> screen. Hence it's OK, even probably better not to touch the bits we
+> don't need.
 
-The swap would be right if you were using an i2c function that is aware that it is
-reading word data (16bit).
+I meant something like: let's say you want to change the "count of the
+fractional part" (I quote from your platdata).  It (the FRACTION_Z
+field, I assume) has a default value of (say) 2.  Say you want to change
+the count to 1.  The above write will change it to 3 instead.  If this
+is really the behaviour you need, it should be OK then.
 
-Here it just thinks it is reading a string of bytes.  Hence the bytes will indeed
-come out big endian.  So if you have a big endian machine this patch will swap the
-bytes round incorrectly.
-
-Of course I might just be half asleep today ;)
-> 
-> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> ---
->  drivers/misc/bmp085.c |   41 +++++++++++++++++++++++++++++------------
->  1 files changed, 29 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
-> index 8af6f1b..74c5b12 100644
-> --- a/drivers/misc/bmp085.c
-> +++ b/drivers/misc/bmp085.c
-> @@ -79,18 +79,35 @@ static s32 bmp085_read_calibration_data(struct i2c_client *client)
->  
->  	if (status != BMP085_CALIBRATION_DATA_LENGTH*sizeof(u16))
->  		return -EIO;
-> -
-> -	cali->AC1 =  be16_to_cpu(tmp[0]);
-> -	cali->AC2 =  be16_to_cpu(tmp[1]);
-> -	cali->AC3 =  be16_to_cpu(tmp[2]);
-> -	cali->AC4 =  be16_to_cpu(tmp[3]);
-> -	cali->AC5 =  be16_to_cpu(tmp[4]);
-> -	cali->AC6 = be16_to_cpu(tmp[5]);
-> -	cali->B1 = be16_to_cpu(tmp[6]);
-> -	cali->B2 = be16_to_cpu(tmp[7]);
-> -	cali->MB = be16_to_cpu(tmp[8]);
-> -	cali->MC = be16_to_cpu(tmp[9]);
-> -	cali->MD = be16_to_cpu(tmp[10]);
-> +/*
-> + * From the datasheet
-> + *
-> + * BMP085 Reg Addr
-> + * parameter	|	MSB	|	LSB
-> + * AC1		|	0xAA	|	0xAB
-> + * AC2		|	0xAC	|	0xAD
-> + * AC3		|	0xAE	|	0xAF
-> + * AC4		|	0xB0	|	0xB1
-> + * AC5		|	0xB2	|	0xB3
-> + * AC6		|	0xB4	|	0xB5
-> + * B1		|	0xB6	|	0xB7
-> + * B2		|	0xB8	|	0xB9
-> + * MB		|	0xBA	|	0xBB
-> + * MC		|	0xBC	|	0xBD
-> + * MC		|	0xBE	|	0xBF
-> + *
-> + */
-> +	cali->AC1 =  swab16(tmp[0]);
-> +	cali->AC2 =  swab16(tmp[1]);
-> +	cali->AC3 =  swab16(tmp[2]);
-> +	cali->AC4 =  swab16(tmp[3]);
-> +	cali->AC5 =  swab16(tmp[4]);
-> +	cali->AC6 = swab16(tmp[5]);
-> +	cali->B1 = swab16(tmp[6]);
-> +	cali->B2 = swab16(tmp[7]);
-> +	cali->MB = swab16(tmp[8]);
-> +	cali->MC = swab16(tmp[9]);
-> +	cali->MD = swab16(tmp[10]);
->  	return 0;
->  }
->  
-
+Rabin
