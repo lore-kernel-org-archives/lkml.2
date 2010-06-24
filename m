@@ -1,39 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab0FXOsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 10:48:30 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:51260 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755464Ab0FXOs2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 10:48:28 -0400
-To: Andrew Lutomirski <luto@mit.edu>
-CC: miklos@szeredi.hu, npiggin@suse.de, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-       drepper@redhat.com, torvalds@linux-foundation.org
-In-reply-to: <AANLkTikKTtNlWEgAL1s2uxIFDPZWn2FDYDQg96mpDsv8@mail.gmail.com>
-	(message from Andrew Lutomirski on Thu, 24 Jun 2010 10:37:31 -0400)
-Subject: Re: [rfc] new stat*fs-like syscall?
-References: <20100624131455.GA10441@laptop> <4C2366F7.5010200@mit.edu> 
-	<E1ORnGc-0008CL-Uo@pomaz-ex.szeredi.hu> <AANLkTikKTtNlWEgAL1s2uxIFDPZWn2FDYDQg96mpDsv8@mail.gmail.com>
-Message-Id: <E1ORnj2-0008JJ-PN@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 24 Jun 2010 16:48:20 +0200
+	id S1755750Ab0FXOul (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 10:50:41 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46040 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755583Ab0FXOuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 10:50:40 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andy Lutomirski <luto@mit.edu>
+Subject: Re: [update] Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Date: Thu, 24 Jun 2010 16:48:46 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>, mark gross <640e9920@gmail.com>,
+       Neil Brown <neilb@suse.de>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Arve@smtp1.linux-foundation.org, Florian Mickler <florian@mickler.org>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <Pine.LNX.4.44L0.1006220952290.1631-100000@iolanthe.rowland.org> <201006222159.28081.rjw__37084.1419128284$1277237903$gmane$org@sisk.pl> <4C2368C8.7020708@mit.edu>
+In-Reply-To: <4C2368C8.7020708@mit.edu>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006241648.46448.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jun 2010, Andrew Lutomirski wrote:
-> Wasn't the point that /proc/self/mounts (and presumably
-> /proc/self/mountinfo) isn't scalable and we wanted a syscall to query
-> it efficiently (and racelessly)?
+On Thursday, June 24, 2010, Andy Lutomirski wrote:
+> Rafael J. Wysocki wrote:
+> > On Tuesday, June 22, 2010, Rafael J. Wysocki wrote:
+> >> On Tuesday, June 22, 2010, Alan Stern wrote:
+> >>> On Tue, 22 Jun 2010, Rafael J. Wysocki wrote:
+> > ... 
+> >>>> So, even if we can say when the kernel has finished processing the event
+> >>>> (although that would be complicated in the PCIe case above), I don't think
+> >>>> it's generally possible to ensure that the entire processing of a wakeup event
+> >>>> has been completed.  This leads to the question whether or not it is worth
+> >>>> trying to detect the ending of the processing of a wakeup event.
+> >>> As Arve pointed out, in some cases it definitely is worthwhile (the
+> >>> gpio keypad matrix example).  In other cases there may be no reasonable
+> >>> way to tell.  That doesn't mean we have to give up entirely.
+> >> Well, I'm not sure, because that really depends on the hardware and bus in
+> >> question.  The necessary condition seems to be that the event be detected
+> >> and handled entirely by the same functional unit (eg. a device driver) within
+> >> the kernel and such that it is able to detect whether or not user space has
+> >> acquired the event information.  That doesn't seem to be a common case to me.
+> > 
+> > Anyway, below's an update that addresses this particular case.
+> > 
+> > It adds two more functions, pm_wakeup_begin() and pm_wakeup_end()
+> > that play similar roles to suspend_block() and suspend_unblock(), but they
+> > don't operate on suspend blocker objects.  Instead, the first of them increases
+> > a counter of events in progress and the other one decreases this counter.
+> > Together they have the same effect as pm_wakeup_event(), but the counter
+> > of wakeup events in progress they operate on is also checked by
+> > pm_check_wakeup_events().
+> > 
+> > Thus there are two ways kernel subsystems can signal wakeup events.  First,
+> > if the event is not explicitly handed over to user space and "instantaneous",
+> > they can simply call pm_wakeup_event() and be done with it.  Second, if the
+> > event is going to be delivered to user space, the subsystem that processes
+> > the event can call pm_wakeup_begin() right when the event is detected and
+> > pm_wakeup_end() when it's been handed over to user space.
+> 
+> How does userspace handle this without races?  (I don't see an example 
+> in a driver that talks to userspace in your code...)
+> 
+> For example, if I push a button on my keyboard, the driver calls 
+> pm_wakeup_begin().  Then userspace reads the key from the evdev device 
+> and tells the userspace suspend manager not to go to sleep.
+> 
+> But there's a race: the keyboard driver (or input subsystem) could call 
+> pm_wakeup_end() before the userspace program has a chance to tell the 
+> suspend manager not to sleep.
 
-The question was how to support statvfs() efficiently, and the only
-thing missing there is f_flags which can easily be added to the
-existing statfs() syscall.
+That basically is what /sys/power/wakeup_count is for.  The power manager is
+supposed to first read from it (that will block if there are any events in
+progress in the last, recently posted, version of the patch), obtain ACKs from
+user space event consumers known to it, then write to
+/sys/power/wakeup_count (that will fail if there were any wakeup events in the
+meantime) and write to /sys/power/state only if that was successful.
 
-A separate mount_info() syscall might possibly be useful, but that's
-another story.
-
-Thanks,
-Miklos
+Rafael
