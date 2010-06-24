@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab0FXU6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 16:58:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50114 "EHLO mail.zytor.com"
+	id S1755529Ab0FXVPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 17:15:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30241 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751483Ab0FXU6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 16:58:45 -0400
-Message-ID: <4C23C6F0.50206@zytor.com>
-Date: Thu, 24 Jun 2010 13:58:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1752018Ab0FXVPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 17:15:15 -0400
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Ben Hutchings <ben@decadent.org.uk>, x86@kernel.org,
-       584846@bugs.debian.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Bug#584846: Detects only 64MB and fails to boot on Intel Green
- City board if e820 hooked by GRUB2
-References: <20100612185538.GA4511@feather> <4C13F102.7000509@zytor.com> <20100612222634.GA1785@feather> <4C141214.5050601@zytor.com> <20100613000742.GA3469@feather> <4C14235B.7030605@zytor.com> <20100622052236.GA9130@feather> <4C205323.3010509@zytor.com> <20100624072729.GA7952@feather> <4C23693A.9040107@zytor.com> <20100624190107.GA15329@feather>
-In-Reply-To: <20100624190107.GA15329@feather>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+X-Fcc: ~/Mail/linus
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Don Zickus <dzickus@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Jerome Marchand <jmarchan@redhat.com>,
+       Mandeep Singh Baines <msb@google.com>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: while_each_thread() under rcu_read_lock() is broken?
+In-Reply-To: Paul E. McKenney's message of  Thursday, 24 June 2010 11:07:26 -0700 <20100624180726.GK2373@linux.vnet.ibm.com>
+References: <20100618190251.GA17297@redhat.com>
+	<20100618193403.GA17314@redhat.com>
+	<20100618223354.GL2365@linux.vnet.ibm.com>
+	<20100621170919.GA13826@redhat.com>
+	<20100621205128.GI2354@linux.vnet.ibm.com>
+	<20100622212357.GA19670@redhat.com>
+	<20100622221226.GP2290@linux.vnet.ibm.com>
+	<20100623152421.GA8445@redhat.com>
+	<20100624180726.GK2373@linux.vnet.ibm.com>
+X-Shopping-List: (1) Aeronautical adhesives
+   (2) Erratic riot concussions
+   (3) Terrific abolitionists
+Message-Id: <20100624211446.5713743188@magilla.sf.frob.com>
+Date: Thu, 24 Jun 2010 14:14:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2010 12:01 PM, Josh Triplett wrote:
-> On Thu, Jun 24, 2010 at 07:18:34AM -0700, H. Peter Anvin wrote:
->> On 06/24/2010 12:27 AM, Josh Triplett wrote:
->>> The following patch fixes GRUB; with this patch, I can reserve memory
->>> (such as with drivemap), boot 2.6.35-rc3 successfully, and it detects
->>> all of my RAM.
->>
->> Congratulations!  You have just committed the single most common BIOS
->> implementation bug.  (Sorry for the sarcasm, but this seems to be a bug
->> that almost everyone who tries to implement BIOS makes at one point or
->> another... even the original IBM BIOS had it in at least one place.)
+> First, what "bad things" can happen to a reader scanning a thread
+> group?
 > 
-> And a rather large number of sample interrupt code found on the web,
-> including the e820 hook from the version of gPXE/Etherboot that I used
-> as an example. :)  Given that I just tested against Linux, which very
-> carefully works around that particular BIOS bug, I didn't run into any
-> issue.
-> 
-> So, how high does GRUB's bug ("stc ; iret"/"clc ; iret") rank on the
-> list of common BIOS implementation bugs?
-> 
+> 1.	The thread-group leader might do exec(), destroying the old
+> 	list and forming a new one.  In this case, we want any readers
+> 	to stop scanning.
 
-Less common, since that one is apparently more obvious to people (you
-only have to think one step ahead instead of two steps ahead.)
+This doesn't do anything different (for these concerns) from just all the
+other threads happening to exit right before the exec.  There is no
+"destroying the old" and "forming the new", it's just that all the other
+threads are convinced to die now.  There is no problem here.
 
-There is a reason Linux works around this and similar bugs... it truly
-is extremely common (and does cause real problems in real code.)
+> 2.	Some other thread might do exec(), destroying the old list and
+> 	forming a new one.  In this case, we also want any readers to
+> 	stop scanning.
 
-	-hpa
+Again, the list is not really destroyed, just everybody dies.  What is
+different here is that ->group_leader changes.  This is the only time
+that ever happens.  Moreover, it's the only time that a task that was
+previously pointed to by any ->group_leader can be reaped before the
+rest of the group has already been reaped first (and thus the
+thread_group made a singleton).
 
+> 3.	The thread-group leader might do pthread_exit(), removing itself
+> 	from the thread group -- and might do so while the hapless reader
+> 	is referencing that thread.
+
+This is called the delay_group_leader() case.  It doesn't happen in a
+way that has the problems you are concerned with.  The group_leader
+remains in EXIT_ZOMBIE state and can't be reaped until all the other
+threads have been reaped.  There is no time at which any thread in the
+group is in any hashes or accessible by any means after the (final)
+group_leader is reaped.
+
+> 4.	Some other thread might do pthread_exit(), removing itself
+> 	from the thread group, and again might do so while the hapless
+> 	reader is referencing that thread.  In this case, we want
+> 	the hapless reader to continue scanning the remainder of the
+> 	thread group.
+
+This is the most normal case (and #1 is effectively just this repeated
+by every thread in parallel).
+
+> 5.	The thread-group leader might do exit(), destroying the old
+> 	list without forming a new one.  In this case, we want any
+> 	readers to stop scanning.
+
+All this means is everybody is convinced to die, and the group_leader
+dies too.  It is not discernibly different from #6.
+
+> 6.	Some other thread might do exit(), destroying the old list
+> 	without forming a new one.  In this case, we also want any
+> 	readers to stop scanning.
+
+This just means everybody is convinced to die and is not materially
+different from each individual thread all happening to die at the same
+time.  
+
+You've described all these cases as "we want any readers to stop
+scanning".  That is far too strong, and sounds like some kind of
+guaranteed synchronization, which does not and need not exist.  Any
+reader that needs a dead thread to be off the list holds siglock
+and/or tasklist_lock.  For the casual readers that only use
+rcu_read_lock, we only "want any readers' loops eventually to
+terminate and never to dereference stale pointers".  That's why
+normal RCU listiness is generally fine.
+
+The only problem we have is in #2.  This is only a problem because
+readers' loops may be using the old ->group_leader pointer as the
+anchor for their circular-list round-robin loop.  Once the former
+leader is removed from the list, that loop termination condition can
+never be met.
+
+
+Thanks,
+Roland
