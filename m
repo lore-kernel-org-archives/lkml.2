@@ -1,89 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab0FXQVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 12:21:18 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46340 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755644Ab0FXQVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 12:21:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [update 2] Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Date: Thu, 24 Jun 2010 18:19:24 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Florian Mickler <florian@mickler.org>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-References: <Pine.LNX.4.44L0.1006241111110.1654-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1006241111110.1654-100000@iolanthe.rowland.org>
+	id S1755925Ab0FXQ1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 12:27:07 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53727 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754821Ab0FXQ1E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 12:27:04 -0400
+Date: Thu, 24 Jun 2010 18:27:02 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 50/52] mm: implement per-zone shrinker
+Message-ID: <20100624162702.GS578@basil.fritz.box>
+References: <20100624030212.676457061@suse.de>
+ <20100624030733.676440935@suse.de>
+ <87aaqkagn9.fsf@basil.nowhere.org>
+ <20100624160052.GL10441@laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006241819.25055.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100624160052.GL10441@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 24, 2010, Alan Stern wrote:
-> On Thu, 24 Jun 2010, Rafael J. Wysocki wrote:
+> > Overall it seems good, but I have not read all the shrinker callback
+> > changes in all subsystems.
 > 
-> > > > And what happens if the device gets a second wakeup event before the timer
-> > > > for the first one expires?
-> > > 
-> > > Good question.  I don't have an answer to it at the moment, but it seems to
-> > > arise from using a single timer for all events.
-> > > 
-> > > It looks like it's simpler to make pm_wakeup_event() allocate a timer for each
-> > > event and make the timer function remove it.  That would cause suspend to
-> > > be blocked until the timer expires without a way to cancel it earlier, though.
-> > 
-> > So, I decided to try this after all.
-> > 
-> > Below is a new version of the patch.  It introduces pm_stay_awake(dev) and
-> > pm_relax() that play the roles of the "old" pm_wakeup_begin() and
-> > pm_wakeup_end().
-> > 
-> > pm_wakeup_event() now takes an extra timeout argument and uses it for
-> > deferred execution of pm_relax().  So, one can either use the
-> > pm_stay_awake(dev) / pm_relax() pair, or use pm_wakeup_event(dev, timeout)
-> > if the ending is under someone else's control.
-> > 
-> > In addition to that, pm_get_wakeup_count() blocks until events_in_progress is
-> > zero.
-> > 
-> > Please tell me what you think.
-> 
-> This is slightly different from the wakelock design.  Each call to
-> pm_stay_awake() must be paired with a call to pm_relax(), allowing one
-> device to have multiple concurrent critical sections, whereas calls to
-> pm_wakeup_event() must not be paired with anything.  With wakelocks,
-> you couldn't have multiple pending events for the same device.
+> Thanks for looking over it Andi.
 
-You could, but you needed to define multiple wakelocks for the same device for
-this purpose.
+FWIW i skimmed over most of the patches and nothing stood out that
+I really disliked. But I have gone over the code in very deep detail.
 
-> I'm not sure which model is better in practice.  No doubt the Android people 
-> will prefer their way.
-
-I suppose so.
-
-> This requires you to define an explicit PCI_WAKEUP_COOLDOWN delay.  I 
-> think that's okay; I had to do something similar with USB and SCSI.  
-> (And I still think it would be a good idea to prevent workqueue threads 
-> from freezing until their queues are empty.)
-
-I guess you mean the freezable ones?  I'm not sure if that helps a lot, because
-new work items may still be added after the workqueue thread has been frozen.
-
-> Instead of allocating the work structures dynamically, would you be 
-> better off using a memory pool?
-
-Well, it would be kind of equivalent to defining my own slab cache for that,
-wouldn't it?
-
-Rafael
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
