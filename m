@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab0FXOIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 10:08:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58759 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876Ab0FXOIu (ORCPT
+	id S1754780Ab0FXOKk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 10:10:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51094 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752876Ab0FXOKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 10:08:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=dSQnHYnNRUGouwnE7PuzsiDzK4zAgod+E/LKnBvV5EWnk4YIG1u0z0MuRLu5edzFg/
-         OgpN5KKM5O7oMSnzUSwGtpp2nGsGR5PrI2Da43SYC1XwB7rfy3ubEwGtx6ItIubjByWb
-         b47nEpqrepZJ+oE2aXv07tCyT38eCrioxPNzs=
-Date: Thu, 24 Jun 2010 18:08:44 +0400
-From: =?KOI8-R?Q?=E9=CC=D8=D1_=EC=CF=C7=C9=CE=CF=D7?= <zerone2@gmail.com>
-To: Ilya Loginov <isloginov@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] fix problem with reschenduling in rest_init
- (2.6.35-rc3)
-Message-Id: <20100624180844.61c8aa2b.zerone2@gmail.com>
-In-Reply-To: <20100624172334.ca7e9bef.isloginov@gmail.com>
-References: <20100624001148.61e9da1c.isloginov@gmail.com>
-	<1277385096.1875.974.camel@laptop>
-	<20100624172334.ca7e9bef.isloginov@gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=KOI8-R
+	Thu, 24 Jun 2010 10:10:39 -0400
+Date: Thu, 24 Jun 2010 10:10:38 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [BISECTED] Suspend regression in v2.6.31 with Lenovo 3000 v200
+In-Reply-To: <201006241001.01587.ozan@pardus.org.tr>
+Message-ID: <Pine.LNX.4.44L0.1006241004430.1654-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5OE95im027390
 
-On Thu, 24 Jun 2010 17:23:34 +0400
-Ilya Loginov <isloginov@gmail.com> wrote:
+On Thu, 24 Jun 2010, Ozan [utf-8] Ã‡aÄŸlayan wrote:
 
-> Strange, but init does not die after I did this. Fix me if I wrong, but it wants
-> to have pid 1, and die in other case.
+> Ok so it should be something like this:
 > 
-> Interesting...
+> --- linux-2.6.31.orig/drivers/usb/core/hub.c
+> +++ linux-2.6.31/drivers/usb/core/hub.c
+> @@ -1305,11 +1305,11 @@ void usb_set_device_state(struct usb_dev
+>  Â·  Â·   Â·   Â·   Â·   || new_state == USB_STATE_SUSPENDED)
+>  Â·  Â·   Â·   Â·   ;Â·  /* No change to wakeup settings */
+>  Â·  Â·   Â·   else if (new_state == USB_STATE_CONFIGURED)
+> -Â·  Â·   Â·   Â·   device_init_wakeup(&udev->dev,
+> +Â·  Â·   Â·   Â·   device_set_wakeup_capable(&udev->dev,
+>  Â·  Â·   Â·   Â·   Â·   (udev->actconfig->desc.bmAttributes
+>  Â·  Â·   Â·   Â·   Â·    & USB_CONFIG_ATT_WAKEUP));
+>  Â·  Â·   Â·   else
+> -Â·  Â·   Â·   Â·   device_init_wakeup(&udev->dev, 0);
+> +Â·  Â·   Â·   Â·   device_set_wakeup_capable(&udev->dev, 0);
+>  Â·  Â·   }
+>  Â·  Â·   if (udev->state == USB_STATE_SUSPENDED &&
+>  Â·  Â·   Â·   new_state != USB_STATE_SUSPENDED)
 
-Yeah, of course, I am wrong. To make it clear I watched sources of sysvinit and
-founded out that if pid not equal to 1 init does
+Right.
 
-exit(telinit(p, argc, argv));
+> > You can verify the result by checking the contents of
+> > /sys/bus/usb/devices/2-5/power/wakeup (replace the 2-5 with the correct
+> > path for the camera device).  With the current code it will say
+> > "enabled", but after the change it should say "disabled".
+> > 
+> 
+> I'll make them try this kernel but when I compare the output of
+> 
+> cat /sys/bus/usb/devices/*/power/wakeup
+> 
+> between the patched and non-patched kernels on my system, all wakeup values 
+> are still enabled. Because as far as I understand the first call still can 
+> enable remote wakeup as the 2nd parameter isn't a hardcoded 0. Or should this 
+> only affect some devices?
 
-So, it does not die. Anyway, I would have kernel panic.
+The content of the power/wakeup file depends on two values: the 
+can_wakeup flag and the should_wakeup flag.  If can_wakeup is false 
+then the file will be empty; otherwise it will contain "disabled" or 
+"enabled" according to the value of should_wakeup.
 
--- 
-éÌØÑ ìÏÇÉÎÏ× <zerone2@gmail.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Now, device_init_wakeup() sets both flags whereas 
+device_set_wakeup_capable() affects only the can_wakeup flag.  After 
+this change is made there should be nothing in the kernel that turns on 
+the should_wakeup flag, and consequently remote wakeup should remain 
+disabled.
+
+You can check this by grepping for occurrences of "should_wakeup" or 
+"dev_set_wakeup_enable" (which affects the should_wakeup flag).
+
+Alan Stern
+
