@@ -1,66 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab0FXTWH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 15:22:07 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44001 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab0FXTWE (ORCPT
+	id S1753097Ab0FXT1N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 15:27:13 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56917 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab0FXT1M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 15:22:04 -0400
+	Thu, 24 Jun 2010 15:27:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=mlspl4PyVCAmMKLzSfuNE5Q+T2/qqdPSDVW7GSyi3kzlnNRKkLvhwer4IoNoHZ3SqB
-         o2LROh3Nq0t+OPDXGzu32SqArxqPeJvoKJXnCLvcI/WquSHmfxWsK2hGK11LWXjBeD/q
-         8v9XFiRQSUkF2CjXHgYWs50fH/p3WadgA1d4A=
+         :cc:content-type:content-transfer-encoding;
+        b=SiDlnb7B6q1I4lWvSHKV+htyNqcXFhPCy4kqeXXjxpTpXa/Zp4WYEAHMdQV5t7K1yk
+         Za3BZk9STFzxv/UezosLV7fplMJCMPoQUVtqSYBIcEyu+njn78SpyFgq5yI78JyKh1rF
+         h9tOqX0Ziyq+bEuRoGZ8Xzb1G5vafl5CUryIw=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimE_BeA3yiCovC0ckn_MbbH3lpgctLD8zD5ir6j@mail.gmail.com>
-References: <alpine.DEB.2.00.1006180940140.11575@router.home>
-	<20100621200118.GA4021@nb-core2.darkstar.lan>
-	<4C223657.3030507@colorfullife.com>
-	<AANLkTimE_BeA3yiCovC0ckn_MbbH3lpgctLD8zD5ir6j@mail.gmail.com>
-Date: Thu, 24 Jun 2010 21:22:00 +0200
-Message-ID: <AANLkTinw8qzAkHTNB05PqfWMQmuya1Dq6AZCgz2nWx6_@mail.gmail.com>
-Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
-From: Luca Tettamanti <kronos.it@gmail.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       Julia Lawall <julia@diku.dk>, Andrew Morton <akpm@linux-foundation.org>,
-       maciej.rutecki@gmail.com
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTikrNs3uFPgi_rBKKZ30F1JQt9iLYpIZ0_32afb6@mail.gmail.com>
+References: <AANLkTimb7rP0rS0OU8nan5uNEhHx_kEYL99ImZ3c8o0D@mail.gmail.com>
+	<1277189909-16376-1-git-send-email-sankar.curiosity@gmail.com>
+	<20100622165509.GB11336@tux>
+	<AANLkTikHiPKPD5myvn8bycPAS4f9rBkPvbag6if7p23O@mail.gmail.com>
+	<20100624185614.GA6031@tux>
+	<AANLkTim4mjw0BFshK_4RS6oDLLQMH_BF7BklU7EhETSj@mail.gmail.com>
+	<20100624191218.GC6031@tux>
+	<AANLkTimVb6kAxvVdtTcxlofYqu1m24XEBlvYY8OKBgFu@mail.gmail.com>
+	<AANLkTikrNs3uFPgi_rBKKZ30F1JQt9iLYpIZ0_32afb6@mail.gmail.com>
+Date: Fri, 25 Jun 2010 00:57:10 +0530
+Message-ID: <AANLkTimkD65VDGEUSuy-meLF3gl0a9T4pmauZ1DXPytd@mail.gmail.com>
+Subject: Re: [PATCH] mm: kmemleak: Change kmemleak default buffer size
+From: Sankar P <sankar.curiosity@gmail.com>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+       Vasanth Thiagarajan <Vasanth.Thiagarajan@atheros.com>,
+       Sujith Manoharan <Sujith.Manoharan@atheros.com>,
+       Senthil Balasubramanian <senthilkumar@atheros.com>,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 9:14 PM, Luca Tettamanti <kronos.it@gmail.com> wrote:
-> On Wed, Jun 23, 2010 at 6:29 PM, Manfred Spraul
-> <manfred@colorfullife.com> wrote:
->> Hi,
+On Fri, Jun 25, 2010 at 12:50 AM, Luis R. Rodriguez
+<lrodriguez@atheros.com> wrote:
+> On Thu, Jun 24, 2010 at 12:17 PM, Sankar P <sankar.curiosity@gmail.com> wrote:
+>> On Fri, Jun 25, 2010 at 12:42 AM, Luis R. Rodriguez
+>> <lrodriguez@atheros.com> wrote:
+>>> On Thu, Jun 24, 2010 at 12:01:51PM -0700, Sankar P wrote:
+>>>> On Fri, Jun 25, 2010 at 12:26 AM, Luis R. Rodriguez
+>>>> <lrodriguez@atheros.com> wrote:
+>>>> > On Thu, Jun 24, 2010 at 12:31:11AM -0700, Sankar P wrote:
+>>>> >> On Tue, Jun 22, 2010 at 10:25 PM, Luis R. Rodriguez
+>>>> >> <lrodriguez@atheros.com> wrote:
+>>>> >> > On Mon, Jun 21, 2010 at 11:58:29PM -0700, Sankar P wrote:
+>>>> >> >> If we try to find the memory leaks in kernel that is
+>>>> >> >> compiled with 'make defconfig', the default buffer size
+>>>> >> >> seem to be inadequate. Change the buffer size from
+>>>> >> >> 400 to 1000, which is sufficient in most cases.
+>>>> >> >>
+>>>> >> >> Signed-off-by: Sankar P <sankar.curiosity@gmail.com>
+>>>> >> >
+>>>> >> > What's your full name? Please read the "Developer's Certificate of Origin 1.1"
+>>>> >> > It says:
+>>>> >> >
+>>>> >> > then you just add a line saying
+>>>> >> >
+>>>> >> >        Signed-off-by: Random J Developer <random@developer.example.org>
+>>>> >> >
+>>>> >> > using your real name (sorry, no pseudonyms or anonymous contributions.)
+>>>> >> >
+>>>> >> >
+>>>> >> > Also you may want to post on a new thread instead of using this old thread
+>>>> >> > unless the maintainer is reading this and wants to pick it up.
+>>>> >> >
+>>>> >>
+>>>> >> In our part of the world, we dont have lastnames. We just use the
+>>>> >> first letter of our father's name as the last name.
+>>>> >
+>>>> > Oh wow, what part of the world is that? Interesting.
+>>>> >
+>>>>
+>>>>
+>>>> It is in a place called "Tamil Nadu" in India. See
+>>>> http://en.wikipedia.org/wiki/Indian_name (First paragraph end)
+>>>
+>>> Odd, I visited Tamil Nadu for a while and met quite a few folks who
+>>> have full last names, like the ones Cc'd. Does this differ between
+>>> area or what?
+>>>
 >>
->> I think I found it:
->> Previously, queue.status was never IN_WAKEUP when the semaphore spinlock was
->> held.
->>
->> The last patch changes that:
->> Now the change from IN_WAKEUP to the final result code happens after the the
->> semaphore spinlock is dropped.
->> Thus a task can observe IN_WAKEUP even when it acquired the semaphore
->> spinlock.
->>
->> As a result, semop() sometimes returned 1 (IN_WAKEUP) for a successful
->> operation.
->>
->> Attached is a patch that should fix the bug.
+>> Thiagarajan, Manoharan, Balasubramanian <= these are all first names.
+>> Probably they are using their Father's full name as their last name.
 >
-> Apache seems fine.
+> And their first names are what then?
+>
 
-Argh, "seems" was indeed appropriate. Manfred your patch does
-alleviate the problem but something is still wrong. I noticed (I'm
-developing an ajax heavy web app) that sometimes an apache worker
-hangs; I can reproduce the problem with ab (apache benchmark) and a
-high concurrency level (I'm testing with 100 and 10k requests, and I
-get only 2-5 dropped requests). This does not happen with 2.4.34.
-Any idea on how I can debug this further?
+What I mean is:
 
-Luca
+Senthil Balasubramanian : Senthil is the person's first name.
+"Balasubramanian" is his father's first name, which Mr.Senthil uses as
+his last name. Mr Balasubramanian (who is senthil's father) will have
+a name like: Balasubramanian Paramasivan, where "Paramasivan" is the
+first name of Senthil's grandfather. (Paramasivan is a hypothetical
+name here).
+
+Such a Father's-first-name-as-last-name is a very common thing in
+Tamil Nadu, India. Some people use the full firstname of father as the
+last name, while some other just use the first letter, as it might
+cause name conflicts. For instance, if a postal-mail is sent to "Mr.
+Balasubramanian" then the postman will want to deliver it to Senthil's
+father and not Senthil.
+
+I hope I explained it clearly this time :-)
+
+-- 
+Sankar P
+http://psankar.blogspot.com
