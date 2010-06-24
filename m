@@ -1,134 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab0FXPWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 11:22:42 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38924 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755515Ab0FXPWj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 11:22:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=references:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:x-mailer:mime-version:subject:date:cc;
-        b=pnHs2t6mKj/eyszdCtwpRayDom5IKlh86jie2b9igFYL8U0S8rPBYn651TYy7BrNqq
-         XEt8kkzPG0vW+UkErZPZKKqMEmF8+vqch8zTC7e62UdboLUrx2WWaOMTEtViK9NQb6Sc
-         BzTequLf5L+yROV4vh8j3++rvQXy4CVyQRuqg=
-References: <Pine.LNX.4.44L0.1006220952290.1631-100000@iolanthe.rowland.org> <201006222159.28081.rjw__37084.1419128284$1277237903$gmane$org@sisk.pl> <4C2368C8.7020708@mit.edu> <201006241648.46448.rjw@sisk.pl>
-Message-Id: <5CBFA89B-B49D-4FEC-A8DC-2F7E672542EF@gmail.com>
-From: Andy Lutomirski <amluto@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-In-Reply-To: <201006241648.46448.rjw@sisk.pl>
-Content-Type: text/plain;
-	charset=us-ascii;
-	format=flowed;
-	delsp=yes
+	id S1755644Ab0FXPZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 11:25:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46177 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754183Ab0FXPZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 11:25:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 2/9] PM / Hibernate: add hibernate_io_ops
+Date: Thu, 24 Jun 2010 17:23:40 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com
+References: <1275468768-28229-1-git-send-email-jslaby@suse.cz> <1275468768-28229-2-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1275468768-28229-2-git-send-email-jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-X-Mailer: iPhone Mail (7D11)
-Mime-Version: 1.0 (iPhone Mail 7D11)
-Subject: Re: [update] Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Date: Thu, 24 Jun 2010 11:21:54 -0400
-Cc: Andy Lutomirski <luto@mit.edu>, Alan Stern <stern@rowland.harvard.edu>,
-       mark gross <640e9920@gmail.com>, Neil Brown <neilb@suse.de>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "Arve@smtp1.linux-foundation.org" <Arve@smtp1.linux-foundation.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Message-Id: <201006241723.40925.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, June 02, 2010, Jiri Slaby wrote:
+> This is a centralized structure for actually used reader/writer. It
+> contains basic operations called from snapshot layer which doesn't
+> need to know who reads/writes the image right now -- this is
+> specified by current set of functions stored in hibernate_io_ops.
+> 
+> In other words there are more than one hibernate_io_ops which
+> contain different set of functions. E.g. one is for swap, one for
+> userspace (user.c) handler.
 
+I don't like that user space reader/writer idea.  I'll write more on that
+commenting the next patches.
 
-On Jun 24, 2010, at 10:48 AM, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> For now they will hold only swap operations. In next patches, user
+> support will be converted to ops as well to have a single layer which
+> allows easier transitions later.
 
-> On Thursday, June 24, 2010, Andy Lutomirski wrote:
->> Rafael J. Wysocki wrote:
->>> On Tuesday, June 22, 2010, Rafael J. Wysocki wrote:
->>>> On Tuesday, June 22, 2010, Alan Stern wrote:
->>>>> On Tue, 22 Jun 2010, Rafael J. Wysocki wrote:
->>> ...
->>>>>> So, even if we can say when the kernel has finished processing  
->>>>>> the event
->>>>>> (although that would be complicated in the PCIe case above), I  
->>>>>> don't think
->>>>>> it's generally possible to ensure that the entire processing of  
->>>>>> a wakeup event
->>>>>> has been completed.  This leads to the question whether or not  
->>>>>> it is worth
->>>>>> trying to detect the ending of the processing of a wakeup event.
->>>>> As Arve pointed out, in some cases it definitely is worthwhile  
->>>>> (the
->>>>> gpio keypad matrix example).  In other cases there may be no  
->>>>> reasonable
->>>>> way to tell.  That doesn't mean we have to give up entirely.
->>>> Well, I'm not sure, because that really depends on the hardware  
->>>> and bus in
->>>> question.  The necessary condition seems to be that the event be  
->>>> detected
->>>> and handled entirely by the same functional unit (eg. a device  
->>>> driver) within
->>>> the kernel and such that it is able to detect whether or not user  
->>>> space has
->>>> acquired the event information.  That doesn't seem to be a common  
->>>> case to me.
->>>
->>> Anyway, below's an update that addresses this particular case.
->>>
->>> It adds two more functions, pm_wakeup_begin() and pm_wakeup_end()
->>> that play similar roles to suspend_block() and suspend_unblock(),  
->>> but they
->>> don't operate on suspend blocker objects.  Instead, the first of  
->>> them increases
->>> a counter of events in progress and the other one decreases this  
->>> counter.
->>> Together they have the same effect as pm_wakeup_event(), but the  
->>> counter
->>> of wakeup events in progress they operate on is also checked by
->>> pm_check_wakeup_events().
->>>
->>> Thus there are two ways kernel subsystems can signal wakeup  
->>> events.  First,
->>> if the event is not explicitly handed over to user space and  
->>> "instantaneous",
->>> they can simply call pm_wakeup_event() and be done with it.   
->>> Second, if the
->>> event is going to be delivered to user space, the subsystem that  
->>> processes
->>> the event can call pm_wakeup_begin() right when the event is  
->>> detected and
->>> pm_wakeup_end() when it's been handed over to user space.
->>
->> How does userspace handle this without races?  (I don't see an  
->> example
->> in a driver that talks to userspace in your code...)
->>
->> For example, if I push a button on my keyboard, the driver calls
->> pm_wakeup_begin().  Then userspace reads the key from the evdev  
->> device
->> and tells the userspace suspend manager not to go to sleep.
->>
->> But there's a race: the keyboard driver (or input subsystem) could  
->> call
->> pm_wakeup_end() before the userspace program has a chance to tell the
->> suspend manager not to sleep.
->
-> That basically is what /sys/power/wakeup_count is for.  The power  
-> manager is
-> supposed to first read from it (that will block if there are any  
-> events in
-> progress in the last, recently posted, version of the patch), obtain  
-> ACKs from
-> user space event consumers known to it, then write to
-> /sys/power/wakeup_count (that will fail if there were any wakeup  
-> events in the
-> meantime) and write to /sys/power/state only if that was successful.
+The patch looks good to me.
 
-That sounds a good deal more complicated than the poll, block suspend,  
-read, unblock approach, but I guess that as long as both work, the  
-kernel doesn't really have to care.
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> ---
+>  kernel/power/hibernate.c |    2 +
+>  kernel/power/power.h     |   27 +++++++++++++++++++++
+>  kernel/power/swap.c      |   57 ++++++++++++++++++++++++++++++---------------
+>  3 files changed, 67 insertions(+), 19 deletions(-)
+> 
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index aa9e916..7d38e6a 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -35,6 +35,8 @@ dev_t swsusp_resume_device;
+>  sector_t swsusp_resume_block;
+>  int in_suspend __nosavedata = 0;
+>  
+> +struct hibernate_io_ops *hibernate_io_ops;
+> +
+>  enum {
+>  	HIBERNATION_INVALID,
+>  	HIBERNATION_PLATFORM,
+> diff --git a/kernel/power/power.h b/kernel/power/power.h
+> index 7427d54..32a40f9 100644
+> --- a/kernel/power/power.h
+> +++ b/kernel/power/power.h
+> @@ -139,6 +139,31 @@ static inline struct hibernate_io_handle *hib_io_handle_alloc(size_t priv_size)
+>  	return ret;
+>  }
+>  
+> +/**
+> + * struct hibernate_io_ops - functions of a hibernation module
+> + *
+> + * @free_space: hom much space is available for the image
 
+s/hom/how/
 
->
-> Rafael
+> + * @reader_start: initialize an image reader
+> + * @reader_finish: deinitialize the reader
+> + * @writer_start: initialize an image writer
+> + * @writer_finish: deinitialize the writer
+> + * @read_page: read an image page from a backing store
+> + * @write_page: write an image page to a backing store
+> + */
+> +struct hibernate_io_ops {
+> +	unsigned long (*free_space)(void);
+> +
+> +	struct hibernate_io_handle *(*reader_start)(unsigned int *flags_p);
+> +	int (*reader_finish)(struct hibernate_io_handle *io_handle);
+> +	struct hibernate_io_handle *(*writer_start)(void);
+> +	int (*writer_finish)(struct hibernate_io_handle *io_handle,
+> +			unsigned int flags, int error);
+> +	int (*read_page)(struct hibernate_io_handle *io_handle, void *addr,
+> +			struct bio **bio_chain);
+> +	int (*write_page)(struct hibernate_io_handle *io_handle, void *addr,
+> +			struct bio **bio_chain);
+> +};
+> +
+>  extern unsigned int snapshot_additional_pages(struct zone *zone);
+>  extern unsigned long snapshot_get_image_size(void);
+>  extern int snapshot_read_next(struct snapshot_handle *handle);
+> @@ -237,6 +262,8 @@ enum {
+>  
+>  extern int pm_test_level;
+>  
+> +extern struct hibernate_io_ops *hibernate_io_ops;
+> +
+>  #ifdef CONFIG_SUSPEND_FREEZER
+>  static inline int suspend_freeze_processes(void)
+>  {
+> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+> index 7096d20..f09494e 100644
+> --- a/kernel/power/swap.c
+> +++ b/kernel/power/swap.c
+> @@ -268,7 +268,7 @@ static void release_swap_writer(struct swap_map_handle *handle)
+>  	handle->cur = NULL;
+>  }
+>  
+> -static struct hibernate_io_handle *get_swap_writer(void)
+> +static struct hibernate_io_handle *swap_writer_start(void)
+>  {
+>  	struct hibernate_io_handle *io_handle;
+>  	struct swap_map_handle *handle;
+> @@ -399,7 +399,8 @@ static int save_image(struct hibernate_io_handle *io_handle,
+>  		ret = snapshot_read_next(snapshot);
+>  		if (ret <= 0)
+>  			break;
+> -		ret = swap_write_page(io_handle, data_of(*snapshot), &bio);
+> +		ret = hibernate_io_ops->write_page(io_handle,
+> +				data_of(*snapshot), &bio);
+>  		if (ret)
+>  			break;
+>  		if (!(nr_pages % m))
+> @@ -419,18 +420,18 @@ static int save_image(struct hibernate_io_handle *io_handle,
+>  }
+>  
+>  /**
+> - *	enough_swap - Make sure we have enough swap to save the image.
+> + *	enough_space - Make sure we have enough space to save the image.
+>   *
+> - *	Returns TRUE or FALSE after checking the total amount of swap
+> - *	space avaiable from the resume partition.
+> + *	Returns TRUE or FALSE after checking the total amount of
+> + *	space avaiable from the resume block.
+>   */
+>  
+> -static int enough_swap(unsigned int nr_pages)
+> +static int enough_space(unsigned int nr_pages)
+>  {
+> -	unsigned int free_swap = count_swap_pages(root_swap, 1);
+> +	unsigned int free_pages = hibernate_io_ops->free_space();
+>  
+> -	pr_debug("PM: Free swap pages: %u\n", free_swap);
+> -	return free_swap > nr_pages + PAGES_FOR_IO;
+> +	pr_debug("PM: Free storage pages: %u\n", free_pages);
+> +	return free_pages > nr_pages + PAGES_FOR_IO;
+>  }
+>  
+>  /**
+> @@ -452,13 +453,13 @@ int swsusp_write(unsigned int flags)
+>  	int error;
+>  
+>  	pages = snapshot_get_image_size();
+> -	io_handle = get_swap_writer();
+> +	io_handle = hibernate_io_ops->writer_start();
+>  	if (IS_ERR(io_handle)) {
+>  		printk(KERN_ERR "PM: Cannot get swap writer\n");
+>  		return PTR_ERR(io_handle);
+>  	}
+> -	if (!enough_swap(pages)) {
+> -		printk(KERN_ERR "PM: Not enough free swap\n");
+> +	if (!enough_space(pages)) {
+> +		printk(KERN_ERR "PM: Not enough free space for image\n");
+>  		error = -ENOSPC;
+>  		goto out_finish;
+>  	}
+> @@ -471,14 +472,19 @@ int swsusp_write(unsigned int flags)
+>  		goto out_finish;
+>  	}
+>  	header = (struct swsusp_info *)data_of(snapshot);
+> -	error = swap_write_page(io_handle, header, NULL);
+> +	error = hibernate_io_ops->write_page(io_handle, header, NULL);
+>  	if (!error)
+>  		error = save_image(io_handle, &snapshot, pages - 1);
+>  out_finish:
+> -	error = swap_writer_finish(io_handle, flags, error);
+> +	error = hibernate_io_ops->writer_finish(io_handle, flags, error);
+>  	return error;
+>  }
+>  
+> +static unsigned long swap_free_space(void)
+> +{
+> +	return count_swap_pages(root_swap, 1);
+> +}
+> +
+>  /**
+>   *	The following functions allow us to read data using a swap map
+>   *	in a file-alike way
+> @@ -491,7 +497,7 @@ static void release_swap_reader(struct swap_map_handle *handle)
+>  	handle->cur = NULL;
+>  }
+>  
+> -static struct hibernate_io_handle *get_swap_reader(unsigned int *flags_p)
+> +static struct hibernate_io_handle *swap_reader_start(unsigned int *flags_p)
+>  {
+>  	struct hibernate_io_handle *io_handle;
+>  	struct swap_map_handle *handle;
+> @@ -561,6 +567,17 @@ static int swap_reader_finish(struct hibernate_io_handle *io_handle)
+>  	return 0;
+>  }
+>  
+> +struct hibernate_io_ops swap_ops = {
+> +	.free_space = swap_free_space,
+> +
+> +	.reader_start = swap_reader_start,
+> +	.reader_finish = swap_reader_finish,
+> +	.writer_start = swap_writer_start,
+> +	.writer_finish = swap_writer_finish,
+> +	.read_page = swap_read_page,
+> +	.write_page = swap_write_page,
+> +};
+> +
+>  /**
+>   *	load_image - load the image
+>   *	@handle and the snapshot handle @snapshot
+> @@ -591,7 +608,8 @@ static int load_image(struct hibernate_io_handle *io_handle,
+>  		error = snapshot_write_next(snapshot);
+>  		if (error <= 0)
+>  			break;
+> -		error = swap_read_page(io_handle, data_of(*snapshot), &bio);
+> +		error = hibernate_io_ops->read_page(io_handle,
+> +				data_of(*snapshot), &bio);
+>  		if (error)
+>  			break;
+>  		if (snapshot->sync_read)
+> @@ -635,16 +653,16 @@ int swsusp_read(unsigned int *flags_p)
+>  	if (error < PAGE_SIZE)
+>  		return error < 0 ? error : -EFAULT;
+>  	header = (struct swsusp_info *)data_of(snapshot);
+> -	io_handle = get_swap_reader(flags_p);
+> +	io_handle = hibernate_io_ops->reader_start(flags_p);
+>  	if (IS_ERR(io_handle)) {
+>  		error = PTR_ERR(io_handle);
+>  		goto end;
+>  	}
+>  	if (!error)
+> -		error = swap_read_page(io_handle, header, NULL);
+> +		error = hibernate_io_ops->read_page(io_handle, header, NULL);
+>  	if (!error)
+>  		error = load_image(io_handle, &snapshot, header->pages - 1);
+> -	swap_reader_finish(io_handle);
+> +	hibernate_io_ops->reader_finish(io_handle);
+>  end:
+>  	if (!error)
+>  		pr_debug("PM: Image successfully loaded\n");
+> @@ -713,6 +731,7 @@ static int swsusp_header_init(void)
+>  	swsusp_header = (struct swsusp_header*) __get_free_page(GFP_KERNEL);
+>  	if (!swsusp_header)
+>  		panic("Could not allocate memory for swsusp_header\n");
+> +	hibernate_io_ops = &swap_ops;
+>  	return 0;
+>  }
+>  
+> 
+
