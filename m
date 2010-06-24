@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab0FXO4i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 10:56:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13490 "EHLO mx1.redhat.com"
+	id S1755831Ab0FXPAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 11:00:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57971 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755796Ab0FXO4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 10:56:36 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Tao Ma <tao.ma@oracle.com>
-Cc: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, Joel Becker <joel.becker@oracle.com>,
-       Sunil Mushran <sunil.mushran@oracle.com>,
-       "ocfs2-devel\@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
-Subject: Re: [PATCH 0/3 v5][RFC] ext3/4: enhance fsync performance when using CFQ
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
-	<4C21D442.8080703@oracle.com> <4C22F316.3080009@oracle.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 24 Jun 2010 10:56:28 -0400
-In-Reply-To: <4C22F316.3080009@oracle.com> (Tao Ma's message of "Thu, 24 Jun
-	2010 13:54:30 +0800")
-Message-ID: <x49r5jwh42r.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754503Ab0FXPAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 11:00:37 -0400
+Date: Fri, 25 Jun 2010 01:00:23 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 06/52] fs: scale files_lock
+Message-ID: <20100624150023.GD10441@laptop>
+References: <20100624030212.676457061@suse.de>
+ <20100624030726.584973456@suse.de>
+ <1277365937.1875.883.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277365937.1875.883.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tao Ma <tao.ma@oracle.com> writes:
+On Thu, Jun 24, 2010 at 09:52:17AM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-06-24 at 13:02 +1000, npiggin@suse.de wrote:
+> > 
+> > One difficulty with this approach is that a file can be removed from the list
+> > by another CPU. We must track which per-cpu list the file is on.  Scalability
+> > could suffer if files are frequently removed from different cpu's list.
+> 
+> 
+> Is this really a lot less complex than what I did with my fine-grained
+> locked list?
 
-> Hi Jeff,
->
-[...]
-> I am sorry to say that the patch make jbd2 locked up when I tested
-> fs_mark using ocfs2.
-> I have attached the log from my netconsole server. After I reverted
-> the patch [3/3], the box works again.
+http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg115071.html
 
-Thanks for the report, Tao, I'll try to reproduce it here and get back
-to you.
+Honestly the filevec code seemed overkill to me, and yes it was a bit
+complex. The only reason to consider it AFAIKS would be if the space
+overhead of the per-cpu structures, or the slowpath cost of the brlock
+was unbearable.
 
-Cheers,
-Jeff
+filevecs probably dont perform as well in the fastpath. My patch doesn't
+add any atomics. The cost of adding or removing a file from its list are
+one atomic for the spinlock.
+
+The cost of adding a file with filevecs is a spinlock to put it on the
+vec, a spinlock to take it off the vec, a spinlock to put it on the
+lock-list. 3 atomics. A heap more icache and branches.
+
+Removing a file with filevecs is a spinlock to check the vec, and 1 or 2
+spinlocks to take it off the list (common case).
+
+Scalability will be improved, but it will hit the global list still
+1/15th times (and there is even no lock batching on the list but I
+assume that could be fixed). Compared with never for my patch (unless
+there is a cross-CPU removal, in which case they both need to hit a
+remote-CPU cacheline).
+
+But before we even get to scalability, I think filevecs from complexity
+and single threaded performance point already lose.
+
