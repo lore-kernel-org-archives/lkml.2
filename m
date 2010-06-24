@@ -1,62 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab0FXMsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 08:48:06 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35331 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755156Ab0FXMsD (ORCPT
+	id S1755393Ab0FXMtj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 08:49:39 -0400
+Received: from ppsw-31.csi.cam.ac.uk ([131.111.8.131]:45960 "EHLO
+	ppsw-31.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755026Ab0FXMti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 08:48:03 -0400
-From: Luotao Fu <l.fu@pengutronix.de>
-To: Rabin VINCENT <rabin.vincent@stericsson.com>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Luotao Fu <l.fu@pengutronix.de>
-Subject: [PATCH 5/6 V3] mfd/stmpexxx: fix stmpe811 enable hook
-Date: Thu, 24 Jun 2010 14:47:58 +0200
-Message-Id: <1277383678-4973-1-git-send-email-l.fu@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100624123211.GB3988@pengutronix.de>
-References: <20100624123211.GB3988@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: l.fu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 24 Jun 2010 08:49:38 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C235523.6000204@jic23.retrosnub.co.uk>
+Date: Thu, 24 Jun 2010 13:52:51 +0100
+From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Christoph Mair <christoph.mair@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] BMP085  : Change the macro to swap
+References: <0680EC522D0CC943BC586913CF3768C003B3553D0C@dbde02.ent.ti.com>
+In-Reply-To: <0680EC522D0CC943BC586913CF3768C003B3553D0C@dbde02.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the stmpe811 enable hook so that we can activate the needed clocks for the
-touchscreen controller.
+On 06/24/10 13:41, Datta, Shubhrajyoti wrote:
+> 
+> Changing the macro to swap the bytes as the reason that the first byte is the MSB and the next is LSB.
+Are you sure on this one?
 
-Signed-off-by: Luotao Fu <l.fu@pengutronix.de>
+The swap would be right if you were using an i2c function that is aware that it is
+reading word data (16bit).
 
----
-V2 Changes:
-separate ADC block enable and ts block enable.
+Here it just thinks it is reading a string of bytes.  Hence the bytes will indeed
+come out big endian.  So if you have a big endian machine this patch will swap the
+bytes round incorrectly.
 
-V3 Changes:
-fixed silly typo
-
- drivers/mfd/stmpe-devices.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mfd/stmpe-devices.c b/drivers/mfd/stmpe-devices.c
-index 3e21c26..066cab5 100644
---- a/drivers/mfd/stmpe-devices.c
-+++ b/drivers/mfd/stmpe-devices.c
-@@ -117,7 +117,7 @@ static int stmpe811_enable(struct stmpe *stmpe, unsigned int blocks,
- 	if (blocks & STMPE_BLOCK_ADC)
- 		mask |= STMPE811_SYS_CTRL2_ADC_OFF;
- 
--	if (blocks & STMPE_BLOCK_KEYPAD)
-+	if (blocks & STMPE_BLOCK_TOUCHSCREEN)
- 		mask |= STMPE811_SYS_CTRL2_TSC_OFF;
- 
- 	return stmpe_set_bits(stmpe, STMPE811_REG_SYS_CTRL2, mask,
--- 
-1.7.1
+Of course I might just be half asleep today ;)
+> 
+> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+> ---
+>  drivers/misc/bmp085.c |   41 +++++++++++++++++++++++++++++------------
+>  1 files changed, 29 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
+> index 8af6f1b..74c5b12 100644
+> --- a/drivers/misc/bmp085.c
+> +++ b/drivers/misc/bmp085.c
+> @@ -79,18 +79,35 @@ static s32 bmp085_read_calibration_data(struct i2c_client *client)
+>  
+>  	if (status != BMP085_CALIBRATION_DATA_LENGTH*sizeof(u16))
+>  		return -EIO;
+> -
+> -	cali->AC1 =  be16_to_cpu(tmp[0]);
+> -	cali->AC2 =  be16_to_cpu(tmp[1]);
+> -	cali->AC3 =  be16_to_cpu(tmp[2]);
+> -	cali->AC4 =  be16_to_cpu(tmp[3]);
+> -	cali->AC5 =  be16_to_cpu(tmp[4]);
+> -	cali->AC6 = be16_to_cpu(tmp[5]);
+> -	cali->B1 = be16_to_cpu(tmp[6]);
+> -	cali->B2 = be16_to_cpu(tmp[7]);
+> -	cali->MB = be16_to_cpu(tmp[8]);
+> -	cali->MC = be16_to_cpu(tmp[9]);
+> -	cali->MD = be16_to_cpu(tmp[10]);
+> +/*
+> + * From the datasheet
+> + *
+> + * BMP085 Reg Addr
+> + * parameter	|	MSB	|	LSB
+> + * AC1		|	0xAA	|	0xAB
+> + * AC2		|	0xAC	|	0xAD
+> + * AC3		|	0xAE	|	0xAF
+> + * AC4		|	0xB0	|	0xB1
+> + * AC5		|	0xB2	|	0xB3
+> + * AC6		|	0xB4	|	0xB5
+> + * B1		|	0xB6	|	0xB7
+> + * B2		|	0xB8	|	0xB9
+> + * MB		|	0xBA	|	0xBB
+> + * MC		|	0xBC	|	0xBD
+> + * MC		|	0xBE	|	0xBF
+> + *
+> + */
+> +	cali->AC1 =  swab16(tmp[0]);
+> +	cali->AC2 =  swab16(tmp[1]);
+> +	cali->AC3 =  swab16(tmp[2]);
+> +	cali->AC4 =  swab16(tmp[3]);
+> +	cali->AC5 =  swab16(tmp[4]);
+> +	cali->AC6 = swab16(tmp[5]);
+> +	cali->B1 = swab16(tmp[6]);
+> +	cali->B2 = swab16(tmp[7]);
+> +	cali->MB = swab16(tmp[8]);
+> +	cali->MC = swab16(tmp[9]);
+> +	cali->MD = swab16(tmp[10]);
+>  	return 0;
+>  }
+>  
 
