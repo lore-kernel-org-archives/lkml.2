@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab0FXJnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 05:43:17 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56185 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754562Ab0FXJnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 05:43:15 -0400
-Date: Thu, 24 Jun 2010 09:42:47 GMT
-From: tip-bot for Andres Salomon <dilinger@queued.net>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       dilinger@queued.net, tglx@linutronix.de, hpa@linux.intel.com,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       dilinger@queued.net, tglx@linutronix.de, hpa@linux.intel.com,
-       mingo@elte.hu
-In-Reply-To: <20100618174653.7755a39a@dev.queued.net>
-References: <20100618174653.7755a39a@dev.queued.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/olpc] x86, olpc: Add comment about implicit optimization barrier
-Message-ID: <tip-75a9cac430a1bd2a5219c74508ca01b0ddfddc9a@git.kernel.org>
-Git-Commit-ID: 75a9cac430a1bd2a5219c74508ca01b0ddfddc9a
-X-Mailer: tip-git-log-daemon
+	id S1754710Ab0FXJsV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 05:48:21 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51151 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754543Ab0FXJsT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 05:48:19 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: npiggin@suse.de
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>,
+       Eric Dumazet <dada1@cosmosbay.com>
+Subject: Re: [patch 42/52] fs: icache per-cpu last_ino allocator
+References: <20100624030212.676457061@suse.de>
+	<20100624030732.402670838@suse.de>
+Date: Thu, 24 Jun 2010 11:48:13 +0200
+In-Reply-To: <20100624030732.402670838@suse.de> (npiggin@suse.de's message of
+	"Thu, 24 Jun 2010 13:02:54 +1000")
+Message-ID: <87tyosahia.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 24 Jun 2010 09:42:48 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  75a9cac430a1bd2a5219c74508ca01b0ddfddc9a
-Gitweb:     http://git.kernel.org/tip/75a9cac430a1bd2a5219c74508ca01b0ddfddc9a
-Author:     Andres Salomon <dilinger@queued.net>
-AuthorDate: Wed, 23 Jun 2010 20:27:00 -0400
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 24 Jun 2010 11:40:47 +0200
+npiggin@suse.de writes:
 
-x86, olpc: Add comment about implicit optimization barrier
+> From: Eric Dumazet <dada1@cosmosbay.com>
+>
+> new_inode() dirties a contended cache line to get increasing inode numbers.
+>
+> Solve this problem by providing to each cpu a per_cpu variable, feeded by the
+> shared last_ino, but once every 1024 allocations.
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-LKML-Reference: <20100618174653.7755a39a@dev.queued.net>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/olpc_ofw.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Most file systems don't even need this because they 
+allocate their own inode numbers, right?. So perhaps it could be turned
+off for all of those, e.g. with a superblock flag.
 
-diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
-index 469ee43..f5d499f 100644
---- a/arch/x86/kernel/olpc_ofw.c
-+++ b/arch/x86/kernel/olpc_ofw.c
-@@ -35,6 +35,8 @@ void __init setup_olpc_ofw_pgd(void)
- 
- 	/* install OFW's PDE permanently into the kernel's pgtable */
- 	set_pgd(&swapper_pg_dir[OLPC_OFW_PDE_NR], *ofw_pde);
-+	/* implicit optimization barrier here due to uninline function return */
-+
- 	early_iounmap(base, sizeof(olpc_ofw_pgd) * PTRS_PER_PGD);
- }
- 
+I guess the main customer is sockets only.
+
+> +#ifdef CONFIG_SMP
+> +/*
+> + * Each cpu owns a range of 1024 numbers.
+> + * 'shared_last_ino' is dirtied only once out of 1024 allocations,
+> + * to renew the exhausted range.
+> + *
+> + * On a 32bit, non LFS stat() call, glibc will generate an EOVERFLOW
+> + * error if st_ino won't fit in target struct field. Use 32bit counter
+> + * here to attempt to avoid that.
+
+I don't understand how the 32bit counter should prevent that.
+
+> + */
+> +static DEFINE_PER_CPU(int, last_ino);
+> +static atomic_t shared_last_ino;
+
+With the 1024 skip, isn't overflow much more likely, just scaling
+with the number of CPUs on a large CPU number systems, even if there
+aren't that many new inodes?
+
+> +static int last_ino_get(void)
+> +{
+> +	int *p = &get_cpu_var(last_ino);
+> +	int res = *p;
+> +
+> +	if (unlikely((res & 1023) == 0))
+> +		res = atomic_add_return(1024, &shared_last_ino) - 1024;
+
+The magic numbers really want to be defines? 
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
