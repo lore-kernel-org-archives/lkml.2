@@ -1,139 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab0FXHsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 03:48:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:51604 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372Ab0FXHsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 03:48:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,472,1272870000"; 
-   d="scan'208";a="811020738"
-Subject: [PATCH] ACPI, APEI, Rename CPER and GHES severity constants
- (resend)
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>, Andi Kleen <ak@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Jun 2010 15:48:48 +0800
-Message-ID: <1277365728.3947.80.camel@yhuang-dev.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1754225Ab0FXHub (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 03:50:31 -0400
+Received: from fg-out-1718.google.com ([72.14.220.154]:46483 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753789Ab0FXHu3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 03:50:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=ghvr3lygecT9DNSwyfjlM+p8w08+aU/Jxz948ByoMaa7qHUDGaYG0gXTJoGsKp1kvm
+         LArNd/Z2HFHwHS/dih0YlKeZs1BNAECruuwERW+Sgmrr6JGZ6AZtsG2ZkL7mw+Wm2Flw
+         VyRrW9aX72y2Pi8J2L6tx4Ic+3XwrKV8+Kg4E=
+Message-ID: <4C230E3F.4020107@gmail.com>
+Date: Thu, 24 Jun 2010 09:50:23 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Xiaotian Feng <xtfeng@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
+CC: Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>, Cliff Wickman <cpw@sgi.com>,
+       stable@kernel.org
+Subject: Re: 2.6.35-rc3 -- kernel BUG at mm/vmalloc.c:216! - invalid opcode:
+ 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+References: <AANLkTimYUy0tCvGHf_Qtz0tUG7XVms9i3MOz03m28Jin@mail.gmail.com> <AANLkTilXIkZM8tHX3QCP9A9LpVbmezaa5_PJdQfVU-w7@mail.gmail.com> <4C2305F9.5010306@gmail.com> <AANLkTik5H_rQ2tPO6h3UtslOVzGQo-qoKW_YD8hULAA3@mail.gmail.com>
+In-Reply-To: <AANLkTik5H_rQ2tPO6h3UtslOVzGQo-qoKW_YD8hULAA3@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The abbreviation of severity should be SEV instead of SER, so the CPER
-severity constants are renamed accordingly. GHES severity constants
-are renamed in the same way too.
+On 06/24/2010 09:45 AM, Xiaotian Feng wrote:
+>> It's probably the same bug Cliff Wickman reported.
+>> per_cpu_ptr_to_phys() was using wrong first chunk match logic which
+>> ends up passing wrong addresses to vmalloc_to_page().  I have the
+>> following fix patch queued in percpu#for-linus branch and was waiting
+>> for Linus to come back.
+>>
+>>  http://git.kernel.org/?p=linux/kernel/git/tj/percpu.git;a=commitdiff_plain;h=9983b6f0cf8263e51bcf4c8a9dc0c1ef175b3c60;hp=a92d3ff9e5dbd958d8008a3e7a573e988e370ca3
+>>
+>> Can you please verify the above patch fixes the problem?
+> 
+> Yes, that patch fixes the problem on my box, thanks.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce-apei.c |    4 ++--
- drivers/acpi/apei/ghes.c              |   32 ++++++++++++++++----------------
- include/linux/cper.h                  |    8 ++++----
- 3 files changed, 22 insertions(+), 22 deletions(-)
+Thanks for verifying.  Greg, we'll have to wait till Linus comes back
+for mainline but maybe it's a good idea to put this into -stable queue
+early?  It's a rather straight forward bug fix and unlikely to be
+contentious.
 
---- a/arch/x86/kernel/cpu/mcheck/mce-apei.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
-@@ -80,7 +80,7 @@ int apei_write_mce(struct mce *m)
- 	rcd.hdr.revision = CPER_RECORD_REV;
- 	rcd.hdr.signature_end = CPER_SIG_END;
- 	rcd.hdr.section_count = 1;
--	rcd.hdr.error_severity = CPER_SER_FATAL;
-+	rcd.hdr.error_severity = CPER_SEV_FATAL;
- 	/* timestamp, platform_id, partition_id are all invalid */
- 	rcd.hdr.validation_bits = 0;
- 	rcd.hdr.record_length = sizeof(rcd);
-@@ -96,7 +96,7 @@ int apei_write_mce(struct mce *m)
- 	rcd.sec_hdr.validation_bits = 0;
- 	rcd.sec_hdr.flags = CPER_SEC_PRIMARY;
- 	rcd.sec_hdr.section_type = CPER_SECTION_TYPE_MCE;
--	rcd.sec_hdr.section_severity = CPER_SER_FATAL;
-+	rcd.sec_hdr.section_severity = CPER_SEV_FATAL;
- 
- 	memcpy(&rcd.mce, m, sizeof(*m));
- 
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -132,26 +132,26 @@ static void ghes_fini(struct ghes *ghes)
- }
- 
- enum {
--	GHES_SER_NO = 0x0,
--	GHES_SER_CORRECTED = 0x1,
--	GHES_SER_RECOVERABLE = 0x2,
--	GHES_SER_PANIC = 0x3,
-+	GHES_SEV_NO = 0x0,
-+	GHES_SEV_CORRECTED = 0x1,
-+	GHES_SEV_RECOVERABLE = 0x2,
-+	GHES_SEV_PANIC = 0x3,
- };
- 
- static inline int ghes_severity(int severity)
- {
- 	switch (severity) {
--	case CPER_SER_INFORMATIONAL:
--		return GHES_SER_NO;
--	case CPER_SER_CORRECTED:
--		return GHES_SER_CORRECTED;
--	case CPER_SER_RECOVERABLE:
--		return GHES_SER_RECOVERABLE;
--	case CPER_SER_FATAL:
--		return GHES_SER_PANIC;
-+	case CPER_SEV_INFORMATIONAL:
-+		return GHES_SEV_NO;
-+	case CPER_SEV_CORRECTED:
-+		return GHES_SEV_CORRECTED;
-+	case CPER_SEV_RECOVERABLE:
-+		return GHES_SEV_RECOVERABLE;
-+	case CPER_SEV_FATAL:
-+		return GHES_SEV_PANIC;
- 	default:
- 		/* Unkown, go panic */
--		return GHES_SER_PANIC;
-+		return GHES_SEV_PANIC;
- 	}
- }
- 
-@@ -237,16 +237,16 @@ static void ghes_clear_estatus(struct gh
- 
- static void ghes_do_proc(struct ghes *ghes)
- {
--	int ser, processed = 0;
-+	int sev, processed = 0;
- 	struct acpi_hest_generic_data *gdata;
- 
--	ser = ghes_severity(ghes->estatus->error_severity);
-+	sev = ghes_severity(ghes->estatus->error_severity);
- 	apei_estatus_for_each_section(ghes->estatus, gdata) {
- #ifdef CONFIG_X86_MCE
- 		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
- 				 CPER_SEC_PLATFORM_MEM)) {
- 			apei_mce_report_mem_error(
--				ser == GHES_SER_CORRECTED,
-+				sev == GHES_SEV_CORRECTED,
- 				(struct cper_sec_mem_err *)(gdata+1));
- 			processed = 1;
- 		}
---- a/include/linux/cper.h
-+++ b/include/linux/cper.h
-@@ -39,10 +39,10 @@
-  * Severity difinition for error_severity in struct cper_record_header
-  * and section_severity in struct cper_section_descriptor
-  */
--#define CPER_SER_RECOVERABLE			0x0
--#define CPER_SER_FATAL				0x1
--#define CPER_SER_CORRECTED			0x2
--#define CPER_SER_INFORMATIONAL			0x3
-+#define CPER_SEV_RECOVERABLE			0x0
-+#define CPER_SEV_FATAL				0x1
-+#define CPER_SEV_CORRECTED			0x2
-+#define CPER_SEV_INFORMATIONAL			0x3
- 
- /*
-  * Validation bits difinition for validation_bits in struct
+Thanks.
 
-
-
+-- 
+tejun
