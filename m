@@ -1,109 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab0FXDQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 23:16:47 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48455 "EHLO mx1.suse.de"
+	id S1754753Ab0FXDQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 23:16:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48459 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754159Ab0FXDPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 23:15:49 -0400
-Message-Id: <20100624030725.885831564@suse.de>
+	id S1754173Ab0FXDPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 23:15:50 -0400
+Message-Id: <20100624030732.254378018@suse.de>
 User-Agent: quilt/0.48-4.4
-Date: Thu, 24 Jun 2010 13:02:14 +1000
+Date: Thu, 24 Jun 2010 13:02:53 +1000
 From: npiggin@suse.de
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: [patch 02/52] fs: fix superblock iteration race
+Subject: [patch 41/52] fs: icache reduce atomics
 References: <20100624030212.676457061@suse.de>
-Content-Disposition: inline; filename=fs-fix-iterate.patch
+Content-Disposition: inline; filename=fs-inode-nr_inodes.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-list_for_each_entry_safe is not suitable to protect against concurrent
-modification of the list. 6754af6 introduced a race in sb walking.
-
-list_for_each_entry can use the trick of pinning the current entry in
-the list before we drop and retake the lock because it subsequently
-follows cur->next. However list_for_each_entry_safe saves n=cur->next
-for following before entering the loop body, so when the lock is
-dropped, n may be deleted.
+Put inode counters under locks to reduce atomics.
 
 Signed-off-by: Nick Piggin <npiggin@suse.de>
 ---
- fs/dcache.c          |    2 ++
- fs/super.c           |    6 ++++++
- include/linux/list.h |   15 +++++++++++++++
- 3 files changed, 23 insertions(+)
+ fs/fs-writeback.c  |    6 ++----
+ fs/inode.c         |   30 ++++++++++++------------------
+ include/linux/fs.h |    4 ++--
+ 3 files changed, 16 insertions(+), 24 deletions(-)
 
-Index: linux-2.6/fs/dcache.c
+Index: linux-2.6/fs/inode.c
 ===================================================================
---- linux-2.6.orig/fs/dcache.c
-+++ linux-2.6/fs/dcache.c
-@@ -590,6 +590,8 @@ static void prune_dcache(int count)
- 			up_read(&sb->s_umount);
- 		}
- 		spin_lock(&sb_lock);
-+		/* lock was dropped, must reset next */
-+		list_safe_reset_next(sb, n, s_list);
- 		count -= pruned;
- 		__put_super(sb);
- 		/* more work left to do? */
-Index: linux-2.6/fs/super.c
-===================================================================
---- linux-2.6.orig/fs/super.c
-+++ linux-2.6/fs/super.c
-@@ -374,6 +374,8 @@ void sync_supers(void)
- 			up_read(&sb->s_umount);
+--- linux-2.6.orig/fs/inode.c
++++ linux-2.6/fs/inode.c
+@@ -141,8 +141,8 @@ static DECLARE_RWSEM(iprune_sem);
+  * Statistics gathering..
+  */
+ struct inodes_stat_t inodes_stat = {
+-	.nr_inodes = ATOMIC_INIT(0),
+-	.nr_unused = ATOMIC_INIT(0),
++	.nr_inodes = 0,
++	.nr_unused = 0,
+ };
  
- 			spin_lock(&sb_lock);
-+			/* lock was dropped, must reset next */
-+			list_safe_reset_next(sb, n, s_list);
- 			__put_super(sb);
- 		}
+ static struct kmem_cache *inode_cachep __read_mostly;
+@@ -390,7 +390,6 @@ static void dispose_list(struct list_hea
+ 		destroy_inode(inode);
+ 		nr_disposed++;
  	}
-@@ -405,6 +407,8 @@ void iterate_supers(void (*f)(struct sup
- 		up_read(&sb->s_umount);
+-	atomic_sub(nr_disposed, &inodes_stat.nr_inodes);
+ }
  
- 		spin_lock(&sb_lock);
-+		/* lock was dropped, must reset next */
-+		list_safe_reset_next(sb, n, s_list);
- 		__put_super(sb);
- 	}
- 	spin_unlock(&sb_lock);
-@@ -585,6 +589,8 @@ static void do_emergency_remount(struct
- 		}
- 		up_write(&sb->s_umount);
- 		spin_lock(&sb_lock);
-+		/* lock was dropped, must reset next */
-+		list_safe_reset_next(sb, n, s_list);
- 		__put_super(sb);
- 	}
- 	spin_unlock(&sb_lock);
-Index: linux-2.6/include/linux/list.h
-===================================================================
---- linux-2.6.orig/include/linux/list.h
-+++ linux-2.6/include/linux/list.h
-@@ -544,6 +544,21 @@ static inline void list_splice_tail_init
- 	     &pos->member != (head); 					\
- 	     pos = n, n = list_entry(n->member.prev, typeof(*n), member))
- 
-+/**
-+ * list_safe_reset_next - reset a stale list_for_each_entry_safe loop
-+ * @pos:	the loop cursor used in the list_for_each_entry_safe loop
-+ * @n:		temporary storage used in list_for_each_entry_safe
-+ * @member:	the name of the list_struct within the struct.
-+ *
-+ * list_safe_reset_next is not safe to use in general if the list may be
-+ * modified concurrently (eg. the lock is dropped in the loop body). An
-+ * exception to this is if the cursor element (pos) is pinned in the list,
-+ * and list_safe_reset_next is called after re-taking the lock and before
-+ * completing the current iteration of the loop body.
-+ */
-+#define list_safe_reset_next(pos, n, member)				\
-+	n = list_entry(pos->member.next, typeof(*pos), member)
-+
  /*
-  * Double linked lists with a single pointer list head.
-  * Mostly useful for hash tables where the two pointer list head is
+@@ -399,7 +398,7 @@ static void dispose_list(struct list_hea
+ static int invalidate_list(struct list_head *head, struct list_head *dispose)
+ {
+ 	struct list_head *next;
+-	int busy = 0, count = 0;
++	int busy = 0;
+ 
+ 	next = head->next;
+ 	for (;;) {
+@@ -419,19 +418,17 @@ static int invalidate_list(struct list_h
+ 		if (!inode->i_count) {
+ 			spin_lock(&wb_inode_list_lock);
+ 			list_del(&inode->i_list);
++			inodes_stat.nr_unused--;
+ 			spin_unlock(&wb_inode_list_lock);
+ 			WARN_ON(inode->i_state & I_NEW);
+ 			inode->i_state |= I_FREEING;
+ 			spin_unlock(&inode->i_lock);
+ 			list_add(&inode->i_list, dispose);
+-			count++;
+ 			continue;
+ 		}
+ 		spin_unlock(&inode->i_lock);
+ 		busy = 1;
+ 	}
+-	/* only unused inodes may be cached with i_count zero */
+-	atomic_sub(count, &inodes_stat.nr_unused);
+ 	return busy;
+ }
+ 
+@@ -483,7 +480,6 @@ EXPORT_SYMBOL(invalidate_inodes);
+ static void prune_icache(int nr_to_scan)
+ {
+ 	LIST_HEAD(freeable);
+-	int nr_pruned = 0;
+ 	unsigned long reap = 0;
+ 
+ 	down_read(&iprune_sem);
+@@ -504,7 +500,7 @@ again:
+ 		if (inode->i_count || (inode->i_state & ~I_REFERENCED)) {
+ 			list_del_init(&inode->i_list);
+ 			spin_unlock(&inode->i_lock);
+-			atomic_dec(&inodes_stat.nr_unused);
++			inodes_stat.nr_unused--;
+ 			continue;
+ 		}
+ 		if (inode->i_state) {
+@@ -530,9 +526,8 @@ again:
+ 		WARN_ON(inode->i_state & I_NEW);
+ 		inode->i_state |= I_FREEING;
+ 		spin_unlock(&inode->i_lock);
+-		nr_pruned++;
++		inodes_stat.nr_unused--;
+ 	}
+-	atomic_sub(nr_pruned, &inodes_stat.nr_unused);
+ 	if (current_is_kswapd())
+ 		__count_vm_events(KSWAPD_INODESTEAL, reap);
+ 	else
+@@ -564,8 +559,7 @@ static int shrink_icache_memory(int nr,
+ 			return -1;
+ 		prune_icache(nr);
+ 	}
+-	return (atomic_read(&inodes_stat.nr_unused) / 100) *
+-					sysctl_vfs_cache_pressure;
++	return inodes_stat.nr_unused / 100 * sysctl_vfs_cache_pressure;
+ }
+ 
+ static struct shrinker icache_shrinker = {
+@@ -661,9 +655,9 @@ static inline void
+ __inode_add_to_lists(struct super_block *sb, struct inode_hash_bucket *b,
+ 			struct inode *inode)
+ {
+-	atomic_inc(&inodes_stat.nr_inodes);
+ 	spin_lock(&sb_inode_list_lock);
+ 	list_add_rcu(&inode->i_sb_list, &sb->s_inodes);
++	inodes_stat.nr_inodes++;
+ 	spin_unlock(&sb_inode_list_lock);
+ 	if (b) {
+ 		spin_lock_bucket(b);
+@@ -1309,17 +1303,17 @@ void generic_delete_inode(struct inode *
+ 	if (!list_empty(&inode->i_list)) {
+ 		spin_lock(&wb_inode_list_lock);
+ 		list_del_init(&inode->i_list);
+-		spin_unlock(&wb_inode_list_lock);
+ 		if (!inode->i_state)
+-			atomic_dec(&inodes_stat.nr_unused);
++			inodes_stat.nr_unused--;
++		spin_unlock(&wb_inode_list_lock);
+ 	}
+ 	spin_lock(&sb_inode_list_lock);
+ 	list_del_rcu(&inode->i_sb_list);
++	inodes_stat.nr_inodes--;
+ 	spin_unlock(&sb_inode_list_lock);
+ 	WARN_ON(inode->i_state & I_NEW);
+ 	inode->i_state |= I_FREEING;
+ 	spin_unlock(&inode->i_lock);
+-	atomic_dec(&inodes_stat.nr_inodes);
+ 
+ 	if (op->delete_inode) {
+ 		void (*delete)(struct inode *) = op->delete_inode;
+@@ -1367,8 +1361,8 @@ int generic_detach_inode(struct inode *i
+ 					list_empty(&inode->i_list)) {
+ 				spin_lock(&wb_inode_list_lock);
+ 				list_add(&inode->i_list, &inode_unused);
++				inodes_stat.nr_unused++;
+ 				spin_unlock(&wb_inode_list_lock);
+-				atomic_inc(&inodes_stat.nr_unused);
+ 			}
+ 			spin_unlock(&inode->i_lock);
+ 			return 0;
+@@ -1385,17 +1379,17 @@ int generic_detach_inode(struct inode *i
+ 	if (!list_empty(&inode->i_list)) {
+ 		spin_lock(&wb_inode_list_lock);
+ 		list_del_init(&inode->i_list);
+-		spin_unlock(&wb_inode_list_lock);
+ 		if (!inode->i_state)
+-			atomic_dec(&inodes_stat.nr_unused);
++			inodes_stat.nr_unused--;
++		spin_unlock(&wb_inode_list_lock);
+ 	}
+ 	spin_lock(&sb_inode_list_lock);
+ 	list_del_rcu(&inode->i_sb_list);
++	inodes_stat.nr_inodes--;
+ 	spin_unlock(&sb_inode_list_lock);
+ 	WARN_ON(inode->i_state & I_NEW);
+ 	inode->i_state |= I_FREEING;
+ 	spin_unlock(&inode->i_lock);
+-	atomic_dec(&inodes_stat.nr_inodes);
+ 	return 1;
+ }
+ EXPORT_SYMBOL_GPL(generic_detach_inode);
+Index: linux-2.6/include/linux/fs.h
+===================================================================
+--- linux-2.6.orig/include/linux/fs.h
++++ linux-2.6/include/linux/fs.h
+@@ -31,6 +31,12 @@
+ #define SEEK_END	2	/* seek relative to end of file */
+ #define SEEK_MAX	SEEK_END
+ 
++struct inodes_stat_t {
++	int nr_inodes;
++	int nr_unused;
++	int dummy[5];		/* padding for sysctl ABI compatibility */
++};
++
+ /* And dynamically-tunable limits and defaults: */
+ struct files_stat_struct {
+ 	int nr_files;		/* read only */
+@@ -411,12 +417,6 @@ typedef int (get_block_t)(struct inode *
+ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
+ 			ssize_t bytes, void *private);
+ 
+-struct inodes_stat_t {
+-	atomic_t nr_inodes;
+-	atomic_t nr_unused;
+-	int dummy[5];		/* padding for sysctl ABI compatibility */
+-};
+-
+ /*
+  * Attribute flags.  These should be or-ed together to figure out what
+  * has been changed!
+Index: linux-2.6/fs/fs-writeback.c
+===================================================================
+--- linux-2.6.orig/fs/fs-writeback.c
++++ linux-2.6/fs/fs-writeback.c
+@@ -904,8 +904,7 @@ static long wb_check_old_data_flush(stru
+ 	wb->last_old_flush = jiffies;
+ 	nr_pages = global_page_state(NR_FILE_DIRTY) +
+ 			global_page_state(NR_UNSTABLE_NFS) +
+-			(atomic_read(&inodes_stat.nr_inodes) -
+-			atomic_read(&inodes_stat.nr_unused));
++			inodes_stat.nr_inodes - inodes_stat.nr_unused;
+ 
+ 	if (nr_pages) {
+ 		struct wb_writeback_args args = {
+@@ -1258,8 +1257,7 @@ void writeback_inodes_sb(struct super_bl
+ 	long nr_to_write;
+ 
+ 	nr_to_write = nr_dirty + nr_unstable +
+-			(atomic_read(&inodes_stat.nr_inodes) -
+-			atomic_read(&inodes_stat.nr_unused));
++			inodes_stat.nr_inodes - inodes_stat.nr_unused;
+ 
+ 	bdi_start_writeback(sb->s_bdi, sb, nr_to_write);
+ }
 
 
