@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab0FYCEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 22:04:24 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47910 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab0FYCEX (ORCPT
+	id S1754416Ab0FYCIo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 22:08:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15973 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753156Ab0FYCIm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 22:04:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Nathan Fontenot <nfont@austin.ibm.com>
-Subject: Re: [PATCH] memory hotplug disable boot option
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org
-In-Reply-To: <4C24012B.9030506@austin.ibm.com>
-References: <4C24012B.9030506@austin.ibm.com>
-Message-Id: <20100625105340.803C.A69D9226@jp.fujitsu.com>
+	Thu, 24 Jun 2010 22:08:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,478,1272870000"; 
+   d="scan'208";a="579709947"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+       "Dong, Eddie" <eddie.dong@intel.com>
+CC: Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Fri, 25 Jun 2010 10:07:34 +0800
+Subject: RE: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Thread-Topic: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Thread-Index: AcsThT/Rm7uoRx/+TDOLr+CCct8P8gAhaLEg
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D7916AFE9AE7C@shsmsx502.ccr.corp.intel.com>
+References: <20100608052744.GA21547@gondor.apana.org.au>
+ <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com>
+ <20100611052112.GA25649@gondor.apana.org.au>
+ <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com>
+ <20100617112119.GB1515@gondor.apana.org.au>
+ <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com>
+ <1A42CE6F5F474C41B63392A5F80372B21F58CD9A@shsmsx501.ccr.corp.intel.com>
+ <20100623095254.GA32491@gondor.apana.org.au>
+ <1A42CE6F5F474C41B63392A5F80372B21F58CE7F@shsmsx501.ccr.corp.intel.com>
+ <20100624100836.GA16220@gondor.apana.org.au>
+In-Reply-To: <20100624100836.GA16220@gondor.apana.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 25 Jun 2010 11:04:19 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Proposed patch to disable memory hotplug via a boot option,
-> mem_hotplug=[on|off].  The patch only disables memory hotplug in that it 
-> prevents the creation of the memory sysfs directories for memory sections.
-> 
-> This patch is meant to help alleviate very long boot times on systems with
-> large memory (1+ TB) and many memory sections (10's of thousands).
+Herbert,
+That's why I have sent you the patch for guest virtio-net driver. I reserved 512 bytes in each page, then I can always have the space to copy and avoid the backend memory used up issue.
 
-Why making simple /sys file is so slowly? Couldn't we fix such performance
-problem?
+Thanks
+Xiaohui
 
-
-> 
-> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-> 
-> ---
->  drivers/base/memory.c  |   33 +++++++++++++++++++++++++++++++++
->  drivers/base/node.c    |    3 +++
->  include/linux/memory.h |    2 ++
->  3 files changed, 38 insertions(+)
-> 
-> Index: linux-2.6/drivers/base/memory.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/base/memory.c	2010-06-23 15:07:03.000000000 -0500
-> +++ linux-2.6/drivers/base/memory.c	2010-06-24 18:46:52.000000000 -0500
-> @@ -29,6 +29,24 @@
->  
->  #define MEMORY_CLASS_NAME	"memory"
->  
-> +static int mem_hp_enabled __read_mostly = 1;
-
-please don't use 'hp' acronym. 'hotplug' is not so long word.
-
-
-> +
-> +static int __setup_memory_hotplug(char *option)
-> +{
-> +	if (!strcmp(option, "off"))
-> +		mem_hp_enabled = 0;
-> +	else if (!strcmp(option, "on"))
-> +		mem_hp_enabled = 1;
-> +
-> +	return 1;
-> +}
-> +__setup("mem_hotplug=", __setup_memory_hotplug);
-
-no documentation on Documentation/kernel-parameters.txt?
-
-
-
-
+>-----Original Message-----
+>From: Herbert Xu [mailto:herbert@gondor.apana.org.au]
+>Sent: Thursday, June 24, 2010 6:09 PM
+>To: Dong, Eddie
+>Cc: Xin, Xiaohui; Stephen Hemminger; netdev@vger.kernel.org; kvm@vger.kernel.org;
+>linux-kernel@vger.kernel.org; mst@redhat.com; mingo@elte.hu; davem@davemloft.net;
+>jdike@linux.intel.com
+>Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from external.
+>
+>On Wed, Jun 23, 2010 at 06:05:41PM +0800, Dong, Eddie wrote:
+>>
+>> I mean once the frontend side driver post the buffers to the backend driver, the backend
+>driver will "immediately" use that buffers to compose skb or gro_frags and post them to the
+>assigned host NIC driver as receive buffers. In that case, if the backend driver recieves a
+>packet from the NIC that requires to do copy, it may be unable to find additional free guest
+>buffer because all of them are already used by the NIC driver. We have to reserve some guest
+>buffers for the possible copy even if the buffer address is not identified by original skb :(
+>
+>OK I see what you mean.  Can you tell me how does Xiaohui's
+>previous patch-set deal with this problem?
+>
+>Thanks,
+>--
+>Visit Openswan at http://www.openswan.org/
+>Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+>Home Page: http://gondor.apana.org.au/~herbert/
+>PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
