@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab0FYP3q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 11:29:46 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51251 "EHLO hera.kernel.org"
+	id S1756162Ab0FYPaZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 11:30:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51324 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751248Ab0FYP3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 11:29:44 -0400
-Date: Fri, 25 Jun 2010 15:29:12 GMT
-From: tip-bot for Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-       mingo@redhat.com, a.p.zijlstra@chello.nl, yanmin_zhang@linux.intel.com,
-       guijianfeng@cn.fujitsu.com, tglx@linutronix.de, mingo@elte.hu
+	id S1751248Ab0FYPaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 11:30:23 -0400
+Date: Fri, 25 Jun 2010 15:29:50 GMT
+From: "tip-bot for Darrick J. Wong" <djwong@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       djwong@us.ibm.com, muli@il.ibm.com, cschultz@linux.vnet.ibm.com,
+       stable@kernel.org, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       acme@redhat.com, a.p.zijlstra@chello.nl, yanmin_zhang@linux.intel.com,
-       guijianfeng@cn.fujitsu.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4C241140.9090008@cn.fujitsu.com>
-References: <4C241140.9090008@cn.fujitsu.com>
+       djwong@us.ibm.com, muli@il.ibm.com, cschultz@linux.vnet.ibm.com,
+       stable@kernel.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20100624212647.GI15515@tux1.beaverton.ibm.com>
+References: <20100624212647.GI15515@tux1.beaverton.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm: Get rid of unused guest_kallsyms
-Message-ID: <tip-830f4c803196eec181e209110885c4ac130f3805@git.kernel.org>
-Git-Commit-ID: 830f4c803196eec181e209110885c4ac130f3805
+Subject: [tip:x86/urgent] x86, Calgary: Increase max PHB number
+Message-ID: <tip-499a00e92dd9a75395081f595e681629eb1eebad@git.kernel.org>
+Git-Commit-ID: 499a00e92dd9a75395081f595e681629eb1eebad
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 25 Jun 2010 15:29:13 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 25 Jun 2010 15:29:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  830f4c803196eec181e209110885c4ac130f3805
-Gitweb:     http://git.kernel.org/tip/830f4c803196eec181e209110885c4ac130f3805
-Author:     Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-AuthorDate: Fri, 25 Jun 2010 10:15:28 +0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 25 Jun 2010 07:28:21 -0300
+Commit-ID:  499a00e92dd9a75395081f595e681629eb1eebad
+Gitweb:     http://git.kernel.org/tip/499a00e92dd9a75395081f595e681629eb1eebad
+Author:     Darrick J. Wong <djwong@us.ibm.com>
+AuthorDate: Thu, 24 Jun 2010 14:26:47 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 25 Jun 2010 16:14:58 +0200
 
-perf kvm: Get rid of unused guest_kallsyms
+x86, Calgary: Increase max PHB number
 
-guest_kallsyms is redundant here, remove it.
+Newer systems (x3950M2) can have 48 PHBs per chassis and 8
+chassis, so bump the limits up and provide an explanation
+of the requirements for each class.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-LKML-Reference: <4C241140.9090008@cn.fujitsu.com>
-Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+Acked-by: Muli Ben-Yehuda <muli@il.ibm.com>
+Cc: Corinna Schultz <cschultz@linux.vnet.ibm.com>
+Cc: <stable@kernel.org>
+LKML-Reference: <20100624212647.GI15515@tux1.beaverton.ibm.com>
+[ v2: Fixed build bug, added back PHBS_PER_CALGARY == 4 ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/builtin-record.c |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+ arch/x86/kernel/pci-calgary_64.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 86b1c3b..0df6408 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -445,8 +445,6 @@ static void atexit_header(void)
- static void event__synthesize_guest_os(struct machine *machine, void *data)
- {
- 	int err;
--	char *guest_kallsyms;
--	char path[PATH_MAX];
- 	struct perf_session *psession = data;
+diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+index fb99f7e..0b96b55 100644
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -103,11 +103,16 @@ int use_calgary __read_mostly = 0;
+ #define PMR_SOFTSTOPFAULT	0x40000000
+ #define PMR_HARDSTOP		0x20000000
  
- 	if (machine__is_host(machine))
-@@ -466,13 +464,6 @@ static void event__synthesize_guest_os(struct machine *machine, void *data)
- 		pr_err("Couldn't record guest kernel [%d]'s reference"
- 		       " relocation symbol.\n", machine->pid);
+-#define MAX_NUM_OF_PHBS		8 /* how many PHBs in total? */
+-#define MAX_NUM_CHASSIS		8 /* max number of chassis */
+-/* MAX_PHB_BUS_NUM is the maximal possible dev->bus->number */
+-#define MAX_PHB_BUS_NUM		(MAX_NUM_OF_PHBS * MAX_NUM_CHASSIS * 2)
+-#define PHBS_PER_CALGARY	4
++/*
++ * The maximum PHB bus number.
++ * x3950M2 (rare): 8 chassis, 48 PHBs per chassis = 384
++ * x3950M2: 4 chassis, 48 PHBs per chassis        = 192
++ * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
++ * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
++ */
++#define MAX_PHB_BUS_NUM		384
++
++#define PHBS_PER_CALGARY	  4
  
--	if (machine__is_default_guest(machine))
--		guest_kallsyms = (char *) symbol_conf.default_guest_kallsyms;
--	else {
--		sprintf(path, "%s/proc/kallsyms", machine->root_dir);
--		guest_kallsyms = path;
--	}
--
- 	/*
- 	 * We use _stext for guest kernel because guest kernel's /proc/kallsyms
- 	 * have no _text sometimes.
+ /* register offsets in Calgary's internal register space */
+ static const unsigned long tar_offsets[] = {
