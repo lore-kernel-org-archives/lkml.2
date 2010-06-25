@@ -1,156 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab0FYKPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 06:15:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2951 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752844Ab0FYKPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 06:15:52 -0400
-Date: Fri, 25 Jun 2010 13:10:22 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sridhar Samudrala <sri@us.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] sched: export sched_set/getaffinity (was Re: [PATCH 3/3]
-	vhost: apply cpumask and cgroup to vhost pollers)
-Message-ID: <20100625101022.GA16321@redhat.com>
-References: <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C99D.9070204@kernel.org> <20100624081135.GA937@redhat.com> <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
+	id S1754581Ab0FYKRO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 06:17:14 -0400
+Received: from n3-vm0.bullet.mail.gq1.yahoo.com ([67.195.23.156]:36345 "HELO
+	n3-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752406Ab0FYKRN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 06:17:13 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 475357.49324.bm@omp124.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=5eg/uPk3kyZWqqaZdFeEkpV5iMVJBXDepCs8F5B74qTajf7U/G1d/JgKZ3doQnMiSKo6pg4TY/lUz3YW915PxmBJWAhO5TJ5wZZ6DhGuAkNyj87n5aTc+19K+aDdH75GTMkw5oSBU4mE8w9Ra7c+oxfgQMXQ2zmajGbljGlYF+M=;
+Message-ID: <352874.17151.qm@web180303.mail.gq1.yahoo.com>
+X-YMail-OSG: StFoQYoVM1m5_se7TAlsEgVZDzXRQKiSzNjWcNMJrOUkbIo
+ smTIrIvXoM4wINjmfa0WrphyICfJFrd6oGAikFZR6G38IOuVW7axbcDsAmfp
+ h_aZbh9448um81l1Z5AfV48JsrFyN3QKqt9YRh7hIIW3T1r4w1Ijk3AT2gzf
+ eyCn1.G5raO0IUm89VWtv.nNl.gc0W7XwAoaVyTqLLdhCTOMlttPodnt_caY
+ hzEny4tPduWBgVkpTByXiapp11S62HocwnUIDdjui.2AJJ4_h1cZu5Dy2wks
+ fAOSaIOKUuQJ4Wq5dFDUeVQ6sY872mKdI3HqXQgF4N5fatZgvoSMAEOmPtSm
+ ilJzQinH2wgcbjQJo2IuM9zqtdwA-
+X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.104.274457
+Date: Fri, 25 Jun 2010 03:17:11 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH] pcf857x: support working w/o platform data
+To: linux-kernel@vger.kernel.org,
+       Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Jean Delvare <khali@linux-fr.org>
+In-Reply-To: <1276778870-1065-1-git-send-email-dbaryshkov@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 03:45:51PM -0700, Sridhar Samudrala wrote:
-> On Thu, 2010-06-24 at 11:11 +0300, Michael S. Tsirkin wrote:
-> > On Sun, May 30, 2010 at 10:25:01PM +0200, Tejun Heo wrote:
-> > > Apply the cpumask and cgroup of the initializing task to the created
-> > > vhost poller.
-> > > 
-> > > Based on Sridhar Samudrala's patch.
-> > > 
-> > > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > > Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>
-> > 
-> > 
-> > I wanted to apply this, but modpost fails:
-> > ERROR: "sched_setaffinity" [drivers/vhost/vhost_net.ko] undefined!
-> > ERROR: "sched_getaffinity" [drivers/vhost/vhost_net.ko] undefined!
-> > 
-> > Did you try building as a module?
-> 
-> In my original implementation, i had these calls in workqueue.c.
-> Now that these are moved to vhost.c which can be built as a module,
-> these symbols need to be exported.
-> The following patch fixes the build issue with vhost as a module.
-> 
-> Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Works for me. To simplify dependencies, I'd like to queue this
-together with the chost patches through net-next.
-Ack to this?
+--- On Thu, 6/17/10, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> wrote:
 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 3c2a54f..15a0c6f 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -4837,6 +4837,7 @@ out_put_task:
->  	put_online_cpus();
->  	return retval;
->  }
-> +EXPORT_SYMBOL_GPL(sched_setaffinity);
+> Provide sane defaults for pcf857x, so
+> the driver can be used w/o
+> providing platform data (and thus can be simply bound via OF tree).
+
+
+Maybe we can get an ack from some OF folk
+who are using it in that way?
+
+
+
+> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> ---
+>  drivers/gpio/pcf857x.c |    9 ++++-----
+>  1 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/gpio/pcf857x.c
+> b/drivers/gpio/pcf857x.c
+> index 29f19ce..879b473 100644
+> --- a/drivers/gpio/pcf857x.c
+> +++ b/drivers/gpio/pcf857x.c
+> @@ -190,7 +190,6 @@ static int pcf857x_probe(struct
+> i2c_client *client,
+>      pdata = client->dev.platform_data;
+>      if (!pdata) {
+>         
+> dev_dbg(&client->dev, "no platform data\n");
+> -        return -EINVAL;
+>      }
 >  
->  static int get_user_cpu_mask(unsigned long __user *user_mask_ptr,
-> unsigned len,
->  			     struct cpumask *new_mask)
-> @@ -4900,6 +4901,7 @@ out_unlock:
+>      /* Allocate, initialize, and register
+> this gpio_chip. */
+> @@ -200,7 +199,7 @@ static int pcf857x_probe(struct
+> i2c_client *client,
 >  
->  	return retval;
->  }
-> +EXPORT_SYMBOL_GPL(sched_getaffinity);
+>      mutex_init(&gpio->lock);
 >  
->  /**
->   * sys_sched_getaffinity - get the cpu affinity of a process
+> -    gpio->chip.base =
+> pdata->gpio_base;
+> +    gpio->chip.base = pdata ?
+> pdata->gpio_base : -1;
+>      gpio->chip.can_sleep = 1;
+>      gpio->chip.dev =
+> &client->dev;
+>      gpio->chip.owner = THIS_MODULE;
+> @@ -278,7 +277,7 @@ static int pcf857x_probe(struct
+> i2c_client *client,
+>       * to zero, our software copy
+> of the "latch" then matches the chip's
+>       * all-ones reset
+> state.  Otherwise it flags pins to be driven low.
+>       */
+> -    gpio->out = ~pdata->n_latch;
+> +    gpio->out = pdata ?
+> ~pdata->n_latch : ~0;
+>  
+>      status =
+> gpiochip_add(&gpio->chip);
+>      if (status < 0)
+> @@ -299,7 +298,7 @@ static int pcf857x_probe(struct
+> i2c_client *client,
+>      /* Let platform code set up the GPIOs
+> and their users.
+>       * Now is the first time
+> anyone could use them.
+>       */
+> -    if (pdata->setup) {
+> +    if (pdata && pdata->setup)
+> {
+>          status =
+> pdata->setup(client,
+>             
+>     gpio->chip.base, gpio->chip.ngpio,
+>             
+>     pdata->context);
+> @@ -322,7 +321,7 @@ static int pcf857x_remove(struct
+> i2c_client *client)
+>      struct pcf857x   
+>         *gpio =
+> i2c_get_clientdata(client);
+>      int   
+>            
+> status = 0;
+>  
+> -    if (pdata->teardown) {
+> +    if (pdata &&
+> pdata->teardown) {
+>          status =
+> pdata->teardown(client,
+>             
+>     gpio->chip.base, gpio->chip.ngpio,
+>             
+>     pdata->context);
+> -- 
+> 1.7.1
 > 
 > 
-> > > ---
-> > >  drivers/vhost/vhost.c |   36 +++++++++++++++++++++++++++++++-----
-> > >  1 file changed, 31 insertions(+), 5 deletions(-)
-> > > 
-> > > Index: work/drivers/vhost/vhost.c
-> > > ===================================================================
-> > > --- work.orig/drivers/vhost/vhost.c
-> > > +++ work/drivers/vhost/vhost.c
-> > > @@ -23,6 +23,7 @@
-> > >  #include <linux/highmem.h>
-> > >  #include <linux/slab.h>
-> > >  #include <linux/kthread.h>
-> > > +#include <linux/cgroup.h>
-> > > 
-> > >  #include <linux/net.h>
-> > >  #include <linux/if_packet.h>
-> > > @@ -176,12 +177,30 @@ repeat:
-> > >  long vhost_dev_init(struct vhost_dev *dev,
-> > >  		    struct vhost_virtqueue *vqs, int nvqs)
-> > >  {
-> > > -	struct task_struct *poller;
-> > > -	int i;
-> > > +	struct task_struct *poller = NULL;
-> > > +	cpumask_var_t mask;
-> > > +	int i, ret = -ENOMEM;
-> > > +
-> > > +	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-> > > +		goto out;
-> > > 
-> > >  	poller = kthread_create(vhost_poller, dev, "vhost-%d", current->pid);
-> > > -	if (IS_ERR(poller))
-> > > -		return PTR_ERR(poller);
-> > > +	if (IS_ERR(poller)) {
-> > > +		ret = PTR_ERR(poller);
-> > > +		goto out;
-> > > +	}
-> > > +
-> > > +	ret = sched_getaffinity(current->pid, mask);
-> > > +	if (ret)
-> > > +		goto out;
-> > > +
-> > > +	ret = sched_setaffinity(poller->pid, mask);
-> > > +	if (ret)
-> > > +		goto out;
-> > > +
-> > > +	ret = cgroup_attach_task_current_cg(poller);
-> > > +	if (ret)
-> > > +		goto out;
-> > > 
-> > >  	dev->vqs = vqs;
-> > >  	dev->nvqs = nvqs;
-> > > @@ -202,7 +221,14 @@ long vhost_dev_init(struct vhost_dev *de
-> > >  			vhost_poll_init(&dev->vqs[i].poll,
-> > >  					dev->vqs[i].handle_kick, POLLIN, dev);
-> > >  	}
-> > > -	return 0;
-> > > +
-> > > +	wake_up_process(poller);	/* avoid contributing to loadavg */
-> > > +	ret = 0;
-> > > +out:
-> > > +	if (ret)
-> > > +		kthread_stop(poller);
-> > > +	free_cpumask_var(mask);
-> > > +	return ret;
-> > >  }
-> > > 
-> > >  /* Caller should have device mutex */
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe netdev" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
