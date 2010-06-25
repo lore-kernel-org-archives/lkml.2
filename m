@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab0FYNjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 09:39:53 -0400
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:59455 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756083Ab0FYNjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 09:39:51 -0400
-X-SENDER-IP: [217.174.79.66]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAO5IJEzZrk9C/2dsb2JhbACfQHHBTA2FFASEAYYi
-X-IronPort-AV: E=Sophos;i="4.53,481,1272837600"; 
-   d="scan'208";a="537856017"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>,
-       Chase Douglas <chase.douglas@canonical.com>,
-       Ping Cheng <pingc@wacom.com>, Stephane Chatty <chatty@enac.fr>,
-       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>,
-       Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 0/2] [RESEND] MT slots
-Date: Fri, 25 Jun 2010 15:15:20 +0200
-Message-Id: <1277471722-2963-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.6.3.3
-X-OriginalArrivalTime: 25 Jun 2010 13:15:32.0598 (UTC) FILETIME=[7D90B160:01CB1468]
+	id S1755776Ab0FYNq3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 09:46:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49191 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752549Ab0FYNq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 09:46:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 5/9] PM / Hibernate: add chunk i/o support
+Date: Fri, 25 Jun 2010 15:44:44 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com
+References: <1275468768-28229-1-git-send-email-jslaby@suse.cz> <1275468768-28229-5-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1275468768-28229-5-git-send-email-jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006251544.45121.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Wednesday, June 02, 2010, Jiri Slaby wrote:
+> Chunk support is useful when not writing whole pages at once. It takes
+> care of joining the buffers into the pages and writing at once when
+> needed.
+> 
+> This adds functions for both reads and writes.
+> 
+> In the end when pages are compressed they use this interface as well
+> (because they are indeed shorter than PAGE_SIZE).
 
-Please find enclosed a resend of the MT slot patches, targetting
-2.6.36. The MT slots are implemented in the mtdev library, so the
-protocol is getting a fair amount of testing. Regarding MT event codes
-that require special initial values, it is assumed that the driver
-will initalize the mt slots properly.
+This one looks good up to a couple of minor things below.
 
-Thanks,
-Henrik
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> ---
+>  kernel/power/block_io.c |  126 +++++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/power/power.h    |   16 ++++++
+>  2 files changed, 142 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/power/block_io.c b/kernel/power/block_io.c
+> index 97024fd..5b6413d 100644
+> --- a/kernel/power/block_io.c
+> +++ b/kernel/power/block_io.c
+> @@ -3,6 +3,7 @@
+>   *
+>   * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
+>   * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
+> + * Copyright (C) 2004-2008 Nigel Cunningham (nigel at tuxonice net)
 
-Henrik Rydberg (2):
-  input: mt: Introduce MT event slots (rev 5b)
-  input: mt: Document the MT event slot protocol (rev5b)
+Please use the e-mail address.
 
- Documentation/input/multi-touch-protocol.txt |  217 ++++++++++++++++++--------
- drivers/input/input.c                        |  105 ++++++++++---
- include/linux/input.h                        |   44 +++++
- 3 files changed, 271 insertions(+), 95 deletions(-)
+>   *
+>   * This file is released under the GPLv2.
+>   */
+> @@ -74,6 +75,131 @@ int hib_bio_write_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
+>  			virt_to_page(addr), bio_chain);
+>  }
+>  
+> +static int hib_buffer_init_rw(struct hibernate_io_handle *io_handle,
+> +		int writing)
+> +{
+> +	/* should never happen - it means we didn't finish properly last time */
+> +	BUG_ON(io_handle->chunk_buffer || io_handle->chunk_buffer_pos);
 
+Please use if (WARN_ON(...)) retuirn -EINVAL; instead.  The BUG_ON() will kill
+an otherwise perfectly useable system just because we happen to have a bug in
+the hibernation code.
+
+Generally, please don't use BUG_ON() unless you _have_ _to_ (ie. the system
+would crash anyway causing data loss and possibly other damage to happen if
+we didn't do it).
+
+Rafael
