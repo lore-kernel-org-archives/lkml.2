@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab0FYORh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 10:17:37 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41177 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754799Ab0FYORg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 10:17:36 -0400
-Date: Fri, 25 Jun 2010 16:17:16 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>,
-       Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: Re: [GIT PULL 0/6] perf/core improvements and fixes for 2.6.36
-Message-ID: <20100625141716.GA10283@elte.hu>
-References: <1277474366-7958-1-git-send-email-acme@infradead.org>
+	id S932071Ab0FYOSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 10:18:24 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:44769 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756388Ab0FYOSX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 10:18:23 -0400
+Date: Fri, 25 Jun 2010 09:17:03 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 2/2] vmscan: don't subtraction of unsined 
+In-Reply-To: <20100625202126.806A.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1006250912380.18900@router.home>
+References: <20100625201915.8067.A69D9226@jp.fujitsu.com> <20100625202126.806A.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277474366-7958-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0004]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 25 Jun 2010, KOSAKI Motohiro wrote:
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> 'slab_reclaimable' and 'nr_pages' are unsigned. so, subtraction is
+> unsafe.
 
-> Hi Ingo,
-> 
->         Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (4):
->   perf ui: Introduce routine ui_browser__is_current_entry
->   perf ui: Introduce ui_browser->seek to support multiple list structures
->   perf ui: Separate showing the entries from running the browser
->   perf ui: Move objdump_line specific stuff out of ui_browser
-> 
-> Gui Jianfeng (1):
->   perf kvm: Get rid of unused guest_kallsyms
-> 
-> Tom Zanussi (1):
->   perf scripts perl: Makefile fix
-> 
->  tools/perf/Makefile         |    2 +-
->  tools/perf/builtin-record.c |    9 --
->  tools/perf/util/newt.c      |  185 +++++++++++++++++++++++++------------------
->  3 files changed, 109 insertions(+), 87 deletions(-)
+Why? We are subtracting the current value of NR_SLAB_RECLAIMABLE from the
+earlier one. The result can be negative (maybe concurrent allocations) and
+then the nr_reclaimed gets decremented instead. This is  okay since we
+have not reached our goal then of reducing the number of reclaimable slab
+pages on the zone.
 
-Pulled, thanks a lot Arnaldo!
+> @@ -2622,17 +2624,21 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  		 * Note that shrink_slab will free memory on all zones and may
+>  		 * take a long time.
+>  		 */
+> -		while (shrink_slab(sc.nr_scanned, gfp_mask, lru_pages) &&
+> -			zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
+> -				slab_reclaimable - nr_pages)
 
-	Ingo
+The comparison could be a problem here. So
+
+			zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages >
+				slab_reclaimable
+
+?
+
