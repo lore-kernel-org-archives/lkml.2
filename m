@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592Ab0FYTNt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:13:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56827 "EHLO mx1.redhat.com"
+	id S932311Ab0FYTGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:06:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10770 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab0FYTGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:06:13 -0400
+	id S1756480Ab0FYTGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:06:01 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-       Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org
-Subject: [PATCH 10/38] whiteout: Split of ext2_append_link() from ext2_add_link()
-Date: Fri, 25 Jun 2010 12:05:00 -0700
-Message-Id: <1277492728-11446-11-git-send-email-vaurora@redhat.com>
+       autofs@linux.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 04/38] autofs4: Save autofs trigger's vfsmount in super block info
+Date: Fri, 25 Jun 2010 12:04:54 -0700
+Message-Id: <1277492728-11446-5-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,151 +23,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Blunck <jblunck@suse.de>
 
-The ext2_append_link() is later used to find or append a directory
-entry to whiteout.
+XXX - This is broken and included just to make union mounts work.  See
+discussion at:
+
+http://kerneltrap.org/mailarchive/linux-fsdevel/2010/1/15/6708053/thread
+
+Original commit message:
+
+This is a bugfix/replacement for commit
+051d381259eb57d6074d02a6ba6e90e744f1a29f:
+
+    During a path walk if an autofs trigger is mounted on a dentry,
+    when the follow_link method is called, the nameidata struct
+    contains the vfsmount and mountpoint dentry of the parent mount
+    while the dentry that is passed in is the root of the autofs
+    trigger mount.  I believe it is impossible to get the vfsmount of
+    the trigger mount, within the follow_link method, when only the
+    parent vfsmount and the root dentry of the trigger mount are
+    known.
+
+The solution in this commit was to replace the path embedded in the
+parent's nameidata with the path of the link itself in
+__do_follow_link().  This is a relatively harmless misuse of the
+field, but union mounts ran into a bug during follow_link() caused by
+the nameidata containing the wrong path (we count on it being what it
+is all other places - the path of the parent).
+
+A cleaner and easier to understand solution is to save the necessary
+vfsmount in the autofs superblock info when it is mounted.  Then we
+can easily update the vfsmount in autofs4_follow_link().
 
 Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Theodore Tso <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org
+Acked-by: Ian Kent <raven@themaw.net>
+Cc: autofs@linux.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- fs/ext2/dir.c |   70 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 50 insertions(+), 20 deletions(-)
+ fs/autofs4/autofs_i.h |    1 +
+ fs/autofs4/init.c     |   11 ++++++++++-
+ fs/autofs4/root.c     |    6 ++++++
+ fs/namei.c            |    7 ++-----
+ 4 files changed, 19 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
-index 7516957..57207a9 100644
---- a/fs/ext2/dir.c
-+++ b/fs/ext2/dir.c
-@@ -472,9 +472,10 @@ void ext2_set_link(struct inode *dir, struct ext2_dir_entry_2 *de,
+diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
+index 3d283ab..de3af64 100644
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -133,6 +133,7 @@ struct autofs_sb_info {
+ 	int reghost_enabled;
+ 	int needs_reghost;
+ 	struct super_block *sb;
++	struct vfsmount *mnt;
+ 	struct mutex wq_mutex;
+ 	spinlock_t fs_lock;
+ 	struct autofs_wait_queue *queues; /* Wait queue pointer */
+diff --git a/fs/autofs4/init.c b/fs/autofs4/init.c
+index 9722e4b..5e0dcd7 100644
+--- a/fs/autofs4/init.c
++++ b/fs/autofs4/init.c
+@@ -17,7 +17,16 @@
+ static int autofs_get_sb(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
+ {
+-	return get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
++	struct autofs_sb_info *sbi;
++	int ret;
++
++	ret = get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
++	if (ret)
++		return ret;
++
++	sbi = autofs4_sbi(mnt->mnt_sb);
++	sbi->mnt = mnt;
++	return 0;
  }
  
- /*
-- *	Parent is locked.
-+ * Find or append a given dentry to the parent directory
-  */
--int ext2_add_link (struct dentry *dentry, struct inode *inode)
-+static ext2_dirent * ext2_append_entry(struct dentry * dentry,
-+				       struct page ** page)
- {
- 	struct inode *dir = dentry->d_parent->d_inode;
- 	const char *name = dentry->d_name.name;
-@@ -482,13 +483,10 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 	unsigned chunk_size = ext2_chunk_size(dir);
- 	unsigned reclen = EXT2_DIR_REC_LEN(namelen);
- 	unsigned short rec_len, name_len;
--	struct page *page = NULL;
--	ext2_dirent * de;
-+	ext2_dirent * de = NULL;
- 	unsigned long npages = dir_pages(dir);
- 	unsigned long n;
- 	char *kaddr;
--	loff_t pos;
--	int err;
- 
+ static struct file_system_type autofs_fs_type = {
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index e8e5e63..c41e01d 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -219,6 +219,12 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 	DPRINTK("dentry=%p %.*s oz_mode=%d nd->flags=%d",
+ 		dentry, dentry->d_name.len, dentry->d_name.name, oz_mode,
+ 		nd->flags);
++
++	dput(nd->path.dentry);
++	mntput(nd->path.mnt);
++	nd->path.mnt = mntget(sbi->mnt);
++	nd->path.dentry = dget(dentry);
++
  	/*
- 	 * We take care of directory expansion in the same loop.
-@@ -498,20 +496,19 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 	for (n = 0; n <= npages; n++) {
- 		char *dir_end;
+ 	 * For an expire of a covered direct or offset mount we need
+ 	 * to break out of follow_down() at the autofs mount trigger
+diff --git a/fs/namei.c b/fs/namei.c
+index 3b43c48..f731108 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -538,11 +538,8 @@ __do_follow_link(struct path *path, struct nameidata *nd, void **p)
+ 	touch_atime(path->mnt, dentry);
+ 	nd_set_link(nd, NULL);
  
--		page = ext2_get_page(dir, n, 0);
--		err = PTR_ERR(page);
--		if (IS_ERR(page))
-+		*page = ext2_get_page(dir, n, 0);
-+		de = ERR_PTR(PTR_ERR(*page));
-+		if (IS_ERR(*page))
- 			goto out;
--		lock_page(page);
--		kaddr = page_address(page);
-+		lock_page(*page);
-+		kaddr = page_address(*page);
- 		dir_end = kaddr + ext2_last_byte(dir, n);
- 		de = (ext2_dirent *)kaddr;
- 		kaddr += PAGE_CACHE_SIZE - reclen;
- 		while ((char *)de <= kaddr) {
- 			if ((char *)de == dir_end) {
- 				/* We hit i_size */
--				name_len = 0;
--				rec_len = chunk_size;
-+				de->name_len = 0;
- 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
- 				de->inode = 0;
- 				goto got_it;
-@@ -519,12 +516,11 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 			if (de->rec_len == 0) {
- 				ext2_error(dir->i_sb, __func__,
- 					"zero-length directory entry");
--				err = -EIO;
-+				de = ERR_PTR(-EIO);
- 				goto out_unlock;
- 			}
--			err = -EEXIST;
- 			if (ext2_match (namelen, name, de))
--				goto out_unlock;
-+				goto got_it;
- 			name_len = EXT2_DIR_REC_LEN(de->name_len);
- 			rec_len = ext2_rec_len_from_disk(de->rec_len);
- 			if (!de->inode && rec_len >= reclen)
-@@ -533,13 +529,48 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 				goto got_it;
- 			de = (ext2_dirent *) ((char *) de + rec_len);
- 		}
--		unlock_page(page);
--		ext2_put_page(page);
-+		unlock_page(*page);
-+		ext2_put_page(*page);
- 	}
-+
- 	BUG();
--	return -EINVAL;
- 
- got_it:
-+	return de;
-+	/* OFFSET_CACHE */
-+out_unlock:
-+	unlock_page(*page);
-+	ext2_put_page(*page);
-+out:
-+	return de;
-+}
-+
-+/*
-+ *	Parent is locked.
-+ */
-+int ext2_add_link (struct dentry *dentry, struct inode *inode)
-+{
-+	struct inode *dir = dentry->d_parent->d_inode;
-+	const char *name = dentry->d_name.name;
-+	int namelen = dentry->d_name.len;
-+	unsigned short rec_len, name_len;
-+	ext2_dirent * de;
-+	struct page *page;
-+	loff_t pos;
-+	int err;
-+
-+	de = ext2_append_entry(dentry, &page);
-+	if (IS_ERR(de))
-+		return PTR_ERR(de);
-+
-+	err = -EEXIST;
-+	if (ext2_match (namelen, name, de))
-+		goto out_unlock;
-+
-+got_it:
-+	name_len = EXT2_DIR_REC_LEN(de->name_len);
-+	rec_len = ext2_rec_len_from_disk(de->rec_len);
-+
- 	pos = page_offset(page) +
- 		(char*)de - (char*)page_address(page);
- 	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
-@@ -563,7 +594,6 @@ got_it:
- 	/* OFFSET_CACHE */
- out_put:
- 	ext2_put_page(page);
--out:
- 	return err;
- out_unlock:
- 	unlock_page(page);
+-	if (path->mnt != nd->path.mnt) {
+-		path_to_nameidata(path, nd);
+-		dget(dentry);
+-	}
+-	mntget(path->mnt);
++	if (path->mnt == nd->path.mnt)
++		mntget(nd->path.mnt);
+ 	nd->last_type = LAST_BIND;
+ 	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
+ 	error = PTR_ERR(*p);
 -- 
 1.6.3.3
 
