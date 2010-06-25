@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab0FYTGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:06:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
+	id S932592Ab0FYTNt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:13:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56827 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756509Ab0FYTF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:05:59 -0400
+	id S932320Ab0FYTGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:06:13 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 02/38] VFS: Make lookup_hash() return a struct path
-Date: Fri, 25 Jun 2010 12:04:52 -0700
-Message-Id: <1277492728-11446-3-git-send-email-vaurora@redhat.com>
+       Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org
+Subject: [PATCH 10/38] whiteout: Split of ext2_append_link() from ext2_add_link()
+Date: Fri, 25 Jun 2010 12:05:00 -0700
+Message-Id: <1277492728-11446-11-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,290 +23,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Blunck <jblunck@suse.de>
 
-This patch changes lookup_hash() into returning a struct path.
-
-XXX - Check for correctness, otherwise obvious
+The ext2_append_link() is later used to find or append a directory
+entry to whiteout.
 
 Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Theodore Tso <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org
 ---
- fs/namei.c |  113 ++++++++++++++++++++++++++++++-----------------------------
- 1 files changed, 57 insertions(+), 56 deletions(-)
+ fs/ext2/dir.c |   70 ++++++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 50 insertions(+), 20 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index ec178f1..3b43c48 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1155,7 +1155,7 @@ int vfs_path_lookup(struct dentry *dentry, struct vfsmount *mnt,
+diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+index 7516957..57207a9 100644
+--- a/fs/ext2/dir.c
++++ b/fs/ext2/dir.c
+@@ -472,9 +472,10 @@ void ext2_set_link(struct inode *dir, struct ext2_dir_entry_2 *de,
  }
  
- static struct dentry *__lookup_hash(struct qstr *name,
--		struct dentry *base, struct nameidata *nd)
-+				    struct dentry *base, struct nameidata *nd)
- {
- 	struct dentry *dentry;
- 	struct inode *inode;
-@@ -1212,14 +1212,22 @@ out:
-  * needs parent already locked. Doesn't follow mounts.
-  * SMP-safe.
+ /*
+- *	Parent is locked.
++ * Find or append a given dentry to the parent directory
   */
--static struct dentry *lookup_hash(struct nameidata *nd)
-+static int lookup_hash(struct nameidata *nd, struct qstr *name,
-+		       struct path *path)
+-int ext2_add_link (struct dentry *dentry, struct inode *inode)
++static ext2_dirent * ext2_append_entry(struct dentry * dentry,
++				       struct page ** page)
  {
- 	int err;
+ 	struct inode *dir = dentry->d_parent->d_inode;
+ 	const char *name = dentry->d_name.name;
+@@ -482,13 +483,10 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 	unsigned chunk_size = ext2_chunk_size(dir);
+ 	unsigned reclen = EXT2_DIR_REC_LEN(namelen);
+ 	unsigned short rec_len, name_len;
+-	struct page *page = NULL;
+-	ext2_dirent * de;
++	ext2_dirent * de = NULL;
+ 	unsigned long npages = dir_pages(dir);
+ 	unsigned long n;
+ 	char *kaddr;
+-	loff_t pos;
+-	int err;
  
- 	err = exec_permission(nd->path.dentry->d_inode);
- 	if (err)
--		return ERR_PTR(err);
--	return __lookup_hash(&nd->last, nd->path.dentry, nd);
-+		return err;
-+	path->mnt = nd->path.mnt;
-+	path->dentry =  __lookup_hash(name, nd->path.dentry, nd);
-+	if (IS_ERR(path->dentry)) {
-+		err = PTR_ERR(path->dentry);
-+		path->dentry = NULL;
-+		path->mnt = NULL;
-+	}
-+	return err;
- }
+ 	/*
+ 	 * We take care of directory expansion in the same loop.
+@@ -498,20 +496,19 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 	for (n = 0; n <= npages; n++) {
+ 		char *dir_end;
  
- static int __lookup_one_len(const char *name, struct qstr *this,
-@@ -1701,12 +1709,9 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 
- 	/* OK, it's O_CREAT */
- 	mutex_lock(&dir->d_inode->i_mutex);
-+	error = lookup_hash(nd, &nd->last, path);
- 
--	path->dentry = lookup_hash(nd);
--	path->mnt = nd->path.mnt;
--
--	error = PTR_ERR(path->dentry);
--	if (IS_ERR(path->dentry)) {
-+	if (error) {
- 		mutex_unlock(&dir->d_inode->i_mutex);
- 		goto exit;
+-		page = ext2_get_page(dir, n, 0);
+-		err = PTR_ERR(page);
+-		if (IS_ERR(page))
++		*page = ext2_get_page(dir, n, 0);
++		de = ERR_PTR(PTR_ERR(*page));
++		if (IS_ERR(*page))
+ 			goto out;
+-		lock_page(page);
+-		kaddr = page_address(page);
++		lock_page(*page);
++		kaddr = page_address(*page);
+ 		dir_end = kaddr + ext2_last_byte(dir, n);
+ 		de = (ext2_dirent *)kaddr;
+ 		kaddr += PAGE_CACHE_SIZE - reclen;
+ 		while ((char *)de <= kaddr) {
+ 			if ((char *)de == dir_end) {
+ 				/* We hit i_size */
+-				name_len = 0;
+-				rec_len = chunk_size;
++				de->name_len = 0;
+ 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
+ 				de->inode = 0;
+ 				goto got_it;
+@@ -519,12 +516,11 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 			if (de->rec_len == 0) {
+ 				ext2_error(dir->i_sb, __func__,
+ 					"zero-length directory entry");
+-				err = -EIO;
++				de = ERR_PTR(-EIO);
+ 				goto out_unlock;
+ 			}
+-			err = -EEXIST;
+ 			if (ext2_match (namelen, name, de))
+-				goto out_unlock;
++				goto got_it;
+ 			name_len = EXT2_DIR_REC_LEN(de->name_len);
+ 			rec_len = ext2_rec_len_from_disk(de->rec_len);
+ 			if (!de->inode && rec_len >= reclen)
+@@ -533,13 +529,48 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 				goto got_it;
+ 			de = (ext2_dirent *) ((char *) de + rec_len);
+ 		}
+-		unlock_page(page);
+-		ext2_put_page(page);
++		unlock_page(*page);
++		ext2_put_page(*page);
  	}
-@@ -1958,7 +1963,8 @@ EXPORT_SYMBOL(filp_open);
-  */
- struct dentry *lookup_create(struct nameidata *nd, int is_dir)
- {
--	struct dentry *dentry = ERR_PTR(-EEXIST);
-+	struct path path;
-+	int err;
- 
- 	mutex_lock_nested(&nd->path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
- 	/*
-@@ -1966,7 +1972,7 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
- 	 * (foo/., foo/.., /////)
- 	 */
- 	if (nd->last_type != LAST_NORM)
--		goto fail;
-+		return ERR_PTR(-EEXIST);
- 	nd->flags &= ~LOOKUP_PARENT;
- 	nd->flags |= LOOKUP_CREATE | LOOKUP_EXCL;
- 	nd->intent.open.flags = O_EXCL;
-@@ -1974,11 +1980,11 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
- 	/*
- 	 * Do the final lookup.
- 	 */
--	dentry = lookup_hash(nd);
--	if (IS_ERR(dentry))
--		goto fail;
-+	err = lookup_hash(nd, &nd->last, &path);
-+	if (err)
-+		return ERR_PTR(err);
- 
--	if (dentry->d_inode)
-+	if (path.dentry->d_inode)
- 		goto eexist;
- 	/*
- 	 * Special case - lookup gave negative, but... we had foo/bar/
-@@ -1987,15 +1993,14 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
- 	 * been asking for (non-existent) directory. -ENOENT for you.
- 	 */
- 	if (unlikely(!is_dir && nd->last.name[nd->last.len])) {
--		dput(dentry);
--		dentry = ERR_PTR(-ENOENT);
-+		dput(path.dentry);
-+		return ERR_PTR(-ENOENT);
- 	}
--	return dentry;
 +
-+	return path.dentry;
- eexist:
--	dput(dentry);
--	dentry = ERR_PTR(-EEXIST);
--fail:
--	return dentry;
-+	path_put_conditional(&path, nd);
-+	return ERR_PTR(-EEXIST);
- }
- EXPORT_SYMBOL_GPL(lookup_create);
+ 	BUG();
+-	return -EINVAL;
  
-@@ -2230,7 +2235,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
- {
- 	int error = 0;
- 	char * name;
--	struct dentry *dentry;
-+	struct path path;
- 	struct nameidata nd;
- 
- 	error = user_path_parent(dfd, pathname, &nd, &name);
-@@ -2252,21 +2257,20 @@ static long do_rmdir(int dfd, const char __user *pathname)
- 	nd.flags &= ~LOOKUP_PARENT;
- 
- 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
--	dentry = lookup_hash(&nd);
--	error = PTR_ERR(dentry);
--	if (IS_ERR(dentry))
-+	error = lookup_hash(&nd, &nd.last, &path);
-+	if (error)
- 		goto exit2;
- 	error = mnt_want_write(nd.path.mnt);
- 	if (error)
- 		goto exit3;
--	error = security_path_rmdir(&nd.path, dentry);
-+	error = security_path_rmdir(&nd.path, path.dentry);
- 	if (error)
- 		goto exit4;
--	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
-+	error = vfs_rmdir(nd.path.dentry->d_inode, path.dentry);
- exit4:
- 	mnt_drop_write(nd.path.mnt);
- exit3:
--	dput(dentry);
-+	path_put_conditional(&path, &nd);
- exit2:
- 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
- exit1:
-@@ -2322,7 +2326,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
- {
- 	int error;
- 	char *name;
--	struct dentry *dentry;
-+	struct path path;
- 	struct nameidata nd;
- 	struct inode *inode = NULL;
- 
-@@ -2337,26 +2341,25 @@ static long do_unlinkat(int dfd, const char __user *pathname)
- 	nd.flags &= ~LOOKUP_PARENT;
- 
- 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
--	dentry = lookup_hash(&nd);
--	error = PTR_ERR(dentry);
--	if (!IS_ERR(dentry)) {
-+	error = lookup_hash(&nd, &nd.last, &path);
-+	if (!error) {
- 		/* Why not before? Because we want correct error value */
- 		if (nd.last.name[nd.last.len])
- 			goto slashes;
--		inode = dentry->d_inode;
-+		inode = path.dentry->d_inode;
- 		if (inode)
- 			atomic_inc(&inode->i_count);
- 		error = mnt_want_write(nd.path.mnt);
- 		if (error)
- 			goto exit2;
--		error = security_path_unlink(&nd.path, dentry);
-+		error = security_path_unlink(&nd.path, path.dentry);
- 		if (error)
- 			goto exit3;
--		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
-+		error = vfs_unlink(nd.path.dentry->d_inode, path.dentry);
- exit3:
- 		mnt_drop_write(nd.path.mnt);
- 	exit2:
--		dput(dentry);
-+		path_put_conditional(&path, &nd);
- 	}
- 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
- 	if (inode)
-@@ -2367,8 +2370,8 @@ exit1:
- 	return error;
- 
- slashes:
--	error = !dentry->d_inode ? -ENOENT :
--		S_ISDIR(dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
-+	error = !path.dentry->d_inode ? -ENOENT :
-+		S_ISDIR(path.dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
- 	goto exit2;
- }
- 
-@@ -2706,7 +2709,7 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 		int, newdfd, const char __user *, newname)
- {
- 	struct dentry *old_dir, *new_dir;
--	struct dentry *old_dentry, *new_dentry;
-+	struct path old, new;
- 	struct dentry *trap;
- 	struct nameidata oldnd, newnd;
- 	char *from;
-@@ -2740,16 +2743,15 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 
- 	trap = lock_rename(new_dir, old_dir);
- 
--	old_dentry = lookup_hash(&oldnd);
--	error = PTR_ERR(old_dentry);
--	if (IS_ERR(old_dentry))
-+	error = lookup_hash(&oldnd, &oldnd.last, &old);
-+	if (error)
- 		goto exit3;
- 	/* source must exist */
- 	error = -ENOENT;
--	if (!old_dentry->d_inode)
-+	if (!old.dentry->d_inode)
- 		goto exit4;
- 	/* unless the source is a directory trailing slashes give -ENOTDIR */
--	if (!S_ISDIR(old_dentry->d_inode->i_mode)) {
-+	if (!S_ISDIR(old.dentry->d_inode->i_mode)) {
- 		error = -ENOTDIR;
- 		if (oldnd.last.name[oldnd.last.len])
- 			goto exit4;
-@@ -2758,32 +2760,31 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	}
- 	/* source should not be ancestor of target */
- 	error = -EINVAL;
--	if (old_dentry == trap)
-+	if (old.dentry == trap)
- 		goto exit4;
--	new_dentry = lookup_hash(&newnd);
--	error = PTR_ERR(new_dentry);
--	if (IS_ERR(new_dentry))
-+	error = lookup_hash(&newnd, &newnd.last, &new);
-+	if (error)
- 		goto exit4;
- 	/* target should not be an ancestor of source */
- 	error = -ENOTEMPTY;
--	if (new_dentry == trap)
-+	if (new.dentry == trap)
- 		goto exit5;
- 
- 	error = mnt_want_write(oldnd.path.mnt);
- 	if (error)
- 		goto exit5;
--	error = security_path_rename(&oldnd.path, old_dentry,
--				     &newnd.path, new_dentry);
-+	error = security_path_rename(&oldnd.path, old.dentry,
-+				     &newnd.path, new.dentry);
- 	if (error)
- 		goto exit6;
--	error = vfs_rename(old_dir->d_inode, old_dentry,
--				   new_dir->d_inode, new_dentry);
-+	error = vfs_rename(old_dir->d_inode, old.dentry,
-+				   new_dir->d_inode, new.dentry);
- exit6:
- 	mnt_drop_write(oldnd.path.mnt);
- exit5:
--	dput(new_dentry);
-+	path_put_conditional(&new, &newnd);
- exit4:
--	dput(old_dentry);
-+	path_put_conditional(&old, &oldnd);
- exit3:
- 	unlock_rename(new_dir, old_dir);
- exit2:
+ got_it:
++	return de;
++	/* OFFSET_CACHE */
++out_unlock:
++	unlock_page(*page);
++	ext2_put_page(*page);
++out:
++	return de;
++}
++
++/*
++ *	Parent is locked.
++ */
++int ext2_add_link (struct dentry *dentry, struct inode *inode)
++{
++	struct inode *dir = dentry->d_parent->d_inode;
++	const char *name = dentry->d_name.name;
++	int namelen = dentry->d_name.len;
++	unsigned short rec_len, name_len;
++	ext2_dirent * de;
++	struct page *page;
++	loff_t pos;
++	int err;
++
++	de = ext2_append_entry(dentry, &page);
++	if (IS_ERR(de))
++		return PTR_ERR(de);
++
++	err = -EEXIST;
++	if (ext2_match (namelen, name, de))
++		goto out_unlock;
++
++got_it:
++	name_len = EXT2_DIR_REC_LEN(de->name_len);
++	rec_len = ext2_rec_len_from_disk(de->rec_len);
++
+ 	pos = page_offset(page) +
+ 		(char*)de - (char*)page_address(page);
+ 	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
+@@ -563,7 +594,6 @@ got_it:
+ 	/* OFFSET_CACHE */
+ out_put:
+ 	ext2_put_page(page);
+-out:
+ 	return err;
+ out_unlock:
+ 	unlock_page(page);
 -- 
 1.6.3.3
 
