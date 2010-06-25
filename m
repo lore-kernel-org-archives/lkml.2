@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab0FYLG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 07:06:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57808 "EHLO
+	id S1755348Ab0FYLIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 07:08:09 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60197 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754409Ab0FYLG0 (ORCPT
+	with ESMTP id S1753371Ab0FYLIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 07:06:26 -0400
+	Fri, 25 Jun 2010 07:08:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=YFPYGtXkLIQGG/X4XKtLDUVlQDErFtFK/dE2CFJYy4pSme9odZQVmGAiGh2oNyXsmJ
-         yr98FbvTqyIl93c80Ng1PFXBFX37iGKpT/jdCoGAqUKIvfiMqMndrXO+P3xPJh8SzjZO
-         TEEHdte/mc3K78RuE1XSGQrQiiAL7DUO8EGR0=
-Date: Fri, 25 Jun 2010 15:06:18 +0400
+        b=HPcS/XufPKflKFZDbs3TUl3ODEffXVgbCTePGd4FUcopzBTvfg/8+Splf5pACUW2lk
+         JnXEOnbt8RVa59+IuFbqGZpIE4KEOzUjHMIwZPvmFnSgZuqzkWiR0X7XTp9cvZC3mVyF
+         67yGMU+Lmun6Fv92+73qHgULrbMmTHZQAXIJk=
+Date: Fri, 25 Jun 2010 15:08:01 +0400
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: Randy Dunlap <rdunlap@xenotime.net>
 Cc: Nick Bowler <nbowler@elliptictech.com>,
@@ -23,8 +23,8 @@ Cc: Nick Bowler <nbowler@elliptictech.com>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Minchan Kim <minchan.kim@gmail.com>, linux-kernel@vger.kernel.org,
        linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation/sysctl/vm.txt typo
-Message-ID: <20100625110618.GA6896@shinshilla>
+Subject: [PATCH v2] Documentation/sysctl/vm.txt typo
+Message-ID: <20100625110801.GB6896@shinshilla>
 References: <1276859270.3159.5.camel@shinshilla>
  <20100618142252.GA31086@elliptictech.com>
  <20100618154033.1e949749.rdunlap@xenotime.net>
@@ -37,7 +37,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 15:40 -0700, Randy Dunlap wrote:
-> There are some mail client clues in Documentation/email-clients.txt.
+Fix trivial typo: duplicated word.
 
-Sorry, my mistake.
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 5fdbb61..82b2da1 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -196,7 +196,7 @@ controlled by this knob are discussed in Documentation/laptops/laptop-mode.txt.
+ 
+ legacy_va_layout
+ 
+-If non-zero, this sysctl disables the new 32-bit mmap mmap layout - the kernel
++If non-zero, this sysctl disables the new 32-bit mmap layout - the kernel
+ will use the legacy (2.4) layout for all processes.
+ 
+ ==============================================================
