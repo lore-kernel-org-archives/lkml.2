@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab0FYJwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 05:52:36 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43763 "EHLO hera.kernel.org"
+	id S1753857Ab0FYJ54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 05:57:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14037 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751896Ab0FYJwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 05:52:35 -0400
-Message-ID: <4C247C36.6040007@kernel.org>
-Date: Fri, 25 Jun 2010 11:51:50 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1752229Ab0FYJ5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 05:57:54 -0400
+Date: Fri, 25 Jun 2010 11:55:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Jerome Marchand <jmarchan@redhat.com>,
+       Mandeep Singh Baines <msb@google.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: while_each_thread() under rcu_read_lock() is broken?
+Message-ID: <20100625095548.GA6292@redhat.com>
+References: <20100618193403.GA17314@redhat.com> <20100618223354.GL2365@linux.vnet.ibm.com> <20100621170919.GA13826@redhat.com> <20100621205128.GI2354@linux.vnet.ibm.com> <20100622212357.GA19670@redhat.com> <20100622221226.GP2290@linux.vnet.ibm.com> <20100623152421.GA8445@redhat.com> <20100624180726.GK2373@linux.vnet.ibm.com> <20100624215702.GA21360@redhat.com> <20100625034105.GD2391@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Jeff Garzik <jeff@garzik.org>
-CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-       stern@rowland.harvard.edu, gregkh@suse.de, khali@linux-fr.org
-Subject: Re: [PATCH 11/12] libata: use IRQ expecting
-References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-12-git-send-email-tj@kernel.org> <4C23F6C1.7070603@garzik.org> <4C245E50.7090701@kernel.org> <4C247B54.2050900@garzik.org>
-In-Reply-To: <4C247B54.2050900@garzik.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 25 Jun 2010 09:51:51 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100625034105.GD2391@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 06/24, Paul E. McKenney wrote:
+>
+> On Thu, Jun 24, 2010 at 11:57:02PM +0200, Oleg Nesterov wrote:
+> > On 06/24, Paul E. McKenney wrote:
+> > >
+> > > 4.	Some other thread might do pthread_exit(), removing itself
+> > > 	from the thread group, and again might do so while the hapless
+> > > 	reader is referencing that thread.  In this case, we want
+> > > 	the hapless reader to continue scanning the remainder of the
+> > > 	thread group.
+> >
+> > Yes.
+> >
+> > But, if that thread was used as a starting point g, then
+> >
+> > 	before the patch:	loop forever
+> > 	after the patch:	break
+>
+> So it is OK to skip some of the other threads in this case, even
+> though they were present throughout the whole procedure?
 
-On 06/25/2010 11:48 AM, Jeff Garzik wrote:
-> My basic point is that you are implicitly changing the entire
-> ata_qc_complete() API, and associated underlying assumptions.
-> 
-> The existing assumption, since libata day #0, is that ata_qc_complete()
-> works entirely within the scope of a single qc -- thus enabling multiple
-> calls for a single controller interrupt.  Your change greatly widens the
-> scope to an entire port.
+I think, yes. We can miss them in any case, they can go away before
+while_each_thread(g, t) starts the scan.
 
-Yeah, I'm changing that and it actually reduces code.
+If g == group_leader (old or new), then we should notice this thread
+at least.
 
-> This isn't just an issue with sata_mv, that was just the easy example I
-> remember off the top of my head.  sata_fsl and sata_nv also make the
-> same assumption.  And it's a reasonable assumption, IMO.
+Otherwise we can miss them all, with or without next_thread_careful().
 
-Yeah, already updating all of them.
+Oleg.
 
-> I think an unexpect_irq() call is more appropriate outside
-> ata_qc_complete().
-
-The choices we have here are....
-
-1. Update completion API so that libata core layer has enough
-   information to decide expect/unexpect events.
-
-2. Add expect/unexpect calls to individual drivers.
-
-I think #1 is much better now and in the long run.  The code actually
-looks better too.
-
-Thanks.
-
--- 
-tejun
