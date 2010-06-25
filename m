@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab0FYVqu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 17:46:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55406 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932088Ab0FYVqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 17:46:48 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100625125306.7f9b1966@tlielax.poochiereds.net>
-References: <20100625125306.7f9b1966@tlielax.poochiereds.net> <4C24A606.5040001@suse.de> <1277220214-3597-1-git-send-email-sjayaraman@suse.de> <yes> <9822.1277312573@redhat.com> <22697.1277470549@redhat.com>
-To: Jeff Layton <jlayton@samba.org>
-Cc: dhowells@redhat.com, Suresh Jayaraman <sjayaraman@suse.de>,
-       Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       samba-technical@lists.samba.org
-Subject: Re: [RFC][PATCH 06/10] cifs: define inode-level cache object and register them
-Date: Fri, 25 Jun 2010 22:46:38 +0100
-Message-ID: <18628.1277502398@redhat.com>
+	id S932331Ab0FYVtK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 17:49:10 -0400
+Received: from mail.globaldataguard.com ([67.210.231.115]:53930 "EHLO
+	mail2.globaldataguard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932080Ab0FYVtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 17:49:08 -0400
+Message-ID: <4C2524D3.9070509@globaldataguard.com>
+Date: Fri, 25 Jun 2010 16:51:15 -0500
+From: Kurt Newman <knewman@globaldataguard.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Roland Dreier <rdreier@cisco.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.32.1 kernel unable to use more than 2 of 16 CPUs on Intel
+ E5540 (i7)
+References: <4C23D1E9.9050007@globaldataguard.com> <adahbksqe71.fsf@roland-alpha.cisco.com>
+In-Reply-To: <adahbksqe71.fsf@roland-alpha.cisco.com>
+X-Enigmail-Version: 0.95.7
+OpenPGP: id=96242FB1;
+	url=http://pgp.mit.edu:11371/pks/lookup?op=get&search=0x96242FB1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Layton <jlayton@samba.org> wrote:
+Roland Dreier wrote:
+> Your config seems to have CONFIG_PM and therefore CONFIG_ACPI disabled.
+> So the kernel is relying on mptable information.  Unsurprisingly on a
+> modern system, that info is probably broken -- since everything would
+> have been tested with ACPI.
+> 
+> Try turning on CONFIG_ACPI and see if that helps at all.
 
-> Looks like it mostly uses the ctime. IMO, the mtime would be a better
-> choice since it changes less frequently, but I don't guess that it
-> matters very much.
+Turning on ACPI solved the problem.  I don't understand why ACPI needs
+to be turned on, but after reading the power management ldp it confirms
+what you said.  I just didn't think that this would have mattered.
 
-I'd've thought mtime changes more frequently since that's altered when data is
-written.  ctime is changed when attributes are changed.
+Thanks for the help,
+Kurt
 
-Note that Ext4 appears to have a file creation time field in its inode
-(struct ext4_inode::i_crtime[_extra]).  Can Samba be made to use that?
 
-David
+
+For anyone else with this problem, here's something to read:
+
+Some SMP system manufacturers may have omitted the pre-ACPI tables used
+for SMP configurations. In this case, ACPI is required.
+
+If you have a newer system that supports Hyper-Threading, you will need
+to enable ACPI (and, of course, SMP). Without it, your Linux system may
+be unable to discover and initialize all of the virtual processors.
+
+IA64 machines require ACPI as well. Additionally, NUMA servers are
+starting to require it for proper initialization.
+
+Source: http://tldp.org/HOWTO/Battery-Powered/powermgm.html#HYPERTHREAD
