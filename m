@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab0FYNOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 09:14:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7956 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753404Ab0FYNOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 09:14:14 -0400
-Date: Fri, 25 Jun 2010 10:13:56 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>, mingo@elte.hu,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 2/3] perf: Remove dead code in buildin-record.c
-Message-ID: <20100625131356.GB4078@ghostprotocols.net>
-References: <4C241140.9090008@cn.fujitsu.com> <4C24119B.60200@cn.fujitsu.com>
+	id S1755974Ab0FYNXB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 09:23:01 -0400
+Received: from 80-190-117-144.ip-home.de ([80.190.117.144]:60214 "EHLO
+	bu3sch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755821Ab0FYNXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 09:23:00 -0400
+Message-ID: <4C24AD94.8030101@bu3sch.de>
+Date: Fri, 25 Jun 2010 15:22:28 +0200
+From: =?UTF-8?B?TWljaGFlbCBCw7xzY2g=?= <mb@bu3sch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux ppc; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C24119B.60200@cn.fujitsu.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: Joe Perches <joe@perches.com>, "John W. Linville" <linville@tuxdriver.com>,
+       Stefano Brivio <stefano.brivio@polimi.it>,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, zajec5@gmail.com,
+       =?UTF-8?B?R8OhYm9yIFN0ZWY=?= =?UTF-8?B?YW5paw==?= 
+	<netrolller.3d@gmail.com>
+Subject: Re: [PATCH net-next] MAINTAINERS: b43 updates
+References: <cover.1276988387.git.joe@perches.com>	 <20100624185339.GC2368@tuxdriver.com>	 <1277408432.1654.80.camel@Joe-Laptop.home> <4C23B877.4060209@lwfinger.net>	 <1277423102.1654.107.camel@Joe-Laptop.home> <4C23EFDE.3000702@lwfinger.net> <1277423829.1654.111.camel@Joe-Laptop.home> <4C241770.6030701@lwfinger.net> (sfid-20100625_044106_571980_FFFFFFFFAF5EC8B1)
+In-Reply-To: <4C241770.6030701@lwfinger.net> (sfid-20100625_044106_571980_FFFFFFFFAF5EC8B1)
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jun 25, 2010 at 10:16:59AM +0800, Gui Jianfeng escreveu:
-> group_fd related code is dead here, remove them.
+On 06/25/2010 04:41 AM, Larry Finger wrote:
+> On 06/24/2010 06:57 PM, Joe Perches wrote:
+>> On Thu, 2010-06-24 at 18:53 -0500, Larry Finger wrote:
+>>> I never said that b43 is unmaintained. It is definitely getting much
+>>> more than "odd fixes".
+>>
+>> If Stefano isn't maintaining it, who is?
+>
+> We are working on that.
 
-I agree it is dead at the moment, but I think Peter (or was it Ingo at
-the time?) had a reason for it to live, Peter, care to take a look?
+Well, there are some developers working on the driver and there
+are some developers that do not actively work on the driver but used
+to work on it in the past (that includes me). Neither of them is an
+official maintainer (yet). I used to be a maintainer, but I dropped
+my official MAINTAINERS file entry, because I do not actively work
+on b43 anymore. However, I still read the patches going into the driver
+and comment on them as appropriate.
+So well. I think b43 does not have a maintainer. But it's
+not unmaintained. There are lots of people working on it. I don't think
+an official maintainer is needed. Patches are sent directly to John
+(the wireless maintainer) and the b43 development crew reviews them.
+There's no problem with that.
 
-- Arnaldo
- 
-> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-> ---
->  tools/perf/builtin-record.c |   12 +-----------
->  1 files changed, 1 insertions(+), 11 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index abaf0f8..84d58b7 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -45,7 +45,6 @@ static int			freq				=   1000;
->  static int			output;
->  static int			pipe_output			=      0;
->  static const char		*output_name			= "perf.data";
-> -static int			group				=      0;
->  static int			realtime_prio			=      0;
->  static bool			raw_samples			=  false;
->  static bool			system_wide			=  false;
-> @@ -203,8 +202,6 @@ static void sig_atexit(void)
->  	kill(getpid(), signr);
->  }
->  
-> -static int group_fd;
-> -
->  static struct perf_header_attr *get_header_attr(struct perf_event_attr *a, int nr)
->  {
->  	struct perf_header_attr *h_attr;
-> @@ -291,7 +288,7 @@ static void create_counter(int counter, int cpu)
->  	for (thread_index = 0; thread_index < thread_num; thread_index++) {
->  try_again:
->  		fd[nr_cpu][counter][thread_index] = sys_perf_event_open(attr,
-> -				all_tids[thread_index], cpu, group_fd, 0);
-> +				all_tids[thread_index], cpu, -1, 0);
->  
->  		if (fd[nr_cpu][counter][thread_index] < 0) {
->  			int err = errno;
-> @@ -359,12 +356,6 @@ try_again:
->  		assert(fd[nr_cpu][counter][thread_index] >= 0);
->  		fcntl(fd[nr_cpu][counter][thread_index], F_SETFL, O_NONBLOCK);
->  
-> -		/*
-> -		 * First counter acts as the group leader:
-> -		 */
-> -		if (group && group_fd == -1)
-> -			group_fd = fd[nr_cpu][counter][thread_index];
-> -
->  		if (counter || thread_index) {
->  			ret = ioctl(fd[nr_cpu][counter][thread_index],
->  					PERF_EVENT_IOC_SET_OUTPUT,
-> @@ -406,7 +397,6 @@ static void open_counters(int cpu)
->  {
->  	int counter;
->  
-> -	group_fd = -1;
->  	for (counter = 0; counter < nr_counters; counter++)
->  		create_counter(counter, cpu);
->  
-> -- 1.6.5.2 
+-- 
+Greetings Michael.
