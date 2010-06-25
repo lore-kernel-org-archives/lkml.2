@@ -1,382 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab0FYO2o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 10:28:44 -0400
+	id S932119Ab0FYO2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 10:28:50 -0400
 Received: from mailout4.w1.samsung.com ([210.118.77.14]:51082 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080Ab0FYO2m (ORCPT
+	with ESMTP id S932098Ab0FYO2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 10:28:42 -0400
+	Fri, 25 Jun 2010 10:28:45 -0400
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Fri, 25 Jun 2010 16:29:27 +0200
+Date: Fri, 25 Jun 2010 16:29:28 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH] USB: gadget: g_fs: code cleanup
+Subject: [PATCH] USB: gadget: f_mass_storage: stale common->fsg value bug fix
 To: linux-usb@vger.kernel.org
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
+Cc: David Brownell <dbrownell@users.sourceforge.net>, Greg KH <greg@kroah.com>,
        Kyungmin Park <kyungmin.park@samsung.com>,
        Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Message-id: <b51342e058f33dc9d78491c1209d0e86d09ed9db.1276170819.git.m.nazarewicz@samsung.com>
+Message-id: <023d27cf18cf64018bb96f0913b0e61bade38c39.1277475111.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit cleans the g_fs gadget hopefully making it more
-readable.  This is achieved by usage of the usb_string_ids_tab()
-function for batch string IDs registration as well as
-generalising configuration so that a single routine is
-used to add each configuration and bind interfaces.  As an
-effect, the code is shorter and has fewer #ifdefs.
+On fsg_unbind the common->fsg pointer was not NULLed if the
+unbound fsg_dev instance was the current one.  As an effect,
+the incorrect pointer was preserved in all further operations
+which caused do_set_interface to reference an invalid region.
 
-Moreover, in some circumstances previous code #defined
-CONFIG_USB_FUNCTIONFS_GENERIC macro to prevent a situation
-where gadget with no configurations is built.  This code removes
-the #define form source code and achieves the same effect using
-select in Kconfig.
+This commit fixes this by raising an exception in fsg_bind
+which will change the common->fsg pointer.  This also requires
+an wait queue so that the thread in fsg_bind can wait till the
+worker thread handles the exception.
 
-This patch also changes wording and names of the Kconfig options.
+This commit removes also a config and new_config fields of
+fsg_common as they are no longer needed since fsg can be
+used to determine whether function is active or not.
+
+Moreover, this commit removes possible race condition where
+the fsg field was modified in both the worker thread and
+form various other contexts.  This is fixed by replacing
+prev_fsg with new_fsg.  At this point, fsg is assigned only
+in worker thread.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
 ---
-I believe this was overlooked so I am resending this patch again.
+Greg, this is another bug fix so I believe it should make it to 2.6.35.
+At the samo time, it is not triggered by any drivers in kernel so I dunno
+if it's worth including in other stable trees.  I leave it to you to
+decide.
 
- drivers/usb/gadget/Kconfig |   23 +++---
- drivers/usb/gadget/g_ffs.c |  174 ++++++++++++--------------------------------
- 2 files changed, 60 insertions(+), 137 deletions(-)
+ drivers/usb/gadget/f_mass_storage.c |  160 +++++++++++++---------------------
+ 1 files changed, 61 insertions(+), 99 deletions(-)
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index d5b65d3..d3d0e2d 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -750,6 +750,7 @@ config USB_GADGETFS
- config USB_FUNCTIONFS
- 	tristate "Function Filesystem (EXPERIMENTAL)"
- 	depends on EXPERIMENTAL
-+	select USB_FUNCTIONFS_GENERIC if !(USB_FUNCTIONFS_ETH || USB_FUNCTIONFS_RNDIS)
- 	help
- 	  The Function Filesystem (FunctioFS) lets one create USB
- 	  composite functions in user space in the same way as GadgetFS
-@@ -758,31 +759,31 @@ config USB_FUNCTIONFS
- 	  implemented in kernel space (for instance Ethernet, serial or
- 	  mass storage) and other are implemented in user space.
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index f866b7e..4ce899c 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -321,8 +321,8 @@ struct fsg_dev;
+ /* Data shared by all the FSG instances. */
+ struct fsg_common {
+ 	struct usb_gadget	*gadget;
+-	struct fsg_dev		*fsg;
+-	struct fsg_dev		*prev_fsg;
++	struct fsg_dev		*fsg, *new_fsg;
++	wait_queue_head_t	fsg_wait;
  
-+	  If you say "y" or "m" here you will be able what kind of
-+	  configurations the gadget will provide.
-+
- 	  Say "y" to link the driver statically, or "m" to build
- 	  a dynamically linked module called "g_ffs".
+ 	/* filesem protects: backing files in use */
+ 	struct rw_semaphore	filesem;
+@@ -351,7 +351,6 @@ struct fsg_common {
+ 	enum fsg_state		state;		/* For exception handling */
+ 	unsigned int		exception_req_tag;
  
- config USB_FUNCTIONFS_ETH
--	bool "Include CDC ECM (Ethernet) function"
-+	bool "Include configuration with CDC ECM (Ethernet)"
- 	depends on USB_FUNCTIONFS && NET
- 	help
--	  Include an CDC ECM (Ethernet) funcion in the CDC ECM (Funcion)
--	  Filesystem.  If you also say "y" to the RNDIS query below the
--	  gadget will have two configurations.
-+	  Include a configuration with CDC ECM funcion (Ethernet) and the
-+	  Funcion Filesystem.
+-	u8			config, new_config;
+ 	enum data_direction	data_dir;
+ 	u32			data_size;
+ 	u32			data_size_from_cmnd;
+@@ -595,7 +594,7 @@ static int fsg_setup(struct usb_function *f,
+ 	u16			w_value = le16_to_cpu(ctrl->wValue);
+ 	u16			w_length = le16_to_cpu(ctrl->wLength);
  
- config USB_FUNCTIONFS_RNDIS
--	bool "Include RNDIS (Ethernet) function"
-+	bool "Include configuration with RNDIS (Ethernet)"
- 	depends on USB_FUNCTIONFS && NET
- 	help
--	  Include an RNDIS (Ethernet) funcion in the Funcion Filesystem.
--	  If you also say "y" to the CDC ECM query above the gadget will
--	  have two configurations.
-+	  Include a configuration with RNDIS funcion (Ethernet) and the Filesystem.
+-	if (!fsg->common->config)
++	if (!fsg_is_set(fsg->common))
+ 		return -EOPNOTSUPP;
  
- config USB_FUNCTIONFS_GENERIC
- 	bool "Include 'pure' configuration"
--	depends on USB_FUNCTIONFS && (USB_FUNCTIONFS_ETH || USB_FUNCTIONFS_RNDIS)
-+	depends on USB_FUNCTIONFS
- 	help
--	  Include a configuration with FunctionFS and no Ethernet
--	  configuration.
-+	  Include a configuration with the Function Filesystem alone with
-+	  no Ethernet interface.
+ 	switch (ctrl->bRequest) {
+@@ -2303,24 +2302,20 @@ static int alloc_request(struct fsg_common *common, struct usb_ep *ep,
+ 	return -ENOMEM;
+ }
  
- config USB_FILE_STORAGE
- 	tristate "File-backed Storage Gadget"
-diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
-index da3a9e4..a9474f8 100644
---- a/drivers/usb/gadget/g_ffs.c
-+++ b/drivers/usb/gadget/g_ffs.c
-@@ -32,12 +32,13 @@
- #  include "u_ether.c"
- 
- static u8 gfs_hostaddr[ETH_ALEN];
--#else
--#  if !defined CONFIG_USB_FUNCTIONFS_GENERIC
--#    define CONFIG_USB_FUNCTIONFS_GENERIC
-+#  ifdef CONFIG_USB_FUNCTIONFS_ETH
-+static int eth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN]);
- #  endif
-+#else
- #  define gether_cleanup() do { } while (0)
- #  define gether_setup(gadget, hostaddr)   ((int)0)
-+#  define gfs_hostaddr NULL
- #endif
- 
- #include "f_fs.c"
-@@ -107,15 +108,7 @@ static const struct usb_descriptor_header *gfs_otg_desc[] = {
- enum {
- 	GFS_STRING_MANUFACTURER_IDX,
- 	GFS_STRING_PRODUCT_IDX,
--#ifdef CONFIG_USB_FUNCTIONFS_RNDIS
--	GFS_STRING_RNDIS_CONFIG_IDX,
--#endif
--#ifdef CONFIG_USB_FUNCTIONFS_ETH
--	GFS_STRING_ECM_CONFIG_IDX,
--#endif
--#ifdef CONFIG_USB_FUNCTIONFS_GENERIC
--	GFS_STRING_GENERIC_CONFIG_IDX,
--#endif
-+	GFS_STRING_FIRST_CONFIG_IDX,
- };
- 
- static       char gfs_manufacturer[50];
-@@ -126,13 +119,13 @@ static struct usb_string gfs_strings[] = {
- 	[GFS_STRING_MANUFACTURER_IDX].s = gfs_manufacturer,
- 	[GFS_STRING_PRODUCT_IDX].s = gfs_driver_desc,
- #ifdef CONFIG_USB_FUNCTIONFS_RNDIS
--	[GFS_STRING_RNDIS_CONFIG_IDX].s = "FunctionFS + RNDIS",
-+	{ .s = "FunctionFS + RNDIS" },
- #endif
- #ifdef CONFIG_USB_FUNCTIONFS_ETH
--	[GFS_STRING_ECM_CONFIG_IDX].s = "FunctionFS + ECM",
-+	{ .s = "FunctionFS + ECM" },
- #endif
- #ifdef CONFIG_USB_FUNCTIONFS_GENERIC
--	[GFS_STRING_GENERIC_CONFIG_IDX].s = "FunctionFS",
-+	{ .s = "FunctionFS" },
- #endif
- 	{  } /* end of list */
- };
-@@ -146,59 +139,33 @@ static struct usb_gadget_strings *gfs_dev_strings[] = {
- };
- 
- 
-+
-+struct gfs_configuration {
-+	struct usb_configuration c;
-+	int (*eth)(struct usb_configuration *c, u8 *ethaddr);
-+} gfs_configurations[] = {
- #ifdef CONFIG_USB_FUNCTIONFS_RNDIS
--static int gfs_do_rndis_config(struct usb_configuration *c);
--
--static struct usb_configuration gfs_rndis_config_driver = {
--	.label			= "FunctionFS + RNDIS",
--	.bind			= gfs_do_rndis_config,
--	.bConfigurationValue	= 1,
--	/* .iConfiguration	= DYNAMIC */
--	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
--};
--#  define gfs_add_rndis_config(cdev) \
--	usb_add_config(cdev, &gfs_rndis_config_driver)
--#else
--#  define gfs_add_rndis_config(cdev) 0
-+	{
-+		.eth		= rndis_bind_config,
-+	},
- #endif
- 
--
- #ifdef CONFIG_USB_FUNCTIONFS_ETH
--static int gfs_do_ecm_config(struct usb_configuration *c);
--
--static struct usb_configuration gfs_ecm_config_driver = {
--	.label			= "FunctionFS + ECM",
--	.bind			= gfs_do_ecm_config,
--	.bConfigurationValue	= 1,
--	/* .iConfiguration	= DYNAMIC */
--	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
--};
--#  define gfs_add_ecm_config(cdev) \
--	usb_add_config(cdev, &gfs_ecm_config_driver)
--#else
--#  define gfs_add_ecm_config(cdev) 0
-+	{
-+		.eth		= eth_bind_config,
-+	},
- #endif
- 
--
- #ifdef CONFIG_USB_FUNCTIONFS_GENERIC
--static int gfs_do_generic_config(struct usb_configuration *c);
--
--static struct usb_configuration gfs_generic_config_driver = {
--	.label			= "FunctionFS",
--	.bind			= gfs_do_generic_config,
--	.bConfigurationValue	= 2,
--	/* .iConfiguration	= DYNAMIC */
--	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
--};
--#  define gfs_add_generic_config(cdev) \
--	usb_add_config(cdev, &gfs_generic_config_driver)
--#else
--#  define gfs_add_generic_config(cdev) 0
-+	{
-+	},
- #endif
-+};
- 
- 
- static int gfs_bind(struct usb_composite_dev *cdev);
- static int gfs_unbind(struct usb_composite_dev *cdev);
-+static int gfs_do_config(struct usb_configuration *c);
- 
- static struct usb_composite_driver gfs_driver = {
- 	.name		= gfs_short_name,
-@@ -267,7 +234,7 @@ static int functionfs_check_dev_callback(const char *dev_name)
- 
- static int gfs_bind(struct usb_composite_dev *cdev)
+-/*
+- * Reset interface setting and re-init endpoint state (toggle etc).
+- * Call with altsetting < 0 to disable the interface.  The only other
+- * available altsetting is 0, which enables the interface.
+- */
+-static int do_set_interface(struct fsg_common *common, int altsetting)
++/* Reset interface setting and re-init endpoint state (toggle etc). */
++static int do_set_interface(struct fsg_common *common, struct fsg_dev *new_fsg)
  {
--	int ret;
-+	int ret, i;
+-	int	rc = 0;
+-	int	i;
+-	const struct usb_endpoint_descriptor	*d;
++	const struct usb_endpoint_descriptor *d;
++	struct fsg_dev *fsg;
++	int i, rc = 0;
  
- 	ENTER();
+ 	if (common->running)
+ 		DBG(common, "reset interface\n");
  
-@@ -284,57 +251,32 @@ static int gfs_bind(struct usb_composite_dev *cdev)
- 	snprintf(gfs_manufacturer, sizeof gfs_manufacturer, "%s %s with %s",
- 		 init_utsname()->sysname, init_utsname()->release,
- 		 cdev->gadget->name);
--	ret = usb_string_id(cdev);
--	if (unlikely(ret < 0))
--		goto error;
--	gfs_strings[GFS_STRING_MANUFACTURER_IDX].id = ret;
--	gfs_dev_desc.iManufacturer = ret;
+ reset:
+ 	/* Deallocate the requests */
+-	if (common->prev_fsg) {
+-		struct fsg_dev *fsg = common->prev_fsg;
++	if (common->fsg) {
++		fsg = common->fsg;
+ 
+ 		for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
+ 			struct fsg_buffhd *bh = &common->buffhds[i];
+@@ -2345,88 +2340,53 @@ reset:
+ 			fsg->bulk_out_enabled = 0;
+ 		}
+ 
+-		common->prev_fsg = 0;
++		common->fsg = NULL;
++		wake_up(&common->fsg_wait);
+ 	}
+ 
+ 	common->running = 0;
+-	if (altsetting < 0 || rc != 0)
++	if (!new_fsg || rc)
+ 		return rc;
+ 
+-	DBG(common, "set interface %d\n", altsetting);
++	common->fsg = new_fsg;
++	fsg = common->fsg;
+ 
+-	if (fsg_is_set(common)) {
+-		struct fsg_dev *fsg = common->fsg;
+-		common->prev_fsg = common->fsg;
++	/* Enable the endpoints */
++	d = fsg_ep_desc(common->gadget,
++			&fsg_fs_bulk_in_desc, &fsg_hs_bulk_in_desc);
++	rc = enable_endpoint(common, fsg->bulk_in, d);
++	if (rc)
++		goto reset;
++	fsg->bulk_in_enabled = 1;
++
++	d = fsg_ep_desc(common->gadget,
++			&fsg_fs_bulk_out_desc, &fsg_hs_bulk_out_desc);
++	rc = enable_endpoint(common, fsg->bulk_out, d);
++	if (rc)
++		goto reset;
++	fsg->bulk_out_enabled = 1;
++	common->bulk_out_maxpacket = le16_to_cpu(d->wMaxPacketSize);
++	clear_bit(IGNORE_BULK_OUT, &fsg->atomic_bitflags);
++
++	/* Allocate the requests */
++	for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
++		struct fsg_buffhd	*bh = &common->buffhds[i];
+ 
+-		/* Enable the endpoints */
+-		d = fsg_ep_desc(common->gadget,
+-				&fsg_fs_bulk_in_desc, &fsg_hs_bulk_in_desc);
+-		rc = enable_endpoint(common, fsg->bulk_in, d);
++		rc = alloc_request(common, fsg->bulk_in, &bh->inreq);
+ 		if (rc)
+ 			goto reset;
+-		fsg->bulk_in_enabled = 1;
 -
--	ret = usb_string_id(cdev);
--	if (unlikely(ret < 0))
--		goto error;
--	gfs_strings[GFS_STRING_PRODUCT_IDX].id = ret;
--	gfs_dev_desc.iProduct = ret;
+-		d = fsg_ep_desc(common->gadget,
+-				&fsg_fs_bulk_out_desc, &fsg_hs_bulk_out_desc);
+-		rc = enable_endpoint(common, fsg->bulk_out, d);
++		rc = alloc_request(common, fsg->bulk_out, &bh->outreq);
+ 		if (rc)
+ 			goto reset;
+-		fsg->bulk_out_enabled = 1;
+-		common->bulk_out_maxpacket = le16_to_cpu(d->wMaxPacketSize);
+-		clear_bit(IGNORE_BULK_OUT, &fsg->atomic_bitflags);
 -
--#ifdef CONFIG_USB_FUNCTIONFS_RNDIS
--	ret = usb_string_id(cdev);
--	if (unlikely(ret < 0))
--		goto error;
--	gfs_strings[GFS_STRING_RNDIS_CONFIG_IDX].id = ret;
--	gfs_rndis_config_driver.iConfiguration = ret;
--#endif
+-		/* Allocate the requests */
+-		for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
+-			struct fsg_buffhd	*bh = &common->buffhds[i];
+-
+-			rc = alloc_request(common, fsg->bulk_in, &bh->inreq);
+-			if (rc)
+-				goto reset;
+-			rc = alloc_request(common, fsg->bulk_out, &bh->outreq);
+-			if (rc)
+-				goto reset;
+-			bh->inreq->buf = bh->outreq->buf = bh->buf;
+-			bh->inreq->context = bh->outreq->context = bh;
+-			bh->inreq->complete = bulk_in_complete;
+-			bh->outreq->complete = bulk_out_complete;
+-		}
+-
+-		common->running = 1;
+-		for (i = 0; i < common->nluns; ++i)
+-			common->luns[i].unit_attention_data = SS_RESET_OCCURRED;
+-		return rc;
+-	} else {
+-		return -EIO;
++		bh->inreq->buf = bh->outreq->buf = bh->buf;
++		bh->inreq->context = bh->outreq->context = bh;
++		bh->inreq->complete = bulk_in_complete;
++		bh->outreq->complete = bulk_out_complete;
+ 	}
+-}
  
--#ifdef CONFIG_USB_FUNCTIONFS_ETH
--	ret = usb_string_id(cdev);
-+	ret = usb_string_ids_tab(cdev, gfs_strings);
- 	if (unlikely(ret < 0))
- 		goto error;
--	gfs_strings[GFS_STRING_ECM_CONFIG_IDX].id = ret;
--	gfs_ecm_config_driver.iConfiguration = ret;
--#endif
+-
+-/*
+- * Change our operational configuration.  This code must agree with the code
+- * that returns config descriptors, and with interface altsetting code.
+- *
+- * It's also responsible for power management interactions.  Some
+- * configurations might not work with our current power sources.
+- * For now we just assume the gadget is always self-powered.
+- */
+-static int do_set_config(struct fsg_common *common, u8 new_config)
+-{
+-	int	rc = 0;
+-
+-	/* Disable the single interface */
+-	if (common->config != 0) {
+-		DBG(common, "reset config\n");
+-		common->config = 0;
+-		rc = do_set_interface(common, -1);
+-	}
+-
+-	/* Enable the interface */
+-	if (new_config != 0) {
+-		common->config = new_config;
+-		rc = do_set_interface(common, 0);
+-		if (rc != 0)
+-			common->config = 0;	/* Reset on errors */
+-	}
++	common->running = 1;
++	for (i = 0; i < common->nluns; ++i)
++		common->luns[i].unit_attention_data = SS_RESET_OCCURRED;
+ 	return rc;
+ }
  
--#ifdef CONFIG_USB_FUNCTIONFS_GENERIC
--	ret = usb_string_id(cdev);
--	if (unlikely(ret < 0))
--		goto error;
--	gfs_strings[GFS_STRING_GENERIC_CONFIG_IDX].id = ret;
--	gfs_generic_config_driver.iConfiguration = ret;
--#endif
-+	gfs_dev_desc.iManufacturer = gfs_strings[GFS_STRING_MANUFACTURER_IDX].id;
-+	gfs_dev_desc.iProduct      = gfs_strings[GFS_STRING_PRODUCT_IDX].id;
+@@ -2437,9 +2397,7 @@ static int do_set_config(struct fsg_common *common, u8 new_config)
+ static int fsg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ {
+ 	struct fsg_dev *fsg = fsg_from_func(f);
+-	fsg->common->prev_fsg = fsg->common->fsg;
+-	fsg->common->fsg = fsg;
+-	fsg->common->new_config = 1;
++	fsg->common->new_fsg = fsg;
+ 	raise_exception(fsg->common, FSG_STATE_CONFIG_CHANGE);
+ 	return 0;
+ }
+@@ -2447,9 +2405,7 @@ static int fsg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ static void fsg_disable(struct usb_function *f)
+ {
+ 	struct fsg_dev *fsg = fsg_from_func(f);
+-	fsg->common->prev_fsg = fsg->common->fsg;
+-	fsg->common->fsg = fsg;
+-	fsg->common->new_config = 0;
++	fsg->common->new_fsg = NULL;
+ 	raise_exception(fsg->common, FSG_STATE_CONFIG_CHANGE);
+ }
  
- 	ret = functionfs_bind(gfs_ffs_data, cdev);
- 	if (unlikely(ret < 0))
- 		goto error;
+@@ -2459,19 +2415,17 @@ static void fsg_disable(struct usb_function *f)
+ static void handle_exception(struct fsg_common *common)
+ {
+ 	siginfo_t		info;
+-	int			sig;
+ 	int			i;
+ 	struct fsg_buffhd	*bh;
+ 	enum fsg_state		old_state;
+-	u8			new_config;
+ 	struct fsg_lun		*curlun;
+ 	unsigned int		exception_req_tag;
+-	int			rc;
  
--	ret = gfs_add_rndis_config(cdev);
--	if (unlikely(ret < 0))
--		goto error_unbind;
-+	for (i = 0; i < ARRAY_SIZE(gfs_configurations); ++i) {
-+		struct gfs_configuration *c = gfs_configurations + i;
+ 	/* Clear the existing signals.  Anything but SIGUSR1 is converted
+ 	 * into a high-priority EXIT exception. */
+ 	for (;;) {
+-		sig = dequeue_signal_lock(current, &current->blocked, &info);
++		int sig =
++			dequeue_signal_lock(current, &current->blocked, &info);
+ 		if (!sig)
+ 			break;
+ 		if (sig != SIGUSR1) {
+@@ -2482,7 +2436,7 @@ static void handle_exception(struct fsg_common *common)
+ 	}
  
--	ret = gfs_add_ecm_config(cdev);
--	if (unlikely(ret < 0))
--		goto error_unbind;
-+		ret = GFS_STRING_FIRST_CONFIG_IDX + i;
-+		c->c.label			= gfs_strings[ret].s;
-+		c->c.iConfiguration		= gfs_strings[ret].id;
-+		c->c.bind			= gfs_do_config;
-+		c->c.bConfigurationValue	= 1 + i;
-+		c->c.bmAttributes		= USB_CONFIG_ATT_SELFPOWER;
+ 	/* Cancel all the pending transfers */
+-	if (fsg_is_set(common)) {
++	if (likely(common->fsg)) {
+ 		for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
+ 			bh = &common->buffhds[i];
+ 			if (bh->inreq_busy)
+@@ -2523,7 +2477,6 @@ static void handle_exception(struct fsg_common *common)
+ 	common->next_buffhd_to_fill = &common->buffhds[0];
+ 	common->next_buffhd_to_drain = &common->buffhds[0];
+ 	exception_req_tag = common->exception_req_tag;
+-	new_config = common->new_config;
+ 	old_state = common->state;
  
--	ret = gfs_add_generic_config(cdev);
--	if (unlikely(ret < 0))
--		goto error_unbind;
-+		ret = usb_add_config(cdev, &c->c);
-+		if (unlikely(ret < 0))
-+			goto error_unbind;
+ 	if (old_state == FSG_STATE_ABORT_BULK_OUT)
+@@ -2573,12 +2526,12 @@ static void handle_exception(struct fsg_common *common)
+ 		break;
+ 
+ 	case FSG_STATE_CONFIG_CHANGE:
+-		rc = do_set_config(common, new_config);
++		do_set_interface(common, common->new_fsg);
+ 		break;
+ 
+ 	case FSG_STATE_EXIT:
+ 	case FSG_STATE_TERMINATED:
+-		do_set_config(common, 0);		/* Free resources */
++		do_set_interface(common, NULL);		/* Free resources */
+ 		spin_lock_irq(&common->lock);
+ 		common->state = FSG_STATE_TERMINATED;	/* Stop the thread */
+ 		spin_unlock_irq(&common->lock);
+@@ -2863,6 +2816,7 @@ buffhds_first_it:
+ 		goto error_release;
+ 	}
+ 	init_completion(&common->thread_notifier);
++	init_waitqueue_head(&common->fsg_wait);
+ #undef OR
+ 
+ 
+@@ -2957,9 +2911,17 @@ static void fsg_common_release(struct kref *ref)
+ static void fsg_unbind(struct usb_configuration *c, struct usb_function *f)
+ {
+ 	struct fsg_dev		*fsg = fsg_from_func(f);
++	struct fsg_common	*common = fsg->common;
+ 
+ 	DBG(fsg, "unbind\n");
+-	fsg_common_put(fsg->common);
++	if (fsg->common->fsg == fsg) {
++		fsg->common->new_fsg = NULL;
++		raise_exception(fsg->common, FSG_STATE_CONFIG_CHANGE);
++		/* FIXME: make interruptible or killable somehow? */
++		wait_event(common->fsg_wait, common->fsg != fsg);
 +	}
- 
- 	return 0;
- 
-@@ -368,10 +310,10 @@ static int gfs_unbind(struct usb_composite_dev *cdev)
- }
- 
- 
--static int __gfs_do_config(struct usb_configuration *c,
--			   int (*eth)(struct usb_configuration *c, u8 *ethaddr),
--			   u8 *ethaddr)
-+static int gfs_do_config(struct usb_configuration *c)
- {
-+	struct gfs_configuration *gc =
-+		container_of(c, struct gfs_configuration, c);
- 	int ret;
- 
- 	if (WARN_ON(!gfs_ffs_data))
-@@ -382,8 +324,8 @@ static int __gfs_do_config(struct usb_configuration *c,
- 		c->bmAttributes |= USB_CONFIG_ATT_WAKEUP;
- 	}
- 
--	if (eth) {
--		ret = eth(c, ethaddr);
-+	if (gc->eth) {
-+		ret = gc->eth(c, gfs_hostaddr);
- 		if (unlikely(ret < 0))
- 			return ret;
- 	}
-@@ -406,32 +348,12 @@ static int __gfs_do_config(struct usb_configuration *c,
- 	return 0;
- }
- 
--#ifdef CONFIG_USB_FUNCTIONFS_RNDIS
--static int gfs_do_rndis_config(struct usb_configuration *c)
--{
--	ENTER();
--
--	return __gfs_do_config(c, rndis_bind_config, gfs_hostaddr);
--}
--#endif
- 
- #ifdef CONFIG_USB_FUNCTIONFS_ETH
--static int gfs_do_ecm_config(struct usb_configuration *c)
--{
--	ENTER();
--
--	return __gfs_do_config(c,
--			       can_support_ecm(c->cdev->gadget)
--			     ? ecm_bind_config : geth_bind_config,
--			       gfs_hostaddr);
--}
--#endif
--
--#ifdef CONFIG_USB_FUNCTIONFS_GENERIC
--static int gfs_do_generic_config(struct usb_configuration *c)
-+static int eth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
- {
--	ENTER();
--
--	return __gfs_do_config(c, NULL, NULL);
-+	return can_support_ecm(c->cdev->gadget)
-+		? ecm_bind_config(c, ethaddr)
-+		: geth_bind_config(c, ethaddr);
- }
- #endif
++
++	fsg_common_put(common);
+ 	usb_free_descriptors(fsg->function.descriptors);
+ 	usb_free_descriptors(fsg->function.hs_descriptors);
+ 	kfree(fsg);
 -- 
 1.7.1
 
