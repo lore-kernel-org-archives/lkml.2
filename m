@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab0FYJsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 05:48:10 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43007 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015Ab0FYJsI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 05:48:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=AjLgpChW6FNQVK38xQWfzwa7qHbDP2Ut1rG/N1F/wibqicttKv/ypLkwf2BTommlAT
-         SmlmFRPSfe/fFOgLt6tlgRxVMyHUKIbLTW7F8nMiu3l7AECug4yKT3H0YRVsfxIMDZSO
-         y32L/q6PngudiktDZjXmFWDgRactW+HLBl1XE=
-Message-ID: <4C247B54.2050900@garzik.org>
-Date: Fri, 25 Jun 2010 05:48:04 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1752573Ab0FYJuY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 05:50:24 -0400
+Received: from www.tglx.de ([62.245.132.106]:40123 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751501Ab0FYJuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 05:50:23 -0400
+Date: Fri, 25 Jun 2010 11:50:02 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Nick Piggin <npiggin@suse.de>
+cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 05/52] lglock: introduce special lglock and brlock spin
+ locks
+In-Reply-To: <20100625062250.GS10441@laptop>
+Message-ID: <alpine.LFD.2.00.1006251140090.2587@localhost.localdomain>
+References: <20100624030212.676457061@suse.de> <20100624030726.371426768@suse.de> <alpine.LFD.2.00.1006241904160.2911@localhost.localdomain> <20100625062250.GS10441@laptop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-       stern@rowland.harvard.edu, gregkh@suse.de, khali@linux-fr.org
-Subject: Re: [PATCH 11/12] libata: use IRQ expecting
-References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-12-git-send-email-tj@kernel.org> <4C23F6C1.7070603@garzik.org> <4C245E50.7090701@kernel.org>
-In-Reply-To: <4C245E50.7090701@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2010 03:44 AM, Tejun Heo wrote:
-> Hello, Jeff.
->
-> On 06/25/2010 02:22 AM, Jeff Garzik wrote:
->>> @@ -4972,6 +4972,8 @@ void ata_qc_complete(struct ata_queued_cmd *qc)
->>>    {
->>>        struct ata_port *ap = qc->ap;
->>>
->>> +    unexpect_irq(ap->irq_expect, false);
->>> +
->>>        /* XXX: New EH and old EH use different mechanisms to
->>>         * synchronize EH with regular execution path.
->>>         *
->>
->> Unconditional use of unexpect_irq() here seems incorrect for some cases,
->> such as sata_mv's use, where ata_qc_complete() is called multiple times
->> rather than a singleton ata_qc_complete_multiple() call.
->
-> Indeed, sata_mv is calling ata_qc_complete() directly multiple times.
-> I still think calling unexpect_irq() from ata_qc_complete() is correct
-> as ata_qc_complete() is always a good indicator of completion events.
+On Fri, 25 Jun 2010, Nick Piggin wrote:
+> On Thu, Jun 24, 2010 at 08:15:54PM +0200, Thomas Gleixner wrote:
+> > On Thu, 24 Jun 2010, npiggin@suse.de wrote:
+> > 
+> > > +#define DEFINE_LGLOCK(name)						\
+> > > +									\
+> > > + DEFINE_PER_CPU(arch_spinlock_t, name##_lock);				\
+> > 
+> > Uuurgh. You want to make that an arch_spinlock ? Just to avoid the
+> > preempt_count overflow when you lock all cpu locks nested ?
+> 
+> Yep, and the lockdep wreckage too :)
+> 
+> Actually it's nice to avoid the function call too (lglock/brlocks
+> are already out of line). Calls aren't totally free, especially
+> on small chips without RSBs. And even with RSBs it's helpful not
+> to overflow them, although Nehalem seems to have 12-16 entries.
+>  
+> 
+> > I'm really not happy about that, it's going to be a complete nightmare
+> > for RT. If you wanted to make this a present for RT giving the
+> > scalability stuff massive testing, then you failed miserably :)
+> 
+> Heh, it's a present for -rt because the locking is quite isolated
+> (I did the same thing with hashtable bitlocks, added a new structure
+> for them, in case you prefer spinlocks than bit spinlocks there).
 
-My basic point is that you are implicitly changing the entire 
-ata_qc_complete() API, and associated underlying assumptions.
+Sure, bitlocks are equally horrible.
 
-The existing assumption, since libata day #0, is that ata_qc_complete() 
-works entirely within the scope of a single qc -- thus enabling multiple 
-calls for a single controller interrupt.  Your change greatly widens the 
-scope to an entire port.
+> -rt already changes locking primitives, so in the worst case you
+> might have to tweak this. My previous patches were open coding
+> these locks in fs/ so I can understand why that was a headache.
 
-This isn't just an issue with sata_mv, that was just the easy example I 
-remember off the top of my head.  sata_fsl and sata_nv also make the 
-same assumption.  And it's a reasonable assumption, IMO.
+I agree that having the code isolated makes my life easier, but I'm a
+bit worried about the various new locking primitives which pop up in
+all corners of the kernel.
 
-I think an unexpect_irq() call is more appropriate outside 
-ata_qc_complete().
+> I think I'll keep it as is for now, it's hard enough to keep single
+> threaded performance up. But it should be much easier to override
+> this in -rt and I'll be happy to try restructuring things to help rt
+> if and when it's possible.
 
-	Jeff
+Ok, lets see how bad it gets :)
 
+Thanks,
 
-
+	tglx
