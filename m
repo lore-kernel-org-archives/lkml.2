@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab0FYTbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:31:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53249 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751833Ab0FYTbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:31:43 -0400
-Date: Fri, 25 Jun 2010 21:29:45 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] pid_ns: Fix proc_flush_task() accessing freed
-	proc_mnt
-Message-ID: <20100625192945.GA25532@redhat.com>
-References: <20100623203652.GA25298@redhat.com> <1277399329-18087-1-git-send-email-louis.rilling@kerlabs.com> <20100624191843.GA14205@redhat.com> <20100625102303.GG3773@hawkmoon.kerlabs.com> <20100625183733.GA2627@us.ibm.com>
+	id S1756765Ab0FYTcp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:32:45 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:51551 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab0FYTco convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:32:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=Xps500kmZ2wZttBXpFOyPafaSqHa9YFu7dwOaB0XAuNDK9r5v4axe8856dFbZ77STR
+         9jQFA4t5aUC1dbF5/tAiFv0wQoXApu2ebddNMwGFNz+cVU3TeuEvqR5jBlknQ4YHcZ0O
+         nsM3F5ebfiH5g0+d3z6WNSCZyYxRC+51ePAkc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100625183733.GA2627@us.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTila2rrYcBUZKwywHTP6g8rsj7Z1ck6LSoC9GaUY@mail.gmail.com>
+References: <AANLkTila2rrYcBUZKwywHTP6g8rsj7Z1ck6LSoC9GaUY@mail.gmail.com>
+Date: Fri, 25 Jun 2010 12:32:43 -0700
+Message-ID: <AANLkTikbQLTC8HLB2m8LoPtZ0JVUzRl6PvRL5yTC0pZV@mail.gmail.com>
+Subject: Fwd: fs/exec.c core dumping on NFS mounted directory
+From: Lei Sun <leisun124@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25, Sukadev Bhattiprolu wrote:
->
-> Louis Rilling [Louis.Rilling@kerlabs.com] wrote:
-> | - proc_pid_readdir():
-> |   Needs similar check and protection to proc_pid_lookup(), but there is another
-> |   issue: next_tgid() can find a dying task:
->
-> Hmm, I thought proc_pid_readdir() would be a problem too but convinced myself
-> that it would not - since a process running proc_pid_readdir() would have
-> a reference to the pid namespace,
+  In 2.6.3x, I am logging in as a root and running app from NFS
+mounted directory. The app crashed with 0 bytes core file (I have set
+"ulimit -c unlimited", so it's not an issue).
 
-Where does this reference comes from ?
+Proposed patch:
 
-proc_pid_readdir() pins the task_struct (ns->child_reaper), not the pid/ns.
+--- exec.c 2010-05-19 17:33:16.000000000 -0700
++++ exec.c.new 2010-05-19 17:33:07.000000000 -0700
+@@ -1859,7 +1859,7 @@
+     * Dont allow local users get cute and trick others to coredump
+     * into their pre-created files:
+     */
+- if (inode->i_uid != current_fsuid())
++ if (inode->i_bytes != 0 && inode->i_uid != current_fsuid())
+        goto close_fail;
 
-But I won't be surprised if I am wrong again ;)
+    if (!file->f_op)
 
-Oleg.
 
+P.S. CC to my email, i am not on the list.
+
+Thanks
+lei
