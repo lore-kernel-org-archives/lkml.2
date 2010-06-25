@@ -1,326 +1,393 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab0FYTGy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:06:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14192 "EHLO mx1.redhat.com"
+	id S932362Ab0FYTHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:07:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46655 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932259Ab0FYTGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:06:49 -0400
+	id S932423Ab0FYTGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:06:53 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 19/38] union-mount: Introduce union_dir structure and basic operations
-Date: Fri, 25 Jun 2010 12:05:09 -0700
-Message-Id: <1277492728-11446-20-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 22/38] union-mount: Implement union lookup
+Date: Fri, 25 Jun 2010 12:05:12 -0700
+Message-Id: <1277492728-11446-23-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the basic structures and operations of VFS-based union
-mounts (but not the ability to mount or lookup unioned file systems).
-Each directory in a unioned file system has an associated union stack
-created when the directory is first looked up.  The union stack is a
-union_dir structure kept in a hash table indexed by mount and dentry
-of the directory; thus, specific paths are unioned, not dentries
-alone.  The union_dir keeps a pointer to the upper path and the lower
-path and can be looked up by either path.  Currently only two layers
-are supported, but the union_dir struct is flexible enough to allow
-more than two layers.
+Implement unioned directories, whiteouts, and fallthrus in pathname
+lookup routines.  do_lookup() and lookup_hash() call lookup_union()
+after looking up the dentry from the top-level file system.
+lookup_union() is centered around __lookup_hash(), which does cached
+and/or real lookups and revalidates each dentry in the union stack.
 
-This particular version of union mounts is based on ideas by Jan
-Blunck, Bharata Rao, and many others.
+XXX - implement negative union cache entries
 
-Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+XXX - What about different permissions on different layers on the same
+directory name?  Should complain, fail, test permissions on all
+layers, what?
 ---
- fs/Kconfig             |   13 +++++
- fs/Makefile            |    1 +
- fs/dcache.c            |    3 +
- fs/union.c             |  119 ++++++++++++++++++++++++++++++++++++++++++++++++
- fs/union.h             |   66 ++++++++++++++++++++++++++
- include/linux/dcache.h |    4 +-
- include/linux/fs.h     |    1 +
- 7 files changed, 206 insertions(+), 1 deletions(-)
- create mode 100644 fs/union.c
- create mode 100644 fs/union.h
+ fs/namei.c |  174 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/union.c |   94 ++++++++++++++++++++++++++++++++
+ fs/union.h |    7 +++
+ 3 files changed, 274 insertions(+), 1 deletions(-)
 
-diff --git a/fs/Kconfig b/fs/Kconfig
-index 5f85b59..f99c3a9 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -59,6 +59,19 @@ source "fs/notify/Kconfig"
+diff --git a/fs/namei.c b/fs/namei.c
+index 06aad7e..3f969af 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -35,6 +35,7 @@
+ #include <asm/uaccess.h>
  
- source "fs/quota/Kconfig"
- 
-+config UNION_MOUNT
-+       bool "Union mounts (writable overlasy) (EXPERIMENTAL)"
-+       depends on EXPERIMENTAL
-+       help
-+         Union mounts allow you to mount a transparent writable
-+	 layer over a read-only file system, for example, an ext3
-+	 partition on a hard drive over a CD-ROM root file system
-+	 image.
-+
-+	 See <file:Documentation/filesystems/union-mounts.txt> for details.
-+
-+	 If unsure, say N.
-+
- source "fs/autofs/Kconfig"
- source "fs/autofs4/Kconfig"
- source "fs/fuse/Kconfig"
-diff --git a/fs/Makefile b/fs/Makefile
-index 97f340f..1949af2 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -52,6 +52,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
- obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
- 
- obj-y				+= quota/
-+obj-$(CONFIG_UNION_MOUNT)	+= union.o
- 
- obj-$(CONFIG_PROC_FS)		+= proc/
- obj-y				+= partitions/
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 1575af4..54ff5a3 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -960,6 +960,9 @@ struct dentry *d_alloc(struct dentry * parent, const struct qstr *name)
- 	INIT_LIST_HEAD(&dentry->d_lru);
- 	INIT_LIST_HEAD(&dentry->d_subdirs);
- 	INIT_LIST_HEAD(&dentry->d_alias);
-+#ifdef CONFIG_UNION_MOUNT
-+	dentry->d_union_dir = NULL;
-+#endif
- 
- 	if (parent) {
- 		dentry->d_parent = dget(parent);
-diff --git a/fs/union.c b/fs/union.c
-new file mode 100644
-index 0000000..02abb7c
---- /dev/null
-+++ b/fs/union.c
-@@ -0,0 +1,119 @@
-+ /*
-+ * VFS-based union mounts for Linux
-+ *
-+ * Copyright (C) 2004-2007 IBM Corporation, IBM Deutschland Entwicklung GmbH.
-+ * Copyright (C) 2007-2009 Novell Inc.
-+ * Copyright (C) 2009-2010 Red Hat, Inc.
-+ *
-+ *   Author(s): Jan Blunck (j.blunck@tu-harburg.de)
-+ *              Valerie Aurora <vaurora@redhat.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/bootmem.h>
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/fs.h>
-+#include <linux/mount.h>
-+#include <linux/fs_struct.h>
-+#include <linux/slab.h>
-+
+ #include "internal.h"
 +#include "union.h"
+ 
+ /* [Feb-1997 T. Schoebel-Theuer]
+  * Fundamental changes in the pathname lookup mechanisms (namei)
+@@ -722,6 +723,163 @@ static __always_inline void follow_dotdot(struct nameidata *nd)
+ 	follow_mount(&nd->path);
+ }
+ 
++static struct dentry *__lookup_hash(struct qstr *name, struct dentry *base,
++				    struct nameidata *nd);
 +
-+static struct kmem_cache *union_cache;
-+
-+static int __init init_union(void)
-+{
-+	union_cache = KMEM_CACHE(union_dir, SLAB_PANIC | SLAB_MEM_SPREAD);
-+	return 0;
-+}
-+
-+fs_initcall(init_union);
-+
-+/**
-+ * union_alloc - allocate a union_dir
++/*
++ * __lookup_union - Given a path from the topmost layer, lookup and
++ * revalidate each dentry in its union stack, building it if necessary
 + *
-+ * @path: path of directory underneath another directory
++ * @nd - nameidata for the parent of @topmost
++ * @name - pathname from this element on
++ * @topmost - path of the topmost matching dentry
 + *
-+ * Allocate a union_dir for this directory.  We only allocate
-+ * union_dirs for the second and lower layers - the read-only layers.
-+ * Top-level dentries don't have a union_dir, just a pointer to the
-+ * union_dir of the directory in the layer below it.  u_lower is
-+ * initialized to NULL by default.  If there is another layer below
-+ * this and a matching directory in the layer, then we allocate a
-+ * union_dir for it and then set u_lower of the above union_dir to
-+ * point to it.
++ * Given the nameidata and the path of the topmost dentry for this
++ * pathname, lookup, revalidate, and build the associated union stack.
++ * @topmost must be either a negative dentry or a directory, and not a
++ * whiteout.
++ *
++ * This function may stomp nd->path with the path of the parent
++ * directory of lower layer, so the caller must save nd->path and
++ * restore it afterwards.  You probably want to use lookup_union(),
++ * not __lookup_union().
 + */
 +
-+static struct union_dir *union_alloc(struct path *path)
++static int __lookup_union(struct nameidata *nd, struct qstr *name,
++			  struct path *topmost)
 +{
++	struct path parent = nd->path;
++	struct path lower, upper;
 +	struct union_dir *ud;
++	/* new_ud is the tail of the list of union dirs for this dentry */
++	struct union_dir **next_ud = &topmost->dentry->d_union_dir;
++	int err = 0;
 +
-+	BUG_ON(!S_ISDIR(path->dentry->d_inode->i_mode));
++	/*
++	 * upper is either a negative dentry from the top layer, or it
++	 * is the most recent positive dentry for a directory that
++	 * we've seen.
++	 */
++	upper = *topmost;
 +
-+	ud = kmem_cache_alloc(union_cache, GFP_ATOMIC);
-+	if (!ud)
-+		return NULL;
++	/* Go through each dir underlying the parent, looking for a match */
++	for (ud = nd->path.dentry->d_union_dir; ud != NULL; ud = ud->u_lower) {
++		BUG_ON(ud->u_this.dentry->d_count.counter == 0);
++		/* Change the nameidata to point to this level's dir */
++		nd->path = ud->u_this;
++		/* Lookup the child in this level */
++		lower.mnt = mntget(nd->path.mnt);
++		mutex_lock(&nd->path.dentry->d_inode->i_mutex);
++		lower.dentry = __lookup_hash(name, nd->path.dentry, nd);
++		mutex_unlock(&nd->path.dentry->d_inode->i_mutex);
 +
-+	ud->u_this = *path;
-+	ud->u_lower = NULL;
++		if (IS_ERR(lower.dentry)) {
++			mntput(lower.mnt);
++			err = PTR_ERR(lower.dentry);
++			goto out;
++		}
 +
-+	return ud;
-+}
++		if (!lower.dentry->d_inode) {
++			if (d_is_whiteout(lower.dentry))
++				break;
++			if (IS_OPAQUE(nd->path.dentry->d_inode) &&
++			    !d_is_fallthru(lower.dentry))
++				break;
++			/* Plain old negative! Keep looking */
++			path_put(&lower);
++			continue;
++		}
 +
-+static void union_put(struct union_dir *ud)
-+{
-+	path_put(&ud->u_this);
-+	kmem_cache_free(union_cache, ud);
-+}
++		/* Finding a non-dir ends the lookup, one way or another */
++		if (!S_ISDIR(lower.dentry->d_inode->i_mode)) {
++			/* Ignore file below dir - invalid */
++			if (upper.dentry->d_inode &&
++			    S_ISDIR(upper.dentry->d_inode->i_mode)) {
++				path_put(&lower);
++				break;
++			}
++			/* Bingo, found our target */
++			dput(topmost->dentry);
++			/* mntput(topmost) done in link_path_walk() */
++			*topmost = lower;
++			break;
++		}
 +
-+/**
-+ * union_add_dir - Add another layer to a unioned directory
-+ *
-+ * @upper - directory in the previous layer
-+ * @lower - directory in the current layer
-+ * @next_ud - location of pointer to this union_dir
-+ *
-+ * Must have a reference (i.e., call path_get()) to @lower before
-+ * passing to this function.
-+ */
++		/* Allow read-only submounts on lower layers */
++		follow_mount(&lower);
 +
-+int union_add_dir(struct path *upper, struct path *lower,
-+		  struct union_dir **next_ud)
-+{
-+	struct union_dir *ud;
++		/* Found a directory. Create the topmost version if it doesn't exist */
++		if (!topmost->dentry->d_inode) {
++			err = union_create_topmost_dir(&parent, name, topmost,
++						       &lower);
++			if (err) {
++				path_put(&lower);
++				return err;
++			}
++		}
 +
-+	BUG_ON(*next_ud != NULL);
++		err = union_add_dir(&upper, &lower, next_ud);
++		if (err)
++			break;
 +
-+	ud = union_alloc(lower);
-+	if (!ud)
-+		return -ENOMEM;
-+	*next_ud = ud;
-+
-+	return 0;
-+}
-+
-+/**
-+ * d_free_unions - free all unions for this dentry
-+ *
-+ * @dentry - topmost dentry in the union stack to remove
-+ *
-+ * This must be called when freeing a dentry.
-+ */
-+void d_free_unions(struct dentry *dentry)
-+{
-+	struct union_dir *this, *next;
-+
-+	this = dentry->d_union_dir;
-+
-+	while (this != NULL) {
-+		next = this->u_lower;
-+		union_put(this);
-+		this = next;
++		next_ud = &(*next_ud)->u_lower;
++		upper = lower;
 +	}
-+	dentry->d_union_dir = NULL;
++out:
++	return 0;
++}
++
++/*
++ * lookup_union - revalidate and build union stack for this path
++ *
++ * We borrow the nameidata struct from the topmost layer to do the
++ * revalidation on lower dentries, replacing the topmost parent
++ * directory's path with that of the matching parent dir in each lower
++ * layer.  This wrapper for __lookup_union() saves the topmost layer's
++ * path and restores it when we are done.
++ */
++static int lookup_union(struct nameidata *nd, struct qstr *name,
++			struct path *topmost)
++{
++	struct path saved_path;
++	int err;
++
++	BUG_ON(!IS_MNT_UNION(nd->path.mnt) && !IS_MNT_UNION(topmost->mnt));
++	BUG_ON(!mutex_is_locked(&nd->path.dentry->d_inode->i_mutex));
++
++	saved_path = nd->path;
++	path_get(&saved_path);
++
++	err = __lookup_union(nd, name, topmost);
++
++	nd->path = saved_path;
++	path_put(&saved_path);
++
++	return err;
++}
++
++/*
++ * do_union_lookup - union mount-aware part of do_lookup
++ *
++ * do_lookup()-style wrapper for lookup_union().  Follows mounts.
++ */
++
++static int do_lookup_union(struct nameidata *nd, struct qstr *name,
++			   struct path *topmost)
++{
++	struct dentry *parent = nd->path.dentry;
++	struct inode *dir = parent->d_inode;
++	int err;
++
++	mutex_lock(&dir->i_mutex);
++	err = lookup_union(nd, name, topmost);
++	mutex_unlock(&dir->i_mutex);
++
++	__follow_mount(topmost);
++
++	return err;
++}
++
+ /*
+  *  It's more convoluted than I'd like it to be, but... it's still fairly
+  *  small and for now I'd prefer to have fast path as straight as possible.
+@@ -752,6 +910,11 @@ done:
+ 	path->mnt = mnt;
+ 	path->dentry = dentry;
+ 	__follow_mount(path);
++	if (needs_lookup_union(&nd->path, path)) {
++		int err = do_lookup_union(nd, name, path);
++		if (err < 0)
++			return err;
++	}
+ 	return 0;
+ 
+ need_lookup:
+@@ -1223,8 +1386,13 @@ static int lookup_hash(struct nameidata *nd, struct qstr *name,
+ 		err = PTR_ERR(path->dentry);
+ 		path->dentry = NULL;
+ 		path->mnt = NULL;
++		return err;
+ 	}
++
++	if (needs_lookup_union(&nd->path, path))
++		err = lookup_union(nd, name, path);
+ 	return err;
++
+ }
+ 
+ static int __lookup_one_len(const char *name, struct qstr *this,
+@@ -2888,7 +3056,11 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	error = -EXDEV;
+ 	if (oldnd.path.mnt != newnd.path.mnt)
+ 		goto exit2;
+-
++	/* Rename on union mounts not implemented yet */
++	/* XXX much harsher check than necessary - can do some renames */
++	if (IS_DIR_UNIONED(oldnd.path.dentry) ||
++	    IS_DIR_UNIONED(newnd.path.dentry))
++		goto exit2;
+ 	old_dir = oldnd.path.dentry;
+ 	error = -EBUSY;
+ 	if (oldnd.last_type != LAST_NORM)
+diff --git a/fs/union.c b/fs/union.c
+index 02abb7c..c089c02 100644
+--- a/fs/union.c
++++ b/fs/union.c
+@@ -21,6 +21,7 @@
+ #include <linux/mount.h>
+ #include <linux/fs_struct.h>
+ #include <linux/slab.h>
++#include <linux/namei.h>
+ 
+ #include "union.h"
+ 
+@@ -117,3 +118,96 @@ void d_free_unions(struct dentry *dentry)
+ 	}
+ 	dentry->d_union_dir = NULL;
+ }
++
++/**
++ * needs_lookup_union - Avoid union lookup when not necessary
++ *
++ * @parent_path: path of the parent directory
++ * @path: path of the lookup target
++ *
++ * Check to see if the target needs union lookup.  Two cases need
++ * union lookup: the target is a directory, and the target is a
++ * negative dentry.
++ *
++ * Returns 0 if this dentry is definitely not unioned.  Returns 1 if
++ * it is possible this dentry is unioned.
++ */
++
++int needs_lookup_union(struct path *parent_path, struct path *path)
++{
++	/*
++	 * If the target is the root of the mount, then its union
++	 * stack was already created at mount time (if this is a union
++	 * mount).
++	 */
++	if (IS_ROOT(path->dentry))
++		return 0;
++
++	/* Only dentries in a unioned directory need a union lookup. */
++	if (!IS_DIR_UNIONED(parent_path->dentry))
++		return 0;
++
++	/* Whiteouts cover up everything below */
++	if (d_is_whiteout(path->dentry))
++		return 0;
++
++	/* Opaque dirs cover except if this is a fallthru */
++	if (IS_OPAQUE(parent_path->dentry->d_inode) &&
++	    !d_is_fallthru(path->dentry))
++		return 0;
++
++	/*
++	 * XXX Negative dentries in unioned directories must always go
++	 * through a full union lookup because there might be a
++	 * matching entry below it.  To improve performance, we should
++	 * mark negative dentries in some way to show they have
++	 * already been looked up in the union and nothing was found.
++	 * Maybe mark it opaque?
++	 */
++	if (!path->dentry->d_inode)
++		return 1;
++
++	/*
++	 * If it's not a directory and it's a positive dentry, then we
++	 * already have the topmost dentry and we don't need to do any
++	 * lookup in lower layers.
++	 */
++
++	if (!S_ISDIR(path->dentry->d_inode->i_mode))
++		return 0;
++
++	/* Is the union stack already constructed? */
++	if (IS_DIR_UNIONED(path->dentry))
++		return 0;
++
++	/*
++	 * XXX This is like the negative dentry case.  This directory
++	 * may have no matching directories in the lower layers, or
++	 * this may just be the first time we looked it up.  We can't
++	 * tell the difference.
++	 */
++	return 1;
++}
++
++/*
++ * union_create_topmost_dir - Create a matching dir in the topmost file system
++ */
++
++int union_create_topmost_dir(struct path *parent, struct qstr *name,
++			     struct path *topmost, struct path *lower)
++{
++	int mode = lower->dentry->d_inode->i_mode;
++	int res;
++
++	BUG_ON(topmost->dentry->d_inode);
++
++	res = mnt_want_write(parent->mnt);
++	if (res)
++		return res;
++
++	res = vfs_mkdir(parent->dentry->d_inode, topmost->dentry, mode);
++
++	mnt_drop_write(parent->mnt);
++
++	return res;
 +}
 diff --git a/fs/union.h b/fs/union.h
-new file mode 100644
-index 0000000..04efc1f
---- /dev/null
+index 04efc1f..505f132 100644
+--- a/fs/union.h
 +++ b/fs/union.h
-@@ -0,0 +1,66 @@
-+ /*
-+ * VFS-based union mounts for Linux
-+ *
-+ * Copyright (C) 2004-2007 IBM Corporation, IBM Deutschland Entwicklung GmbH.
-+ * Copyright (C) 2007-2009 Novell Inc.
-+ * Copyright (C) 2009-2010 Red Hat, Inc.
-+ *
-+ *   Author(s): Jan Blunck (j.blunck@tu-harburg.de)
-+ *              Valerie Aurora <vaurora@redhat.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef __LINUX_UNION_H
-+#define __LINUX_UNION_H
-+#ifdef __KERNEL__
-+
-+#ifdef CONFIG_UNION_MOUNT
-+
-+/*
-+ * WARNING! Confusing terminology alert.
-+ *
-+ * Note that the directions "up" and "down" in union mounts are the
-+ * opposite of "up" and "down" in normal VFS operation terminology.
-+ * "up" in the rest of the VFS means "towards the root of the mount
-+ * tree."  If you mount B on top of A, following B "up" will get you
-+ * A.  In union mounts, "up" means "towards the most recently mounted
-+ * layer of the union stack."  If you union mount B on top of A,
-+ * following A "up" will get you to B.  Another way to put it is that
-+ * "up" in the VFS means going from this mount towards the direction
-+ * of its mnt->mnt_parent pointer, but "up" in union mounts means
-+ * going in the opposite direction (until you run out of union
-+ * layers).
-+ */
-+
-+/*
-+ * The union_dir structure.  Basically just a singly-linked list with
-+ * a pointer to the referenced dentry, whose head is d_union_dir in
-+ * the dentry of the topmost directory.  We can't link this list
-+ * purely through list elements in the dentry because lower layer
-+ * dentries can be part of multiple union stacks.  However, the
-+ * topmost dentry is only part of one union stack.  So we point at the
-+ * lower layer dentries through a linked list rooted in the topmost
-+ * dentry.
-+ */
-+struct union_dir {
-+	struct path u_this;		/* this is me */
-+	struct union_dir *u_lower;	/* this is what I overlay */
-+};
-+
-+#define IS_MNT_UNION(mnt)	((mnt)->mnt_flags & MNT_UNION)
-+
-+extern int union_add_dir(struct path *, struct path *, struct union_dir **);
-+extern void d_free_unions(struct dentry *);
-+
-+#else /* CONFIG_UNION_MOUNT */
-+
-+#define IS_MNT_UNION(x)			(0)
-+#define union_add_dir(x, y, z)		({ BUG(); (NULL); })
-+#define d_free_unions(x)		do { } while (0)
-+
-+#endif	/* CONFIG_UNION_MOUNT */
-+#endif	/* __KERNEL__ */
-+#endif	/* __LINUX_UNION_H */
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index 01d6011..509a637 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -100,7 +100,9 @@ struct dentry {
- 	struct hlist_node d_hash;	/* lookup hash list */
- 	struct dentry *d_parent;	/* parent directory */
- 	struct qstr d_name;
--
-+#ifdef CONFIG_UNION_MOUNT
-+	struct union_dir *d_union_dir;	/* head of union stack */
-+#endif
- 	struct list_head d_lru;		/* LRU list */
- 	/*
- 	 * d_child and d_rcu can share memory
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index dbd9881..32e6988 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1395,6 +1395,7 @@ struct super_block {
- 	 * read-only.
- 	 */
- 	int s_hard_readonly_users;
-+
+@@ -51,15 +51,22 @@ struct union_dir {
  };
  
- extern struct timespec current_fs_time(struct super_block *sb);
+ #define IS_MNT_UNION(mnt)	((mnt)->mnt_flags & MNT_UNION)
++#define IS_DIR_UNIONED(dentry)	((dentry)->d_union_dir)
+ 
+ extern int union_add_dir(struct path *, struct path *, struct union_dir **);
+ extern void d_free_unions(struct dentry *);
++int needs_lookup_union(struct path *, struct path *);
++int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
++			     struct path *);
+ 
+ #else /* CONFIG_UNION_MOUNT */
+ 
+ #define IS_MNT_UNION(x)			(0)
++#define IS_DIR_UNIONED(x)		(0)
+ #define union_add_dir(x, y, z)		({ BUG(); (NULL); })
+ #define d_free_unions(x)		do { } while (0)
++#define needs_lookup_union(x, y)	({ (0); })
++#define union_create_topmost_dir(w, x, y, z)	({ BUG(); (NULL); })
+ 
+ #endif	/* CONFIG_UNION_MOUNT */
+ #endif	/* __KERNEL__ */
 -- 
 1.6.3.3
 
