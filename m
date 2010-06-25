@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab0FYTN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:13:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60182 "EHLO mx1.redhat.com"
+	id S932326Ab0FYTGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:06:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932343Ab0FYTGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:06:25 -0400
+	id S1756509Ab0FYTF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:05:59 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-       Valerie Aurora <vaurora@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, linux-mm@kvack.org
-Subject: [PATCH 09/38] whiteout: tmpfs whiteout support
-Date: Fri, 25 Jun 2010 12:04:59 -0700
-Message-Id: <1277492728-11446-10-git-send-email-vaurora@redhat.com>
+       linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 02/38] VFS: Make lookup_hash() return a struct path
+Date: Fri, 25 Jun 2010 12:04:52 -0700
+Message-Id: <1277492728-11446-3-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,280 +23,290 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Blunck <jblunck@suse.de>
 
-Add support for whiteout dentries to tmpfs.  This includes adding
-support for whiteouts to d_genocide(), which is called to tear down
-pinned tmpfs dentries.  Whiteouts have to be persistent, so they have
-a pinning extra ref count that needs to be dropped by d_genocide().
+This patch changes lookup_hash() into returning a struct path.
+
+XXX - Check for correctness, otherwise obvious
 
 Signed-off-by: Jan Blunck <jblunck@suse.de>
-Signed-off-by: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Cc: linux-mm@kvack.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- fs/dcache.c |   13 +++++-
- mm/shmem.c  |  149 +++++++++++++++++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 147 insertions(+), 15 deletions(-)
+ fs/namei.c |  113 ++++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 57 insertions(+), 56 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 265015d..3b0e525 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2229,7 +2229,18 @@ resume:
- 		struct list_head *tmp = next;
- 		struct dentry *dentry = list_entry(tmp, struct dentry, d_u.d_child);
- 		next = tmp->next;
--		if (d_unhashed(dentry)||!dentry->d_inode)
-+		/*
-+		 * Skip unhashed and negative dentries, but process
-+		 * positive dentries and whiteouts.  A whiteout looks
-+		 * kind of like a negative dentry for purposes of
-+		 * lookup, but it has an extra pinning ref count
-+		 * because it can't be evicted like a negative dentry
-+		 * can.  What we care about here is ref counts - and
-+		 * we need to drop the ref count on a whiteout before
-+		 * we can evict it.
-+		 */
-+		if (d_unhashed(dentry)||(!dentry->d_inode &&
-+					 !d_is_whiteout(dentry)))
- 			continue;
- 		if (!list_empty(&dentry->d_subdirs)) {
- 			this_parent = dentry;
-diff --git a/mm/shmem.c b/mm/shmem.c
-index eef4ebe..c58ecf4 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1805,6 +1805,76 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	return 0;
+diff --git a/fs/namei.c b/fs/namei.c
+index ec178f1..3b43c48 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1155,7 +1155,7 @@ int vfs_path_lookup(struct dentry *dentry, struct vfsmount *mnt,
  }
  
-+static int shmem_rmdir(struct inode *dir, struct dentry *dentry);
-+static int shmem_unlink(struct inode *dir, struct dentry *dentry);
-+
-+/*
-+ * This is the whiteout support for tmpfs. It uses one singleton whiteout
-+ * inode per superblock thus it is very similar to shmem_link().
-+ */
-+static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
-+			  struct dentry *new_dentry)
-+{
-+	struct shmem_sb_info *sbinfo = SHMEM_SB(dir->i_sb);
-+	struct dentry *dentry;
-+
-+	if (!(dir->i_sb->s_flags & MS_WHITEOUT))
-+		return -EPERM;
-+
-+	/* This gives us a proper initialized negative dentry */
-+	dentry = simple_lookup(dir, new_dentry, NULL);
-+	if (dentry && IS_ERR(dentry))
-+		return PTR_ERR(dentry);
-+
-+	/*
-+	 * No ordinary (disk based) filesystem counts whiteouts as inodes;
-+	 * but each new link needs a new dentry, pinning lowmem, and
-+	 * tmpfs dentries cannot be pruned until they are unlinked.
-+	 */
-+	if (sbinfo->max_inodes) {
-+		spin_lock(&sbinfo->stat_lock);
-+		if (!sbinfo->free_inodes) {
-+			spin_unlock(&sbinfo->stat_lock);
-+			return -ENOSPC;
-+		}
-+		sbinfo->free_inodes--;
-+		spin_unlock(&sbinfo->stat_lock);
-+	}
-+
-+	if (old_dentry->d_inode) {
-+		if (S_ISDIR(old_dentry->d_inode->i_mode))
-+			shmem_rmdir(dir, old_dentry);
-+		else
-+			shmem_unlink(dir, old_dentry);
-+	}
-+
-+	dir->i_size += BOGO_DIRENT_SIZE;
-+	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
-+	/* Extra pinning count for the created dentry */
-+	dget(new_dentry);
-+	spin_lock(&new_dentry->d_lock);
-+	new_dentry->d_flags |= DCACHE_WHITEOUT;
-+	spin_unlock(&new_dentry->d_lock);
-+	return 0;
-+}
-+
-+static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
-+				struct inode *inode)
-+{
-+	if (d_is_whiteout(dentry)) {
-+		/* Re-using an existing whiteout */
-+		shmem_free_inode(dir->i_sb);
-+		if (S_ISDIR(inode->i_mode))
-+			inode->i_mode |= S_OPAQUE;
-+	} else {
-+		/* New dentry */
-+		dir->i_size += BOGO_DIRENT_SIZE;
-+		dget(dentry); /* Extra count - pin the dentry in core */
-+	}
-+	/* Will clear DCACHE_WHITEOUT flag */
-+	d_instantiate(dentry, inode);
-+
-+}
- /*
-  * File creation. Allocate an inode, and we're done..
+ static struct dentry *__lookup_hash(struct qstr *name,
+-		struct dentry *base, struct nameidata *nd)
++				    struct dentry *base, struct nameidata *nd)
+ {
+ 	struct dentry *dentry;
+ 	struct inode *inode;
+@@ -1212,14 +1212,22 @@ out:
+  * needs parent already locked. Doesn't follow mounts.
+  * SMP-safe.
   */
-@@ -1838,10 +1908,10 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t dev)
- 			if (S_ISDIR(mode))
- 				inode->i_mode |= S_ISGID;
- 		}
--		dir->i_size += BOGO_DIRENT_SIZE;
-+
-+		shmem_d_instantiate(dir, dentry, inode);
-+
- 		dir->i_ctime = dir->i_mtime = CURRENT_TIME;
--		d_instantiate(dentry, inode);
--		dget(dentry); /* Extra count - pin the dentry in core */
+-static struct dentry *lookup_hash(struct nameidata *nd)
++static int lookup_hash(struct nameidata *nd, struct qstr *name,
++		       struct path *path)
+ {
+ 	int err;
+ 
+ 	err = exec_permission(nd->path.dentry->d_inode);
+ 	if (err)
+-		return ERR_PTR(err);
+-	return __lookup_hash(&nd->last, nd->path.dentry, nd);
++		return err;
++	path->mnt = nd->path.mnt;
++	path->dentry =  __lookup_hash(name, nd->path.dentry, nd);
++	if (IS_ERR(path->dentry)) {
++		err = PTR_ERR(path->dentry);
++		path->dentry = NULL;
++		path->mnt = NULL;
++	}
++	return err;
+ }
+ 
+ static int __lookup_one_len(const char *name, struct qstr *this,
+@@ -1701,12 +1709,9 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 
+ 	/* OK, it's O_CREAT */
+ 	mutex_lock(&dir->d_inode->i_mutex);
++	error = lookup_hash(nd, &nd->last, path);
+ 
+-	path->dentry = lookup_hash(nd);
+-	path->mnt = nd->path.mnt;
+-
+-	error = PTR_ERR(path->dentry);
+-	if (IS_ERR(path->dentry)) {
++	if (error) {
+ 		mutex_unlock(&dir->d_inode->i_mutex);
+ 		goto exit;
  	}
+@@ -1958,7 +1963,8 @@ EXPORT_SYMBOL(filp_open);
+  */
+ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ {
+-	struct dentry *dentry = ERR_PTR(-EEXIST);
++	struct path path;
++	int err;
+ 
+ 	mutex_lock_nested(&nd->path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+ 	/*
+@@ -1966,7 +1972,7 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	 * (foo/., foo/.., /////)
+ 	 */
+ 	if (nd->last_type != LAST_NORM)
+-		goto fail;
++		return ERR_PTR(-EEXIST);
+ 	nd->flags &= ~LOOKUP_PARENT;
+ 	nd->flags |= LOOKUP_CREATE | LOOKUP_EXCL;
+ 	nd->intent.open.flags = O_EXCL;
+@@ -1974,11 +1980,11 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	/*
+ 	 * Do the final lookup.
+ 	 */
+-	dentry = lookup_hash(nd);
+-	if (IS_ERR(dentry))
+-		goto fail;
++	err = lookup_hash(nd, &nd->last, &path);
++	if (err)
++		return ERR_PTR(err);
+ 
+-	if (dentry->d_inode)
++	if (path.dentry->d_inode)
+ 		goto eexist;
+ 	/*
+ 	 * Special case - lookup gave negative, but... we had foo/bar/
+@@ -1987,15 +1993,14 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	 * been asking for (non-existent) directory. -ENOENT for you.
+ 	 */
+ 	if (unlikely(!is_dir && nd->last.name[nd->last.len])) {
+-		dput(dentry);
+-		dentry = ERR_PTR(-ENOENT);
++		dput(path.dentry);
++		return ERR_PTR(-ENOENT);
+ 	}
+-	return dentry;
++
++	return path.dentry;
+ eexist:
+-	dput(dentry);
+-	dentry = ERR_PTR(-EEXIST);
+-fail:
+-	return dentry;
++	path_put_conditional(&path, nd);
++	return ERR_PTR(-EEXIST);
+ }
+ EXPORT_SYMBOL_GPL(lookup_create);
+ 
+@@ -2230,7 +2235,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ {
+ 	int error = 0;
+ 	char * name;
+-	struct dentry *dentry;
++	struct path path;
+ 	struct nameidata nd;
+ 
+ 	error = user_path_parent(dfd, pathname, &nd, &name);
+@@ -2252,21 +2257,20 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (IS_ERR(dentry))
++	error = lookup_hash(&nd, &nd.last, &path);
++	if (error)
+ 		goto exit2;
+ 	error = mnt_want_write(nd.path.mnt);
+ 	if (error)
+ 		goto exit3;
+-	error = security_path_rmdir(&nd.path, dentry);
++	error = security_path_rmdir(&nd.path, path.dentry);
+ 	if (error)
+ 		goto exit4;
+-	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
++	error = vfs_rmdir(nd.path.dentry->d_inode, path.dentry);
+ exit4:
+ 	mnt_drop_write(nd.path.mnt);
+ exit3:
+-	dput(dentry);
++	path_put_conditional(&path, &nd);
+ exit2:
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ exit1:
+@@ -2322,7 +2326,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ {
+ 	int error;
+ 	char *name;
+-	struct dentry *dentry;
++	struct path path;
+ 	struct nameidata nd;
+ 	struct inode *inode = NULL;
+ 
+@@ -2337,26 +2341,25 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (!IS_ERR(dentry)) {
++	error = lookup_hash(&nd, &nd.last, &path);
++	if (!error) {
+ 		/* Why not before? Because we want correct error value */
+ 		if (nd.last.name[nd.last.len])
+ 			goto slashes;
+-		inode = dentry->d_inode;
++		inode = path.dentry->d_inode;
+ 		if (inode)
+ 			atomic_inc(&inode->i_count);
+ 		error = mnt_want_write(nd.path.mnt);
+ 		if (error)
+ 			goto exit2;
+-		error = security_path_unlink(&nd.path, dentry);
++		error = security_path_unlink(&nd.path, path.dentry);
+ 		if (error)
+ 			goto exit3;
+-		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
++		error = vfs_unlink(nd.path.dentry->d_inode, path.dentry);
+ exit3:
+ 		mnt_drop_write(nd.path.mnt);
+ 	exit2:
+-		dput(dentry);
++		path_put_conditional(&path, &nd);
+ 	}
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ 	if (inode)
+@@ -2367,8 +2370,8 @@ exit1:
  	return error;
- }
-@@ -1879,12 +1949,11 @@ static int shmem_link(struct dentry *old_dentry, struct inode *dir, struct dentr
- 	if (ret)
- 		goto out;
  
--	dir->i_size += BOGO_DIRENT_SIZE;
-+	shmem_d_instantiate(dir, dentry, inode);
-+
- 	inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
- 	inc_nlink(inode);
- 	atomic_inc(&inode->i_count);	/* New dentry reference */
--	dget(dentry);		/* Extra pinning count for the created dentry */
--	d_instantiate(dentry, inode);
- out:
- 	return ret;
+ slashes:
+-	error = !dentry->d_inode ? -ENOENT :
+-		S_ISDIR(dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
++	error = !path.dentry->d_inode ? -ENOENT :
++		S_ISDIR(path.dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
+ 	goto exit2;
  }
-@@ -1893,21 +1962,61 @@ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
+ 
+@@ -2706,7 +2709,7 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 		int, newdfd, const char __user *, newname)
  {
- 	struct inode *inode = dentry->d_inode;
+ 	struct dentry *old_dir, *new_dir;
+-	struct dentry *old_dentry, *new_dentry;
++	struct path old, new;
+ 	struct dentry *trap;
+ 	struct nameidata oldnd, newnd;
+ 	char *from;
+@@ -2740,16 +2743,15 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
  
--	if (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode))
--		shmem_free_inode(inode->i_sb);
-+	if (d_is_whiteout(dentry) || (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
-+		shmem_free_inode(dir->i_sb);
+ 	trap = lock_rename(new_dir, old_dir);
  
-+	if (inode) {
-+		inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
-+		drop_nlink(inode);
-+	}
- 	dir->i_size -= BOGO_DIRENT_SIZE;
--	inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
--	drop_nlink(inode);
- 	dput(dentry);	/* Undo the count from "create" - this does all the work */
- 	return 0;
- }
- 
-+static void shmem_dir_unlink_whiteouts(struct inode *dir, struct dentry *dentry)
-+{
-+	if (!dentry->d_inode)
-+		return;
-+
-+	/* Remove whiteouts from logical empty directory */
-+	if (S_ISDIR(dentry->d_inode->i_mode) &&
-+	    dentry->d_inode->i_sb->s_flags & MS_WHITEOUT) {
-+		struct dentry *child, *next;
-+		LIST_HEAD(list);
-+
-+		spin_lock(&dcache_lock);
-+		list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child) {
-+			spin_lock(&child->d_lock);
-+			if (d_is_whiteout(child)) {
-+				__d_drop(child);
-+				if (!list_empty(&child->d_lru)) {
-+					list_del(&child->d_lru);
-+					dentry_stat.nr_unused--;
-+				}
-+				list_add(&child->d_lru, &list);
-+			}
-+			spin_unlock(&child->d_lock);
-+		}
-+		spin_unlock(&dcache_lock);
-+
-+		list_for_each_entry_safe(child, next, &list, d_lru) {
-+			spin_lock(&child->d_lock);
-+			list_del_init(&child->d_lru);
-+			spin_unlock(&child->d_lock);
-+
-+			shmem_unlink(dentry->d_inode, child);
-+		}
-+	}
-+}
-+
- static int shmem_rmdir(struct inode *dir, struct dentry *dentry)
- {
- 	if (!simple_empty(dentry))
- 		return -ENOTEMPTY;
- 
-+	/* Remove whiteouts from logical empty directory */
-+	shmem_dir_unlink_whiteouts(dir, dentry);
- 	drop_nlink(dentry->d_inode);
- 	drop_nlink(dir);
- 	return shmem_unlink(dir, dentry);
-@@ -1916,7 +2025,7 @@ static int shmem_rmdir(struct inode *dir, struct dentry *dentry)
- /*
-  * The VFS layer already does all the dentry stuff for rename,
-  * we just have to decrement the usage count for the target if
-- * it exists so that the VFS layer correctly free's it when it
-+ * it exists so that the VFS layer correctly frees it when it
-  * gets overwritten.
-  */
- static int shmem_rename(struct inode *old_dir, struct dentry *old_dentry, struct inode *new_dir, struct dentry *new_dentry)
-@@ -1927,7 +2036,12 @@ static int shmem_rename(struct inode *old_dir, struct dentry *old_dentry, struct
- 	if (!simple_empty(new_dentry))
- 		return -ENOTEMPTY;
- 
-+	if (d_is_whiteout(new_dentry))
-+		shmem_unlink(new_dir, new_dentry);
-+
- 	if (new_dentry->d_inode) {
-+		/* Remove whiteouts from logical empty directory */
-+		shmem_dir_unlink_whiteouts(new_dir, new_dentry);
- 		(void) shmem_unlink(new_dir, new_dentry);
- 		if (they_are_dirs)
- 			drop_nlink(old_dir);
-@@ -1992,12 +2106,12 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
- 		unlock_page(page);
- 		page_cache_release(page);
+-	old_dentry = lookup_hash(&oldnd);
+-	error = PTR_ERR(old_dentry);
+-	if (IS_ERR(old_dentry))
++	error = lookup_hash(&oldnd, &oldnd.last, &old);
++	if (error)
+ 		goto exit3;
+ 	/* source must exist */
+ 	error = -ENOENT;
+-	if (!old_dentry->d_inode)
++	if (!old.dentry->d_inode)
+ 		goto exit4;
+ 	/* unless the source is a directory trailing slashes give -ENOTDIR */
+-	if (!S_ISDIR(old_dentry->d_inode->i_mode)) {
++	if (!S_ISDIR(old.dentry->d_inode->i_mode)) {
+ 		error = -ENOTDIR;
+ 		if (oldnd.last.name[oldnd.last.len])
+ 			goto exit4;
+@@ -2758,32 +2760,31 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
  	}
-+
-+	shmem_d_instantiate(dir, dentry, inode);
-+
- 	if (dir->i_mode & S_ISGID)
- 		inode->i_gid = dir->i_gid;
--	dir->i_size += BOGO_DIRENT_SIZE;
- 	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
--	d_instantiate(dentry, inode);
--	dget(dentry);
- 	return 0;
- }
+ 	/* source should not be ancestor of target */
+ 	error = -EINVAL;
+-	if (old_dentry == trap)
++	if (old.dentry == trap)
+ 		goto exit4;
+-	new_dentry = lookup_hash(&newnd);
+-	error = PTR_ERR(new_dentry);
+-	if (IS_ERR(new_dentry))
++	error = lookup_hash(&newnd, &newnd.last, &new);
++	if (error)
+ 		goto exit4;
+ 	/* target should not be an ancestor of source */
+ 	error = -ENOTEMPTY;
+-	if (new_dentry == trap)
++	if (new.dentry == trap)
+ 		goto exit5;
  
-@@ -2375,6 +2489,12 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
- 	if (!root)
- 		goto failed_iput;
- 	sb->s_root = root;
-+
-+#ifdef CONFIG_TMPFS
-+	if (!(sb->s_flags & MS_NOUSER))
-+		sb->s_flags |= MS_WHITEOUT;
-+#endif
-+
- 	return 0;
- 
- failed_iput:
-@@ -2475,6 +2595,7 @@ static const struct inode_operations shmem_dir_inode_operations = {
- 	.rmdir		= shmem_rmdir,
- 	.mknod		= shmem_mknod,
- 	.rename		= shmem_rename,
-+	.whiteout       = shmem_whiteout,
- #endif
- #ifdef CONFIG_TMPFS_POSIX_ACL
- 	.setattr	= shmem_notify_change,
+ 	error = mnt_want_write(oldnd.path.mnt);
+ 	if (error)
+ 		goto exit5;
+-	error = security_path_rename(&oldnd.path, old_dentry,
+-				     &newnd.path, new_dentry);
++	error = security_path_rename(&oldnd.path, old.dentry,
++				     &newnd.path, new.dentry);
+ 	if (error)
+ 		goto exit6;
+-	error = vfs_rename(old_dir->d_inode, old_dentry,
+-				   new_dir->d_inode, new_dentry);
++	error = vfs_rename(old_dir->d_inode, old.dentry,
++				   new_dir->d_inode, new.dentry);
+ exit6:
+ 	mnt_drop_write(oldnd.path.mnt);
+ exit5:
+-	dput(new_dentry);
++	path_put_conditional(&new, &newnd);
+ exit4:
+-	dput(old_dentry);
++	path_put_conditional(&old, &oldnd);
+ exit3:
+ 	unlock_rename(new_dir, old_dir);
+ exit2:
 -- 
 1.6.3.3
 
