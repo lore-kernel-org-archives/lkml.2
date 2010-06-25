@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab0FYMXQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 08:23:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19288 "EHLO mx1.redhat.com"
+	id S1755165Ab0FYMo1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 08:44:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51036 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753044Ab0FYMXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 08:23:15 -0400
-Date: Fri, 25 Jun 2010 14:21:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] pid_ns: Fix proc_flush_task() accessing freed
-	proc_mnt
-Message-ID: <20100625122118.GA5341@redhat.com>
-References: <20100623203652.GA25298@redhat.com> <1277399329-18087-1-git-send-email-louis.rilling@kerlabs.com> <20100624191843.GA14205@redhat.com> <20100625102303.GG3773@hawkmoon.kerlabs.com>
+	id S1754222Ab0FYMoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 08:44:25 -0400
+Message-ID: <4C24A4A0.90408@suse.de>
+Date: Fri, 25 Jun 2010 18:14:16 +0530
+From: Suresh Jayaraman <sjayaraman@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091130 SUSE/3.0.0-1.1.1 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100625102303.GG3773@hawkmoon.kerlabs.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: David Howells <dhowells@redhat.com>
+Cc: Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 05/10] cifs: define superblock-level cache index
+ objects and register them
+References: <1277220206-3559-1-git-send-email-sjayaraman@suse.de> <yes> <9720.1277312290@redhat.com>
+In-Reply-To: <9720.1277312290@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25, Louis Rilling wrote:
->
-> On 24/06/10 21:18 +0200, Oleg Nesterov wrote:
-> >
-> > and this adds the extra code to alloc/free pidmap.
->
-> Hopefully this is not much in alloc_pidmap() since we can expect that nr_pids
-> and last_pid are in the same cache line.
+On 06/23/2010 10:28 PM, David Howells wrote:
+> Suresh Jayaraman <sjayaraman@suse.de> wrote:
+> 
+>> Define superblock-level cache index objects (managed by cifsTconInfo
+>> structs).  Each superblock object is created in a server-level index object
+>> and in itself an index into which inode-level objects are inserted.
+>>
+>> Currently, the superblock objects are keyed by sharename.
+> 
+> Seems reasonable.  Is there any way you can check that the share you are
+> looking at on a server is the same as the last time you looked?  Can you
 
-This also adds atomic op. But I mostly dislike the pid-ns-specific
-complications itself (including the mount-after-the-first-alloc_pid
-dependancy), not the minor perfomance penalty.
+Good point.
 
-But see below...
+I thought of using TID (Tree identifier; a unique ID for a resource in
+use by client) along with sharename. But, Server is free to reuse them
+when the tree connection closes and does not guarantee the same Tid for
+a particular resource across tree connections.
 
-> > And, this subjective, yes, but it looks a bit strange that upid->nr
-> > has a reference to proc_mnt.
->
-> I presume that you wanted to say upid->ns.
+Also, considering the UNC name of the resource (//server/share) may not
+be a good idea too as the cache will not be used when for e.g. IPaddress
+is used to mount.
 
-I meant ns->nr_pids ;)
+So, if a server does something like this:
+   - export a share 'foo' (original server path: /export/vol1/foo)
+   - client mounts and uses it
+   - server unexports the share 'foo'
+   - server exports 'foo' (original sever path: /export/vol2/foo)
 
-> This last point is what made me worry about your approach so far, although I did
-> not take time to spot the precise issues. Unfortunately I don't see what the
-> checks you added in proc_self_readlink(), proc_self_follow_link() and
-> proc_pid_lookup() buy. What does prevent destroy_pid_namespace() from running
-> concurrently? Maybe RCU could help in those cases?
+we have a bit of problem..
 
-Very good point. And the strong argument against this approach.
+> validate the root directory of the share in some way?
+> 
 
-> Moreover, I think that proc_pid_readdir() should get some check too.
+I don't know if there is a way to do this.
 
-Well, it checks ->reaper != NULL, that is why I don't verify ns.
+Thanks,
 
-But yes, we have the same race (races) you pointed out here.
 
->     void pid_ns_release_proc(struct pid_namespace *ns)
->     {
-> 	struct inode *root_inode;
->
-> 	if (ns->proc_mnt) {
-> 		root_inode = ns->proc_mnt->mnt_sb->s_root->d_inode;
->
-> 		mutex_lock(&root_inode->i_mutex);
-> 		ns->proc_mnt->mnt_sb->s_fs_info = NULL;
-> 		PROC_I(root_inode)->pid = NULL;
-> 		mutex_unlock(&root_inode->i_mutex);
->
-> 		mntput(ns->proc_mnt);
-> 	}
->     }
->
->   This would also solve the issue for proc_pid_lookup() btw.
-
-Looks like you are right, but this doesn't help proc_self_readlink().
-
-I think we can fix all these problems, but I no longer think this
-approach can pretend to simplify the code. No, it will make the
-code more complex/ugly and potentially more buggy.
-
-Louis, thank you very much.
-
-Oleg.
-
+-- 
+Suresh Jayaraman
