@@ -1,87 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab0FYMu1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 08:50:27 -0400
-Received: from ozlabs.org ([203.10.76.45]:50946 "EHLO ozlabs.org"
+	id S1754574Ab0FYMza (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 08:55:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49945 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755024Ab0FYMuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 08:50:24 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH -next] ipmi: fix module param sparse warnings
-Date: Fri, 25 Jun 2010 22:20:15 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-       Corey Minyard <minyard@acm.org>
-References: <20100624152122.bfc0472a.randy.dunlap@oracle.com>
-In-Reply-To: <20100624152122.bfc0472a.randy.dunlap@oracle.com>
+	id S1752535Ab0FYMz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 08:55:28 -0400
+Date: Fri, 25 Jun 2010 08:55:27 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
+Message-ID: <20100625125527.GA3187@jolsa.bos.redhat.com>
+References: <20100616160844.GB1893@jolsa.lab.eng.brq.redhat.com>
+ <1276691043-12694-1-git-send-email-jolsa@redhat.com>
+ <1276692314.2632.66.camel@edumazet-laptop>
+ <20100616125708.GA1893@jolsa.lab.eng.brq.redhat.com>
+ <1276693837.2632.75.camel@edumazet-laptop>
+ <6118.1276818640@redhat.com>
+ <20100619120101.GA2043@jolsa.colubris.lan>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006252220.17228.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100619120101.GA2043@jolsa.colubris.lan>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jun 2010 07:51:22 am Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+hi,
+
+do I need to send this some one/place else?
+not sure it's going to be picked up..
+
+thanks,
+jirka
+
+On Sat, Jun 19, 2010 at 02:01:02PM +0200, Jiri Olsa wrote:
+> On Fri, Jun 18, 2010 at 12:50:40AM +0100, David Howells wrote:
+> > Jiri Olsa <jolsa@redhat.com> wrote:
+> > 
+> > > maybe I have better solution...
+> > > 
+> > > I think there's no need to get the cred refference as long as
+> > > the 'cred' handling stays inside the rcu_read_lock block.
+> > 
+> > I think this is right.  There should be no need for a synchronize_rcu() call
+> > to be added in commit_creds() with this as commit_creds() calls put_cred()
+> > which will defer the destruction until the RCU grace period is up anyway.
+> > 
+> > Whilst I'd prefer to call get_cred() in task_state(), as you point out (and I
+> > hadn't considered), this may see an cred struct that has been detached from
+> > its pointer on another CPU and had its usage count reduced to 0.
+> > 
+> > In such a case, we can't simply increment the count and then decrement it
+> > again later as it's already on the RCU destruction queue and can't necessarily
+> > be removed so that it can be added back in.
+> > 
+> > What could be done, though I'm not sure it's worth it, is to use
+> > atomic_inc_not_zero() and loop around if the cred struct has gone out of
+> > service when we try and access it and reread the pointer.
+> > 
+> > The advantage of this would be that we could manage to hold the RCU read lock
+> > for as little time as possible.
+> > 
+> > Acked-by: David Howells <dhowells@redhat.com>
 > 
-> The <arg> parameter in module_param_cb() should be a pointer,
-
-Well, I don't think there's anything wrong with it being a function.
-
-The actual problem is that it tries to figure out if the arg is a bool
-or an int: if someone wants to work through the 700-odd cases of 
-module_param*bool and convert those vars to actual bools, that'd allow
-us to get rid of that logic.
-
-Meanwhile, we can do this instead.  Does it solve it as well?
-
-Subject: ipmi: fix module param sparse warnings
-Date: Thu, 24 Jun 2010 15:21:22 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-
-The <arg> parameter in module_param_cb() should be a pointer,
-i.e., like one of these:
-	union {
-		void *arg;
-		const struct kparam_string *str;
-		const struct kparam_array *arr;
-	};
-
-sparse complains:
-drivers/char/ipmi/ipmi_watchdog.c:303:1: error: cannot dereference this type
-drivers/char/ipmi/ipmi_watchdog.c:307:1: error: cannot dereference this type
-drivers/char/ipmi/ipmi_watchdog.c:311:1: error: cannot dereference this type
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Corey Minyard <minyard@acm.org>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
- drivers/char/ipmi/ipmi_watchdog.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- linux-next-20100528.orig/drivers/char/ipmi/ipmi_watchdog.c
-+++ linux-next-20100528/drivers/char/ipmi/ipmi_watchdog.c
-@@ -300,15 +300,15 @@ MODULE_PARM_DESC(timeout, "Timeout value
- module_param(pretimeout, timeout, 0644);
- MODULE_PARM_DESC(pretimeout, "Pretimeout value in seconds.");
- 
--module_param_cb(action, &param_ops_str, action_op, 0644);
-+module_param_cb(action, &param_ops_str, &action_op, 0644);
- MODULE_PARM_DESC(action, "Timeout action. One of: "
- 		 "reset, none, power_cycle, power_off.");
- 
--module_param_cb(preaction, &param_ops_str, preaction_op, 0644);
-+module_param_cb(preaction, &param_ops_str, &preaction_op, 0644);
- MODULE_PARM_DESC(preaction, "Pretimeout action.  One of: "
- 		 "pre_none, pre_smi, pre_nmi, pre_int.");
- 
--module_param_cb(preop, &param_ops_str, preop_op, 0644);
-+module_param_cb(preop, &param_ops_str, &preop_op, 0644);
- MODULE_PARM_DESC(preop, "Pretimeout driver operation.  One of: "
- 		 "preop_none, preop_panic, preop_give_data.");
- 
-
-
+> thanks,
+> 
+> in case the there's need for some consistent comment :)
+> patch stays
+> 
+> wbr,
+> jirka
+> 
+> 
+> 
+> ---
+> BZ 591015 - kernel BUG at kernel/cred.c:168
+> https://bugzilla.redhat.com/show_bug.cgi?id=591015
+> 
+> Above bugzilla reported bug during the releasing of
+> old cred structure.
+> 
+> There is reproducer attached to the bugzilla.
+> 
+> The issue is caused by releasing old cred struct while other
+> kernel path might be still using it. This leads to cred->usage
+> inconsistency inside the __put_cred and triggering the bug.
+> 
+> Following kernel paths are affected:
+> 
+> The CPU1 path is setting the new groups creds.
+> The CPU2 path is cat /proc/PID/status
+> 
+> 
+> CPU 1                              CPU 2
+> 
+> sys_setgroups                      proc_pid_status      
+>   set_current_groups                 task_state
+>     commit_creds                       rcu_read_lock
+>       put_cred                         ...
+>         __put_cred                     get_cred
+>           BUG_ON(usage != 0)           ...
+>                                        rcu_read_unlock
+>                                        
+> 
+> 
+> If __put_cred got executed during the CPU2 holding the reference
+> the BUG_ON inside __put_cred is trigered.
+> 
+> I think there's no need to get the cred refference as long as
+> the 'cred' handling stays inside the rcu_read_lock block.
+> 
+> And the condition of __task_cred 'make sure task doesn't go away',
+> is done by proc_single_show as this is the proc file.
+> 
+> wbr,
+> jirka
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+> diff --git a/fs/proc/array.c b/fs/proc/array.c
+> index 9b58d38..ac3b3a4 100644
+> --- a/fs/proc/array.c
+> +++ b/fs/proc/array.c
+> @@ -176,7 +176,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+>  		if (tracer)
+>  			tpid = task_pid_nr_ns(tracer, ns);
+>  	}
+> -	cred = get_cred((struct cred *) __task_cred(p));
+> +	cred = __task_cred(p);
+>  	seq_printf(m,
+>  		"State:\t%s\n"
+>  		"Tgid:\t%d\n"
+> @@ -199,15 +199,14 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+>  		"FDSize:\t%d\n"
+>  		"Groups:\t",
+>  		fdt ? fdt->max_fds : 0);
+> -	rcu_read_unlock();
+>  
+>  	group_info = cred->group_info;
+>  	task_unlock(p);
+>  
+>  	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
+>  		seq_printf(m, "%d ", GROUP_AT(group_info, g));
+> -	put_cred(cred);
+>  
+> +	rcu_read_unlock();
+>  	seq_printf(m, "\n");
+>  }
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
