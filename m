@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab0FYRsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 13:48:16 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:44660 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897Ab0FYRsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 13:48:15 -0400
-Date: Fri, 25 Jun 2010 10:48:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.35-rc3] Add RCU check for find_task_by_vpid().
-Message-ID: <20100625174812.GF2432@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <201006260108.JFJ86910.VMFOLOFFJOtSQH@I-love.SAKURA.ne.jp>
+	id S932211Ab0FYRw1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 13:52:27 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45218 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756604Ab0FYRw0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 13:52:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=cZRDsySW0dRtYS2+tKepU5ub03pkTxavtxeI0UXTSuvioxrb2jW5Aqaoe01UezTtwU
+         zK8Q+AnCm6RQnUmNUK6tDyRffp6pvFCVLK7NeI0RTP1ysPrNTqqjj9mReYEC/surAx94
+         DjnIP9gRBUQfTe5lV5mT032XOMJ5o9k8ZPpNs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006260108.JFJ86910.VMFOLOFFJOtSQH@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1A529206-98C4-4A88-A2CA-18522D4D631D@dilger.ca>
+References: <20100624131455.GA10441@laptop> <A57010D3-065B-41B1-85E6-8B9C61970D37@dilger.ca> 
+	<20100625040156.GQ10441@laptop> <1A529206-98C4-4A88-A2CA-18522D4D631D@dilger.ca>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Fri, 25 Jun 2010 10:52:05 -0700
+Message-ID: <AANLkTin__C1EOuTFJJ4UqAFsO5x_IOKLX11boRl7B194@mail.gmail.com>
+Subject: Re: [rfc] new stat*fs-like syscall?
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Nick Piggin <npiggin@suse.de>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+       Ulrich Drepper <drepper@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 26, 2010 at 01:08:19AM +0900, Tetsuo Handa wrote:
-> find_task_by_vpid() says "Must be called under rcu_read_lock().". But due to
-> commit 3120438 "rcu: Disable lockdep checking in RCU list-traversal primitives",
-> we are currently unable to catch "find_task_by_vpid() with tasklist_lock held
-> but RCU lock not held" errors.
-> 
->   ===================================================
->   [ INFO: suspicious rcu_dereference_check() usage. ]
->   ---------------------------------------------------
->   kernel/pid.c:386 invoked rcu_dereference_check() without protection!
->   
->   other info that might help us debug this:
->   
->   
->   rcu_scheduler_active = 1, debug_locks = 1
->   1 lock held by rc.sysinit/1102:
->    #0:  (tasklist_lock){.+.+..}, at: [<c1048340>] sys_setpgid+0x40/0x160
->   
->   stack backtrace:
->   Pid: 1102, comm: rc.sysinit Not tainted 2.6.35-rc3-dirty #1
->   Call Trace:
->    [<c105e714>] lockdep_rcu_dereference+0x94/0xb0
->    [<c104b4cd>] find_task_by_pid_ns+0x6d/0x70
->    [<c104b4e8>] find_task_by_vpid+0x18/0x20
->    [<c1048347>] sys_setpgid+0x47/0x160
->    [<c1002b50>] sysenter_do_call+0x12/0x36
-> 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> ---
-> diff --git a/kernel/pid.c b/kernel/pid.c
-> index e9fd8c1..a257471 100644
-> --- a/kernel/pid.c
-> +++ b/kernel/pid.c
-> @@ -382,6 +382,9 @@ EXPORT_SYMBOL(pid_task);
->   */
->  struct task_struct *find_task_by_pid_ns(pid_t nr, struct pid_namespace *ns)
->  {
-> +#ifdef __do_rcu_dereference_check
-> +	__do_rcu_dereference_check(rcu_read_lock_held());
-> +#endif
+On Fri, Jun 25, 2010 at 10:47, Andreas Dilger <adilger@dilger.ca> wrote:
+> SUSv2 only defines the flags ST_RDONLY and ST_NOSUID, and this is also what is documented in the Linux/BSD/OSX statvfs(3) man page.  According to the Solaris statvfs(3) man page I found it additionally defines:
+>
+> ST_NOTRUNC   0x04    /* does not truncate file names longer than
+>                        NAME_MAX */
 
-How about the following?
-
-	WARN_ON_ONCE(!rcu_read_lock_held());
-
->  	return pid_task(find_pid_ns(nr, ns), PIDTYPE_PID);
->  }
-> 
+glibc supports many more flags.  SuS of course has to restrict itself,
+there are not that many flags which are portable and available on all
+the platforms.  Look at /usr/include/bits/statvfs.h for what has to be
+supported and the values to use.  If the values the kernel will use
+differ I'd have to (unnecessarily) convert the values.  If some values
+are missing/not supported I still would have to use /proc/mounts and
+nothing is gained.
