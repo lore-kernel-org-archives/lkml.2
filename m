@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405Ab0FYTGp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:06:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42491 "EHLO mx1.redhat.com"
+	id S932519Ab0FYTLR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:11:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46308 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932350Ab0FYTGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:06:39 -0400
+	id S932401Ab0FYTGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:06:45 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 35/38] union-mount: Implement union-aware lchown()
-Date: Fri, 25 Jun 2010 12:05:25 -0700
-Message-Id: <1277492728-11446-36-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 20/38] union-mount: Free union dirs on removal from dcache
+Date: Fri, 25 Jun 2010 12:05:10 -0700
+Message-Id: <1277492728-11446-21-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If a dentry is removed from dentry cache because its usage count drops
+to zero, the union_dirs in its union stack are freed too.
 ---
- fs/open.c |   23 ++++++++++++++++++++---
- 1 files changed, 20 insertions(+), 3 deletions(-)
+ fs/dcache.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 336fe01..b021dcb 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -812,18 +812,35 @@ out:
- SYSCALL_DEFINE3(lchown, const char __user *, filename, uid_t, user, gid_t, group)
- {
- 	struct path path;
-+	struct nameidata nd;
-+	struct vfsmount *mnt;
-+	char *tmp;
- 	int error;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 54ff5a3..ce54dc5 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -34,6 +34,7 @@
+ #include <linux/fs_struct.h>
+ #include <linux/hardirq.h>
+ #include "internal.h"
++#include "union.h"
  
--	error = user_lpath(filename, &path);
-+	error = user_path_nd(AT_FDCWD, filename, 0, &nd, &path, &tmp);
- 	if (error)
- 		goto out;
--	error = mnt_want_write(path.mnt);
-+
-+	if (IS_DIR_UNIONED(nd.path.dentry))
-+		mnt = nd.path.mnt;
-+	else
-+		mnt = path.mnt;
-+
-+	error = mnt_want_write(mnt);
- 	if (error)
- 		goto out_release;
-+
-+	error = union_copyup(&nd, &path);
-+	if (error)
-+		goto out_drop_write;
-+
- 	error = chown_common(&path, user, group);
--	mnt_drop_write(path.mnt);
-+out_drop_write:
-+	mnt_drop_write(mnt);
- out_release:
- 	path_put(&path);
-+	path_put(&nd.path);
-+	putname(tmp);
- out:
- 	return error;
+ int sysctl_vfs_cache_pressure __read_mostly = 100;
+ EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
+@@ -175,6 +176,7 @@ static struct dentry *d_kill(struct dentry *dentry)
+ 	dentry_stat.nr_dentry--;	/* For d_free, below */
+ 	/*drops the locks, at that point nobody can reach this dentry */
+ 	dentry_iput(dentry);
++	d_free_unions(dentry);
+ 	if (IS_ROOT(dentry))
+ 		parent = NULL;
+ 	else
+@@ -696,6 +698,7 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
+ 					iput(inode);
+ 			}
+ 
++			d_free_unions(dentry);
+ 			d_free(dentry);
+ 
+ 			/* finished when we fall off the top of the tree,
+@@ -1535,6 +1538,7 @@ void d_delete(struct dentry * dentry)
+ 	isdir = S_ISDIR(dentry->d_inode->i_mode);
+ 	if (atomic_read(&dentry->d_count) == 1) {
+ 		dentry_iput(dentry);
++		d_free_unions(dentry);
+ 		fsnotify_nameremove(dentry, isdir);
+ 		return;
+ 	}
+@@ -1545,6 +1549,13 @@ void d_delete(struct dentry * dentry)
+ 	spin_unlock(&dentry->d_lock);
+ 	spin_unlock(&dcache_lock);
+ 
++	/*
++	 * Remove any associated unions.  While someone still has this
++	 * directory open (ref count > 0), we could not have deleted
++	 * it unless it was empty, and therefore has no references to
++	 * directories below it.  So we don't need the unions.
++	 */
++	d_free_unions(dentry);
+ 	fsnotify_nameremove(dentry, isdir);
  }
+ EXPORT_SYMBOL(d_delete);
 -- 
 1.6.3.3
 
