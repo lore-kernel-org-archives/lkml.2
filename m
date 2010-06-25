@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab0FYMJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 08:09:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52999 "EHLO song.cn.fujitsu.com"
+	id S1755029Ab0FYMJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 08:09:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57945 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753229Ab0FYMJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 08:09:33 -0400
-Message-ID: <4C249B93.9040907@cn.fujitsu.com>
-Date: Fri, 25 Jun 2010 20:05:39 +0800
+	id S1752667Ab0FYMJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 08:09:53 -0400
+Message-ID: <4C249BAD.6000609@cn.fujitsu.com>
+Date: Fri, 25 Jun 2010 20:06:05 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
        KVM list <kvm@vger.kernel.org>
-Subject: [PATCH v2 2/10] KVM: MMU: fix conflict access permissions in direct
- sp
+Subject: [PATCH v2 3/10] KVM: MMU: fix direct sp's access corruptted
 References: <4C2498EC.2010006@cn.fujitsu.com>
 In-Reply-To: <4C2498EC.2010006@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -24,74 +23,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In no-direct mapping, we mark sp is 'direct' when we mapping the
-guest's larger page, but its access is encoded form upper page-struct
-entire not include the last mapping, it will cause access conflict.
+Consider using small page to fit guest's large page mapping:
 
-For example, have this mapping:
-        [W] 
-      / PDE1 -> |---|
-  P[W]          |   | LPA
-      \ PDE2 -> |---|
-        [R]
+If the mapping is writable but the dirty flag is not set, we will find
+the read-only direct sp and setup the mapping, then if the write #PF
+occur, we will mark this mapping writable in the read-only direct sp,
+now, other real read-only mapping will happily write it without #PF.
 
-P have two children, PDE1 and PDE2, both PDE1 and PDE2 mapping the
-same lage page(LPA). The P's access is WR, PDE1's access is WR,
-PDE2's access is RO(just consider read-write permissions here)
+It may hurt guest's COW
 
-When guest access PDE1, we will create a direct sp for LPA, the sp's
-access is from P, is W, then we will mark the ptes is W in this sp.
-
-Then, guest access PDE2, we will find LPA's shadow page, is the same as
-PDE's, and mark the ptes is RO.
-
-So, if guest access PDE1, the incorrect #PF is occured.
-
-Fixed by encode the last mapping access into direct shadow page
-
-And, it also cleanup the code that directly get the last level's dirty flag
+Fixed by re-install the mapping when write #PF occur.
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/paging_tmpl.h |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ arch/x86/kvm/mmu.c         |    3 ++-
+ arch/x86/kvm/paging_tmpl.h |   18 ++++++++++++++++++
+ 2 files changed, 20 insertions(+), 1 deletions(-)
 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 556a798..0412ba4 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -153,7 +153,8 @@ module_param(oos_shadow, bool, 0644);
+ #define CREATE_TRACE_POINTS
+ #include "mmutrace.h"
+ 
+-#define SPTE_HOST_WRITEABLE (1ULL << PT_FIRST_AVAIL_BITS_SHIFT)
++#define SPTE_HOST_WRITEABLE	(1ULL << PT_FIRST_AVAIL_BITS_SHIFT)
++#define SPTE_NO_DIRTY		(2ULL << PT_FIRST_AVAIL_BITS_SHIFT)
+ 
+ #define SHADOW_PT_INDEX(addr, level) PT64_INDEX(addr, level)
+ 
 diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 37c26cb..e46eb8a 100644
+index e46eb8a..fdba751 100644
 --- a/arch/x86/kvm/paging_tmpl.h
 +++ b/arch/x86/kvm/paging_tmpl.h
-@@ -306,6 +306,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 	gfn_t table_gfn;
- 	int r;
- 	int level;
-+	bool dirty = is_dirty_gpte(gw->ptes[gw->level-1]);
- 	pt_element_t curr_pte;
- 	struct kvm_shadow_walk_iterator iterator;
- 
-@@ -319,8 +320,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 			mmu_set_spte(vcpu, sptep, access,
- 				     gw->pte_access & access,
- 				     user_fault, write_fault,
--				     is_dirty_gpte(gw->ptes[gw->level-1]),
--				     ptwrite, level,
-+				     dirty, ptwrite, level,
- 				     gw->gfn, pfn, false, true);
+@@ -325,6 +325,20 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
  			break;
  		}
-@@ -335,10 +335,11 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 
++		if (*sptep & SPTE_NO_DIRTY) {
++			struct kvm_mmu_page *child;
++
++			WARN_ON(level !=  gw->level);
++			WARN_ON(!is_shadow_present_pte(*sptep));
++			if (dirty) {
++				child = page_header(*sptep &
++						      PT64_BASE_ADDR_MASK);
++				mmu_page_remove_parent_pte(child, sptep);
++				__set_spte(sptep, shadow_trap_nonpresent_pte);
++				kvm_flush_remote_tlbs(vcpu->kvm);
++			}
++		}
++
+ 		if (is_shadow_present_pte(*sptep) && !is_large_pte(*sptep))
+ 			continue;
+ 
+@@ -365,6 +379,10 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 			}
  		}
  
- 		if (level <= gw->level) {
--			int delta = level - gw->level + 1;
- 			direct = 1;
--			if (!is_dirty_gpte(gw->ptes[level - delta]))
-+			if (!dirty)
- 				access &= ~ACC_WRITE_MASK;
-+			access &= gw->pte_access;
++		if (level == gw->level && !dirty &&
++		      access & gw->pte_access & ACC_WRITE_MASK)
++			spte |= SPTE_NO_DIRTY;
 +
- 			/*
- 			 * It is a large guest pages backed by small host pages,
- 			 * So we set @direct(@sp->role.direct)=1, and set
+ 		spte = __pa(sp->spt)
+ 			| PT_PRESENT_MASK | PT_ACCESSED_MASK
+ 			| PT_WRITABLE_MASK | PT_USER_MASK;
 -- 
 1.6.1.2
 
