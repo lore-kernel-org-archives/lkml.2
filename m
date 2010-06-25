@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab0FYL6x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 07:58:53 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42375 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab0FYL6w convert rfc822-to-8bit (ORCPT
+	id S1753229Ab0FYMDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 08:03:40 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:51704 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab0FYMDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 07:58:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eaLx4xnwQPhS2mIxBIKF8w9pdFCr6AR4oMRrRR/8MtTF6prEVjpIw1pnGLX24XiaDt
-         lAJjPByOx6yzZEd5KPPb8e25MbJL38wjDJAJS/EBa3yqILmBIABLoc7vowvL7VgNxYgw
-         HOn/37dIsPVQxkJgC9wS854h684Lv/fkZjGfA=
+	Fri, 25 Jun 2010 08:03:39 -0400
+X-AuditID: b753bd60-a8003ba000007d15-d3-4c249b186537
+Message-ID: <4C249B16.2090209@hitachi.com>
+Date: Fri, 25 Jun 2010 21:03:34 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <1277458245.32034.96.camel@twins>
-References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
-	<1277361352.1875.838.camel@laptop>
-	<1277431963.3947.140.camel@yhuang-dev.sh.intel.com>
-	<1277452110.22715.2116.camel@twins>
-	<1277457439.3947.184.camel@yhuang-dev.sh.intel.com>
-	<1277458245.32034.96.camel@twins>
-Date: Fri, 25 Jun 2010 19:58:49 +0800
-Message-ID: <AANLkTimiq2K6v_OhCajiktj6HzqikMZRuc8p4PK6SPjq@mail.gmail.com>
-Subject: Re: [RFC][PATCH] irq_work
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       hpa@zytor.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jamie Iles <jamie.iles@picochip.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] perf tools: allow cross compiling with DWARF support
+References: <1277462318-6516-1-git-send-email-jamie.iles@picochip.com> <4C249027.1060304@hitachi.com> <20100625114150.GE4510@wear.picochip.com>
+In-Reply-To: <20100625114150.GE4510@wear.picochip.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 25, 2010 at 5:30 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > You can always miss an NMI since it can always happen before the
->> > callback gets done, and allowing another enqueue before the callback is
->> > complete is asking for trouble.
->>
->> If we move entry->next = NULL before entry->func(entry), we will not
->> miss the NMI. Can you show how to miss it in this way?
->
-> <NMI>
->  ...
->  irq_work_queue(&my_work, func);
->  ...
-> <EOI>
-> <IPI>
->  irq_work_run()
->
->  <NMI>
->    irq_work_queue(&my_work, func); <FAIL>
->  <EOI>
->
->   my_func.next = NULL;
+Jamie Iles wrote:
+> On Fri, Jun 25, 2010 at 08:16:55PM +0900, Masami Hiramatsu wrote:
+>> Jamie Iles wrote:
+>>> The path to elfutils was previously hardcoded as /usr/include/elfutils
+>>> which does not work with cross compilers. If CROSS_COMPILE is set, try
+>>> to set an include path from GCC's sysroot if GCC was built with sysroot
+>>> support, if sysroot support isn't enabled, don't specify a path for
+>>> elfutils allowing the user to set it with EXTRA_CFLAGS.
+>> Hmm, I'm not so sure about cross compiling. I just thought
+>> if there is no sysroot support, we should warn user instead of
+>> just failing to find elfutils.
+> Is that something that you really need to warn the user about? If they have a
+> compiler without sysroot support they can still cross compile using
+> EXTRA_CFLAGS and the warning would be needless. There isn't a real requirement
+> for sysroot here, just a path to the elfutils headers.
 
-entry->func() should follows here. You can collect all information
-(maybe some data in a ring buffer) from NMI handler in entry->func().
-But if you place entry->NULL after entry->func(), you will really lose
-a NMI notification and the information from NMI handler.
+It seems that $ELFUTILS_INCLUDE become "" without sysroot support.
+In that case, I guess that user have to set the elfutils header
+path to  EXTRA_CFLAGS and, make will just show "No libdw.h found
+or old libdw.h found ..." message. (I just guess, not so familier
+with cross compile...)
 
-> <EOI>
+So, I just like to suggest adding a message like as;
+"No sysroot support. Please set elfutils include path in EXTRA_CFLAGS."
+Doesn't it make easier to find a problem?
 
-> Really not that hard. Now imagine wrapping irq_work in some state and
-> you reusing the state while the function is still running..
+Other parts are OK for me.
 
-So I suggest to use another flag to signify the function is running to
-distinguish.
-
-Best Regards,
-Huang Ying
+Thank you,
