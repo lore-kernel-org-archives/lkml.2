@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409Ab0FYGNF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 02:13:05 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:39916 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab0FYGNC convert rfc822-to-8bit (ORCPT
+	id S1751512Ab0FYGQx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 02:16:53 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34485 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab0FYGQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 02:13:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=IEgsfKKlF4kLcubLLgPVlHU6pJMCW/dnlyXz7fDXztLhvFTGl//DwJUKFMyIu0QR7B
-         z95pQIUyWML/fiQzaBt/Ul5XBRn6Nee/iU5d1CMIa+CF4w8op3nuCRW1GZrSqjo+XQFH
-         scKg0yrcDl+9VnnWdW3M+Q8ZB1dEByn1nto6Y=
+	Fri, 25 Jun 2010 02:16:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Hendry <andrew.hendry@gmail.com>
+Subject: Re: 2.6.35-rc1 system oom, many processes killed but memory not free
+Cc: kosaki.motohiro@jp.fujitsu.com,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTiniN949ew8asVksRw6EEBlcs2yy2pZ7Eir33oiy@mail.gmail.com>
+References: <20100625133542.8047.A69D9226@jp.fujitsu.com> <AANLkTiniN949ew8asVksRw6EEBlcs2yy2pZ7Eir33oiy@mail.gmail.com>
+Message-Id: <20100625151248.804A.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikUkrAyZiuG_alemWfR6pbcoKrCtL6rG9KBLRzb@mail.gmail.com>
-References: <AANLkTikUkrAyZiuG_alemWfR6pbcoKrCtL6rG9KBLRzb@mail.gmail.com>
-From: Shihping <c64683@gmail.com>
-Date: Fri, 25 Jun 2010 14:12:40 +0800
-Message-ID: <AANLkTikUCtqrjkqALYqtZLEQFf3Q7MI_nzJlXsr5wjzn@mail.gmail.com>
-Subject: [KERNEL-2.6.34] load dmatest got "__dma_request_channel (fail)" dmesg
-To: linux kernel mail <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 25 Jun 2010 15:16:48 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> Yes I made a mistake setting up ramdisk too big, but not sure why it
+> allowed me to set it up like that.
 
-I try to load dmatest module in linux-2.6.34 on Ubuntu x86_64 Server system
-but when I loaded dmatest module, I got "__dma_request_channel:fall
-((null))"  message.
-It seems unable to allocate DMA channel.
+Sorry, I don't know the reason. 
 
-But I found /proc/dma was registed to cascade mode like
-# cat /proc/dma
- 4:cascade
+> I think after ramdisk used all the memory, even after unmounting then
+> other processes still cannot use it.
+> oom killer gets very aggressive but cannot fix problem.
+> 
+> I have updated to rc3 and will test again on weekend. I will turn on
+> mem leak checker, is there anything else i should configure?
 
-So I thought DMA channel should be registed by DMA controller in ICH
-successfully. right?
+Probably nothing.
 
-My plaform use Intel E5100(San Clemente) and ICH9R chipset,there were
-2 DMA controller was embedded in ICH9R chip.
-Is dmatest module not work with ICH9R ? or some other reason cause this?
-
-Sorry about my poor English, and thanks for your answers and responses
+Thanks.
 
 
-Shihping Chen
