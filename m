@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab0FYA5q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 20:57:46 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44894 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab0FYA5p (ORCPT
+	id S1754513Ab0FYA6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 20:58:15 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49054 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681Ab0FYA6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 20:57:45 -0400
+	Thu, 24 Jun 2010 20:58:14 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C23FF0E.4020908@jp.fujitsu.com>
-Date: Fri, 25 Jun 2010 09:57:50 +0900
+Message-ID: <4C23FF28.4040404@jp.fujitsu.com>
+Date: Fri, 25 Jun 2010 09:58:16 +0900
 From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
 MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org
 CC: kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com
-Subject: [RFC PATCH v2 1/5] irq: add tracepoint to softirq_raise
+Subject: [RFC PATCH v2 2/5] napi: convert trace_napi_poll to TRACE_EVENT
 References: <4C2312A8.9060903@jp.fujitsu.com>
 In-Reply-To: <4C2312A8.9060903@jp.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -24,112 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a tracepoint to raising of softirq.
-This is useful if you want to detect which hard interrupt raise softirq
-and lets you know a time between raising softirq and performing softirq.
-Combinating with other tracepoint, it lets us know a process of packets
-(See patch 0/5).
+This patch converts trace_napi_poll from DECLARE_EVENT to TRACE_EVENT.
+This lets you know how long napi_poll takes.
 
-          <idle>-0     [001] 241229.957184: softirq_raise: vec=3 [action=NET_RX]
-          <idle>-0     [000] 241229.993399: softirq_raise: vec=1 [action=TIMER]
-          <idle>-0     [000] 241229.993400: softirq_raise: vec=9 [action=RCU]
+          <idle>-0     [001] 241302.750777: napi_poll: napi poll on napi struct f6acc480 for device eth3
+          <idle>-0     [000] 241302.852389: napi_poll: napi poll on napi struct f5d0d70c for device eth1
+          <idle>-0     [000] 241302.852389: napi_poll: napi poll on napi struct f5d0d20c for device eth1
 
-This is a same patch Lai Jiangshan submitted.
-http://marc.info/?l=linux-kernel&m=126026122728732&w=2
+This is a same patch Neil Horman submitted.
+http://marc.info/?l=linux-kernel&m=125978157926853&w=2
 
 Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
 ---
- include/linux/interrupt.h  |    8 +++++++-
- include/trace/events/irq.h |   34 +++++++++++++++++++++++++++++++---
- 2 files changed, 38 insertions(+), 4 deletions(-)
+ include/trace/events/napi.h |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index c233113..1cb5726 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -18,6 +18,7 @@
- #include <asm/atomic.h>
- #include <asm/ptrace.h>
- #include <asm/system.h>
-+#include <trace/events/irq.h>
+diff --git a/include/trace/events/napi.h b/include/trace/events/napi.h
+index 188deca..512a057 100644
+--- a/include/trace/events/napi.h
++++ b/include/trace/events/napi.h
+@@ -6,10 +6,29 @@
  
- /*
-  * These correspond to the IORESOURCE_IRQ_* defines in
-@@ -402,7 +403,12 @@ asmlinkage void do_softirq(void);
- asmlinkage void __do_softirq(void);
- extern void open_softirq(int nr, void (*action)(struct softirq_action *));
- extern void softirq_init(void);
--#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
-+static inline void __raise_softirq_irqoff(unsigned int nr)
-+{
-+	trace_softirq_raise(nr);
-+	or_softirq_pending(1UL << nr);
-+}
-+
- extern void raise_softirq_irqoff(unsigned int nr);
- extern void raise_softirq(unsigned int nr);
- extern void wakeup_softirqd(void);
-diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-index 0e4cfb6..7cb7435 100644
---- a/include/trace/events/irq.h
-+++ b/include/trace/events/irq.h
-@@ -5,7 +5,9 @@
- #define _TRACE_IRQ_H
- 
+ #include <linux/netdevice.h>
  #include <linux/tracepoint.h>
--#include <linux/interrupt.h>
++#include <linux/ftrace.h>
 +
-+struct irqaction;
-+struct softirq_action;
++#define NO_DEV "(no_device)"
++
++TRACE_EVENT(napi_poll,
  
- #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
- #define show_softirq_name(val)				\
-@@ -82,6 +84,32 @@ TRACE_EVENT(irq_handler_exit,
- 		  __entry->irq, __entry->ret ? "handled" : "unhandled")
- );
- 
-+/**
-+ * softirq_raise - called immediately when a softirq is raised
-+ * @nr: softirq vector number
-+ *
-+ * Tracepoint for tracing when softirq action is raised.
-+ * Also, when used in combination with the softirq_entry tracepoint
-+ * we can determine the softirq raise latency.
-+ */
-+TRACE_EVENT(softirq_raise,
+-DECLARE_TRACE(napi_poll,
+ 	TP_PROTO(struct napi_struct *napi),
+-	TP_ARGS(napi));
 +
-+	TP_PROTO(unsigned int nr),
-+
-+	TP_ARGS(nr),
++	TP_ARGS(napi),
 +
 +	TP_STRUCT__entry(
-+		__field(	unsigned int,	vec	)
++		__field(	struct napi_struct *,	napi)
++		__string(	dev_name, napi->dev ? napi->dev->name : NO_DEV)
 +	),
 +
 +	TP_fast_assign(
-+		__entry->vec	= nr;
++		__entry->napi = napi;
++		__assign_str(dev_name, napi->dev ? napi->dev->name : NO_DEV);
 +	),
 +
-+	TP_printk("vec=%d [action=%s]", __entry->vec,
-+		show_softirq_name(__entry->vec))
++	TP_printk("napi poll on napi struct %p for device %s",
++		__entry->napi, __get_str(dev_name))
 +);
-+
- DECLARE_EVENT_CLASS(softirq,
  
- 	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
-@@ -89,11 +117,11 @@ DECLARE_EVENT_CLASS(softirq,
- 	TP_ARGS(h, vec),
+ #endif /* _TRACE_NAPI_H_ */
  
- 	TP_STRUCT__entry(
--		__field(	int,	vec			)
-+		__field(	unsigned int,	vec	)
- 	),
- 
- 	TP_fast_assign(
--		__entry->vec = (int)(h - vec);
-+		__entry->vec = (unsigned int)(h - vec);
- 	),
- 
- 	TP_printk("vec=%d [action=%s]", __entry->vec,
-
 
