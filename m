@@ -1,83 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab0FYTIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:08:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25355 "EHLO mx1.redhat.com"
+	id S932555Ab0FYTIp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:08:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7448 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932480Ab0FYTHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932483Ab0FYTHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jun 2010 15:07:25 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 34/38] union-mount: Implement union-aware chmod()/fchmodat()
-Date: Fri, 25 Jun 2010 12:05:24 -0700
-Message-Id: <1277492728-11446-35-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 30/38] union-mount: Implement union-aware rename()
+Date: Fri, 25 Jun 2010 12:05:20 -0700
+Message-Id: <1277492728-11446-31-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- fs/open.c |   25 +++++++++++++++++++++----
- 1 files changed, 21 insertions(+), 4 deletions(-)
+On rename() of a file on union mount, copyup and whiteout the source
+file.  Both are done under the rename mutex.  I believe this is
+actually atomic.
 
-diff --git a/fs/open.c b/fs/open.c
-index 3c1ae55..336fe01 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -669,18 +669,32 @@ out:
- SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, mode_t, mode)
+XXX - May not need to do file copyup under the lock.
+XXX - Convert newly empty unioned dirs to not-unioned
+---
+ fs/namei.c |   76 +++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 70 insertions(+), 6 deletions(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index 399cb65..6662dda 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3158,6 +3158,7 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
  {
- 	struct path path;
-+	struct nameidata nd;
-+	struct vfsmount *mnt;
- 	struct inode *inode;
-+	char *tmp;
- 	int error;
- 	struct iattr newattrs;
+ 	struct dentry *old_dir, *new_dir;
+ 	struct path old, new;
++	struct path to_whiteout = {NULL, NULL};
+ 	struct dentry *trap;
+ 	struct nameidata oldnd, newnd;
+ 	char *from;
+@@ -3173,13 +3174,9 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 		goto exit1;
  
--	error = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
-+	error = user_path_nd(dfd, filename, LOOKUP_FOLLOW, &nd,
-+				     &path, &tmp);
+ 	error = -EXDEV;
++	/* Union mounts will pass below test - dirs always on topmost */
+ 	if (oldnd.path.mnt != newnd.path.mnt)
+ 		goto exit2;
+-	/* Rename on union mounts not implemented yet */
+-	/* XXX much harsher check than necessary - can do some renames */
+-	if (IS_DIR_UNIONED(oldnd.path.dentry) ||
+-	    IS_DIR_UNIONED(newnd.path.dentry))
+-		goto exit2;
+ 	old_dir = oldnd.path.dentry;
+ 	error = -EBUSY;
+ 	if (oldnd.last_type != LAST_NORM)
+@@ -3202,7 +3199,7 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	error = -ENOENT;
+ 	if (!old.dentry->d_inode)
+ 		goto exit4;
+-	/* unless the source is a directory trailing slashes give -ENOTDIR */
++	/* unless the source is a directory, trailing slashes give -ENOTDIR */
+ 	if (!S_ISDIR(old.dentry->d_inode->i_mode)) {
+ 		error = -ENOTDIR;
+ 		if (oldnd.last.name[oldnd.last.len])
+@@ -3214,6 +3211,11 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	error = -EINVAL;
+ 	if (old.dentry == trap)
+ 		goto exit4;
++	error = -EXDEV;
++	/* Can't rename a directory from a lower layer */
++	if (IS_DIR_UNIONED(oldnd.path.dentry) &&
++	    IS_DIR_UNIONED(old.dentry))
++		goto exit4;
+ 	error = lookup_hash(&newnd, &newnd.last, &new);
  	if (error)
- 		goto out;
--	inode = path.dentry->d_inode;
+ 		goto exit4;
+@@ -3221,6 +3223,48 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	error = -ENOTEMPTY;
+ 	if (new.dentry == trap)
+ 		goto exit5;
++	error = -EXDEV;
++	/* Can't rename over directories on the lower layer */
++	if (IS_DIR_UNIONED(newnd.path.dentry) &&
++	    IS_DIR_UNIONED(new.dentry))
++		goto exit5;
++
++	/* If source is on lower layer, copy up */
++	if (IS_DIR_UNIONED(oldnd.path.dentry) &&
++	    (old.mnt != oldnd.path.mnt)) {
++		/* Save the lower path to avoid a second lookup for whiteout */
++		to_whiteout.mnt = mntget(old.mnt);
++		to_whiteout.dentry = dget(old.dentry);
++		error = __union_copyup(&oldnd, &old);
++		if (error)
++			goto exit5;
++	}
++
++	/* If target is on lower layer, get negative dentry for topmost */
++	if (IS_DIR_UNIONED(newnd.path.dentry) &&
++	    (new.mnt != newnd.path.mnt)) {
++		struct dentry *dentry;
++		/*
++		 * At this point, source and target are both files,
++		 * the source is on the topmost layer, and the target
++		 * is on a lower layer.  We want the target dentry to
++		 * disappear from the namespace, and give vfs_rename a
++		 * negative dentry from the topmost layer.
++		 */
++		/* We already did lookup once, no need to check perm */
++		dentry = __lookup_hash(&newnd.last, newnd.path.dentry, &newnd);
++		if (IS_ERR(dentry)) {
++			error = PTR_ERR(dentry);
++			goto exit5;
++		}
++		/* We no longer need the lower target dentry.  It
++		 * definitely should be removed from the hash table */
++		/* XXX what about failure case? */
++		d_delete(new.dentry);
++		mntput(new.mnt);
++		new.mnt = mntget(newnd.path.mnt);
++		new.dentry = dentry;
++	}
  
--	error = mnt_want_write(path.mnt);
-+	if (IS_DIR_UNIONED(nd.path.dentry))
-+		mnt = nd.path.mnt;
-+	else
-+		mnt = path.mnt;
-+
-+	error = mnt_want_write(mnt);
+ 	error = mnt_want_write(oldnd.path.mnt);
  	if (error)
- 		goto dput_and_out;
-+
-+	error = union_copyup(&nd, &path);
+@@ -3231,6 +3275,26 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 		goto exit6;
+ 	error = vfs_rename(old_dir->d_inode, old.dentry,
+ 				   new_dir->d_inode, new.dentry);
 +	if (error)
-+		goto mnt_drop_write_and_out;
++		goto exit6;
++	/* Now whiteout the source */
++	if (IS_DIR_UNIONED(oldnd.path.dentry)) {
++		if (!to_whiteout.dentry) {
++			struct dentry *dentry;
++			/* We could have exposed a lower level entry */
++			dentry = __lookup_hash(&oldnd.last, oldnd.path.dentry, &oldnd);
++			if (IS_ERR(dentry)) {
++				error = PTR_ERR(dentry);
++				goto exit6;
++			}
++			to_whiteout.dentry = dentry;
++			to_whiteout.mnt = mntget(oldnd.path.mnt);
++		}
 +
-+	inode = path.dentry->d_inode;
- 	mutex_lock(&inode->i_mutex);
- 	error = security_path_chmod(path.dentry, path.mnt, mode);
- 	if (error)
-@@ -692,9 +706,12 @@ SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, mode_t, mode)
- 	error = notify_change(path.dentry, &newattrs);
- out_unlock:
- 	mutex_unlock(&inode->i_mutex);
--	mnt_drop_write(path.mnt);
-+mnt_drop_write_and_out:
-+	mnt_drop_write(mnt);
- dput_and_out:
- 	path_put(&path);
-+	path_put(&nd.path);
-+	putname(tmp);
- out:
- 	return error;
- }
++		if (to_whiteout.dentry->d_inode)
++			error = do_whiteout(&oldnd, &to_whiteout, 0);
++		path_put(&to_whiteout);
++	}
+ exit6:
+ 	mnt_drop_write(oldnd.path.mnt);
+ exit5:
 -- 
 1.6.3.3
 
