@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab0FYMPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 08:15:50 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55979 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754504Ab0FYMPr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 08:15:47 -0400
-References: <1277393751.6703.16.camel@sw-eng-lt-dc-vm2> <1277394947.3100.217.camel@odin> (sfid-20100624_165552_200938_9BA5EDE2)
-Message-Id: <130A207E-2DE7-4DD2-B9EE-1CB265879B8B@opensource.wolfsonmicro.com>
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-In-Reply-To: <1277394947.3100.217.camel@odin> (sfid-20100624_165552_200938_9BA5EDE2)
+	id S1754263Ab0FYMXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 08:23:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753044Ab0FYMXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 08:23:15 -0400
+Date: Fri, 25 Jun 2010 14:21:18 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH] pid_ns: Fix proc_flush_task() accessing freed
+	proc_mnt
+Message-ID: <20100625122118.GA5341@redhat.com>
+References: <20100623203652.GA25298@redhat.com> <1277399329-18087-1-git-send-email-louis.rilling@kerlabs.com> <20100624191843.GA14205@redhat.com> <20100625102303.GG3773@hawkmoon.kerlabs.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0 (iPad Mail 7B367)
-Subject: Re: [PATCH 3/11] device driver for DA9052
-Date: Thu, 24 Jun 2010 17:39:22 +0100
-Cc: "dd.diasemi@gmail.com" <dd.diasemi@gmail.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Samuel Ortiz <sameo@linux.intel.com>
-X-Mailer: iPad Mail (7B367)
+Content-Disposition: inline
+In-Reply-To: <20100625102303.GG3773@hawkmoon.kerlabs.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 Jun 2010, at 16:55, Liam Girdwood <lrg@slimlogic.co.uk> wrote:
+On 06/25, Louis Rilling wrote:
+>
+> On 24/06/10 21:18 +0200, Oleg Nesterov wrote:
+> >
+> > and this adds the extra code to alloc/free pidmap.
+>
+> Hopefully this is not much in alloc_pidmap() since we can expect that nr_pids
+> and last_pid are in the same cache line.
 
-> On Thu, 2010-06-24 at 17:35 +0200, dd diasemi wrote:
->> Initial submission of power REGULATOR control module of the device
->> driver for DA9052 power management device from Dialog Semiconductor.
->> 
->> Linux Kernel Version: 2.6.34
->> 
->> Signed-off-by: D. Chen <dchen@diasemi.com>
-> 
-> It looks like your mailer has screwed up all the formatting. Can you
-> resend and please also CC Mark and Samuel.
+This also adds atomic op. But I mostly dislike the pid-ns-specific
+complications itself (including the mount-after-the-first-alloc_pid
+dependancy), not the minor perfomance penalty.
 
-Please do try to remember the CCs - you've been reminded several
-times about this aspect of the patch submission process. Neglecting
-to CC people is only going to slow down the review process.
+But see below...
 
-> 
-> Thanks
-> 
-> Liam
-> -- 
-> Freelance Developer, SlimLogic Ltd
-> ASoC and Voltage Regulator Maintainer.
-> http://www.slimlogic.co.uk
-> 
+> > And, this subjective, yes, but it looks a bit strange that upid->nr
+> > has a reference to proc_mnt.
+>
+> I presume that you wanted to say upid->ns.
+
+I meant ns->nr_pids ;)
+
+> This last point is what made me worry about your approach so far, although I did
+> not take time to spot the precise issues. Unfortunately I don't see what the
+> checks you added in proc_self_readlink(), proc_self_follow_link() and
+> proc_pid_lookup() buy. What does prevent destroy_pid_namespace() from running
+> concurrently? Maybe RCU could help in those cases?
+
+Very good point. And the strong argument against this approach.
+
+> Moreover, I think that proc_pid_readdir() should get some check too.
+
+Well, it checks ->reaper != NULL, that is why I don't verify ns.
+
+But yes, we have the same race (races) you pointed out here.
+
+>     void pid_ns_release_proc(struct pid_namespace *ns)
+>     {
+> 	struct inode *root_inode;
+>
+> 	if (ns->proc_mnt) {
+> 		root_inode = ns->proc_mnt->mnt_sb->s_root->d_inode;
+>
+> 		mutex_lock(&root_inode->i_mutex);
+> 		ns->proc_mnt->mnt_sb->s_fs_info = NULL;
+> 		PROC_I(root_inode)->pid = NULL;
+> 		mutex_unlock(&root_inode->i_mutex);
+>
+> 		mntput(ns->proc_mnt);
+> 	}
+>     }
+>
+>   This would also solve the issue for proc_pid_lookup() btw.
+
+Looks like you are right, but this doesn't help proc_self_readlink().
+
+I think we can fix all these problems, but I no longer think this
+approach can pretend to simplify the code. No, it will make the
+code more complex/ugly and potentially more buggy.
+
+Louis, thank you very much.
+
+Oleg.
+
