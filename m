@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab0FYNXB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 09:23:01 -0400
-Received: from 80-190-117-144.ip-home.de ([80.190.117.144]:60214 "EHLO
-	bu3sch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821Ab0FYNXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 09:23:00 -0400
-Message-ID: <4C24AD94.8030101@bu3sch.de>
-Date: Fri, 25 Jun 2010 15:22:28 +0200
-From: =?UTF-8?B?TWljaGFlbCBCw7xzY2g=?= <mb@bu3sch.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux ppc; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
+	id S1756032Ab0FYN0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 09:26:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42455 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755863Ab0FYN0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 09:26:37 -0400
+Date: Fri, 25 Jun 2010 13:25:58 GMT
+From: tip-bot for Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
+       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+       davem@davemloft.net, fweisbec@gmail.com,
+       nobuhiro.iwamatsu.yj@renesas.com, tglx@linutronix.de,
+       sfr@canb.auug.org.au, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+       davem@davemloft.net, fweisbec@gmail.com,
+       nobuhiro.iwamatsu.yj@renesas.com, tglx@linutronix.de,
+       sfr@canb.auug.org.au, mingo@elte.hu
+In-Reply-To: <AANLkTinKKFKEBQrZ3Hkj-XCaMwaTqulb-XnFzqEYiFRr@mail.gmail.com>
+References: <AANLkTinKKFKEBQrZ3Hkj-XCaMwaTqulb-XnFzqEYiFRr@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Fix argument of perf_arch_fetch_caller_regs
+Message-ID: <tip-5cfaf214856eb934759ae500a0b812dd06a00bd9@git.kernel.org>
+Git-Commit-ID: 5cfaf214856eb934759ae500a0b812dd06a00bd9
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>
-CC: Joe Perches <joe@perches.com>, "John W. Linville" <linville@tuxdriver.com>,
-       Stefano Brivio <stefano.brivio@polimi.it>,
-       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, zajec5@gmail.com,
-       =?UTF-8?B?R8OhYm9yIFN0ZWY=?= =?UTF-8?B?YW5paw==?= 
-	<netrolller.3d@gmail.com>
-Subject: Re: [PATCH net-next] MAINTAINERS: b43 updates
-References: <cover.1276988387.git.joe@perches.com>	 <20100624185339.GC2368@tuxdriver.com>	 <1277408432.1654.80.camel@Joe-Laptop.home> <4C23B877.4060209@lwfinger.net>	 <1277423102.1654.107.camel@Joe-Laptop.home> <4C23EFDE.3000702@lwfinger.net> <1277423829.1654.111.camel@Joe-Laptop.home> <4C241770.6030701@lwfinger.net> (sfid-20100625_044106_571980_FFFFFFFFAF5EC8B1)
-In-Reply-To: <4C241770.6030701@lwfinger.net> (sfid-20100625_044106_571980_FFFFFFFFAF5EC8B1)
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 25 Jun 2010 13:25:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2010 04:41 AM, Larry Finger wrote:
-> On 06/24/2010 06:57 PM, Joe Perches wrote:
->> On Thu, 2010-06-24 at 18:53 -0500, Larry Finger wrote:
->>> I never said that b43 is unmaintained. It is definitely getting much
->>> more than "odd fixes".
->>
->> If Stefano isn't maintaining it, who is?
->
-> We are working on that.
+Commit-ID:  5cfaf214856eb934759ae500a0b812dd06a00bd9
+Gitweb:     http://git.kernel.org/tip/5cfaf214856eb934759ae500a0b812dd06a00bd9
+Author:     Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+AuthorDate: Wed, 23 Jun 2010 09:17:53 +0900
+Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+CommitDate: Thu, 24 Jun 2010 23:34:58 +0200
 
-Well, there are some developers working on the driver and there
-are some developers that do not actively work on the driver but used
-to work on it in the past (that includes me). Neither of them is an
-official maintainer (yet). I used to be a maintainer, but I dropped
-my official MAINTAINERS file entry, because I do not actively work
-on b43 anymore. However, I still read the patches going into the driver
-and comment on them as appropriate.
-So well. I think b43 does not have a maintainer. But it's
-not unmaintained. There are lots of people working on it. I don't think
-an official maintainer is needed. Patches are sent directly to John
-(the wireless maintainer) and the b43 development crew reviews them.
-There's no problem with that.
+perf: Fix argument of perf_arch_fetch_caller_regs
 
--- 
-Greetings Michael.
+"struct regs" was set to argument of perf_arch_fetch_caller_regs
+off-case. It should be "struct pt_regs".
+
+This fixes various build errors in archs that have CONFIG_PERF_EVENTS=y
+but no overriden implementation of perf_arch_fetch_caller_regs.
+
+cc1: warnings being treated as errors
+In file included from include/linux/ftrace_event.h:8,
+                 from include/trace/syscall.h:6,
+                 from include/linux/syscalls.h:75,
+                 from arch/sh/kernel/sys_sh32.c:9:
+include/linux/perf_event.h:937: error: 'struct regs' declared inside parameter list
+include/linux/perf_event.h:937: error: its scope is only this definition or declaration, which is probably not what you want
+include/linux/perf_event.h: In function 'perf_fetch_caller_regs':
+include/linux/perf_event.h:952: error: passing argument 1 of 'perf_arch_fetch_caller_regs' from incompatible pointer type
+
+Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+LKML-Reference: <AANLkTinKKFKEBQrZ3Hkj-XCaMwaTqulb-XnFzqEYiFRr@mail.gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ include/linux/perf_event.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 0dd5f8a..937495c 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -936,7 +936,7 @@ extern void __perf_sw_event(u32, u64, int, struct pt_regs *, u64);
+ 
+ #ifndef perf_arch_fetch_caller_regs
+ static inline void
+-perf_arch_fetch_caller_regs(struct regs *regs, unsigned long ip) { }
++perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip) { }
+ #endif
+ 
+ /*
