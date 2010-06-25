@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab0FYDcG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 23:32:06 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:49629 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab0FYDcD (ORCPT
+	id S1754888Ab0FYDcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 23:32:45 -0400
+Received: from fg-out-1718.google.com ([72.14.220.152]:54273 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754708Ab0FYDco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 23:32:03 -0400
-Date: Fri, 25 Jun 2010 04:31:56 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: linux-next: build warning after merge of the drivers-x86 tree
-Message-ID: <20100625033156.GA15720@srcf.ucam.org>
-References: <20100625132545.50e226e3.sfr@canb.auug.org.au>
+	Thu, 24 Jun 2010 23:32:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100625132545.50e226e3.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Thu, 24 Jun 2010 23:32:22 -0400
+Message-ID: <AANLkTilxKwgVu_XdO3UwRtiRo1S9xJJuaeCsA7MyNOVn@mail.gmail.com>
+Subject: New P2020-based board (mpc85xx) gets "Processor 1 is stuck" on 
+	2.6.34, not on 2.6.32
+To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.linuxppc.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 25, 2010 at 01:25:45PM +1000, Stephen Rothwell wrote:
+Hello,
 
-> RAR_REGISTER is also still defined in
-> drivers/staging/rar_register/Kconfig ...  Also, that commit did not move
-> intel_rar_register.c from staging ...
+I'm working on a new board port for a P2020-based board, and I'm
+having problems with my second core not starting up on 2.6.34, even
+though it starts up fine on 2.6.32.
 
-Bother. I'll fix that up.
+In adding various debugs to mpc85xx_kick_cpu(), it looks like the
+virtual address is detected as 0x7ffff280 on both, and it seems to
+ioremap it to the same address.  Furthermore, both of them get the
+"ack" from the other CPU almost immediately (within 1ms).
+Unfortunately, after that the second core fails to rendezvous
+elsewhere in the SMP code and as a result I get "Processor 1 is
+stuck".
 
-Thanks,
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Unfortunately I've had no luck looking through "git log
+v2.6.32..v2.6.34 -- arch/powerpc/" by hand, and there are enough
+mechanical merge conflicts with my patchset to make "bisection" very
+painful (IE: git bisect, git cherry-pick, test, git reset --hard
+HEAD^, repeat)
+
+Any additional suggestions on where to look would be much appreciated.
+
+Cheers,
+Kyle Moffett
