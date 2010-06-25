@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab0FYMJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 08:09:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62176 "EHLO song.cn.fujitsu.com"
+	id S1754905Ab0FYMJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 08:09:36 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52999 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751967Ab0FYMJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 08:09:16 -0400
-Message-ID: <4C249B84.4080703@cn.fujitsu.com>
-Date: Fri, 25 Jun 2010 20:05:24 +0800
+	id S1753229Ab0FYMJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 08:09:33 -0400
+Message-ID: <4C249B93.9040907@cn.fujitsu.com>
+Date: Fri, 25 Jun 2010 20:05:39 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
        KVM list <kvm@vger.kernel.org>
-Subject: [PATCH v2 1/10] KVM: MMU: fix writable sync sp mapping
+Subject: [PATCH v2 2/10] KVM: MMU: fix conflict access permissions in direct
+ sp
+References: <4C2498EC.2010006@cn.fujitsu.com>
+In-Reply-To: <4C2498EC.2010006@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While we sync the unsync sp, we may mapping the spte writable, it's
-dangerous, if one unsync sp's mapping gfn is another unsync page's gfn.
+In no-direct mapping, we mark sp is 'direct' when we mapping the
+guest's larger page, but its access is encoded form upper page-struct
+entire not include the last mapping, it will cause access conflict.
 
-For example:
-have two unsync pages SP1, SP2 and:
+For example, have this mapping:
+        [W] 
+      / PDE1 -> |---|
+  P[W]          |   | LPA
+      \ PDE2 -> |---|
+        [R]
 
-SP1.pte[0] = P
-SP2.gfn's pfn = P
-[SP1.pte[0] = SP2.gfn's pfn]
+P have two children, PDE1 and PDE2, both PDE1 and PDE2 mapping the
+same lage page(LPA). The P's access is WR, PDE1's access is WR,
+PDE2's access is RO(just consider read-write permissions here)
 
-First, we unsync SP2, it will write protect for SP2.gfn since
-SP1.pte[0] is mapping to this page, it will mark read only.
+When guest access PDE1, we will create a direct sp for LPA, the sp's
+access is from P, is W, then we will mark the ptes is W in this sp.
 
-Then, we unsync SP1, SP1.pte[0] may mark to writable.
+Then, guest access PDE2, we will find LPA's shadow page, is the same as
+PDE's, and mark the ptes is RO.
 
-Now, we will write SP2.gfn by SP1.pte[0] mapping
+So, if guest access PDE1, the incorrect #PF is occured.
 
-This bug will corrupt guest's page table, fixed by mark read-only mapping
-if the mapped gfn has shadow page
+Fixed by encode the last mapping access into direct shadow page
+
+And, it also cleanup the code that directly get the last level's dirty flag
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu.c |   14 ++++----------
- 1 files changed, 4 insertions(+), 10 deletions(-)
+ arch/x86/kvm/paging_tmpl.h |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 045a0f9..556a798 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1810,11 +1810,14 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
- 	bool need_unsync = false;
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 37c26cb..e46eb8a 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -306,6 +306,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 	gfn_t table_gfn;
+ 	int r;
+ 	int level;
++	bool dirty = is_dirty_gpte(gw->ptes[gw->level-1]);
+ 	pt_element_t curr_pte;
+ 	struct kvm_shadow_walk_iterator iterator;
  
- 	for_each_gfn_indirect_valid_sp(vcpu->kvm, s, gfn, node) {
-+		if (!can_unsync)
-+			return 1;
-+
- 		if (s->role.level != PT_PAGE_TABLE_LEVEL)
- 			return 1;
- 
- 		if (!need_unsync && !s->unsync) {
--			if (!can_unsync || !oos_shadow)
-+			if (!oos_shadow)
- 				return 1;
- 			need_unsync = true;
+@@ -319,8 +320,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 			mmu_set_spte(vcpu, sptep, access,
+ 				     gw->pte_access & access,
+ 				     user_fault, write_fault,
+-				     is_dirty_gpte(gw->ptes[gw->level-1]),
+-				     ptwrite, level,
++				     dirty, ptwrite, level,
+ 				     gw->gfn, pfn, false, true);
+ 			break;
  		}
-@@ -1877,15 +1880,6 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		if (!tdp_enabled && !(pte_access & ACC_WRITE_MASK))
- 			spte &= ~PT_USER_MASK;
+@@ -335,10 +335,11 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 		}
  
--		/*
--		 * Optimization: for pte sync, if spte was writable the hash
--		 * lookup is unnecessary (and expensive). Write protection
--		 * is responsibility of mmu_get_page / kvm_sync_page.
--		 * Same reasoning can be applied to dirty page accounting.
--		 */
--		if (!can_unsync && is_writable_pte(*sptep))
--			goto set_pte;
--
- 		if (mmu_need_write_protect(vcpu, gfn, can_unsync)) {
- 			pgprintk("%s: found shadow page for %lx, marking ro\n",
- 				 __func__, gfn);
+ 		if (level <= gw->level) {
+-			int delta = level - gw->level + 1;
+ 			direct = 1;
+-			if (!is_dirty_gpte(gw->ptes[level - delta]))
++			if (!dirty)
+ 				access &= ~ACC_WRITE_MASK;
++			access &= gw->pte_access;
++
+ 			/*
+ 			 * It is a large guest pages backed by small host pages,
+ 			 * So we set @direct(@sp->role.direct)=1, and set
 -- 
 1.6.1.2
+
 
 
