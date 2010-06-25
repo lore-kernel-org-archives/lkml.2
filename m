@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab0FYNzG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 09:55:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49229 "EHLO ogre.sisk.pl"
+	id S1755891Ab0FYNzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 09:55:53 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49238 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753404Ab0FYNzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 09:55:04 -0400
+	id S1755703Ab0FYNzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 09:55:51 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 6/9] PM / Hibernate: split snapshot_read_next
-Date: Fri, 25 Jun 2010 15:53:28 +0200
+Subject: Re: [PATCH 7/9] PM / Hibernate: split snapshot_write_next
+Date: Fri, 25 Jun 2010 15:54:24 +0200
 User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
 Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-References: <1275468768-28229-1-git-send-email-jslaby@suse.cz> <1275468768-28229-6-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1275468768-28229-6-git-send-email-jslaby@suse.cz>
+References: <1275468768-28229-1-git-send-email-jslaby@suse.cz> <1275468768-28229-7-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1275468768-28229-7-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006251553.28680.rjw@sisk.pl>
+Message-Id: <201006251554.24587.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wednesday, June 02, 2010, Jiri Slaby wrote:
-> When writing the snapshot, do the initialization and header write in
+> When reading the snapshot, do the initialization and header read in
 > a separate function. This makes the code more readable and lowers
-> complexity of snapshot_read_next.
+> complexity of snapshot_write_next.
 
-This one looks good, but it seems to depend on [3/9] and [4/9].  Does it?
+Same as for [6/9], looks good by itself, but seems to depend on
+[3/9] and [4/9].
 
 > Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 > ---
 >  kernel/power/power.h    |    2 +
->  kernel/power/snapshot.c |   65 ++++++++++++++++++++++++++++++----------------
->  kernel/power/swap.c     |   14 +++-------
->  3 files changed, 48 insertions(+), 33 deletions(-)
+>  kernel/power/snapshot.c |  100 ++++++++++++++++++++++++++++++-----------------
+>  kernel/power/swap.c     |   20 ++++------
+>  3 files changed, 74 insertions(+), 48 deletions(-)
 > 
 > diff --git a/kernel/power/power.h b/kernel/power/power.h
-> index 812b66c..ff3f63f 100644
+> index ff3f63f..6e2e796 100644
 > --- a/kernel/power/power.h
 > +++ b/kernel/power/power.h
 > @@ -171,6 +171,8 @@ struct hibernate_io_ops {
 >  
 >  extern unsigned int snapshot_additional_pages(struct zone *zone);
 >  extern unsigned long snapshot_get_image_size(void);
-> +extern int snapshot_write_init(struct hibernate_io_handle *io_handle,
+> +extern int snapshot_read_init(struct hibernate_io_handle *io_handle,
 > +		struct snapshot_handle *handle);
+>  extern int snapshot_write_init(struct hibernate_io_handle *io_handle,
+>  		struct snapshot_handle *handle);
 >  extern int snapshot_read_next(struct snapshot_handle *handle);
->  extern int snapshot_write_next(struct snapshot_handle *handle);
->  extern void snapshot_write_finalize(struct snapshot_handle *handle);
 > diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-> index 25ce010..4600d15 100644
+> index 4600d15..9cd6931 100644
 > --- a/kernel/power/snapshot.c
 > +++ b/kernel/power/snapshot.c
-> @@ -1598,10 +1598,46 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
+> @@ -2129,10 +2129,54 @@ static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca)
 >  }
 >  
 >  /**
-> + *	snapshot_write_init - initialization before writing the snapshot to
+> + *	snapshot_read_init - initialization before reading the snapshot from
 > + *	a backing storage
 > + *
-> + *	This function *must* be called before snapshot_read_next to initialize
-> + *	@handle and write a header.
+> + *	This function *must* be called before snapshot_write_next to initialize
+> + *	@handle and read header.
 > + *
-> + *	@io_handle: handle used when writing the initial info onto storage
+> + *	@io_handle: io handle used for reading
 > + *	@handle: snapshot handle to init
 > + */
-> +int snapshot_write_init(struct hibernate_io_handle *io_handle,
+> +int snapshot_read_init(struct hibernate_io_handle *io_handle,
 > +		struct snapshot_handle *handle)
 > +{
 > +	int ret;
@@ -78,109 +79,189 @@ This one looks good, but it seems to depend on [3/9] and [4/9].  Does it?
 > +	buffer = get_image_page(GFP_ATOMIC, PG_ANY);
 > +	if (!buffer)
 > +		return -ENOMEM;
-> +	init_header(buffer);
-> +	ret = hib_buffer_init_write(io_handle);
+> +
+> +	ret = hib_buffer_init_read(io_handle);
 > +	if (ret)
 > +		return ret;
-> +	ret = hib_buffer_write(io_handle, buffer, sizeof(struct swsusp_info));
+> +	ret = hib_buffer_read(io_handle, buffer, sizeof(struct swsusp_info));
 > +	if (ret)
 > +		goto finish;
-> +	hib_buffer_finish_write(io_handle);
-> +	memory_bm_position_reset(&orig_bm);
-> +	memory_bm_position_reset(&copy_bm);
+> +	hib_buffer_finish_read(io_handle);
+> +
+> +	ret = load_header(buffer);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = memory_bm_create(&copy_bm, GFP_ATOMIC, PG_ANY);
+> +	if (ret)
+> +		return ret;
+> +
 > +	handle->buffer = buffer;
+> +	handle->sync_read = 1;
 > +	return 0;
 > +finish:
-> +	hib_buffer_finish_write(io_handle);
+> +	hib_buffer_finish_read(io_handle);
 > +	return ret;
 > +}
 > +
 > +/**
->   *	snapshot_read_next - used for reading the system memory snapshot.
+>   *	snapshot_write_next - used for writing the system memory snapshot.
 >   *
 > - *	On the first call to it @handle should point to a zeroed
 > - *	snapshot_handle structure.  The structure gets updated and a pointer
-> + *	Before calling this function, snapshot_write_init has to be called with
+> + *	Before calling this function, snapshot_read_init has to be called with
 > + *	handle passed as @handle here. The structure gets updated and a pointer
 >   *	to it should be passed to this function every next time.
 >   *
 >   *	On success the function returns a positive number.  Then, the caller
-> @@ -1613,31 +1649,12 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
+> @@ -2144,42 +2188,20 @@ static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca)
 >   *	structure pointed to by @handle is not updated and should not be used
 >   *	any more.
 >   */
 > -
->  int snapshot_read_next(struct snapshot_handle *handle)
+>  int snapshot_write_next(struct snapshot_handle *handle)
 >  {
-> -	if (handle->cur > nr_meta_pages + nr_copy_pages)
+>  	static struct chain_allocator ca;
+>  	int error = 0;
+>  
+> -	/* Check if we have already loaded the entire image */
+> -	if (handle->cur > 1 && handle->cur > nr_meta_pages + nr_copy_pages)
 > -		return 0;
 > -
-> -	if (!buffer) {
-> -		/* This makes the buffer be freed by swsusp_free() */
-> -		buffer = get_image_page(GFP_ATOMIC, PG_ANY);
+>  	handle->sync_read = 1;
+> -
+> -	if (!handle->cur) {
+> -		if (!buffer)
+> -			/* This makes the buffer be freed by swsusp_free() */
+> -			buffer = get_image_page(GFP_ATOMIC, PG_ANY);
+> -
 > -		if (!buffer)
 > -			return -ENOMEM;
-> -	}
-> -	if (!handle->cur) {
-> -		int error;
 > -
-> -		error = init_header((struct swsusp_info *)buffer);
+> -		handle->buffer = buffer;
+> -	} else if (handle->cur == 1) {
+> -		error = load_header(buffer);
 > -		if (error)
 > -			return error;
-> -		handle->buffer = buffer;
-> -		memory_bm_position_reset(&orig_bm);
-> -		memory_bm_position_reset(&copy_bm);
-> -	} else if (handle->cur <= nr_meta_pages) {
+> -
+> -		error = memory_bm_create(&copy_bm, GFP_ATOMIC, PG_ANY);
+> -		if (error)
+> -			return error;
+> -
+> -	} else if (handle->cur <= nr_meta_pages + 1) {
 > +	if (handle->cur < nr_meta_pages) {
->  		memset(buffer, 0, PAGE_SIZE);
->  		pack_pfns(buffer, &orig_bm);
-> -	} else {
-> +	} else if (handle->cur < nr_meta_pages + nr_copy_pages) {
->  		struct page *page;
+>  		error = unpack_orig_pfns(buffer, &copy_bm);
+>  		if (error)
+>  			return error;
 >  
->  		page = pfn_to_page(memory_bm_next_pfn(&copy_bm));
-> @@ -1655,6 +1672,8 @@ int snapshot_read_next(struct snapshot_handle *handle)
->  		} else {
->  			handle->buffer = page_address(page);
+> -		if (handle->cur == nr_meta_pages + 1) {
+> +		/* well, this was the last meta page
+> +		   prepare for ordinary pages */
+> +		if (handle->cur + 1 == nr_meta_pages) {
+>  			error = prepare_image(&orig_bm, &copy_bm);
+>  			if (error)
+>  				return error;
+> @@ -2192,16 +2214,22 @@ int snapshot_write_next(struct snapshot_handle *handle)
+>  			if (IS_ERR(handle->buffer))
+>  				return PTR_ERR(handle->buffer);
 >  		}
-> +	} else {
-> +		return 0;
+> +		error = PAGE_SIZE;
+>  	} else {
+>  		copy_last_highmem_page();
+> -		handle->buffer = get_buffer(&orig_bm, &ca);
+> -		if (IS_ERR(handle->buffer))
+> -			return PTR_ERR(handle->buffer);
+> -		if (handle->buffer != buffer)
+> -			handle->sync_read = 0;
+> +		/* prepare next unless this was the last one */
+> +		if (handle->cur + 1 < nr_meta_pages + nr_copy_pages) {
+> +			handle->buffer = get_buffer(&orig_bm, &ca);
+> +			if (IS_ERR(handle->buffer))
+> +				return PTR_ERR(handle->buffer);
+> +			if (handle->buffer != buffer)
+> +				handle->sync_read = 0;
+> +			error = PAGE_SIZE;
+> +		}
 >  	}
+> +
 >  	handle->cur++;
->  	return PAGE_SIZE;
+> -	return PAGE_SIZE;
+> +	return error;
+>  }
+>  
+>  /**
+> @@ -2216,7 +2244,7 @@ void snapshot_write_finalize(struct snapshot_handle *handle)
+>  {
+>  	copy_last_highmem_page();
+>  	/* Free only if we have loaded the image entirely */
+> -	if (handle->cur > 1 && handle->cur > nr_meta_pages + nr_copy_pages) {
+> +	if (handle->cur >= nr_meta_pages + nr_copy_pages) {
+>  		memory_bm_free(&orig_bm, PG_UNSAFE_CLEAR);
+>  		free_highmem_data();
+>  	}
+> @@ -2225,7 +2253,7 @@ void snapshot_write_finalize(struct snapshot_handle *handle)
+>  int snapshot_image_loaded(struct snapshot_handle *handle)
+>  {
+>  	return !(!nr_copy_pages || !last_highmem_page_copied() ||
+> -			handle->cur <= nr_meta_pages + nr_copy_pages);
+> +			handle->cur < nr_meta_pages + nr_copy_pages);
+>  }
+>  
+>  #ifdef CONFIG_HIGHMEM
 > diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-> index f09494e..9b319f1 100644
+> index 9b319f1..f7864bc 100644
 > --- a/kernel/power/swap.c
 > +++ b/kernel/power/swap.c
-> @@ -448,7 +448,6 @@ int swsusp_write(unsigned int flags)
->  {
+> @@ -599,9 +599,6 @@ static int load_image(struct hibernate_io_handle *io_handle,
+>  	bio = NULL;
+>  	do_gettimeofday(&start);
+>  	for ( ; ; ) {
+> -		error = snapshot_write_next(snapshot);
+> -		if (error <= 0)
+> -			break;
+>  		error = hibernate_io_ops->read_page(io_handle,
+>  				data_of(*snapshot), &bio);
+>  		if (error)
+> @@ -610,9 +607,13 @@ static int load_image(struct hibernate_io_handle *io_handle,
+>  			error = hib_wait_on_bio_chain(&bio);
+>  		if (error)
+>  			break;
+> +		error = snapshot_write_next(snapshot);
+> +		if (error >= 0)
+> +			nr_pages++;
+> +		if (error <= 0)
+> +			break;
+>  		if (!(nr_pages % m))
+>  			printk("\b\b\b\b%3d%%", nr_pages / m);
+> -		nr_pages++;
+>  	}
+>  	err2 = hib_wait_on_bio_chain(&bio);
+>  	do_gettimeofday(&stop);
+> @@ -640,22 +641,17 @@ int swsusp_read(unsigned int *flags_p)
+>  	int error;
 >  	struct hibernate_io_handle *io_handle;
 >  	struct snapshot_handle snapshot;
 > -	struct swsusp_info *header;
->  	unsigned long pages;
->  	int error;
 >  
-> @@ -464,17 +463,12 @@ int swsusp_write(unsigned int flags)
->  		goto out_finish;
->  	}
 >  	memset(&snapshot, 0, sizeof(struct snapshot_handle));
-> -	error = snapshot_read_next(&snapshot);
-> -	if (error < PAGE_SIZE) {
-> -		if (error >= 0)
-> -			error = -EFAULT;
-> -
-> +	error = snapshot_write_init(io_handle, &snapshot);
-> +	if (error) {
-> +		printk(KERN_ERR "PM: Cannot init writer\n");
->  		goto out_finish;
->  	}
+> -	error = snapshot_write_next(&snapshot);
+> -	if (error < PAGE_SIZE)
+> -		return error < 0 ? error : -EFAULT;
 > -	header = (struct swsusp_info *)data_of(snapshot);
-> -	error = hibernate_io_ops->write_page(io_handle, header, NULL);
+>  	io_handle = hibernate_io_ops->reader_start(flags_p);
+>  	if (IS_ERR(io_handle)) {
+>  		error = PTR_ERR(io_handle);
+>  		goto end;
+>  	}
+> +	error = snapshot_read_init(io_handle, &snapshot);
+>  	if (!error)
+> -		error = hibernate_io_ops->read_page(io_handle, header, NULL);
 > -	if (!error)
-> -		error = save_image(io_handle, &snapshot, pages - 1);
-> +	error = save_image(io_handle, &snapshot, pages - 1);
->  out_finish:
->  	error = hibernate_io_ops->writer_finish(io_handle, flags, error);
->  	return error;
+> -		error = load_image(io_handle, &snapshot, header->pages - 1);
+> +		error = load_image(io_handle, &snapshot,
+> +				snapshot_get_image_size()  - 1);
+>  	hibernate_io_ops->reader_finish(io_handle);
+>  end:
+>  	if (!error)
 > 
 
