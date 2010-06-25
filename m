@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab0FYUMI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 16:12:08 -0400
-Received: from mail.tpi.com ([70.99.223.143]:4230 "EHLO mail.tpi.com"
+	id S1756436Ab0FYU0J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 16:26:09 -0400
+Received: from www.tglx.de ([62.245.132.106]:34004 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932103Ab0FYUME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 16:12:04 -0400
-Message-ID: <4C250D8C.6030907@canonical.com>
-Date: Fri, 25 Jun 2010 14:11:56 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1751137Ab0FYU0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 16:26:07 -0400
+Date: Fri, 25 Jun 2010 22:25:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ulrich Drepper <drepper@redhat.com>
+cc: Darren Hart <dvhltc@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Andreas Schwab <schwab@redhat.com>, Danny Feng <dfeng@redhat.com>,
+       Jakub Jelinek <jakub@redhat.com>, linux-kernel@vger.kernel.org,
+       Oleg Nesterov <oleg@redhat.com>
+Subject: Re: Q: sys_futex() && timespec_valid()
+In-Reply-To: <235959492.961541277496281970.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+Message-ID: <alpine.LFD.2.00.1006252212420.18683@localhost.localdomain>
+References: <235959492.961541277496281970.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: xiaosuo@gmail.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Regression caused by commit cc56f7de7f00d188c7c4da1e9861581853b9e92f
-Content-Type: multipart/mixed;
- boundary="------------040206020008030700020201"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040206020008030700020201
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, 25 Jun 2010, Ulrich Drepper wrote:
 
-Hi,
+> ----- "Thomas Gleixner" <tglx@linutronix.de> wrote:
+> > tv->sec < 0 is definitely an invalid value for both CLOCK_REALTIME
+> > and CLOCK_MONOTONIC.
 
-I have bisected a strange regression down to this commit that you made. 
-If I apply the attached patch (which restores the original 2 lines of 
-code), then everything works correctly. I apologize, but I don't have a 
-simple reproducer. The gist of the problem is that Java cannot decrypt a 
-file under certain circumstances, e.g., "ERROR 
-javax.crypto.BadPaddingException: pad block corrupted". There is more 
-information in the bug report at http://bugs.launchpad.net/bugs/588861 , 
-but not all of it is helpful.
+> CLOCK_MONOTONIC is different but it's wrong for CLOCK_REALTIME.
 
-Any thoughts?
+Why is CLOCK_MONOTONIC any different ? According to you argumentation
+it's just _BEFORE_ we started the system.
 
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+> Why would it be invalid?  Because times before Epoch will not be
+> used?  By that logic you would have to declare all values before
+> Linus' first running kernel as invalid.  None of this makes sense.
 
---------------040206020008030700020201
-Content-Type: text/x-patch;
- name="0001-fs-Restore-previously-removed-f_op-checks.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-fs-Restore-previously-removed-f_op-checks.patch"
+That's utter bullshit and you know that. Every system which does not
+have an RTC starts with the EPOCH and the range check is correct in
+the terms of the specification:
 
->From 8565505534da369292d593e174255cf5c398f703 Mon Sep 17 00:00:00 2001
-From: Tim Gardner <tim.gardner@canonical.com>
-Date: Fri, 25 Jun 2010 13:53:55 -0600
-Subject: [PATCH] fs: Restore previously removed f_op checks.
+    Outside the valid range of the clock_id.
 
-BugLink: http://bugs.launchpad.net/bugs/588861
+The kernel treats the range valid which it can theoretically hand back
+to user space:
 
-commit cc56f7de7f00d188c7c4da1e9861581853b9e92f removed
-a check for output file f_op and f_op->sendpage. This appears
-to have caused a regression in the ability of Java
-to read and decrypt files. This would be simpler if
-there was an easy reproducer, but so far the only way I've
-been able to get it to fail is within the Maverick
-UEC environment.
+   EPOCH <= CLOCK_REALTIME <= Y2038_or_far_away
 
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- fs/read_write.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+   0 <= CLOCK_MONOTONIC <= far_away
 
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 9c04852..3203ca1 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -845,6 +845,8 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
- 	if (!(out_file->f_mode & FMODE_WRITE))
- 		goto fput_out;
- 	retval = -EINVAL;
-+	if (!out_file->f_op || !out_file->f_op->sendpage)
-+		goto fput_out;
- 	in_inode = in_file->f_path.dentry->d_inode;
- 	out_inode = out_file->f_path.dentry->d_inode;
- 	retval = rw_verify_area(WRITE, out_file, &out_file->f_pos, count);
--- 
-1.7.0.4
+> The tv_sec in timespec is of type time_t and for absolute time
+> values the same semantics as for naked time_t values applies.  The
+> absolute time is
+>   epoch + tv_sec + tv_nsec / 1000000000
+> 
+> If tv_sec is negative these are values before epoch.
+> 
+> If there are other interfaces with absolute timeouts they certainly
+>  should be changed as well.
 
+If we'd change that, then we'd need to allow negative relative
+timeouts as well and not restrict it to CLOCK_REALTIME. 
 
---------------040206020008030700020201--
+If we'd change the notion of "valid" then we do it in a consistent
+way for everything not just for a corner case of some glibc wreckage.
+
+Thanks,
+
+	tglx
