@@ -1,50 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab0FYTkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:40:49 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37837 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756771Ab0FYTkr convert rfc822-to-8bit (ORCPT
+	id S1756763Ab0FYTnP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:43:15 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:36429 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab0FYTnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:40:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=qvwhsBNYqWZWBHVkr0Qm2s/p2Shwmu5Ua8IIUmc+ekyL8UPqi6RXZ1QF3mt7KxRABs
-         ybl3G6DHiMutY0EGS7K6yVvqlYcsgHwyViwTUCG/cJAxsX+T6S1J0lO4ZWBvdP8BwNLK
-         Sj8Le3XuLcjZGSSm56smRoIfL62Z4epUzgX6Q=
+	Fri, 25 Jun 2010 15:43:13 -0400
+Message-ID: <4C2506C3.2000301@us.ibm.com>
+Date: Fri, 25 Jun 2010 12:42:59 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100625184504.GA11867@infradead.org>
-References: <20100624131455.GA10441@laptop> <A57010D3-065B-41B1-85E6-8B9C61970D37@dilger.ca> 
-	<20100625040156.GQ10441@laptop> <1A529206-98C4-4A88-A2CA-18522D4D631D@dilger.ca> 
-	<AANLkTin__C1EOuTFJJ4UqAFsO5x_IOKLX11boRl7B194@mail.gmail.com> 
-	<20100625181638.GA15227@infradead.org> <20100625184504.GA11867@infradead.org>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Fri, 25 Jun 2010 12:40:22 -0700
-Message-ID: <AANLkTikicz4WXG2GRuoc9RUZy9AmpYuoi5ifEXO6g2EJ@mail.gmail.com>
-Subject: Re: [rfc] new stat*fs-like syscall?
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Andreas Dilger <adilger@dilger.ca>, Nick Piggin <npiggin@suse.de>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Al Viro <viro@zeniv.linux.org.uk>, Ulrich Drepper <drepper@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andreas Schwab <schwab@redhat.com>, Danny Feng <dfeng@redhat.com>,
+       Jakub Jelinek <jakub@redhat.com>, Ulrich Drepper <drepper@redhat.com>,
+       linux-kernel@vger.kernel.org,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: Q: sys_futex() && timespec_valid()
+References: <20100625192008.GA25337@redhat.com>
+In-Reply-To: <20100625192008.GA25337@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 25, 2010 at 11:45, Christoph Hellwig <hch@infradead.org> wrote:
-> I don't quite get what ST_WRITE is supposed to mean.  All but that one
-> can be supported trivially.
+On 06/25/2010 12:20 PM, Oleg Nesterov wrote:
+> Hello.
+>
 
-ST_WRITE comes elsewhere.  We don't use it on Linux.
+Hi Oleg,
+
+> Another stupid question about the trivial problem I am going to ask,
+> just to report the authoritative answer back to bugzilla. The problem
+> is, personally I am not sure we should/can add the user-visible change
+> required by glibc maintainers, and I am in no position to suggest them
+> to fix the user-space code instead.
+>
+> In short, glibc developers believe that sys_futex(ts) is buggy and
+> needs the fix to return -ETIMEDOUT instead of -EINVAL in case when
+> ts->tv_sec<  0 and the timeout is absolute.
+>
+
+Just a question of semantics I guess. Seems reasonable to me to call a 
+negative timeout invalid. However, I certainly don't feel strongly 
+enough about it to fight for it. Glibc is the principle user of 
+sys_futex(). While there are certainly other users out there (Mathieu 
+Desnoyers' Userspace RCU comes to mind), I doubt any of them depend on 
+-EINVAL for negative timeouts to function properly.
+
+Unless there is some good reason to object to breaking the API that I am 
+missing, I don't mind changing it to -ETIMEDOUT (although -EINVAL seems 
+more intuitive to me).
+
+--
+Darren "Little Fish" Hart
+
+> Ignoring the possible cleanups/microoptimizations, something like this:
+>
+> --- x/kernel/futex.c
+> +++ x/kernel/futex.c
+> @@ -2625,6 +2625,16 @@ SYSCALL_DEFINE6(futex, u32 __user *, uad
+>   		      cmd == FUTEX_WAIT_REQUEUE_PI)) {
+>   		if (copy_from_user(&ts, utime, sizeof(ts)) != 0)
+>   			return -EFAULT;
+> +
+> +		// absolute timeout
+> +		if (cmd != FUTEX_WAIT) {
+> +			if (ts->tv_nsec>= NSEC_PER_SEC)
+> +				return -EINVAL;
+> +			if (ts->tv_sec<  0)
+> +				return -ETIMEDOUT;
+> +		}
+> +
+> +
+>   		if (!timespec_valid(&ts))
+>   			return -EINVAL;
+>
+> ------------------------------------------------------------------------
+>
+> Otherwise, pthread_rwlock_timedwrlock(ts) hangs spinning in user-space
+> forever if ts->tv_sec<  0.
+>
+> To clarify: this depends on libc version and arch.
+>
+> This happens because pthread_rwlock_timedwrlock(rwlock, ts) on x86_64
+> roughly does:
+>
+> 	for (;;) {
+> 		if (fast_path_succeeds(rwlock))
+> 			return 0;
+>
+> 		if (ts->tv_nsec>= NSEC_PER_SEC)
+> 			return EINVAL;
+>
+> 		errcode = sys_futex(FUTEX_WAIT_BITSET_PRIVATE, ts);
+> 		if (errcode == ETIMEDOUT)
+> 			return ETIMEDOUT;
+> 	}
+>
+> and since the kernel return EINVAL due to !timespec_valid(ts), the
+> code above loops forever.
+>
+> (btw, we have same problem with EFAULT, and this is considered as
+>   a caller's problem).
+>
+> IOW, pthread_rwlock_timedwrlock() assumes that in this case
+> sys_futex() can return nothing interesting except 0 or ETIMEDOUT.
+> I guess pthread_rwlock_timedwrlock() is not alone, but I didn't check.
+>
+>
+>
+> So, the question: do you think we can change sys_futex() to make
+> glibc happy?
+>
+> Or, do you think it is user-space who should check tv_sec<  0 if
+> it wants ETIMEDOUT with the negative timeout ?
+>
+> Thanks,
+>
+> Oleg.
+>
 
 
-> In addition ST_APPEND and ST_IMMUTABLE are rather puzzling.  Do you
-> really want these to mean if the file we call statfs on have the
-> immutable/append only bits set?  That is mixing two bits of stat
-> information into statfs?
-
-Ignore these as well, they also has a different source.
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
