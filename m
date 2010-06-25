@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab0FYK6N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 06:58:13 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50668 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753734Ab0FYK6L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 06:58:11 -0400
-Date: Fri, 25 Jun 2010 12:03:29 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Samo Pogacnik <samo_pogacnik@t-2.net>
-Cc: linux-embedded <linux-embedded@vger.kernel.org>,
-       linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-Message-ID: <20100625120329.1303aa61@lxorguk.ukuu.org.uk>
-In-Reply-To: <1277462596.2143.101.camel@itpsd6lap>
-References: <1273918658.2341.17.camel@itpsd6lap>
-	<1275171436.2122.29.camel@itpsd6lap>
-	<20100529235402.296406d9@lxorguk.ukuu.org.uk>
-	<1275175983.2122.42.camel@itpsd6lap>
-	<1276123020.16010.97.camel@itpsd6lap>
-	<20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
-	<1276291932.2154.45.camel@itpsd6lap>
-	<20100621153858.444695c0@lxorguk.ukuu.org.uk>
-	<1277244410.2195.47.camel@itpsd6lap>
-	<20100622232108.26752ff8@lxorguk.ukuu.org.uk>
-	<1277462596.2143.101.camel@itpsd6lap>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S1754840Ab0FYLDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 07:03:38 -0400
+Received: from verein.lst.de ([213.95.11.210]:47796 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754188Ab0FYLDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 07:03:36 -0400
+Date: Fri, 25 Jun 2010 13:03:20 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
+Message-ID: <20100625110319.GA12855@lst.de>
+References: <20100621094828.GA30748@lst.de> <4C1F3916.4070608@kernel.dk> <20100621110436.GA4056@lst.de> <4C1FB5F7.3070908@kernel.dk> <20100621191410.GA24213@lst.de> <20100621213618.GC6474@redhat.com> <20100623100138.GA9575@lst.de> <20100624014420.GB3297@redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100624014420.GB3297@redhat.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 2.142 (**) BAYES_70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static int tpk_write_room(struct tty_struct *tty)
-> +{
-> +	int ret = tpk_space;
-> +
-> +	/* allow char by char under max pressure */
-> +	if (tpk_space == 0)
-> +		tpk_space = 1;
+On Wed, Jun 23, 2010 at 09:44:20PM -0400, Vivek Goyal wrote:
+> Let me explain the general idling logic and then see if it makes sense in case
+> of WRITE_SYNC.
+> 
+> Once a request has completed, if the cfq queue is empty, we have two choices.
+> Either expire the cfq queue and move on to dispatch requests from a
+> different queue or we idle on the queue hoping we will get more IO from
+> same process/queue.
 
-That won't do what you think, the ldisc will keep seeing progress and
-generate millions of 1 byte I/Os in a loop !
+queues are basically processes in this context?
 
-Otherwise looks excellent.
+> Idling can help (on SATA disks with high seek cost), if
+> our guess was right and soon we got another request from same process. We
+> cut down on number of seeks hence increased throghput.
 
+I don't really understand the logic behind this.  If we lots of I/O
+that actually is close to each other we should generally submit it in
+one batch.  That is true for pagecache writeback, that is true for
+metadata (at least in XFS..), and it's true for any sane application
+doing O_DIRECT / O_SYNC style I/O.
 
-> +	switch (cmd) {
-> +	/* Stop TIOCCONS */
-> +	case TIOCCONS:
-> +		return -EOPNOTSUPP;
+What workloads produde I/O that is local (not random) writes with small
+delays between the I/O requests?
 
-And I'll fix this bit up to work properly in the core code.
+I see the point of this logic for reads where various workloads have
+dependent reads that might be close to each other, but I don't really
+see any point for writes.
 
+> So looks like fsync path will do bunch of IO and then will wait for jbd thread
+> to finish the work. In this case idling is waste of time.
 
-With my devices.txt owner hat on I'll allocate the minor as you suggest
-(and double check this causes no problems), with my tty hat on can you
-send it to GregKH for merging into the tree.
+Given that ->writepage already does WRITE_SYNC_PLUG I/O which includes
+REQ_NODILE I'm still confused why we still have that issue.
+
+> I guess same will
+> be true for umount and sync() path. But same probably is not necessarily true
+> for a O_DIRECT writer (database comes to mind), and for O_SYNC writer
+> (virtual machines?).
+
+For virtual machines idling seems like a waste of ressources.  If we
+have sequential I/O we dispatch in batches - in fact qemu even merges
+sequential small block I/O it gets from the guest into one large request
+we hand off to the host kernel.  For reads the same caveat as above
+applies as read requests as handed through 1:1 from the guest.
+
+> O_SYNC writers will get little disk share in presence of heavy buffered
+> WRITES. If we choose to not special case WRITE_SYNC and continue to
+> idle on the queue then we probably are wasting time and reducing overall
+> throughput. (The fsync() case Jeff is running into).
+
+Remember that O_SYNC writes are implemented as normal buffered write +
+fsync (a range fsync to be exact, but that doesn't change a thing).
+
+And that's what they conceptually are anyway, so treating a normal
+buffered write + fsync different from an O_SYNC write is not only wrong
+conceptuall but also in implementation.  You have the exact same issue
+of handing off work to the journal commit thread in extN.   Note that
+the log write (or at least parts of it) will always use WRITE_BARRIER,
+which completey bypasses the I/O scheduler.  
+
+> So one possible way could be that don't try to special case synchronous
+> writes and continue to idle on the queue based on other parameters. If
+> kernel/higher layers have knowledge that we are not going to issue more
+> IO in same context, then they should explicitly call blk_yield(), to
+> stop idling and give up slice.
+
+We have no way to know what userspace will do if we are doing
+O_SYNC/O_DIRECT style I/O or use fsync.  We know that we will most
+likely continue kicking things from the same queue when doing page
+writeback.  One thing that should help with this is Jens' explicit
+per-process plugging stuff, which I noticed he recently updated to a
+current kernel.
+
