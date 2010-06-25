@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468Ab0FYULy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 16:11:54 -0400
-Received: from www.tglx.de ([62.245.132.106]:57597 "EHLO www.tglx.de"
+	id S932253Ab0FYUMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 16:12:08 -0400
+Received: from mail.tpi.com ([70.99.223.143]:4230 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751021Ab0FYULx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 16:11:53 -0400
-Date: Fri, 25 Jun 2010 22:11:19 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ulrich Drepper <drepper@redhat.com>
-cc: Darren Hart <dvhltc@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Andreas Schwab <schwab@redhat.com>, Danny Feng <dfeng@redhat.com>,
-       Jakub Jelinek <jakub@redhat.com>, linux-kernel@vger.kernel.org,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Oleg Nesterov <oleg@redhat.com>
-Subject: Re: Q: sys_futex() && timespec_valid()
-In-Reply-To: <2054433814.959851277495348646.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-Message-ID: <alpine.LFD.2.00.1006252159370.18683@localhost.localdomain>
-References: <2054433814.959851277495348646.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932103Ab0FYUME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 16:12:04 -0400
+Message-ID: <4C250D8C.6030907@canonical.com>
+Date: Fri, 25 Jun 2010 14:11:56 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: xiaosuo@gmail.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Regression caused by commit cc56f7de7f00d188c7c4da1e9861581853b9e92f
+Content-Type: multipart/mixed;
+ boundary="------------040206020008030700020201"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jun 2010, Ulrich Drepper wrote:
+This is a multi-part message in MIME format.
+--------------040206020008030700020201
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Can you please use a mail client with proper line breaks ?
+Hi,
 
-> ----- "Darren Hart" <dvhltc@us.ibm.com> wrote:
-> > Unless there is some good reason to object to breaking the API that I
-> > am  missing, I don't mind changing it to -ETIMEDOUT (although -EINVAL
-> > seems more intuitive to me).
-> 
-> It's only not intuitive because Oleg misrepresented or at least
-> didn't describe the issue.
+I have bisected a strange regression down to this commit that you made. 
+If I apply the attached patch (which restores the original 2 lines of 
+code), then everything works correctly. I apologize, but I don't have a 
+simple reproducer. The gist of the problem is that Java cannot decrypt a 
+file under certain circumstances, e.g., "ERROR 
+javax.crypto.BadPaddingException: pad block corrupted". There is more 
+information in the bug report at http://bugs.launchpad.net/bugs/588861 , 
+but not all of it is helpful.
 
-> The kernel already catches invalid timespec values.  Unfortunately
-> the code used comes from the time when all timeouts where specified
-> with relative values.  In such situations negative tv_sec values
-> were in fact invalid and rejected with EINVAL.
+Any thoughts?
 
-> But for absolute timeouts tv_sec = -1 means a time before Epoch.
-> This is not an invalid value, it just is one of many points in time
-> which have passed and therefore the kernel has to respond with
-> ETIMEDOUT.
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
 
-That's simply wrong.
+--------------040206020008030700020201
+Content-Type: text/x-patch;
+ name="0001-fs-Restore-previously-removed-f_op-checks.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-fs-Restore-previously-removed-f_op-checks.patch"
 
-  ... or the TIMER_ABSTIME flag was specified in flags and the rqtp
-  argument is outside the range for the clock specified by clock_id;
+>From 8565505534da369292d593e174255cf5c398f703 Mon Sep 17 00:00:00 2001
+From: Tim Gardner <tim.gardner@canonical.com>
+Date: Fri, 25 Jun 2010 13:53:55 -0600
+Subject: [PATCH] fs: Restore previously removed f_op checks.
 
-And I consider anything before the EPOCH or before the computer booted
-outside of the range. Simply because that's outside the range which we
-can read back from the clock, out of the range to which we can set the
-clock.
+BugLink: http://bugs.launchpad.net/bugs/588861
 
-And it's completely illogical to treat relative and abolute timeouts
-different. If we'd accept that before the EPOCH or before the computer
-started is valid for ABSTIME, then there is no freaking reason to
-treat relative timeouts any different.
+commit cc56f7de7f00d188c7c4da1e9861581853b9e92f removed
+a check for output file f_op and f_op->sendpage. This appears
+to have caused a regression in the ability of Java
+to read and decrypt files. This would be simpler if
+there was an easy reproducer, but so far the only way I've
+been able to get it to fail is within the Maverick
+UEC environment.
 
-> This is no semantic change or anything like that.  It pure and
-> simply a bug fix.  When Thomas worked on that come we simply missed
-> updating the test for invalid timespec values.
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ fs/read_write.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-No, that's how we treat every damned timespec in the
-syscalls. clock_nanosleep(ABSTIME) has this behaviour forever and we
-have this behaviour in sys_futex since we merged PI futex support way
-before we added the BITSET stuff.
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 9c04852..3203ca1 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -845,6 +845,8 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
+ 	if (!(out_file->f_mode & FMODE_WRITE))
+ 		goto fput_out;
+ 	retval = -EINVAL;
++	if (!out_file->f_op || !out_file->f_op->sendpage)
++		goto fput_out;
+ 	in_inode = in_file->f_path.dentry->d_inode;
+ 	out_inode = out_file->f_path.dentry->d_inode;
+ 	retval = rw_verify_area(WRITE, out_file, &out_file->f_pos, count);
+-- 
+1.7.0.4
 
-So just because you messed up your glibc implementation you want us to
-fix glibc in the kernel based on some backwards arguments ?
 
-> The kernel code should be fixed to always check tv_nsec for < 0 and
-> > 1000000000.  But the tv_sec test for < 0 should be skipped if the
-> timeout value is interpreted as an absolute time value.
-
-Definitely NOT!
-
-	   tglx
+--------------040206020008030700020201--
