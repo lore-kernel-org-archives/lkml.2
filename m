@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab0FYB7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 21:59:03 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33194 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270Ab0FYB7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 21:59:01 -0400
-Message-ID: <4C240D61.4000006@austin.ibm.com>
-Date: Thu, 24 Jun 2010 20:58:57 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1754183Ab0FYCEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 22:04:24 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47910 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab0FYCEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 22:04:23 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Subject: Re: [PATCH] memory hotplug disable boot option
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org
+In-Reply-To: <4C24012B.9030506@austin.ibm.com>
+References: <4C24012B.9030506@austin.ibm.com>
+Message-Id: <20100625105340.803C.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Store sysfs dirent structs in rbtree
-References: <4C22C944.4040700@austin.ibm.com> <20100624200424.0a7d3a57@gondolin>
-In-Reply-To: <20100624200424.0a7d3a57@gondolin>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 25 Jun 2010 11:04:19 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2010 01:04 PM, Cornelia Huck wrote:
-> On Wed, 23 Jun 2010 21:56:04 -0500,
-> Nathan Fontenot <nfont@austin.ibm.com> wrote:
+> Proposed patch to disable memory hotplug via a boot option,
+> mem_hotplug=[on|off].  The patch only disables memory hotplug in that it 
+> prevents the creation of the memory sysfs directories for memory sections.
 > 
->> +static void sysfs_dirent_insert(struct sysfs_dirent *sd)
->> +{
->> +	struct sysfs_dirent *parent_sd = sd->s_parent;
->> +	struct sysfs_dirent *d;
->> +	struct rb_node **p = &parent_sd->s_dir.rb_root.rb_node;
->> +	struct rb_node *parent = NULL;
->> +
->> +	while (*p) {
->> +		int cmp_val;
->> +		parent = *p;
->> +		d = to_sysfs_dirent(parent);
->> +
->> +		cmp_val = strcmp(d->s_name, sd->s_name);
->> +		if (cmp_val < 0)
->> +			p = &parent->rb_left;
->> +		if (cmp_val > 0)
->> +			p = &parent->rb_right;
->> +	}
->> +
->> +	rb_link_node(&sd->s_dir.rb_node, parent, p);
->> +	rb_insert_color(&sd->s_dir.rb_node, &parent_sd->s_dir.rb_root);
->> +}
-> 
-> This will run into trouble if you have duplicate names in different
-> namespaces. You won't see it with your patch though, since...
-> 
->> @@ -536,14 +572,24 @@
->>  				       const void *ns,
->>  				       const unsigned char *name)
->>  {
->> -	struct sysfs_dirent *sd;
->> -
->> -	for (sd = parent_sd->s_dir.children; sd; sd = sd->s_sibling) {
->> -		if (ns && sd->s_ns && (sd->s_ns != ns))
->> -			continue;
->> -		if (!strcmp(sd->s_name, name))
->> -			return sd;
->> +	struct sysfs_dirent *d;
->> +	struct rb_node **p = &parent_sd->s_dir.rb_root.rb_node;
->> +	struct rb_node *parent = NULL;
->> +
->> +	while (*p) {
->> +		int cmp_val;
->> +		parent = *p;
->> +		d = to_sysfs_dirent(parent);
->> +
->> +		cmp_val = strcmp(d->s_name, name);
->> +		if (cmp_val == 0)
->> +			return d;
->> +		else if (cmp_val < 0)
->> +			p = &parent->rb_left;
->> +		else /* (cmp_val > 0) */
->> +			p = &parent->rb_right;
->>  	}
->> +
->>  	return NULL;
->>  }
-> 
-> ...you removed the namespace check down here.
+> This patch is meant to help alleviate very long boot times on systems with
+> large memory (1+ TB) and many memory sections (10's of thousands).
 
-Yep, I missed namespaces completely with this patch.  I'll try again.
+Why making simple /sys file is so slowly? Couldn't we fix such performance
+problem?
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+> 
+> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+> 
+> ---
+>  drivers/base/memory.c  |   33 +++++++++++++++++++++++++++++++++
+>  drivers/base/node.c    |    3 +++
+>  include/linux/memory.h |    2 ++
+>  3 files changed, 38 insertions(+)
+> 
+> Index: linux-2.6/drivers/base/memory.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/base/memory.c	2010-06-23 15:07:03.000000000 -0500
+> +++ linux-2.6/drivers/base/memory.c	2010-06-24 18:46:52.000000000 -0500
+> @@ -29,6 +29,24 @@
+>  
+>  #define MEMORY_CLASS_NAME	"memory"
+>  
+> +static int mem_hp_enabled __read_mostly = 1;
+
+please don't use 'hp' acronym. 'hotplug' is not so long word.
+
+
+> +
+> +static int __setup_memory_hotplug(char *option)
+> +{
+> +	if (!strcmp(option, "off"))
+> +		mem_hp_enabled = 0;
+> +	else if (!strcmp(option, "on"))
+> +		mem_hp_enabled = 1;
+> +
+> +	return 1;
+> +}
+> +__setup("mem_hotplug=", __setup_memory_hotplug);
+
+no documentation on Documentation/kernel-parameters.txt?
+
+
+
 
