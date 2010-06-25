@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab0FYAYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 20:24:05 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42863 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab0FYAYC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 20:24:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Y/rarN4lTZV8vf/DTpZgEPdRAGuSPFriHFLV1v+TgLXS5ASPMJIxtedeCmd8+vLwko
-         jz/FkSLuHUuQoQKyEq0nyIfw+kCAcQJf3MSVR1O6H8nuXNKm9KGRWBE1/kWe9G0oH0Rd
-         Q11WMecVPhK3l0/JXUH4wm8+iSpo4la0wXv04=
-Message-ID: <4C23F71F.7000806@gmail.com>
-Date: Thu, 24 Jun 2010 18:23:59 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1753335Ab0FYA0U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 20:26:20 -0400
+Received: from kroah.org ([198.145.64.141]:35278 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312Ab0FYA0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 20:26:18 -0400
+Date: Thu, 24 Jun 2010 17:16:33 -0700
+From: Greg KH <greg@kroah.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Nils Radtke <lkml@Think-Future.de>, reinette.chatre@intel.com,
+       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+       stable@kernel.org
+Subject: Re: [stable] [PATCH] iwlwifi: recalculate average tpt if not
+ current
+Message-ID: <20100625001633.GI11656@kroah.com>
+References: <20100604163218.GA28003@localhost>
+ <20100604180328.GB2492@tuxdriver.com>
 MIME-Version: 1.0
-To: Roland Dreier <rdreier@cisco.com>
-CC: Kurt Newman <knewman@globaldataguard.com>, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.32.1 kernel unable to use more than 2 of 16 CPUs on Intel
- E5540 (i7)
-References: <4C23D1E9.9050007@globaldataguard.com> <adahbksqe71.fsf@roland-alpha.cisco.com>
-In-Reply-To: <adahbksqe71.fsf@roland-alpha.cisco.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100604180328.GB2492@tuxdriver.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2010 04:05 PM, Roland Dreier wrote:
-> Your config seems to have CONFIG_PM and therefore CONFIG_ACPI disabled.
-> So the kernel is relying on mptable information.  Unsurprisingly on a
-> modern system, that info is probably broken -- since everything would
-> have been tested with ACPI.
->
-> Try turning on CONFIG_ACPI and see if that helps at all.
+On Fri, Jun 04, 2010 at 02:03:28PM -0400, John W. Linville wrote:
+> On Fri, Jun 04, 2010 at 06:32:18PM +0200, Nils Radtke wrote:
+> >   Hi John,
+> > 
+> > http://marc.info/?l=linux-wireless&m=127317062320707&w=2 :
+> > > > > The BUG_ON was introduced by:
+> > > > > commit 3110bef78cb4282c58245bc8fd6d95d9ccb19749
+> > > > > Author: Guy Cohen <guy.cohen@intel.com>
+> > > > > Date:   Tue Sep 9 10:54:54 2008 +0800
+> > > > > 
+> > > > >     iwlwifi: Added support for 3 antennas
+> > > > > 
+> > > > > ... the portion adding the BUG_ON is reverted since we are encountering the error
+> > > > > and BUG_ON was created with assumption that error is not encountered.
+> > > > > 
+> > > > > Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+> > > > > ---
+> > > > 
+> > > > I noticed this patch in your wireless-next-2.6 pull request. Since it is
+> > > > addressing a system hang issue, could it perhaps be included in
+> > > > wireless-2.6 also? I should have included the bug report reference for
+> > > > this purpose, sorry ... it is
+> > > > https://bugzilla.redhat.com/show_bug.cgi?id=588021
+> > > 
+> > > I didn't send it that way because a) that code has been there for a
+> > > really long time; and b) the reporter couldn't reliably reproduce
+> > > the bug and therefore can't reliably test the fix.  While I agree
+> > > that the fix looks harmless, no update is zero-risk.
+> > > 
+> > > Can you reliably hit that code?  Has it been tested enough that we
+> > > should risk holding-up 2.6.34's release for it?
+> > I'm one of those _very reliably_ hitting this BUG. I can tell how 
+> > annoying it is. I have to backport the patch w/ every kernel release
+> > to be able to use the wireless link _at all_. So please consider
+> > it as somewhat urgent to get the patch included. 
+> > 
+> > I'm still in contact w/ Reinette regularly to get those problems fixed.
+> > It involves physically moving around the city for testing any modification
+> > so this working is slowly processing as it takes every time an enormous 
+> > amount of time to do so. Work in (slow) progress, but it's alive..
+> > C.f. http://permalink.gmane.org/gmane.linux.kernel/992941
+> > 
+> > BTW, https://bugzilla.redhat.com/show_bug.cgi?id=588021 this isn't fixed.
+> > Maybe RH did fix it. kernel.org sources haven't. This is a blocker ever 
+> > since.
+> 
+> The patch is in linux-2.6.  I suppose it could go to stable@kernel.org.
 
-Indeed, not having ACPI enabled will prevent any multi-core CPU 
-detection. ACPI really has to be enabled for any modern x86 system to 
-work properly.
+Now queued up, thanks.
 
-I'd think that the CONFIG_ACPI really should be defaulted on more 
-strongly - maybe force it on if CONFIG_EMBEDDED isn't set or something..
+greg k-h
