@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab0FYQFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 12:05:44 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:58466 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab0FYQFn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 12:05:43 -0400
-Date: Fri, 25 Jun 2010 11:00:25 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-       Russell King <rmk@arm.linux.org.uk>, Bryan Wu <cooloney@kernel.org>,
-       Tony Luck <tony.luck@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-       anton@samba.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Mike Travis <travis@sgi.com>, Bryan Wu <cooloney@kernel.org>,
-       Tony Luck <tony.luck@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-       anton@samba.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Mike Travis <travis@sgi.com>
-Subject: Re: [PATCH 2/5] cpumask: make task_struct.cpus_allowed a
- cpumask_var_t
-In-Reply-To: <201006252233.40481.rusty@rustcorp.com.au>
-Message-ID: <alpine.DEB.2.00.1006251058180.18900@router.home>
-References: <201006252233.40481.rusty@rustcorp.com.au>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756516Ab0FYQIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 12:08:23 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:57890 "EHLO smtp.wine.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756389Ab0FYQIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 12:08:22 -0400
+To: paulmck@linux.vnet.ibm.com, mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 2.6.35-rc3] Add RCU check for find_task_by_vpid().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201006260108.JFJ86910.VMFOLOFFJOtSQH@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 26 Jun 2010 01:08:19 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jun 2010, Rusty Russell wrote:
+find_task_by_vpid() says "Must be called under rcu_read_lock().". But due to
+commit 3120438 "rcu: Disable lockdep checking in RCU list-traversal primitives",
+we are currently unable to catch "find_task_by_vpid() with tasklist_lock held
+but RCU lock not held" errors.
 
-> Even better would be to point to the fixed "one cpu" and "all cpus"
-> masks where possible, and make a copy when setting it to something
-> else.  But you'd have to track down those naughty places which frob it
-> directly...
+  ===================================================
+  [ INFO: suspicious rcu_dereference_check() usage. ]
+  ---------------------------------------------------
+  kernel/pid.c:386 invoked rcu_dereference_check() without protection!
+  
+  other info that might help us debug this:
+  
+  
+  rcu_scheduler_active = 1, debug_locks = 1
+  1 lock held by rc.sysinit/1102:
+   #0:  (tasklist_lock){.+.+..}, at: [<c1048340>] sys_setpgid+0x40/0x160
+  
+  stack backtrace:
+  Pid: 1102, comm: rc.sysinit Not tainted 2.6.35-rc3-dirty #1
+  Call Trace:
+   [<c105e714>] lockdep_rcu_dereference+0x94/0xb0
+   [<c104b4cd>] find_task_by_pid_ns+0x6d/0x70
+   [<c104b4e8>] find_task_by_vpid+0x18/0x20
+   [<c1048347>] sys_setpgid+0x47/0x160
+   [<c1002b50>] sysenter_do_call+0x12/0x36
 
-Put it into a read only segment?
-
-What is the estimated performance impact of adding a level of indirection
-(and a potential cache miss) to a number of critical code paths?
-
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+diff --git a/kernel/pid.c b/kernel/pid.c
+index e9fd8c1..a257471 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -382,6 +382,9 @@ EXPORT_SYMBOL(pid_task);
+  */
+ struct task_struct *find_task_by_pid_ns(pid_t nr, struct pid_namespace *ns)
+ {
++#ifdef __do_rcu_dereference_check
++	__do_rcu_dereference_check(rcu_read_lock_held());
++#endif
+ 	return pid_task(find_pid_ns(nr, ns), PIDTYPE_PID);
+ }
+ 
