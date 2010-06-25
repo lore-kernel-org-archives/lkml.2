@@ -1,75 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab0FYA3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 20:29:36 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37409 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab0FYA3f (ORCPT
+	id S1754137Ab0FYAtz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 20:49:55 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48611 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab0FYAty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 20:29:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=d8Nd7l2wbL5fCSGFQS2/JZNJHrUT/IDtDok67z9g2/RWzpJtLYdEirSVEiHUYyTRAA
-         B/TnXFiv2F1VnjSNSYPLEH8y0ZPL61Dk2qrZe1n4KqjWxlDre77GcYoaa1Op+lf99J9G
-         ukj2Pt3as4ZQjim6x/L6RuNHxK/tRJv5fOgkg=
-Message-ID: <4C23F86C.5090502@gmail.com>
-Date: Thu, 24 Jun 2010 18:29:32 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	Thu, 24 Jun 2010 20:49:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C23FD2B.30204@jp.fujitsu.com>
+Date: Fri, 25 Jun 2010 09:49:47 +0900
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
 MIME-Version: 1.0
-To: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-       Linux ACPI <linux-acpi@vger.kernel.org>
-Subject: Re: Ubuntu patch enabling speedstep for sonoma processors
-References: <4C237EAE.3000908@pardus.org.tr>
-In-Reply-To: <4C237EAE.3000908@pardus.org.tr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: rostedt@goodmis.org
+CC: netdev@vger.kernel.org, davem@davemloft.net, scott.a.mcmillan@intel.com,
+       kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 1/5] irq: add tracepoint to softirq_raise
+References: <4C2312A8.9060903@jp.fujitsu.com>	 <4C23145B.30805@jp.fujitsu.com> <1277406914.9181.67.camel@gandalf.stny.rr.com>
+In-Reply-To: <1277406914.9181.67.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2010 09:50 AM, Ozan Çağlayan wrote:
-> Hi,
->
-> The following patch enables speedstep for sonoma processors:
-> http://kernel.ubuntu.com/git?p=ubuntu/ubuntu-maverick.git;a=blobdiff;f=arch/x86/kernel/cpu/cpufreq/speedstep-centrino.c;h=ee4e9f8050752923f9671f61ffbea662bc9ad12a;hp=9b1ff37de46ae6a729f48d2d94ad30548806884d;hb=23120eb5ae5a12924565e8af3d946a015e1caaf9;hpb=215cc71ef0b26b9434404f387681d9bd173d2434
->
-> The patch never got accepted by upstream after some discussions:
->
-> http://linux.derkeiler.com/Mailing-Lists/Kernel/2008-06/msg01078.html
->
-> """
-> This patch has been floating around for years.
-> So long, I've forgotten the original reason it wasn't accepted.
-> It had something to do with it working for some users, but not others,
-> and we can't detect the 'not working' case.
->
-> speedstep-centrino is also deprecated in favour of acpi-cpufreq for some time.
-> If acpi isn't working on these machines, we should find out why.
->
-> Dave Jones
-> """
->
-> """
-> My recollection is that we had no way to work out which voltage table
-> was appropriate for a given CPU, so there was a risk of us either over-
-> or under-volting the chip. Doing it via ACPI is safe.
->
-> Matthew Garrett
-> """
->
-> I have bug report from a user which complains that frequency scaling is not available
-> on its computer. This patch fixes the issue but seen the discussions there should be a
-> better and more correct way to fix the issue.
->
-> What should I do in order to debug and try to fix it?
->
-> And also seen that Ubuntu carries this patch for a relatively long time, did you see
-> any negative effect like the aforementioned risk of over/under-volting the chip?
+Hi Steven,
 
-The acpidump from that system would be a good start, to figure out why 
-acpi-cpufreq isn't working..
+Sorry, I submitted other patches to only netdev.
+I'll resubmit soon all patches to linux-kernel.
+
+(2010/06/25 4:15), Steven Rostedt wrote:
+> Hi Koki,
+> 
+> Your subject says 1/5 but I do not see any other patches.
+> 
+> 
+> On Thu, 2010-06-24 at 17:16 +0900, Koki Sanagi wrote:
+>> This patch adds a tracepoint to raising of softirq.
+>> This is useful if you want to detect which hard interrupt raise softirq
+>> and lets you know a time between raising softirq and performing softirq.
+>> Combinating with other tracepoint, it lets us know a process of packets
+>> (See patch 0/5).
+>>
+>>           <idle>-0     [001] 241229.957184: softirq_raise: vec=3 [action=NET_RX]
+>>           <idle>-0     [000] 241229.993399: softirq_raise: vec=1 [action=TIMER]
+>>           <idle>-0     [000] 241229.993400: softirq_raise: vec=9 [action=RCU]
+>>
+>> This is a same patch Lai Jiangshan submitted.
+>> http://marc.info/?l=linux-kernel&m=126026122728732&w=2
+>>
+>> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+>> ---
+>>  include/linux/interrupt.h  |    8 +++++++-
+>>  include/trace/events/irq.h |   34 +++++++++++++++++++++++++++++++---
+>>  2 files changed, 38 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+>> index c233113..1cb5726 100644
+>> --- a/include/linux/interrupt.h
+>> +++ b/include/linux/interrupt.h
+>> @@ -18,6 +18,7 @@
+>>  #include <asm/atomic.h>
+>>  #include <asm/ptrace.h>
+>>  #include <asm/system.h>
+>> +#include <trace/events/irq.h>
+>>  
+>>  /*
+>>   * These correspond to the IORESOURCE_IRQ_* defines in
+>> @@ -402,7 +403,12 @@ asmlinkage void do_softirq(void);
+>>  asmlinkage void __do_softirq(void);
+>>  extern void open_softirq(int nr, void (*action)(struct softirq_action *));
+>>  extern void softirq_init(void);
+>> -#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
+>> +static inline void __raise_softirq_irqoff(unsigned int nr)
+>> +{
+>> +	trace_softirq_raise(nr);
+>> +	or_softirq_pending(1UL << nr);
+>> +}
+>> +
+>>  extern void raise_softirq_irqoff(unsigned int nr);
+>>  extern void raise_softirq(unsigned int nr);
+>>  extern void wakeup_softirqd(void);
+>> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+>> index 0e4cfb6..7cb7435 100644
+>> --- a/include/trace/events/irq.h
+>> +++ b/include/trace/events/irq.h
+>> @@ -5,7 +5,9 @@
+>>  #define _TRACE_IRQ_H
+>>  
+>>  #include <linux/tracepoint.h>
+>> -#include <linux/interrupt.h>
+>> +
+>> +struct irqaction;
+>> +struct softirq_action;
+>>  
+>>  #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
+>>  #define show_softirq_name(val)				\
+>> @@ -82,6 +84,32 @@ TRACE_EVENT(irq_handler_exit,
+>>  		  __entry->irq, __entry->ret ? "handled" : "unhandled")
+>>  );
+>>  
+>> +/**
+>> + * softirq_raise - called immediately when a softirq is raised
+>> + * @nr: softirq vector number
+>> + *
+>> + * Tracepoint for tracing when softirq action is raised.
+>> + * Also, when used in combination with the softirq_entry tracepoint
+>> + * we can determine the softirq raise latency.
+>> + */
+>> +TRACE_EVENT(softirq_raise,
+>> +
+>> +	TP_PROTO(unsigned int nr),
+>> +
+>> +	TP_ARGS(nr),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(	unsigned int,	vec	)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->vec	= nr;
+>> +	),
+>> +
+>> +	TP_printk("vec=%d [action=%s]", __entry->vec,
+>> +		show_softirq_name(__entry->vec))
+> 
+> Hmm, is there a way to reuse a DECLARE_EVENT_CLASS here?
+> 
+>> +);
+>> +
+>>  DECLARE_EVENT_CLASS(softirq,
+>>  
+>>  	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
+>> @@ -89,11 +117,11 @@ DECLARE_EVENT_CLASS(softirq,
+>>  	TP_ARGS(h, vec),
+>>  
+>>  	TP_STRUCT__entry(
+>> -		__field(	int,	vec			)
+>> +		__field(	unsigned int,	vec	)
+>>  	),
+>>  
+>>  	TP_fast_assign(
+>> -		__entry->vec = (int)(h - vec);
+>> +		__entry->vec = (unsigned int)(h - vec);
+> 
+> Just curious, did you see the original as a bug?
+> 
+> -- Steve
+> 
+>>  	),
+>>  
+>>  	TP_printk("vec=%d [action=%s]", __entry->vec,
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+
+
