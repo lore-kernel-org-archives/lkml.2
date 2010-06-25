@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab0FYK4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 06:56:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46564 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753651Ab0FYK4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 06:56:30 -0400
-Message-ID: <4C248B56.8030207@suse.de>
-Date: Fri, 25 Jun 2010 16:26:22 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091130 SUSE/3.0.0-1.1.1 Thunderbird/3.0
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-Cc: Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 03/10] cifs: register CIFS for caching
-References: <1277220189-3485-1-git-send-email-sjayaraman@suse.de> <yes> <9603.1277311877@redhat.com>
-In-Reply-To: <9603.1277311877@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754906Ab0FYK6N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 06:58:13 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50668 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753734Ab0FYK6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 06:58:11 -0400
+Date: Fri, 25 Jun 2010 12:03:29 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Samo Pogacnik <samo_pogacnik@t-2.net>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+       linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+Message-ID: <20100625120329.1303aa61@lxorguk.ukuu.org.uk>
+In-Reply-To: <1277462596.2143.101.camel@itpsd6lap>
+References: <1273918658.2341.17.camel@itpsd6lap>
+	<1275171436.2122.29.camel@itpsd6lap>
+	<20100529235402.296406d9@lxorguk.ukuu.org.uk>
+	<1275175983.2122.42.camel@itpsd6lap>
+	<1276123020.16010.97.camel@itpsd6lap>
+	<20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
+	<1276291932.2154.45.camel@itpsd6lap>
+	<20100621153858.444695c0@lxorguk.ukuu.org.uk>
+	<1277244410.2195.47.camel@itpsd6lap>
+	<20100622232108.26752ff8@lxorguk.ukuu.org.uk>
+	<1277462596.2143.101.camel@itpsd6lap>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 10:21 PM, David Howells wrote:
-> Suresh Jayaraman <sjayaraman@suse.de> wrote:
-> 
->> +	rc = cifs_fscache_register();
->> +	if (rc)
->> +		goto out;
->> +
->>  	rc = cifs_init_inodecache();
->>  	if (rc)
->>  		goto out_clean_proc;
->> @@ -949,8 +954,10 @@ init_cifs(void)
->>  	cifs_destroy_mids();
->>   out_destroy_inodecache:
->>  	cifs_destroy_inodecache();
->> +	cifs_fscache_unregister();
->>   out_clean_proc:
-> 
-> This is incorrect.  You need to call cifs_fscache_unregister() if
-> cifs_init_inodecache() fails.
-> 
+> +static int tpk_write_room(struct tty_struct *tty)
+> +{
+> +	int ret = tpk_space;
+> +
+> +	/* allow char by char under max pressure */
+> +	if (tpk_space == 0)
+> +		tpk_space = 1;
 
-Doh! I'll fix it.
+That won't do what you think, the ldisc will keep seeing progress and
+generate millions of 1 byte I/Os in a loop !
+
+Otherwise looks excellent.
 
 
--- 
-Suresh Jayaraman
+> +	switch (cmd) {
+> +	/* Stop TIOCCONS */
+> +	case TIOCCONS:
+> +		return -EOPNOTSUPP;
+
+And I'll fix this bit up to work properly in the core code.
+
+
+With my devices.txt owner hat on I'll allocate the minor as you suggest
+(and double check this causes no problems), with my tty hat on can you
+send it to GregKH for merging into the tree.
