@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab0FYTWw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:22:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22353 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836Ab0FYTWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:22:51 -0400
-Date: Fri, 25 Jun 2010 21:20:08 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Darren Hart <dvhltc@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Thomas Gleixner <tglx@linutronix.de>
-Cc: Andreas Schwab <schwab@redhat.com>, Danny Feng <dfeng@redhat.com>,
-       Jakub Jelinek <jakub@redhat.com>, Ulrich Drepper <drepper@redhat.com>,
-       linux-kernel@vger.kernel.org
-Subject: Q: sys_futex() && timespec_valid()
-Message-ID: <20100625192008.GA25337@redhat.com>
+	id S1756743Ab0FYTai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:30:38 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:54520 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab0FYTag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:30:36 -0400
+Date: Fri, 25 Jun 2010 21:30:31 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       "H.PeterA" <"nvin hpa"@zytor.com>, linux-kernel@vger.kernel.org,
+       Andi Kleen <andi@firstfloor.org>, tglx <tglx@linutronix.de>,
+       davem <davem@davemloft.net>, paulus <paulus@samba.org>
+Subject: Re: [RFC][PATCH] irq_work -v2
+Message-ID: <20100625193031.GD13421@basil.fritz.box>
+References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
+ <1277361352.1875.838.camel@laptop>
+ <1277490625.1875.986.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1277490625.1875.986.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Jun 25, 2010 at 08:30:25PM +0200, Peter Zijlstra wrote:
 
-Another stupid question about the trivial problem I am going to ask,
-just to report the authoritative answer back to bugzilla. The problem
-is, personally I am not sure we should/can add the user-visible change
-required by glibc maintainers, and I am in no position to suggest them
-to fix the user-space code instead.
+I'm not sure what all the logic for entry enqueued by someone
+else is good for? Is that for the case you don't have enough
+entries preallocated and you share them with someone else?
 
+Normally if the sharing is per cpu that would be difficult 
+to recover from because if it's due to a nest situation (for example)
+you would deadlock.
 
-In short, glibc developers believe that sys_futex(ts) is buggy and
-needs the fix to return -ETIMEDOUT instead of -EINVAL in case when
-ts->tv_sec < 0 and the timeout is absolute.
+For me it would seem simpler to simply not share.
 
-Ignoring the possible cleanups/microoptimizations, something like this:
+> +	struct irq_work *list;
+> +
+> +	BUG_ON(!in_irq());
+> +	BUG_ON(!irqs_disabled());
+> +
+> +	list = xchg(&__get_cpu_var(irq_work_list), NULL);
+> +	while (list != NULL) {
+> +		struct irq_work *entry = list;
+> +
+> +		list = irq_work_next(list);
+> +
+> +		/*
+> +		 * Clear the PENDING bit, after this point the @entry
+> +		 * can be re-used.
+> +		 */
+> +		entry->next = next_flags(NULL, IRQ_WORK_BUSY);
+> +		entry->func(entry);
 
---- x/kernel/futex.c
-+++ x/kernel/futex.c
-@@ -2625,6 +2625,16 @@ SYSCALL_DEFINE6(futex, u32 __user *, uad
- 		      cmd == FUTEX_WAIT_REQUEUE_PI)) {
- 		if (copy_from_user(&ts, utime, sizeof(ts)) != 0)
- 			return -EFAULT;
-+
-+		// absolute timeout
-+		if (cmd != FUTEX_WAIT) {
-+			if (ts->tv_nsec >= NSEC_PER_SEC)
-+				return -EINVAL;
-+			if (ts->tv_sec < 0)
-+				return -ETIMEDOUT;
-+		}
-+
-+
- 		if (!timespec_valid(&ts))
- 			return -EINVAL;
- 
-------------------------------------------------------------------------
+Needs compiler memory barrier here I think.
 
-Otherwise, pthread_rwlock_timedwrlock(ts) hangs spinning in user-space
-forever if ts->tv_sec < 0.
+> +		/*
+> +		 * Clear the BUSY bit and return to the free state if
+> +		 * no-one else claimed it meanwhile.
+> +		 */
+> +		cmpxchg(&entry->next, next_flags(NULL, IRQ_WORK_BUSY), NULL);
+> +	}
+> +}
 
-To clarify: this depends on libc version and arch.
-
-This happens because pthread_rwlock_timedwrlock(rwlock, ts) on x86_64
-roughly does:
-
-	for (;;) {
-		if (fast_path_succeeds(rwlock))
-			return 0;
-
-		if (ts->tv_nsec >= NSEC_PER_SEC)
-			return EINVAL;
-
-		errcode = sys_futex(FUTEX_WAIT_BITSET_PRIVATE, ts);
-		if (errcode == ETIMEDOUT)
-			return ETIMEDOUT;
-	}
-
-and since the kernel return EINVAL due to !timespec_valid(ts), the
-code above loops forever.
-
-(btw, we have same problem with EFAULT, and this is considered as
- a caller's problem).
-
-IOW, pthread_rwlock_timedwrlock() assumes that in this case
-sys_futex() can return nothing interesting except 0 or ETIMEDOUT.
-I guess pthread_rwlock_timedwrlock() is not alone, but I didn't check.
-
-
-
-So, the question: do you think we can change sys_futex() to make
-glibc happy?
-
-Or, do you think it is user-space who should check tv_sec < 0 if
-it wants ETIMEDOUT with the negative timeout ?
-
-Thanks,
-
-Oleg.
-
+-Andi
