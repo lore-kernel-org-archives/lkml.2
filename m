@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab0FYHSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 03:18:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55470 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662Ab0FYHSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 03:18:49 -0400
-Date: Fri, 25 Jun 2010 09:18:47 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Fabio Estevam <fabioestevam@yahoo.com>
-Cc: linux-kernel@vger.kernel.org, wim@iguana.be, rdunlap@xenotime.net,
-       s.hauer@pengutronix.de
-Subject: Re: [PATCH] watchdog docs: add an entry for imx2_wdt
-Message-ID: <20100625071847.GA25451@pengutronix.de>
-References: <898714.83943.qm@web51007.mail.re2.yahoo.com>
+	id S1752159Ab0FYHTo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 03:19:44 -0400
+Received: from n1-vm1.bullet.mail.gq1.yahoo.com ([67.195.23.153]:42043 "HELO
+	n1-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751734Ab0FYHTn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 03:19:43 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 814390.52930.bm@omp119.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=jm1haSOZNbsJVzzV2vTLEnQqgo3T+wouZt5lYRbCIXD+JpvJtBMeOmPvFHe+o3zCCRvIb6adG3DYt55Omjx691hd/AVc3qGiBHk3BF43XCeGaTidytZSsgZUNv8PxocTBlpA8mvB76c7uqx1pS/RLKD7mPKI5A8xXKoQwhZVYyA=;
+Message-ID: <683567.34621.qm@web180314.mail.gq1.yahoo.com>
+X-YMail-OSG: GqNdJfwVM1kYs6wh4_EVDamLIyyoarGh8zUhE4Pi.Uvtoj1
+ dN55hqE15BpFgw03hZa5u.l2K3Zu1m237qJRntbDsJ.EodVsVE2foxrlhjNg
+ OJcffT2xtljxYZ8I3qR4bUTQq8_HJIFr_jT7sLJoMKkFyq6iYOIjJXEzYgvh
+ 6HMIw5MM8Ta_vlwMireuha_ivlSYktF4cG6bvIBEfRI7OXrwJ9qWC7xQ8U0P
+ f4o3qhihmff8.ur8W7Ktx1yCPAqY4vMeaSkUaxyAM1egg.Mdk36J3R823ONF
+ lv2xGDBVs9Bi2iLE76_T3oX2pJVVFJ1ZhuJUgDW57MIyadcZnf10ajfPM7TZ
+ LXquJsYOERZTH7cxMjuBhN5.G6P1hENarbIs-
+X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.104.274457
+Date: Fri, 25 Jun 2010 00:19:41 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [RFC PATCH] Rework gpio cansleep (was Re: gpiolib and sleeping gpios)
+To: Jamie Lokier <jamie@shareable.org>, Ryan Mallon <ryan@bluewatersys.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
+       linux kernel <linux-kernel@vger.kernel.org>,
+       ext-jani.1.nikula@nokia.com,
+       =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <4C22A275.3030102@bluewatersys.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YiEDa0DAkWCtVeE4"
-Content-Disposition: inline
-In-Reply-To: <898714.83943.qm@web51007.mail.re2.yahoo.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---YiEDa0DAkWCtVeE4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jun 24, 2010 at 09:43:25AM -0700, Fabio Estevam wrote:
-> Add an entry for imx2_wdt in watchdog-parameters.txt
->=20
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+--- On Wed, 6/23/10, Ryan Mallon <ryan@bluewatersys.com> wrote:
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+> >> In the current code, if a driver ever calls
+> gpio_(set/get)_value on a
+> >> gpio then you cannot pass a sleeping gpio to that
+> driver. The request
+> >> will succeed,
 
-Thanks!
+No it won't.  Recall that those bit accessor
+functions don't return success or failure!!
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+I'll be submitting a patch soonish, which is
+a variant of Jani's patch to make the runtime
+warnings trigger more consistently in the
+face of such programming errors.
 
---YiEDa0DAkWCtVeE4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
 
-iEYEARECAAYFAkwkWFcACgkQD27XaX1/VRtVvgCeKe7g3YqShbIUjAvxDKxQ9Cqy
-3roAoLG8OM0/x1y5OvdA0g+98TBPPjHm
-=1uHA
------END PGP SIGNATURE-----
 
---YiEDa0DAkWCtVeE4--
