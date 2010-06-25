@@ -1,160 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab0FYMza (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 08:55:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49945 "EHLO mx1.redhat.com"
+	id S1755233Ab0FYM4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 08:56:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50162 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752535Ab0FYMz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 08:55:28 -0400
-Date: Fri, 25 Jun 2010 08:55:27 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
-Message-ID: <20100625125527.GA3187@jolsa.bos.redhat.com>
-References: <20100616160844.GB1893@jolsa.lab.eng.brq.redhat.com>
- <1276691043-12694-1-git-send-email-jolsa@redhat.com>
- <1276692314.2632.66.camel@edumazet-laptop>
- <20100616125708.GA1893@jolsa.lab.eng.brq.redhat.com>
- <1276693837.2632.75.camel@edumazet-laptop>
- <6118.1276818640@redhat.com>
- <20100619120101.GA2043@jolsa.colubris.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100619120101.GA2043@jolsa.colubris.lan>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752535Ab0FYM4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 08:56:01 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4C24A606.5040001@suse.de>
+References: <4C24A606.5040001@suse.de> <1277220214-3597-1-git-send-email-sjayaraman@suse.de> <yes> <9822.1277312573@redhat.com>
+To: Suresh Jayaraman <sjayaraman@suse.de>
+Cc: dhowells@redhat.com, Steve French <smfrench@gmail.com>,
+       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 06/10] cifs: define inode-level cache object and register them
+Date: Fri, 25 Jun 2010 13:55:49 +0100
+Message-ID: <22697.1277470549@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+Suresh Jayaraman <sjayaraman@suse.de> wrote:
 
-do I need to send this some one/place else?
-not sure it's going to be picked up..
+> I think the creation time is currently being ignored as we won't be able
+> to accomodate in POSIX stat struct.
 
-thanks,
-jirka
+The FS-Cache interface doesn't use the POSIX stat struct, but it could be
+really useful to save it and use it for cache coherency inside the kernel.
 
-On Sat, Jun 19, 2010 at 02:01:02PM +0200, Jiri Olsa wrote:
-> On Fri, Jun 18, 2010 at 12:50:40AM +0100, David Howells wrote:
-> > Jiri Olsa <jolsa@redhat.com> wrote:
-> > 
-> > > maybe I have better solution...
-> > > 
-> > > I think there's no need to get the cred refference as long as
-> > > the 'cred' handling stays inside the rcu_read_lock block.
-> > 
-> > I think this is right.  There should be no need for a synchronize_rcu() call
-> > to be added in commit_creds() with this as commit_creds() calls put_cred()
-> > which will defer the destruction until the RCU grace period is up anyway.
-> > 
-> > Whilst I'd prefer to call get_cred() in task_state(), as you point out (and I
-> > hadn't considered), this may see an cred struct that has been detached from
-> > its pointer on another CPU and had its usage count reduced to 0.
-> > 
-> > In such a case, we can't simply increment the count and then decrement it
-> > again later as it's already on the RCU destruction queue and can't necessarily
-> > be removed so that it can be added back in.
-> > 
-> > What could be done, though I'm not sure it's worth it, is to use
-> > atomic_inc_not_zero() and loop around if the cred struct has gone out of
-> > service when we try and access it and reread the pointer.
-> > 
-> > The advantage of this would be that we could manage to hold the RCU read lock
-> > for as little time as possible.
-> > 
-> > Acked-by: David Howells <dhowells@redhat.com>
-> 
-> thanks,
-> 
-> in case the there's need for some consistent comment :)
-> patch stays
-> 
-> wbr,
-> jirka
-> 
-> 
-> 
-> ---
-> BZ 591015 - kernel BUG at kernel/cred.c:168
-> https://bugzilla.redhat.com/show_bug.cgi?id=591015
-> 
-> Above bugzilla reported bug during the releasing of
-> old cred structure.
-> 
-> There is reproducer attached to the bugzilla.
-> 
-> The issue is caused by releasing old cred struct while other
-> kernel path might be still using it. This leads to cred->usage
-> inconsistency inside the __put_cred and triggering the bug.
-> 
-> Following kernel paths are affected:
-> 
-> The CPU1 path is setting the new groups creds.
-> The CPU2 path is cat /proc/PID/status
-> 
-> 
-> CPU 1                              CPU 2
-> 
-> sys_setgroups                      proc_pid_status      
->   set_current_groups                 task_state
->     commit_creds                       rcu_read_lock
->       put_cred                         ...
->         __put_cred                     get_cred
->           BUG_ON(usage != 0)           ...
->                                        rcu_read_unlock
->                                        
-> 
-> 
-> If __put_cred got executed during the CPU2 holding the reference
-> the BUG_ON inside __put_cred is trigered.
-> 
-> I think there's no need to get the cred refference as long as
-> the 'cred' handling stays inside the rcu_read_lock block.
-> 
-> And the condition of __task_cred 'make sure task doesn't go away',
-> is done by proc_single_show as this is the proc file.
-> 
-> wbr,
-> jirka
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
-> diff --git a/fs/proc/array.c b/fs/proc/array.c
-> index 9b58d38..ac3b3a4 100644
-> --- a/fs/proc/array.c
-> +++ b/fs/proc/array.c
-> @@ -176,7 +176,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
->  		if (tracer)
->  			tpid = task_pid_nr_ns(tracer, ns);
->  	}
-> -	cred = get_cred((struct cred *) __task_cred(p));
-> +	cred = __task_cred(p);
->  	seq_printf(m,
->  		"State:\t%s\n"
->  		"Tgid:\t%d\n"
-> @@ -199,15 +199,14 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
->  		"FDSize:\t%d\n"
->  		"Groups:\t",
->  		fdt ? fdt->max_fds : 0);
-> -	rcu_read_unlock();
->  
->  	group_info = cred->group_info;
->  	task_unlock(p);
->  
->  	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
->  		seq_printf(m, "%d ", GROUP_AT(group_info, g));
-> -	put_cred(cred);
->  
-> +	rcu_read_unlock();
->  	seq_printf(m, "\n");
->  }
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Out of interest, what does Samba do when it comes to generating a creation time
+for UNIX where one does not exist?
+
+David
