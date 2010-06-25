@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab0FYIPG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 04:15:06 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36828 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab0FYIPA (ORCPT
+	id S1752982Ab0FYIRB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 04:17:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48287 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab0FYIRA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 04:15:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=E6kmappu6bEEz1jeC5LkwRme1RYBbZIiaKU/dyFxkD9/JHsNch1ObjaD4f0sd9RrTS
-         VED/owmthCNNbNbntdvBkt4IkPKc/1kPZGBKM5P8bNb+XKkPfI335RrwTfqvx+0J2MH+
-         WWvKLH2kpa/N1UMGyLtatn/+fA2e/u7R7u1cI=
-Date: Fri, 25 Jun 2010 01:14:54 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-       Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] smb380: accelerometer driver
-Message-ID: <20100625081454.GB8546@core.coreip.homeip.net>
-References: <4C1216FD.6010107@samsung.com>
- <4C1224AE.6070607@jic23.retrosnub.co.uk>
- <AANLkTimNhxdyt7raC1GBoFXNse4cIe5C1Nn9xlUwAs0n@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimNhxdyt7raC1GBoFXNse4cIe5C1Nn9xlUwAs0n@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Fri, 25 Jun 2010 04:17:00 -0400
+Subject: Re: [RFC][PATCH] irq_work
+From: Peter Zijlstra <peterz@infradead.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H.Peter Anvin" <hpa@zytor.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <1277431963.3947.140.camel@yhuang-dev.sh.intel.com>
+References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
+	 <1277361352.1875.838.camel@laptop>
+	 <1277431963.3947.140.camel@yhuang-dev.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 25 Jun 2010 09:48:30 +0200
+Message-ID: <1277452110.22715.2116.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 09:36:51PM +0900, Kyungmin Park wrote:
-> Hi,
+On Fri, 2010-06-25 at 10:12 +0800, Huang Ying wrote:
 > 
-> 2010/6/11 Jonathan Cameron <kernel@jic23.retrosnub.co.uk>:
-> > On 06/11/10 11:59, Donggeun Kim wrote:
-> >> This patch support driver for BOSCH SMB380 and BMA023.
-> >>
-> >> This driver will read x, y, z coordinate registers from the device and
-> >> report the values to users through sysfs interface.
-> > Nack. This should not be in hwmon.
+> It is better to add "void *data" field in this struct to allow same
+> function can be used for multiple struct irq_work. 
+
+No, simply do:
+
+struct my_foo {
+  struct irq_work work;
+  /* my extra data */
+}
+
+void my_func(struct irq_work *work)
+{
+  struct my_foo *foo = container_of(work, struct my_foo, work);
+
+  /* tada! */
+}
+
+
+> And I think IRQ is the implementation detail here, so irq_work is
+> probably not a good name. nmi_return_notifier or nmi_callback is better?
+
+Well, its ran in hard-irq context, so its an irq work. There's nothing
+that says it can only be used from NMI context.
+
+> > +void irq_work_run(void)
+> > +{
+> > +     struct irq_work *list;
+> > +
+> > +     list = xchg(&__get_cpu_var(irq_work_list), CALLBACK_TAIL);
+> > +     while (list != CALLBACK_TAIL) {
+> > +             struct irq_work *entry = list;
+> > +
+> > +             list = list->next;
+> > +             entry->func(entry);
+> > +
+> > +             entry->next = NULL;
 > 
-> It's long story which subsystem is suitable to add.
-> We try to add 2008 at hwmon, and get failed.
+> entry->next = NULL should be put before entry->func(entry), so that we
+> will not lose a notification from NMI. And maybe check irq_work_list for
+> several times to make sure nothing is lost.
+
+But then _sync() will return before its done executing.
+
+I think clearing after the function is done executing is the only sane
+semantics (and yes, I should fix the current perf code).
+
+You can always miss an NMI since it can always happen before the
+callback gets done, and allowing another enqueue before the callback is
+complete is asking for trouble.
+
+> > +             /*
+> > +              * matches the mb in cmpxchg() in irq_work_queue()
+> > +              */
+> > +             smp_wmb();
+> > +     }
+> > +}
 > 
-> As you suggested there's several options.
-> 1. input
+> I don't know why we need smp_wmb() here and smp_rmb() in
+> irq_work_pending(). The smp_<x>mb() in original perf_pending_xxx code is
+> not necessary too. Because smp_<x>mb is invoked in wake_up_process() and
+> __wait_event() already.
 
-I decided I will take the accelerometers as input devices.
+The smp_wmb() wants to be before ->next = NULL; so that all writes are
+completed before we release the entry. To that same effect _sync() and
+_queue need the (r)mb.
 
-Thanks.
 
--- 
-Dmitry
