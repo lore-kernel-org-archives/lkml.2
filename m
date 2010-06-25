@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab0FYJS6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 05:18:58 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52684 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab0FYJS5 (ORCPT
+	id S1754320Ab0FYJTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 05:19:17 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:49777 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006Ab0FYJTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 05:18:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=lReT4s02wpCtMnkEN7aIj3PHvDdPKU/h/puy7kv1Jbs0U+H5Q8z7IrlS+QrBy6aCxw
-         H9BzAhAOmKzAAwaPFfah7UUpLbq8/c3iqp2knzWLDM28+I/aQwCw9sQVs5Y4/F1nO4Ot
-         O1/eG0wVkTzegy0O1Ik1NUlMKoEygkP7Xo+ac=
-Message-ID: <4C24747B.90008@gmail.com>
-Date: Fri, 25 Jun 2010 11:18:51 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	Fri, 25 Jun 2010 05:19:15 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Nathan Fontenot <nfont@austin.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memory hotplug disable boot option
+References: <4C24012B.9030506@austin.ibm.com>
+	<20100625105340.803C.A69D9226@jp.fujitsu.com>
+Date: Fri, 25 Jun 2010 11:19:13 +0200
+In-Reply-To: <20100625105340.803C.A69D9226@jp.fujitsu.com> (KOSAKI Motohiro's
+	message of "Fri, 25 Jun 2010 11:04:19 +0900 (JST)")
+Message-ID: <87d3vfeage.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-CC: Sankar P <sankar.curiosity@gmail.com>,
-       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       Vasanth Thiagarajan <Vasanth.Thiagarajan@atheros.com>,
-       Sujith Manoharan <Sujith.Manoharan@atheros.com>,
-       Senthilkumar Balasubramanian 
-	<Senthilkumar.Balasubramanian@atheros.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: kmemleak: Change kmemleak default buffer size
-References: <AANLkTimb7rP0rS0OU8nan5uNEhHx_kEYL99ImZ3c8o0D@mail.gmail.com> <1277189909-16376-1-git-send-email-sankar.curiosity@gmail.com> <20100622165509.GB11336@tux> <AANLkTikHiPKPD5myvn8bycPAS4f9rBkPvbag6if7p23O@mail.gmail.com> <20100624185614.GA6031@tux> <AANLkTim4mjw0BFshK_4RS6oDLLQMH_BF7BklU7EhETSj@mail.gmail.com> <20100624191218.GC6031@tux> <AANLkTimVb6kAxvVdtTcxlofYqu1m24XEBlvYY8OKBgFu@mail.gmail.com> <AANLkTikrNs3uFPgi_rBKKZ30F1JQt9iLYpIZ0_32afb6@mail.gmail.com> <AANLkTimkD65VDGEUSuy-meLF3gl0a9T4pmauZ1DXPytd@mail.gmail.com> <20100625091007.GA10672@tux>
-In-Reply-To: <20100625091007.GA10672@tux>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> writes:
 
-On 06/25/2010 11:10 AM, Luis R. Rodriguez wrote:
->> I hope I explained it clearly this time :-)
-> 
-> Indeed, thanks, so the letter only last name is really more of an
-> exemption? Or is it really common as well?
+>> Proposed patch to disable memory hotplug via a boot option,
+>> mem_hotplug=[on|off].  The patch only disables memory hotplug in that it 
+>> prevents the creation of the memory sysfs directories for memory sections.
+>> 
+>> This patch is meant to help alleviate very long boot times on systems with
+>> large memory (1+ TB) and many memory sections (10's of thousands).
+>
+> Why making simple /sys file is so slowly? Couldn't we fix such performance
+> problem?
 
-Having full name for SOB is the requirement.  Sankar P's full name is
-Sankar P.  That's as much as anyone cares or _should_ care, at least
-on the list.  If you wanna pursue further, can you please take it off
-list?
+Yes I agree this really needs to be fixed properly, not hacked around
+with an option. Nathan can you please post some profile logs of the long
+boot times?  
 
-Thanks.
+-Andi
 
 -- 
-tejun
+ak@linux.intel.com -- Speaking for myself only.
