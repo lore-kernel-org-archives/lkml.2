@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab0FYTHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:07:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45626 "EHLO mx1.redhat.com"
+	id S1756688Ab0FYTHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:07:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30099 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471Ab0FYTHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756636Ab0FYTHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Jun 2010 15:07:21 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 28/38] union-mount: Implement union-aware access()/faccessat()
-Date: Fri, 25 Jun 2010 12:05:18 -0700
-Message-Id: <1277492728-11446-29-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 29/38] union-mount: Implement union-aware link()
+Date: Fri, 25 Jun 2010 12:05:19 -0700
+Message-Id: <1277492728-11446-30-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For union mounts, a file located on the lower layer will incorrectly
-return EROFS on an access check.  To fix this, use the new
-path_permission() call, which ignores a read-only lower layer file
-system if the target will be copied up to the topmost file system.
 ---
- fs/open.c |   21 +++++++++++++++++----
- 1 files changed, 17 insertions(+), 4 deletions(-)
+ fs/namei.c |   24 ++++++++++++++++++++----
+ 1 files changed, 20 insertions(+), 4 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 74e5cd9..7f7958e 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -32,6 +32,7 @@
- #include <linux/ima.h>
- 
- #include "internal.h"
-+#include "union.h"
- 
- int vfs_statfs(struct dentry *dentry, struct kstatfs *buf)
+diff --git a/fs/namei.c b/fs/namei.c
+index 0a4abc7..399cb65 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2941,16 +2941,18 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
  {
-@@ -454,7 +455,10 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 	const struct cred *old_cred;
- 	struct cred *override_cred;
- 	struct path path;
-+	struct nameidata nd;
-+	struct vfsmount *mnt;
- 	struct inode *inode;
-+	char *tmp;
- 	int res;
+ 	struct dentry *new_dentry;
+ 	struct nameidata nd;
++	struct nameidata old_nd;
+ 	struct path old_path;
+ 	int error;
+ 	char *to;
++	char *from;
  
- 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
-@@ -478,10 +482,17 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	if ((flags & ~AT_SYMLINK_FOLLOW) != 0)
+ 		return -EINVAL;
  
- 	old_cred = override_creds(override_cred);
+-	error = user_path_at(olddfd, oldname,
++	error = user_path_nd(olddfd, oldname,
+ 			     flags & AT_SYMLINK_FOLLOW ? LOOKUP_FOLLOW : 0,
+-			     &old_path);
++			     &old_nd, &old_path, &from);
+ 	if (error)
+ 		return error;
  
--	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
-+	res = user_path_nd(dfd, filename, LOOKUP_FOLLOW,
-+				   &nd, &path, &tmp);
- 	if (res)
+@@ -2958,8 +2960,20 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+ 	if (error)
  		goto out;
- 
-+	/* For union mounts, use the topmost mnt's permissions */
-+	if (IS_DIR_UNIONED(nd.path.dentry))
-+		mnt = nd.path.mnt;
-+	else
-+		mnt = path.mnt;
-+
- 	inode = path.dentry->d_inode;
- 
- 	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
-@@ -490,11 +501,11 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 		 * with the "noexec" flag.
- 		 */
- 		res = -EACCES;
--		if (path.mnt->mnt_flags & MNT_NOEXEC)
-+		if (mnt->mnt_flags & MNT_NOEXEC)
- 			goto out_path_release;
- 	}
- 
--	res = inode_permission(inode, mode | MAY_ACCESS);
-+	res = path_permission(&path, &nd.path, mode | MAY_ACCESS);
- 	/* SuS v2 requires we report a read only fs too */
- 	if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
- 		goto out_path_release;
-@@ -508,11 +519,13 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 	 * inherently racy and know that the fs may change
- 	 * state before we even see this result.
- 	 */
--	if (__mnt_is_readonly(path.mnt))
-+	if (__mnt_is_readonly(mnt))
- 		res = -EROFS;
- 
- out_path_release:
- 	path_put(&path);
-+	path_put(&nd.path);
-+	putname(tmp);
+ 	error = -EXDEV;
+-	if (old_path.mnt != nd.path.mnt)
+-		goto out_release;
++	if (old_path.mnt != nd.path.mnt) {
++		if (IS_DIR_UNIONED(old_nd.path.dentry) &&
++		    (old_nd.path.mnt == nd.path.mnt)) {
++			error = mnt_want_write(old_nd.path.mnt);
++			if (error)
++				goto out_release;
++			error = union_copyup(&old_nd, &old_path);
++			mnt_drop_write(old_nd.path.mnt);
++			if (error)
++				goto out_release;
++		} else {
++			goto out_release;
++		}
++	}
+ 	new_dentry = lookup_create(&nd, 0);
+ 	error = PTR_ERR(new_dentry);
+ 	if (IS_ERR(new_dentry))
+@@ -2982,6 +2996,8 @@ out_release:
+ 	putname(to);
  out:
- 	revert_creds(old_cred);
- 	put_cred(override_cred);
+ 	path_put(&old_path);
++	path_put(&old_nd.path);
++	putname(from);
+ 
+ 	return error;
+ }
 -- 
 1.6.3.3
 
