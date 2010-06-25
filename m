@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab0FYUqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 16:46:42 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33225 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab0FYUql convert rfc822-to-8bit (ORCPT
+	id S1752861Ab0FYU6B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 16:58:01 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47229 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751187Ab0FYU6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 16:46:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=MKmb+rCJTRwoJ3ODuqU7ttJkSXca5u16PVXBeRzhJtjNzE8Wy2rdS+cX+HBddWT7mm
-         /uyeiRnlqwtYgkH1n7hS5ySPtv3gL02AN3PVa7o3mR0jejSdb32oeiIBV1XoxkGKs+yq
-         DHd8zgcdCYVSeXbgAnSMPQd8o5j5Hobv03uiU=
+	Fri, 25 Jun 2010 16:58:00 -0400
+Date: Fri, 25 Jun 2010 16:57:57 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Florian Mickler <florian@mickler.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [update 2] Re: [RFC][PATCH] PM: Avoid losing wakeup events during
+ suspend
+In-Reply-To: <201006252237.50584.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1006251654470.1322-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikH-jOOOzJ7xium-O3jwHpgh_czAFlkFkwnxpkK@mail.gmail.com>
-References: <AANLkTila2rrYcBUZKwywHTP6g8rsj7Z1ck6LSoC9GaUY@mail.gmail.com>
-	<AANLkTikbQLTC8HLB2m8LoPtZ0JVUzRl6PvRL5yTC0pZV@mail.gmail.com>
-	<1277496077.6141.30.camel@heimdal.trondhjem.org>
-	<AANLkTikH-jOOOzJ7xium-O3jwHpgh_czAFlkFkwnxpkK@mail.gmail.com>
-Date: Fri, 25 Jun 2010 13:41:03 -0700
-Message-ID: <AANLkTikJ8-nIwiNSqBxY8HP7zWmK4OM42nJo4G0myG5u@mail.gmail.com>
-Subject: Fwd: Fwd: fs/exec.c core dumping on NFS mounted directory
-From: Lei Sun <leisun124@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lei Sun <leisun124@gmail.com>
-Date: Fri, Jun 25, 2010 at 1:39 PM
-Subject: Re: Fwd: fs/exec.c core dumping on NFS mounted directory
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
+On Fri, 25 Jun 2010, Rafael J. Wysocki wrote:
 
+> > > You seem to be referring to the PM workqueue specifically.  Perhaps it would be
+> > > better to special-case it and stop it by adding a barrier work during suspend
+> > > instead of just freezing?  Then, it wouldn't need to be singlethread any more.
+> > 
+> > The barrier work would have to be queued to each CPU's thread.  That
+> > would be okay.
+> 
+> I guess we should stop the PM workqueue after the freezing of tasks, shouldn't we?
 
-On Fri, Jun 25, 2010 at 1:01 PM, Trond Myklebust
-<trond.myklebust@fys.uio.no> wrote:
-> On Fri, 2010-06-25 at 12:32 -0700, Lei Sun wrote:
->>   In 2.6.3x, I am logging in as a root and running app from NFS
->> mounted directory. The app crashed with 0 bytes core file (I have set
->> "ulimit -c unlimited", so it's not an issue).
->>
->> Proposed patch:
->>
->> --- exec.c 2010-05-19 17:33:16.000000000 -0700
->> +++ exec.c.new 2010-05-19 17:33:07.000000000 -0700
->> @@ -1859,7 +1859,7 @@
->>      * Dont allow local users get cute and trick others to coredump
->>      * into their pre-created files:
->>      */
->> - if (inode->i_uid != current_fsuid())
->> + if (inode->i_bytes != 0 && inode->i_uid != current_fsuid())
->>         goto close_fail;
->>
->>     if (!file->f_op)
->>
-> ... which would go ahead and reintroduce bugzilla entry 3043, but only
-> for those filesystems that set inode->i_bytes to zero:
->           https://bugzilla.kernel.org/show_bug.cgi?id=3043
->
-> NACKed...
->
-> Trond
->
->
+Yes.  The exact spot probably doesn't matter; that's as good as any.
 
-If existing core file size is 0, it will be replaced, otherwise it
-won't , is this a problem?  The 0 bytes core file is not useful
-anyway.
+> > Hmm, it looks like wait_event_freezable() and
+> > wait_event_freezable_timeout() could use similar changes: If the
+> > condition is true then they shouldn't try to freeze the caller.
+> 
+> Yes, but that should be a separate patch IMHO.
+
+Agreed.
+
+Alan Stern
+
