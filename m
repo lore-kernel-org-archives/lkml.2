@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab0FYWua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 18:50:30 -0400
-Received: from qmta02.westchester.pa.hmc1.comcast.net ([76.96.53.9]:46855 "EHLO
-	qmta02.westchester.pa.hmc1.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756824Ab0FYWu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 18:50:29 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Jun 2010 18:50:29 EDT
-From: Rob Emanuele <rob@emanuele.us>
-To: linux-kernel@vger.kernel.org
-Cc: Rob Emanuele <rob@emanuele.us>
-Subject: [PATCH] usb gadget, serial: Add a serial number field to the usb descriptor.
-Date: Fri, 25 Jun 2010 15:45:14 -0700
-Message-Id: <1277505914-22719-1-git-send-email-rob@emanuele.us>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755845Ab0FYXEm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 19:04:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752149Ab0FYXEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 19:04:41 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100625182651.36800d06@tlielax.poochiereds.net>
+References: <20100625182651.36800d06@tlielax.poochiereds.net> <20100625125306.7f9b1966@tlielax.poochiereds.net> <4C24A606.5040001@suse.de> <1277220214-3597-1-git-send-email-sjayaraman@suse.de> <yes> <9822.1277312573@redhat.com> <22697.1277470549@redhat.com> <18628.1277502398@redhat.com>
+To: Jeff Layton <jlayton@samba.org>
+Cc: dhowells@redhat.com, Suresh Jayaraman <sjayaraman@suse.de>,
+       Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       samba-technical@lists.samba.org
+Subject: Re: [RFC][PATCH 06/10] cifs: define inode-level cache object and register them
+Date: Sat, 26 Jun 2010 00:04:28 +0100
+Message-ID: <20123.1277507068@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way it can support the iSerialNumber parameter.
+Jeff Layton <jlayton@samba.org> wrote:
 
-Signed-off-by: Rob Emanuele <rob@emanuele.us>
----
- drivers/usb/gadget/serial.c |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
+> IIUC, updating mtime for a write is also an attribute change, and that
+> affects ctime. According to the stat(2) manpage:
 
-diff --git a/drivers/usb/gadget/serial.c b/drivers/usb/gadget/serial.c
-index f46a609..7f64524 100644
---- a/drivers/usb/gadget/serial.c
-+++ b/drivers/usb/gadget/serial.c
-@@ -63,13 +63,16 @@
- 
- #define STRING_MANUFACTURER_IDX		0
- #define STRING_PRODUCT_IDX		1
--#define STRING_DESCRIPTION_IDX		2
-+#define STRING_SERIAL_IDX		2
-+#define STRING_DESCRIPTION_IDX		3
- 
- static char manufacturer[50];
-+static char serialnum[25];
- 
- static struct usb_string strings_dev[] = {
- 	[STRING_MANUFACTURER_IDX].s = manufacturer,
- 	[STRING_PRODUCT_IDX].s = GS_VERSION_NAME,
-+	[STRING_SERIAL_IDX].s = serialnum,
- 	[STRING_DESCRIPTION_IDX].s = NULL /* updated; f(use_acm) */,
- 	{  } /* end of list */
- };
-@@ -175,7 +178,7 @@ static int __init gs_bind(struct usb_composite_dev *cdev)
- 	 * contents can be overridden by the composite_dev glue.
- 	 */
- 
--	/* device description: manufacturer, product */
-+	/* device description: manufacturer, product, serialnum */
- 	snprintf(manufacturer, sizeof manufacturer, "%s %s with %s",
- 		init_utsname()->sysname, init_utsname()->release,
- 		gadget->name);
-@@ -193,6 +196,14 @@ static int __init gs_bind(struct usb_composite_dev *cdev)
- 
- 	device_desc.iProduct = status;
- 
-+	snprintf(serialnum, sizeof serialnum, "non-unique");
-+	status = usb_string_id(cdev);
-+	if (status < 0)
-+		goto fail;
-+	strings_dev[STRING_SERIAL_IDX].id = status;
-+
-+	device_desc.iSerialNumber = status;
-+
- 	/* config description */
- 	status = usb_string_id(cdev);
- 	if (status < 0)
--- 
-1.7.0.4
+You're right.  Okay, ctime is the more frequently changed.
 
+> > Note that Ext4 appears to have a file creation time field in its inode
+> > (struct ext4_inode::i_crtime[_extra]).  Can Samba be made to use that?
+> 
+> Is it exposed to userspace in any (standard) way? It would be handy to
+> have that. While we're wishing...it might also be nice to have a
+> standard way to get at the i_generation from userspace too.
+
+Not at present, but it's something that could be exported by ioctl() or
+getxattr().
+
+David
