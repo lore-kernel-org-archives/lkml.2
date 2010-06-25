@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab0FYTH5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:07:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21419 "EHLO mx1.redhat.com"
+	id S932524Ab0FYTIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:08:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20659 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932498Ab0FYTH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:07:28 -0400
+	id S932490Ab0FYTH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:07:26 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 36/38] union-mount: Implement union-aware utimensat()
-Date: Fri, 25 Jun 2010 12:05:26 -0700
-Message-Id: <1277492728-11446-37-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 33/38] union-mount: Implement union-aware truncate()
+Date: Fri, 25 Jun 2010 12:05:23 -0700
+Message-Id: <1277492728-11446-34-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,53 +21,77 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
- fs/utimes.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
+ fs/open.c |   24 ++++++++++++++++++++----
+ 1 files changed, 20 insertions(+), 4 deletions(-)
 
-diff --git a/fs/utimes.c b/fs/utimes.c
-index e4c75db..e83b6bd 100644
---- a/fs/utimes.c
-+++ b/fs/utimes.c
-@@ -8,8 +8,10 @@
- #include <linux/stat.h>
- #include <linux/utime.h>
- #include <linux/syscalls.h>
-+#include <linux/slab.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
-+#include "union.h"
+diff --git a/fs/open.c b/fs/open.c
+index 68c97dd..3c1ae55 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -230,14 +230,17 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
+ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ {
+ 	struct path path;
++	struct nameidata nd;
++	struct vfsmount *mnt;
+ 	struct inode *inode;
++	char *tmp;
+ 	int error;
  
- #ifdef __ARCH_WANT_SYS_UTIME
+ 	error = -EINVAL;
+ 	if (length < 0)	/* sorry, but loff_t says... */
+ 		goto out;
  
-@@ -152,18 +154,26 @@ long do_utimes(int dfd, char __user *filename, struct timespec *times, int flags
- 		error = utimes_common(&file->f_path, times);
- 		fput(file);
- 	} else {
-+		struct nameidata nd;
-+		char *tmp;
- 		struct path path;
- 		int lookup_flags = 0;
+-	error = user_path(pathname, &path);
++	error = user_path_nd(AT_FDCWD, pathname, 0, &nd, &path, &tmp);
+ 	if (error)
+ 		goto out;
+ 	inode = path.dentry->d_inode;
+@@ -251,11 +254,16 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ 	if (!S_ISREG(inode->i_mode))
+ 		goto dput_and_out;
  
- 		if (!(flags & AT_SYMLINK_NOFOLLOW))
- 			lookup_flags |= LOOKUP_FOLLOW;
- 
--		error = user_path_at(dfd, filename, lookup_flags, &path);
-+		error = user_path_nd(dfd, filename, lookup_flags, &nd, &path,
-+				     &tmp);
- 		if (error)
- 			goto out;
- 
--		error = utimes_common(&path, times);
-+		error = union_copyup(&nd, &path);
+-	error = mnt_want_write(path.mnt);
++	if (IS_DIR_UNIONED(nd.path.dentry))
++		mnt = nd.path.mnt;
++	else
++		mnt = path.mnt;
 +
-+		if (!error)
-+			error = utimes_common(&path, times);
- 		path_put(&path);
-+		path_put(&nd.path);
-+		putname(tmp);
- 	}
++	error = mnt_want_write(mnt);
+ 	if (error)
+ 		goto dput_and_out;
  
+-	error = inode_permission(inode, MAY_WRITE);
++	error = path_permission(&path, &nd.path, MAY_WRITE);
+ 	if (error)
+ 		goto mnt_drop_write_and_out;
+ 
+@@ -263,6 +271,12 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ 	if (IS_APPEND(inode))
+ 		goto mnt_drop_write_and_out;
+ 
++	error = union_copyup_len(&nd, &path, length);
++	if (error)
++		goto mnt_drop_write_and_out;
++
++	/* path may have changed after copyup */
++	inode = path.dentry->d_inode;
+ 	error = get_write_access(inode);
+ 	if (error)
+ 		goto mnt_drop_write_and_out;
+@@ -284,9 +298,11 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ put_write_and_out:
+ 	put_write_access(inode);
+ mnt_drop_write_and_out:
+-	mnt_drop_write(path.mnt);
++	mnt_drop_write(mnt);
+ dput_and_out:
+ 	path_put(&path);
++	path_put(&nd.path);
++	putname(tmp);
  out:
+ 	return error;
+ }
 -- 
 1.6.3.3
 
