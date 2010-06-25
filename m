@@ -1,102 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab0FYQVa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 12:21:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51585 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605Ab0FYQV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 12:21:29 -0400
-Message-ID: <4C24D779.6020209@oracle.com>
-Date: Fri, 25 Jun 2010 09:21:13 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S932195Ab0FYQwI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 12:52:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5690 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752709Ab0FYQwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 12:52:06 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/3] block: Implement a blk_yield function to voluntarily give up the I/O scheduler.
+References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
+	<1277242502-9047-2-git-send-email-jmoyer@redhat.com>
+	<20100624004622.GA3297@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 25 Jun 2010 12:51:58 -0400
+In-Reply-To: <20100624004622.GA3297@redhat.com> (Vivek Goyal's message of
+	"Wed, 23 Jun 2010 20:46:22 -0400")
+Message-ID: <x49bpaznjgx.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: lkml <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-       Corey Minyard <minyard@acm.org>
-Subject: Re: [PATCH -next] ipmi: fix module param sparse warnings
-References: <20100624152122.bfc0472a.randy.dunlap@oracle.com> <201006252220.17228.rusty@rustcorp.com.au>
-In-Reply-To: <201006252220.17228.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C24D780.0087:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/10 05:50, Rusty Russell wrote:
-> On Fri, 25 Jun 2010 07:51:22 am Randy Dunlap wrote:
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> The <arg> parameter in module_param_cb() should be a pointer,
-> 
-> Well, I don't think there's anything wrong with it being a function.
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Ah, yes, I see.  That makes it a sparse error, right?
+> On Tue, Jun 22, 2010 at 05:35:00PM -0400, Jeff Moyer wrote:
+>
+> [..]
+>> @@ -1614,6 +1620,15 @@ __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+>>  	cfq_clear_cfqq_wait_request(cfqq);
+>>  	cfq_clear_cfqq_wait_busy(cfqq);
+>>  
+>> +	if (!cfq_cfqq_yield(cfqq)) {
+>> +		struct cfq_rb_root *st;
+>> +		st = service_tree_for(cfqq->cfqg,
+>> +				      cfqq_prio(cfqq), cfqq_type(cfqq));
+>> +		st->last_expiry = jiffies;
+>> +		st->last_pid = cfqq->pid;
+>> +	}
+>> +	cfq_clear_cfqq_yield(cfqq);
+>
+> Jeff, I think cfqq is still on service tree at this point of time. If yes,
+> then we can simply use cfqq->service_tree, instead of calling
+> service_tree_for().
 
-> The actual problem is that it tries to figure out if the arg is a bool
-> or an int: if someone wants to work through the 700-odd cases of 
-> module_param*bool and convert those vars to actual bools, that'd allow
-> us to get rid of that logic.
-> 
-> Meanwhile, we can do this instead.  Does it solve it as well?
+Yup.
 
-Yes, that also fixes it.
-Thanks.
+> No clearing of cfqq->yield_to field?
 
-> Subject: ipmi: fix module param sparse warnings
-> Date: Thu, 24 Jun 2010 15:21:22 -0700
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> The <arg> parameter in module_param_cb() should be a pointer,
-> i.e., like one of these:
-> 	union {
-> 		void *arg;
-> 		const struct kparam_string *str;
-> 		const struct kparam_array *arr;
-> 	};
-> 
-> sparse complains:
-> drivers/char/ipmi/ipmi_watchdog.c:303:1: error: cannot dereference this type
-> drivers/char/ipmi/ipmi_watchdog.c:307:1: error: cannot dereference this type
-> drivers/char/ipmi/ipmi_watchdog.c:311:1: error: cannot dereference this type
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: Corey Minyard <minyard@acm.org>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->  drivers/char/ipmi/ipmi_watchdog.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> --- linux-next-20100528.orig/drivers/char/ipmi/ipmi_watchdog.c
-> +++ linux-next-20100528/drivers/char/ipmi/ipmi_watchdog.c
-> @@ -300,15 +300,15 @@ MODULE_PARM_DESC(timeout, "Timeout value
->  module_param(pretimeout, timeout, 0644);
->  MODULE_PARM_DESC(pretimeout, "Pretimeout value in seconds.");
->  
-> -module_param_cb(action, &param_ops_str, action_op, 0644);
-> +module_param_cb(action, &param_ops_str, &action_op, 0644);
->  MODULE_PARM_DESC(action, "Timeout action. One of: "
->  		 "reset, none, power_cycle, power_off.");
->  
-> -module_param_cb(preaction, &param_ops_str, preaction_op, 0644);
-> +module_param_cb(preaction, &param_ops_str, &preaction_op, 0644);
->  MODULE_PARM_DESC(preaction, "Pretimeout action.  One of: "
->  		 "pre_none, pre_smi, pre_nmi, pre_int.");
->  
-> -module_param_cb(preop, &param_ops_str, preop_op, 0644);
-> +module_param_cb(preop, &param_ops_str, &preop_op, 0644);
->  MODULE_PARM_DESC(preop, "Pretimeout driver operation.  One of: "
->  		 "preop_none, preop_panic, preop_give_data.");
->  
-> 
-> 
+Nope.  Again, it's not required, but if you really want me to, I'll add
+it.
 
+> [..]
+>>  /*
+>>   * Select a queue for service. If we have a current active queue,
+>>   * check whether to continue servicing it, or retrieve and set a new one.
+>> @@ -2187,6 +2232,10 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+>>  		 * have been idling all along on this queue and it should be
+>>  		 * ok to wait for this request to complete.
+>>  		 */
+>> +		if (cfq_cfqq_yield(cfqq) &&
+>> +		    cfq_should_yield_now(cfqq, &new_cfqq))
+>> +			goto expire;
+>> +
+>
+> I think we can get rid of this condition here and move the yield check
+> above outside above if condition. This if condition waits for request to
+> complete from this queue and waits for queue to get busy before slice
+> expiry. If we have decided to yield the queue, there is no point in
+> waiting for next request for queue to get busy.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Yeah, this is a vestige of the older code layout.  Thanks, this cleans
+things up nicely.
+
+>> +	cfq_log_cfqq(cfqd, cfqq, "yielding queue to %d", tsk->pid);
+>> +	cfqq->yield_to = new_cic;
+>
+> We are stashing away a pointer to cic without taking reference?
+
+There is no reference counting on the cic.
+
+>> @@ -3123,6 +3234,13 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
+>>  	if (!cfqq)
+>>  		return false;
+>>  
+>> +	/*
+>> +	 * If the active queue yielded its timeslice to this queue, let
+>> +	 * it preempt.
+>> +	 */
+>> +	if (cfq_cfqq_yield(cfqq) && RQ_CIC(rq) == cfqq->yield_to)
+>> +		return true;
+>> +
+>
+> I think we need to again if if we are sync-noidle workload then allow
+> preemption only if no dependent read is currently on, otherwise
+> sync-noidle service tree loses share.
+
+I think you mean don't yield if there is a dependent reader.  Yeah,
+makes sense.
+
+> This version looks much simpler than previous one and is much easier
+> to understand. I will do some testing on friday and provide you feedback.
+
+Great, thanks again for the review!
+
+Cheers,
+Jeff
