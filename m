@@ -1,123 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab0FYCm4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 22:42:56 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:57253 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754788Ab0FYCmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 22:42:54 -0400
-Message-ID: <4C2417AA.4030306@us.ibm.com>
-Date: Thu, 24 Jun 2010 19:42:50 -0700
-From: Darren Hart <dvhltc@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: futex: race in lock and unlock&exit for robust futex with PI?
-References: <20100623091307.GA11072@tiehlicka.suse.cz>
-In-Reply-To: <20100623091307.GA11072@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754648Ab0FYDZz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 23:25:55 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54715 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754380Ab0FYDZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 23:25:54 -0400
+Date: Fri, 25 Jun 2010 13:25:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: linux-next: build warning after merge of the drivers-x86 tree
+Message-Id: <20100625132545.50e226e3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__25_Jun_2010_13_25_45_+1000_=0J1HI6us3vCoBY3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 02:13 AM, Michal Hocko wrote:
-> Hi,
+--Signature=_Fri__25_Jun_2010_13_25_45_+1000_=0J1HI6us3vCoBY3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Michal,
+Hi Matthew,
 
-Thanks for reporting the issue and providing a testcase.
+After merging the drivers-x86 tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
->
-> attached you can find a simple test case which fails quite easily on the
-> following glibc assert:
-> "SharedMutexTest: pthread_mutex_lock.c:289: __pthread_mutex_lock:
->    Assertion `(-(e)) != 3 || !robust' failed." "
+drivers/platform/x86/Kconfig:542:warning: type of 'RAR_REGISTER' redefined =
+from 'tristate' to 'boolean'
 
-I've run runSimple.sh in a tight loop for a couple hours (about 2k 
-iterations so far) and haven't seen anything other than "Here we go" 
-printed to the console.
+Caused by commit b8fd1646cc932c911c4d836f7fd9624c05722a2d ("rar: Move the
+RAR driver into the right place as its now clean").
 
-I had to add -D_GNU_SOURCE to get it to build on my system (RHEL5.2 + 
-2.6.34). Perhaps this is just a difference in the toolchain.
+RAR_REGISTER is also still defined in
+drivers/staging/rar_register/Kconfig ...  Also, that commit did not move
+intel_rar_register.c from staging ...
 
-> AFAIU, this assertion says that futex syscall cannot fail with ESRCH
-> for robust futex because it should either succeed or fail with
-> EOWNERDEAD.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-I'll have to think on that and review the libc source. We do need to 
-confirm that the assert is even doing the right thing.
+--Signature=_Fri__25_Jun_2010_13_25_45_+1000_=0J1HI6us3vCoBY3
+Content-Type: application/pgp-signature
 
->
-> We have seen this problem on SLES11 and SLES11SP1 but I was able to
-> reproduce it with the 2.6.34 kernel as well.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-What kind of system are you seeing this on? I've been running on a 4-way 
-x86_64 blade.
+iQEcBAEBAgAGBQJMJCG5AAoJEDMEi1NhKgbsL9AH/iSPQSS83CwGoFXQWS+ejCiH
+Zfy1IkHNILdezIvblT/J4VIh+JS3BXyE2KONODaGfjju0aSFXT1zw1JCYxgO4+Um
+9xjdr7gZuSi6biyTCXYRSh7j1nbeKlIkMABfX21z23UR5mTtkV/tjWQu7wVfqkPZ
+3D6hIo1A8purcipoG08A8rLhhk99FkahHBY/HpUrcPAg59spK2+CzQ6XgBhVeFDD
+xqg6zVaB+AxonMgIvb5pFFDkTS6BpHtNWNj49TeoQ8fL8dK+5SwrjGBH4K3BRI4s
+ujQ09CKxN7pmpXgUYhCaxJ/jVn2OH7tO//Qsu/001aN0Wsjt+bybAFqlBpEBrtw=
+=y9oa
+-----END PGP SIGNATURE-----
 
-> The test case is quite easy.
->
-> Executed with a parameter it creates a test file and initializes shared,
-> robust pthread mutex (optionaly compile time configured with priority
-> inheritance) backed by the mmapped test file. Without a parameter it
-> mmaps the file and just locks, unlocks mutex and checks for EOWNERDEAD
-> (this should never happen during the test as the process never dies with
-> the lock held) in the loop.
-
-Have you found the PI parameter to be required for reproducing the 
-error? From the comments below I'm assuming so... just want to be sure.
-
->
-> If I run this application for multiple users in parallel I can see the
-> above assertion. However, if priority inheritance is turned off then
-> there is no problem. I am not able to reproduce also if the test case is
-> run under a single user.
->
-> I am using the attached runSimple.sh script to run the test case like
-> this:
->
-> rm test.file simple
-> for i in `seq 10`
-> do
-> 	sh runSimple.sh
-> done
->
-> To disable IP just comment out USE_PI variable in the script.
-> You need to change USER1 and USER2 variables to match you system. You
-> will need to run the script as root if you do not set any special
-> setting to run su on behalf of those users.
->
-> I have tried to look at futex_{un}lock_pi but it is really hard to
-> understand.
-
-*grin* tell me about it...
-
-See Documentation/pi-futex.txt if you haven't already.
-
-> I assume that lookup_pi_state is the one which sets ESRCH
-> after it is not able to find the pid of the current owner.
->
-> This would suggest that we are racing with the unlock of the current
-> lock holder but I don't see how is this possible as both lock and unlock
-> paths hold fshared lock for all operations over the lock value. I have
-> noticed that the lock path drops fshared if the current holder is dying
-> but then it retries the whole process again.
->
-> Any advice would be highly appreciated.
-
-If I can reproduce this I should be able to get some trace points in 
-there to get a better idea of the execution path leading up to the problem.
-
-This would be a great time to have those futex fault injection patches...
-
-
--- 
-Darren Hart
-IBM Linux Technology Center
-Real-Time Linux Team
+--Signature=_Fri__25_Jun_2010_13_25_45_+1000_=0J1HI6us3vCoBY3--
