@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab0FYN47 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 09:56:59 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49264 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755227Ab0FYN46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 09:56:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 9/9] PM / Hibernate: move non-swap code to image.c
-Date: Fri, 25 Jun 2010 15:55:12 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, jirislaby@gmail.com
-References: <1275468768-28229-1-git-send-email-jslaby@suse.cz> <1275468768-28229-9-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1275468768-28229-9-git-send-email-jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006251555.13125.rjw@sisk.pl>
+	id S1756288Ab0FYN7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 09:59:47 -0400
+Received: from [18.85.46.34] ([18.85.46.34]:57134 "EHLO bombadil.infradead.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756062Ab0FYN7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 09:59:40 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>,
+       Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Subject: [GIT PULL 0/6] perf/core improvements and fixes for 2.6.36
+Date: Fri, 25 Jun 2010 10:59:20 -0300
+Message-Id: <1277474366-7958-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 02, 2010, Jiri Slaby wrote:
-> Now, when all the swap-independent code was separated, it's time to
-> move it into a separate file called image.c. Although snapshot.c is
-> image related too, we want to move the snapshot.c code to mm/,
-> because it is rather a memory management so that mm people won't
-> forget about hibernation. Hence we don't pollute snapshot.c with
-> image processing here.
+Hi Ingo,
 
-Makes sense.
+        Please pull from:
 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> ---
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 
-Rafael
+Regards,
+
+- Arnaldo
+
+Arnaldo Carvalho de Melo (4):
+  perf ui: Introduce routine ui_browser__is_current_entry
+  perf ui: Introduce ui_browser->seek to support multiple list structures
+  perf ui: Separate showing the entries from running the browser
+  perf ui: Move objdump_line specific stuff out of ui_browser
+
+Gui Jianfeng (1):
+  perf kvm: Get rid of unused guest_kallsyms
+
+Tom Zanussi (1):
+  perf scripts perl: Makefile fix
+
+ tools/perf/Makefile         |    2 +-
+ tools/perf/builtin-record.c |    9 --
+ tools/perf/util/newt.c      |  185 +++++++++++++++++++++++++------------------
+ 3 files changed, 109 insertions(+), 87 deletions(-)
+
