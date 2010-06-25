@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab0FYVWx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 17:22:53 -0400
-Received: from www.tglx.de ([62.245.132.106]:58576 "EHLO www.tglx.de"
+	id S1756507Ab0FYV3u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 17:29:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2220 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751632Ab0FYVWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 17:22:52 -0400
-Date: Fri, 25 Jun 2010 23:22:44 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/tile: Enable more sophisticated IRQ model for 32-bit
- chips.
-In-Reply-To: <201006252110.o5PLAovH010769@farm-0002.internal.tilera.com>
-Message-ID: <alpine.LFD.2.00.1006252320430.18683@localhost.localdomain>
-References: <201006252110.o5PLAovH010769@farm-0002.internal.tilera.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751103Ab0FYV3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 17:29:49 -0400
+Date: Fri, 25 Jun 2010 23:27:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH] pid_ns: Fix proc_flush_task() accessing freed
+	proc_mnt
+Message-ID: <20100625212758.GA30474@redhat.com>
+References: <20100623203652.GA25298@redhat.com> <1277399329-18087-1-git-send-email-louis.rilling@kerlabs.com> <20100624191843.GA14205@redhat.com> <20100625102303.GG3773@hawkmoon.kerlabs.com> <20100625183733.GA2627@us.ibm.com> <20100625192945.GA25532@redhat.com> <20100625212618.GA11917@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100625212618.GA11917@us.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+On 06/25, Sukadev Bhattiprolu wrote:
+>
+> Oleg Nesterov [oleg@redhat.com] wrote:
+> | On 06/25, Sukadev Bhattiprolu wrote:
+> | >
+> | > Louis Rilling [Louis.Rilling@kerlabs.com] wrote:
+> | > | - proc_pid_readdir():
+> | > |   Needs similar check and protection to proc_pid_lookup(), but there is another
+> | > |   issue: next_tgid() can find a dying task:
+> | >
+> | > Hmm, I thought proc_pid_readdir() would be a problem too but convinced myself
+> | > that it would not - since a process running proc_pid_readdir() would have
+> | > a reference to the pid namespace,
+> |
+> | Where does this reference comes from ?
+>
+> Caller of proc_pid_readdir() would be living in the same pid namespace right ?
 
-On Fri, 25 Jun 2010, Chris Metcalf wrote:
+Afaics, in general not.
 
-> This model is based on the on-chip interrupt model used by the
-> TILE-Gx next-generation hardware, and interacts much more cleanly
-> with the Linux generic IRQ layer.
-> 
-> The change includes modifications to the Tilera hypervisor, which
-> are reflected in the hypervisor headers in arch/tile/include/arch/.
+Suppose that we do something like
 
-can you please cc me on irq related changes ? Also I'd prefer a combo
-patch of the irq code which lets me see the full story w/o going to
-pull another git tree from somewhere.
+	if (!clone(CLONE_NEWPID)) {
+		mount("none", "/SUB_PROC", "proc", 0, NULL);
+		exit();
+	}
 
-Thanks,
+After that /SUB_PROC/ still exists, one can do "ls /SUB_PROC/".
 
-	tglx
+This particular case is fine, ns->child_reaper was already cleared.
+But, as Louis pointed out, ls can race with the exiting init.
+
+> | But I won't be surprised if I am wrong again ;)
+
+Yes ;)
+
+Oleg.
+
