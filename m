@@ -1,142 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab0FYBG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Jun 2010 21:06:59 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:50819 "EHLO e6.ny.us.ibm.com"
+	id S1753973Ab0FYBGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Jun 2010 21:06:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15556 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754380Ab0FYBGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Jun 2010 21:06:54 -0400
-Message-ID: <4C24012B.9030506@austin.ibm.com>
-Date: Thu, 24 Jun 2010 20:06:51 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1751338Ab0FYBGi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Jun 2010 21:06:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,477,1272870000"; 
+   d="scan'208";a="530056319"
+From: "Dong, Eddie" <eddie.dong@intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>,
+       "Dong, Eddie" <eddie.dong@intel.com>,
+       "Dong, Eddie" <eddie.dong@intel.com>
+Date: Fri, 25 Jun 2010 09:03:46 +0800
+Subject: RE: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Thread-Topic: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Thread-Index: AcsThT/zH5J3EVkHSUqVqVPxYO+wXwAe7Z4g
+Message-ID: <1A42CE6F5F474C41B63392A5F80372B21F58D666@shsmsx501.ccr.corp.intel.com>
+References: <20100608052744.GA21547@gondor.apana.org.au>
+ <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com>
+ <20100611052112.GA25649@gondor.apana.org.au>
+ <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com>
+ <20100617112119.GB1515@gondor.apana.org.au>
+ <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com>
+ <1A42CE6F5F474C41B63392A5F80372B21F58CD9A@shsmsx501.ccr.corp.intel.com>
+ <20100623095254.GA32491@gondor.apana.org.au>
+ <1A42CE6F5F474C41B63392A5F80372B21F58CE7F@shsmsx501.ccr.corp.intel.com>
+ <20100624100836.GA16220@gondor.apana.org.au>
+In-Reply-To: <20100624100836.GA16220@gondor.apana.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] memory hotplug disable boot option
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Proposed patch to disable memory hotplug via a boot option,
-mem_hotplug=[on|off].  The patch only disables memory hotplug in that it 
-prevents the creation of the memory sysfs directories for memory sections.
+Herbert Xu wrote:
+> On Wed, Jun 23, 2010 at 06:05:41PM +0800, Dong, Eddie wrote:
+>> 
+>> I mean once the frontend side driver post the buffers to the backend
+>> driver, the backend driver will "immediately" use that buffers to
+>> compose skb or gro_frags and post them to the assigned host NIC
+>> driver as receive buffers. In that case, if the backend driver
+>> recieves a packet from the NIC that requires to do copy, it may be
+>> unable to find additional free guest buffer because all of them are
+>> already used by the NIC driver. We have to reserve some guest
+>> buffers for the possible copy even if the buffer address is not
+>> identified by original skb :(        
+> 
+> OK I see what you mean.  Can you tell me how does Xiaohui's
+> previous patch-set deal with this problem?
+> 
+> Thanks,
 
-This patch is meant to help alleviate very long boot times on systems with
-large memory (1+ TB) and many memory sections (10's of thousands).
+In current patch, each SKB for the assigned device (SRIOV VF or NIC or a complete queue pairs) uses the buffer from guest, so it eliminates copy completely in software and requires hardware to do so. If we can have an additonal place to store the buffer per skb (may cause copy later on), we can do copy later on or re-post the buffer to assigned NIC driver later on. But that may be not very clean either :(
 
-Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+BTW, some hardware may require certain level of packet copy such as for broadcast packets in very old VMDq device, which is not addressed in previous Xiaohui's patch yet. We may address this by implementing an additional virtqueue between guest and host for slow path (broadcast packets only here) with additinal complexity in FE/BE driver. 
 
----
- drivers/base/memory.c  |   33 +++++++++++++++++++++++++++++++++
- drivers/base/node.c    |    3 +++
- include/linux/memory.h |    2 ++
- 3 files changed, 38 insertions(+)
-
-Index: linux-2.6/drivers/base/memory.c
-===================================================================
---- linux-2.6.orig/drivers/base/memory.c	2010-06-23 15:07:03.000000000 -0500
-+++ linux-2.6/drivers/base/memory.c	2010-06-24 18:46:52.000000000 -0500
-@@ -29,6 +29,24 @@
- 
- #define MEMORY_CLASS_NAME	"memory"
- 
-+static int mem_hp_enabled __read_mostly = 1;
-+
-+static int __setup_memory_hotplug(char *option)
-+{
-+	if (!strcmp(option, "off"))
-+		mem_hp_enabled = 0;
-+	else if (!strcmp(option, "on"))
-+		mem_hp_enabled = 1;
-+
-+	return 1;
-+}
-+__setup("mem_hotplug=", __setup_memory_hotplug);
-+
-+int memory_hotplug_enabled(void)
-+{
-+	return mem_hp_enabled;
-+}
-+
- static struct sysdev_class memory_sysdev_class = {
- 	.name = MEMORY_CLASS_NAME,
- };
-@@ -320,6 +338,9 @@
- 
- static int block_size_init(void)
- {
-+	if (!memory_hotplug_enabled())
-+		return 0;
-+
- 	return sysfs_create_file(&memory_sysdev_class.kset.kobj,
- 				&attr_block_size_bytes.attr);
- }
-@@ -442,6 +463,9 @@
- 	unsigned long start_pfn;
- 	int ret = 0;
- 
-+	if (!memory_hotplug_enabled())
-+		return 0;
-+
- 	if (!mem)
- 		return -ENOMEM;
- 
-@@ -483,6 +507,9 @@
- 	struct memory_block *mem;
- 	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
- 
-+	if (!memory_hotplug_enabled())
-+		return NULL;
-+
- 	/*
- 	 * This only works because we know that section == sysdev->id
- 	 * slightly redundant with sysdev_register()
-@@ -504,6 +531,9 @@
- {
- 	struct memory_block *mem;
- 
-+	if (!memory_hotplug_enabled())
-+		return 0;
-+
- 	mem = find_memory_block(section);
- 	unregister_mem_sect_under_nodes(mem);
- 	mem_remove_simple_file(mem, phys_index);
-@@ -541,6 +571,9 @@
- 	int ret;
- 	int err;
- 
-+	if (!memory_hotplug_enabled())
-+		return 0;
-+
- 	memory_sysdev_class.kset.uevent_ops = &memory_uevent_ops;
- 	ret = sysdev_class_register(&memory_sysdev_class);
- 	if (ret)
-Index: linux-2.6/drivers/base/node.c
-===================================================================
---- linux-2.6.orig/drivers/base/node.c	2010-06-23 15:07:03.000000000 -0500
-+++ linux-2.6/drivers/base/node.c	2010-06-24 13:05:55.000000000 -0500
-@@ -411,6 +411,9 @@
- 	unsigned long pfn;
- 	int err = 0;
- 
-+	if (!memory_hotplug_enabled())
-+		return 0;
-+
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
- 		unsigned long section_nr = pfn_to_section_nr(pfn);
- 		struct mem_section *mem_sect;
-Index: linux-2.6/include/linux/memory.h
-===================================================================
---- linux-2.6.orig/include/linux/memory.h	2010-06-23 15:07:24.000000000 -0500
-+++ linux-2.6/include/linux/memory.h	2010-06-24 13:06:25.000000000 -0500
-@@ -128,6 +128,8 @@
- #define hotplug_memory_notifier(fn, pri) do { } while (0)
- #endif
- 
-+extern int memory_hotplug_enabled(void);
-+
- /*
-  * 'struct memory_accessor' is a generic interface to provide
-  * in-kernel access to persistent memory such as i2c or SPI EEPROMs
+Thx, Eddie
