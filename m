@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab0FYJLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 05:11:25 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41497 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab0FYJLX (ORCPT
+	id S1753979Ab0FYJN0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 05:13:26 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37733 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab0FYJNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 05:11:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=E0kZCWHh8CT9VbGfCpDW8CrM8jIKHOrzyMbYW5zaI/u2CeSISFNpqIXPkVZoEHnd7T
-         Atxw0Ntcae0Eu+WcKYFf7/TjmssIXVkU+no7YPGGPBgz3OQNAaUTUcOS9TYKjXLIr3+3
-         q2TiAkzX4hIJdpX1zD1lKfoWK/TitO588Q9E4=
-Date: Fri, 25 Jun 2010 02:11:16 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Luotao Fu <l.fu@pengutronix.de>
-Cc: Rabin VINCENT <rabin.vincent@stericsson.com>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
-Subject: Re: [PATCH 5/5 V7] input: STMPE touch controller support
-Message-ID: <20100625091116.GE8546@core.coreip.homeip.net>
-References: <20100624162407.GA18899@core.coreip.homeip.net>
- <1277455071-8572-1-git-send-email-l.fu@pengutronix.de>
+	Fri, 25 Jun 2010 05:13:25 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Minchan Kim <minchan.kim@gmail.com>
+Subject: [PATCH] vmscan: recalculate lru_pages on each priority
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100625181221.805A.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277455071-8572-1-git-send-email-l.fu@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 25 Jun 2010 18:13:20 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 25, 2010 at 10:37:51AM +0200, Luotao Fu wrote:
-> +
-> +	/* 
+shrink_zones() need relatively long time. and lru_pages can be
+changed dramatically while shrink_zones().
+then, lru_pages need recalculate on each priority.
 
-Trailing whitespace.
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/vmscan.c |   21 ++++++++-------------
+ 1 files changed, 8 insertions(+), 13 deletions(-)
 
-> +	 * touch_det sometimes get desasserted or just get stuck. This appears
-> +	 * to be a silicon bug, We still have to clearify this with the
-> +	 * manufacture. As a workaround We release the key anyway if the
-> +	 * touch_det keeps coming in after 4ms, while the FIFO contains no value
-> +	 * during the whole time. 
-
-Trailing whitespace.
-
-> +
-> +static int stmpe_init_hw(struct stmpe_touch *ts)
-
-__devinit.
-
-Otherwise:
-
-	Acked-by: Dmitry Torokhov <dtor@mail.ru>
-
-I assume it will be merged through MFD tree?
-
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 0c961f1..0ebfe12 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1785,7 +1785,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 	bool all_unreclaimable;
+ 	unsigned long total_scanned = 0;
+ 	struct reclaim_state *reclaim_state = current->reclaim_state;
+-	unsigned long lru_pages = 0;
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
+@@ -1796,18 +1795,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 
+ 	if (scanning_global_lru(sc))
+ 		count_vm_event(ALLOCSTALL);
+-	/*
+-	 * mem_cgroup will not do shrink_slab.
+-	 */
+-	if (scanning_global_lru(sc)) {
+-		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+-
+-			if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+-				continue;
+-
+-			lru_pages += zone_reclaimable_pages(zone);
+-		}
+-	}
+ 
+ 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
+ 		sc->nr_scanned = 0;
+@@ -1819,6 +1806,14 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		 * over limit cgroups
+ 		 */
+ 		if (scanning_global_lru(sc)) {
++			unsigned long lru_pages = 0;
++			for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
++				if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
++					continue;
++
++				lru_pages += zone_reclaimable_pages(zone);
++			}
++
+ 			shrink_slab(sc->nr_scanned, sc->gfp_mask, lru_pages);
+ 			if (reclaim_state) {
+ 				sc->nr_reclaimed += reclaim_state->reclaimed_slab;
 -- 
-Dmitry
+1.6.5.2
+
+
+
