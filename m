@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab0FYTIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:08:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20659 "EHLO mx1.redhat.com"
+	id S932534Ab0FYTIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:08:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56258 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932490Ab0FYTH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:07:26 -0400
+	id S932484Ab0FYTHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:07:25 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 33/38] union-mount: Implement union-aware truncate()
-Date: Fri, 25 Jun 2010 12:05:23 -0700
-Message-Id: <1277492728-11446-34-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 31/38] union-mount: Implement union-aware writable open()
+Date: Fri, 25 Jun 2010 12:05:21 -0700
+Message-Id: <1277492728-11446-32-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Copy up a file when opened with write permissions.  Does not copy up
+the file data when O_TRUNC is specified.
 ---
- fs/open.c |   24 ++++++++++++++++++++----
- 1 files changed, 20 insertions(+), 4 deletions(-)
+ fs/namei.c |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 68c97dd..3c1ae55 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -230,14 +230,17 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
- static long do_sys_truncate(const char __user *pathname, loff_t length)
- {
- 	struct path path;
-+	struct nameidata nd;
-+	struct vfsmount *mnt;
- 	struct inode *inode;
-+	char *tmp;
- 	int error;
- 
- 	error = -EINVAL;
- 	if (length < 0)	/* sorry, but loff_t says... */
- 		goto out;
- 
--	error = user_path(pathname, &path);
-+	error = user_path_nd(AT_FDCWD, pathname, 0, &nd, &path, &tmp);
- 	if (error)
- 		goto out;
- 	inode = path.dentry->d_inode;
-@@ -251,11 +254,16 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
- 	if (!S_ISREG(inode->i_mode))
- 		goto dput_and_out;
- 
--	error = mnt_want_write(path.mnt);
-+	if (IS_DIR_UNIONED(nd.path.dentry))
-+		mnt = nd.path.mnt;
-+	else
-+		mnt = path.mnt;
-+
-+	error = mnt_want_write(mnt);
- 	if (error)
- 		goto dput_and_out;
- 
--	error = inode_permission(inode, MAY_WRITE);
-+	error = path_permission(&path, &nd.path, MAY_WRITE);
- 	if (error)
- 		goto mnt_drop_write_and_out;
- 
-@@ -263,6 +271,12 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
- 	if (IS_APPEND(inode))
- 		goto mnt_drop_write_and_out;
- 
-+	error = union_copyup_len(&nd, &path, length);
-+	if (error)
-+		goto mnt_drop_write_and_out;
-+
-+	/* path may have changed after copyup */
-+	inode = path.dentry->d_inode;
- 	error = get_write_access(inode);
- 	if (error)
- 		goto mnt_drop_write_and_out;
-@@ -284,9 +298,11 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
- put_write_and_out:
- 	put_write_access(inode);
- mnt_drop_write_and_out:
--	mnt_drop_write(path.mnt);
-+	mnt_drop_write(mnt);
- dput_and_out:
- 	path_put(&path);
-+	path_put(&nd.path);
-+	putname(tmp);
- out:
- 	return error;
+diff --git a/fs/namei.c b/fs/namei.c
+index 6662dda..9a3ba52 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1910,6 +1910,24 @@ exit:
+ 	return ERR_PTR(error);
  }
+ 
++static int open_union_copyup(struct nameidata *nd, struct path *path,
++			     int open_flag)
++{
++	struct vfsmount *oldmnt = path->mnt;
++	int error;
++
++	if (open_flag & O_TRUNC)
++		error = union_copyup_len(nd, path, 0);
++	else
++		error = union_copyup(nd, path);
++	if (error)
++		return error;
++	if (oldmnt != path->mnt)
++		mntput(nd->path.mnt);
++
++	return error;
++}
++
+ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 			    int open_flag, int acc_mode,
+ 			    int mode, const char *pathname)
+@@ -1961,6 +1979,11 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 			if (!path->dentry->d_inode->i_op->lookup)
+ 				goto exit_dput;
+ 		}
++		if (acc_mode & MAY_WRITE) {
++			error = open_union_copyup(nd, path, open_flag);
++			if (error)
++				goto exit_dput;
++		}
+ 		path_to_nameidata(path, nd);
+ 		audit_inode(pathname, nd->path.dentry);
+ 		goto ok;
+@@ -2032,6 +2055,11 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	if (path->dentry->d_inode->i_op->follow_link)
+ 		return NULL;
+ 
++	if (acc_mode & MAY_WRITE) {
++		error = open_union_copyup(nd, path, open_flag);
++		if (error)
++			goto exit_dput;
++	}
+ 	path_to_nameidata(path, nd);
+ 	error = -EISDIR;
+ 	if (S_ISDIR(path->dentry->d_inode->i_mode))
 -- 
 1.6.3.3
 
