@@ -1,113 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab0FYQwI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 12:52:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5690 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752709Ab0FYQwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 12:52:06 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/3] block: Implement a blk_yield function to voluntarily give up the I/O scheduler.
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
-	<1277242502-9047-2-git-send-email-jmoyer@redhat.com>
-	<20100624004622.GA3297@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 25 Jun 2010 12:51:58 -0400
-In-Reply-To: <20100624004622.GA3297@redhat.com> (Vivek Goyal's message of
-	"Wed, 23 Jun 2010 20:46:22 -0400")
-Message-ID: <x49bpaznjgx.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932215Ab0FYQxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 12:53:11 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.122]:53512 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932187Ab0FYQxJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 12:53:09 -0400
+X-Authority-Analysis: v=1.0 c=1 a=iVNVO0OCT3kA:10 a=yQWWgrYGNuUA:10 a=kj9zAlcOel0A:10 a=20KFwNOVAAAA:8 a=hGzw-44bAAAA:8 a=f0L6POiToRdS6aViIA4A:9 a=tdNtT7bw1iHNm6ggrCkIte35EhAA:4 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=0kPLrQdw3YYA:10 a=dowx1zmaLagA:10 a=00U40p1LBqVLw4jT:21 a=gh7LVOPznGai4vo_:21
+X-Cloudmark-Score: 0
+X-Originating-IP: 71.70.153.3
+Date: Fri, 25 Jun 2010 12:53:06 -0400
+From: Jeff Layton <jlayton@samba.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Suresh Jayaraman <sjayaraman@suse.de>, Steve French <smfrench@gmail.com>,
+       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org
+Subject: Re: [RFC][PATCH 06/10] cifs: define inode-level cache object and
+ register them
+Message-ID: <20100625125306.7f9b1966@tlielax.poochiereds.net>
+In-Reply-To: <22697.1277470549@redhat.com>
+References: <4C24A606.5040001@suse.de>
+	<1277220214-3597-1-git-send-email-sjayaraman@suse.de>
+	<yes>
+	<9822.1277312573@redhat.com>
+	<22697.1277470549@redhat.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On Fri, 25 Jun 2010 13:55:49 +0100
+David Howells <dhowells@redhat.com> wrote:
 
-> On Tue, Jun 22, 2010 at 05:35:00PM -0400, Jeff Moyer wrote:
->
-> [..]
->> @@ -1614,6 +1620,15 @@ __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
->>  	cfq_clear_cfqq_wait_request(cfqq);
->>  	cfq_clear_cfqq_wait_busy(cfqq);
->>  
->> +	if (!cfq_cfqq_yield(cfqq)) {
->> +		struct cfq_rb_root *st;
->> +		st = service_tree_for(cfqq->cfqg,
->> +				      cfqq_prio(cfqq), cfqq_type(cfqq));
->> +		st->last_expiry = jiffies;
->> +		st->last_pid = cfqq->pid;
->> +	}
->> +	cfq_clear_cfqq_yield(cfqq);
->
-> Jeff, I think cfqq is still on service tree at this point of time. If yes,
-> then we can simply use cfqq->service_tree, instead of calling
-> service_tree_for().
+> Suresh Jayaraman <sjayaraman@suse.de> wrote:
+> 
+> > I think the creation time is currently being ignored as we won't be able
+> > to accomodate in POSIX stat struct.
+> 
+> The FS-Cache interface doesn't use the POSIX stat struct, but it could be
+> really useful to save it and use it for cache coherency inside the kernel.
+> 
+> Out of interest, what does Samba do when it comes to generating a creation time
+> for UNIX where one does not exist?
+> 
 
-Yup.
+(cc'ing samba-technical since we're talking about the create time)
 
-> No clearing of cfqq->yield_to field?
+Looks like it mostly uses the ctime. IMO, the mtime would be a better
+choice since it changes less frequently, but I don't guess that it
+matters very much.
 
-Nope.  Again, it's not required, but if you really want me to, I'll add
-it.
+I have a few patches that make the cifs_iget code do more stringent
+checks. One of those makes it use the create time like an i_generation
+field to guard against matching inodes that have the same number but
+that have undergone a delete/create cycle. They need a bit more testing
+but I'm planning to post them in time for 2.6.36.
 
-> [..]
->>  /*
->>   * Select a queue for service. If we have a current active queue,
->>   * check whether to continue servicing it, or retrieve and set a new one.
->> @@ -2187,6 +2232,10 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
->>  		 * have been idling all along on this queue and it should be
->>  		 * ok to wait for this request to complete.
->>  		 */
->> +		if (cfq_cfqq_yield(cfqq) &&
->> +		    cfq_should_yield_now(cfqq, &new_cfqq))
->> +			goto expire;
->> +
->
-> I think we can get rid of this condition here and move the yield check
-> above outside above if condition. This if condition waits for request to
-> complete from this queue and waits for queue to get busy before slice
-> expiry. If we have decided to yield the queue, there is no point in
-> waiting for next request for queue to get busy.
+Because of how samba generates this number, it could be somewhat
+problematic to do this. What may save us though is that Linux<->Samba
+mostly uses unix extensions unless someone has specifically disabled
+them on either end. The unix extension calls don't generally send any
+sort of create time field, so we can't rely on it in those codepaths
+anyway.
 
-Yeah, this is a vestige of the older code layout.  Thanks, this cleans
-things up nicely.
-
->> +	cfq_log_cfqq(cfqd, cfqq, "yielding queue to %d", tsk->pid);
->> +	cfqq->yield_to = new_cic;
->
-> We are stashing away a pointer to cic without taking reference?
-
-There is no reference counting on the cic.
-
->> @@ -3123,6 +3234,13 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
->>  	if (!cfqq)
->>  		return false;
->>  
->> +	/*
->> +	 * If the active queue yielded its timeslice to this queue, let
->> +	 * it preempt.
->> +	 */
->> +	if (cfq_cfqq_yield(cfqq) && RQ_CIC(rq) == cfqq->yield_to)
->> +		return true;
->> +
->
-> I think we need to again if if we are sync-noidle workload then allow
-> preemption only if no dependent read is currently on, otherwise
-> sync-noidle service tree loses share.
-
-I think you mean don't yield if there is a dependent reader.  Yeah,
-makes sense.
-
-> This version looks much simpler than previous one and is much easier
-> to understand. I will do some testing on friday and provide you feedback.
-
-Great, thanks again for the review!
-
-Cheers,
-Jeff
+-- 
+Jeff Layton <jlayton@samba.org>
