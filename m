@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab0FYVtK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 17:49:10 -0400
-Received: from mail.globaldataguard.com ([67.210.231.115]:53930 "EHLO
-	mail2.globaldataguard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080Ab0FYVtI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 17:49:08 -0400
-Message-ID: <4C2524D3.9070509@globaldataguard.com>
-Date: Fri, 25 Jun 2010 16:51:15 -0500
-From: Kurt Newman <knewman@globaldataguard.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1756661Ab0FYVzw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 17:55:52 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:58875 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751996Ab0FYVzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 17:55:51 -0400
+Date: Fri, 25 Jun 2010 15:07:13 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH] pid_ns: Fix proc_flush_task() accessing freed
+	proc_mnt
+Message-ID: <20100625220713.GA31123@us.ibm.com>
+References: <20100623203652.GA25298@redhat.com> <1277399329-18087-1-git-send-email-louis.rilling@kerlabs.com> <20100624191843.GA14205@redhat.com> <20100625102303.GG3773@hawkmoon.kerlabs.com> <20100625183733.GA2627@us.ibm.com> <20100625192945.GA25532@redhat.com> <20100625212618.GA11917@us.ibm.com> <20100625212758.GA30474@redhat.com>
 MIME-Version: 1.0
-To: Roland Dreier <rdreier@cisco.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.32.1 kernel unable to use more than 2 of 16 CPUs on Intel
- E5540 (i7)
-References: <4C23D1E9.9050007@globaldataguard.com> <adahbksqe71.fsf@roland-alpha.cisco.com>
-In-Reply-To: <adahbksqe71.fsf@roland-alpha.cisco.com>
-X-Enigmail-Version: 0.95.7
-OpenPGP: id=96242FB1;
-	url=http://pgp.mit.edu:11371/pks/lookup?op=get&search=0x96242FB1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100625212758.GA30474@redhat.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roland Dreier wrote:
-> Your config seems to have CONFIG_PM and therefore CONFIG_ACPI disabled.
-> So the kernel is relying on mptable information.  Unsurprisingly on a
-> modern system, that info is probably broken -- since everything would
-> have been tested with ACPI.
-> 
-> Try turning on CONFIG_ACPI and see if that helps at all.
+Oleg Nesterov [oleg@redhat.com] wrote:
+| On 06/25, Sukadev Bhattiprolu wrote:
+| >
+| > Oleg Nesterov [oleg@redhat.com] wrote:
+| > | On 06/25, Sukadev Bhattiprolu wrote:
+| > | >
+| > | > Louis Rilling [Louis.Rilling@kerlabs.com] wrote:
+| > | > | - proc_pid_readdir():
+| > | > |   Needs similar check and protection to proc_pid_lookup(), but there is another
+| > | > |   issue: next_tgid() can find a dying task:
+| > | >
+| > | > Hmm, I thought proc_pid_readdir() would be a problem too but convinced myself
+| > | > that it would not - since a process running proc_pid_readdir() would have
+| > | > a reference to the pid namespace,
+| > |
+| > | Where does this reference comes from ?
+| >
+| > Caller of proc_pid_readdir() would be living in the same pid namespace right ?
+| 
+| Afaics, in general not.
+| 
+| Suppose that we do something like
+| 
+| 	if (!clone(CLONE_NEWPID)) {
+| 		mount("none", "/SUB_PROC", "proc", 0, NULL);
+| 		exit();
+| 	}
+| 
+| After that /SUB_PROC/ still exists, one can do "ls /SUB_PROC/".
 
-Turning on ACPI solved the problem.  I don't understand why ACPI needs
-to be turned on, but after reading the power management ldp it confirms
-what you said.  I just didn't think that this would have mattered.
+Yes, I see it now. Thanks,
 
-Thanks for the help,
-Kurt
-
-
-
-For anyone else with this problem, here's something to read:
-
-Some SMP system manufacturers may have omitted the pre-ACPI tables used
-for SMP configurations. In this case, ACPI is required.
-
-If you have a newer system that supports Hyper-Threading, you will need
-to enable ACPI (and, of course, SMP). Without it, your Linux system may
-be unable to discover and initialize all of the virtual processors.
-
-IA64 machines require ACPI as well. Additionally, NUMA servers are
-starting to require it for proper initialization.
-
-Source: http://tldp.org/HOWTO/Battery-Powered/powermgm.html#HYPERTHREAD
+Sukadev
