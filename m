@@ -1,139 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab0FYKRO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 06:17:14 -0400
-Received: from n3-vm0.bullet.mail.gq1.yahoo.com ([67.195.23.156]:36345 "HELO
-	n3-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752406Ab0FYKRN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 06:17:13 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 475357.49324.bm@omp124.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=5eg/uPk3kyZWqqaZdFeEkpV5iMVJBXDepCs8F5B74qTajf7U/G1d/JgKZ3doQnMiSKo6pg4TY/lUz3YW915PxmBJWAhO5TJ5wZZ6DhGuAkNyj87n5aTc+19K+aDdH75GTMkw5oSBU4mE8w9Ra7c+oxfgQMXQ2zmajGbljGlYF+M=;
-Message-ID: <352874.17151.qm@web180303.mail.gq1.yahoo.com>
-X-YMail-OSG: StFoQYoVM1m5_se7TAlsEgVZDzXRQKiSzNjWcNMJrOUkbIo
- smTIrIvXoM4wINjmfa0WrphyICfJFrd6oGAikFZR6G38IOuVW7axbcDsAmfp
- h_aZbh9448um81l1Z5AfV48JsrFyN3QKqt9YRh7hIIW3T1r4w1Ijk3AT2gzf
- eyCn1.G5raO0IUm89VWtv.nNl.gc0W7XwAoaVyTqLLdhCTOMlttPodnt_caY
- hzEny4tPduWBgVkpTByXiapp11S62HocwnUIDdjui.2AJJ4_h1cZu5Dy2wks
- fAOSaIOKUuQJ4Wq5dFDUeVQ6sY872mKdI3HqXQgF4N5fatZgvoSMAEOmPtSm
- ilJzQinH2wgcbjQJo2IuM9zqtdwA-
-X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.104.274457
-Date: Fri, 25 Jun 2010 03:17:11 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH] pcf857x: support working w/o platform data
-To: linux-kernel@vger.kernel.org,
-       Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-In-Reply-To: <1276778870-1065-1-git-send-email-dbaryshkov@gmail.com>
+	id S1754632Ab0FYKTH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 06:19:07 -0400
+Received: from col0-omc2-s1.col0.hotmail.com ([65.55.34.75]:47688 "EHLO
+	col0-omc2-s1.col0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752406Ab0FYKTF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 06:19:05 -0400
+Message-ID: <COL124-W12DF71EA7EFE8265E7410CD6C70@phx.gbl>
+Content-Type: multipart/mixed;
+	boundary="_c941bcdc-240d-4e3c-8687-07888ed5dcad_"
+X-Originating-IP: [178.128.47.180]
+From: =?iso-8859-7?B?wevd7uHt5PHv8iDQ4fDh5O/j6eHt7dzq5/I=?= 
+	<psxlover@hotmail.com>
+To: <peterz@infradead.org>
+Subject: RE: sched_setaffinity not working with kernel 2.6.32.15
+Date: Fri, 25 Jun 2010 13:19:04 +0300
+Importance: Normal
+In-Reply-To: <1277277558.1875.745.camel@laptop>
+References: <COL124-W1850C30E9FF3BFB06DF5BFD6C20@phx.gbl>,<20100622171622.fc9d04c1.akpm@linux-foundation.org>,<1277277558.1875.745.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 25 Jun 2010 10:19:04.0629 (UTC) FILETIME=[D6A4D650:01CB144F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--_c941bcdc-240d-4e3c-8687-07888ed5dcad_
+Content-Type: text/plain; charset="iso-8859-7"
+Content-Transfer-Encoding: quoted-printable
 
 
---- On Thu, 6/17/10, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> wrote:
+Here's the correct testcase
 
-> Provide sane defaults for pcf857x, so
-> the driver can be used w/o
-> providing platform data (and thus can be simply bound via OF tree).
+   =20
+           =20
 
+           =20
+ 		 	   		 =20
+_________________________________________________________________
+Your E-mail and More On-the-Go. Get Windows Live Hotmail Free.
+https://signup.live.com/signup.aspx?id=3D60969=
 
-Maybe we can get an ack from some OF folk
-who are using it in that way?
+--_c941bcdc-240d-4e3c-8687-07888ed5dcad_
+Content-Type: text/x-csrc
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="sched_check.c"
 
+CiNpZm5kZWYgX0dOVV9TT1VSQ0UKI2RlZmluZSBfR05VX1NPVVJDRSAxCiNlbmRpZgoKI2luY2x1
+ZGUgPHN0ZGlvLmg+Ci8vI2luY2x1ZGUgPHNjaGVkLmg+Ci8vI2luY2x1ZGUgPGh3bG9jLmg+CiNp
+bmNsdWRlIDxzdGRsaWIuaD4KI2luY2x1ZGUgPHB0aHJlYWQuaD4KI2luY2x1ZGUgPHVuaXN0ZC5o
+PgojaW5jbHVkZSA8c3lzL3R5cGVzLmg+CiNpbmNsdWRlIDxzeXMvc3lzY2FsbC5oPgoKI2RlZmlu
+ZSBOUl9DUFVTIDgKI2RlZmluZSBOUl9USFJFQURTIDUKI2RlZmluZSBVU0VfVEhSRUFEQUZGSU5J
+VFkgMQoKcGlkX3QgdGlkW05SX1RIUkVBRFNdOwoKcHRocmVhZF9iYXJyaWVyX3QgaW5pdF9zdGFy
+dCwgYmFycmllcjI7Cgp2b2lkIHByaW50X2FmZmluaXR5KHB0aHJlYWRfdCBwaWQsIGludCB0aHJl
+YWRubykgewoJaW50IGk7CgljcHVfc2V0X3Qgc2V0OwoJCglDUFVfWkVSTygmc2V0KTsKCQoJc2No
+ZWRfZ2V0YWZmaW5pdHkoIHBpZCwgc2l6ZW9mKHNldCksICZzZXQpOyAgCgoJCglmb3IoIGkgPSAw
+OyBpIDwgTlJfQ1BVUzsgaSsrKSB7CgkJaWYgKENQVV9JU1NFVChpLCAmc2V0KSkKCQkJcHJpbnRm
+KCJDcHUgIyVkIGlzIGluICVkIHRocmVhZCdzIGFmZmluaXR5XG4iLCBpLCB0aHJlYWRubyk7Cgl9
+Cn0KCnZvaWQgc2V0X3NjaGVkYWZmaW5pdHkocHRocmVhZF90IHBpZCwgaW50IGNwdSkgewoJY3B1
+X3NldF90IHNldDsKCQoJQ1BVX1pFUk8oJnNldCk7CglDUFVfU0VUKGNwdSwgJnNldCk7CgkKCXNj
+aGVkX3NldGFmZmluaXR5KHBpZCwgc2l6ZW9mKHNldCksICZzZXQpOwp9Cgp2b2lkIHNldF90aHJl
+YWRhZmZpbml0eShwdGhyZWFkX3QgcGlkLCBpbnQgY3B1KSB7CgljcHVfc2V0X3Qgc2V0OwoJCglD
+UFVfWkVSTygmc2V0KTsKCUNQVV9TRVQoY3B1LCAmc2V0KTsKCQoJcHRocmVhZF9zZXRhZmZpbml0
+eV9ucChwaWQsIHNpemVvZihzZXQpLCAmc2V0KTsKfQoKdm9pZCAqIHRocmVhZENvZGUodm9pZCAq
+IHRocmVhZE5vKSB7Cglsb25nIGludCB0aHJlYWQgPSAobG9uZyBpbnQpIHRocmVhZE5vOwoJCglp
+ZiAoIVVTRV9USFJFQURBRkZJTklUWSkgewoJCS8vU2V0IGN1cnJlbnQgdGhyZWFkIGlkCgkJdGlk
+W3RocmVhZF0gPSAocGlkX3QpIHN5c2NhbGwgKFNZU19nZXR0aWQpOwoJCgkJLy9XYWl0IGZvciBh
+bGwgdGhlIHRocmVhZHMgdG8gc2V0IHRoZWlyIHRocmVhZCBpZAoJCXB0aHJlYWRfYmFycmllcl93
+YWl0KCZpbml0X3N0YXJ0KTsKCX0KCQoJLy9XYWl0IGZvciBtYWluIHRvIHNldCB0aGUgYWZmaW5p
+dHkKCXB0aHJlYWRfYmFycmllcl93YWl0KCZiYXJyaWVyMik7CgkvL3NsZWVwKDEpOwoJCgkvL1By
+aW50IGFmZmluaXR5CglwcmludF9hZmZpbml0eSgwLHRocmVhZCk7CgkKCS8vRG8gc29tZXRoaW5n
+IHNvIHRoYXQgd2UgY2FuIHNlZSBjcHUgYmVpbmcgdXNlZAoJd2hpbGUgKDEpOwoKCXB0aHJlYWRf
+ZXhpdCgwKTsKfQoKCgppbnQgbWFpbihpbnQgYXJnYyAsIGNoYXIgKmFyZ3ZbXSkgewoJbG9uZyBp
+bnQgaTsKCXB0aHJlYWRfdCBwaWRbTlJfVEhSRUFEU107CgkKCS8vIEluaXRpYWxpemUgYmFycmll
+cnMKCWlmKHB0aHJlYWRfYmFycmllcl9pbml0KCZpbml0X3N0YXJ0LCBOVUxMLCBOUl9USFJFQURT
+KzEpKSB7CgkJcHJpbnRmKCJDb3VsZCBub3QgY3JlYXRlIGEgYmFycmllclxuIik7CgkJZXhpdCgx
+KTsKCX0KCWlmKHB0aHJlYWRfYmFycmllcl9pbml0KCZiYXJyaWVyMiwgTlVMTCwgTlJfVEhSRUFE
+UysxKSkgewoJCXByaW50ZigiQ291bGQgbm90IGNyZWF0ZSBhIGJhcnJpZXJcbiIpOwoJCWV4aXQo
+MSk7Cgl9CgkKCS8vQ3JlYXRlIHRocmVhZHMKCWZvciAoaSA9IDA7IGkgPCBOUl9USFJFQURTOyBp
+KyspCgkJcHRocmVhZF9jcmVhdGUoJnBpZFtpXSwgTlVMTCwgdGhyZWFkQ29kZSwgKHZvaWQgKikg
+aSk7CgkKCS8vV2FpdCBmb3IgdGhyZWFkcyB0byBzZXQgdGhlaXIgdGhyZWFkIGlkCglpZiAoIVVT
+RV9USFJFQURBRkZJTklUWSkKCQlwdGhyZWFkX2JhcnJpZXJfd2FpdCgmaW5pdF9zdGFydCk7CgkK
+CS8vU2V0IGFmZmluaXR5Cglmb3IgKGkgPSAwOyBpIDwgTlJfVEhSRUFEUzsgaSsrKSB7CgkJaWYg
+KFVTRV9USFJFQURBRkZJTklUWSkKCQkJc2V0X3RocmVhZGFmZmluaXR5KHBpZFtpXSwwKTsKCQll
+bHNlCgkJCXNldF9zY2hlZGFmZmluaXR5KHRpZFtpXSwwKTsKCX0KCQoJLy9UZWxsIHRoZSB0aHJl
+YWRzIHRvIGNvbnRpbnVlIGFmdGVyIHNldHRpbmcgYWZmaW5pdHkKCXB0aHJlYWRfYmFycmllcl93
+YWl0KCZiYXJyaWVyMik7CgkKCWdldGNoYXIoKTsgCgkKICAgIHJldHVybiAwOwp9Cgo=
 
-
-> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> ---
->  drivers/gpio/pcf857x.c |    9 ++++-----
->  1 files changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/gpio/pcf857x.c
-> b/drivers/gpio/pcf857x.c
-> index 29f19ce..879b473 100644
-> --- a/drivers/gpio/pcf857x.c
-> +++ b/drivers/gpio/pcf857x.c
-> @@ -190,7 +190,6 @@ static int pcf857x_probe(struct
-> i2c_client *client,
->      pdata = client->dev.platform_data;
->      if (!pdata) {
->         
-> dev_dbg(&client->dev, "no platform data\n");
-> -        return -EINVAL;
->      }
->  
->      /* Allocate, initialize, and register
-> this gpio_chip. */
-> @@ -200,7 +199,7 @@ static int pcf857x_probe(struct
-> i2c_client *client,
->  
->      mutex_init(&gpio->lock);
->  
-> -    gpio->chip.base =
-> pdata->gpio_base;
-> +    gpio->chip.base = pdata ?
-> pdata->gpio_base : -1;
->      gpio->chip.can_sleep = 1;
->      gpio->chip.dev =
-> &client->dev;
->      gpio->chip.owner = THIS_MODULE;
-> @@ -278,7 +277,7 @@ static int pcf857x_probe(struct
-> i2c_client *client,
->       * to zero, our software copy
-> of the "latch" then matches the chip's
->       * all-ones reset
-> state.  Otherwise it flags pins to be driven low.
->       */
-> -    gpio->out = ~pdata->n_latch;
-> +    gpio->out = pdata ?
-> ~pdata->n_latch : ~0;
->  
->      status =
-> gpiochip_add(&gpio->chip);
->      if (status < 0)
-> @@ -299,7 +298,7 @@ static int pcf857x_probe(struct
-> i2c_client *client,
->      /* Let platform code set up the GPIOs
-> and their users.
->       * Now is the first time
-> anyone could use them.
->       */
-> -    if (pdata->setup) {
-> +    if (pdata && pdata->setup)
-> {
->          status =
-> pdata->setup(client,
->             
->     gpio->chip.base, gpio->chip.ngpio,
->             
->     pdata->context);
-> @@ -322,7 +321,7 @@ static int pcf857x_remove(struct
-> i2c_client *client)
->      struct pcf857x   
->         *gpio =
-> i2c_get_clientdata(client);
->      int   
->            
-> status = 0;
->  
-> -    if (pdata->teardown) {
-> +    if (pdata &&
-> pdata->teardown) {
->          status =
-> pdata->teardown(client,
->             
->     gpio->chip.base, gpio->chip.ngpio,
->             
->     pdata->context);
-> -- 
-> 1.7.1
-> 
-> 
-
+--_c941bcdc-240d-4e3c-8687-07888ed5dcad_--
