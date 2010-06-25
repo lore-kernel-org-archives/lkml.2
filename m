@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751325Ab0FYEdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 00:33:39 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:65516 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab0FYEdi (ORCPT
+	id S1751409Ab0FYEkz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 00:40:55 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48258 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab0FYEky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 00:33:38 -0400
+	Fri, 25 Jun 2010 00:40:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=TLqycB8v/r5vREfSYmrwBkJyd+50msZ1biZGSWqm1v+9mKG0B8bVsCJR0LQCutgAmC
-         2384gLAJIU2rVWgW/rYADUqZq2JnyPAKS3ckHuU77/GLHl4KH0U+0Z8hajyYGuxKdZJg
-         gfxR+X1KzSN3Q2mRz59XZM4Fzt4s5VAsrmXkc=
-Message-ID: <4C24319F.1030307@garzik.org>
-Date: Fri, 25 Jun 2010 00:33:35 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Nick Piggin <npiggin@suse.de>
-CC: Andreas Dilger <adilger@dilger.ca>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-       Ulrich Drepper <drepper@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [rfc] new stat*fs-like syscall?
-References: <20100624131455.GA10441@laptop> <A57010D3-065B-41B1-85E6-8B9C61970D37@dilger.ca> <20100625040156.GQ10441@laptop>
-In-Reply-To: <20100625040156.GQ10441@laptop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=M0yuS6AF+Jlv2m2UJyv4kCZ9O1yGOEvLS60Sus8pIZgHyIv678O2eCmYVVI/HdVPHO
+         ZOMlw7Sny/WbDTFm/JXFNd6gU+NJ8BoyUxWvgUMSESsymzq4E7nI8iR54qy8UgG0Ndto
+         HWT9Ku0klUHe+9juaU6GKxFoB3MxfFErKWM4U=
+Subject: [PATCH] staging/spectra: remove non existing blk_fs_request wrapper
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+       David Woodhouse <David.Woodhouse@intel.com>,
+       linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+       kernel-janitors <kernel-janitors@vger.kernel.org>
+Content-Type: text/plain; charset="ISO-8859-9"
+Date: Fri, 25 Jun 2010 00:40:48 -0400
+Message-ID: <1277440848.18981.9.camel@lenovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2010 12:01 AM, Nick Piggin wrote:
-> So is "frsize" supposed to be the optimal block size, or what?
-> f_bsize AFAIKS should be filesystem allocation block size because
-> apparently some programs require it to calculate size of file on
-> disk.
->
-> If we can't change existing suboptimal legacy things, then let's
-> introduce new APIs that do the right thing. Apps that care will
-> eventually start using eg. a new syscall.
->
->>
->>> - statvfs(2) lacks f_type.
->>>
->>> Is there anything more we should add here? Samba wants a capabilities
->>> field, with things like sparse files, quotas, compression, encryption,
->>> case preserving/sensitive.
->>
->> It wouldn't be a bad idea, but then you could get into issues of what exactly the above flags mean.  That said, I think it is better to have broad categories of features that may be slightly ill-defined than having nothing at all.
->
-> Yes it would be tricky. I don't want to add features that will just
-> be useless or go unused, but I don't want to change the syscall API
-> just to add f_flags, without looking at other possibilities.
+The spectra driver doesn't compile with today linux-next
+
+The problem is that it tries to use a blk_fs_request macro. Searching for this macro I saw that it used to exist in linux/blkdev.h as
+
+#define blk_fs_request(rq) ((rq)->cmd_type == REQ_TYPE_FS)
+
+This patch solves the issue eliminating the unnecessary (and now inexistent) wrapper
+
+Best regards,
+
+>From 755f948d65ff67d5dc8dde8c2edd212cbe61bd5f Mon Sep 17 00:00:00 2001
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Fri, 25 Jun 2010 00:26:20 -0400
+Subject: [PATCH] staging/spectra: remove non existing blk_fs_request wrapper
 
 
-It would be nice to separate capabilities and fixed parameters (block 
-size) from statistics which change frequently (free space).
+Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+---
+ drivers/staging/spectra/ffsport.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-And are capabilities really suited to a C struct, at all?  That seems 
-more suited to a key/value type interface, a la NFSv4 attributes.
+diff --git a/drivers/staging/spectra/ffsport.c b/drivers/staging/spectra/ffsport.c
+index 3c3565d..d0c5c97 100644
+--- a/drivers/staging/spectra/ffsport.c
++++ b/drivers/staging/spectra/ffsport.c
+@@ -304,7 +304,7 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
+ 			return 0;
+ 	}
+ 
+-	if (!blk_fs_request(req))
++	if (req->cmd_type != REQ_TYPE_FS)
+ 		return -EIO;
+ 
+ 	if (blk_rq_pos(req) + blk_rq_cur_sectors(req) > get_capacity(tr->gd)) {
+-- 
+1.7.0.4
 
-	Jeff
+
 
 
 
