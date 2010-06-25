@@ -1,138 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409Ab0FYEzU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 00:55:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56296 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab0FYEzT (ORCPT
+	id S1751512Ab0FYFAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 01:00:08 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59475 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab0FYFAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 00:55:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=W9QZdQbP+61b7s803ZFEKFnpyDkFQ1zg4n6AHxadrxdrcOBTwuZ3XDx4D599kbaQzJ
-         PManGPpnxFeCZYT7b7SwlCF3gpXnZ5QEphHZa+qmThb4PTkQ5zzzTAe51EGpUSbflbPl
-         zogofQV8/rXH1eXDHAGjDcgy7WUSKx2f0hmFM=
-Subject: Re: [RFC PATCH v2 4/5] skb: add tracepoints to freeing skb
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, kaneshige.kenji@jp.fujitsu.com,
-       izumi.taku@jp.fujitsu.com
-In-Reply-To: <4C23FF55.3090604@jp.fujitsu.com>
-References: <4C2312A8.9060903@jp.fujitsu.com>
-	 <4C23FF55.3090604@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Jun 2010 06:55:11 +0200
-Message-ID: <1277441711.2481.3.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 25 Jun 2010 01:00:07 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: andrew hendry <andrew.hendry@gmail.com>
+Subject: Re: 2.6.35-rc1 system oom, many processes killed but memory not free
+Cc: kosaki.motohiro@jp.fujitsu.com,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTim7CiW-yfugZUAHZCqLvXKgt9CwolCvbLGdCLAk@mail.gmail.com>
+References: <AANLkTim7CiW-yfugZUAHZCqLvXKgt9CwolCvbLGdCLAk@mail.gmail.com>
+Message-Id: <20100625133542.8047.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 25 Jun 2010 14:00:02 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 25 juin 2010 à 09:59 +0900, Koki Sanagi a écrit :
-> This patch adds tracepoint to consume_skb and dev_kfree_skb_irq.
-> Combinating with tracepoint on dev_hard_start_xmit, we can check how long it
-> takes to free transmited packets. And using it, we can calculate how many
-> packets driver had at that time. It is useful when a drop of transmited packet
-> is a problem.
-> 
->           <idle>-0     [001] 241409.218333: consume_skb: skbaddr=dd6b2fb8
->           <idle>-0     [001] 241409.490555: dev_kfree_skb_irq: skbaddr=f5e29840
-> 
-> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-> ---
-> include/trace/events/skb.h |   36 ++++++++++++++++++++++++++++++++++++
->  net/core/dev.c             |    2 ++
->  net/core/skbuff.c          |    1 +
->  3 files changed, 39 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
-> index 4b2be6d..6ab5b34 100644
-> --- a/include/trace/events/skb.h
-> +++ b/include/trace/events/skb.h
-> @@ -35,6 +35,42 @@ TRACE_EVENT(kfree_skb,
->  		__entry->skbaddr, __entry->protocol, __entry->location)
->  );
->  
-> +TRACE_EVENT(consume_skb,
-> +
-> +	TP_PROTO(struct sk_buff *skb),
-> +
-> +	TP_ARGS(skb),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	void *,	skbaddr	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->skbaddr = skb;
-> +	),
-> +
-> +	TP_printk("skbaddr=%p",
-> +		__entry->skbaddr)
-> +);
-> +
-> +TRACE_EVENT(dev_kfree_skb_irq,
-> +
-> +	TP_PROTO(struct sk_buff *skb),
-> +
-> +	TP_ARGS(skb),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	void *,	skbaddr	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->skbaddr = skb;
-> +	),
-> +
-> +	TP_printk("skbaddr=%p",
-> +		__entry->skbaddr)
-> +);
-> +
->  TRACE_EVENT(skb_copy_datagram_iovec,
->  
->  	TP_PROTO(const struct sk_buff *skb, int len),
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index 4b64b21..807b1ca 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -131,6 +131,7 @@
->  #include <linux/random.h>
->  #include <trace/events/napi.h>
->  #include <trace/events/net.h>
-> +#include <trace/events/skb.h>
->  #include <linux/pci.h>
->  
->  #include "net-sysfs.h"
-> @@ -1580,6 +1581,7 @@ void dev_kfree_skb_irq(struct sk_buff *skb)
->  		struct softnet_data *sd;
->  		unsigned long flags;
->  
-> +		trace_dev_kfree_skb_irq(skb);
->  		local_irq_save(flags);
->  		sd = &__get_cpu_var(softnet_data);
->  		skb->next = sd->completion_queue;
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 34432b4..a7b4036 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -466,6 +466,7 @@ void consume_skb(struct sk_buff *skb)
->  		smp_rmb();
->  	else if (likely(!atomic_dec_and_test(&skb->users)))
->  		return;
-> +	trace_consume_skb(skb);
->  	__kfree_skb(skb);
->  }
->  EXPORT_SYMBOL(consume_skb);
-> 
+> I left a 2.6.35-rc1 system, ubuntu 10.4/64 building randconfigs in a
+> ramdisk overnight.
+> /dev/ram0              9842848   5141780   4201068  56% /media/ramdisk
 
+your total memory size is 8GB, but ramdisk size is 9.8GB. it's odd settings.
 
-You might add a trace point to skb_free_datagram_locked() too, since it
-contains an inlined consume_skb()
+> 
+> After about 3 hours oom killer started killing nearly all the
+> processes, but the memory is still not released. Could ramdisk cause
+> this? How can I find out what is still using all the memory?
+
+Could.
+but I'm unclear your case was happen by only ramdisk.
+Can you remove such ramdisk at once?
+
+> 
+> cat /proc/meminfo
+> MemTotal:        8187304 kB
+> MemFree:          231976 kB
+> Buffers:             424 kB
+> Cached:            19728 kB
+> SwapCached:        51144 kB
+> Active:            14056 kB
+> Inactive:          72592 kB
+> Active(anon):      12900 kB
+> Inactive(anon):    53940 kB
+> Active(file):       1156 kB
+> Inactive(file):    18652 kB
+> Unevictable:           0 kB
+> Mlocked:               0 kB
+> SwapTotal:       1986556 kB
+> SwapFree:        1504676 kB
+> Dirty:                 0 kB
+> Writeback:         19720 kB
+> AnonPages:         32884 kB
+> Mapped:             4760 kB
+> Shmem:                 4 kB
+> Slab:              51652 kB
+> SReclaimable:      28816 kB
+> SUnreclaim:        22836 kB
+> KernelStack:        2880 kB
+> PageTables:        18484 kB
+> NFS_Unstable:          0 kB
+> Bounce:                0 kB
+> WritebackTmp:          0 kB
+> CommitLimit:     6080208 kB
+> Committed_AS:    1133944 kB
+> VmallocTotal:   34359738367 kB
+> VmallocUsed:      350936 kB
+> VmallocChunk:   34359369212 kB
+> HardwareCorrupted:     0 kB
+> HugePages_Total:       0
+> HugePages_Free:        0
+> HugePages_Rsvd:        0
+> HugePages_Surp:        0
+> Hugepagesize:       2048 kB
+> DirectMap4k:        7616 kB
+> DirectMap2M:     8372224 kB
 
 
 
