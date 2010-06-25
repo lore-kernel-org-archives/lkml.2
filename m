@@ -1,108 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab0FYJbR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 05:31:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59943 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab0FYJbQ convert rfc822-to-8bit (ORCPT
+	id S1754581Ab0FYJcs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 05:32:48 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38371 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878Ab0FYJco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 05:31:16 -0400
-Subject: Re: [RFC][PATCH] irq_work
-From: Peter Zijlstra <peterz@infradead.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H.PeterA" <"nvin hpa"@zytor.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <1277457439.3947.184.camel@yhuang-dev.sh.intel.com>
-References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
-	 <1277361352.1875.838.camel@laptop>
-	 <1277431963.3947.140.camel@yhuang-dev.sh.intel.com>
-	 <1277452110.22715.2116.camel@twins>
-	 <1277457439.3947.184.camel@yhuang-dev.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 25 Jun 2010 11:30:45 +0200
-Message-ID: <1277458245.32034.96.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 25 Jun 2010 05:32:44 -0400
+Date: Fri, 25 Jun 2010 11:32:41 +0200
+From: Luotao Fu <l.fu@pengutronix.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Luotao Fu <l.fu@pengutronix.de>,
+       Rabin VINCENT <rabin.vincent@stericsson.com>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Linus WALLEIJ <linus.walleij@stericsson.com>,
+       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
+Subject: Re: [PATCH 5/5 V7] input: STMPE touch controller support
+Message-ID: <20100625093240.GB27553@pengutronix.de>
+Mail-Followup-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Luotao Fu <l.fu@pengutronix.de>,
+	Rabin VINCENT <rabin.vincent@stericsson.com>,
+	Samuel Ortiz <sameo@linux.intel.com>,
+	Linus WALLEIJ <linus.walleij@stericsson.com>,
+	linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+	STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
+References: <20100624162407.GA18899@core.coreip.homeip.net> <1277455071-8572-1-git-send-email-l.fu@pengutronix.de> <20100625091116.GE8546@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EuxKj2iCbKjpUGkD"
+Content-Disposition: inline
+In-Reply-To: <20100625091116.GE8546@core.coreip.homeip.net>
+X-PGP-Key-ID: 0xE5325261
+X-URL: http://www.pengutronix.de/
+X-Sent-From: Pengutronix Hildesheim
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:19:35 up 18 days,  1:47, 30 users,  load average: 12.65, 9.67,
+	6.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: l.fu@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-25 at 17:17 +0800, Huang Ying wrote:
-> On Fri, 2010-06-25 at 15:48 +0800, Peter Zijlstra wrote:
-> > On Fri, 2010-06-25 at 10:12 +0800, Huang Ying wrote:
-> > > 
-> > > It is better to add "void *data" field in this struct to allow same
-> > > function can be used for multiple struct irq_work. 
-> > 
-> > No, simply do:
-> > 
-> > struct my_foo {
-> >   struct irq_work work;
-> >   /* my extra data */
-> > }
-> > 
-> > void my_func(struct irq_work *work)
-> > {
-> >   struct my_foo *foo = container_of(work, struct my_foo, work);
-> > 
-> >   /* tada! */
-> > }
-> 
-> Yes. This works too. But Adding "void *data" field is helpful if you do
-> not embed struct irq_work into another struct.
 
-No, embedding is the normal way we do this in the kernel.
+--EuxKj2iCbKjpUGkD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > > And I think IRQ is the implementation detail here, so irq_work is
-> > > probably not a good name. nmi_return_notifier or nmi_callback is better?
-> > 
-> > Well, its ran in hard-irq context, so its an irq work. There's nothing
-> > that says it can only be used from NMI context.
-> 
-> It may be run in other contexts on some system (without APIC). 
+On Fri, Jun 25, 2010 at 02:11:16AM -0700, Dmitry Torokhov wrote:
+> On Fri, Jun 25, 2010 at 10:37:51AM +0200, Luotao Fu wrote:
+> > +
+> > +	/*=20
+>=20
+> Trailing whitespace.
+>=20
+> > +	 * touch_det sometimes get desasserted or just get stuck. This appears
+> > +	 * to be a silicon bug, We still have to clearify this with the
+> > +	 * manufacture. As a workaround We release the key anyway if the
+> > +	 * touch_det keeps coming in after 4ms, while the FIFO contains no va=
+lue
+> > +	 * during the whole time.=20
+>=20
+> Trailing whitespace.
+>=20
+> > +
+> > +static int stmpe_init_hw(struct stmpe_touch *ts)
+>=20
+> __devinit.
+>=20
 
-I would consider that a BUG. Use a random IRQ source to process the
-callbacks on these broken platforms.
+doh! Note to myself: never forget checkpatch.pl
 
-> And I
-> don't think it is useful to others except NMI handler. I think this is a
-> choice between naming after implementation and purpose.
+> Otherwise:
+>=20
+> 	Acked-by: Dmitry Torokhov <dtor@mail.ru>
+>=20
 
-There is, although I'm sure people will yell at me for even proposing
-this. You can raise the IPI from an IRQ disabled section to get
-something done right after it.
+thx
 
-> We can use another flag to signify whether it is executing. For example
-> the bit 0 of entry->next.
+> I assume it will be merged through MFD tree?
+>=20
 
-There's no point.
+to be very honest: no idea... ;-) Samuel once asked Rabin and me to
+merge the stmpe stuffs since I once posted a serie exclusively for
+stmpe811, now it's so far done(V8 with white space fixes is coming).
+Rabin's patch series also contains input stuffs like keypad etc. I don't
+know whether Rabin is going to rebase the serie to merge some other
+fixes or one of you (Samuel and you) would prefer the patch serie
+"as it is".
 
-> > I think clearing after the function is done executing is the only sane
-> > semantics (and yes, I should fix the current perf code).
-> > 
-> > You can always miss an NMI since it can always happen before the
-> > callback gets done, and allowing another enqueue before the callback is
-> > complete is asking for trouble.
-> 
-> If we move entry->next = NULL before entry->func(entry), we will not
-> miss the NMI. Can you show how to miss it in this way?
+Rabin, what do you think?
 
-<NMI>
-  ...
-  irq_work_queue(&my_work, func);
-  ...
-<EOI>
-<IPI>
-  irq_work_run()
+Cheers
+Luotao Fu
+--=20
+Pengutronix e.K.                           | Dipl.-Ing. Luotao Fu        |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
-  <NMI>
-    irq_work_queue(&my_work, func); <FAIL>
-  <EOI>
+--EuxKj2iCbKjpUGkD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-   my_func.next = NULL;
-<EOI>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-Really not that hard. Now imagine wrapping irq_work in some state and
-you reusing the state while the function is still running..
+iEYEARECAAYFAkwkd7gACgkQkLuxfMCkDTazlQCfW2YnS/zEdMvfTEtCgQZhfqTt
+sc8AniBmopAOftXWJ4YYq/DHPywzQM+I
+=20u/
+-----END PGP SIGNATURE-----
+
+--EuxKj2iCbKjpUGkD--
