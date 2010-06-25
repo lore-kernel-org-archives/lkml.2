@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab0FYQAO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 12:00:14 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:55395 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752202Ab0FYQAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 12:00:13 -0400
-Message-ID: <4C24D28A.30006@austin.ibm.com>
-Date: Fri, 25 Jun 2010 11:00:10 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1756507Ab0FYQC1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 12:02:27 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:57946 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab0FYQCZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 12:02:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Kk3AZ6+zbu1efoQiTOKfKnv8C+TDAcHuWIJ0jstwfZykL1ROynE6UQaye0W3Vwem5a
+         dy5YkOlDH0lbFY2MfBpqXiK3mPKkbPhpWVnrJ0XYHlxf/mFNx752Rchh0ZPy7QVwEQ1m
+         bisS3T/8Yg4pkA9QsTn2+MRMziiNHpm8aIFxw=
+Date: Fri, 25 Jun 2010 09:02:18 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.35-rc1
+Message-ID: <20100625160218.GA18302@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memory hotplug disable boot option
-References: <4C24012B.9030506@austin.ibm.com> <20100625105340.803C.A69D9226@jp.fujitsu.com> <87d3vfeage.fsf@basil.nowhere.org> <4C24C279.3050206@austin.ibm.com> <20100625145622.GB13421@basil.fritz.box> <4C24C96F.4030709@austin.ibm.com> <20100625152819.GC13421@basil.fritz.box>
-In-Reply-To: <20100625152819.GC13421@basil.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2010 10:28 AM, Andi Kleen wrote:
->> Yes, this would work to reduce the number of memory sections created.  The reason
-> 
-> Note it could be done on the sysfs interface level too, e.g. have one
-> entry that gets a bitmap as input/output.
+Hi Linus,
 
-This was sort of the idea I was thinking of for a flat representation in sysfs.
-Instead of creating all of the directories for each memory section, have a single
-file for the memory section attributes.  For example, an 'online' file.  Users
-could read the file to get online memory section numbers and write to it to
-online a specific memory section.
+Please pull from:
 
-> 
->> I have not gone this route is that increasing the memory section size would
->> break DLPAR memory add and remove for powerpc pseries.
-> 
-> How would it break it?
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-For the powerpc/pseries hardware memory is assigned in LMB size chunks.  If the
-memory section size is larger than the LMB size then DLPAR remove would have
-to hotplug remove more memory than required to DLPAR remove the memory.  For
-DLPAR memory add, we would fail because we could not hotplug add the larger
-memory section since that much memory had not actually been given to the
-machine.
- 
-> 
-> But aren't you breaking this anyways by disabling the sysfs entries?!?
+to receive updates for the input subsystem that mainly fix issues arisen from
+the recent pull.
 
-This is meant more for allowing people to bot systems without the long boot
-times (as mentioned before 8+ hours for a 2TB system) even if it means they
-will not be able to memory hotplug or memory DLPAR.
 
--Nathan
+Changelog:
+---------
 
+Dan Carpenter (1):
+      Input: pcf8574_keypad - fix off by one in pcf8574_kp_irq_handler()
+
+Dmitry Torokhov (1):
+      Input: sysrq - fix "stuck" SysRq mode
+
+Henrik Rydberg (1):
+      MAINTAINERS - Add an entry for the input MT protocol
+
+Oskar Schirmer (1):
+      Input: ad7877 - fix spi word size to 16 bit
+
+Ping Cheng (1):
+      Input: wacom - fix serial number handling on Cintiq 21UX2
+
+Randy Dunlap (1):
+      Input: fixup X86_MRST selects
+
+
+Diffstat:
+--------
+
+ MAINTAINERS                         |    7 +++++++
+ drivers/char/sysrq.c                |    8 ++++++--
+ drivers/input/keyboard/Kconfig      |    2 +-
+ drivers/input/misc/pcf8574_keypad.c |    2 +-
+ drivers/input/serio/Kconfig         |    2 +-
+ drivers/input/tablet/wacom_wac.c    |    9 +++++----
+ drivers/input/touchscreen/ad7877.c  |    7 +++++++
+ 7 files changed, 28 insertions(+), 9 deletions(-)
+
+-- 
+Dmitry
 
