@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab0FYTai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:30:38 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:54520 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab0FYTag (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:30:36 -0400
-Date: Fri, 25 Jun 2010 21:30:31 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       "H.PeterA" <"nvin hpa"@zytor.com>, linux-kernel@vger.kernel.org,
-       Andi Kleen <andi@firstfloor.org>, tglx <tglx@linutronix.de>,
-       davem <davem@davemloft.net>, paulus <paulus@samba.org>
-Subject: Re: [RFC][PATCH] irq_work -v2
-Message-ID: <20100625193031.GD13421@basil.fritz.box>
-References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
- <1277361352.1875.838.camel@laptop>
- <1277490625.1875.986.camel@laptop>
+	id S932270Ab0FYTbo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:31:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53249 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751833Ab0FYTbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:31:43 -0400
+Date: Fri, 25 Jun 2010 21:29:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH] pid_ns: Fix proc_flush_task() accessing freed
+	proc_mnt
+Message-ID: <20100625192945.GA25532@redhat.com>
+References: <20100623203652.GA25298@redhat.com> <1277399329-18087-1-git-send-email-louis.rilling@kerlabs.com> <20100624191843.GA14205@redhat.com> <20100625102303.GG3773@hawkmoon.kerlabs.com> <20100625183733.GA2627@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1277490625.1875.986.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100625183733.GA2627@us.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 25, 2010 at 08:30:25PM +0200, Peter Zijlstra wrote:
+On 06/25, Sukadev Bhattiprolu wrote:
+>
+> Louis Rilling [Louis.Rilling@kerlabs.com] wrote:
+> | - proc_pid_readdir():
+> |   Needs similar check and protection to proc_pid_lookup(), but there is another
+> |   issue: next_tgid() can find a dying task:
+>
+> Hmm, I thought proc_pid_readdir() would be a problem too but convinced myself
+> that it would not - since a process running proc_pid_readdir() would have
+> a reference to the pid namespace,
 
-I'm not sure what all the logic for entry enqueued by someone
-else is good for? Is that for the case you don't have enough
-entries preallocated and you share them with someone else?
+Where does this reference comes from ?
 
-Normally if the sharing is per cpu that would be difficult 
-to recover from because if it's due to a nest situation (for example)
-you would deadlock.
+proc_pid_readdir() pins the task_struct (ns->child_reaper), not the pid/ns.
 
-For me it would seem simpler to simply not share.
+But I won't be surprised if I am wrong again ;)
 
-> +	struct irq_work *list;
-> +
-> +	BUG_ON(!in_irq());
-> +	BUG_ON(!irqs_disabled());
-> +
-> +	list = xchg(&__get_cpu_var(irq_work_list), NULL);
-> +	while (list != NULL) {
-> +		struct irq_work *entry = list;
-> +
-> +		list = irq_work_next(list);
-> +
-> +		/*
-> +		 * Clear the PENDING bit, after this point the @entry
-> +		 * can be re-used.
-> +		 */
-> +		entry->next = next_flags(NULL, IRQ_WORK_BUSY);
-> +		entry->func(entry);
+Oleg.
 
-Needs compiler memory barrier here I think.
-
-> +		/*
-> +		 * Clear the BUSY bit and return to the free state if
-> +		 * no-one else claimed it meanwhile.
-> +		 */
-> +		cmpxchg(&entry->next, next_flags(NULL, IRQ_WORK_BUSY), NULL);
-> +	}
-> +}
-
--Andi
