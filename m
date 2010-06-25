@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab0FYGiE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 02:38:04 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40441 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab0FYGiB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 02:38:01 -0400
-Date: Fri, 25 Jun 2010 02:37:55 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Andy Lutomirski <luto@mit.edu>, Nick Piggin <npiggin@suse.de>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Al Viro <viro@ZenIV.linux.org.uk>, Ulrich Drepper <drepper@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [rfc] new stat*fs-like syscall?
-Message-ID: <20100625063755.GB4128@infradead.org>
-References: <20100624131455.GA10441@laptop>
- <4C2366F7.5010200@mit.edu>
- <9AFEC906-4EC6-49F3-8644-9230934E1D2C@dilger.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9AFEC906-4EC6-49F3-8644-9230934E1D2C@dilger.ca>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1751695Ab0FYGln (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 02:41:43 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:54830 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400Ab0FYGll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 02:41:41 -0400
+Date: Fri, 25 Jun 2010 08:40:56 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [update 2] Re: [RFC][PATCH] PM: Avoid losing wakeup events
+ during suspend
+Message-ID: <20100625084056.188ba96d@schatten.dmk.lab>
+In-Reply-To: <Pine.LNX.4.44L0.1006241257410.1654-100000@iolanthe.rowland.org>
+References: <201006241819.25055.rjw@sisk.pl>
+	<Pine.LNX.4.44L0.1006241257410.1654-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 05:06:45PM -0600, Andreas Dilger wrote:
-> I think the right solution for this issue is to (gradually) start enforcing the "uniqueness" of the UUID in the filesystem superblock.  That is what it is supposed to be for.  Using (fsid, st_inode) doesn't necessarily help anything, if "fsid" isn't unique, and the same "st_inode" number is used on two different mountpoints.
-> 
-> To start, tracking the UUID at mount time an printing a non-fatal error at mount time if the mounted UUID is not unique would help, as would having e.g. fsck track the UUIDs of the underlying filesystems and printing a non-fatal error if it hits a duplicate UUID.  
-> 
-> At some point in the future, the kernel can be changed to refuse to mount a filesystem with a duplicate UUID.  I believe mount.xfs already does this.
+On Thu, 24 Jun 2010 13:09:27 -0400 (EDT)
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-Tracking and exposing the uuid to be exact.  Having the full uuid in a
-statfs/statvfs-like system call is one first step.  And yes, XFS does
-check the uuid during mount.  But it's actually in kernelspace, not in a
-mount helper which XFS doesn't have.  Take a look at xfs_uuid_mount().
+> > > This requires you to define an explicit PCI_WAKEUP_COOLDOWN delay.  I 
+> > > think that's okay; I had to do something similar with USB and SCSI.  
+> > > (And I still think it would be a good idea to prevent workqueue threads 
+> > > from freezing until their queues are empty.)
 
+I'm not that familiar with the freezer, but couldn't it be
+deadlocky if the work depends on some already frozen part?
+
+What about a new work-type that calls
+pm_relax() after executing it's workfunction and executing
+pm_stay_awake() on enqueue?
+
+
+Cheers,
+Flo
