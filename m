@@ -1,113 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab0FYNeK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 09:34:10 -0400
-Received: from mail2.picochip.com ([82.111.145.34]:43895 "EHLO
-	thurne.picochip.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755913Ab0FYNeI (ORCPT
+	id S1756235Ab0FYNeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 09:34:31 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45386 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756080Ab0FYNea convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 09:34:08 -0400
-Message-ID: <4C24B03B.8090504@picochip.com>
-Date: Fri, 25 Jun 2010 14:33:47 +0100
-From: Jamie Iles <jamie.iles@picochip.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	Fri, 25 Jun 2010 09:34:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=S/0i7+ZG1EZyb5SR484+KTk5cuNd5kYrnbUEEjycJDgleMfAedVBtIPqfFn6+EgDrc
+         mE/wJNmtjk/DSodf+vtOdBoPYi9w9gPSW502J9LofP72BBy6VEnMOn/gytkOFja/7Zf2
+         iFOX4PFgrNGXmH+qvz4bbGjM5OFrN4GkvfvuQ=
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] perf tools: allow cross compiling with DWARF support
-References: <1277462318-6516-1-git-send-email-jamie.iles@picochip.com> <4C249027.1060304@hitachi.com> <20100625114150.GE4510@wear.picochip.com> <4C249B16.2090209@hitachi.com>
-In-Reply-To: <4C249B16.2090209@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (thurne.picochip.com [172.17.0.105]); Fri, 25 Jun 2010 14:33:59 +0100 (BST)
+In-Reply-To: <0680EC522D0CC943BC586913CF3768C003B3553F63@dbde02.ent.ti.com>
+References: <0680EC522D0CC943BC586913CF3768C003B3553D0C@dbde02.ent.ti.com>
+	<4C235523.6000204@jic23.retrosnub.co.uk>
+	<0680EC522D0CC943BC586913CF3768C003B3553F63@dbde02.ent.ti.com>
+Date: Fri, 25 Jun 2010 15:34:28 +0200
+Message-ID: <AANLkTilljwEFE9Yuf_bd6p_9P4Ck0VFa6bglyD45n5lz@mail.gmail.com>
+Subject: Re: [PATCH] BMP085 : Change the macro to swap
+From: Christoph Mair <christoph.mair@gmail.com>
+To: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
+Cc: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2010 01:03 PM, Masami Hiramatsu wrote:
-> Jamie Iles wrote:
->> On Fri, Jun 25, 2010 at 08:16:55PM +0900, Masami Hiramatsu wrote:
->>> Jamie Iles wrote:
->>>> The path to elfutils was previously hardcoded as /usr/include/elfutils
->>>> which does not work with cross compilers. If CROSS_COMPILE is set, try
->>>> to set an include path from GCC's sysroot if GCC was built with sysroot
->>>> support, if sysroot support isn't enabled, don't specify a path for
->>>> elfutils allowing the user to set it with EXTRA_CFLAGS.
-[...]
-> 
-> It seems that $ELFUTILS_INCLUDE become "" without sysroot support.
-> In that case, I guess that user have to set the elfutils header
-> path to  EXTRA_CFLAGS and, make will just show "No libdw.h found
-> or old libdw.h found ..." message. (I just guess, not so familier
-> with cross compile...)
-> 
-> So, I just like to suggest adding a message like as;
-> "No sysroot support. Please set elfutils include path in EXTRA_CFLAGS."
-> Doesn't it make easier to find a problem?
-> 
-> Other parts are OK for me.
+On Fri, Jun 25, 2010 at 3:00 PM, Datta, Shubhrajyoti
+<shubhrajyoti@ti.com> wrote:
+>
+>
+>> -----Original Message-----
+>> From: J.I. Cameron [mailto:jic23@hermes.cam.ac.uk] On Behalf Of Jonathan
+>> Cameron
+>> Sent: Thursday, June 24, 2010 6:23 PM
+>> To: Datta, Shubhrajyoti
+>> Cc: linux-kernel@vger.kernel.org; Christoph Mair; Andrew Morton
+>> Subject: Re: [PATCH] BMP085 : Change the macro to swap
+>>
+>> On 06/24/10 13:41, Datta, Shubhrajyoti wrote:
+>> >
+>> > Changing the macro to swap the bytes as the reason that the first byte
+>> is the MSB and the next is LSB.
+>> Are you sure on this one?
+>
+> The datasheet says the  E2PROM has the bytes as described in the comment below
+> *
+> * BMP085 Reg Addr
+> * parameter     |       MSB     |       LSB
+> * AC1           |       0xAA    |       0xAB
+> ...
+>
+> AA has MSB and AB has lsb so it has to be swapped. My idea is that it does not depend on the endianness of the CPU running the code. So I think that swap should happen unconditionally. The I2C reads a string of bytes and the first byte from AA and next from AB and hence an unconditional swap maybe needed.
+>
+> Am I missing something.
+The data is read bytewise and stored in memory starting with
+MSB-LSM-MSB-LSB-... If you have a big endian CPU, it expects a 16 Bit
+word to be stored in exactly this format. A little endian CPU expects
+the LSB to be stored at the lower memory address: LSB-MSB.
+Therefore the bytes have to be swapped only for little-endian cpus.
 
-Ok, how about this revised patch?
-
-From: Jamie Iles <jamie.iles@picochip.com>
-Date: Fri, 25 Jun 2010 13:59:44 +0100
-Subject: [PATCHv2] perf tools: allow cross compiling with DWARF support
-
-The path to elfutils was previously hardcoded as /usr/include/elfutils
-which does not work with cross compilers. If CROSS_COMPILE is set, try
-to set an include path from GCC's sysroot if GCC was built with sysroot
-support, if sysroot support isn't enabled, don't specify a path for
-elfutils allowing the user to set it with EXTRA_CFLAGS.
-
-v2: if we can't find libdw.h and there is no sysroot support but it
-would be useful, warn the user.
-
-Signed-off-by: Jamie Iles <jamie.iles@picochip.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- tools/perf/Makefile |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 6aa2fe3..1c08b7b 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -503,9 +503,24 @@ PERFLIBS = $(LIB_FILE)
- -include config.mak.autogen
- -include config.mak
- 
-+ifndef CROSS_COMPILE
-+	ELFUTILS_INCLUDE = -I/usr/include/elfutils
-+else
-+	# See if the compiler has been built with sysroot support
-+	SYSROOT_PATH = $(shell $(CC) -print-sysroot 2> /dev/null || echo "")
-+	ifneq ($(SYSROOT_PATH),)
-+		ELFUTILS_INCLUDE := -I$(SYSROOT_PATH)/usr/include/elfutils
-+	else
-+		NO_SYSROOT := y
-+	endif
-+endif
-+
- ifndef NO_DWARF
--FLAGS_DWARF=$(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
-+FLAGS_DWARF=$(ALL_CFLAGS) $(ELFUTILS_INCLUDE) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
- ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
-+	ifdef NO_SYSROOT
-+		msg := $(warning No sysroot support. Set elfutils include path in EXTRA_CFLAGS for dwarf support)
-+	endif
- 	msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
- 	NO_DWARF := 1
- endif # Dwarf support
-@@ -551,7 +566,7 @@ ifndef NO_DWARF
- ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
- 	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
- else
--	BASIC_CFLAGS += -I/usr/include/elfutils -DDWARF_SUPPORT
-+	BASIC_CFLAGS += $(ELFUTILS_INCLUDE) -DDWARF_SUPPORT
- 	EXTLIBS += -lelf -ldw
- 	LIB_OBJS += $(OUTPUT)util/probe-finder.o
- endif # PERF_HAVE_DWARF_REGS
--- 
-1.7.0.1
-
+Best regards,
+  Christoph
