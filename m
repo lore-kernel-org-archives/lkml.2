@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab0FYM4E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 08:56:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50162 "EHLO mx1.redhat.com"
+	id S1755508Ab0FYM5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 08:57:43 -0400
+Received: from ozlabs.org ([203.10.76.45]:40963 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752535Ab0FYM4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 08:56:01 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4C24A606.5040001@suse.de>
-References: <4C24A606.5040001@suse.de> <1277220214-3597-1-git-send-email-sjayaraman@suse.de> <yes> <9822.1277312573@redhat.com>
-To: Suresh Jayaraman <sjayaraman@suse.de>
-Cc: dhowells@redhat.com, Steve French <smfrench@gmail.com>,
-       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 06/10] cifs: define inode-level cache object and register them
-Date: Fri, 25 Jun 2010 13:55:49 +0100
-Message-ID: <22697.1277470549@redhat.com>
+	id S1754086Ab0FYM5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 08:57:41 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: Tree for June 11
+Date: Fri, 25 Jun 2010 22:27:35 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+References: <20100611141738.cf8a6bbf.sfr@canb.auug.org.au> <201006151856.38882.rusty@rustcorp.com.au> <20100623155303.65ead123.akpm@linux-foundation.org>
+In-Reply-To: <20100623155303.65ead123.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006252227.35693.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suresh Jayaraman <sjayaraman@suse.de> wrote:
+On Thu, 24 Jun 2010 08:23:03 am Andrew Morton wrote:
+> I bisected it down to 4624469822455b4accc886557f6c997ccdd59066
+> ("module: kallsyms functions take struct load_info").  I couldn't see
+> anything obviously wrong with it, but there's something screwy in
+> there..
 
-> I think the creation time is currently being ignored as we won't be able
-> to accomodate in POSIX stat struct.
+Great, thanks for bisecting.  I'll wrangle with it a little and see
+if I can figure out what screwed up.
 
-The FS-Cache interface doesn't use the POSIX stat struct, but it could be
-really useful to save it and use it for cache coherency inside the kernel.
-
-Out of interest, what does Samba do when it comes to generating a creation time
-for UNIX where one does not exist?
-
-David
+Thanks,
+Rusty.
