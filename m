@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab0FYTtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:49:24 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33112 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab0FYTtX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:49:23 -0400
-Subject: Re: [RFC][PATCH] irq_work -v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       "H.PeterA" <"nvin hpa"@zytor.com>, linux-kernel@vger.kernel.org,
-       tglx <tglx@linutronix.de>, davem <davem@davemloft.net>,
-       paulus <paulus@samba.org>
-In-Reply-To: <1277494784.1875.989.camel@laptop>
-References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
-	 <1277361352.1875.838.camel@laptop> <1277490625.1875.986.camel@laptop>
-	 <20100625193031.GD13421@basil.fritz.box> <1277494784.1875.989.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
+	id S932402Ab0FYTtf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:49:35 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:40486 "EHLO
+	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932324Ab0FYTte convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:49:34 -0400
+Date: Fri, 25 Jun 2010 15:49:08 -0400 (EDT)
+From: Ulrich Drepper <drepper@redhat.com>
+To: Darren Hart <dvhltc@us.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andreas Schwab <schwab@redhat.com>, Danny Feng <dfeng@redhat.com>,
+       Jakub Jelinek <jakub@redhat.com>, linux-kernel@vger.kernel.org,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Oleg Nesterov <oleg@redhat.com>
+Message-ID: <2054433814.959851277495348646.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <4C2506C3.2000301@us.ibm.com>
+Subject: Re: Q: sys_futex() && timespec_valid()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 25 Jun 2010 21:49:13 +0200
-Message-ID: <1277495353.1875.991.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Originating-IP: [10.5.5.71]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-25 at 21:39 +0200, Peter Zijlstra wrote:
-> On Fri, 2010-06-25 at 21:30 +0200, Andi Kleen wrote:
-> > 
-> > I'm not sure what all the logic for entry enqueued by someone
-> > else is good for? Is that for the case you don't have enough
-> > entries preallocated and you share them with someone else?
-> > 
-> > Normally if the sharing is per cpu that would be difficult 
-> > to recover from because if it's due to a nest situation (for example)
-> > you would deadlock.
-> > 
-> > For me it would seem simpler to simply not share.
-> 
-> perf has two different reasons to for the callback, what I do is set the
-> state and enqueue, if its already enqueued the pending callback will
-> handle both.
-> 
-> Its cheaper than having two callback structures per event.
-> 
-> We can expose the claim/enqueue thing separately so that users can
-> choose.
+----- "Darren Hart" <dvhltc@us.ibm.com> wrote:
+> Unless there is some good reason to object to breaking the API that I
+> am  missing, I don't mind changing it to -ETIMEDOUT (although -EINVAL
+> seems more intuitive to me).
 
-Also, its possible the PMI hits again before the IRQ callback has a
-chance to happen.
+It's only not intuitive because Oleg misrepresented or at least didn't describe the issue.
 
+The kernel already catches invalid timespec values.  Unfortunately the code used comes from the time when all timeouts where specified with relative values.  In such situations negative tv_sec values were in fact invalid and rejected with EINVAL.
 
+But for absolute timeouts tv_sec = -1 means a time before Epoch.  This is not an invalid value, it just is one of many points in time which have passed and therefore the kernel has to respond with ETIMEDOUT.
+
+This is no semantic change or anything like that.  It pure and simply a bug fix.  When Thomas worked on that come we simply missed updating the test for invalid timespec values.
+
+The kernel code should be fixed to always check tv_nsec for < 0 and > 1000000000.  But the tv_sec test for < 0 should be skipped if the timeout value is interpreted as an absolute time value.
+
+-- 
+➧ Ulrich Drepper ➧ Red Hat, Inc. ➧ 444 Castro St ➧ Mountain View, CA ❖
