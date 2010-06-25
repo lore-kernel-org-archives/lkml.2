@@ -1,120 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab0FYTF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:05:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20218 "EHLO mx1.redhat.com"
+	id S932338Ab0FYTGQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:06:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3724 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab0FYTFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:05:55 -0400
+	id S932240Ab0FYTGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:06:07 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 00/38] Union mounts - multiple layers and submounts
-Date: Fri, 25 Jun 2010 12:04:50 -0700
-Message-Id: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 08/38] whiteout: Allow removal of a directory with whiteouts
+Date: Fri, 25 Jun 2010 12:04:58 -0700
+Message-Id: <1277492728-11446-9-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
+References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This version of union mounts adds support for more than one read-only
-layer and submounts in the read-only layers.  It replaces the clumsy
-array of vfsmounts in the topmost superblock with a pointer to the
-root of a cloned vfsmount tree of all the read-only mounts to be
-unioned.
+From: Jan Blunck <jblunck@suse.de>
 
-This branch is named "submounts" and is in the usual git tree:
+do_whiteout() allows removal of a directory when it has whiteouts but
+is logically empty.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/val/linux-2.6.git
+XXX - This patch abuses readdir() to check if the union directory is
+logically empty - that is, all the entries are whiteouts (or "." or
+"..").  Currently, we have no clean VFS interface to ask the lower
+file system if a directory is empty.
 
-FYI, I'll be on vacation for the next two weeks and not reading email.
+Fixes:
+ - Add ->is_directory_empty() op
+ - Add is_directory_empty flag to dentry (ugly dcache populate)
+ - Ask underlying fs to remove it and look for an error return
+ - (your idea here)
 
--VAL
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+---
+ fs/namei.c |   84 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 84 insertions(+), 0 deletions(-)
 
-Felix Fietkau (2):
-  whiteout: jffs2 whiteout support
-  fallthru: jffs2 fallthru support
-
-Jan Blunck (11):
-  VFS: Make lookup_hash() return a struct path
-  autofs4: Save autofs trigger's vfsmount in super block info
-  whiteout/NFSD: Don't return information about whiteouts to userspace
-  whiteout: Add vfs_whiteout() and whiteout inode operation
-  whiteout: Set S_OPAQUE inode flag when creating directories
-  whiteout: Allow removal of a directory with whiteouts
-  whiteout: tmpfs whiteout support
-  whiteout: Split of ext2_append_link() from ext2_add_link()
-  whiteout: ext2 whiteout support
-  union-mount: Introduce MNT_UNION and MS_UNION flags
-  union-mount: Call do_whiteout() on unlink and rmdir in unions
-
-Valerie Aurora (25):
-  VFS: Comment follow_mount() and friends
-  VFS: Add read-only users count to superblock
-  fallthru: Basic fallthru definitions
-  fallthru: ext2 fallthru support
-  fallthru: tmpfs fallthru support
-  union-mount: Union mounts documentation
-  union-mount: Introduce union_dir structure and basic operations
-  union-mount: Free union dirs on removal from dcache
-  union-mount: Support for mounting union mount file systems
-  union-mount: Implement union lookup
-  union-mount: Copy up directory entries on first readdir()
-  VFS: Split inode_permission() and create path_permission()
-  VFS: Create user_path_nd() to lookup both parent and target
-  union-mount: In-kernel file copyup routines
-  union-mount: Implement union-aware access()/faccessat()
-  union-mount: Implement union-aware link()
-  union-mount: Implement union-aware rename()
-  union-mount: Implement union-aware writable open()
-  union-mount: Implement union-aware chown()
-  union-mount: Implement union-aware truncate()
-  union-mount: Implement union-aware chmod()/fchmodat()
-  union-mount: Implement union-aware lchown()
-  union-mount: Implement union-aware utimensat()
-  union-mount: Implement union-aware setxattr()
-  union-mount: Implement union-aware lsetxattr()
-
- Documentation/filesystems/union-mounts.txt |  752 +++++++++++++++++++++++++++
- Documentation/filesystems/vfs.txt          |   16 +-
- fs/Kconfig                                 |   13 +
- fs/Makefile                                |    1 +
- fs/autofs4/autofs_i.h                      |    1 +
- fs/autofs4/init.c                          |   11 +-
- fs/autofs4/root.c                          |    6 +
- fs/compat.c                                |    9 +
- fs/dcache.c                                |   32 ++-
- fs/ext2/dir.c                              |  248 +++++++++-
- fs/ext2/ext2.h                             |    4 +
- fs/ext2/inode.c                            |   11 +-
- fs/ext2/namei.c                            |   89 ++++-
- fs/ext2/super.c                            |    6 +
- fs/jffs2/dir.c                             |  104 ++++-
- fs/jffs2/fs.c                              |    4 +
- fs/jffs2/super.c                           |    2 +-
- fs/libfs.c                                 |   21 +-
- fs/namei.c                                 |  754 ++++++++++++++++++++++++----
- fs/namespace.c                             |  279 ++++++++++-
- fs/nfsd/nfs3xdr.c                          |    5 +
- fs/nfsd/nfs4xdr.c                          |    5 +
- fs/nfsd/nfsxdr.c                           |    4 +
- fs/open.c                                  |  116 ++++-
- fs/readdir.c                               |   18 +
- fs/super.c                                 |   24 +
- fs/union.c                                 |  692 +++++++++++++++++++++++++
- fs/union.h                                 |   80 +++
- fs/utimes.c                                |   14 +-
- fs/xattr.c                                 |   65 ++-
- include/linux/dcache.h                     |   16 +-
- include/linux/ext2_fs.h                    |    5 +
- include/linux/fs.h                         |   23 +
- include/linux/jffs2.h                      |    8 +
- include/linux/mount.h                      |    6 +-
- include/linux/namei.h                      |    2 +
- mm/shmem.c                                 |  195 +++++++-
- 37 files changed, 3459 insertions(+), 182 deletions(-)
- create mode 100644 Documentation/filesystems/union-mounts.txt
- create mode 100644 fs/union.c
- create mode 100644 fs/union.h
+diff --git a/fs/namei.c b/fs/namei.c
+index 8c67636..06aad7e 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2249,6 +2249,90 @@ static int vfs_whiteout(struct inode *dir, struct dentry *old_dentry, int isdir)
+ }
+ 
+ /*
++ * XXX - We are abusing readdir to check if a union directory is
++ * logically empty.
++ */
++static int filldir_is_empty(void *__buf, const char *name, int namlen,
++			    loff_t offset, u64 ino, unsigned int d_type)
++{
++	int *is_empty = (int *)__buf;
++
++	switch (namlen) {
++	case 2:
++		if (name[1] != '.')
++			break;
++	case 1:
++		if (name[0] != '.')
++			break;
++		return 0;
++	}
++
++	if (d_type == DT_WHT)
++		return 0;
++
++	(*is_empty) = 0;
++	return 0;
++}
++
++static int directory_is_empty(struct path *path)
++{
++	struct file *file;
++	int err;
++	int is_empty = 1;
++
++	BUG_ON(!S_ISDIR(path->dentry->d_inode->i_mode));
++
++	/* references for the file pointer */
++	path_get(path);
++
++	file = dentry_open(path->dentry, path->mnt, O_RDONLY, current_cred());
++	if (IS_ERR(file))
++		return 0;
++
++	err = vfs_readdir(file, filldir_is_empty, &is_empty);
++
++	fput(file);
++	return is_empty;
++}
++
++static int do_whiteout(struct nameidata *nd, struct path *path, int isdir)
++{
++	struct path safe = nd->path;
++	struct dentry *dentry = path->dentry;
++	int err;
++
++	path_get(&safe);
++
++	err = may_delete(nd->path.dentry->d_inode, dentry, isdir);
++	if (err)
++		goto out;
++
++	err = -ENOTEMPTY;
++	if (isdir && !directory_is_empty(path))
++		goto out;
++
++	if (nd->path.dentry != dentry->d_parent) {
++		dentry = __lookup_hash(&path->dentry->d_name, nd->path.dentry,
++				       nd);
++		err = PTR_ERR(dentry);
++		if (IS_ERR(dentry))
++			goto out;
++
++		dput(path->dentry);
++		if (path->mnt != safe.mnt)
++			mntput(path->mnt);
++		path->mnt = nd->path.mnt;
++		path->dentry = dentry;
++	}
++
++	err = vfs_whiteout(nd->path.dentry->d_inode, dentry, isdir);
++
++out:
++	path_put(&safe);
++	return err;
++}
++
++/*
+  * We try to drop the dentry early: we should have
+  * a usage count of 2 if we're the only user of this
+  * dentry, and if that is true (possibly after pruning
+-- 
+1.6.3.3
 
