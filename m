@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab0FYM5n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 08:57:43 -0400
-Received: from ozlabs.org ([203.10.76.45]:40963 "EHLO ozlabs.org"
+	id S1755638Ab0FYM6l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 08:58:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50417 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754086Ab0FYM5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 08:57:41 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: Tree for June 11
-Date: Fri, 25 Jun 2010 22:27:35 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-References: <20100611141738.cf8a6bbf.sfr@canb.auug.org.au> <201006151856.38882.rusty@rustcorp.com.au> <20100623155303.65ead123.akpm@linux-foundation.org>
-In-Reply-To: <20100623155303.65ead123.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006252227.35693.rusty@rustcorp.com.au>
+	id S1754086Ab0FYM6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 08:58:39 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4C24A4A0.90408@suse.de>
+References: <4C24A4A0.90408@suse.de> <1277220206-3559-1-git-send-email-sjayaraman@suse.de> <yes> <9720.1277312290@redhat.com>
+To: Suresh Jayaraman <sjayaraman@suse.de>
+Cc: dhowells@redhat.com, Steve French <smfrench@gmail.com>,
+       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 05/10] cifs: define superblock-level cache index objects and register them
+Date: Fri, 25 Jun 2010 13:58:33 +0100
+Message-ID: <22746.1277470713@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jun 2010 08:23:03 am Andrew Morton wrote:
-> I bisected it down to 4624469822455b4accc886557f6c997ccdd59066
-> ("module: kallsyms functions take struct load_info").  I couldn't see
-> anything obviously wrong with it, but there's something screwy in
-> there..
+Suresh Jayaraman <sjayaraman@suse.de> wrote:
 
-Great, thanks for bisecting.  I'll wrangle with it a little and see
-if I can figure out what screwed up.
+> Also, considering the UNC name of the resource (//server/share) may not
+> be a good idea too as the cache will not be used when for e.g. IPaddress
+> is used to mount.
 
-Thanks,
-Rusty.
+You could convert the UNC name to an IP address, and just use that as your
+key.
+
+> > validate the root directory of the share in some way?
+>
+> I don't know if there is a way to do this.
+
+Is there an inode number or something?  Even the creation time might do.
+
+David
