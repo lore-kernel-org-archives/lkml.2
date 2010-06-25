@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab0FYU6B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 16:58:01 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47229 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751187Ab0FYU6A (ORCPT
+	id S1752306Ab0FYVIt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 17:08:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47868 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab0FYVIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 16:58:00 -0400
-Date: Fri, 25 Jun 2010 16:57:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Florian Mickler <florian@mickler.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [update 2] Re: [RFC][PATCH] PM: Avoid losing wakeup events during
- suspend
-In-Reply-To: <201006252237.50584.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1006251654470.1322-100000@iolanthe.rowland.org>
+	Fri, 25 Jun 2010 17:08:48 -0400
+Message-ID: <4C251AFF.70803@colorfullife.com>
+Date: Fri, 25 Jun 2010 23:09:19 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Luca Tettamanti <kronos.it@gmail.com>
+CC: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       Julia Lawall <julia@diku.dk>, Andrew Morton <akpm@linux-foundation.org>,
+       maciej.rutecki@gmail.com
+Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
+References: <alpine.DEB.2.00.1006180940140.11575@router.home> <20100621200118.GA4021@nb-core2.darkstar.lan> <4C223657.3030507@colorfullife.com> <AANLkTimE_BeA3yiCovC0ckn_MbbH3lpgctLD8zD5ir6j@mail.gmail.com> <AANLkTinw8qzAkHTNB05PqfWMQmuya1Dq6AZCgz2nWx6_@mail.gmail.com>
+In-Reply-To: <AANLkTinw8qzAkHTNB05PqfWMQmuya1Dq6AZCgz2nWx6_@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jun 2010, Rafael J. Wysocki wrote:
+On 06/24/2010 09:22 PM, Luca Tettamanti wrote:
+> Argh, "seems" was indeed appropriate. Manfred your patch does
+> alleviate the problem but something is still wrong. I noticed (I'm
+> developing an ajax heavy web app) that sometimes an apache worker
+> hangs; I can reproduce the problem with ab (apache benchmark) and a
+> high concurrency level (I'm testing with 100 and 10k requests, and I
+> get only 2-5 dropped requests). This does not happen with 2.4.34.
+> Any idea on how I can debug this further?
+>
+>    
+Are there still hung httpd processes?
 
-> > > You seem to be referring to the PM workqueue specifically.  Perhaps it would be
-> > > better to special-case it and stop it by adding a barrier work during suspend
-> > > instead of just freezing?  Then, it wouldn't need to be singlethread any more.
-> > 
-> > The barrier work would have to be queued to each CPU's thread.  That
-> > would be okay.
-> 
-> I guess we should stop the PM workqueue after the freezing of tasks, shouldn't we?
-
-Yes.  The exact spot probably doesn't matter; that's as good as any.
-
-> > Hmm, it looks like wait_event_freezable() and
-> > wait_event_freezable_timeout() could use similar changes: If the
-> > condition is true then they shouldn't try to freeze the caller.
-> 
-> Yes, but that should be a separate patch IMHO.
-
-Agreed.
-
-Alan Stern
-
+--
+     Manfred
