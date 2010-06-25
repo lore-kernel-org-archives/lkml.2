@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab0FYTLR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:11:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46308 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932401Ab0FYTGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:06:45 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 20/38] union-mount: Free union dirs on removal from dcache
-Date: Fri, 25 Jun 2010 12:05:10 -0700
-Message-Id: <1277492728-11446-21-git-send-email-vaurora@redhat.com>
-In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
-References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
+	id S932439Ab0FYTLa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:11:30 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:38058 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932376Ab0FYTL2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:11:28 -0400
+Subject: Re: [PATCH] tps65023: Allow registering similar TPS65021
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <20100625115528.GF2803@sirena.org.uk>
+References: <1277387389-5103-1-git-send-email-marek.vasut@gmail.com>
+	 <20100625115528.GF2803@sirena.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Jun 2010 20:11:25 +0100
+Message-ID: <1277493085.26730.986.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a dentry is removed from dentry cache because its usage count drops
-to zero, the union_dirs in its union stack are freed too.
----
- fs/dcache.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+On Fri, 2010-06-25 at 12:55 +0100, Mark Brown wrote:
+> On Thu, Jun 24, 2010 at 03:49:49PM +0200, Marek Vasut wrote:
+> > TPS65021 is an older model and is slightly weaker (can supply less current),
+> > otherwise is the same.
+> > 
+> > Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+> 
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> --
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 54ff5a3..ce54dc5 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -34,6 +34,7 @@
- #include <linux/fs_struct.h>
- #include <linux/hardirq.h>
- #include "internal.h"
-+#include "union.h"
- 
- int sysctl_vfs_cache_pressure __read_mostly = 100;
- EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
-@@ -175,6 +176,7 @@ static struct dentry *d_kill(struct dentry *dentry)
- 	dentry_stat.nr_dentry--;	/* For d_free, below */
- 	/*drops the locks, at that point nobody can reach this dentry */
- 	dentry_iput(dentry);
-+	d_free_unions(dentry);
- 	if (IS_ROOT(dentry))
- 		parent = NULL;
- 	else
-@@ -696,6 +698,7 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
- 					iput(inode);
- 			}
- 
-+			d_free_unions(dentry);
- 			d_free(dentry);
- 
- 			/* finished when we fall off the top of the tree,
-@@ -1535,6 +1538,7 @@ void d_delete(struct dentry * dentry)
- 	isdir = S_ISDIR(dentry->d_inode->i_mode);
- 	if (atomic_read(&dentry->d_count) == 1) {
- 		dentry_iput(dentry);
-+		d_free_unions(dentry);
- 		fsnotify_nameremove(dentry, isdir);
- 		return;
- 	}
-@@ -1545,6 +1549,13 @@ void d_delete(struct dentry * dentry)
- 	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&dcache_lock);
- 
-+	/*
-+	 * Remove any associated unions.  While someone still has this
-+	 * directory open (ref count > 0), we could not have deleted
-+	 * it unless it was empty, and therefore has no references to
-+	 * directories below it.  So we don't need the unions.
-+	 */
-+	d_free_unions(dentry);
- 	fsnotify_nameremove(dentry, isdir);
- }
- EXPORT_SYMBOL(d_delete);
+Applied.
+
+Thanks
+
+Liam
 -- 
-1.6.3.3
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
