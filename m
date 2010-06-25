@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab0FYJN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 05:13:26 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37733 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab0FYJNZ (ORCPT
+	id S1754084Ab0FYJP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 05:15:59 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51176 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab0FYJP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 05:13:25 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH] vmscan: recalculate lru_pages on each priority
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20100625181221.805A.A69D9226@jp.fujitsu.com>
+	Fri, 25 Jun 2010 05:15:56 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: "Daniel Taylor" <Daniel.Taylor@wdc.com>
+Cc: "Mike Fedyk" <mfedyk@mikefedyk.com>,
+       "Daniel J Blueman" <daniel.blueman@gmail.com>,
+       "Mat" <jackdachef@gmail.com>, "LKML" <linux-kernel@vger.kernel.org>,
+       <linux-fsdevel@vger.kernel.org>, "Chris Mason" <chris.mason@oracle.com>,
+       "Ric Wheeler" <rwheeler@redhat.com>,
+       "Andrew Morton" <akpm@linux-foundation.org>,
+       "Linus Torvalds" <torvalds@linux-foundation.org>,
+       "The development of BTRFS" <linux-btrfs@vger.kernel.org>
+Subject: Re: Btrfs: broken file system design
+References: <4C07C321.8010000@redhat.com>
+	<AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
+	<4C1B7560.1000806@gmail.com>
+	<AANLkTilQm8VGAvc1XNW4EaHd1FLd6dXIXwJ9-yT-joQ8@mail.gmail.com>
+	<4C1BA3E5.7020400@gmail.com> <20100623234031.GF7058@shareable.org>
+	<469D2D911E4BF043BFC8AD32E8E30F5B24AEBA@wdscexbe07.sc.wdc.com>
+	<AANLkTil5Gl0-rWClRsLZby_c37bQu5RB_tCgHsxTFshO@mail.gmail.com>
+	<469D2D911E4BF043BFC8AD32E8E30F5B24AEBB@wdscexbe07.sc.wdc.com>
+Date: Fri, 25 Jun 2010 11:15:55 +0200
+In-Reply-To: <469D2D911E4BF043BFC8AD32E8E30F5B24AEBB@wdscexbe07.sc.wdc.com>
+	(Daniel Taylor's message of "Thu, 24 Jun 2010 15:06:03 -0700")
+Message-ID: <87hbkrealw.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 25 Jun 2010 18:13:20 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shrink_zones() need relatively long time. and lru_pages can be
-changed dramatically while shrink_zones().
-then, lru_pages need recalculate on each priority.
+"Daniel Taylor" <Daniel.Taylor@wdc.com> writes:
+>
+> As long as no object smaller than the disk block size is ever
+> flushed to media, and all flushed objects are aligned to the disk
+> blocks, there should be no real performance hit from that.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/vmscan.c |   21 ++++++++-------------
- 1 files changed, 8 insertions(+), 13 deletions(-)
+The question is just how large such a block needs to be.
+Traditionally some RAID controllers (and possibly some SSDs now) 
+needed very large blocks upto MBs.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0c961f1..0ebfe12 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1785,7 +1785,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 	bool all_unreclaimable;
- 	unsigned long total_scanned = 0;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
--	unsigned long lru_pages = 0;
- 	struct zoneref *z;
- 	struct zone *zone;
- 	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
-@@ -1796,18 +1795,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 
- 	if (scanning_global_lru(sc))
- 		count_vm_event(ALLOCSTALL);
--	/*
--	 * mem_cgroup will not do shrink_slab.
--	 */
--	if (scanning_global_lru(sc)) {
--		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
--
--			if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
--				continue;
--
--			lru_pages += zone_reclaimable_pages(zone);
--		}
--	}
- 
- 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
- 		sc->nr_scanned = 0;
-@@ -1819,6 +1806,14 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		 * over limit cgroups
- 		 */
- 		if (scanning_global_lru(sc)) {
-+			unsigned long lru_pages = 0;
-+			for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
-+				if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-+					continue;
-+
-+				lru_pages += zone_reclaimable_pages(zone);
-+			}
-+
- 			shrink_slab(sc->nr_scanned, sc->gfp_mask, lru_pages);
- 			if (reclaim_state) {
- 				sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+>
+> Otherwise we end up with the damage for the ext[234] family, where
+> the file blocks can be aligned, but the 1K inode updates cause
+> the read-modify-write (RMW) cycles and and cost >10% performance
+> hit for creation/update of large numbers of files.
+
+Fixing that doesn't require a new file system layout, just some effort
+to read/write inodes in batches of multiple of them. XFS did similar
+things for a long time, I believe there were some efforts for this
+for ext4 too.
+
+-Andi
 -- 
-1.6.5.2
-
-
-
+ak@linux.intel.com -- Speaking for myself only.
