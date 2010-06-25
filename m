@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab0FYLLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 07:11:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38080 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754409Ab0FYLLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 07:11:43 -0400
-Date: Fri, 25 Jun 2010 14:06:30 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Dong, Eddie" <eddie.dong@intel.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-       "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>
-Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
-	external.
-Message-ID: <20100625110629.GB16444@redhat.com>
-References: <20100611052112.GA25649@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com> <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com> <1A42CE6F5F474C41B63392A5F80372B21F58CD9A@shsmsx501.ccr.corp.intel.com> <20100623095254.GA32491@gondor.apana.org.au> <1A42CE6F5F474C41B63392A5F80372B21F58CE7F@shsmsx501.ccr.corp.intel.com> <20100624100836.GA16220@gondor.apana.org.au> <1A42CE6F5F474C41B63392A5F80372B21F58D666@shsmsx501.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1A42CE6F5F474C41B63392A5F80372B21F58D666@shsmsx501.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1755564Ab0FYLL5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 07:11:57 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55636 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755501Ab0FYLLz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 07:11:55 -0400
+Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100624142804.431553874@chello.nl>
+References: <20100624142804.431553874@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Jun 2010 12:11:28 +0100
+Message-ID: <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Jun 2010 11:11:32.0044 (UTC) FILETIME=[2AA640C0:01CB1457]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 25, 2010 at 09:03:46AM +0800, Dong, Eddie wrote:
-> Herbert Xu wrote:
-> > On Wed, Jun 23, 2010 at 06:05:41PM +0800, Dong, Eddie wrote:
-> >> 
-> >> I mean once the frontend side driver post the buffers to the backend
-> >> driver, the backend driver will "immediately" use that buffers to
-> >> compose skb or gro_frags and post them to the assigned host NIC
-> >> driver as receive buffers. In that case, if the backend driver
-> >> recieves a packet from the NIC that requires to do copy, it may be
-> >> unable to find additional free guest buffer because all of them are
-> >> already used by the NIC driver. We have to reserve some guest
-> >> buffers for the possible copy even if the buffer address is not
-> >> identified by original skb :(        
-> > 
-> > OK I see what you mean.  Can you tell me how does Xiaohui's
-> > previous patch-set deal with this problem?
-> > 
-> > Thanks,
+Hi Peter,
+
+On Thu, 2010-06-24 at 15:28 +0100, Peter Zijlstra wrote:
+> These patches prepare the perf code for multiple pmus (no user
+> interface yet, Lin Ming is working on that). These patches remove all
+> weak functions and rework the struct pmu interface.
 > 
-> In current patch, each SKB for the assigned device (SRIOV VF or NIC or a complete queue pairs) uses the buffer from guest, so it eliminates copy completely in software and requires hardware to do so. If we can have an additonal place to store the buffer per skb (may cause copy later on), we can do copy later on or re-post the buffer to assigned NIC driver later on. But that may be not very clean either :(
-> BTW, some hardware may require certain level of packet copy such as for broadcast packets in very old VMDq device, which is not addressed in previous Xiaohui's patch yet. We may address this by implementing an additional virtqueue between guest and host for slow path (broadcast packets only here) with additinal complexity in FE/BE driver. 
+> The patches are boot tested on x86_64 and compile tested on: powerpc
+> (!fsl, what config is that?), sparc and arm (sorry no SH compiler)
 > 
-> Thx, Eddie
 
-guest posts a large number of buffers to the host.
-Host can use them any way it wants to, and in any order,
-for example reserve half the buffers for the copy.
+I tried to test these for ARM, but I get compilation errors. Maybe you
+forgot to enable perf in the ARM .config? Anyway, the compiler log is:
 
-This might waste some memory if buffers are used
-only partially, but let's worry about this later.
+  CC      arch/arm/kernel/perf_event.o
+arch/arm/kernel/perf_event.c: In function 'validate_event':
+arch/arm/kernel/perf_event.c:342: error: 'pmu' undeclared (first use in this function)
+arch/arm/kernel/perf_event.c:342: error: (Each undeclared identifier is reported only once
+arch/arm/kernel/perf_event.c:342: error: for each function it appears in.)
+arch/arm/kernel/perf_event.c: In function 'armpmu_event_init':
+arch/arm/kernel/perf_event.c:536: warning: return makes integer from pointer without a cast
+arch/arm/kernel/perf_event.c: In function 'init_hw_perf_events':
+arch/arm/kernel/perf_event.c:3037: error: expected ';' before 'return'
+arch/arm/kernel/perf_event.c:3038: warning: no return statement in function returning non-void
+make[1]: *** [arch/arm/kernel/perf_event.o] Error 1
+make: *** [arch/arm/kernel] Error 2
 
--- 
-MST
+I think there's a missing semicolon, an ERR_PTR that should be a PTR_ERR
+and an ordering issue with the pmu struct.
+
+Cheers,
+
+Will
+
