@@ -1,14246 +1,3852 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab0FYVLJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 17:11:09 -0400
+	id S932182Ab0FYVMF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 17:12:05 -0400
 Received: from king.tilera.com ([72.1.168.226]:44209 "EHLO king.tilera.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755547Ab0FYVK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 17:10:59 -0400
-Message-Id: <201006252110.o5PLArSJ010771@farm-0002.internal.tilera.com>
+	id S1756119Ab0FYVLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 17:11:05 -0400
+Message-Id: <201006252110.o5PLArqD010774@farm-0002.internal.tilera.com>
 To: linux-kernel@vger.kernel.org
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 25 Jun 2010 17:02:05 -0400
-Subject: [PATCH] arch/tile: Shrink the tile-opcode files considerably.
-X-OriginalArrivalTime: 25 Jun 2010 21:10:53.0501 (UTC) FILETIME=[E5591ED0:01CB14AA]
+Date: Fri, 25 Jun 2010 17:04:17 -0400
+Subject: [PATCH] arch/tile: Miscellaneous cleanup changes.
+X-OriginalArrivalTime: 25 Jun 2010 21:10:54.0064 (UTC) FILETIME=[E5AF0700:01CB14AA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The C file (tile-desc_{32,64}.c) was about 300KB before this change,
-and is now shrunk down to 100K.  The original file included support
-for BFD in the binutils toolchain, which is not necessary in the
-kernel; the kernel version only needs to include enough support to
-enable the single-stepper and backtracer.
+This commit is primarily changes caused by reviewing "sparse"
+and "checkpatch" output on our sources, so is somewhat noisy, since
+things like "printk() -> pr_err()" (or whatever) throughout the
+codebase tend to get tedious to read.  Rather than trying to tease
+apart precisely which things changed due to which type of code
+review, this commit includes various cleanups in the code:
+
+- sparse: Add declarations in headers for globals.
+- sparse: Fix __user annotations.
+- sparse: Using gfp_t consistently instead of int.
+- sparse: removing functions not actually used.
+- checkpatch: Clean up printk() warnings by using pr_info(), etc.;
+  also avoid partial-line printks except in bootup code.
+  - checkpatch: Use exposed structs rather than typedefs.
+  - checkpatch: Change some C99 comments to C89 comments.
+
+In addition, a couple of minor other changes are rolled in
+to this commit:
+
+- Add support for a "raise" instruction to cause SIGFPE, etc., to be raised.
+- Remove some compat code that is unnecessary when we fully eliminate
+  some of the deprecated syscalls from the generic syscall ABI.
+- Update the tile_defconfig to reflect current config contents.
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/include/asm/opcode-tile_32.h |   93 +-
- arch/tile/include/asm/opcode-tile_64.h |   93 +-
- arch/tile/kernel/tile-desc_32.c        |14144 ++++----------------------------
- 3 files changed, 1410 insertions(+), 12920 deletions(-)
+ arch/tile/configs/tile_defconfig       |   15 ++--
+ arch/tile/include/arch/abi.h           |   69 +++++++++--------
+ arch/tile/include/arch/interrupts_32.h |    2 +-
+ arch/tile/include/asm/atomic_32.h      |   17 ++++
+ arch/tile/include/asm/compat.h         |   55 +-------------
+ arch/tile/include/asm/elf.h            |    6 +-
+ arch/tile/include/asm/futex.h          |   17 +++--
+ arch/tile/include/asm/page.h           |    9 ++-
+ arch/tile/include/asm/pgtable.h        |    9 ++-
+ arch/tile/include/asm/pgtable_32.h     |   12 +++
+ arch/tile/include/asm/ptrace.h         |    5 +-
+ arch/tile/include/asm/sections.h       |    9 ++-
+ arch/tile/include/asm/signal.h         |    1 +
+ arch/tile/include/asm/spinlock_32.h    |    3 +-
+ arch/tile/include/asm/stack.h          |    6 ++
+ arch/tile/include/asm/syscalls.h       |   72 +++++++++++++++++-
+ arch/tile/include/asm/system.h         |   30 +++++++
+ arch/tile/include/asm/thread_info.h    |    8 ++-
+ arch/tile/include/asm/traps.h          |   26 ++++++
+ arch/tile/include/asm/uaccess.h        |   22 +++---
+ arch/tile/include/asm/unistd.h         |    9 +-
+ arch/tile/kernel/backtrace.c           |   81 ++++++++-----------
+ arch/tile/kernel/compat.c              |   28 ++-----
+ arch/tile/kernel/compat_signal.c       |   10 ++-
+ arch/tile/kernel/early_printk.c        |    2 +-
+ arch/tile/kernel/entry.S               |    4 +-
+ arch/tile/kernel/machine_kexec.c       |   38 +++------
+ arch/tile/kernel/messaging.c           |    5 +-
+ arch/tile/kernel/module.c              |   16 ++--
+ arch/tile/kernel/process.c             |  110 ++++++++++++++++----------
+ arch/tile/kernel/ptrace.c              |    3 +-
+ arch/tile/kernel/reboot.c              |    7 +-
+ arch/tile/kernel/setup.c               |  132 ++++++++++++++++++--------------
+ arch/tile/kernel/signal.c              |   19 ++---
+ arch/tile/kernel/single_step.c         |   75 ++++++++++--------
+ arch/tile/kernel/smpboot.c             |   37 +++------
+ arch/tile/kernel/stack.c               |   43 +++++-----
+ arch/tile/kernel/sys.c                 |   18 ++---
+ arch/tile/kernel/time.c                |    7 +-
+ arch/tile/kernel/traps.c               |  130 +++++++++++++++++++++++++------
+ arch/tile/kernel/vmlinux.lds.S         |    4 +-
+ arch/tile/lib/atomic_32.c              |   53 +++++---------
+ arch/tile/lib/cpumask.c                |    1 +
+ arch/tile/lib/exports.c                |    1 +
+ arch/tile/lib/memcpy_tile64.c          |    6 +-
+ arch/tile/lib/memmove_32.c             |    2 +-
+ arch/tile/lib/memset_32.c              |    3 +-
+ arch/tile/lib/spinlock_common.h        |    2 +-
+ arch/tile/lib/uaccess.c                |    3 +-
+ arch/tile/mm/elf.c                     |    4 +-
+ arch/tile/mm/fault.c                   |   64 +++------------
+ arch/tile/mm/highmem.c                 |    2 +-
+ arch/tile/mm/homecache.c               |   18 +----
+ arch/tile/mm/hugetlbpage.c             |    2 +-
+ arch/tile/mm/init.c                    |   99 ++++++++++++------------
+ arch/tile/mm/pgtable.c                 |   46 +----------
+ 56 files changed, 798 insertions(+), 679 deletions(-)
 
-diff --git a/arch/tile/include/asm/opcode-tile_32.h b/arch/tile/include/asm/opcode-tile_32.h
-index 90f8dd3..eda60ec 100644
---- a/arch/tile/include/asm/opcode-tile_32.h
-+++ b/arch/tile/include/asm/opcode-tile_32.h
-@@ -28,6 +28,7 @@ typedef enum
-   TILE_OPC_MOVELI_SN,
-   TILE_OPC_MOVELIS,
-   TILE_OPC_PREFETCH,
-+  TILE_OPC_RAISE,
-   TILE_OPC_ADD,
-   TILE_OPC_ADD_SN,
-   TILE_OPC_ADDB,
-@@ -419,43 +420,6 @@ typedef enum
+diff --git a/arch/tile/configs/tile_defconfig b/arch/tile/configs/tile_defconfig
+index 74a5be3..f34c70b 100644
+--- a/arch/tile/configs/tile_defconfig
++++ b/arch/tile/configs/tile_defconfig
+@@ -1,7 +1,7 @@
+ #
+ # Automatically generated make config: don't edit
+ # Linux kernel version: 2.6.34
+-# Fri May 28 17:51:43 2010
++# Thu Jun  3 13:20:05 2010
+ #
+ CONFIG_MMU=y
+ CONFIG_GENERIC_CSUM=y
+@@ -9,16 +9,13 @@ CONFIG_GENERIC_HARDIRQS=y
+ CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ=y
+ CONFIG_GENERIC_IRQ_PROBE=y
+ CONFIG_GENERIC_PENDING_IRQ=y
+-CONFIG_ZONE_DMA=y
+ CONFIG_SEMAPHORE_SLEEPERS=y
+-CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+ CONFIG_HAVE_ARCH_ALLOC_REMAP=y
+ CONFIG_HAVE_SETUP_PER_CPU_AREA=y
+ CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
+ CONFIG_SYS_SUPPORTS_HUGETLBFS=y
+ CONFIG_GENERIC_TIME=y
+ CONFIG_GENERIC_CLOCKEVENTS=y
+-CONFIG_CLOCKSOURCE_WATCHDOG=y
+ CONFIG_RWSEM_GENERIC_SPINLOCK=y
+ CONFIG_DEFAULT_MIGRATION_COST=10000000
+ CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
+@@ -32,7 +29,6 @@ CONFIG_STRICT_DEVMEM=y
+ CONFIG_SMP=y
+ CONFIG_WERROR=y
+ # CONFIG_DEBUG_COPY_FROM_USER is not set
+-CONFIG_SERIAL_CONSOLE=y
+ CONFIG_HVC_TILE=y
+ CONFIG_TILE=y
+ # CONFIG_TILEGX is not set
+@@ -86,6 +82,7 @@ CONFIG_INITRAMFS_COMPRESSION_NONE=y
+ # CONFIG_INITRAMFS_COMPRESSION_BZIP2 is not set
+ # CONFIG_INITRAMFS_COMPRESSION_LZMA is not set
+ # CONFIG_INITRAMFS_COMPRESSION_LZO is not set
++CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+ CONFIG_SYSCTL=y
+ CONFIG_ANON_INODES=y
+ CONFIG_EMBEDDED=y
+@@ -220,7 +217,7 @@ CONFIG_PAGEFLAGS_EXTENDED=y
+ CONFIG_SPLIT_PTLOCK_CPUS=4
+ CONFIG_MIGRATION=y
+ CONFIG_PHYS_ADDR_T_64BIT=y
+-CONFIG_ZONE_DMA_FLAG=1
++CONFIG_ZONE_DMA_FLAG=0
+ CONFIG_BOUNCE=y
+ CONFIG_VIRT_TO_BUS=y
+ # CONFIG_KSM is not set
+@@ -232,10 +229,11 @@ CONFIG_FEEDBACK_USE=""
+ CONFIG_VMALLOC_RESERVE=0x1000000
+ CONFIG_HARDWALL=y
+ CONFIG_MEMPROF=y
+-CONFIG_XGBE_MAIN=y
++CONFIG_XGBE=y
+ CONFIG_NET_TILE=y
+ CONFIG_PSEUDO_NAPI=y
+ CONFIG_TILEPCI_ENDP=y
++CONFIG_TILEPCI_HOST_SUBSET=m
+ CONFIG_TILE_IDE_GPIO=y
+ CONFIG_TILE_SOFTUART=y
  
- #define TILE_ELF_NAME "elf32-tilepro"
+@@ -244,6 +242,8 @@ CONFIG_TILE_SOFTUART=y
+ #
+ CONFIG_PCI=y
+ CONFIG_PCI_DOMAINS=y
++# CONFIG_NO_IOMEM is not set
++# CONFIG_NO_IOPORT is not set
+ # CONFIG_ARCH_SUPPORTS_MSI is not set
+ CONFIG_PCI_DEBUG=y
+ # CONFIG_PCI_STUB is not set
+@@ -742,6 +742,7 @@ CONFIG_HVC_DRIVER=y
+ #
+ # CONFIG_RAW_DRIVER is not set
+ # CONFIG_TCG_TPM is not set
++CONFIG_DEVPORT=y
+ CONFIG_I2C=y
+ CONFIG_I2C_BOARDINFO=y
+ CONFIG_I2C_COMPAT=y
+diff --git a/arch/tile/include/arch/abi.h b/arch/tile/include/arch/abi.h
+index 7cdc47b..da8df5b 100644
+--- a/arch/tile/include/arch/abi.h
++++ b/arch/tile/include/arch/abi.h
+@@ -1,26 +1,29 @@
+-// Copyright 2010 Tilera Corporation. All Rights Reserved.
+-//
+-//   This program is free software; you can redistribute it and/or
+-//   modify it under the terms of the GNU General Public License
+-//   as published by the Free Software Foundation, version 2.
+-//
+-//   This program is distributed in the hope that it will be useful, but
+-//   WITHOUT ANY WARRANTY; without even the implied warranty of
+-//   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+-//   NON INFRINGEMENT.  See the GNU General Public License for
+-//   more details.
+-
+-//! @file
+-//!
+-//! ABI-related register definitions helpful when writing assembly code.
+-//!
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++/**
++ * @file
++ *
++ * ABI-related register definitions helpful when writing assembly code.
++ */
  
--enum
--{
--  TILE_SN_MAX_OPERANDS = 6 /* route */
+ #ifndef __ARCH_ABI_H__
+ #define __ARCH_ABI_H__
+ 
+ #include <arch/chip.h>
+ 
+-// Registers 0 - 55 are "normal", but some perform special roles.
++/* Registers 0 - 55 are "normal", but some perform special roles. */
+ 
+ #define TREG_FP       52   /**< Frame pointer. */
+ #define TREG_TP       53   /**< Thread pointer. */
+@@ -30,7 +33,7 @@
+ /** Index of last normal general-purpose register. */
+ #define TREG_LAST_GPR 55
+ 
+-// Registers 56 - 62 are "special" network registers.
++/* Registers 56 - 62 are "special" network registers. */
+ 
+ #define TREG_SN       56   /**< Static network access. */
+ #define TREG_IDN0     57   /**< IDN demux 0 access. */
+@@ -40,7 +43,7 @@
+ #define TREG_UDN2     61   /**< UDN demux 2 access. */
+ #define TREG_UDN3     62   /**< UDN demux 3 access. */
+ 
+-// Register 63 is the "special" zero register.
++/* Register 63 is the "special" zero register. */
+ 
+ #define TREG_ZERO     63   /**< "Zero" register; always reads as "0". */
+ 
+@@ -52,42 +55,44 @@
+ #define TREG_SYSCALL_NR_NAME r10
+ 
+ 
+-//! The ABI requires callers to allocate a caller state save area of
+-//! this many bytes at the bottom of each stack frame.
+-//!
++/**
++ * The ABI requires callers to allocate a caller state save area of
++ * this many bytes at the bottom of each stack frame.
++ */
+ #ifdef __tile__
+ #define C_ABI_SAVE_AREA_SIZE (2 * __SIZEOF_POINTER__)
+ #endif
+ 
+-//! The operand to an 'info' opcode directing the backtracer to not
+-//! try to find the calling frame.
+-//!
++/**
++ * The operand to an 'info' opcode directing the backtracer to not
++ * try to find the calling frame.
++ */
+ #define INFO_OP_CANNOT_BACKTRACE 2
+ 
+ #ifndef __ASSEMBLER__
+ #if CHIP_WORD_SIZE() > 32
+ 
+-//! Unsigned type that can hold a register.
++/** Unsigned type that can hold a register. */
+ typedef unsigned long long uint_reg_t;
+ 
+-//! Signed type that can hold a register.
++/** Signed type that can hold a register. */
+ typedef long long int_reg_t;
+ 
+-//! String prefix to use for printf().
++/** String prefix to use for printf(). */
+ #define INT_REG_FMT "ll"
+ 
+ #elif !defined(__LP64__)   /* avoid confusion with LP64 cross-build tools */
+ 
+-//! Unsigned type that can hold a register.
++/** Unsigned type that can hold a register. */
+ typedef unsigned long uint_reg_t;
+ 
+-//! Signed type that can hold a register.
++/** Signed type that can hold a register. */
+ typedef long int_reg_t;
+ 
+-//! String prefix to use for printf().
++/** String prefix to use for printf(). */
+ #define INT_REG_FMT "l"
+ 
+ #endif
+ #endif /* __ASSEMBLER__ */
+ 
+-#endif // !__ARCH_ABI_H__
++#endif /* !__ARCH_ABI_H__ */
+diff --git a/arch/tile/include/arch/interrupts_32.h b/arch/tile/include/arch/interrupts_32.h
+index feffada..9d0bfa7 100644
+--- a/arch/tile/include/arch/interrupts_32.h
++++ b/arch/tile/include/arch/interrupts_32.h
+@@ -301,4 +301,4 @@
+     INT_MASK(INT_DOUBLE_FAULT) | \
+     INT_MASK(INT_AUX_PERF_COUNT) | \
+     0)
+-#endif // !__ARCH_INTERRUPTS_H__
++#endif /* !__ARCH_INTERRUPTS_H__ */
+diff --git a/arch/tile/include/asm/atomic_32.h b/arch/tile/include/asm/atomic_32.h
+index e4f8b4f..40a5a3a 100644
+--- a/arch/tile/include/asm/atomic_32.h
++++ b/arch/tile/include/asm/atomic_32.h
+@@ -348,6 +348,23 @@ void __init_atomic_per_cpu(void);
+ /* Support releasing the atomic lock in do_page_fault_ics(). */
+ void __atomic_fault_unlock(int *lock_ptr);
+ #endif
++
++/* Private helper routines in lib/atomic_asm_32.S */
++extern struct __get_user __atomic_cmpxchg(volatile int *p,
++					  int *lock, int o, int n);
++extern struct __get_user __atomic_xchg(volatile int *p, int *lock, int n);
++extern struct __get_user __atomic_xchg_add(volatile int *p, int *lock, int n);
++extern struct __get_user __atomic_xchg_add_unless(volatile int *p,
++						  int *lock, int o, int n);
++extern struct __get_user __atomic_or(volatile int *p, int *lock, int n);
++extern struct __get_user __atomic_andn(volatile int *p, int *lock, int n);
++extern struct __get_user __atomic_xor(volatile int *p, int *lock, int n);
++extern u64 __atomic64_cmpxchg(volatile u64 *p, int *lock, u64 o, u64 n);
++extern u64 __atomic64_xchg(volatile u64 *p, int *lock, u64 n);
++extern u64 __atomic64_xchg_add(volatile u64 *p, int *lock, u64 n);
++extern u64 __atomic64_xchg_add_unless(volatile u64 *p,
++				      int *lock, u64 o, u64 n);
++
+ #endif /* !__ASSEMBLY__ */
+ 
+ #endif /* _ASM_TILE_ATOMIC_32_H */
+diff --git a/arch/tile/include/asm/compat.h b/arch/tile/include/asm/compat.h
+index e133c53..6ee9d07 100644
+--- a/arch/tile/include/asm/compat.h
++++ b/arch/tile/include/asm/compat.h
+@@ -70,48 +70,7 @@ struct compat_timeval {
+ 	s32		tv_usec;
+ };
+ 
+-struct compat_stat {
+-	unsigned int	st_dev;
+-	unsigned int	st_ino;
+-	unsigned int	st_mode;
+-	unsigned int	st_nlink;
+-	unsigned int	st_uid;
+-	unsigned int	st_gid;
+-	unsigned int	st_rdev;
+-	unsigned int    __pad1;
+-	int		st_size;
+-	int		st_blksize;
+-	int		__pad2;
+-	int		st_blocks;
+-	int		st_atime;
+-	unsigned int	st_atime_nsec;
+-	int		st_mtime;
+-	unsigned int	st_mtime_nsec;
+-	int		st_ctime;
+-	unsigned int	st_ctime_nsec;
+-	unsigned int	__unused[2];
 -};
 -
--typedef enum
--{
--  TILE_SN_OPC_BZ,
--  TILE_SN_OPC_BNZ,
--  TILE_SN_OPC_JRR,
--  TILE_SN_OPC_FNOP,
--  TILE_SN_OPC_BLZ,
--  TILE_SN_OPC_NOP,
--  TILE_SN_OPC_MOVEI,
--  TILE_SN_OPC_MOVE,
--  TILE_SN_OPC_BGEZ,
--  TILE_SN_OPC_JR,
--  TILE_SN_OPC_BLEZ,
--  TILE_SN_OPC_BBNS,
--  TILE_SN_OPC_JALRR,
--  TILE_SN_OPC_BPT,
--  TILE_SN_OPC_JALR,
--  TILE_SN_OPC_SHR1,
--  TILE_SN_OPC_BGZ,
--  TILE_SN_OPC_BBS,
--  TILE_SN_OPC_SHL8II,
--  TILE_SN_OPC_ADDI,
--  TILE_SN_OPC_HALT,
--  TILE_SN_OPC_ROUTE,
--  TILE_SN_OPC_NONE
--} tile_sn_mnemonic;
+-struct compat_stat64 {
+-	unsigned long	st_dev;
+-	unsigned long	st_ino;
+-	unsigned int	st_mode;
+-	unsigned int	st_nlink;
+-	unsigned int	st_uid;
+-	unsigned int	st_gid;
+-	unsigned long	st_rdev;
+-	long		st_size;
+-	unsigned int	st_blksize;
+-	unsigned long	st_blocks __attribute__((packed));
+-	unsigned int	st_atime;
+-	unsigned int	st_atime_nsec;
+-	unsigned int	st_mtime;
+-	unsigned int	st_mtime_nsec;
+-	unsigned int	st_ctime;
+-	unsigned int	st_ctime_nsec;
+-	unsigned int	__unused8;
+-};
 -
--extern const unsigned char tile_sn_route_encode[6 * 6 * 6];
--extern const signed char tile_sn_route_decode[256][3];
--extern const char tile_sn_direction_names[6][5];
--extern const signed char tile_sn_dest_map[6][6];
--
++#define compat_stat stat
+ #define compat_statfs statfs
  
- static __inline unsigned int
- get_BrOff_SN(tile_bundle_bits num)
-@@ -1387,8 +1351,6 @@ create_UnShOpcodeExtension_Y1(int num)
+ struct compat_sysctl {
+@@ -233,7 +192,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+ /* Sign-extend when storing a kernel pointer to a user's ptregs. */
+ static inline unsigned long ptr_to_compat_reg(void __user *uptr)
+ {
+-	return (long)(int)(long)uptr;
++	return (long)(int)(long __force)uptr;
+ }
+ 
+ static inline void __user *compat_alloc_user_space(long len)
+@@ -278,17 +237,8 @@ long compat_sys_sync_file_range2(int fd, unsigned int flags,
+ long compat_sys_fallocate(int fd, int mode,
+ 			  u32 offset_lo, u32 offset_hi,
+ 			  u32 len_lo, u32 len_hi);
+-long compat_sys_stat64(char __user *filename,
+-		       struct compat_stat64 __user *statbuf);
+-long compat_sys_lstat64(char __user *filename,
+-			struct compat_stat64 __user *statbuf);
+-long compat_sys_fstat64(unsigned int fd, struct compat_stat64 __user *statbuf);
+-long compat_sys_fstatat64(int dfd, char __user *filename,
+-			  struct compat_stat64 __user *statbuf, int flag);
+ long compat_sys_sched_rr_get_interval(compat_pid_t pid,
+ 				      struct compat_timespec __user *interval);
+-ssize_t compat_sys_sendfile(int out_fd, int in_fd, compat_off_t __user *offset,
+-			    size_t count);
+ 
+ /* Versions of compat functions that differ from generic Linux. */
+ struct compat_msgbuf;
+@@ -302,7 +252,6 @@ long tile_compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+ 			    compat_long_t addr, compat_long_t data);
+ 
+ /* Tilera Linux syscalls that don't have "compat" versions. */
+-#define compat_sys_raise_fpe sys_raise_fpe
+ #define compat_sys_flush_cache sys_flush_cache
+ 
+ #endif /* _ASM_TILE_COMPAT_H */
+diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
+index 1bca0de..623a6bb 100644
+--- a/arch/tile/include/asm/elf.h
++++ b/arch/tile/include/asm/elf.h
+@@ -59,8 +59,7 @@ enum { ELF_ARCH = CHIP_ELF_TYPE() };
+  */
+ #define elf_check_arch(x)  \
+ 	((x)->e_ident[EI_CLASS] == ELF_CLASS && \
+-	 ((x)->e_machine == CHIP_ELF_TYPE() || \
+-	  (x)->e_machine == CHIP_COMPAT_ELF_TYPE()))
++	 (x)->e_machine == CHIP_ELF_TYPE())
+ 
+ /* The module loader only handles a few relocation types. */
+ #ifndef __tilegx__
+@@ -139,8 +138,7 @@ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
+  */
+ #define compat_elf_check_arch(x)  \
+ 	((x)->e_ident[EI_CLASS] == ELFCLASS32 && \
+-	 ((x)->e_machine == CHIP_ELF_TYPE() || \
+-	  (x)->e_machine == CHIP_COMPAT_ELF_TYPE()))
++	 (x)->e_machine == CHIP_ELF_TYPE())
+ 
+ #define compat_start_thread(regs, ip, usp) do { \
+ 		regs->pc = ptr_to_compat_reg((void *)(ip)); \
+diff --git a/arch/tile/include/asm/futex.h b/arch/tile/include/asm/futex.h
+index 9eaeb3c..fe0d10d 100644
+--- a/arch/tile/include/asm/futex.h
++++ b/arch/tile/include/asm/futex.h
+@@ -29,14 +29,14 @@
+ #include <linux/uaccess.h>
+ #include <linux/errno.h>
+ 
+-extern struct __get_user futex_set(int *v, int i);
+-extern struct __get_user futex_add(int *v, int n);
+-extern struct __get_user futex_or(int *v, int n);
+-extern struct __get_user futex_andn(int *v, int n);
+-extern struct __get_user futex_cmpxchg(int *v, int o, int n);
++extern struct __get_user futex_set(int __user *v, int i);
++extern struct __get_user futex_add(int __user *v, int n);
++extern struct __get_user futex_or(int __user *v, int n);
++extern struct __get_user futex_andn(int __user *v, int n);
++extern struct __get_user futex_cmpxchg(int __user *v, int o, int n);
+ 
+ #ifndef __tilegx__
+-extern struct __get_user futex_xor(int *v, int n);
++extern struct __get_user futex_xor(int __user *v, int n);
+ #else
+ static inline struct __get_user futex_xor(int __user *uaddr, int n)
+ {
+@@ -131,6 +131,11 @@ static inline int futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval,
+ 	return asm_ret.err ? asm_ret.err : asm_ret.val;
+ }
+ 
++#ifndef __tilegx__
++/* Return failure from the atomic wrappers. */
++struct __get_user __atomic_bad_address(int __user *addr);
++#endif
++
+ #endif /* !__ASSEMBLY__ */
+ 
+ #endif /* _ASM_TILE_FUTEX_H */
+diff --git a/arch/tile/include/asm/page.h b/arch/tile/include/asm/page.h
+index c8301c4..f894a90 100644
+--- a/arch/tile/include/asm/page.h
++++ b/arch/tile/include/asm/page.h
+@@ -16,8 +16,6 @@
+ #define _ASM_TILE_PAGE_H
+ 
+ #include <linux/const.h>
+-#include <hv/hypervisor.h>
+-#include <arch/chip.h>
+ 
+ /* PAGE_SHIFT and HPAGE_SHIFT determine the page sizes. */
+ #define PAGE_SHIFT	16
+@@ -29,6 +27,11 @@
+ #define PAGE_MASK	(~(PAGE_SIZE - 1))
+ #define HPAGE_MASK	(~(HPAGE_SIZE - 1))
+ 
++#ifdef __KERNEL__
++
++#include <hv/hypervisor.h>
++#include <arch/chip.h>
++
+ /*
+  * The {,H}PAGE_SHIFT values must match the HV_LOG2_PAGE_SIZE_xxx
+  * definitions in <hv/hypervisor.h>.  We validate this at build time
+@@ -331,4 +334,6 @@ extern pte_t *virt_to_pte(struct mm_struct *mm, unsigned long addr);
+ #include <asm-generic/memory_model.h>
+ #include <asm-generic/getorder.h>
+ 
++#endif /* __KERNEL__ */
++
+ #endif /* _ASM_TILE_PAGE_H */
+diff --git a/arch/tile/include/asm/pgtable.h b/arch/tile/include/asm/pgtable.h
+index beb1504..b336737 100644
+--- a/arch/tile/include/asm/pgtable.h
++++ b/arch/tile/include/asm/pgtable.h
+@@ -229,9 +229,9 @@ static inline void __pte_clear(pte_t *ptep)
+ #define pte_donemigrate(x) hv_pte_set_present(hv_pte_clear_migrating(x))
+ 
+ #define pte_ERROR(e) \
+-	printk("%s:%d: bad pte 0x%016llx.\n", __FILE__, __LINE__, pte_val(e))
++	pr_err("%s:%d: bad pte 0x%016llx.\n", __FILE__, __LINE__, pte_val(e))
+ #define pgd_ERROR(e) \
+-	printk("%s:%d: bad pgd 0x%016llx.\n", __FILE__, __LINE__, pgd_val(e))
++	pr_err("%s:%d: bad pgd 0x%016llx.\n", __FILE__, __LINE__, pgd_val(e))
+ 
+ /*
+  * set_pte_order() sets the given PTE and also sanity-checks the
+@@ -470,6 +470,11 @@ static inline int pmd_huge_page(pmd_t pmd)
+ 
+ #include <asm-generic/pgtable.h>
+ 
++/* Support /proc/NN/pgtable API. */
++struct seq_file;
++int arch_proc_pgtable_show(struct seq_file *m, struct mm_struct *mm,
++			   unsigned long vaddr, pte_t *ptep, void **datap);
++
+ #endif /* !__ASSEMBLY__ */
+ 
+ #endif /* _ASM_TILE_PGTABLE_H */
+diff --git a/arch/tile/include/asm/pgtable_32.h b/arch/tile/include/asm/pgtable_32.h
+index b935fb2..53ec348 100644
+--- a/arch/tile/include/asm/pgtable_32.h
++++ b/arch/tile/include/asm/pgtable_32.h
+@@ -89,15 +89,27 @@ static inline int pgd_addr_invalid(unsigned long addr)
+ /*
+  * Provide versions of these routines that can be used safely when
+  * the hypervisor may be asynchronously modifying dirty/accessed bits.
++ * ptep_get_and_clear() matches the generic one but we provide it to
++ * be parallel with the 64-bit code.
+  */
+ #define __HAVE_ARCH_PTEP_TEST_AND_CLEAR_YOUNG
+ #define __HAVE_ARCH_PTEP_SET_WRPROTECT
++#define __HAVE_ARCH_PTEP_GET_AND_CLEAR
+ 
+ extern int ptep_test_and_clear_young(struct vm_area_struct *,
+ 				     unsigned long addr, pte_t *);
+ extern void ptep_set_wrprotect(struct mm_struct *,
+ 			       unsigned long addr, pte_t *);
+ 
++#define __HAVE_ARCH_PTEP_GET_AND_CLEAR
++static inline pte_t ptep_get_and_clear(struct mm_struct *mm,
++				       unsigned long addr, pte_t *ptep)
++{
++	pte_t pte = *ptep;
++	pte_clear(_mm, addr, ptep);
++	return pte;
++}
++
+ /* Create a pmd from a PTFN. */
+ static inline pmd_t ptfn_pmd(unsigned long ptfn, pgprot_t prot)
+ {
+diff --git a/arch/tile/include/asm/ptrace.h b/arch/tile/include/asm/ptrace.h
+index 4d1d995..acdae81 100644
+--- a/arch/tile/include/asm/ptrace.h
++++ b/arch/tile/include/asm/ptrace.h
+@@ -112,6 +112,9 @@ struct pt_regs {
+ /* Fill in a struct pt_regs with the current kernel registers. */
+ struct pt_regs *get_pt_regs(struct pt_regs *);
+ 
++/* Trace the current syscall. */
++extern void do_syscall_trace(void);
++
+ extern void show_regs(struct pt_regs *);
+ 
+ #define arch_has_single_step()	(1)
+@@ -123,7 +126,7 @@ extern void show_regs(struct pt_regs *);
+  */
+ struct single_step_state {
+ 	/* the page to which we will write hacked-up bundles */
+-	void *buffer;
++	void __user *buffer;
+ 
+ 	union {
+ 		int flags;
+diff --git a/arch/tile/include/asm/sections.h b/arch/tile/include/asm/sections.h
+index 6c11149..d062d46 100644
+--- a/arch/tile/include/asm/sections.h
++++ b/arch/tile/include/asm/sections.h
+@@ -25,7 +25,14 @@ extern char _sinitdata[], _einitdata[];
+ /* Write-once data is writable only till the end of initialization. */
+ extern char __w1data_begin[], __w1data_end[];
+ 
+-extern char __feedback_section_start[], __feedback_section_end[];
++
++/* Not exactly sections, but PC comparison points in the code. */
++extern char __rt_sigreturn[], __rt_sigreturn_end[];
++#ifndef __tilegx__
++extern char sys_cmpxchg[], __sys_cmpxchg_end[];
++extern char __sys_cmpxchg_grab_lock[];
++extern char __start_atomic_asm_code[], __end_atomic_asm_code[];
++#endif
+ 
+ /* Handle the discontiguity between _sdata and _stext. */
+ static inline int arch_is_kernel_data(unsigned long addr)
+diff --git a/arch/tile/include/asm/signal.h b/arch/tile/include/asm/signal.h
+index d20d326..eb0253f 100644
+--- a/arch/tile/include/asm/signal.h
++++ b/arch/tile/include/asm/signal.h
+@@ -26,6 +26,7 @@
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
+ int restore_sigcontext(struct pt_regs *, struct sigcontext __user *, long *);
+ int setup_sigcontext(struct sigcontext __user *, struct pt_regs *);
++void do_signal(struct pt_regs *regs);
+ #endif
+ 
+ #endif /* _ASM_TILE_SIGNAL_H */
+diff --git a/arch/tile/include/asm/spinlock_32.h b/arch/tile/include/asm/spinlock_32.h
+index f3a8473..88efdde 100644
+--- a/arch/tile/include/asm/spinlock_32.h
++++ b/arch/tile/include/asm/spinlock_32.h
+@@ -134,9 +134,8 @@ static inline int arch_read_trylock(arch_rwlock_t *rwlock)
+ {
+ 	int locked;
+ 	u32 val = __insn_tns((int *)&rwlock->lock);
+-	if (unlikely(val & 1)) {
++	if (unlikely(val & 1))
+ 		return arch_read_trylock_slow(rwlock);
+-	}
+ 	locked = (val << _RD_COUNT_WIDTH) == 0;
+ 	rwlock->lock = val + (locked << _RD_COUNT_SHIFT);
+ 	return locked;
+diff --git a/arch/tile/include/asm/stack.h b/arch/tile/include/asm/stack.h
+index 864913b..f908473 100644
+--- a/arch/tile/include/asm/stack.h
++++ b/arch/tile/include/asm/stack.h
+@@ -48,6 +48,10 @@ extern void KBacktraceIterator_init(struct KBacktraceIterator *kbt,
+ /* Initialize iterator based on current stack. */
+ extern void KBacktraceIterator_init_current(struct KBacktraceIterator *kbt);
+ 
++/* Helper method for above. */
++extern void _KBacktraceIterator_init_current(struct KBacktraceIterator *kbt,
++				ulong pc, ulong lr, ulong sp, ulong r52);
++
+ /* No more frames? */
+ extern int KBacktraceIterator_end(struct KBacktraceIterator *kbt);
+ 
+@@ -64,5 +68,7 @@ extern void tile_show_stack(struct KBacktraceIterator *, int headers);
+ /* Dump stack of current process, with registers to seed the backtrace. */
+ extern void dump_stack_regs(struct pt_regs *);
+ 
++/* Helper method for assembly dump_stack(). */
++extern void _dump_stack(int dummy, ulong pc, ulong lr, ulong sp, ulong r52);
+ 
+ #endif /* _ASM_TILE_STACK_H */
+diff --git a/arch/tile/include/asm/syscalls.h b/arch/tile/include/asm/syscalls.h
+index 9f2b8e2..af165a7 100644
+--- a/arch/tile/include/asm/syscalls.h
++++ b/arch/tile/include/asm/syscalls.h
+@@ -22,7 +22,19 @@
+ #include <linux/linkage.h>
+ #include <linux/signal.h>
+ #include <linux/types.h>
+-#include <asm-generic/syscalls.h>
++#include <linux/compat.h>
++
++/* The array of function pointers for syscalls. */
++extern void *sys_call_table[];
++#ifdef CONFIG_COMPAT
++extern void *compat_sys_call_table[];
++#endif
++
++/*
++ * Note that by convention, any syscall which requires the current
++ * register set takes an additional "struct pt_regs *" pointer; the
++ * sys_xxx() function just adds the pointer and tail-calls to _sys_xxx().
++ */
+ 
+ /* kernel/sys.c */
+ ssize_t sys32_readahead(int fd, u32 offset_lo, u32 offset_hi, u32 count);
+@@ -31,10 +43,66 @@ long sys32_fadvise64(int fd, u32 offset_lo, u32 offset_hi,
+ int sys32_fadvise64_64(int fd, u32 offset_lo, u32 offset_hi,
+ 		       u32 len_lo, u32 len_hi, int advice);
+ long sys_flush_cache(void);
++long sys_mmap2(unsigned long addr, unsigned long len,
++	       unsigned long prot, unsigned long flags,
++	       unsigned long fd, unsigned long pgoff);
++#ifdef __tilegx__
++long sys_mmap(unsigned long addr, unsigned long len,
++	      unsigned long prot, unsigned long flags,
++	      unsigned long fd, off_t pgoff);
++#endif
++
++/* kernel/process.c */
++long sys_clone(unsigned long clone_flags, unsigned long newsp,
++	       void __user *parent_tid, void __user *child_tid);
++long _sys_clone(unsigned long clone_flags, unsigned long newsp,
++		void __user *parent_tid, void __user *child_tid,
++		struct pt_regs *regs);
++long sys_fork(void);
++long _sys_fork(struct pt_regs *regs);
++long sys_vfork(void);
++long _sys_vfork(struct pt_regs *regs);
++long sys_execve(char __user *filename, char __user * __user *argv,
++		char __user * __user *envp);
++long _sys_execve(char __user *filename, char __user * __user *argv,
++		 char __user * __user *envp, struct pt_regs *regs);
++
++/* kernel/signal.c */
++long sys_sigaltstack(const stack_t __user *, stack_t __user *);
++long _sys_sigaltstack(const stack_t __user *, stack_t __user *,
++		      struct pt_regs *);
++long sys_rt_sigreturn(void);
++long _sys_rt_sigreturn(struct pt_regs *regs);
++
++/* platform-independent functions */
++long sys_rt_sigsuspend(sigset_t __user *unewset, size_t sigsetsize);
++long sys_rt_sigaction(int sig, const struct sigaction __user *act,
++		      struct sigaction __user *oact, size_t sigsetsize);
+ 
+ #ifndef __tilegx__
+ /* mm/fault.c */
+-int sys_cmpxchg_badaddr(unsigned long address, struct pt_regs *);
++int sys_cmpxchg_badaddr(unsigned long address);
++int _sys_cmpxchg_badaddr(unsigned long address, struct pt_regs *);
++#endif
++
++#ifdef CONFIG_COMPAT
++long compat_sys_execve(char __user *path, compat_uptr_t __user *argv,
++		       compat_uptr_t __user *envp);
++long _compat_sys_execve(char __user *path, compat_uptr_t __user *argv,
++			compat_uptr_t __user *envp, struct pt_regs *regs);
++long compat_sys_sigaltstack(const struct compat_sigaltstack __user *uss_ptr,
++			    struct compat_sigaltstack __user *uoss_ptr);
++long _compat_sys_sigaltstack(const struct compat_sigaltstack __user *uss_ptr,
++			     struct compat_sigaltstack __user *uoss_ptr,
++			     struct pt_regs *regs);
++long compat_sys_rt_sigreturn(void);
++long _compat_sys_rt_sigreturn(struct pt_regs *regs);
++
++/* These four are not defined for 64-bit, but serve as "compat" syscalls. */
++long sys_fcntl64(unsigned int fd, unsigned int cmd, unsigned long arg);
++long sys_fstat64(unsigned long fd, struct stat64 __user *statbuf);
++long sys_truncate64(const char __user *path, loff_t length);
++long sys_ftruncate64(unsigned int fd, loff_t length);
+ #endif
+ 
+ #endif /* _ASM_TILE_SYSCALLS_H */
+diff --git a/arch/tile/include/asm/system.h b/arch/tile/include/asm/system.h
+index d6ca7f8..0935094 100644
+--- a/arch/tile/include/asm/system.h
++++ b/arch/tile/include/asm/system.h
+@@ -160,6 +160,14 @@ struct task_struct;
+ extern struct task_struct *_switch_to(struct task_struct *prev,
+ 				      struct task_struct *next);
+ 
++/* Helper function for _switch_to(). */
++extern struct task_struct *__switch_to(struct task_struct *prev,
++				       struct task_struct *next,
++				       unsigned long new_system_save_1_0);
++
++/* Address that switched-away from tasks are at. */
++extern unsigned long get_switch_to_pc(void);
++
+ /*
+  * On SMP systems, when the scheduler does migration-cost autodetection,
+  * it needs a way to flush as much of the CPU's caches as possible:
+@@ -187,10 +195,26 @@ extern int unaligned_printk;
+ /* Number of unaligned fixups performed */
+ extern unsigned int unaligned_fixup_count;
+ 
++/* Init-time routine to do tile-specific per-cpu setup. */
++void setup_cpu(int boot);
++
+ /* User-level DMA management functions */
+ void grant_dma_mpls(void);
+ void restrict_dma_mpls(void);
+ 
++#ifdef CONFIG_HARDWALL
++/* User-level network management functions */
++void reset_network_state(void);
++void grant_network_mpls(void);
++void restrict_network_mpls(void);
++int hardwall_deactivate(struct task_struct *task);
++
++/* Hook hardwall code into changes in affinity. */
++#define arch_set_cpus_allowed(p, new_mask) do { \
++	if (p->thread.hardwall && !cpumask_equal(&p->cpus_allowed, new_mask)) \
++		hardwall_deactivate(p); \
++} while (0)
++#endif
+ 
+ /* Invoke the simulator "syscall" mechanism (see arch/tile/kernel/entry.S). */
+ extern int _sim_syscall(int syscall_num, ...);
+@@ -215,6 +239,12 @@ extern int _sim_syscall(int syscall_num, ...);
+ 		homecache_migrate_kthread();                              \
+ } while (0)
+ 
++/* Support function for forking a new task. */
++void ret_from_fork(void);
++
++/* Called from ret_from_fork() when a new process starts up. */
++struct task_struct *sim_notify_fork(struct task_struct *prev);
++
+ #endif /* !__ASSEMBLY__ */
+ 
+ #endif /* _ASM_TILE_SYSTEM_H */
+diff --git a/arch/tile/include/asm/thread_info.h b/arch/tile/include/asm/thread_info.h
+index 9024bf3..beec872 100644
+--- a/arch/tile/include/asm/thread_info.h
++++ b/arch/tile/include/asm/thread_info.h
+@@ -55,7 +55,7 @@ struct thread_info {
+ 	.restart_block	= {			\
+ 		.fn = do_no_restart_syscall,	\
+ 	},					\
+-	.step_state	= 0,			\
++	.step_state	= NULL,			\
+ }
+ 
+ #define init_thread_info	(init_thread_union.thread_info)
+@@ -86,6 +86,12 @@ register unsigned long stack_pointer __asm__("sp");
+ extern struct thread_info *alloc_thread_info(struct task_struct *task);
+ extern void free_thread_info(struct thread_info *info);
+ 
++/* Sit on a nap instruction until interrupted. */
++extern void smp_nap(void);
++
++/* Enable interrupts racelessly and nap forever: helper for cpu_idle(). */
++extern void _cpu_idle(void);
++
+ /* Switch boot idle thread to a freshly-allocated stack and free old stack. */
+ extern void cpu_idle_on_new_stack(struct thread_info *old_ti,
+ 				  unsigned long new_sp,
+diff --git a/arch/tile/include/asm/traps.h b/arch/tile/include/asm/traps.h
+index eab33d4..432a9c1 100644
+--- a/arch/tile/include/asm/traps.h
++++ b/arch/tile/include/asm/traps.h
+@@ -18,9 +18,28 @@
+ /* mm/fault.c */
+ void do_page_fault(struct pt_regs *, int fault_num,
+ 		   unsigned long address, unsigned long write);
++void do_async_page_fault(struct pt_regs *);
++
++#ifndef __tilegx__
++/*
++ * We return this structure in registers to avoid having to write
++ * additional save/restore code in the intvec.S caller.
++ */
++struct intvec_state {
++	void *handler;
++	unsigned long vecnum;
++	unsigned long fault_num;
++	unsigned long info;
++	unsigned long retval;
++};
++struct intvec_state do_page_fault_ics(struct pt_regs *regs, int fault_num,
++				      unsigned long address,
++				      unsigned long info);
++#endif
+ 
+ /* kernel/traps.c */
+ void do_trap(struct pt_regs *, int fault_num, unsigned long reason);
++void kernel_double_fault(int dummy, ulong pc, ulong lr, ulong sp, ulong r52);
+ 
+ /* kernel/time.c */
+ void do_timer_interrupt(struct pt_regs *, int fault_num);
+@@ -31,6 +50,13 @@ void hv_message_intr(struct pt_regs *, int intnum);
+ /* kernel/irq.c */
+ void tile_dev_intr(struct pt_regs *, int intnum);
+ 
++#ifdef CONFIG_HARDWALL
++/* kernel/hardwall.c */
++void do_hardwall_trap(struct pt_regs *, int fault_num);
++#endif
++
++/* kernel/ptrace.c */
++void do_breakpoint(struct pt_regs *, int fault_num);
+ 
+ 
+ #endif /* _ASM_TILE_SYSCALLS_H */
+diff --git a/arch/tile/include/asm/uaccess.h b/arch/tile/include/asm/uaccess.h
+index f3058af..ed17a80 100644
+--- a/arch/tile/include/asm/uaccess.h
++++ b/arch/tile/include/asm/uaccess.h
+@@ -89,8 +89,10 @@ int __range_ok(unsigned long addr, unsigned long size);
+  * checks that the pointer is in the user space range - after calling
+  * this function, memory access functions may still return -EFAULT.
+  */
+-#define access_ok(type, addr, size) \
+-	(likely(__range_ok((unsigned long)addr, size) == 0))
++#define access_ok(type, addr, size) ({ \
++	__chk_user_ptr(addr); \
++	likely(__range_ok((unsigned long)(addr), (size)) == 0);	\
++})
+ 
+ /*
+  * The exception table consists of pairs of addresses: the first is the
+@@ -134,14 +136,14 @@ struct __get_user {
+  * such extended assembler routines, though we will have to use a
+  * different return code in that case (1, 2, or 4, rather than -EFAULT).
+  */
+-extern struct __get_user __get_user_1(const void *);
+-extern struct __get_user __get_user_2(const void *);
+-extern struct __get_user __get_user_4(const void *);
+-extern struct __get_user __get_user_8(const void *);
+-extern int __put_user_1(long, void *);
+-extern int __put_user_2(long, void *);
+-extern int __put_user_4(long, void *);
+-extern int __put_user_8(long long, void *);
++extern struct __get_user __get_user_1(const void __user *);
++extern struct __get_user __get_user_2(const void __user *);
++extern struct __get_user __get_user_4(const void __user *);
++extern struct __get_user __get_user_8(const void __user *);
++extern int __put_user_1(long, void __user *);
++extern int __put_user_2(long, void __user *);
++extern int __put_user_4(long, void __user *);
++extern int __put_user_8(long long, void __user *);
+ 
+ /* Unimplemented routines to cause linker failures */
+ extern struct __get_user __get_user_bad(void);
+diff --git a/arch/tile/include/asm/unistd.h b/arch/tile/include/asm/unistd.h
+index 03b3d5d..f2e3ff4 100644
+--- a/arch/tile/include/asm/unistd.h
++++ b/arch/tile/include/asm/unistd.h
+@@ -15,7 +15,6 @@
+ #if !defined(_ASM_TILE_UNISTD_H) || defined(__SYSCALL)
+ #define _ASM_TILE_UNISTD_H
+ 
+-
+ #ifndef __LP64__
+ /* Use the flavor of this syscall that matches the 32-bit API better. */
+ #define __ARCH_WANT_SYNC_FILE_RANGE2
+@@ -24,6 +23,10 @@
+ /* Use the standard ABI for syscalls. */
+ #include <asm-generic/unistd.h>
+ 
++/* Additional Tilera-specific syscalls. */
++#define __NR_flush_cache	(__NR_arch_specific_syscall + 1)
++__SYSCALL(__NR_flush_cache, sys_flush_cache)
++
+ #ifndef __tilegx__
+ /* "Fast" syscalls provide atomic support for 32-bit chips. */
+ #define __NR_FAST_cmpxchg	-1
+@@ -33,10 +36,6 @@
+ __SYSCALL(__NR_cmpxchg_badaddr, sys_cmpxchg_badaddr)
+ #endif
+ 
+-/* Additional Tilera-specific syscalls. */
+-#define __NR_flush_cache	(__NR_arch_specific_syscall + 1)
+-__SYSCALL(__NR_flush_cache, sys_flush_cache)
+-
+ #ifdef __KERNEL__
+ /* In compat mode, we use sys_llseek() for compat_sys_llseek(). */
+ #ifdef CONFIG_COMPAT
+diff --git a/arch/tile/kernel/backtrace.c b/arch/tile/kernel/backtrace.c
+index 1b0a410..77265f3 100644
+--- a/arch/tile/kernel/backtrace.c
++++ b/arch/tile/kernel/backtrace.c
+@@ -30,18 +30,18 @@
+ 
+ 
+ /** A decoded bundle used for backtracer analysis. */
+-typedef struct {
++struct BacktraceBundle {
+ 	tile_bundle_bits bits;
+ 	int num_insns;
+ 	struct tile_decoded_instruction
+ 	insns[TILE_MAX_INSTRUCTIONS_PER_BUNDLE];
+-} BacktraceBundle;
++};
+ 
+ 
+ /* This implementation only makes sense for native tools. */
+ /** Default function to read memory. */
+-static bool
+-bt_read_memory(void *result, VirtualAddress addr, size_t size, void *extra)
++static bool bt_read_memory(void *result, VirtualAddress addr,
++			   size_t size, void *extra)
+ {
+ 	/* FIXME: this should do some horrible signal stuff to catch
+ 	 * SEGV cleanly and fail.
+@@ -58,11 +58,11 @@ bt_read_memory(void *result, VirtualAddress addr, size_t size, void *extra)
+  * has the specified mnemonic, and whose first 'num_operands_to_match'
+  * operands exactly match those in 'operand_values'.
+  */
+-static const struct tile_decoded_instruction*
+-find_matching_insn(const BacktraceBundle *bundle,
+-		   tile_mnemonic mnemonic,
+-		   const int *operand_values,
+-		   int num_operands_to_match)
++static const struct tile_decoded_instruction *find_matching_insn(
++	const struct BacktraceBundle *bundle,
++	tile_mnemonic mnemonic,
++	const int *operand_values,
++	int num_operands_to_match)
+ {
+ 	int i, j;
+ 	bool match;
+@@ -90,8 +90,7 @@ find_matching_insn(const BacktraceBundle *bundle,
+ }
+ 
+ /** Does this bundle contain an 'iret' instruction? */
+-static inline bool
+-bt_has_iret(const BacktraceBundle *bundle)
++static inline bool bt_has_iret(const struct BacktraceBundle *bundle)
+ {
+ 	return find_matching_insn(bundle, TILE_OPC_IRET, NULL, 0) != NULL;
+ }
+@@ -99,8 +98,7 @@ bt_has_iret(const BacktraceBundle *bundle)
+ /** Does this bundle contain an 'addi sp, sp, OFFSET' or
+  * 'addli sp, sp, OFFSET' instruction, and if so, what is OFFSET?
+  */
+-static bool
+-bt_has_addi_sp(const BacktraceBundle *bundle, int *adjust)
++static bool bt_has_addi_sp(const struct BacktraceBundle *bundle, int *adjust)
+ {
+ 	static const int vals[2] = { TREG_SP, TREG_SP };
+ 
+@@ -120,8 +118,7 @@ bt_has_addi_sp(const BacktraceBundle *bundle, int *adjust)
+  * as an unsigned value by this code since that's what the caller wants.
+  * Returns the number of info ops found.
+  */
+-static int
+-bt_get_info_ops(const BacktraceBundle *bundle,
++static int bt_get_info_ops(const struct BacktraceBundle *bundle,
+ 		int operands[MAX_INFO_OPS_PER_BUNDLE])
+ {
+ 	int num_ops = 0;
+@@ -143,8 +140,7 @@ bt_get_info_ops(const BacktraceBundle *bundle,
+ /** Does this bundle contain a jrp instruction, and if so, to which
+  * register is it jumping?
+  */
+-static bool
+-bt_has_jrp(const BacktraceBundle *bundle, int *target_reg)
++static bool bt_has_jrp(const struct BacktraceBundle *bundle, int *target_reg)
+ {
+ 	const struct tile_decoded_instruction *insn =
+ 		find_matching_insn(bundle, TILE_OPC_JRP, NULL, 0);
+@@ -156,8 +152,7 @@ bt_has_jrp(const BacktraceBundle *bundle, int *target_reg)
+ }
+ 
+ /** Does this bundle modify the specified register in any way? */
+-static bool
+-bt_modifies_reg(const BacktraceBundle *bundle, int reg)
++static bool bt_modifies_reg(const struct BacktraceBundle *bundle, int reg)
+ {
+ 	int i, j;
+ 	for (i = 0; i < bundle->num_insns; i++) {
+@@ -177,30 +172,26 @@ bt_modifies_reg(const BacktraceBundle *bundle, int reg)
+ }
+ 
+ /** Does this bundle modify sp? */
+-static inline bool
+-bt_modifies_sp(const BacktraceBundle *bundle)
++static inline bool bt_modifies_sp(const struct BacktraceBundle *bundle)
+ {
+ 	return bt_modifies_reg(bundle, TREG_SP);
+ }
+ 
+ /** Does this bundle modify lr? */
+-static inline bool
+-bt_modifies_lr(const BacktraceBundle *bundle)
++static inline bool bt_modifies_lr(const struct BacktraceBundle *bundle)
+ {
+ 	return bt_modifies_reg(bundle, TREG_LR);
+ }
+ 
+ /** Does this bundle contain the instruction 'move fp, sp'? */
+-static inline bool
+-bt_has_move_r52_sp(const BacktraceBundle *bundle)
++static inline bool bt_has_move_r52_sp(const struct BacktraceBundle *bundle)
+ {
+ 	static const int vals[2] = { 52, TREG_SP };
+ 	return find_matching_insn(bundle, TILE_OPC_MOVE, vals, 2) != NULL;
+ }
+ 
+ /** Does this bundle contain the instruction 'sw sp, lr'? */
+-static inline bool
+-bt_has_sw_sp_lr(const BacktraceBundle *bundle)
++static inline bool bt_has_sw_sp_lr(const struct BacktraceBundle *bundle)
+ {
+ 	static const int vals[2] = { TREG_SP, TREG_LR };
+ 	return find_matching_insn(bundle, TILE_OPC_SW, vals, 2) != NULL;
+@@ -209,11 +200,10 @@ bt_has_sw_sp_lr(const BacktraceBundle *bundle)
+ /** Locates the caller's PC and SP for a program starting at the
+  * given address.
+  */
+-static void
+-find_caller_pc_and_caller_sp(CallerLocation *location,
+-			     const VirtualAddress start_pc,
+-			     BacktraceMemoryReader read_memory_func,
+-			     void *read_memory_func_extra)
++static void find_caller_pc_and_caller_sp(CallerLocation *location,
++					 const VirtualAddress start_pc,
++					 BacktraceMemoryReader read_memory_func,
++					 void *read_memory_func_extra)
+ {
+ 	/* Have we explicitly decided what the sp is,
+ 	 * rather than just the default?
+@@ -253,7 +243,7 @@ find_caller_pc_and_caller_sp(CallerLocation *location,
+ 
+ 	for (pc = start_pc;; pc += sizeof(tile_bundle_bits)) {
+ 
+-		BacktraceBundle bundle;
++		struct BacktraceBundle bundle;
+ 		int num_info_ops, info_operands[MAX_INFO_OPS_PER_BUNDLE];
+ 		int one_ago, jrp_reg;
+ 		bool has_jrp;
+@@ -475,12 +465,11 @@ find_caller_pc_and_caller_sp(CallerLocation *location,
+ 	}
+ }
+ 
+-void
+-backtrace_init(BacktraceIterator *state,
+-	       BacktraceMemoryReader read_memory_func,
+-	       void *read_memory_func_extra,
+-	       VirtualAddress pc, VirtualAddress lr,
+-	       VirtualAddress sp, VirtualAddress r52)
++void backtrace_init(BacktraceIterator *state,
++		    BacktraceMemoryReader read_memory_func,
++		    void *read_memory_func_extra,
++		    VirtualAddress pc, VirtualAddress lr,
++		    VirtualAddress sp, VirtualAddress r52)
+ {
+ 	CallerLocation location;
+ 	VirtualAddress fp, initial_frame_caller_pc;
+@@ -558,8 +547,7 @@ backtrace_init(BacktraceIterator *state,
+ 	state->read_memory_func_extra = read_memory_func_extra;
+ }
+ 
+-bool
+-backtrace_next(BacktraceIterator *state)
++bool backtrace_next(BacktraceIterator *state)
+ {
+ 	VirtualAddress next_fp, next_pc, next_frame[2];
+ 
+@@ -614,12 +602,11 @@ backtrace_next(BacktraceIterator *state)
+ 
+ #else /* TILE_CHIP < 10 */
+ 
+-void
+-backtrace_init(BacktraceIterator *state,
+-	       BacktraceMemoryReader read_memory_func,
+-	       void *read_memory_func_extra,
+-	       VirtualAddress pc, VirtualAddress lr,
+-	       VirtualAddress sp, VirtualAddress r52)
++void backtrace_init(BacktraceIterator *state,
++		    BacktraceMemoryReader read_memory_func,
++		    void *read_memory_func_extra,
++		    VirtualAddress pc, VirtualAddress lr,
++		    VirtualAddress sp, VirtualAddress r52)
+ {
+ 	state->pc = pc;
+ 	state->sp = sp;
+diff --git a/arch/tile/kernel/compat.c b/arch/tile/kernel/compat.c
+index a374c99..b1e06d0 100644
+--- a/arch/tile/kernel/compat.c
++++ b/arch/tile/kernel/compat.c
+@@ -88,34 +88,14 @@ long compat_sys_sched_rr_get_interval(compat_pid_t pid,
+ 	mm_segment_t old_fs = get_fs();
+ 
+ 	set_fs(KERNEL_DS);
+-	ret = sys_sched_rr_get_interval(pid, (struct timespec __user *)&t);
++	ret = sys_sched_rr_get_interval(pid,
++					(struct timespec __force __user *)&t);
+ 	set_fs(old_fs);
+ 	if (put_compat_timespec(&t, interval))
+ 		return -EFAULT;
+ 	return ret;
+ }
+ 
+-ssize_t compat_sys_sendfile(int out_fd, int in_fd, compat_off_t __user *offset,
+-			    size_t count)
+-{
+-	mm_segment_t old_fs = get_fs();
+-	int ret;
+-	off_t of;
+-
+-	if (offset && get_user(of, offset))
+-		return -EFAULT;
+-
+-	set_fs(KERNEL_DS);
+-	ret = sys_sendfile(out_fd, in_fd, offset ? (off_t __user *)&of : NULL,
+-			   count);
+-	set_fs(old_fs);
+-
+-	if (offset && put_user(of, offset))
+-		return -EFAULT;
+-	return ret;
+-}
+-
+-
+ /*
+  * The usual compat_sys_msgsnd() and _msgrcv() seem to be assuming
+  * some different calling convention than our normal 32-bit tile code.
+@@ -177,6 +157,10 @@ long tile_compat_sys_msgrcv(int msqid,
+ /* Pass full 64-bit values through ptrace. */
+ #define compat_sys_ptrace tile_compat_sys_ptrace
+ 
++/*
++ * Note that we can't include <linux/unistd.h> here since the header
++ * guard will defeat us; <asm/unistd.h> checks for __SYSCALL as well.
++ */
+ void *compat_sys_call_table[__NR_syscalls] = {
+ 	[0 ... __NR_syscalls-1] = sys_ni_syscall,
+ #include <asm/unistd.h>
+diff --git a/arch/tile/kernel/compat_signal.c b/arch/tile/kernel/compat_signal.c
+index 9fa4ba8..d5efb21 100644
+--- a/arch/tile/kernel/compat_signal.c
++++ b/arch/tile/kernel/compat_signal.c
+@@ -32,13 +32,14 @@
+ #include <asm/processor.h>
+ #include <asm/ucontext.h>
+ #include <asm/sigframe.h>
++#include <asm/syscalls.h>
+ #include <arch/interrupts.h>
+ 
+ struct compat_sigaction {
+ 	compat_uptr_t sa_handler;
+ 	compat_ulong_t sa_flags;
+ 	compat_uptr_t sa_restorer;
+-	sigset_t sa_mask;		/* mask last for extensibility */
++	sigset_t sa_mask __packed;
+ };
+ 
+ struct compat_sigaltstack {
+@@ -170,7 +171,7 @@ long compat_sys_rt_sigqueueinfo(int pid, int sig,
+ 	if (copy_siginfo_from_user32(&info, uinfo))
+ 		return -EFAULT;
+ 	set_fs(KERNEL_DS);
+-	ret = sys_rt_sigqueueinfo(pid, sig, (siginfo_t __user *)&info);
++	ret = sys_rt_sigqueueinfo(pid, sig, (siginfo_t __force __user *)&info);
+ 	set_fs(old_fs);
+ 	return ret;
+ }
+@@ -274,7 +275,8 @@ long _compat_sys_sigaltstack(const struct compat_sigaltstack __user *uss_ptr,
+ 	}
+ 	seg = get_fs();
+ 	set_fs(KERNEL_DS);
+-	ret = do_sigaltstack(uss_ptr ? &uss : NULL, &uoss,
++	ret = do_sigaltstack(uss_ptr ? (stack_t __user __force *)&uss : NULL,
++			     (stack_t __user __force *)&uoss,
+ 			     (unsigned long)compat_ptr(regs->sp));
+ 	set_fs(seg);
+ 	if (ret >= 0 && uoss_ptr)  {
+@@ -336,7 +338,7 @@ static inline void __user *compat_get_sigframe(struct k_sigaction *ka,
+ 	 * will die with SIGSEGV.
+ 	 */
+ 	if (on_sig_stack(sp) && !likely(on_sig_stack(sp - frame_size)))
+-		return (void __user *) -1L;
++		return (void __user __force *)-1UL;
+ 
+ 	/* This is the X/Open sanctioned signal stack switching.  */
+ 	if (ka->sa.sa_flags & SA_ONSTACK) {
+diff --git a/arch/tile/kernel/early_printk.c b/arch/tile/kernel/early_printk.c
+index e44d441..2c54fd4 100644
+--- a/arch/tile/kernel/early_printk.c
++++ b/arch/tile/kernel/early_printk.c
+@@ -32,7 +32,7 @@ static struct console early_hv_console = {
+ };
+ 
+ /* Direct interface for emergencies */
+-struct console *early_console = &early_hv_console;
++static struct console *early_console = &early_hv_console;
+ static int early_console_initialized;
+ static int early_console_complete;
+ 
+diff --git a/arch/tile/kernel/entry.S b/arch/tile/kernel/entry.S
+index 136261f..3d01383 100644
+--- a/arch/tile/kernel/entry.S
++++ b/arch/tile/kernel/entry.S
+@@ -13,9 +13,9 @@
+  */
+ 
+ #include <linux/linkage.h>
+-#include <arch/abi.h>
+-#include <asm/unistd.h>
++#include <linux/unistd.h>
+ #include <asm/irqflags.h>
++#include <arch/abi.h>
+ 
+ #ifdef __tilegx__
+ #define bnzt bnezt
+diff --git a/arch/tile/kernel/machine_kexec.c b/arch/tile/kernel/machine_kexec.c
+index ed3e1cb..ba7a265 100644
+--- a/arch/tile/kernel/machine_kexec.c
++++ b/arch/tile/kernel/machine_kexec.c
+@@ -75,13 +75,13 @@ void machine_crash_shutdown(struct pt_regs *regs)
+ int machine_kexec_prepare(struct kimage *image)
+ {
+ 	if (num_online_cpus() > 1) {
+-		printk(KERN_WARNING "%s: detected attempt to kexec "
++		pr_warning("%s: detected attempt to kexec "
+ 		       "with num_online_cpus() > 1\n",
+ 		       __func__);
+ 		return -ENOSYS;
+ 	}
+ 	if (image->type != KEXEC_TYPE_DEFAULT) {
+-		printk(KERN_WARNING "%s: detected attempt to kexec "
++		pr_warning("%s: detected attempt to kexec "
+ 		       "with unsupported type: %d\n",
+ 		       __func__,
+ 		       image->type);
+@@ -124,22 +124,13 @@ static unsigned char *kexec_bn2cl(void *pg)
+ 		return 0;
+ 
+ 	/*
+-	 * If we get a checksum mismatch, it's possible that this is
+-	 * just a false positive, but relatively unlikely.  We dump
+-	 * out the contents of the section so we can diagnose better.
++	 * If we get a checksum mismatch, warn with the checksum
++	 * so we can diagnose better.
+ 	 */
+ 	csum = ip_compute_csum(pg, bhdrp->b_size);
+ 	if (csum != 0) {
+-		int i;
+-		unsigned char *p = pg;
+-		int nbytes = min((Elf32_Word)1000, bhdrp->b_size);
+-		printk(KERN_INFO "%s: bad checksum %#x\n", __func__, csum);
+-		printk(KERN_INFO "bytes (%d):", bhdrp->b_size);
+-		for (i = 0; i < nbytes; ++i)
+-			printk(" %02x", p[i]);
+-		if (bhdrp->b_size != nbytes)
+-			printk(" ...");
+-		printk("\n");
++		pr_warning("%s: bad checksum %#x (size %d)\n",
++			   __func__, csum, bhdrp->b_size);
+ 		return 0;
+ 	}
+ 
+@@ -156,7 +147,7 @@ static unsigned char *kexec_bn2cl(void *pg)
+ 		if ((unsigned char *) (nhdrp + 1) >
+ 		    ((unsigned char *) pg) + bhdrp->b_size) {
+ 
+-			printk(KERN_INFO "%s: out of bounds\n", __func__);
++			pr_info("%s: out of bounds\n", __func__);
+ 			return 0;
+ 		}
+ 	}
+@@ -167,7 +158,7 @@ static unsigned char *kexec_bn2cl(void *pg)
+ 	while (*desc != '\0') {
+ 		desc++;
+ 		if (((unsigned long)desc & PAGE_MASK) != (unsigned long)pg) {
+-			printk(KERN_INFO "%s: ran off end of page\n",
++			pr_info("%s: ran off end of page\n",
+ 			       __func__);
+ 			return 0;
+ 		}
+@@ -202,23 +193,20 @@ static void kexec_find_and_set_command_line(struct kimage *image)
+ 	}
+ 
+ 	if (command_line != 0) {
+-		printk(KERN_INFO "setting new command line to \"%s\"\n",
++		pr_info("setting new command line to \"%s\"\n",
+ 		       command_line);
+ 
+ 		hverr = hv_set_command_line(
+ 			(HV_VirtAddr) command_line, strlen(command_line));
+ 		kunmap_atomic(command_line, KM_USER0);
+ 	} else {
+-		printk(KERN_INFO "%s: no command line found; making empty\n",
++		pr_info("%s: no command line found; making empty\n",
+ 		       __func__);
+ 		hverr = hv_set_command_line((HV_VirtAddr) command_line, 0);
+ 	}
+-	if (hverr) {
+-		printk(KERN_WARNING
+-		      "%s: call to hv_set_command_line returned error: %d\n",
+-		      __func__, hverr);
+-
+-	}
++	if (hverr)
++		pr_warning("%s: hv_set_command_line returned error: %d\n",
++			   __func__, hverr);
+ }
+ 
+ /*
+diff --git a/arch/tile/kernel/messaging.c b/arch/tile/kernel/messaging.c
+index f991f52..6d23ed2 100644
+--- a/arch/tile/kernel/messaging.c
++++ b/arch/tile/kernel/messaging.c
+@@ -18,13 +18,14 @@
+ #include <linux/ptrace.h>
+ #include <asm/hv_driver.h>
+ #include <asm/irq_regs.h>
++#include <asm/traps.h>
+ #include <hv/hypervisor.h>
+ #include <arch/interrupts.h>
+ 
+ /* All messages are stored here */
+ static DEFINE_PER_CPU(HV_MsgState, msg_state);
+ 
+-void __cpuinit init_messaging()
++void __cpuinit init_messaging(void)
+ {
+ 	/* Allocate storage for messages in kernel space */
+ 	HV_MsgState *state = &__get_cpu_var(msg_state);
+@@ -58,7 +59,7 @@ void hv_message_intr(struct pt_regs *regs, int intnum)
+ 	{
+ 		long sp = stack_pointer - (long) current_thread_info();
+ 		if (unlikely(sp < (sizeof(struct thread_info) + STACK_WARN))) {
+-			printk(KERN_EMERG "hv_message_intr: "
++			pr_emerg("hv_message_intr: "
+ 			       "stack overflow: %ld\n",
+ 			       sp - sizeof(struct thread_info));
+ 			dump_stack();
+diff --git a/arch/tile/kernel/module.c b/arch/tile/kernel/module.c
+index ed3e911..e2ab82b 100644
+--- a/arch/tile/kernel/module.c
++++ b/arch/tile/kernel/module.c
+@@ -107,7 +107,7 @@ int apply_relocate(Elf_Shdr *sechdrs,
+ 		   unsigned int relsec,
+ 		   struct module *me)
+ {
+-	printk(KERN_ERR "module %s: .rel relocation unsupported\n", me->name);
++	pr_err("module %s: .rel relocation unsupported\n", me->name);
+ 	return -ENOEXEC;
+ }
+ 
+@@ -119,8 +119,8 @@ int apply_relocate(Elf_Shdr *sechdrs,
+ static int validate_hw2_last(long value, struct module *me)
+ {
+ 	if (((value << 16) >> 16) != value) {
+-		printk("module %s: Out of range HW2_LAST value %#lx\n",
+-		       me->name, value);
++		pr_warning("module %s: Out of range HW2_LAST value %#lx\n",
++			   me->name, value);
+ 		return 0;
+ 	}
+ 	return 1;
+@@ -223,10 +223,10 @@ int apply_relocate_add(Elf_Shdr *sechdrs,
+ 			value -= (unsigned long) location;  /* pc-relative */
+ 			value = (long) value >> 3;     /* count by instrs */
+ 			if (!validate_jumpoff(value)) {
+-				printk("module %s: Out of range jump to"
+-				       " %#llx at %#llx (%p)\n", me->name,
+-				       sym->st_value + rel[i].r_addend,
+-				       rel[i].r_offset, location);
++				pr_warning("module %s: Out of range jump to"
++					   " %#llx at %#llx (%p)\n", me->name,
++					   sym->st_value + rel[i].r_addend,
++					   rel[i].r_offset, location);
+ 				return -ENOEXEC;
+ 			}
+ 			MUNGE(create_JumpOff_X1);
+@@ -236,7 +236,7 @@ int apply_relocate_add(Elf_Shdr *sechdrs,
+ #undef MUNGE
+ 
+ 		default:
+-			printk(KERN_ERR "module %s: Unknown relocation: %d\n",
++			pr_err("module %s: Unknown relocation: %d\n",
+ 			       me->name, (int) ELF_R_TYPE(rel[i].r_info));
+ 			return -ENOEXEC;
+ 		}
+diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
+index c70ff14..ed590ad 100644
+--- a/arch/tile/kernel/process.c
++++ b/arch/tile/kernel/process.c
+@@ -24,9 +24,14 @@
+ #include <linux/compat.h>
+ #include <linux/hardirq.h>
+ #include <linux/syscalls.h>
++#include <linux/kernel.h>
+ #include <asm/system.h>
+ #include <asm/stack.h>
+ #include <asm/homecache.h>
++#include <asm/syscalls.h>
++#ifdef CONFIG_HARDWALL
++#include <asm/hardwall.h>
++#endif
+ #include <arch/chip.h>
+ #include <arch/abi.h>
+ 
+@@ -43,7 +48,7 @@ static int __init idle_setup(char *str)
+ 		return -EINVAL;
+ 
+ 	if (!strcmp(str, "poll")) {
+-		printk("using polling idle threads.\n");
++		pr_info("using polling idle threads.\n");
+ 		no_idle_nap = 1;
+ 	} else if (!strcmp(str, "halt"))
+ 		no_idle_nap = 0;
+@@ -62,7 +67,6 @@ early_param("idle", idle_setup);
+  */
+ void cpu_idle(void)
+ {
+-	extern void _cpu_idle(void);
+ 	int cpu = smp_processor_id();
+ 
+ 
+@@ -108,7 +112,7 @@ void cpu_idle(void)
+ struct thread_info *alloc_thread_info(struct task_struct *task)
+ {
+ 	struct page *page;
+-	int flags = GFP_KERNEL;
++	gfp_t flags = GFP_KERNEL;
+ 
+ #ifdef CONFIG_DEBUG_STACK_USAGE
+ 	flags |= __GFP_ZERO;
+@@ -116,7 +120,7 @@ struct thread_info *alloc_thread_info(struct task_struct *task)
+ 
+ 	page = alloc_pages(flags, THREAD_SIZE_ORDER);
+ 	if (!page)
+-		return 0;
++		return NULL;
+ 
+ 	return (struct thread_info *)page_address(page);
+ }
+@@ -129,6 +133,18 @@ void free_thread_info(struct thread_info *info)
+ {
+ 	struct single_step_state *step_state = info->step_state;
+ 
++#ifdef CONFIG_HARDWALL
++	/*
++	 * We free a thread_info from the context of the task that has
++	 * been scheduled next, so the original task is already dead.
++	 * Calling deactivate here just frees up the data structures.
++	 * If the task we're freeing held the last reference to a
++	 * hardwall fd, it would have been released prior to this point
++	 * anyway via exit_files(), and "hardwall" would be NULL by now.
++	 */
++	if (info->task->thread.hardwall)
++		hardwall_deactivate(info->task);
++#endif
+ 
+ 	if (step_state) {
+ 
+@@ -154,8 +170,6 @@ void free_thread_info(struct thread_info *info)
+ 
+ static void save_arch_state(struct thread_struct *t);
+ 
+-extern void ret_from_fork(void);
+-
+ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 		unsigned long stack_size,
+ 		struct task_struct *p, struct pt_regs *regs)
+@@ -235,6 +249,10 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 	p->thread.proc_status = 0;
+ #endif
+ 
++#ifdef CONFIG_HARDWALL
++	/* New thread does not own any networks. */
++	p->thread.hardwall = NULL;
++#endif
+ 
+ 
+ 	/*
+@@ -257,7 +275,7 @@ struct task_struct *validate_current(void)
+ 	if (unlikely((unsigned long)tsk < PAGE_OFFSET ||
+ 		     (void *)tsk > high_memory ||
+ 		     ((unsigned long)tsk & (__alignof__(*tsk) - 1)) != 0)) {
+-		printk("Corrupt 'current' %p (sp %#lx)\n", tsk, stack_pointer);
++		pr_err("Corrupt 'current' %p (sp %#lx)\n", tsk, stack_pointer);
+ 		tsk = &corrupt;
+ 	}
+ 	return tsk;
+@@ -447,10 +465,6 @@ void _prepare_arch_switch(struct task_struct *next)
  }
  
  
--typedef unsigned short tile_sn_instruction_bits;
+-extern struct task_struct *__switch_to(struct task_struct *prev,
+-				       struct task_struct *next,
+-				       unsigned long new_system_save_1_0);
 -
- 
- typedef enum
+ struct task_struct *__sched _switch_to(struct task_struct *prev,
+ 				       struct task_struct *next)
  {
-@@ -1519,41 +1481,10 @@ struct tile_opcode
-    * index into the tile_operands[] table. */
-   unsigned char operands[TILE_NUM_PIPELINE_ENCODINGS][TILE_MAX_OPERANDS];
+@@ -486,6 +500,15 @@ struct task_struct *__sched _switch_to(struct task_struct *prev,
+ 	}
+ #endif
  
--  /* A mask of which bits have predefined values for each pipeline.
--   * This is useful for disassembly. */
--  tile_bundle_bits fixed_bit_masks[TILE_NUM_PIPELINE_ENCODINGS];
--
--  /* For each bit set in fixed_bit_masks, what the value is for this
--   * instruction. */
--  tile_bundle_bits fixed_bit_values[TILE_NUM_PIPELINE_ENCODINGS];
- };
++#ifdef CONFIG_HARDWALL
++	/* Enable or disable access to the network registers appropriately. */
++	if (prev->thread.hardwall != NULL) {
++		if (next->thread.hardwall == NULL)
++			restrict_network_mpls();
++	} else if (next->thread.hardwall != NULL) {
++		grant_network_mpls();
++	}
++#endif
  
- extern const struct tile_opcode tile_opcodes[];
- 
--struct tile_sn_opcode
--{
--  /* The opcode mnemonic, e.g. "add" */
--  const char *name;
--
--  /* The enum value for this mnemonic. */
--  tile_sn_mnemonic mnemonic;
--
--  /* How many operands are there? */
--  unsigned char num_operands;
--
--  /* The description of the operands. Each of these is an
--   * index into the tile_operands[] table. */
--  unsigned char operands[TILE_SN_MAX_OPERANDS];
--
--  /* A mask of which bits have predefined values.
--   * This is useful for disassembly. */
--  tile_sn_instruction_bits fixed_bit_mask;
--
--  /* For each bit set in fixed_bit_masks, what its value is. */
--  tile_sn_instruction_bits fixed_bit_values;
--};
--
--extern const struct tile_sn_opcode tile_sn_opcodes[];
- 
- /* Used for non-textual disassembly into structs. */
- struct tile_decoded_instruction
-@@ -1571,27 +1502,5 @@ extern int parse_insn_tile(tile_bundle_bits bits,
-                            decoded[TILE_MAX_INSTRUCTIONS_PER_BUNDLE]);
- 
- 
--/* Canonical names of all the registers. */
--/* ISSUE: This table lives in "tile-dis.c" */
--extern const char * const tile_register_names[];
--
--/* Descriptor for a special-purpose register. */
--struct tile_spr
--{
--  /* The number */
--  int number;
--
--  /* The name */
--  const char *name;
--};
--
--/* List of all the SPRs; ordered by increasing number. */
--extern const struct tile_spr tile_sprs[];
--
--/* Number of special-purpose registers. */
--extern const int tile_num_sprs;
--
--extern const char *
--get_tile_spr_name (int num);
- 
- #endif /* opcode_tile_h */
-diff --git a/arch/tile/include/asm/opcode-tile_64.h b/arch/tile/include/asm/opcode-tile_64.h
-index 90f8dd3..eda60ec 100644
---- a/arch/tile/include/asm/opcode-tile_64.h
-+++ b/arch/tile/include/asm/opcode-tile_64.h
-@@ -28,6 +28,7 @@ typedef enum
-   TILE_OPC_MOVELI_SN,
-   TILE_OPC_MOVELIS,
-   TILE_OPC_PREFETCH,
-+  TILE_OPC_RAISE,
-   TILE_OPC_ADD,
-   TILE_OPC_ADD_SN,
-   TILE_OPC_ADDB,
-@@ -419,43 +420,6 @@ typedef enum
- 
- #define TILE_ELF_NAME "elf32-tilepro"
- 
--enum
--{
--  TILE_SN_MAX_OPERANDS = 6 /* route */
--};
--
--typedef enum
--{
--  TILE_SN_OPC_BZ,
--  TILE_SN_OPC_BNZ,
--  TILE_SN_OPC_JRR,
--  TILE_SN_OPC_FNOP,
--  TILE_SN_OPC_BLZ,
--  TILE_SN_OPC_NOP,
--  TILE_SN_OPC_MOVEI,
--  TILE_SN_OPC_MOVE,
--  TILE_SN_OPC_BGEZ,
--  TILE_SN_OPC_JR,
--  TILE_SN_OPC_BLEZ,
--  TILE_SN_OPC_BBNS,
--  TILE_SN_OPC_JALRR,
--  TILE_SN_OPC_BPT,
--  TILE_SN_OPC_JALR,
--  TILE_SN_OPC_SHR1,
--  TILE_SN_OPC_BGZ,
--  TILE_SN_OPC_BBS,
--  TILE_SN_OPC_SHL8II,
--  TILE_SN_OPC_ADDI,
--  TILE_SN_OPC_HALT,
--  TILE_SN_OPC_ROUTE,
--  TILE_SN_OPC_NONE
--} tile_sn_mnemonic;
--
--extern const unsigned char tile_sn_route_encode[6 * 6 * 6];
--extern const signed char tile_sn_route_decode[256][3];
--extern const char tile_sn_direction_names[6][5];
--extern const signed char tile_sn_dest_map[6][6];
--
- 
- static __inline unsigned int
- get_BrOff_SN(tile_bundle_bits num)
-@@ -1387,8 +1351,6 @@ create_UnShOpcodeExtension_Y1(int num)
+ 	/*
+ 	 * Switch kernel SP, PC, and callee-saved registers.
+@@ -496,14 +519,14 @@ struct task_struct *__sched _switch_to(struct task_struct *prev,
+ 	return __switch_to(prev, next, next_current_ksp0(next));
  }
  
- 
--typedef unsigned short tile_sn_instruction_bits;
--
- 
- typedef enum
+-int _sys_fork(struct pt_regs *regs)
++long _sys_fork(struct pt_regs *regs)
  {
-@@ -1519,41 +1481,10 @@ struct tile_opcode
-    * index into the tile_operands[] table. */
-   unsigned char operands[TILE_NUM_PIPELINE_ENCODINGS][TILE_MAX_OPERANDS];
+ 	return do_fork(SIGCHLD, regs->sp, regs, 0, NULL, NULL);
+ }
  
--  /* A mask of which bits have predefined values for each pipeline.
--   * This is useful for disassembly. */
--  tile_bundle_bits fixed_bit_masks[TILE_NUM_PIPELINE_ENCODINGS];
--
--  /* For each bit set in fixed_bit_masks, what the value is for this
--   * instruction. */
--  tile_bundle_bits fixed_bit_values[TILE_NUM_PIPELINE_ENCODINGS];
- };
+-int _sys_clone(unsigned long clone_flags, unsigned long newsp,
+-	       void __user *parent_tidptr, void __user *child_tidptr,
+-	       struct pt_regs *regs)
++long _sys_clone(unsigned long clone_flags, unsigned long newsp,
++		void __user *parent_tidptr, void __user *child_tidptr,
++		struct pt_regs *regs)
+ {
+ 	if (!newsp)
+ 		newsp = regs->sp;
+@@ -511,7 +534,7 @@ int _sys_clone(unsigned long clone_flags, unsigned long newsp,
+ 		       parent_tidptr, child_tidptr);
+ }
  
- extern const struct tile_opcode tile_opcodes[];
+-int _sys_vfork(struct pt_regs *regs)
++long _sys_vfork(struct pt_regs *regs)
+ {
+ 	return do_fork(CLONE_VFORK | CLONE_VM | SIGCHLD, regs->sp,
+ 		       regs, 0, NULL, NULL);
+@@ -520,10 +543,10 @@ int _sys_vfork(struct pt_regs *regs)
+ /*
+  * sys_execve() executes a new program.
+  */
+-int _sys_execve(char __user *path, char __user *__user *argv,
+-		char __user *__user *envp, struct pt_regs *regs)
++long _sys_execve(char __user *path, char __user *__user *argv,
++		 char __user *__user *envp, struct pt_regs *regs)
+ {
+-	int error;
++	long error;
+ 	char *filename;
  
--struct tile_sn_opcode
--{
--  /* The opcode mnemonic, e.g. "add" */
--  const char *name;
--
--  /* The enum value for this mnemonic. */
--  tile_sn_mnemonic mnemonic;
--
--  /* How many operands are there? */
--  unsigned char num_operands;
--
--  /* The description of the operands. Each of these is an
--   * index into the tile_operands[] table. */
--  unsigned char operands[TILE_SN_MAX_OPERANDS];
--
--  /* A mask of which bits have predefined values.
--   * This is useful for disassembly. */
--  tile_sn_instruction_bits fixed_bit_mask;
--
--  /* For each bit set in fixed_bit_masks, what its value is. */
--  tile_sn_instruction_bits fixed_bit_values;
--};
--
--extern const struct tile_sn_opcode tile_sn_opcodes[];
+ 	filename = getname(path);
+@@ -537,10 +560,10 @@ out:
+ }
  
- /* Used for non-textual disassembly into structs. */
- struct tile_decoded_instruction
-@@ -1571,27 +1502,5 @@ extern int parse_insn_tile(tile_bundle_bits bits,
-                            decoded[TILE_MAX_INSTRUCTIONS_PER_BUNDLE]);
+ #ifdef CONFIG_COMPAT
+-int _compat_sys_execve(char __user *path, compat_uptr_t __user *argv,
+-		       compat_uptr_t __user *envp, struct pt_regs *regs)
++long _compat_sys_execve(char __user *path, compat_uptr_t __user *argv,
++			compat_uptr_t __user *envp, struct pt_regs *regs)
+ {
+-	int error;
++	long error;
+ 	char *filename;
  
+ 	filename = getname(path);
+@@ -616,31 +639,32 @@ void exit_thread(void)
+ 	/* Nothing */
+ }
  
--/* Canonical names of all the registers. */
--/* ISSUE: This table lives in "tile-dis.c" */
--extern const char * const tile_register_names[];
--
--/* Descriptor for a special-purpose register. */
--struct tile_spr
--{
--  /* The number */
--  int number;
--
--  /* The name */
--  const char *name;
--};
--
--/* List of all the SPRs; ordered by increasing number. */
--extern const struct tile_spr tile_sprs[];
--
--/* Number of special-purpose registers. */
--extern const int tile_num_sprs;
--
--extern const char *
--get_tile_spr_name (int num);
- 
- #endif /* opcode_tile_h */
-diff --git a/arch/tile/kernel/tile-desc_32.c b/arch/tile/kernel/tile-desc_32.c
-index 3b78369..69af0e1 100644
---- a/arch/tile/kernel/tile-desc_32.c
-+++ b/arch/tile/kernel/tile-desc_32.c
-@@ -1,12 +1,5 @@
--/* Define to include "bfd.h" and get actual BFD relocations below. */
--/* #define WANT_BFD_RELOCS */
--
--#ifdef WANT_BFD_RELOCS
--#include "bfd.h"
--#define MAYBE_BFD_RELOC(X) (X)
+-#ifdef __tilegx__
+-# define LINECOUNT 3
+-# define EXTRA_NL "\n"
 -#else
--#define MAYBE_BFD_RELOC(X) -1
+-# define LINECOUNT 4
+-# define EXTRA_NL ""
 -#endif
-+/* This define is BFD_RELOC_##x for real bfd, or -1 for everyone else. */
-+#define BFD_RELOC(x) -1
+-
+ void show_regs(struct pt_regs *regs)
+ {
+ 	struct task_struct *tsk = validate_current();
+-	int i, linebreak;
+-	printk("\n");
+-	printk(" Pid: %d, comm: %20s, CPU: %d\n",
++	int i;
++
++	pr_err("\n");
++	pr_err(" Pid: %d, comm: %20s, CPU: %d\n",
+ 	       tsk->pid, tsk->comm, smp_processor_id());
+-	for (i = linebreak = 0; i < 53; ++i) {
+-		printk(" r%-2d: "REGFMT, i, regs->regs[i]);
+-		if (++linebreak == LINECOUNT) {
+-			linebreak = 0;
+-			printk("\n");
+-		}
+-	}
+-	printk(" tp : "REGFMT EXTRA_NL " sp : "REGFMT" lr : "REGFMT"\n",
+-	       regs->tp, regs->sp, regs->lr);
+-	printk(" pc : "REGFMT" ex1: %ld     faultnum: %ld\n",
++#ifdef __tilegx__
++	for (i = 0; i < 51; i += 3)
++		pr_err(" r%-2d: "REGFMT" r%-2d: "REGFMT" r%-2d: "REGFMT"\n",
++		       i, regs->regs[i], i+1, regs->regs[i+1],
++		       i+2, regs->regs[i+2]);
++	pr_err(" r51: "REGFMT" r52: "REGFMT" tp : "REGFMT"\n",
++	       regs->regs[51], regs->regs[52], regs->tp);
++	pr_err(" sp : "REGFMT" lr : "REGFMT"\n", regs->sp, regs->lr);
++#else
++	for (i = 0; i < 52; i += 3)
++		pr_err(" r%-2d: "REGFMT" r%-2d: "REGFMT
++		       " r%-2d: "REGFMT" r%-2d: "REGFMT"\n",
++		       i, regs->regs[i], i+1, regs->regs[i+1],
++		       i+2, regs->regs[i+2], i+3, regs->regs[i+3]);
++	pr_err(" r52: "REGFMT" tp : "REGFMT" sp : "REGFMT" lr : "REGFMT"\n",
++	       regs->regs[52], regs->tp, regs->sp, regs->lr);
++#endif
++	pr_err(" pc : "REGFMT" ex1: %ld     faultnum: %ld\n",
+ 	       regs->pc, regs->ex1, regs->faultnum);
  
- /* Special registers. */
- #define TREG_LR 55
-@@ -16,11014 +9,1193 @@
- /* FIXME: Rename this. */
+ 	dump_stack_regs(regs);
+diff --git a/arch/tile/kernel/ptrace.c b/arch/tile/kernel/ptrace.c
+index 4680549..e5701d1 100644
+--- a/arch/tile/kernel/ptrace.c
++++ b/arch/tile/kernel/ptrace.c
+@@ -19,6 +19,7 @@
+ #include <linux/kprobes.h>
+ #include <linux/compat.h>
+ #include <linux/uaccess.h>
++#include <asm/traps.h>
+ 
+ void user_enable_single_step(struct task_struct *child)
+ {
+@@ -76,7 +77,7 @@ long arch_ptrace(struct task_struct *child, long request, long addr, long data)
+ 	if (task_thread_info(child)->status & TS_COMPAT)
+ 		addr = (u32)addr;
+ #endif
+-	datap = (unsigned long __user *)data;
++	datap = (unsigned long __user __force *)data;
+ 
+ 	switch (request) {
+ 
+diff --git a/arch/tile/kernel/reboot.c b/arch/tile/kernel/reboot.c
+index a452392..acd86d2 100644
+--- a/arch/tile/kernel/reboot.c
++++ b/arch/tile/kernel/reboot.c
+@@ -15,6 +15,7 @@
+ #include <linux/stddef.h>
+ #include <linux/reboot.h>
+ #include <linux/smp.h>
++#include <linux/pm.h>
+ #include <asm/page.h>
+ #include <asm/setup.h>
+ #include <hv/hypervisor.h>
+@@ -46,7 +47,5 @@ void machine_restart(char *cmd)
+ 	hv_restart((HV_VirtAddr) "vmlinux", (HV_VirtAddr) cmd);
+ }
+ 
+-/*
+- * Power off function, if any
+- */
+-void (*pm_power_off)(void) = machine_power_off;
++/* No interesting distinction to be made here. */
++void (*pm_power_off)(void) = NULL;
+diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+index 934136b..4dd21c1 100644
+--- a/arch/tile/kernel/setup.c
++++ b/arch/tile/kernel/setup.c
+@@ -20,6 +20,7 @@
+ #include <linux/node.h>
+ #include <linux/cpu.h>
+ #include <linux/ioport.h>
++#include <linux/irq.h>
+ #include <linux/kexec.h>
+ #include <linux/pci.h>
+ #include <linux/initrd.h>
+@@ -109,7 +110,7 @@ static int __init setup_maxmem(char *str)
+ 
+ 	maxmem_pfn = (maxmem_mb >> (HPAGE_SHIFT - 20)) <<
+ 		(HPAGE_SHIFT - PAGE_SHIFT);
+-	printk("Forcing RAM used to no more than %dMB\n",
++	pr_info("Forcing RAM used to no more than %dMB\n",
+ 	       maxmem_pfn >> (20 - PAGE_SHIFT));
+ 	return 0;
+ }
+@@ -127,7 +128,7 @@ static int __init setup_maxnodemem(char *str)
+ 
+ 	maxnodemem_pfn[node] = (maxnodemem_mb >> (HPAGE_SHIFT - 20)) <<
+ 		(HPAGE_SHIFT - PAGE_SHIFT);
+-	printk("Forcing RAM used on node %ld to no more than %dMB\n",
++	pr_info("Forcing RAM used on node %ld to no more than %dMB\n",
+ 	       node, maxnodemem_pfn[node] >> (20 - PAGE_SHIFT));
+ 	return 0;
+ }
+@@ -140,7 +141,7 @@ static int __init setup_isolnodes(char *str)
+ 		return -EINVAL;
+ 
+ 	nodelist_scnprintf(buf, sizeof(buf), isolnodes);
+-	printk("Set isolnodes value to '%s'\n", buf);
++	pr_info("Set isolnodes value to '%s'\n", buf);
+ 	return 0;
+ }
+ early_param("isolnodes", setup_isolnodes);
+@@ -155,7 +156,7 @@ static int __init setup_pci_reserve(char* str)
+ 		return -EINVAL;
+ 
+ 	pci_reserve_mb = mb;
+-	printk("Reserving %dMB for PCIE root complex mappings\n",
++	pr_info("Reserving %dMB for PCIE root complex mappings\n",
+ 	       pci_reserve_mb);
+ 	return 0;
+ }
+@@ -269,7 +270,7 @@ static void *__init setup_pa_va_mapping(void)
+  * This is up to 4 mappings for lowmem, one mapping per memory
+  * controller, plus one for our text segment.
+  */
+-void __cpuinit store_permanent_mappings(void)
++static void __cpuinit store_permanent_mappings(void)
+ {
+ 	int i;
+ 
+@@ -320,14 +321,14 @@ static void __init setup_memory(void)
+ 			break;
+ #ifdef CONFIG_FLATMEM
+ 		if (i > 0) {
+-			printk("Can't use discontiguous PAs: %#llx..%#llx\n",
++			pr_err("Can't use discontiguous PAs: %#llx..%#llx\n",
+ 			       range.size, range.start + range.size);
+ 			continue;
+ 		}
+ #endif
+ #ifndef __tilegx__
+ 		if ((unsigned long)range.start) {
+-			printk("Range not at 4GB multiple: %#llx..%#llx\n",
++			pr_err("Range not at 4GB multiple: %#llx..%#llx\n",
+ 			       range.start, range.start + range.size);
+ 			continue;
+ 		}
+@@ -335,51 +336,51 @@ static void __init setup_memory(void)
+ 		if ((range.start & (HPAGE_SIZE-1)) != 0 ||
+ 		    (range.size & (HPAGE_SIZE-1)) != 0) {
+ 			unsigned long long start_pa = range.start;
+-			unsigned long long size = range.size;
++			unsigned long long orig_size = range.size;
+ 			range.start = (start_pa + HPAGE_SIZE - 1) & HPAGE_MASK;
+ 			range.size -= (range.start - start_pa);
+ 			range.size &= HPAGE_MASK;
+-			printk("Range not hugepage-aligned: %#llx..%#llx:"
++			pr_err("Range not hugepage-aligned: %#llx..%#llx:"
+ 			       " now %#llx-%#llx\n",
+-			       start_pa, start_pa + size,
++			       start_pa, start_pa + orig_size,
+ 			       range.start, range.start + range.size);
+ 		}
+ 		highbits = __pa_to_highbits(range.start);
+ 		if (highbits >= NR_PA_HIGHBIT_VALUES) {
+-			printk("PA high bits too high: %#llx..%#llx\n",
++			pr_err("PA high bits too high: %#llx..%#llx\n",
+ 			       range.start, range.start + range.size);
+ 			continue;
+ 		}
+ 		if (highbits_seen[highbits]) {
+-			printk("Range overlaps in high bits: %#llx..%#llx\n",
++			pr_err("Range overlaps in high bits: %#llx..%#llx\n",
+ 			       range.start, range.start + range.size);
+ 			continue;
+ 		}
+ 		highbits_seen[highbits] = 1;
+ 		if (PFN_DOWN(range.size) > maxnodemem_pfn[i]) {
+-			int size = maxnodemem_pfn[i];
+-			if (size > 0) {
+-				printk("Maxnodemem reduced node %d to"
+-				       " %d pages\n", i, size);
+-				range.size = (HV_PhysAddr)size << PAGE_SHIFT;
++			int max_size = maxnodemem_pfn[i];
++			if (max_size > 0) {
++				pr_err("Maxnodemem reduced node %d to"
++				       " %d pages\n", i, max_size);
++				range.size = PFN_PHYS(max_size);
+ 			} else {
+-				printk("Maxnodemem disabled node %d\n", i);
++				pr_err("Maxnodemem disabled node %d\n", i);
+ 				continue;
+ 			}
+ 		}
+ 		if (num_physpages + PFN_DOWN(range.size) > maxmem_pfn) {
+-			int size = maxmem_pfn - num_physpages;
+-			if (size > 0) {
+-				printk("Maxmem reduced node %d to %d pages\n",
+-				       i, size);
+-				range.size = (HV_PhysAddr)size << PAGE_SHIFT;
++			int max_size = maxmem_pfn - num_physpages;
++			if (max_size > 0) {
++				pr_err("Maxmem reduced node %d to %d pages\n",
++				       i, max_size);
++				range.size = PFN_PHYS(max_size);
+ 			} else {
+-				printk("Maxmem disabled node %d\n", i);
++				pr_err("Maxmem disabled node %d\n", i);
+ 				continue;
+ 			}
+ 		}
+ 		if (i >= MAX_NUMNODES) {
+-			printk("Too many PA nodes (#%d): %#llx...%#llx\n",
++			pr_err("Too many PA nodes (#%d): %#llx...%#llx\n",
+ 			       i, range.size, range.size + range.start);
+ 			continue;
+ 		}
+@@ -391,7 +392,7 @@ static void __init setup_memory(void)
+ #ifndef __tilegx__
+ 		if (((HV_PhysAddr)end << PAGE_SHIFT) !=
+ 		    (range.start + range.size)) {
+-			printk("PAs too high to represent: %#llx..%#llx\n",
++			pr_err("PAs too high to represent: %#llx..%#llx\n",
+ 			       range.start, range.start + range.size);
+ 			continue;
+ 		}
+@@ -412,7 +413,7 @@ static void __init setup_memory(void)
+ 				NR_CPUS * (PFN_UP(per_cpu_size) >> PAGE_SHIFT);
+ 			if (end < pci_reserve_end_pfn + percpu_pages) {
+ 				end = pci_reserve_start_pfn;
+-				printk("PCI mapping region reduced node %d to"
++				pr_err("PCI mapping region reduced node %d to"
+ 				       " %ld pages\n", i, end - start);
+ 			}
+ 		}
+@@ -456,11 +457,11 @@ static void __init setup_memory(void)
+ 			}
+ 		}
+ 		num_physpages -= dropped_pages;
+-		printk(KERN_WARNING "Only using %ldMB memory;"
++		pr_warning("Only using %ldMB memory;"
+ 		       " ignoring %ldMB.\n",
+ 		       num_physpages >> (20 - PAGE_SHIFT),
+ 		       dropped_pages >> (20 - PAGE_SHIFT));
+-		printk(KERN_WARNING "Consider using a larger page size.\n");
++		pr_warning("Consider using a larger page size.\n");
+ 	}
+ #endif
+ 
+@@ -478,9 +479,9 @@ static void __init setup_memory(void)
+ 		MAXMEM_PFN : mappable_physpages;
+ 	highmem_pages = (long) (num_physpages - lowmem_pages);
+ 
+-	printk(KERN_NOTICE "%ldMB HIGHMEM available.\n",
++	pr_notice("%ldMB HIGHMEM available.\n",
+ 	       pages_to_mb(highmem_pages > 0 ? highmem_pages : 0));
+-	printk(KERN_NOTICE "%ldMB LOWMEM available.\n",
++	pr_notice("%ldMB LOWMEM available.\n",
+ 			pages_to_mb(lowmem_pages));
+ #else
+ 	/* Set max_low_pfn based on what node 0 can directly address. */
+@@ -488,15 +489,15 @@ static void __init setup_memory(void)
+ 
+ #ifndef __tilegx__
+ 	if (node_end_pfn[0] > MAXMEM_PFN) {
+-		printk(KERN_WARNING "Only using %ldMB LOWMEM.\n",
++		pr_warning("Only using %ldMB LOWMEM.\n",
+ 		       MAXMEM>>20);
+-		printk(KERN_WARNING "Use a HIGHMEM enabled kernel.\n");
++		pr_warning("Use a HIGHMEM enabled kernel.\n");
+ 		max_low_pfn = MAXMEM_PFN;
+ 		max_pfn = MAXMEM_PFN;
+ 		num_physpages = MAXMEM_PFN;
+ 		node_end_pfn[0] = MAXMEM_PFN;
+ 	} else {
+-		printk(KERN_NOTICE "%ldMB memory available.\n",
++		pr_notice("%ldMB memory available.\n",
+ 		       pages_to_mb(node_end_pfn[0]));
+ 	}
+ 	for (i = 1; i < MAX_NUMNODES; ++i) {
+@@ -512,7 +513,7 @@ static void __init setup_memory(void)
+ 		if (pages)
+ 			high_memory = pfn_to_kaddr(node_end_pfn[i]);
+ 	}
+-	printk(KERN_NOTICE "%ldMB memory available.\n",
++	pr_notice("%ldMB memory available.\n",
+ 	       pages_to_mb(lowmem_pages));
+ #endif
+ #endif
+@@ -744,7 +745,7 @@ static void __init setup_numa_mapping(void)
+ 	nodes_andnot(default_nodes, node_online_map, isolnodes);
+ 	if (nodes_empty(default_nodes)) {
+ 		BUG_ON(!node_isset(0, node_online_map));
+-		printk("Forcing NUMA node zero available as a default node\n");
++		pr_err("Forcing NUMA node zero available as a default node\n");
+ 		node_set(0, default_nodes);
+ 	}
+ 
+@@ -822,13 +823,13 @@ static void __init setup_numa_mapping(void)
+ 		printk(KERN_DEBUG "NUMA cpu-to-node row %d:", y);
+ 		for (x = 0; x < smp_width; ++x, ++cpu) {
+ 			if (cpu_to_node(cpu) < 0) {
+-				printk(" -");
++				pr_cont(" -");
+ 				cpu_2_node[cpu] = first_node(default_nodes);
+ 			} else {
+-				printk(" %d", cpu_to_node(cpu));
++				pr_cont(" %d", cpu_to_node(cpu));
+ 			}
+ 		}
+-		printk("\n");
++		pr_cont("\n");
+ 	}
+ }
+ 
+@@ -856,12 +857,17 @@ subsys_initcall(topology_init);
+ #endif /* CONFIG_NUMA */
+ 
+ /**
+- * setup_mpls() - Allow the user-space code to access various SPRs.
++ * setup_cpu() - Do all necessary per-cpu, tile-specific initialization.
++ * @boot: Is this the boot cpu?
+  *
+- * Also called from online_secondary().
++ * Called from setup_arch() on the boot cpu, or online_secondary().
+  */
+-void __cpuinit setup_mpls(void)
++void __cpuinit setup_cpu(int boot)
+ {
++	/* The boot cpu sets up its permanent mappings much earlier. */
++	if (!boot)
++		store_permanent_mappings();
++
+ 	/* Allow asynchronous TLB interrupts. */
+ #if CHIP_HAS_TILE_DMA()
+ 	raw_local_irq_unmask(INT_DMATLB_MISS);
+@@ -892,6 +898,14 @@ void __cpuinit setup_mpls(void)
+ 	 * as well as the PL 0 interrupt mask.
+ 	 */
+ 	__insn_mtspr(SPR_MPL_INTCTRL_0_SET_0, 1);
++
++	/* Initialize IRQ support for this cpu. */
++	setup_irq_regs();
++
++#ifdef CONFIG_HARDWALL
++	/* Reset the network state on this cpu. */
++	reset_network_state();
++#endif
+ }
+ 
+ static int __initdata set_initramfs_file;
+@@ -922,22 +936,22 @@ static void __init load_hv_initrd(void)
+ 	fd = hv_fs_findfile((HV_VirtAddr) initramfs_file);
+ 	if (fd == HV_ENOENT) {
+ 		if (set_initramfs_file)
+-			printk("No such hvfs initramfs file '%s'\n",
+-			       initramfs_file);
++			pr_warning("No such hvfs initramfs file '%s'\n",
++				   initramfs_file);
+ 		return;
+ 	}
+ 	BUG_ON(fd < 0);
+ 	stat = hv_fs_fstat(fd);
+ 	BUG_ON(stat.size < 0);
+ 	if (stat.flags & HV_FS_ISDIR) {
+-		printk("Ignoring hvfs file '%s': it's a directory.\n",
+-		       initramfs_file);
++		pr_warning("Ignoring hvfs file '%s': it's a directory.\n",
++			   initramfs_file);
+ 		return;
+ 	}
+ 	initrd = alloc_bootmem_pages(stat.size);
+ 	rc = hv_fs_pread(fd, (HV_VirtAddr) initrd, stat.size, 0);
+ 	if (rc != stat.size) {
+-		printk("Error reading %d bytes from hvfs file '%s': %d\n",
++		pr_err("Error reading %d bytes from hvfs file '%s': %d\n",
+ 		       stat.size, initramfs_file, rc);
+ 		free_bootmem((unsigned long) initrd, stat.size);
+ 		return;
+@@ -966,9 +980,9 @@ static void __init validate_hv(void)
+ 	HV_Topology topology = hv_inquire_topology();
+ 	BUG_ON(topology.coord.x != 0 || topology.coord.y != 0);
+ 	if (topology.width != 1 || topology.height != 1) {
+-		printk("Warning: booting UP kernel on %dx%d grid;"
+-		       " will ignore all but first tile.\n",
+-		       topology.width, topology.height);
++		pr_warning("Warning: booting UP kernel on %dx%d grid;"
++			   " will ignore all but first tile.\n",
++			   topology.width, topology.height);
+ 	}
+ #endif
+ 
+@@ -1004,7 +1018,7 @@ static void __init validate_hv(void)
+ 
+ 	if (hv_confstr(HV_CONFSTR_CHIP_MODEL, (HV_VirtAddr)chip_model,
+ 		       sizeof(chip_model)) < 0) {
+-		printk("Warning: HV_CONFSTR_CHIP_MODEL not available\n");
++		pr_err("Warning: HV_CONFSTR_CHIP_MODEL not available\n");
+ 		strlcpy(chip_model, "unknown", sizeof(chip_model));
+ 	}
+ }
+@@ -1096,7 +1110,7 @@ static int __init disabled_cpus(char *str)
+ 	if (str == NULL || cpulist_parse_crop(str, &disabled_map) != 0)
+ 		return -EINVAL;
+ 	if (cpumask_test_cpu(boot_cpu, &disabled_map)) {
+-		printk("disabled_cpus: can't disable boot cpu %d\n", boot_cpu);
++		pr_err("disabled_cpus: can't disable boot cpu %d\n", boot_cpu);
+ 		cpumask_clear_cpu(boot_cpu, &disabled_map);
+ 	}
+ 	return 0;
+@@ -1104,12 +1118,12 @@ static int __init disabled_cpus(char *str)
+ 
+ early_param("disabled_cpus", disabled_cpus);
+ 
+-void __init print_disabled_cpus()
++void __init print_disabled_cpus(void)
+ {
+ 	if (!cpumask_empty(&disabled_map)) {
+ 		char buf[100];
+ 		cpulist_scnprintf(buf, sizeof(buf), &disabled_map);
+-		printk(KERN_INFO "CPUs not available for Linux: %s\n", buf);
++		pr_info("CPUs not available for Linux: %s\n", buf);
+ 	}
+ }
+ 
+@@ -1162,7 +1176,7 @@ static void __init setup_cpu_maps(void)
+ 			      (HV_VirtAddr) cpumask_bits(&cpu_lotar_map),
+ 			      sizeof(cpu_lotar_map));
+ 	if (rc < 0) {
+-		printk("warning: no HV_INQ_TILES_LOTAR; using AVAIL\n");
++		pr_err("warning: no HV_INQ_TILES_LOTAR; using AVAIL\n");
+ 		cpu_lotar_map = cpu_possible_map;
+ 	}
+ 
+@@ -1182,7 +1196,7 @@ static void __init setup_cpu_maps(void)
+ 
+ static int __init dataplane(char *str)
+ {
+-	printk("WARNING: dataplane support disabled in this kernel\n");
++	pr_warning("WARNING: dataplane support disabled in this kernel\n");
+ 	return 0;
+ }
+ 
+@@ -1200,8 +1214,8 @@ void __init setup_arch(char **cmdline_p)
+ 	len = hv_get_command_line((HV_VirtAddr) boot_command_line,
+ 				  COMMAND_LINE_SIZE);
+ 	if (boot_command_line[0])
+-		printk("WARNING: ignoring dynamic command line \"%s\"\n",
+-		       boot_command_line);
++		pr_warning("WARNING: ignoring dynamic command line \"%s\"\n",
++			   boot_command_line);
+ 	strlcpy(boot_command_line, builtin_cmdline, COMMAND_LINE_SIZE);
+ #else
+ 	char *hv_cmdline;
+@@ -1269,7 +1283,7 @@ void __init setup_arch(char **cmdline_p)
+ 	setup_numa_mapping();
+ 	zone_sizes_init();
+ 	set_page_homes();
+-	setup_mpls();
++	setup_cpu(1);
+ 	setup_clock();
+ 	load_hv_initrd();
+ }
+diff --git a/arch/tile/kernel/signal.c b/arch/tile/kernel/signal.c
+index 45835cf..45b66a3 100644
+--- a/arch/tile/kernel/signal.c
++++ b/arch/tile/kernel/signal.c
+@@ -33,6 +33,7 @@
+ #include <asm/processor.h>
+ #include <asm/ucontext.h>
+ #include <asm/sigframe.h>
++#include <asm/syscalls.h>
+ #include <arch/interrupts.h>
+ 
+ #define DEBUG_SIG 0
+@@ -40,11 +41,8 @@
+ #define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
+ 
+ 
+-/* Caller before callee in this file; other callee is in assembler */
+-void do_signal(struct pt_regs *regs);
+-
+ long _sys_sigaltstack(const stack_t __user *uss,
+-                      stack_t __user *uoss, struct pt_regs *regs)
++		      stack_t __user *uoss, struct pt_regs *regs)
+ {
+ 	return do_sigaltstack(uss, uoss, regs->sp);
+ }
+@@ -65,7 +63,7 @@ int restore_sigcontext(struct pt_regs *regs,
+ 
+ 	for (i = 0; i < sizeof(struct pt_regs)/sizeof(long); ++i)
+ 		err |= __get_user(((long *)regs)[i],
+-				  &((long *)(&sc->regs))[i]);
++				  &((long __user *)(&sc->regs))[i]);
+ 
+ 	regs->faultnum = INT_SWINT_1_SIGRETURN;
+ 
+@@ -73,7 +71,8 @@ int restore_sigcontext(struct pt_regs *regs,
+ 	return err;
+ }
+ 
+-int _sys_rt_sigreturn(struct pt_regs *regs)
++/* sigreturn() returns long since it restores r0 in the interrupted code. */
++long _sys_rt_sigreturn(struct pt_regs *regs)
+ {
+ 	struct rt_sigframe __user *frame =
+ 		(struct rt_sigframe __user *)(regs->sp);
+@@ -114,7 +113,7 @@ int setup_sigcontext(struct sigcontext __user *sc, struct pt_regs *regs)
+ 
+ 	for (i = 0; i < sizeof(struct pt_regs)/sizeof(long); ++i)
+ 		err |= __put_user(((long *)regs)[i],
+-				  &((long *)(&sc->regs))[i]);
++				  &((long __user *)(&sc->regs))[i]);
+ 
+ 	return err;
+ }
+@@ -137,7 +136,7 @@ static inline void __user *get_sigframe(struct k_sigaction *ka,
+ 	 * will die with SIGSEGV.
+ 	 */
+ 	if (on_sig_stack(sp) && !likely(on_sig_stack(sp - frame_size)))
+-		return (void __user *) -1L;
++		return (void __user __force *)-1UL;
+ 
+ 	/* This is the X/Open sanctioned signal stack switching.  */
+ 	if (ka->sa.sa_flags & SA_ONSTACK) {
+@@ -185,8 +184,8 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	/* Create the ucontext.  */
+ 	err |= __clear_user(&frame->save_area, sizeof(frame->save_area));
+ 	err |= __put_user(0, &frame->uc.uc_flags);
+-	err |= __put_user(0, &frame->uc.uc_link);
+-	err |= __put_user((void *)(current->sas_ss_sp),
++	err |= __put_user(NULL, &frame->uc.uc_link);
++	err |= __put_user((void __user *)(current->sas_ss_sp),
+ 			  &frame->uc.uc_stack.ss_sp);
+ 	err |= __put_user(sas_ss_flags(regs->sp),
+ 			  &frame->uc.uc_stack.ss_flags);
+diff --git a/arch/tile/kernel/single_step.c b/arch/tile/kernel/single_step.c
+index 266aae1..5ec4b9c 100644
+--- a/arch/tile/kernel/single_step.c
++++ b/arch/tile/kernel/single_step.c
+@@ -23,6 +23,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/mman.h>
+ #include <linux/types.h>
++#include <linux/err.h>
+ #include <asm/cacheflush.h>
  #include <asm/opcode-tile.h>
- 
-+#include <linux/stddef.h>
- 
--const struct tile_opcode tile_opcodes[394] =
-+const struct tile_opcode tile_opcodes[395] =
+ #include <asm/opcode_constants.h>
+@@ -39,8 +40,8 @@ static int __init setup_unaligned_printk(char *str)
+ 	if (strict_strtol(str, 0, &val) != 0)
+ 		return 0;
+ 	unaligned_printk = val;
+-	printk("Printk for each unaligned data accesses is %s\n",
+-	       unaligned_printk ? "enabled" : "disabled");
++	pr_info("Printk for each unaligned data accesses is %s\n",
++		unaligned_printk ? "enabled" : "disabled");
+ 	return 1;
+ }
+ __setup("unaligned_printk=", setup_unaligned_printk);
+@@ -113,7 +114,7 @@ static tile_bundle_bits rewrite_load_store_unaligned(
+ 	enum mem_op mem_op,
+ 	int size, int sign_ext)
  {
-- { "bpt", TILE_OPC_BPT, 0x2 /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    0, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      {  },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbffffff80000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b3cae00000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+ { "bpt", TILE_OPC_BPT, 0x2, 0, TREG_ZERO, 0,
-+    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
-   },
--  { "info", TILE_OPC_INFO, 0xf /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0 },
--      { 1 },
--      { 2 },
--      { 3 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00fffULL,
--      0xfff807ff80000000ULL,
--      0x8000000078000fffULL,
--      0xf80007ff80000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000050100fffULL,
--      0x302007ff80000000ULL,
--      0x8000000050000fffULL,
--      0xc00007ff80000000ULL,
--      -1ULL
--    }
-+  { "info", TILE_OPC_INFO, 0xf, 1, TREG_ZERO, 1,
-+    { { 0 }, { 1 }, { 2 }, { 3 }, { 0, } },
-   },
--  { "infol", TILE_OPC_INFOL, 0x3 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 4 },
--      { 5 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000070000fffULL,
--      0xf80007ff80000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000030000fffULL,
--      0x200007ff80000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "infol", TILE_OPC_INFOL, 0x3, 1, TREG_ZERO, 1,
-+    { { 4 }, { 5 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "j", TILE_OPC_J, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 6 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xf000000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x5000000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "j", TILE_OPC_J, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 6 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "jal", TILE_OPC_JAL, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_LR, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 6 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xf000000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x6000000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "jal", TILE_OPC_JAL, 0x2, 1, TREG_LR, 1,
-+    { { 0, }, { 6 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "move", TILE_OPC_MOVE, 0xf /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 9, 10 },
--      { 11, 12 },
--      { 13, 14 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0xfffff80000000000ULL,
--      0x80000000780ff000ULL,
--      0xf807f80000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000cff000ULL,
--      0x0833f80000000000ULL,
--      0x80000000180bf000ULL,
--      0x9805f80000000000ULL,
--      -1ULL
--    }
-+  { "move", TILE_OPC_MOVE, 0xf, 2, TREG_ZERO, 1,
-+    { { 7, 8 }, { 9, 10 }, { 11, 12 }, { 13, 14 }, { 0, } },
-   },
--  { "move.sn", TILE_OPC_MOVE_SN, 0x3 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008cff000ULL,
--      0x0c33f80000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "move.sn", TILE_OPC_MOVE_SN, 0x3, 2, TREG_SN, 1,
-+    { { 7, 8 }, { 9, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "movei", TILE_OPC_MOVEI, 0xf /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 0 },
--      { 9, 1 },
--      { 11, 2 },
--      { 13, 3 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00fc0ULL,
--      0xfff807e000000000ULL,
--      0x8000000078000fc0ULL,
--      0xf80007e000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040800fc0ULL,
--      0x305807e000000000ULL,
--      0x8000000058000fc0ULL,
--      0xc80007e000000000ULL,
--      -1ULL
--    }
-+  { "movei", TILE_OPC_MOVEI, 0xf, 2, TREG_ZERO, 1,
-+    { { 7, 0 }, { 9, 1 }, { 11, 2 }, { 13, 3 }, { 0, } },
-   },
--  { "movei.sn", TILE_OPC_MOVEI_SN, 0x3 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 0 },
--      { 9, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00fc0ULL,
--      0xfff807e000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048800fc0ULL,
--      0x345807e000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "movei.sn", TILE_OPC_MOVEI_SN, 0x3, 2, TREG_SN, 1,
-+    { { 7, 0 }, { 9, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "moveli", TILE_OPC_MOVELI, 0x3 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 4 },
--      { 9, 5 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000070000fc0ULL,
--      0xf80007e000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000020000fc0ULL,
--      0x180007e000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "moveli", TILE_OPC_MOVELI, 0x3, 2, TREG_ZERO, 1,
-+    { { 7, 4 }, { 9, 5 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "moveli.sn", TILE_OPC_MOVELI_SN, 0x3 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 4 },
--      { 9, 5 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000070000fc0ULL,
--      0xf80007e000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000010000fc0ULL,
--      0x100007e000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "moveli.sn", TILE_OPC_MOVELI_SN, 0x3, 2, TREG_SN, 1,
-+    { { 7, 4 }, { 9, 5 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "movelis", TILE_OPC_MOVELIS, 0x3 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 4 },
--      { 9, 5 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000070000fc0ULL,
--      0xf80007e000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000010000fc0ULL,
--      0x100007e000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "movelis", TILE_OPC_MOVELIS, 0x3, 2, TREG_SN, 1,
-+    { { 7, 4 }, { 9, 5 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "prefetch", TILE_OPC_PREFETCH, 0x12 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 15 }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff81f80000000ULL,
--      0ULL,
--      0ULL,
--      0x8700000003f00000ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b501f80000000ULL,
--      -1ULL,
--      -1ULL,
--      0x8000000003f00000ULL
--    }
-+  { "prefetch", TILE_OPC_PREFETCH, 0x12, 1, TREG_ZERO, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 15 } },
-   },
--  { "add", TILE_OPC_ADD, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000000c0000ULL,
--      0x0806000000000000ULL,
--      0x8000000008000000ULL,
--      0x8800000000000000ULL,
--      -1ULL
--    }
-+  { "raise", TILE_OPC_RAISE, 0x2, 0, TREG_ZERO, 1,
-+    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
-   },
--  { "add.sn", TILE_OPC_ADD_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000080c0000ULL,
--      0x0c06000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "add", TILE_OPC_ADD, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "addb", TILE_OPC_ADDB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000040000ULL,
--      0x0802000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "add.sn", TILE_OPC_ADD_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addb.sn", TILE_OPC_ADDB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008040000ULL,
--      0x0c02000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addb", TILE_OPC_ADDB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addbs_u", TILE_OPC_ADDBS_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001880000ULL,
--      0x0888000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addb.sn", TILE_OPC_ADDB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addbs_u.sn", TILE_OPC_ADDBS_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009880000ULL,
--      0x0c88000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addbs_u", TILE_OPC_ADDBS_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addh", TILE_OPC_ADDH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000080000ULL,
--      0x0804000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addbs_u.sn", TILE_OPC_ADDBS_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addh.sn", TILE_OPC_ADDH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008080000ULL,
--      0x0c04000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addh", TILE_OPC_ADDH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addhs", TILE_OPC_ADDHS, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000018c0000ULL,
--      0x088a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addh.sn", TILE_OPC_ADDH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addhs.sn", TILE_OPC_ADDHS_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000098c0000ULL,
--      0x0c8a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addhs", TILE_OPC_ADDHS, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addi", TILE_OPC_ADDI, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 11, 12, 2 },
--      { 13, 14, 3 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0x8000000078000000ULL,
--      0xf800000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040300000ULL,
--      0x3018000000000000ULL,
--      0x8000000048000000ULL,
--      0xb800000000000000ULL,
--      -1ULL
--    }
-+  { "addhs.sn", TILE_OPC_ADDHS_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addi.sn", TILE_OPC_ADDI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048300000ULL,
--      0x3418000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addi", TILE_OPC_ADDI, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 11, 12, 2 }, { 13, 14, 3 }, { 0, } },
-   },
--  { "addib", TILE_OPC_ADDIB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040100000ULL,
--      0x3008000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addi.sn", TILE_OPC_ADDI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addib.sn", TILE_OPC_ADDIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048100000ULL,
--      0x3408000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addib", TILE_OPC_ADDIB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addih", TILE_OPC_ADDIH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040200000ULL,
--      0x3010000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addib.sn", TILE_OPC_ADDIB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addih.sn", TILE_OPC_ADDIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048200000ULL,
--      0x3410000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addih", TILE_OPC_ADDIH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addli", TILE_OPC_ADDLI, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 4 },
--      { 9, 10, 5 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000070000000ULL,
--      0xf800000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000020000000ULL,
--      0x1800000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addih.sn", TILE_OPC_ADDIH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addli.sn", TILE_OPC_ADDLI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 4 },
--      { 9, 10, 5 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000070000000ULL,
--      0xf800000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000010000000ULL,
--      0x1000000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addli", TILE_OPC_ADDLI, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 4 }, { 9, 10, 5 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "addlis", TILE_OPC_ADDLIS, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 4 },
--      { 9, 10, 5 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000070000000ULL,
--      0xf800000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000010000000ULL,
--      0x1000000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addli.sn", TILE_OPC_ADDLI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 4 }, { 9, 10, 5 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "adds", TILE_OPC_ADDS, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001800000ULL,
--      0x0884000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "addlis", TILE_OPC_ADDLIS, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 4 }, { 9, 10, 5 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "adds.sn", TILE_OPC_ADDS_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009800000ULL,
--      0x0c84000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "adds", TILE_OPC_ADDS, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "adiffb_u", TILE_OPC_ADIFFB_U, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000100000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "adds.sn", TILE_OPC_ADDS_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "adiffb_u.sn", TILE_OPC_ADIFFB_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008100000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "adiffb_u", TILE_OPC_ADIFFB_U, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "adiffh", TILE_OPC_ADIFFH, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000140000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "adiffb_u.sn", TILE_OPC_ADIFFB_U_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "adiffh.sn", TILE_OPC_ADIFFH_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008140000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "adiffh", TILE_OPC_ADIFFH, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "and", TILE_OPC_AND, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000180000ULL,
--      0x0808000000000000ULL,
--      0x8000000018000000ULL,
--      0x9800000000000000ULL,
--      -1ULL
--    }
-+  { "adiffh.sn", TILE_OPC_ADIFFH_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "and.sn", TILE_OPC_AND_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008180000ULL,
--      0x0c08000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "and", TILE_OPC_AND, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "andi", TILE_OPC_ANDI, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 11, 12, 2 },
--      { 13, 14, 3 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0x8000000078000000ULL,
--      0xf800000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000050100000ULL,
--      0x3020000000000000ULL,
--      0x8000000050000000ULL,
--      0xc000000000000000ULL,
--      -1ULL
--    }
-+  { "and.sn", TILE_OPC_AND_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "andi.sn", TILE_OPC_ANDI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000058100000ULL,
--      0x3420000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "andi", TILE_OPC_ANDI, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 11, 12, 2 }, { 13, 14, 3 }, { 0, } },
-   },
--  { "auli", TILE_OPC_AULI, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 4 },
--      { 9, 10, 5 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000070000000ULL,
--      0xf800000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000030000000ULL,
--      0x2000000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "andi.sn", TILE_OPC_ANDI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "avgb_u", TILE_OPC_AVGB_U, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000001c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "auli", TILE_OPC_AULI, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 4 }, { 9, 10, 5 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "avgb_u.sn", TILE_OPC_AVGB_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000081c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "avgb_u", TILE_OPC_AVGB_U, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "avgh", TILE_OPC_AVGH, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000200000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "avgb_u.sn", TILE_OPC_AVGB_U_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "avgh.sn", TILE_OPC_AVGH_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008200000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "avgh", TILE_OPC_AVGH, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bbns", TILE_OPC_BBNS, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000700000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "avgh.sn", TILE_OPC_AVGH_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bbns.sn", TILE_OPC_BBNS_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000700000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bbns", TILE_OPC_BBNS, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bbnst", TILE_OPC_BBNST, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000780000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bbns.sn", TILE_OPC_BBNS_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bbnst.sn", TILE_OPC_BBNST_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000780000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bbnst", TILE_OPC_BBNST, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bbs", TILE_OPC_BBS, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000600000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bbnst.sn", TILE_OPC_BBNST_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bbs.sn", TILE_OPC_BBS_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000600000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bbs", TILE_OPC_BBS, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bbst", TILE_OPC_BBST, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000680000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bbs.sn", TILE_OPC_BBS_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bbst.sn", TILE_OPC_BBST_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000680000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bbst", TILE_OPC_BBST, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bgez", TILE_OPC_BGEZ, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000300000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bbst.sn", TILE_OPC_BBST_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bgez.sn", TILE_OPC_BGEZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000300000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bgez", TILE_OPC_BGEZ, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bgezt", TILE_OPC_BGEZT, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000380000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bgez.sn", TILE_OPC_BGEZ_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bgezt.sn", TILE_OPC_BGEZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000380000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bgezt", TILE_OPC_BGEZT, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bgz", TILE_OPC_BGZ, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000200000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bgezt.sn", TILE_OPC_BGEZT_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bgz.sn", TILE_OPC_BGZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000200000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bgz", TILE_OPC_BGZ, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bgzt", TILE_OPC_BGZT, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000280000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bgz.sn", TILE_OPC_BGZ_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bgzt.sn", TILE_OPC_BGZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000280000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bgzt", TILE_OPC_BGZT, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bitx", TILE_OPC_BITX, 0x5 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 0, },
--      { 11, 12 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0x80000000780ff000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070161000ULL,
--      -1ULL,
--      0x80000000680a1000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bgzt.sn", TILE_OPC_BGZT_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bitx.sn", TILE_OPC_BITX_SN, 0x1 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078161000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bitx", TILE_OPC_BITX, 0x5, 2, TREG_ZERO, 1,
-+    { { 7, 8 }, { 0, }, { 11, 12 }, { 0, }, { 0, } },
-   },
--  { "blez", TILE_OPC_BLEZ, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000500000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bitx.sn", TILE_OPC_BITX_SN, 0x1, 2, TREG_SN, 1,
-+    { { 7, 8 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "blez.sn", TILE_OPC_BLEZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000500000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "blez", TILE_OPC_BLEZ, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "blezt", TILE_OPC_BLEZT, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000580000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "blez.sn", TILE_OPC_BLEZ_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "blezt.sn", TILE_OPC_BLEZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000580000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "blezt", TILE_OPC_BLEZT, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "blz", TILE_OPC_BLZ, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000400000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "blezt.sn", TILE_OPC_BLEZT_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "blz.sn", TILE_OPC_BLZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000400000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "blz", TILE_OPC_BLZ, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "blzt", TILE_OPC_BLZT, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000480000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "blz.sn", TILE_OPC_BLZ_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "blzt.sn", TILE_OPC_BLZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000480000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "blzt", TILE_OPC_BLZT, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bnz", TILE_OPC_BNZ, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000100000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "blzt.sn", TILE_OPC_BLZT_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bnz.sn", TILE_OPC_BNZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000100000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bnz", TILE_OPC_BNZ, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bnzt", TILE_OPC_BNZT, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000180000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bnz.sn", TILE_OPC_BNZ_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bnzt.sn", TILE_OPC_BNZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000180000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bnzt", TILE_OPC_BNZT, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bytex", TILE_OPC_BYTEX, 0x5 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 0, },
--      { 11, 12 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0x80000000780ff000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070162000ULL,
--      -1ULL,
--      0x80000000680a2000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bnzt.sn", TILE_OPC_BNZT_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bytex.sn", TILE_OPC_BYTEX_SN, 0x1 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078162000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bytex", TILE_OPC_BYTEX, 0x5, 2, TREG_ZERO, 1,
-+    { { 7, 8 }, { 0, }, { 11, 12 }, { 0, }, { 0, } },
-   },
--  { "bz", TILE_OPC_BZ, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bytex.sn", TILE_OPC_BYTEX_SN, 0x1, 2, TREG_SN, 1,
-+    { { 7, 8 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bz.sn", TILE_OPC_BZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bz", TILE_OPC_BZ, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bzt", TILE_OPC_BZT, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2800000080000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bz.sn", TILE_OPC_BZ_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "bzt.sn", TILE_OPC_BZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 20 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfc00000780000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x2c00000080000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bzt", TILE_OPC_BZT, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "clz", TILE_OPC_CLZ, 0x5 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 0, },
--      { 11, 12 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0x80000000780ff000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070163000ULL,
--      -1ULL,
--      0x80000000680a3000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "bzt.sn", TILE_OPC_BZT_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 10, 20 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "clz.sn", TILE_OPC_CLZ_SN, 0x1 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078163000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "clz", TILE_OPC_CLZ, 0x5, 2, TREG_ZERO, 1,
-+    { { 7, 8 }, { 0, }, { 11, 12 }, { 0, }, { 0, } },
-   },
--  { "crc32_32", TILE_OPC_CRC32_32, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000240000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "clz.sn", TILE_OPC_CLZ_SN, 0x1, 2, TREG_SN, 1,
-+    { { 7, 8 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "crc32_32.sn", TILE_OPC_CRC32_32_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008240000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "crc32_32", TILE_OPC_CRC32_32, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "crc32_8", TILE_OPC_CRC32_8, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000280000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "crc32_32.sn", TILE_OPC_CRC32_32_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "crc32_8.sn", TILE_OPC_CRC32_8_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008280000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "crc32_8", TILE_OPC_CRC32_8, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "ctz", TILE_OPC_CTZ, 0x5 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 0, },
--      { 11, 12 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0x80000000780ff000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070164000ULL,
--      -1ULL,
--      0x80000000680a4000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "crc32_8.sn", TILE_OPC_CRC32_8_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "ctz.sn", TILE_OPC_CTZ_SN, 0x1 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078164000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "ctz", TILE_OPC_CTZ, 0x5, 2, TREG_ZERO, 1,
-+    { { 7, 8 }, { 0, }, { 11, 12 }, { 0, }, { 0, } },
-   },
--  { "drain", TILE_OPC_DRAIN, 0x2 /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    0, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      {  },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b080000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "ctz.sn", TILE_OPC_CTZ_SN, 0x1, 2, TREG_SN, 1,
-+    { { 7, 8 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "dtlbpr", TILE_OPC_DTLBPR, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b100000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "drain", TILE_OPC_DRAIN, 0x2, 0, TREG_ZERO, 0,
-+    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
-   },
--  { "dword_align", TILE_OPC_DWORD_ALIGN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000017c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "dtlbpr", TILE_OPC_DTLBPR, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "dword_align.sn", TILE_OPC_DWORD_ALIGN_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000097c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "dword_align", TILE_OPC_DWORD_ALIGN, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "finv", TILE_OPC_FINV, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b180000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "dword_align.sn", TILE_OPC_DWORD_ALIGN_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "flush", TILE_OPC_FLUSH, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b200000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "finv", TILE_OPC_FINV, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "fnop", TILE_OPC_FNOP, 0xf /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      {  },
--      {  },
--      {  },
--      {  },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000077fff000ULL,
--      0xfbfff80000000000ULL,
--      0x80000000780ff000ULL,
--      0xf807f80000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070165000ULL,
--      0x400b280000000000ULL,
--      0x80000000680a5000ULL,
--      0xd805080000000000ULL,
--      -1ULL
--    }
-+  { "flush", TILE_OPC_FLUSH, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "icoh", TILE_OPC_ICOH, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b300000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "fnop", TILE_OPC_FNOP, 0xf, 0, TREG_ZERO, 1,
-+    { {  }, {  }, {  }, {  }, { 0, } },
-   },
--  { "ill", TILE_OPC_ILL, 0xa /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      {  },
--      { 0, },
--      {  },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0xf807f80000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b380000000000ULL,
--      -1ULL,
--      0xd805100000000000ULL,
--      -1ULL
--    }
-+  { "icoh", TILE_OPC_ICOH, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "inthb", TILE_OPC_INTHB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000002c0000ULL,
--      0x080a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "ill", TILE_OPC_ILL, 0xa, 0, TREG_ZERO, 1,
-+    { { 0, }, {  }, { 0, }, {  }, { 0, } },
-   },
--  { "inthb.sn", TILE_OPC_INTHB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000082c0000ULL,
--      0x0c0a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "inthb", TILE_OPC_INTHB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "inthh", TILE_OPC_INTHH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000300000ULL,
--      0x080c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "inthb.sn", TILE_OPC_INTHB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "inthh.sn", TILE_OPC_INTHH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008300000ULL,
--      0x0c0c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "inthh", TILE_OPC_INTHH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "intlb", TILE_OPC_INTLB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000340000ULL,
--      0x080e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "inthh.sn", TILE_OPC_INTHH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "intlb.sn", TILE_OPC_INTLB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008340000ULL,
--      0x0c0e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "intlb", TILE_OPC_INTLB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "intlh", TILE_OPC_INTLH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000380000ULL,
--      0x0810000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "intlb.sn", TILE_OPC_INTLB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "intlh.sn", TILE_OPC_INTLH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008380000ULL,
--      0x0c10000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "intlh", TILE_OPC_INTLH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "inv", TILE_OPC_INV, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b400000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "intlh.sn", TILE_OPC_INTLH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "iret", TILE_OPC_IRET, 0x2 /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      {  },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b480000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "inv", TILE_OPC_INV, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "jalb", TILE_OPC_JALB, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_LR, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 22 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xf800000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x6800000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "iret", TILE_OPC_IRET, 0x2, 0, TREG_ZERO, 1,
-+    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
-   },
--  { "jalf", TILE_OPC_JALF, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_LR, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 22 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xf800000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x6000000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "jalb", TILE_OPC_JALB, 0x2, 1, TREG_LR, 1,
-+    { { 0, }, { 22 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "jalr", TILE_OPC_JALR, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_LR, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x0814000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "jalf", TILE_OPC_JALF, 0x2, 1, TREG_LR, 1,
-+    { { 0, }, { 22 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "jalrp", TILE_OPC_JALRP, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_LR, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x0812000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "jalr", TILE_OPC_JALR, 0x2, 1, TREG_LR, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "jb", TILE_OPC_JB, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 22 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xf800000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x5800000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "jalrp", TILE_OPC_JALRP, 0x2, 1, TREG_LR, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "jf", TILE_OPC_JF, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 22 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xf800000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x5000000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "jb", TILE_OPC_JB, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 22 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "jr", TILE_OPC_JR, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x0818000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "jf", TILE_OPC_JF, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 22 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "jrp", TILE_OPC_JRP, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x0816000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "jr", TILE_OPC_JR, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lb", TILE_OPC_LB, 0x12 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 23, 15 }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0x8700000000000000ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b500000000000ULL,
--      -1ULL,
--      -1ULL,
--      0x8000000000000000ULL
--    }
-+  { "jrp", TILE_OPC_JRP, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lb.sn", TILE_OPC_LB_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x440b500000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lb", TILE_OPC_LB, 0x12, 2, TREG_ZERO, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 23, 15 } },
-   },
--  { "lb_u", TILE_OPC_LB_U, 0x12 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 23, 15 }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0x8700000000000000ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b580000000000ULL,
--      -1ULL,
--      -1ULL,
--      0x8100000000000000ULL
--    }
-+  { "lb.sn", TILE_OPC_LB_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lb_u.sn", TILE_OPC_LB_U_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x440b580000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lb_u", TILE_OPC_LB_U, 0x12, 2, TREG_ZERO, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 23, 15 } },
-   },
--  { "lbadd", TILE_OPC_LBADD, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x30b0000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lb_u.sn", TILE_OPC_LB_U_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lbadd.sn", TILE_OPC_LBADD_SN, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x34b0000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lbadd", TILE_OPC_LBADD, 0x2, 3, TREG_ZERO, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lbadd_u", TILE_OPC_LBADD_U, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x30b8000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lbadd.sn", TILE_OPC_LBADD_SN, 0x2, 3, TREG_SN, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lbadd_u.sn", TILE_OPC_LBADD_U_SN, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x34b8000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lbadd_u", TILE_OPC_LBADD_U, 0x2, 3, TREG_ZERO, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lh", TILE_OPC_LH, 0x12 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 23, 15 }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0x8700000000000000ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b600000000000ULL,
--      -1ULL,
--      -1ULL,
--      0x8200000000000000ULL
--    }
-+  { "lbadd_u.sn", TILE_OPC_LBADD_U_SN, 0x2, 3, TREG_SN, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lh.sn", TILE_OPC_LH_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x440b600000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lh", TILE_OPC_LH, 0x12, 2, TREG_ZERO, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 23, 15 } },
-   },
--  { "lh_u", TILE_OPC_LH_U, 0x12 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 23, 15 }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0x8700000000000000ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b680000000000ULL,
--      -1ULL,
--      -1ULL,
--      0x8300000000000000ULL
--    }
-+  { "lh.sn", TILE_OPC_LH_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lh_u.sn", TILE_OPC_LH_U_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x440b680000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lh_u", TILE_OPC_LH_U, 0x12, 2, TREG_ZERO, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 23, 15 } },
-   },
--  { "lhadd", TILE_OPC_LHADD, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x30c0000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lh_u.sn", TILE_OPC_LH_U_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lhadd.sn", TILE_OPC_LHADD_SN, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x34c0000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lhadd", TILE_OPC_LHADD, 0x2, 3, TREG_ZERO, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lhadd_u", TILE_OPC_LHADD_U, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x30c8000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lhadd.sn", TILE_OPC_LHADD_SN, 0x2, 3, TREG_SN, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lhadd_u.sn", TILE_OPC_LHADD_U_SN, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x34c8000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lhadd_u", TILE_OPC_LHADD_U, 0x2, 3, TREG_ZERO, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lnk", TILE_OPC_LNK, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x081a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lhadd_u.sn", TILE_OPC_LHADD_U_SN, 0x2, 3, TREG_SN, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lnk.sn", TILE_OPC_LNK_SN, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x0c1a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lnk", TILE_OPC_LNK, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 9 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lw", TILE_OPC_LW, 0x12 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 23, 15 }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0x8700000000000000ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b700000000000ULL,
--      -1ULL,
--      -1ULL,
--      0x8400000000000000ULL
--    }
-+  { "lnk.sn", TILE_OPC_LNK_SN, 0x2, 1, TREG_SN, 1,
-+    { { 0, }, { 9 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lw.sn", TILE_OPC_LW_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x440b700000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lw", TILE_OPC_LW, 0x12, 2, TREG_ZERO, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 23, 15 } },
-   },
--  { "lw_na", TILE_OPC_LW_NA, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400bc00000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lw.sn", TILE_OPC_LW_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lw_na.sn", TILE_OPC_LW_NA_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x440bc00000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lw_na", TILE_OPC_LW_NA, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lwadd", TILE_OPC_LWADD, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x30d0000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lw_na.sn", TILE_OPC_LW_NA_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lwadd.sn", TILE_OPC_LWADD_SN, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x34d0000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lwadd", TILE_OPC_LWADD, 0x2, 3, TREG_ZERO, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lwadd_na", TILE_OPC_LWADD_NA, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x30d8000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lwadd.sn", TILE_OPC_LWADD_SN, 0x2, 3, TREG_SN, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "lwadd_na.sn", TILE_OPC_LWADD_NA_SN, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 24, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x34d8000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lwadd_na", TILE_OPC_LWADD_NA, 0x2, 3, TREG_ZERO, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "maxb_u", TILE_OPC_MAXB_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000003c0000ULL,
--      0x081c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "lwadd_na.sn", TILE_OPC_LWADD_NA_SN, 0x2, 3, TREG_SN, 1,
-+    { { 0, }, { 9, 24, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "maxb_u.sn", TILE_OPC_MAXB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000083c0000ULL,
--      0x0c1c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "maxb_u", TILE_OPC_MAXB_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "maxh", TILE_OPC_MAXH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000400000ULL,
--      0x081e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "maxb_u.sn", TILE_OPC_MAXB_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "maxh.sn", TILE_OPC_MAXH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008400000ULL,
--      0x0c1e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "maxh", TILE_OPC_MAXH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "maxib_u", TILE_OPC_MAXIB_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040400000ULL,
--      0x3028000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "maxh.sn", TILE_OPC_MAXH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "maxib_u.sn", TILE_OPC_MAXIB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048400000ULL,
--      0x3428000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "maxib_u", TILE_OPC_MAXIB_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "maxih", TILE_OPC_MAXIH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040500000ULL,
--      0x3030000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "maxib_u.sn", TILE_OPC_MAXIB_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "maxih.sn", TILE_OPC_MAXIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048500000ULL,
--      0x3430000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "maxih", TILE_OPC_MAXIH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mf", TILE_OPC_MF, 0x2 /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      {  },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b780000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "maxih.sn", TILE_OPC_MAXIH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mfspr", TILE_OPC_MFSPR, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 25 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbf8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x3038000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mf", TILE_OPC_MF, 0x2, 0, TREG_ZERO, 1,
-+    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
-   },
--  { "minb_u", TILE_OPC_MINB_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000440000ULL,
--      0x0820000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mfspr", TILE_OPC_MFSPR, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 9, 25 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "minb_u.sn", TILE_OPC_MINB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008440000ULL,
--      0x0c20000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "minb_u", TILE_OPC_MINB_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "minh", TILE_OPC_MINH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000480000ULL,
--      0x0822000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "minb_u.sn", TILE_OPC_MINB_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "minh.sn", TILE_OPC_MINH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008480000ULL,
--      0x0c22000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "minh", TILE_OPC_MINH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "minib_u", TILE_OPC_MINIB_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040600000ULL,
--      0x3040000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "minh.sn", TILE_OPC_MINH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "minib_u.sn", TILE_OPC_MINIB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048600000ULL,
--      0x3440000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "minib_u", TILE_OPC_MINIB_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "minih", TILE_OPC_MINIH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040700000ULL,
--      0x3048000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "minib_u.sn", TILE_OPC_MINIB_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "minih.sn", TILE_OPC_MINIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048700000ULL,
--      0x3448000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "minih", TILE_OPC_MINIH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mm", TILE_OPC_MM, 0x3 /* pipes */, 5 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16, 26, 27 },
--      { 9, 10, 17, 28, 29 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000070000000ULL,
--      0xf800000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000060000000ULL,
--      0x3800000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "minih.sn", TILE_OPC_MINIH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mnz", TILE_OPC_MNZ, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000540000ULL,
--      0x0828000000000000ULL,
--      0x8000000010000000ULL,
--      0x9002000000000000ULL,
--      -1ULL
--    }
-+  { "mm", TILE_OPC_MM, 0x3, 5, TREG_ZERO, 1,
-+    { { 7, 8, 16, 26, 27 }, { 9, 10, 17, 28, 29 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mnz.sn", TILE_OPC_MNZ_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008540000ULL,
--      0x0c28000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mnz", TILE_OPC_MNZ, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "mnzb", TILE_OPC_MNZB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000004c0000ULL,
--      0x0824000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mnz.sn", TILE_OPC_MNZ_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mnzb.sn", TILE_OPC_MNZB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000084c0000ULL,
--      0x0c24000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mnzb", TILE_OPC_MNZB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mnzh", TILE_OPC_MNZH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000500000ULL,
--      0x0826000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mnzb.sn", TILE_OPC_MNZB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mnzh.sn", TILE_OPC_MNZH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008500000ULL,
--      0x0c26000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mnzh", TILE_OPC_MNZH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mtspr", TILE_OPC_MTSPR, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 30, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbf8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x3050000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mnzh.sn", TILE_OPC_MNZH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhh_ss", TILE_OPC_MULHH_SS, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 11, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000680000ULL,
--      -1ULL,
--      0x8000000038000000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mtspr", TILE_OPC_MTSPR, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 30, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhh_ss.sn", TILE_OPC_MULHH_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008680000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhh_ss", TILE_OPC_MULHH_SS, 0x5, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 11, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mulhh_su", TILE_OPC_MULHH_SU, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000006c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhh_ss.sn", TILE_OPC_MULHH_SS_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhh_su.sn", TILE_OPC_MULHH_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000086c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhh_su", TILE_OPC_MULHH_SU, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhh_uu", TILE_OPC_MULHH_UU, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 11, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000700000ULL,
--      -1ULL,
--      0x8000000038040000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhh_su.sn", TILE_OPC_MULHH_SU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhh_uu.sn", TILE_OPC_MULHH_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008700000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhh_uu", TILE_OPC_MULHH_UU, 0x5, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 11, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mulhha_ss", TILE_OPC_MULHHA_SS, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 31, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000580000ULL,
--      -1ULL,
--      0x8000000040000000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhh_uu.sn", TILE_OPC_MULHH_UU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhha_ss.sn", TILE_OPC_MULHHA_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008580000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhha_ss", TILE_OPC_MULHHA_SS, 0x5, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 31, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mulhha_su", TILE_OPC_MULHHA_SU, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000005c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhha_ss.sn", TILE_OPC_MULHHA_SS_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhha_su.sn", TILE_OPC_MULHHA_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000085c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhha_su", TILE_OPC_MULHHA_SU, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhha_uu", TILE_OPC_MULHHA_UU, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 31, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000600000ULL,
--      -1ULL,
--      0x8000000040040000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhha_su.sn", TILE_OPC_MULHHA_SU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhha_uu.sn", TILE_OPC_MULHHA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008600000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhha_uu", TILE_OPC_MULHHA_UU, 0x5, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 31, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mulhhsa_uu", TILE_OPC_MULHHSA_UU, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000640000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhha_uu.sn", TILE_OPC_MULHHA_UU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhhsa_uu.sn", TILE_OPC_MULHHSA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008640000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhhsa_uu", TILE_OPC_MULHHSA_UU, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhl_ss", TILE_OPC_MULHL_SS, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000880000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhhsa_uu.sn", TILE_OPC_MULHHSA_UU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhl_ss.sn", TILE_OPC_MULHL_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008880000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhl_ss", TILE_OPC_MULHL_SS, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhl_su", TILE_OPC_MULHL_SU, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000008c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhl_ss.sn", TILE_OPC_MULHL_SS_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhl_su.sn", TILE_OPC_MULHL_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000088c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhl_su", TILE_OPC_MULHL_SU, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhl_us", TILE_OPC_MULHL_US, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000900000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhl_su.sn", TILE_OPC_MULHL_SU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhl_us.sn", TILE_OPC_MULHL_US_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008900000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhl_us", TILE_OPC_MULHL_US, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhl_uu", TILE_OPC_MULHL_UU, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000940000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhl_us.sn", TILE_OPC_MULHL_US_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhl_uu.sn", TILE_OPC_MULHL_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008940000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhl_uu", TILE_OPC_MULHL_UU, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhla_ss", TILE_OPC_MULHLA_SS, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000740000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhl_uu.sn", TILE_OPC_MULHL_UU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhla_ss.sn", TILE_OPC_MULHLA_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008740000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhla_ss", TILE_OPC_MULHLA_SS, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhla_su", TILE_OPC_MULHLA_SU, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000780000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhla_ss.sn", TILE_OPC_MULHLA_SS_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhla_su.sn", TILE_OPC_MULHLA_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008780000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhla_su", TILE_OPC_MULHLA_SU, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhla_us", TILE_OPC_MULHLA_US, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000007c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhla_su.sn", TILE_OPC_MULHLA_SU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhla_us.sn", TILE_OPC_MULHLA_US_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000087c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhla_us", TILE_OPC_MULHLA_US, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhla_uu", TILE_OPC_MULHLA_UU, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000800000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhla_us.sn", TILE_OPC_MULHLA_US_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhla_uu.sn", TILE_OPC_MULHLA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008800000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhla_uu", TILE_OPC_MULHLA_UU, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhlsa_uu", TILE_OPC_MULHLSA_UU, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 31, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000840000ULL,
--      -1ULL,
--      0x8000000030000000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhla_uu.sn", TILE_OPC_MULHLA_UU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulhlsa_uu.sn", TILE_OPC_MULHLSA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008840000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhlsa_uu", TILE_OPC_MULHLSA_UU, 0x5, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 31, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mulll_ss", TILE_OPC_MULLL_SS, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 11, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000a80000ULL,
--      -1ULL,
--      0x8000000038080000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulhlsa_uu.sn", TILE_OPC_MULHLSA_UU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulll_ss.sn", TILE_OPC_MULLL_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008a80000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulll_ss", TILE_OPC_MULLL_SS, 0x5, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 11, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mulll_su", TILE_OPC_MULLL_SU, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000ac0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulll_ss.sn", TILE_OPC_MULLL_SS_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulll_su.sn", TILE_OPC_MULLL_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008ac0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulll_su", TILE_OPC_MULLL_SU, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulll_uu", TILE_OPC_MULLL_UU, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 11, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000b00000ULL,
--      -1ULL,
--      0x80000000380c0000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulll_su.sn", TILE_OPC_MULLL_SU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulll_uu.sn", TILE_OPC_MULLL_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008b00000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulll_uu", TILE_OPC_MULLL_UU, 0x5, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 11, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mullla_ss", TILE_OPC_MULLLA_SS, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 31, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000980000ULL,
--      -1ULL,
--      0x8000000040080000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulll_uu.sn", TILE_OPC_MULLL_UU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mullla_ss.sn", TILE_OPC_MULLLA_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008980000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mullla_ss", TILE_OPC_MULLLA_SS, 0x5, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 31, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mullla_su", TILE_OPC_MULLLA_SU, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000009c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mullla_ss.sn", TILE_OPC_MULLLA_SS_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mullla_su.sn", TILE_OPC_MULLLA_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000089c0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mullla_su", TILE_OPC_MULLLA_SU, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mullla_uu", TILE_OPC_MULLLA_UU, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 31, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000a00000ULL,
--      -1ULL,
--      0x80000000400c0000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mullla_su.sn", TILE_OPC_MULLLA_SU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mullla_uu.sn", TILE_OPC_MULLLA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008a00000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mullla_uu", TILE_OPC_MULLLA_UU, 0x5, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 31, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mulllsa_uu", TILE_OPC_MULLLSA_UU, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000a40000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mullla_uu.sn", TILE_OPC_MULLLA_UU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mulllsa_uu.sn", TILE_OPC_MULLLSA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008a40000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulllsa_uu", TILE_OPC_MULLLSA_UU, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mvnz", TILE_OPC_MVNZ, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 31, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000b40000ULL,
--      -1ULL,
--      0x8000000010040000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mulllsa_uu.sn", TILE_OPC_MULLLSA_UU_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mvnz.sn", TILE_OPC_MVNZ_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008b40000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mvnz", TILE_OPC_MVNZ, 0x5, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 31, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mvz", TILE_OPC_MVZ, 0x5 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 31, 12, 18 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0x80000000780c0000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000b80000ULL,
--      -1ULL,
--      0x8000000010080000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mvnz.sn", TILE_OPC_MVNZ_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mvz.sn", TILE_OPC_MVZ_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008b80000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mvz", TILE_OPC_MVZ, 0x5, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 31, 12, 18 }, { 0, }, { 0, } },
-   },
--  { "mz", TILE_OPC_MZ, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000c40000ULL,
--      0x082e000000000000ULL,
--      0x80000000100c0000ULL,
--      0x9004000000000000ULL,
--      -1ULL
--    }
-+  { "mvz.sn", TILE_OPC_MVZ_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mz.sn", TILE_OPC_MZ_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008c40000ULL,
--      0x0c2e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mz", TILE_OPC_MZ, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "mzb", TILE_OPC_MZB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000bc0000ULL,
--      0x082a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mz.sn", TILE_OPC_MZ_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mzb.sn", TILE_OPC_MZB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008bc0000ULL,
--      0x0c2a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mzb", TILE_OPC_MZB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mzh", TILE_OPC_MZH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000c00000ULL,
--      0x082c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mzb.sn", TILE_OPC_MZB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "mzh.sn", TILE_OPC_MZH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008c00000ULL,
--      0x0c2c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mzh", TILE_OPC_MZH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "nap", TILE_OPC_NAP, 0x2 /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    0, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      {  },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b800000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "mzh.sn", TILE_OPC_MZH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "nop", TILE_OPC_NOP, 0xf /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      {  },
--      {  },
--      {  },
--      {  },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x8000000077fff000ULL,
--      0xfbfff80000000000ULL,
--      0x80000000780ff000ULL,
--      0xf807f80000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070166000ULL,
--      0x400b880000000000ULL,
--      0x80000000680a6000ULL,
--      0xd805180000000000ULL,
--      -1ULL
--    }
-+  { "nap", TILE_OPC_NAP, 0x2, 0, TREG_ZERO, 0,
-+    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
-   },
--  { "nor", TILE_OPC_NOR, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000c80000ULL,
--      0x0830000000000000ULL,
--      0x8000000018040000ULL,
--      0x9802000000000000ULL,
--      -1ULL
--    }
-+  { "nop", TILE_OPC_NOP, 0xf, 0, TREG_ZERO, 1,
-+    { {  }, {  }, {  }, {  }, { 0, } },
-   },
--  { "nor.sn", TILE_OPC_NOR_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008c80000ULL,
--      0x0c30000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "nor", TILE_OPC_NOR, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "or", TILE_OPC_OR, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000cc0000ULL,
--      0x0832000000000000ULL,
--      0x8000000018080000ULL,
--      0x9804000000000000ULL,
--      -1ULL
--    }
-+  { "nor.sn", TILE_OPC_NOR_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "or.sn", TILE_OPC_OR_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008cc0000ULL,
--      0x0c32000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "or", TILE_OPC_OR, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "ori", TILE_OPC_ORI, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 11, 12, 2 },
--      { 13, 14, 3 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0x8000000078000000ULL,
--      0xf800000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040800000ULL,
--      0x3058000000000000ULL,
--      0x8000000058000000ULL,
--      0xc800000000000000ULL,
--      -1ULL
--    }
-+  { "or.sn", TILE_OPC_OR_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "ori.sn", TILE_OPC_ORI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048800000ULL,
--      0x3458000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "ori", TILE_OPC_ORI, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 11, 12, 2 }, { 13, 14, 3 }, { 0, } },
-   },
--  { "packbs_u", TILE_OPC_PACKBS_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000019c0000ULL,
--      0x0892000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "ori.sn", TILE_OPC_ORI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "packbs_u.sn", TILE_OPC_PACKBS_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000099c0000ULL,
--      0x0c92000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "packbs_u", TILE_OPC_PACKBS_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "packhb", TILE_OPC_PACKHB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000d00000ULL,
--      0x0834000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "packbs_u.sn", TILE_OPC_PACKBS_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "packhb.sn", TILE_OPC_PACKHB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008d00000ULL,
--      0x0c34000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "packhb", TILE_OPC_PACKHB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "packhs", TILE_OPC_PACKHS, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001980000ULL,
--      0x0890000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "packhb.sn", TILE_OPC_PACKHB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "packhs.sn", TILE_OPC_PACKHS_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009980000ULL,
--      0x0c90000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "packhs", TILE_OPC_PACKHS, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "packlb", TILE_OPC_PACKLB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000d40000ULL,
--      0x0836000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "packhs.sn", TILE_OPC_PACKHS_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "packlb.sn", TILE_OPC_PACKLB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008d40000ULL,
--      0x0c36000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "packlb", TILE_OPC_PACKLB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "pcnt", TILE_OPC_PCNT, 0x5 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 0, },
--      { 11, 12 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0x80000000780ff000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070167000ULL,
--      -1ULL,
--      0x80000000680a7000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "packlb.sn", TILE_OPC_PACKLB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "pcnt.sn", TILE_OPC_PCNT_SN, 0x1 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078167000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "pcnt", TILE_OPC_PCNT, 0x5, 2, TREG_ZERO, 1,
-+    { { 7, 8 }, { 0, }, { 11, 12 }, { 0, }, { 0, } },
-   },
--  { "rl", TILE_OPC_RL, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000d80000ULL,
--      0x0838000000000000ULL,
--      0x8000000020000000ULL,
--      0xa000000000000000ULL,
--      -1ULL
--    }
-+  { "pcnt.sn", TILE_OPC_PCNT_SN, 0x1, 2, TREG_SN, 1,
-+    { { 7, 8 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "rl.sn", TILE_OPC_RL_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008d80000ULL,
--      0x0c38000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "rl", TILE_OPC_RL, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "rli", TILE_OPC_RLI, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 11, 12, 34 },
--      { 13, 14, 35 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0x80000000780e0000ULL,
--      0xf807000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070020000ULL,
--      0x4001000000000000ULL,
--      0x8000000068020000ULL,
--      0xd801000000000000ULL,
--      -1ULL
--    }
-+  { "rl.sn", TILE_OPC_RL_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "rli.sn", TILE_OPC_RLI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078020000ULL,
--      0x4401000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "rli", TILE_OPC_RLI, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 11, 12, 34 }, { 13, 14, 35 }, { 0, } },
-   },
--  { "s1a", TILE_OPC_S1A, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000dc0000ULL,
--      0x083a000000000000ULL,
--      0x8000000008040000ULL,
--      0x8802000000000000ULL,
--      -1ULL
--    }
-+  { "rli.sn", TILE_OPC_RLI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "s1a.sn", TILE_OPC_S1A_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008dc0000ULL,
--      0x0c3a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "s1a", TILE_OPC_S1A, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "s2a", TILE_OPC_S2A, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000e00000ULL,
--      0x083c000000000000ULL,
--      0x8000000008080000ULL,
--      0x8804000000000000ULL,
--      -1ULL
--    }
-+  { "s1a.sn", TILE_OPC_S1A_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "s2a.sn", TILE_OPC_S2A_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008e00000ULL,
--      0x0c3c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "s2a", TILE_OPC_S2A, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "s3a", TILE_OPC_S3A, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000e40000ULL,
--      0x083e000000000000ULL,
--      0x8000000030040000ULL,
--      0xb002000000000000ULL,
--      -1ULL
--    }
-+  { "s2a.sn", TILE_OPC_S2A_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "s3a.sn", TILE_OPC_S3A_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008e40000ULL,
--      0x0c3e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "s3a", TILE_OPC_S3A, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "sadab_u", TILE_OPC_SADAB_U, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000e80000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "s3a.sn", TILE_OPC_S3A_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadab_u.sn", TILE_OPC_SADAB_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008e80000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadab_u", TILE_OPC_SADAB_U, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadah", TILE_OPC_SADAH, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000ec0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadab_u.sn", TILE_OPC_SADAB_U_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadah.sn", TILE_OPC_SADAH_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008ec0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadah", TILE_OPC_SADAH, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadah_u", TILE_OPC_SADAH_U, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000f00000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadah.sn", TILE_OPC_SADAH_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadah_u.sn", TILE_OPC_SADAH_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008f00000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadah_u", TILE_OPC_SADAH_U, 0x1, 3, TREG_ZERO, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadb_u", TILE_OPC_SADB_U, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000f40000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadah_u.sn", TILE_OPC_SADAH_U_SN, 0x1, 3, TREG_SN, 1,
-+    { { 21, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadb_u.sn", TILE_OPC_SADB_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008f40000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadb_u", TILE_OPC_SADB_U, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadh", TILE_OPC_SADH, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000f80000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadb_u.sn", TILE_OPC_SADB_U_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadh.sn", TILE_OPC_SADH_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008f80000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadh", TILE_OPC_SADH, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadh_u", TILE_OPC_SADH_U, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000000fc0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadh.sn", TILE_OPC_SADH_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sadh_u.sn", TILE_OPC_SADH_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000008fc0000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sadh_u", TILE_OPC_SADH_U, 0x1, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sb", TILE_OPC_SB, 0x12 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 17 },
--      { 0, },
--      { 0, },
--      { 15, 36 }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfe000000000000ULL,
--      0ULL,
--      0ULL,
--      0x8700000000000000ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x0840000000000000ULL,
--      -1ULL,
--      -1ULL,
--      0x8500000000000000ULL
--    }
-+  { "sadh_u.sn", TILE_OPC_SADH_U_SN, 0x1, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sbadd", TILE_OPC_SBADD, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 24, 17, 37 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbf8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x30e0000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sb", TILE_OPC_SB, 0x12, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 17 }, { 0, }, { 0, }, { 15, 36 } },
-   },
--  { "seq", TILE_OPC_SEQ, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001080000ULL,
--      0x0846000000000000ULL,
--      0x8000000030080000ULL,
--      0xb004000000000000ULL,
--      -1ULL
--    }
-+  { "sbadd", TILE_OPC_SBADD, 0x2, 3, TREG_ZERO, 1,
-+    { { 0, }, { 24, 17, 37 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "seq.sn", TILE_OPC_SEQ_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009080000ULL,
--      0x0c46000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "seq", TILE_OPC_SEQ, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "seqb", TILE_OPC_SEQB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001000000ULL,
--      0x0842000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "seq.sn", TILE_OPC_SEQ_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "seqb.sn", TILE_OPC_SEQB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009000000ULL,
--      0x0c42000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "seqb", TILE_OPC_SEQB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "seqh", TILE_OPC_SEQH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001040000ULL,
--      0x0844000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "seqb.sn", TILE_OPC_SEQB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "seqh.sn", TILE_OPC_SEQH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009040000ULL,
--      0x0c44000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "seqh", TILE_OPC_SEQH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "seqi", TILE_OPC_SEQI, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 11, 12, 2 },
--      { 13, 14, 3 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0x8000000078000000ULL,
--      0xf800000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040b00000ULL,
--      0x3070000000000000ULL,
--      0x8000000060000000ULL,
--      0xd000000000000000ULL,
--      -1ULL
--    }
-+  { "seqh.sn", TILE_OPC_SEQH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "seqi.sn", TILE_OPC_SEQI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048b00000ULL,
--      0x3470000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "seqi", TILE_OPC_SEQI, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 11, 12, 2 }, { 13, 14, 3 }, { 0, } },
-   },
--  { "seqib", TILE_OPC_SEQIB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040900000ULL,
--      0x3060000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "seqi.sn", TILE_OPC_SEQI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "seqib.sn", TILE_OPC_SEQIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048900000ULL,
--      0x3460000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "seqib", TILE_OPC_SEQIB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "seqih", TILE_OPC_SEQIH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040a00000ULL,
--      0x3068000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "seqib.sn", TILE_OPC_SEQIB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "seqih.sn", TILE_OPC_SEQIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048a00000ULL,
--      0x3468000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "seqih", TILE_OPC_SEQIH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sh", TILE_OPC_SH, 0x12 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 17 },
--      { 0, },
--      { 0, },
--      { 15, 36 }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfe000000000000ULL,
--      0ULL,
--      0ULL,
--      0x8700000000000000ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x0854000000000000ULL,
--      -1ULL,
--      -1ULL,
--      0x8600000000000000ULL
--    }
-+  { "seqih.sn", TILE_OPC_SEQIH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shadd", TILE_OPC_SHADD, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 24, 17, 37 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbf8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x30e8000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sh", TILE_OPC_SH, 0x12, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 17 }, { 0, }, { 0, }, { 15, 36 } },
-   },
--  { "shl", TILE_OPC_SHL, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001140000ULL,
--      0x084c000000000000ULL,
--      0x8000000020040000ULL,
--      0xa002000000000000ULL,
--      -1ULL
--    }
-+  { "shadd", TILE_OPC_SHADD, 0x2, 3, TREG_ZERO, 1,
-+    { { 0, }, { 24, 17, 37 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shl.sn", TILE_OPC_SHL_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009140000ULL,
--      0x0c4c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shl", TILE_OPC_SHL, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "shlb", TILE_OPC_SHLB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000010c0000ULL,
--      0x0848000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shl.sn", TILE_OPC_SHL_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shlb.sn", TILE_OPC_SHLB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000090c0000ULL,
--      0x0c48000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shlb", TILE_OPC_SHLB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shlh", TILE_OPC_SHLH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001100000ULL,
--      0x084a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shlb.sn", TILE_OPC_SHLB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shlh.sn", TILE_OPC_SHLH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009100000ULL,
--      0x0c4a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shlh", TILE_OPC_SHLH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shli", TILE_OPC_SHLI, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 11, 12, 34 },
--      { 13, 14, 35 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0x80000000780e0000ULL,
--      0xf807000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070080000ULL,
--      0x4004000000000000ULL,
--      0x8000000068040000ULL,
--      0xd802000000000000ULL,
--      -1ULL
--    }
-+  { "shlh.sn", TILE_OPC_SHLH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shli.sn", TILE_OPC_SHLI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078080000ULL,
--      0x4404000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shli", TILE_OPC_SHLI, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 11, 12, 34 }, { 13, 14, 35 }, { 0, } },
-   },
--  { "shlib", TILE_OPC_SHLIB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070040000ULL,
--      0x4002000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shli.sn", TILE_OPC_SHLI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shlib.sn", TILE_OPC_SHLIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078040000ULL,
--      0x4402000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shlib", TILE_OPC_SHLIB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shlih", TILE_OPC_SHLIH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070060000ULL,
--      0x4003000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shlib.sn", TILE_OPC_SHLIB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shlih.sn", TILE_OPC_SHLIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078060000ULL,
--      0x4403000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shlih", TILE_OPC_SHLIH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shr", TILE_OPC_SHR, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001200000ULL,
--      0x0852000000000000ULL,
--      0x8000000020080000ULL,
--      0xa004000000000000ULL,
--      -1ULL
--    }
-+  { "shlih.sn", TILE_OPC_SHLIH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shr.sn", TILE_OPC_SHR_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009200000ULL,
--      0x0c52000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shr", TILE_OPC_SHR, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "shrb", TILE_OPC_SHRB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001180000ULL,
--      0x084e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shr.sn", TILE_OPC_SHR_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shrb.sn", TILE_OPC_SHRB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009180000ULL,
--      0x0c4e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shrb", TILE_OPC_SHRB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shrh", TILE_OPC_SHRH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000011c0000ULL,
--      0x0850000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shrb.sn", TILE_OPC_SHRB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shrh.sn", TILE_OPC_SHRH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000091c0000ULL,
--      0x0c50000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shrh", TILE_OPC_SHRH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shri", TILE_OPC_SHRI, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 11, 12, 34 },
--      { 13, 14, 35 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0x80000000780e0000ULL,
--      0xf807000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000700e0000ULL,
--      0x4007000000000000ULL,
--      0x8000000068060000ULL,
--      0xd803000000000000ULL,
--      -1ULL
--    }
-+  { "shrh.sn", TILE_OPC_SHRH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shri.sn", TILE_OPC_SHRI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000780e0000ULL,
--      0x4407000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shri", TILE_OPC_SHRI, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 11, 12, 34 }, { 13, 14, 35 }, { 0, } },
-   },
--  { "shrib", TILE_OPC_SHRIB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000700a0000ULL,
--      0x4005000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shri.sn", TILE_OPC_SHRI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shrib.sn", TILE_OPC_SHRIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000780a0000ULL,
--      0x4405000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shrib", TILE_OPC_SHRIB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shrih", TILE_OPC_SHRIH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000700c0000ULL,
--      0x4006000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shrib.sn", TILE_OPC_SHRIB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "shrih.sn", TILE_OPC_SHRIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000780c0000ULL,
--      0x4406000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "shrih", TILE_OPC_SHRIH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slt", TILE_OPC_SLT, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000014c0000ULL,
--      0x086a000000000000ULL,
--      0x8000000028080000ULL,
--      0xa804000000000000ULL,
--      -1ULL
--    }
-+  { "shrih.sn", TILE_OPC_SHRIH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slt.sn", TILE_OPC_SLT_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000094c0000ULL,
--      0x0c6a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slt", TILE_OPC_SLT, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "slt_u", TILE_OPC_SLT_U, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001500000ULL,
--      0x086c000000000000ULL,
--      0x80000000280c0000ULL,
--      0xa806000000000000ULL,
--      -1ULL
--    }
-+  { "slt.sn", TILE_OPC_SLT_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slt_u.sn", TILE_OPC_SLT_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009500000ULL,
--      0x0c6c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slt_u", TILE_OPC_SLT_U, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "sltb", TILE_OPC_SLTB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001240000ULL,
--      0x0856000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slt_u.sn", TILE_OPC_SLT_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sltb.sn", TILE_OPC_SLTB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009240000ULL,
--      0x0c56000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sltb", TILE_OPC_SLTB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sltb_u", TILE_OPC_SLTB_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001280000ULL,
--      0x0858000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sltb.sn", TILE_OPC_SLTB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sltb_u.sn", TILE_OPC_SLTB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009280000ULL,
--      0x0c58000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sltb_u", TILE_OPC_SLTB_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slte", TILE_OPC_SLTE, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000013c0000ULL,
--      0x0862000000000000ULL,
--      0x8000000028000000ULL,
--      0xa800000000000000ULL,
--      -1ULL
--    }
-+  { "sltb_u.sn", TILE_OPC_SLTB_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slte.sn", TILE_OPC_SLTE_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000093c0000ULL,
--      0x0c62000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slte", TILE_OPC_SLTE, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "slte_u", TILE_OPC_SLTE_U, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001400000ULL,
--      0x0864000000000000ULL,
--      0x8000000028040000ULL,
--      0xa802000000000000ULL,
--      -1ULL
--    }
-+  { "slte.sn", TILE_OPC_SLTE_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slte_u.sn", TILE_OPC_SLTE_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009400000ULL,
--      0x0c64000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slte_u", TILE_OPC_SLTE_U, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "slteb", TILE_OPC_SLTEB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000012c0000ULL,
--      0x085a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slte_u.sn", TILE_OPC_SLTE_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slteb.sn", TILE_OPC_SLTEB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000092c0000ULL,
--      0x0c5a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slteb", TILE_OPC_SLTEB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slteb_u", TILE_OPC_SLTEB_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001300000ULL,
--      0x085c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slteb.sn", TILE_OPC_SLTEB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slteb_u.sn", TILE_OPC_SLTEB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009300000ULL,
--      0x0c5c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slteb_u", TILE_OPC_SLTEB_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slteh", TILE_OPC_SLTEH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001340000ULL,
--      0x085e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slteb_u.sn", TILE_OPC_SLTEB_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slteh.sn", TILE_OPC_SLTEH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009340000ULL,
--      0x0c5e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slteh", TILE_OPC_SLTEH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slteh_u", TILE_OPC_SLTEH_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001380000ULL,
--      0x0860000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slteh.sn", TILE_OPC_SLTEH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slteh_u.sn", TILE_OPC_SLTEH_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009380000ULL,
--      0x0c60000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slteh_u", TILE_OPC_SLTEH_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slth", TILE_OPC_SLTH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001440000ULL,
--      0x0866000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slteh_u.sn", TILE_OPC_SLTEH_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slth.sn", TILE_OPC_SLTH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009440000ULL,
--      0x0c66000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slth", TILE_OPC_SLTH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slth_u", TILE_OPC_SLTH_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001480000ULL,
--      0x0868000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slth.sn", TILE_OPC_SLTH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slth_u.sn", TILE_OPC_SLTH_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009480000ULL,
--      0x0c68000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slth_u", TILE_OPC_SLTH_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slti", TILE_OPC_SLTI, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 11, 12, 2 },
--      { 13, 14, 3 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0x8000000078000000ULL,
--      0xf800000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000041000000ULL,
--      0x3098000000000000ULL,
--      0x8000000070000000ULL,
--      0xe000000000000000ULL,
--      -1ULL
--    }
-+  { "slth_u.sn", TILE_OPC_SLTH_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slti.sn", TILE_OPC_SLTI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000049000000ULL,
--      0x3498000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slti", TILE_OPC_SLTI, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 11, 12, 2 }, { 13, 14, 3 }, { 0, } },
-   },
--  { "slti_u", TILE_OPC_SLTI_U, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 11, 12, 2 },
--      { 13, 14, 3 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0x8000000078000000ULL,
--      0xf800000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000041100000ULL,
--      0x30a0000000000000ULL,
--      0x8000000078000000ULL,
--      0xe800000000000000ULL,
--      -1ULL
--    }
-+  { "slti.sn", TILE_OPC_SLTI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "slti_u.sn", TILE_OPC_SLTI_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000049100000ULL,
--      0x34a0000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slti_u", TILE_OPC_SLTI_U, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 11, 12, 2 }, { 13, 14, 3 }, { 0, } },
-   },
--  { "sltib", TILE_OPC_SLTIB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040c00000ULL,
--      0x3078000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "slti_u.sn", TILE_OPC_SLTI_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sltib.sn", TILE_OPC_SLTIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048c00000ULL,
--      0x3478000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sltib", TILE_OPC_SLTIB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sltib_u", TILE_OPC_SLTIB_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040d00000ULL,
--      0x3080000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sltib.sn", TILE_OPC_SLTIB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sltib_u.sn", TILE_OPC_SLTIB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048d00000ULL,
--      0x3480000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sltib_u", TILE_OPC_SLTIB_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sltih", TILE_OPC_SLTIH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040e00000ULL,
--      0x3088000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sltib_u.sn", TILE_OPC_SLTIB_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sltih.sn", TILE_OPC_SLTIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048e00000ULL,
--      0x3488000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sltih", TILE_OPC_SLTIH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sltih_u", TILE_OPC_SLTIH_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000040f00000ULL,
--      0x3090000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sltih.sn", TILE_OPC_SLTIH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sltih_u.sn", TILE_OPC_SLTIH_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000048f00000ULL,
--      0x3490000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sltih_u", TILE_OPC_SLTIH_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sne", TILE_OPC_SNE, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000015c0000ULL,
--      0x0872000000000000ULL,
--      0x80000000300c0000ULL,
--      0xb006000000000000ULL,
--      -1ULL
--    }
-+  { "sltih_u.sn", TILE_OPC_SLTIH_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sne.sn", TILE_OPC_SNE_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000095c0000ULL,
--      0x0c72000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sne", TILE_OPC_SNE, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "sneb", TILE_OPC_SNEB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001540000ULL,
--      0x086e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sne.sn", TILE_OPC_SNE_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sneb.sn", TILE_OPC_SNEB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009540000ULL,
--      0x0c6e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sneb", TILE_OPC_SNEB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sneh", TILE_OPC_SNEH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001580000ULL,
--      0x0870000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sneb.sn", TILE_OPC_SNEB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sneh.sn", TILE_OPC_SNEH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009580000ULL,
--      0x0c70000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sneh", TILE_OPC_SNEH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sra", TILE_OPC_SRA, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001680000ULL,
--      0x0878000000000000ULL,
--      0x80000000200c0000ULL,
--      0xa006000000000000ULL,
--      -1ULL
--    }
-+  { "sneh.sn", TILE_OPC_SNEH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sra.sn", TILE_OPC_SRA_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009680000ULL,
--      0x0c78000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sra", TILE_OPC_SRA, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "srab", TILE_OPC_SRAB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001600000ULL,
--      0x0874000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sra.sn", TILE_OPC_SRA_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "srab.sn", TILE_OPC_SRAB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009600000ULL,
--      0x0c74000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "srab", TILE_OPC_SRAB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "srah", TILE_OPC_SRAH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001640000ULL,
--      0x0876000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "srab.sn", TILE_OPC_SRAB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "srah.sn", TILE_OPC_SRAH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009640000ULL,
--      0x0c76000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "srah", TILE_OPC_SRAH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "srai", TILE_OPC_SRAI, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 11, 12, 34 },
--      { 13, 14, 35 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0x80000000780e0000ULL,
--      0xf807000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070140000ULL,
--      0x400a000000000000ULL,
--      0x8000000068080000ULL,
--      0xd804000000000000ULL,
--      -1ULL
--    }
-+  { "srah.sn", TILE_OPC_SRAH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "srai.sn", TILE_OPC_SRAI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078140000ULL,
--      0x440a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "srai", TILE_OPC_SRAI, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 11, 12, 34 }, { 13, 14, 35 }, { 0, } },
-   },
--  { "sraib", TILE_OPC_SRAIB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070100000ULL,
--      0x4008000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "srai.sn", TILE_OPC_SRAI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sraib.sn", TILE_OPC_SRAIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078100000ULL,
--      0x4408000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sraib", TILE_OPC_SRAIB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sraih", TILE_OPC_SRAIH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070120000ULL,
--      0x4009000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sraib.sn", TILE_OPC_SRAIB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sraih.sn", TILE_OPC_SRAIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 32 },
--      { 9, 10, 33 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffe0000ULL,
--      0xffff000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078120000ULL,
--      0x4409000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sraih", TILE_OPC_SRAIH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sub", TILE_OPC_SUB, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001740000ULL,
--      0x087e000000000000ULL,
--      0x80000000080c0000ULL,
--      0x8806000000000000ULL,
--      -1ULL
--    }
-+  { "sraih.sn", TILE_OPC_SRAIH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 32 }, { 9, 10, 33 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sub.sn", TILE_OPC_SUB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009740000ULL,
--      0x0c7e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sub", TILE_OPC_SUB, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "subb", TILE_OPC_SUBB, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000016c0000ULL,
--      0x087a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sub.sn", TILE_OPC_SUB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "subb.sn", TILE_OPC_SUBB_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x00000000096c0000ULL,
--      0x0c7a000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "subb", TILE_OPC_SUBB, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "subbs_u", TILE_OPC_SUBBS_U, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001900000ULL,
--      0x088c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "subb.sn", TILE_OPC_SUBB_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "subbs_u.sn", TILE_OPC_SUBBS_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009900000ULL,
--      0x0c8c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "subbs_u", TILE_OPC_SUBBS_U, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "subh", TILE_OPC_SUBH, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001700000ULL,
--      0x087c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "subbs_u.sn", TILE_OPC_SUBBS_U_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "subh.sn", TILE_OPC_SUBH_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009700000ULL,
--      0x0c7c000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "subh", TILE_OPC_SUBH, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "subhs", TILE_OPC_SUBHS, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001940000ULL,
--      0x088e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "subh.sn", TILE_OPC_SUBH_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "subhs.sn", TILE_OPC_SUBHS_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009940000ULL,
--      0x0c8e000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "subhs", TILE_OPC_SUBHS, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "subs", TILE_OPC_SUBS, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001840000ULL,
--      0x0886000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "subhs.sn", TILE_OPC_SUBHS_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "subs.sn", TILE_OPC_SUBS_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009840000ULL,
--      0x0c86000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "subs", TILE_OPC_SUBS, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "sw", TILE_OPC_SW, 0x12 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10, 17 },
--      { 0, },
--      { 0, },
--      { 15, 36 }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfe000000000000ULL,
--      0ULL,
--      0ULL,
--      0x8700000000000000ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x0880000000000000ULL,
--      -1ULL,
--      -1ULL,
--      0x8700000000000000ULL
--    }
-+  { "subs.sn", TILE_OPC_SUBS_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "swadd", TILE_OPC_SWADD, 0x2 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 24, 17, 37 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbf8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x30f0000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "sw", TILE_OPC_SW, 0x12, 2, TREG_ZERO, 1,
-+    { { 0, }, { 10, 17 }, { 0, }, { 0, }, { 15, 36 } },
-   },
--  { "swint0", TILE_OPC_SWINT0, 0x2 /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    0, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      {  },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b900000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "swadd", TILE_OPC_SWADD, 0x2, 3, TREG_ZERO, 1,
-+    { { 0, }, { 24, 17, 37 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "swint1", TILE_OPC_SWINT1, 0x2 /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    0, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      {  },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400b980000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "swint0", TILE_OPC_SWINT0, 0x2, 0, TREG_ZERO, 0,
-+    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
-   },
--  { "swint2", TILE_OPC_SWINT2, 0x2 /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    0, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      {  },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400ba00000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "swint1", TILE_OPC_SWINT1, 0x2, 0, TREG_ZERO, 0,
-+    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
-   },
--  { "swint3", TILE_OPC_SWINT3, 0x2 /* pipes */, 0 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    0, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      {  },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400ba80000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "swint2", TILE_OPC_SWINT2, 0x2, 0, TREG_ZERO, 0,
-+    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
-   },
--  { "tblidxb0", TILE_OPC_TBLIDXB0, 0x5 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8 },
--      { 0, },
--      { 31, 12 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0x80000000780ff000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070168000ULL,
--      -1ULL,
--      0x80000000680a8000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "swint3", TILE_OPC_SWINT3, 0x2, 0, TREG_ZERO, 0,
-+    { { 0, }, {  }, { 0, }, { 0, }, { 0, } },
-   },
--  { "tblidxb0.sn", TILE_OPC_TBLIDXB0_SN, 0x1 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078168000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "tblidxb0", TILE_OPC_TBLIDXB0, 0x5, 2, TREG_ZERO, 1,
-+    { { 21, 8 }, { 0, }, { 31, 12 }, { 0, }, { 0, } },
-   },
--  { "tblidxb1", TILE_OPC_TBLIDXB1, 0x5 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8 },
--      { 0, },
--      { 31, 12 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0x80000000780ff000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000070169000ULL,
--      -1ULL,
--      0x80000000680a9000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "tblidxb0.sn", TILE_OPC_TBLIDXB0_SN, 0x1, 2, TREG_SN, 1,
-+    { { 21, 8 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "tblidxb1.sn", TILE_OPC_TBLIDXB1_SN, 0x1 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000078169000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "tblidxb1", TILE_OPC_TBLIDXB1, 0x5, 2, TREG_ZERO, 1,
-+    { { 21, 8 }, { 0, }, { 31, 12 }, { 0, }, { 0, } },
-   },
--  { "tblidxb2", TILE_OPC_TBLIDXB2, 0x5 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8 },
--      { 0, },
--      { 31, 12 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0x80000000780ff000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x000000007016a000ULL,
--      -1ULL,
--      0x80000000680aa000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "tblidxb1.sn", TILE_OPC_TBLIDXB1_SN, 0x1, 2, TREG_SN, 1,
-+    { { 21, 8 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "tblidxb2.sn", TILE_OPC_TBLIDXB2_SN, 0x1 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x000000007816a000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "tblidxb2", TILE_OPC_TBLIDXB2, 0x5, 2, TREG_ZERO, 1,
-+    { { 21, 8 }, { 0, }, { 31, 12 }, { 0, }, { 0, } },
-   },
--  { "tblidxb3", TILE_OPC_TBLIDXB3, 0x5 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8 },
--      { 0, },
--      { 31, 12 },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0x80000000780ff000ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x000000007016b000ULL,
--      -1ULL,
--      0x80000000680ab000ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "tblidxb2.sn", TILE_OPC_TBLIDXB2_SN, 0x1, 2, TREG_SN, 1,
-+    { { 21, 8 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "tblidxb3.sn", TILE_OPC_TBLIDXB3_SN, 0x1 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 21, 8 },
--      { 0, },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffff000ULL,
--      0ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x000000007816b000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "tblidxb3", TILE_OPC_TBLIDXB3, 0x5, 2, TREG_ZERO, 1,
-+    { { 21, 8 }, { 0, }, { 31, 12 }, { 0, }, { 0, } },
-   },
--  { "tns", TILE_OPC_TNS, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400bb00000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "tblidxb3.sn", TILE_OPC_TBLIDXB3_SN, 0x1, 2, TREG_SN, 1,
-+    { { 21, 8 }, { 0, }, { 0, }, { 0, }, { 0, } },
-   },
--  { "tns.sn", TILE_OPC_TNS_SN, 0x2 /* pipes */, 2 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 9, 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfffff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x440bb00000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "tns", TILE_OPC_TNS, 0x2, 2, TREG_ZERO, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "wh64", TILE_OPC_WH64, 0x2 /* pipes */, 1 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 0, },
--      { 10 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0ULL,
--      0xfbfff80000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      -1ULL,
--      0x400bb80000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "tns.sn", TILE_OPC_TNS_SN, 0x2, 2, TREG_SN, 1,
-+    { { 0, }, { 9, 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "xor", TILE_OPC_XOR, 0xf /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 11, 12, 18 },
--      { 13, 14, 19 },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0x80000000780c0000ULL,
--      0xf806000000000000ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000001780000ULL,
--      0x0882000000000000ULL,
--      0x80000000180c0000ULL,
--      0x9806000000000000ULL,
--      -1ULL
--    }
-+  { "wh64", TILE_OPC_WH64, 0x2, 1, TREG_ZERO, 1,
-+    { { 0, }, { 10 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "xor.sn", TILE_OPC_XOR_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 16 },
--      { 9, 10, 17 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ffc0000ULL,
--      0xfffe000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000009780000ULL,
--      0x0c82000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "xor", TILE_OPC_XOR, 0xf, 3, TREG_ZERO, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 11, 12, 18 }, { 13, 14, 19 }, { 0, } },
-   },
--  { "xori", TILE_OPC_XORI, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_ZERO, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000050200000ULL,
--      0x30a8000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "xor.sn", TILE_OPC_XOR_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 16 }, { 9, 10, 17 }, { 0, }, { 0, }, { 0, } },
-   },
--  { "xori.sn", TILE_OPC_XORI_SN, 0x3 /* pipes */, 3 /* num_operands */,
--    TREG_SN, /* implicitly_written_register */
--    1, /* can_bundle */
--    {
--      /* operands */
--      { 7, 8, 0 },
--      { 9, 10, 1 },
--      { 0, },
--      { 0, },
--      { 0, }
--    },
--    {
--      /* fixed_bit_masks */
--      0x800000007ff00000ULL,
--      0xfff8000000000000ULL,
--      0ULL,
--      0ULL,
--      0ULL
--    },
--    {
--      /* fixed_bit_values */
--      0x0000000058200000ULL,
--      0x34a8000000000000ULL,
--      -1ULL,
--      -1ULL,
--      -1ULL
--    }
-+  { "xori", TILE_OPC_XORI, 0x3, 3, TREG_ZERO, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-+  },
-+  { "xori.sn", TILE_OPC_XORI_SN, 0x3, 3, TREG_SN, 1,
-+    { { 7, 8, 0 }, { 9, 10, 1 }, { 0, }, { 0, }, { 0, } },
-   },
--  { 0, TILE_OPC_NONE, 0, 0, 0, TREG_ZERO, { { 0, } }, { 0, }, { 0, }
-+  { NULL, TILE_OPC_NONE, 0, 0, TREG_ZERO, 0, { { 0, } },
-   }
- };
- #define BITFIELD(start, size) ((start) | (((1 << (size)) - 1) << 6))
-@@ -11387,7 +1559,7 @@ static const unsigned short decode_X0_fsm[1153] =
-   TILE_OPC_TBLIDXB3_SN, TILE_OPC_NONE,
- };
+-	unsigned char *addr;
++	unsigned char __user *addr;
+ 	int val_reg, addr_reg, err, val;
  
--static const unsigned short decode_X1_fsm[1509] =
-+static const unsigned short decode_X1_fsm[1540] =
+ 	/* Get address and value registers */
+@@ -148,7 +149,7 @@ static tile_bundle_bits rewrite_load_store_unaligned(
+ 		return bundle;
+ 
+ 	/* If it's aligned, don't handle it specially */
+-	addr = (void *)regs->regs[addr_reg];
++	addr = (void __user *)regs->regs[addr_reg];
+ 	if (((unsigned long)addr % size) == 0)
+ 		return bundle;
+ 
+@@ -183,7 +184,7 @@ static tile_bundle_bits rewrite_load_store_unaligned(
+ 		siginfo_t info = {
+ 			.si_signo = SIGSEGV,
+ 			.si_code = SEGV_MAPERR,
+-			.si_addr = (void __user *)addr
++			.si_addr = addr
+ 		};
+ 		force_sig_info(info.si_signo, &info, current);
+ 		return (tile_bundle_bits) 0;
+@@ -193,30 +194,33 @@ static tile_bundle_bits rewrite_load_store_unaligned(
+ 		siginfo_t info = {
+ 			.si_signo = SIGBUS,
+ 			.si_code = BUS_ADRALN,
+-			.si_addr = (void __user *)addr
++			.si_addr = addr
+ 		};
+ 		force_sig_info(info.si_signo, &info, current);
+ 		return (tile_bundle_bits) 0;
+ 	}
+ 
+ 	if (unaligned_printk || unaligned_fixup_count == 0) {
+-		printk("Process %d/%s: PC %#lx: Fixup of"
+-		       " unaligned %s at %#lx.\n",
+-		       current->pid, current->comm, regs->pc,
+-		       (mem_op == MEMOP_LOAD || mem_op == MEMOP_LOAD_POSTINCR) ?
+-			 "load" : "store",
+-		       (unsigned long)addr);
++		pr_info("Process %d/%s: PC %#lx: Fixup of"
++			" unaligned %s at %#lx.\n",
++			current->pid, current->comm, regs->pc,
++			(mem_op == MEMOP_LOAD ||
++			 mem_op == MEMOP_LOAD_POSTINCR) ?
++			"load" : "store",
++			(unsigned long)addr);
+ 		if (!unaligned_printk) {
+-			printk("\n"
+-"Unaligned fixups in the kernel will slow your application considerably.\n"
+-"You can find them by writing \"1\" to /proc/sys/tile/unaligned_fixup/printk,\n"
+-"which requests the kernel show all unaligned fixups, or writing a \"0\"\n"
+-"to /proc/sys/tile/unaligned_fixup/enabled, in which case each unaligned\n"
+-"access will become a SIGBUS you can debug. No further warnings will be\n"
+-"shown so as to avoid additional slowdown, but you can track the number\n"
+-"of fixups performed via /proc/sys/tile/unaligned_fixup/count.\n"
+-"Use the tile-addr2line command (see \"info addr2line\") to decode PCs.\n"
+-				"\n");
++#define P pr_info
++P("\n");
++P("Unaligned fixups in the kernel will slow your application considerably.\n");
++P("To find them, write a \"1\" to /proc/sys/tile/unaligned_fixup/printk,\n");
++P("which requests the kernel show all unaligned fixups, or write a \"0\"\n");
++P("to /proc/sys/tile/unaligned_fixup/enabled, in which case each unaligned\n");
++P("access will become a SIGBUS you can debug. No further warnings will be\n");
++P("shown so as to avoid additional slowdown, but you can track the number\n");
++P("of fixups performed via /proc/sys/tile/unaligned_fixup/count.\n");
++P("Use the tile-addr2line command (see \"info addr2line\") to decode PCs.\n");
++P("\n");
++#undef P
+ 		}
+ 	}
+ 	++unaligned_fixup_count;
+@@ -276,7 +280,7 @@ void single_step_once(struct pt_regs *regs)
+ 	struct thread_info *info = (void *)current_thread_info();
+ 	struct single_step_state *state = info->step_state;
+ 	int is_single_step = test_ti_thread_flag(info, TIF_SINGLESTEP);
+-	tile_bundle_bits *buffer, *pc;
++	tile_bundle_bits __user *buffer, *pc;
+ 	tile_bundle_bits bundle;
+ 	int temp_reg;
+ 	int target_reg = TREG_LR;
+@@ -306,21 +310,21 @@ void single_step_once(struct pt_regs *regs)
+ 		/* allocate a page of writable, executable memory */
+ 		state = kmalloc(sizeof(struct single_step_state), GFP_KERNEL);
+ 		if (state == NULL) {
+-			printk("Out of kernel memory trying to single-step\n");
++			pr_err("Out of kernel memory trying to single-step\n");
+ 			return;
+ 		}
+ 
+ 		/* allocate a cache line of writable, executable memory */
+ 		down_write(&current->mm->mmap_sem);
+-		buffer = (void *) do_mmap(0, 0, 64,
++		buffer = (void __user *) do_mmap(NULL, 0, 64,
+ 					  PROT_EXEC | PROT_READ | PROT_WRITE,
+ 					  MAP_PRIVATE | MAP_ANONYMOUS,
+ 					  0);
+ 		up_write(&current->mm->mmap_sem);
+ 
+-		if ((int)buffer < 0 && (int)buffer > -PAGE_SIZE) {
++		if (IS_ERR((void __force *)buffer)) {
+ 			kfree(state);
+-			printk("Out of kernel pages trying to single-step\n");
++			pr_err("Out of kernel pages trying to single-step\n");
+ 			return;
+ 		}
+ 
+@@ -349,11 +353,14 @@ void single_step_once(struct pt_regs *regs)
+ 	if (regs->faultnum == INT_SWINT_1)
+ 		regs->pc -= 8;
+ 
+-	pc = (tile_bundle_bits *)(regs->pc);
+-	bundle = pc[0];
++	pc = (tile_bundle_bits __user *)(regs->pc);
++	if (get_user(bundle, pc) != 0) {
++		pr_err("Couldn't read instruction at %p trying to step\n", pc);
++		return;
++	}
+ 
+ 	/* We'll follow the instruction with 2 ill op bundles */
+-	state->orig_pc = (unsigned long) pc;
++	state->orig_pc = (unsigned long)pc;
+ 	state->next_pc = (unsigned long)(pc + 1);
+ 	state->branch_next_pc = 0;
+ 	state->update = 0;
+@@ -633,7 +640,7 @@ void single_step_once(struct pt_regs *regs)
+ 	}
+ 
+ 	if (err) {
+-		printk("Fault when writing to single-step buffer\n");
++		pr_err("Fault when writing to single-step buffer\n");
+ 		return;
+ 	}
+ 
+@@ -641,12 +648,12 @@ void single_step_once(struct pt_regs *regs)
+ 	 * Flush the buffer.
+ 	 * We do a local flush only, since this is a thread-specific buffer.
+ 	 */
+-	__flush_icache_range((unsigned long) state->buffer,
+-			     (unsigned long) buffer);
++	__flush_icache_range((unsigned long)state->buffer,
++			     (unsigned long)buffer);
+ 
+ 	/* Indicate enabled */
+ 	state->is_enabled = is_single_step;
+-	regs->pc = (unsigned long) state->buffer;
++	regs->pc = (unsigned long)state->buffer;
+ 
+ 	/* Fault immediately if we are coming back from a syscall. */
+ 	if (regs->faultnum == INT_SWINT_1)
+diff --git a/arch/tile/kernel/smpboot.c b/arch/tile/kernel/smpboot.c
+index aa3aafd..74d62d0 100644
+--- a/arch/tile/kernel/smpboot.c
++++ b/arch/tile/kernel/smpboot.c
+@@ -25,19 +25,13 @@
+ #include <linux/percpu.h>
+ #include <linux/delay.h>
+ #include <linux/err.h>
++#include <linux/irq.h>
+ #include <asm/mmu_context.h>
+ #include <asm/tlbflush.h>
+ #include <asm/sections.h>
+ 
+-/*
+- * This assembly function is provided in entry.S.
+- * When called, it loops on a nap instruction forever.
+- * FIXME: should be in a header somewhere.
+- */
+-extern void smp_nap(void);
+-
+ /* State of each CPU. */
+-DEFINE_PER_CPU(int, cpu_state) = { 0 };
++static DEFINE_PER_CPU(int, cpu_state) = { 0 };
+ 
+ /* The messaging code jumps to this pointer during boot-up */
+ unsigned long start_cpu_function_addr;
+@@ -74,7 +68,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+ 	 */
+ 	rc = sched_setaffinity(current->pid, cpumask_of(boot_cpu));
+ 	if (rc != 0)
+-		printk("Couldn't set init affinity to boot cpu (%ld)\n", rc);
++		pr_err("Couldn't set init affinity to boot cpu (%ld)\n", rc);
+ 
+ 	/* Print information about disabled and dataplane cpus. */
+ 	print_disabled_cpus();
+@@ -134,13 +128,13 @@ static __init int reset_init_affinity(void)
  {
-   BITFIELD(54, 9) /* index 0 */,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-@@ -11440,7 +1612,7 @@ static const unsigned short decode_X1_fsm[1509] =
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
--  CHILD(1303), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  CHILD(1334), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-@@ -11673,7 +1845,7 @@ static const unsigned short decode_X1_fsm[1509] =
-   CHILD(1139), CHILD(1139), CHILD(1142), CHILD(1142), CHILD(1142),
-   CHILD(1142), CHILD(1145), CHILD(1145), CHILD(1145), CHILD(1145),
-   CHILD(1148), CHILD(1148), CHILD(1148), CHILD(1148), CHILD(1151),
--  CHILD(1211), CHILD(1259), CHILD(1292), TILE_OPC_NONE, TILE_OPC_NONE,
-+  CHILD(1242), CHILD(1290), CHILD(1323), TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-@@ -11725,10 +1897,10 @@ static const unsigned short decode_X1_fsm[1509] =
-   TILE_OPC_FNOP, TILE_OPC_NONE,
-   BITFIELD(53, 1) /* index 1175 */,
-   TILE_OPC_ICOH, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1178 */,
--  CHILD(1181), TILE_OPC_NONE,
--  BITFIELD(31, 2) /* index 1181 */,
--  CHILD(1186), TILE_OPC_ILL, TILE_OPC_ILL, TILE_OPC_ILL,
-+  BITFIELD(31, 2) /* index 1178 */,
-+  CHILD(1183), CHILD(1211), CHILD(1239), CHILD(1239),
-+  BITFIELD(53, 1) /* index 1183 */,
-+  CHILD(1186), TILE_OPC_NONE,
-   BITFIELD(33, 2) /* index 1186 */,
-   TILE_OPC_ILL, TILE_OPC_ILL, TILE_OPC_ILL, CHILD(1191),
-   BITFIELD(35, 2) /* index 1191 */,
-@@ -11739,67 +1911,81 @@ static const unsigned short decode_X1_fsm[1509] =
-   TILE_OPC_ILL, CHILD(1206), TILE_OPC_ILL, TILE_OPC_ILL,
-   BITFIELD(41, 2) /* index 1206 */,
-   TILE_OPC_ILL, TILE_OPC_ILL, TILE_OPC_BPT, TILE_OPC_ILL,
--  BITFIELD(43, 3) /* index 1211 */,
--  CHILD(1220), CHILD(1223), CHILD(1226), CHILD(1244), CHILD(1247),
--  CHILD(1250), CHILD(1253), CHILD(1256),
--  BITFIELD(53, 1) /* index 1220 */,
-+  BITFIELD(53, 1) /* index 1211 */,
-+  CHILD(1214), TILE_OPC_NONE,
-+  BITFIELD(33, 2) /* index 1214 */,
-+  TILE_OPC_ILL, TILE_OPC_ILL, TILE_OPC_ILL, CHILD(1219),
-+  BITFIELD(35, 2) /* index 1219 */,
-+  TILE_OPC_ILL, CHILD(1224), TILE_OPC_ILL, TILE_OPC_ILL,
-+  BITFIELD(37, 2) /* index 1224 */,
-+  TILE_OPC_ILL, CHILD(1229), TILE_OPC_ILL, TILE_OPC_ILL,
-+  BITFIELD(39, 2) /* index 1229 */,
-+  TILE_OPC_ILL, CHILD(1234), TILE_OPC_ILL, TILE_OPC_ILL,
-+  BITFIELD(41, 2) /* index 1234 */,
-+  TILE_OPC_ILL, TILE_OPC_ILL, TILE_OPC_RAISE, TILE_OPC_ILL,
-+  BITFIELD(53, 1) /* index 1239 */,
-+  TILE_OPC_ILL, TILE_OPC_NONE,
-+  BITFIELD(43, 3) /* index 1242 */,
-+  CHILD(1251), CHILD(1254), CHILD(1257), CHILD(1275), CHILD(1278),
-+  CHILD(1281), CHILD(1284), CHILD(1287),
-+  BITFIELD(53, 1) /* index 1251 */,
-   TILE_OPC_INV, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1223 */,
-+  BITFIELD(53, 1) /* index 1254 */,
-   TILE_OPC_IRET, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1226 */,
--  CHILD(1229), TILE_OPC_NONE,
--  BITFIELD(31, 2) /* index 1229 */,
--  TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, CHILD(1234),
--  BITFIELD(33, 2) /* index 1234 */,
--  TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, CHILD(1239),
--  BITFIELD(35, 2) /* index 1239 */,
-+  BITFIELD(53, 1) /* index 1257 */,
-+  CHILD(1260), TILE_OPC_NONE,
-+  BITFIELD(31, 2) /* index 1260 */,
-+  TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, CHILD(1265),
-+  BITFIELD(33, 2) /* index 1265 */,
-+  TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, CHILD(1270),
-+  BITFIELD(35, 2) /* index 1270 */,
-   TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_PREFETCH,
--  BITFIELD(53, 1) /* index 1244 */,
-+  BITFIELD(53, 1) /* index 1275 */,
-   TILE_OPC_LB_U, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1247 */,
-+  BITFIELD(53, 1) /* index 1278 */,
-   TILE_OPC_LH, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1250 */,
-+  BITFIELD(53, 1) /* index 1281 */,
-   TILE_OPC_LH_U, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1253 */,
-+  BITFIELD(53, 1) /* index 1284 */,
-   TILE_OPC_LW, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1256 */,
-+  BITFIELD(53, 1) /* index 1287 */,
-   TILE_OPC_MF, TILE_OPC_NONE,
--  BITFIELD(43, 3) /* index 1259 */,
--  CHILD(1268), CHILD(1271), CHILD(1274), CHILD(1277), CHILD(1280),
--  CHILD(1283), CHILD(1286), CHILD(1289),
--  BITFIELD(53, 1) /* index 1268 */,
-+  BITFIELD(43, 3) /* index 1290 */,
-+  CHILD(1299), CHILD(1302), CHILD(1305), CHILD(1308), CHILD(1311),
-+  CHILD(1314), CHILD(1317), CHILD(1320),
-+  BITFIELD(53, 1) /* index 1299 */,
-   TILE_OPC_NAP, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1271 */,
-+  BITFIELD(53, 1) /* index 1302 */,
-   TILE_OPC_NOP, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1274 */,
-+  BITFIELD(53, 1) /* index 1305 */,
-   TILE_OPC_SWINT0, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1277 */,
-+  BITFIELD(53, 1) /* index 1308 */,
-   TILE_OPC_SWINT1, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1280 */,
-+  BITFIELD(53, 1) /* index 1311 */,
-   TILE_OPC_SWINT2, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1283 */,
-+  BITFIELD(53, 1) /* index 1314 */,
-   TILE_OPC_SWINT3, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1286 */,
-+  BITFIELD(53, 1) /* index 1317 */,
-   TILE_OPC_TNS, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1289 */,
-+  BITFIELD(53, 1) /* index 1320 */,
-   TILE_OPC_WH64, TILE_OPC_NONE,
--  BITFIELD(43, 2) /* index 1292 */,
--  CHILD(1297), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
--  BITFIELD(45, 1) /* index 1297 */,
--  CHILD(1300), TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1300 */,
-+  BITFIELD(43, 2) /* index 1323 */,
-+  CHILD(1328), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(45, 1) /* index 1328 */,
-+  CHILD(1331), TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1331 */,
-   TILE_OPC_LW_NA, TILE_OPC_NONE,
--  BITFIELD(46, 7) /* index 1303 */,
--  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, CHILD(1432),
--  CHILD(1432), CHILD(1432), CHILD(1432), CHILD(1435), CHILD(1435),
--  CHILD(1435), CHILD(1435), CHILD(1438), CHILD(1438), CHILD(1438),
--  CHILD(1438), CHILD(1441), CHILD(1441), CHILD(1441), CHILD(1441),
--  CHILD(1444), CHILD(1444), CHILD(1444), CHILD(1444), CHILD(1447),
--  CHILD(1447), CHILD(1447), CHILD(1447), CHILD(1450), CHILD(1450),
--  CHILD(1450), CHILD(1450), CHILD(1453), CHILD(1453), CHILD(1453),
--  CHILD(1453), CHILD(1456), CHILD(1456), CHILD(1456), CHILD(1456),
--  CHILD(1459), CHILD(1459), CHILD(1459), CHILD(1459), CHILD(1151),
--  CHILD(1462), CHILD(1486), CHILD(1498), TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(46, 7) /* index 1334 */,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, CHILD(1463),
-+  CHILD(1463), CHILD(1463), CHILD(1463), CHILD(1466), CHILD(1466),
-+  CHILD(1466), CHILD(1466), CHILD(1469), CHILD(1469), CHILD(1469),
-+  CHILD(1469), CHILD(1472), CHILD(1472), CHILD(1472), CHILD(1472),
-+  CHILD(1475), CHILD(1475), CHILD(1475), CHILD(1475), CHILD(1478),
-+  CHILD(1478), CHILD(1478), CHILD(1478), CHILD(1481), CHILD(1481),
-+  CHILD(1481), CHILD(1481), CHILD(1484), CHILD(1484), CHILD(1484),
-+  CHILD(1484), CHILD(1487), CHILD(1487), CHILD(1487), CHILD(1487),
-+  CHILD(1490), CHILD(1490), CHILD(1490), CHILD(1490), CHILD(1151),
-+  CHILD(1493), CHILD(1517), CHILD(1529), TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-@@ -11816,49 +2002,49 @@ static const unsigned short decode_X1_fsm[1509] =
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-   TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1432 */,
-+  BITFIELD(53, 1) /* index 1463 */,
-   TILE_OPC_RLI_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1435 */,
-+  BITFIELD(53, 1) /* index 1466 */,
-   TILE_OPC_SHLIB_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1438 */,
-+  BITFIELD(53, 1) /* index 1469 */,
-   TILE_OPC_SHLIH_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1441 */,
-+  BITFIELD(53, 1) /* index 1472 */,
-   TILE_OPC_SHLI_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1444 */,
-+  BITFIELD(53, 1) /* index 1475 */,
-   TILE_OPC_SHRIB_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1447 */,
-+  BITFIELD(53, 1) /* index 1478 */,
-   TILE_OPC_SHRIH_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1450 */,
-+  BITFIELD(53, 1) /* index 1481 */,
-   TILE_OPC_SHRI_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1453 */,
-+  BITFIELD(53, 1) /* index 1484 */,
-   TILE_OPC_SRAIB_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1456 */,
-+  BITFIELD(53, 1) /* index 1487 */,
-   TILE_OPC_SRAIH_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1459 */,
-+  BITFIELD(53, 1) /* index 1490 */,
-   TILE_OPC_SRAI_SN, TILE_OPC_NONE,
--  BITFIELD(43, 3) /* index 1462 */,
--  CHILD(1220), CHILD(1223), CHILD(1471), CHILD(1474), CHILD(1477),
--  CHILD(1480), CHILD(1483), CHILD(1256),
--  BITFIELD(53, 1) /* index 1471 */,
-+  BITFIELD(43, 3) /* index 1493 */,
-+  CHILD(1251), CHILD(1254), CHILD(1502), CHILD(1505), CHILD(1508),
-+  CHILD(1511), CHILD(1514), CHILD(1287),
-+  BITFIELD(53, 1) /* index 1502 */,
-   TILE_OPC_LB_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1474 */,
-+  BITFIELD(53, 1) /* index 1505 */,
-   TILE_OPC_LB_U_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1477 */,
-+  BITFIELD(53, 1) /* index 1508 */,
-   TILE_OPC_LH_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1480 */,
-+  BITFIELD(53, 1) /* index 1511 */,
-   TILE_OPC_LH_U_SN, TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1483 */,
-+  BITFIELD(53, 1) /* index 1514 */,
-   TILE_OPC_LW_SN, TILE_OPC_NONE,
--  BITFIELD(43, 3) /* index 1486 */,
--  CHILD(1268), CHILD(1271), CHILD(1274), CHILD(1277), CHILD(1280),
--  CHILD(1283), CHILD(1495), CHILD(1289),
--  BITFIELD(53, 1) /* index 1495 */,
-+  BITFIELD(43, 3) /* index 1517 */,
-+  CHILD(1299), CHILD(1302), CHILD(1305), CHILD(1308), CHILD(1311),
-+  CHILD(1314), CHILD(1526), CHILD(1320),
-+  BITFIELD(53, 1) /* index 1526 */,
-   TILE_OPC_TNS_SN, TILE_OPC_NONE,
--  BITFIELD(43, 2) /* index 1498 */,
--  CHILD(1503), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
--  BITFIELD(45, 1) /* index 1503 */,
--  CHILD(1506), TILE_OPC_NONE,
--  BITFIELD(53, 1) /* index 1506 */,
-+  BITFIELD(43, 2) /* index 1529 */,
-+  CHILD(1534), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(45, 1) /* index 1534 */,
-+  CHILD(1537), TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1537 */,
-   TILE_OPC_LW_NA_SN, TILE_OPC_NONE,
- };
+ 	long rc = sched_setaffinity(current->pid, &init_affinity);
+ 	if (rc != 0)
+-		printk(KERN_WARNING "couldn't reset init affinity (%ld)\n",
++		pr_warning("couldn't reset init affinity (%ld)\n",
+ 		       rc);
+ 	return 0;
+ }
+ late_initcall(reset_init_affinity);
  
-@@ -12005,1741 +2191,227 @@ tile_bundle_decoder_fsms[TILE_NUM_PIPELINE_ENCODINGS] =
-   decode_Y1_fsm,
-   decode_Y2_fsm
- };
--const struct tile_sn_opcode tile_sn_opcodes[23] =
--{
-- { "bz", TILE_SN_OPC_BZ,
--    1 /* num_operands */,
--    /* operands */
--    { 38 },
--    /* fixed_bit_mask */
--    0xfc00,
--    /* fixed_bit_value */
--    0xe000
--  },
--  { "bnz", TILE_SN_OPC_BNZ,
--    1 /* num_operands */,
--    /* operands */
--    { 38 },
--    /* fixed_bit_mask */
--    0xfc00,
--    /* fixed_bit_value */
--    0xe400
--  },
--  { "jrr", TILE_SN_OPC_JRR,
--    1 /* num_operands */,
--    /* operands */
--    { 39 },
--    /* fixed_bit_mask */
--    0xff00,
--    /* fixed_bit_value */
--    0x0600
--  },
--  { "fnop", TILE_SN_OPC_FNOP,
--    0 /* num_operands */,
--    /* operands */
--    { 0, },
--    /* fixed_bit_mask */
--    0xffff,
--    /* fixed_bit_value */
--    0x0003
--  },
--  { "blz", TILE_SN_OPC_BLZ,
--    1 /* num_operands */,
--    /* operands */
--    { 38 },
--    /* fixed_bit_mask */
--    0xfc00,
--    /* fixed_bit_value */
--    0xf000
--  },
--  { "nop", TILE_SN_OPC_NOP,
--    0 /* num_operands */,
--    /* operands */
--    { 0, },
--    /* fixed_bit_mask */
--    0xffff,
--    /* fixed_bit_value */
--    0x0002
--  },
--  { "movei", TILE_SN_OPC_MOVEI,
--    1 /* num_operands */,
--    /* operands */
--    { 40 },
--    /* fixed_bit_mask */
--    0xff00,
--    /* fixed_bit_value */
--    0x0400
--  },
--  { "move", TILE_SN_OPC_MOVE,
--    2 /* num_operands */,
--    /* operands */
--    { 41, 42 },
--    /* fixed_bit_mask */
--    0xfff0,
--    /* fixed_bit_value */
--    0x0080
--  },
--  { "bgez", TILE_SN_OPC_BGEZ,
--    1 /* num_operands */,
--    /* operands */
--    { 38 },
--    /* fixed_bit_mask */
--    0xfc00,
--    /* fixed_bit_value */
--    0xf400
--  },
--  { "jr", TILE_SN_OPC_JR,
--    1 /* num_operands */,
--    /* operands */
--    { 42 },
--    /* fixed_bit_mask */
--    0xfff0,
--    /* fixed_bit_value */
--    0x0040
--  },
--  { "blez", TILE_SN_OPC_BLEZ,
--    1 /* num_operands */,
--    /* operands */
--    { 38 },
--    /* fixed_bit_mask */
--    0xfc00,
--    /* fixed_bit_value */
--    0xec00
--  },
--  { "bbns", TILE_SN_OPC_BBNS,
--    1 /* num_operands */,
--    /* operands */
--    { 38 },
--    /* fixed_bit_mask */
--    0xfc00,
--    /* fixed_bit_value */
--    0xfc00
--  },
--  { "jalrr", TILE_SN_OPC_JALRR,
--    1 /* num_operands */,
--    /* operands */
--    { 39 },
--    /* fixed_bit_mask */
--    0xff00,
--    /* fixed_bit_value */
--    0x0700
--  },
--  { "bpt", TILE_SN_OPC_BPT,
--    0 /* num_operands */,
--    /* operands */
--    { 0, },
--    /* fixed_bit_mask */
--    0xffff,
--    /* fixed_bit_value */
--    0x0001
--  },
--  { "jalr", TILE_SN_OPC_JALR,
--    1 /* num_operands */,
--    /* operands */
--    { 42 },
--    /* fixed_bit_mask */
--    0xfff0,
--    /* fixed_bit_value */
--    0x0050
--  },
--  { "shr1", TILE_SN_OPC_SHR1,
--    2 /* num_operands */,
--    /* operands */
--    { 41, 42 },
--    /* fixed_bit_mask */
--    0xfff0,
--    /* fixed_bit_value */
--    0x0090
--  },
--  { "bgz", TILE_SN_OPC_BGZ,
--    1 /* num_operands */,
--    /* operands */
--    { 38 },
--    /* fixed_bit_mask */
--    0xfc00,
--    /* fixed_bit_value */
--    0xe800
--  },
--  { "bbs", TILE_SN_OPC_BBS,
--    1 /* num_operands */,
--    /* operands */
--    { 38 },
--    /* fixed_bit_mask */
--    0xfc00,
--    /* fixed_bit_value */
--    0xf800
--  },
--  { "shl8ii", TILE_SN_OPC_SHL8II,
--    1 /* num_operands */,
--    /* operands */
--    { 39 },
--    /* fixed_bit_mask */
--    0xff00,
--    /* fixed_bit_value */
--    0x0300
--  },
--  { "addi", TILE_SN_OPC_ADDI,
--    1 /* num_operands */,
--    /* operands */
--    { 40 },
--    /* fixed_bit_mask */
--    0xff00,
--    /* fixed_bit_value */
--    0x0500
--  },
--  { "halt", TILE_SN_OPC_HALT,
--    0 /* num_operands */,
--    /* operands */
--    { 0, },
--    /* fixed_bit_mask */
--    0xffff,
--    /* fixed_bit_value */
--    0x0000
--  },
--  { "route", TILE_SN_OPC_ROUTE, 0, { 0, }, 0, 0,
--  },
--  { 0, TILE_SN_OPC_NONE, 0, { 0, }, 0, 0,
+-struct cpumask cpu_started __cpuinitdata;
++static struct cpumask cpu_started __cpuinitdata;
+ 
+ /*
+  * Activate a secondary processor.  Very minimal; don't add anything
+@@ -172,9 +166,6 @@ static void __cpuinit start_secondary(void)
+ 		BUG();
+ 	enter_lazy_tlb(&init_mm, current);
+ 
+-	/* Enable IRQs. */
+-	init_per_tile_IRQs();
+-
+ 	/* Allow hypervisor messages to be received */
+ 	init_messaging();
+ 	local_irq_enable();
+@@ -182,7 +173,7 @@ static void __cpuinit start_secondary(void)
+ 	/* Indicate that we're ready to come up. */
+ 	/* Must not do this before we're ready to receive messages */
+ 	if (cpumask_test_and_set_cpu(cpuid, &cpu_started)) {
+-		printk(KERN_WARNING "CPU#%d already started!\n", cpuid);
++		pr_warning("CPU#%d already started!\n", cpuid);
+ 		for (;;)
+ 			local_irq_enable();
+ 	}
+@@ -190,13 +181,10 @@ static void __cpuinit start_secondary(void)
+ 	smp_nap();
+ }
+ 
+-void setup_mpls(void);  /* from kernel/setup.c */
+-void store_permanent_mappings(void);
+-
+ /*
+  * Bring a secondary processor online.
+  */
+-void __cpuinit online_secondary()
++void __cpuinit online_secondary(void)
+ {
+ 	/*
+ 	 * low-memory mappings have been cleared, flush them from
+@@ -222,17 +210,14 @@ void __cpuinit online_secondary()
+ 	ipi_call_unlock();
+ 	__get_cpu_var(cpu_state) = CPU_ONLINE;
+ 
+-	/* Set up MPLs for this processor */
+-	setup_mpls();
+-
++	/* Set up tile-specific state for this cpu. */
++	setup_cpu(0);
+ 
+ 	/* Set up tile-timer clock-event device on this cpu */
+ 	setup_tile_timer();
+ 
+ 	preempt_enable();
+ 
+-	store_permanent_mappings();
+-
+ 	cpu_idle();
+ }
+ 
+@@ -242,7 +227,7 @@ int __cpuinit __cpu_up(unsigned int cpu)
+ 	static int timeout;
+ 	for (; !cpumask_test_cpu(cpu, &cpu_started); timeout++) {
+ 		if (timeout >= 50000) {
+-			printk(KERN_INFO "skipping unresponsive cpu%d\n", cpu);
++			pr_info("skipping unresponsive cpu%d\n", cpu);
+ 			local_irq_enable();
+ 			return -EIO;
+ 		}
+@@ -289,5 +274,5 @@ void __init smp_cpus_done(unsigned int max_cpus)
+ 		;
+ 	rc = sched_setaffinity(current->pid, cpumask_of(cpu));
+ 	if (rc != 0)
+-		printk("Couldn't set init affinity to cpu %d (%d)\n", cpu, rc);
++		pr_err("Couldn't set init affinity to cpu %d (%d)\n", cpu, rc);
+ }
+diff --git a/arch/tile/kernel/stack.c b/arch/tile/kernel/stack.c
+index 382170b..b6268d3 100644
+--- a/arch/tile/kernel/stack.c
++++ b/arch/tile/kernel/stack.c
+@@ -56,13 +56,16 @@ static int valid_address(struct KBacktraceIterator *kbt, VirtualAddress address)
+ 	HV_PTE pte;
+ 	struct page *page;
+ 
++	if (l1_pgtable == NULL)
++		return 0;	/* can't read user space in other tasks */
++
+ 	pte = l1_pgtable[HV_L1_INDEX(address)];
+ 	if (!hv_pte_get_present(pte))
+ 		return 0;
+ 	pfn = hv_pte_get_pfn(pte);
+ 	if (pte_huge(pte)) {
+ 		if (!pfn_valid(pfn)) {
+-			printk(KERN_ERR "huge page has bad pfn %#lx\n", pfn);
++			pr_err("huge page has bad pfn %#lx\n", pfn);
+ 			return 0;
+ 		}
+ 		return hv_pte_get_present(pte) && hv_pte_get_readable(pte);
+@@ -70,7 +73,7 @@ static int valid_address(struct KBacktraceIterator *kbt, VirtualAddress address)
+ 
+ 	page = pfn_to_page(pfn);
+ 	if (PageHighMem(page)) {
+-		printk(KERN_ERR "L2 page table not in LOWMEM (%#llx)\n",
++		pr_err("L2 page table not in LOWMEM (%#llx)\n",
+ 		       HV_PFN_TO_CPA(pfn));
+ 		return 0;
+ 	}
+@@ -91,13 +94,12 @@ static bool read_memory_func(void *result, VirtualAddress address,
+ 		/* We only tolerate kernel-space reads of this task's stack */
+ 		if (!in_kernel_stack(kbt, address))
+ 			return 0;
+-	} else if (kbt->pgtable == NULL) {
+-		return 0;	/* can't read user space in other tasks */
+ 	} else if (!valid_address(kbt, address)) {
+ 		return 0;	/* invalid user-space address */
+ 	}
+ 	pagefault_disable();
+-	retval = __copy_from_user_inatomic(result, (const void *)address,
++	retval = __copy_from_user_inatomic(result,
++					   (void __user __force *)address,
+ 					   size);
+ 	pagefault_enable();
+ 	return (retval == 0);
+@@ -131,14 +133,14 @@ static struct pt_regs *valid_fault_handler(struct KBacktraceIterator* kbt)
+ 	    in_kernel_stack(kbt, p->sp) &&
+ 	    p->sp >= sp) {
+ 		if (kbt->verbose)
+-			printk(KERN_ERR "  <%s while in kernel mode>\n", fault);
++			pr_err("  <%s while in kernel mode>\n", fault);
+ 	} else if (EX1_PL(p->ex1) == USER_PL &&
+ 	    p->pc < PAGE_OFFSET &&
+ 	    p->sp < PAGE_OFFSET) {
+ 		if (kbt->verbose)
+-			printk(KERN_ERR "  <%s while in user mode>\n", fault);
++			pr_err("  <%s while in user mode>\n", fault);
+ 	} else if (kbt->verbose) {
+-		printk(KERN_ERR "  (odd fault: pc %#lx, sp %#lx, ex1 %#lx?)\n",
++		pr_err("  (odd fault: pc %#lx, sp %#lx, ex1 %#lx?)\n",
+ 		       p->pc, p->sp, p->ex1);
+ 		p = NULL;
+ 	}
+@@ -166,13 +168,13 @@ static struct pt_regs *valid_sigframe(struct KBacktraceIterator* kbt)
+ 		if (!valid_address(kbt, b->sp) ||
+ 		    !valid_address(kbt, sigframe_top)) {
+ 			if (kbt->verbose)
+-				printk("  (odd signal: sp %#lx?)\n",
++				pr_err("  (odd signal: sp %#lx?)\n",
+ 				       (unsigned long)(b->sp));
+ 			return NULL;
+ 		}
+ 		frame = (struct rt_sigframe *)b->sp;
+ 		if (kbt->verbose) {
+-			printk(KERN_ERR "  <received signal %d>\n",
++			pr_err("  <received signal %d>\n",
+ 			       frame->info.si_signo);
+ 		}
+ 		return &frame->uc.uc_mcontext.regs;
+@@ -180,7 +182,7 @@ static struct pt_regs *valid_sigframe(struct KBacktraceIterator* kbt)
+ 	return NULL;
+ }
+ 
+-int KBacktraceIterator_is_sigreturn(struct KBacktraceIterator *kbt)
++static int KBacktraceIterator_is_sigreturn(struct KBacktraceIterator *kbt)
+ {
+ 	return is_sigreturn(kbt->it.pc);
+ }
+@@ -231,13 +233,13 @@ static void validate_stack(struct pt_regs *regs)
+ 	unsigned long sp = stack_pointer;
+ 
+ 	if (EX1_PL(regs->ex1) == KERNEL_PL && regs->sp >= ksp0) {
+-		printk("WARNING: cpu %d: kernel stack page %#lx underrun!\n"
++		pr_err("WARNING: cpu %d: kernel stack page %#lx underrun!\n"
+ 		       "  sp %#lx (%#lx in caller), caller pc %#lx, lr %#lx\n",
+ 		       cpu, ksp0_base, sp, regs->sp, regs->pc, regs->lr);
+ 	}
+ 
+ 	else if (sp < ksp0_base + sizeof(struct thread_info)) {
+-		printk("WARNING: cpu %d: kernel stack page %#lx overrun!\n"
++		pr_err("WARNING: cpu %d: kernel stack page %#lx overrun!\n"
+ 		       "  sp %#lx (%#lx in caller), caller pc %#lx, lr %#lx\n",
+ 		       cpu, ksp0_base, sp, regs->sp, regs->pc, regs->lr);
+ 	}
+@@ -280,7 +282,7 @@ void KBacktraceIterator_init(struct KBacktraceIterator *kbt,
+ 			if (!PageHighMem(page))
+ 				kbt->pgtable = __va(pgdir_pa);
+ 			else
+-				printk(KERN_ERR "page table not in LOWMEM"
++				pr_err("page table not in LOWMEM"
+ 				       " (%#llx)\n", pgdir_pa);
+ 		}
+ 		local_flush_tlb_all();
+@@ -288,13 +290,12 @@ void KBacktraceIterator_init(struct KBacktraceIterator *kbt,
+ 	}
+ 
+ 	if (regs == NULL) {
+-		extern const void *get_switch_to_pc(void);
+ 		if (is_current || t->state == TASK_RUNNING) {
+ 			/* Can't do this; we need registers */
+ 			kbt->end = 1;
+ 			return;
+ 		}
+-		pc = (ulong) get_switch_to_pc();
++		pc = get_switch_to_pc();
+ 		lr = t->thread.pc;
+ 		sp = t->thread.ksp;
+ 		r52 = 0;
+@@ -344,8 +345,8 @@ void tile_show_stack(struct KBacktraceIterator *kbt, int headers)
+ 		 * then bust_spinlocks() spit out a space in front of us
+ 		 * and it will mess up our KERN_ERR.
+ 		 */
+-		printk("\n");
+-		printk(KERN_ERR "Starting stack dump of tid %d, pid %d (%s)"
++		pr_err("\n");
++		pr_err("Starting stack dump of tid %d, pid %d (%s)"
+ 		       " on cpu %d at cycle %lld\n",
+ 		       kbt->task->pid, kbt->task->tgid, kbt->task->comm,
+ 		       smp_processor_id(), get_cycles());
+@@ -385,17 +386,17 @@ void tile_show_stack(struct KBacktraceIterator *kbt, int headers)
+ 			namebuf[sizeof(namebuf)-1] = '\0';
+ 		}
+ 
+-		printk(KERN_ERR "  frame %d: 0x%lx %s(sp 0x%lx)\n",
++		pr_err("  frame %d: 0x%lx %s(sp 0x%lx)\n",
+ 		       i++, address, namebuf, (unsigned long)(kbt->it.sp));
+ 
+ 		if (i >= 100) {
+-			printk(KERN_ERR "Stack dump truncated"
++			pr_err("Stack dump truncated"
+ 			       " (%d frames)\n", i);
+ 			break;
+ 		}
+ 	}
+ 	if (headers)
+-		printk(KERN_ERR "Stack dump complete\n");
++		pr_err("Stack dump complete\n");
+ }
+ EXPORT_SYMBOL(tile_show_stack);
+ 
+diff --git a/arch/tile/kernel/sys.c b/arch/tile/kernel/sys.c
+index 0427978..f0f87ea 100644
+--- a/arch/tile/kernel/sys.c
++++ b/arch/tile/kernel/sys.c
+@@ -27,11 +27,10 @@
+ #include <linux/mempolicy.h>
+ #include <linux/binfmts.h>
+ #include <linux/fs.h>
+-#include <linux/syscalls.h>
++#include <linux/compat.h>
+ #include <linux/uaccess.h>
+ #include <linux/signal.h>
+ #include <asm/syscalls.h>
+-
+ #include <asm/pgtable.h>
+ #include <asm/homecache.h>
+ #include <arch/chip.h>
+@@ -74,10 +73,7 @@ int sys32_fadvise64_64(int fd, u32 offset_lo, u32 offset_hi,
+ 
+ #endif /* 32-bit syscall wrappers */
+ 
+-/*
+- * This API uses a 4KB-page-count offset into the file descriptor.
+- * It is likely not the right API to use on a 64-bit platform.
+- */
++/* Note: used by the compat code even in 64-bit Linux. */
+ SYSCALL_DEFINE6(mmap2, unsigned long, addr, unsigned long, len,
+ 		unsigned long, prot, unsigned long, flags,
+ 		unsigned long, fd, unsigned long, off_4k)
+@@ -89,10 +85,7 @@ SYSCALL_DEFINE6(mmap2, unsigned long, addr, unsigned long, len,
+ 			      off_4k >> PAGE_ADJUST);
+ }
+ 
+-/*
+- * This API uses a byte offset into the file descriptor.
+- * It is likely not the right API to use on a 32-bit platform.
+- */
++#ifdef __tilegx__
+ SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
+ 		unsigned long, prot, unsigned long, flags,
+ 		unsigned long, fd, off_t, offset)
+@@ -102,6 +95,7 @@ SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
+ 	return sys_mmap_pgoff(addr, len, prot, flags, fd,
+ 			      offset >> PAGE_SHIFT);
+ }
++#endif
+ 
+ 
+ /* Provide the actual syscall number to call mapping. */
+@@ -116,6 +110,10 @@ SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
+ #define sys_sync_file_range sys_sync_file_range2
+ #endif
+ 
++/*
++ * Note that we can't include <linux/unistd.h> here since the header
++ * guard will defeat us; <asm/unistd.h> checks for __SYSCALL as well.
++ */
+ void *sys_call_table[__NR_syscalls] = {
+ 	[0 ... __NR_syscalls-1] = sys_ni_syscall,
+ #include <asm/unistd.h>
+diff --git a/arch/tile/kernel/time.c b/arch/tile/kernel/time.c
+index 47500a3..b9ab25a 100644
+--- a/arch/tile/kernel/time.c
++++ b/arch/tile/kernel/time.c
+@@ -23,6 +23,7 @@
+ #include <linux/smp.h>
+ #include <linux/delay.h>
+ #include <asm/irq_regs.h>
++#include <asm/traps.h>
+ #include <hv/hypervisor.h>
+ #include <arch/interrupts.h>
+ #include <arch/spr_def.h>
+@@ -45,13 +46,13 @@ static cycles_t cycles_per_sec __write_once;
+  */
+ #define TILE_MINSEC 5
+ 
+-cycles_t get_clock_rate()
++cycles_t get_clock_rate(void)
+ {
+ 	return cycles_per_sec;
+ }
+ 
+ #if CHIP_HAS_SPLIT_CYCLE()
+-cycles_t get_cycles()
++cycles_t get_cycles(void)
+ {
+ 	unsigned int high = __insn_mfspr(SPR_CYCLE_HIGH);
+ 	unsigned int low = __insn_mfspr(SPR_CYCLE_LOW);
+@@ -67,7 +68,7 @@ cycles_t get_cycles()
+ }
+ #endif
+ 
+-cycles_t clocksource_get_cycles(struct clocksource *cs)
++static cycles_t clocksource_get_cycles(struct clocksource *cs)
+ {
+ 	return get_cycles();
+ }
+diff --git a/arch/tile/kernel/traps.c b/arch/tile/kernel/traps.c
+index 12cb10f..3870abb 100644
+--- a/arch/tile/kernel/traps.c
++++ b/arch/tile/kernel/traps.c
+@@ -20,6 +20,9 @@
+ #include <linux/uaccess.h>
+ #include <linux/ptrace.h>
+ #include <asm/opcode-tile.h>
++#include <asm/opcode_constants.h>
++#include <asm/stack.h>
++#include <asm/traps.h>
+ 
+ #include <arch/interrupts.h>
+ #include <arch/spr_def.h>
+@@ -42,7 +45,7 @@ static int __init setup_unaligned_fixup(char *str)
+ 	if (strict_strtol(str, 0, &val) != 0)
+ 		return 0;
+ 	unaligned_fixup = val;
+-	printk("Fixups for unaligned data accesses are %s\n",
++	pr_info("Fixups for unaligned data accesses are %s\n",
+ 	       unaligned_fixup >= 0 ?
+ 	       (unaligned_fixup ? "enabled" : "disabled") :
+ 	       "completely disabled");
+@@ -56,7 +59,7 @@ static int dma_disabled;
+ 
+ static int __init nodma(char *str)
+ {
+-	printk("User-space DMA is disabled\n");
++	pr_info("User-space DMA is disabled\n");
+ 	dma_disabled = 1;
+ 	return 1;
+ }
+@@ -97,20 +100,106 @@ static int retry_gpv(unsigned int gpv_reason)
+ 
+ #endif /* CHIP_HAS_TILE_DMA() */
+ 
+-/* Defined inside do_trap(), below. */
+ #ifdef __tilegx__
+-extern tilegx_bundle_bits bpt_code;
++#define bundle_bits tilegx_bundle_bits
+ #else
+-extern tile_bundle_bits bpt_code;
++#define bundle_bits tile_bundle_bits
+ #endif
+ 
++extern bundle_bits bpt_code;
++
++asm(".pushsection .rodata.bpt_code,\"a\";"
++    ".align 8;"
++    "bpt_code: bpt;"
++    ".size bpt_code,.-bpt_code;"
++    ".popsection");
++
++static int special_ill(bundle_bits bundle, int *sigp, int *codep)
++{
++	int sig, code, maxcode;
++
++	if (bundle == bpt_code) {
++		*sigp = SIGTRAP;
++		*codep = TRAP_BRKPT;
++		return 1;
++	}
++
++	/* If it's a "raise" bundle, then "ill" must be in pipe X1. */
++#ifdef __tilegx__
++	if ((bundle & TILEGX_BUNDLE_MODE_MASK) != 0)
++		return 0;
++	if (get_Opcode_X1(bundle) != UNARY_OPCODE_X1)
++		return 0;
++	if (get_UnaryOpcodeExtension_X1(bundle) != ILL_UNARY_OPCODE_X1)
++		return 0;
++#else
++	if (bundle & TILE_BUNDLE_Y_ENCODING_MASK)
++		return 0;
++	if (get_Opcode_X1(bundle) != SHUN_0_OPCODE_X1)
++		return 0;
++	if (get_UnShOpcodeExtension_X1(bundle) != UN_0_SHUN_0_OPCODE_X1)
++		return 0;
++	if (get_UnOpcodeExtension_X1(bundle) != ILL_UN_0_SHUN_0_OPCODE_X1)
++		return 0;
++#endif
++
++	/* Check that the magic distinguishers are set to mean "raise". */
++	if (get_Dest_X1(bundle) != 29 || get_SrcA_X1(bundle) != 37)
++		return 0;
++
++	/* There must be an "addli zero, zero, VAL" in X0. */
++	if (get_Opcode_X0(bundle) != ADDLI_OPCODE_X0)
++		return 0;
++	if (get_Dest_X0(bundle) != TREG_ZERO)
++		return 0;
++	if (get_SrcA_X0(bundle) != TREG_ZERO)
++		return 0;
++
++	/*
++	 * Validate the proposed signal number and si_code value.
++	 * Note that we embed these in the static instruction itself
++	 * so that we perturb the register state as little as possible
++	 * at the time of the actual fault; it's unlikely you'd ever
++	 * need to dynamically choose which kind of fault to raise
++	 * from user space.
++	 */
++	sig = get_Imm16_X0(bundle) & 0x3f;
++	switch (sig) {
++	case SIGILL:
++		maxcode = NSIGILL;
++		break;
++	case SIGFPE:
++		maxcode = NSIGFPE;
++		break;
++	case SIGSEGV:
++		maxcode = NSIGSEGV;
++		break;
++	case SIGBUS:
++		maxcode = NSIGBUS;
++		break;
++	case SIGTRAP:
++		maxcode = NSIGTRAP;
++		break;
++	default:
++		return 0;
++	}
++	code = (get_Imm16_X0(bundle) >> 6) & 0xf;
++	if (code <= 0 || code > maxcode)
++		return 0;
++
++	/* Make it the requested signal. */
++	*sigp = sig;
++	*codep = code | __SI_FAULT;
++	return 1;
++}
++
+ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
+ 		       unsigned long reason)
+ {
+ 	siginfo_t info = { 0 };
+ 	int signo, code;
+ 	unsigned long address;
+-	__typeof__(bpt_code) instr;
++	bundle_bits instr;
+ 
+ 	/* Re-enable interrupts. */
+ 	local_irq_enable();
+@@ -122,10 +211,10 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
+ 	if (!user_mode(regs)) {
+ 		if (fixup_exception(regs))  /* only UNALIGN_DATA in practice */
+ 			return;
+-		printk(KERN_ALERT "Kernel took bad trap %d at PC %#lx\n",
++		pr_alert("Kernel took bad trap %d at PC %#lx\n",
+ 		       fault_num, regs->pc);
+ 		if (fault_num == INT_GPV)
+-			printk(KERN_ALERT "GPV_REASON is %#lx\n", reason);
++			pr_alert("GPV_REASON is %#lx\n", reason);
+ 		show_regs(regs);
+ 		do_exit(SIGKILL);  /* FIXME: implement i386 die() */
+ 		return;
+@@ -133,22 +222,14 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
+ 
+ 	switch (fault_num) {
+ 	case INT_ILL:
+-		asm(".pushsection .rodata.bpt_code,\"a\";"
+-		    ".align 8;"
+-		    "bpt_code: bpt;"
+-		    ".size bpt_code,.-bpt_code;"
+-		    ".popsection");
+-
+-		if (copy_from_user(&instr, (void *)regs->pc, sizeof(instr))) {
+-			printk(KERN_ERR "Unreadable instruction for INT_ILL:"
++		if (copy_from_user(&instr, (void __user *)regs->pc,
++				   sizeof(instr))) {
++			pr_err("Unreadable instruction for INT_ILL:"
+ 			       " %#lx\n", regs->pc);
+ 			do_exit(SIGKILL);
+ 			return;
+ 		}
+-		if (instr == bpt_code) {
+-			signo = SIGTRAP;
+-			code = TRAP_BRKPT;
+-		} else {
++		if (!special_ill(instr, &signo, &code)) {
+ 			signo = SIGILL;
+ 			code = ILL_ILLOPC;
+ 		}
+@@ -181,7 +262,8 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
+ 		if (unaligned_fixup >= 0) {
+ 			struct single_step_state *state =
+ 				current_thread_info()->step_state;
+-			if (!state || (void *)(regs->pc) != state->buffer) {
++			if (!state ||
++			    (void __user *)(regs->pc) != state->buffer) {
+ 				single_step_once(regs);
+ 				return;
+ 			}
+@@ -221,17 +303,15 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
+ 
+ 	info.si_signo = signo;
+ 	info.si_code = code;
+-	info.si_addr = (void *)address;
++	info.si_addr = (void __user *)address;
+ 	if (signo == SIGILL)
+ 		info.si_trapno = fault_num;
+ 	force_sig_info(signo, &info, current);
+ }
+ 
+-extern void _dump_stack(int dummy, ulong pc, ulong lr, ulong sp, ulong r52);
+-
+ void kernel_double_fault(int dummy, ulong pc, ulong lr, ulong sp, ulong r52)
+ {
+ 	_dump_stack(dummy, pc, lr, sp, r52);
+-	printk("Double fault: exiting\n");
++	pr_emerg("Double fault: exiting\n");
+ 	machine_halt();
+ }
+diff --git a/arch/tile/kernel/vmlinux.lds.S b/arch/tile/kernel/vmlinux.lds.S
+index 77388c1..25fdc0c 100644
+--- a/arch/tile/kernel/vmlinux.lds.S
++++ b/arch/tile/kernel/vmlinux.lds.S
+@@ -36,8 +36,8 @@ SECTIONS
+ 
+   /* Now the real code */
+   . = ALIGN(0x20000);
+-  HEAD_TEXT_SECTION :text =0
+   .text : AT (ADDR(.text) - LOAD_OFFSET) {
++    HEAD_TEXT
+     SCHED_TEXT
+     LOCK_TEXT
+     __fix_text_end = .;   /* tile-cpack won't rearrange before this */
+@@ -46,7 +46,7 @@ SECTIONS
+     *(.coldtext*)
+     *(.fixup)
+     *(.gnu.warning)
 -  }
--};
--const unsigned char tile_sn_route_encode[6 * 6 * 6] =
--{
--  0xdf,
--  0xde,
--  0xdd,
--  0xdc,
--  0xdb,
--  0xda,
--  0xb9,
--  0xb8,
--  0xa1,
--  0xa0,
--  0x11,
--  0x10,
--  0x9f,
--  0x9e,
--  0x9d,
--  0x9c,
--  0x9b,
--  0x9a,
--  0x79,
--  0x78,
--  0x61,
--  0x60,
--  0xb,
--  0xa,
--  0x5f,
--  0x5e,
--  0x5d,
--  0x5c,
--  0x5b,
--  0x5a,
--  0x1f,
--  0x1e,
--  0x1d,
--  0x1c,
--  0x1b,
--  0x1a,
--  0xd7,
--  0xd6,
--  0xd5,
--  0xd4,
--  0xd3,
--  0xd2,
--  0xa7,
--  0xa6,
--  0xb1,
--  0xb0,
--  0x13,
--  0x12,
--  0x97,
--  0x96,
--  0x95,
--  0x94,
--  0x93,
--  0x92,
--  0x67,
--  0x66,
--  0x71,
--  0x70,
--  0x9,
--  0x8,
--  0x57,
--  0x56,
--  0x55,
--  0x54,
--  0x53,
--  0x52,
--  0x17,
--  0x16,
--  0x15,
--  0x14,
--  0x19,
--  0x18,
--  0xcf,
--  0xce,
--  0xcd,
--  0xcc,
--  0xcb,
--  0xca,
--  0xaf,
--  0xae,
--  0xad,
--  0xac,
--  0xab,
--  0xaa,
--  0x8f,
--  0x8e,
--  0x8d,
--  0x8c,
--  0x8b,
--  0x8a,
--  0x6f,
--  0x6e,
--  0x6d,
--  0x6c,
--  0x6b,
--  0x6a,
--  0x4f,
--  0x4e,
--  0x4d,
--  0x4c,
--  0x4b,
--  0x4a,
--  0x2f,
--  0x2e,
--  0x2d,
--  0x2c,
--  0x2b,
--  0x2a,
--  0xc9,
--  0xc8,
--  0xc5,
--  0xc4,
--  0xc3,
--  0xc2,
--  0xa9,
--  0xa8,
--  0xa5,
--  0xa4,
--  0xa3,
--  0xa2,
--  0x89,
--  0x88,
--  0x85,
--  0x84,
--  0x83,
--  0x82,
--  0x69,
--  0x68,
--  0x65,
--  0x64,
--  0x63,
--  0x62,
--  0x47,
--  0x46,
--  0x45,
--  0x44,
--  0x43,
--  0x42,
--  0x27,
--  0x26,
--  0x25,
--  0x24,
--  0x23,
--  0x22,
--  0xd9,
--  0xd8,
--  0xc1,
--  0xc0,
--  0x3b,
--  0x3a,
--  0xbf,
--  0xbe,
--  0xbd,
--  0xbc,
--  0xbb,
--  0xba,
--  0x99,
--  0x98,
--  0x81,
--  0x80,
--  0x31,
--  0x30,
--  0x7f,
--  0x7e,
--  0x7d,
--  0x7c,
--  0x7b,
--  0x7a,
--  0x59,
--  0x58,
--  0x3d,
--  0x3c,
--  0x49,
--  0x48,
--  0xf,
--  0xe,
--  0xd,
--  0xc,
--  0x29,
--  0x28,
--  0xc7,
--  0xc6,
--  0xd1,
--  0xd0,
--  0x39,
--  0x38,
--  0xb7,
--  0xb6,
--  0xb5,
--  0xb4,
--  0xb3,
--  0xb2,
--  0x87,
--  0x86,
--  0x91,
--  0x90,
--  0x33,
--  0x32,
--  0x77,
--  0x76,
--  0x75,
--  0x74,
--  0x73,
--  0x72,
--  0x3f,
--  0x3e,
--  0x51,
--  0x50,
--  0x41,
--  0x40,
--  0x37,
--  0x36,
--  0x35,
--  0x34,
--  0x21,
--  0x20
--};
++  } :text =0
+   _etext = .;
+ 
+   /* "Init" is divided into two areas with very different virtual addresses. */
+diff --git a/arch/tile/lib/atomic_32.c b/arch/tile/lib/atomic_32.c
+index be1e8ac..8040b42 100644
+--- a/arch/tile/lib/atomic_32.c
++++ b/arch/tile/lib/atomic_32.c
+@@ -18,27 +18,10 @@
+ #include <linux/module.h>
+ #include <linux/mm.h>
+ #include <asm/atomic.h>
++#include <asm/futex.h>
+ #include <arch/chip.h>
+ 
+-/* The routines in atomic_asm.S are private, so we only declare them here. */
+-extern struct __get_user __atomic_cmpxchg(volatile int *p,
+-					  int *lock, int o, int n);
+-extern struct __get_user __atomic_xchg(volatile int *p, int *lock, int n);
+-extern struct __get_user __atomic_xchg_add(volatile int *p, int *lock, int n);
+-extern struct __get_user __atomic_xchg_add_unless(volatile int *p,
+-						  int *lock, int o, int n);
+-extern struct __get_user __atomic_or(volatile int *p, int *lock, int n);
+-extern struct __get_user __atomic_andn(volatile int *p, int *lock, int n);
+-extern struct __get_user __atomic_xor(volatile int *p, int *lock, int n);
 -
--const signed char tile_sn_route_decode[256][3] =
--{
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { 5, 3, 1 },
--  { 4, 3, 1 },
--  { 5, 3, 0 },
--  { 4, 3, 0 },
--  { 3, 5, 4 },
--  { 2, 5, 4 },
--  { 1, 5, 4 },
--  { 0, 5, 4 },
--  { 5, 1, 0 },
--  { 4, 1, 0 },
--  { 5, 1, 1 },
--  { 4, 1, 1 },
--  { 3, 5, 1 },
--  { 2, 5, 1 },
--  { 1, 5, 1 },
--  { 0, 5, 1 },
--  { 5, 5, 1 },
--  { 4, 5, 1 },
--  { 5, 5, 0 },
--  { 4, 5, 0 },
--  { 3, 5, 0 },
--  { 2, 5, 0 },
--  { 1, 5, 0 },
--  { 0, 5, 0 },
--  { 5, 5, 5 },
--  { 4, 5, 5 },
--  { 5, 5, 3 },
--  { 4, 5, 3 },
--  { 3, 5, 3 },
--  { 2, 5, 3 },
--  { 1, 5, 3 },
--  { 0, 5, 3 },
--  { 5, 5, 4 },
--  { 4, 5, 4 },
--  { 5, 5, 2 },
--  { 4, 5, 2 },
--  { 3, 5, 2 },
--  { 2, 5, 2 },
--  { 1, 5, 2 },
--  { 0, 5, 2 },
--  { 5, 2, 4 },
--  { 4, 2, 4 },
--  { 5, 2, 5 },
--  { 4, 2, 5 },
--  { 3, 5, 5 },
--  { 2, 5, 5 },
--  { 1, 5, 5 },
--  { 0, 5, 5 },
--  { 5, 0, 5 },
--  { 4, 0, 5 },
--  { 5, 0, 4 },
--  { 4, 0, 4 },
--  { 3, 4, 4 },
--  { 2, 4, 4 },
--  { 1, 4, 5 },
--  { 0, 4, 5 },
--  { 5, 4, 5 },
--  { 4, 4, 5 },
--  { 5, 4, 3 },
--  { 4, 4, 3 },
--  { 3, 4, 3 },
--  { 2, 4, 3 },
--  { 1, 4, 3 },
--  { 0, 4, 3 },
--  { 5, 4, 4 },
--  { 4, 4, 4 },
--  { 5, 4, 2 },
--  { 4, 4, 2 },
--  { 3, 4, 2 },
--  { 2, 4, 2 },
--  { 1, 4, 2 },
--  { 0, 4, 2 },
--  { 3, 4, 5 },
--  { 2, 4, 5 },
--  { 5, 4, 1 },
--  { 4, 4, 1 },
--  { 3, 4, 1 },
--  { 2, 4, 1 },
--  { 1, 4, 1 },
--  { 0, 4, 1 },
--  { 1, 4, 4 },
--  { 0, 4, 4 },
--  { 5, 4, 0 },
--  { 4, 4, 0 },
--  { 3, 4, 0 },
--  { 2, 4, 0 },
--  { 1, 4, 0 },
--  { 0, 4, 0 },
--  { 3, 3, 0 },
--  { 2, 3, 0 },
--  { 5, 3, 3 },
--  { 4, 3, 3 },
--  { 3, 3, 3 },
--  { 2, 3, 3 },
--  { 1, 3, 1 },
--  { 0, 3, 1 },
--  { 1, 3, 3 },
--  { 0, 3, 3 },
--  { 5, 3, 2 },
--  { 4, 3, 2 },
--  { 3, 3, 2 },
--  { 2, 3, 2 },
--  { 1, 3, 2 },
--  { 0, 3, 2 },
--  { 3, 3, 1 },
--  { 2, 3, 1 },
--  { 5, 3, 5 },
--  { 4, 3, 5 },
--  { 3, 3, 5 },
--  { 2, 3, 5 },
--  { 1, 3, 5 },
--  { 0, 3, 5 },
--  { 1, 3, 0 },
--  { 0, 3, 0 },
--  { 5, 3, 4 },
--  { 4, 3, 4 },
--  { 3, 3, 4 },
--  { 2, 3, 4 },
--  { 1, 3, 4 },
--  { 0, 3, 4 },
--  { 3, 2, 4 },
--  { 2, 2, 4 },
--  { 5, 2, 3 },
--  { 4, 2, 3 },
--  { 3, 2, 3 },
--  { 2, 2, 3 },
--  { 1, 2, 5 },
--  { 0, 2, 5 },
--  { 1, 2, 3 },
--  { 0, 2, 3 },
--  { 5, 2, 2 },
--  { 4, 2, 2 },
--  { 3, 2, 2 },
--  { 2, 2, 2 },
--  { 1, 2, 2 },
--  { 0, 2, 2 },
--  { 3, 2, 5 },
--  { 2, 2, 5 },
--  { 5, 2, 1 },
--  { 4, 2, 1 },
--  { 3, 2, 1 },
--  { 2, 2, 1 },
--  { 1, 2, 1 },
--  { 0, 2, 1 },
--  { 1, 2, 4 },
--  { 0, 2, 4 },
--  { 5, 2, 0 },
--  { 4, 2, 0 },
--  { 3, 2, 0 },
--  { 2, 2, 0 },
--  { 1, 2, 0 },
--  { 0, 2, 0 },
--  { 3, 1, 0 },
--  { 2, 1, 0 },
--  { 5, 1, 3 },
--  { 4, 1, 3 },
--  { 3, 1, 3 },
--  { 2, 1, 3 },
--  { 1, 1, 1 },
--  { 0, 1, 1 },
--  { 1, 1, 3 },
--  { 0, 1, 3 },
--  { 5, 1, 2 },
--  { 4, 1, 2 },
--  { 3, 1, 2 },
--  { 2, 1, 2 },
--  { 1, 1, 2 },
--  { 0, 1, 2 },
--  { 3, 1, 1 },
--  { 2, 1, 1 },
--  { 5, 1, 5 },
--  { 4, 1, 5 },
--  { 3, 1, 5 },
--  { 2, 1, 5 },
--  { 1, 1, 5 },
--  { 0, 1, 5 },
--  { 1, 1, 0 },
--  { 0, 1, 0 },
--  { 5, 1, 4 },
--  { 4, 1, 4 },
--  { 3, 1, 4 },
--  { 2, 1, 4 },
--  { 1, 1, 4 },
--  { 0, 1, 4 },
--  { 3, 0, 4 },
--  { 2, 0, 4 },
--  { 5, 0, 3 },
--  { 4, 0, 3 },
--  { 3, 0, 3 },
--  { 2, 0, 3 },
--  { 1, 0, 5 },
--  { 0, 0, 5 },
--  { 1, 0, 3 },
--  { 0, 0, 3 },
--  { 5, 0, 2 },
--  { 4, 0, 2 },
--  { 3, 0, 2 },
--  { 2, 0, 2 },
--  { 1, 0, 2 },
--  { 0, 0, 2 },
--  { 3, 0, 5 },
--  { 2, 0, 5 },
--  { 5, 0, 1 },
--  { 4, 0, 1 },
--  { 3, 0, 1 },
--  { 2, 0, 1 },
--  { 1, 0, 1 },
--  { 0, 0, 1 },
--  { 1, 0, 4 },
--  { 0, 0, 4 },
--  { 5, 0, 0 },
--  { 4, 0, 0 },
--  { 3, 0, 0 },
--  { 2, 0, 0 },
--  { 1, 0, 0 },
--  { 0, 0, 0 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 },
--  { -1, -1, -1 }
--};
+-extern u64 __atomic64_cmpxchg(volatile u64 *p, int *lock, u64 o, u64 n);
+-extern u64 __atomic64_xchg(volatile u64 *p, int *lock, u64 n);
+-extern u64 __atomic64_xchg_add(volatile u64 *p, int *lock, u64 n);
+-extern u64 __atomic64_xchg_add_unless(volatile u64 *p,
+-				      int *lock, u64 o, u64 n);
 -
--const char tile_sn_direction_names[6][5] =
--{
--  "w",
--  "c",
--  "acc",
--  "n",
--  "e",
--  "s"
--};
 -
--const signed char tile_sn_dest_map[6][6] = {
--  { -1, 3, 4, 5, 1, 2 } /* val -> w */,
--  { -1, 3, 4, 5, 0, 2 } /* val -> c */,
--  { -1, 3, 4, 5, 0, 1 } /* val -> acc */,
--  { -1, 4, 5, 0, 1, 2 } /* val -> n */,
--  { -1, 3, 5, 0, 1, 2 } /* val -> e */,
--  { -1, 3, 4, 0, 1, 2 } /* val -> s */
--};
--
- const struct tile_operand tile_operands[43] =
+-/* See <asm/atomic.h> */
++/* See <asm/atomic_32.h> */
+ #if ATOMIC_LOCKS_FOUND_VIA_TABLE()
+ 
+ /*
+@@ -209,7 +192,7 @@ u64 _atomic64_cmpxchg(atomic64_t *v, u64 o, u64 n)
+ EXPORT_SYMBOL(_atomic64_cmpxchg);
+ 
+ 
+-static inline int *__futex_setup(__user int *v)
++static inline int *__futex_setup(int __user *v)
  {
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM8_X0), /* default_reloc */
--    8, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Imm8_X0, /* insert */
--    get_Imm8_X0  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_IMM8_X0),
-+    8, 1, 0, 0, 0, 0,
-+    create_Imm8_X0, get_Imm8_X0
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM8_X1), /* default_reloc */
--    8, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Imm8_X1, /* insert */
--    get_Imm8_X1  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_IMM8_X1),
-+    8, 1, 0, 0, 0, 0,
-+    create_Imm8_X1, get_Imm8_X1
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM8_Y0), /* default_reloc */
--    8, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Imm8_Y0, /* insert */
--    get_Imm8_Y0  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_IMM8_Y0),
-+    8, 1, 0, 0, 0, 0,
-+    create_Imm8_Y0, get_Imm8_Y0
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM8_Y1), /* default_reloc */
--    8, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Imm8_Y1, /* insert */
--    get_Imm8_Y1  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_IMM8_Y1),
-+    8, 1, 0, 0, 0, 0,
-+    create_Imm8_Y1, get_Imm8_Y1
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM16_X0), /* default_reloc */
--    16, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Imm16_X0, /* insert */
--    get_Imm16_X0  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_IMM16_X0),
-+    16, 1, 0, 0, 0, 0,
-+    create_Imm16_X0, get_Imm16_X0
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM16_X1), /* default_reloc */
--    16, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Imm16_X1, /* insert */
--    get_Imm16_X1  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_IMM16_X1),
-+    16, 1, 0, 0, 0, 0,
-+    create_Imm16_X1, get_Imm16_X1
-   },
-   {
--    TILE_OP_TYPE_ADDRESS, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_JOFFLONG_X1), /* default_reloc */
--    29, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    1, /* is_pc_relative */
--    TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES, /* rightshift */
--    create_JOffLong_X1, /* insert */
--    get_JOffLong_X1  /* extract */
-+    TILE_OP_TYPE_ADDRESS, BFD_RELOC(TILE_JOFFLONG_X1),
-+    29, 1, 0, 0, 1, TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES,
-+    create_JOffLong_X1, get_JOffLong_X1
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    1, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Dest_X0, /* insert */
--    get_Dest_X0  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 0, 1, 0, 0,
-+    create_Dest_X0, get_Dest_X0
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcA_X0, /* insert */
--    get_SrcA_X0  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 0, 0, 0,
-+    create_SrcA_X0, get_SrcA_X0
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    1, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Dest_X1, /* insert */
--    get_Dest_X1  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 0, 1, 0, 0,
-+    create_Dest_X1, get_Dest_X1
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcA_X1, /* insert */
--    get_SrcA_X1  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 0, 0, 0,
-+    create_SrcA_X1, get_SrcA_X1
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    1, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Dest_Y0, /* insert */
--    get_Dest_Y0  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 0, 1, 0, 0,
-+    create_Dest_Y0, get_Dest_Y0
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcA_Y0, /* insert */
--    get_SrcA_Y0  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 0, 0, 0,
-+    create_SrcA_Y0, get_SrcA_Y0
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    1, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Dest_Y1, /* insert */
--    get_Dest_Y1  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 0, 1, 0, 0,
-+    create_Dest_Y1, get_Dest_Y1
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcA_Y1, /* insert */
--    get_SrcA_Y1  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 0, 0, 0,
-+    create_SrcA_Y1, get_SrcA_Y1
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcA_Y2, /* insert */
--    get_SrcA_Y2  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 0, 0, 0,
-+    create_SrcA_Y2, get_SrcA_Y2
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcB_X0, /* insert */
--    get_SrcB_X0  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 0, 0, 0,
-+    create_SrcB_X0, get_SrcB_X0
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcB_X1, /* insert */
--    get_SrcB_X1  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 0, 0, 0,
-+    create_SrcB_X1, get_SrcB_X1
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcB_Y0, /* insert */
--    get_SrcB_Y0  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 0, 0, 0,
-+    create_SrcB_Y0, get_SrcB_Y0
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcB_Y1, /* insert */
--    get_SrcB_Y1  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 0, 0, 0,
-+    create_SrcB_Y1, get_SrcB_Y1
-   },
-   {
--    TILE_OP_TYPE_ADDRESS, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_BROFF_X1), /* default_reloc */
--    17, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    1, /* is_pc_relative */
--    TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES, /* rightshift */
--    create_BrOff_X1, /* insert */
--    get_BrOff_X1  /* extract */
-+    TILE_OP_TYPE_ADDRESS, BFD_RELOC(TILE_BROFF_X1),
-+    17, 1, 0, 0, 1, TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES,
-+    create_BrOff_X1, get_BrOff_X1
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    1, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Dest_X0, /* insert */
--    get_Dest_X0  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 1, 0, 0,
-+    create_Dest_X0, get_Dest_X0
-   },
-   {
--    TILE_OP_TYPE_ADDRESS, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    28, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    1, /* is_pc_relative */
--    TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES, /* rightshift */
--    create_JOff_X1, /* insert */
--    get_JOff_X1  /* extract */
-+    TILE_OP_TYPE_ADDRESS, BFD_RELOC(NONE),
-+    28, 1, 0, 0, 1, TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES,
-+    create_JOff_X1, get_JOff_X1
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    1, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcBDest_Y2, /* insert */
--    get_SrcBDest_Y2  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 0, 1, 0, 0,
-+    create_SrcBDest_Y2, get_SrcBDest_Y2
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    1, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcA_X1, /* insert */
--    get_SrcA_X1  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 1, 0, 0,
-+    create_SrcA_X1, get_SrcA_X1
-   },
-   {
--    TILE_OP_TYPE_SPR, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MF_IMM15_X1), /* default_reloc */
--    15, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_MF_Imm15_X1, /* insert */
--    get_MF_Imm15_X1  /* extract */
-+    TILE_OP_TYPE_SPR, BFD_RELOC(TILE_MF_IMM15_X1),
-+    15, 0, 0, 0, 0, 0,
-+    create_MF_Imm15_X1, get_MF_Imm15_X1
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MMSTART_X0), /* default_reloc */
--    5, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_MMStart_X0, /* insert */
--    get_MMStart_X0  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_MMSTART_X0),
-+    5, 0, 0, 0, 0, 0,
-+    create_MMStart_X0, get_MMStart_X0
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MMEND_X0), /* default_reloc */
--    5, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_MMEnd_X0, /* insert */
--    get_MMEnd_X0  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_MMEND_X0),
-+    5, 0, 0, 0, 0, 0,
-+    create_MMEnd_X0, get_MMEnd_X0
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MMSTART_X1), /* default_reloc */
--    5, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_MMStart_X1, /* insert */
--    get_MMStart_X1  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_MMSTART_X1),
-+    5, 0, 0, 0, 0, 0,
-+    create_MMStart_X1, get_MMStart_X1
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MMEND_X1), /* default_reloc */
--    5, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_MMEnd_X1, /* insert */
--    get_MMEnd_X1  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_MMEND_X1),
-+    5, 0, 0, 0, 0, 0,
-+    create_MMEnd_X1, get_MMEnd_X1
-   },
-   {
--    TILE_OP_TYPE_SPR, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MT_IMM15_X1), /* default_reloc */
--    15, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_MT_Imm15_X1, /* insert */
--    get_MT_Imm15_X1  /* extract */
-+    TILE_OP_TYPE_SPR, BFD_RELOC(TILE_MT_IMM15_X1),
-+    15, 0, 0, 0, 0, 0,
-+    create_MT_Imm15_X1, get_MT_Imm15_X1
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    1, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Dest_Y0, /* insert */
--    get_Dest_Y0  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 1, 0, 0,
-+    create_Dest_Y0, get_Dest_Y0
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SHAMT_X0), /* default_reloc */
--    5, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_ShAmt_X0, /* insert */
--    get_ShAmt_X0  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_SHAMT_X0),
-+    5, 0, 0, 0, 0, 0,
-+    create_ShAmt_X0, get_ShAmt_X0
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SHAMT_X1), /* default_reloc */
--    5, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_ShAmt_X1, /* insert */
--    get_ShAmt_X1  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_SHAMT_X1),
-+    5, 0, 0, 0, 0, 0,
-+    create_ShAmt_X1, get_ShAmt_X1
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SHAMT_Y0), /* default_reloc */
--    5, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_ShAmt_Y0, /* insert */
--    get_ShAmt_Y0  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_SHAMT_Y0),
-+    5, 0, 0, 0, 0, 0,
-+    create_ShAmt_Y0, get_ShAmt_Y0
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SHAMT_Y1), /* default_reloc */
--    5, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_ShAmt_Y1, /* insert */
--    get_ShAmt_Y1  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_SHAMT_Y1),
-+    5, 0, 0, 0, 0, 0,
-+    create_ShAmt_Y1, get_ShAmt_Y1
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    6, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_SrcBDest_Y2, /* insert */
--    get_SrcBDest_Y2  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    6, 0, 1, 0, 0, 0,
-+    create_SrcBDest_Y2, get_SrcBDest_Y2
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    8, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Dest_Imm8_X1, /* insert */
--    get_Dest_Imm8_X1  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(NONE),
-+    8, 1, 0, 0, 0, 0,
-+    create_Dest_Imm8_X1, get_Dest_Imm8_X1
-   },
-   {
--    TILE_OP_TYPE_ADDRESS, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SN_BROFF), /* default_reloc */
--    10, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    1, /* is_pc_relative */
--    TILE_LOG2_SN_INSTRUCTION_SIZE_IN_BYTES, /* rightshift */
--    create_BrOff_SN, /* insert */
--    get_BrOff_SN  /* extract */
-+    TILE_OP_TYPE_ADDRESS, BFD_RELOC(TILE_SN_BROFF),
-+    10, 1, 0, 0, 1, TILE_LOG2_SN_INSTRUCTION_SIZE_IN_BYTES,
-+    create_BrOff_SN, get_BrOff_SN
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SN_UIMM8), /* default_reloc */
--    8, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Imm8_SN, /* insert */
--    get_Imm8_SN  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_SN_UIMM8),
-+    8, 0, 0, 0, 0, 0,
-+    create_Imm8_SN, get_Imm8_SN
-   },
-   {
--    TILE_OP_TYPE_IMMEDIATE, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SN_IMM8), /* default_reloc */
--    8, /* num_bits */
--    1, /* is_signed */
--    0, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Imm8_SN, /* insert */
--    get_Imm8_SN  /* extract */
-+    TILE_OP_TYPE_IMMEDIATE, BFD_RELOC(TILE_SN_IMM8),
-+    8, 1, 0, 0, 0, 0,
-+    create_Imm8_SN, get_Imm8_SN
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    2, /* num_bits */
--    0, /* is_signed */
--    0, /* is_src_reg */
--    1, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Dest_SN, /* insert */
--    get_Dest_SN  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    2, 0, 0, 1, 0, 0,
-+    create_Dest_SN, get_Dest_SN
-   },
-   {
--    TILE_OP_TYPE_REGISTER, /* type */
--    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
--    2, /* num_bits */
--    0, /* is_signed */
--    1, /* is_src_reg */
--    0, /* is_dest_reg */
--    0, /* is_pc_relative */
--    0, /* rightshift */
--    create_Src_SN, /* insert */
--    get_Src_SN  /* extract */
-+    TILE_OP_TYPE_REGISTER, BFD_RELOC(NONE),
-+    2, 0, 1, 0, 0, 0,
-+    create_Src_SN, get_Src_SN
-   }
- };
+ 	/*
+ 	 * Issue a prefetch to the counter to bring it into cache.
+@@ -217,37 +200,37 @@ static inline int *__futex_setup(__user int *v)
+ 	 * since it might fault; instead we do a prefetch into the L2.
+ 	 */
+ 	__insn_prefetch(v);
+-	return __atomic_hashed_lock(v);
++	return __atomic_hashed_lock((int __force *)v);
+ }
  
--const struct tile_spr tile_sprs[] = {
--  { 0, "MPL_ITLB_MISS_SET_0" },
--  { 1, "MPL_ITLB_MISS_SET_1" },
--  { 2, "MPL_ITLB_MISS_SET_2" },
--  { 3, "MPL_ITLB_MISS_SET_3" },
--  { 4, "MPL_ITLB_MISS" },
--  { 256, "ITLB_CURRENT_0" },
--  { 257, "ITLB_CURRENT_1" },
--  { 258, "ITLB_CURRENT_2" },
--  { 259, "ITLB_CURRENT_3" },
--  { 260, "ITLB_INDEX" },
--  { 261, "ITLB_MATCH_0" },
--  { 262, "ITLB_PR" },
--  { 263, "NUMBER_ITLB" },
--  { 264, "REPLACEMENT_ITLB" },
--  { 265, "WIRED_ITLB" },
--  { 266, "ITLB_PERF" },
--  { 512, "MPL_MEM_ERROR_SET_0" },
--  { 513, "MPL_MEM_ERROR_SET_1" },
--  { 514, "MPL_MEM_ERROR_SET_2" },
--  { 515, "MPL_MEM_ERROR_SET_3" },
--  { 516, "MPL_MEM_ERROR" },
--  { 517, "L1_I_ERROR" },
--  { 518, "MEM_ERROR_CBOX_ADDR" },
--  { 519, "MEM_ERROR_CBOX_STATUS" },
--  { 520, "MEM_ERROR_ENABLE" },
--  { 521, "MEM_ERROR_MBOX_ADDR" },
--  { 522, "MEM_ERROR_MBOX_STATUS" },
--  { 523, "SNIC_ERROR_LOG_STATUS" },
--  { 524, "SNIC_ERROR_LOG_VA" },
--  { 525, "XDN_DEMUX_ERROR" },
--  { 1024, "MPL_ILL_SET_0" },
--  { 1025, "MPL_ILL_SET_1" },
--  { 1026, "MPL_ILL_SET_2" },
--  { 1027, "MPL_ILL_SET_3" },
--  { 1028, "MPL_ILL" },
--  { 1536, "MPL_GPV_SET_0" },
--  { 1537, "MPL_GPV_SET_1" },
--  { 1538, "MPL_GPV_SET_2" },
--  { 1539, "MPL_GPV_SET_3" },
--  { 1540, "MPL_GPV" },
--  { 1541, "GPV_REASON" },
--  { 2048, "MPL_SN_ACCESS_SET_0" },
--  { 2049, "MPL_SN_ACCESS_SET_1" },
--  { 2050, "MPL_SN_ACCESS_SET_2" },
--  { 2051, "MPL_SN_ACCESS_SET_3" },
--  { 2052, "MPL_SN_ACCESS" },
--  { 2053, "SNCTL" },
--  { 2054, "SNFIFO_DATA" },
--  { 2055, "SNFIFO_SEL" },
--  { 2056, "SNIC_INVADDR" },
--  { 2057, "SNISTATE" },
--  { 2058, "SNOSTATE" },
--  { 2059, "SNPC" },
--  { 2060, "SNSTATIC" },
--  { 2304, "SN_DATA_AVAIL" },
--  { 2560, "MPL_IDN_ACCESS_SET_0" },
--  { 2561, "MPL_IDN_ACCESS_SET_1" },
--  { 2562, "MPL_IDN_ACCESS_SET_2" },
--  { 2563, "MPL_IDN_ACCESS_SET_3" },
--  { 2564, "MPL_IDN_ACCESS" },
--  { 2565, "IDN_DEMUX_CA_COUNT" },
--  { 2566, "IDN_DEMUX_COUNT_0" },
--  { 2567, "IDN_DEMUX_COUNT_1" },
--  { 2568, "IDN_DEMUX_CTL" },
--  { 2569, "IDN_DEMUX_CURR_TAG" },
--  { 2570, "IDN_DEMUX_QUEUE_SEL" },
--  { 2571, "IDN_DEMUX_STATUS" },
--  { 2572, "IDN_DEMUX_WRITE_FIFO" },
--  { 2573, "IDN_DEMUX_WRITE_QUEUE" },
--  { 2574, "IDN_PENDING" },
--  { 2575, "IDN_SP_FIFO_DATA" },
--  { 2576, "IDN_SP_FIFO_SEL" },
--  { 2577, "IDN_SP_FREEZE" },
--  { 2578, "IDN_SP_STATE" },
--  { 2579, "IDN_TAG_0" },
--  { 2580, "IDN_TAG_1" },
--  { 2581, "IDN_TAG_VALID" },
--  { 2582, "IDN_TILE_COORD" },
--  { 2816, "IDN_CA_DATA" },
--  { 2817, "IDN_CA_REM" },
--  { 2818, "IDN_CA_TAG" },
--  { 2819, "IDN_DATA_AVAIL" },
--  { 3072, "MPL_UDN_ACCESS_SET_0" },
--  { 3073, "MPL_UDN_ACCESS_SET_1" },
--  { 3074, "MPL_UDN_ACCESS_SET_2" },
--  { 3075, "MPL_UDN_ACCESS_SET_3" },
--  { 3076, "MPL_UDN_ACCESS" },
--  { 3077, "UDN_DEMUX_CA_COUNT" },
--  { 3078, "UDN_DEMUX_COUNT_0" },
--  { 3079, "UDN_DEMUX_COUNT_1" },
--  { 3080, "UDN_DEMUX_COUNT_2" },
--  { 3081, "UDN_DEMUX_COUNT_3" },
--  { 3082, "UDN_DEMUX_CTL" },
--  { 3083, "UDN_DEMUX_CURR_TAG" },
--  { 3084, "UDN_DEMUX_QUEUE_SEL" },
--  { 3085, "UDN_DEMUX_STATUS" },
--  { 3086, "UDN_DEMUX_WRITE_FIFO" },
--  { 3087, "UDN_DEMUX_WRITE_QUEUE" },
--  { 3088, "UDN_PENDING" },
--  { 3089, "UDN_SP_FIFO_DATA" },
--  { 3090, "UDN_SP_FIFO_SEL" },
--  { 3091, "UDN_SP_FREEZE" },
--  { 3092, "UDN_SP_STATE" },
--  { 3093, "UDN_TAG_0" },
--  { 3094, "UDN_TAG_1" },
--  { 3095, "UDN_TAG_2" },
--  { 3096, "UDN_TAG_3" },
--  { 3097, "UDN_TAG_VALID" },
--  { 3098, "UDN_TILE_COORD" },
--  { 3328, "UDN_CA_DATA" },
--  { 3329, "UDN_CA_REM" },
--  { 3330, "UDN_CA_TAG" },
--  { 3331, "UDN_DATA_AVAIL" },
--  { 3584, "MPL_IDN_REFILL_SET_0" },
--  { 3585, "MPL_IDN_REFILL_SET_1" },
--  { 3586, "MPL_IDN_REFILL_SET_2" },
--  { 3587, "MPL_IDN_REFILL_SET_3" },
--  { 3588, "MPL_IDN_REFILL" },
--  { 3589, "IDN_REFILL_EN" },
--  { 4096, "MPL_UDN_REFILL_SET_0" },
--  { 4097, "MPL_UDN_REFILL_SET_1" },
--  { 4098, "MPL_UDN_REFILL_SET_2" },
--  { 4099, "MPL_UDN_REFILL_SET_3" },
--  { 4100, "MPL_UDN_REFILL" },
--  { 4101, "UDN_REFILL_EN" },
--  { 4608, "MPL_IDN_COMPLETE_SET_0" },
--  { 4609, "MPL_IDN_COMPLETE_SET_1" },
--  { 4610, "MPL_IDN_COMPLETE_SET_2" },
--  { 4611, "MPL_IDN_COMPLETE_SET_3" },
--  { 4612, "MPL_IDN_COMPLETE" },
--  { 4613, "IDN_REMAINING" },
--  { 5120, "MPL_UDN_COMPLETE_SET_0" },
--  { 5121, "MPL_UDN_COMPLETE_SET_1" },
--  { 5122, "MPL_UDN_COMPLETE_SET_2" },
--  { 5123, "MPL_UDN_COMPLETE_SET_3" },
--  { 5124, "MPL_UDN_COMPLETE" },
--  { 5125, "UDN_REMAINING" },
--  { 5632, "MPL_SWINT_3_SET_0" },
--  { 5633, "MPL_SWINT_3_SET_1" },
--  { 5634, "MPL_SWINT_3_SET_2" },
--  { 5635, "MPL_SWINT_3_SET_3" },
--  { 5636, "MPL_SWINT_3" },
--  { 6144, "MPL_SWINT_2_SET_0" },
--  { 6145, "MPL_SWINT_2_SET_1" },
--  { 6146, "MPL_SWINT_2_SET_2" },
--  { 6147, "MPL_SWINT_2_SET_3" },
--  { 6148, "MPL_SWINT_2" },
--  { 6656, "MPL_SWINT_1_SET_0" },
--  { 6657, "MPL_SWINT_1_SET_1" },
--  { 6658, "MPL_SWINT_1_SET_2" },
--  { 6659, "MPL_SWINT_1_SET_3" },
--  { 6660, "MPL_SWINT_1" },
--  { 7168, "MPL_SWINT_0_SET_0" },
--  { 7169, "MPL_SWINT_0_SET_1" },
--  { 7170, "MPL_SWINT_0_SET_2" },
--  { 7171, "MPL_SWINT_0_SET_3" },
--  { 7172, "MPL_SWINT_0" },
--  { 7680, "MPL_UNALIGN_DATA_SET_0" },
--  { 7681, "MPL_UNALIGN_DATA_SET_1" },
--  { 7682, "MPL_UNALIGN_DATA_SET_2" },
--  { 7683, "MPL_UNALIGN_DATA_SET_3" },
--  { 7684, "MPL_UNALIGN_DATA" },
--  { 8192, "MPL_DTLB_MISS_SET_0" },
--  { 8193, "MPL_DTLB_MISS_SET_1" },
--  { 8194, "MPL_DTLB_MISS_SET_2" },
--  { 8195, "MPL_DTLB_MISS_SET_3" },
--  { 8196, "MPL_DTLB_MISS" },
--  { 8448, "AER_0" },
--  { 8449, "AER_1" },
--  { 8450, "DTLB_BAD_ADDR" },
--  { 8451, "DTLB_BAD_ADDR_REASON" },
--  { 8452, "DTLB_CURRENT_0" },
--  { 8453, "DTLB_CURRENT_1" },
--  { 8454, "DTLB_CURRENT_2" },
--  { 8455, "DTLB_CURRENT_3" },
--  { 8456, "DTLB_INDEX" },
--  { 8457, "DTLB_MATCH_0" },
--  { 8458, "NUMBER_DTLB" },
--  { 8459, "PHYSICAL_MEMORY_MODE" },
--  { 8460, "REPLACEMENT_DTLB" },
--  { 8461, "WIRED_DTLB" },
--  { 8462, "CACHE_RED_WAY_OVERRIDDEN" },
--  { 8463, "DTLB_PERF" },
--  { 8704, "MPL_DTLB_ACCESS_SET_0" },
--  { 8705, "MPL_DTLB_ACCESS_SET_1" },
--  { 8706, "MPL_DTLB_ACCESS_SET_2" },
--  { 8707, "MPL_DTLB_ACCESS_SET_3" },
--  { 8708, "MPL_DTLB_ACCESS" },
--  { 9216, "MPL_DMATLB_MISS_SET_0" },
--  { 9217, "MPL_DMATLB_MISS_SET_1" },
--  { 9218, "MPL_DMATLB_MISS_SET_2" },
--  { 9219, "MPL_DMATLB_MISS_SET_3" },
--  { 9220, "MPL_DMATLB_MISS" },
--  { 9472, "DMA_BAD_ADDR" },
--  { 9473, "DMA_STATUS" },
--  { 9728, "MPL_DMATLB_ACCESS_SET_0" },
--  { 9729, "MPL_DMATLB_ACCESS_SET_1" },
--  { 9730, "MPL_DMATLB_ACCESS_SET_2" },
--  { 9731, "MPL_DMATLB_ACCESS_SET_3" },
--  { 9732, "MPL_DMATLB_ACCESS" },
--  { 10240, "MPL_SNITLB_MISS_SET_0" },
--  { 10241, "MPL_SNITLB_MISS_SET_1" },
--  { 10242, "MPL_SNITLB_MISS_SET_2" },
--  { 10243, "MPL_SNITLB_MISS_SET_3" },
--  { 10244, "MPL_SNITLB_MISS" },
--  { 10245, "NUMBER_SNITLB" },
--  { 10246, "REPLACEMENT_SNITLB" },
--  { 10247, "SNITLB_CURRENT_0" },
--  { 10248, "SNITLB_CURRENT_1" },
--  { 10249, "SNITLB_CURRENT_2" },
--  { 10250, "SNITLB_CURRENT_3" },
--  { 10251, "SNITLB_INDEX" },
--  { 10252, "SNITLB_MATCH_0" },
--  { 10253, "SNITLB_PR" },
--  { 10254, "WIRED_SNITLB" },
--  { 10255, "SNITLB_STATUS" },
--  { 10752, "MPL_SN_NOTIFY_SET_0" },
--  { 10753, "MPL_SN_NOTIFY_SET_1" },
--  { 10754, "MPL_SN_NOTIFY_SET_2" },
--  { 10755, "MPL_SN_NOTIFY_SET_3" },
--  { 10756, "MPL_SN_NOTIFY" },
--  { 10757, "SN_NOTIFY_STATUS" },
--  { 11264, "MPL_SN_FIREWALL_SET_0" },
--  { 11265, "MPL_SN_FIREWALL_SET_1" },
--  { 11266, "MPL_SN_FIREWALL_SET_2" },
--  { 11267, "MPL_SN_FIREWALL_SET_3" },
--  { 11268, "MPL_SN_FIREWALL" },
--  { 11269, "SN_DIRECTION_PROTECT" },
--  { 11776, "MPL_IDN_FIREWALL_SET_0" },
--  { 11777, "MPL_IDN_FIREWALL_SET_1" },
--  { 11778, "MPL_IDN_FIREWALL_SET_2" },
--  { 11779, "MPL_IDN_FIREWALL_SET_3" },
--  { 11780, "MPL_IDN_FIREWALL" },
--  { 11781, "IDN_DIRECTION_PROTECT" },
--  { 12288, "MPL_UDN_FIREWALL_SET_0" },
--  { 12289, "MPL_UDN_FIREWALL_SET_1" },
--  { 12290, "MPL_UDN_FIREWALL_SET_2" },
--  { 12291, "MPL_UDN_FIREWALL_SET_3" },
--  { 12292, "MPL_UDN_FIREWALL" },
--  { 12293, "UDN_DIRECTION_PROTECT" },
--  { 12800, "MPL_TILE_TIMER_SET_0" },
--  { 12801, "MPL_TILE_TIMER_SET_1" },
--  { 12802, "MPL_TILE_TIMER_SET_2" },
--  { 12803, "MPL_TILE_TIMER_SET_3" },
--  { 12804, "MPL_TILE_TIMER" },
--  { 12805, "TILE_TIMER_CONTROL" },
--  { 13312, "MPL_IDN_TIMER_SET_0" },
--  { 13313, "MPL_IDN_TIMER_SET_1" },
--  { 13314, "MPL_IDN_TIMER_SET_2" },
--  { 13315, "MPL_IDN_TIMER_SET_3" },
--  { 13316, "MPL_IDN_TIMER" },
--  { 13317, "IDN_DEADLOCK_COUNT" },
--  { 13318, "IDN_DEADLOCK_TIMEOUT" },
--  { 13824, "MPL_UDN_TIMER_SET_0" },
--  { 13825, "MPL_UDN_TIMER_SET_1" },
--  { 13826, "MPL_UDN_TIMER_SET_2" },
--  { 13827, "MPL_UDN_TIMER_SET_3" },
--  { 13828, "MPL_UDN_TIMER" },
--  { 13829, "UDN_DEADLOCK_COUNT" },
--  { 13830, "UDN_DEADLOCK_TIMEOUT" },
--  { 14336, "MPL_DMA_NOTIFY_SET_0" },
--  { 14337, "MPL_DMA_NOTIFY_SET_1" },
--  { 14338, "MPL_DMA_NOTIFY_SET_2" },
--  { 14339, "MPL_DMA_NOTIFY_SET_3" },
--  { 14340, "MPL_DMA_NOTIFY" },
--  { 14592, "DMA_BYTE" },
--  { 14593, "DMA_CHUNK_SIZE" },
--  { 14594, "DMA_CTR" },
--  { 14595, "DMA_DST_ADDR" },
--  { 14596, "DMA_DST_CHUNK_ADDR" },
--  { 14597, "DMA_SRC_ADDR" },
--  { 14598, "DMA_SRC_CHUNK_ADDR" },
--  { 14599, "DMA_STRIDE" },
--  { 14600, "DMA_USER_STATUS" },
--  { 14848, "MPL_IDN_CA_SET_0" },
--  { 14849, "MPL_IDN_CA_SET_1" },
--  { 14850, "MPL_IDN_CA_SET_2" },
--  { 14851, "MPL_IDN_CA_SET_3" },
--  { 14852, "MPL_IDN_CA" },
--  { 15360, "MPL_UDN_CA_SET_0" },
--  { 15361, "MPL_UDN_CA_SET_1" },
--  { 15362, "MPL_UDN_CA_SET_2" },
--  { 15363, "MPL_UDN_CA_SET_3" },
--  { 15364, "MPL_UDN_CA" },
--  { 15872, "MPL_IDN_AVAIL_SET_0" },
--  { 15873, "MPL_IDN_AVAIL_SET_1" },
--  { 15874, "MPL_IDN_AVAIL_SET_2" },
--  { 15875, "MPL_IDN_AVAIL_SET_3" },
--  { 15876, "MPL_IDN_AVAIL" },
--  { 15877, "IDN_AVAIL_EN" },
--  { 16384, "MPL_UDN_AVAIL_SET_0" },
--  { 16385, "MPL_UDN_AVAIL_SET_1" },
--  { 16386, "MPL_UDN_AVAIL_SET_2" },
--  { 16387, "MPL_UDN_AVAIL_SET_3" },
--  { 16388, "MPL_UDN_AVAIL" },
--  { 16389, "UDN_AVAIL_EN" },
--  { 16896, "MPL_PERF_COUNT_SET_0" },
--  { 16897, "MPL_PERF_COUNT_SET_1" },
--  { 16898, "MPL_PERF_COUNT_SET_2" },
--  { 16899, "MPL_PERF_COUNT_SET_3" },
--  { 16900, "MPL_PERF_COUNT" },
--  { 16901, "PERF_COUNT_0" },
--  { 16902, "PERF_COUNT_1" },
--  { 16903, "PERF_COUNT_CTL" },
--  { 16904, "PERF_COUNT_STS" },
--  { 16905, "WATCH_CTL" },
--  { 16906, "WATCH_MASK" },
--  { 16907, "WATCH_VAL" },
--  { 16912, "PERF_COUNT_DN_CTL" },
--  { 17408, "MPL_INTCTRL_3_SET_0" },
--  { 17409, "MPL_INTCTRL_3_SET_1" },
--  { 17410, "MPL_INTCTRL_3_SET_2" },
--  { 17411, "MPL_INTCTRL_3_SET_3" },
--  { 17412, "MPL_INTCTRL_3" },
--  { 17413, "EX_CONTEXT_3_0" },
--  { 17414, "EX_CONTEXT_3_1" },
--  { 17415, "INTERRUPT_MASK_3_0" },
--  { 17416, "INTERRUPT_MASK_3_1" },
--  { 17417, "INTERRUPT_MASK_RESET_3_0" },
--  { 17418, "INTERRUPT_MASK_RESET_3_1" },
--  { 17419, "INTERRUPT_MASK_SET_3_0" },
--  { 17420, "INTERRUPT_MASK_SET_3_1" },
--  { 17432, "INTCTRL_3_STATUS" },
--  { 17664, "SYSTEM_SAVE_3_0" },
--  { 17665, "SYSTEM_SAVE_3_1" },
--  { 17666, "SYSTEM_SAVE_3_2" },
--  { 17667, "SYSTEM_SAVE_3_3" },
--  { 17920, "MPL_INTCTRL_2_SET_0" },
--  { 17921, "MPL_INTCTRL_2_SET_1" },
--  { 17922, "MPL_INTCTRL_2_SET_2" },
--  { 17923, "MPL_INTCTRL_2_SET_3" },
--  { 17924, "MPL_INTCTRL_2" },
--  { 17925, "EX_CONTEXT_2_0" },
--  { 17926, "EX_CONTEXT_2_1" },
--  { 17927, "INTCTRL_2_STATUS" },
--  { 17928, "INTERRUPT_MASK_2_0" },
--  { 17929, "INTERRUPT_MASK_2_1" },
--  { 17930, "INTERRUPT_MASK_RESET_2_0" },
--  { 17931, "INTERRUPT_MASK_RESET_2_1" },
--  { 17932, "INTERRUPT_MASK_SET_2_0" },
--  { 17933, "INTERRUPT_MASK_SET_2_1" },
--  { 18176, "SYSTEM_SAVE_2_0" },
--  { 18177, "SYSTEM_SAVE_2_1" },
--  { 18178, "SYSTEM_SAVE_2_2" },
--  { 18179, "SYSTEM_SAVE_2_3" },
--  { 18432, "MPL_INTCTRL_1_SET_0" },
--  { 18433, "MPL_INTCTRL_1_SET_1" },
--  { 18434, "MPL_INTCTRL_1_SET_2" },
--  { 18435, "MPL_INTCTRL_1_SET_3" },
--  { 18436, "MPL_INTCTRL_1" },
--  { 18437, "EX_CONTEXT_1_0" },
--  { 18438, "EX_CONTEXT_1_1" },
--  { 18439, "INTCTRL_1_STATUS" },
--  { 18440, "INTCTRL_3_STATUS_REV0" },
--  { 18441, "INTERRUPT_MASK_1_0" },
--  { 18442, "INTERRUPT_MASK_1_1" },
--  { 18443, "INTERRUPT_MASK_RESET_1_0" },
--  { 18444, "INTERRUPT_MASK_RESET_1_1" },
--  { 18445, "INTERRUPT_MASK_SET_1_0" },
--  { 18446, "INTERRUPT_MASK_SET_1_1" },
--  { 18688, "SYSTEM_SAVE_1_0" },
--  { 18689, "SYSTEM_SAVE_1_1" },
--  { 18690, "SYSTEM_SAVE_1_2" },
--  { 18691, "SYSTEM_SAVE_1_3" },
--  { 18944, "MPL_INTCTRL_0_SET_0" },
--  { 18945, "MPL_INTCTRL_0_SET_1" },
--  { 18946, "MPL_INTCTRL_0_SET_2" },
--  { 18947, "MPL_INTCTRL_0_SET_3" },
--  { 18948, "MPL_INTCTRL_0" },
--  { 18949, "EX_CONTEXT_0_0" },
--  { 18950, "EX_CONTEXT_0_1" },
--  { 18951, "INTCTRL_0_STATUS" },
--  { 18952, "INTERRUPT_MASK_0_0" },
--  { 18953, "INTERRUPT_MASK_0_1" },
--  { 18954, "INTERRUPT_MASK_RESET_0_0" },
--  { 18955, "INTERRUPT_MASK_RESET_0_1" },
--  { 18956, "INTERRUPT_MASK_SET_0_0" },
--  { 18957, "INTERRUPT_MASK_SET_0_1" },
--  { 19200, "SYSTEM_SAVE_0_0" },
--  { 19201, "SYSTEM_SAVE_0_1" },
--  { 19202, "SYSTEM_SAVE_0_2" },
--  { 19203, "SYSTEM_SAVE_0_3" },
--  { 19456, "MPL_BOOT_ACCESS_SET_0" },
--  { 19457, "MPL_BOOT_ACCESS_SET_1" },
--  { 19458, "MPL_BOOT_ACCESS_SET_2" },
--  { 19459, "MPL_BOOT_ACCESS_SET_3" },
--  { 19460, "MPL_BOOT_ACCESS" },
--  { 19461, "CBOX_CACHEASRAM_CONFIG" },
--  { 19462, "CBOX_CACHE_CONFIG" },
--  { 19463, "CBOX_MMAP_0" },
--  { 19464, "CBOX_MMAP_1" },
--  { 19465, "CBOX_MMAP_2" },
--  { 19466, "CBOX_MMAP_3" },
--  { 19467, "CBOX_MSR" },
--  { 19468, "CBOX_SRC_ID" },
--  { 19469, "CYCLE_HIGH_MODIFY" },
--  { 19470, "CYCLE_LOW_MODIFY" },
--  { 19471, "DIAG_BCST_CTL" },
--  { 19472, "DIAG_BCST_MASK" },
--  { 19473, "DIAG_BCST_TRIGGER" },
--  { 19474, "DIAG_MUX_CTL" },
--  { 19475, "DIAG_TRACE_CTL" },
--  { 19476, "DIAG_TRACE_STS" },
--  { 19477, "IDN_DEMUX_BUF_THRESH" },
--  { 19478, "SBOX_CONFIG" },
--  { 19479, "TILE_COORD" },
--  { 19480, "UDN_DEMUX_BUF_THRESH" },
--  { 19481, "CBOX_HOME_MAP_ADDR" },
--  { 19482, "CBOX_HOME_MAP_DATA" },
--  { 19483, "CBOX_MSR1" },
--  { 19484, "BIG_ENDIAN_CONFIG" },
--  { 19485, "MEM_STRIPE_CONFIG" },
--  { 19486, "DIAG_TRACE_WAY" },
--  { 19487, "VDN_SNOOP_SHIM_CTL" },
--  { 19488, "PERF_COUNT_PLS" },
--  { 19489, "DIAG_TRACE_DATA" },
--  { 19712, "I_AER_0" },
--  { 19713, "I_AER_1" },
--  { 19714, "I_PHYSICAL_MEMORY_MODE" },
--  { 19968, "MPL_WORLD_ACCESS_SET_0" },
--  { 19969, "MPL_WORLD_ACCESS_SET_1" },
--  { 19970, "MPL_WORLD_ACCESS_SET_2" },
--  { 19971, "MPL_WORLD_ACCESS_SET_3" },
--  { 19972, "MPL_WORLD_ACCESS" },
--  { 19973, "SIM_SOCKET" },
--  { 19974, "CYCLE_HIGH" },
--  { 19975, "CYCLE_LOW" },
--  { 19976, "DONE" },
--  { 19977, "FAIL" },
--  { 19978, "INTERRUPT_CRITICAL_SECTION" },
--  { 19979, "PASS" },
--  { 19980, "SIM_CONTROL" },
--  { 19981, "EVENT_BEGIN" },
--  { 19982, "EVENT_END" },
--  { 19983, "TILE_WRITE_PENDING" },
--  { 19984, "TILE_RTF_HWM" },
--  { 20224, "PROC_STATUS" },
--  { 20225, "STATUS_SATURATE" },
--  { 20480, "MPL_I_ASID_SET_0" },
--  { 20481, "MPL_I_ASID_SET_1" },
--  { 20482, "MPL_I_ASID_SET_2" },
--  { 20483, "MPL_I_ASID_SET_3" },
--  { 20484, "MPL_I_ASID" },
--  { 20485, "I_ASID" },
--  { 20992, "MPL_D_ASID_SET_0" },
--  { 20993, "MPL_D_ASID_SET_1" },
--  { 20994, "MPL_D_ASID_SET_2" },
--  { 20995, "MPL_D_ASID_SET_3" },
--  { 20996, "MPL_D_ASID" },
--  { 20997, "D_ASID" },
--  { 21504, "MPL_DMA_ASID_SET_0" },
--  { 21505, "MPL_DMA_ASID_SET_1" },
--  { 21506, "MPL_DMA_ASID_SET_2" },
--  { 21507, "MPL_DMA_ASID_SET_3" },
--  { 21508, "MPL_DMA_ASID" },
--  { 21509, "DMA_ASID" },
--  { 22016, "MPL_SNI_ASID_SET_0" },
--  { 22017, "MPL_SNI_ASID_SET_1" },
--  { 22018, "MPL_SNI_ASID_SET_2" },
--  { 22019, "MPL_SNI_ASID_SET_3" },
--  { 22020, "MPL_SNI_ASID" },
--  { 22021, "SNI_ASID" },
--  { 22528, "MPL_DMA_CPL_SET_0" },
--  { 22529, "MPL_DMA_CPL_SET_1" },
--  { 22530, "MPL_DMA_CPL_SET_2" },
--  { 22531, "MPL_DMA_CPL_SET_3" },
--  { 22532, "MPL_DMA_CPL" },
--  { 23040, "MPL_SN_CPL_SET_0" },
--  { 23041, "MPL_SN_CPL_SET_1" },
--  { 23042, "MPL_SN_CPL_SET_2" },
--  { 23043, "MPL_SN_CPL_SET_3" },
--  { 23044, "MPL_SN_CPL" },
--  { 23552, "MPL_DOUBLE_FAULT_SET_0" },
--  { 23553, "MPL_DOUBLE_FAULT_SET_1" },
--  { 23554, "MPL_DOUBLE_FAULT_SET_2" },
--  { 23555, "MPL_DOUBLE_FAULT_SET_3" },
--  { 23556, "MPL_DOUBLE_FAULT" },
--  { 23557, "LAST_INTERRUPT_REASON" },
--  { 24064, "MPL_SN_STATIC_ACCESS_SET_0" },
--  { 24065, "MPL_SN_STATIC_ACCESS_SET_1" },
--  { 24066, "MPL_SN_STATIC_ACCESS_SET_2" },
--  { 24067, "MPL_SN_STATIC_ACCESS_SET_3" },
--  { 24068, "MPL_SN_STATIC_ACCESS" },
--  { 24069, "SN_STATIC_CTL" },
--  { 24070, "SN_STATIC_FIFO_DATA" },
--  { 24071, "SN_STATIC_FIFO_SEL" },
--  { 24073, "SN_STATIC_ISTATE" },
--  { 24074, "SN_STATIC_OSTATE" },
--  { 24076, "SN_STATIC_STATIC" },
--  { 24320, "SN_STATIC_DATA_AVAIL" },
--  { 24576, "MPL_AUX_PERF_COUNT_SET_0" },
--  { 24577, "MPL_AUX_PERF_COUNT_SET_1" },
--  { 24578, "MPL_AUX_PERF_COUNT_SET_2" },
--  { 24579, "MPL_AUX_PERF_COUNT_SET_3" },
--  { 24580, "MPL_AUX_PERF_COUNT" },
--  { 24581, "AUX_PERF_COUNT_0" },
--  { 24582, "AUX_PERF_COUNT_1" },
--  { 24583, "AUX_PERF_COUNT_CTL" },
--  { 24584, "AUX_PERF_COUNT_STS" },
--};
--
--const int tile_num_sprs = 499;
--
--
+-struct __get_user futex_set(int *v, int i)
++struct __get_user futex_set(int __user *v, int i)
+ {
+-	return __atomic_xchg(v, __futex_setup(v), i);
++	return __atomic_xchg((int __force *)v, __futex_setup(v), i);
+ }
  
+-struct __get_user futex_add(int *v, int n)
++struct __get_user futex_add(int __user *v, int n)
+ {
+-	return __atomic_xchg_add(v, __futex_setup(v), n);
++	return __atomic_xchg_add((int __force *)v, __futex_setup(v), n);
+ }
  
--/* Canonical name of each register. */
--const char *const tile_register_names[] =
+-struct __get_user futex_or(int *v, int n)
++struct __get_user futex_or(int __user *v, int n)
+ {
+-	return __atomic_or(v, __futex_setup(v), n);
++	return __atomic_or((int __force *)v, __futex_setup(v), n);
+ }
+ 
+-struct __get_user futex_andn(int *v, int n)
++struct __get_user futex_andn(int __user *v, int n)
+ {
+-	return __atomic_andn(v, __futex_setup(v), n);
++	return __atomic_andn((int __force *)v, __futex_setup(v), n);
+ }
+ 
+-struct __get_user futex_xor(int *v, int n)
++struct __get_user futex_xor(int __user *v, int n)
+ {
+-	return __atomic_xor(v, __futex_setup(v), n);
++	return __atomic_xor((int __force *)v, __futex_setup(v), n);
+ }
+ 
+-struct __get_user futex_cmpxchg(int *v, int o, int n)
++struct __get_user futex_cmpxchg(int __user *v, int o, int n)
+ {
+-	return __atomic_cmpxchg(v, __futex_setup(v), o, n);
++	return __atomic_cmpxchg((int __force *)v, __futex_setup(v), o, n);
+ }
+ 
+ /*
+@@ -260,7 +243,7 @@ struct __get_user futex_cmpxchg(int *v, int o, int n)
+  * invoked in is the context of the "_atomic_xxx()" routines called
+  * by the functions in this file.
+  */
+-struct __get_user __atomic_bad_address(int *addr)
++struct __get_user __atomic_bad_address(int __user *addr)
+ {
+ 	if (unlikely(!access_ok(VERIFY_WRITE, addr, sizeof(int))))
+ 		panic("Bad address used for kernel atomic op: %p\n", addr);
+@@ -271,7 +254,7 @@ struct __get_user __atomic_bad_address(int *addr)
+ #if CHIP_HAS_CBOX_HOME_MAP()
+ static int __init noatomichash(char *str)
+ {
+-	printk("noatomichash is deprecated.\n");
++	pr_warning("noatomichash is deprecated.\n");
+ 	return 1;
+ }
+ __setup("noatomichash", noatomichash);
+diff --git a/arch/tile/lib/cpumask.c b/arch/tile/lib/cpumask.c
+index af745b3..fdc4036 100644
+--- a/arch/tile/lib/cpumask.c
++++ b/arch/tile/lib/cpumask.c
+@@ -15,6 +15,7 @@
+ #include <linux/cpumask.h>
+ #include <linux/ctype.h>
+ #include <linux/errno.h>
++#include <linux/smp.h>
+ 
+ /*
+  * Allow cropping out bits beyond the end of the array.
+diff --git a/arch/tile/lib/exports.c b/arch/tile/lib/exports.c
+index af8e70e..6bc7b52 100644
+--- a/arch/tile/lib/exports.c
++++ b/arch/tile/lib/exports.c
+@@ -21,6 +21,7 @@
+ EXPORT_SYMBOL(__get_user_1);
+ EXPORT_SYMBOL(__get_user_2);
+ EXPORT_SYMBOL(__get_user_4);
++EXPORT_SYMBOL(__get_user_8);
+ EXPORT_SYMBOL(__put_user_1);
+ EXPORT_SYMBOL(__put_user_2);
+ EXPORT_SYMBOL(__put_user_4);
+diff --git a/arch/tile/lib/memcpy_tile64.c b/arch/tile/lib/memcpy_tile64.c
+index 4f00473..dfedea7 100644
+--- a/arch/tile/lib/memcpy_tile64.c
++++ b/arch/tile/lib/memcpy_tile64.c
+@@ -60,8 +60,8 @@ typedef unsigned long (*memcpy_t)(void *, const void *, unsigned long);
+ static void memcpy_multicache(void *dest, const void *source,
+ 			      pte_t dst_pte, pte_t src_pte, int len)
+ {
+-	int idx, i;
+-	unsigned long flags, newsrc, newdst, endsrc;
++	int idx;
++	unsigned long flags, newsrc, newdst;
+ 	pmd_t *pmdp;
+ 	pte_t *ptep;
+ 	int cpu = get_cpu();
+@@ -121,7 +121,7 @@ static void memcpy_multicache(void *dest, const void *source,
+ 	 */
+ 	sim_allow_multiple_caching(0);
+ 	local_irq_restore(flags);
+-	put_cpu_no_resched();
++	put_cpu();
+ }
+ 
+ /*
+diff --git a/arch/tile/lib/memmove_32.c b/arch/tile/lib/memmove_32.c
+index f09d8c4..fd615ae 100644
+--- a/arch/tile/lib/memmove_32.c
++++ b/arch/tile/lib/memmove_32.c
+@@ -42,7 +42,7 @@ void *memmove(void *dest, const void *src, size_t n)
+ 			in = (const uint8_t *)src;
+ 			out = (uint8_t *)dest;
+ 			stride = 1;
+-                }
++		}
+ 
+ 		/* Manually software-pipeline this loop. */
+ 		x = *in;
+diff --git a/arch/tile/lib/memset_32.c b/arch/tile/lib/memset_32.c
+index 8593bc8..bfde5d8 100644
+--- a/arch/tile/lib/memset_32.c
++++ b/arch/tile/lib/memset_32.c
+@@ -245,7 +245,8 @@ void *memset(void *s, int c, size_t n)
+ 				wh += CACHE_LINE_SIZE_IN_WORDS;
+ 			} while (--i);
+ 
+-			for (j = x * (CACHE_LINE_SIZE_IN_WORDS / 4); j != 0; j--) {
++			for (j = x * (CACHE_LINE_SIZE_IN_WORDS / 4);
++			     j != 0; j--) {
+ 				*out32++ = v32;
+ 				*out32++ = v32;
+ 				*out32++ = v32;
+diff --git a/arch/tile/lib/spinlock_common.h b/arch/tile/lib/spinlock_common.h
+index 8dffebd..c101098 100644
+--- a/arch/tile/lib/spinlock_common.h
++++ b/arch/tile/lib/spinlock_common.h
+@@ -35,7 +35,7 @@ relax(int iterations)
+ }
+ 
+ /* Perform bounded exponential backoff.*/
+-void delay_backoff(int iterations)
++static void delay_backoff(int iterations)
+ {
+ 	u32 exponent, loops;
+ 
+diff --git a/arch/tile/lib/uaccess.c b/arch/tile/lib/uaccess.c
+index 9ae1825..f8d398c 100644
+--- a/arch/tile/lib/uaccess.c
++++ b/arch/tile/lib/uaccess.c
+@@ -18,14 +18,15 @@
+ int __range_ok(unsigned long addr, unsigned long size)
+ {
+ 	unsigned long limit = current_thread_info()->addr_limit.seg;
+-	__chk_user_ptr(addr);
+ 	return !((addr < limit && size <= limit - addr) ||
+ 		 is_arch_mappable_range(addr, size));
+ }
+ EXPORT_SYMBOL(__range_ok);
+ 
++#ifdef CONFIG_DEBUG_COPY_FROM_USER
+ void copy_from_user_overflow(void)
+ {
+        WARN(1, "Buffer overflow detected!\n");
+ }
+ EXPORT_SYMBOL(copy_from_user_overflow);
++#endif
+diff --git a/arch/tile/mm/elf.c b/arch/tile/mm/elf.c
+index 818c9be..55e58e9 100644
+--- a/arch/tile/mm/elf.c
++++ b/arch/tile/mm/elf.c
+@@ -20,6 +20,7 @@
+ #include <linux/elf.h>
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
++#include <asm/sections.h>
+ 
+ /* Notify a running simulator, if any, that an exec just occurred. */
+ static void sim_notify_exec(const char *binary_name)
+@@ -77,9 +78,8 @@ static void *vdso_page;
+ /* One-entry array used for install_special_mapping. */
+ static struct page *vdso_pages[1];
+ 
+-int __init vdso_setup(void)
++static int __init vdso_setup(void)
+ {
+-	extern char __rt_sigreturn[], __rt_sigreturn_end[];
+ 	vdso_page = (void *)get_zeroed_page(GFP_ATOMIC);
+ 	memcpy(vdso_page, __rt_sigreturn, __rt_sigreturn_end - __rt_sigreturn);
+ 	vdso_pages[0] = virt_to_page(vdso_page);
+diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
+index 9b6b92f..0011f06 100644
+--- a/arch/tile/mm/fault.c
++++ b/arch/tile/mm/fault.c
+@@ -39,32 +39,11 @@
+ #include <asm/system.h>
+ #include <asm/pgalloc.h>
+ #include <asm/sections.h>
++#include <asm/traps.h>
++#include <asm/syscalls.h>
+ 
+ #include <arch/interrupts.h>
+ 
+-/*
+- * Unlock any spinlocks which will prevent us from getting the
+- * message out
+- */
+-void bust_spinlocks(int yes)
 -{
--  "r0",   "r1",  "r2",  "r3",  "r4",  "r5",  "r6",  "r7",
--  "r8",   "r9",  "r10", "r11", "r12", "r13", "r14", "r15",
--  "r16",  "r17", "r18", "r19", "r20", "r21", "r22", "r23",
--  "r24",  "r25", "r26", "r27", "r28", "r29", "r30", "r31",
--  "r32",  "r33", "r34", "r35", "r36", "r37", "r38", "r39",
--  "r40",  "r41", "r42", "r43", "r44", "r45", "r46", "r47",
--  "r48",  "r49", "r50", "r51", "r52", "tp",  "sp",  "lr",
--  "sn",  "idn0", "idn1", "udn0", "udn1", "udn2", "udn3", "zero"
+-	int loglevel_save = console_loglevel;
+-
+-	if (yes) {
+-		oops_in_progress = 1;
+-		return;
+-	}
+-	oops_in_progress = 0;
+-	/*
+-	 * OK, the message is on the console.  Now we call printk()
+-	 * without oops_in_progress set so that printk will give klogd
+-	 * a poke.  Hold onto your hats...
+-	 */
+-	console_loglevel = 15;	/* NMI oopser may have shut the console up */
+-	printk(" ");
+-	console_loglevel = loglevel_save;
+-}
+-
+ static noinline void force_sig_info_fault(int si_signo, int si_code,
+ 	unsigned long address, int fault_num, struct task_struct *tsk)
+ {
+@@ -301,10 +280,10 @@ static int handle_page_fault(struct pt_regs *regs,
+ 	 */
+ 	stack_offset = stack_pointer & (THREAD_SIZE-1);
+ 	if (stack_offset < THREAD_SIZE / 8) {
+-		printk(KERN_ALERT "Potential stack overrun: sp %#lx\n",
++		pr_alert("Potential stack overrun: sp %#lx\n",
+ 		       stack_pointer);
+ 		show_regs(regs);
+-		printk(KERN_ALERT "Killing current process %d/%s\n",
++		pr_alert("Killing current process %d/%s\n",
+ 		       tsk->pid, tsk->comm);
+ 		do_group_exit(SIGKILL);
+ 	}
+@@ -422,7 +401,7 @@ good_area:
+ 	} else if (write) {
+ #ifdef TEST_VERIFY_AREA
+ 		if (!is_page_fault && regs->cs == KERNEL_CS)
+-			printk("WP fault at "REGFMT"\n", regs->eip);
++			pr_err("WP fault at "REGFMT"\n", regs->eip);
+ #endif
+ 		if (!(vma->vm_flags & VM_WRITE))
+ 			goto bad_area;
+@@ -450,6 +429,7 @@ good_area:
+ 	else
+ 		tsk->min_flt++;
+ 
++#if CHIP_HAS_TILE_DMA() || CHIP_HAS_SN_PROC()
+ 	/*
+ 	 * If this was an asynchronous fault,
+ 	 * restart the appropriate engine.
+@@ -472,6 +452,7 @@ good_area:
+ 		break;
+ #endif
+ 	}
++#endif
+ 
+ 	up_read(&mm->mmap_sem);
+ 	return 1;
+@@ -514,17 +495,17 @@ no_context:
+ 		pte_t *pte = lookup_address(address);
+ 
+ 		if (pte && pte_present(*pte) && !pte_exec_kernel(*pte))
+-			printk(KERN_CRIT "kernel tried to execute"
++			pr_crit("kernel tried to execute"
+ 			       " non-executable page - exploit attempt?"
+ 			       " (uid: %d)\n", current->uid);
+ 	}
+ #endif
+ 	if (address < PAGE_SIZE)
+-		printk(KERN_ALERT "Unable to handle kernel NULL pointer dereference\n");
++		pr_alert("Unable to handle kernel NULL pointer dereference\n");
+ 	else
+-		printk(KERN_ALERT "Unable to handle kernel paging request\n");
+-	printk(" at virtual address "REGFMT", pc "REGFMT"\n",
+-	       address, regs->pc);
++		pr_alert("Unable to handle kernel paging request\n");
++	pr_alert(" at virtual address "REGFMT", pc "REGFMT"\n",
++		 address, regs->pc);
+ 
+ 	show_regs(regs);
+ 
+@@ -555,7 +536,7 @@ out_of_memory:
+ 		down_read(&mm->mmap_sem);
+ 		goto survive;
+ 	}
+-	printk("VM: killing process %s\n", tsk->comm);
++	pr_alert("VM: killing process %s\n", tsk->comm);
+ 	if (!is_kernel_mode)
+ 		do_group_exit(SIGKILL);
+ 	goto no_context;
+@@ -573,31 +554,12 @@ do_sigbus:
+ 
+ #ifndef __tilegx__
+ 
+-extern char sys_cmpxchg[], __sys_cmpxchg_end[];
+-extern char __sys_cmpxchg_grab_lock[];
+-extern char __start_atomic_asm_code[], __end_atomic_asm_code[];
+-
+-/*
+- * We return this structure in registers to avoid having to write
+- * additional save/restore code in the intvec.S caller.
+- */
+-struct intvec_state {
+-	void *handler;
+-	unsigned long vecnum;
+-	unsigned long fault_num;
+-	unsigned long info;
+-	unsigned long retval;
 -};
 -
+ /* We must release ICS before panicking or we won't get anywhere. */
+ #define ics_panic(fmt, ...) do { \
+ 	__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0); \
+ 	panic(fmt, __VA_ARGS__); \
+ } while (0)
  
- /* Given a set of bundle bits and the lookup FSM for a specific pipe,
-  * returns which instruction the bundle contains in that pipe.
+-void do_page_fault(struct pt_regs *regs, int fault_num,
+-		   unsigned long address, unsigned long write);
+-
+ /*
+  * When we take an ITLB or DTLB fault or access violation in the
+  * supervisor while the critical section bit is set, the hypervisor is
+diff --git a/arch/tile/mm/highmem.c b/arch/tile/mm/highmem.c
+index 1fcecc5..ff1cdff 100644
+--- a/arch/tile/mm/highmem.c
++++ b/arch/tile/mm/highmem.c
+@@ -121,7 +121,7 @@ static struct list_head amp_list = LIST_HEAD_INIT(amp_list);
+ struct kmap_amps {
+ 	struct atomic_mapped_page per_type[KM_TYPE_NR];
+ };
+-DEFINE_PER_CPU(struct kmap_amps, amps);
++static DEFINE_PER_CPU(struct kmap_amps, amps);
+ 
+ /*
+  * Add a page and va, on this cpu, to the list of kmap_atomic pages,
+diff --git a/arch/tile/mm/homecache.c b/arch/tile/mm/homecache.c
+index 52feb77..97c478e 100644
+--- a/arch/tile/mm/homecache.c
++++ b/arch/tile/mm/homecache.c
+@@ -46,7 +46,7 @@
+  * locally from a remote home.  There's no point in using it if we
+  * don't have coherent local caching, though.
+  */
+-int __write_once noallocl2;
++static int __write_once noallocl2;
+ static int __init set_noallocl2(char *str)
+ {
+ 	noallocl2 = 1;
+@@ -60,15 +60,11 @@ early_param("noallocl2", set_noallocl2);
+ 
+ #endif
+ 
+-
+-
+ /* Provide no-op versions of these routines to keep flush_remote() cleaner. */
+ #define mark_caches_evicted_start() 0
+ #define mark_caches_evicted_finish(mask, timestamp) do {} while (0)
+ 
+ 
+-
+-
+ /*
+  * Update the irq_stat for cpus that we are going to interrupt
+  * with TLB or cache flushes.  Also handle removing dataplane cpus
+@@ -171,20 +167,12 @@ void flush_remote(unsigned long cache_pfn, unsigned long cache_control,
+ 	cpumask_scnprintf(cache_buf, sizeof(cache_buf), &cache_cpumask_copy);
+ 	cpumask_scnprintf(tlb_buf, sizeof(tlb_buf), &tlb_cpumask_copy);
+ 
+-	printk("hv_flush_remote(%#llx, %#lx, %p [%s],"
++	pr_err("hv_flush_remote(%#llx, %#lx, %p [%s],"
+ 	       " %#lx, %#lx, %#lx, %p [%s], %p, %d) = %d\n",
+ 	       cache_pa, cache_control, cache_cpumask, cache_buf,
+ 	       (unsigned long)tlb_va, tlb_length, tlb_pgsize,
+ 	       tlb_cpumask, tlb_buf,
+ 	       asids, asidcount, rc);
+-	if (asidcount > 0) {
+-		int i;
+-		printk(" asids:");
+-		for (i = 0; i < asidcount; ++i)
+-			printk(" %d,%d,%d",
+-			       asids[i].x, asids[i].y, asids[i].asid);
+-		printk("\n");
+-	}
+ 	panic("Unsafe to continue.");
+ }
+ 
+@@ -293,7 +281,7 @@ pte_t pte_set_home(pte_t pte, int home)
+ 	 */
+ 	if (hv_pte_get_nc(pte) && home != PAGE_HOME_IMMUTABLE) {
+ 		pte = hv_pte_clear_nc(pte);
+-		printk("non-immutable page incoherently referenced: %#llx\n",
++		pr_err("non-immutable page incoherently referenced: %#llx\n",
+ 		       pte.val);
+ 	}
+ 
+diff --git a/arch/tile/mm/hugetlbpage.c b/arch/tile/mm/hugetlbpage.c
+index c38570f..24688b6 100644
+--- a/arch/tile/mm/hugetlbpage.c
++++ b/arch/tile/mm/hugetlbpage.c
+@@ -332,7 +332,7 @@ static __init int setup_hugepagesz(char *opt)
+ 	} else if (ps == PUD_SIZE) {
+ 		hugetlb_add_hstate(PUD_SHIFT - PAGE_SHIFT);
+ 	} else {
+-		printk(KERN_ERR "hugepagesz: Unsupported page size %lu M\n",
++		pr_err("hugepagesz: Unsupported page size %lu M\n",
+ 			ps >> 20);
+ 		return 0;
+ 	}
+diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
+index 125ac53..d89c9ea 100644
+--- a/arch/tile/mm/init.c
++++ b/arch/tile/mm/init.c
+@@ -67,7 +67,9 @@
+ 
+ #define clear_pgd(pmdptr) (*(pmdptr) = hv_pte(0))
+ 
++#ifndef __tilegx__
+ unsigned long VMALLOC_RESERVE = CONFIG_VMALLOC_RESERVE;
++#endif
+ 
+ DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+ 
+@@ -282,9 +284,9 @@ static pgprot_t __init init_pgprot(ulong address)
+ 	/*
+ 	 * Everything else that isn't data or bss is heap, so mark it
+ 	 * with the initial heap home (hash-for-home, or this cpu).  This
+-	 * includes any addresses after the loaded image; any address before
+-	 * _einittext (since we already captured the case of text before
+-	 * _sinittext); and any init-data pages.
++	 * includes any addresses after the loaded image and any address before
++	 * _einitdata, since we already captured the case of text before
++	 * _sinittext, and __pa(einittext) is approximately __pa(sinitdata).
+ 	 *
+ 	 * All the LOWMEM pages that we mark this way will get their
+ 	 * struct page homecache properly marked later, in set_page_homes().
+@@ -292,9 +294,7 @@ static pgprot_t __init init_pgprot(ulong address)
+ 	 * homes, but with a zero free_time we don't have to actually
+ 	 * do a flush action the first time we use them, either.
+ 	 */
+-	if (address >= (ulong) _end || address < (ulong) _sdata ||
+-	    (address >= (ulong) _sinitdata &&
+-	     address < (ulong) _einitdata))
++	if (address >= (ulong) _end || address < (ulong) _einitdata)
+ 		return construct_pgprot(PAGE_KERNEL, initial_heap_home());
+ 
+ #if CHIP_HAS_CBOX_HOME_MAP()
+@@ -304,35 +304,38 @@ static pgprot_t __init init_pgprot(ulong address)
+ #endif
+ 
+ 	/*
++	 * Make the w1data homed like heap to start with, to avoid
++	 * making it part of the page-striped data area when we're just
++	 * going to convert it to read-only soon anyway.
++	 */
++	if (address >= (ulong)__w1data_begin && address < (ulong)__w1data_end)
++		return construct_pgprot(PAGE_KERNEL, initial_heap_home());
++
++	/*
+ 	 * Otherwise we just hand out consecutive cpus.  To avoid
+ 	 * requiring this function to hold state, we just walk forward from
+ 	 * _sdata by PAGE_SIZE, skipping the readonly and init data, to reach
+ 	 * the requested address, while walking cpu home around kdata_mask.
+ 	 * This is typically no more than a dozen or so iterations.
+ 	 */
+-	BUG_ON(_einitdata != __bss_start);
+-	for (page = (ulong)_sdata, cpu = NR_CPUS; ; ) {
+-		cpu = cpumask_next(cpu, &kdata_mask);
+-		if (cpu == NR_CPUS)
+-			cpu = cpumask_first(&kdata_mask);
+-		if (page >= address)
+-			break;
+-		page += PAGE_SIZE;
+-		if (page == (ulong)__start_rodata)
+-			page = (ulong)__end_rodata;
+-		if (page == (ulong)&init_thread_union)
+-			page += THREAD_SIZE;
+-		if (page == (ulong)_sinitdata)
+-			page = (ulong)_einitdata;
++	page = (((ulong)__w1data_end) + PAGE_SIZE - 1) & PAGE_MASK;
++	BUG_ON(address < page || address >= (ulong)_end);
++	cpu = cpumask_first(&kdata_mask);
++	for (; page < address; page += PAGE_SIZE) {
++		if (page >= (ulong)&init_thread_union &&
++		    page < (ulong)&init_thread_union + THREAD_SIZE)
++			continue;
+ 		if (page == (ulong)empty_zero_page)
+-			page += PAGE_SIZE;
++			continue;
+ #ifndef __tilegx__
+ #if !ATOMIC_LOCKS_FOUND_VIA_TABLE()
+ 		if (page == (ulong)atomic_locks)
+-			page += PAGE_SIZE;
++			continue;
+ #endif
+ #endif
+-
++		cpu = cpumask_next(cpu, &kdata_mask);
++		if (cpu == NR_CPUS)
++			cpu = cpumask_first(&kdata_mask);
+ 	}
+ 	return construct_pgprot(PAGE_KERNEL, cpu);
+ }
+@@ -362,7 +365,7 @@ static int __init setup_ktext(char *str)
+ 	/* If you have a leading "nocache", turn off ktext caching */
+ 	if (strncmp(str, "nocache", 7) == 0) {
+ 		ktext_nocache = 1;
+-		printk("ktext: disabling local caching of kernel text\n");
++		pr_info("ktext: disabling local caching of kernel text\n");
+ 		str += 7;
+ 		if (*str == ',')
+ 			++str;
+@@ -374,20 +377,20 @@ static int __init setup_ktext(char *str)
+ 
+ 	/* Default setting on Tile64: use a huge page */
+ 	if (strcmp(str, "huge") == 0)
+-		printk("ktext: using one huge locally cached page\n");
++		pr_info("ktext: using one huge locally cached page\n");
+ 
+ 	/* Pay TLB cost but get no cache benefit: cache small pages locally */
+ 	else if (strcmp(str, "local") == 0) {
+ 		ktext_small = 1;
+ 		ktext_local = 1;
+-		printk("ktext: using small pages with local caching\n");
++		pr_info("ktext: using small pages with local caching\n");
+ 	}
+ 
+ 	/* Neighborhood cache ktext pages on all cpus. */
+ 	else if (strcmp(str, "all") == 0) {
+ 		ktext_small = 1;
+ 		ktext_all = 1;
+-		printk("ktext: using maximal caching neighborhood\n");
++		pr_info("ktext: using maximal caching neighborhood\n");
+ 	}
+ 
+ 
+@@ -397,10 +400,10 @@ static int __init setup_ktext(char *str)
+ 		cpulist_scnprintf(buf, sizeof(buf), &ktext_mask);
+ 		if (cpumask_weight(&ktext_mask) > 1) {
+ 			ktext_small = 1;
+-			printk("ktext: using caching neighborhood %s "
++			pr_info("ktext: using caching neighborhood %s "
+ 			       "with small pages\n", buf);
+ 		} else {
+-			printk("ktext: caching on cpu %s with one huge page\n",
++			pr_info("ktext: caching on cpu %s with one huge page\n",
+ 			       buf);
+ 		}
+ 	}
+@@ -470,19 +473,19 @@ static void __init kernel_physical_mapping_init(pgd_t *pgd_base)
+ 
+ #if CHIP_HAS_CBOX_HOME_MAP()
+ 	if (ktext_arg_seen && ktext_hash) {
+-		printk("warning: \"ktext\" boot argument ignored"
+-		       " if \"kcache_hash\" sets up text hash-for-home\n");
++		pr_warning("warning: \"ktext\" boot argument ignored"
++			   " if \"kcache_hash\" sets up text hash-for-home\n");
+ 		ktext_small = 0;
+ 	}
+ 
+ 	if (kdata_arg_seen && kdata_hash) {
+-		printk("warning: \"kdata\" boot argument ignored"
+-		       " if \"kcache_hash\" sets up data hash-for-home\n");
++		pr_warning("warning: \"kdata\" boot argument ignored"
++			   " if \"kcache_hash\" sets up data hash-for-home\n");
+ 	}
+ 
+ 	if (kdata_huge && !hash_default) {
+-		printk("warning: disabling \"kdata=huge\"; requires"
+-		       " kcache_hash=all or =allbutstack\n");
++		pr_warning("warning: disabling \"kdata=huge\"; requires"
++			  " kcache_hash=all or =allbutstack\n");
+ 		kdata_huge = 0;
+ 	}
+ #endif
+@@ -556,11 +559,11 @@ static void __init kernel_physical_mapping_init(pgd_t *pgd_base)
+ 		if (!cpumask_empty(&bad)) {
+ 			char buf[NR_CPUS * 5];
+ 			cpulist_scnprintf(buf, sizeof(buf), &bad);
+-			printk("ktext: not using unavailable cpus %s\n", buf);
++			pr_info("ktext: not using unavailable cpus %s\n", buf);
+ 		}
+ 		if (cpumask_empty(&ktext_mask)) {
+-			printk("ktext: no valid cpus; caching on %d.\n",
+-			       smp_processor_id());
++			pr_warning("ktext: no valid cpus; caching on %d.\n",
++				   smp_processor_id());
+ 			cpumask_copy(&ktext_mask,
+ 				     cpumask_of(smp_processor_id()));
+ 		}
+@@ -737,17 +740,18 @@ static void __init set_non_bootmem_pages_init(void)
+ 	for_each_zone(z) {
+ 		unsigned long start, end;
+ 		int nid = z->zone_pgdat->node_id;
++		int idx = zone_idx(z);
+ 
+ 		start = z->zone_start_pfn;
+ 		if (start == 0)
+ 			continue;  /* bootmem */
+ 		end = start + z->spanned_pages;
+-		if (zone_idx(z) == ZONE_NORMAL) {
++		if (idx == ZONE_NORMAL) {
+ 			BUG_ON(start != node_start_pfn[nid]);
+ 			start = node_free_pfn[nid];
+ 		}
+ #ifdef CONFIG_HIGHMEM
+-		if (zone_idx(z) == ZONE_HIGHMEM)
++		if (idx == ZONE_HIGHMEM)
+ 			totalhigh_pages += z->spanned_pages;
+ #endif
+ 		if (kdata_huge) {
+@@ -841,9 +845,9 @@ void __init mem_init(void)
+ #ifdef CONFIG_HIGHMEM
+ 	/* check that fixmap and pkmap do not overlap */
+ 	if (PKMAP_ADDR(LAST_PKMAP-1) >= FIXADDR_START) {
+-		printk(KERN_ERR "fixmap and kmap areas overlap"
++		pr_err("fixmap and kmap areas overlap"
+ 		       " - this will crash\n");
+-		printk(KERN_ERR "pkstart: %lxh pkend: %lxh fixstart %lxh\n",
++		pr_err("pkstart: %lxh pkend: %lxh fixstart %lxh\n",
+ 		       PKMAP_BASE, PKMAP_ADDR(LAST_PKMAP-1),
+ 		       FIXADDR_START);
+ 		BUG();
+@@ -863,7 +867,7 @@ void __init mem_init(void)
+ 	initsize =  (unsigned long)&_einittext - (unsigned long)&_sinittext;
+ 	initsize += (unsigned long)&_einitdata - (unsigned long)&_sinitdata;
+ 
+-	printk(KERN_INFO "Memory: %luk/%luk available (%dk kernel code, %dk data, %dk init, %ldk highmem)\n",
++	pr_info("Memory: %luk/%luk available (%dk kernel code, %dk data, %dk init, %ldk highmem)\n",
+ 		(unsigned long) nr_free_pages() << (PAGE_SHIFT-10),
+ 		num_physpages << (PAGE_SHIFT-10),
+ 		codesize >> 10,
+@@ -968,7 +972,6 @@ static void mark_w1data_ro(void)
+ 	BUG_ON((addr & (PAGE_SIZE-1)) != 0);
+ 	for (; addr <= (unsigned long)__w1data_end - 1; addr += PAGE_SIZE) {
+ 		unsigned long pfn = kaddr_to_pfn((void *)addr);
+-		struct page *page = pfn_to_page(pfn);
+ 		pte_t *ptep = virt_to_pte(NULL, addr);
+ 		BUG_ON(pte_huge(*ptep));   /* not relevant for kdata_huge */
+ 		set_pte_at(&init_mm, addr, ptep, pfn_pte(pfn, PAGE_KERNEL_RO));
+@@ -986,7 +989,7 @@ static long __write_once initfree = 1;
+ static int __init set_initfree(char *str)
+ {
+ 	strict_strtol(str, 0, &initfree);
+-	printk("initfree: %s free init pages\n", initfree ? "will" : "won't");
++	pr_info("initfree: %s free init pages\n", initfree ? "will" : "won't");
+ 	return 1;
+ }
+ __setup("initfree=", set_initfree);
+@@ -996,8 +999,8 @@ static void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ 	unsigned long addr = (unsigned long) begin;
+ 
+ 	if (kdata_huge && !initfree) {
+-		printk("Warning: ignoring initfree=0:"
+-		       " incompatible with kdata=huge\n");
++		pr_warning("Warning: ignoring initfree=0:"
++			   " incompatible with kdata=huge\n");
+ 		initfree = 1;
+ 	}
+ 	end = (end + PAGE_SIZE - 1) & PAGE_MASK;
+@@ -1033,7 +1036,7 @@ static void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ 		free_page(addr);
+ 		totalram_pages++;
+ 	}
+-	printk(KERN_INFO "Freeing %s: %ldk freed\n", what, (end - begin) >> 10);
++	pr_info("Freeing %s: %ldk freed\n", what, (end - begin) >> 10);
+ }
+ 
+ void free_initmem(void)
+diff --git a/arch/tile/mm/pgtable.c b/arch/tile/mm/pgtable.c
+index 289e729..28c2314 100644
+--- a/arch/tile/mm/pgtable.c
++++ b/arch/tile/mm/pgtable.c
+@@ -46,7 +46,7 @@ void show_mem(void)
+ {
+ 	struct zone *zone;
+ 
+-	printk("Active:%lu inactive:%lu dirty:%lu writeback:%lu unstable:%lu"
++	pr_err("Active:%lu inactive:%lu dirty:%lu writeback:%lu unstable:%lu"
+ 	       " free:%lu\n slab:%lu mapped:%lu pagetables:%lu bounce:%lu"
+ 	       " pagecache:%lu swap:%lu\n",
+ 	       (global_page_state(NR_ACTIVE_ANON) +
+@@ -71,7 +71,6 @@ void show_mem(void)
+ 		if (!populated_zone(zone))
+ 			continue;
+ 
+-		printk("Node %d %7s: ", zone_to_nid(zone), zone->name);
+ 		spin_lock_irqsave(&zone->lock, flags);
+ 		for (order = 0; order < MAX_ORDER; order++) {
+ 			int nr = zone->free_area[order].nr_free;
+@@ -80,7 +79,8 @@ void show_mem(void)
+ 				largest_order = order;
+ 		}
+ 		spin_unlock_irqrestore(&zone->lock, flags);
+-		printk("%lukB (largest %luKb)\n",
++		pr_err("Node %d %7s: %lukB (largest %luKb)\n",
++		       zone_to_nid(zone), zone->name,
+ 		       K(total), largest_order ? K(1UL) << largest_order : 0);
+ 	}
+ }
+@@ -123,42 +123,6 @@ static void set_pte_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags)
+ 	local_flush_tlb_page(NULL, vaddr, PAGE_SIZE);
+ }
+ 
+-/*
+- * Associate a huge virtual page frame with a given physical page frame
+- * and protection flags for that frame. pfn is for the base of the page,
+- * vaddr is what the page gets mapped to - both must be properly aligned.
+- * The pmd must already be instantiated.
+- */
+-void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags)
+-{
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-
+-	if (vaddr & (PMD_SIZE-1)) {		/* vaddr is misaligned */
+-		printk(KERN_WARNING "set_pmd_pfn: vaddr misaligned\n");
+-		return; /* BUG(); */
+-	}
+-	if (pfn & (PTRS_PER_PTE-1)) {		/* pfn is misaligned */
+-		printk(KERN_WARNING "set_pmd_pfn: pfn misaligned\n");
+-		return; /* BUG(); */
+-	}
+-	pgd = swapper_pg_dir + pgd_index(vaddr);
+-	if (pgd_none(*pgd)) {
+-		printk(KERN_WARNING "set_pmd_pfn: pgd_none\n");
+-		return; /* BUG(); */
+-	}
+-	pud = pud_offset(pgd, vaddr);
+-	pmd = pmd_offset(pud, vaddr);
+-	set_pmd(pmd, ptfn_pmd(HV_PFN_TO_PTFN(pfn), flags));
+-	/*
+-	 * It's enough to flush this one mapping.
+-	 * We flush both small and huge TSBs to be sure.
+-	 */
+-	local_flush_tlb_page(NULL, vaddr, HPAGE_SIZE);
+-	local_flush_tlb_pages(NULL, vaddr, PAGE_SIZE, HPAGE_SIZE);
+-}
+-
+ void __set_fixmap(enum fixed_addresses idx, unsigned long phys, pgprot_t flags)
+ {
+ 	unsigned long address = __fix_to_virt(idx);
+@@ -257,7 +221,7 @@ void pgd_free(struct mm_struct *mm, pgd_t *pgd)
+ 
+ struct page *pte_alloc_one(struct mm_struct *mm, unsigned long address)
+ {
+-	int flags = GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO|__GFP_COMP;
++	gfp_t flags = GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO|__GFP_COMP;
+ 	struct page *p;
+ 
+ #ifdef CONFIG_HIGHPTE
+@@ -550,7 +514,7 @@ void iounmap(volatile void __iomem *addr_in)
+ 	read_unlock(&vmlist_lock);
+ 
+ 	if (!p) {
+-		printk("iounmap: bad address %p\n", addr);
++		pr_err("iounmap: bad address %p\n", addr);
+ 		dump_stack();
+ 		return;
+ 	}
 -- 
 1.6.5.2
 
