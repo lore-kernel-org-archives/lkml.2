@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab0FYOqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 10:46:47 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46541 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab0FYOqq (ORCPT
+	id S932139Ab0FYOtE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 10:49:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50537 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756233Ab0FYOtB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 10:46:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ArWb6IbhNWSpT76MRHRfhj4vvoNJsvoLO1qs7ORxSlTnQP6TIH/FTvnWBLfjN/Oz8U
-         pvOrMGKBdpPLTKm2CxBnCX4G3LRFaIhhnQgFK8JZ/MucZZO8QDqBijeaPnY6Kbrnq6Zs
-         JE+oEu2bqKIkR5KAILQUfSaKg0FjD0gsH613w=
-MIME-Version: 1.0
-In-Reply-To: <20100624072732.GQ12115@pengutronix.de>
-References: <20100618205401.GA12115@pengutronix.de>
-	<80sk4ivkga.fsf@merkur.tec.linutronix.de>
-	<AANLkTimA7Rbm_nHpVYpEPqaPCjrOse9s8YyiInWlhfEK@mail.gmail.com>
-	<80tyoyhxey.fsf_-_@merkur.tec.linutronix.de>
-	<AANLkTikRj_dMkKLyFhW78yld9jIYAIFncfPaPAF8WqUY@mail.gmail.com>
-	<80iq5bqd07.fsf_-_@merkur.tec.linutronix.de>
-	<AANLkTimJKNEwOoKldq4a4_ufxNY6IY7r6tAfAM055hlW@mail.gmail.com>
-	<80vd9ab0d2.fsf@merkur.tec.linutronix.de>
-	<AANLkTinVaXjCneg-XpxB7YNlmGOwQFTnm5RUcetPdToI@mail.gmail.com>
-	<80lja6awlb.fsf@merkur.tec.linutronix.de>
-	<20100624072732.GQ12115@pengutronix.de>
-Date: Fri, 25 Jun 2010 16:46:44 +0200
-Message-ID: <AANLkTilG2AhYtQkb8V0u9851JP1vHhqrJTWKyRDGM36F@mail.gmail.com>
-Subject: Re: [PATCHv3 4/5] mtd: mxc_nand fixups
-From: Ivo Clarysse <ivo.clarysse@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-       John Ogness <john.ogness@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 25 Jun 2010 10:49:01 -0400
+Subject: Re: [PATCH 2/3] perf: Remove dead code in buildin-record.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Yanmin Zhang <yanmin_zhang@linux.intel.com>, mingo@elte.hu,
+       linux kernel mailing list <linux-kernel@vger.kernel.org>,
+       Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <20100625131356.GB4078@ghostprotocols.net>
+References: <4C241140.9090008@cn.fujitsu.com>
+	 <4C24119B.60200@cn.fujitsu.com>  <20100625131356.GB4078@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 25 Jun 2010 16:48:05 +0200
+Message-ID: <1277477285.32034.666.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 9:27 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-[...]
->
-> BTW I observed that at least on i.MX27 the latencies introduced by
-> waiting for an interrupt cause a significant performance drop. The
-> driver gets much faster when we just poll all the time. I don't know how
-> this affects system performance otherwise, but it may be a possibility
-> to drop interrupt support at least for i.MX21. I have no idea how long
-> the longest possible time we'd have to poll is though.
+On Fri, 2010-06-25 at 10:13 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Jun 25, 2010 at 10:16:59AM +0800, Gui Jianfeng escreveu:
+> > group_fd related code is dead here, remove them.
+> 
+> I agree it is dead at the moment, but I think Peter (or was it Ingo at
+> the time?) had a reason for it to live, Peter, care to take a look?
 
-I'm noticing the same thing on i.MX21: when using interrupts,
-"Scanning device for bad blocks" takes 982 (!) seconds.  When always
-using polling, the same scan takes 'only' 500 seconds.
+Ah, yes, it would be nice for SH (which doesn't have a PMI) to couple a
+software timer with their hardware counter to get samples.
 
+Never got around to actually implementing that though, maybe Paul has a
+minion interested in making that work?
 
-Ivo.
+> > Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+> > ---
+> >  tools/perf/builtin-record.c |   12 +-----------
+> >  1 files changed, 1 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> > index abaf0f8..84d58b7 100644
+> > --- a/tools/perf/builtin-record.c
+> > +++ b/tools/perf/builtin-record.c
+> > @@ -45,7 +45,6 @@ static int			freq				=   1000;
+> >  static int			output;
+> >  static int			pipe_output			=      0;
+> >  static const char		*output_name			= "perf.data";
+> > -static int			group				=      0;
+> >  static int			realtime_prio			=      0;
+> >  static bool			raw_samples			=  false;
+> >  static bool			system_wide			=  false;
+> > @@ -203,8 +202,6 @@ static void sig_atexit(void)
+> >  	kill(getpid(), signr);
+> >  }
+> >  
+> > -static int group_fd;
+> > -
+> >  static struct perf_header_attr *get_header_attr(struct perf_event_attr *a, int nr)
+> >  {
+> >  	struct perf_header_attr *h_attr;
+> > @@ -291,7 +288,7 @@ static void create_counter(int counter, int cpu)
+> >  	for (thread_index = 0; thread_index < thread_num; thread_index++) {
+> >  try_again:
+> >  		fd[nr_cpu][counter][thread_index] = sys_perf_event_open(attr,
+> > -				all_tids[thread_index], cpu, group_fd, 0);
+> > +				all_tids[thread_index], cpu, -1, 0);
+> >  
+> >  		if (fd[nr_cpu][counter][thread_index] < 0) {
+> >  			int err = errno;
+> > @@ -359,12 +356,6 @@ try_again:
+> >  		assert(fd[nr_cpu][counter][thread_index] >= 0);
+> >  		fcntl(fd[nr_cpu][counter][thread_index], F_SETFL, O_NONBLOCK);
+> >  
+> > -		/*
+> > -		 * First counter acts as the group leader:
+> > -		 */
+> > -		if (group && group_fd == -1)
+> > -			group_fd = fd[nr_cpu][counter][thread_index];
+> > -
+> >  		if (counter || thread_index) {
+> >  			ret = ioctl(fd[nr_cpu][counter][thread_index],
+> >  					PERF_EVENT_IOC_SET_OUTPUT,
+> > @@ -406,7 +397,6 @@ static void open_counters(int cpu)
+> >  {
+> >  	int counter;
+> >  
+> > -	group_fd = -1;
+> >  	for (counter = 0; counter < nr_counters; counter++)
+> >  		create_counter(counter, cpu);
+> >  
+> > -- 1.6.5.2 
+
