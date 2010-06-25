@@ -1,73 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409Ab0FYEkz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 00:40:55 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48258 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab0FYEky (ORCPT
+	id S1751409Ab0FYEzU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 00:55:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56296 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867Ab0FYEzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 00:40:54 -0400
+	Fri, 25 Jun 2010 00:55:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=M0yuS6AF+Jlv2m2UJyv4kCZ9O1yGOEvLS60Sus8pIZgHyIv678O2eCmYVVI/HdVPHO
-         ZOMlw7Sny/WbDTFm/JXFNd6gU+NJ8BoyUxWvgUMSESsymzq4E7nI8iR54qy8UgG0Ndto
-         HWT9Ku0klUHe+9juaU6GKxFoB3MxfFErKWM4U=
-Subject: [PATCH] staging/spectra: remove non existing blk_fs_request wrapper
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-       David Woodhouse <David.Woodhouse@intel.com>,
-       linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-       kernel-janitors <kernel-janitors@vger.kernel.org>
-Content-Type: text/plain; charset="ISO-8859-9"
-Date: Fri, 25 Jun 2010 00:40:48 -0400
-Message-ID: <1277440848.18981.9.camel@lenovo>
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=W9QZdQbP+61b7s803ZFEKFnpyDkFQ1zg4n6AHxadrxdrcOBTwuZ3XDx4D599kbaQzJ
+         PManGPpnxFeCZYT7b7SwlCF3gpXnZ5QEphHZa+qmThb4PTkQ5zzzTAe51EGpUSbflbPl
+         zogofQV8/rXH1eXDHAGjDcgy7WUSKx2f0hmFM=
+Subject: Re: [RFC PATCH v2 4/5] skb: add tracepoints to freeing skb
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, kaneshige.kenji@jp.fujitsu.com,
+       izumi.taku@jp.fujitsu.com
+In-Reply-To: <4C23FF55.3090604@jp.fujitsu.com>
+References: <4C2312A8.9060903@jp.fujitsu.com>
+	 <4C23FF55.3090604@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Jun 2010 06:55:11 +0200
+Message-ID: <1277441711.2481.3.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The spectra driver doesn't compile with today linux-next
+Le vendredi 25 juin 2010 à 09:59 +0900, Koki Sanagi a écrit :
+> This patch adds tracepoint to consume_skb and dev_kfree_skb_irq.
+> Combinating with tracepoint on dev_hard_start_xmit, we can check how long it
+> takes to free transmited packets. And using it, we can calculate how many
+> packets driver had at that time. It is useful when a drop of transmited packet
+> is a problem.
+> 
+>           <idle>-0     [001] 241409.218333: consume_skb: skbaddr=dd6b2fb8
+>           <idle>-0     [001] 241409.490555: dev_kfree_skb_irq: skbaddr=f5e29840
+> 
+> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+> ---
+> include/trace/events/skb.h |   36 ++++++++++++++++++++++++++++++++++++
+>  net/core/dev.c             |    2 ++
+>  net/core/skbuff.c          |    1 +
+>  3 files changed, 39 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
+> index 4b2be6d..6ab5b34 100644
+> --- a/include/trace/events/skb.h
+> +++ b/include/trace/events/skb.h
+> @@ -35,6 +35,42 @@ TRACE_EVENT(kfree_skb,
+>  		__entry->skbaddr, __entry->protocol, __entry->location)
+>  );
+>  
+> +TRACE_EVENT(consume_skb,
+> +
+> +	TP_PROTO(struct sk_buff *skb),
+> +
+> +	TP_ARGS(skb),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	void *,	skbaddr	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->skbaddr = skb;
+> +	),
+> +
+> +	TP_printk("skbaddr=%p",
+> +		__entry->skbaddr)
+> +);
+> +
+> +TRACE_EVENT(dev_kfree_skb_irq,
+> +
+> +	TP_PROTO(struct sk_buff *skb),
+> +
+> +	TP_ARGS(skb),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	void *,	skbaddr	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->skbaddr = skb;
+> +	),
+> +
+> +	TP_printk("skbaddr=%p",
+> +		__entry->skbaddr)
+> +);
+> +
+>  TRACE_EVENT(skb_copy_datagram_iovec,
+>  
+>  	TP_PROTO(const struct sk_buff *skb, int len),
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index 4b64b21..807b1ca 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -131,6 +131,7 @@
+>  #include <linux/random.h>
+>  #include <trace/events/napi.h>
+>  #include <trace/events/net.h>
+> +#include <trace/events/skb.h>
+>  #include <linux/pci.h>
+>  
+>  #include "net-sysfs.h"
+> @@ -1580,6 +1581,7 @@ void dev_kfree_skb_irq(struct sk_buff *skb)
+>  		struct softnet_data *sd;
+>  		unsigned long flags;
+>  
+> +		trace_dev_kfree_skb_irq(skb);
+>  		local_irq_save(flags);
+>  		sd = &__get_cpu_var(softnet_data);
+>  		skb->next = sd->completion_queue;
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 34432b4..a7b4036 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -466,6 +466,7 @@ void consume_skb(struct sk_buff *skb)
+>  		smp_rmb();
+>  	else if (likely(!atomic_dec_and_test(&skb->users)))
+>  		return;
+> +	trace_consume_skb(skb);
+>  	__kfree_skb(skb);
+>  }
+>  EXPORT_SYMBOL(consume_skb);
+> 
 
-The problem is that it tries to use a blk_fs_request macro. Searching for this macro I saw that it used to exist in linux/blkdev.h as
 
-#define blk_fs_request(rq) ((rq)->cmd_type == REQ_TYPE_FS)
-
-This patch solves the issue eliminating the unnecessary (and now inexistent) wrapper
-
-Best regards,
-
->From 755f948d65ff67d5dc8dde8c2edd212cbe61bd5f Mon Sep 17 00:00:00 2001
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Fri, 25 Jun 2010 00:26:20 -0400
-Subject: [PATCH] staging/spectra: remove non existing blk_fs_request wrapper
-
-
-Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
----
- drivers/staging/spectra/ffsport.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/spectra/ffsport.c b/drivers/staging/spectra/ffsport.c
-index 3c3565d..d0c5c97 100644
---- a/drivers/staging/spectra/ffsport.c
-+++ b/drivers/staging/spectra/ffsport.c
-@@ -304,7 +304,7 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
- 			return 0;
- 	}
- 
--	if (!blk_fs_request(req))
-+	if (req->cmd_type != REQ_TYPE_FS)
- 		return -EIO;
- 
- 	if (blk_rq_pos(req) + blk_rq_cur_sectors(req) > get_capacity(tr->gd)) {
--- 
-1.7.0.4
-
-
+You might add a trace point to skb_free_datagram_locked() too, since it
+contains an inlined consume_skb()
 
 
 
