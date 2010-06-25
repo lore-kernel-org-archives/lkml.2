@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab0FYLIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 07:08:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60197 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab0FYLIF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 07:08:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=HPcS/XufPKflKFZDbs3TUl3ODEffXVgbCTePGd4FUcopzBTvfg/8+Splf5pACUW2lk
-         JnXEOnbt8RVa59+IuFbqGZpIE4KEOzUjHMIwZPvmFnSgZuqzkWiR0X7XTp9cvZC3mVyF
-         67yGMU+Lmun6Fv92+73qHgULrbMmTHZQAXIJk=
-Date: Fri, 25 Jun 2010 15:08:01 +0400
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Nick Bowler <nbowler@elliptictech.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Rik van Riel <riel@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Minchan Kim <minchan.kim@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-doc@vger.kernel.org
-Subject: [PATCH v2] Documentation/sysctl/vm.txt typo
-Message-ID: <20100625110801.GB6896@shinshilla>
-References: <1276859270.3159.5.camel@shinshilla>
- <20100618142252.GA31086@elliptictech.com>
- <20100618154033.1e949749.rdunlap@xenotime.net>
+	id S1755432Ab0FYLLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 07:11:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38080 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754409Ab0FYLLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 07:11:43 -0400
+Date: Fri, 25 Jun 2010 14:06:30 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Dong, Eddie" <eddie.dong@intel.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+       "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>
+Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Message-ID: <20100625110629.GB16444@redhat.com>
+References: <20100611052112.GA25649@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com> <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com> <1A42CE6F5F474C41B63392A5F80372B21F58CD9A@shsmsx501.ccr.corp.intel.com> <20100623095254.GA32491@gondor.apana.org.au> <1A42CE6F5F474C41B63392A5F80372B21F58CE7F@shsmsx501.ccr.corp.intel.com> <20100624100836.GA16220@gondor.apana.org.au> <1A42CE6F5F474C41B63392A5F80372B21F58D666@shsmsx501.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100618154033.1e949749.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1A42CE6F5F474C41B63392A5F80372B21F58D666@shsmsx501.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix trivial typo: duplicated word.
+On Fri, Jun 25, 2010 at 09:03:46AM +0800, Dong, Eddie wrote:
+> Herbert Xu wrote:
+> > On Wed, Jun 23, 2010 at 06:05:41PM +0800, Dong, Eddie wrote:
+> >> 
+> >> I mean once the frontend side driver post the buffers to the backend
+> >> driver, the backend driver will "immediately" use that buffers to
+> >> compose skb or gro_frags and post them to the assigned host NIC
+> >> driver as receive buffers. In that case, if the backend driver
+> >> recieves a packet from the NIC that requires to do copy, it may be
+> >> unable to find additional free guest buffer because all of them are
+> >> already used by the NIC driver. We have to reserve some guest
+> >> buffers for the possible copy even if the buffer address is not
+> >> identified by original skb :(        
+> > 
+> > OK I see what you mean.  Can you tell me how does Xiaohui's
+> > previous patch-set deal with this problem?
+> > 
+> > Thanks,
+> 
+> In current patch, each SKB for the assigned device (SRIOV VF or NIC or a complete queue pairs) uses the buffer from guest, so it eliminates copy completely in software and requires hardware to do so. If we can have an additonal place to store the buffer per skb (may cause copy later on), we can do copy later on or re-post the buffer to assigned NIC driver later on. But that may be not very clean either :(
+> BTW, some hardware may require certain level of packet copy such as for broadcast packets in very old VMDq device, which is not addressed in previous Xiaohui's patch yet. We may address this by implementing an additional virtqueue between guest and host for slow path (broadcast packets only here) with additinal complexity in FE/BE driver. 
+> 
+> Thx, Eddie
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 5fdbb61..82b2da1 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -196,7 +196,7 @@ controlled by this knob are discussed in Documentation/laptops/laptop-mode.txt.
- 
- legacy_va_layout
- 
--If non-zero, this sysctl disables the new 32-bit mmap mmap layout - the kernel
-+If non-zero, this sysctl disables the new 32-bit mmap layout - the kernel
- will use the legacy (2.4) layout for all processes.
- 
- ==============================================================
+guest posts a large number of buffers to the host.
+Host can use them any way it wants to, and in any order,
+for example reserve half the buffers for the copy.
+
+This might waste some memory if buffers are used
+only partially, but let's worry about this later.
+
+-- 
+MST
