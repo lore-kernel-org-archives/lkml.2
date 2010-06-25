@@ -1,170 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab0FYOk5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 10:40:57 -0400
-Received: from [18.85.46.34] ([18.85.46.34]:55053 "EHLO bombadil.infradead.org"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755788Ab0FYOkz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 10:40:55 -0400
-Subject: Re: [PATCH] cpuidle: avoid using smp_processor_id() in preemptible
- code (nr_iowait_cpu) v4
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Arjan van de Ven <arjan@infradead.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20100617062950.GA3979@swordfish>
-References: <20100614140941.GA3581@swordfish.minsk.epam.com>
-	 <20100614073853.6fa2f91f@infradead.org>
-	 <20100614145439.GA3448@swordfish.minsk.epam.com>
-	 <20100614080154.7d6a71fc@infradead.org>
-	 <20100614151735.GB3448@swordfish.minsk.epam.com>
-	 <20100614204021.52c50cdc@infradead.org> <20100615061927.GA3312@swordfish>
-	 <20100615072435.5a47d850@infradead.org>
-	 <20100615145029.GB3967@swordfish.minsk.epam.com>
-	 <20100615080808.6286448b@infradead.org>  <20100617062950.GA3979@swordfish>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 25 Jun 2010 16:39:33 +0200
-Message-ID: <1277476773.32034.639.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756457Ab0FYOlq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 10:41:46 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:57227 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755951Ab0FYOlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 10:41:45 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>, Hans de Goede <hdegoede@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH v2 2/3] hwmon: SMM665 driver documentation
+Date: Fri, 25 Jun 2010 07:40:31 -0700
+Message-ID: <1277476832-28480-3-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.0.87.g0901d
+In-Reply-To: <1277476832-28480-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1277476832-28480-1-git-send-email-guenter.roeck@ericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-17 at 09:29 +0300, Sergey Senozhatsky wrote:
-> Fix
->    
->  BUG: using smp_processor_id() in preemptible [00000000] code: s2disk/3392
-
-> The initial fix was to use get_cpu/put_cpu in nr_iowait_cpu.  However,
-> Arjan stated that "the bug is that it needs to be nr_iowait_cpu(int cpu)".
-> 
-> This patch introduces nr_iowait_cpu(int cpu) and changes to its callers.
-> 
-> Arjan also pointed out that we can't use get_cpu/put_cpu in update_ts_time_stats
-> since we "pick the current cpu, rather than the one denoted by ts" in that case.
-> To match given *ts and cpu denoted by *ts we use new field in the struct tick_sched: int cpu.
-
-
-> diff --git a/include/linux/tick.h b/include/linux/tick.h
-> index b232ccc..db14691 100644
-> --- a/include/linux/tick.h
-> +++ b/include/linux/tick.h
-> @@ -51,6 +51,7 @@ struct tick_sched {
->  	unsigned long			check_clocks;
->  	enum tick_nohz_mode		nohz_mode;
->  	ktime_t				idle_tick;
-> +	int				cpu;
->  	int				inidle;
->  	int				tick_stopped;
->  	unsigned long			idle_jiffies;
-
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 1d7b9bc..1907037 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -38,6 +38,9 @@ static ktime_t last_jiffies_update;
->  
->  struct tick_sched *tick_get_tick_sched(int cpu)
->  {
-> +	/*FIXME: Arjan van de Ven:
-> +	 can we do this bit once, when the ts structure gets initialized?*/
-> +	per_cpu(tick_cpu_sched, cpu).cpu = cpu;
->  	return &per_cpu(tick_cpu_sched, cpu);
->  }
-
-> @@ -161,7 +164,7 @@ update_ts_time_stats(struct tick_sched *ts, ktime_t now, u64 *last_update_time)
->  	if (ts->idle_active) {
->  		delta = ktime_sub(now, ts->idle_entrytime);
->  		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
-> -		if (nr_iowait_cpu() > 0)
-> +		if (nr_iowait_cpu(ts->cpu) > 0)
->  			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
->  		ts->idle_entrytime = now;
->  	}
-
-
-This all seems extremely silly, why not something like:
-
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 ---
- kernel/time/tick-sched.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ Documentation/hwmon/smm665 |  151 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 151 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/hwmon/smm665
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 5f171f0..1363d3a 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -154,14 +154,14 @@ static void tick_nohz_update_jiffies(ktime_t now)
-  * Updates the per cpu time idle statistics counters
-  */
- static void
--update_ts_time_stats(struct tick_sched *ts, ktime_t now, u64 *last_update_time)
-+update_ts_time_stats(int cpu, struct tick_sched *ts, ktime_t now, u64 *last_update_time)
- {
- 	ktime_t delta;
- 
- 	if (ts->idle_active) {
- 		delta = ktime_sub(now, ts->idle_entrytime);
- 		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
--		if (nr_iowait_cpu() > 0)
-+		if (nr_iowait_cpu(cpu) > 0)
- 			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
- 		ts->idle_entrytime = now;
- 	}
-@@ -175,19 +175,19 @@ static void tick_nohz_stop_idle(int cpu, ktime_t now)
- {
- 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
- 
--	update_ts_time_stats(ts, now, NULL);
-+	update_ts_time_stats(cpu, ts, now, NULL);
- 	ts->idle_active = 0;
- 
- 	sched_clock_idle_wakeup_event(0);
- }
- 
--static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
-+static ktime_t tick_nohz_start_idle(int cpu, struct tick_sched *ts)
- {
- 	ktime_t now;
- 
- 	now = ktime_get();
- 
--	update_ts_time_stats(ts, now, NULL);
-+	update_ts_time_stats(cpu, ts, now, NULL);
- 
- 	ts->idle_entrytime = now;
- 	ts->idle_active = 1;
-@@ -216,7 +216,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
- 	if (!tick_nohz_enabled)
- 		return -1;
- 
--	update_ts_time_stats(ts, ktime_get(), last_update_time);
-+	update_ts_time_stats(cpu, ts, ktime_get(), last_update_time);
- 
- 	return ktime_to_us(ts->idle_sleeptime);
- }
-@@ -242,7 +242,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
- 	if (!tick_nohz_enabled)
- 		return -1;
- 
--	update_ts_time_stats(ts, ktime_get(), last_update_time);
-+	update_ts_time_stats(cpu, ts, ktime_get(), last_update_time);
- 
- 	return ktime_to_us(ts->iowait_sleeptime);
- }
-@@ -284,7 +284,7 @@ void tick_nohz_stop_sched_tick(int inidle)
- 	 */
- 	ts->inidle = 1;
- 
--	now = tick_nohz_start_idle(ts);
-+	now = tick_nohz_start_idle(cpu, ts);
- 
- 	/*
- 	 * If this cpu is offline and it is the one which updates
+diff --git a/Documentation/hwmon/smm665 b/Documentation/hwmon/smm665
+new file mode 100644
+index 0000000..8c08f63
+--- /dev/null
++++ b/Documentation/hwmon/smm665
+@@ -0,0 +1,151 @@
++Kernel driver smm665
++====================
++
++Supported chips:
++  * Summit Microelectronics SMM465
++    Prefix: 'smm465'
++    Addresses scanned: -
++    Datasheet: Publicly available at the Summit Microelectronics website.
++  * Summit Microelectronics SMM665, SMM665B
++    Prefix: 'smm665'
++    Addresses scanned: -
++    Datasheet: Publicly available at the Summit Microelectronics website.
++  * Summit Microelectronics SMM665C
++    Prefix: 'smm665c'
++    Addresses scanned: -
++    Datasheet: Publicly available at the Summit Microelectronics website.
++  * Summit Microelectronics SMM764
++    Prefix: 'smm764'
++    Addresses scanned: -
++    Datasheet: Publicly available at the Summit Microelectronics website.
++  * Summit Microelectronics SMM766
++    Prefix: 'smm766'
++    Addresses scanned: -
++    Datasheet: Publicly available at the Summit Microelectronics website.
++
++Author: Guenter Roeck <guenter.roeck@ericsson.com>
++
++
++Module Parameters
++-----------------
++
++* vref: int
++  Default: 1250 (mV)
++  Reference voltage on VREF_ADC pin in mV. It should not be necessary to set
++  this parameter unless a non-default reference voltage is used.
++
++
++Description
++-----------
++
++[From datasheet] The SMM665 is an Active DC Output power supply Controller
++that monitors, margins and cascade sequences power. The part monitors six
++power supply channels as well as VDD, 12V input, two general-purpose analog
++inputs and an internal temperature sensor using a 10-bit ADC.
++
++Each monitored channel has its own high and low limits, plus a critical
++limit.
++
++Support for SMM465, SMM764, and SMM766 has been implemented but is untested.
++
++
++Usage Notes
++-----------
++
++This driver does not probe for devices, since there is no register which
++can be safely used to identify the chip. You will have to instantiate
++the devices explicitly. When instantiating the device, you have to specify
++its configuration register address.
++
++Example: the following will load the driver for an SMM665 at address 0x57
++on I2C bus #1:
++$ modprobe smm665
++$ echo smm665 0x57 > /sys/bus/i2c/devices/i2c-1/new_device
++
++
++Sysfs entries
++-------------
++
++This driver uses the values in the datasheet to convert ADC register values
++into the values specified in the sysfs-interface document. All attributes are
++read only.
++
++Min, max, lcrit, and crit values are used by the chip to trigger external signals
++and/or other activity. Triggered signals can include HEALTHY, RST, Power Off,
++or Fault depending on the chip configuration. The driver reports values as lcrit
++or crit if exceeding the limits triggers RST, Power Off, or Fault, and as min or
++max otherwise. For details please see the SMM665 datasheet.
++
++For SMM465 and SMM764, values for Channel E and F are reported but undefined.
++
++in1_input		12V input voltage (mV)
++in2_input		3.3V (VDD) input voltage (mV)
++in3_input		Channel A voltage (mV)
++in4_input		Channel B voltage (mV)
++in5_input		Channel C voltage (mV)
++in6_input		Channel D voltage (mV)
++in7_input		Channel E voltage (mV)
++in8_input		Channel F voltage (mV)
++in9_input		AIN1 voltage (mV)
++in10_input		AIN2 voltage (mV)
++
++in1_min			12v input minimum voltage (mV)
++in2_min			3.3V (VDD) input minimum voltage (mV)
++in3_min			Channel A minimum voltage (mV)
++in4_min			Channel B minimum voltage (mV)
++in5_min			Channel C minimum voltage (mV)
++in6_min			Channel D minimum voltage (mV)
++in7_min			Channel E minimum voltage (mV)
++in8_min			Channel F minimum voltage (mV)
++in9_min			AIN1 minimum voltage (mV)
++in10_min		AIN2 minimum voltage (mV)
++
++in1_max			12v input maximum voltage (mV)
++in2_max			3.3V (VDD) input maximum voltage (mV)
++in3_max			Channel A maximum voltage (mV)
++in4_max			Channel B maximum voltage (mV)
++in5_max			Channel C maximum voltage (mV)
++in6_max			Channel D maximum voltage (mV)
++in7_max			Channel E maximum voltage (mV)
++in8_max			Channel F maximum voltage (mV)
++in9_max			AIN1 maximum voltage (mV)
++in10_max		AIN2 maximum voltage (mV)
++
++in1_lcrit		12v input critical minimum voltage (mV)
++in2_lcrit		3.3V (VDD) input critical minimum voltage (mV)
++in3_lcrit		Channel A critical minimum voltage (mV)
++in4_lcrit		Channel B critical minimum voltage (mV)
++in5_lcrit		Channel C critical minimum voltage (mV)
++in6_lcrit		Channel D critical minimum voltage (mV)
++in7_lcrit		Channel E critical minimum voltage (mV)
++in8_lcrit		Channel F critical minimum voltage (mV)
++in9_lcrit		AIN1 critical minimum voltage (mV)
++in10_lcrit		AIN2 critical minimum voltage (mV)
++
++in1_crit		12v input critical maximum voltage (mV)
++in2_crit		3.3V (VDD) input critical maximum voltage (mV)
++in3_crit		Channel A critical maximum voltage (mV)
++in4_crit		Channel B critical maximum voltage (mV)
++in5_crit		Channel C critical maximum voltage (mV)
++in6_crit		Channel D critical maximum voltage (mV)
++in7_crit		Channel E critical maximum voltage (mV)
++in8_crit		Channel F critical maximum voltage (mV)
++in9_crit		AIN1 critical maximum voltage (mV)
++in10_crit		AIN2 critical maximum voltage (mV)
++
++in1_fault		12v input fault
++in2_fault		3.3V (VDD) input fault
++in3_fault		Channel A fault
++in4_fault		Channel B fault
++in5_fault		Channel C fault
++in6_fault		Channel D fault
++in7_fault		Channel E fault
++in8_fault		Channel F fault
++in9_fault		AIN1 fault
++in10_fault		AIN2 fault
++
++temp1_input		Chip tempererature
++temp1_min		Mimimum chip tempererature
++temp1_max		Maximum chip tempererature
++temp1_crit		Critical chip tempererature
++temp1_fault		Temperature fault
+-- 
+1.7.0.87.g0901d
 
