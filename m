@@ -1,94 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932585Ab0FYTMT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:12:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48194 "EHLO mx1.redhat.com"
+	id S932559Ab0FYTMj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:12:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38305 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932387Ab0FYTGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:06:40 -0400
+	id S932365Ab0FYTGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 15:06:30 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 18/38] union-mount: Introduce MNT_UNION and MS_UNION flags
-Date: Fri, 25 Jun 2010 12:05:08 -0700
-Message-Id: <1277492728-11446-19-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 16/38] fallthru: tmpfs fallthru support
+Date: Fri, 25 Jun 2010 12:05:06 -0700
+Message-Id: <1277492728-11446-17-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 References: <1277492728-11446-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+Add support for fallthru directory entries to tmpfs
 
-Add per mountpoint flag for Union Mount support. You need additional patches
-to util-linux for that to work - see:
+XXX - Makes up inode number for dirent
 
-git://git.kernel.org/pub/scm/utils/util-linux-ng/val/util-linux-ng.git
-
-Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/namespace.c        |    5 ++++-
- include/linux/fs.h    |    1 +
- include/linux/mount.h |    4 ++--
- 3 files changed, 7 insertions(+), 3 deletions(-)
+ fs/dcache.c |    3 +-
+ fs/libfs.c  |   21 +++++++++++++++++--
+ mm/shmem.c  |   60 ++++++++++++++++++++++++++++++++++++++++++++++++++++------
+ 3 files changed, 73 insertions(+), 11 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 4eb69cd..121a137 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -810,6 +810,7 @@ static void show_mnt_opts(struct seq_file *m, struct vfsmount *mnt)
- 		{ MNT_NODIRATIME, ",nodiratime" },
- 		{ MNT_RELATIME, ",relatime" },
- 		{ MNT_STRICTATIME, ",strictatime" },
-+		{ MNT_UNION, ",union" },
- 		{ 0, NULL }
- 	};
- 	const struct proc_fs_info *fs_infop;
-@@ -2020,10 +2021,12 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 		mnt_flags &= ~(MNT_RELATIME | MNT_NOATIME);
- 	if (flags & MS_RDONLY)
- 		mnt_flags |= MNT_READONLY;
-+	if (flags & MS_UNION)
-+		mnt_flags |= MNT_UNION;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index b76f9e4..1575af4 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2240,7 +2240,8 @@ resume:
+ 		 * we can evict it.
+ 		 */
+ 		if (d_unhashed(dentry)||(!dentry->d_inode &&
+-					 !d_is_whiteout(dentry)))
++					 !d_is_whiteout(dentry) &&
++					 !d_is_fallthru(dentry)))
+ 			continue;
+ 		if (!list_empty(&dentry->d_subdirs)) {
+ 			this_parent = dentry;
+diff --git a/fs/libfs.c b/fs/libfs.c
+index ea9a6cc..2b28ca9 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -134,6 +134,7 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 	struct dentry *cursor = filp->private_data;
+ 	struct list_head *p, *q = &cursor->d_u.d_child;
+ 	ino_t ino;
++	int d_type;
+ 	int i = filp->f_pos;
  
- 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE |
- 		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
--		   MS_STRICTATIME);
-+		   MS_STRICTATIME | MS_UNION);
+ 	switch (i) {
+@@ -159,14 +160,28 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 			for (p=q->next; p != &dentry->d_subdirs; p=p->next) {
+ 				struct dentry *next;
+ 				next = list_entry(p, struct dentry, d_u.d_child);
+-				if (d_unhashed(next) || !next->d_inode)
++				if (d_unhashed(next) || (!next->d_inode && !d_is_fallthru(next)))
+ 					continue;
  
- 	if (flags & MS_REMOUNT)
- 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b59cd7b..dbd9881 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -192,6 +192,7 @@ struct inodes_stat_t {
- #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
- #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
- #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
-+#define MS_UNION	256	/* Merge namespace with FS mounted below */
- #define MS_NOATIME	1024	/* Do not update access times. */
- #define MS_NODIRATIME	2048	/* Do not update directory access times */
- #define MS_BIND		4096
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 4bd0547..0302703 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -43,9 +43,9 @@ struct mnt_namespace;
++				if (d_is_fallthru(next)) {
++					/* XXX We don't know the inode
++					 * number of the directory
++					 * entry in the underlying
++					 * file system.  Should look
++					 * it up, either on fallthru
++					 * creation at first readdir
++					 * or now at filldir time. */
++					ino = 123; /* Made up ino */
++					d_type = DT_UNKNOWN;
++				} else {
++					ino = next->d_inode->i_ino;
++					d_type = dt_type(next->d_inode);
++				}
++
+ 				spin_unlock(&dcache_lock);
+ 				if (filldir(dirent, next->d_name.name, 
+ 					    next->d_name.len, filp->f_pos, 
+-					    next->d_inode->i_ino, 
+-					    dt_type(next->d_inode)) < 0)
++					    ino, d_type) < 0)
+ 					return 0;
+ 				spin_lock(&dcache_lock);
+ 				/* next is still alive */
+diff --git a/mm/shmem.c b/mm/shmem.c
+index c58ecf4..163957b 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1809,8 +1809,7 @@ static int shmem_rmdir(struct inode *dir, struct dentry *dentry);
+ static int shmem_unlink(struct inode *dir, struct dentry *dentry);
+ 
+ /*
+- * This is the whiteout support for tmpfs. It uses one singleton whiteout
+- * inode per superblock thus it is very similar to shmem_link().
++ * Create a dentry to signify a whiteout.
   */
- #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
- #define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
-+#define MNT_UNION	0x4000	/* top layer of a union mount */
+ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
+ 			  struct dentry *new_dentry)
+@@ -1841,8 +1840,10 @@ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
+ 		spin_unlock(&sbinfo->stat_lock);
+ 	}
  
+-	if (old_dentry->d_inode) {
+-		if (S_ISDIR(old_dentry->d_inode->i_mode))
++	if (old_dentry->d_inode || d_is_fallthru(old_dentry)) {
++		/* A fallthru for a dir is treated like a regular link */
++		if (old_dentry->d_inode &&
++		    S_ISDIR(old_dentry->d_inode->i_mode))
+ 			shmem_rmdir(dir, old_dentry);
+ 		else
+ 			shmem_unlink(dir, old_dentry);
+@@ -1859,6 +1860,48 @@ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
+ }
+ 
+ static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
++				struct inode *inode);
++
++/*
++ * Create a dentry to signify a fallthru.  A fallthru in tmpfs is the
++ * logical equivalent of an in-kernel readdir() cache.  It can't be
++ * deleted until the file system is unmounted.
++ */
++static int shmem_fallthru(struct inode *dir, struct dentry *dentry)
++{
++	struct shmem_sb_info *sbinfo = SHMEM_SB(dir->i_sb);
++
++	/* FIXME: this is stupid */
++	if (!(dir->i_sb->s_flags & MS_WHITEOUT))
++		return -EPERM;
++
++	if (dentry->d_inode || d_is_fallthru(dentry) || d_is_whiteout(dentry))
++		return -EEXIST;
++
++	/*
++	 * Each new link needs a new dentry, pinning lowmem, and tmpfs
++	 * dentries cannot be pruned until they are unlinked.
++	 */
++	if (sbinfo->max_inodes) {
++		spin_lock(&sbinfo->stat_lock);
++		if (!sbinfo->free_inodes) {
++			spin_unlock(&sbinfo->stat_lock);
++			return -ENOSPC;
++		}
++		sbinfo->free_inodes--;
++		spin_unlock(&sbinfo->stat_lock);
++	}
++
++	shmem_d_instantiate(dir, dentry, NULL);
++	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
++
++	spin_lock(&dentry->d_lock);
++	dentry->d_flags |= DCACHE_FALLTHRU;
++	spin_unlock(&dentry->d_lock);
++	return 0;
++}
++
++static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
+ 				struct inode *inode)
+ {
+ 	if (d_is_whiteout(dentry)) {
+@@ -1866,14 +1909,15 @@ static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
+ 		shmem_free_inode(dir->i_sb);
+ 		if (S_ISDIR(inode->i_mode))
+ 			inode->i_mode |= S_OPAQUE;
++	} else if (d_is_fallthru(dentry)) {
++		shmem_free_inode(dir->i_sb);
+ 	} else {
+ 		/* New dentry */
+ 		dir->i_size += BOGO_DIRENT_SIZE;
+ 		dget(dentry); /* Extra count - pin the dentry in core */
+ 	}
+-	/* Will clear DCACHE_WHITEOUT flag */
++	/* Will clear DCACHE_WHITEOUT and DCACHE_FALLTHRU flags */
+ 	d_instantiate(dentry, inode);
 -
--#define MNT_INTERNAL	0x4000
-+#define MNT_INTERNAL	0x8000
+ }
+ /*
+  * File creation. Allocate an inode, and we're done..
+@@ -1962,7 +2006,8 @@ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct inode *inode = dentry->d_inode;
  
- struct vfsmount {
- 	struct list_head mnt_hash;
+-	if (d_is_whiteout(dentry) || (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
++	if (d_is_whiteout(dentry) || d_is_fallthru(dentry) ||
++	    (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
+ 		shmem_free_inode(dir->i_sb);
+ 
+ 	if (inode) {
+@@ -2596,6 +2641,7 @@ static const struct inode_operations shmem_dir_inode_operations = {
+ 	.mknod		= shmem_mknod,
+ 	.rename		= shmem_rename,
+ 	.whiteout       = shmem_whiteout,
++	.fallthru       = shmem_fallthru,
+ #endif
+ #ifdef CONFIG_TMPFS_POSIX_ACL
+ 	.setattr	= shmem_notify_change,
 -- 
 1.6.3.3
 
