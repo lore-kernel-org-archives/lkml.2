@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab0FYTcp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 15:32:45 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:51551 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab0FYTco convert rfc822-to-8bit (ORCPT
+	id S1756761Ab0FYTkF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 15:40:05 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49082 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab0FYTkD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 15:32:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=Xps500kmZ2wZttBXpFOyPafaSqHa9YFu7dwOaB0XAuNDK9r5v4axe8856dFbZ77STR
-         9jQFA4t5aUC1dbF5/tAiFv0wQoXApu2ebddNMwGFNz+cVU3TeuEvqR5jBlknQ4YHcZ0O
-         nsM3F5ebfiH5g0+d3z6WNSCZyYxRC+51ePAkc=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTila2rrYcBUZKwywHTP6g8rsj7Z1ck6LSoC9GaUY@mail.gmail.com>
-References: <AANLkTila2rrYcBUZKwywHTP6g8rsj7Z1ck6LSoC9GaUY@mail.gmail.com>
-Date: Fri, 25 Jun 2010 12:32:43 -0700
-Message-ID: <AANLkTikbQLTC8HLB2m8LoPtZ0JVUzRl6PvRL5yTC0pZV@mail.gmail.com>
-Subject: Fwd: fs/exec.c core dumping on NFS mounted directory
-From: Lei Sun <leisun124@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 25 Jun 2010 15:40:03 -0400
+Subject: Re: [RFC][PATCH] irq_work -v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       "H.PeterA" <"nvin hpa"@zytor.com>, linux-kernel@vger.kernel.org,
+       tglx <tglx@linutronix.de>, davem <davem@davemloft.net>,
+       paulus <paulus@samba.org>
+In-Reply-To: <20100625193031.GD13421@basil.fritz.box>
+References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
+	 <1277361352.1875.838.camel@laptop> <1277490625.1875.986.camel@laptop>
+	 <20100625193031.GD13421@basil.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 25 Jun 2010 21:39:44 +0200
+Message-ID: <1277494784.1875.989.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  In 2.6.3x, I am logging in as a root and running app from NFS
-mounted directory. The app crashed with 0 bytes core file (I have set
-"ulimit -c unlimited", so it's not an issue).
+On Fri, 2010-06-25 at 21:30 +0200, Andi Kleen wrote:
+> 
+> I'm not sure what all the logic for entry enqueued by someone
+> else is good for? Is that for the case you don't have enough
+> entries preallocated and you share them with someone else?
+> 
+> Normally if the sharing is per cpu that would be difficult 
+> to recover from because if it's due to a nest situation (for example)
+> you would deadlock.
+> 
+> For me it would seem simpler to simply not share.
 
-Proposed patch:
+perf has two different reasons to for the callback, what I do is set the
+state and enqueue, if its already enqueued the pending callback will
+handle both.
 
---- exec.c 2010-05-19 17:33:16.000000000 -0700
-+++ exec.c.new 2010-05-19 17:33:07.000000000 -0700
-@@ -1859,7 +1859,7 @@
-     * Dont allow local users get cute and trick others to coredump
-     * into their pre-created files:
-     */
-- if (inode->i_uid != current_fsuid())
-+ if (inode->i_bytes != 0 && inode->i_uid != current_fsuid())
-        goto close_fail;
+Its cheaper than having two callback structures per event.
 
-    if (!file->f_op)
-
-
-P.S. CC to my email, i am not on the list.
-
-Thanks
-lei
+We can expose the claim/enqueue thing separately so that users can
+choose.
