@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab0FYOue (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 10:50:34 -0400
-Received: from [18.85.46.34] ([18.85.46.34]:57110 "EHLO bombadil.infradead.org"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183Ab0FYOuc convert rfc822-to-8bit (ORCPT
+	id S932173Ab0FYOuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 10:50:52 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:54208 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932075Ab0FYOuv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 10:50:32 -0400
-Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com>
-References: <20100624142804.431553874@chello.nl>
-	 <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com>
-	 <1277464589.32034.276.camel@twins>
-	 <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 25 Jun 2010 10:50:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SovpteFCyRsq3MqHN8gN1Gvf+CzgHjzTW9ySImjWM0WFE2trboAbWWryo7hIzbOf9f
+         a71N8s63/fEZT9/2qOWOD10CEUD2bHXVrKMqJf8Kr+YLlnVc+UJfDDm5xyObeytLmNKf
+         HNxhUxUvLd23OBNC8HfH8WxF06W+dmfRn099c=
+MIME-Version: 1.0
+In-Reply-To: <807hloag6w.fsf@merkur.tec.linutronix.de>
+References: <20100618205401.GA12115@pengutronix.de>
+	<80sk4ivkga.fsf@merkur.tec.linutronix.de>
+	<AANLkTimA7Rbm_nHpVYpEPqaPCjrOse9s8YyiInWlhfEK@mail.gmail.com>
+	<80tyoyhxey.fsf_-_@merkur.tec.linutronix.de>
+	<AANLkTikRj_dMkKLyFhW78yld9jIYAIFncfPaPAF8WqUY@mail.gmail.com>
+	<80iq5bqd07.fsf_-_@merkur.tec.linutronix.de>
+	<AANLkTimJKNEwOoKldq4a4_ufxNY6IY7r6tAfAM055hlW@mail.gmail.com>
+	<80vd9ab0d2.fsf@merkur.tec.linutronix.de>
+	<AANLkTinVaXjCneg-XpxB7YNlmGOwQFTnm5RUcetPdToI@mail.gmail.com>
+	<80lja6awlb.fsf@merkur.tec.linutronix.de>
+	<20100624072732.GQ12115@pengutronix.de>
+	<807hloag6w.fsf@merkur.tec.linutronix.de>
+Date: Fri, 25 Jun 2010 16:50:45 +0200
+Message-ID: <AANLkTilTbvlPxRhioMiKrBUNggcxZeboi1YpB8Y9Bdpm@mail.gmail.com>
+Subject: Re: [PATCHv3 4/5] mtd: mxc_nand fixups
+From: Ivo Clarysse <ivo.clarysse@gmail.com>
+To: John Ogness <john.ogness@linutronix.de>
+Cc: Sascha Hauer <kernel@pengutronix.de>, linux-arm-kernel@lists.infradead.org,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 25 Jun 2010 16:50:01 +0200
-Message-ID: <1277477401.32034.670.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-25 at 15:36 +0100, Will Deacon wrote:
-> Hello,
-> 
-> On Fri, 2010-06-25 at 12:16 +0100, Peter Zijlstra wrote:
-> > I seem to have lost a refresh before sending the emails, please check:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-perf.git perf-pmu
-> > 
-> > I pushed out updated patches there.
-> 
-> Ok, I rebuilt my Kernel and perf tools from that tree and tested it on a
-> quad-core ARMv7 board. 
+On Thu, Jun 24, 2010 at 12:16 PM, John Ogness <john.ogness@linutronix.de> wrote:
+> On 2010-06-24, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+>> Ok, if it's the only way out to have 5 cpu_is_* blocks, then lets go
+>> for it.
+>
+> Here is a new patch that puts the behavior behind a "nfc_avoid_masking"
+> macro. The macro is only used 3 times.
+[...]
 
-Ooh, neat toy ;-)
+Tested on an MX21ADS board, and it still works.
 
-> Per-task counters appear to work (software and
-> hardware) but pinned hardware counters always return 0:
-> 
-> 
-> root@will-lucid-nfs:~# perf stat -a -e cs -e cycles -e instructions -- ls
-> linux-2.6  tmp
-> 
->  Performance counter stats for 'ls':
-> 
->                  33  context-switches        
->                   0  cycles                  
->                   0  instructions             #      0.000 IPC  
-> 
->         0.028572009  seconds time elapsed
-> 
-> 
-> It's odd if only ARM is affected in this way. Do pinned events still work
-> for other people?
+> This patch is based on linux-next 20100618.
+>
+> Signed-off-by: John Ogness <john.ogness@linutronix.de>
+> ---
+>  drivers/mtd/nand/mxc_nand.c |   81 +++++++++++++++++++++++++---------
+>  1 file changed, 61 insertions(+), 20 deletions(-)
+>
+> Index: linux-next-20100618/drivers/mtd/nand/mxc_nand.c
+> ===================================================================
+> --- linux-next-20100618.orig/drivers/mtd/nand/mxc_nand.c
+> +++ linux-next-20100618/drivers/mtd/nand/mxc_nand.c
+[...]
+> @@ -100,6 +109,18 @@
+>
+>  #define NFC_RSLTSPARE_AREA_MASK  0xff
+>
+> +#define nfc_interrupt_set(_regs) \
+> +               (readw(_regs + NFC_CONFIG2) & NFC_INT)
+> +#define nfc_clear_interrupt(_regs) \
+> +               writew(readw(_regs + NFC_CONFIG2) & ~NFC_INT, \
+> +                      _regs + NFC_CONFIG2)
 
-/me goes build that exact tree on his x86_64.. and gets:
+Naming is not very consistent; I'd suggest nfc_set_interrupt /
+nfc_clear_interrupt
 
-# perf stat -a -e cs -e cycles -e instructions -- ls > /dev/null
-
- Performance counter stats for 'ls':
-
-             51  context-switches        
-       24963513  cycles                  
-        9225808  instructions             #      0.370 IPC  
-
-    0.002389051  seconds time elapsed
-
-
-Not exactly sure how I could have messed up the ARM architecture code to
-make this happen though... will have a peek.
+> +#define nfc_mask_irq(_regs) \
+> +               writew(readw(_regs + NFC_CONFIG1) | NFC_INT_MSK, \
+> +                      _regs + NFC_CONFIG1)
+> +#define nfc_unmask_irq(_regs) \
+> +               writew(readw(_regs + NFC_CONFIG1) & ~NFC_INT_MSK, \
+> +                      _regs + NFC_CONFIG1)
+> +
+[...]
