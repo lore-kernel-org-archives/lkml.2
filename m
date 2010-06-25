@@ -1,186 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab0FYI1Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 04:27:16 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40851 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752331Ab0FYI1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 04:27:13 -0400
-Date: Fri, 25 Jun 2010 10:27:11 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Darren Hart <dvhltc@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: futex: race in lock and unlock&exit for robust futex with PI?
-Message-ID: <20100625082711.GA32765@tiehlicka.suse.cz>
-References: <20100623091307.GA11072@tiehlicka.suse.cz>
- <4C2417AA.4030306@us.ibm.com>
+	id S1754062Ab0FYI3t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 04:29:49 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40443 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab0FYI3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 04:29:46 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 05/12] vmscan: kill prev_priority completely
+Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100616163709.1e0f6b56.akpm@linux-foundation.org>
+References: <1276514273-27693-6-git-send-email-mel@csn.ul.ie> <20100616163709.1e0f6b56.akpm@linux-foundation.org>
+Message-Id: <20100624211413.802B.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C2417AA.4030306@us.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 25 Jun 2010 17:29:41 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 24-06-10 19:42:50, Darren Hart wrote:
-> On 06/23/2010 02:13 AM, Michal Hocko wrote:
-> >Hi,
 
-Hi,
+sorry for the long delay.
+(and I'm a bit wonder why I was not CCed this thread ;)
 
+> On Mon, 14 Jun 2010 12:17:46 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> Hi Michal,
+> > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > 
+> > Since 2.6.28 zone->prev_priority is unused. Then it can be removed
+> > safely. It reduce stack usage slightly.
+> > 
+> > Now I have to say that I'm sorry. 2 years ago, I thought prev_priority
+> > can be integrate again, it's useful. but four (or more) times trying
+> > haven't got good performance number. Thus I give up such approach.
 > 
-> Thanks for reporting the issue and providing a testcase.
+> This would have been badder in earlier days when we were using the
+> scanning priority to decide when to start unmapping pte-mapped pages -
+> page reclaim would have been recirculating large blobs of mapped pages
+> around the LRU until the priority had built to the level where we
+> started to unmap them.
 > 
-> >
-> >attached you can find a simple test case which fails quite easily on the
-> >following glibc assert:
-> >"SharedMutexTest: pthread_mutex_lock.c:289: __pthread_mutex_lock:
-> >   Assertion `(-(e)) != 3 || !robust' failed." "
-> 
-> I've run runSimple.sh in a tight loop for a couple hours (about 2k
-> iterations so far) and haven't seen anything other than "Here we go"
-> printed to the console.
-
-Maybe a higher load on CPUs would help (busy loop on other CPUs). 
-
-> 
-> I had to add -D_GNU_SOURCE to get it to build on my system (RHEL5.2
-> + 2.6.34). Perhaps this is just a difference in the toolchain.
-
-I assume that you got PTHREAD_PRIO_INHERIT undeclared error, don't you?
-I have hacked around that by #define __USE_UNIX98 which worked on Debian
-and OpenSuse. But you are right _GNU_SOURCE is definitely better
-solution.
-
-> 
-> >AFAIU, this assertion says that futex syscall cannot fail with ESRCH
-> >for robust futex because it should either succeed or fail with
-> >EOWNERDEAD.
-> 
-> I'll have to think on that and review the libc source. We do need to
-> confirm that the assert is even doing the right thing.
-
-Sure. I have looked through the glibc lock implementation and it makes
-quite a good sense to me. A robust lock should never return with ESRCH.
-
-> 
-> >
-> >We have seen this problem on SLES11 and SLES11SP1 but I was able to
-> >reproduce it with the 2.6.34 kernel as well.
-> 
-> What kind of system are you seeing this on? I've been running on a
-> 4-way x86_64 blade.
-
-* Debian (squeeze/sid) with 
-- Intel(R) Core(TM)2 CPU T5600 @ 1.83GHz
-- kernel: vanilla 2.6.34
-- glibc: 2.11.1-3
-- i386
-
-* OpenSuse 11.2 with 
-- Intel(R) Core(TM)2 Duo CPU E4500 @ 2.20GHz
-- kernel: distribution 2.6.31.12-0.2-desktop
-- glibc: 2.10.1-10.5.1
-- i386
-
-* SLES11SP1
-- Dual-Core AMD Opteron(tm) Processor 1218
-- kernel: distribution 2.6.32.12-0.3-default
-- glibc: 2.11.1-0.17.4
-- x86_64
-
-Each box shows a different number of asserts during 10 iterations.
-
-> 
-> >The test case is quite easy.
-> >
-> >Executed with a parameter it creates a test file and initializes shared,
-> >robust pthread mutex (optionaly compile time configured with priority
-> >inheritance) backed by the mmapped test file. Without a parameter it
-> >mmaps the file and just locks, unlocks mutex and checks for EOWNERDEAD
-> >(this should never happen during the test as the process never dies with
-> >the lock held) in the loop.
-> 
-> Have you found the PI parameter to be required for reproducing the
-> error? From the comments below I'm assuming so... just want to be
-> sure.
-
-Yes. If you comment out USE_PI variable in the script the problem is not 
-shown at all.
-
-> 
-> >
-> >If I run this application for multiple users in parallel I can see the
-> >above assertion. However, if priority inheritance is turned off then
-> >there is no problem. I am not able to reproduce also if the test case is
-> >run under a single user.
-> >
-> >I am using the attached runSimple.sh script to run the test case like
-> >this:
-> >
-> >rm test.file simple
-> >for i in `seq 10`
-> >do
-> >	sh runSimple.sh
-> >done
-> >
-> >To disable IP just comment out USE_PI variable in the script.
-> >You need to change USER1 and USER2 variables to match you system. You
-> >will need to run the script as root if you do not set any special
-> >setting to run su on behalf of those users.
-> >
-> >I have tried to look at futex_{un}lock_pi but it is really hard to
-> >understand.
-> 
-> *grin* tell me about it...
-> 
-> See Documentation/pi-futex.txt if you haven't already.
-
-Will do.
-
-> 
-> >I assume that lookup_pi_state is the one which sets ESRCH
-> >after it is not able to find the pid of the current owner.
-> >
-> >This would suggest that we are racing with the unlock of the current
-> >lock holder but I don't see how is this possible as both lock and unlock
-> >paths hold fshared lock for all operations over the lock value. I have
-> >noticed that the lock path drops fshared if the current holder is dying
-> >but then it retries the whole process again.
-> >
-> >Any advice would be highly appreciated.
-> 
-> If I can reproduce this I should be able to get some trace points in
-> there to get a better idea of the execution path leading up to the
-> problem.
-
-Please make sure that you run the test case with two different users. I
-couldn't reproduce the issue with a single user.
-
-If you have some ideas about patches which I could try then just pass it
-to me.
-
-> 
-> This would be a great time to have those futex fault injection patches...
+> However that priority-based decision got removed and right now I don't
+> recall what it got replaced with.  Aren't we now unmapping pages way
+> too early and suffering an increased major&minor fault rate?  Worried.
 > 
 > 
-> -- 
-> Darren Hart
-> IBM Linux Technology Center
-> Real-Time Linux Team
+> Things which are still broken after we broke prev_priority:
+> 
+> - If page reclaim is having a lot of trouble, prev_priority would
+>   have permitted do_try_to_free_pages() to call disable_swap_token()
+>   earlier on.  As things presently stand, we'll do a lot of
+>   thrash-detection stuff before (presumably correctly) dropping the
+>   swap token.
+> 
+>   So.  What's up with that?  I don't even remember _why_ we disable
+>   the swap token once the scanning priority gets severe and the code
+>   comments there are risible.  And why do we wait until priority==0
+>   rather than priority==1?
+> 
+> - Busted prev_priority means that lumpy reclaim will act oddly. 
+>   Every time someone goes into do some recalim, they'll start out not
+>   doing lumpy reclaim.  Then, after a while, they'll get a clue and
+>   will start doing the lumpy thing.  Then they return from reclaim and
+>   the next recalim caller will again forget that he should have done
+>   lumpy reclaim.
+> 
+>   I dunno what the effects of this are in the real world, but it
+>   seems dumb.
+> 
+> And one has to wonder: if we're making these incorrect decisions based
+> upon a bogus view of the current scanning difficulty, why are these
+> various priority-based thresholding heuristics even in there?  Are they
+> doing anything useful?
+> 
+> So..  either we have a load of useless-crap-and-cruft in there which
+> should be lopped out, or we don't have a load of useless-crap-and-cruft
+> in there, and we should fix prev_priority.
 
-Thanks for looking into it.
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+May I explain my experience? I'd like to explain why prev_priority wouldn't
+works nowadays. 
+
+First of all, Yes, current vmscan still a lot of UP centric code. it 
+expose some weakness on some dozens CPUs machine. I think we need 
+more and more improvement.
+
+The problem is, current vmscan mix up per-system-pressure, per-zone-pressure
+and per-task-pressure a bit. example, prev_priority try to boost priority to
+other concurrent priority. but If the another task have mempolicy restriction,
+It's unnecessary, but also makes wrong big latency and exceeding reclaim.
+per-task based priority + prev_priority adjustment make the emulation of
+per-system pressure. but it have two issue 1) too rough and brutal emulation
+2) we need per-zone pressure, not per-system.
+
+another example, currently DEF_PRIORITY is 12. it mean the lru rotate about
+2 cycle (1/4096 + 1/2048 + 1/1024 + .. + 1) before invoking OOM-Killer.
+but if 10,0000 thrreads enter DEF_PRIORITY reclaim at the same time, the
+system have higher memory pressure than priority==0 (1/4096*10,000 > 2).
+prev_priority can't solve such multithreads workload issue.
+
+In other word, prev_priority concept assume the sysmtem don't have lots
+threads.
+
+And, I don't think lumpy reclaim threshold is big matter, because It was
+introduced to case aim7 corner case issue. I don't think such situation
+will occur frequently in the real workload. thus end users can't observe
+such logic.
+
+For mapped-vs-unmapped thing, I dunnno the exactly reason. That was
+introduced by Rik, unfortunatelly I had not joined its activity at 
+making design time. I can only say, while my testing the current code 
+works good.
+
+That said, my conclusion is opposite. For long term view, we should
+consider to kill reclaim priority completely. Instead, we should
+consider to introduce per-zone pressure statistics.
+
+
+
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > ---
+> >  include/linux/mmzone.h |   15 ------------
+> >  mm/page_alloc.c        |    2 -
+> >  mm/vmscan.c            |   57 ------------------------------------------------
+> >  mm/vmstat.c            |    2 -
+> 
+> The patch forgot to remove mem_cgroup_get_reclaim_priority() and friends.
+
+Sure. thanks.
+Will fix.
+
+
+btw, current zone reclaim have wrong swap token usage.
+
+	static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+	{
+	(snip)
+	        disable_swap_token();
+	        cond_resched();
+
+
+I can't understand the reason why zone reclaim _always_ disable swap token.
+that's mean, if the system is enabled zone reclaim, swap token don't works 
+at all.
+
+Perhaps, original author's intention was following, I guess.
+
+                priority = ZONE_RECLAIM_PRIORITY;
+                do {
+                        if ((zone_reclaim_mode & RECLAIM_SWAP) && !priority)	// here
+			        disable_swap_token();				// here
+
+                        note_zone_scanning_priority(zone, priority);
+                        shrink_zone(priority, zone, &sc);
+                        priority--;
+                } while (priority >= 0 && sc.nr_reclaimed < nr_pages);
+
+
+However, if my understanding is correct, we can remove this 
+disable_swap_token() completely. because zone reclaim failure don't bring 
+to OOM-Killer, instead melery cause normal try_to_free_pages().
+
+
+
+
