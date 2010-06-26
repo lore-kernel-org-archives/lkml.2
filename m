@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab0FZKKv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 06:10:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54794 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752513Ab0FZKKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 06:10:50 -0400
-Date: Sat, 26 Jun 2010 20:10:45 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
-Message-ID: <20100626101045.GJ29809@laptop>
-References: <4C1F3916.4070608@kernel.dk>
- <20100621110436.GA4056@lst.de>
- <4C1FB5F7.3070908@kernel.dk>
- <20100621191410.GA24213@lst.de>
- <20100621213618.GC6474@redhat.com>
- <20100623100138.GA9575@lst.de>
- <20100624014420.GB3297@redhat.com>
- <20100625110319.GA12855@lst.de>
- <20100626092556.GH29809@laptop>
- <20100626092759.GA25896@lst.de>
+	id S1753329Ab0FZKNm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 06:13:42 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:41408 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752206Ab0FZKNl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 06:13:41 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Nick Piggin <npiggin@suse.de>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Al Viro <viro@ZenIV.linux.org.uk>, Ulrich Drepper <drepper@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [rfc] new stat*fs-like syscall?
+References: <20100624131455.GA10441@laptop>
+Date: Sat, 26 Jun 2010 12:13:39 +0200
+In-Reply-To: <20100624131455.GA10441@laptop> (Nick Piggin's message of "Thu,
+	24 Jun 2010 23:14:55 +1000")
+Message-ID: <87tyoqcd9o.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100626092759.GA25896@lst.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 26, 2010 at 11:27:59AM +0200, Christoph Hellwig wrote:
-> On Sat, Jun 26, 2010 at 07:25:56PM +1000, Nick Piggin wrote:
-> > Biggest thing is multiple small files operations like on the same
-> > directory. Best case I measured back when doing AS io scheduler
-> > versus deadline was about 100x improvement on a uncached kernel
-> > grep workload when competing with a streaming writeout (the writeout
-> > probably ended up going somewhat slower naturally, but it is fairer).
-> 
-> As I mentioned below I absolutely see the case for reads.  A normal
-> grep basically is a dependent read kind of workload.  For for writes
-> it should either be O_SYNC-style workloads or batched I/O. 
+Nick Piggin <npiggin@suse.de> writes:
 
-Sorry I missed that. OK well that may be true. One would hope
-it was benchmarked before being merged.
+> Other than types, other differences are:
+> - statvfs(2) has is f_frsize, which seems fairly useless.
+> - statvfs(2) has f_favail.
+> - statfs(2) f_bsize is optimal transfer block, statvfs(2) f_bsize is fs
+>   block size. The latter could be useful for disk space algorithms.
+>   Both can be ill defned.
+> - statvfs(2) lacks f_type.
+>
+> Is there anything more we should add here? Samba wants a capabilities
+> field, with things like sparse files, quotas, compression, encryption,
+> case preserving/sensitive.
 
-But I'm sure apps can submit fsyncs much faster than once per
-few ms, like small database transactions.
+I wonder if it would make sense to export the time stamp granuality
+of the time stamps? We already have this information internally,
+and it might allow user land to optimize its stat frequency or comparison.
 
+Some file systems also have quotas with "project ids". Maybe add that 
+too?
+
+I think NTFS et.al. also have some more time stamps, but not sure
+there's enough space for that.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
