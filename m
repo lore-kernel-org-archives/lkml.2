@@ -1,141 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab0FZLQa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 07:16:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59839 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400Ab0FZLQ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 07:16:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] arch/tile: Add driver to enable access to the user dynamic network.
-Date: Sat, 26 Jun 2010 13:16:12 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201006252110.o5PLArvw010770@farm-0002.internal.tilera.com>
-In-Reply-To: <201006252110.o5PLArvw010770@farm-0002.internal.tilera.com>
+	id S1753646Ab0FZLU5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 07:20:57 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54548 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752400Ab0FZLU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 07:20:56 -0400
+Date: Sat, 26 Jun 2010 13:20:55 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, czoccolo@gmail.com
+Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
+Message-ID: <20100626112054.GA30661@kernel.dk>
+References: <4C1F3916.4070608@kernel.dk> <20100621110436.GA4056@lst.de> <4C1FB5F7.3070908@kernel.dk> <20100621191410.GA24213@lst.de> <20100621213618.GC6474@redhat.com> <20100623100138.GA9575@lst.de> <20100624014420.GB3297@redhat.com> <20100625110319.GA12855@lst.de> <20100626033509.GA2435@redhat.com> <20100626100526.GA27159@lst.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006261316.12816.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18yAJXqxLTub+k2BAQoZpw7G5ROWlglbRUebDt
- BW1gH7S4VgTMslQWMLhxNkH+AuPQkiP9DjGVCiWcQ5Y2mqbqx0
- ixrvdnr85OG5Eaz1jqvYg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100626100526.GA27159@lst.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 25 June 2010, Chris Metcalf wrote:
+On Sat, Jun 26 2010, Christoph Hellwig wrote:
+> > - Stop idling on all the WRITE_SYNC IO. There is no reasonable way to 
+> >   tell whether there will be more IO or not from applicatoin. This will
+> >   impact direct writes, O_SYNC writes and fsync().
+> > 
+> >   If direct IO application is submitting writes with a delay in between
+> >   it can be starved out in presnce of competing workloads.
+> 
+> So what application does this?
 
-> The original submission of this code to LKML had the driver
-> instantiated under /proc/tile/hardwall.  Now we just use a character
-> device for this, conventionally /dev/hardwall.  Some futures planning
-> for the TILE-Gx chip suggests that we may want to have other types of
-> devices that share the general model of "bind a task to a cpu, then
-> 'activate' a file descriptor on a pseudo-device that gives access to
-> some hardware resource".  As such, we are using a device rather
-> than, for example, a syscall, to set up and activate this code.
+It isn't about apps having a small delay between submissions,
+not sure where Vivek gets that from. Even if you submit back
+to back, there's still very small time where the io scheduler
+will switch to something else if there's other io pending. This
+happens instantly when the sync request finishes - if we don't
+idle for any given request, then we of course go to service
+someone else with pending io.
 
-The character device looks much better than the proc file. I still
-think a system call would be a more appropriate abstraction here,
-but the two are equivalent after all.
+The whole idling/anticipation is all about knowing when to
+stall the queue very briefly for sync io, allowing that single
+sync stream to make good progress for a while before switching
+to something else. This switching back and forth potentially
+destroyes throughput for the O_DIRECT writer, especially for
+disks with write through caching.
 
-> diff --git a/arch/tile/include/asm/processor.h b/arch/tile/include/asm/processor.h
-> index 96c50d2..95b54bc 100644
-> --- a/arch/tile/include/asm/processor.h
-> +++ b/arch/tile/include/asm/processor.h
-> @@ -74,6 +74,14 @@ struct async_tlb {
->  	unsigned long address;   /* what address faulted? */
->  };
->  
-> +#ifdef CONFIG_HARDWALL
-> +struct hardwall_info;
-> +
-> +/* Can't use a normal list_head here due to header-file inclusion issues. */
-> +struct hardwall_list {
-> +	struct list_head *next, *prev;
-> +};
-> +#endif
+Christoph, you seem not to agree on the concept of idling. As
+Nick writes in another reply, the difference in performance
+when you get it right is staggering. We don't idle the disk
+for kicks and laughs. I wont rule out bugs, both in the
+handling and the signalling of idling. But as a concept, it
+is definitely sound and proven.
 
-It seems strange that you need this. Why does linux/list.h
-depend on asm/processor.h?
-It certainly seems that the code would get simpler if this
-can be avoided.
+-- 
+Jens Axboe
 
-> +/*
-> + * Guard changes to the hardwall data structures.
-> + * This could be finer grained (e.g. one lock for the list of hardwall
-> + * rectangles, then separate embedded locks for each one's list of tasks),
-> + * but there are subtle correctness issues when trying to start with
-> + * a task's "hardwall" pointer and lock the correct rectangle's embedded
-> + * lock in the presence of a simultaneous deactivation, so it seems
-> + * easier to have a single lock, given that none of these data
-> + * structures are touched very frequently during normal operation.
-> + */
-> +static DEFINE_SPINLOCK(hardwall_lock);
-
-I think instead of making the lock more fine-grained, a better optimization
-might be to use RCU to protect the updates. AFAICT, the updates to the
-structure are rare but you need to read it a lot.
-
-> +/*
-> + * Low-level primitives
-> + */
-> +
-> +/* Map a HARDWALL_FILE file to the matching hardwall info structure */
-> +#define _file_to_hardwall(file) ((file)->private_data)
-> +#define file_to_hardwall(file) \
-> +	((struct hardwall_info *)_file_to_hardwall(file))
-
-I wouldn't bother with these abstractions, you can simply write
-file->private_data in every place where they are used.
-
-> +/*
-> + * Code to create, activate, deactivate, and destroy hardwall rectangles.
-> + */
-> +
-> +/* Create a hardwall for the given rectangle */
-> +static struct hardwall_info *hardwall_create(
-> +	size_t size, const unsigned long __user *bits)
-> +{
-
-To make this a system call, I'd wrap this function with one that roughly
-does
-
-asmlinkage long sys_hardwall_create(size_t size,
-			 const unsigned long __user *bits)
-{
-	int fd;
-	struct hardwall_info *info;
-
-	info = hardwall_create(size, bits);
-	if (IS_ERR(info))
-		return PTR_ERR(info);
-
-	fd = anon_inode_getfd("hardwall", &hardwall_fops, info, O_CREAT | O_RDWR);
-	if (fd < 0)
-		hardwall_destroy(info);
-	
-	return fd;
-}
-
-The main difference between this and the ioctl approach would be that
-using chardev/ioctl allows you to give access to the hardwall functionality
-to a specific group or user with file permissions, while the system call
-would be less fine-grained, either associating access with a specific
-capability (e.g. CAP_SYS_ADMIN) or giving it to all users.
-
-> +#ifdef CONFIG_COMPAT
-> +static long hardwall_compat_ioctl(struct file *file,
-> +				  unsigned int a, unsigned long b)
-> +{
-> +	/* Sign-extend the argument so it can be used as a pointer. */
-> +	return hardwall_ioctl(file, a, (int)(long)b);
-> +}
-> +#endif
-
-Better use compat_ptr(b) instead of the manual cast.
-
-	Arnd
