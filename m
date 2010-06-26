@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab0FZQWk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 12:22:40 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:49832 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab0FZQWj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 12:22:39 -0400
-Message-ID: <4C262949.3030804@linux.vnet.ibm.com>
-Date: Sat, 26 Jun 2010 09:22:33 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
-References: <20100624142804.431553874@chello.nl>
-In-Reply-To: <20100624142804.431553874@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753060Ab0FZQ3W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 12:29:22 -0400
+Received: from bamako.nerim.net ([62.4.17.28]:63813 "EHLO bamako.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752503Ab0FZQ3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 12:29:21 -0400
+Date: Sat, 26 Jun 2010 18:29:15 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+       "ben-linux@fluff.org" <ben-linux@fluff.org>,
+       "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+       "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c/mips: Fix error return codes from Sibyte i2c bus 
+ driver
+Message-ID: <20100626182915.46ab3ecd@hyperion.delvare>
+In-Reply-To: <alpine.LFD.2.00.1006261709110.14683@eddie.linux-mips.org>
+References: <1277056673-4305-1-git-send-email-guenter.roeck@ericsson.com>
+	<20100621190252.2adc6bd8@hyperion.delvare>
+	<20100622115417.GA14418@ericsson.com>
+	<alpine.LFD.2.00.1006261709110.14683@eddie.linux-mips.org>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2010 07:28 AM, Peter Zijlstra wrote:
-> These patches prepare the perf code for multiple pmus (no user
-> interface yet, Lin Ming is working on that). These patches remove all
-> weak functions and rework the struct pmu interface.
->
-> The patches are boot tested on x86_64 and compile tested on: powerpc
-> (!fsl, what config is that?), sparc and arm (sorry no SH compiler)
->
-> On x86 perf stat and record with both software and hardware events still worked.
->
-> I changed all (hardware) pmu implementations so there's a fair chance I messed
-> something up, please have a look at it.
->
-> If people agree with this, I'll continue with the per-pmu context stuff I
-> talked about last time, which should get us the hardware write batching back.
+On Sat, 26 Jun 2010 17:14:59 +0100 (BST), Maciej W. Rozycki wrote:
+> On Tue, 22 Jun 2010, Guenter Roeck wrote:
+> 
+> > > > @@ -104,7 +104,7 @@ static int smbus_xfer(struct i2c_adapter *i2c_adap, u16 addr,
+> > > >  	if (error & M_SMB_ERROR) {
+> > > >  		/* Clear error bit by writing a 1 */
+> > > >  		csr_out32(M_SMB_ERROR, SMB_CSR(adap, R_SMB_STATUS));
+> > > > -		return -1;      /* XXXKW better error code? */
+> > > > +		return -ENXIO;
+> > > >  	}
+> > > >  
+> > > >  	if (data_bytes == 1)
+> > > 
+> > > Definitely an improvement. However, returning -ENXIO on all errors
+> > > seems wrong. This error value should only be returned on missing ack
+> > > from the slave on address byte. Isn't it possible to distinguish
+> > > between different error kinds? M_SMB_ERROR_TYPE seems promising, but
+> > > one would need to look up the datasheet (which I don't have) to
+> > > discover its meaning.
+> > > 
+> > Makes sense. I'll dig up a copy of the datasheet and see if I can improve it.
+> 
+>  The M_SMB_ERROR_TYPE bit is cleared if an expected ackonwledgement has 
+> not been seen and set if the transfer has failed after 15 retries.  So 
+> that's probably ENXIO for the former and EIO for the latter.
 
-Hi Peter,
+Exactly what Guenter did. Good.
 
-These patches look like they are really taking us in the right 
-direction.  Thanks for all your effort on this!
-
-As for the "hardware write batching", can you describe a bit more about 
-what you have in mind there?  I wonder if this might have something to 
-do with accounting for PMU hardware which is slow to access, for 
-example, via I2C via an internal bridge.
-
-Cheers,
-
-- Corey
-
+-- 
+Jean Delvare
