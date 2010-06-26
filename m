@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab0FZS4l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 14:56:41 -0400
-Received: from mail2.unibz.it ([193.206.186.180]:26547 "EHLO mail2.unibz.it"
+	id S1753993Ab0FZTOE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 15:14:04 -0400
+Received: from ozlabs.org ([203.10.76.45]:49282 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753280Ab0FZS4k convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 14:56:40 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1753575Ab0FZTOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 15:14:00 -0400
+Date: Sun, 27 Jun 2010 05:13:09 +1000
+From: Anton Blanchard <anton@samba.org>
+To: akpm@linux-foundation.org, mingo@elte.hu, arjan@linux.intel.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] Add oops end marker to lib/bug.c WARN implementation
+Message-ID: <20100626191309.GB2345@kryten>
+References: <20100626191059.GA2345@kryten>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: Email Quota Alert.
-Date: Sat, 26 Jun 2010 20:56:38 +0200
-Message-ID: <F818C18F0275F447BC817DC5B504A3A0037003C8@ubz05be.unibz.it>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Email Quota Alert.
-Thread-Index: AcsVYInl2Z+eUDGJRQ2bbQr2ui5n+w==
-From: "Farneti Alessandra (P)" <Alessandra.Farneti@unibz.it>
-To: <info@notification.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100626191059.GA2345@kryten>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+We are missing the oops end marker for the exception based WARN implementation
+in lib/bug.c. This is useful for logfile analysis tools.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
+
+Index: linux-2.6/include/linux/kernel.h
+===================================================================
+--- linux-2.6.orig/include/linux/kernel.h	2010-06-26 06:29:35.000000000 +1000
++++ linux-2.6/include/linux/kernel.h	2010-06-26 06:30:27.000000000 +1000
+@@ -177,6 +177,7 @@ NORET_TYPE void panic(const char * fmt, 
+ 	__attribute__ ((NORET_AND format (printf, 1, 2))) __cold;
+ extern void oops_enter(void);
+ extern void oops_exit(void);
++void print_oops_end_marker(void);
+ extern int oops_may_print(void);
+ NORET_TYPE void do_exit(long error_code)
+ 	ATTRIB_NORET;
+Index: linux-2.6/kernel/panic.c
+===================================================================
+--- linux-2.6.orig/kernel/panic.c	2010-06-26 06:29:35.000000000 +1000
++++ linux-2.6/kernel/panic.c	2010-06-26 06:30:05.000000000 +1000
+@@ -344,7 +344,7 @@ static int init_oops_id(void)
+ }
+ late_initcall(init_oops_id);
  
-
-Dear Web mail User, 
-
+-static void print_oops_end_marker(void)
++void print_oops_end_marker(void)
+ {
+ 	init_oops_id();
+ 	printk(KERN_WARNING "---[ end trace %016llx ]---\n",
+Index: linux-2.6/lib/bug.c
+===================================================================
+--- linux-2.6.orig/lib/bug.c	2010-06-26 06:29:35.000000000 +1000
++++ linux-2.6/lib/bug.c	2010-06-26 06:31:28.000000000 +1000
+@@ -166,6 +166,7 @@ enum bug_trap_type report_bug(unsigned l
  
-
-Your mailbox has exceeded the allocated storage limit as set by the administrator, you may not be able to send or receive new mail until you upgrade your allocated quota. To upgrade your quota, please click on the following link: CLICK HERE <http://ufodt.9hz.com/> 
-
-
-Thank you for your anticipated cooperation. 
-Syed Zikrur Rehman For Web mail Support Team
-Email Quota Alert
-
+         	print_modules();
+ 		show_regs(regs);
++		print_oops_end_marker();
+ 		add_taint(BUG_GET_TAINT(bug));
+ 		return BUG_TRAP_TYPE_WARN;
+ 	}
