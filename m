@@ -1,121 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab0FZXaf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 19:30:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37972 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751045Ab0FZXae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 19:30:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,488,1272870000"; 
-   d="scan'208";a="633959108"
-Date: Sun, 27 Jun 2010 07:30:29 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] [31/31] HWPOISON: Add a madvise() injector for soft
- page 	offlining
-Message-ID: <20100626233029.GA8820@localhost>
-References: <20100619132055.GK18946@basil.fritz.box>
- <AANLkTin-lj5ZgtcvJhWcNiMuWSCQ39N8mqe_2fm8DDVR@mail.gmail.com>
- <20100619133000.GL18946@basil.fritz.box>
- <AANLkTiloIXtCwBeBvP32hLBBvxCWrZMMwWTZwSj475wi@mail.gmail.com>
- <20100619140933.GM18946@basil.fritz.box>
- <AANLkTilF6m5YKMiDGaTNuoW6LxiA44oss3HyvkavwrOK@mail.gmail.com>
- <20100619195242.GS18946@basil.fritz.box>
- <AANLkTikMZu0GXwzs6IeMyoTuhETrnjZ1m5lI9FTauYBA@mail.gmail.com>
- <20100620071446.GA21743@localhost>
- <AANLkTimv1S4BuyGFyuBld0Wn6ncz7JUnMiPis-HlN3Tb@mail.gmail.com>
+	id S1754317Ab0FZXdg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 19:33:36 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61401 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786Ab0FZXdf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 19:33:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=gLLPqD4mUnjmiH9dZ44WlVUAbUeumLgQnh/txN+57ft1U0oDyfNbX+BhWIi0xrubU6
+         Er1Kx0UgB8+wN5iVU0ZMmTYo7LyfxX5vNRHKLZm1kcSqDpTfV32J9PAYQ5Nx2EFe4ID6
+         6ZaRsfiL2T2cKlVXzKbtJc7KoNNpTRazr5w04=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimv1S4BuyGFyuBld0Wn6ncz7JUnMiPis-HlN3Tb@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100625181221.805A.A69D9226@jp.fujitsu.com>
+References: <20100625181221.805A.A69D9226@jp.fujitsu.com>
+Date: Sun, 27 Jun 2010 08:33:34 +0900
+Message-ID: <AANLkTinXLZD-8QkMU8T5xqnGg2Fl55Nkzd6HzNT1FhPo@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: recalculate lru_pages on each priority
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 26, 2010 at 09:18:52PM +0800, Michael Kerrisk wrote:
-> Hi Fengguang,
-> 
-> On Sun, Jun 20, 2010 at 9:14 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > On Sun, Jun 20, 2010 at 02:19:35PM +0800, Michael Kerrisk wrote:
-> >> Hi Andi,
-> >> On Sat, Jun 19, 2010 at 9:52 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >> >> .TP
-> >> >> .BR MADV_SOFT_OFFLINE " (Since Linux 2.6.33)
-> >> >> Soft offline the pages in the range specified by
-> >> >> .I addr
-> >> >> and
-> >> >> .IR length .
-> >> >> This memory of each page in the specified range is copied to a new page,
-> >> >
-> >> > Actually there are some cases where it's also dropped if it's cached page.
-> >> >
-> >> > Perhaps better would be something more fuzzy like
-> >> >
-> >> > "the contents are preserved"
-> >>
-> >> The problem to me is that this gets so fuzzy that it's hard to
-> >> understand the meaning (I imagine many readers will ask: "What does it
-> >> mean that the contents are preserved"?). Would you be able to come up
-> >> with a wording that is a little miore detailed?
-> >
-> > That is, MADV_SOFT_OFFLINE won't lose data.
-> >
-> > If a process writes "1" to some virtual address and then called
-> > madvice(MADV_SOFT_OFFLINE) on that virtual address, it can continue
-> > to read "1" from that virtual address.
-> >
-> > MADV_SOFT_OFFLINE "transparently" replaces the underlying physical page
-> > frame with a new one that contains the same data "1". The original page
-> > frame is offlined, and the new page frame may be installed lazily.
-> 
-> Thanks. That helps me come up with a description that is I think a bit clearer:
-> 
->        MADV_SOFT_OFFLINE (Since Linux 2.6.33)
->               Soft offline the pages in the range specified by
->               addr and length.  The memory of each page in the
->               specified  range  is  preserved (i.e., when next
->               accessed, the same content will be visible,  but
->               in  a new physical page frame), and the original
->               page is offlined  (i.e.,  no  longer  used,  and
->               taken  out  of  normal  memory management).  The
->               effect of  the  MADV_SOFT_OFFLINE  operation  is
->               invisible  to  (i.e., does not change the seman-
->               tics of) the calling process. ...
-> 
-> The actual patch for man-pages-3.26 is below.
+On Fri, Jun 25, 2010 at 6:13 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> shrink_zones() need relatively long time. and lru_pages can be
+> changed dramatically while shrink_zones().
+> then, lru_pages need recalculate on each priority.
+>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Thanks. The change looks good to me.
+Kosaki's patch seems to be reasonable to me.
 
-Note that the other perceivable change may be a little access delay.
-The kernel could choose to simply drop the in-memory data when there
-is another copy in disk. When accessed again, the content for the new
-physical page will be populated from disk IO.
+I looked into background reclaim. It already has done until now.
+(ie, background : dynamic lru_pages in each priority, direct reclaim :
+static lru_pages in each priority).
+Firstly In 53dce00d, Andrew did it.
+Why does he do it with unbalance?
+I guess it was just a mistake.
 
-Thanks,
-Fengguang
-
-> 
-> --- a/man2/madvise.2
-> +++ b/man2/madvise.2
-> @@ -163,12 +163,14 @@ Soft offline the pages in the range specified by
->  .I addr
->  and
->  .IR length .
-> -The memory of each page in the specified range is copied to a new page,
-> +The memory of each page in the specified range is preserved
-> +(i.e., when next accessed, the same content will be visible,
-> +but in a new physical page frame),
->  and the original page is offlined
->  (i.e., no longer used, and taken out of normal memory management).
->  The effect of the
->  .B MADV_SOFT_OFFLINE
-> -operation is normally invisible to (i.e., does not change the semantics of)
-> +operation is invisible to (i.e., does not change the semantics of)
->  the calling process.
->  This feature is intended for testing of memory error-handling code;
->  it is only available if the kernel was configured with
+-- 
+Kind regards,
+Minchan Kim
