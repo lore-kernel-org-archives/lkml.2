@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab0FZQRx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 12:17:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753175Ab0FZQRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 12:17:52 -0400
-Message-ID: <4C262824.6080806@redhat.com>
-Date: Sat, 26 Jun 2010 18:17:40 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1753869Ab0FZQWk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 12:22:40 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:49832 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab0FZQWj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 12:22:39 -0400
+Message-ID: <4C262949.3030804@linux.vnet.ibm.com>
+Date: Sat, 26 Jun 2010 09:22:33 -0700
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Christoph Anton Mitterer <calestyo@scientia.net>
-CC: linux-kernel@vger.kernel.org, dm-crypt <dm-crypt@saout.de>
-Subject: Re: how to (really) cleanly shutdown the system when root is on multiple
- stacked block devices
-References: <1277552682.29791.23.camel@fermat.scientia.net>
-In-Reply-To: <1277552682.29791.23.camel@fermat.scientia.net>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
+References: <20100624142804.431553874@chello.nl>
+In-Reply-To: <20100624142804.431553874@chello.nl>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2010 01:44 PM, Christoph Anton Mitterer wrote:
-
-> I stumbled however across a problem for the shutdown/reboot:
-> What Debian does about is the following (via sysvinit 0 or 6):
-> 1. cryptdisks stop
-> 2. lvm2 stop
-> 3. umountroot
-> 4. halt/reboot
+On 06/24/2010 07:28 AM, Peter Zijlstra wrote:
+> These patches prepare the perf code for multiple pmus (no user
+> interface yet, Lin Ming is working on that). These patches remove all
+> weak functions and rework the struct pmu interface.
 >
-> That 1 and 2 are before 3 is (I guess) because they simply don't expect
-> root-fs to be on the stacked block devices, and want to cleanly close
-> everything else, before umounting the root-fs
+> The patches are boot tested on x86_64 and compile tested on: powerpc
+> (!fsl, what config is that?), sparc and arm (sorry no SH compiler)
+>
+> On x86 perf stat and record with both software and hardware events still worked.
+>
+> I changed all (hardware) pmu implementations so there's a fair chance I messed
+> something up, please have a look at it.
+>
+> If people agree with this, I'll continue with the per-pmu context stuff I
+> talked about last time, which should get us the hardware write batching back.
 
-For the device-mapper device (and this applies to other type devices too),
-you cannot remove device (unload mapping table) when device is still open.
+Hi Peter,
 
-This applies even for active stacked mapping of devices (LVM over LUKS)
-- you cannot remove LUKS device while LVs are active on top of it.
-(even unmounted)
+These patches look like they are really taking us in the right 
+direction.  Thanks for all your effort on this!
 
-remount RO will not help here - it still keeps the device open.
+As for the "hardware write batching", can you describe a bit more about 
+what you have in mind there?  I wonder if this might have something to 
+do with accounting for PMU hardware which is slow to access, for 
+example, via I2C via an internal bridge.
 
-> Now my question:
-> Is it strictly guaranteed, that when the mount -o remount,ro / in
-> umountroot returns,... everything that the filesystem flushed out,...
-> has already went down throught all the different block layers to the
-> disk?
+Cheers,
 
-With recent kernel and flush (issuing barrier internally) device-mapper
-properly propagates barrier request.
+- Corey
 
-But note that you are running shutdown scripts from device itself
-if it is root-fs script itself produces reads to the device.
-...
-
-> Now I guess with a filesystem having barriers... it's secure, right? But
-> what about filesystem not having them?
-
-btw block device flush is implemented using barrier too.
-
-> So I think in the end my question is:
-> Is it by design secured, that I do _NOT_ cleanly disable any (possible
-> stacked block layers like lvm/md/dm-crypt/etc), when halting/rebooting
-> the system and when I do an remount,ro in the end.
-
- From the data integrity point of view, remounting to RO should probably
-be enough (correct me please if I am wrong:-).
-
-But from the security point of view dm-crypt encryption key remains in memory
-because you cannot properly remove LUKS device thus wipe the key.
-
-Anyone with proper boot image can recover such key from RAM memory using
-so called cold-boot attack.
-
-You have several options how to solve this, but I am afraid all require
-some kind of ramdisk, where are the basic tools are copied before unmounting
-root-fs and unmapping devices and reboot.
-
-(For non-root devices it is easy, you can even call luksSuspend to wipe
-key on still active device as workaround before reboot. After luksSuspend
-device is frozen - until the key is provided back using luksResume.
-So only some e.g. page cache leaks of plaintext data are possible -
-but not encryption key itself.)
-
-I mean something like this on shutdown:
-
-- create ramdisk containing basic utilities
-   (mount, sync, lvm, cryptsetup, halt, etc)
-- remount device read-only, iow sync and flush write IO
-- switch to ramdisk, all command now must run from there
-- try to cleanly unmout root-fs, deactivate underlying LV, deactivate LUKS
-   - if deactivation fails, fallback to wipe LUKS device key in memory
-     using luksSuspend
-   (more options here, like trying to dmsetup remove -f do remap to error target,
-    which disconnects underlying devices and allows deactivate them,
-    but it is quite dangerous)
-- reboot
-
-(sounds like we need shutdownramfs but initramfs can be probably reused here:-)
-
-Milan
