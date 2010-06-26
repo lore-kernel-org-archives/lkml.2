@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab0FZONe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 10:13:34 -0400
-Received: from mailgw02.dd24.net ([193.46.215.43]:42505 "EHLO
-	mailgw02.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab0FZONc (ORCPT
+	id S1752915Ab0FZOtk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 10:49:40 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48547 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab0FZOtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 10:13:32 -0400
-Subject: Re: (stupid) how to specify the root-device via kernel parameters
-From: Christoph Anton Mitterer <calestyo@scientia.net>
-To: linux-kernel@vger.kernel.org
-In-Reply-To: <20100626134638.GQ6843@thunk.org>
-References: <1277553549.29791.38.camel@fermat.scientia.net>
-	 <20100626134638.GQ6843@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 26 Jun 2010 16:13:26 +0200
-Message-ID: <1277561606.3245.35.camel@fermat.scientia.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Sat, 26 Jun 2010 10:49:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=H/9dO+cazUTdfGYPwFup2rIGq/+Lmk2YIWQKfYA6J2hHS0zQ5sYZ+KBSQQf2/EVSMg
+         zDM93c4pJm/K/+PNj1OVs5IZHhv91iUOxyQHlYsmp5axBcai/3IRHIs2FqrvoUQHY2GK
+         nSaBVEfar5OdDDJJAGQtfxRwZ3V/j/EVLQK7w=
+MIME-Version: 1.0
+In-Reply-To: <20100626093544.GA27715@infradead.org>
+References: <20100624131455.GA10441@laptop> <7897.1277531612@jrobl> 
+	<20100626093544.GA27715@infradead.org>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Sat, 26 Jun 2010 07:49:13 -0700
+Message-ID: <AANLkTiljx7NzPWiiWnFznfqSX898BEyaxysJt4Fc_xKo@mail.gmail.com>
+Subject: Re: [rfc] new stat*fs-like syscall?
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>, Nick Piggin <npiggin@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Al Viro <viro@zeniv.linux.org.uk>, Ulrich Drepper <drepper@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-06-26 at 09:46 -0400, tytso@mit.edu wrote:
-> Abuse this how?  What do you think is "wrong"?
-Uhm... not totally sure as I only had a first short glance on it (so I
-hope not to step on Bastian's toes ;) )... but the lvm2 initramfs-script
-from Debian's lvm2 package somehow to set up the VGs/LVs... which is
-fine, expect you have fully encrypted fs (with boot on USB stick),...
-and you have a dm-crypt device on top of LVM.
-Not sure why he simply doesn't do a vgchange -an or so,.. but will ask
-him.
+On Sat, Jun 26, 2010 at 02:35, Christoph Hellwig <hch@infradead.org> wrote:
+> That's really job for a pathconf system call that allows quering random
+> paramters.
 
-Then my root is /dev/mapper/root or so,... and the script has it's
-problem.
-
-
-Cheers,
-Chris.
-
+Linus has always objected to sysconf/pathconf-like syscalls.  If you
+get it in I'm all for it.
