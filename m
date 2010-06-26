@@ -1,78 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab0FZLMK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 07:12:10 -0400
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:33511 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab0FZLMI (ORCPT
+	id S1753553Ab0FZLQa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 07:16:30 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59839 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab0FZLQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 07:12:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=DAU9CucsPwAkikScfT8tgtM7914DY+5xQVtvHqH9APw2JmRlNW59TQ6FULUWuATCZH
-         NEMvLz0dWQadz4KIcKvw5uXSwZNk4zk5bI59m/3qTtC/4z6U744f1iE6980aj6ye9oV4
-         XUIWoq6DQUMxYQeRk2ncwoEn9OFQEBdDkRdJQ=
-From: Christoph Mair <christoph.mair@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-       Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-       Stefan Schmidt <stefan@datenfreihafen.org>,
-       Datta Shubhrajyoti <shubhrajyoti@ti.com>,
-       Christoph Mair <christoph.mair@gmail.com>
-Subject: [PATCH 1/2] Add ABI documentation for the bmp085 digital pressure sensor.
-Date: Sat, 26 Jun 2010 13:10:23 +0200
-Message-Id: <1277550624-13879-2-git-send-email-christoph.mair@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100621144958.d5fc694e.akpm@linux-foundation.org>
-References: <20100621144958.d5fc694e.akpm@linux-foundation.org>
+	Sat, 26 Jun 2010 07:16:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] arch/tile: Add driver to enable access to the user dynamic network.
+Date: Sat, 26 Jun 2010 13:16:12 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201006252110.o5PLArvw010770@farm-0002.internal.tilera.com>
+In-Reply-To: <201006252110.o5PLArvw010770@farm-0002.internal.tilera.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006261316.12816.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX18yAJXqxLTub+k2BAQoZpw7G5ROWlglbRUebDt
+ BW1gH7S4VgTMslQWMLhxNkH+AuPQkiP9DjGVCiWcQ5Y2mqbqx0
+ ixrvdnr85OG5Eaz1jqvYg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Christoph Mair <christoph.mair@gmail.com>
----
- Documentation/ABI/testing/sysfs-i2c-bmp085 |   31 ++++++++++++++++++++++++++++
- 1 files changed, 31 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-i2c-bmp085
+On Friday 25 June 2010, Chris Metcalf wrote:
 
-diff --git a/Documentation/ABI/testing/sysfs-i2c-bmp085 b/Documentation/ABI/testing/sysfs-i2c-bmp085
-new file mode 100644
-index 0000000..585962a
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-i2c-bmp085
-@@ -0,0 +1,31 @@
-+What:		/sys/bus/i2c/devices/<busnum>-<devaddr>/pressure0_input
-+Date:		June 2010
-+Contact:	Christoph Mair <christoph.mair@gmail.com>
-+Description:	Start a pressure measurement and read the result. Values
-+		represent the ambient air pressure in pascal (0.01 millibar).
-+
-+		Reading: returns the current air pressure.
-+
-+
-+What:		/sys/bus/i2c/devices/<busnum>-<devaddr>/temp0_input
-+Date:		June 2010
-+Contact:	Christoph Mair <christoph.mair@gmail.com>
-+Description:	Measure the ambient temperature. The returned value represents
-+		the ambient temperature in units of 0.1 degree celsius.
-+
-+		Reading: returns the current temperature.
-+
-+
-+What:		/sys/bus/i2c/devices/<busnum>-<devaddr>/oversampling
-+Date:		June 2010
-+Contact:	Christoph Mair <christoph.mair@gmail.com>
-+Description:	Tell the bmp085 to use more samples to calculate a pressure
-+		value. When writing to this file the chip will use 2^x samples
-+		to calculate the next pressure value with x being the value
-+		written. Using this feature will decrease RMS noise and
-+		increase the measurement time.
-+
-+		Reading: returns the current oversampling setting.
-+
-+		Writing: sets a new oversampling setting.
-+		Accepted values: 0..3.
--- 
-1.7.1
+> The original submission of this code to LKML had the driver
+> instantiated under /proc/tile/hardwall.  Now we just use a character
+> device for this, conventionally /dev/hardwall.  Some futures planning
+> for the TILE-Gx chip suggests that we may want to have other types of
+> devices that share the general model of "bind a task to a cpu, then
+> 'activate' a file descriptor on a pseudo-device that gives access to
+> some hardware resource".  As such, we are using a device rather
+> than, for example, a syscall, to set up and activate this code.
 
+The character device looks much better than the proc file. I still
+think a system call would be a more appropriate abstraction here,
+but the two are equivalent after all.
+
+> diff --git a/arch/tile/include/asm/processor.h b/arch/tile/include/asm/processor.h
+> index 96c50d2..95b54bc 100644
+> --- a/arch/tile/include/asm/processor.h
+> +++ b/arch/tile/include/asm/processor.h
+> @@ -74,6 +74,14 @@ struct async_tlb {
+>  	unsigned long address;   /* what address faulted? */
+>  };
+>  
+> +#ifdef CONFIG_HARDWALL
+> +struct hardwall_info;
+> +
+> +/* Can't use a normal list_head here due to header-file inclusion issues. */
+> +struct hardwall_list {
+> +	struct list_head *next, *prev;
+> +};
+> +#endif
+
+It seems strange that you need this. Why does linux/list.h
+depend on asm/processor.h?
+It certainly seems that the code would get simpler if this
+can be avoided.
+
+> +/*
+> + * Guard changes to the hardwall data structures.
+> + * This could be finer grained (e.g. one lock for the list of hardwall
+> + * rectangles, then separate embedded locks for each one's list of tasks),
+> + * but there are subtle correctness issues when trying to start with
+> + * a task's "hardwall" pointer and lock the correct rectangle's embedded
+> + * lock in the presence of a simultaneous deactivation, so it seems
+> + * easier to have a single lock, given that none of these data
+> + * structures are touched very frequently during normal operation.
+> + */
+> +static DEFINE_SPINLOCK(hardwall_lock);
+
+I think instead of making the lock more fine-grained, a better optimization
+might be to use RCU to protect the updates. AFAICT, the updates to the
+structure are rare but you need to read it a lot.
+
+> +/*
+> + * Low-level primitives
+> + */
+> +
+> +/* Map a HARDWALL_FILE file to the matching hardwall info structure */
+> +#define _file_to_hardwall(file) ((file)->private_data)
+> +#define file_to_hardwall(file) \
+> +	((struct hardwall_info *)_file_to_hardwall(file))
+
+I wouldn't bother with these abstractions, you can simply write
+file->private_data in every place where they are used.
+
+> +/*
+> + * Code to create, activate, deactivate, and destroy hardwall rectangles.
+> + */
+> +
+> +/* Create a hardwall for the given rectangle */
+> +static struct hardwall_info *hardwall_create(
+> +	size_t size, const unsigned long __user *bits)
+> +{
+
+To make this a system call, I'd wrap this function with one that roughly
+does
+
+asmlinkage long sys_hardwall_create(size_t size,
+			 const unsigned long __user *bits)
+{
+	int fd;
+	struct hardwall_info *info;
+
+	info = hardwall_create(size, bits);
+	if (IS_ERR(info))
+		return PTR_ERR(info);
+
+	fd = anon_inode_getfd("hardwall", &hardwall_fops, info, O_CREAT | O_RDWR);
+	if (fd < 0)
+		hardwall_destroy(info);
+	
+	return fd;
+}
+
+The main difference between this and the ioctl approach would be that
+using chardev/ioctl allows you to give access to the hardwall functionality
+to a specific group or user with file permissions, while the system call
+would be less fine-grained, either associating access with a specific
+capability (e.g. CAP_SYS_ADMIN) or giving it to all users.
+
+> +#ifdef CONFIG_COMPAT
+> +static long hardwall_compat_ioctl(struct file *file,
+> +				  unsigned int a, unsigned long b)
+> +{
+> +	/* Sign-extend the argument so it can be used as a pointer. */
+> +	return hardwall_ioctl(file, a, (int)(long)b);
+> +}
+> +#endif
+
+Better use compat_ptr(b) instead of the manual cast.
+
+	Arnd
