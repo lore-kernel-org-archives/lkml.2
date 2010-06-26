@@ -1,129 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab0FZQC5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 12:02:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49086 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab0FZQCz (ORCPT
+	id S1753630Ab0FZQPL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 12:15:11 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:37442 "EHLO
+	eddie.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753496Ab0FZQPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 12:02:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer;
-        b=L1axrh94XYUZY+021RokKlriKDhoE3VXGCnPedbQprkg7htTNdkon46xngl6AGOWay
-         etLEVOv1/lWSJpi5bZa+867AwKbECiBgY1ITUScEKHAx47T5Msl+TJJsL0BNLkqM6B9D
-         ZqTOnf67ZnPJ9udXmh3hc1Mamb+m3vOyPjEwk=
-From: Maurice Dawson <mauricedawson2699@gmail.com>
-To: gregkh@suse.de, stewart_r@aliencamel.com, mithlesh@linsyssoft.com,
-       u.kleine-koenig@pengutronix.de, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: comedi: fix over 80 character coding style issue in ni_labpc.c
-Date: Sat, 26 Jun 2010 17:02:25 +0100
-Message-Id: <1277568145-2214-1-git-send-email-mauricedawson2699@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 26 Jun 2010 12:15:09 -0400
+Date: Sat, 26 Jun 2010 17:14:59 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+cc: Jean Delvare <khali@linux-fr.org>,
+       "ben-linux@fluff.org" <ben-linux@fluff.org>,
+       "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+       "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c/mips: Fix error return codes from Sibyte i2c bus
+ driver
+In-Reply-To: <20100622115417.GA14418@ericsson.com>
+Message-ID: <alpine.LFD.2.00.1006261709110.14683@eddie.linux-mips.org>
+References: <1277056673-4305-1-git-send-email-guenter.roeck@ericsson.com> <20100621190252.2adc6bd8@hyperion.delvare> <20100622115417.GA14418@ericsson.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ni_labpc.c file that fixes up 80 character warnings found by the checkpatch.pl tool
+On Tue, 22 Jun 2010, Guenter Roeck wrote:
 
-Signed-off-by: Maurice Dawson <mauricedawson2699@gmail.com>
----
- drivers/staging/comedi/drivers/ni_labpc.c |   38 ++++++++++++++++++++++------
- 1 files changed, 30 insertions(+), 8 deletions(-)
+> > > @@ -104,7 +104,7 @@ static int smbus_xfer(struct i2c_adapter *i2c_adap, u16 addr,
+> > >  	if (error & M_SMB_ERROR) {
+> > >  		/* Clear error bit by writing a 1 */
+> > >  		csr_out32(M_SMB_ERROR, SMB_CSR(adap, R_SMB_STATUS));
+> > > -		return -1;      /* XXXKW better error code? */
+> > > +		return -ENXIO;
+> > >  	}
+> > >  
+> > >  	if (data_bytes == 1)
+> > 
+> > Definitely an improvement. However, returning -ENXIO on all errors
+> > seems wrong. This error value should only be returned on missing ack
+> > from the slave on address byte. Isn't it possible to distinguish
+> > between different error kinds? M_SMB_ERROR_TYPE seems promising, but
+> > one would need to look up the datasheet (which I don't have) to
+> > discover its meaning.
+> > 
+> Makes sense. I'll dig up a copy of the datasheet and see if I can improve it.
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
-index 67c8a53..60c03b8 100644
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -1096,7 +1096,10 @@ static int labpc_ai_cmdtest(struct comedi_device *dev,
- 			err++;
- 		}
- 		break;
--		/*  TRIG_EXT doesn't care since it doesn't trigger off a numbered channel */
-+		/*
-+		 * TRIG_EXT doesn't care since it doesn't
-+		 * trigger off a numbered channel
-+		 */
- 	default:
- 		break;
- 	}
-@@ -1154,25 +1157,35 @@ static int labpc_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 
- 	/*  setup hardware conversion counter */
- 	if (cmd->stop_src == TRIG_EXT) {
--		/*  load counter a1 with count of 3 (pc+ manual says this is minimum allowed) using mode 0 */
-+		/*
-+		 * load counter a1 with count of 3
-+		 * (pc+ manual says this is minimum allowed) using mode 0
-+		 */
- 		ret = labpc_counter_load(dev, dev->iobase + COUNTER_A_BASE_REG,
- 					 1, 3, 0);
- 		if (ret < 0) {
- 			comedi_error(dev, "error loading counter a1");
- 			return -1;
- 		}
--	} else			/*  otherwise, just put a1 in mode 0 with no count to set its output low */
-+	} else			/*
-+				 * otherwise, just put a1 in mode 0
-+				 * with no count to set its output low
-+				 */
- 		devpriv->write_byte(INIT_A1_BITS,
- 				    dev->iobase + COUNTER_A_CONTROL_REG);
- 
- 	/*  figure out what method we will use to transfer data */
- 	if (devpriv->dma_chan &&	/*  need a dma channel allocated */
--	    /*  dma unsafe at RT priority, and too much setup time for TRIG_WAKE_EOS for */
-+		/*
-+		 * dma unsafe at RT priority,
-+		 * and too much setup time for TRIG_WAKE_EOS for
-+		 */
- 	    (cmd->flags & (TRIG_WAKE_EOS | TRIG_RT)) == 0 &&
- 	    /*  only available on the isa boards */
- 	    thisboard->bustype == isa_bustype) {
- 		xfer = isa_dma_transfer;
--	} else if (thisboard->register_layout == labpc_1200_layout &&	/*  pc-plus has no fifo-half full interrupt */
-+		/* pc-plus has no fifo-half full interrupt */
-+	} else if (thisboard->register_layout == labpc_1200_layout &&
- 		   /*  wake-end-of-scan should interrupt on fifo not empty */
- 		   (cmd->flags & TRIG_WAKE_EOS) == 0 &&
- 		   /*  make sure we are taking more than just a few points */
-@@ -1619,7 +1632,10 @@ static int labpc_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
- 		devpriv->command4_bits |= ADC_DIFF_BIT;
- 	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
- 
--	/* initialize pacer counter output to make sure it doesn't cause any problems */
-+	/*
-+	 * initialize pacer counter output to make sure it doesn't
-+	 * cause any problems
-+	 */
- 	devpriv->write_byte(INIT_A0_BITS, dev->iobase + COUNTER_A_CONTROL_REG);
- 
- 	labpc_clear_adc_fifo(dev);
-@@ -1844,7 +1860,10 @@ static void labpc_adc_timing(struct comedi_device *dev, struct comedi_cmd *cmd)
- 		unsigned int scan_period;
- 
- 		scan_period = labpc_ai_scan_period(cmd);
--		/* calculate cascaded counter values that give desired scan timing */
-+		/*
-+		 * calculate cascaded counter values
-+		 * that give desired scan timing
-+		 */
- 		i8253_cascade_ns_to_timer_2div(LABPC_TIMER_BASE,
- 					       &(devpriv->divisor_b1),
- 					       &(devpriv->divisor_b0),
-@@ -1855,7 +1874,10 @@ static void labpc_adc_timing(struct comedi_device *dev, struct comedi_cmd *cmd)
- 		unsigned int convert_period;
- 
- 		convert_period = labpc_ai_convert_period(cmd);
--		/* calculate cascaded counter values that give desired conversion timing */
-+		/*
-+		 * calculate cascaded counter values
-+		 * that give desired conversion timing
-+		 */
- 		i8253_cascade_ns_to_timer_2div(LABPC_TIMER_BASE,
- 					       &(devpriv->divisor_a0),
- 					       &(devpriv->divisor_b0),
--- 
-1.7.0.4
+ The M_SMB_ERROR_TYPE bit is cleared if an expected ackonwledgement has 
+not been seen and set if the transfer has failed after 15 retries.  So 
+that's probably ENXIO for the former and EIO for the latter.
 
+  Maciej
