@@ -1,217 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab0FZWhF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 18:37:05 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42179 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992Ab0FZWhB (ORCPT
+	id S1754571Ab0FZXKY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 19:10:24 -0400
+Received: from mailgw02.dd24.net ([193.46.215.43]:40978 "EHLO
+	mailgw02.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab0FZXKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 18:37:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Hd7z+Uzu6A47MLbRM6lsG0mfNSPyRRMXV24suoYC/vywKQCrzDxGHOTnnioTOsyABp
-         68a7lUWnjrXN24IzVXi/fHxi7rD59/dR2rK1Idf9FaWU3FYHdbdtYWagCAMpT8KJQ4sf
-         738+I7o4/msc6mdISAScILYaNHKktla2okD7s=
-From: Gustavo Silva <silvagustavosilva@gmail.com>
-To: gregkh@suse.de, horms@verge.net.au
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Gustavo Silva <silvagustavo@users.sourceforge.net>
-Subject: [PATCH] Staging: otus: fix coding style issues in ioctl.c
-Date: Sat, 26 Jun 2010 17:36:53 -0500
-Message-Id: <1277591813-15405-1-git-send-email-silvagustavo@users.sourceforge.net>
-X-Mailer: git-send-email 1.7.1
+	Sat, 26 Jun 2010 19:10:23 -0400
+Subject: Re: how to (really) cleanly shutdown the system when root is on
+ multiple stacked block devices
+From: Christoph Anton Mitterer <calestyo@scientia.net>
+To: linux-kernel@vger.kernel.org
+In-Reply-To: <4C265258.3080508@redhat.com>
+References: <1277552682.29791.23.camel@fermat.scientia.net>
+	 <4C262824.6080806@redhat.com>
+	 <1277570658.3245.71.camel@fermat.scientia.net>
+	 <4C265258.3080508@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 27 Jun 2010 01:10:16 +0200
+Message-ID: <1277593816.3239.78.camel@fermat.scientia.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ioctl.c file that fixes up the following
-issues:
+On Sat, 2010-06-26 at 21:17 +0200, Milan Broz wrote:
+> IIRC barriers are fully supported for DM devices since 2.6.31
+thx.
 
-ERROR: that open brace { should be on the previous line				x  3
-WARNING: please, no space before tabs								x  1
-ERROR: space required before the open parenthesis '('				x  5
-WARNING: braces {} are not necessary for single statement blocks	x  2
-ERROR: space prohibited after that '!' (ctx:BxW)					x  1
-WARNING: suspect code indent for conditional statements				x  2
-ERROR: do not use C99 // comments									x  1
-WARNING: braces {} are not necessary for any arm of this statement	x  4
+> but every fs must properly flush IO on umount or remount RO
+> (using whatever method is possible).
+But... shouldn't literally every filesystem do that? At least all the
+ones that are used as rootfs (ext234,btrfs,reiser34,xfs,jfs,... I guess)
 
 
-Signed-off-by: Gustavo Silva <silvagustavo@users.sourceforge.net>
----
- drivers/staging/otus/ioctl.c |   53 ++++++++++++++++++-----------------------
- 1 files changed, 23 insertions(+), 30 deletions(-)
+> Just that every command run will issue some reads when it need to load
+> libraries etc.
+But that shouldn't harm, if you just remount,ro and as long as all
+different block layers (dm-crypt/lvm2/md/etc) are still there,.. which
+is as far as I understood you definitely the case,.. as one cannot
+remove them as long as something above uses them.
 
-diff --git a/drivers/staging/otus/ioctl.c b/drivers/staging/otus/ioctl.c
-index a48c8e4..a6c30d2 100644
---- a/drivers/staging/otus/ioctl.c
-+++ b/drivers/staging/otus/ioctl.c
-@@ -63,8 +63,7 @@
- 
- extern u16_t zfLnxGetVapId(zdev_t *dev);
- 
--static const u32_t channel_frequency_11A[] =
--{
-+static const u32_t channel_frequency_11A[] = {
- 	/* Even element for Channel Number, Odd for Frequency */
- 	36, 5180,
- 	40, 5200,
-@@ -1361,7 +1360,7 @@ int usbdrvwext_giwpower(struct net_device *dev,
- }
- 
- /*int usbdrvwext_setparam(struct net_device *dev, struct iw_request_info *info,
--*		   	 void *w, char *extra)
-+*				void *w, char *extra)
- *{
- *	struct ieee80211vap *vap = dev->ml_priv;
- *	struct ieee80211com *ic = vap->iv_ic;
-@@ -2261,10 +2260,10 @@ int usbdrv_wpa_ioctl(struct net_device *dev, struct athr_wlan_param *zdparm)
- 		printk(KERN_ERR "wd->ap.wpaLen : % d\n", len);
- 
- 		/* DUMP WPA IE */
--		for(ii = 0; ii < len;) {
-+		for (ii = 0; ii < len;) {
- 			printk(KERN_ERR "0x%02x ", wpaie[ii]);
- 
--			if((++ii % 16) == 0)
-+			if ((++ii % 16) == 0)
- 				printk(KERN_ERR "\n");
- 		}
- 		printk(KERN_ERR "\n");
-@@ -2309,11 +2308,10 @@ int usbdrv_cenc_ioctl(struct net_device *dev, struct zydas_cenc_param *zdparm)
- 	/* Get the AP Id */
- 	apId = zfLnxGetVapId(dev);
- 
--	if (apId == 0xffff) {
-+	if (apId == 0xffff)
- 		apId = 0;
--	} else {
-+	else
- 		apId = apId + 1;
--	}
- 
- 	switch (zdparm->cmd) {
- 	case ZM_CMD_CENC_SETCENC:
-@@ -2334,15 +2332,15 @@ int usbdrv_cenc_ioctl(struct net_device *dev, struct zydas_cenc_param *zdparm)
- 
- 		printk(KERN_ERR "Key Index : % d\n", zdparm->u.crypt.keyid);
- 		printk(KERN_ERR "Encryption key = ");
--		for (ii = 0; ii < 16; ii++) {
-+		for (ii = 0; ii < 16; ii++)
- 			printk(KERN_ERR "0x%02x ", zdparm->u.crypt.key[ii]);
--		}
-+
- 		printk(KERN_ERR "\n");
- 
- 		printk(KERN_ERR "MIC key = ");
--		for(ii = 16; ii < ZM_CENC_KEY_SIZE; ii++) {
-+		for (ii = 16; ii < ZM_CENC_KEY_SIZE; ii++)
- 			printk(KERN_ERR "0x%02x ", zdparm->u.crypt.key[ii]);
--		}
-+
- 		printk(KERN_ERR "\n");
- 
- 		/* Set up key information */
-@@ -2424,7 +2422,7 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		break;
- 	case SIOCSIWRTS:
- 		err = usbdrv_ioctl_setrts(dev, &wrq->u.rts);
--		if (! err)
-+		if (!err)
- 			changed = 1;
- 		break;
- 	/* set_auth */
-@@ -2582,8 +2580,7 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 							ZM_AUTH_MODE_WPA);
- 					} else if ((macp->supIe[17] == 0xf) &&
- 						(macp->supIe[18] == 0xac) &&
--						(macp->supIe[19] == 0x2))
--					{
-+						(macp->supIe[19] == 0x2)) {
- 						printk(KERN_ERR
- 				"wd->sta.authMode = ZM_AUTH_MODE_WPA2PSK\n");
- 				/* wd->sta.authMode = ZM_AUTH_MODE_WPA2PSK; */
-@@ -2592,8 +2589,7 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 				ZM_AUTH_MODE_WPA2PSK);
- 			} else if ((macp->supIe[17] == 0xf) &&
- 				(macp->supIe[18] == 0xac) &&
--				(macp->supIe[19] == 0x1))
--				{
-+				(macp->supIe[19] == 0x1)) {
- 					printk(KERN_ERR
- 				"wd->sta.authMode = ZM_AUTH_MODE_WPA2\n");
- 				/* wd->sta.authMode = ZM_AUTH_MODE_WPA2; */
-@@ -2618,7 +2614,7 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 				zfiWlanSetWepStatus(dev, ZM_ENCRYPTION_AES);
- 				}
- 			}
--			//WPA2 or WPA2PSK
-+			/*WPA2 or WPA2PSK*/
- 			if ((macp->supIe[17] == 0xf) ||
- 				(macp->supIe[18] == 0xac)) {
- 				if (macp->supIe[13] == 0x2) {
-@@ -2656,7 +2652,7 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 			printk(KERN_ERR
- 				"****************ZD_PARAM_COUNTERMEASURES : ");
- 
--			if(arg) {
-+			if (arg) {
- 				/*    mCounterMeasureState=1; */
- 				printk(KERN_ERR "enable\n");
- 			} else {
-@@ -2667,20 +2663,18 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		if (op == ZD_PARAM_DROPUNENCRYPTED) {
- 			printk(KERN_ERR "ZD_PARAM_DROPUNENCRYPTED : ");
- 
--			if(arg) {
-+			if (arg)
- 				printk(KERN_ERR "enable\n");
--			} else {
-+			else
- 				printk(KERN_ERR "disable\n");
--			}
- 		}
- 		if (op == ZD_PARAM_AUTH_ALGS) {
- 			printk(KERN_ERR "ZD_PARAM_AUTH_ALGS : ");
- 
--			if (arg == 0) {
-+			if (arg == 0)
- 				printk(KERN_ERR "OPEN_SYSTEM\n");
--			} else {
-+			else
- 				printk(KERN_ERR "SHARED_KEY\n");
--			}
- 		}
- 		if (op == ZD_PARAM_WPS_FILTER) {
- 			printk(KERN_ERR "ZD_PARAM_WPS_FILTER : ");
-@@ -2705,11 +2699,10 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		/* Get the AP Id */
- 		apId = zfLnxGetVapId(dev);
- 
--		if (apId == 0xffff) {
-+		if (apId == 0xffff)
- 			apId = 0;
--		} else {
-+		else
- 			apId = apId + 1;
--		}
- 
- 		if (copy_from_user(&req_wpaie, ifr->ifr_data,
- 					sizeof(struct ieee80211req_wpaie))) {
-@@ -2721,10 +2714,10 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 			for (j = 0; j < IEEE80211_ADDR_LEN; j++) {
- 				if (macp->stawpaie[i].wpa_macaddr[j] !=
- 						req_wpaie.wpa_macaddr[j])
--				break;
-+					break;
- 			}
- 			if (j == 6)
--			break;
-+				break;
- 		}
- 
- 		if (i < ZM_OAL_MAX_STA_SUPPORT) {
--- 
-1.7.1
+
+> See http://citp.princeton.edu/memory/
+thx =)
+
+
+> (just FYI: luksSuspend is simple wrapper for dm-crypt wipe key functionality;
+> it was written to provide tool to safely wipe all dm-crypt encryption keys
+> in memory without need to close device, it is de-initialising cryptoAPI
+> modules etc.
+Then why can't one do this at the dm-crypt device which has root-fs on
+top? If the data flushing is secure as you've said before,... we should
+be fine...
+Oh... wait... if the key was gone we could not call halt / reboot
+anymore, right?
+
+
+> It was intended to provide something which can help "suspend to RAM" to be
+> at least partially immune to cold boot attack on RAM-suspended laptop.)
+I've always thought suspend-to-RAM would be generally insecure with full
+disk encryption,... and only suspend-to-disk could be made secure (with
+encrypted swap)?!
+
+
+> > I guess non-root devices should be cleanly closed, with luksClose, or
+> > not?
+> yes. But for security reasons there still should be some fallback if it
+> fails - so at least key is properly wiped if all other attempts to unmout fails.
+So you mean,... if non-root devices are shut down,.. but the umount
+doesn't (still blocking or so)... then we should still clear the keys?
+Wouldn't that lead to data corruption?
+
+
+> That will solve only one problem. Then you will have some some device which
+> need ioctl to wipe its state (including possible sensitive data in
+> its buffers) etc. It is just an example, hack to wipe memory on reboot is
+> not proper solution.
+But we don't do all this right now either, right?
+
+> I think this should be solved systematically - clean shutdown should keep
+> machine in safe state.
+Would be great....
+
+
+> It is always amusing these discussions which super-hyper encryption mode
+> to use and then we are not able to properly shutdown it, keeping the root-fs
+> encryption key in memory.
+> Seriously, this is problem and must be solved if we are serious with
+> full disk encryption.
+It's especially interesting,.. as with modern checksummed filesystems
+fully encrypted systems should also provide some level of
+integrity/authenticity... as it's like a MAC.
+
+
+> > And it's quite complex I guess,... given the fact that there are
+> > basically arbitrary ways to stack your block devices...
+> It is exactly the same complexity like in initramfs, just steps are reversed.
+Yes...
+
+
+> But I think that solution which 1) flush page cache 2) remount read-only
+> and 3) wipe all encryption keys for remaining devices is enough.
+What about the "some device which need ioctl to wipe its state
+(including possible sensitive data in its buffers)" ?
+After step (3) we won't be anymore able to invoke the init-scripts which
+came after "unmountroot" and e.g. reboot/hald, would we?
+
+
+> > Right now when I shutdown,... I get errors for lvm/dm-crypt/md,... as
+> > they all can't close there devices,... as the root-fs is just ro-mounted
+> > (ok the Debian cryptsetup package seems to not display that error,.. but
+> > it's probably there).
+> 
+> cryptsetup should print error when device is busy on luksClose,
+> report it to upstream (currently probably me) if not:-)
+> (It prints "Device <dev> is busy." in that situtation and fails.)
+> 
+> Anyway, I am sure that other distro maintainers must solved similar problem...
+For Debian I was planing to organise some round table bringing all the
+related maintainers (lvm2, cryptsetup, mdadm, perhaps even initscripts
+because of the shutdown stuff together).
+
+Less for that security related problem,... but more for the question,
+how can we provide a generic way, that root/non-root devices can be
+stacked,... that the initramfs is fitted with only the required tools
+(which means we must build a tree starting from the fstab entry down to
+the bootom... to really get any device which can have parts of root)...
+that the different stuff (e.g. vgchange) is called in the right order in
+it... and the same for the non-root devices,... which are mounted
+outside initramfs.
+
+And of course the same vice versa when shutting down...
+
+
+Which place would you suggest for such discussions (not sure if lkml is
+the right place ;) )? I mean it would be great if already people form
+multiple distros (e.g. you from RedHat) would take part. I know that at
+least Jonas from Debian is already following this :)
+And I guess it's generally great if you take part,... as dm-crypt/lvm
+developer :) you easily see if something stupid is done ;)
+I mean for some parts of the whole picture I have already some ideas how
+things should work,.. but I guess I have far to less technical knowledge
+(as you see from my questions ;) ) to do this (alone).
+
+
+Best wishes,
+Chris.
 
