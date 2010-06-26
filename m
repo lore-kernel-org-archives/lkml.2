@@ -1,100 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab0FZJQK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 05:16:10 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42821 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824Ab0FZJQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 05:16:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=hn3No4XjYcjS0kbAnqimwAt0KssdergNoz5plJUc8/QxpW0z1pHL/a/IhsgUS1A85t
-         S8yEe3uh/VPxB/frC3Ro7c/V8LTTpgxwRCBZJLZmrZLs33d4Xm+CCtcR+mhJUDpnaXLO
-         Kk/q4kfnYQvKoMP1lLmeIiM68BS86EOM/5Jmg=
-Message-ID: <4C25C551.8000404@garzik.org>
-Date: Sat, 26 Jun 2010 05:16:01 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1752961Ab0FZJRv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 05:17:51 -0400
+Received: from www.tglx.de ([62.245.132.106]:47705 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751824Ab0FZJRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 05:17:49 -0400
+From: John Ogness <john.ogness@linutronix.de>
+To: Ivo Clarysse <ivo.clarysse@gmail.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>, linux-arm-kernel@lists.infradead.org,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 4/5] mtd: mxc_nand fixups
+References: <20100618205401.GA12115@pengutronix.de>
+	<80sk4ivkga.fsf@merkur.tec.linutronix.de>
+	<AANLkTimA7Rbm_nHpVYpEPqaPCjrOse9s8YyiInWlhfEK@mail.gmail.com>
+	<80tyoyhxey.fsf_-_@merkur.tec.linutronix.de>
+	<AANLkTikRj_dMkKLyFhW78yld9jIYAIFncfPaPAF8WqUY@mail.gmail.com>
+	<80iq5bqd07.fsf_-_@merkur.tec.linutronix.de>
+	<AANLkTimJKNEwOoKldq4a4_ufxNY6IY7r6tAfAM055hlW@mail.gmail.com>
+	<80vd9ab0d2.fsf@merkur.tec.linutronix.de>
+	<AANLkTinVaXjCneg-XpxB7YNlmGOwQFTnm5RUcetPdToI@mail.gmail.com>
+	<80lja6awlb.fsf@merkur.tec.linutronix.de>
+	<20100624072732.GQ12115@pengutronix.de>
+	<807hloag6w.fsf@merkur.tec.linutronix.de>
+	<AANLkTilTbvlPxRhioMiKrBUNggcxZeboi1YpB8Y9Bdpm@mail.gmail.com>
+Date: Sat, 26 Jun 2010 11:17:35 +0200
+In-Reply-To: <AANLkTilTbvlPxRhioMiKrBUNggcxZeboi1YpB8Y9Bdpm@mail.gmail.com>
+	(Ivo Clarysse's message of "Fri, 25 Jun 2010 16:50:45 +0200")
+Message-ID: <80y6e2kv9s.fsf@merkur.tec.linutronix.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-       stern@rowland.harvard.edu, gregkh@suse.de, khali@linux-fr.org
-Subject: Re: [PATCH 11/12] libata: use IRQ expecting
-References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-12-git-send-email-tj@kernel.org> <4C23F6C1.7070603@garzik.org> <4C245E50.7090701@kernel.org> <4C2577F2.4030005@garzik.org> <4C25BAD2.4070705@kernel.org>
-In-Reply-To: <4C25BAD2.4070705@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2010 04:31 AM, Tejun Heo wrote:
-> Well, it can indicte the start of cluster of completions, which is the
-> necessary information anyway.  From the second call on, it's a simple
-> flag test and return.  I doubt it will affect anything even w/ high
-> performance SSDs but please read on.
-
-Yes, and your patch calls unexpect_irq() at the _start_ of a cluster of 
-completions.  That is nonsensical, because it reflects the /opposite/ of 
-the present ATA bus state, when multiple commands are in flight.
-
-
-> ata_qc_complete_multiple() call [un]expect_irq() only once by
-> introducing an internal completion function w/o irq expect handling,
-> say ata_qc_complete_raw() and making both ata_qc_complete() and
-> ata_qc_complete_multiple() simple wrapper around it w/ irq expect
-> handling.
-
-Yes, this fixes problem, but it is better to create a wrapper path for 
-the legacy PATA/SATA1 that uses irq-expecting, and a fast path for 
-modern controllers that do not use it.
-
-
-> On 06/26/2010 05:45 AM, Jeff Garzik wrote:
->> We don't want to  burden modern SATA drivers with the overhead of
->> dealing with silly PATA/SATA1 legacy irq nastiness, particularly the
->> ugliness of calling
+On 2010-06-25, Ivo Clarysse <ivo.clarysse@gmail.com> wrote:
+> Tested on an MX21ADS board, and it still works.
 >
-> I think we're much better off applying it to all the drivers.  IRQ
-> expecting is very cheap and scalable and there definitely are plenty
-> of IRQ delivery problems with modern controllers although their
-> patterns tend to be different from legacy ones.  Plus, it will also be
-> useful for power state predictions.
+> [...]
+>
+> Naming is not very consistent; I'd suggest nfc_set_interrupt /
+> nfc_clear_interrupt
 
-Modern SATA/SAS controllers, and their drivers, already have well 
-defined methods of acknowledging interrupts, even unexpected ones, in 
-ways that do not need this core manipulation.  This is over-engineering, 
-punishing all modern chipsets moving forward regardless of their design, 
-by unconditionally requiring this behavior of all libata drivers.
+Actually, the set function is a query, not an action. I've renamed it
+nfc_isset_interrupt() so that it is clearer. I also fixed a typo in one
+of the comments.
 
-Just like the rest of libata's layered driver architecture, it should be 
-straightforward to apply this only to SFF/BMDMA chipsets, then tackle 
-odd cases as needs arise.
+This patch is based on linux-next 20100618.
 
-Modern controllers acknowledge interrupts sanely, and always "expect" an 
-interrupt when you include interrupt events like hotplug, even if the 
-ATA bus itself is idle.  There is no need to burden the millions of ahci 
-users with irq-expecting, for example.
+Signed-off-by: John Ogness <john.ogness@linutronix.de>
+---
+ drivers/mtd/nand/mxc_nand.c |   81 +++++++++++++++++++++++++---------
+ 1 file changed, 61 insertions(+), 20 deletions(-)
 
-With regards to power state predictions, it is only useful if you are 
-accurately reflecting the ATA bus state (idle or not) at all times.  As 
-mentioned above, this patch clearly creates a condition where 
-unexpect_irq() is called when commands remain in flight, and libata is 
-expecting further command completions.
-
-IOW, patch #11 says "we are not expecting irq" when we are.
-
-At least a halfway sane approach would be to track bus-idle status, and 
-trigger useful code when that status changes (idle->active or 
-active->idle).  Perhaps LED, power state, and irq-expecting could all 
-use such a triggering mechanism.
-
-	Jeff
-
-
-
+Index: linux-next-20100618/drivers/mtd/nand/mxc_nand.c
+===================================================================
+--- linux-next-20100618.orig/drivers/mtd/nand/mxc_nand.c
++++ linux-next-20100618/drivers/mtd/nand/mxc_nand.c
+@@ -30,6 +30,8 @@
+ #include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/completion.h>
+ 
+ #include <asm/mach/flash.h>
+ #include <mach/mxc_nand.h>
+@@ -40,6 +42,13 @@
+ #define nfc_is_v21()		(cpu_is_mx25() || cpu_is_mx35())
+ #define nfc_is_v1()		(cpu_is_mx31() || cpu_is_mx27() || cpu_is_mx21())
+ 
++/* It has been observed that the i.MX21 cannot read the CONFIG2:INT bit
++ * if interrupts are masked (CONFIG1:INT_MSK is set). To handle this, the
++ * driver can enable/disable the irq line rather than simply masking the
++ * interrupts. The nfc_avoid_masking() macro identifies the systems that
++ * should use this workaround. */
++#define nfc_avoid_masking()	(cpu_is_mx21())
++
+ /* Addresses for NFC registers */
+ #define NFC_BUF_SIZE		0xE00
+ #define NFC_BUF_ADDR		0xE04
+@@ -100,6 +109,18 @@
+ 
+ #define NFC_RSLTSPARE_AREA_MASK  0xff
+ 
++#define nfc_isset_interrupt(_regs) \
++		(readw(_regs + NFC_CONFIG2) & NFC_INT)
++#define nfc_clear_interrupt(_regs) \
++		writew(readw(_regs + NFC_CONFIG2) & ~NFC_INT, \
++		       _regs + NFC_CONFIG2)
++#define nfc_mask_irq(_regs) \
++		writew(readw(_regs + NFC_CONFIG1) | NFC_INT_MSK, \
++		       _regs + NFC_CONFIG1)
++#define nfc_unmask_irq(_regs) \
++		writew(readw(_regs + NFC_CONFIG1) & ~NFC_INT_MSK, \
++		       _regs + NFC_CONFIG1)
++
+ struct mxc_nand_host {
+ 	struct mtd_info		mtd;
+ 	struct nand_chip	nand;
+@@ -117,7 +138,7 @@ struct mxc_nand_host {
+ 	int			clk_act;
+ 	int			irq;
+ 
+-	wait_queue_head_t	irq_waitq;
++	struct completion	op_completion;
+ 
+ 	uint8_t			*data_buf;
+ 	unsigned int		buf_start;
+@@ -174,9 +195,18 @@ static irqreturn_t mxc_nfc_irq(int irq, 
+ {
+ 	struct mxc_nand_host *host = dev_id;
+ 
+-	disable_irq_nosync(irq);
+-
+-	wake_up(&host->irq_waitq);
++	/* If NFC_INT is not set, we have a spurious interrupt! */
++	if (!nfc_isset_interrupt(host->regs))
++		return IRQ_NONE;
++
++	/* Even with nfc_avoid_masking() we mask the interrupt
++	 * here to avoid an interrupt flood until the irq line
++	 * is disabled by the driver thread. */
++	nfc_mask_irq(host->regs);
++
++	/* Notify the driver thread that an interrupt has occurred.
++	 * The driver thread will clear the interrupt. */
++	complete(&host->op_completion);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -186,27 +216,32 @@ static irqreturn_t mxc_nfc_irq(int irq, 
+  */
+ static void wait_op_done(struct mxc_nand_host *host, int useirq)
+ {
+-	uint16_t tmp;
+ 	int max_retries = 8000;
+ 
+ 	if (useirq) {
+-		if ((readw(host->regs + NFC_CONFIG2) & NFC_INT) == 0) {
++		if (!nfc_isset_interrupt(host->regs)) {
++
++			INIT_COMPLETION(host->op_completion);
+ 
+-			enable_irq(host->irq);
++			if (nfc_avoid_masking())
++				enable_irq(host->irq);
++			else
++				nfc_unmask_irq(host->regs);
+ 
+-			wait_event(host->irq_waitq,
+-				readw(host->regs + NFC_CONFIG2) & NFC_INT);
++			/* wait for the interrupt */
++			wait_for_completion(&host->op_completion);
+ 
+-			tmp = readw(host->regs + NFC_CONFIG2);
+-			tmp  &= ~NFC_INT;
+-			writew(tmp, host->regs + NFC_CONFIG2);
++			if (nfc_avoid_masking()) {
++				disable_irq(host->irq);
++				nfc_unmask_irq(host->regs);
++			}
+ 		}
++
++		nfc_clear_interrupt(host->regs);
+ 	} else {
+ 		while (max_retries-- > 0) {
+-			if (readw(host->regs + NFC_CONFIG2) & NFC_INT) {
+-				tmp = readw(host->regs + NFC_CONFIG2);
+-				tmp  &= ~NFC_INT;
+-				writew(tmp, host->regs + NFC_CONFIG2);
++			if (nfc_isset_interrupt(host->regs)) {
++				nfc_clear_interrupt(host->regs);
+ 				break;
+ 			}
+ 			udelay(1);
+@@ -582,9 +617,8 @@ static void preset(struct mtd_info *mtd)
+ 	struct mxc_nand_host *host = nand_chip->priv;
+ 	uint16_t tmp;
+ 
+-	/* enable interrupt, disable spare enable, setup ECC */
++	/* disable spare-only, setup ECC */
+ 	tmp = readw(host->regs + NFC_CONFIG1);
+-	tmp &= ~NFC_INT_MSK;
+ 	tmp &= ~NFC_SP_EN;
+ 	if (nand_chip->ecc.mode == NAND_ECC_HW) {
+ 		tmp |= NFC_ECC_EN;
+@@ -842,11 +876,18 @@ static int __init mxcnd_probe(struct pla
+ 		this->options |= NAND_USE_FLASH_BBT;
+ 	}
+ 
+-	init_waitqueue_head(&host->irq_waitq);
++	init_completion(&host->op_completion);
+ 
+ 	host->irq = platform_get_irq(pdev, 0);
+ 
+-	err = request_irq(host->irq, mxc_nfc_irq, IRQF_DISABLED, DRIVER_NAME, host);
++	if (nfc_avoid_masking()) {
++		set_irq_flags(host->irq, IRQF_VALID | IRQF_NOAUTOEN);
++		nfc_unmask_irq(host->regs);
++	} else {
++		nfc_mask_irq(host->regs);
++	}
++
++	err = request_irq(host->irq, mxc_nfc_irq, 0, DRIVER_NAME, host);
+ 	if (err)
+ 		goto eirq;
+ 
