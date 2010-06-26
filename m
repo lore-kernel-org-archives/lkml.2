@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab0FZBFV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 21:05:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:50704 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab0FZBFT convert rfc822-to-8bit (ORCPT
+	id S1754574Ab0FZB0J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 21:26:09 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53531 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab0FZB0G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 21:05:19 -0400
-Date: Fri, 25 Jun 2010 18:04:51 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       =?UTF-8?Q?Jind=C5=99ich_Makovi=C4=8Dka?= <makovick@gmail.com>,
-       Michael Ellerman <michael@ellerman.id.au>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
-In-Reply-To: <rHrHQMIU4rI.A.5FD.vepHMB@chimera>
-Message-ID: <alpine.DEB.2.01.1006251801350.3964@bogon.housecafe.de>
-References: <g77CuMUl7QI.A.qMH.4ZpHMB@chimera> <rHrHQMIU4rI.A.5FD.vepHMB@chimera>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	Fri, 25 Jun 2010 21:26:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FpU36mzDMuM4YiZbQ1NkHftnny/FALFasYQdmXy9h0OCkVnegHxbCKEGRWGiWR3+qv
+         kOZH6m8cGologQPs0YZK0OEBkEQ/Kp+gn+DsmagFNmLohVlVkVwKdym8Vyd2E6Yxag5u
+         fHg3sK9HQ4oGtJa6C5qrG/8t6+xwaZmajuVxs=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
+In-Reply-To: <1277490625.1875.986.camel@laptop>
+References: <1277348698-17311-1-git-send-email-ying.huang@intel.com>
+	<1277361352.1875.838.camel@laptop>
+	<1277490625.1875.986.camel@laptop>
+Date: Sat, 26 Jun 2010 09:26:05 +0800
+Message-ID: <AANLkTiltWgLtf2_pIu57-7V_Ya_PvOa5y75t_BwCvAtg@mail.gmail.com>
+Subject: Re: [RFC][PATCH] irq_work -v2
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       "H.Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+       Andi Kleen <andi@firstfloor.org>, tglx <tglx@linutronix.de>,
+       davem <davem@davemloft.net>, paulus <paulus@samba.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V01U2FsdGVkX18n2czcSxQN7GetMh8O5oa+eDQzB7r+UQ5d4V2
- k/CCiv+nLiJwxSngP1NOBE6p9I6LGx7YY4UjxpGIC1SsdXLwZZ
- 1O6savSP02OBTBtruJseQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the late reply:
+On Sat, Jun 26, 2010 at 2:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> +
+> +static DEFINE_PER_CPU(struct irq_work *, irq_work_list);
+> +
+> +/*
+> + * Claim the entry so that no one else will poke at it.
+> + */
+> +static bool irq_work_claim(struct irq_work *entry)
+> +{
+> +       unsigned long flags;
+> +
+> +       do {
+> +               flags = (unsigned long)entry->next;
+> +               if (flags & IRQ_WORK_PENDING)
+> +                       return false;
+> +       } while (cmpxchg(&entry->next, flags, flags | IRQ_WORK_FLAGS) != flags);
+> +
+> +       return true;
+> +}
+> +
+> +
+> +void __weak arch_irq_work_raise(void)
+> +{
+> +       /*
+> +        * Lame architectures will get the timer tick callback
+> +        */
+> +}
+> +
+> +/*
+> + * Queue the entry and raise the IPI if needed.
+> + */
+> +static void __irq_work_queue(struct irq_work *entry)
+> +{
+> +       struct irq_work **head;
+> +
+> +       head = &get_cpu_var(irq_work_list);
+> +
+> +       do {
+> +               /*
+> +                * Can assign non-atomic because we keep the flags set.
+> +                */
+> +               entry->next = next_flags(*head, IRQ_WORK_FLAGS);
+> +       } while (cmpxchg(head, entry->next, entry) != entry->next);
 
-On Mon, 21 Jun 2010 at 00:32, Rafael J. Wysocki wrote:
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+*head & IRQ_WORK_FLAGS == 0, but entry->next & IRQ_WORK_FLAGS ==
+IRQ_WORK_FLAGS. So the cmpxchg will never succeed.
 
-Yes, the bug is still present in 2.6.34 and .35-rc3, but a tested patch is 
-available, hopefully to be included in 2.6.35.
+> +
+> +       /*
+> +        * The list was empty, raise self-interrupt to start processing.
+> +        */
+> +       if (!irq_work_next(entry))
+> +               arch_irq_work_raise();
+> +
+> +       put_cpu_var(irq_work_list);
+> +}
 
-Thanks,
-Christian.
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15589
-> Subject		: 2.6.34-rc1: Badness at fs/proc/generic.c:316
-> Submitter	: Christian Kujau <lists@nerdbynature.de>
-> Date		: 2010-03-13 23:53 (100 days old)
-> Message-ID	: < <AANLkTikNcCtUn9SQwKu2b3IE6NiAwAhciHsm1HVH4EJh@mail.gmail.com>>
-> References	: http://marc.info/?l=linux-kernel&m=126852442903680&w=2
-> Handled-By	: Michael Ellerman <michael@ellerman.id.au>
-> 		  Jindřich Makovička <makovick@gmail.com>
-> Patch		: http://patchwork.ozlabs.org/patch/52978/
-> 		  http://lkml.indiana.edu/hypermail/linux/kernel/1006.0/00137.html
--- 
-BOFH excuse #302:
-
-microelectronic Riemannian curved-space fault in write-only file system
+Best Regards,
+Huang Ying
