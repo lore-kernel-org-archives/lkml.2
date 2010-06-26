@@ -1,130 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab0FZT5V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 15:57:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58423 "EHLO mx1.redhat.com"
+	id S1754108Ab0FZT5U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 15:57:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31808 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753986Ab0FZT5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753977Ab0FZT5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 26 Jun 2010 15:57:18 -0400
 From: Mike Snitzer <snitzer@redhat.com>
 To: Christoph Hellwig <hch@lst.de>
 Cc: axboe@kernel.dk, dm-devel@redhat.com, James.Bottomley@suse.de,
        linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
        akpm@linux-foundation.org
-Subject: [PATCH 2/2] block: defer the use of inline biovecs for discard requests
-Date: Sat, 26 Jun 2010 15:56:51 -0400
-Message-Id: <1277582211-10725-2-git-send-email-snitzer@redhat.com>
+Subject: [PATCH 1/2] block: fix leaks associated with discard request payload
+Date: Sat, 26 Jun 2010 15:56:50 -0400
+Message-Id: <1277582211-10725-1-git-send-email-snitzer@redhat.com>
 In-Reply-To: <20100622180029.GA15950@redhat.com>
 References: <20100622180029.GA15950@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't alloc discard bio with a biovec in blkdev_issue_discard.  Doing so
-means bio_has_data() will not be true until the SCSI layer adds the
-payload to the discard request via blk_add_request_payload.
+Fix leaks introduced via "block: don't allocate a payload for discard
+request" commit a1d949f5f44.
 
-bio_{enable,disable}_inline_vecs are not expected to be widely used so
-they were exported using EXPORT_SYMBOL_GPL.
+sd_done() is not called for REQ_TYPE_BLOCK_PC commands so cleanup
+discard request's payload directly in scsi_finish_command().
 
-This patch avoids the need for the following VM accounting fix for
-discards: http://lkml.org/lkml/2010/6/23/361
-NOTE: Jens, you said you applied Tao Ma's fix but I cannot see it in
-your linux-2.6-block's for-next or for-2.6.36... as such I didn't revert
-it in this patch.
+Also cleanup page allocated for discard payload in
+scsi_setup_discard_cmnd's scsi_setup_blk_pc_cmnd error path.
 
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 ---
- block/blk-core.c    |    2 ++
- block/blk-lib.c     |    2 +-
- fs/bio.c            |   19 +++++++++++++++++--
- include/linux/bio.h |    3 +++
- 4 files changed, 23 insertions(+), 3 deletions(-)
+ block/blk-core.c       |   23 +++++++++++++++++++++++
+ drivers/scsi/scsi.c    |    8 ++++++++
+ drivers/scsi/sd.c      |   18 ++++++++----------
+ include/linux/blkdev.h |    1 +
+ 4 files changed, 40 insertions(+), 10 deletions(-)
 
 diff --git a/block/blk-core.c b/block/blk-core.c
-index 07925aa..457fc29 100644
+index 98b4cee..07925aa 100644
 --- a/block/blk-core.c
 +++ b/block/blk-core.c
-@@ -1153,6 +1153,7 @@ void blk_add_request_payload(struct request *rq, struct page *page,
+@@ -1167,6 +1167,29 @@ void blk_add_request_payload(struct request *rq, struct page *page,
+ }
+ EXPORT_SYMBOL_GPL(blk_add_request_payload);
+ 
++/**
++ * blk_clear_request_payload - clear a request's payload
++ * @rq: request to update
++ *
++ * The driver needs to take care of freeing the payload itself.
++ */
++void blk_clear_request_payload(struct request *rq)
++{
++	struct bio *bio = rq->bio;
++
++	rq->__data_len = rq->resid_len = 0;
++	rq->nr_phys_segments = 0;
++	rq->buffer = NULL;
++
++	bio->bi_size = 0;
++	bio->bi_vcnt = 0;
++	bio->bi_phys_segments = 0;
++
++	bio->bi_io_vec->bv_page = NULL;
++	bio->bi_io_vec->bv_len = 0;
++}
++EXPORT_SYMBOL_GPL(blk_clear_request_payload);
++
+ void init_request_from_bio(struct request *req, struct bio *bio)
  {
- 	struct bio *bio = rq->bio;
- 
-+	bio_enable_inline_vecs(bio);
- 	bio->bi_io_vec->bv_page = page;
- 	bio->bi_io_vec->bv_offset = 0;
- 	bio->bi_io_vec->bv_len = len;
-@@ -1187,6 +1188,7 @@ void blk_clear_request_payload(struct request *rq)
- 
- 	bio->bi_io_vec->bv_page = NULL;
- 	bio->bi_io_vec->bv_len = 0;
-+	bio_disable_inline_vecs(bio);
+ 	req->cpu = bio->bi_comp_cpu;
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index ad0ed21..69c7ea4 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -851,6 +851,14 @@ void scsi_finish_command(struct scsi_cmnd *cmd)
+ 		 */
+ 		if (good_bytes == old_good_bytes)
+ 			good_bytes -= scsi_get_resid(cmd);
++	} else if (cmd->request->cmd_flags & REQ_DISCARD) {
++		/*
++		 * If this is a discard request that originated from the kernel
++		 * we need to free our payload here.  Note that we need to check
++		 * the request flag as the normal payload rules apply for
++		 * pass-through UNMAP / WRITE SAME requests.
++		 */
++		__free_page(bio_page(cmd->request->bio));
+ 	}
+ 	scsi_io_completion(cmd, good_bytes);
  }
- EXPORT_SYMBOL_GPL(blk_clear_request_payload);
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 86da819..9b81dda 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -425,6 +425,7 @@ static int scsi_setup_discard_cmnd(struct scsi_device *sdp, struct request *rq)
+ 	sector_t sector = bio->bi_sector;
+ 	unsigned int nr_sectors = bio_sectors(bio);
+ 	unsigned int len;
++	int ret;
+ 	struct page *page;
  
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index e16185b..345a4b6 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -54,7 +54,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 		unsigned int max_discard_sectors =
- 			min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+ 	if (sdkp->device->sector_size == 4096) {
+@@ -465,7 +466,13 @@ static int scsi_setup_discard_cmnd(struct scsi_device *sdp, struct request *rq)
+ 	}
  
--		bio = bio_alloc(gfp_mask, 1);
-+		bio = bio_alloc(gfp_mask, 0);
- 		if (!bio) {
- 			ret = -ENOMEM;
- 			break;
-diff --git a/fs/bio.c b/fs/bio.c
-index 8abb2df..e47d0a6 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -260,6 +260,21 @@ void bio_init(struct bio *bio)
+ 	blk_add_request_payload(rq, page, len);
+-	return scsi_setup_blk_pc_cmnd(sdp, rq);
++	ret = scsi_setup_blk_pc_cmnd(sdp, rq);
++	if (ret != BLKPREP_OK) {
++		blk_clear_request_payload(rq);
++		__free_page(page);
++	}
++
++	return ret;
  }
- EXPORT_SYMBOL(bio_init);
  
-+void bio_enable_inline_vecs(struct bio *bio)
-+{
-+	bio->bi_flags |= BIO_POOL_NONE << BIO_POOL_OFFSET;
-+	bio->bi_max_vecs = BIO_INLINE_VECS;
-+	bio->bi_io_vec = bio->bi_inline_vecs;;
-+}
-+EXPORT_SYMBOL_GPL(bio_enable_inline_vecs);
-+
-+void bio_disable_inline_vecs(struct bio *bio)
-+{
-+	bio->bi_max_vecs = 0;
-+	bio->bi_io_vec = NULL;
-+}
-+EXPORT_SYMBOL_GPL(bio_disable_inline_vecs);
-+
  /**
-  * bio_alloc_bioset - allocate a bio for I/O
-  * @gfp_mask:   the GFP_ mask given to the slab allocator
-@@ -293,8 +308,8 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 		goto out_set;
+@@ -1170,15 +1177,6 @@ static int sd_done(struct scsi_cmnd *SCpnt)
+ 	int sense_valid = 0;
+ 	int sense_deferred = 0;
  
- 	if (nr_iovecs <= BIO_INLINE_VECS) {
--		bvl = bio->bi_inline_vecs;
--		nr_iovecs = BIO_INLINE_VECS;
-+		bio_enable_inline_vecs(bio);
-+		return bio;
- 	} else {
- 		bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs);
- 		if (unlikely(!bvl))
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 4d379c8..3135631 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -403,6 +403,9 @@ extern struct bio *bio_clone(struct bio *, gfp_t);
- 
- extern void bio_init(struct bio *);
- 
-+extern void bio_enable_inline_vecs(struct bio *);
-+extern void bio_disable_inline_vecs(struct bio *);
-+
- extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
- extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
- 			   unsigned int, unsigned int);
+-	/*
+-	 * If this is a discard request that originated from the kernel
+-	 * we need to free our payload here.  Note that we need to check
+-	 * the request flag as the normal payload rules apply for
+-	 * pass-through UNMAP / WRITE SAME requests.
+-	 */
+-	if (SCpnt->request->cmd_flags & REQ_DISCARD)
+-		__free_page(bio_page(SCpnt->request->bio));
+-
+ 	if (result) {
+ 		sense_valid = scsi_command_normalize_sense(SCpnt, &sshdr);
+ 		if (sense_valid)
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 204fbe2..fdeef47 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -707,6 +707,7 @@ extern void blk_insert_request(struct request_queue *, struct request *, int, vo
+ extern void blk_requeue_request(struct request_queue *, struct request *);
+ extern void blk_add_request_payload(struct request *rq, struct page *page,
+ 		unsigned int len);
++extern void blk_clear_request_payload(struct request *rq);
+ extern int blk_rq_check_limits(struct request_queue *q, struct request *rq);
+ extern int blk_lld_busy(struct request_queue *q);
+ extern int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
 -- 
 1.6.5.rc2
 
