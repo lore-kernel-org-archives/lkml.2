@@ -1,140 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab0FZTRt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 15:17:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36335 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753221Ab0FZTRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 15:17:48 -0400
-Message-ID: <4C265258.3080508@redhat.com>
-Date: Sat, 26 Jun 2010 21:17:44 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
-MIME-Version: 1.0
-To: Christoph Anton Mitterer <calestyo@scientia.net>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: how to (really) cleanly shutdown the system when root is on multiple
- stacked block devices
-References: <1277552682.29791.23.camel@fermat.scientia.net>	 <4C262824.6080806@redhat.com> <1277570658.3245.71.camel@fermat.scientia.net>
-In-Reply-To: <1277570658.3245.71.camel@fermat.scientia.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754072Ab0FZTyA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 15:54:00 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:53373 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753961Ab0FZTx7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 15:53:59 -0400
+Date: Sat, 26 Jun 2010 21:48:21 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: xhci: fixed brace and spacing coding style issues
+Message-ID: <20100626214821.26157640@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2010 06:44 PM, Christoph Anton Mitterer wrote:
-> On Sat, 2010-06-26 at 18:17 +0200, Milan Broz wrote:
+Fixed brace and spacing coding style issues.
 
->> With recent kernel and flush (issuing barrier internally) device-mapper
->> properly propagates barrier request.
-> a) What is recent? ;)
-> b) The barrier thingy,... does it have to be supported by the thing
-> (e.g. filesystem, LV, etc.) on top? Or is this something generically
-> implemented for flushing?
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/usb/host/pci-quirks.c |    3 +--
+ drivers/usb/host/xhci-mem.c   |    4 ++--
+ drivers/usb/host/xhci-pci.c   |    2 +-
+ drivers/usb/host/xhci-ring.c  |    2 +-
+ drivers/usb/host/xhci.c       |    9 +++------
+ 5 files changed, 8 insertions(+), 12 deletions(-)
 
-IIRC barriers are fully supported for DM devices since 2.6.31
-but every fs must properly flush IO on umount or remount RO
-(using whatever method is possible).
-  
->> But note that you are running shutdown scripts from device itself
->> if it is root-fs script itself produces reads to the device.
->> ...
-> Uhm what exactly do you mean?
-
-Just that every command run will issue some reads when it need to load
-libraries etc.
-
->> But from the security point of view dm-crypt encryption key remains in memory
->> because you cannot properly remove LUKS device thus wipe the key.
->>
->> Anyone with proper boot image can recover such key from RAM memory using
->> so called cold-boot attack.
-> How long is this about staying in the RAM (after poweroff)?
-> And after reboot.... isn't everything set to 0x0? Otherwise,... booting
-> e.g. another OS or a compromised Linux could leak the key...
-
-See http://citp.princeton.edu/memory/
-
->> You have several options how to solve this, but I am afraid all require
->> some kind of ramdisk, where are the basic tools are copied before unmounting
->> root-fs and unmapping devices and reboot.
-> I've already feared that... so we need de-initramfs? ;)
->
->
->> (For non-root devices it is easy, you can even call luksSuspend to wipe
->> key on still active device as workaround before reboot.
-
-(just FYI: luksSuspend is simple wrapper for dm-crypt wipe key functionality;
-it was written to provide tool to safely wipe all dm-crypt encryption keys
-in memory without need to close device, it is de-initialising cryptoAPI
-modules etc.
-It was intended to provide something which can help "suspend to RAM" to be
-at least partially immune to cold boot attack on RAM-suspended laptop.)
-
-> I guess non-root devices should be cleanly closed, with luksClose, or
-> not?
-
-yes. But for security reasons there still should be some fallback if it
-fails - so at least key is properly wiped if all other attempts to unmout fails.
-  
->> After luksSuspend
->> device is frozen - until the key is provided back using luksResume.
->> So only some e.g. page cache leaks of plaintext data are possible -
->> but not encryption key itself.)
-> Isn't it possible to patch the kernel,.. that always when halting or
-> rebooting,.. it "simply" wipes _ALL_ dm-cryptkeys available,...
-> And why/how are plaintext leaks possible?
-
-That will solve only one problem. Then you will have some some device which
-need ioctl to wipe its state (including possible sensitive data in
-its buffers) etc. It is just an example, hack to wipe memory on reboot is
-not proper solution.
-
-I think this should be solved systematically - clean shutdown should keep
-machine in safe state.
-
->> I mean something like this on shutdown:
->>
->> - create ramdisk containing basic utilities
->>     (mount, sync, lvm, cryptsetup, halt, etc)
->> - remount device read-only, iow sync and flush write IO
->> - switch to ramdisk, all command now must run from there
->> - try to cleanly unmout root-fs, deactivate underlying LV, deactivate LUKS
->>     - if deactivation fails, fallback to wipe LUKS device key in memory
->>       using luksSuspend
->>     (more options here, like trying to dmsetup remove -f do remap to error target,
->>      which disconnects underlying devices and allows deactivate them,
->>      but it is quite dangerous)
->> - reboot
->>
->> (sounds like we need shutdownramfs but initramfs can be probably reused here:-)
-> Already thought about that before,... but it seems impossible to me,...
-> to convice distros to do that...
-
-It is always amusing these discussions which super-hyper encryption mode
-to use and then we are not able to properly shutdown it, keeping the root-fs
-encryption key in memory.
-Seriously, this is problem and must be solved if we are serious with
-full disk encryption.
-
-> And it's quite complex I guess,... given the fact that there are
-> basically arbitrary ways to stack your block devices...
-
-It is exactly the same complexity like in initramfs, just steps are reversed.
-
-But I think that solution which 1) flush page cache 2) remount read-only
-and 3) wipe all encryption keys for remaining devices is enough.
-
-> Right now when I shutdown,... I get errors for lvm/dm-crypt/md,... as
-> they all can't close there devices,... as the root-fs is just ro-mounted
-> (ok the Debian cryptsetup package seems to not display that error,.. but
-> it's probably there).
-
-cryptsetup should print error when device is busy on luksClose,
-report it to upstream (currently probably me) if not:-)
-(It prints "Device <dev> is busy." in that situtation and fails.)
-
-Anyway, I am sure that other distro maintainers must solved similar problem...
-
-Milan
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index 83b5f9c..843848a 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -329,9 +329,8 @@ static void __devinit quirk_usb_disable_ehci(struct pci_dev *pdev)
+ 			udelay(delta);
+ 			wait_time -= delta;
+ 			val = readl(op_reg_base + EHCI_USBSTS);
+-			if ((val == ~(u32)0) || (val & EHCI_USBSTS_HALTED)) {
++			if ((val == ~(u32)0) || (val & EHCI_USBSTS_HALTED))
+ 				break;
+-			}
+ 		} while (wait_time > 0);
+ 	}
+ 	writel(0, op_reg_base + EHCI_USBINTR);
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index fd9e03a..27fbcd2 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1479,7 +1479,7 @@ static int xhci_check_trb_in_td_math(struct xhci_hcd *xhci, gfp_t mem_flags)
+ 	struct {
+ 		dma_addr_t		input_dma;
+ 		struct xhci_segment	*result_seg;
+-	} simple_test_vector [] = {
++	} simple_test_vector[] = {
+ 		/* A zeroed DMA field should fail */
+ 		{ 0, NULL },
+ 		/* One TRB before the ring start should fail */
+@@ -1504,7 +1504,7 @@ static int xhci_check_trb_in_td_math(struct xhci_hcd *xhci, gfp_t mem_flags)
+ 		union xhci_trb		*end_trb;
+ 		dma_addr_t		input_dma;
+ 		struct xhci_segment	*result_seg;
+-	} complex_test_vector [] = {
++	} complex_test_vector[] = {
+ 		/* Test feeding a valid DMA address from a different ring */
+ 		{	.input_seg = xhci->event_ring->first_seg,
+ 			.start_trb = xhci->event_ring->first_seg->trbs,
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 11482b6..dd12371 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -176,7 +176,7 @@ static struct pci_driver xhci_pci_driver = {
+ 	.remove =	usb_hcd_pci_remove,
+ 	/* suspend and resume implemented later */
+ 
+-	.shutdown = 	usb_hcd_pci_shutdown,
++	.shutdown =	usb_hcd_pci_shutdown,
+ };
+ 
+ int xhci_register_pci(void)
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 9012098..9e2fccb 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1857,7 +1857,7 @@ static unsigned int count_sg_trbs_needed(struct xhci_hcd *xhci, struct urb *urb)
+ 	num_sgs = urb->num_sgs;
+ 	temp = urb->transfer_buffer_length;
+ 
+-	xhci_dbg(xhci, "count sg list trbs: \n");
++	xhci_dbg(xhci, "count sg list trbs:\n");
+ 	num_trbs = 0;
+ 	for_each_sg(urb->sg, sg, num_sgs, i) {
+ 		unsigned int previous_total_trbs = num_trbs;
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 27345cd..812b81f 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -390,9 +390,8 @@ void xhci_event_ring_work(unsigned long arg)
+ 	for (i = 0; i < MAX_HC_SLOTS; ++i) {
+ 		if (!xhci->devs[i])
+ 			continue;
+-		for (j = 0; j < 31; ++j) {
++		for (j = 0; j < 31; ++j)
+ 			xhci_dbg_ep_rings(xhci, i, j, &xhci->devs[i]->eps[j]);
+-		}
+ 	}
+ 
+ 	if (xhci->noops_submitted != NUM_TEST_NOOPS)
+@@ -1329,9 +1328,8 @@ int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)
+ 		/* Only cache or free the old ring if it exists.
+ 		 * It may not if this is the first add of an endpoint.
+ 		 */
+-		if (virt_dev->eps[i].ring) {
++		if (virt_dev->eps[i].ring)
+ 			xhci_free_or_cache_endpoint_ring(xhci, virt_dev, i);
+-		}
+ 		virt_dev->eps[i].ring = virt_dev->eps[i].new_ring;
+ 		virt_dev->eps[i].new_ring = NULL;
+ 	}
+@@ -2185,9 +2183,8 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 		ret = -EINVAL;
+ 		break;
+ 	}
+-	if (ret) {
++	if (ret)
+ 		return ret;
+-	}
+ 	temp_64 = xhci_read_64(xhci, &xhci->op_regs->dcbaa_ptr);
+ 	xhci_dbg(xhci, "Op regs DCBAA ptr = %#016llx\n", temp_64);
+ 	xhci_dbg(xhci, "Slot ID %d dcbaa entry @%p = %#016llx\n",
+-- 
+1.7.1
