@@ -1,55 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab0FZQPL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 12:15:11 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:37442 "EHLO
-	eddie.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab0FZQPJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 12:15:09 -0400
-Date: Sat, 26 Jun 2010 17:14:59 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-cc: Jean Delvare <khali@linux-fr.org>,
-       "ben-linux@fluff.org" <ben-linux@fluff.org>,
-       "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-       "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c/mips: Fix error return codes from Sibyte i2c bus
- driver
-In-Reply-To: <20100622115417.GA14418@ericsson.com>
-Message-ID: <alpine.LFD.2.00.1006261709110.14683@eddie.linux-mips.org>
-References: <1277056673-4305-1-git-send-email-guenter.roeck@ericsson.com> <20100621190252.2adc6bd8@hyperion.delvare> <20100622115417.GA14418@ericsson.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753757Ab0FZQRx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 12:17:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14921 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753175Ab0FZQRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 12:17:52 -0400
+Message-ID: <4C262824.6080806@redhat.com>
+Date: Sat, 26 Jun 2010 18:17:40 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Christoph Anton Mitterer <calestyo@scientia.net>
+CC: linux-kernel@vger.kernel.org, dm-crypt <dm-crypt@saout.de>
+Subject: Re: how to (really) cleanly shutdown the system when root is on multiple
+ stacked block devices
+References: <1277552682.29791.23.camel@fermat.scientia.net>
+In-Reply-To: <1277552682.29791.23.camel@fermat.scientia.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jun 2010, Guenter Roeck wrote:
+On 06/26/2010 01:44 PM, Christoph Anton Mitterer wrote:
 
-> > > @@ -104,7 +104,7 @@ static int smbus_xfer(struct i2c_adapter *i2c_adap, u16 addr,
-> > >  	if (error & M_SMB_ERROR) {
-> > >  		/* Clear error bit by writing a 1 */
-> > >  		csr_out32(M_SMB_ERROR, SMB_CSR(adap, R_SMB_STATUS));
-> > > -		return -1;      /* XXXKW better error code? */
-> > > +		return -ENXIO;
-> > >  	}
-> > >  
-> > >  	if (data_bytes == 1)
-> > 
-> > Definitely an improvement. However, returning -ENXIO on all errors
-> > seems wrong. This error value should only be returned on missing ack
-> > from the slave on address byte. Isn't it possible to distinguish
-> > between different error kinds? M_SMB_ERROR_TYPE seems promising, but
-> > one would need to look up the datasheet (which I don't have) to
-> > discover its meaning.
-> > 
-> Makes sense. I'll dig up a copy of the datasheet and see if I can improve it.
+> I stumbled however across a problem for the shutdown/reboot:
+> What Debian does about is the following (via sysvinit 0 or 6):
+> 1. cryptdisks stop
+> 2. lvm2 stop
+> 3. umountroot
+> 4. halt/reboot
+>
+> That 1 and 2 are before 3 is (I guess) because they simply don't expect
+> root-fs to be on the stacked block devices, and want to cleanly close
+> everything else, before umounting the root-fs
 
- The M_SMB_ERROR_TYPE bit is cleared if an expected ackonwledgement has 
-not been seen and set if the transfer has failed after 15 retries.  So 
-that's probably ENXIO for the former and EIO for the latter.
+For the device-mapper device (and this applies to other type devices too),
+you cannot remove device (unload mapping table) when device is still open.
 
-  Maciej
+This applies even for active stacked mapping of devices (LVM over LUKS)
+- you cannot remove LUKS device while LVs are active on top of it.
+(even unmounted)
+
+remount RO will not help here - it still keeps the device open.
+
+> Now my question:
+> Is it strictly guaranteed, that when the mount -o remount,ro / in
+> umountroot returns,... everything that the filesystem flushed out,...
+> has already went down throught all the different block layers to the
+> disk?
+
+With recent kernel and flush (issuing barrier internally) device-mapper
+properly propagates barrier request.
+
+But note that you are running shutdown scripts from device itself
+if it is root-fs script itself produces reads to the device.
+...
+
+> Now I guess with a filesystem having barriers... it's secure, right? But
+> what about filesystem not having them?
+
+btw block device flush is implemented using barrier too.
+
+> So I think in the end my question is:
+> Is it by design secured, that I do _NOT_ cleanly disable any (possible
+> stacked block layers like lvm/md/dm-crypt/etc), when halting/rebooting
+> the system and when I do an remount,ro in the end.
+
+ From the data integrity point of view, remounting to RO should probably
+be enough (correct me please if I am wrong:-).
+
+But from the security point of view dm-crypt encryption key remains in memory
+because you cannot properly remove LUKS device thus wipe the key.
+
+Anyone with proper boot image can recover such key from RAM memory using
+so called cold-boot attack.
+
+You have several options how to solve this, but I am afraid all require
+some kind of ramdisk, where are the basic tools are copied before unmounting
+root-fs and unmapping devices and reboot.
+
+(For non-root devices it is easy, you can even call luksSuspend to wipe
+key on still active device as workaround before reboot. After luksSuspend
+device is frozen - until the key is provided back using luksResume.
+So only some e.g. page cache leaks of plaintext data are possible -
+but not encryption key itself.)
+
+I mean something like this on shutdown:
+
+- create ramdisk containing basic utilities
+   (mount, sync, lvm, cryptsetup, halt, etc)
+- remount device read-only, iow sync and flush write IO
+- switch to ramdisk, all command now must run from there
+- try to cleanly unmout root-fs, deactivate underlying LV, deactivate LUKS
+   - if deactivation fails, fallback to wipe LUKS device key in memory
+     using luksSuspend
+   (more options here, like trying to dmsetup remove -f do remap to error target,
+    which disconnects underlying devices and allows deactivate them,
+    but it is quite dangerous)
+- reboot
+
+(sounds like we need shutdownramfs but initramfs can be probably reused here:-)
+
+Milan
