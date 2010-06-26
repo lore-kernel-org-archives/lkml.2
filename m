@@ -1,37 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab0FZNmj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 09:42:39 -0400
-Received: from web53701.mail.re2.yahoo.com ([206.190.37.22]:31060 "HELO
-	web53701.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756180Ab0FZNmi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 09:42:38 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Jun 2010 09:42:38 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=Rl1YdX3G4JlYEf/2SalfQxQZ2UbtsHgBF/gQpznv8/DrKkyMiVszpwF1cmx6fLp13Oasm56e3boj1Wa2EASokjt5j03IRCKMMfsmheC47pSaFh5/IFrFhoX73XZ/oaXu7oNSw6cg2w94u/ftGDsfV2ImA3taYuHmPZgjzYvi/iI=;
-Message-ID: <534495.94892.qm@web53701.mail.re2.yahoo.com>
-X-YMail-OSG: 13FkKC8VM1mFugf1DOYNdOXQgYSrYgze_aq61QMZrYF3Ewi
- QmKx0YOwS_vkYlRDpgxJebNctmiGiTZ.DlUJQDb3ZsUFGMZt_E52GORf2F2v
- vxARbBIyXTCMNfqBhEZ3hbtdUSPAw7DYJC8xgFD5HFYEi0h9U9ecjIKqwWC8
- wLYfLZOB86J37wnq6MKMu43sWtt30e0jc_nv0mLShm59ffMpBs3cFio4ykq8
- _AKmfdOAHa4O4_Unobie5N7RV_DeLEnpLt5hbrGx01UYHo1j_H2B_R.H05WM
- 3vpWqmeILeVFX_J5CN7mKqOQcQR6xyVduE5zm8o.vDSUELQ.1UZ2lKjczKvK
- wHmBHcSADkpRU
-X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.104.274457
-Date: Sat, 26 Jun 2010 06:35:57 -0700 (PDT)
-From: LORI WERTENBERGER <lori_wertenberger@yahoo.com>
-To: linux-kernel@vger.kernel.org
+	id S1756243Ab0FZNrG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 09:47:06 -0400
+Received: from thunk.org ([69.25.196.29]:59281 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753711Ab0FZNrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 09:47:04 -0400
+Date: Sat, 26 Jun 2010 09:46:38 -0400
+From: tytso@mit.edu
+To: Christoph Anton Mitterer <calestyo@scientia.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: (stupid) how to specify the root-device via kernel parameters
+Message-ID: <20100626134638.GQ6843@thunk.org>
+Mail-Followup-To: tytso@mit.edu,
+	Christoph Anton Mitterer <calestyo@scientia.net>,
+	linux-kernel@vger.kernel.org
+References: <1277553549.29791.38.camel@fermat.scientia.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277553549.29791.38.camel@fermat.scientia.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://sites.google.com/site/gGtjM8SuCxGe/WkUeaO-y
+On Sat, Jun 26, 2010 at 01:59:09PM +0200, Christoph Anton Mitterer wrote:
+> 
+> My question:
+> These are intended (especially root/nfsroot) to really name the device,
+> on which the filesystem directly lays, right?
+> E.g. if the ext4-root-fs is on /dev/sda1,... => root=/dev/sda1
+> 
+> I've seen several initramfs scripts (which I'd like to fix),... where
+> people abuse this or misuse this in setups where a root-fs is used on
+> multi-stacked block layers (e.g. something like disk->lvm->dm-crypt->fs)
 
+Abuse this how?  What do you think is "wrong"?
 
-
-      
+							- Ted
