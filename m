@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab0FZDwe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 23:52:34 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56898 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380Ab0FZDwb (ORCPT
+	id S1751571Ab0FZEHT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 00:07:19 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40538 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab0FZEHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 23:52:31 -0400
+	Sat, 26 Jun 2010 00:07:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
          :references:in-reply-to:content-type:content-transfer-encoding;
-        b=DDq/uPcpEXBgAGx24LjIGLlchLpaYqKBRJH6wly8iY2iNAtVP76nIkzDMIcwgR9Dxz
-         5nAuZS2rgBNwgY3CkfKJbVX0tOnrfYCr76GzXYVkVH7Hf5frQ0Pyxd0qx7z/1Y3gdrkU
-         iEbaX0fKDA4GT8+cSKPyLFXls/hSvNlulJGeU=
-Message-ID: <4C2577F2.4030005@garzik.org>
-Date: Fri, 25 Jun 2010 23:45:54 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+        b=PuQUJu/RVGxwfQHMIUDbcTKc0Ck9D5E9E+OC3wHUotgi9fiLQc0+xU3YpvmAln0Zfe
+         /sFKxM9+/1zhXQLKO0T+U8wOMDsy4DnzHA5onIzpxkqA1b141YXmKetfur1XX1P/Yatu
+         jPKBWauON2t2sXFXuctnjB3mi6xxsI//B0Rbs=
+Message-ID: <4C257CEE.2070309@gmail.com>
+Date: Fri, 25 Jun 2010 22:07:10 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc13 Thunderbird/3.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-       stern@rowland.harvard.edu, gregkh@suse.de, khali@linux-fr.org
-Subject: Re: [PATCH 11/12] libata: use IRQ expecting
-References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-12-git-send-email-tj@kernel.org> <4C23F6C1.7070603@garzik.org> <4C245E50.7090701@kernel.org>
-In-Reply-To: <4C245E50.7090701@kernel.org>
+To: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+       linux-ide@vger.kernel.org
+Subject: Re: ata link not reset properly
+References: <4C223F8A.9030306@odi.ch> <4C224429.6010705@kernel.org> <4C224502.2040206@kernel.org> <4C2305A8.4070708@odi.ch> <4C24C903.1070705@kernel.org> <4C24EED2.4020300@odi.ch>
+In-Reply-To: <4C24EED2.4020300@odi.ch>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2010 03:44 AM, Tejun Heo wrote:
-> I still think calling unexpect_irq() from ata_qc_complete() is correct
-> as ata_qc_complete() is always a good indicator of completion events.
+On 06/25/2010 12:00 PM, Ortwin Glück wrote:
+>
+>
+> On 25.06.2010 17:19, Tejun Heo wrote:
+>> Patch attached, but please see below.
+>
+> Cheers, I will give it a try and provide feedback if "it" happens again.
+>
+>> Is it PATA?
+>
+> Yes. This chipset doesn't have SATA, only PATA.
 
-No, it's not.  ata_qc_complete() is an indicator that _one_ completion 
-event occurred, not _all_ completion events for that port.
+Ahh, ok, it's not sata_nv at all then, it's pata_amd. On the same chip, 
+totally different controller though.
 
-Converting drivers to use ata_qc_complete_multiple() completely misses 
-the point:  ata_qc_complete_multiple() is doing exactly the same thing 
-as those drivers:  calling ata_qc_complete() in a loop.
+PATA doesn't normally use hard-resets as a means of error recovery - 
+that would mean hitting the RESET line, which I don't think most 
+controllers can do on software command (it usually only gets asserted on 
+power up or hitting the reset button), unlike on SATA where there's a 
+defined way to trigger a COMRESET which is mostly equivalent. Also, that 
+resets both devices on the channel, unlike soft reset which is specific 
+to one device.
 
-ata_qc_complete() is -- as its name implies -- completing a single qc. 
-Your patch introduces an unconditional controller-wide unexpect_irq() 
-call.  It's a layering violation.
-
-You can trivially trace through ata_qc_complete_multiple() after patch 
-#11 is applied, and see the result...  for $N completion bits passed to 
-ata_qc_complete_multiple(), you call
-	unexpect_irq()
-	expect_irq()
-in rapid succession $N times, once for each ata_qc_complete() call in 
-the loop of ata_qc_complete_multiple().  For something that is not 
-needed for modern SATA controllers.
-
-The preferred solution would be something that only touches legacy 
-controllers, namely:
-
-*) create ata_port_complete(), with the implementation
-
-	ata_qc_complete()
-	unexpect_irq()
-
-*) then call ata_port_complete() in the legacy code that needs 
-unexpect_irq()
-
-We don't want to  burden modern SATA drivers with the overhead of 
-dealing with silly PATA/SATA1 legacy irq nastiness, particularly the 
-ugliness of calling
-
-	unexpect_irq() + expect_irq()
-
-for a number of NCQ commands, in a tight loop!
-
-	Jeff
-
-
-
-
+>
+> CONFIG_ATA=y
+> CONFIG_ATA_SFF=y
+> CONFIG_SATA_NV=y
+> CONFIG_PATA_AMD=y
+>
+>> Why do you have 2.01?
+>
+> for the DVD drive?
+>
+>> Can you please attach full boot
+>> log?
+>
+> attached.
+>
+> Thanks.
+>   Ortwin
 
