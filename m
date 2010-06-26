@@ -1,65 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab0FZP6P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 11:58:15 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:55694 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab0FZP6N (ORCPT
+	id S1753529Ab0FZQC5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 12:02:57 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49086 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab0FZQCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 11:58:13 -0400
-X-Authority-Analysis: v=1.1 cv=RJh5qLNcouNXRoa2xeUuD5+cYELFcZRJb8XCZWNbBzY= c=1 sm=0 a=v6q0ed96Jx4A:10 a=hO-oPbc3tlwA:10 a=kj9zAlcOel0A:10 a=ld/erqUjW76FpBUqCqkKeA==:17 a=pGLkceISAAAA:8 a=hGzw-44bAAAA:8 a=p3T0RCafYPqiqG5joB4A:9 a=XSQYUfZpPVnNs04Ey16olpjt83sA:4 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=dowx1zmaLagA:10 a=ld/erqUjW76FpBUqCqkKeA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 71.70.153.3
-Date: Sat, 26 Jun 2010 11:58:10 -0400
-From: Jeff Layton <jlayton@samba.org>
-To: Andrew Hendry <andrew.hendry@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org
-Subject: Re: 2.6.34-rc3 BUG: unable to handle kernel NULL pointer
- dereference  at 0000000000000048 cifs_show_options
-Message-ID: <20100626115810.532913f5@tlielax.poochiereds.net>
-In-Reply-To: <AANLkTikXz-zW3_nh0k941BPHWLJMN630l2R5sPoc35kC@mail.gmail.com>
-References: <AANLkTilhTrEBYZd4HxeXQk8B6-yV8rCJ2C0jXsEREgIR@mail.gmail.com>
-	<AANLkTimTmPEG-8gDKu7Xj8--LrXsF9oe-afbm0X_QHsX@mail.gmail.com>
-	<20100626075125.3d1711ff@tlielax.poochiereds.net>
-	<AANLkTikXz-zW3_nh0k941BPHWLJMN630l2R5sPoc35kC@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 26 Jun 2010 12:02:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:message-id:x-mailer;
+        b=L1axrh94XYUZY+021RokKlriKDhoE3VXGCnPedbQprkg7htTNdkon46xngl6AGOWay
+         etLEVOv1/lWSJpi5bZa+867AwKbECiBgY1ITUScEKHAx47T5Msl+TJJsL0BNLkqM6B9D
+         ZqTOnf67ZnPJ9udXmh3hc1Mamb+m3vOyPjEwk=
+From: Maurice Dawson <mauricedawson2699@gmail.com>
+To: gregkh@suse.de, stewart_r@aliencamel.com, mithlesh@linsyssoft.com,
+       u.kleine-koenig@pengutronix.de, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: comedi: fix over 80 character coding style issue in ni_labpc.c
+Date: Sat, 26 Jun 2010 17:02:25 +0100
+Message-Id: <1277568145-2214-1-git-send-email-mauricedawson2699@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Jun 2010 22:22:00 +1000
-Andrew Hendry <andrew.hendry@gmail.com> wrote:
+This is a patch to the ni_labpc.c file that fixes up 80 character warnings found by the checkpatch.pl tool
 
-> I have turned on cifs debug to try to catch it if happens again.
-> 
-> (gdb) list *(cifs_show_options+0xf9)
-> 0x309 is in cifs_show_options (fs/cifs/cifsfs.c:336).
-> 331	static void
-> 332	cifs_show_address(struct seq_file *s, struct TCP_Server_Info *server)
-> 333	{
-> 334		seq_printf(s, ",addr=");
-> 335	
-> 336		switch (server->addr.sockAddr.sin_family) {
-> 337		case AF_INET:
-> 338			seq_printf(s, "%pI4", &server->addr.sockAddr.sin_addr.s_addr);
-> 339			break;
-> 340		case AF_INET6:
-> 
-> 
-> 
-> 
+Signed-off-by: Maurice Dawson <mauricedawson2699@gmail.com>
+---
+ drivers/staging/comedi/drivers/ni_labpc.c |   38 ++++++++++++++++++++++------
+ 1 files changed, 30 insertions(+), 8 deletions(-)
 
-Thanks, that helps. It looks like the "server" pointer in that function
-was NULL or something close to it. Those should be properly refcounted
-nowadays and that hasn't changed in quite a while. This function only
-gets called from one place -- cifs_show_options. So something was
-reading /proc/self/mountinfo and this pointer got zeroed out. Maybe
-this raced with an unmount and the memory was recycled? Doesn't seem
-like that ought to be possible though (I think vfsmount references are
-held for each of these calls).
-
+diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
+index 67c8a53..60c03b8 100644
+--- a/drivers/staging/comedi/drivers/ni_labpc.c
++++ b/drivers/staging/comedi/drivers/ni_labpc.c
+@@ -1096,7 +1096,10 @@ static int labpc_ai_cmdtest(struct comedi_device *dev,
+ 			err++;
+ 		}
+ 		break;
+-		/*  TRIG_EXT doesn't care since it doesn't trigger off a numbered channel */
++		/*
++		 * TRIG_EXT doesn't care since it doesn't
++		 * trigger off a numbered channel
++		 */
+ 	default:
+ 		break;
+ 	}
+@@ -1154,25 +1157,35 @@ static int labpc_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 
+ 	/*  setup hardware conversion counter */
+ 	if (cmd->stop_src == TRIG_EXT) {
+-		/*  load counter a1 with count of 3 (pc+ manual says this is minimum allowed) using mode 0 */
++		/*
++		 * load counter a1 with count of 3
++		 * (pc+ manual says this is minimum allowed) using mode 0
++		 */
+ 		ret = labpc_counter_load(dev, dev->iobase + COUNTER_A_BASE_REG,
+ 					 1, 3, 0);
+ 		if (ret < 0) {
+ 			comedi_error(dev, "error loading counter a1");
+ 			return -1;
+ 		}
+-	} else			/*  otherwise, just put a1 in mode 0 with no count to set its output low */
++	} else			/*
++				 * otherwise, just put a1 in mode 0
++				 * with no count to set its output low
++				 */
+ 		devpriv->write_byte(INIT_A1_BITS,
+ 				    dev->iobase + COUNTER_A_CONTROL_REG);
+ 
+ 	/*  figure out what method we will use to transfer data */
+ 	if (devpriv->dma_chan &&	/*  need a dma channel allocated */
+-	    /*  dma unsafe at RT priority, and too much setup time for TRIG_WAKE_EOS for */
++		/*
++		 * dma unsafe at RT priority,
++		 * and too much setup time for TRIG_WAKE_EOS for
++		 */
+ 	    (cmd->flags & (TRIG_WAKE_EOS | TRIG_RT)) == 0 &&
+ 	    /*  only available on the isa boards */
+ 	    thisboard->bustype == isa_bustype) {
+ 		xfer = isa_dma_transfer;
+-	} else if (thisboard->register_layout == labpc_1200_layout &&	/*  pc-plus has no fifo-half full interrupt */
++		/* pc-plus has no fifo-half full interrupt */
++	} else if (thisboard->register_layout == labpc_1200_layout &&
+ 		   /*  wake-end-of-scan should interrupt on fifo not empty */
+ 		   (cmd->flags & TRIG_WAKE_EOS) == 0 &&
+ 		   /*  make sure we are taking more than just a few points */
+@@ -1619,7 +1632,10 @@ static int labpc_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		devpriv->command4_bits |= ADC_DIFF_BIT;
+ 	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
+ 
+-	/* initialize pacer counter output to make sure it doesn't cause any problems */
++	/*
++	 * initialize pacer counter output to make sure it doesn't
++	 * cause any problems
++	 */
+ 	devpriv->write_byte(INIT_A0_BITS, dev->iobase + COUNTER_A_CONTROL_REG);
+ 
+ 	labpc_clear_adc_fifo(dev);
+@@ -1844,7 +1860,10 @@ static void labpc_adc_timing(struct comedi_device *dev, struct comedi_cmd *cmd)
+ 		unsigned int scan_period;
+ 
+ 		scan_period = labpc_ai_scan_period(cmd);
+-		/* calculate cascaded counter values that give desired scan timing */
++		/*
++		 * calculate cascaded counter values
++		 * that give desired scan timing
++		 */
+ 		i8253_cascade_ns_to_timer_2div(LABPC_TIMER_BASE,
+ 					       &(devpriv->divisor_b1),
+ 					       &(devpriv->divisor_b0),
+@@ -1855,7 +1874,10 @@ static void labpc_adc_timing(struct comedi_device *dev, struct comedi_cmd *cmd)
+ 		unsigned int convert_period;
+ 
+ 		convert_period = labpc_ai_convert_period(cmd);
+-		/* calculate cascaded counter values that give desired conversion timing */
++		/*
++		 * calculate cascaded counter values
++		 * that give desired conversion timing
++		 */
+ 		i8253_cascade_ns_to_timer_2div(LABPC_TIMER_BASE,
+ 					       &(devpriv->divisor_a0),
+ 					       &(devpriv->divisor_b0),
 -- 
-Jeff Layton <jlayton@samba.org>
+1.7.0.4
+
