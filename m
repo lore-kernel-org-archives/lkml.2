@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab0FZFSO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 01:18:14 -0400
-Received: from isrv.corpit.ru ([81.13.33.159]:36343 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751093Ab0FZFSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 01:18:13 -0400
-Message-ID: <4C258D91.6010308@msgid.tls.msk.ru>
-Date: Sat, 26 Jun 2010 09:18:09 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
-MIME-Version: 1.0
-To: Ric Wheeler <rwheeler@redhat.com>
-CC: Daniel Taylor <Daniel.Taylor@wdc.com>, Mike Fedyk <mfedyk@mikefedyk.com>,
-       Daniel J Blueman <daniel.blueman@gmail.com>, Mat <jackdachef@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Chris Mason <chris.mason@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Btrfs: broken file system design (was Unbound(?) internal fragmentation
- in Btrfs)
-References: <4C07C321.8010000@redhat.com><AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com><4C1B7560.1000806@gmail.com><AANLkTilQm8VGAvc1XNW4EaHd1FLd6dXIXwJ9-yT-joQ8@mail.gmail.com><4C1BA3E5.7020400@gmail.com><20100623234031.GF7058@shareable.org><469D2D911E4BF043BFC8AD32E8E30F5B24AEBA@wdscexbe07.sc.wdc.com> <AANLkTil5Gl0-rWClRsLZby_c37bQu5RB_tCgHsxTFshO@mail.gmail.com> <469D2D911E4BF043BFC8AD32E8E30F5B24AEBB@wdscexbe07.sc.wdc.com> <4C24FC71.6020001@redhat.com>
-In-Reply-To: <4C24FC71.6020001@redhat.com>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751945Ab0FZFyL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 01:54:11 -0400
+Received: from mtoichi12.ns.itscom.net ([219.110.2.182]:44842 "EHLO
+	mtoichi12.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab0FZFyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 01:54:10 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [rfc] new stat*fs-like syscall?
+To: Nick Piggin <npiggin@suse.de>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Al Viro <viro@ZenIV.linux.org.uk>, Ulrich Drepper <drepper@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20100624131455.GA10441@laptop>
+References: <20100624131455.GA10441@laptop>
+Date: Sat, 26 Jun 2010 14:53:32 +0900
+Message-ID: <7897.1277531612@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-25.06.2010 22:58, Ric Wheeler wrote:
-> On 06/24/2010 06:06 PM, Daniel Taylor wrote:
-[]
->>> On Wed, Jun 23, 2010 at 8:43 PM, Daniel Taylor
->>> <Daniel.Taylor@wdc.com>  wrote:
->>>     
->>>> Just an FYI reminder.  The original test (2K files) is utterly
->>>> pathological for disk drives with 4K physical sectors, such as
->>>> those now shipping from WD, Seagate, and others.  Some of the
->>>> SSDs have larger (16K0 or smaller blocks (2K).  There is also
->>>> the issue of btrfs over RAID (which I know is not entirely
->>>> sensible, but which will happen).
 
-Why it is not sensible to use btrfs on raid devices?
-Nowadays raid is just everywhere, from 'fakeraid' on AHCI to
-large external arrays on iSCSI-attached storage.  Sometimes
-it is nearly imposisble to _not_ use RAID, -- many servers
-comes with a built-in RAID card which can't be turned off or
-disabled.  And hardware raid is faster (at least in theory)
-at least because it puts less load on various system busses.
+Nick Piggin:
+> Is there anything more we should add here? Samba wants a capabilities
+> field, with things like sparse files, quotas, compression, encryption,
+> case preserving/sensitive.
 
-To many "enterprise folks" a statement "we don't need hw raid,
-we have better solution" sounds like "we're just a toy, don't
-use".
+How about the max link count?
+There was a post in last December.
+See <http://marc.info/?l=linux-kernel&m=126008640210762&w=2> and its
+thread in detail.
 
-Hmm?  ;)
 
-/mjt, who always used and preferred _software_ raid due to
- multiple reasons, and never used btrfs so far.
+J. R. Okajima
+
+----------------------------------------------------------------------
+The pathconf(_PC_LINK_MAX) cannot get the correct value, since linux
+kernel doesn't provide such interface. And the current implementation in
+GLibc issues statfs(2) first and then returns the predefined value
+(EXT2_LINK_MAX, etc) based upoin the filesystem type. But GLibc doesn't
+support all filesystem types. ie. when the target filesystem is unknown
+to pathconf(3), it will return LINUX_LINK_MAX (127).
+For GLibc, there is no way except implementing this poor method.
+
+This patch makes statfs(2) return the correct value via struct
+statfs.f_spare[0].
+
+RFC:
+- Can we use f_spare for this purpose?
+- Does pathconf(_PC_LINK_MAX) distinguish a dir and a non-dir?
+  If a filesystem sets different limit for a dir as a link count from a
+  non-dir, then should the filesystem checks the type of the specified
+  dentry->d_inode->i_mode and return the different value?
+  This patch series doesn't distinguish them and return a single value.
+- Here I tried supporting only ext[23], nfs and tmpfs. Since I can test
+  them by myself. I left other FSs as it is, which means if FS doesn't
+  support _PC_LINK_MAX by modifying its s_op->statfs(), the default
+  value will be returned. The default value is taken from GLibc trying
+  to keep the compatibility. But it may not be important.
+- Some FS such as ms-dos based one which doesn't support hardlink, will
+  return LINK_MAX_UNSUPPORTED which is defined as 1.
+- Other FS such as tmpfs which doesn't check the link count in link(2),
+  will return LINK_MAX_UNLIMITED which is defined as -1. This value
+  doesn't mean an error. The negative return value of pathconf(3) is
+  valid.
+
+Even if linux kernel return a correct value via statfs(2) (or anything
+else), users will not get the value at once since the support in libc is
+necessary too.
+
+
+J. R. Okajima (5):
+  vfs, support pathconf(3) with _PC_LINK_MAX
+  ext2, support pathconf(3) with _PC_LINK_MAX
+  ext3, support pathconf(3) with _PC_LINK_MAX
+  nfs, support pathconf(3) with _PC_LINK_MAX
+  tmpfs, support pathconf(3) with _PC_LINK_MAX
+
+ fs/compat.c               |    5 +++--
+ fs/ext2/super.c           |    1 +
+ fs/ext3/super.c           |    1 +
+ fs/libfs.c                |    1 +
+ fs/nfs/client.c           |   10 +++++++---
+ fs/nfs/super.c            |    1 +
+ fs/open.c                 |    9 +++++++--
+ include/linux/nfs_fs_sb.h |    1 +
+ include/linux/statfs.h    |    6 ++++++
+ mm/shmem.c                |    1 +
+ 10 files changed, 29 insertions(+), 7 deletions(-)
