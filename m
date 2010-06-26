@@ -1,89 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab0FZCc2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 22:32:28 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:22907 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949Ab0FZCc1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 22:32:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=wigPZPKLxS8Je2Yf4lKs7m8q1pvrIF6CYk5DY48AzEP+oZJuznbKl7ROOop0hg0v6
-	fPQ6t22Zsl3jzDk4gqA+A==
+	id S1752931Ab0FZDfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 23:35:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15071 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752423Ab0FZDfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 23:35:38 -0400
+Date: Fri, 25 Jun 2010 23:35:10 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
+Message-ID: <20100626033509.GA2435@redhat.com>
+References: <20100621094828.GA30748@lst.de>
+ <4C1F3916.4070608@kernel.dk>
+ <20100621110436.GA4056@lst.de>
+ <4C1FB5F7.3070908@kernel.dk>
+ <20100621191410.GA24213@lst.de>
+ <20100621213618.GC6474@redhat.com>
+ <20100623100138.GA9575@lst.de>
+ <20100624014420.GB3297@redhat.com>
+ <20100625110319.GA12855@lst.de>
 MIME-Version: 1.0
-In-Reply-To: <20100610145706.15588.4562.stgit@e102109-lin.cambridge.arm.com>
-References: <20100610145706.15588.4562.stgit@e102109-lin.cambridge.arm.com>
-Date: Fri, 25 Jun 2010 19:32:22 -0700
-Message-ID: <AANLkTimdHs25zHe8DJUaOOo7wYW14Ds4c2ORaSBhRxSg@mail.gmail.com>
-Subject: Re: [PATCH] sata_sil24: Use memory barriers before issuing commands
-From: Grant Grundler <grundler@google.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Colin Tuckley <colin.tuckley@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100625110319.GA12855@lst.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 7:57 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> The data in the cmd_block buffers may reach the main memory after the
-> writel() to the device ports.
+On Fri, Jun 25, 2010 at 01:03:20PM +0200, Christoph Hellwig wrote:
+> On Wed, Jun 23, 2010 at 09:44:20PM -0400, Vivek Goyal wrote:
+> > Let me explain the general idling logic and then see if it makes sense in case
+> > of WRITE_SYNC.
+> > 
+> > Once a request has completed, if the cfq queue is empty, we have two choices.
+> > Either expire the cfq queue and move on to dispatch requests from a
+> > different queue or we idle on the queue hoping we will get more IO from
+> > same process/queue.
+> 
+> queues are basically processes in this context?
 
-"ia-64 Linux Kernel" (mosberger and eranian) uses exactly this sequence
-as an example for wmb() on page 303.
+Yes. Basically IO context. Generally one per process but multiple threads
+can also share the IO context and requests from all the threads will go
+into single cfq queue.
 
-I'm curious about the system that exposed this problem. I believe wmb() fixes
- an issue not exposed on most machines. Can any general comments be
-made about cache coherency, memory ordering (weak?), instruction ordering
- (super scalar?), etc. ?
+> 
+> > Idling can help (on SATA disks with high seek cost), if
+> > our guess was right and soon we got another request from same process. We
+> > cut down on number of seeks hence increased throghput.
+> 
+> I don't really understand the logic behind this.  If we lots of I/O
+> that actually is close to each other we should generally submit it in
+> one batch.  That is true for pagecache writeback, that is true for
+> metadata (at least in XFS..), and it's true for any sane application
+> doing O_DIRECT / O_SYNC style I/O.
+> 
+> What workloads produde I/O that is local (not random) writes with small
+> delays between the I/O requests?
+> 
 
-The explanation above is a bit short (most people won't understand it).
+That's a good question. I don't have an answer for that. I have most of the
+time done my testing using fio where one can create synthetic workload of
+doing O_DIRECT/O_SYNC sequential/local writes after small delays.
 
+I think I need to run blktrace on some of the real life workloads and monitor
+for WRITE_SYNC pattern.
 
-> This patch introduces two calls to wmb() to ensure the relative ordering.
+> I see the point of this logic for reads where various workloads have
+> dependent reads that might be close to each other, but I don't really
+> see any point for writes.
+> 
+> > So looks like fsync path will do bunch of IO and then will wait for jbd thread
+> > to finish the work. In this case idling is waste of time.
+> 
+> Given that ->writepage already does WRITE_SYNC_PLUG I/O which includes
+> REQ_NODILE I'm still confused why we still have that issue.
 
-And as Tejun asked, the comment where wmb() gets used should clearly
-explain which host memory writes are targetted by the wmb().
+In current form, cfq honors REQ_NOIDLE conditionally and that's why we
+still have the issue. If you look at cfq_completed_request(), we continue
+to idle in following two cases.
 
-thanks,
-grant
+- If we classifed the queue as SYNC_WORKLOAD.
+- If there is another random read/write happening on sync-noidle service
+  tree.
 
->
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Tested-by: Colin Tuckley <colin.tuckley@arm.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> ---
->  drivers/ata/sata_sil24.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/ata/sata_sil24.c b/drivers/ata/sata_sil24.c
-> index e925051..6392fdb 100644
-> --- a/drivers/ata/sata_sil24.c
-> +++ b/drivers/ata/sata_sil24.c
-> @@ -622,6 +622,7 @@ static int sil24_exec_polled_cmd(struct ata_port *ap, int pmp,
->        irq_enabled = readl(port + PORT_IRQ_ENABLE_SET);
->        writel(PORT_IRQ_COMPLETE | PORT_IRQ_ERROR, port + PORT_IRQ_ENABLE_CLR);
->
-> +       wmb();
->        writel((u32)paddr, port + PORT_CMD_ACTIVATE);
->        writel((u64)paddr >> 32, port + PORT_CMD_ACTIVATE + 4);
->
-> @@ -895,6 +896,7 @@ static unsigned int sil24_qc_issue(struct ata_queued_cmd *qc)
->        paddr = pp->cmd_block_dma + tag * sizeof(*pp->cmd_block);
->        activate = port + PORT_CMD_ACTIVATE + tag * 8;
->
-> +       wmb();
->        writel((u32)paddr, activate);
->        writel((u64)paddr >> 32, activate + 4);
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+SYNC_WORKLOAD means that cfq thinks this particular queue is doing sequential
+IO. For random IO queues, we don't idle on each individual queue but a
+group of queue.
+
+In jeff's testing, fsync thread/queue sometimes is viewed as sequential
+workload and goes on SYNC_WORKLOAD tree. In that case even if request is
+REQ_NOIDLE, we will continue to idle hence fsync issue.
+
+This logic was introduced by corrado to ensure WRITE_SYNC does not
+lose fair share. Now we are back to the same question, what is the workload
+which does that.
+
+8e55063 cfq-iosched: fix corner cases in idling logic
+
+Before this patch, we will simply not do any idling on WRITE_SYNC. That
+means no idling on O_SYNC/fsync paths but still idle on direct IO
+WRITE_SYNC. Which is a bit of discrepancy.
+
+> 
+> > I guess same will
+> > be true for umount and sync() path. But same probably is not necessarily true
+> > for a O_DIRECT writer (database comes to mind), and for O_SYNC writer
+> > (virtual machines?).
+> 
+> For virtual machines idling seems like a waste of ressources.  If we
+> have sequential I/O we dispatch in batches - in fact qemu even merges
+> sequential small block I/O it gets from the guest into one large request
+> we hand off to the host kernel.  For reads the same caveat as above
+> applies as read requests as handed through 1:1 from the guest.
+> 
+
+Ok, That's good to know.
+
+> > O_SYNC writers will get little disk share in presence of heavy buffered
+> > WRITES. If we choose to not special case WRITE_SYNC and continue to
+> > idle on the queue then we probably are wasting time and reducing overall
+> > throughput. (The fsync() case Jeff is running into).
+> 
+> Remember that O_SYNC writes are implemented as normal buffered write +
+> fsync (a range fsync to be exact, but that doesn't change a thing).
+> 
+> And that's what they conceptually are anyway, so treating a normal
+> buffered write + fsync different from an O_SYNC write is not only wrong
+> conceptuall but also in implementation.  You have the exact same issue
+> of handing off work to the journal commit thread in extN.
+
+Actually right now I think O_DIRECT is getting different treatment as
+it does not mark queue IO as RQ_NOIDLE. As you said O_SYNC is just fsync
+on a specific range, so both the paths will mark RQ_NOIDLE and get treated
+same in IO scheduler.
+
+Intially Jens treated O_DIRECT differently and then Jeff put a patch which
+accidently got rid of that difference and finally I had reintroduced the
+O_DIRECT flag.
+
+d9449ce Fix regression in direct writes performance due to WRITE_ODIRECT flag
+
+I have explained the effect of not idling on DIRECT writes in changelog. It
+gets very little BW in presence of sequential reads.
+
+With idling on WRITE_SYNC, distribution looks as follows.
+
+    direct writes: aggrb=2,968KB/s
+    readers          : aggrb=101MB/s
+
+Without idling on WRITE_SYNC, distribution of BW looks as follows.
+
+    direct write: aggrb=19KB/s
+    readers           aggrb=137MB/s
+
+So notice how sequential reads can starve a DIRECT sequential writer. Now
+this is a synthetic workload created with the help of fio where sequential
+writes are submitted with delay in between (i think so). We are back to
+the question that the application should coalesce sequential writes and
+submit bigger write requests. Otherwise you will lose share and get
+starved out.
+
+So going forward, I think there are few possible options.
+
+- Stop idling on all the WRITE_SYNC IO. There is no reasonable way to 
+  tell whether there will be more IO or not from applicatoin. This will
+  impact direct writes, O_SYNC writes and fsync().
+
+  If direct IO application is submitting writes with a delay in between
+  it can be starved out in presnce of competing workloads.
+
+  In this scheme we get rid of all rq_noidle logic, get rid of separate
+  flag for direct IO, WRITE_ODIRECT_PLUG, and also don't need any queue
+  yielding patches as we never idle on SYNC_WRITES.
+
+  The important thing to note here is that even direct random writes
+  will lose share here if we don't keep the queue busy continuously
+  and issue random writes after a delay. (database?).
+
+- Do idling by default on WRITE_SYNC path. Implement Jeff's queue yielding
+  patches. That way O_SYNC/fsyn path will call blk_yield() and stop idling.
+  Direct IO write path will stil continue to idle (I think if file has already
+  been laid out?). 
+
+I have no idea in real world how SYNC_WRITE workloads look like and how
+their traffic pattern is. So it is hard to say which scheme to go for.
+Jens, what do you think of above?
+
+> Note that
+> the log write (or at least parts of it) will always use WRITE_BARRIER,
+> which completey bypasses the I/O scheduler.  
+> 
+> > So one possible way could be that don't try to special case synchronous
+> > writes and continue to idle on the queue based on other parameters. If
+> > kernel/higher layers have knowledge that we are not going to issue more
+> > IO in same context, then they should explicitly call blk_yield(), to
+> > stop idling and give up slice.
+> 
+> We have no way to know what userspace will do if we are doing
+> O_SYNC/O_DIRECT style I/O or use fsync.  We know that we will most
+> likely continue kicking things from the same queue when doing page
+> writeback.  One thing that should help with this is Jens' explicit
+> per-process plugging stuff, which I noticed he recently updated to a
+> current kernel.
+
+Ok. I will have a look at that.
+
+Thanks
+Vivek
+
