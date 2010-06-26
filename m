@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab0FZUEd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 16:04:33 -0400
-Received: from shutemov.name ([188.40.19.243]:52426 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753975Ab0FZUEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 16:04:32 -0400
-X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Jun 2010 16:04:32 EDT
-Date: Sat, 26 Jun 2010 22:54:57 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Anton Blanchard <anton@samba.org>
-Cc: akpm@linux-foundation.org, mingo@elte.hu, arjan@linux.intel.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Make lib/bug.c WARN implementation match the
- kernel/panic.c one
-Message-ID: <20100626195457.GA32393@shutemov.name>
-References: <20100626191059.GA2345@kryten>
-MIME-Version: 1.0
+	id S1753679Ab0FZUh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 16:37:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41114 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753132Ab0FZUh5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 16:37:57 -0400
+Subject: Re: [PATCH] MMC: remove regulator refcount fiddling in mmc core
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100626191059.GA2345@kryten>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <AANLkTikiPByvzfbj-gwfyozWb5MMJXSWuINFbrLdcwtU@mail.gmail.com> (sfid-20100626_183725_929817_AB417141)
+Date: Sat, 26 Jun 2010 21:37:52 +0100
+Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Liam Girdwood <lrg@slimlogic.co.uk>, Tony Lindgren <tony@atomide.com>,
+       Adrian Hunter <adrian.hunter@nokia.com>,
+       Robert Jarzmik <robert.jarzmik@free.fr>,
+       Sundar Iyer <sundar.iyer@stericsson.com>,
+       Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <DDE00276-5AB7-4A7E-AA93-29755DE8E874@opensource.wolfsonmicro.com>
+References: <1277392337-27627-1-git-send-email-linus.walleij@stericsson.com> <20100625112232.GA21217@opensource.wolfsonmicro.com> <AANLkTikiPByvzfbj-gwfyozWb5MMJXSWuINFbrLdcwtU@mail.gmail.com> (sfid-20100626_183725_929817_AB417141)
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 27, 2010 at 05:10:59AM +1000, Anton Blanchard wrote:
-> 
-> There are a few issues with the exception based WARN implementation in
-> lib/bug.c:
-> 
-> - Inconsistent printk flags. The "cut here" line is printed at KERN_EMERG, so
->   the console and all logged in users see the single line:
-> 
-> ------------[ cut here ]------------
-> 
->   for each WARN. Fix this so we print everything at KERN_WARNING to match the
->   kernel/panic.c version.
-> 
-> - The lib/bug.c WARN would print "Badness at". Change it to match the
->   kernel/panic.c version which prints "WARNING: at". 
-> 
-> - Print the list of modules, similar to kernel/panic.c of modules, similar to
->   kernel/panic.c
-> 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> ---
-> 
-> Index: linux-2.6/lib/bug.c
-> ===================================================================
-> --- linux-2.6.orig/lib/bug.c	2010-06-26 06:09:59.000000000 +1000
-> +++ linux-2.6/lib/bug.c	2010-06-26 06:24:28.000000000 +1000
-> @@ -136,8 +136,6 @@ enum bug_trap_type report_bug(unsigned l
->  
->  	bug = find_bug(bugaddr);
->  
-> -	printk(KERN_EMERG "------------[ cut here ]------------\n");
-> -
->  	file = NULL;
->  	line = 0;
->  	warning = 0;
-> @@ -156,19 +154,24 @@ enum bug_trap_type report_bug(unsigned l
->  
->  	if (warning) {
->  		/* this is a WARN_ON rather than BUG/BUG_ON */
-> +		printk(KERN_WARNING "------------[ cut here ]------------\n");
-> +
->  		if (file)
-> -			printk(KERN_ERR "Badness at %s:%u\n",
-> +			printk(KERN_WARNING "WARNING: at %s:%u\n",
->  			       file, line);
->  		else
-> -			printk(KERN_ERR "Badness at %p "
-> +			printk(KERN_WARNING "WARNING: at %p "
->  			       "[verbose debug info unavailable]\n",
->  			       (void *)bugaddr);
->  
-> +        	print_modules();
->  		show_regs(regs);
->  		add_taint(BUG_GET_TAINT(bug));
->  		return BUG_TRAP_TYPE_WARN;
->  	}
->  
-> +	printk(KERN_EMERG "------------[ cut here ]------------\n");
-> +
+On 26 Jun 2010, at 18:37, Linus Walleij wrote:
+> 2010/6/25 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+>> 
 
-Hm... Why do you use KERN_EMERG here?
+>> So, the feedback from folks at the time this was originally written was
+>> that the MMC code was unable to cope with sharing regulators since it
+>> really needs to be able to set specific voltages.  This needn't be a
+>> showstopper since people can force a single voltage in the constraints
+>> but it does need to be considered here.
 
->  	if (file)
->  		printk(KERN_CRIT "kernel BUG at %s:%u!\n",
->  		       file, line);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Well hm, that's not strictly true. If you only provide one standard
+> voltage ONLY in your OCR mask, i.e. MMC_VDD_* then you can use
+> the same regulator for two or more MMC cards.
 
--- 
- Kirill A. Shutemov
+This is what I'm saying about forcing a voltage in the constraints - the
+existing code should i believe implement the above automatically.
+
+> Further that's a perfectly reasonable thing to do if you have e.g.
+> two embedded eMMC cards and you know which voltage they like
+> to operate on ... so share the same regulator, why not. The above
+> assumption comes from a slot-based world.
+
+Right, but this code supports all MMC cards. To repeat what I said
+above this does need to be considered here. I don't think it's a
+particular problem, probably just turning it into a consumer capable
+of sharing the regulator would be enough.
+
+> Another argument is that a function named
+> mmc_regulator_set_ocr() shouldn't be enabling/disabling regulators
+> anyway because it's hopeless to read the code, and the other
+> functions in mmc/core.c only deals with voltages, not on/off:ing.
+> (Maybe it's just me who have a hard time reading code like that.)
+
+This seems rather surprising - are you saying that no other MMC drivers
+are able to manage power to the slot? There was a strong insistence
+when this code was originally written that it was essential to be able to
+power up and down the regulators for MMC applications.
