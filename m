@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab0FZT60 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 15:58:26 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:53652 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754016Ab0FZT6Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 15:58:24 -0400
-Date: Sat, 26 Jun 2010 15:58:23 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: David Brownell <david-b@pacbell.net>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       mark gross <640e9920@gmail.com>, Florian Mickler <florian@mickler.org>,
-       Neil Brown <neilb@suse.de>, <linux-pci@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [linux-pm] [PATCH] PM: Make it possible to avoid wakeup events
- from being lost
-In-Reply-To: <201006262021.42966.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1006261550400.24010-100000@netrider.rowland.org>
+	id S1754193Ab0FZUEd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 16:04:33 -0400
+Received: from shutemov.name ([188.40.19.243]:52426 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753975Ab0FZUEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Jun 2010 16:04:32 -0400
+X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Jun 2010 16:04:32 EDT
+Date: Sat, 26 Jun 2010 22:54:57 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Anton Blanchard <anton@samba.org>
+Cc: akpm@linux-foundation.org, mingo@elte.hu, arjan@linux.intel.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Make lib/bug.c WARN implementation match the
+ kernel/panic.c one
+Message-ID: <20100626195457.GA32393@shutemov.name>
+References: <20100626191059.GA2345@kryten>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100626191059.GA2345@kryten>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Jun 2010, Rafael J. Wysocki wrote:
-
-> On Saturday, June 26, 2010, Alan Stern wrote:
-> > On Sat, 26 Jun 2010, David Brownell wrote:
-> ... 
-> > > > +        The
-> > > > /sys/power/wakeup_count file allows user space to avoid
-> > > > +        losing wakeup events
-> > > > when transitioning the system into a sleep
-> > > > +        state.  Reading
-> > 
-> > This could have been phrased better:  The /sys/power/wakeup_count file
-> > allows user space to put the system into a sleep state conditionally
-> > subject to the arrival of concurrent wakeup events, which will either
-> > block the sleep transition or cause it to fail.
+On Sun, Jun 27, 2010 at 05:10:59AM +1000, Anton Blanchard wrote:
 > 
-> I'll chage this in the final version.  Thanks!
+> There are a few issues with the exception based WARN implementation in
+> lib/bug.c:
+> 
+> - Inconsistent printk flags. The "cut here" line is printed at KERN_EMERG, so
+>   the console and all logged in users see the single line:
+> 
+> ------------[ cut here ]------------
+> 
+>   for each WARN. Fix this so we print everything at KERN_WARNING to match the
+>   kernel/panic.c version.
+> 
+> - The lib/bug.c WARN would print "Badness at". Change it to match the
+>   kernel/panic.c version which prints "WARNING: at". 
+> 
+> - Print the list of modules, similar to kernel/panic.c of modules, similar to
+>   kernel/panic.c
+> 
+> Signed-off-by: Anton Blanchard <anton@samba.org>
+> ---
+> 
+> Index: linux-2.6/lib/bug.c
+> ===================================================================
+> --- linux-2.6.orig/lib/bug.c	2010-06-26 06:09:59.000000000 +1000
+> +++ linux-2.6/lib/bug.c	2010-06-26 06:24:28.000000000 +1000
+> @@ -136,8 +136,6 @@ enum bug_trap_type report_bug(unsigned l
+>  
+>  	bug = find_bug(bugaddr);
+>  
+> -	printk(KERN_EMERG "------------[ cut here ]------------\n");
+> -
+>  	file = NULL;
+>  	line = 0;
+>  	warning = 0;
+> @@ -156,19 +154,24 @@ enum bug_trap_type report_bug(unsigned l
+>  
+>  	if (warning) {
+>  		/* this is a WARN_ON rather than BUG/BUG_ON */
+> +		printk(KERN_WARNING "------------[ cut here ]------------\n");
+> +
+>  		if (file)
+> -			printk(KERN_ERR "Badness at %s:%u\n",
+> +			printk(KERN_WARNING "WARNING: at %s:%u\n",
+>  			       file, line);
+>  		else
+> -			printk(KERN_ERR "Badness at %p "
+> +			printk(KERN_WARNING "WARNING: at %p "
+>  			       "[verbose debug info unavailable]\n",
+>  			       (void *)bugaddr);
+>  
+> +        	print_modules();
+>  		show_regs(regs);
+>  		add_taint(BUG_GET_TAINT(bug));
+>  		return BUG_TRAP_TYPE_WARN;
+>  	}
+>  
+> +	printk(KERN_EMERG "------------[ cut here ]------------\n");
+> +
 
-Even this should be simplified, if possible.  Maybe something like: ...  
-put the system into a sleep state while taking into account the
-concurrent arrival of wakeup events ...
+Hm... Why do you use KERN_EMERG here?
 
-I tried to put the word "reliably" in there, but it didn't seem to fit.  
-After all, the current /sys/power/state is already very reliable about 
-putting the system to sleep!
+>  	if (file)
+>  		printk(KERN_CRIT "kernel BUG at %s:%u!\n",
+>  		       file, line);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Alan Stern
-
+-- 
+ Kirill A. Shutemov
