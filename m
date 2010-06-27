@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab0F0Qjw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 12:39:52 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:6204 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755460Ab0F0Qjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 12:39:51 -0400
-Message-ID: <4C277ED5.6020208@tilera.com>
-Date: Sun, 27 Jun 2010 12:39:49 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1755777Ab0F0Qoq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 12:44:46 -0400
+Received: from borg.medozas.de ([188.40.89.202]:51264 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755552Ab0F0Qoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 12:44:44 -0400
+Date: Sun, 27 Jun 2010 18:44:42 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Jan Kara <jack@suse.cz>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
+       gregkh@suse.de
+Subject: Re: [PATCH] writeback: Fix broken sync writeback
+In-Reply-To: <alpine.LSU.2.01.1002151629380.27775@obet.zrqbmnf.qr>
+Message-ID: <alpine.LSU.2.01.1006271842220.1495@obet.zrqbmnf.qr>
+References: <20100212091609.GB1025@kernel.dk> <alpine.LFD.2.00.1002120722270.7792@localhost.localdomain> <alpine.LSU.2.01.1002131356250.20838@obet.zrqbmnf.qr> <20100215144938.GD3434@quack.suse.cz> <alpine.LSU.2.01.1002151629380.27775@obet.zrqbmnf.qr>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/tile: Miscellaneous cleanup changes.
-References: <201006252110.o5PLArqD010774@farm-0002.internal.tilera.com> <201006261156.28495.arnd@arndb.de>
-In-Reply-To: <201006261156.28495.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/26/2010 5:56 AM, Arnd Bergmann wrote:
-> As far as I can tell, all the changes in this patch look reasonable, but
-> as a rule you should never mix functional changes and cleanups in a single
-> patch. This is both for review purposes as well as for being able to bisect
-> specific regressions that might be introduced by the patch.
->   
 
-Yes, I'll try to be more precise with my commits in the future.  I was
-playing catch-up with a bunch of commits in our internal tree, which
-uses Perforce.  The change migration process doesn't lend itself to
-pulling individual commits out of Perforce and into git, and I also
-worried about spamming LKML with dozens of small patches for the tile
-architecture, which after all hasn't even been pulled into Linus's tree
-yet.  And, of course, since few if any folks are actually running these
-bits on their hardware yet (our hardware customers are likely all
-running the sources we ship them), the bisection issue is less
-critical.  But I will at least make sure to separate out cleanups and
-bugfixes going forward.
+Hi Jan Kara,
 
-Thanks!
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+On Monday 2010-02-15 16:41, Jan Engelhardt wrote:
+>On Monday 2010-02-15 15:49, Jan Kara wrote:
+>>On Sat 13-02-10 13:58:19, Jan Engelhardt wrote:
+>>> >> 
+>>> >> This fixes it by using the passed in page writeback count, instead of
+>>> >> doing MAX_WRITEBACK_PAGES batches, which gets us much better performance
+>>> >> (Jan reports it's up from ~400KB/sec to 10MB/sec) and makes sync(1)
+>>> >> finish properly even when new pages are being dirted.
+>>> >
+>>> >This seems broken.
+>>> 
+>>> It seems so. Jens, Jan Kara, your patch does not entirely fix this.
+>>> While there is no sync/fsync to be seen in these traces, I can
+>>> tell there's a livelock, without Dirty decreasing at all.
 
+What ultimately became of the discussion and/or the patch? 
+
+Your original ad-hoc patch certainly still does its job; had no need to 
+reboot in 86 days and still counting.
