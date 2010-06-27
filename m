@@ -1,38 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab0F0LCk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 07:02:40 -0400
-Received: from mail.perches.com ([173.55.12.10]:1302 "EHLO mail.perches.com"
+	id S1754936Ab0F0LHn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 07:07:43 -0400
+Received: from verein.lst.de ([213.95.11.210]:33189 "EHLO verein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754629Ab0F0LCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 07:02:39 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 0/4] Introduce and use printk pointer extension %pV
-Date: Sun, 27 Jun 2010 04:02:32 -0700
-Message-Id: <cover.1277636090.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.1.337.g6068.dirty
+	id S1754812Ab0F0LHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 07:07:40 -0400
+Date: Sun, 27 Jun 2010 13:07:12 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: hch@lst.de, snitzer@redhat.com, axboe@kernel.dk, dm-devel@redhat.com,
+       James.Bottomley@suse.de, linux-kernel@vger.kernel.org,
+       martin.petersen@oracle.com, akpm@linux-foundation.org,
+       linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request payload
+Message-ID: <20100627110712.GA14511@lst.de>
+References: <20100627174721D.fujita.tomonori@lab.ntt.co.jp> <20100627092652.GA11625@lst.de> <20100627185927K.fujita.tomonori@lab.ntt.co.jp> <20100627193253P.fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100627193253P.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recursive printk can reduce the total image size of an x86 defconfig about 1% 
-by reducing duplicated KERN_<level> strings and centralizing the functions
-used by macros in new separate functions.
+> How about this?
 
-Joe Perches (4):
-  vsprintf: Recursive vsnprintf: Add "%pV", struct va_format
-  device.h drivers/base/core.c Convert dev_<level> logging macros to functions
-  netdevice.h net/core/dev.c: Convert netdev_<level> logging macros to functions
-  netdevice.h: Change netif_<level> macros to call netdev_<level> functions
-
- drivers/base/core.c       |   64 +++++++++++++++++++++++++
- include/linux/device.h    |  112 ++++++++++++++++++++++++++++++++++----------
- include/linux/kernel.h    |    5 ++
- include/linux/netdevice.h |   56 ++++++++++++----------
- lib/vsprintf.c            |    9 ++++
- net/core/dev.c            |   62 +++++++++++++++++++++++++
- 6 files changed, 256 insertions(+), 52 deletions(-)
+As I tried to explain before this utterly confuses the I/O completion
+path.  With the patch applied even a simple mkfs.xfs that issues discard
+just hangs.
 
