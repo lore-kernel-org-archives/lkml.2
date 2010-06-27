@@ -1,134 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab0F0Ahz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 20:37:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61289 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab0F0Ahv (ORCPT
+	id S1754464Ab0F0BDu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 21:03:50 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42871 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab0F0BDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 20:37:51 -0400
-Date: Sat, 26 Jun 2010 17:37:36 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Nicolas Kaiser <nikai@nikai.net>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation/kbuild: fixed typos and wording
-Message-Id: <20100626173736.e5946273.randy.dunlap@oracle.com>
-In-Reply-To: <20100626150021.254b95b3@absol.kitzblitz>
-References: <20100626150021.254b95b3@absol.kitzblitz>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C269D57.01AB:SCFMA4539814,ss=1,fgs=0
+	Sat, 26 Jun 2010 21:03:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=C7K078R4evTs9QHCqHL3w7ili7x9kO24kTLHdgfYfiNf1RrMKjpNq8I6CmtE3TtGwB
+         NwQ3C5YoSKkfYGcKQtdA6yTNvIIc0G9fpV6juM3JY70P1laOQzgAhcHjh7/P+o7jwFaL
+         yuYMAaQEmFPtfA66WR62SrHXPVzKEsSCCHJLA=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1006250857040.18900@router.home>
+References: <20100625201915.8067.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1006250857040.18900@router.home>
+Date: Sun, 27 Jun 2010 10:03:44 +0900
+Message-ID: <AANLkTimAF9O3kupOWHv2lLuZefDU7HLgq5ApnD-FE_Ng@mail.gmail.com>
+Subject: Re: [PATCH 1/2] vmscan: shrink_slab() require number of lru_pages, 
+	not page order
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Jun 2010 15:00:21 +0200 Nicolas Kaiser wrote:
+On Fri, Jun 25, 2010 at 11:07 PM, Christoph Lameter
+<cl@linux-foundation.org> wrote:
+> On Fri, 25 Jun 2010, KOSAKI Motohiro wrote:
+>
+>> Fix simple argument error. Usually 'order' is very small value than
+>> lru_pages. then it can makes unnecessary icache dropping.
+>
+> This is going to reduce the delta that is added to shrinker->nr
+> significantly thereby increasing the number of times that shrink_slab() is
+> called.
+>
+> What does the "lru_pages" parameter do in shrink_slab()? Looks
+> like its only role is as a divison factor in a complex calculation of
+> pages to be scanned.
 
-> Fixed some typos and wording.
-> 
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+Yes. But I think it can make others confuse like this.
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+Except zone_reclaim, lru_pages had been used for balancing slab
+reclaim VS page reclaim.
+So lru_page naming is a good.
 
-Thanks.
+But in 0ff38490, you observed rather corner case.
+AFAIU with your description, you wanted to shrink slabs until
+unsuccessful or reached the limit.
+So you intentionally passed order instead of the number of lru pages
+for shrinking many slabs as possible as.
 
-> ---
->  Documentation/kbuild/kbuild.txt    |    8 ++++----
->  Documentation/kbuild/makefiles.txt |   20 ++++++++++----------
->  2 files changed, 14 insertions(+), 14 deletions(-)
-> 
-> diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
-> index 634c625..0d8addb 100644
-> --- a/Documentation/kbuild/kbuild.txt
-> +++ b/Documentation/kbuild/kbuild.txt
-> @@ -40,15 +40,15 @@ Set the directory to look for the kernel source when building external
->  modules.
->  The directory can be specified in several ways:
->  1) Use "M=..." on the command line
-> -2) Environmnet variable KBUILD_EXTMOD
-> -3) Environmnet variable SUBDIRS
-> +2) Environment variable KBUILD_EXTMOD
-> +3) Environment variable SUBDIRS
->  The possibilities are listed in the order they take precedence.
->  Using "M=..." will always override the others.
->  
->  KBUILD_OUTPUT
->  --------------------------------------------------
->  Specify the output directory when building the kernel.
-> -The output directory can also be specificed using "O=...".
-> +The output directory can also be specified using "O=...".
->  Setting "O=..." takes precedence over KBUILD_OUTPUT.
->  
->  ARCH
-> @@ -90,7 +90,7 @@ The script will be called with the following arguments:
->      $3 - kernel map file
->      $4 - default install path (use root directory if blank)
->  
-> -The implmentation of "make install" is architecture specific
-> +The implementation of "make install" is architecture specific
->  and it may differ from the above.
->  
->  INSTALLKERNEL is provided to enable the possibility to
-> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-> index 71c602d..c0c9b1c 100644
-> --- a/Documentation/kbuild/makefiles.txt
-> +++ b/Documentation/kbuild/makefiles.txt
-> @@ -284,12 +284,12 @@ more details, with real examples.
->  --- 3.7 Compilation flags
->  
->      ccflags-y, asflags-y and ldflags-y
-> -	The three flags listed above applies only to the kbuild makefile
-> -	where they are assigned. They are used for all the normal
-> -	cc, as and ld invocation happenign during a recursive build.
-> +	These three flags apply only to the kbuild makefile in which they
-> +	are assigned. They are used for all the normal cc, as and ld
-> +	invocations happening during a recursive build.
->  	Note: Flags with the same behaviour were previously named:
->  	EXTRA_CFLAGS, EXTRA_AFLAGS and EXTRA_LDFLAGS.
-> -	They are yet supported but their use are deprecated.
-> +	They are still supported but their usage is deprecated.
->  
->  	ccflags-y specifies options for compiling C files with $(CC).
->  
-> @@ -318,9 +318,9 @@ more details, with real examples.
->  		ldflags-y := -x
->  
->      subdir-ccflags-y, subdir-asflags-y
-> -	The two flags listed above are similar to ccflags-y and as-falgs-y.
-> -	The difference is that the subdir- variants has effect for the kbuild
-> -	file where tey are present and all subdirectories.
-> +	The two flags listed above are similar to ccflags-y and as-flags-y.
-> +	The difference is that the subdir- variants have effect for the kbuild
-> +	file where they are present and all subdirectories.
->  	Options specified using subdir-* are added to the commandline before
->  	the options specified using the non-subdir variants.
->  
-> @@ -1176,14 +1176,14 @@ When kbuild executes, the following steps are followed (roughly):
->  === 7 Kbuild syntax for exported headers
->  
->  The kernel include a set of headers that is exported to userspace.
-> -Many headers can be exported as-is but other headers requires  a
-> +Many headers can be exported as-is but other headers require a
->  minimal pre-processing before they are ready for user-space.
->  The pre-processing does:
->  - drop kernel specific annotations
->  - drop include of compiler.h
-> -- drop all sections that is kernel internat (guarded by ifdef __KERNEL__)
-> +- drop all sections that are kernel internal (guarded by ifdef __KERNEL__)
->  
-> -Each relevant directory contain a file name "Kbuild" which specify the
-> +Each relevant directory contains a file name "Kbuild" which specifies the
->  headers to be exported.
->  See subsequent chapter for the syntax of the Kbuild file.
->  
-> -- 
+So at least, we need some comment to prevent confusion.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 9c7e57c..5523eae 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2626,6 +2626,9 @@ static int __zone_reclaim(struct zone *zone,
+gfp_t gfp_mask, unsigned int order)
+                 *
+                 * Note that shrink_slab will free memory on all zones and may
+                 * take a long time.
++                *
++                * We pass order instead of lru_pages for shrinking slab
++                * as much as possible.
+                 */
+                while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
+                        zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
+
+
+>
+> do_try_to_free_pages passes 0 as "lru_pages" to shrink_slab() when trying
+> to do cgroup lru scans. Why is that?
+>
+
+memcg doesn't call shrink_slab.
+
+
+-- 
+Kind regards,
+Minchan Kim
