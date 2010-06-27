@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab0F0QXi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 12:23:38 -0400
-Received: from sh.osrg.net ([192.16.179.4]:44740 "EHLO sh.osrg.net"
+	id S1755675Ab0F0QbA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 12:31:00 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48819 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755552Ab0F0QXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 12:23:36 -0400
-Date: Mon, 28 Jun 2010 01:23:02 +0900
-To: hch@lst.de
-Cc: snitzer@redhat.com, fujita.tomonori@lab.ntt.co.jp, axboe@kernel.dk,
-       dm-devel@redhat.com, James.Bottomley@suse.de,
-       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
-       akpm@linux-foundation.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
- payload
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100627153545.GC25667@lst.de>
-References: <20100627212952D.fujita.tomonori@lab.ntt.co.jp>
-	<20100627141638.GD3970@redhat.com>
-	<20100627153545.GC25667@lst.de>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754149Ab0F0Qa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 12:30:57 -0400
+Message-ID: <4C277C76.8060704@kernel.org>
+Date: Sun, 27 Jun 2010 18:29:42 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       "Pavel V. Panteleev" <pp_84@mail.ru>, Cliff Wickman <cpw@sgi.com>
+Subject: [GIT PULL] percpu for v2.6.35-rc3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100628012055Y.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 28 Jun 2010 01:23:04 +0900 (JST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 27 Jun 2010 16:30:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 27 Jun 2010 17:35:45 +0200
-Christoph Hellwig <hch@lst.de> wrote:
+Hello, Linus.
 
-> On Sun, Jun 27, 2010 at 10:16:40AM -0400, Mike Snitzer wrote:
-> > My leak fixes have been tested extensively against all permuations of
-> > devices with discards (ATA trim, SCSI UNMAP, SCSI WRTIE SAME w/ unmap=1).
-> > 
-> > I think we need to get Christoph's discard payload transformation
-> > complete by fixing the leaks _without_ trying to rework how discard
-> > commands are tagged, etc.  E.g. fix what Jens already has staged in
-> > linux-2.6-block's 'for-next' and 'for-2.6.36'.
-> > 
-> > With that sorted out we can then look at longer term changes to cleanup
-> > discard request processing.
-> 
-> I tend to agree.  I'll look into getting rid of treating discards as
-> BLOCK_PC commands ontop of you patchset.
+Please pull from the following branch to receive percpu changes for
+2.6.35-rc3.
 
-Let's start from jens' 2.6.36 tree (or it would be better if Jens can
-drop Christoph's patch).
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-linus
 
-We don't need to start on the top of new discard hacks (specially, the
-hack in scsi_finish_command looks terrible). We should not merge them
-into mainline. We are still in rc3.
+There are two fixes.  One is to fix two trivial and harmless bugs in
+pcpu_build_alloc_info().  The other fixes a bug in
+per_cpu_ptr_to_phys() which can cause oops during operations which
+need to map percpu addresses to physical addresses such as kdump or
+reading /sys/devices/system/cpu/cpuN/crash_notes.
 
-I'll see how things work with other configurations.
+Thanks.
+
+Pavel V. Panteleev (1):
+      percpu: fix trivial bugs in pcpu_build_alloc_info()
+
+Tejun Heo (1):
+      percpu: fix first chunk match in per_cpu_ptr_to_phys()
+
+ mm/percpu.c |   36 ++++++++++++++++++++++++++++++------
+ 1 files changed, 30 insertions(+), 6 deletions(-)
+
+--
+tejun
