@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab0F0GuT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 02:50:19 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56349 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab0F0GuQ (ORCPT
+	id S1754561Ab0F0HGK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 03:06:10 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35873 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752698Ab0F0HGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 02:50:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=H/MfAYp4v/2bBSaPwss+CVffrwLAFLXO7oDVV7G5LBtPZvrNfQTxO/hN7Ewhnria15
-         PtU6maOTQd9s7xqgyaVbpkSB/BaDDePQrbgLFpq2LrGKIDgq7n2hL+mvRAYuLQPe/WoM
-         /FglCxbxnbxOJt3UHtsi4pHyW88QxsBj4LLJw=
-Date: Sun, 27 Jun 2010 03:50:07 -0300
-From: "Gustavo F. Padovan" <gustavo@padovan.org>
-To: Cody Rester <codyrester@gmail.com>
-Cc: marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: bluetooth: bluecard_cs.c: Fixed include
- error, changed to linux/io.h
-Message-ID: <20100627065006.GA32318@vigoh>
-References: <1277619142-10751-1-git-send-email-codyrester@gmail.com>
+	Sun, 27 Jun 2010 03:06:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277619142-10751-1-git-send-email-codyrester@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <352874.17151.qm@web180303.mail.gq1.yahoo.com>
+References: <1276778870-1065-1-git-send-email-dbaryshkov@gmail.com> 
+	<352874.17151.qm@web180303.mail.gq1.yahoo.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 27 Jun 2010 01:05:44 -0600
+X-Google-Sender-Auth: kfGIR-9aih5BpXccSmq7jxR8GC4
+Message-ID: <AANLkTilIZ2X3-b53tpr8zKG0Qn-9Shgt4urMOpQg2xSU@mail.gmail.com>
+Subject: Re: [PATCH] pcf857x: support working w/o platform data
+To: David Brownell <david-b@pacbell.net>
+Cc: linux-kernel@vger.kernel.org,
+       Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+       Jean Delvare <khali@linux-fr.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Cody Rester <codyrester@gmail.com> [2010-06-27 02:12:22 -0400]:
+On Fri, Jun 25, 2010 at 4:17 AM, David Brownell <david-b@pacbell.net> wrote:
+>
+>
+> --- On Thu, 6/17/10, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> wrote:
+>
+>> Provide sane defaults for pcf857x, so
+>> the driver can be used w/o
+>> providing platform data (and thus can be simply bound via OF tree).
+>
+>
+> Maybe we can get an ack from some OF folk
+> who are using it in that way?
 
-> Fixed include error, changed to linux/io.h
-> 
-> Signed-off-by: Cody Rester <codyrester@gmail.com>
-> ---
->  drivers/bluetooth/bluecard_cs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/bluetooth/bluecard_cs.c b/drivers/bluetooth/bluecard_cs.c
-> index d9bf87c..89a4455 100644
-> --- a/drivers/bluetooth/bluecard_cs.c
-> +++ b/drivers/bluetooth/bluecard_cs.c
-> @@ -37,7 +37,7 @@
->  #include <linux/wait.h>
->  
->  #include <linux/skbuff.h>
-> -#include <asm/io.h>
-> +#include <linux/io.h>
->  
->  #include <pcmcia/cs_types.h>
->  #include <pcmcia/cs.h>
-> -- 
-> 1.7.0.4
+I'm not actually using this chip, but the change looks sane to me.
 
-Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
-
--- 
-Gustavo F. Padovan
-http://padovan.org
+g.
