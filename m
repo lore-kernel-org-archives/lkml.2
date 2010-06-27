@@ -1,77 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab0F0EVi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 00:21:38 -0400
-Received: from sh.osrg.net ([192.16.179.4]:36943 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751612Ab0F0EVZ convert rfc822-to-8bit (ORCPT
+	id S1751626Ab0F0EjG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 00:39:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53298 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab0F0EjB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 00:21:25 -0400
-Date: Sun, 27 Jun 2010 13:20:45 +0900
-To: mattst88@gmail.com
-Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-       linux-alpha@vger.kernel.org, rth@twiddle.net, ink@jurassic.park.msu.ru,
-       mcree@orcon.net.nz, jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
-       dri-devel@lists.freedesktop.org, airlied@gmail.com,
-       alexdeucher@gmail.com, jglisse@redhat.com
-Subject: Re: Problems with alpha/pci + radeon/ttm
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <AANLkTimTOTM8Tt5A7eBVbxcYaGQVn_Q6-9hL8B1B4bjY@mail.gmail.com>
-References: <AANLkTinG-5iKW5cigIQHPHRZuAMtG_xY-74XLL6vE5kb@mail.gmail.com>
-	<20100622145805R.fujita.tomonori@lab.ntt.co.jp>
-	<AANLkTimTOTM8Tt5A7eBVbxcYaGQVn_Q6-9hL8B1B4bjY@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
+	Sun, 27 Jun 2010 00:39:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=IpGRScG5wlnO6Gp9cHcMnYeewYObbmG90bmbzwYg6lMxorFL4RCbI8Wtyca74bqGNN
+         nNwS6kR8SU5YKbXdjEju3PGqJGZIp3SCncCZbqwV0j+Nb8Hg2MbfJtBvNPIpoqXO24ZQ
+         zCgN54ky0d55cL+mqtXr3nLOrV0aIhBNrO70o=
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20100626233029.GA8820@localhost>
+References: <20100619132055.GK18946@basil.fritz.box> <AANLkTin-lj5ZgtcvJhWcNiMuWSCQ39N8mqe_2fm8DDVR@mail.gmail.com> 
+	<20100619133000.GL18946@basil.fritz.box> <AANLkTiloIXtCwBeBvP32hLBBvxCWrZMMwWTZwSj475wi@mail.gmail.com> 
+	<20100619140933.GM18946@basil.fritz.box> <AANLkTilF6m5YKMiDGaTNuoW6LxiA44oss3HyvkavwrOK@mail.gmail.com> 
+	<20100619195242.GS18946@basil.fritz.box> <AANLkTikMZu0GXwzs6IeMyoTuhETrnjZ1m5lI9FTauYBA@mail.gmail.com> 
+	<20100620071446.GA21743@localhost> <AANLkTimv1S4BuyGFyuBld0Wn6ncz7JUnMiPis-HlN3Tb@mail.gmail.com> 
+	<20100626233029.GA8820@localhost>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Sun, 27 Jun 2010 06:38:39 +0200
+Message-ID: <AANLkTimN_QBDJU1m_LuhoPREI_SRBSSLC7_-Rc9oa-T5@mail.gmail.com>
+Subject: Re: [PATCH] [31/31] HWPOISON: Add a madvise() injector for soft page 
+	offlining
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <20100627130717M.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 27 Jun 2010 13:20:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jun 2010 10:53:52 -0400
-Matt Turner <mattst88@gmail.com> wrote:
+On Sun, Jun 27, 2010 at 1:30 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> On Sat, Jun 26, 2010 at 09:18:52PM +0800, Michael Kerrisk wrote:
+>> Hi Fengguang,
+>>
+>> On Sun, Jun 20, 2010 at 9:14 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> > On Sun, Jun 20, 2010 at 02:19:35PM +0800, Michael Kerrisk wrote:
+>> >> Hi Andi,
+>> >> On Sat, Jun 19, 2010 at 9:52 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> >> >> .TP
+>> >> >> .BR MADV_SOFT_OFFLINE " (Since Linux 2.6.33)
+>> >> >> Soft offline the pages in the range specified by
+>> >> >> .I addr
+>> >> >> and
+>> >> >> .IR length .
+>> >> >> This memory of each page in the specified range is copied to a new page,
+>> >> >
+>> >> > Actually there are some cases where it's also dropped if it's cached page.
+>> >> >
+>> >> > Perhaps better would be something more fuzzy like
+>> >> >
+>> >> > "the contents are preserved"
+>> >>
+>> >> The problem to me is that this gets so fuzzy that it's hard to
+>> >> understand the meaning (I imagine many readers will ask: "What does it
+>> >> mean that the contents are preserved"?). Would you be able to come up
+>> >> with a wording that is a little miore detailed?
+>> >
+>> > That is, MADV_SOFT_OFFLINE won't lose data.
+>> >
+>> > If a process writes "1" to some virtual address and then called
+>> > madvice(MADV_SOFT_OFFLINE) on that virtual address, it can continue
+>> > to read "1" from that virtual address.
+>> >
+>> > MADV_SOFT_OFFLINE "transparently" replaces the underlying physical page
+>> > frame with a new one that contains the same data "1". The original page
+>> > frame is offlined, and the new page frame may be installed lazily.
+>>
+>> Thanks. That helps me come up with a description that is I think a bit clearer:
+>>
+>>        MADV_SOFT_OFFLINE (Since Linux 2.6.33)
+>>               Soft offline the pages in the range specified by
+>>               addr and length.  The memory of each page in the
+>>               specified  range  is  preserved (i.e., when next
+>>               accessed, the same content will be visible,  but
+>>               in  a new physical page frame), and the original
+>>               page is offlined  (i.e.,  no  longer  used,  and
+>>               taken  out  of  normal  memory management).  The
+>>               effect of  the  MADV_SOFT_OFFLINE  operation  is
+>>               invisible  to  (i.e., does not change the seman-
+>>               tics of) the calling process. ...
+>>
+>> The actual patch for man-pages-3.26 is below.
+>
+> Thanks. The change looks good to me.
 
-> > Seems that the IOMMU can't find 128 pages. It's likely due to:
-> >
-> > - out of the IOMMU space (possibly someone doesn't free the IOMMU
-> >  space).
-> >
-> > or
-> >
-> > - the mapping parameters (such as align) aren't appropriate so the
-> >  IOMMU can't find space.
-> >
-> >
-> >> Is this the cause of the bug we're seeing in the report [1]?
-> >>
-> >> Anyone know what's going wrong here?
-> >
-> >
-> > I've attached a patch to print the debug info about the mapping
-> > parameters.
-> >
-> >
-> > diff --git a/arch/alpha/kernel/pci_iommu.c b/arch/alpha/kernel/pci_iommu.c
-> > index d1dbd9a..17cf0d8 100644
-> > --- a/arch/alpha/kernel/pci_iommu.c
-> > +++ b/arch/alpha/kernel/pci_iommu.c
-> > @@ -187,6 +187,10 @@ iommu_arena_alloc(struct device *dev, struct pci_iommu_arena *arena, long n,
-> >        /* Search for N empty ptes */
-> >        ptes = arena->ptes;
-> >        mask = max(align, arena->align_entry) - 1;
-> > +
-> > +       printk("%s: %p, %p, %d, %ld, %lx, %u\n", __func__, dev, arena, arena->size,
-> > +              n, mask, align);
-> > +
-> >        p = iommu_arena_find_pages(dev, arena, n, mask);
-> >        if (p < 0) {
-> >                spin_unlock_irqrestore(&arena->lock, flags);
-> 
-> Using this patch, I log the attached output.
+Thanks for checking it.
 
-Your system has 1GB iommu address space. I guess that it's enough for
-KSM?
+> Note that the other perceivable change may be a little access delay.
+> The kernel could choose to simply drop the in-memory data when there
+> is another copy in disk. When accessed again, the content for the new
+> physical page will be populated from disk IO.
 
-The parameters in the log looks good. But you got this log before you
-started X?
+Yes, I'd suposed as much, but decided that was a detail that probably
+didm\t need to be mentioned in tha man page.
+
+Thanks,
+
+Michael
+
+
+>>
+>> --- a/man2/madvise.2
+>> +++ b/man2/madvise.2
+>> @@ -163,12 +163,14 @@ Soft offline the pages in the range specified by
+>>  .I addr
+>>  and
+>>  .IR length .
+>> -The memory of each page in the specified range is copied to a new page,
+>> +The memory of each page in the specified range is preserved
+>> +(i.e., when next accessed, the same content will be visible,
+>> +but in a new physical page frame),
+>>  and the original page is offlined
+>>  (i.e., no longer used, and taken out of normal memory management).
+>>  The effect of the
+>>  .B MADV_SOFT_OFFLINE
+>> -operation is normally invisible to (i.e., does not change the semantics of)
+>> +operation is invisible to (i.e., does not change the semantics of)
+>>  the calling process.
+>>  This feature is intended for testing of memory error-handling code;
+>>  it is only available if the kernel was configured with
+>
+
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface" http://blog.man7.org/
