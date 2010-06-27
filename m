@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab0F0PbW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 11:31:22 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:52383 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754916Ab0F0PbT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 11:31:19 -0400
-Date: Sun, 27 Jun 2010 17:27:51 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-kbuild@vger.kernel.org
-Subject: [PATCH] drivers/usb/Makefile: conditionally descend to 'early'
-Message-ID: <20100627172751.32deb6aa@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
+	id S1755548Ab0F0Ped (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 11:34:33 -0400
+Received: from verein.lst.de ([213.95.11.210]:44535 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755429Ab0F0Pec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 11:34:32 -0400
+Date: Sun, 27 Jun 2010 17:33:35 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: hch@lst.de, snitzer@redhat.com, axboe@kernel.dk, dm-devel@redhat.com,
+       James.Bottomley@suse.de, linux-kernel@vger.kernel.org,
+       martin.petersen@oracle.com, akpm@linux-foundation.org,
+       linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request payload
+Message-ID: <20100627153335.GA25667@lst.de>
+References: <20100627185927K.fujita.tomonori@lab.ntt.co.jp> <20100627193253P.fujita.tomonori@lab.ntt.co.jp> <20100627110712.GA14511@lst.de> <20100627212952D.fujita.tomonori@lab.ntt.co.jp>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100627212952D.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't descend to the EARLY_PRINTK_DBGP directory
-unless it is actually used.
+On Sun, Jun 27, 2010 at 09:32:07PM +0900, FUJITA Tomonori wrote:
+> On Sun, 27 Jun 2010 13:07:12 +0200
+> Christoph Hellwig <hch@lst.de> wrote:
+> 
+> > > How about this?
+> > 
+> > As I tried to explain before this utterly confuses the I/O completion
+> > path.  With the patch applied even a simple mkfs.xfs that issues discard
+> > just hangs.
+> 
+> Wired. I just tried mkfs.xfs against scsi_debug with my block patches
+> (I saw one discard command). Seemed that it worked fine.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/usb/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Doesn't work for me against either a real SSD or WRITE SAME support in
+qemu.  But I think I didn't actually have your barrier patches applied,
+so I'll try again with a clean tree.
 
-diff --git a/drivers/usb/Makefile b/drivers/usb/Makefile
-index 80b4008..239f050 100644
---- a/drivers/usb/Makefile
-+++ b/drivers/usb/Makefile
-@@ -41,7 +41,7 @@ obj-$(CONFIG_USB_MICROTEK)	+= image/
- obj-$(CONFIG_USB_SERIAL)	+= serial/
- 
- obj-$(CONFIG_USB)		+= misc/
--obj-y				+= early/
-+obj-$(CONFIG_EARLY_PRINTK_DBGP)	+= early/
- 
- obj-$(CONFIG_USB_ATM)		+= atm/
- obj-$(CONFIG_USB_SPEEDTOUCH)	+= atm/
--- 
-1.7.1
