@@ -1,65 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab0F0PMI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 11:12:08 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:53128 "EHLO imr3.ericy.com"
+	id S1755446Ab0F0P3q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 11:29:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43418 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754697Ab0F0PMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 11:12:06 -0400
-Date: Sun, 27 Jun 2010 08:10:47 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>, Jean Delvare <khali@linux-fr.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Ira W. Snyder" <iws@ovro.caltech.edu>,
-       Hans de Goede <hdegoede@redhat.com>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v3 1/4] hwmon: Driver for SMM665 Six-Channel Active DC
- Output Controller/Monitor
-Message-ID: <20100627151047.GA5731@ericsson.com>
-References: <1277416861-32494-1-git-send-email-guenter.roeck@ericsson.com>
- <1277416861-32494-2-git-send-email-guenter.roeck@ericsson.com>
- <20100627102058.GB2845@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100627102058.GB2845@sirena.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754844Ab0F0P3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 11:29:45 -0400
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
+ payload
+From: James Bottomley <James.Bottomley@suse.de>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Christoph Hellwig <hch@lst.de>, axboe@kernel.dk, dm-devel@redhat.com,
+       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
+       akpm@linux-foundation.org, linux-scsi@vger.kernel.org,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1277582211-10725-1-git-send-email-snitzer@redhat.com>
+References: <20100622180029.GA15950@redhat.com>
+	 <1277582211-10725-1-git-send-email-snitzer@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 27 Jun 2010 10:29:36 -0500
+Message-ID: <1277652576.4366.19.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 27, 2010 at 06:20:59AM -0400, Mark Brown wrote:
-> On Thu, Jun 24, 2010 at 03:00:58PM -0700, Guenter Roeck wrote:
-> > This driver adds support for the monitoring features of the Summit
-> > Microelectronics SMM665 Six-Channel Active DC Output Controller/Monitor.
+linux-scsi cc added, since it's a SCSI patch.
+
+On Sat, 2010-06-26 at 15:56 -0400, Mike Snitzer wrote:
+> Fix leaks introduced via "block: don't allocate a payload for discard
+> request" commit a1d949f5f44.
 > 
-> A bit late to the game here but this looks like the chip has some
-> regulator control functionality as well as monitoring functionality (and
-> the product page on the Summit web site suggests so also).  This means
-> that when fully supported in software the driver would cross multiple
-> subsystems so it might make sense to start off with a MFD rather than
-> direct I2C control?  
+> sd_done() is not called for REQ_TYPE_BLOCK_PC commands so cleanup
+> discard request's payload directly in scsi_finish_command().
 > 
-> If the non-monitoring functionality can't be controlled from software
-> this isn't an issue.
+> Also cleanup page allocated for discard payload in
+> scsi_setup_discard_cmnd's scsi_setup_blk_pc_cmnd error path.
+> 
+> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+> ---
+>  block/blk-core.c       |   23 +++++++++++++++++++++++
+>  drivers/scsi/scsi.c    |    8 ++++++++
+>  drivers/scsi/sd.c      |   18 ++++++++----------
+>  include/linux/blkdev.h |    1 +
+>  4 files changed, 40 insertions(+), 10 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 98b4cee..07925aa 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -1167,6 +1167,29 @@ void blk_add_request_payload(struct request *rq, struct page *page,
+>  }
+>  EXPORT_SYMBOL_GPL(blk_add_request_payload);
+>  
+> +/**
+> + * blk_clear_request_payload - clear a request's payload
+> + * @rq: request to update
+> + *
+> + * The driver needs to take care of freeing the payload itself.
+> + */
+> +void blk_clear_request_payload(struct request *rq)
+> +{
+> +	struct bio *bio = rq->bio;
+> +
+> +	rq->__data_len = rq->resid_len = 0;
+> +	rq->nr_phys_segments = 0;
+> +	rq->buffer = NULL;
+> +
+> +	bio->bi_size = 0;
+> +	bio->bi_vcnt = 0;
+> +	bio->bi_phys_segments = 0;
+> +
+> +	bio->bi_io_vec->bv_page = NULL;
+> +	bio->bi_io_vec->bv_len = 0;
+> +}
+> +EXPORT_SYMBOL_GPL(blk_clear_request_payload);
+> +
+>  void init_request_from_bio(struct request *req, struct bio *bio)
+>  {
+>  	req->cpu = bio->bi_comp_cpu;
+> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> index ad0ed21..69c7ea4 100644
+> --- a/drivers/scsi/scsi.c
+> +++ b/drivers/scsi/scsi.c
+> @@ -851,6 +851,14 @@ void scsi_finish_command(struct scsi_cmnd *cmd)
+>  		 */
+>  		if (good_bytes == old_good_bytes)
+>  			good_bytes -= scsi_get_resid(cmd);
+> +	} else if (cmd->request->cmd_flags & REQ_DISCARD) {
+> +		/*
+> +		 * If this is a discard request that originated from the kernel
+> +		 * we need to free our payload here.  Note that we need to check
+> +		 * the request flag as the normal payload rules apply for
+> +		 * pass-through UNMAP / WRITE SAME requests.
+> +		 */
+> +		__free_page(bio_page(cmd->request->bio));
 
-I thought about that when I started working on the driver, but concluded that 
-it does not really make sense.
+This is another layering violation:  the page is allocated in the Upper
+layer and freed in the mid-layer.
 
-The chip is commonly used to control all supply voltages on a board.
-Changing those voltages is not a good idea. For that reason, the chip can be 
-set into read-only mode, where changing the voltages is no longer possible
-after initial programming.
+I really hate these growing contortions for discard.  They're a clear
+signal that we haven't implemented it right.
 
-While it is theoretically possible that someone might use the device to control
-not only fixed but also dynamic voltages, I think that is highly unlikely, given
-the risk involved in blowing up the board. Thus, moving the driver to mfd would 
-effectively serve no real purpose other than to cause confusion and add unnecessary
-complexity.
+So let's first work out how it should be done.  I really like Tomo's
+idea of doing discard through the normal REQ_TYPE_FS route, which means
+we can control the setup in prep and the tear down in done, all confined
+to the ULD.
 
-Guenter
+Where I think I'm at is partially what Christoph says:  The command
+transformation belongs in the ULD so that's where the allocation and
+deallocation should be, and partly what Tomo says in that we should
+eliminate the special case paths.
+
+The payload vs actual request size should be a red herring if we've got
+everything correct:  only the ULD cares about the request parameters.
+Once we've got everything set up, the mid layer and LLD should only care
+about the parameters in the command, so we can confine the size changing
+part to the ULD doing the discard.
+
+Could someone take a stab at this and see if it works without layering
+violations or any other problematic signals?
+
+Thanks,
+
+James
+
+
