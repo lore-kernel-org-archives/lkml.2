@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab0F0GNx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 02:13:53 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49718 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab0F0GNu (ORCPT
+	id S1752911Ab0F0GPH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 02:15:07 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:40147 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab0F0GPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 02:13:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=OYeRTYv7ND3Lxmmj5bp2hMRXJcPB0bW9+03nMO99YMJs/DTi0MlZbcfqAtO2QDFPYP
-         UjBRyFekGl8MFFzCyuqc9uncApuKPLIY9pIUk5mdlOKwhpjG2VwVaXOL1X/YmGknIVJv
-         GduDNcaP7Wq5Z18HQ2fg7jFUFIOlii5F99SeI=
-From: Cody Rester <codyrester@gmail.com>
-To: marcel@holtmann.org
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Cody Rester <codyrester@gmail.com>
-Subject: [PATCH] drivers: bluetooth: bluecard_cs.c: Fixed include error, changed to linux/io.h
-Date: Sun, 27 Jun 2010 02:12:22 -0400
-Message-Id: <1277619142-10751-1-git-send-email-codyrester@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sun, 27 Jun 2010 02:15:04 -0400
+Date: Sun, 27 Jun 2010 16:14:55 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Dong, Eddie" <eddie.dong@intel.com>
+Cc: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>
+Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Message-ID: <20100627061455.GA16782@gondor.apana.org.au>
+References: <20100611052112.GA25649@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com> <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com> <1A42CE6F5F474C41B63392A5F80372B21F58CD9A@shsmsx501.ccr.corp.intel.com> <20100623095254.GA32491@gondor.apana.org.au> <1A42CE6F5F474C41B63392A5F80372B21F58CE7F@shsmsx501.ccr.corp.intel.com> <20100624100836.GA16220@gondor.apana.org.au> <1A42CE6F5F474C41B63392A5F80372B21F58D666@shsmsx501.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1A42CE6F5F474C41B63392A5F80372B21F58D666@shsmsx501.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed include error, changed to linux/io.h
+On Fri, Jun 25, 2010 at 09:03:46AM +0800, Dong, Eddie wrote:
+> 
+> In current patch, each SKB for the assigned device (SRIOV VF or NIC or a complete queue pairs) uses the buffer from guest, so it eliminates copy completely in software and requires hardware to do so. If we can have an additonal place to store the buffer per skb (may cause copy later on), we can do copy later on or re-post the buffer to assigned NIC driver later on. But that may be not very clean either :(
 
-Signed-off-by: Cody Rester <codyrester@gmail.com>
----
- drivers/bluetooth/bluecard_cs.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+OK, if I understand you correctly then I don't think have a
+problem.  With your current patch-set you have exactly the same
+situation when the skb->data is reallocated as a kernel buffer.
 
-diff --git a/drivers/bluetooth/bluecard_cs.c b/drivers/bluetooth/bluecard_cs.c
-index d9bf87c..89a4455 100644
---- a/drivers/bluetooth/bluecard_cs.c
-+++ b/drivers/bluetooth/bluecard_cs.c
-@@ -37,7 +37,7 @@
- #include <linux/wait.h>
- 
- #include <linux/skbuff.h>
--#include <asm/io.h>
-+#include <linux/io.h>
- 
- #include <pcmcia/cs_types.h>
- #include <pcmcia/cs.h>
+This is OK because as you correctly argue, it is a rare situation.
+
+With my proposal you will need to get this extra external buffer
+in even less cases, because you'd only need to do it if the skb
+head grows, which only happens if it becomes encapsulated.
+
+So let me explain it in a bit more detail:
+
+Our packet starts out as a purely non-linear skb, i.e., skb->head
+contains nothing and all the page frags come from the guest.
+
+During host processing we may pull data into skb->head but the
+first frag will remain unless we pull all of it.  If we did do
+that then you would have a free external buffer anyway.
+
+Now in the common case the header may be modified or pulled, but
+it very rarely grows.  So you can just copy the header back into
+the first frag just before we give it to the guest.
+
+Only in the case where the packet header grows (e.g., encapsulation)
+would you need to get an extra external buffer.
+
+Cheers,
 -- 
-1.7.0.4
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
