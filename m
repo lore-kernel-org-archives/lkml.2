@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab0F0SWp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 14:22:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55433 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab0F0SWn (ORCPT
+	id S1755147Ab0F0S2g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 14:28:36 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45772 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab0F0S2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 14:22:43 -0400
-Date: Sun, 27 Jun 2010 14:22:29 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Mingming Cao <mcao@us.ibm.com>, Steve French <smfrench@gmail.com>,
-       DENIEL Philippe <philippe.deniel@cea.fr>,
-       David Howells <dhowells@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-       Jeff Layton <jlayton@samba.org>, linux-cifs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       samba-technical@lists.samba.org, Suresh Jayaraman <sjayaraman@suse.de>
-Subject: Re: [RFC][PATCH 06/10] cifs: define inode-level cache object and
- register them
-Message-ID: <20100627182229.GA492@infradead.org>
-References: <20100625125306.7f9b1966@tlielax.poochiereds.net>
- <4C24A606.5040001@suse.de>
- <1277220214-3597-1-git-send-email-sjayaraman@suse.de>
- <9822.1277312573@redhat.com>
- <22697.1277470549@redhat.com>
- <18628.1277502398@redhat.com>
- <20100625182651.36800d06@tlielax.poochiereds.net>
- <AANLkTilOTrHLvLv4XWYZO6xCnYZgYT7gO2M-oKZ6VvqM@mail.gmail.com>
- <OFB55E8EC7.E8DD23D5-ON8725774E.0004921E-8825774E.0004CC31@us.ibm.com>
- <871vbscpce.fsf@linux.vnet.ibm.com>
+	Sun, 27 Jun 2010 14:28:35 -0400
+Message-ID: <4C279814.9030100@ru.mvista.com>
+Date: Sun, 27 Jun 2010 22:27:32 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871vbscpce.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>, Tejun Heo <tj@kernel.org>,
+       linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: ata link not reset properly
+References: <4C223F8A.9030306@odi.ch> <4C224429.6010705@kernel.org> <4C224502.2040206@kernel.org> <4C2305A8.4070708@odi.ch> <4C24C903.1070705@kernel.org> <4C24EED2.4020300@odi.ch> <4C257CEE.2070309@gmail.com>
+In-Reply-To: <4C257CEE.2070309@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 27, 2010 at 11:47:21PM +0530, Aneesh Kumar K. V wrote:
-> NFS ganesha pNFS also had a requirement for getting i_generation and
-> inode number in userspace. So may be we should now look at updating
-> stat or add a variant syscall that include i_generation and create time
-> in the return value
+Hello.
 
-What's missing in knfsd that you feel the sudden urge to move backwards
-to a userspace nfsd (one with a horribly crappy codebase, too).
+Robert Hancock wrote:
+
+>> On 25.06.2010 17:19, Tejun Heo wrote:
+>>> Patch attached, but please see below.
+
+>> Cheers, I will give it a try and provide feedback if "it" happens again.
+
+>>> Is it PATA?
+
+>> Yes. This chipset doesn't have SATA, only PATA.
+
+> Ahh, ok, it's not sata_nv at all then, it's pata_amd. On the same chip, 
+> totally different controller though.
+
+> PATA doesn't normally use hard-resets as a means of error recovery - 
+> that would mean hitting the RESET line, which I don't think most 
+> controllers can do on software command (it usually only gets asserted on 
+> power up or hitting the reset button), unlike on SATA where there's a 
+> defined way to trigger a COMRESET which is mostly equivalent. Also, that 
+> resets both devices on the channel, unlike soft reset which is specific 
+> to one device.
+
+    PATA soft reset affects both devices too. Unless you mean ATAPI Device 
+Reset command.
+
+MBR, Sergei
 
