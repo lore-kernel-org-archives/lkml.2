@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab0F0GsE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 02:48:04 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64699 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab0F0Gro (ORCPT
+	id S1753370Ab0F0GuT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 02:50:19 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56349 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab0F0GuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 02:47:44 -0400
+	Sun, 27 Jun 2010 02:50:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=lpigvDXbVNOGCGLTmD2RDqu6fZU5cbOMm+1woLhnADvE9zLMBAbO24WooJ+PkQTs/X
-         TA+Nekkd21U+d8poQ48eqgSHWtQqiLUg/TrMIY80QEd9RdXzAfxdFjMsXGbQnvUJth3R
-         uaxh4wHtw3Zj9E+KaCSY4IRDofUO7QEDEPjVQ=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, sds@tycho.nsa.gov, lenb@kernel.org,
-       linux-bluetooth@vger.kernel.org,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 2/5]security:ebitmap.c Fix warning: variable 'e_sft' set but not used
-Date: Sat, 26 Jun 2010 23:47:23 -0700
-Message-Id: <1277621246-10960-3-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
-In-Reply-To: <1277621246-10960-1-git-send-email-justinmattock@gmail.com>
-References: <1277621246-10960-1-git-send-email-justinmattock@gmail.com>
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=H/MfAYp4v/2bBSaPwss+CVffrwLAFLXO7oDVV7G5LBtPZvrNfQTxO/hN7Ewhnria15
+         PtU6maOTQd9s7xqgyaVbpkSB/BaDDePQrbgLFpq2LrGKIDgq7n2hL+mvRAYuLQPe/WoM
+         /FglCxbxnbxOJt3UHtsi4pHyW88QxsBj4LLJw=
+Date: Sun, 27 Jun 2010 03:50:07 -0300
+From: "Gustavo F. Padovan" <gustavo@padovan.org>
+To: Cody Rester <codyrester@gmail.com>
+Cc: marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: bluetooth: bluecard_cs.c: Fixed include
+ error, changed to linux/io.h
+Message-ID: <20100627065006.GA32318@vigoh>
+References: <1277619142-10751-1-git-send-email-codyrester@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277619142-10751-1-git-send-email-codyrester@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gcc is giving me this during compiling:
-  CC      security/selinux/ss/ebitmap.o
-security/selinux/ss/ebitmap.c: In function 'ebitmap_netlbl_import':
-security/selinux/ss/ebitmap.c:159:27: warning: variable 'e_sft' set but not used
+* Cody Rester <codyrester@gmail.com> [2010-06-27 02:12:22 -0400]:
 
-The below fixes this warning for me.
-(please check this whenever you have time).
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> Fixed include error, changed to linux/io.h
+> 
+> Signed-off-by: Cody Rester <codyrester@gmail.com>
+> ---
+>  drivers/bluetooth/bluecard_cs.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/bluetooth/bluecard_cs.c b/drivers/bluetooth/bluecard_cs.c
+> index d9bf87c..89a4455 100644
+> --- a/drivers/bluetooth/bluecard_cs.c
+> +++ b/drivers/bluetooth/bluecard_cs.c
+> @@ -37,7 +37,7 @@
+>  #include <linux/wait.h>
+>  
+>  #include <linux/skbuff.h>
+> -#include <asm/io.h>
+> +#include <linux/io.h>
+>  
+>  #include <pcmcia/cs_types.h>
+>  #include <pcmcia/cs.h>
+> -- 
+> 1.7.0.4
 
----
- security/selinux/ss/ebitmap.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
 
-diff --git a/security/selinux/ss/ebitmap.c b/security/selinux/ss/ebitmap.c
-index 04b6145..b7980ee 100644
---- a/security/selinux/ss/ebitmap.c
-+++ b/security/selinux/ss/ebitmap.c
-@@ -156,7 +156,7 @@ int ebitmap_netlbl_import(struct ebitmap *ebmap,
- 	struct ebitmap_node *e_iter = NULL;
- 	struct ebitmap_node *emap_prev = NULL;
- 	struct netlbl_lsm_secattr_catmap *c_iter = catmap;
--	u32 c_idx, c_pos, e_idx, e_sft;
-+	u32 c_idx, c_pos, e_idx;
- 
- 	/* NetLabel's NETLBL_CATMAP_MAPTYPE is defined as an array of u64,
- 	 * however, it is not always compatible with an array of unsigned long
-@@ -190,7 +190,6 @@ int ebitmap_netlbl_import(struct ebitmap *ebmap,
- 			}
- 			delta = c_pos - e_iter->startbit;
- 			e_idx = delta / EBITMAP_UNIT_SIZE;
--			e_sft = delta % EBITMAP_UNIT_SIZE;
- 			while (map) {
- 				e_iter->maps[e_idx++] |= map & (-1UL);
- 				map = EBITMAP_SHIFT_UNIT_SIZE(map);
 -- 
-1.7.1.rc1.21.gf3bd6
-
+Gustavo F. Padovan
+http://padovan.org
