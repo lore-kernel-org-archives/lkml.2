@@ -1,123 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab0F0PwV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 11:52:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8519 "EHLO mx1.redhat.com"
+	id S1755681Ab0F0P6W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 11:58:22 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:30080 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755482Ab0F0PwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 11:52:19 -0400
-Date: Sun, 27 Jun 2010 18:46:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sridhar Samudrala <samudrala@us.ibm.com>,
-       "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-       virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH RFC] vhost-net: add dhclient work-around from userspace
-Message-ID: <20100627154657.GA9723@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100626.200320.43025947.davem@davemloft.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754916Ab0F0P6T convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 11:58:19 -0400
+X-IronPort-AV: E=Sophos;i="4.53,492,1272870000"; 
+   d="scan'208";a="390573101"
+Subject: [GIT] Please pull NFS client fixes
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Sun, 27 Jun 2010 11:58:01 -0400
+Message-ID: <1277654281.3311.3.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-8.fc13) 
+X-OriginalArrivalTime: 27 Jun 2010 15:58:03.0786 (UTC) FILETIME=[868D66A0:01CB1611]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userspace virtio server has the following hack
-so guests rely on it, and we have to replicate it, too:
+Hi Linus,
 
-use source port to detect incoming IPv4 DHCP response packets,
-and fill in the checksum for these.
+Please pull from the "bugfixes" branch of the repository at
 
-The issue we are solving is that on linux guests, some apps
-that use recvmsg with AF_PACKET sockets, don't know how to
-handle CHECKSUM_PARTIAL;
-The interface to return the relevant information was added
-in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
-and older userspace does not use it.
-One important user of recvmsg with AF_PACKET is dhclient,
-so we add a work-around just for DHCP.
+   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+This will update the following files through the appended changesets.
 
-So here's what I came up with: I basically copied
-the work-around from userspace virtio.
-As suggested by Dave (assuming I understood the suggestion
-correctly) this implements the workaround in vhost-net, so
-other tun users don't start relying on it.
-Untested.
+  Cheers,
+    Trond
 
- drivers/vhost/net.c |   42 +++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 41 insertions(+), 1 deletions(-)
+----
+ fs/nfs/client.c       |  122 ++++++++++++++++++++----------------------------
+ fs/nfs/getroot.c      |    2 +-
+ fs/nfs/nfs4xdr.c      |    4 +-
+ fs/nfs/super.c        |   22 +++++++--
+ net/sunrpc/xprtsock.c |   38 +++++++++------
+ 5 files changed, 94 insertions(+), 94 deletions(-)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 54096ee..9ed4051 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -25,6 +25,10 @@
- #include <linux/if_tun.h>
- #include <linux/if_macvlan.h>
- 
-+#include <linux/ip.h>
-+#include <linux/udp.h>
-+#include <linux/netdevice.h>
-+
- #include <net/sock.h>
- 
- #include "vhost.h"
-@@ -191,6 +195,42 @@ static void handle_tx(struct vhost_net *net)
- 	unuse_mm(net->dev.mm);
- }
- 
-+static int peek_head(struct sock *sk)
-+{
-+	struct sk_buff *head;
-+	int ret;
-+
-+	lock_sock(sk);
-+	head = skb_peek(&sk->sk_receive_queue);
-+	if (likely(head)) {
-+		ret = 1;
-+		/* Userspace virtio server has the following hack so
-+		 * guests rely on it, and we have to replicate it, too: */
-+		/* On linux guests, some apps that use recvmsg with AF_PACKET
-+		 * sockets, don't know how to handle CHECKSUM_PARTIAL;
-+		 * The interface to return the relevant information was added in
-+		 * 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
-+		 * and older userspace does not use it.
-+		 * One important user of recvmsg with AF_PACKET is dhclient,
-+		 * so we add a work-around just for DHCP. */
-+		/* We use source port to detect DHCP packets. */
-+		if (skb->ip_summed == CHECKSUM_PARTIAL &&
-+		    skb->protocol == htons(ETH_P_IP) &&
-+		    skb_network_header_len(skb) >= sizeof(struct iphdr) &&
-+		    ip_hdr(skb)->protocol == IPPRODO_UDP &&
-+		    skb_headlen(skb) >= skb_transport_offset(skb) + sizeof(struct udphdr) &&
-+		    udp_hdr(skb)->source == htons(0x67)) {
-+			skb_checksum_help(skb);
-+			/* Restore ip_summed value: tun passes it to user. */
-+			skb->ip_summed = CHECKSUM_PARTIAL;
-+		}
-+	} else {
-+		ret = 0;
-+	}
-+	release_sock(sk);
-+	return len;
-+}
-+
- /* Expects to be always run from workqueue - which acts as
-  * read-size critical section for our kind of RCU. */
- static void handle_rx(struct vhost_net *net)
-@@ -228,7 +268,7 @@ static void handle_rx(struct vhost_net *net)
- 	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
- 		vq->log : NULL;
- 
--	for (;;) {
-+	while (peek_head(sock)) {
- 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
- 					 ARRAY_SIZE(vq->iov),
- 					 &out, &in,
--- 
-1.7.1.12.g42b7f
+commit d3f6baaa34c54040b3ef30950e59b54ac0624b21
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Tue Jun 22 08:52:39 2010 -0400
+
+    NFSv4: Fix an embarassing typo in encode_attrs()
+    
+    Apparently, we have never been able to set the atime correctly from the
+    NFSv4 client.
+    
+    Reported-by: 小倉一夫 <ka-ogura@bd6.so-net.ne.jp>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+commit 0be8189f2c87fcc747d6a4a657a0b6e2161b2318
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Fri Jun 18 12:23:58 2010 -0400
+
+    NFSv4: Ensure that /proc/self/mountinfo displays the minor version number
+    
+    Currently, we do not display the minor version mount parameter in the
+    /proc mount info.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+commit 44950b67a6239b377a9e6fd52c498b310bcdd713
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Jun 17 11:45:12 2010 -0400
+
+    NFSv4.1: Ensure that we initialise the session when following a referral
+    
+    Put the code that is common to both the referral and ordinary mount cases
+    into a common helper routine.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit b76ce56192bcf618013fb9aecd83488cffd645cc
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 13:57:32 2010 -0400
+
+    SUNRPC: Fix a re-entrancy bug in xs_tcp_read_calldir()
+    
+    If the attempt to read the calldir fails, then instead of storing the read
+    bytes, we currently discard them. This leads to a garbage final result when
+    upon re-entry to the same routine, we read the remaining bytes.
+    
+    Fixes the regression in bugzilla number 16213. Please see
+        https://bugzilla.kernel.org/show_bug.cgi?id=16213
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+commit f799bdb355edaabd81b778087613409a8932fbe9
+Author: Andy Adamson <andros@netapp.com>
+Date:   Wed Jun 16 09:51:02 2010 -0400
+
+    nfs4 use mandatory attribute file type in nfs4_get_root
+    
+    S_ISDIR(fsinfo.fattr->mode) checks the file type rather than the mode bits,
+    so we should be checking for the NFS_ATTR_FATTR_TYPE fattr property.
+    
+    Signed-off-by: Andy Adamson <andros@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+
