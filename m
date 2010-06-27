@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab0F0N3h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 09:29:37 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42003 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755167Ab0F0N3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 09:29:34 -0400
-Date: Sun, 27 Jun 2010 14:35:18 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Samo Pogacnik <samo_pogacnik@t-2.net>
-Cc: linux-embedded <linux-embedded@vger.kernel.org>,
-       linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] detour TTY driver - now ttyprintk
-Message-ID: <20100627143518.104ef190@lxorguk.ukuu.org.uk>
-In-Reply-To: <1277516912.29797.411.camel@itpsd6lap>
-References: <1273918658.2341.17.camel@itpsd6lap>
-	<1275171436.2122.29.camel@itpsd6lap>
-	<20100529235402.296406d9@lxorguk.ukuu.org.uk>
-	<1275175983.2122.42.camel@itpsd6lap>
-	<1276123020.16010.97.camel@itpsd6lap>
-	<20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
-	<1276291932.2154.45.camel@itpsd6lap>
-	<20100621153858.444695c0@lxorguk.ukuu.org.uk>
-	<1277244410.2195.47.camel@itpsd6lap>
-	<20100622232108.26752ff8@lxorguk.ukuu.org.uk>
-	<1277462596.2143.101.camel@itpsd6lap>
-	<20100625120329.1303aa61@lxorguk.ukuu.org.uk>
-	<1277516912.29797.411.camel@itpsd6lap>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755348Ab0F0Nse (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 09:48:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3988 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755233Ab0F0Nsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 09:48:33 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, Joel Becker <joel.becker@oracle.com>,
+       Sunil Mushran <sunil.mushran@oracle.com>,
+       "ocfs2-devel\@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
+Subject: Re: [PATCH 0/3 v5][RFC] ext3/4: enhance fsync performance when using CFQ
+References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
+	<4C21D442.8080703@oracle.com> <4C22F316.3080009@oracle.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Sun, 27 Jun 2010 09:48:25 -0400
+In-Reply-To: <4C22F316.3080009@oracle.com> (Tao Ma's message of "Thu, 24 Jun
+	2010 13:54:30 +0800")
+Message-ID: <x49k4pk60ye.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I thought that this would automatically reduce processor load, which is
-> obviously not the case. Sorry for the delay, but i am trying to figure
-> out how to slow down write method when under pressure.
+Tao Ma <tao.ma@oracle.com> writes:
 
-Ok I played with this a bit. Much to my surprise until I thought about it
-in detail it all works fine without any of the ratelimiting at all. There
-is a problem if you manage to redirect the console *in kernel* to the
-printk driver, but that needs stopping anyway and rate limit won't fix it
-(you blow the stack before it kicks in)
+> Hi Jeff,
+>
+> On 06/23/2010 05:30 PM, Tao Ma wrote:
+>> Hi Jeff,
+>>
+>> On 06/23/2010 05:34 AM, Jeff Moyer wrote:
+>>> Hi,
+>>>
+>>> Running iozone with the fsync flag, or fs_mark, the performance of CFQ is
+>>> far worse than that of deadline for enterprise class storage when dealing
+>>> with file sizes of 8MB or less. I used the following command line as a
+>>> representative test case:
+>>>
+>>> fs_mark -S 1 -D 10000 -N 100000 -d /mnt/test/fs_mark -s 65536 -t 1 -w
+>>> 4096 -F
+>>>
+>>> When run using the deadline I/O scheduler, an average of the first 5
+>>> numbers
+>>> will give you 448.4 files / second. CFQ will yield only 106.7. With
+>>> this patch series applied (and the two patches I sent yesterday), CFQ now
+>>> achieves 462.5 files / second.
+>> which 2 patches? Could you paste the link or the subject? Just want to
+>> make my test env like yours. ;)
+>> As Joel mentioned in another mail, ocfs2 also use jbd/jbd2, so I'd like
+>> to give it a try and give you some feedback about the test.
+> I am sorry to say that the patch make jbd2 locked up when I tested
+> fs_mark using ocfs2.
+> I have attached the log from my netconsole server. After I reverted
+> the patch [3/3], the box works again.
 
-In the case where userspace loads it hard and its a graphical console
-then we use a lot of CPU power drawing stuff on screen, but killing the
-process does as is expected.
+I can't reproduce this, unfortunately.  Also, when building with the
+.config you sent me, the disassembly doesn't line up with the stack
+trace you posted.
 
-With a serial console the printk itself blocks which blocks the line
-discipline which in turn slows stuff down.
+I'm not sure why yielding the queue would cause a deadlock.  The only
+explanation I can come up with is that I/O is not being issued.  I'm
+assuming that no other I/O will be completed to the file system in
+question.  Is that right?  Could you send along the output from sysrq-t?
 
-The only two bad things I can see how to cause are
-
-- Slowing down output by stuffing lots of extra data into the port (which
-  I can do anyway just fine) so isn't worse than before.
-
-- Filling up the dmesg log easily and hiding important messages. Not
-  really a problem in this case bcause the whole point of this is
-  embedded and capturing those messages as if they were system ones.
-
-So much to my surprise the flow control is a red herring and best left
-out.
-
-Alan
+Cheers,
+Jeff
