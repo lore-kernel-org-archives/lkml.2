@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab0F0WbK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 18:31:10 -0400
-Received: from mail.idngh.com ([41.204.36.5]:35515 "EHLO idngh.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754548Ab0F0WbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 18:31:07 -0400
-Message-ID: <20100627180150.zxyp7o1roco4gkko@mail.idngh.com>
-Date: Sun, 27 Jun 2010 18:01:50 +0000
-From: "Mr.COOK ADAMS" <mrcookadamsinvestment6@gmail.com>
-To: undisclosed-recipients:;
-Subject: 
+	id S1754343Ab0F0XGA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 19:06:00 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:47738 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab0F0XF7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 19:05:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:from:date:x-google-sender-auth:message-id
+         :subject:to:content-type;
+        b=YryQ69ZVjGCzAHroXvbTJ+qlad7JxSnlV0nh0betodboLlr3LUdIOxs1bJsY/BBL6i
+         UZQSp7wTmRiZt033uBCrZo3pwfPBHg8CB/vmkXyjvJk/Rj4JqY12Z1Ho+RaUJc+bAVxo
+         o/BM1gIrvYLCC1Im2HrRddJtRwtARZ4X83GFU=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
-X-idngh-MailScanner-Information: Please contact the ISP for more information
-X-idngh-MailScanner-ID: 1OSwB4-0007d9-ON
-X-idngh-MailScanner: Found to be clean
-X-idngh-MailScanner-SpamCheck: not spam, SpamAssassin (cached, score=-0.155,
-	required 4, autolearn=disabled, ALL_TRUSTED -1.44,
-	MISSING_SUBJECT 1.28)
-X-idngh-MailScanner-From: mrcookadamsinvestment6@gmail.com
-Subject: 
+From: Ragnar Hojland Espinosa <ragnar@ragnar-hojland.com>
+Date: Mon, 28 Jun 2010 01:05:28 +0200
+X-Google-Sender-Auth: A7_74uWnJY06OGTI4kV22v7CQiE
+Message-ID: <AANLkTinR6E9hSkopCgqcVK9WHojNKesAH_5V5XoWSjiA@mail.gmail.com>
+Subject: 2.6.34 ext4_mb_free_metadata: Double free of blocks
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Moving about 200 GB through the network out of the computer (vanilla
+2.6.34, sata_via sata device), after it finished I noticed:
 
+EXT4-fs error (device sda1): ext4_mb_free_metadata: Double free of
+blocks 20764 (20764 395)
+JBD: Spotted dirty metadata buffer (dev = sda1, blocknr = 0). There's
+a risk of filesystem corruption in case of system crash..
 
-I am Mr Cook Adams,I gives out loans at low interest rate of 3% to
-student,individuals,business men and woman with low credit all over
-the globe.Sound lending is base on the promise that the borrowers will
-repay.contact us via Email:mrcookadamsinvestment6@gmail.com
-Below are the loan Applications:
-*Applicant's Full Names:
-*Applicant's Contact Address:.
-*Phone No:
-*Country:
-*Age:
-*Marital Status:
-*Amount Required As Loan:
-*Proposed Terms/Duration Of Loan:
-*Annual Income:
-*Occupation:
+So I proceeded to umount and fsck.
 
-Mode of Payment:
-* Payment by bank to bank transfer
-* Payment by bank certified check(courier
+# umount /vol3/
+# fsck -f /vol3/
+fsck from util-linux-ng 2.17.2
+e2fsck 1.41.11 (14-Mar-2010)
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+Free blocks count wrong for group #6764 (17193, counted=16798).
+Fix<y>? yes
 
-Mr.COOK ADAMS
-Managing Director.
+Free blocks count wrong (44974340, counted=44973945).
+Fix<y>? yes
 
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
-
-
+FWIW.
 -- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
-
+Ragnar
