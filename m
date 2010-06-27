@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab0F0TyM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 15:54:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38788 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754762Ab0F0TyJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 15:54:09 -0400
-Subject: Re: [PATCH v3 1/4] hwmon: Driver for SMM665 Six-Channel Active DC Output Controller/Monitor
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <20100627151047.GA5731@ericsson.com> (sfid-20100627_161157_396817_8F10F51C)
-Date: Sun, 27 Jun 2010 20:54:06 +0100
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Jean Delvare <khali@linux-fr.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Ira W. Snyder" <iws@ovro.caltech.edu>,
-       Hans de Goede <hdegoede@redhat.com>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+	id S1755876Ab0F0UH3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 16:07:29 -0400
+Received: from xenotime.net ([72.52.115.56]:34187 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755845Ab0F0UH1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 16:07:27 -0400
+Date: Sun, 27 Jun 2010 13:07:20 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Kulikov Vasiliy <segooon@gmail.com>, Jiri Kosina <trivial@kernel.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       Nick Bowler <nbowler@elliptictech.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Rik van Riel <riel@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3] Documentation/sysctl/vm.txt typo
+Message-Id: <20100627130720.d9c16b83.rdunlap@xenotime.net>
+In-Reply-To: <20100627035106.GA25692@shinshilla>
+References: <1276859270.3159.5.camel@shinshilla>
+	<20100618142252.GA31086@elliptictech.com>
+	<20100618154033.1e949749.rdunlap@xenotime.net>
+	<20100625110801.GB6896@shinshilla>
+	<AANLkTinu8OkcfANcJAFELtiPXTC9pfJTDsdSXugJ2xN3@mail.gmail.com>
+	<20100627035106.GA25692@shinshilla>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <52840892-BE40-44D3-9454-407B074481CC@opensource.wolfsonmicro.com>
-References: <1277416861-32494-1-git-send-email-guenter.roeck@ericsson.com> <1277416861-32494-2-git-send-email-guenter.roeck@ericsson.com> <20100627102058.GB2845@sirena.org.uk> <20100627151047.GA5731@ericsson.com> (sfid-20100627_161157_396817_8F10F51C)
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 Jun 2010, at 16:10, Guenter Roeck wrote:
+On Sun, 27 Jun 2010 07:51:06 +0400 Kulikov Vasiliy wrote:
 
-> On Sun, Jun 27, 2010 at 06:20:59AM -0400, Mark Brown wrote:
-
->> A bit late to the game here but this looks like the chip has some
->> regulator control functionality as well as monitoring functionality (and
->> the product page on the Summit web site suggests so also).  This means
->> that when fully supported in software the driver would cross multiple
->> subsystems so it might make sense to start off with a MFD rather than
->> direct I2C control?  
->> 
->> If the non-monitoring functionality can't be controlled from software
->> this isn't an issue.
+> Fix trivial typo: duplicated word.
 > 
-> I thought about that when I started working on the driver, but concluded that 
-> it does not really make sense.
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+
+Thanks.
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+Kulikov, in the future, please send such small patches to:
+
+TRIVIAL PATCHES
+M:	Jiri Kosina <trivial@kernel.org>
+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git
+S:	Maintained
+
+
+Jiri, will you pick this up, please?
+
+
 > 
-> The chip is commonly used to control all supply voltages on a board.
-> Changing those voltages is not a good idea. For that reason, the chip can be 
+> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> index 5fdbb61..82b2da1 100644
+> --- a/Documentation/sysctl/vm.txt
+> +++ b/Documentation/sysctl/vm.txt
+> @@ -196,7 +196,7 @@ controlled by this knob are discussed in Documentation/laptops/laptop-mode.txt.
+> 
+>  legacy_va_layout
+> 
+> -If non-zero, this sysctl disables the new 32-bit mmap mmap layout - the kernel
+> +If non-zero, this sysctl disables the new 32-bit mmap layout - the kernel
+>  will use the legacy (2.4) layout for all processes.
+> 
+>  ==============================================================
+> 
 
-There's rather a lot of systems out there doing DVFS or using things like MMC
-cards which would disagree with the idea that it's a bad idea to change supply
-voltages at runtime. Even for fixed voltage supplies enabling and disabling at
-runtime is useful to save power. I think it's fair to say that the overall trend is
-towards more dynamic power management.
 
-> set into read-only mode, where changing the voltages is no longer possible
-> after initial programming.
-
-This tends to be done through paranoia more than anything else - people get
-very worried about things like accidental writes to their PMICs.
-
-> While it is theoretically possible that someone might use the device to control
-> not only fixed but also dynamic voltages, I think that is highly unlikely, given
-> the risk involved in blowing up the board. Thus, moving the driver to mfd would 
-> effectively serve no real purpose other than to cause confusion and add unnecessary
-
-Pretty much any current generation CPU can use dynamic voltage configuration
-for DVFS.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
