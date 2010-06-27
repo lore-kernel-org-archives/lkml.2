@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab0F0GsJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 02:48:09 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58213 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326Ab0F0Grr (ORCPT
+	id S1754394Ab0F0GsE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 02:48:04 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64699 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab0F0Gro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 02:47:47 -0400
+	Sun, 27 Jun 2010 02:47:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=C/P++AJAzXkDBwrpTbHJnqytKP0AykFaKf9OaUAvxHF24YMyYWMrF+OSCehPGwQAIy
-         njVk3iou9JBbpuned3e2CypVcS/m4E2Csr32Q3WBdlC0vJVULc7WIaRHz7FWpYmzYbnW
-         XI8+LaLKLDt2sow0dQybd52enMDcQKqnrfEn4=
+        b=lpigvDXbVNOGCGLTmD2RDqu6fZU5cbOMm+1woLhnADvE9zLMBAbO24WooJ+PkQTs/X
+         TA+Nekkd21U+d8poQ48eqgSHWtQqiLUg/TrMIY80QEd9RdXzAfxdFjMsXGbQnvUJth3R
+         uaxh4wHtw3Zj9E+KaCSY4IRDofUO7QEDEPjVQ=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: dhowells@redhat.com, sds@tycho.nsa.gov, lenb@kernel.org,
        linux-bluetooth@vger.kernel.org,
        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 3/5]acpi:glue.c Fix warning: variable 'ret' set but not used
-Date: Sat, 26 Jun 2010 23:47:24 -0700
-Message-Id: <1277621246-10960-4-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 2/5]security:ebitmap.c Fix warning: variable 'e_sft' set but not used
+Date: Sat, 26 Jun 2010 23:47:23 -0700
+Message-Id: <1277621246-10960-3-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 In-Reply-To: <1277621246-10960-1-git-send-email-justinmattock@gmail.com>
 References: <1277621246-10960-1-git-send-email-justinmattock@gmail.com>
@@ -28,35 +28,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Im getting a warning message when building with gcc 4.6.0
-  CC      drivers/acpi/glue.o
-drivers/acpi/glue.c: In function 'acpi_bind_one':
-drivers/acpi/glue.c:163:7: warning: variable 'ret' set but not used
+gcc is giving me this during compiling:
+  CC      security/selinux/ss/ebitmap.o
+security/selinux/ss/ebitmap.c: In function 'ebitmap_netlbl_import':
+security/selinux/ss/ebitmap.c:159:27: warning: variable 'e_sft' set but not used
 
-The below fixes it for me. Please have a look when you have
-time and let me know(bit confused with the backwardness of
-&acpi_dev->dev.kobj, &dev->kobji with these two ret's)
-
+The below fixes this warning for me.
+(please check this whenever you have time).
  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/acpi/glue.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ security/selinux/ss/ebitmap.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
-index 4af6301..f146165 100644
---- a/drivers/acpi/glue.c
-+++ b/drivers/acpi/glue.c
-@@ -166,6 +166,9 @@ static int acpi_bind_one(struct device *dev, acpi_handle handle)
- 				"firmware_node");
- 		ret = sysfs_create_link(&acpi_dev->dev.kobj, &dev->kobj,
- 				"physical_node");
-+		if (ret) {
-+			printk(KERN_WARNING "dev%d: Failed to get exception\n", ret);
-+		}
- 		if (acpi_dev->wakeup.flags.valid) {
- 			device_set_wakeup_capable(dev, true);
- 			device_set_wakeup_enable(dev,
+diff --git a/security/selinux/ss/ebitmap.c b/security/selinux/ss/ebitmap.c
+index 04b6145..b7980ee 100644
+--- a/security/selinux/ss/ebitmap.c
++++ b/security/selinux/ss/ebitmap.c
+@@ -156,7 +156,7 @@ int ebitmap_netlbl_import(struct ebitmap *ebmap,
+ 	struct ebitmap_node *e_iter = NULL;
+ 	struct ebitmap_node *emap_prev = NULL;
+ 	struct netlbl_lsm_secattr_catmap *c_iter = catmap;
+-	u32 c_idx, c_pos, e_idx, e_sft;
++	u32 c_idx, c_pos, e_idx;
+ 
+ 	/* NetLabel's NETLBL_CATMAP_MAPTYPE is defined as an array of u64,
+ 	 * however, it is not always compatible with an array of unsigned long
+@@ -190,7 +190,6 @@ int ebitmap_netlbl_import(struct ebitmap *ebmap,
+ 			}
+ 			delta = c_pos - e_iter->startbit;
+ 			e_idx = delta / EBITMAP_UNIT_SIZE;
+-			e_sft = delta % EBITMAP_UNIT_SIZE;
+ 			while (map) {
+ 				e_iter->maps[e_idx++] |= map & (-1UL);
+ 				map = EBITMAP_SHIFT_UNIT_SIZE(map);
 -- 
 1.7.1.rc1.21.gf3bd6
 
