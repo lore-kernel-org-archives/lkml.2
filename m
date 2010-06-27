@@ -1,218 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab0F0JEk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 05:04:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24217 "EHLO mx1.redhat.com"
+	id S1754630Ab0F0JR4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 05:17:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5314 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701Ab0F0JEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 05:04:37 -0400
-Date: Sun, 27 Jun 2010 11:59:07 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sridhar Samudrala <samudrala@us.ibm.com>, Arnd Bergmann <arnd@arndb.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Juan Quintela <quintela@redhat.com>,
-       Rusty Russell <rusty@rustcorp.com.au>, Jes.Sorensen@redhat.com,
-       kraxel@redhat.com, Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-       kvm@vger.kernel.org, virtualization@lists.osdl.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] vhost: break out of polling loop on error
-Message-ID: <20100627085907.GA8588@redhat.com>
+	id S1752701Ab0F0JRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 05:17:55 -0400
+Message-ID: <4C271736.5010102@redhat.com>
+Date: Sun, 27 Jun 2010 12:17:42 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Nick Piggin <npiggin@suse.de>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Slow vmalloc in 2.6.35-rc3
+References: <4C232324.7070305@redhat.com> <20100624151427.GH10441@laptop>
+In-Reply-To: <20100624151427.GH10441@laptop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ring parsing fails, we currently handle this
-as ring empty condition. This means that we enable
-kicks and recheck ring empty: if this not empty,
-we re-start polling which of course will fail again.
+On 06/24/2010 06:14 PM, Nick Piggin wrote:
+> On Thu, Jun 24, 2010 at 12:19:32PM +0300, Avi Kivity wrote:
+>    
+>> I see really slow vmalloc performance on 2.6.35-rc3:
+>>      
+> Can you try this patch?
+> http://userweb.kernel.org/~akpm/mmotm/broken-out/mm-vmap-area-cache.patch
+>    
 
-Instead, let's return a negative error code and stop polling.
+The patch completely eliminates the problem.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+>>
+>> It seems completely wrong - iterating 8 levels of a binary tree
+>> shouldn't take half a millisecond.
+>>      
+> It's not iterating down the tree, it's iterating through the
+> nodes to find a free area. Slows down because lazy vunmap means
+> that quite a lot of little areas build up right at the start of
+> our search start address. The vmap cache should hopefully fix
+> it up.
+>    
 
-Dave, I'm sending this out so it can get reviewed.
-I'll put this on my vhost tree
-so no need for you to pick this patch directly.
+I see, thanks.
 
- drivers/vhost/net.c   |   12 ++++++++++--
- drivers/vhost/vhost.c |   33 +++++++++++++++++----------------
- drivers/vhost/vhost.h |    8 ++++----
- 3 files changed, 31 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 0f41c91..54096ee 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -98,7 +98,8 @@ static void tx_poll_start(struct vhost_net *net, struct socket *sock)
- static void handle_tx(struct vhost_net *net)
- {
- 	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
--	unsigned head, out, in, s;
-+	unsigned out, in, s;
-+	int head;
- 	struct msghdr msg = {
- 		.msg_name = NULL,
- 		.msg_namelen = 0,
-@@ -135,6 +136,9 @@ static void handle_tx(struct vhost_net *net)
- 					 ARRAY_SIZE(vq->iov),
- 					 &out, &in,
- 					 NULL, NULL);
-+		/* On error, stop handling until the next kick. */
-+		if (head < 0)
-+			break;
- 		/* Nothing new?  Wait for eventfd to tell us they refilled. */
- 		if (head == vq->num) {
- 			wmem = atomic_read(&sock->sk->sk_wmem_alloc);
-@@ -192,7 +196,8 @@ static void handle_tx(struct vhost_net *net)
- static void handle_rx(struct vhost_net *net)
- {
- 	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_RX];
--	unsigned head, out, in, log, s;
-+	unsigned out, in, log, s;
-+	int head;
- 	struct vhost_log *vq_log;
- 	struct msghdr msg = {
- 		.msg_name = NULL,
-@@ -228,6 +233,9 @@ static void handle_rx(struct vhost_net *net)
- 					 ARRAY_SIZE(vq->iov),
- 					 &out, &in,
- 					 vq_log, &log);
-+		/* On error, stop handling until the next kick. */
-+		if (head < 0)
-+			break;
- 		/* OK, now we need to know about added descriptors. */
- 		if (head == vq->num) {
- 			if (unlikely(vhost_enable_notify(vq))) {
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 3b83382..5ccd384 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -873,12 +873,13 @@ static unsigned get_indirect(struct vhost_dev *dev, struct vhost_virtqueue *vq,
-  * number of output then some number of input descriptors, it's actually two
-  * iovecs, but we pack them into one and note how many of each there were.
-  *
-- * This function returns the descriptor number found, or vq->num (which
-- * is never a valid descriptor number) if none was found. */
--unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
--			   struct iovec iov[], unsigned int iov_size,
--			   unsigned int *out_num, unsigned int *in_num,
--			   struct vhost_log *log, unsigned int *log_num)
-+ * This function returns the descriptor number found, or vq->num (which is
-+ * never a valid descriptor number) if none was found.  A negative code is
-+ * returned on error. */
-+int vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
-+		      struct iovec iov[], unsigned int iov_size,
-+		      unsigned int *out_num, unsigned int *in_num,
-+		      struct vhost_log *log, unsigned int *log_num)
- {
- 	struct vring_desc desc;
- 	unsigned int i, head, found = 0;
-@@ -890,13 +891,13 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 	if (get_user(vq->avail_idx, &vq->avail->idx)) {
- 		vq_err(vq, "Failed to access avail idx at %p\n",
- 		       &vq->avail->idx);
--		return vq->num;
-+		return -EFAULT;
- 	}
- 
- 	if ((u16)(vq->avail_idx - last_avail_idx) > vq->num) {
- 		vq_err(vq, "Guest moved used index from %u to %u",
- 		       last_avail_idx, vq->avail_idx);
--		return vq->num;
-+		return -EFAULT;
- 	}
- 
- 	/* If there's nothing new since last we looked, return invalid. */
-@@ -912,14 +913,14 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 		vq_err(vq, "Failed to read head: idx %d address %p\n",
- 		       last_avail_idx,
- 		       &vq->avail->ring[last_avail_idx % vq->num]);
--		return vq->num;
-+		return -EFAULT;
- 	}
- 
- 	/* If their number is silly, that's an error. */
- 	if (head >= vq->num) {
- 		vq_err(vq, "Guest says index %u > %u is available",
- 		       head, vq->num);
--		return vq->num;
-+		return -EINVAL;
- 	}
- 
- 	/* When we start there are none of either input nor output. */
-@@ -933,19 +934,19 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 		if (i >= vq->num) {
- 			vq_err(vq, "Desc index is %u > %u, head = %u",
- 			       i, vq->num, head);
--			return vq->num;
-+			return -EINVAL;
- 		}
- 		if (++found > vq->num) {
- 			vq_err(vq, "Loop detected: last one at %u "
- 			       "vq size %u head %u\n",
- 			       i, vq->num, head);
--			return vq->num;
-+			return -EINVAL;
- 		}
- 		ret = copy_from_user(&desc, vq->desc + i, sizeof desc);
- 		if (ret) {
- 			vq_err(vq, "Failed to get descriptor: idx %d addr %p\n",
- 			       i, vq->desc + i);
--			return vq->num;
-+			return -EFAULT;
- 		}
- 		if (desc.flags & VRING_DESC_F_INDIRECT) {
- 			ret = get_indirect(dev, vq, iov, iov_size,
-@@ -954,7 +955,7 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 			if (ret < 0) {
- 				vq_err(vq, "Failure detected "
- 				       "in indirect descriptor at idx %d\n", i);
--				return vq->num;
-+				return ret;
- 			}
- 			continue;
- 		}
-@@ -964,7 +965,7 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 		if (ret < 0) {
- 			vq_err(vq, "Translation failure %d descriptor idx %d\n",
- 			       ret, i);
--			return vq->num;
-+			return ret;
- 		}
- 		if (desc.flags & VRING_DESC_F_WRITE) {
- 			/* If this is an input descriptor,
-@@ -981,7 +982,7 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 			if (*in_num) {
- 				vq_err(vq, "Descriptor has out after in: "
- 				       "idx %d\n", i);
--				return vq->num;
-+				return -EINVAL;
- 			}
- 			*out_num += ret;
- 		}
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 44591ba..11ee13d 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -120,10 +120,10 @@ long vhost_dev_ioctl(struct vhost_dev *, unsigned int ioctl, unsigned long arg);
- int vhost_vq_access_ok(struct vhost_virtqueue *vq);
- int vhost_log_access_ok(struct vhost_dev *);
- 
--unsigned vhost_get_vq_desc(struct vhost_dev *, struct vhost_virtqueue *,
--			   struct iovec iov[], unsigned int iov_count,
--			   unsigned int *out_num, unsigned int *in_num,
--			   struct vhost_log *log, unsigned int *log_num);
-+int vhost_get_vq_desc(struct vhost_dev *, struct vhost_virtqueue *,
-+		      struct iovec iov[], unsigned int iov_count,
-+		      unsigned int *out_num, unsigned int *in_num,
-+		      struct vhost_log *log, unsigned int *log_num);
- void vhost_discard_vq_desc(struct vhost_virtqueue *);
- 
- int vhost_add_used(struct vhost_virtqueue *, unsigned int head, int len);
 -- 
-1.7.1.12.g42b7f
+error compiling committee.c: too many arguments to function
+
