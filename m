@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab0F0BDu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 21:03:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42871 "EHLO
+	id S1753916Ab0F0Bdh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Jun 2010 21:33:37 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41942 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab0F0BDq (ORCPT
+	with ESMTP id S1753086Ab0F0Bdf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 21:03:46 -0400
+	Sat, 26 Jun 2010 21:33:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=C7K078R4evTs9QHCqHL3w7ili7x9kO24kTLHdgfYfiNf1RrMKjpNq8I6CmtE3TtGwB
-         NwQ3C5YoSKkfYGcKQtdA6yTNvIIc0G9fpV6juM3JY70P1laOQzgAhcHjh7/P+o7jwFaL
-         yuYMAaQEmFPtfA66WR62SrHXPVzKEsSCCHJLA=
+         :cc:content-type:content-transfer-encoding;
+        b=v3o2FD+aCJWj72y7QVY9YcQ67FZ+KShJQ/9tYdyQtZmkw9bDeVc0fwT97Oio1QRdP8
+         Ldp/30iSLIgPIbQc3sgd5SDZpI/SfMQjIPfUZmxfSv0fKXPdEOg9qFp4tkIcWWuvC8iI
+         NTo7IbGcyzwRzJ4jL+qKQ4VsvWN3RjpjRD1eE=
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1006250857040.18900@router.home>
-References: <20100625201915.8067.A69D9226@jp.fujitsu.com>
-	<alpine.DEB.2.00.1006250857040.18900@router.home>
-Date: Sun, 27 Jun 2010 10:03:44 +0900
-Message-ID: <AANLkTimAF9O3kupOWHv2lLuZefDU7HLgq5ApnD-FE_Ng@mail.gmail.com>
-Subject: Re: [PATCH 1/2] vmscan: shrink_slab() require number of lru_pages, 
-	not page order
+In-Reply-To: <20100625110801.GB6896@shinshilla>
+References: <1276859270.3159.5.camel@shinshilla>
+	<20100618142252.GA31086@elliptictech.com>
+	<20100618154033.1e949749.rdunlap@xenotime.net>
+	<20100625110801.GB6896@shinshilla>
+Date: Sun, 27 Jun 2010 10:33:29 +0900
+Message-ID: <AANLkTinu8OkcfANcJAFELtiPXTC9pfJTDsdSXugJ2xN3@mail.gmail.com>
+Subject: Re: [PATCH v2] Documentation/sysctl/vm.txt typo
 From: Minchan Kim <minchan.kim@gmail.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+       Nick Bowler <nbowler@elliptictech.com>,
        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
+       Rik van Riel <riel@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 25, 2010 at 11:07 PM, Christoph Lameter
-<cl@linux-foundation.org> wrote:
-> On Fri, 25 Jun 2010, KOSAKI Motohiro wrote:
+Hello.
+
+On Fri, Jun 25, 2010 at 8:08 PM, Kulikov Vasiliy <segooon@gmail.com> wrote:
+> Fix trivial typo: duplicated word.
 >
->> Fix simple argument error. Usually 'order' is very small value than
->> lru_pages. then it can makes unnecessary icache dropping.
+> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> index 5fdbb61..82b2da1 100644
+> --- a/Documentation/sysctl/vm.txt
+> +++ b/Documentation/sysctl/vm.txt
+> @@ -196,7 +196,7 @@ controlled by this knob are discussed in Documentation/laptops/laptop-mode.txt.
 >
-> This is going to reduce the delta that is added to shrinker->nr
-> significantly thereby increasing the number of times that shrink_slab() is
-> called.
+>  legacy_va_layout
 >
-> What does the "lru_pages" parameter do in shrink_slab()? Looks
-> like its only role is as a divison factor in a complex calculation of
-> pages to be scanned.
-
-Yes. But I think it can make others confuse like this.
-
-Except zone_reclaim, lru_pages had been used for balancing slab
-reclaim VS page reclaim.
-So lru_page naming is a good.
-
-But in 0ff38490, you observed rather corner case.
-AFAIU with your description, you wanted to shrink slabs until
-unsuccessful or reached the limit.
-So you intentionally passed order instead of the number of lru pages
-for shrinking many slabs as possible as.
-
-So at least, we need some comment to prevent confusion.
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 9c7e57c..5523eae 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2626,6 +2626,9 @@ static int __zone_reclaim(struct zone *zone,
-gfp_t gfp_mask, unsigned int order)
-                 *
-                 * Note that shrink_slab will free memory on all zones and may
-                 * take a long time.
-+                *
-+                * We pass order instead of lru_pages for shrinking slab
-+                * as much as possible.
-                 */
-                while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
-                        zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
-
-
+> -If non-zero, this sysctl disables the new 32-bit mmap mmap layout - the kernel
+> +If non-zero, this sysctl disables the new 32-bit mmap layout - the kernel
+>  will use the legacy (2.4) layout for all processes.
 >
-> do_try_to_free_pages passes 0 as "lru_pages" to shrink_slab() when trying
-> to do cgroup lru scans. Why is that?
+>  ==============================================================
 >
 
-memcg doesn't call shrink_slab.
+Please, add your sign.
+You can refer 12) in Documentation/SubmittingPatch.
+
+Thanks for your contribution.
+
 
 
 -- 
