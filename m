@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab0F1MAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 08:00:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46280 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751199Ab0F1MAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 08:00:04 -0400
-Date: Mon, 28 Jun 2010 13:59:58 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Kulikov Vasiliy <segooon@gmail.com>, Minchan Kim <minchan.kim@gmail.com>,
-       Nick Bowler <nbowler@elliptictech.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Rik van Riel <riel@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v3] Documentation/sysctl/vm.txt typo
-In-Reply-To: <20100627130720.d9c16b83.rdunlap@xenotime.net>
-Message-ID: <alpine.LNX.2.00.1006281359420.13809@pobox.suse.cz>
-References: <1276859270.3159.5.camel@shinshilla> <20100618142252.GA31086@elliptictech.com> <20100618154033.1e949749.rdunlap@xenotime.net> <20100625110801.GB6896@shinshilla> <AANLkTinu8OkcfANcJAFELtiPXTC9pfJTDsdSXugJ2xN3@mail.gmail.com> <20100627035106.GA25692@shinshilla>
- <20100627130720.d9c16b83.rdunlap@xenotime.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753160Ab0F1MGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 08:06:06 -0400
+Received: from platinum.liacs.nl ([132.229.131.22]:57032 "EHLO
+	platinum.liacs.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab0F1MGA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 08:06:00 -0400
+X-Greylist: delayed 42752 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jun 2010 08:06:00 EDT
+Date: Mon, 28 Jun 2010 01:58:04 +0200
+Message-Id: <201006272358.o5RNw4Q2001493@platinum.liacs.nl>
+From: ACM ICMR <noreply@liacs.nl>
+To: linux-kernel@vger.kernel.org
+Reply-To: noreply@liacs.nl
+Subject: CFO: ACM Int. Conf. Multimedia Retrieval - ICMR2012
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.0 (platinum.liacs.nl [132.229.131.22]); Mon, 28 Jun 2010 01:58:05 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 27 Jun 2010, Randy Dunlap wrote:
 
-> On Sun, 27 Jun 2010 07:51:06 +0400 Kulikov Vasiliy wrote:
-> 
-> > Fix trivial typo: duplicated word.
-> > 
-> > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> 
-> Thanks.
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Kulikov, in the future, please send such small patches to:
-> 
-> TRIVIAL PATCHES
-> M:	Jiri Kosina <trivial@kernel.org>
-> T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git
-> S:	Maintained
-> 
-> 
-> Jiri, will you pick this up, please?
+ICMR 2012 - Call for Organizers
 
-Yup, applied, thanks.
+The ACM ICMR Steering Committee invites interested parties 
+to submit proposals to host and organize  
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+the ACM International Conference on Multimedia Retrieval, ICMR2012
+
+ICMR is the premier ACM scientific meeting aimed at 
+illuminating the state of the art in multimedia retrieval.  
+Toward that goal, ICMR brings together researchers and 
+practitioners in the field of multimedia retrieval to 
+present high quality, original research papers and for 
+sharing practitioner experiences. 
+
+
+Submission Deadline: 24 September 2010
+
+Email proposals or questions to the committee chair
+
+Michael Lew
+Leiden University
+mlew@liacs.nl
+
+Details are available at 
+
+http://press.liacs.nl/icmr/icmr2012.cfo.final.pdf
+
+All decisions are made by majority vote by the steering committee.
+
+ACM ICMR Steering Committee
+
+Chair: Michael S. Lew, Leiden University
+
+Committee Members:
+Nozha Boujemaa, INRIA
+Tat-Seng Chua, National University of Singapore
+Ling Guan, Ryerson University
+Thomas Huang, University of Illinois at Urbana-Champaign
+Yiannis Kompatsiaris, CERTH/ITI
+Jiebo Luo, Kodak Research
+Stephane Marchand-Maillet, University of Geneva
+Yong Rui, Microsoft Research
+Nicu Sebe, University of Treonto
+Alan Smeaton, Dublin City University
+Qi Tian, University of Arizona
+James Wang, Penn State University
+Marcel Worring, University of Amsterdam
+Hong-Jiang Zhang, Microsoft Research Asia
+
+
+
+
+
+
+
+----------------------
+
+If you prefer to have your address permanently removed, please send an email to icmr@liacs.nl with subject line as "REMOVE ICMR"
