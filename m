@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab0F0VYL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 17:24:11 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61024 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752523Ab0F0VYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 17:24:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,492,1272870000"; 
-   d="scan'208";a="812121550"
-Date: Sun, 27 Jun 2010 23:24:06 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Luotao Fu <l.fu@pengutronix.de>,
-       Rabin VINCENT <rabin.vincent@stericsson.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
-Subject: Re: [PATCH 5/5 V7] input: STMPE touch controller support
-Message-ID: <20100627212405.GA9264@sortiz-mobl>
-References: <20100624162407.GA18899@core.coreip.homeip.net>
- <1277455071-8572-1-git-send-email-l.fu@pengutronix.de>
- <20100625091116.GE8546@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100625091116.GE8546@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754620Ab0F0VvZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 17:51:25 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:56561 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753401Ab0F0VvY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 17:51:24 -0400
+Date: Sun, 27 Jun 2010 23:44:52 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kbuild@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/net/Makefile: conditionally descend to wireless
+Message-ID: <20100627234452.0f9d19f1@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Don't descend to wireless unless it is actually used.
 
-On Fri, Jun 25, 2010 at 02:11:16AM -0700, Dmitry Torokhov wrote:
-> On Fri, Jun 25, 2010 at 10:37:51AM +0200, Luotao Fu wrote:
-> > +
-> > +	/* 
-> 
-> Trailing whitespace.
-> 
-> > +	 * touch_det sometimes get desasserted or just get stuck. This appears
-> > +	 * to be a silicon bug, We still have to clearify this with the
-> > +	 * manufacture. As a workaround We release the key anyway if the
-> > +	 * touch_det keeps coming in after 4ms, while the FIFO contains no value
-> > +	 * during the whole time. 
-> 
-> Trailing whitespace.
-> 
-> > +
-> > +static int stmpe_init_hw(struct stmpe_touch *ts)
-> 
-> __devinit.
-> 
-> Otherwise:
-> 
-> 	Acked-by: Dmitry Torokhov <dtor@mail.ru>
-> 
-> I assume it will be merged through MFD tree?
-Yes, that's correct.
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/net/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Cheers,
-Samuel.
-
-
-> -- 
-> Dmitry
-
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index 0a0512a..9715c95 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -275,7 +275,7 @@ obj-$(CONFIG_USB_USBNET)        += usb/
+ obj-$(CONFIG_USB_ZD1201)        += usb/
+ obj-$(CONFIG_USB_IPHETH)        += usb/
+ 
+-obj-y += wireless/
++obj-$(CONFIG_WLAN) += wireless/
+ obj-$(CONFIG_NET_TULIP) += tulip/
+ obj-$(CONFIG_HAMRADIO) += hamradio/
+ obj-$(CONFIG_IRDA) += irda/
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.1
