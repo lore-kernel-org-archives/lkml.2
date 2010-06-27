@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab0F0DvQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Jun 2010 23:51:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34933 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388Ab0F0DvL (ORCPT
+	id S1751251Ab0F0EIb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 00:08:31 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45416 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab0F0EI1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Jun 2010 23:51:11 -0400
+	Sun, 27 Jun 2010 00:08:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=a4Uqn0nXnJGut3n/SGGZ3SNk1Wn3dJovBqJo+EnwIb834cv7LbXNk+Dndoqlf8+YQN
-         OS1SEtLBkgH2xruzYtzmiNEy8laMsuXGXHVjo0eltuRlXzt++FLnNYzRy00p2+lG2Zn9
-         gYhSzrgQk/3JU4c6fD0TbhWOuuIYl3VswAEIM=
-Date: Sun, 27 Jun 2010 07:51:06 +0400
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-       Nick Bowler <nbowler@elliptictech.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Rik van Riel <riel@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH v3] Documentation/sysctl/vm.txt typo
-Message-ID: <20100627035106.GA25692@shinshilla>
-References: <1276859270.3159.5.camel@shinshilla>
- <20100618142252.GA31086@elliptictech.com>
- <20100618154033.1e949749.rdunlap@xenotime.net>
- <20100625110801.GB6896@shinshilla>
- <AANLkTinu8OkcfANcJAFELtiPXTC9pfJTDsdSXugJ2xN3@mail.gmail.com>
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=TVEv1s4suaxR7hqiHQRoz0pmLysqDjStUrVk9CMkepV5SgVZuQQ3qtpJytSV/RR1tY
+         qLknYY34YSwJ0Ub4bltSgLa1j+dU0H0q5fkRN5NTZgY4PWfBvwG5fpxYfOiMqFbsR8tR
+         1E7CEy/w/vP2YK69W/rAR7uJZDtljjhmSwvgw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinu8OkcfANcJAFELtiPXTC9pfJTDsdSXugJ2xN3@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.44L0.1006201120210.22272-100000@netrider.rowland.org>
+References: <AANLkTikPOcNZk5ISX2WDHSmsPDw_a5_3Ic3owAbO4o0y@mail.gmail.com> 
+	<Pine.LNX.4.44L0.1006201120210.22272-100000@netrider.rowland.org>
+From: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>
+Date: Sat, 26 Jun 2010 21:08:07 -0700
+X-Google-Sender-Auth: 46l2N4zsxJx6rzBra3sAYW-2jI8
+Message-ID: <AANLkTiktmoiyX4c8x1XtJ353sv0flV5NqIQrptrDXPnM@mail.gmail.com>
+Subject: Re: [linux-pm] wait_for_completion_interruptible does not wait !!
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-omap@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       vivin uthappa <vivinuthappa@gmail.com>,
+       Sudhakar R <sudhakar.raj@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix trivial typo: duplicated word.
+On Sun, Jun 20, 2010 at 8:52 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>
+> What happens if the variable is completed while nobody is waiting for
+> it?  The next time somebody tries to wait, won't the wait terminate
+> immediately?
+>
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+Haven't tested it but will reply with the answer once I get a chance to test it.
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 5fdbb61..82b2da1 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -196,7 +196,7 @@ controlled by this knob are discussed in Documentation/laptops/laptop-mode.txt.
 
- legacy_va_layout
+>> I tried wait_for_completion instead, but now the kernel refuses to suspend.
+>>
+>> I have tried wait queues and mutexs with no success.
+>>
+>> Could anyone please point me how I can resolve this issue? Is there
+>> any construct which can block inside the kernel during suspend/resume?
+>
+> Yes: The freezer.
+>
+>> Can there be a blocking call active while we suspend?
+>
+> Yes, in theory.  In practice it's not a good idea, since the call
+> wouldn't be able to distinguish between an actual signal and the onset
+> of a suspend.  You might end up with a call that ignores all signals
+> and hence cannot be interrupted.
+>
 
--If non-zero, this sysctl disables the new 32-bit mmap mmap layout - the kernel
-+If non-zero, this sysctl disables the new 32-bit mmap layout - the kernel
- will use the legacy (2.4) layout for all processes.
+Just for the information of others on the list, here is what we did to
+solve this issue, we designed a freezer-friendly wrapper around
+wait_for_completion_interruptible()
 
- ==============================================================
+<SNIP>
+#define wait_for_completion_freezable(ptr_completion)           \
+({                                                              \
+   int __retval;                                                \
+   do {                                                         \
+       __retval = wait_for_completion_interruptible(            \
+                       ptr_completion);                         \
+       if (__retval && !freezing(current))                      \
+           break;                                               \
+   } while (try_to_freeze());                                   \
+   __retval;                                                    \
+})
 
+</SNIP>
+
+Thanks
+Suresh
