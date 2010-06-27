@@ -1,121 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab0F0IuQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 04:50:16 -0400
-Received: from sh.osrg.net ([192.16.179.4]:46112 "EHLO sh.osrg.net"
+	id S1754618Ab0F0JEk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 05:04:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24217 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753226Ab0F0IuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 04:50:12 -0400
-Date: Sun, 27 Jun 2010 17:49:29 +0900
-To: snitzer@redhat.com
-Cc: hch@lst.de, axboe@kernel.dk, dm-devel@redhat.com, James.Bottomley@suse.de,
-       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
-       akpm@linux-foundation.org
-Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
- payload
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1277582211-10725-1-git-send-email-snitzer@redhat.com>
-References: <20100622180029.GA15950@redhat.com>
-	<1277582211-10725-1-git-send-email-snitzer@redhat.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100627174721D.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 27 Jun 2010 17:49:32 +0900 (JST)
+	id S1752701Ab0F0JEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 05:04:37 -0400
+Date: Sun, 27 Jun 2010 11:59:07 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sridhar Samudrala <samudrala@us.ibm.com>, Arnd Bergmann <arnd@arndb.de>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Juan Quintela <quintela@redhat.com>,
+       Rusty Russell <rusty@rustcorp.com.au>, Jes.Sorensen@redhat.com,
+       kraxel@redhat.com, Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+       kvm@vger.kernel.org, virtualization@lists.osdl.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] vhost: break out of polling loop on error
+Message-ID: <20100627085907.GA8588@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Jun 2010 15:56:50 -0400
-Mike Snitzer <snitzer@redhat.com> wrote:
+When ring parsing fails, we currently handle this
+as ring empty condition. This means that we enable
+kicks and recheck ring empty: if this not empty,
+we re-start polling which of course will fail again.
 
-> Fix leaks introduced via "block: don't allocate a payload for discard
-> request" commit a1d949f5f44.
-> 
-> sd_done() is not called for REQ_TYPE_BLOCK_PC commands so cleanup
-> discard request's payload directly in scsi_finish_command().
+Instead, let's return a negative error code and stop polling.
 
-Instead of adding another discard hack to scsi_finish_command(), how
-about converting discard to REQ_TYPE_FS request? discard is FS request
-from the perspective of the block layer. It also fixes a problem that
-discard isn't retried in the case of UNIT ATTENTION.
-
-I think that we can get more cleaner code if we handle discard as
-normal (fs) request in the block layer (and scsi-ml). We need more
-changes but this patch is the first step.
-
-This patch depends on the patchset to convert flush request to
-REQ_TYPE_FS:
-
-http://marc.info/?l=linux-kernel&m=127730591527424&w=2
-
-The git tree is also available:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/tomo/linux-2.6-misc.git flush
-
-
-> Also cleanup page allocated for discard payload in
-> scsi_setup_discard_cmnd's scsi_setup_blk_pc_cmnd error path.
-
-This patch doesn't address on this (since it's a different problem). I
-think that scsi_setup_discard_cmnd() sees if it already allocates a
-page before allocating a page. That's similar to how other prep
-functions work, I think.
-
-=
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH] convert discard request to REQ_TYPE_FS instead of BLOCK_PC
-
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- block/blk-lib.c   |    4 ++++
- drivers/scsi/sd.c |   11 +----------
- 2 files changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index e16185b..9e15c46 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -20,6 +20,10 @@ static void blkdev_discard_end_io(struct bio *bio, int err)
- 	if (bio->bi_private)
- 		complete(bio->bi_private);
- 
-+	/* free the page that the lower layer allocated */
-+	if (bio_page(bio))
-+		__free_page(bio_page(bio));
-+
- 	bio_put(bio);
- }
- 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index d447726..1b182de 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -432,7 +432,7 @@ static int scsi_setup_discard_cmnd(struct scsi_device *sdp, struct request *rq)
- 		nr_sectors >>= 3;
+Dave, I'm sending this out so it can get reviewed.
+I'll put this on my vhost tree
+so no need for you to pick this patch directly.
+
+ drivers/vhost/net.c   |   12 ++++++++++--
+ drivers/vhost/vhost.c |   33 +++++++++++++++++----------------
+ drivers/vhost/vhost.h |    8 ++++----
+ 3 files changed, 31 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 0f41c91..54096ee 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -98,7 +98,8 @@ static void tx_poll_start(struct vhost_net *net, struct socket *sock)
+ static void handle_tx(struct vhost_net *net)
+ {
+ 	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
+-	unsigned head, out, in, s;
++	unsigned out, in, s;
++	int head;
+ 	struct msghdr msg = {
+ 		.msg_name = NULL,
+ 		.msg_namelen = 0,
+@@ -135,6 +136,9 @@ static void handle_tx(struct vhost_net *net)
+ 					 ARRAY_SIZE(vq->iov),
+ 					 &out, &in,
+ 					 NULL, NULL);
++		/* On error, stop handling until the next kick. */
++		if (head < 0)
++			break;
+ 		/* Nothing new?  Wait for eventfd to tell us they refilled. */
+ 		if (head == vq->num) {
+ 			wmem = atomic_read(&sock->sk->sk_wmem_alloc);
+@@ -192,7 +196,8 @@ static void handle_tx(struct vhost_net *net)
+ static void handle_rx(struct vhost_net *net)
+ {
+ 	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_RX];
+-	unsigned head, out, in, log, s;
++	unsigned out, in, log, s;
++	int head;
+ 	struct vhost_log *vq_log;
+ 	struct msghdr msg = {
+ 		.msg_name = NULL,
+@@ -228,6 +233,9 @@ static void handle_rx(struct vhost_net *net)
+ 					 ARRAY_SIZE(vq->iov),
+ 					 &out, &in,
+ 					 vq_log, &log);
++		/* On error, stop handling until the next kick. */
++		if (head < 0)
++			break;
+ 		/* OK, now we need to know about added descriptors. */
+ 		if (head == vq->num) {
+ 			if (unlikely(vhost_enable_notify(vq))) {
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 3b83382..5ccd384 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -873,12 +873,13 @@ static unsigned get_indirect(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+  * number of output then some number of input descriptors, it's actually two
+  * iovecs, but we pack them into one and note how many of each there were.
+  *
+- * This function returns the descriptor number found, or vq->num (which
+- * is never a valid descriptor number) if none was found. */
+-unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+-			   struct iovec iov[], unsigned int iov_size,
+-			   unsigned int *out_num, unsigned int *in_num,
+-			   struct vhost_log *log, unsigned int *log_num)
++ * This function returns the descriptor number found, or vq->num (which is
++ * never a valid descriptor number) if none was found.  A negative code is
++ * returned on error. */
++int vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
++		      struct iovec iov[], unsigned int iov_size,
++		      unsigned int *out_num, unsigned int *in_num,
++		      struct vhost_log *log, unsigned int *log_num)
+ {
+ 	struct vring_desc desc;
+ 	unsigned int i, head, found = 0;
+@@ -890,13 +891,13 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+ 	if (get_user(vq->avail_idx, &vq->avail->idx)) {
+ 		vq_err(vq, "Failed to access avail idx at %p\n",
+ 		       &vq->avail->idx);
+-		return vq->num;
++		return -EFAULT;
  	}
  
--	rq->cmd_type = REQ_TYPE_BLOCK_PC;
-+	rq->cmd_type = REQ_TYPE_FS;
- 	rq->timeout = SD_TIMEOUT;
+ 	if ((u16)(vq->avail_idx - last_avail_idx) > vq->num) {
+ 		vq_err(vq, "Guest moved used index from %u to %u",
+ 		       last_avail_idx, vq->avail_idx);
+-		return vq->num;
++		return -EFAULT;
+ 	}
  
- 	memset(rq->cmd, 0, rq->cmd_len);
-@@ -1177,15 +1177,6 @@ static int sd_done(struct scsi_cmnd *SCpnt)
- 	int sense_valid = 0;
- 	int sense_deferred = 0;
+ 	/* If there's nothing new since last we looked, return invalid. */
+@@ -912,14 +913,14 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+ 		vq_err(vq, "Failed to read head: idx %d address %p\n",
+ 		       last_avail_idx,
+ 		       &vq->avail->ring[last_avail_idx % vq->num]);
+-		return vq->num;
++		return -EFAULT;
+ 	}
  
--	/*
--	 * If this is a discard request that originated from the kernel
--	 * we need to free our payload here.  Note that we need to check
--	 * the request flag as the normal payload rules apply for
--	 * pass-through UNMAP / WRITE SAME requests.
--	 */
--	if (SCpnt->request->cmd_flags & REQ_DISCARD)
--		__free_page(bio_page(SCpnt->request->bio));
--
- 	if (result) {
- 		sense_valid = scsi_command_normalize_sense(SCpnt, &sshdr);
- 		if (sense_valid)
+ 	/* If their number is silly, that's an error. */
+ 	if (head >= vq->num) {
+ 		vq_err(vq, "Guest says index %u > %u is available",
+ 		       head, vq->num);
+-		return vq->num;
++		return -EINVAL;
+ 	}
+ 
+ 	/* When we start there are none of either input nor output. */
+@@ -933,19 +934,19 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+ 		if (i >= vq->num) {
+ 			vq_err(vq, "Desc index is %u > %u, head = %u",
+ 			       i, vq->num, head);
+-			return vq->num;
++			return -EINVAL;
+ 		}
+ 		if (++found > vq->num) {
+ 			vq_err(vq, "Loop detected: last one at %u "
+ 			       "vq size %u head %u\n",
+ 			       i, vq->num, head);
+-			return vq->num;
++			return -EINVAL;
+ 		}
+ 		ret = copy_from_user(&desc, vq->desc + i, sizeof desc);
+ 		if (ret) {
+ 			vq_err(vq, "Failed to get descriptor: idx %d addr %p\n",
+ 			       i, vq->desc + i);
+-			return vq->num;
++			return -EFAULT;
+ 		}
+ 		if (desc.flags & VRING_DESC_F_INDIRECT) {
+ 			ret = get_indirect(dev, vq, iov, iov_size,
+@@ -954,7 +955,7 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+ 			if (ret < 0) {
+ 				vq_err(vq, "Failure detected "
+ 				       "in indirect descriptor at idx %d\n", i);
+-				return vq->num;
++				return ret;
+ 			}
+ 			continue;
+ 		}
+@@ -964,7 +965,7 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+ 		if (ret < 0) {
+ 			vq_err(vq, "Translation failure %d descriptor idx %d\n",
+ 			       ret, i);
+-			return vq->num;
++			return ret;
+ 		}
+ 		if (desc.flags & VRING_DESC_F_WRITE) {
+ 			/* If this is an input descriptor,
+@@ -981,7 +982,7 @@ unsigned vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+ 			if (*in_num) {
+ 				vq_err(vq, "Descriptor has out after in: "
+ 				       "idx %d\n", i);
+-				return vq->num;
++				return -EINVAL;
+ 			}
+ 			*out_num += ret;
+ 		}
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 44591ba..11ee13d 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -120,10 +120,10 @@ long vhost_dev_ioctl(struct vhost_dev *, unsigned int ioctl, unsigned long arg);
+ int vhost_vq_access_ok(struct vhost_virtqueue *vq);
+ int vhost_log_access_ok(struct vhost_dev *);
+ 
+-unsigned vhost_get_vq_desc(struct vhost_dev *, struct vhost_virtqueue *,
+-			   struct iovec iov[], unsigned int iov_count,
+-			   unsigned int *out_num, unsigned int *in_num,
+-			   struct vhost_log *log, unsigned int *log_num);
++int vhost_get_vq_desc(struct vhost_dev *, struct vhost_virtqueue *,
++		      struct iovec iov[], unsigned int iov_count,
++		      unsigned int *out_num, unsigned int *in_num,
++		      struct vhost_log *log, unsigned int *log_num);
+ void vhost_discard_vq_desc(struct vhost_virtqueue *);
+ 
+ int vhost_add_used(struct vhost_virtqueue *, unsigned int head, int len);
 -- 
-1.6.5
-
+1.7.1.12.g42b7f
