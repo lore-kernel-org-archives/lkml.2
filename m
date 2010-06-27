@@ -1,107 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab0F0NWm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 09:22:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47857 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab0F0NWl (ORCPT
+	id S1755331Ab0F0N3h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 09:29:37 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42003 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755167Ab0F0N3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 09:22:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=bs1VlBWa9mA96z3/jvrDRbyihkvDG4q6CfOLrJrDjw5cuzdpp5vPFN5Q9IbRyI0bkq
-         8koB9Zp++F7LprtHw4fQLGQs5pOdbMa+sOw3K2yW7GKIRC14YrrBL69k/5CdsHv1HtRU
-         KJn7zcnXESDBhZcGUIMpmg7QiJovIPIYJs2KM=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Lior Dotan <liodot@gmail.com>, <charrer@alacritech.com>,
-       Denis Kirjanov <kirjanov@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jpirko@redhat.com>,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] staging: slicoss: error handling with goto
-Date: Sun, 27 Jun 2010 17:20:47 +0400
-Message-Id: <1277644847-16292-5-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1277644847-16292-1-git-send-email-segooon@gmail.com>
-References: <1277644847-16292-1-git-send-email-segooon@gmail.com>
+	Sun, 27 Jun 2010 09:29:34 -0400
+Date: Sun, 27 Jun 2010 14:35:18 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Samo Pogacnik <samo_pogacnik@t-2.net>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+       linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+Message-ID: <20100627143518.104ef190@lxorguk.ukuu.org.uk>
+In-Reply-To: <1277516912.29797.411.camel@itpsd6lap>
+References: <1273918658.2341.17.camel@itpsd6lap>
+	<1275171436.2122.29.camel@itpsd6lap>
+	<20100529235402.296406d9@lxorguk.ukuu.org.uk>
+	<1275175983.2122.42.camel@itpsd6lap>
+	<1276123020.16010.97.camel@itpsd6lap>
+	<20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
+	<1276291932.2154.45.camel@itpsd6lap>
+	<20100621153858.444695c0@lxorguk.ukuu.org.uk>
+	<1277244410.2195.47.camel@itpsd6lap>
+	<20100622232108.26752ff8@lxorguk.ukuu.org.uk>
+	<1277462596.2143.101.camel@itpsd6lap>
+	<20100625120329.1303aa61@lxorguk.ukuu.org.uk>
+	<1277516912.29797.411.camel@itpsd6lap>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes error handling more readable due to 'goto err' pattern.
+> I thought that this would automatically reduce processor load, which is
+> obviously not the case. Sorry for the delay, but i am trying to figure
+> out how to slow down write method when under pressure.
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- drivers/staging/slicoss/slicoss.c |   28 +++++++++++++++-------------
- 1 files changed, 15 insertions(+), 13 deletions(-)
+Ok I played with this a bit. Much to my surprise until I thought about it
+in detail it all works fine without any of the ratelimiting at all. There
+is a problem if you manage to redirect the console *in kernel* to the
+printk driver, but that needs stopping anyway and rate limit won't fix it
+(you blow the stack before it kicks in)
 
-diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-index d8c952e..478ba3b 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -1451,7 +1451,7 @@ static int slic_if_init(struct adapter *adapter)
- 	struct net_device *dev = adapter->netdev;
- 	__iomem struct slic_regs *slic_regs = adapter->slic_regs;
- 	struct slic_shmem *pshmem;
--	int status = 0;
-+	int rc;
- 
- 	ASSERT(card);
- 
-@@ -1459,7 +1459,8 @@ static int slic_if_init(struct adapter *adapter)
- 	if (adapter->state != ADAPT_DOWN) {
- 		dev_err(&dev->dev, "%s: adapter->state != ADAPT_DOWN\n",
- 			__func__);
--		return -EIO;
-+		rc = -EIO;
-+		goto err;
- 	}
- 	ASSERT(adapter->linkstate == LINK_DOWN);
- 
-@@ -1475,22 +1476,22 @@ static int slic_if_init(struct adapter *adapter)
- 		if (dev->flags & IFF_MULTICAST)
- 			adapter->macopts |= MAC_MCAST;
- 	}
--	status = slic_adapter_allocresources(adapter);
--	if (status != 0) {
-+	rc = slic_adapter_allocresources(adapter);
-+	if (rc) {
- 		dev_err(&dev->dev,
- 			"%s: slic_adapter_allocresources FAILED %x\n",
--			__func__, status);
-+			__func__, rc);
- 		slic_adapter_freeresources(adapter);
--		return status;
-+		goto err;
- 	}
- 
- 	if (!adapter->queues_initialized) {
--		if (slic_rspqueue_init(adapter))
--			return -ENOMEM;
--		if (slic_cmdq_init(adapter))
--			return -ENOMEM;
--		if (slic_rcvqueue_init(adapter))
--			return -ENOMEM;
-+		if ((rc = slic_rspqueue_init(adapter)))
-+			goto err;
-+		if ((rc = slic_cmdq_init(adapter)))
-+			goto err;
-+		if ((rc = slic_rcvqueue_init(adapter)))
-+			goto err;
- 		adapter->queues_initialized = 1;
- 	}
- 
-@@ -1553,7 +1554,8 @@ static int slic_if_init(struct adapter *adapter)
- 	slic_link_config(adapter, LINK_AUTOSPEED, LINK_AUTOD);
- 	slic_link_event_handler(adapter);
- 
--	return 0;
-+err:
-+	return rc;
- }
- 
- static void slic_unmap_mmio_space(struct adapter *adapter)
--- 
-1.7.0.4
+In the case where userspace loads it hard and its a graphical console
+then we use a lot of CPU power drawing stuff on screen, but killing the
+process does as is expected.
 
+With a serial console the printk itself blocks which blocks the line
+discipline which in turn slows stuff down.
+
+The only two bad things I can see how to cause are
+
+- Slowing down output by stuffing lots of extra data into the port (which
+  I can do anyway just fine) so isn't worse than before.
+
+- Filling up the dmesg log easily and hiding important messages. Not
+  really a problem in this case bcause the whole point of this is
+  embedded and capturing those messages as if they were system ones.
+
+So much to my surprise the flow control is a red herring and best left
+out.
+
+Alan
