@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab0F0PIy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 11:08:54 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53590 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755420Ab0F0PIw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 11:08:52 -0400
-Subject: Re: [PATCH -mm 1/2] scsi: remove dma_is_consistent usage in 53c700
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: akpm@linux-foundation.org, grundler@parisc-linux.org, lethal@linux-sh.org,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-In-Reply-To: <1277633423-5700-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1277633423-5700-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 27 Jun 2010 10:08:48 -0500
-Message-ID: <1277651328.4366.7.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1755517Ab0F0PMI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 11:12:08 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:53128 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754697Ab0F0PMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 11:12:06 -0400
+Date: Sun, 27 Jun 2010 08:10:47 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>, Jean Delvare <khali@linux-fr.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Ira W. Snyder" <iws@ovro.caltech.edu>,
+       Hans de Goede <hdegoede@redhat.com>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v3 1/4] hwmon: Driver for SMM665 Six-Channel Active DC
+ Output Controller/Monitor
+Message-ID: <20100627151047.GA5731@ericsson.com>
+References: <1277416861-32494-1-git-send-email-guenter.roeck@ericsson.com>
+ <1277416861-32494-2-git-send-email-guenter.roeck@ericsson.com>
+ <20100627102058.GB2845@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100627102058.GB2845@sirena.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-06-27 at 19:10 +0900, FUJITA Tomonori wrote:
-> 53c700 is the only user of dma_is_consistent():
+On Sun, Jun 27, 2010 at 06:20:59AM -0400, Mark Brown wrote:
+> On Thu, Jun 24, 2010 at 03:00:58PM -0700, Guenter Roeck wrote:
+> > This driver adds support for the monitoring features of the Summit
+> > Microelectronics SMM665 Six-Channel Active DC Output Controller/Monitor.
 > 
-> BUG_ON(!dma_is_consistent(hostdata->dev, pScript) && L1_CACHE_BYTES < dma_get_cache_alignment());
+> A bit late to the game here but this looks like the chip has some
+> regulator control functionality as well as monitoring functionality (and
+> the product page on the Summit web site suggests so also).  This means
+> that when fully supported in software the driver would cross multiple
+> subsystems so it might make sense to start off with a MFD rather than
+> direct I2C control?  
 > 
-> The above code tries to see if the system can allocate coherent memory
-> or not. It's for some old systems that can't allocate coherent memory
-> at all (e.g some parisc systems).
+> If the non-monitoring functionality can't be controlled from software
+> this isn't an issue.
 
-Actually, that's not the right explanation.  The BUG_ON is because of an
-efficiency in the driver ... it's nothing to do with the architecture.
+I thought about that when I started working on the driver, but concluded that 
+it does not really make sense.
 
-The driver uses a set of mailboxes, but for efficiency's sake, it packs
-them into a single coherent area and separates the different usages by a
-L1 cache stride).  On architectures capable of manufacturing coherent
-memory, this is a nice speed up in the DMA infrastructure.  However, for
-incoherent architectures, it's fatal if the dma coherence stride is
-greater than the L1 cache size, because now we'll get data corruption
-due to cacheline interference.  That's what the BUG_ON is checking for.
+The chip is commonly used to control all supply voltages on a board.
+Changing those voltages is not a good idea. For that reason, the chip can be 
+set into read-only mode, where changing the voltages is no longer possible
+after initial programming.
 
-> I think that we can safely remove the above usage:
-> 
-> - such old systems haven't triger the above checking for long.
-> 
-> - the above condition is important for systems that can't allocate
->   coherent memory if these systems do DMA. So probably it would be
->   better to have such checking in arch's DMA initialization code
->   instead of a driver.
+While it is theoretically possible that someone might use the device to control
+not only fixed but also dynamic voltages, I think that is highly unlikely, given
+the risk involved in blowing up the board. Thus, moving the driver to mfd would 
+effectively serve no real purpose other than to cause confusion and add unnecessary
+complexity.
 
-Well, we can't check in the architecture because it's a driver specific
-thing ... I suppose making it a rule that dma_get_cache_alignment()
-*must* be <= L1_CACHE_BYTES fixes it ... we seem to have no architecture
-violating that, so just add it to the documentation, and the check can
-go.
-
-James
-
-
+Guenter
