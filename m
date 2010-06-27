@@ -1,91 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab0F0PuJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 11:50:09 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:36796 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755464Ab0F0PuH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 11:50:07 -0400
-Date: Sun, 27 Jun 2010 11:50:05 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: linux-pm@lists.linux-foundation.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>,
-       Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Florian Mickler <florian@mickler.org>, <linux-pci@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being
- lost
-In-Reply-To: <201006261514.13491.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1006271142190.3772-100000@netrider.rowland.org>
+	id S1755688Ab0F0PwV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 11:52:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8519 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755482Ab0F0PwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 11:52:19 -0400
+Date: Sun, 27 Jun 2010 18:46:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sridhar Samudrala <samudrala@us.ibm.com>,
+       "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+       virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] vhost-net: add dhclient work-around from userspace
+Message-ID: <20100627154657.GA9723@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100626.200320.43025947.davem@davemloft.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Jun 2010, Rafael J. Wysocki wrote:
+Userspace virtio server has the following hack
+so guests rely on it, and we have to replicate it, too:
 
-> +void pm_relax(void)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&events_lock, flags);
-> +	if (events_in_progress) {
-> +		event_count++;
-> +		if (!--events_in_progress)
-> +			wake_up_all(&events_wait_queue);
-> +	}
-> +	spin_unlock_irqrestore(&events_lock, flags);
-> +}
+use source port to detect incoming IPv4 DHCP response packets,
+and fill in the checksum for these.
 
-> +bool pm_get_wakeup_count(unsigned long *count)
-> +{
-> +	bool ret;
-> +
-> +	spin_lock_irq(&events_lock);
-> +	if (capable(CAP_SYS_ADMIN))
-> +		events_check_enabled = false;
-> +
-> +	if (events_in_progress) {
-> +		DEFINE_WAIT(wait);
-> +
-> +		do {
-> +			prepare_to_wait(&events_wait_queue, &wait,
-> +					TASK_INTERRUPTIBLE);
-> +			if (!events_in_progress)
-> +				break;
-> +			spin_unlock_irq(&events_lock);
-> +
-> +			schedule();
-> +
-> +			spin_lock_irq(&events_lock);
-> +		} while (!signal_pending(current));
-> +		finish_wait(&events_wait_queue, &wait);
-> +	}
-> +	*count = event_count;
-> +	ret = !events_in_progress;
-> +	spin_unlock_irq(&events_lock);
-> +	return ret;
-> +}
+The issue we are solving is that on linux guests, some apps
+that use recvmsg with AF_PACKET sockets, don't know how to
+handle CHECKSUM_PARTIAL;
+The interface to return the relevant information was added
+in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
+and older userspace does not use it.
+One important user of recvmsg with AF_PACKET is dhclient,
+so we add a work-around just for DHCP.
 
-Here's a thought.  Presumably pm_relax() will end up getting called a 
-lot more often than pm_get_wakeup_count().  Instead of using a wait 
-queue, you could make pm_get_wakeup_count() poll at 100-ms intervals.  
-The total overhead would be smaller.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-Here's another thought.  If event_count and events_in_progress were 
-atomic_t then the new spinlock wouldn't be needed at all.  (But you 
-would need an appropriate pair of memory barriers, to guarantee that 
-when a writer decrements events_in_progress to 0 and increments 
-event_count, a reader won't see events_in_progress == 0 without also 
-seeing the incremented event_count.)  Overall, this may not be a
-significant improvement.
+So here's what I came up with: I basically copied
+the work-around from userspace virtio.
+As suggested by Dave (assuming I understood the suggestion
+correctly) this implements the workaround in vhost-net, so
+other tun users don't start relying on it.
+Untested.
 
-Alan Stern
+ drivers/vhost/net.c |   42 +++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 41 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 54096ee..9ed4051 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -25,6 +25,10 @@
+ #include <linux/if_tun.h>
+ #include <linux/if_macvlan.h>
+ 
++#include <linux/ip.h>
++#include <linux/udp.h>
++#include <linux/netdevice.h>
++
+ #include <net/sock.h>
+ 
+ #include "vhost.h"
+@@ -191,6 +195,42 @@ static void handle_tx(struct vhost_net *net)
+ 	unuse_mm(net->dev.mm);
+ }
+ 
++static int peek_head(struct sock *sk)
++{
++	struct sk_buff *head;
++	int ret;
++
++	lock_sock(sk);
++	head = skb_peek(&sk->sk_receive_queue);
++	if (likely(head)) {
++		ret = 1;
++		/* Userspace virtio server has the following hack so
++		 * guests rely on it, and we have to replicate it, too: */
++		/* On linux guests, some apps that use recvmsg with AF_PACKET
++		 * sockets, don't know how to handle CHECKSUM_PARTIAL;
++		 * The interface to return the relevant information was added in
++		 * 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
++		 * and older userspace does not use it.
++		 * One important user of recvmsg with AF_PACKET is dhclient,
++		 * so we add a work-around just for DHCP. */
++		/* We use source port to detect DHCP packets. */
++		if (skb->ip_summed == CHECKSUM_PARTIAL &&
++		    skb->protocol == htons(ETH_P_IP) &&
++		    skb_network_header_len(skb) >= sizeof(struct iphdr) &&
++		    ip_hdr(skb)->protocol == IPPRODO_UDP &&
++		    skb_headlen(skb) >= skb_transport_offset(skb) + sizeof(struct udphdr) &&
++		    udp_hdr(skb)->source == htons(0x67)) {
++			skb_checksum_help(skb);
++			/* Restore ip_summed value: tun passes it to user. */
++			skb->ip_summed = CHECKSUM_PARTIAL;
++		}
++	} else {
++		ret = 0;
++	}
++	release_sock(sk);
++	return len;
++}
++
+ /* Expects to be always run from workqueue - which acts as
+  * read-size critical section for our kind of RCU. */
+ static void handle_rx(struct vhost_net *net)
+@@ -228,7 +268,7 @@ static void handle_rx(struct vhost_net *net)
+ 	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
+ 		vq->log : NULL;
+ 
+-	for (;;) {
++	while (peek_head(sock)) {
+ 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+ 					 ARRAY_SIZE(vq->iov),
+ 					 &out, &in,
+-- 
+1.7.1.12.g42b7f
