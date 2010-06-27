@@ -1,142 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab0F0Qy3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 12:54:29 -0400
-Received: from smtp109.prem.mail.sp1.yahoo.com ([98.136.44.54]:43866 "HELO
-	smtp109.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755577Ab0F0Qy1 (ORCPT
+	id S1755903Ab0F0RAf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 13:00:35 -0400
+Received: from usmamail.tilera.com ([72.1.168.231]:16710 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755623Ab0F0RAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 12:54:27 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: WnacHysVM1kZ.OprkgBBddz9qDrV3kGm04zmyRAvHzJUE4w
- FpSWZJAlMIvKg9rV1LFneu8IYaGX7iHTs_hEcTXAfrZhxayPZ.vzH_0KXd1s
- H7plz7Hvs6zT3q1vqDOSfkswMS96PKy9N1OL_F5ZCgKps6n4wAPlcBsEtzlA
- 8pW7BwSArj1GEBjPrxdhh8u3UafSbXoRqTBRXYVD.RkM3FTK1Cvf5WCmnAb3
- Wkz826WhwUFLjr2LvbGoRl.wG.NdgZa30n.OweXuvbaUVzUWZJvQHy1DlS7M
- _BpnJg35gyN9_P2p8vJoUbXXJlluZycZcxd6hIw7oTrPmUUyu2hWkaA--
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4C278241.2020308@schaufler-ca.com>
-Date: Sun, 27 Jun 2010 09:54:25 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Sun, 27 Jun 2010 13:00:34 -0400
+Message-ID: <4C2783AD.3010403@tilera.com>
+Date: Sun, 27 Jun 2010 13:00:29 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-       David Safford <safford@watson.ibm.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH 02/15] security: move LSM xattrnames to xattr.h
-References: <1277403031-3080-1-git-send-email-zohar@linux.vnet.ibm.com>	 <1277403031-3080-3-git-send-email-zohar@linux.vnet.ibm.com>	 <4C242745.6050801@schaufler-ca.com> <1277464506.3220.5.camel@localhost.localdomain>
-In-Reply-To: <1277464506.3220.5.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/tile: Add driver to enable access to the user dynamic
+ network.
+References: <201006252110.o5PLArvw010770@farm-0002.internal.tilera.com> <201006261316.12816.arnd@arndb.de>
+In-Reply-To: <201006261316.12816.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar wrote:
-> On Thu, 2010-06-24 at 20:49 -0700, Casey Schaufler wrote: 
+On 6/26/2010 7:16 AM, Arnd Bergmann wrote:
+> On Friday 25 June 2010, Chris Metcalf wrote:
 >   
->> Mimi Zohar wrote:
+>> The original submission of this code to LKML had the driver
+>> instantiated under /proc/tile/hardwall.  Now we just use a character
+>> device for this, conventionally /dev/hardwall.  Some futures planning
+>> for the TILE-Gx chip suggests that we may want to have other types of
+>> devices that share the general model of "bind a task to a cpu, then
+>> 'activate' a file descriptor on a pseudo-device that gives access to
+>> some hardware resource".  As such, we are using a device rather
+>> than, for example, a syscall, to set up and activate this code.
 >>     
->>> Make the security extended attributes names global.
->>>
->>> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
->>> Acked-by: Serge Hallyn <serue@us.ibm.com>
->>> ---
->>>  include/linux/capability.h |    3 ---
->>>  include/linux/xattr.h      |   10 ++++++++++
->>>  security/selinux/hooks.c   |    3 ---
->>>  security/smack/smack.h     |    2 --
->>>  4 files changed, 10 insertions(+), 8 deletions(-)
->>>
->>> diff --git a/include/linux/capability.h b/include/linux/capability.h
->>> index 39e5ff5..90012b9 100644
->>> --- a/include/linux/capability.h
->>> +++ b/include/linux/capability.h
->>> @@ -49,9 +49,6 @@ typedef struct __user_cap_data_struct {
->>>  } __user *cap_user_data_t;
->>>  
->>>  
->>> -#define XATTR_CAPS_SUFFIX "capability"
->>> -#define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
->>> -
->>>  #define VFS_CAP_REVISION_MASK	0xFF000000
->>>  #define VFS_CAP_REVISION_SHIFT	24
->>>  #define VFS_CAP_FLAGS_MASK	~VFS_CAP_REVISION_MASK
->>> diff --git a/include/linux/xattr.h b/include/linux/xattr.h
->>> index 0cfa1e9..62ca853 100644
->>> --- a/include/linux/xattr.h
->>> +++ b/include/linux/xattr.h
->>> @@ -33,6 +33,16 @@
->>>  #define XATTR_USER_PREFIX "user."
->>>  #define XATTR_USER_PREFIX_LEN (sizeof (XATTR_USER_PREFIX) - 1)
->>>  
->>> +/* Security namespace */
->>> +#define XATTR_SELINUX_SUFFIX "selinux"
->>> +#define XATTR_NAME_SELINUX XATTR_SECURITY_PREFIX XATTR_SELINUX_SUFFIX
->>> +
->>> +#define XATTR_SMACK_SUFFIX "SMACK64"
->>> +#define XATTR_NAME_SMACK XATTR_SECURITY_PREFIX XATTR_SMACK_SUFFIX
->>> +
->>> +#define XATTR_CAPS_SUFFIX "capability"
->>> +#define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
->>> +
->>>  struct inode;
->>>  struct dentry;
->>>  
->>> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
->>> index 0f524b7..85338f0 100644
->>> --- a/security/selinux/hooks.c
->>> +++ b/security/selinux/hooks.c
->>> @@ -87,9 +87,6 @@
->>>  #include "netlabel.h"
->>>  #include "audit.h"
->>>  
->>> -#define XATTR_SELINUX_SUFFIX "selinux"
->>> -#define XATTR_NAME_SELINUX XATTR_SECURITY_PREFIX XATTR_SELINUX_SUFFIX
->>> -
->>>  #define NUM_SEL_MNT_OPTS 5
->>>  
->>>  extern int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm);
->>> diff --git a/security/smack/smack.h b/security/smack/smack.h
->>> index c6e9aca..9c773e3 100644
->>> --- a/security/smack/smack.h
->>> +++ b/security/smack/smack.h
->>> @@ -126,10 +126,8 @@ struct smack_known {
->>>  /*
->>>   * xattr names
->>>   */
->>> -#define XATTR_SMACK_SUFFIX	"SMACK64"
->>>  #define XATTR_SMACK_IPIN	"SMACK64IPIN"
->>>  #define XATTR_SMACK_IPOUT	"SMACK64IPOUT"
->>> -#define XATTR_NAME_SMACK	XATTR_SECURITY_PREFIX XATTR_SMACK_SUFFIX
->>>  #define XATTR_NAME_SMACKIPIN	XATTR_SECURITY_PREFIX XATTR_SMACK_IPIN
->>>  #define XATTR_NAME_SMACKIPOUT	XATTR_SECURITY_PREFIX XATTR_SMACK_IPOUT
->>>   
->>>       
->> Why just the SMACK64 attribute name, and not the others? They are
->> manipulated with the same interfaces (well, fsetxattr, fgetxattr)
->> as the SMACK64 attribute. There isn't any conceptual difference and
->> the rationale for moving attribute names really ought to apply to
->> them as well.
+> The character device looks much better than the proc file. I still
+> think a system call would be a more appropriate abstraction here,
+> but the two are equivalent after all.
+>   
+
+I'm going to argue for a character device, though.  There are a few
+reasons why I prefer it:
+
+1. It allows a straightforward model for adding additional types of
+"device" like this in the future.  It would be natural to support
+multiple minor numbers, perhaps with different ones having different "is
+the cpumask valid?" criteria.  Our next release will have two user
+networks, and a notion of userspace IPIs, all of which fit the life
+cycle of "create nonoverlapping cpumask, bind to cpu via affinity,
+activate, deactivate".  You could imagine passing constants to the
+syscall you propose, but it feels like it's just turning into a device
+switch at that point.
+
+2. You can easily imagine multiple classes of users, where different
+classes are allowed to use different resources -- perhaps one user
+network reserved for root, one for some privileged group, while the
+userspace IPI network is available to anyone.  Or something different. 
+We don't really know all the use cases yet, and having user/group
+permissions built into the model seems like it may be helpful.
+
+3. More subjectively -- the user dynamic networks have a "devicey" feel
+to me.  Normal open-source code never has to deal with these things; you
+only use them if your program is ready to open them up somehow, then
+read and write data to them, which feels like a device kind of
+abstraction (even though the reading and writing is via GPRs, not
+iomem).  And the userspace IPI stuff will be done by mapping IOMEM into
+process space and poking at it, once you've registered on the "userspace
+IPI" device, so again it has a kind of devicey feel to it.
+
+I don't think it would be strictly wrong to use a syscall, and you say
+the two are interchangeable at a high level, but I think character
+devices fit a bit better.
+
+>> diff --git a/arch/tile/include/asm/processor.h b/arch/tile/include/asm/processor.h
+>> index 96c50d2..95b54bc 100644
+>> --- a/arch/tile/include/asm/processor.h
+>> +++ b/arch/tile/include/asm/processor.h
+>> @@ -74,6 +74,14 @@ struct async_tlb {
+>>  	unsigned long address;   /* what address faulted? */
+>>  };
+>>  
+>> +#ifdef CONFIG_HARDWALL
+>> +struct hardwall_info;
+>> +
+>> +/* Can't use a normal list_head here due to header-file inclusion issues. */
+>> +struct hardwall_list {
+>> +	struct list_head *next, *prev;
+>> +};
+>> +#endif
 >>     
->
-> Hi Casey,
->
-> Moving the other SMACK xattrs is fine, but are they used on persistent
-> files and need to be EVM protected?
+> It seems strange that you need this. Why does linux/list.h
+> depend on asm/processor.h?
 >   
 
-They are not persistent in any configuration available today, but
-as they say, tomorrow never knows. The real reason I'm concerned is
-that I always dislike having to go look in two places for something
-like attr names. Either global or local is fine, but it should be
-one or the other.
+<linux/list.h> -> <linux/poison.h> -> <linux/prefetch.h> ->
+<asm/processor.h>.  There doesn't seem to be any good way around this. 
+I could, I suppose, use an opaque "struct list_head;" declaration in
+<asm/processor.h>, then create one with kmalloc on demand, but that
+seemed like overkill, so I embed the made-up version here, then validate
+it as a BUILD_BUG_ON() to be the same size as a real list_head.  I never
+actually use the "hardwall_list" structure directly.
 
-
-> Mimi
->
+> It certainly seems that the code would get simpler if this
+> can be avoided.
 >
 >   
+>> +/*
+>> + * Guard changes to the hardwall data structures.
+>> + * This could be finer grained (e.g. one lock for the list of hardwall
+>> + * rectangles, then separate embedded locks for each one's list of tasks),
+>> + * but there are subtle correctness issues when trying to start with
+>> + * a task's "hardwall" pointer and lock the correct rectangle's embedded
+>> + * lock in the presence of a simultaneous deactivation, so it seems
+>> + * easier to have a single lock, given that none of these data
+>> + * structures are touched very frequently during normal operation.
+>> + */
+>> +static DEFINE_SPINLOCK(hardwall_lock);
+>>     
+> I think instead of making the lock more fine-grained, a better optimization
+> might be to use RCU to protect the updates. AFAICT, the updates to the
+> structure are rare but you need to read it a lot.
+>   
+
+Actually, we neither read nor write the list very much.  We take the
+lock when a new hardwall is created or a new process enables user
+network access, but these are both "once per process lifetime" events
+typically.  After that, the user process is just granted direct hardware
+access when it is context switched in (based on a non-NULL hardwall_info
+pointer) and that's it.  So the big spinlock approach is actually good
+from a simplicity point of view.
+
+>> +/*
+>> + * Low-level primitives
+>> + */
+>> +
+>> +/* Map a HARDWALL_FILE file to the matching hardwall info structure */
+>> +#define _file_to_hardwall(file) ((file)->private_data)
+>> +#define file_to_hardwall(file) \
+>> +	((struct hardwall_info *)_file_to_hardwall(file))
+>>     
+> I wouldn't bother with these abstractions, you can simply write
+> file->private_data in every place where they are used.
+>   
+
+Good point, fixed.  The abstractions were more useful when the file was
+a seq_file and I had to work harder to get private data.
+
+>> +#ifdef CONFIG_COMPAT
+>> +static long hardwall_compat_ioctl(struct file *file,
+>> +				  unsigned int a, unsigned long b)
+>> +{
+>> +	/* Sign-extend the argument so it can be used as a pointer. */
+>> +	return hardwall_ioctl(file, a, (int)(long)b);
+>> +}
+>> +#endif
+>>     
+> Better use compat_ptr(b) instead of the manual cast.
+>   
+
+Yes, although hardwall_ioctl() wants an unsigned long, so it would have
+to be "(unsigned long)compat_ptr(b)", so it's not obviously better
+(certainly less succinct!).  But I concur that it's slightly less
+obscure :-)
+
+Thanks!
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
