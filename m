@@ -1,130 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab0F0P3q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 11:29:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43418 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754844Ab0F0P3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 11:29:45 -0400
-Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
- payload
-From: James Bottomley <James.Bottomley@suse.de>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Christoph Hellwig <hch@lst.de>, axboe@kernel.dk, dm-devel@redhat.com,
-       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
-       akpm@linux-foundation.org, linux-scsi@vger.kernel.org,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1277582211-10725-1-git-send-email-snitzer@redhat.com>
-References: <20100622180029.GA15950@redhat.com>
-	 <1277582211-10725-1-git-send-email-snitzer@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 27 Jun 2010 10:29:36 -0500
-Message-ID: <1277652576.4366.19.camel@mulgrave.site>
+	id S1755509Ab0F0PbW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 11:31:22 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:52383 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754916Ab0F0PbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 11:31:19 -0400
+Date: Sun, 27 Jun 2010 17:27:51 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org
+Subject: [PATCH] drivers/usb/Makefile: conditionally descend to 'early'
+Message-ID: <20100627172751.32deb6aa@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linux-scsi cc added, since it's a SCSI patch.
+Don't descend to the EARLY_PRINTK_DBGP directory
+unless it is actually used.
 
-On Sat, 2010-06-26 at 15:56 -0400, Mike Snitzer wrote:
-> Fix leaks introduced via "block: don't allocate a payload for discard
-> request" commit a1d949f5f44.
-> 
-> sd_done() is not called for REQ_TYPE_BLOCK_PC commands so cleanup
-> discard request's payload directly in scsi_finish_command().
-> 
-> Also cleanup page allocated for discard payload in
-> scsi_setup_discard_cmnd's scsi_setup_blk_pc_cmnd error path.
-> 
-> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> ---
->  block/blk-core.c       |   23 +++++++++++++++++++++++
->  drivers/scsi/scsi.c    |    8 ++++++++
->  drivers/scsi/sd.c      |   18 ++++++++----------
->  include/linux/blkdev.h |    1 +
->  4 files changed, 40 insertions(+), 10 deletions(-)
-> 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 98b4cee..07925aa 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -1167,6 +1167,29 @@ void blk_add_request_payload(struct request *rq, struct page *page,
->  }
->  EXPORT_SYMBOL_GPL(blk_add_request_payload);
->  
-> +/**
-> + * blk_clear_request_payload - clear a request's payload
-> + * @rq: request to update
-> + *
-> + * The driver needs to take care of freeing the payload itself.
-> + */
-> +void blk_clear_request_payload(struct request *rq)
-> +{
-> +	struct bio *bio = rq->bio;
-> +
-> +	rq->__data_len = rq->resid_len = 0;
-> +	rq->nr_phys_segments = 0;
-> +	rq->buffer = NULL;
-> +
-> +	bio->bi_size = 0;
-> +	bio->bi_vcnt = 0;
-> +	bio->bi_phys_segments = 0;
-> +
-> +	bio->bi_io_vec->bv_page = NULL;
-> +	bio->bi_io_vec->bv_len = 0;
-> +}
-> +EXPORT_SYMBOL_GPL(blk_clear_request_payload);
-> +
->  void init_request_from_bio(struct request *req, struct bio *bio)
->  {
->  	req->cpu = bio->bi_comp_cpu;
-> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-> index ad0ed21..69c7ea4 100644
-> --- a/drivers/scsi/scsi.c
-> +++ b/drivers/scsi/scsi.c
-> @@ -851,6 +851,14 @@ void scsi_finish_command(struct scsi_cmnd *cmd)
->  		 */
->  		if (good_bytes == old_good_bytes)
->  			good_bytes -= scsi_get_resid(cmd);
-> +	} else if (cmd->request->cmd_flags & REQ_DISCARD) {
-> +		/*
-> +		 * If this is a discard request that originated from the kernel
-> +		 * we need to free our payload here.  Note that we need to check
-> +		 * the request flag as the normal payload rules apply for
-> +		 * pass-through UNMAP / WRITE SAME requests.
-> +		 */
-> +		__free_page(bio_page(cmd->request->bio));
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/usb/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This is another layering violation:  the page is allocated in the Upper
-layer and freed in the mid-layer.
-
-I really hate these growing contortions for discard.  They're a clear
-signal that we haven't implemented it right.
-
-So let's first work out how it should be done.  I really like Tomo's
-idea of doing discard through the normal REQ_TYPE_FS route, which means
-we can control the setup in prep and the tear down in done, all confined
-to the ULD.
-
-Where I think I'm at is partially what Christoph says:  The command
-transformation belongs in the ULD so that's where the allocation and
-deallocation should be, and partly what Tomo says in that we should
-eliminate the special case paths.
-
-The payload vs actual request size should be a red herring if we've got
-everything correct:  only the ULD cares about the request parameters.
-Once we've got everything set up, the mid layer and LLD should only care
-about the parameters in the command, so we can confine the size changing
-part to the ULD doing the discard.
-
-Could someone take a stab at this and see if it works without layering
-violations or any other problematic signals?
-
-Thanks,
-
-James
-
-
+diff --git a/drivers/usb/Makefile b/drivers/usb/Makefile
+index 80b4008..239f050 100644
+--- a/drivers/usb/Makefile
++++ b/drivers/usb/Makefile
+@@ -41,7 +41,7 @@ obj-$(CONFIG_USB_MICROTEK)	+= image/
+ obj-$(CONFIG_USB_SERIAL)	+= serial/
+ 
+ obj-$(CONFIG_USB)		+= misc/
+-obj-y				+= early/
++obj-$(CONFIG_EARLY_PRINTK_DBGP)	+= early/
+ 
+ obj-$(CONFIG_USB_ATM)		+= atm/
+ obj-$(CONFIG_USB_SPEEDTOUCH)	+= atm/
+-- 
+1.7.1
