@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab0F0Hbv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 03:31:51 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54191 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab0F0Hbu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 03:31:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CJLjOTsTEN8xRFdKok8LoI0jWnD8MAbzbd1+r1LdV8R1Z2mGZ1NmjiJ0WD3W8mTUAO
-         1QF6kOHhz/LgiCXglsBQD3JSWlviCNPtdiaB5y4kxsFhdWHaCV3UzBpZ8bDM7Rdk5+ip
-         VN0xSjyy7QZNWr8cuOPtgHt+Bgg8CaMQq3Z8s=
-Date: Sun, 27 Jun 2010 04:31:40 -0300
-From: "Gustavo F. Padovan" <gustavo@padovan.org>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com, sds@tycho.nsa.gov,
-       lenb@kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH 5/5]bluetooth:hci_bcsp Fix operation on
- 'bcsp->msgq_txseq' may be undefined
-Message-ID: <20100627073140.GA32575@vigoh>
-References: <1277621246-10960-1-git-send-email-justinmattock@gmail.com>
- <1277621246-10960-6-git-send-email-justinmattock@gmail.com>
+	id S1754469Ab0F0IDK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 04:03:10 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51103 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752980Ab0F0IDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 04:03:04 -0400
+Message-ID: <4C2704CF.6040401@cn.fujitsu.com>
+Date: Sun, 27 Jun 2010 15:59:11 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277621246-10960-6-git-send-email-justinmattock@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 1/10] KVM: MMU: fix writable sync sp mapping
+References: <4C249B84.4080703@cn.fujitsu.com>
+In-Reply-To: <4C249B84.4080703@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Justin,
 
-* Justin P. Mattock <justinmattock@gmail.com> [2010-06-26 23:47:26 -0700]:
 
-> Im seeing this building the kernel with gcc 4.6.0
->  CC [M]  drivers/bluetooth/hci_bcsp.o
-> drivers/bluetooth/hci_bcsp.c: In function 'bcsp_prepare_pkt':
-> drivers/bluetooth/hci_bcsp.c:247:20: warning: operation on 'bcsp->msgq_txseq' may be undefined
-> 
-> Hopefully the below is a fix for this. Please let me know.
->  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  drivers/bluetooth/hci_bcsp.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/bluetooth/hci_bcsp.c b/drivers/bluetooth/hci_bcsp.c
-> index 40aec0f..0f892e7 100644
-> --- a/drivers/bluetooth/hci_bcsp.c
-> +++ b/drivers/bluetooth/hci_bcsp.c
-> @@ -182,7 +182,7 @@ static struct sk_buff *bcsp_prepare_pkt(struct bcsp_struct *bcsp, u8 *data,
->  	struct sk_buff *nskb;
->  	u8 hdr[4], chan;
->  	u16 BCSP_CRC_INIT(bcsp_txmsg_crc);
-> -	int rel, i;
-> +	int rel, i, ret;
+Xiao Guangrong wrote:
+
 >  
->  	switch (pkt_type) {
->  	case HCI_ACLDATA_PKT:
-> @@ -243,8 +243,8 @@ static struct sk_buff *bcsp_prepare_pkt(struct bcsp_struct *bcsp, u8 *data,
->  
->  	if (rel) {
->  		hdr[0] |= 0x80 + bcsp->msgq_txseq;
-> -		BT_DBG("Sending packet with seqno %u", bcsp->msgq_txseq);
-> -		bcsp->msgq_txseq = ++(bcsp->msgq_txseq) & 0x07;
-> +		BT_DBG("Sending packet with seqno %u", bcsp->msgq_txseq | ret);
-> +		ret = ++(bcsp->msgq_txseq) & 0x07;
->  	}
+> -		/*
+> -		 * Optimization: for pte sync, if spte was writable the hash
+> -		 * lookup is unnecessary (and expensive). Write protection
+> -		 * is responsibility of mmu_get_page / kvm_sync_page.
+> -		 * Same reasoning can be applied to dirty page accounting.
+> -		 */
+> -		if (!can_unsync && is_writable_pte(*sptep))
+> -			goto set_pte;
+> -
 
-What are trying to do here? That is completely wrong, you are losting
-the next txseq to be sent.
+Sorry, this optimization not broken anything, just my mistake, please review
+this.
 
-And please do not bother the linux-bluetooth mailing list with patches
-to other subsystems. Send them in a way that only Bluetooth patches will
-come to linux-bluetooth.
+Subject: [PATCH v2 1/10] KVM: MMU: fix writable sync sp mapping
 
-Regards,
+While we sync the unsync sp, we may mapping the spte writable, it's
+dangerous, if one unsync sp's mapping gfn is another unsync page's gfn.
 
+For example:
+have two unsync pages SP1, SP2 and:
+
+SP1.pte[0] = P
+SP2.gfn's pfn = P
+[SP1.pte[0] = SP2.gfn's pfn]
+
+First, we unsync SP2, it will write protect for SP2.gfn since
+SP1.pte[0] is mapping to this page, it will mark read only.
+
+Then, we unsync SP1, SP1.pte[0] may mark to writable.
+
+Now, we will write SP2.gfn by SP1.pte[0] mapping
+
+This bug will corrupt guest's page table, fixed by mark read-only mapping
+if the mapped gfn has shadow page
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 045a0f9..24290f8 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1810,11 +1810,14 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
+ 	bool need_unsync = false;
+ 
+ 	for_each_gfn_indirect_valid_sp(vcpu->kvm, s, gfn, node) {
++		if (!can_unsync)
++			return 1;
++
+ 		if (s->role.level != PT_PAGE_TABLE_LEVEL)
+ 			return 1;
+ 
+ 		if (!need_unsync && !s->unsync) {
+-			if (!can_unsync || !oos_shadow)
++			if (!oos_shadow)
+ 				return 1;
+ 			need_unsync = true;
+ 		}
 -- 
-Gustavo F. Padovan
-http://padovan.org
+1.6.1.2
+
