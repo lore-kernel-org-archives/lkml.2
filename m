@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab0F0QKx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 12:10:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39794 "EHLO mx1.redhat.com"
+	id S1755863Ab0F0QXi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 12:23:38 -0400
+Received: from sh.osrg.net ([192.16.179.4]:44740 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755735Ab0F0QKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 12:10:50 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Sergey Temerkhanov <temerkhanov@cifronik.ru>
-Cc: Sergey Temerkhanov <temerkhanov@yandex.ru>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-aio" <linux-aio@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Benjamin LaHaise <bcrl@kvack.org>, Zach Brown <zach.brown@oracle.com>,
-       Suparna Bhattacharya <suparna@in.ibm.com>
-Subject: Re: [PATCH][RFC] AIO: always reinitialize iocb->ki_run_list at the end of aio_run_iocb()
-References: <201004280251.43430.temerkhanov@yandex.ru>
-	<201005271406.36489.temerkhanov@yandex.ru>
-	<x49iq62lak7.fsf@segfault.boston.devel.redhat.com>
-	<201006242131.21463.temerkhanov@cifronik.ru>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Sun, 27 Jun 2010 12:10:32 -0400
-In-Reply-To: <201006242131.21463.temerkhanov@cifronik.ru> (Sergey
-	Temerkhanov's message of "Thu, 24 Jun 2010 21:31:21 +0400")
-Message-ID: <x49sk48318n.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755552Ab0F0QXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 12:23:36 -0400
+Date: Mon, 28 Jun 2010 01:23:02 +0900
+To: hch@lst.de
+Cc: snitzer@redhat.com, fujita.tomonori@lab.ntt.co.jp, axboe@kernel.dk,
+       dm-devel@redhat.com, James.Bottomley@suse.de,
+       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
+       akpm@linux-foundation.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
+ payload
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100627153545.GC25667@lst.de>
+References: <20100627212952D.fujita.tomonori@lab.ntt.co.jp>
+	<20100627141638.GD3970@redhat.com>
+	<20100627153545.GC25667@lst.de>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100628012055Y.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 28 Jun 2010 01:23:04 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sergey Temerkhanov <temerkhanov@cifronik.ru> writes:
+On Sun, 27 Jun 2010 17:35:45 +0200
+Christoph Hellwig <hch@lst.de> wrote:
 
-> The problem with kick_iocb() is exactly as this: If retry() method 
-> returns -EIOCBQUEUED to aio_run_iocb() then any subsequent call to 
-> kick_iocb() results in failure. Is it expected behavior?
+> On Sun, Jun 27, 2010 at 10:16:40AM -0400, Mike Snitzer wrote:
+> > My leak fixes have been tested extensively against all permuations of
+> > devices with discards (ATA trim, SCSI UNMAP, SCSI WRTIE SAME w/ unmap=1).
+> > 
+> > I think we need to get Christoph's discard payload transformation
+> > complete by fixing the leaks _without_ trying to rework how discard
+> > commands are tagged, etc.  E.g. fix what Jens already has staged in
+> > linux-2.6-block's 'for-next' and 'for-2.6.36'.
+> > 
+> > With that sorted out we can then look at longer term changes to cleanup
+> > discard request processing.
+> 
+> I tend to agree.  I'll look into getting rid of treating discards as
+> BLOCK_PC commands ontop of you patchset.
 
- * If ki_retry returns -EIOCBQUEUED it has made a promise that aio_complete()
- * will be called on the kiocb pointer in the future.  The AIO core will
- * not ask the method again -- ki_retry must ensure forward progress.
+Let's start from jens' 2.6.36 tree (or it would be better if Jens can
+drop Christoph's patch).
 
-Does that answer your question?
+We don't need to start on the top of new discard hacks (specially, the
+hack in scsi_finish_command looks terrible). We should not merge them
+into mainline. We are still in rc3.
 
-Cheers,
-Jeff
+I'll see how things work with other configurations.
