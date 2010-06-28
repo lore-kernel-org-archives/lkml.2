@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab0F1Uet (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 16:34:49 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:39010 "EHLO
+	id S1755013Ab0F1Uev (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 16:34:51 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:39425 "EHLO
 	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779Ab0F1Ueo convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754782Ab0F1Ueo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Jun 2010 16:34:44 -0400
-Date: Mon, 28 Jun 2010 22:30:29 +0200
+Date: Mon, 28 Jun 2010 22:31:20 +0200
 From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
 To: Jiri Kosina <jkosina@suse.cz>
 Cc: Jaya Kumar <jayakumar.lkml@gmail.com>, linux-fbdev@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] HID: picolcd: Add minimal palette required by fbcon on
- 8bpp
-Message-ID: <20100628223029.4f4e5b8e@neptune.home>
+Subject: [PATCH 3/4] HID: picolcd: do not reallocate memory on depth change
+Message-ID: <20100628223120.4d334f95@neptune.home>
 In-Reply-To: <20100628222641.489c955a@neptune.home>
 References: <20100509184911.3f136b77@neptune.home>
 	<AANLkTik0EkPYKdnhrpF7yK6eXIrHMsNYrzSC6tyeBR0P@mail.gmail.com>
@@ -32,164 +31,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a minimal palette so fbcon does not try to dereference
-a NULL point when fb is set to 8bpp.
+Reallocating memory in depth change does not work well if some
+userspace application has mmapped() the framebuffer as that mapping
+does not get adjusted (thus application continues to write to old
+buffer).
+In addition doing deferred_io_cleanup() and init() inside of set_par()
+tends to deadlock with fbcon's flashing cursor.
 
-fbcon stores pixels the other way around in bytes for 1bpp
-than intially implemented, correct this.
+Avoid all this by allocating a buffer that can hold 8bpp framebuffer
+and just use 1/8 of it while running at 1bpp.
 
 Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
 ---
- drivers/hid/hid-picolcd.c |   62 +++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 51 insertions(+), 11 deletions(-)
+ drivers/hid/hid-picolcd.c |   27 ++++++++++++---------------
+ 1 files changed, 12 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-index 883d720..ac7aece 100644
+index ac7aece..31a0abd 100644
 --- a/drivers/hid/hid-picolcd.c
 +++ b/drivers/hid/hid-picolcd.c
-@@ -127,6 +127,26 @@ static const struct fb_var_screeninfo picolcdfb_var = {
- 	.height         = 26,
- 	.bits_per_pixel = 1,
- 	.grayscale      = 1,
-+	.red            = {
-+		.offset = 0,
-+		.length = 1,
-+		.msb_right = 0,
-+	},
-+	.green          = {
-+		.offset = 0,
-+		.length = 1,
-+		.msb_right = 0,
-+	},
-+	.blue           = {
-+		.offset = 0,
-+		.length = 1,
-+		.msb_right = 0,
-+	},
-+	.transp         = {
-+		.offset = 0,
-+		.length = 0,
-+		.msb_right = 0,
-+	},
- };
- #endif /* CONFIG_HID_PICOLCD_FB */
- 
-@@ -188,6 +208,7 @@ struct picolcd_data {
- 	/* Framebuffer stuff */
- 	u8 fb_update_rate;
- 	u8 fb_bpp;
-+	u8 fb_force;
- 	u8 *fb_vbitmap;		/* local copy of what was sent to PicoLCD */
- 	u8 *fb_bitmap;		/* framebuffer */
- 	struct fb_info *fb_info;
-@@ -346,7 +367,7 @@ static int picolcd_fb_update_tile(u8 *vbitmap, const u8 *bitmap, int bpp,
- 			const u8 *bdata = bitmap + tile * 256 + chip * 8 + b * 32;
- 			for (i = 0; i < 64; i++) {
- 				tdata[i] <<= 1;
--				tdata[i] |= (bdata[i/8] >> (7 - i % 8)) & 0x01;
-+				tdata[i] |= (bdata[i/8] >> (i % 8)) & 0x01;
- 			}
- 		}
- 	} else if (bpp == 8) {
-@@ -399,13 +420,10 @@ static int picolcd_fb_reset(struct picolcd_data *data, int clear)
- 
- 	if (data->fb_bitmap) {
- 		if (clear) {
--			memset(data->fb_vbitmap, 0xff, PICOLCDFB_SIZE);
-+			memset(data->fb_vbitmap, 0, PICOLCDFB_SIZE);
- 			memset(data->fb_bitmap, 0, PICOLCDFB_SIZE*data->fb_bpp);
--		} else {
--			/* invert 1 byte in each tile to force resend */
--			for (i = 0; i < PICOLCDFB_SIZE; i += 64)
--				data->fb_vbitmap[i] = ~data->fb_vbitmap[i];
- 		}
-+		data->fb_force = 1;
- 	}
- 
- 	/* schedule first output of framebuffer */
-@@ -440,7 +458,8 @@ static void picolcd_fb_update(struct picolcd_data *data)
- 	for (chip = 0; chip < 4; chip++)
- 		for (tile = 0; tile < 8; tile++)
- 			if (picolcd_fb_update_tile(data->fb_vbitmap,
--					data->fb_bitmap, data->fb_bpp, chip, tile)) {
-+					data->fb_bitmap, data->fb_bpp, chip, tile) ||
-+				data->fb_force) {
- 				n += 2;
- 				if (n >= HID_OUTPUT_FIFO_SIZE / 2) {
- 					usbhid_wait_io(data->hdev);
-@@ -448,6 +467,7 @@ static void picolcd_fb_update(struct picolcd_data *data)
- 				}
- 				picolcd_fb_send_tile(data->hdev, chip, tile);
- 			}
-+	data->fb_force = false;
- 	if (n)
- 		usbhid_wait_io(data->hdev);
- }
-@@ -526,10 +546,17 @@ static int picolcd_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *i
- 	/* only allow 1/8 bit depth (8-bit is grayscale) */
- 	*var = picolcdfb_var;
- 	var->activate = activate;
--	if (bpp >= 8)
-+	if (bpp >= 8) {
- 		var->bits_per_pixel = 8;
--	else
-+		var->red.length     = 8;
-+		var->green.length   = 8;
-+		var->blue.length    = 8;
-+	} else {
- 		var->bits_per_pixel = 1;
-+		var->red.length     = 1;
-+		var->green.length   = 1;
-+		var->blue.length    = 1;
-+	}
- 	return 0;
- }
- 
-@@ -660,9 +687,10 @@ static int picolcd_init_framebuffer(struct picolcd_data *data)
+@@ -563,19 +563,18 @@ static int picolcd_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *i
+ static int picolcd_set_par(struct fb_info *info)
  {
- 	struct device *dev = &data->hdev->dev;
- 	struct fb_info *info = NULL;
--	int error = -ENOMEM;
-+	int i, error = -ENOMEM;
- 	u8 *fb_vbitmap = NULL;
- 	u8 *fb_bitmap  = NULL;
-+	u32 *palette;
+ 	struct picolcd_data *data = info->par;
+-	u8 *o_fb, *n_fb;
++	u8 *tmp_fb, *o_fb;
+ 	if (info->var.bits_per_pixel == data->fb_bpp)
+ 		return 0;
+ 	/* switch between 1/8 bit depths */
+ 	if (info->var.bits_per_pixel != 1 && info->var.bits_per_pixel != 8)
+ 		return -EINVAL;
  
- 	fb_bitmap = vmalloc(PICOLCDFB_SIZE*picolcdfb_var.bits_per_pixel);
- 	if (fb_bitmap == NULL) {
-@@ -678,12 +706,23 @@ static int picolcd_init_framebuffer(struct picolcd_data *data)
+-	o_fb = data->fb_bitmap;
+-	n_fb = vmalloc(PICOLCDFB_SIZE*info->var.bits_per_pixel);
+-	if (!n_fb)
++	o_fb   = data->fb_bitmap;
++	tmp_fb = kmalloc(PICOLCDFB_SIZE*info->var.bits_per_pixel, GFP_KERNEL);
++	if (!tmp_fb)
+ 		return -ENOMEM;
  
- 	data->fb_update_rate = PICOLCDFB_UPDATE_RATE_DEFAULT;
- 	data->fb_defio = picolcd_fb_defio;
--	info = framebuffer_alloc(0, dev);
-+	/* The extra memory is:
-+	 * - struct picolcd_fb_cleanup_item
-+	 * - u32 for ref_count
-+	 * - 256*u32 for pseudo_palette
-+	 */
-+	info = framebuffer_alloc(257 * sizeof(u32), dev);
- 	if (info == NULL) {
- 		dev_err(dev, "failed to allocate a framebuffer\n");
- 		goto err_nomem;
+-	fb_deferred_io_cleanup(info);
+ 	/* translate FB content to new bits-per-pixel */
+ 	if (info->var.bits_per_pixel == 1) {
+ 		int i, b;
+@@ -585,24 +584,22 @@ static int picolcd_set_par(struct fb_info *info)
+ 				p <<= 1;
+ 				p |= o_fb[i*8+b] ? 0x01 : 0x00;
+ 			}
++			tmp_fb[i] = p;
+ 		}
++		memcpy(o_fb, tmp_fb, PICOLCDFB_SIZE);
+ 		info->fix.visual = FB_VISUAL_MONO01;
+ 		info->fix.line_length = PICOLCDFB_WIDTH / 8;
+ 	} else {
+ 		int i;
++		memcpy(tmp_fb, o_fb, PICOLCDFB_SIZE);
+ 		for (i = 0; i < PICOLCDFB_SIZE * 8; i++)
+-			n_fb[i] = o_fb[i/8] & (0x01 << (7 - i % 8)) ? 0xff : 0x00;
+-		info->fix.visual = FB_VISUAL_TRUECOLOR;
++			o_fb[i] = tmp_fb[i/8] & (0x01 << (7 - i % 8)) ? 0xff : 0x00;
++		info->fix.visual = FB_VISUAL_DIRECTCOLOR;
+ 		info->fix.line_length = PICOLCDFB_WIDTH;
  	}
  
-+	palette  = info->par;
-+	*palette = 1;
-+	palette++;
-+	for (i = 0; i < 256; i++)
-+		palette[i] = i > 0 && i < 16 ? 0xff : 0;
-+	info->pseudo_palette = palette;
- 	info->fbdefio = &data->fb_defio;
- 	info->screen_base = (char __force __iomem *)fb_bitmap;
- 	info->fbops = &picolcdfb_ops;
-@@ -715,6 +754,7 @@ static int picolcd_init_framebuffer(struct picolcd_data *data)
- 		goto err_sysfs;
- 	}
- 	/* schedule first output of framebuffer */
-+	data->fb_force = 1;
- 	schedule_delayed_work(&info->deferred_work, 0);
+-	data->fb_bitmap   = n_fb;
++	kfree(tmp_fb);
+ 	data->fb_bpp      = info->var.bits_per_pixel;
+-	info->screen_base = (char __force __iomem *)n_fb;
+-	info->fix.smem_start = (unsigned long)n_fb;
+-	info->fix.smem_len   = PICOLCDFB_SIZE*data->fb_bpp;
+-	fb_deferred_io_init(info);
+-	vfree(o_fb);
  	return 0;
+ }
  
+@@ -692,7 +689,7 @@ static int picolcd_init_framebuffer(struct picolcd_data *data)
+ 	u8 *fb_bitmap  = NULL;
+ 	u32 *palette;
+ 
+-	fb_bitmap = vmalloc(PICOLCDFB_SIZE*picolcdfb_var.bits_per_pixel);
++	fb_bitmap = vmalloc(PICOLCDFB_SIZE*8);
+ 	if (fb_bitmap == NULL) {
+ 		dev_err(dev, "can't get a free page for framebuffer\n");
+ 		goto err_nomem;
+@@ -728,7 +725,7 @@ static int picolcd_init_framebuffer(struct picolcd_data *data)
+ 	info->fbops = &picolcdfb_ops;
+ 	info->var = picolcdfb_var;
+ 	info->fix = picolcdfb_fix;
+-	info->fix.smem_len   = PICOLCDFB_SIZE;
++	info->fix.smem_len   = PICOLCDFB_SIZE*8;
+ 	info->fix.smem_start = (unsigned long)fb_bitmap;
+ 	info->par = data;
+ 	info->flags = FBINFO_FLAG_DEFAULT;
 -- 
 1.7.1
 
