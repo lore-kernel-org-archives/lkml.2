@@ -1,147 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab0F1PIr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 11:08:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61147 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab0F1PIo (ORCPT
+	id S1754500Ab0F1PN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 11:13:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60740 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab0F1PNz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 11:08:44 -0400
-Message-ID: <4C28BAE3.8030909@oracle.com>
-Date: Mon, 28 Jun 2010 08:08:19 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Nicolas Kaiser <nikai@nikai.net>, linux-kbuild@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation/kbuild: fixed typos and wording
-References: <20100626150021.254b95b3@absol.kitzblitz> <20100626173736.e5946273.randy.dunlap@oracle.com> <4C28B801.7050709@suse.cz>
-In-Reply-To: <4C28B801.7050709@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C28BAF5.0169:SCFMA4539814,ss=1,fgs=0
+	Mon, 28 Jun 2010 11:13:55 -0400
+Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <4C262949.3030804@linux.vnet.ibm.com>
+References: <20100624142804.431553874@chello.nl>
+	 <4C262949.3030804@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Jun 2010 17:13:29 +0200
+Message-ID: <1277738009.3561.129.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/10 07:56, Michal Marek wrote:
-> On 27.6.2010 02:37, Randy Dunlap wrote:
->> On Sat, 26 Jun 2010 15:00:21 +0200 Nicolas Kaiser wrote:
->>
->>> Fixed some typos and wording.
->>>
->>> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
->>
->> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Randy, are you adding this to the kernel-doc tree? There are already
-> patches from matt mooney, sometimes touching the same paragraphs as this
-> one.
+On Sat, 2010-06-26 at 09:22 -0700, Corey Ashford wrote:
 
-Oh, thanks for the warning, I hadn't noticed that.
-I guess that it makes more sense for me to add this one also
-and fix up any merge problems.  Will do.
+> These patches look like they are really taking us in the right 
+> direction.  Thanks for all your effort on this!
 
-> Michal
-> 
->>
->> Thanks.
->>
->>> ---
->>>  Documentation/kbuild/kbuild.txt    |    8 ++++----
->>>  Documentation/kbuild/makefiles.txt |   20 ++++++++++----------
->>>  2 files changed, 14 insertions(+), 14 deletions(-)
->>>
->>> diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
->>> index 634c625..0d8addb 100644
->>> --- a/Documentation/kbuild/kbuild.txt
->>> +++ b/Documentation/kbuild/kbuild.txt
->>> @@ -40,15 +40,15 @@ Set the directory to look for the kernel source when building external
->>>  modules.
->>>  The directory can be specified in several ways:
->>>  1) Use "M=..." on the command line
->>> -2) Environmnet variable KBUILD_EXTMOD
->>> -3) Environmnet variable SUBDIRS
->>> +2) Environment variable KBUILD_EXTMOD
->>> +3) Environment variable SUBDIRS
->>>  The possibilities are listed in the order they take precedence.
->>>  Using "M=..." will always override the others.
->>>  
->>>  KBUILD_OUTPUT
->>>  --------------------------------------------------
->>>  Specify the output directory when building the kernel.
->>> -The output directory can also be specificed using "O=...".
->>> +The output directory can also be specified using "O=...".
->>>  Setting "O=..." takes precedence over KBUILD_OUTPUT.
->>>  
->>>  ARCH
->>> @@ -90,7 +90,7 @@ The script will be called with the following arguments:
->>>      $3 - kernel map file
->>>      $4 - default install path (use root directory if blank)
->>>  
->>> -The implmentation of "make install" is architecture specific
->>> +The implementation of "make install" is architecture specific
->>>  and it may differ from the above.
->>>  
->>>  INSTALLKERNEL is provided to enable the possibility to
->>> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
->>> index 71c602d..c0c9b1c 100644
->>> --- a/Documentation/kbuild/makefiles.txt
->>> +++ b/Documentation/kbuild/makefiles.txt
->>> @@ -284,12 +284,12 @@ more details, with real examples.
->>>  --- 3.7 Compilation flags
->>>  
->>>      ccflags-y, asflags-y and ldflags-y
->>> -	The three flags listed above applies only to the kbuild makefile
->>> -	where they are assigned. They are used for all the normal
->>> -	cc, as and ld invocation happenign during a recursive build.
->>> +	These three flags apply only to the kbuild makefile in which they
->>> +	are assigned. They are used for all the normal cc, as and ld
->>> +	invocations happening during a recursive build.
->>>  	Note: Flags with the same behaviour were previously named:
->>>  	EXTRA_CFLAGS, EXTRA_AFLAGS and EXTRA_LDFLAGS.
->>> -	They are yet supported but their use are deprecated.
->>> +	They are still supported but their usage is deprecated.
->>>  
->>>  	ccflags-y specifies options for compiling C files with $(CC).
->>>  
->>> @@ -318,9 +318,9 @@ more details, with real examples.
->>>  		ldflags-y := -x
->>>  
->>>      subdir-ccflags-y, subdir-asflags-y
->>> -	The two flags listed above are similar to ccflags-y and as-falgs-y.
->>> -	The difference is that the subdir- variants has effect for the kbuild
->>> -	file where tey are present and all subdirectories.
->>> +	The two flags listed above are similar to ccflags-y and as-flags-y.
->>> +	The difference is that the subdir- variants have effect for the kbuild
->>> +	file where they are present and all subdirectories.
->>>  	Options specified using subdir-* are added to the commandline before
->>>  	the options specified using the non-subdir variants.
->>>  
->>> @@ -1176,14 +1176,14 @@ When kbuild executes, the following steps are followed (roughly):
->>>  === 7 Kbuild syntax for exported headers
->>>  
->>>  The kernel include a set of headers that is exported to userspace.
->>> -Many headers can be exported as-is but other headers requires  a
->>> +Many headers can be exported as-is but other headers require a
->>>  minimal pre-processing before they are ready for user-space.
->>>  The pre-processing does:
->>>  - drop kernel specific annotations
->>>  - drop include of compiler.h
->>> -- drop all sections that is kernel internat (guarded by ifdef __KERNEL__)
->>> +- drop all sections that are kernel internal (guarded by ifdef __KERNEL__)
->>>  
->>> -Each relevant directory contain a file name "Kbuild" which specify the
->>> +Each relevant directory contains a file name "Kbuild" which specifies the
->>>  headers to be exported.
->>>  See subsequent chapter for the syntax of the Kbuild file.
+Yeah, although I seem to have managed to wreck all architectures tested
+so far (I found some iffy on x86 too), I guess I need to carefully look
+at things.
+
+> As for the "hardware write batching", can you describe a bit more about 
+> what you have in mind there?  I wonder if this might have something to 
+> do with accounting for PMU hardware which is slow to access, for 
+> example, via I2C via an internal bridge.
+
+Right, so the write batching is basically delaying writing out the PMU
+state to hardware until pmu::pmu_enable() time. It avoids having to
+re-program the hardware when, due to a scheduling constraint, we have to
+move counters around.
+
+So say, we context switch a task, and remove the old events and add the
+new ones under a single pmu::pmu_disable()/::pmu_enable() pair, we will
+only hit the hardware twice (once to disable, once to enable), instead
+of for each individual ::del()/::add().
+
+For this to work we need to have an association between a context and a
+pmu, otherwise its very hard to know what pmu to disable/enable; the
+alternative is all of them which isn't very attractive.
+
+Then again, it doesn't make sense to have task-counters on an I2C
+attached PMU simply because writing to the PMU could cause context
+switches.
 
 
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
