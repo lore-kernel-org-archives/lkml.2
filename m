@@ -1,207 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab0F1O5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 10:57:08 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:38621 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab0F1O5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 10:57:03 -0400
-Message-ID: <4C28B825.3000506@us.ibm.com>
-Date: Mon, 28 Jun 2010 07:56:37 -0700
-From: Darren Hart <dvhltc@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1754484Ab0F1PDM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 11:03:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52698 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751456Ab0F1PDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 11:03:08 -0400
+Date: Mon, 28 Jun 2010 08:02:46 -0700
+From: Greg KH <gregkh@suse.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Nathan Fontenot <nfont@austin.ibm.com>, Andi Kleen <andi@firstfloor.org>,
+       linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] memory hotplug disable boot option
+Message-ID: <20100628150246.GA13192@suse.de>
+References: <87d3vfeage.fsf@basil.nowhere.org>
+ <4C24C279.3050206@austin.ibm.com>
+ <20100628110658.387B.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: futex: race in lock and unlock&exit for robust futex with PI?
-References: <20100623091307.GA11072@tiehlicka.suse.cz> <4C2417AA.4030306@us.ibm.com> <20100625082711.GA32765@tiehlicka.suse.cz> <4C24ED34.9040808@us.ibm.com> <4C253D32.6040304@us.ibm.com> <20100628144246.GA14201@tiehlicka.suse.cz>
-In-Reply-To: <20100628144246.GA14201@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100628110658.387B.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2010 07:42 AM, Michal Hocko wrote:
-> Hi Darren,
->
-> On Fri 25-06-10 16:35:14, Darren Hart wrote:
-> [...]
->> # trace-cmd record -p nop ./runSimple.sh
->> <snip>
->>
->> # ps -eLo pid,comm,wchan | grep "simple "
->> 20636 simple          pause
->> 20876 simple          pause
->>
->> # trace-cmd report
->> version = 6
->> CPU 0 is empty
->> cpus=4
->> field->offset = 24 size=8
->>             <...>-20636 [003]  1778.965860: bprint:               futex_lock_pi_atomic : lookup_pi_state: -ESRCH
->>             <...>-20636 [003]  1778.965865: bprint:               futex_lock_pi_atomic : ownerdied not detected, returning -ESRCH
->>             <...>-20636 [003]  1778.965866: bprint:               futex_lock_pi_atomic : lookup_pi_state: -3
->>>> --->      <...>-20636 [003]  1778.965867: bprint:               futex_lock_pi : returning -ESRCH to userspace
->>             <...>-20876 [001]  1780.199394: bprint:               futex_lock_pi_atomic : cmpxchg failed, retrying
->>             <...>-20876 [001]  1780.199400: bprint:               futex_lock_pi_atomic : lookup_pi_state: -ESRCH
->>             <...>-20876 [001]  1780.199401: bprint:               futex_lock_pi_atomic : ownerdied not detected, returning -ESRCH
->>             <...>-20876 [001]  1780.199402: bprint:               futex_lock_pi_atomic : lookup_pi_state: -3
->>>> --->      <...>-20876 [001]  1780.199403: bprint:               futex_lock_pi : returning -ESRCH to userspace
->>             <...>-21316 [002]  1782.300695: bprint:               futex_lock_pi_atomic : cmpxchg failed, retrying
->>             <...>-21316 [002]  1782.300698: bprint:               futex_lock_pi_atomic : cmpxchg failed, retrying
->>
-> [...]
->
-> I have updated the test case slightly (reduced the number of lock/unlock
-> cycles to 1).
->
-> Then, I have used the additional patch (see bellow) on top of the one
-> you have posted and here is the log I am getting:
+On Mon, Jun 28, 2010 at 11:20:27AM +0900, KOSAKI Motohiro wrote:
+> > On 06/25/2010 04:19 AM, Andi Kleen wrote:
+> > > KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> writes:
+> > > 
+> > >>> Proposed patch to disable memory hotplug via a boot option,
+> > >>> mem_hotplug=[on|off].  The patch only disables memory hotplug in that it 
+> > >>> prevents the creation of the memory sysfs directories for memory sections.
+> > >>>
+> > >>> This patch is meant to help alleviate very long boot times on systems with
+> > >>> large memory (1+ TB) and many memory sections (10's of thousands).
+> > >>
+> > >> Why making simple /sys file is so slowly? Couldn't we fix such performance
+> > >> problem?
+> > 
+> > The issue is the large number of sysfs memory directories that get created.
+> > On a system with 1 TB of memory I am seeing ~63,00 directories.  The long
+> > creation time is due to the string compare check in sysfs code to ensure
+> > we are not creating a directory with a duplicate name.
+> 
+> Ah, I see. probably this is sysfs issue. So Let's cc Greg and Eric.
+> Greg, I have dumb question. Why sysfs call strcmp() so heavily? I mean why sysfs
+> don't have hash based name dupliation check?
 
+Because we have not needed such complexity before.
 
-Interesting. I'm going to start pouring over lookup_pi_state() and 
-futex_lock_pi() to see if I can spot any races. I'm also wondering about 
-glibc's usage of the FUTEX_WAITERS bit.
+You might want to take a step back and asky why you are creating 63
+thousand directories in sysfs for large memory systems.  Are you really
+going to use all of those directories?  What are they for?  Perhaps
+someone created the wrong interface to memory and that needs to be fixed
+instead?
 
-While I investigate that, could you do a git bisect from 2.6.31 (after 
-which a lot of the most recent futex changes hit) and see if you can 
-identify a particular patch, or even kernel version, where this broke?
+And as always, patches are welcome :)
 
-Thanks,
+thanks,
 
-Darren
-
->
-> version = 6
-> cpus=2
-> field->offset = 16 size=4
->             <...>-13232 [001]   226.693880: bprint:               do_futex : futex_lock_pi start
->             <...>-13232 [001]   226.693886: bprint:               do_futex : futex_lock_pi done ret=0
->             <...>-13235 [001]   226.700204: bprint:               do_futex : futex_lock_pi start
->             <...>-13235 [001]   226.700210: bprint:               futex_lock_pi_atomic : lookup_pi_state: -ESRCH for pid=13242
->             <...>-13235 [001]   226.700211: bprint:               futex_lock_pi_atomic : ownerdied not detected, returning -ESRCH
->             <...>-13235 [001]   226.700211: bprint:               futex_lock_pi_atomic : lookup_pi_state: -3
->             <...>-13235 [001]   226.700212: bprint:               futex_lock_pi : returning -ESRCH to userspace
->             <...>-13235 [001]   226.700212: bprint:               do_futex : futex_lock_pi done ret=-3
->             <...>-13240 [000]   226.705574: bprint:               do_futex : futex_lock_pi start
->             <...>-13240 [000]   226.705580: bprint:               futex_lock_pi_atomic : lookup_pi_state: -ESRCH for pid=13242
->             <...>-13240 [000]   226.705581: bprint:               futex_lock_pi_atomic : ownerdied not detected, returning -ESRCH
->             <...>-13240 [000]   226.705582: bprint:               futex_lock_pi_atomic : lookup_pi_state: -3
->             <...>-13240 [000]   226.705582: bprint:               futex_lock_pi : returning -ESRCH to userspace
->             <...>-13240 [000]   226.705583: bprint:               do_futex : futex_lock_pi done ret=-3
->             <...>-13231 [000]   226.708095: bprint:               do_futex : futex_lock_pi start
->             <...>-13231 [000]   226.708101: bprint:               futex_lock_pi_atomic : lookup_pi_state: -ESRCH for pid=13242
->             <...>-13231 [000]   226.708102: bprint:               futex_lock_pi_atomic : ownerdied not detected, returning -ESRCH
->             <...>-13231 [000]   226.708102: bprint:               futex_lock_pi_atomic : lookup_pi_state: -3
->             <...>-13231 [000]   226.708103: bprint:               futex_lock_pi : returning -ESRCH to userspace
->             <...>-13231 [000]   226.708103: bprint:               do_futex : futex_lock_pi done ret=-3
->             <...>-13242 [001]   226.709246: bprint:               do_futex : futex_unlock_pi start
->             <...>-13242 [001]   226.709249: bprint:               do_futex : futex_unlock_pi: TID->0 transition 2147496890
->             <...>-13242 [001]   226.709250: bprint:               do_futex : futex_unlock_pi: no waiters, unlock the futex ret=0 uval=-2147470406
->             <...>-13242 [001]   226.709250: bprint:               do_futex : futex_unlock_pi done ret=0
->
-> As you can see lookup_pi_state fails for the pid (13242) which is at the very
-> bottom and that is unlocking the futex. This smells fishy to me. I can
-> see this pattern consistently for all failures. Maybe I am doing
-> something wrong or the timestamps are not precise enough but from what I
-> can see this looks like a bug in lookup_pi_state which doesn't find an
-> existing PID.
->
-> --
->  From 733816347db91670f27d206382b8c2e57e5ef125 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko<mhocko@suse.cz>
-> Date: Mon, 28 Jun 2010 13:42:29 +0200
-> Subject: [PATCH] futex pi unlock tracing added
->
-> ---
->   kernel/futex.c |   24 +++++++++++++++++++-----
->   1 files changed, 19 insertions(+), 5 deletions(-)
->
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index 24ac437..d114fee 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -716,7 +716,8 @@ retry:
->   	if (unlikely(ret)) {
->   		switch (ret) {
->   		case -ESRCH:
-> -			trace_printk("lookup_pi_state: -ESRCH\n");
-> +			trace_printk("lookup_pi_state: -ESRCH for pid=%u\n",
-> +					uval&  FUTEX_TID_MASK);
->   			/*
->   			 * No owner found for this futex. Check if the
->   			 * OWNER_DIED bit is set to figure out whether
-> @@ -2070,8 +2071,10 @@ retry:
->   	 * again. If it succeeds then we can return without waking
->   	 * anyone else up:
->   	 */
-> -	if (!(uval&  FUTEX_OWNER_DIED))
-> +	if (!(uval&  FUTEX_OWNER_DIED)) {
->   		uval = cmpxchg_futex_value_locked(uaddr, task_pid_vnr(current), 0);
-> +		trace_printk("futex_unlock_pi: TID->0 transition %u\n", uval);
-> +	}
->
->
->   	if (unlikely(uval == -EFAULT))
-> @@ -2080,8 +2083,10 @@ retry:
->   	 * Rare case: we managed to release the lock atomically,
->   	 * no need to wake anyone else up:
->   	 */
-> -	if (unlikely(uval == task_pid_vnr(current)))
-> +	if (unlikely(uval == task_pid_vnr(current))) {
-> +		trace_printk("futex_unlock_pi: release without wakeup\n");
->   		goto out_unlock;
-> +	}
->
->   	/*
->   	 * Ok, other tasks may need to be woken up - check waiters
-> @@ -2093,6 +2098,7 @@ retry:
->   		if (!match_futex (&this->key,&key))
->   			continue;
->   		ret = wake_futex_pi(uaddr, uval, this);
-> +		trace_printk("futex_unlock_pi: wake ret=%d uval=%u this=%p\n", ret, uval, this);
->   		/*
->   		 * The atomic access to the futex value
->   		 * generated a pagefault, so retry the
-> @@ -2107,6 +2113,8 @@ retry:
->   	 */
->   	if (!(uval&  FUTEX_OWNER_DIED)) {
->   		ret = unlock_futex_pi(uaddr, uval);
-> +		trace_printk("futex_unlock_pi: no waiters, unlock the futex ret=%d uval=%d\n",
-> +				ret, uval);
->   		if (ret == -EFAULT)
->   			goto pi_faulted;
->   	}
-> @@ -2600,12 +2608,18 @@ long do_futex(u32 __user *uaddr, int op, u32 val, ktime_t *timeout,
->   		ret = futex_wake_op(uaddr, fshared, uaddr2, val, val2, val3);
->   		break;
->   	case FUTEX_LOCK_PI:
-> -		if (futex_cmpxchg_enabled)
-> +		if (futex_cmpxchg_enabled) {
-> +			trace_printk("futex_lock_pi start\n");
->   			ret = futex_lock_pi(uaddr, fshared, val, timeout, 0);
-> +			trace_printk("futex_lock_pi done ret=%d\n", ret);
-> +		}
->   		break;
->   	case FUTEX_UNLOCK_PI:
-> -		if (futex_cmpxchg_enabled)
-> +		if (futex_cmpxchg_enabled) {
-> +			trace_printk("futex_unlock_pi start\n");
->   			ret = futex_unlock_pi(uaddr, fshared);
-> +			trace_printk("futex_unlock_pi done ret=%d\n", ret);
-> +		}
->   		break;
->   	case FUTEX_TRYLOCK_PI:
->   		if (futex_cmpxchg_enabled)
-
-
--- 
-Darren Hart
-IBM Linux Technology Center
-Real-Time Linux Team
+greg k-h
