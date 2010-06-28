@@ -1,352 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab0F1P6v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 11:58:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54431 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751491Ab0F1P6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 11:58:50 -0400
-Date: Mon, 28 Jun 2010 17:58:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Darren Hart <dvhltc@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: futex: race in lock and unlock&exit for robust futex with PI?
-Message-ID: <20100628155845.GC24127@tiehlicka.suse.cz>
-References: <20100623091307.GA11072@tiehlicka.suse.cz>
- <4C2417AA.4030306@us.ibm.com>
- <20100625082711.GA32765@tiehlicka.suse.cz>
- <4C24ED34.9040808@us.ibm.com>
- <4C253D32.6040304@us.ibm.com>
- <20100628144246.GA14201@tiehlicka.suse.cz>
- <20100628153214.GA24127@tiehlicka.suse.cz>
+	id S1754828Ab0F1QEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 12:04:38 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:39455 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab0F1QEe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 12:04:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Wy9hC72PSU/2bMVvvuVqEMZx/98axzm0Mdh5V+/VpSKxXf40AW6kgH6p+ZnB1K0Ul8
+         YyNdykFsSywkqEMfcsZZqyH37B6b4Uaxb/jYNuSOYepcLLBYklYxR0E8Ckc8KE8qZtM3
+         Ld1RV+3TwVkU+yId2B4nEhb2qmJsPVGPZ9w5w=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100628153214.GA24127@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTim0jVRyqkwlGOcrg_XTvUQwcBYfWJX-aRzkkrLG@mail.gmail.com>
+References: <AANLkTim0jVRyqkwlGOcrg_XTvUQwcBYfWJX-aRzkkrLG@mail.gmail.com>
+Date: Mon, 28 Jun 2010 08:56:26 -0700
+Message-ID: <AANLkTimBY1ydg_PO9whlsO0LM64L7M09AtRX_f9q8dHl@mail.gmail.com>
+Subject: Re: 2.6.35-rc2-git5 -- [drm:drm_mode_getfb] *ERROR* invalid 
+	framebuffer id
+From: Bret Towe <magnade@gmail.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 28-06-10 17:32:14, Michal Hocko wrote:
-> On Mon 28-06-10 16:42:46, Michal Hocko wrote:
-> > Hi Darren,
-> 
-> Hmm, I think that I've found the reason. I have used one additional
-> tracing patch (bellow) and we are getting ESRCH because cread and pcred
-> don't match:
-> 
-> 
-> version = 6
-> CPU 0 is empty
-> cpus=2
-> field->offset = 16 size=4
->            <...>-22260 [001]   139.669672: bprint:               do_futex : futex_lock_pi start
->            <...>-22260 [001]   139.669678: bprint:               do_futex : futex_lock_pi done ret=0
->            <...>-22281 [001]   139.693690: bprint:               do_futex : futex_lock_pi start
->            <...>-22281 [001]   139.693696: bprint:               lookup_pi_state : cred(1004,1004) != pcred(1003,1003)
->            <...>-22281 [001]   139.693697: bprint:               lookup_pi_state : futex_find_get_task failed with -3
->            <...>-22281 [001]   139.693697: bprint:               futex_lock_pi_atomic : lookup_pi_state: -ESRCH for pid=22280
->            <...>-22281 [001]   139.693698: bprint:               futex_lock_pi_atomic : ownerdied not detected, returning -ESRCH
->            <...>-22281 [001]   139.693698: bprint:               futex_lock_pi_atomic : lookup_pi_state: -3
->            <...>-22281 [001]   139.693699: bprint:               futex_lock_pi : returning -ESRCH to userspace
->            <...>-22281 [001]   139.693700: bprint:               do_futex : futex_lock_pi done ret=-3
->            <...>-22280 [001]   139.694033: bprint:               do_futex : futex_unlock_pi start
->            <...>-22280 [001]   139.694035: bprint:               do_futex : futex_unlock_pi: TID->0 transition 2147505928
->            <...>-22280 [001]   139.694036: bprint:               do_futex : futex_unlock_pi: no waiters, unlock the futex ret=0 uval=-2147461368
->            <...>-22280 [001]   139.694036: bprint:               do_futex : futex_unlock_pi done ret=0
->            <...>-22488 [001]   139.874967: bprint:               do_futex : futex_lock_pi start
->            <...>-22488 [001]   139.874972: bprint:               do_futex : futex_lock_pi done ret=0
-> 
-> This would answer why we cannot reproduce with a single user.
+On Fri, Jun 11, 2010 at 1:31 PM, Miles Lane <miles.lane@gmail.com> wrote:
+> # dmesg | grep -i drm
+> How should I go about debugging this?  I am running Ubuntu unstable,
+> which just moved to the latest Xorg code (xserver-xorg-core
+> 2:1.8.1.901-1ubuntu1 and  xserver-xorg-video-intel 2:2.11.0-1ubuntu2
+> ).
+>
+> [    0.971549] [drm] Initialized drm 1.1.0 20060810
+> [    1.171050] [drm] set up 31M of stolen space
+> [    2.075347] fb0: inteldrmfb frame buffer device
+> [    2.075351] drm: registered panic notifier
+> [    2.081609] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+> [   66.545581] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> [   75.336738] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> [30843.394355] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> [33302.610229] [drm:init_ring_common] *ERROR* render ring head not
+> reset to zero ctl 00000000 head fffffffc tail 00000000 start 02000000
+> [33302.610238] [drm:init_ring_common] *ERROR* render ring head forced
+> to zero ctl 00000000 head 00000000 tail 00000000 start 02000000
+> [33305.239941] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+> [35339.052446] [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+>
+> 00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series
+> Chipset Integrated Graphics Controller (rev 07)
+>        Subsystem: ASUSTeK Computer Inc. Device 1af2
+>        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
+> Stepping- SERR- FastB2B- DisINTx+
+>        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort-
+> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>        Latency: 0
+>        Interrupt: pin A routed to IRQ 44
+>        Region 0: Memory at fcc00000 (64-bit, non-prefetchable) [size=4M]
+>        Region 2: Memory at d0000000 (64-bit, prefetchable) [size=256M]
+>        Region 4: I/O ports at cc00 [size=8]
+>        Capabilities: [90] Message Signalled Interrupts: Mask- 64bit- Queue=0/0 Enable+
+>                Address: fee0200c  Data: 4169
+>        Capabilities: [d0] Power Management version 3
+>                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+>                Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+>        Kernel driver in use: i915
+> 00: 86 80 42 2a 07 04 90 00 07 00 00 03 00 00 00 00
+> 10: 04 00 c0 fc 00 00 00 00 0c 00 00 d0 00 00 00 00
+> 20: 01 cc 00 00 00 00 00 00 00 00 00 00 43 10 f2 1a
+> 30: 00 00 00 00 90 00 00 00 00 00 00 00 0a 01 00 00
+> 40: 00 00 00 00 48 00 00 00 09 00 0a 11 88 30 00 1c
+> 50: 01 80 50 03 0b 00 00 00 00 00 00 00 00 00 00 be
+> 60: 00 00 00 00 00 00 02 00 00 00 00 00 00 00 00 00
+> 70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> 80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> 90: 05 d0 01 00 0c 20 e0 fe 69 41 00 00 00 00 00 00
+> a0: 00 00 00 00 09 00 06 20 00 00 00 00 00 00 00 00
+> b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> c0: 00 00 00 00 00 00 00 00 00 00 00 00 40 01 00 00
+> d0: 01 00 23 00 00 00 00 00 00 00 00 00 34 00 00 00
+> e0: 00 00 00 00 00 00 00 00 00 80 00 1a 41 20 00 00
+> f0: 0d 1c 34 07 ff 00 00 00 a0 0f 07 00 e4 20 d8 bd
+>
+> 01:00.0 VGA compatible controller: nVidia Corporation GT218 [GeForce
+> G210M] (rev a2)
+>        Subsystem: ASUSTeK Computer Inc. Device 1af2
+>        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr-
+> Stepping- SERR- FastB2B- DisINTx-
+>        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>        Interrupt: pin A routed to IRQ 10
+>        Region 0: Memory at fd000000 (32-bit, non-prefetchable) [disabled] [size=16M]
+>        Region 1: Memory at e0000000 (64-bit, prefetchable) [disabled] [size=256M]
+>        Region 3: Memory at fa000000 (64-bit, prefetchable) [disabled] [size=32M]
+>        Region 5: I/O ports at dc00 [disabled] [size=128]
+>        Expansion ROM at fe980000 [disabled] [size=512K]
+>        Capabilities: [60] Power Management version 3
+>                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+>                Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+>        Capabilities: [68] Message Signalled Interrupts: Mask- 64bit+ Queue=0/0 Enable-
+>                Address: 0000000000000000  Data: 0000
+>        Capabilities: [78] Express (v2) Endpoint, MSI 00
+>                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <4us, L1 <64us
+>                        ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+>                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+>                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+>                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+>                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
+>                LnkCap: Port #0, Speed 5GT/s, Width x16, ASPM L0s L1, Latency L0
+> <256ns, L1 <1us
+>                        ClockPM+ Suprise- LLActRep- BwNot-
+>                LnkCtl: ASPM L0s L1 Enabled; RCB 128 bytes Disabled- Retrain- CommClk+
+>                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+>                LnkSta: Speed 2.5GT/s, Width x8, TrErr- Train- SlotClk+ DLActive-
+> BWMgmt- ABWMgmt-
+>        Capabilities: [b4] Vendor Specific Information <?>
+>        Capabilities: [100] Virtual Channel <?>
+>        Capabilities: [128] Power Budgeting <?>
+>        Capabilities: [600] Vendor Specific Information <?>
+> 00: de 10 74 0a 00 00 10 00 a2 00 00 03 08 00 80 00
+> 10: 00 00 00 fd 0c 00 00 e0 00 00 00 00 0c 00 00 fa
+> 20: 00 00 00 00 01 dc 00 00 00 00 00 00 43 10 f2 1a
+> 30: 00 00 98 fe 60 00 00 00 00 00 00 00 0a 01 00 00
+> 40: 43 10 f2 1a 00 00 00 00 00 00 00 00 00 00 00 00
+> 50: 00 00 00 00 01 00 00 00 ce d6 23 00 00 00 00 00
+> 60: 01 68 03 00 08 00 00 00 05 78 80 00 00 00 00 00
+> 70: 00 00 00 00 00 00 00 00 10 b4 02 00 a0 8d 64 00
+> 80: 10 28 00 00 02 2d 04 00 4b 00 81 10 00 00 00 00
+> 90: 00 00 00 00 00 00 00 00 00 00 00 00 10 00 00 00
+> a0: 00 00 00 00 00 00 00 00 02 00 00 00 00 00 00 00
+> b0: 00 00 00 00 09 00 14 01 00 00 00 00 00 00 00 00
+> c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>
+> CONFIG_AGP=y
+> CONFIG_AGP_INTEL=y
+> CONFIG_VGA_ARB=y
+> CONFIG_VGA_ARB_MAX_GPUS=2
+> CONFIG_VGA_SWITCHEROO=y
+> CONFIG_DRM=y
+> CONFIG_DRM_KMS_HELPER=y
+> CONFIG_DRM_I915=y
+> CONFIG_DRM_I915_KMS=y
+> CONFIG_VIDEO_OUTPUT_CONTROL=y
+> CONFIG_FB=y
+> CONFIG_FIRMWARE_EDID=y
+> CONFIG_FB_CFB_FILLRECT=y
+> CONFIG_FB_CFB_COPYAREA=y
+> CONFIG_FB_CFB_IMAGEBLIT=y
+> CONFIG_FB_SYS_FILLRECT=y
+> CONFIG_FB_SYS_COPYAREA=y
+> CONFIG_FB_SYS_IMAGEBLIT=y
+> CONFIG_FB_SYS_FOPS=y
+> CONFIG_FB_DEFERRED_IO=y
+> CONFIG_FB_MODE_HELPERS=y
+> CONFIG_FB_TILEBLITTING=y
+> CONFIG_XEN_FBDEV_FRONTEND=y
+> CONFIG_BACKLIGHT_LCD_SUPPORT=y
+> CONFIG_LCD_CLASS_DEVICE=m
+> CONFIG_LCD_PLATFORM=m
+> CONFIG_BACKLIGHT_CLASS_DEVICE=y
+> CONFIG_VGA_CONSOLE=y
+> CONFIG_VGACON_SOFT_SCROLLBACK=y
+> CONFIG_VGACON_SOFT_SCROLLBACK_SIZE=64
+> CONFIG_DUMMY_CONSOLE=y
+> CONFIG_FRAMEBUFFER_CONSOLE=y
+> CONFIG_FONT_8x8=y
+> CONFIG_FONT_8x16=y
 
-I am trying to understand why futex_find_get_task has to check the
-credentials at all. I guess that there might be some concerns from
-futex_requeue callers but does it make sense from futex_lock_pi_atomic
-call path? This would mean that the futex is unusable in multi-user process
-synchronization, right? (Is this documented somewhere?)
+any luck on this? I'm seeing the same error with a radeon card
+I'm on a 2.6.35-rc3 kernel btw
+on ubuntu lucid
 
-[...]
-> 
-> --
-> From f0743d2b2d2f81c40700c4d6816ad3abfd113c1b Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Mon, 28 Jun 2010 17:08:56 +0200
-> Subject: [PATCH] more traces
-> 
-> ---
->  kernel/futex.c |   13 +++++++++++--
->  1 files changed, 11 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index d114fee..d1c2489 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -435,11 +435,16 @@ static struct task_struct * futex_find_get_task(pid_t pid)
->  	p = find_task_by_vpid(pid);
->  	if (!p) {
->  		p = ERR_PTR(-ESRCH);
-> +		trace_printk("%u pid not found\n", pid);
->  	} else {
->  		pcred = __task_cred(p);
->  		if (cred->euid != pcred->euid &&
-> -		    cred->euid != pcred->uid)
-> +		    cred->euid != pcred->uid) {
->  			p = ERR_PTR(-ESRCH);
-> +			trace_printk("cred(%u,%u) != pcred(%u,%u)\n",
-> +					cred->euid, cred->uid,
-> +					pcred->euid, pcred->uid);
-> +		}
->  		else
->  			get_task_struct(p);
->  	}
-> @@ -564,8 +569,11 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
->  	if (!pid)
->  		return -ESRCH;
->  	p = futex_find_get_task(pid);
-> -	if (IS_ERR(p))
-> +	if (IS_ERR(p)) {
-> +		trace_printk("futex_find_get_task failed with %d\n",
-> +				PTR_ERR(p));
->  		return PTR_ERR(p);
-> +	}
->  
->  	/*
->  	 * We need to look at the task state flags to figure out,
-> @@ -581,6 +589,7 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
->  		 * cleanup:
->  		 */
->  		int ret = (p->flags & PF_EXITPIDONE) ? -ESRCH : -EAGAIN;
-> +		trace_printk("pid=%u is exiting ret=%d\n", pid, ret);
->  
->  		raw_spin_unlock_irq(&p->pi_lock);
->  		put_task_struct(p);
-> -- 
-> 1.7.1
-> 
-> 
-> > 
-> > --
-> > From 733816347db91670f27d206382b8c2e57e5ef125 Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Mon, 28 Jun 2010 13:42:29 +0200
-> > Subject: [PATCH] futex pi unlock tracing added
-> > 
-> > ---
-> >  kernel/futex.c |   24 +++++++++++++++++++-----
-> >  1 files changed, 19 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/kernel/futex.c b/kernel/futex.c
-> > index 24ac437..d114fee 100644
-> > --- a/kernel/futex.c
-> > +++ b/kernel/futex.c
-> > @@ -716,7 +716,8 @@ retry:
-> >  	if (unlikely(ret)) {
-> >  		switch (ret) {
-> >  		case -ESRCH:
-> > -			trace_printk("lookup_pi_state: -ESRCH\n");
-> > +			trace_printk("lookup_pi_state: -ESRCH for pid=%u\n",
-> > +					uval & FUTEX_TID_MASK);
-> >  			/*
-> >  			 * No owner found for this futex. Check if the
-> >  			 * OWNER_DIED bit is set to figure out whether
-> > @@ -2070,8 +2071,10 @@ retry:
-> >  	 * again. If it succeeds then we can return without waking
-> >  	 * anyone else up:
-> >  	 */
-> > -	if (!(uval & FUTEX_OWNER_DIED))
-> > +	if (!(uval & FUTEX_OWNER_DIED)) {
-> >  		uval = cmpxchg_futex_value_locked(uaddr, task_pid_vnr(current), 0);
-> > +		trace_printk("futex_unlock_pi: TID->0 transition %u\n", uval);
-> > +	}
-> >  
-> >  
-> >  	if (unlikely(uval == -EFAULT))
-> > @@ -2080,8 +2083,10 @@ retry:
-> >  	 * Rare case: we managed to release the lock atomically,
-> >  	 * no need to wake anyone else up:
-> >  	 */
-> > -	if (unlikely(uval == task_pid_vnr(current)))
-> > +	if (unlikely(uval == task_pid_vnr(current))) {
-> > +		trace_printk("futex_unlock_pi: release without wakeup\n");
-> >  		goto out_unlock;
-> > +	}
-> >  
-> >  	/*
-> >  	 * Ok, other tasks may need to be woken up - check waiters
-> > @@ -2093,6 +2098,7 @@ retry:
-> >  		if (!match_futex (&this->key, &key))
-> >  			continue;
-> >  		ret = wake_futex_pi(uaddr, uval, this);
-> > +		trace_printk("futex_unlock_pi: wake ret=%d uval=%u this=%p\n", ret, uval, this);
-> >  		/*
-> >  		 * The atomic access to the futex value
-> >  		 * generated a pagefault, so retry the
-> > @@ -2107,6 +2113,8 @@ retry:
-> >  	 */
-> >  	if (!(uval & FUTEX_OWNER_DIED)) {
-> >  		ret = unlock_futex_pi(uaddr, uval);
-> > +		trace_printk("futex_unlock_pi: no waiters, unlock the futex ret=%d uval=%d\n",
-> > +				ret, uval);
-> >  		if (ret == -EFAULT)
-> >  			goto pi_faulted;
-> >  	}
-> > @@ -2600,12 +2608,18 @@ long do_futex(u32 __user *uaddr, int op, u32 val, ktime_t *timeout,
-> >  		ret = futex_wake_op(uaddr, fshared, uaddr2, val, val2, val3);
-> >  		break;
-> >  	case FUTEX_LOCK_PI:
-> > -		if (futex_cmpxchg_enabled)
-> > +		if (futex_cmpxchg_enabled) {
-> > +			trace_printk("futex_lock_pi start\n");
-> >  			ret = futex_lock_pi(uaddr, fshared, val, timeout, 0);
-> > +			trace_printk("futex_lock_pi done ret=%d\n", ret);
-> > +		}
-> >  		break;
-> >  	case FUTEX_UNLOCK_PI:
-> > -		if (futex_cmpxchg_enabled)
-> > +		if (futex_cmpxchg_enabled) {
-> > +			trace_printk("futex_unlock_pi start\n");
-> >  			ret = futex_unlock_pi(uaddr, fshared);
-> > +			trace_printk("futex_unlock_pi done ret=%d\n", ret);
-> > +		}
-> >  		break;
-> >  	case FUTEX_TRYLOCK_PI:
-> >  		if (futex_cmpxchg_enabled)
-> > -- 
-> > 1.7.1
-> > 
-> > > 
-> > > --
-> > > Darren Hart
-> > > 
-> > > From 92014a07df73489460ff788274506255ff0f775d Mon Sep 17 00:00:00 2001
-> > > From: Darren Hart <dvhltc@us.ibm.com>
-> > > Date: Fri, 25 Jun 2010 13:54:25 -0700
-> > > Subject: [PATCH] robust pi futex tracing
-> > > 
-> > > ---
-> > >  kernel/futex.c |   24 ++++++++++++++++++++----
-> > >  1 files changed, 20 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/kernel/futex.c b/kernel/futex.c
-> > > index e7a35f1..24ac437 100644
-> > > --- a/kernel/futex.c
-> > > +++ b/kernel/futex.c
-> > > @@ -683,6 +683,8 @@ retry:
-> > >  	 */
-> > >  	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
-> > >  		/* Keep the OWNER_DIED bit */
-> > > +		if (ownerdied)
-> > > +			trace_printk("ownerdied, taking over lock\n");
-> > >  		newval = (curval & ~FUTEX_TID_MASK) | task_pid_vnr(task);
-> > >  		ownerdied = 0;
-> > >  		lock_taken = 1;
-> > > @@ -692,14 +694,18 @@ retry:
-> > >  
-> > >  	if (unlikely(curval == -EFAULT))
-> > >  		return -EFAULT;
-> > > -	if (unlikely(curval != uval))
-> > > +	if (unlikely(curval != uval)) {
-> > > +		trace_printk("cmpxchg failed, retrying\n");
-> > >  		goto retry;
-> > > +	}
-> > >  
-> > >  	/*
-> > >  	 * We took the lock due to owner died take over.
-> > >  	 */
-> > > -	if (unlikely(lock_taken))
-> > > +	if (unlikely(lock_taken)) {
-> > > +		trace_printk("ownerdied, lock acquired, return 1\n");
-> > >  		return 1;
-> > > +	}
-> > >  
-> > >  	/*
-> > >  	 * We dont have the lock. Look up the PI state (or create it if
-> > > @@ -710,13 +716,16 @@ retry:
-> > >  	if (unlikely(ret)) {
-> > >  		switch (ret) {
-> > >  		case -ESRCH:
-> > > +			trace_printk("lookup_pi_state: -ESRCH\n");
-> > >  			/*
-> > >  			 * No owner found for this futex. Check if the
-> > >  			 * OWNER_DIED bit is set to figure out whether
-> > >  			 * this is a robust futex or not.
-> > >  			 */
-> > > -			if (get_futex_value_locked(&curval, uaddr))
-> > > +			if (get_futex_value_locked(&curval, uaddr)) {
-> > > +				trace_printk("get_futex_value_locked: -EFAULT\n");
-> > >  				return -EFAULT;
-> > > +			}
-> > >  
-> > >  			/*
-> > >  			 * We simply start over in case of a robust
-> > > @@ -724,10 +733,13 @@ retry:
-> > >  			 * and return happy.
-> > >  			 */
-> > >  			if (curval & FUTEX_OWNER_DIED) {
-> > > +				trace_printk("ownerdied, goto retry\n");
-> > >  				ownerdied = 1;
-> > >  				goto retry;
-> > >  			}
-> > > +			trace_printk("ownerdied not detected, returning -ESRCH\n");
-> > >  		default:
-> > > +			trace_printk("lookup_pi_state: %d\n", ret);
-> > >  			break;
-> > >  		}
-> > >  	}
-> > > @@ -1950,6 +1962,8 @@ retry_private:
-> > >  			put_futex_key(fshared, &q.key);
-> > >  			cond_resched();
-> > >  			goto retry;
-> > > +		case -ESRCH:
-> > > +			trace_printk("returning -ESRCH to userspace\n");
-> > >  		default:
-> > >  			goto out_unlock_put_key;
-> > >  		}
-> > > @@ -2537,8 +2551,10 @@ void exit_robust_list(struct task_struct *curr)
-> > >  		/*
-> > >  		 * Avoid excessively long or circular lists:
-> > >  		 */
-> > > -		if (!--limit)
-> > > +		if (!--limit) {
-> > > +			trace_printk("excessively long list, aborting\n");
-> > >  			break;
-> > > +		}
-> > >  
-> > >  		cond_resched();
-> > >  	}
-> > > -- 
-> > > 1.7.0.4
-> > > 
-> > > -- 
-> > > Darren Hart
-> > > IBM Linux Technology Center
-> > > Real-Time Linux Team
-> > 
-> > -- 
-> > Michal Hocko
-> > L3 team 
-> > SUSE LINUX s.r.o.
-> > Lihovarska 1060/12
-> > 190 00 Praha 9    
-> > Czech Republic
-> 
-> -- 
-> Michal Hocko
-> L3 team 
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9    
-> Czech Republic
-
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+and not sure if its related or not but my consoles are broken
+in that i can't see them switching to them gives dmesg an error
+like above
+any dmesg or config output required say so I'll be able to add them tonight
