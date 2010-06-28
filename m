@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab0F1RSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 13:18:25 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61268 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab0F1RSW (ORCPT
+	id S1753441Ab0F1RSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 13:18:40 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:63716 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753296Ab0F1RSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 13:18:22 -0400
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Mike Snitzer <snitzer@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-       martin.petersen@oracle.com, akpm@linux-foundation.org,
-       linux-scsi@vger.kernel.org,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request payload
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20100622180029.GA15950@redhat.com>
-	<1277582211-10725-1-git-send-email-snitzer@redhat.com>
-	<1277652576.4366.19.camel@mulgrave.site>
-Date: Mon, 28 Jun 2010 13:16:42 -0400
-In-Reply-To: <1277652576.4366.19.camel@mulgrave.site> (James Bottomley's
-	message of "Sun, 27 Jun 2010 10:29:36 -0500")
-Message-ID: <yq1sk47dqmd.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Mon, 28 Jun 2010 13:18:38 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq4BAG12KExLd/sX/2dsb2JhbAAHgxaXDLVJkH6BKYMJcgQ
+X-IronPort-AV: E=Sophos;i="4.53,498,1272859200"; 
+   d="scan'208";a="69048967"
+Message-ID: <4C28D96B.6060409@teksavvy.com>
+Date: Mon, 28 Jun 2010 13:18:35 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C28D90D.01C9:SCFMA4539814,ss=1,fgs=0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Regression: ps2mouse not working in 2.6.34
+References: <4C28C81E.4010909@teksavvy.com> <20100628163350.GA11670@core.coreip.homeip.net>
+In-Reply-To: <20100628163350.GA11670@core.coreip.homeip.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "James" == James Bottomley <James.Bottomley@suse.de> writes:
+On 28/06/10 12:33 PM, Dmitry Torokhov wrote:
+> On Mon, Jun 28, 2010 at 12:04:46PM -0400, Mark Lord wrote:
+>> Okay, who broke it, and how do I re-enable it?
+>>
+>> The PS/2 mice on my systems here don't do anything with 2.6.34.
+>> One system complains that I need to boot with i8042.nopnp to enable it,
+>> which I also tried, but still nogo.  Same behaviour with or without
+>> /dev/psaux enabled.  64-bit kernel.
+>>
+>> The other system, running older userspace, hangs at the X-server startup
+>> because it cannot find the mouse.  No i8042 warnings.   32-bit kernel.
+>>
+>> Both systems working fine with older kernels.
+>> Google finds lots of other people discovering the same problem.
+>>
+>> What gives?
+>>
+>
+> Well, lest start small: did it work ifor you with 2.6.33? Does kernel
+> discover AUX serio port (dmesg)? What about the mouse itself? Is it
+> absent or is it not reporting events?
+..
 
-James> I really hate these growing contortions for discard.  They're a
-James> clear signal that we haven't implemented it right.
+I started by crawling into the wire nest under the table.  :)
 
-James> So let's first work out how it should be done.  I really like
-James> Tomo's idea of doing discard through the normal REQ_TYPE_FS
-James> route, which means we can control the setup in prep and the tear
-James> down in done, all confined to the ULD.
+After a certain amount of experimentation, it appears that the newer
+kernel is not compatible with the USB-to-PS2 dongle on the end of the mouse.
+I found a different USB-to-PS2 dongle which does work, though.
 
-Yeah, this is what I was trying to do a couple of months ago.  Trying to
-make discard and write same filesystem class requests so we can split,
-merge, etc. like READs and WRITEs.  I still think this is how we should
-do it but it's a lot of work.
+Very weird.  I can mail you the other dongle if are really interested
+in figuring out what broke and fixing it.
 
-There are several challenges involved.  I was doing the "payload"
-allocation at request allocation time by permitting a buffer trailing
-struct request (size defined by ULD depending on req type).  However, we
-have a few places in the stack where we memcpy requests and assume them
-to be the same size.  That needs to be fixed.  That's also the roadblock
-I ran into wrt. 32-byte CDB allocation so for that I ended up allocating
-the command in sd.
+Otherwise, things are now working here again after the hardware change.
 
-Also, another major headache of mine is WRITE SAME/UNMAP to DSM TRIM
-conversion.  Because of the limitations of the TRIM command format a
-single WRITE SAME can turn into effectively hundreds of TRIM commands to
-be issued.  I tried to limit this by using UNMAP translation instead.
-But we can still get into cases where we need to either loop or allocate
-a bunch of TRIMs in the translation layer.  That leaves two options:
-Either pass really conservative limits up the stack and loop up there.
-Or deal with the allocation/translation stuff at the bottom of the pile.
-None of my attempts in these departments turned out to be very nice.
-I'm still dreaming of the day where libata moves out from under SCSI so
-we don't have to translate square pegs into round holes...
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+Cheers
