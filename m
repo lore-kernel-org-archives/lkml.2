@@ -1,64 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399Ab0F1LoB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 07:44:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62085 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab0F1LoA (ORCPT
+	id S1752844Ab0F1Lxe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 07:53:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36730 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab0F1Lxd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 07:44:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rZfDOLcJnB6EfC1Ct3xseHI0uknAy0RgJd76UJ0WFwUbev6KG9Ofb3UXdwWdEaYLZu
-         6B0UvZO6xwp6F7U/9YogSIXohrw2MPKraGYZg7Q6lMOvhYAE3SrclScpCSGYmt0dhUf4
-         I7XyyTzX2i+zJVdBZZ/tnhke3dicMVFoG5xyY=
-Date: Mon, 28 Jun 2010 15:43:54 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH v2 24/26] power: Add JZ4740 battery driver.
-Message-ID: <20100628114354.GA21096@oksana.dev.rtsoft.ru>
-References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
- <1276924111-11158-25-git-send-email-lars@metafoo.de>
- <4C26B05C.3030706@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4C26B05C.3030706@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 28 Jun 2010 07:53:33 -0400
+Subject: [PATCH] init: Fix race between init and kthreadd -v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ilya Loginov <isloginov@gmail.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1277715689.1875.1104.camel@laptop>
+References: <20100624001148.61e9da1c.isloginov@gmail.com>
+	 <1277385096.1875.974.camel@laptop>
+	 <20100624172334.ca7e9bef.isloginov@gmail.com>
+	 <1277715689.1875.1104.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Jun 2010 13:53:17 +0200
+Message-ID: <1277725997.3561.6.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 27, 2010 at 03:58:52AM +0200, Lars-Peter Clausen wrote:
-> Hi Anton
-> 
-> You already said that v1 of the patch looked good to you. There are some minor
-> modifications in v2 due to code re-factoring of the ADC driver. If you think this
-> version is good as well an Acked-By would be nice :)
+On Mon, 2010-06-28 at 11:01 +0200, Peter Zijlstra wrote:
 
-Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+>  static int __init kernel_init(void * unused)
+>  {
+> +	/*
+> +	 * Synchronize against setting kthreadd_task in rest_init().
+> +	 * Using a mutex would have been a lot nicer, but since its a very
+> +	 * rare race don't bother wasting the space overhead.
+> +	 */
+> +	while (!kthreadd_task)
+> +		yield();
+> +
+>  	lock_kernel();
 
-Thanks,
 
-> Lars-Peter Clausen wrote:
-> > This patch adds support for the battery voltage measurement part of the JZ4740
-> > ADC unit.
-> > 
-> > Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> > Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> > 
-> > ---
-> > Changes since v1
-> > - Fix voltage difference check in jz_update_battery
-> > - Move get_battery_voltage from the hwmon driver to the battery driver
-> > - The battery driver is now a cell of the ADC MFD driver
-> > ---
+I just realized its all __init code so its all 'free' anyway, how about
+the nicer version:
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+---
+Subject: init: Fix race between init and kthreadd -v2
+
+Ilya reported that on a very slow machine he could reliably reproduce a
+race between forking init and kthreadd. We first fork init so that it 
+obtains pid-1, however since the scheduler is already fully running at
+this point it can preempt and run the init thread before we spawn and
+set kthreadd_task.
+
+The init thread can then attempt spawning kthreads without kthreadd
+being present which results in an OOPS.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ init/main.c |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
+
+diff --git a/init/main.c b/init/main.c
+index e2a2bf3..8f2acf5 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -420,18 +420,27 @@ static void __init setup_command_line(char *command_line)
+  * gcc-3.4 accidentally inlines this function, so use noinline.
+  */
+ 
++static __initdata DEFINE_MUTEX(kthreadd_lock);
++
+ static noinline void __init_refok rest_init(void)
+ 	__releases(kernel_lock)
+ {
+ 	int pid;
+ 
+ 	rcu_scheduler_starting();
++	/*
++	 * We need to spawn init first so that it obtains pid-1, however
++	 * the init task will end up wanting to create kthreads, which
++	 * if we schedule it before we create kthreadd, will OOPS.
++	 */
++	mutex_lock(&kthreadd_lock);
+ 	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
+ 	numa_default_policy();
+ 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
+ 	rcu_read_lock();
+ 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
+ 	rcu_read_unlock();
++	mutex_unlock(&kthreadd_lock);
+ 	unlock_kernel();
+ 
+ 	/*
+@@ -847,6 +856,13 @@ static noinline int init_post(void)
+ 
+ static int __init kernel_init(void * unused)
+ {
++	/*
++	 * We spawned this thread while holding this lock, ensure the
++	 * locked section in rest_init() is complete before proceeding.
++	 */
++	mutex_lock(&kthreadd_lock);
++	mutex_unlock(&kthreadd_lock);
++
+ 	lock_kernel();
+ 
+ 	/*
+
