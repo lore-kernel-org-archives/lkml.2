@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab0F1VLL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 17:11:11 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42868 "EHLO hera.kernel.org"
+	id S1755472Ab0F1VL1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 17:11:27 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42867 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755277Ab0F1VGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 17:06:19 -0400
+	id S1755271Ab0F1VGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 17:06:18 -0400
 From: Tejun Heo <tj@kernel.org>
 To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
@@ -14,270 +14,359 @@ To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/35] kthread: implement kthread_worker
-Date: Mon, 28 Jun 2010 23:03:49 +0200
-Message-Id: <1277759063-24607-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 11/35] workqueue: kill cpu_populated_map
+Date: Mon, 28 Jun 2010 23:03:59 +0200
+Message-Id: <1277759063-24607-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1277759063-24607-1-git-send-email-tj@kernel.org>
 References: <1277759063-24607-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 21:05:00 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 21:05:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement simple work processor for kthread.  This is to ease using
-kthread.  Single thread workqueue used to be used for things like this
-but workqueue won't guarantee fixed kthread association anymore to
-enable worker sharing.
+Worker management is about to be overhauled.  Simplify things by
+removing cpu_populated_map, creating workers for all possible cpus and
+making single threaded workqueues behave more like multi threaded
+ones.
 
-This can be used in cases where specific kthread association is
-necessary, for example, when it should have RT priority or be assigned
-to certain cgroup.
+After this patch, all cwqs are always initialized, all workqueues are
+linked on the workqueues list and workers for all possibles cpus
+always exist.  This also makes CPU hotplug support simpler - checking
+->cpus_allowed before processing works in worker_thread() and flushing
+cwqs on CPU_POST_DEAD are enough.
+
+While at it, make get_cwq() always return the cwq for the specified
+cpu, add target_cwq() for cases where single thread distinction is
+necessary and drop all direct usage of per_cpu_ptr() on wq->cpu_wq.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/kthread.h |   64 ++++++++++++++++++++
- kernel/kthread.c        |  149 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 213 insertions(+), 0 deletions(-)
+ kernel/workqueue.c |  173 ++++++++++++++++++----------------------------------
+ 1 files changed, 59 insertions(+), 114 deletions(-)
 
-diff --git a/include/linux/kthread.h b/include/linux/kthread.h
-index aabc8a1..f93cb69 100644
---- a/include/linux/kthread.h
-+++ b/include/linux/kthread.h
-@@ -34,4 +34,68 @@ int kthread_should_stop(void);
- int kthreadd(void *unused);
- extern struct task_struct *kthreadd_task;
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f7ab703..dc78956 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -55,6 +55,7 @@ struct cpu_workqueue_struct {
+ 	struct list_head worklist;
+ 	wait_queue_head_t more_work;
+ 	struct work_struct *current_work;
++	unsigned int		cpu;
  
-+/*
-+ * Simple work processor based on kthread.
-+ *
-+ * This provides easier way to make use of kthreads.  A kthread_work
-+ * can be queued and flushed using queue/flush_kthread_work()
-+ * respectively.  Queued kthread_works are processed by a kthread
-+ * running kthread_worker_fn().
-+ *
-+ * A kthread_work can't be freed while it is executing.
-+ */
-+struct kthread_work;
-+typedef void (*kthread_work_func_t)(struct kthread_work *work);
-+
-+struct kthread_worker {
-+	spinlock_t		lock;
-+	struct list_head	work_list;
-+	struct task_struct	*task;
-+};
-+
-+struct kthread_work {
-+	struct list_head	node;
-+	kthread_work_func_t	func;
-+	wait_queue_head_t	done;
-+	atomic_t		flushing;
-+	int			queue_seq;
-+	int			done_seq;
-+};
-+
-+#define KTHREAD_WORKER_INIT(worker)	{				\
-+	.lock = SPIN_LOCK_UNLOCKED,					\
-+	.work_list = LIST_HEAD_INIT((worker).work_list),		\
-+	}
-+
-+#define KTHREAD_WORK_INIT(work, fn)	{				\
-+	.node = LIST_HEAD_INIT((work).node),				\
-+	.func = (fn),							\
-+	.done = __WAIT_QUEUE_HEAD_INITIALIZER((work).done),		\
-+	.flushing = ATOMIC_INIT(0),					\
-+	}
-+
-+#define DEFINE_KTHREAD_WORKER(worker)					\
-+	struct kthread_worker worker = KTHREAD_WORKER_INIT(worker)
-+
-+#define DEFINE_KTHREAD_WORK(work, fn)					\
-+	struct kthread_work work = KTHREAD_WORK_INIT(work, fn)
-+
-+static inline void init_kthread_worker(struct kthread_worker *worker)
-+{
-+	*worker = (struct kthread_worker)KTHREAD_WORKER_INIT(*worker);
-+}
-+
-+static inline void init_kthread_work(struct kthread_work *work,
-+				     kthread_work_func_t fn)
-+{
-+	*work = (struct kthread_work)KTHREAD_WORK_INIT(*work, fn);
-+}
-+
-+int kthread_worker_fn(void *worker_ptr);
-+
-+bool queue_kthread_work(struct kthread_worker *worker,
-+			struct kthread_work *work);
-+void flush_kthread_work(struct kthread_work *work);
-+void flush_kthread_worker(struct kthread_worker *worker);
-+
- #endif /* _LINUX_KTHREAD_H */
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 83911c7..8b63c7f 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -14,6 +14,8 @@
- #include <linux/file.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
-+#include <linux/slab.h>
-+#include <linux/freezer.h>
- #include <trace/events/sched.h>
+ 	struct workqueue_struct *wq;		/* I: the owning workqueue */
+ 	struct task_struct	*thread;
+@@ -189,34 +190,19 @@ static DEFINE_SPINLOCK(workqueue_lock);
+ static LIST_HEAD(workqueues);
  
- static DEFINE_SPINLOCK(kthread_create_lock);
-@@ -247,3 +249,150 @@ int kthreadd(void *unused)
+ static int singlethread_cpu __read_mostly;
+-static const struct cpumask *cpu_singlethread_map __read_mostly;
+-/*
+- * _cpu_down() first removes CPU from cpu_online_map, then CPU_DEAD
+- * flushes cwq->worklist. This means that flush_workqueue/wait_on_work
+- * which comes in between can't use for_each_online_cpu(). We could
+- * use cpu_possible_map, the cpumask below is more a documentation
+- * than optimization.
+- */
+-static cpumask_var_t cpu_populated_map __read_mostly;
+-
+-/* If it's single threaded, it isn't in the list of workqueues. */
+-static inline bool is_wq_single_threaded(struct workqueue_struct *wq)
+-{
+-	return wq->flags & WQ_SINGLE_THREAD;
+-}
  
- 	return 0;
+-static const struct cpumask *wq_cpu_map(struct workqueue_struct *wq)
++static struct cpu_workqueue_struct *get_cwq(unsigned int cpu,
++					    struct workqueue_struct *wq)
+ {
+-	return is_wq_single_threaded(wq)
+-		? cpu_singlethread_map : cpu_populated_map;
++	return per_cpu_ptr(wq->cpu_wq, cpu);
  }
-+
-+/**
-+ * kthread_worker_fn - kthread function to process kthread_worker
-+ * @worker_ptr: pointer to initialized kthread_worker
-+ *
-+ * This function can be used as @threadfn to kthread_create() or
-+ * kthread_run() with @worker_ptr argument pointing to an initialized
-+ * kthread_worker.  The started kthread will process work_list until
-+ * the it is stopped with kthread_stop().  A kthread can also call
-+ * this function directly after extra initialization.
-+ *
-+ * Different kthreads can be used for the same kthread_worker as long
-+ * as there's only one kthread attached to it at any given time.  A
-+ * kthread_worker without an attached kthread simply collects queued
-+ * kthread_works.
-+ */
-+int kthread_worker_fn(void *worker_ptr)
-+{
-+	struct kthread_worker *worker = worker_ptr;
-+	struct kthread_work *work;
-+
-+	WARN_ON(worker->task);
-+	worker->task = current;
-+repeat:
-+	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
-+
-+	if (kthread_should_stop()) {
-+		__set_current_state(TASK_RUNNING);
-+		spin_lock_irq(&worker->lock);
-+		worker->task = NULL;
-+		spin_unlock_irq(&worker->lock);
-+		return 0;
-+	}
-+
-+	work = NULL;
-+	spin_lock_irq(&worker->lock);
-+	if (!list_empty(&worker->work_list)) {
-+		work = list_first_entry(&worker->work_list,
-+					struct kthread_work, node);
-+		list_del_init(&work->node);
-+	}
-+	spin_unlock_irq(&worker->lock);
-+
-+	if (work) {
-+		__set_current_state(TASK_RUNNING);
-+		work->func(work);
-+		smp_wmb();	/* wmb worker-b0 paired with flush-b1 */
-+		work->done_seq = work->queue_seq;
-+		smp_mb();	/* mb worker-b1 paired with flush-b0 */
-+		if (atomic_read(&work->flushing))
-+			wake_up_all(&work->done);
-+	} else if (!freezing(current))
-+		schedule();
-+
-+	try_to_freeze();
-+	goto repeat;
-+}
-+EXPORT_SYMBOL_GPL(kthread_worker_fn);
-+
-+/**
-+ * queue_kthread_work - queue a kthread_work
-+ * @worker: target kthread_worker
-+ * @work: kthread_work to queue
-+ *
-+ * Queue @work to work processor @task for async execution.  @task
-+ * must have been created with kthread_worker_create().  Returns %true
-+ * if @work was successfully queued, %false if it was already pending.
-+ */
-+bool queue_kthread_work(struct kthread_worker *worker,
-+			struct kthread_work *work)
-+{
-+	bool ret = false;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&worker->lock, flags);
-+	if (list_empty(&work->node)) {
-+		list_add_tail(&work->node, &worker->work_list);
-+		work->queue_seq++;
-+		if (likely(worker->task))
-+			wake_up_process(worker->task);
-+		ret = true;
-+	}
-+	spin_unlock_irqrestore(&worker->lock, flags);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(queue_kthread_work);
-+
-+/**
-+ * flush_kthread_work - flush a kthread_work
-+ * @work: work to flush
-+ *
-+ * If @work is queued or executing, wait for it to finish execution.
-+ */
-+void flush_kthread_work(struct kthread_work *work)
-+{
-+	int seq = work->queue_seq;
-+
-+	atomic_inc(&work->flushing);
-+
+ 
+-static struct cpu_workqueue_struct *get_cwq(unsigned int cpu,
+-					    struct workqueue_struct *wq)
++static struct cpu_workqueue_struct *target_cwq(unsigned int cpu,
++					       struct workqueue_struct *wq)
+ {
+-	if (unlikely(is_wq_single_threaded(wq)))
++	if (unlikely(wq->flags & WQ_SINGLE_THREAD))
+ 		cpu = singlethread_cpu;
+-	return per_cpu_ptr(wq->cpu_wq, cpu);
++	return get_cwq(cpu, wq);
+ }
+ 
+ /*
+@@ -279,7 +265,7 @@ static void insert_work(struct cpu_workqueue_struct *cwq,
+ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+ 			 struct work_struct *work)
+ {
+-	struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
++	struct cpu_workqueue_struct *cwq = target_cwq(cpu, wq);
+ 	unsigned long flags;
+ 
+ 	debug_work_activate(work);
+@@ -383,7 +369,7 @@ int queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
+ 		timer_stats_timer_set_start_info(&dwork->timer);
+ 
+ 		/* This stores cwq for the moment, for the timer_fn */
+-		set_wq_data(work, get_cwq(raw_smp_processor_id(), wq), 0);
++		set_wq_data(work, target_cwq(raw_smp_processor_id(), wq), 0);
+ 		timer->expires = jiffies + delay;
+ 		timer->data = (unsigned long)dwork;
+ 		timer->function = delayed_work_timer_fn;
+@@ -495,6 +481,10 @@ static int worker_thread(void *__cwq)
+ 		if (kthread_should_stop())
+ 			break;
+ 
++		if (unlikely(!cpumask_equal(&cwq->thread->cpus_allowed,
++					    get_cpu_mask(cwq->cpu))))
++			set_cpus_allowed_ptr(cwq->thread,
++					     get_cpu_mask(cwq->cpu));
+ 		run_workqueue(cwq);
+ 	}
+ 
+@@ -574,14 +564,13 @@ static int flush_cpu_workqueue(struct cpu_workqueue_struct *cwq)
+  */
+ void flush_workqueue(struct workqueue_struct *wq)
+ {
+-	const struct cpumask *cpu_map = wq_cpu_map(wq);
+ 	int cpu;
+ 
+ 	might_sleep();
+ 	lock_map_acquire(&wq->lockdep_map);
+ 	lock_map_release(&wq->lockdep_map);
+-	for_each_cpu(cpu, cpu_map)
+-		flush_cpu_workqueue(per_cpu_ptr(wq->cpu_wq, cpu));
++	for_each_possible_cpu(cpu)
++		flush_cpu_workqueue(get_cwq(cpu, wq));
+ }
+ EXPORT_SYMBOL_GPL(flush_workqueue);
+ 
+@@ -699,7 +688,6 @@ static void wait_on_work(struct work_struct *work)
+ {
+ 	struct cpu_workqueue_struct *cwq;
+ 	struct workqueue_struct *wq;
+-	const struct cpumask *cpu_map;
+ 	int cpu;
+ 
+ 	might_sleep();
+@@ -712,9 +700,8 @@ static void wait_on_work(struct work_struct *work)
+ 		return;
+ 
+ 	wq = cwq->wq;
+-	cpu_map = wq_cpu_map(wq);
+ 
+-	for_each_cpu(cpu, cpu_map)
++	for_each_possible_cpu(cpu)
+ 		wait_on_cpu_work(get_cwq(cpu, wq), work);
+ }
+ 
+@@ -972,7 +959,7 @@ int current_is_keventd(void)
+ 
+ 	BUG_ON(!keventd_wq);
+ 
+-	cwq = per_cpu_ptr(keventd_wq->cpu_wq, cpu);
++	cwq = get_cwq(cpu, keventd_wq);
+ 	if (current == cwq->thread)
+ 		ret = 1;
+ 
+@@ -980,26 +967,12 @@ int current_is_keventd(void)
+ 
+ }
+ 
+-static struct cpu_workqueue_struct *
+-init_cpu_workqueue(struct workqueue_struct *wq, int cpu)
+-{
+-	struct cpu_workqueue_struct *cwq = per_cpu_ptr(wq->cpu_wq, cpu);
+-
+-	cwq->wq = wq;
+-	spin_lock_init(&cwq->lock);
+-	INIT_LIST_HEAD(&cwq->worklist);
+-	init_waitqueue_head(&cwq->more_work);
+-
+-	return cwq;
+-}
+-
+ static int create_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
+ {
+ 	struct workqueue_struct *wq = cwq->wq;
+-	const char *fmt = is_wq_single_threaded(wq) ? "%s" : "%s/%d";
+ 	struct task_struct *p;
+ 
+-	p = kthread_create(worker_thread, cwq, fmt, wq->name, cpu);
++	p = kthread_create(worker_thread, cwq, "%s/%d", wq->name, cpu);
+ 	/*
+ 	 * Nobody can add the work_struct to this cwq,
+ 	 *	if (caller is __create_workqueue)
+@@ -1031,8 +1004,8 @@ struct workqueue_struct *__create_workqueue_key(const char *name,
+ 						struct lock_class_key *key,
+ 						const char *lock_name)
+ {
++	bool singlethread = flags & WQ_SINGLE_THREAD;
+ 	struct workqueue_struct *wq;
+-	struct cpu_workqueue_struct *cwq;
+ 	int err = 0, cpu;
+ 
+ 	wq = kzalloc(sizeof(*wq), GFP_KERNEL);
+@@ -1048,37 +1021,37 @@ struct workqueue_struct *__create_workqueue_key(const char *name,
+ 	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
+ 	INIT_LIST_HEAD(&wq->list);
+ 
+-	if (flags & WQ_SINGLE_THREAD) {
+-		cwq = init_cpu_workqueue(wq, singlethread_cpu);
+-		err = create_workqueue_thread(cwq, singlethread_cpu);
+-		start_workqueue_thread(cwq, -1);
+-	} else {
+-		cpu_maps_update_begin();
+-		/*
+-		 * We must place this wq on list even if the code below fails.
+-		 * cpu_down(cpu) can remove cpu from cpu_populated_map before
+-		 * destroy_workqueue() takes the lock, in that case we leak
+-		 * cwq[cpu]->thread.
+-		 */
+-		spin_lock(&workqueue_lock);
+-		list_add(&wq->list, &workqueues);
+-		spin_unlock(&workqueue_lock);
+-		/*
+-		 * We must initialize cwqs for each possible cpu even if we
+-		 * are going to call destroy_workqueue() finally. Otherwise
+-		 * cpu_up() can hit the uninitialized cwq once we drop the
+-		 * lock.
+-		 */
+-		for_each_possible_cpu(cpu) {
+-			cwq = init_cpu_workqueue(wq, cpu);
+-			if (err || !cpu_online(cpu))
+-				continue;
+-			err = create_workqueue_thread(cwq, cpu);
++	cpu_maps_update_begin();
 +	/*
-+	 * mb flush-b0 paired with worker-b1, to make sure either
-+	 * worker sees the above increment or we see done_seq update.
++	 * We must initialize cwqs for each possible cpu even if we
++	 * are going to call destroy_workqueue() finally. Otherwise
++	 * cpu_up() can hit the uninitialized cwq once we drop the
++	 * lock.
 +	 */
-+	smp_mb__after_atomic_inc();
++	for_each_possible_cpu(cpu) {
++		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
 +
-+	/* A - B <= 0 tests whether B is in front of A regardless of overflow */
-+	wait_event(work->done, seq - work->done_seq <= 0);
-+	atomic_dec(&work->flushing);
++		cwq->wq = wq;
++		cwq->cpu = cpu;
++		spin_lock_init(&cwq->lock);
++		INIT_LIST_HEAD(&cwq->worklist);
++		init_waitqueue_head(&cwq->more_work);
 +
-+	/*
-+	 * rmb flush-b1 paired with worker-b0, to make sure our caller
-+	 * sees every change made by work->func().
-+	 */
-+	smp_mb__after_atomic_dec();
-+}
-+EXPORT_SYMBOL_GPL(flush_kthread_work);
++		if (err)
++			continue;
++		err = create_workqueue_thread(cwq, cpu);
++		if (cpu_online(cpu) && !singlethread)
+ 			start_workqueue_thread(cwq, cpu);
+-		}
+-		cpu_maps_update_done();
++		else
++			start_workqueue_thread(cwq, -1);
+ 	}
+ 
++	spin_lock(&workqueue_lock);
++	list_add(&wq->list, &workqueues);
++	spin_unlock(&workqueue_lock);
 +
-+struct kthread_flush_work {
-+	struct kthread_work	work;
-+	struct completion	done;
-+};
++	cpu_maps_update_done();
 +
-+static void kthread_flush_work_fn(struct kthread_work *work)
-+{
-+	struct kthread_flush_work *fwork =
-+		container_of(work, struct kthread_flush_work, work);
-+	complete(&fwork->done);
-+}
-+
-+/**
-+ * flush_kthread_worker - flush all current works on a kthread_worker
-+ * @worker: worker to flush
-+ *
-+ * Wait until all currently executing or pending works on @worker are
-+ * finished.
-+ */
-+void flush_kthread_worker(struct kthread_worker *worker)
-+{
-+	struct kthread_flush_work fwork = {
-+		KTHREAD_WORK_INIT(fwork.work, kthread_flush_work_fn),
-+		COMPLETION_INITIALIZER_ONSTACK(fwork.done),
-+	};
-+
-+	queue_kthread_work(worker, &fwork.work);
-+	wait_for_completion(&fwork.done);
-+}
-+EXPORT_SYMBOL_GPL(flush_kthread_worker);
+ 	if (err) {
+ 		destroy_workqueue(wq);
+ 		wq = NULL;
+@@ -1128,17 +1101,16 @@ static void cleanup_workqueue_thread(struct cpu_workqueue_struct *cwq)
+  */
+ void destroy_workqueue(struct workqueue_struct *wq)
+ {
+-	const struct cpumask *cpu_map = wq_cpu_map(wq);
+ 	int cpu;
+ 
+ 	cpu_maps_update_begin();
+ 	spin_lock(&workqueue_lock);
+ 	list_del(&wq->list);
+ 	spin_unlock(&workqueue_lock);
++	cpu_maps_update_done();
+ 
+-	for_each_cpu(cpu, cpu_map)
+-		cleanup_workqueue_thread(per_cpu_ptr(wq->cpu_wq, cpu));
+- 	cpu_maps_update_done();
++	for_each_possible_cpu(cpu)
++		cleanup_workqueue_thread(get_cwq(cpu, wq));
+ 
+ 	free_percpu(wq->cpu_wq);
+ 	kfree(wq);
+@@ -1152,48 +1124,25 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
+ 	unsigned int cpu = (unsigned long)hcpu;
+ 	struct cpu_workqueue_struct *cwq;
+ 	struct workqueue_struct *wq;
+-	int err = 0;
+ 
+ 	action &= ~CPU_TASKS_FROZEN;
+ 
+-	switch (action) {
+-	case CPU_UP_PREPARE:
+-		cpumask_set_cpu(cpu, cpu_populated_map);
+-	}
+-undo:
+ 	list_for_each_entry(wq, &workqueues, list) {
+-		cwq = per_cpu_ptr(wq->cpu_wq, cpu);
++		if (wq->flags & WQ_SINGLE_THREAD)
++			continue;
+ 
+-		switch (action) {
+-		case CPU_UP_PREPARE:
+-			err = create_workqueue_thread(cwq, cpu);
+-			if (!err)
+-				break;
+-			printk(KERN_ERR "workqueue [%s] for %i failed\n",
+-				wq->name, cpu);
+-			action = CPU_UP_CANCELED;
+-			err = -ENOMEM;
+-			goto undo;
+-
+-		case CPU_ONLINE:
+-			start_workqueue_thread(cwq, cpu);
+-			break;
++		cwq = get_cwq(cpu, wq);
+ 
+-		case CPU_UP_CANCELED:
+-			start_workqueue_thread(cwq, -1);
++		switch (action) {
+ 		case CPU_POST_DEAD:
+-			cleanup_workqueue_thread(cwq);
++			lock_map_acquire(&cwq->wq->lockdep_map);
++			lock_map_release(&cwq->wq->lockdep_map);
++			flush_cpu_workqueue(cwq);
+ 			break;
+ 		}
+ 	}
+ 
+-	switch (action) {
+-	case CPU_UP_CANCELED:
+-	case CPU_POST_DEAD:
+-		cpumask_clear_cpu(cpu, cpu_populated_map);
+-	}
+-
+-	return notifier_from_errno(err);
++	return notifier_from_errno(0);
+ }
+ 
+ #ifdef CONFIG_SMP
+@@ -1245,11 +1194,7 @@ EXPORT_SYMBOL_GPL(work_on_cpu);
+ 
+ void __init init_workqueues(void)
+ {
+-	alloc_cpumask_var(&cpu_populated_map, GFP_KERNEL);
+-
+-	cpumask_copy(cpu_populated_map, cpu_online_mask);
+ 	singlethread_cpu = cpumask_first(cpu_possible_mask);
+-	cpu_singlethread_map = cpumask_of(singlethread_cpu);
+ 	hotcpu_notifier(workqueue_cpu_callback, 0);
+ 	keventd_wq = create_workqueue("events");
+ 	BUG_ON(!keventd_wq);
 -- 
 1.6.4.2
 
