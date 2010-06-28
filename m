@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab0F1VHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 17:07:33 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42984 "EHLO hera.kernel.org"
+	id S1755527Ab0F1VHB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 17:07:01 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42932 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753214Ab0F1VHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 17:07:19 -0400
+	id S1752745Ab0F1VG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 17:06:58 -0400
 From: Tejun Heo <tj@kernel.org>
 To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
@@ -13,211 +13,263 @@ To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        oleg@redhat.com, axboe@kernel.dk, fweisbec@gmail.com,
        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/35] workqueue: temporarily remove workqueue tracing
-Date: Mon, 28 Jun 2010 23:03:58 +0200
-Message-Id: <1277759063-24607-11-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Arjan van de Ven <arjan@infradead.org>
+Subject: [PATCH 34/35] async: use workqueue for worker pool
+Date: Mon, 28 Jun 2010 23:04:22 +0200
+Message-Id: <1277759063-24607-35-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1277759063-24607-1-git-send-email-tj@kernel.org>
 References: <1277759063-24607-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 21:05:08 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 21:05:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Strip tracing code from workqueue and remove workqueue tracing.  This
-is temporary measure till concurrency managed workqueue is complete.
+Replace private worker pool with system_long_wq.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arjan van de Ven <arjan@infradead.org>
 ---
- include/trace/events/workqueue.h |   92 --------------------------------------
- kernel/trace/Kconfig             |   11 -----
- kernel/workqueue.c               |   14 +-----
- 3 files changed, 3 insertions(+), 114 deletions(-)
- delete mode 100644 include/trace/events/workqueue.h
+ kernel/async.c |  140 ++++++++-----------------------------------------------
+ 1 files changed, 21 insertions(+), 119 deletions(-)
 
-diff --git a/include/trace/events/workqueue.h b/include/trace/events/workqueue.h
-deleted file mode 100644
-index d6c9744..0000000
---- a/include/trace/events/workqueue.h
-+++ /dev/null
-@@ -1,92 +0,0 @@
--#undef TRACE_SYSTEM
--#define TRACE_SYSTEM workqueue
--
--#if !defined(_TRACE_WORKQUEUE_H) || defined(TRACE_HEADER_MULTI_READ)
--#define _TRACE_WORKQUEUE_H
--
--#include <linux/workqueue.h>
--#include <linux/sched.h>
--#include <linux/tracepoint.h>
--
--DECLARE_EVENT_CLASS(workqueue,
--
--	TP_PROTO(struct task_struct *wq_thread, struct work_struct *work),
--
--	TP_ARGS(wq_thread, work),
--
--	TP_STRUCT__entry(
--		__array(char,		thread_comm,	TASK_COMM_LEN)
--		__field(pid_t,		thread_pid)
--		__field(work_func_t,	func)
--	),
--
--	TP_fast_assign(
--		memcpy(__entry->thread_comm, wq_thread->comm, TASK_COMM_LEN);
--		__entry->thread_pid	= wq_thread->pid;
--		__entry->func		= work->func;
--	),
--
--	TP_printk("thread=%s:%d func=%pf", __entry->thread_comm,
--		__entry->thread_pid, __entry->func)
--);
--
--DEFINE_EVENT(workqueue, workqueue_insertion,
--
--	TP_PROTO(struct task_struct *wq_thread, struct work_struct *work),
--
--	TP_ARGS(wq_thread, work)
--);
--
--DEFINE_EVENT(workqueue, workqueue_execution,
--
--	TP_PROTO(struct task_struct *wq_thread, struct work_struct *work),
--
--	TP_ARGS(wq_thread, work)
--);
--
--/* Trace the creation of one workqueue thread on a cpu */
--TRACE_EVENT(workqueue_creation,
--
--	TP_PROTO(struct task_struct *wq_thread, int cpu),
--
--	TP_ARGS(wq_thread, cpu),
--
--	TP_STRUCT__entry(
--		__array(char,	thread_comm,	TASK_COMM_LEN)
--		__field(pid_t,	thread_pid)
--		__field(int,	cpu)
--	),
--
--	TP_fast_assign(
--		memcpy(__entry->thread_comm, wq_thread->comm, TASK_COMM_LEN);
--		__entry->thread_pid	= wq_thread->pid;
--		__entry->cpu		= cpu;
--	),
--
--	TP_printk("thread=%s:%d cpu=%d", __entry->thread_comm,
--		__entry->thread_pid, __entry->cpu)
--);
--
--TRACE_EVENT(workqueue_destruction,
--
--	TP_PROTO(struct task_struct *wq_thread),
--
--	TP_ARGS(wq_thread),
--
--	TP_STRUCT__entry(
--		__array(char,	thread_comm,	TASK_COMM_LEN)
--		__field(pid_t,	thread_pid)
--	),
--
--	TP_fast_assign(
--		memcpy(__entry->thread_comm, wq_thread->comm, TASK_COMM_LEN);
--		__entry->thread_pid	= wq_thread->pid;
--	),
--
--	TP_printk("thread=%s:%d", __entry->thread_comm, __entry->thread_pid)
--);
--
--#endif /* _TRACE_WORKQUEUE_H */
--
--/* This part must be outside protection */
--#include <trace/define_trace.h>
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 8b1797c..a0d95c1 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -391,17 +391,6 @@ config KMEMTRACE
+diff --git a/kernel/async.c b/kernel/async.c
+index 15319d6..c285258 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -49,40 +49,32 @@ asynchronous and synchronous parts of the kernel.
+ */
  
- 	  If unsure, say N.
+ #include <linux/async.h>
+-#include <linux/bug.h>
+ #include <linux/module.h>
+ #include <linux/wait.h>
+ #include <linux/sched.h>
+-#include <linux/init.h>
+-#include <linux/kthread.h>
+-#include <linux/delay.h>
+ #include <linux/slab.h>
+ #include <asm/atomic.h>
  
--config WORKQUEUE_TRACER
--	bool "Trace workqueues"
--	select GENERIC_TRACER
--	help
--	  The workqueue tracer provides some statistical information
--          about each cpu workqueue thread such as the number of the
--          works inserted and executed since their creation. It can help
--          to evaluate the amount of work each of them has to perform.
--          For example it can help a developer to decide whether he should
--          choose a per-cpu workqueue instead of a singlethreaded one.
+ static async_cookie_t next_cookie = 1;
+ 
+-#define MAX_THREADS	256
+ #define MAX_WORK	32768
+ 
+ static LIST_HEAD(async_pending);
+ static LIST_HEAD(async_running);
+ static DEFINE_SPINLOCK(async_lock);
+ 
+-static int async_enabled = 0;
 -
- config BLK_DEV_IO_TRACE
- 	bool "Support for tracing block IO actions"
- 	depends on SYSFS
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 8e3082b..f7ab703 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -33,8 +33,6 @@
- #include <linux/kallsyms.h>
- #include <linux/debug_locks.h>
- #include <linux/lockdep.h>
--#define CREATE_TRACE_POINTS
--#include <trace/events/workqueue.h>
+ struct async_entry {
+-	struct list_head list;
+-	async_cookie_t   cookie;
+-	async_func_ptr	 *func;
+-	void             *data;
+-	struct list_head *running;
++	struct list_head	list;
++	struct work_struct	work;
++	async_cookie_t		cookie;
++	async_func_ptr		*func;
++	void			*data;
++	struct list_head	*running;
+ };
  
+ static DECLARE_WAIT_QUEUE_HEAD(async_done);
+-static DECLARE_WAIT_QUEUE_HEAD(async_new);
+ 
+ static atomic_t entry_count;
+-static atomic_t thread_count;
+ 
+ extern int initcall_debug;
+ 
+@@ -117,27 +109,23 @@ static async_cookie_t  lowest_in_progress(struct list_head *running)
+ 	spin_unlock_irqrestore(&async_lock, flags);
+ 	return ret;
+ }
++
  /*
-  * Structure fields follow one of the following exclusion rules.
-@@ -243,10 +241,10 @@ static inline void clear_wq_data(struct work_struct *work)
- 	atomic_long_set(&work->data, work_static(work));
- }
- 
--static inline
--struct cpu_workqueue_struct *get_wq_data(struct work_struct *work)
-+static inline struct cpu_workqueue_struct *get_wq_data(struct work_struct *work)
+  * pick the first pending entry and run it
+  */
+-static void run_one_entry(void)
++static void async_run_entry_fn(struct work_struct *work)
  {
--	return (void *) (atomic_long_read(&work->data) & WORK_STRUCT_WQ_DATA_MASK);
-+	return (void *)(atomic_long_read(&work->data) &
-+			WORK_STRUCT_WQ_DATA_MASK);
++	struct async_entry *entry =
++		container_of(work, struct async_entry, work);
+ 	unsigned long flags;
+-	struct async_entry *entry;
+ 	ktime_t calltime, delta, rettime;
+ 
+-	/* 1) pick one task from the pending queue */
+-
++	/* 1) move self to the running queue */
+ 	spin_lock_irqsave(&async_lock, flags);
+-	if (list_empty(&async_pending))
+-		goto out;
+-	entry = list_first_entry(&async_pending, struct async_entry, list);
+-
+-	/* 2) move it to the running queue */
+ 	list_move_tail(&entry->list, entry->running);
+ 	spin_unlock_irqrestore(&async_lock, flags);
+ 
+-	/* 3) run it (and print duration)*/
++	/* 2) run (and print duration) */
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+ 		printk("calling  %lli_%pF @ %i\n", (long long)entry->cookie,
+ 			entry->func, task_pid_nr(current));
+@@ -153,31 +141,25 @@ static void run_one_entry(void)
+ 			(long long)ktime_to_ns(delta) >> 10);
+ 	}
+ 
+-	/* 4) remove it from the running queue */
++	/* 3) remove self from the running queue */
+ 	spin_lock_irqsave(&async_lock, flags);
+ 	list_del(&entry->list);
+ 
+-	/* 5) free the entry  */
++	/* 4) free the entry */
+ 	kfree(entry);
+ 	atomic_dec(&entry_count);
+ 
+ 	spin_unlock_irqrestore(&async_lock, flags);
+ 
+-	/* 6) wake up any waiters. */
++	/* 5) wake up any waiters */
+ 	wake_up(&async_done);
+-	return;
+-
+-out:
+-	spin_unlock_irqrestore(&async_lock, flags);
  }
  
- /**
-@@ -265,8 +263,6 @@ static void insert_work(struct cpu_workqueue_struct *cwq,
- 			struct work_struct *work, struct list_head *head,
- 			unsigned int extra_flags)
+-
+ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct list_head *running)
  {
--	trace_workqueue_insertion(cwq->thread, work);
--
- 	/* we own @work, set data and link */
- 	set_wq_data(work, cwq, extra_flags);
+ 	struct async_entry *entry;
+ 	unsigned long flags;
+ 	async_cookie_t newcookie;
+-	
  
-@@ -431,7 +427,6 @@ static void process_one_work(struct cpu_workqueue_struct *cwq,
- 	struct lockdep_map lockdep_map = work->lockdep_map;
- #endif
- 	/* claim and process */
--	trace_workqueue_execution(cwq->thread, work);
- 	debug_work_deactivate(work);
- 	cwq->current_work = work;
- 	list_del_init(&work->entry);
-@@ -1017,8 +1012,6 @@ static int create_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
- 		return PTR_ERR(p);
- 	cwq->thread = p;
- 
--	trace_workqueue_creation(cwq->thread, cpu);
--
- 	return 0;
- }
- 
-@@ -1123,7 +1116,6 @@ static void cleanup_workqueue_thread(struct cpu_workqueue_struct *cwq)
- 	 * checks list_empty(), and a "normal" queue_work() can't use
- 	 * a dead CPU.
+ 	/* allow irq-off callers */
+ 	entry = kzalloc(sizeof(struct async_entry), GFP_ATOMIC);
+@@ -186,7 +168,7 @@ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct l
+ 	 * If we're out of memory or if there's too much work
+ 	 * pending already, we execute synchronously.
  	 */
--	trace_workqueue_destruction(cwq->thread);
- 	kthread_stop(cwq->thread);
- 	cwq->thread = NULL;
+-	if (!async_enabled || !entry || atomic_read(&entry_count) > MAX_WORK) {
++	if (!entry || atomic_read(&entry_count) > MAX_WORK) {
+ 		kfree(entry);
+ 		spin_lock_irqsave(&async_lock, flags);
+ 		newcookie = next_cookie++;
+@@ -196,6 +178,7 @@ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct l
+ 		ptr(data, newcookie);
+ 		return newcookie;
+ 	}
++	INIT_WORK(&entry->work, async_run_entry_fn);
+ 	entry->func = ptr;
+ 	entry->data = data;
+ 	entry->running = running;
+@@ -205,7 +188,10 @@ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct l
+ 	list_add_tail(&entry->list, &async_pending);
+ 	atomic_inc(&entry_count);
+ 	spin_unlock_irqrestore(&async_lock, flags);
+-	wake_up(&async_new);
++
++	/* schedule for execution */
++	queue_work(system_long_wq, &entry->work);
++
+ 	return newcookie;
  }
+ 
+@@ -312,87 +298,3 @@ void async_synchronize_cookie(async_cookie_t cookie)
+ 	async_synchronize_cookie_domain(cookie, &async_running);
+ }
+ EXPORT_SYMBOL_GPL(async_synchronize_cookie);
+-
+-
+-static int async_thread(void *unused)
+-{
+-	DECLARE_WAITQUEUE(wq, current);
+-	add_wait_queue(&async_new, &wq);
+-
+-	while (!kthread_should_stop()) {
+-		int ret = HZ;
+-		set_current_state(TASK_INTERRUPTIBLE);
+-		/*
+-		 * check the list head without lock.. false positives
+-		 * are dealt with inside run_one_entry() while holding
+-		 * the lock.
+-		 */
+-		rmb();
+-		if (!list_empty(&async_pending))
+-			run_one_entry();
+-		else
+-			ret = schedule_timeout(HZ);
+-
+-		if (ret == 0) {
+-			/*
+-			 * we timed out, this means we as thread are redundant.
+-			 * we sign off and die, but we to avoid any races there
+-			 * is a last-straw check to see if work snuck in.
+-			 */
+-			atomic_dec(&thread_count);
+-			wmb(); /* manager must see our departure first */
+-			if (list_empty(&async_pending))
+-				break;
+-			/*
+-			 * woops work came in between us timing out and us
+-			 * signing off; we need to stay alive and keep working.
+-			 */
+-			atomic_inc(&thread_count);
+-		}
+-	}
+-	remove_wait_queue(&async_new, &wq);
+-
+-	return 0;
+-}
+-
+-static int async_manager_thread(void *unused)
+-{
+-	DECLARE_WAITQUEUE(wq, current);
+-	add_wait_queue(&async_new, &wq);
+-
+-	while (!kthread_should_stop()) {
+-		int tc, ec;
+-
+-		set_current_state(TASK_INTERRUPTIBLE);
+-
+-		tc = atomic_read(&thread_count);
+-		rmb();
+-		ec = atomic_read(&entry_count);
+-
+-		while (tc < ec && tc < MAX_THREADS) {
+-			if (IS_ERR(kthread_run(async_thread, NULL, "async/%i",
+-					       tc))) {
+-				msleep(100);
+-				continue;
+-			}
+-			atomic_inc(&thread_count);
+-			tc++;
+-		}
+-
+-		schedule();
+-	}
+-	remove_wait_queue(&async_new, &wq);
+-
+-	return 0;
+-}
+-
+-static int __init async_init(void)
+-{
+-	async_enabled =
+-		!IS_ERR(kthread_run(async_manager_thread, NULL, "async/mgr"));
+-
+-	WARN_ON(!async_enabled);
+-	return 0;
+-}
+-
+-core_initcall(async_init);
 -- 
 1.6.4.2
 
