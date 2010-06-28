@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab0F1WzH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 18:55:07 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:42415 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab0F1WzE (ORCPT
+	id S1754065Ab0F1XAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 19:00:37 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:47885 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751239Ab0F1XAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 18:55:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=egPHeilKGiBL8tyN9lh9JsdE588z1EFRfYLe297KjaVBXfKOVk0ZNRUE8OVdUcvD6E
-         116jJKw7GstT1XXyIe82fH9Xeu7egxy1xbfp+Ow/aMFR6nmgNGk9Qb7OUwNmGKDGyRYl
-         7mbSg31XzlpozS4ZPyXm93JUs8tUbxwMUEjDs=
-Date: Tue, 29 Jun 2010 00:55:14 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       oleg@redhat.com, axboe@kernel.dk, dwalker@codeaurora.org,
-       stefanr@s5r6.in-berlin.de, florian@mickler.org, andi@firstfloor.org,
-       mst@redhat.com, randy.dunlap@oracle.com,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 34/35] async: use workqueue for worker pool
-Message-ID: <20100628225513.GB10104@nowhere>
-References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org>
+	Mon, 28 Jun 2010 19:00:36 -0400
+Date: Mon, 28 Jun 2010 16:00:35 -0700
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] VMware balloon: force compiling as a module
+Message-ID: <20100628230035.GA18971@dtor-ws.eng.vmware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1277759063-24607-35-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 11:04:22PM +0200, Tejun Heo wrote:
-> Replace private worker pool with system_long_wq.
+VMware Tools installer requires the upstream driver to be compiled
+as a module in order to detect its presence and avoid installing
+our own version on top of it. To avoid surprises with 2 versions
+of the driver being installed and fighting with each other, let's
+force the driver to be compiled as a module unless user selects
+CONFIG_EMBEDDED.
 
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+---
 
-It appeared to me that async is deemed to parallelize as much as
-possible, to probe devices faster on boot for example, while cmwq
-seems to do the opposite: trying to execute in batches as much as
-possible, and fork when a work goes to sleep voluntarily.
+Andrew,
 
-That said I haven't checked that deeply so it's fairly possible
-I missed something obvious :)
+Please consider forwarding this to Linus in your next batch.
+
+Thanks,
+Dmitry
+
+ drivers/misc/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 26386a9..bb5b6ea 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -339,7 +339,7 @@ config TI_DAC7512
+ 
+ config VMWARE_BALLOON
+ 	tristate "VMware Balloon Driver"
+-	depends on X86
++	depends on X86 && (EMBEDDED || m)
+ 	help
+ 	  This is VMware physical memory management driver which acts
+ 	  like a "balloon" that can be inflated to reclaim physical pages
+-- 
+1.7.0
 
