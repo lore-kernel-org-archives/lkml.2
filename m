@@ -1,260 +1,1083 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab0F1BUl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 21:20:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:56136 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237Ab0F1BUj (ORCPT
+	id S1755441Ab0F1BVT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 21:21:19 -0400
+Received: from smtp-out-143.synserver.de ([212.40.180.143]:1071 "HELO
+	smtp-out-143.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751885Ab0F1BVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 21:20:39 -0400
-Message-ID: <4C27F8D4.6020200@infradead.org>
-Date: Sun, 27 Jun 2010 22:20:20 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Linus <torvalds@linux-foundation.org>,
+	Sun, 27 Jun 2010 21:21:13 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 8132
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+       Lars-Peter Clausen <lars@metafoo.de>,
        Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Len Brown <lenb@kernel.org>,
-       Joel Becker <joel.becker@oracle.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Russell King <rmk@arm.linux.org.uk>
-Subject: Re: [GIT PULL] Please pull fix patches sitting in linux-next
-References: <20100628103715.594635f7.sfr@canb.auug.org.au>
-In-Reply-To: <20100628103715.594635f7.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+       Matt Fleming <matt@console-pimps.org>, linux-mmc@vger.kernel.org
+Subject: [PATCH v3] MMC: Add JZ4740 mmc driver
+Date: Mon, 28 Jun 2010 03:20:41 +0200
+Message-Id: <1277688041-23522-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1276924111-11158-19-git-send-email-lars@metafoo.de>
+References: <1276924111-11158-19-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-06-2010 21:37, Stephen Rothwell escreveu:
-> Hi Linus,
-> 
-> These patches have been sitting in my fixes tree (and thus in linux-next)
-> for considerable time and the respective maintainers seem either unaware
-> or unwilling to pick them up.  They are just fallout from Tejun's removal
-> of slab.h from percpu.h changes that you merged back in April.
-> 
-> The following changes since commit b4322e7057ca851b0a3e15f29e26806efeada100:
-> 
->   Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu (2010-06-27 11:33:44 -0700)
-> 
-> are available in the git repository at:
-> 
->   ssh://master.kernel.org/~sfr/next-fixes.git fixes
-> 
-> Tejun Heo (5):
->       v4l-dvb: update gfp/slab.h includes
+This patch adds support for the mmc controller on JZ4740 SoCs.
 
-Hmm... it seems that I missed this one. The patch looks ok to me (yet, it would be a 
-little better to add slab.h at tm6000.h, instead of adding it to all tm6000 files,
-but a latter patch may do such cleanup).
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matt Fleming <matt@console-pimps.org>
+Cc: linux-mmc@vger.kernel.org
 
-Anyway,
+---
+Changes since v1
+- Do not request IRQ with IRQF_DISABLED since it is a noop now
+- Use a generous slack for the timeout timer. It does not need to be accurate.
+Changes since v2
+- Use sg_mapping_to iterate over sg elements in mmc read and write functions
+- Use bitops instead of a spinlock and a variable for testing whether a request
+  has been finished.
+- Rework irq and timeout handling in order to get rid of locking in hot paths
+---
+ drivers/mmc/host/Kconfig       |    8 +
+ drivers/mmc/host/Makefile      |    1 +
+ drivers/mmc/host/jz4740_mmc.c  |  969 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/mmc/jz4740_mmc.h |   15 +
+ 4 files changed, 993 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mmc/host/jz4740_mmc.c
+ create mode 100644 include/linux/mmc/jz4740_mmc.h
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
->       arm: update gfp/slab.h includes
->       davinci: update gfp/slab.h includes
->       ocfs2: update gfp/slab.h includes
->       acpi: update gfp/slab.h includes
-> 
->  arch/arm/mach-vexpress/ct-ca9x4.c     |    1 +
->  drivers/acpi/apei/apei-base.c         |    1 +
->  drivers/acpi/atomicio.c               |    1 +
->  drivers/rtc/rtc-davinci.c             |    1 +
->  drivers/staging/tm6000/tm6000-alsa.c  |    1 +
->  drivers/staging/tm6000/tm6000-cards.c |    1 +
->  drivers/staging/tm6000/tm6000-core.c  |    1 +
->  drivers/staging/tm6000/tm6000-dvb.c   |    1 +
->  fs/ocfs2/reservations.c               |    1 -
->  9 files changed, 8 insertions(+), 1 deletions(-)
-> commit e0fb8c418520b41d57667befdb8861c46cdf69e0
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Tue Mar 30 02:52:44 2010 +0900
-> 
->     acpi: update gfp/slab.h includes
->     
->     Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
->     gfp.h or slab.h is included as necessary.
->     
->     Signed-off-by: Tejun Heo <tj@kernel.org>
->     Cc: Stephen Rothwell <sfr@canb.auug.org.au>
->     Cc: Len Brown <lenb@kernel.org>
->     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> 
-> diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
-> index db3946e..216e1e9 100644
-> --- a/drivers/acpi/apei/apei-base.c
-> +++ b/drivers/acpi/apei/apei-base.c
-> @@ -34,6 +34,7 @@
->  #include <linux/module.h>
->  #include <linux/init.h>
->  #include <linux/acpi.h>
-> +#include <linux/slab.h>
->  #include <linux/io.h>
->  #include <linux/kref.h>
->  #include <linux/rculist.h>
-> diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
-> index 814b192..8f8bd73 100644
-> --- a/drivers/acpi/atomicio.c
-> +++ b/drivers/acpi/atomicio.c
-> @@ -31,6 +31,7 @@
->  #include <linux/kref.h>
->  #include <linux/rculist.h>
->  #include <linux/interrupt.h>
-> +#include <linux/slab.h>
->  #include <acpi/atomicio.h>
->  
->  #define ACPI_PFX "ACPI: "
-> 
-> commit 327f935a9ef644c0ec3d050c94bce753756d60c0
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Tue Mar 30 02:52:32 2010 +0900
-> 
->     ocfs2: update gfp/slab.h includes
->     
->     Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
->     gfp.h or slab.h is included as necessary.
->     
->     Signed-off-by: Tejun Heo <tj@kernel.org>
->     Cc: Stephen Rothwell <sfr@canb.auug.org.au>
->     Cc: Joel Becker <joel.becker@oracle.com>
->     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> 
-> diff --git a/fs/ocfs2/reservations.c b/fs/ocfs2/reservations.c
-> index 4065002..d8b6e42 100644
-> --- a/fs/ocfs2/reservations.c
-> +++ b/fs/ocfs2/reservations.c
-> @@ -26,7 +26,6 @@
->  
->  #include <linux/fs.h>
->  #include <linux/types.h>
-> -#include <linux/slab.h>
->  #include <linux/highmem.h>
->  #include <linux/bitops.h>
->  #include <linux/list.h>
-> 
-> commit f244f31a0d31402c2c1b1950108e0013353cc3f3
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Tue Mar 30 02:52:36 2010 +0900
-> 
->     davinci: update gfp/slab.h includes
->     
->     Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
->     gfp.h or slab.h is included as necessary.
->     
->     Signed-off-by: Tejun Heo <tj@kernel.org>
->     Cc: Stephen Rothwell <sfr@canb.auug.org.au>
->     Cc: Kevin Hilman <khilman@deeprootsystems.com>
->     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> 
-> diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
-> index 92a8f6c..34647fc 100644
-> --- a/drivers/rtc/rtc-davinci.c
-> +++ b/drivers/rtc/rtc-davinci.c
-> @@ -29,6 +29,7 @@
->  #include <linux/bcd.h>
->  #include <linux/platform_device.h>
->  #include <linux/io.h>
-> +#include <linux/slab.h>
->  
->  /*
->   * The DaVinci RTC is a simple RTC with the following
-> 
-> commit 68aaae9e95199d2bc46a9e8e3670e403b4a3fe75
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Tue Mar 30 02:52:45 2010 +0900
-> 
->     arm: update gfp/slab.h includes
->     
->     Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
->     gfp.h or slab.h is included as necessary.
->     
->     Signed-off-by: Tejun Heo <tj@kernel.org>
->     Cc: Stephen Rothwell <sfr@canb.auug.org.au>
->     Cc: Russell King <linux@arm.linux.org.uk>
->     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> 
-> diff --git a/arch/arm/mach-vexpress/ct-ca9x4.c b/arch/arm/mach-vexpress/ct-ca9x4.c
-> index e6f7303..9b11eed 100644
-> --- a/arch/arm/mach-vexpress/ct-ca9x4.c
-> +++ b/arch/arm/mach-vexpress/ct-ca9x4.c
-> @@ -2,6 +2,7 @@
->   * Versatile Express Core Tile Cortex A9x4 Support
->   */
->  #include <linux/init.h>
-> +#include <linux/gfp.h>
->  #include <linux/device.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/platform_device.h>
-> 
-> commit 4ef09889d7b4c7be2aa3e132efb77029f51c95b7
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Tue Mar 30 02:52:33 2010 +0900
-> 
->     v4l-dvb: update gfp/slab.h includes
->     
->     Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
->     gfp.h or slab.h is included as necessary.
->     
->     Signed-off-by: Tejun Heo <tj@kernel.org>
->     Cc: Stephen Rothwell <sfr@canb.auug.org.au>
->     Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
->     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> 
-> diff --git a/drivers/staging/tm6000/tm6000-alsa.c b/drivers/staging/tm6000/tm6000-alsa.c
-> index ce081cd..273e26e 100644
-> --- a/drivers/staging/tm6000/tm6000-alsa.c
-> +++ b/drivers/staging/tm6000/tm6000-alsa.c
-> @@ -15,6 +15,7 @@
->  #include <linux/device.h>
->  #include <linux/interrupt.h>
->  #include <linux/usb.h>
-> +#include <linux/slab.h>
->  
->  #include <asm/delay.h>
->  #include <sound/core.h>
-> diff --git a/drivers/staging/tm6000/tm6000-cards.c b/drivers/staging/tm6000/tm6000-cards.c
-> index cedd904..6a9ae40 100644
-> --- a/drivers/staging/tm6000/tm6000-cards.c
-> +++ b/drivers/staging/tm6000/tm6000-cards.c
-> @@ -24,6 +24,7 @@
->  #include <linux/i2c.h>
->  #include <linux/usb.h>
->  #include <linux/version.h>
-> +#include <linux/slab.h>
->  #include <media/v4l2-common.h>
->  #include <media/tuner.h>
->  #include <media/tvaudio.h>
-> diff --git a/drivers/staging/tm6000/tm6000-core.c b/drivers/staging/tm6000/tm6000-core.c
-> index 27f3f55..c3690e3 100644
-> --- a/drivers/staging/tm6000/tm6000-core.c
-> +++ b/drivers/staging/tm6000/tm6000-core.c
-> @@ -22,6 +22,7 @@
->  
->  #include <linux/module.h>
->  #include <linux/kernel.h>
-> +#include <linux/slab.h>
->  #include <linux/usb.h>
->  #include <linux/i2c.h>
->  #include "tm6000.h"
-> diff --git a/drivers/staging/tm6000/tm6000-dvb.c b/drivers/staging/tm6000/tm6000-dvb.c
-> index 261e66a..86c1c8b 100644
-> --- a/drivers/staging/tm6000/tm6000-dvb.c
-> +++ b/drivers/staging/tm6000/tm6000-dvb.c
-> @@ -18,6 +18,7 @@
->   */
->  
->  #include <linux/kernel.h>
-> +#include <linux/slab.h>
->  #include <linux/usb.h>
->  
->  #include "tm6000.h"
-> 
-> 
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index f06d06e..546fc49 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -81,6 +81,14 @@ config MMC_RICOH_MMC
+ 
+ 	  If unsure, say Y.
+ 
++config MMC_JZ4740
++	tristate "JZ4740 SD/Multimedia Card Interface support"
++	depends on MACH_JZ4740
++	help
++	  This selects the Ingenic Z4740 SD/Multimedia card Interface.
++	  If you have an ngenic platform with a Multimedia Card slot,
++	  say Y or M here.
++
+ config MMC_SDHCI_OF
+ 	tristate "SDHCI support on OpenFirmware platforms"
+ 	depends on MMC_SDHCI && PPC_OF
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index e30c2ee..f4e53c9 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -36,6 +36,7 @@ obj-$(CONFIG_MMC_CB710)	+= cb710-mmc.o
+ obj-$(CONFIG_MMC_VIA_SDMMC)	+= via-sdmmc.o
+ obj-$(CONFIG_SDH_BFIN)		+= bfin_sdh.o
+ obj-$(CONFIG_MMC_SH_MMCIF)	+= sh_mmcif.o
++obj-$(CONFIG_MMC_JZ4740)	+= jz4740_mmc.o
+ 
+ obj-$(CONFIG_MMC_SDHCI_OF)	+= sdhci-of.o
+ sdhci-of-y				:= sdhci-of-core.o
+diff --git a/drivers/mmc/host/jz4740_mmc.c b/drivers/mmc/host/jz4740_mmc.c
+new file mode 100644
+index 0000000..b34f25b
+--- /dev/null
++++ b/drivers/mmc/host/jz4740_mmc.c
+@@ -0,0 +1,969 @@
++/*
++ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 SD/MMC controller driver
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#include <linux/mmc/host.h>
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
++#include <linux/scatterlist.h>
++#include <linux/clk.h>
++#include <linux/mmc/jz4740_mmc.h>
++
++#include <linux/bitops.h>
++#include <linux/gpio.h>
++#include <asm/mach-jz4740/gpio.h>
++#include <asm/cacheflush.h>
++#include <linux/dma-mapping.h>
++
++
++#define JZ_REG_MMC_STRPCL	0x00
++#define JZ_REG_MMC_STATUS	0x04
++#define JZ_REG_MMC_CLKRT	0x08
++#define JZ_REG_MMC_CMDAT	0x0C
++#define JZ_REG_MMC_RESTO	0x10
++#define JZ_REG_MMC_RDTO		0x14
++#define JZ_REG_MMC_BLKLEN	0x18
++#define JZ_REG_MMC_NOB		0x1C
++#define JZ_REG_MMC_SNOB		0x20
++#define JZ_REG_MMC_IMASK	0x24
++#define JZ_REG_MMC_IREG		0x28
++#define JZ_REG_MMC_CMD		0x2C
++#define JZ_REG_MMC_ARG		0x30
++#define JZ_REG_MMC_RESP_FIFO	0x34
++#define JZ_REG_MMC_RXFIFO	0x38
++#define JZ_REG_MMC_TXFIFO	0x3C
++
++#define JZ_MMC_STRPCL_EXIT_MULTIPLE BIT(7)
++#define JZ_MMC_STRPCL_EXIT_TRANSFER BIT(6)
++#define JZ_MMC_STRPCL_START_READWAIT BIT(5)
++#define JZ_MMC_STRPCL_STOP_READWAIT BIT(4)
++#define JZ_MMC_STRPCL_RESET BIT(3)
++#define JZ_MMC_STRPCL_START_OP BIT(2)
++#define JZ_MMC_STRPCL_CLOCK_CONTROL (BIT(1) | BIT(0))
++#define JZ_MMC_STRPCL_CLOCK_STOP BIT(0)
++#define JZ_MMC_STRPCL_CLOCK_START BIT(1)
++
++
++#define JZ_MMC_STATUS_IS_RESETTING BIT(15)
++#define JZ_MMC_STATUS_SDIO_INT_ACTIVE BIT(14)
++#define JZ_MMC_STATUS_PRG_DONE BIT(13)
++#define JZ_MMC_STATUS_DATA_TRAN_DONE BIT(12)
++#define JZ_MMC_STATUS_END_CMD_RES BIT(11)
++#define JZ_MMC_STATUS_DATA_FIFO_AFULL BIT(10)
++#define JZ_MMC_STATUS_IS_READWAIT BIT(9)
++#define JZ_MMC_STATUS_CLK_EN BIT(8)
++#define JZ_MMC_STATUS_DATA_FIFO_FULL BIT(7)
++#define JZ_MMC_STATUS_DATA_FIFO_EMPTY BIT(6)
++#define JZ_MMC_STATUS_CRC_RES_ERR BIT(5)
++#define JZ_MMC_STATUS_CRC_READ_ERROR BIT(4)
++#define JZ_MMC_STATUS_TIMEOUT_WRITE BIT(3)
++#define JZ_MMC_STATUS_CRC_WRITE_ERROR BIT(2)
++#define JZ_MMC_STATUS_TIMEOUT_RES BIT(1)
++#define JZ_MMC_STATUS_TIMEOUT_READ BIT(0)
++
++#define JZ_MMC_STATUS_READ_ERROR_MASK (BIT(4) | BIT(0))
++#define JZ_MMC_STATUS_WRITE_ERROR_MASK (BIT(3) | BIT(2))
++
++
++#define JZ_MMC_CMDAT_IO_ABORT BIT(11)
++#define JZ_MMC_CMDAT_BUS_WIDTH_4BIT BIT(10)
++#define JZ_MMC_CMDAT_DMA_EN BIT(8)
++#define JZ_MMC_CMDAT_INIT BIT(7)
++#define JZ_MMC_CMDAT_BUSY BIT(6)
++#define JZ_MMC_CMDAT_STREAM BIT(5)
++#define JZ_MMC_CMDAT_WRITE BIT(4)
++#define JZ_MMC_CMDAT_DATA_EN BIT(3)
++#define JZ_MMC_CMDAT_RESPONSE_FORMAT (BIT(2) | BIT(1) | BIT(0))
++#define JZ_MMC_CMDAT_RSP_R1 1
++#define JZ_MMC_CMDAT_RSP_R2 2
++#define JZ_MMC_CMDAT_RSP_R3 3
++
++#define JZ_MMC_IRQ_SDIO BIT(7)
++#define JZ_MMC_IRQ_TXFIFO_WR_REQ BIT(6)
++#define JZ_MMC_IRQ_RXFIFO_RD_REQ BIT(5)
++#define JZ_MMC_IRQ_END_CMD_RES BIT(2)
++#define JZ_MMC_IRQ_PRG_DONE BIT(1)
++#define JZ_MMC_IRQ_DATA_TRAN_DONE BIT(0)
++
++
++#define JZ_MMC_CLK_RATE 24000000
++
++#define JZ4740_MMC_MAX_TIMEOUT 10000000
++
++struct jz4740_mmc_host {
++	struct mmc_host *mmc;
++	struct platform_device *pdev;
++	struct jz4740_mmc_platform_data *pdata;
++	struct clk *clk;
++
++	int irq;
++	int card_detect_irq;
++
++	struct resource *mem;
++	void __iomem *base;
++	struct mmc_request *req;
++	struct mmc_command *cmd;
++
++	unsigned long waiting;
++
++	int max_clock;
++	uint32_t cmdat;
++
++	uint16_t irq_mask;
++
++	spinlock_t lock;
++
++	struct timer_list timeout_timer;
++};
++
++static void jz4740_mmc_set_irq_enabled(struct jz4740_mmc_host *host,
++	unsigned int irq, bool enabled)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&host->lock, flags);
++	if (enabled)
++		host->irq_mask &= ~irq;
++	else
++		host->irq_mask |= irq;
++	spin_unlock_irqrestore(&host->lock, flags);
++
++	writew(host->irq_mask, host->base + JZ_REG_MMC_IMASK);
++}
++
++static void jz4740_mmc_clock_enable(struct jz4740_mmc_host *host,
++	bool start_transfer)
++{
++	uint16_t val = JZ_MMC_STRPCL_CLOCK_START;
++
++	if (start_transfer)
++		val |= JZ_MMC_STRPCL_START_OP;
++
++	writew(val, host->base + JZ_REG_MMC_STRPCL);
++}
++
++static void jz4740_mmc_clock_disable(struct jz4740_mmc_host *host)
++{
++	uint32_t status;
++
++	writew(JZ_MMC_STRPCL_CLOCK_STOP, host->base + JZ_REG_MMC_STRPCL);
++	do {
++		status = readl(host->base + JZ_REG_MMC_STATUS);
++	} while (status & JZ_MMC_STATUS_CLK_EN);
++}
++
++static void jz4740_mmc_reset(struct jz4740_mmc_host *host)
++{
++	uint32_t status;
++
++	writew(JZ_MMC_STRPCL_RESET, host->base + JZ_REG_MMC_STRPCL);
++	udelay(10);
++	do {
++		status = readl(host->base + JZ_REG_MMC_STATUS);
++	} while (status & JZ_MMC_STATUS_IS_RESETTING);
++}
++
++static void jz4740_mmc_request_done(struct jz4740_mmc_host *host)
++{
++	struct mmc_request *req;
++
++	req = host->req;
++	host->req = NULL;
++
++	mmc_request_done(host->mmc, req);
++}
++
++static inline unsigned int jz4740_mmc_wait_irq(struct jz4740_mmc_host *host,
++	unsigned int irq)
++{
++	unsigned int timeout = JZ4740_MMC_MAX_TIMEOUT;
++	uint16_t status;
++
++	do {
++		status = readw(host->base + JZ_REG_MMC_IREG);
++	} while (!(status & irq) && --timeout);
++
++	return timeout;
++}
++
++static void jz4740_mmc_write_data(struct jz4740_mmc_host *host,
++	struct mmc_data *data)
++{
++	struct sg_mapping_iter miter;
++	uint32_t *buf;
++	int status;
++	unsigned int timeout;
++	size_t i, j;
++
++	sg_miter_start(&miter, data->sg, data->sg_len, SG_MITER_FROM_SG);
++	while (sg_miter_next(&miter)) {
++		buf = miter.addr;
++		i = miter.length / 4;
++		j = i >> 3;
++		i = i & 0x7;
++		while (j) {
++			timeout = jz4740_mmc_wait_irq(host, JZ_MMC_IRQ_TXFIFO_WR_REQ);
++			if (unlikely(timeout == 0)) {
++				sg_miter_stop(&miter);
++				goto err_timeout;
++			}
++
++			writel(buf[0], host->base + JZ_REG_MMC_TXFIFO);
++			writel(buf[1], host->base + JZ_REG_MMC_TXFIFO);
++			writel(buf[2], host->base + JZ_REG_MMC_TXFIFO);
++			writel(buf[3], host->base + JZ_REG_MMC_TXFIFO);
++			writel(buf[4], host->base + JZ_REG_MMC_TXFIFO);
++			writel(buf[5], host->base + JZ_REG_MMC_TXFIFO);
++			writel(buf[6], host->base + JZ_REG_MMC_TXFIFO);
++			writel(buf[7], host->base + JZ_REG_MMC_TXFIFO);
++			buf += 8;
++			--j;
++		}
++		if (unlikely(i)) {
++			timeout = jz4740_mmc_wait_irq(host, JZ_MMC_IRQ_TXFIFO_WR_REQ);
++			if (unlikely(timeout == 0)) {
++				sg_miter_stop(&miter);
++				goto err_timeout;
++			}
++
++			while (i) {
++				writel(*buf, host->base + JZ_REG_MMC_TXFIFO);
++				++buf;
++				--i;
++			}
++		}
++		data->bytes_xfered += miter.length;
++	}
++	sg_miter_stop(&miter);
++
++	status = readl(host->base + JZ_REG_MMC_STATUS);
++	if (status & JZ_MMC_STATUS_WRITE_ERROR_MASK) {
++		if (status & (JZ_MMC_STATUS_TIMEOUT_WRITE)) {
++			host->req->cmd->error = -ETIMEDOUT;
++			data->error = -ETIMEDOUT;
++		} else {
++			host->req->cmd->error = -EIO;
++			data->error = -EIO;
++		}
++		return;
++	}
++
++	timeout = JZ4740_MMC_MAX_TIMEOUT;
++	do {
++		status = readl(host->base + JZ_REG_MMC_STATUS);
++	} while ((status & JZ_MMC_STATUS_DATA_TRAN_DONE) == 0 && --timeout);
++
++	if (unlikely(timeout == 0))
++		goto err_timeout;
++	writew(JZ_MMC_IRQ_DATA_TRAN_DONE, host->base + JZ_REG_MMC_IREG);
++
++	return;
++
++err_timeout:
++	host->req->cmd->error = -ETIMEDOUT;
++	data->error = -ETIMEDOUT;
++}
++
++static void jz4740_mmc_read_data(struct jz4740_mmc_host *host,
++				struct mmc_data *data)
++{
++	struct sg_mapping_iter miter;
++	uint32_t *buf;
++	uint32_t d;
++	uint16_t status = 0;
++	size_t i, j;
++	unsigned int timeout;
++
++	sg_miter_start(&miter, data->sg, data->sg_len, SG_MITER_TO_SG);
++	while (sg_miter_next(&miter)) {
++		buf = miter.addr;
++		i = miter.length;
++		j = i >> 5;
++		i = i & 0x1f;
++		while (j) {
++			timeout = jz4740_mmc_wait_irq(host, JZ_MMC_IRQ_RXFIFO_RD_REQ);
++			if (unlikely(timeout == 0)) {
++				sg_miter_stop(&miter);
++				goto err_timeout;
++			}
++
++			buf[0] = readl(host->base + JZ_REG_MMC_RXFIFO);
++			buf[1] = readl(host->base + JZ_REG_MMC_RXFIFO);
++			buf[2] = readl(host->base + JZ_REG_MMC_RXFIFO);
++			buf[3] = readl(host->base + JZ_REG_MMC_RXFIFO);
++			buf[4] = readl(host->base + JZ_REG_MMC_RXFIFO);
++			buf[5] = readl(host->base + JZ_REG_MMC_RXFIFO);
++			buf[6] = readl(host->base + JZ_REG_MMC_RXFIFO);
++			buf[7] = readl(host->base + JZ_REG_MMC_RXFIFO);
++
++			buf += 8;
++			--j;
++		}
++
++		while (i >= 4) {
++			timeout = jz4740_mmc_wait_irq(host, JZ_MMC_IRQ_RXFIFO_RD_REQ);
++			if (unlikely(timeout == 0)) {
++				sg_miter_stop(&miter);
++				goto err_timeout;
++			}
++
++			*buf++ = readl(host->base + JZ_REG_MMC_RXFIFO);
++			i -= 4;
++		}
++		if (unlikely(i > 0)) {
++			d = readl(host->base + JZ_REG_MMC_RXFIFO);
++			memcpy(buf, &d, i);
++		}
++		data->bytes_xfered += miter.length;
++
++		/* This can go away once MIPS implements flush_kernel_dcache_page */
++		flush_dcache_page(miter.page);
++	}
++	sg_miter_stop(&miter);
++
++	status = readl(host->base + JZ_REG_MMC_STATUS);
++	if (status & JZ_MMC_STATUS_READ_ERROR_MASK) {
++		if (status & JZ_MMC_STATUS_TIMEOUT_READ) {
++			host->req->cmd->error = -ETIMEDOUT;
++			data->error = -ETIMEDOUT;
++		} else {
++			host->req->cmd->error = -EIO;
++			data->error = -EIO;
++		}
++		return;
++	}
++
++	/* For whatever reason there is sometime one word more in the fifo then
++	 * requested */
++	while ((status & JZ_MMC_STATUS_DATA_FIFO_EMPTY) == 0 && --timeout) {
++		d = readl(host->base + JZ_REG_MMC_RXFIFO);
++		status = readl(host->base + JZ_REG_MMC_STATUS);
++	}
++	return;
++
++err_timeout:
++	host->req->cmd->error = -ETIMEDOUT;
++	data->error = -ETIMEDOUT;
++}
++
++static void jz4740_mmc_timeout(unsigned long data)
++{
++	struct jz4740_mmc_host *host = (struct jz4740_mmc_host *)data;
++
++	if (!test_and_clear_bit(0, &host->waiting))
++		return;
++
++	jz4740_mmc_set_irq_enabled(host, JZ_MMC_IRQ_END_CMD_RES, false);
++
++	host->req->cmd->error = -ETIMEDOUT;
++	jz4740_mmc_request_done(host);
++}
++
++static void jz4740_mmc_read_response(struct jz4740_mmc_host *host,
++	struct mmc_command *cmd)
++{
++	int i;
++	uint16_t tmp;
++
++	if (cmd->flags & MMC_RSP_136) {
++		tmp = readw(host->base + JZ_REG_MMC_RESP_FIFO);
++		for (i = 0; i < 4; ++i) {
++			cmd->resp[i] = tmp << 24;
++			cmd->resp[i] |= readw(host->base + JZ_REG_MMC_RESP_FIFO) << 8;
++			tmp = readw(host->base + JZ_REG_MMC_RESP_FIFO);
++			cmd->resp[i] |= tmp >> 8;
++		}
++	} else {
++		cmd->resp[0] = readw(host->base + JZ_REG_MMC_RESP_FIFO) << 24;
++		cmd->resp[0] |= readw(host->base + JZ_REG_MMC_RESP_FIFO) << 8;
++		cmd->resp[0] |= readw(host->base + JZ_REG_MMC_RESP_FIFO) & 0xff;
++	}
++}
++
++static void jz4740_mmc_send_command(struct jz4740_mmc_host *host,
++	struct mmc_command *cmd)
++{
++	uint32_t cmdat = host->cmdat;
++
++	host->cmdat &= ~JZ_MMC_CMDAT_INIT;
++	jz4740_mmc_clock_disable(host);
++
++	host->cmd = cmd;
++
++	if (cmd->flags & MMC_RSP_BUSY)
++		cmdat |= JZ_MMC_CMDAT_BUSY;
++
++	switch (mmc_resp_type(cmd)) {
++	case MMC_RSP_R1B:
++	case MMC_RSP_R1:
++		cmdat |= JZ_MMC_CMDAT_RSP_R1;
++		break;
++	case MMC_RSP_R2:
++		cmdat |= JZ_MMC_CMDAT_RSP_R2;
++		break;
++	case MMC_RSP_R3:
++		cmdat |= JZ_MMC_CMDAT_RSP_R3;
++		break;
++	default:
++		break;
++	}
++
++	if (cmd->data) {
++		cmdat |= JZ_MMC_CMDAT_DATA_EN;
++		if (cmd->data->flags & MMC_DATA_WRITE)
++			cmdat |= JZ_MMC_CMDAT_WRITE;
++		if (cmd->data->flags & MMC_DATA_STREAM)
++			cmdat |= JZ_MMC_CMDAT_STREAM;
++
++		writew(cmd->data->blksz, host->base + JZ_REG_MMC_BLKLEN);
++		writew(cmd->data->blocks, host->base + JZ_REG_MMC_NOB);
++	}
++
++	writeb(cmd->opcode, host->base + JZ_REG_MMC_CMD);
++	writel(cmd->arg, host->base + JZ_REG_MMC_ARG);
++	writel(cmdat, host->base + JZ_REG_MMC_CMDAT);
++
++	jz4740_mmc_clock_enable(host, 1);
++}
++
++
++static irqreturn_t jz_mmc_irq_worker(int irq, void *devid)
++{
++	struct jz4740_mmc_host *host = (struct jz4740_mmc_host *)devid;
++	struct mmc_command *cmd = host->req->cmd;
++	struct mmc_request *req = host->req;
++	unsigned int timeout = JZ4740_MMC_MAX_TIMEOUT;
++	uint32_t status;
++
++	if (cmd->error)
++		goto done;
++
++	if (cmd->flags & MMC_RSP_PRESENT)
++		jz4740_mmc_read_response(host, cmd);
++
++	if (cmd->data) {
++		if (cmd->data->flags & MMC_DATA_READ)
++			jz4740_mmc_read_data(host, cmd->data);
++		else
++			jz4740_mmc_write_data(host, cmd->data);
++	}
++
++	if (req->stop) {
++		jz4740_mmc_send_command(host, req->stop);
++		do {
++			status = readw(host->base + JZ_REG_MMC_IREG);
++		} while ((status & JZ_MMC_IRQ_PRG_DONE) == 0 && --timeout);
++		writew(JZ_MMC_IRQ_PRG_DONE, host->base + JZ_REG_MMC_IREG);
++	}
++
++	if (unlikely(timeout == 0))
++		req->stop->error = -ETIMEDOUT;
++
++done:
++	jz4740_mmc_request_done(host);
++
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t jz_mmc_irq(int irq, void *devid)
++{
++	struct jz4740_mmc_host *host = devid;
++	uint16_t irq_reg, status, tmp;
++	irqreturn_t ret = IRQ_HANDLED;
++
++	irq_reg = readw(host->base + JZ_REG_MMC_IREG);
++
++	tmp = irq_reg;
++	irq_reg &= ~host->irq_mask;
++
++	tmp &= ~(JZ_MMC_IRQ_TXFIFO_WR_REQ | JZ_MMC_IRQ_RXFIFO_RD_REQ |
++		    JZ_MMC_IRQ_PRG_DONE | JZ_MMC_IRQ_DATA_TRAN_DONE);
++
++	if (tmp != irq_reg)
++		writew(tmp & ~irq_reg, host->base + JZ_REG_MMC_IREG);
++
++	if (irq_reg & JZ_MMC_IRQ_SDIO) {
++		writew(JZ_MMC_IRQ_SDIO, host->base + JZ_REG_MMC_IREG);
++		mmc_signal_sdio_irq(host->mmc);
++	}
++
++	if (!host->req || !host->cmd)
++		goto handled;
++
++	if (!(irq_reg & JZ_MMC_IRQ_END_CMD_RES))
++		goto handled;
++
++	if (test_and_clear_bit(0, &host->waiting)) {
++	    del_timer(&host->timeout_timer);
++
++	    status = readl(host->base + JZ_REG_MMC_STATUS);
++
++	    if (status & JZ_MMC_STATUS_TIMEOUT_RES) {
++			host->cmd->error = -ETIMEDOUT;
++		} else if (status & JZ_MMC_STATUS_CRC_RES_ERR) {
++			host->cmd->error = -EIO;
++		} else if (status & (JZ_MMC_STATUS_CRC_READ_ERROR |
++			    JZ_MMC_STATUS_CRC_WRITE_ERROR)) {
++			host->cmd->data->error = -EIO;
++		} else if (status & (JZ_MMC_STATUS_CRC_READ_ERROR |
++				JZ_MMC_STATUS_CRC_WRITE_ERROR)) {
++			host->cmd->data->error = -EIO;
++		}
++
++		ret = IRQ_WAKE_THREAD;
++	}
++
++	jz4740_mmc_set_irq_enabled(host, JZ_MMC_IRQ_END_CMD_RES, false);
++	writew(JZ_MMC_IRQ_END_CMD_RES, host->base + JZ_REG_MMC_IREG);
++
++handled:
++	return ret;
++}
++
++static int jz4740_mmc_set_clock_rate(struct jz4740_mmc_host *host, int rate)
++{
++	int div = 0;
++	int real_rate;
++
++	jz4740_mmc_clock_disable(host);
++	clk_set_rate(host->clk, JZ_MMC_CLK_RATE);
++
++	real_rate = clk_get_rate(host->clk);
++
++	while (real_rate > rate && div < 7) {
++		++div;
++		real_rate >>= 1;
++	}
++
++	writew(div, host->base + JZ_REG_MMC_CLKRT);
++	return real_rate;
++}
++
++static void jz4740_mmc_request(struct mmc_host *mmc, struct mmc_request *req)
++{
++	struct jz4740_mmc_host *host = mmc_priv(mmc);
++
++	host->req = req;
++
++	writew(0xffff, host->base + JZ_REG_MMC_IREG);
++
++	writew(JZ_MMC_IRQ_END_CMD_RES, host->base + JZ_REG_MMC_IREG);
++	jz4740_mmc_set_irq_enabled(host, JZ_MMC_IRQ_END_CMD_RES, true);
++
++	set_bit(0, &host->waiting);
++	mod_timer(&host->timeout_timer, jiffies + 5*HZ);
++	jz4740_mmc_send_command(host, req->cmd);
++}
++
++static void jz4740_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
++{
++	struct jz4740_mmc_host *host = mmc_priv(mmc);
++	if (ios->clock)
++		jz4740_mmc_set_clock_rate(host, ios->clock);
++
++	switch (ios->power_mode) {
++	case MMC_POWER_UP:
++		jz4740_mmc_reset(host);
++		if (gpio_is_valid(host->pdata->gpio_power))
++			gpio_set_value(host->pdata->gpio_power,
++					!host->pdata->power_active_low);
++		host->cmdat |= JZ_MMC_CMDAT_INIT;
++		clk_enable(host->clk);
++		break;
++	case MMC_POWER_ON:
++		break;
++	default:
++		if (gpio_is_valid(host->pdata->gpio_power))
++			gpio_set_value(host->pdata->gpio_power,
++					host->pdata->power_active_low);
++		clk_disable(host->clk);
++		break;
++	}
++
++	switch (ios->bus_width) {
++	case MMC_BUS_WIDTH_1:
++		host->cmdat &= ~JZ_MMC_CMDAT_BUS_WIDTH_4BIT;
++		break;
++	case MMC_BUS_WIDTH_4:
++		host->cmdat |= JZ_MMC_CMDAT_BUS_WIDTH_4BIT;
++		break;
++	default:
++		break;
++	}
++}
++
++static int jz4740_mmc_get_ro(struct mmc_host *mmc)
++{
++	struct jz4740_mmc_host *host = mmc_priv(mmc);
++	if (!gpio_is_valid(host->pdata->gpio_read_only))
++		return -ENOSYS;
++
++	return gpio_get_value(host->pdata->gpio_read_only) ^
++		host->pdata->read_only_active_low;
++}
++
++static int jz4740_mmc_get_cd(struct mmc_host *mmc)
++{
++	struct jz4740_mmc_host *host = mmc_priv(mmc);
++	if (!gpio_is_valid(host->pdata->gpio_card_detect))
++		return -ENOSYS;
++
++	return gpio_get_value(host->pdata->gpio_card_detect) ^
++			host->pdata->card_detect_active_low;
++}
++
++static irqreturn_t jz4740_mmc_card_detect_irq(int irq, void *devid)
++{
++	struct jz4740_mmc_host *host = devid;
++
++	mmc_detect_change(host->mmc, HZ / 3);
++
++	return IRQ_HANDLED;
++}
++
++static void jz4740_mmc_enable_sdio_irq(struct mmc_host *mmc, int enable)
++{
++	struct jz4740_mmc_host *host = mmc_priv(mmc);
++	jz4740_mmc_set_irq_enabled(host, JZ_MMC_IRQ_SDIO, enable);
++}
++
++static const struct mmc_host_ops jz4740_mmc_ops = {
++	.request	= jz4740_mmc_request,
++	.set_ios	= jz4740_mmc_set_ios,
++	.get_ro		= jz4740_mmc_get_ro,
++	.get_cd		= jz4740_mmc_get_cd,
++	.enable_sdio_irq = jz4740_mmc_enable_sdio_irq,
++};
++
++static const struct jz_gpio_bulk_request jz4740_mmc_pins[] = {
++	JZ_GPIO_BULK_PIN(MSC_CMD),
++	JZ_GPIO_BULK_PIN(MSC_CLK),
++	JZ_GPIO_BULK_PIN(MSC_DATA0),
++	JZ_GPIO_BULK_PIN(MSC_DATA1),
++	JZ_GPIO_BULK_PIN(MSC_DATA2),
++	JZ_GPIO_BULK_PIN(MSC_DATA3),
++};
++
++static int __devinit jz4740_mmc_request_gpios(struct platform_device *pdev)
++{
++	int ret;
++	struct jz4740_mmc_platform_data *pdata = pdev->dev.platform_data;
++
++	if (!pdata)
++		return 0;
++
++	if (gpio_is_valid(pdata->gpio_card_detect)) {
++		ret = gpio_request(pdata->gpio_card_detect, "MMC detect change");
++		if (ret) {
++			dev_err(&pdev->dev, "Failed to request detect change gpio\n");
++			goto err;
++		}
++		gpio_direction_input(pdata->gpio_card_detect);
++	}
++
++	if (gpio_is_valid(pdata->gpio_read_only)) {
++		ret = gpio_request(pdata->gpio_read_only, "MMC read only");
++		if (ret) {
++			dev_err(&pdev->dev, "Failed to request read only gpio: %d\n", ret);
++			goto err_free_gpio_card_detect;
++		}
++		gpio_direction_input(pdata->gpio_read_only);
++	}
++
++	if (gpio_is_valid(pdata->gpio_power)) {
++		ret = gpio_request(pdata->gpio_power, "MMC power");
++		if (ret) {
++			dev_err(&pdev->dev, "Failed to request power gpio: %d\n", ret);
++			goto err_free_gpio_read_only;
++		}
++		gpio_direction_output(pdata->gpio_power, pdata->power_active_low);
++	}
++
++	return 0;
++
++err_free_gpio_read_only:
++	if (gpio_is_valid(pdata->gpio_read_only))
++		gpio_free(pdata->gpio_read_only);
++err_free_gpio_card_detect:
++	if (gpio_is_valid(pdata->gpio_card_detect))
++		gpio_free(pdata->gpio_card_detect);
++err:
++	return ret;
++}
++
++static void jz4740_mmc_free_gpios(struct platform_device *pdev)
++{
++	struct jz4740_mmc_platform_data *pdata = pdev->dev.platform_data;
++
++	if (!pdata)
++		return;
++
++	if (gpio_is_valid(pdata->gpio_power))
++		gpio_free(pdata->gpio_power);
++	if (gpio_is_valid(pdata->gpio_read_only))
++		gpio_free(pdata->gpio_read_only);
++	if (gpio_is_valid(pdata->gpio_card_detect))
++		gpio_free(pdata->gpio_card_detect);
++}
++
++static inline size_t jz4740_mmc_num_pins(struct jz4740_mmc_host *host)
++{
++	size_t num_pins = ARRAY_SIZE(jz4740_mmc_pins);
++	if (host->pdata && host->pdata->data_1bit)
++		num_pins -= 3;
++
++	return num_pins;
++}
++
++static int __devinit jz4740_mmc_probe(struct platform_device* pdev)
++{
++	int ret;
++	struct mmc_host *mmc;
++	struct jz4740_mmc_host *host;
++	struct jz4740_mmc_platform_data *pdata;
++
++	pdata = pdev->dev.platform_data;
++
++	mmc = mmc_alloc_host(sizeof(struct jz4740_mmc_host), &pdev->dev);
++	if (!mmc) {
++		dev_err(&pdev->dev, "Failed to alloc mmc host structure\n");
++		return -ENOMEM;
++	}
++
++	host = mmc_priv(mmc);
++	host->pdata = pdata;
++
++	host->irq = platform_get_irq(pdev, 0);
++	if (host->irq < 0) {
++		ret = host->irq;
++		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
++		goto err_free_host;
++	}
++
++	host->clk = clk_get(&pdev->dev, "mmc");
++	if (!host->clk) {
++		ret = -ENOENT;
++		dev_err(&pdev->dev, "Failed to get mmc clock\n");
++		goto err_free_host;
++	}
++
++	host->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!host->mem) {
++		ret = -ENOENT;
++		dev_err(&pdev->dev, "Failed to get base platform memory\n");
++		goto err_clk_put;
++	}
++
++	host->mem = request_mem_region(host->mem->start,
++					resource_size(host->mem), pdev->name);
++	if (!host->mem) {
++		ret = -EBUSY;
++		dev_err(&pdev->dev, "Failed to request base memory region\n");
++		goto err_clk_put;
++	}
++
++	host->base = ioremap_nocache(host->mem->start, resource_size(host->mem));
++	if (!host->base) {
++		ret = -EBUSY;
++		dev_err(&pdev->dev, "Failed to ioremap base memory\n");
++		goto err_release_mem_region;
++	}
++
++	ret = jz_gpio_bulk_request(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to request mmc pins: %d\n", ret);
++		goto err_iounmap;
++	}
++
++	ret = jz4740_mmc_request_gpios(pdev);
++	if (ret)
++		goto err_gpio_bulk_free;
++
++	mmc->ops = &jz4740_mmc_ops;
++	mmc->f_min = JZ_MMC_CLK_RATE / 128;
++	mmc->f_max = JZ_MMC_CLK_RATE;
++	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
++	mmc->caps = (pdata && pdata->data_1bit) ? 0 : MMC_CAP_4_BIT_DATA;
++	mmc->caps |= MMC_CAP_SDIO_IRQ;
++
++	mmc->max_blk_size = (1 << 10) - 1;
++	mmc->max_blk_count = (1 << 15) - 1;
++	mmc->max_req_size = mmc->max_blk_size * mmc->max_blk_count;
++
++	mmc->max_phys_segs = 128;
++	mmc->max_hw_segs = 128;
++	mmc->max_seg_size = mmc->max_req_size;
++
++	host->mmc = mmc;
++	host->pdev = pdev;
++	host->max_clock = JZ_MMC_CLK_RATE;
++	spin_lock_init(&host->lock);
++	host->irq_mask = 0xffff;
++
++	host->card_detect_irq = gpio_to_irq(pdata->gpio_card_detect);
++
++	if (host->card_detect_irq < 0) {
++		dev_warn(&pdev->dev, "Failed to get irq for card detect gpio\n");
++	} else {
++		ret = request_irq(host->card_detect_irq,
++			jz4740_mmc_card_detect_irq,
++			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++			"MMC card detect", host);
++
++		if (ret) {
++			dev_err(&pdev->dev, "Failed to request card detect irq");
++			goto err_free_gpios;
++		}
++	}
++
++	ret = request_threaded_irq(host->irq, jz_mmc_irq, jz_mmc_irq_worker, 0,
++			dev_name(&pdev->dev), host);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to request irq: %d\n", ret);
++		goto err_free_card_detect_irq;
++	}
++
++	jz4740_mmc_reset(host);
++	jz4740_mmc_clock_disable(host);
++	setup_timer(&host->timeout_timer, jz4740_mmc_timeout,
++			(unsigned long)host);
++	/* It is not that important when it times out, it just needs to timeout. */
++	set_timer_slack(&host->timeout_timer, HZ);
++
++	platform_set_drvdata(pdev, host);
++	ret = mmc_add_host(mmc);
++
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to add mmc host: %d\n", ret);
++		goto err_free_irq;
++	}
++	dev_info(&pdev->dev, "JZ SD/MMC card driver registered\n");
++
++	return 0;
++
++err_free_irq:
++	free_irq(host->irq, host);
++err_free_card_detect_irq:
++	if (host->card_detect_irq >= 0)
++		free_irq(host->card_detect_irq, host);
++err_free_gpios:
++	jz4740_mmc_free_gpios(pdev);
++err_gpio_bulk_free:
++	jz_gpio_bulk_free(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
++err_iounmap:
++	iounmap(host->base);
++err_release_mem_region:
++	release_mem_region(host->mem->start, resource_size(host->mem));
++err_clk_put:
++	clk_put(host->clk);
++err_free_host:
++	platform_set_drvdata(pdev, NULL);
++	mmc_free_host(mmc);
++
++	return ret;
++}
++
++static int __devexit jz4740_mmc_remove(struct platform_device *pdev)
++{
++	struct jz4740_mmc_host *host = platform_get_drvdata(pdev);
++
++	del_timer_sync(&host->timeout_timer);
++	jz4740_mmc_set_irq_enabled(host, 0xff, false);
++	jz4740_mmc_reset(host);
++
++	mmc_remove_host(host->mmc);
++
++	free_irq(host->irq, host);
++	if (host->card_detect_irq >= 0)
++		free_irq(host->card_detect_irq, host);
++
++	jz4740_mmc_free_gpios(pdev);
++	jz_gpio_bulk_free(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
++
++	iounmap(host->base);
++	release_mem_region(host->mem->start, resource_size(host->mem));
++
++	clk_put(host->clk);
++
++	platform_set_drvdata(pdev, NULL);
++	mmc_free_host(host->mmc);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++
++static int jz4740_mmc_suspend(struct device *dev)
++{
++	struct jz4740_mmc_host *host = dev_get_drvdata(dev);
++
++	mmc_suspend_host(host->mmc);
++
++	jz_gpio_bulk_suspend(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
++
++	return 0;
++}
++
++static int jz4740_mmc_resume(struct device *dev)
++{
++	struct jz4740_mmc_host *host = dev_get_drvdata(dev);
++
++	jz_gpio_bulk_resume(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
++
++	mmc_resume_host(host->mmc);
++
++	return 0;
++}
++
++const struct dev_pm_ops jz4740_mmc_pm_ops = {
++	.suspend	= jz4740_mmc_suspend,
++	.resume		= jz4740_mmc_resume,
++	.poweroff	= jz4740_mmc_suspend,
++	.restore	= jz4740_mmc_resume,
++};
++
++#define JZ4740_MMC_PM_OPS (&jz4740_mmc_pm_ops)
++#else
++#define JZ4740_MMC_PM_OPS NULL
++#endif
++
++static struct platform_driver jz4740_mmc_driver = {
++	.probe = jz4740_mmc_probe,
++	.remove = __devexit_p(jz4740_mmc_remove),
++	.driver = {
++		.name = "jz4740-mmc",
++		.owner = THIS_MODULE,
++		.pm = JZ4740_MMC_PM_OPS,
++	},
++};
++
++static int __init jz4740_mmc_init(void)
++{
++	return platform_driver_register(&jz4740_mmc_driver);
++}
++module_init(jz4740_mmc_init);
++
++static void __exit jz4740_mmc_exit(void)
++{
++	platform_driver_unregister(&jz4740_mmc_driver);
++}
++module_exit(jz4740_mmc_exit);
++
++MODULE_DESCRIPTION("JZ4740 SD/MMC controller driver");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
+diff --git a/include/linux/mmc/jz4740_mmc.h b/include/linux/mmc/jz4740_mmc.h
+new file mode 100644
+index 0000000..8543f43
+--- /dev/null
++++ b/include/linux/mmc/jz4740_mmc.h
+@@ -0,0 +1,15 @@
++#ifndef __LINUX_MMC_JZ4740_MMC
++#define __LINUX_MMC_JZ4740_MMC
++
++struct jz4740_mmc_platform_data {
++	int gpio_power;
++	int gpio_card_detect;
++	int gpio_read_only;
++	unsigned card_detect_active_low:1;
++	unsigned read_only_active_low:1;
++	unsigned power_active_low:1;
++
++	unsigned data_1bit:1;
++};
++
++#endif
+-- 
+1.5.6.5
 
