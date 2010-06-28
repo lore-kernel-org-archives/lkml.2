@@ -1,70 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab0F1SKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 14:10:49 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49326 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab0F1SKs (ORCPT
+	id S1753988Ab0F1SNE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 14:13:04 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:41067 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478Ab0F1SND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 14:10:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=c9xBGIyzATP8/wvnu0B9FpZPi60fu/2mZ/OJS214r2zRynzFl3+I/dKyc5WikYfNPR
-         V3ytzncthAc7phRVCixY89HMC7W93YeArxrIoHD3LrtABF7AnK0UkMTqFOCpKyP+NN13
-         a4CP1ilB0Ambzcv6+iR6p8o3ui4Y9Y5s8I84Y=
-Message-ID: <4C28DF65.4010802@gmail.com>
-Date: Mon, 28 Jun 2010 10:44:05 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-       gustavo@padovan.org
-Subject: Re: [PATCH] Bluetooth: Fix abuse of the preincrement operator
-References: <1277621246-10960-6-git-send-email-justinmattock@gmail.com> <20100628125752.8945.50572.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20100628125752.8945.50572.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 28 Jun 2010 14:13:03 -0400
+X-Authority-Analysis: v=1.1 cv=hVjE12FRt4v4sD2HVuppbi620CRC5en4UNTr7KPd1ng= c=1 sm=0 a=INyEKc8lnp4A:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=GE0wyK3zUUi6KdM-kwAA:9 a=dp79VBGVTnep1Bk63eAA:7 a=2dXyHtY6ujaMcpHLMAR5goToEWIA:4 a=PUjeQqilurYA:10 a=x8gzFH9gYPwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [RFC PATCH v2 4/5] skb: add tracepoints to freeing skb
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, kaneshige.kenji@jp.fujitsu.com,
+       izumi.taku@jp.fujitsu.com
+In-Reply-To: <4C23FF55.3090604@jp.fujitsu.com>
+References: <4C2312A8.9060903@jp.fujitsu.com>
+	 <4C23FF55.3090604@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 28 Jun 2010 14:12:59 -0400
+Message-ID: <1277748779.9181.72.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2010 05:57 AM, David Howells wrote:
-> Fix abuse of the preincrement operator as detected when building with gcc
-> 4.6.0:
->
-> 	 CC [M]  drivers/bluetooth/hci_bcsp.o
-> 	drivers/bluetooth/hci_bcsp.c: In function 'bcsp_prepare_pkt':
-> 	drivers/bluetooth/hci_bcsp.c:247:20: warning: operation on 'bcsp->msgq_txseq' may be undefined
->
-> Reported-by: Justin P. Mattock<justinmattock@gmail.com>
-> Signed-off-by: David Howells<dhowells@redhat.com>
+On Fri, 2010-06-25 at 09:59 +0900, Koki Sanagi wrote:
+> This patch adds tracepoint to consume_skb and dev_kfree_skb_irq.
+> Combinating with tracepoint on dev_hard_start_xmit, we can check how long it
+> takes to free transmited packets. And using it, we can calculate how many
+> packets driver had at that time. It is useful when a drop of transmited packet
+> is a problem.
+> 
+>           <idle>-0     [001] 241409.218333: consume_skb: skbaddr=dd6b2fb8
+>           <idle>-0     [001] 241409.490555: dev_kfree_skb_irq: skbaddr=f5e29840
+> 
+> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
 > ---
->
->   drivers/bluetooth/hci_bcsp.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/bluetooth/hci_bcsp.c b/drivers/bluetooth/hci_bcsp.c
-> index 40aec0f..42d69d4 100644
-> --- a/drivers/bluetooth/hci_bcsp.c
-> +++ b/drivers/bluetooth/hci_bcsp.c
-> @@ -244,7 +244,7 @@ static struct sk_buff *bcsp_prepare_pkt(struct bcsp_struct *bcsp, u8 *data,
->   	if (rel) {
->   		hdr[0] |= 0x80 + bcsp->msgq_txseq;
->   		BT_DBG("Sending packet with seqno %u", bcsp->msgq_txseq);
-> -		bcsp->msgq_txseq = ++(bcsp->msgq_txseq)&  0x07;
-> +		bcsp->msgq_txseq = (bcsp->msgq_txseq + 1)&  0x07;
->   	}
->
->   	if (bcsp->use_crc)
->
->
+> include/trace/events/skb.h |   36 ++++++++++++++++++++++++++++++++++++
+>  net/core/dev.c             |    2 ++
+>  net/core/skbuff.c          |    1 +
+>  3 files changed, 39 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
+> index 4b2be6d..6ab5b34 100644
+> --- a/include/trace/events/skb.h
+> +++ b/include/trace/events/skb.h
+> @@ -35,6 +35,42 @@ TRACE_EVENT(kfree_skb,
+>  		__entry->skbaddr, __entry->protocol, __entry->location)
+>  );
+>  
+> +TRACE_EVENT(consume_skb,
+> +
+> +	TP_PROTO(struct sk_buff *skb),
+> +
+> +	TP_ARGS(skb),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	void *,	skbaddr	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->skbaddr = skb;
+> +	),
+> +
+> +	TP_printk("skbaddr=%p",
+> +		__entry->skbaddr)
+> +);
+> +
+> +TRACE_EVENT(dev_kfree_skb_irq,
+> +
+> +	TP_PROTO(struct sk_buff *skb),
+> +
+> +	TP_ARGS(skb),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	void *,	skbaddr	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->skbaddr = skb;
+> +	),
+> +
+> +	TP_printk("skbaddr=%p",
+> +		__entry->skbaddr)
+> +);
 
-ahh.. so it's o.k. to add the value after bcsp->msgq_txseq instead of 
-before. Anyways build clean over here..
+These two tracepoints are also identical in body. Please use
+DECLARE_EVENT_CLASS() and DEFINE_EVENT() instead.
 
-Thanks!
+-- Steve
 
-Justin P. Mattock
+> +
+>  TRACE_EVENT(skb_copy_datagram_iovec,
+>  
+>  	TP_PROTO(const struct sk_buff *skb, int len),
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index 4b64b21..807b1ca 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -131,6 +131,7 @@
+>  #include <linux/random.h>
+>  #include <trace/events/napi.h>
+>  #include <trace/events/net.h>
+> +#include <trace/events/skb.h>
+>  #include <linux/pci.h>
+>  
+>  #include "net-sysfs.h"
+> @@ -1580,6 +1581,7 @@ void dev_kfree_skb_irq(struct sk_buff *skb)
+>  		struct softnet_data *sd;
+>  		unsigned long flags;
+>  
+> +		trace_dev_kfree_skb_irq(skb);
+>  		local_irq_save(flags);
+>  		sd = &__get_cpu_var(softnet_data);
+>  		skb->next = sd->completion_queue;
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 34432b4..a7b4036 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -466,6 +466,7 @@ void consume_skb(struct sk_buff *skb)
+>  		smp_rmb();
+>  	else if (likely(!atomic_dec_and_test(&skb->users)))
+>  		return;
+> +	trace_consume_skb(skb);
+>  	__kfree_skb(skb);
+>  }
+>  EXPORT_SYMBOL(consume_skb);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
