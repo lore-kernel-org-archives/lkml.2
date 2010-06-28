@@ -1,79 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab0F1VpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 17:45:16 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39080 "EHLO gate.crashing.org"
+	id S1755305Ab0F1VuR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 17:50:17 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:51545 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752662Ab0F1VpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 17:45:14 -0400
-Subject: Re: kmem_cache_destroy() badness with SLUB
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1006280159010.28072@chino.kir.corp.google.com>
-References: <1277688701.4200.159.camel@pasglop>
-	 <alpine.DEB.2.00.1006280159010.28072@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Jun 2010 07:44:29 +1000
-Message-ID: <1277761469.4200.194.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753578Ab0F1VuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 17:50:15 -0400
+Date: Mon, 28 Jun 2010 14:50:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: npiggin@suse.de
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 24/52] fs: dcache reduce d_parent locking
+Message-ID: <20100628215013.GG2357@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100624030212.676457061@suse.de>
+ <20100624030729.395195069@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100624030729.395195069@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-28 at 02:03 -0700, David Rientjes wrote:
-> On Mon, 28 Jun 2010, Benjamin Herrenschmidt wrote:
+On Thu, Jun 24, 2010 at 01:02:36PM +1000, npiggin@suse.de wrote:
+> Use RCU property of dcache to simplify locking in some places where we
+> take d_parent and d_lock.
 > 
-> > Hi folks !
-> > 
-> > Internally, I'm hitting a little "nit"...
-> > 
-> > sysfs_slab_add() has this check:
-> > 
-> > 	if (slab_state < SYSFS)
-> > 		/* Defer until later */
-> > 		return 0;
-> > 
-> > But sysfs_slab_remove() doesn't.
-> > 
-> > So if the slab is created -and- destroyed at, for example, arch_initcall
-> > time, then we hit a WARN in the kobject code, trying to dispose of a
-> > non-existing kobject.
-> > 
-> Indeed, but shouldn't we be appropriately handling the return value of 
-> sysfs_slab_add() so that it fails cache creation?  We wouldn't be calling 
-> sysfs_slab_remove() on a cache that was never created.
+> Comment: don't need rcu_deref because we take the spinlock and recheck it.
 
-It's eventually created, but yes, we should probably store a state,
-unless we have a clean way to know the kobject in there is uninitialized
-and test for that.
+Looks good other than one question below.
 
-> > Now, at first sight, just adding the same test to sysfs_slab_remove()
-> > would do the job... but it all seems very racy to me.
-> > 
-> > I don't understand in fact how this slab_state deals with races at all. 
-> > 
-> All modifiers of slab_state are intended to be run only on the boot cpu so 
-> the only concern is the ordering.  We need slab_state to indicate how far 
-> slab has been initialized since we can't otherwise enforce how code uses 
-> slab in between things like kmem_cache_init(), kmem_cache_init_late(), and 
-> initcalls on the boot cpu.
+							Thanx, Paul
 
-But initcalls aren't pinned to the boot CPU... IE. I don't see how the
-sysfs creation avoids racing with SLAB creation, or am I missing
-something ?
+> Signed-off-by: Nick Piggin <npiggin@suse.de>
+> --
+> 
+> Index: linux-2.6/fs/dcache.c
+> ===================================================================
+> --- linux-2.6.orig/fs/dcache.c
+> +++ linux-2.6/fs/dcache.c
+> @@ -311,23 +311,18 @@ struct dentry *dget_parent(struct dentry
+>  	struct dentry *ret;
+> 
+>  repeat:
+> -	spin_lock(&dentry->d_lock);
+> +	rcu_read_lock();
+>  	ret = dentry->d_parent;
 
-Cheers,
-Ben.
+Doesn't this need to be as follows?
 
+	ret = rcu_dereference(dentry)->d_parent;
+
+Otherwise, couldn't we end up seeing pre-initialization value for
+->d_parent for a newly inserted dentry?
+
+> -	if (!ret)
+> -		goto out;
+> -	if (dentry == ret) {
+> -		ret->d_count++;
+> -		goto out;
+> -	}
+> -	if (!spin_trylock(&ret->d_lock)) {
+> -		spin_unlock(&dentry->d_lock);
+> +	spin_lock(&ret->d_lock);
+
+Once we do this, however, we are golden, at least for all dentry
+fields protected by ->lock.  This does assume that the compiler does not
+speculate the fetch that initialized the argument dentry into the critical
+section, which I would sure hope would be a reasonable assumption.
+
+> +	if (unlikely(ret != dentry->d_parent)) {
+> +		spin_unlock(&ret->d_lock);
+> +		rcu_read_unlock();
+>  		goto repeat;
+>  	}
+> +	rcu_read_unlock();
+>  	BUG_ON(!ret->d_count);
+>  	ret->d_count++;
+>  	spin_unlock(&ret->d_lock);
+> -out:
+> -	spin_unlock(&dentry->d_lock);
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL(dget_parent);
+> @@ -601,14 +596,22 @@ static void prune_one_dentry(struct dent
+>  		if (inode)
+>  			spin_lock(&inode->i_lock);
+>  again:
+> -		spin_lock(&dentry->d_lock);
+> -		if (dentry->d_parent && dentry != dentry->d_parent) {
+> -			if (!spin_trylock(&dentry->d_parent->d_lock)) {
+> -				spin_unlock(&dentry->d_lock);
+> +		rcu_read_lock();
+> +		parent = dentry->d_parent;
+> +		if (parent) {
+> +			spin_lock(&parent->d_lock);
+> +			if (unlikely(parent != dentry->d_parent)) {
+> +				spin_unlock(&parent->d_lock);
+> +				rcu_read_unlock();
+>  				goto again;
+>  			}
+> - 			parent = dentry->d_parent;
+> -		}
+> +			if (parent != dentry)
+> +				spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+> +			else
+> +				parent = NULL;
+> +		} else
+> +			spin_lock(&dentry->d_lock);
+> +		rcu_read_unlock();
+>  		dentry->d_count--;
+>  		if (dentry->d_count) {
+>  			if (parent)
+> 
 > 
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
-
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
