@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab0F1IBR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 04:01:17 -0400
-Received: from smtp.extricom.com ([192.114.46.18]:34584 "HELO
-	smtp.extricom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752794Ab0F1IBQ (ORCPT
+	id S1755216Ab0F1ICp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 04:02:45 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54084 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab0F1ICm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 04:01:16 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jun 2010 04:01:15 EDT
-Message-ID: <4C2855D4.5050507@extricom.com>
-Date: Mon, 28 Jun 2010 10:57:08 +0300
-From: Eran Liberty <liberty@extricom.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+	Mon, 28 Jun 2010 04:02:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Oy6FToAndhyj73PSDLUcK+GBOkbGCvUrc5YmNSS9TKSd6ve9SDOrUgySAXS1D2AhJD
+         VaSOiMtQE+VbyK1NwUvdQwL4YN6iTijqhyFh4u73BzwIFR9HEccqwBdvFCc27y0TbwcM
+         LESa0zfDn24blJpt14U6Fkfa2esxdXcswE0l4=
+Date: Mon, 28 Jun 2010 01:02:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Miloslav Trmac <mitr@volny.cz>, Rakib Mullick <rakib.mullick@gmail.com>,
+       TJ <ubuntu@tjworld.net>, Julia Lawall <julia@diku.dk>,
+       Samu Onkalo <samu.p.onkalo@nokia.com>, linux-input@vger.kernel.org
+Subject: Re: [PATCH] wistron_btns: fix a memory leak in wb_module_init error
+ path
+Message-ID: <20100628080235.GB25287@core.coreip.homeip.net>
+References: <1277706620.4148.2.camel@mola>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, galak@kernel.crashing.org
-Subject: Re: [PATCH] gainfar.c : skb_over_panic (kernel-2.6.32.15)
-References: <4C232B13.5000706@extricom.com> <20100624.145225.70206491.davem@davemloft.net>
-In-Reply-To: <20100624.145225.70206491.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277706620.4148.2.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
-> From: Eran Liberty <liberty@extricom.com>
-> Date: Thu, 24 Jun 2010 12:53:23 +0300
->
->   
->> Fix possible skb_over_panic event in Freescale's "gianfar" driver. 
->>
->> The skb_over_panic occurs due to calling skb_put() within
->> gfar_clean_rx_ring(). This happens if (and only if) shortly prior to
->> the event and a few lined above the skb_put(), an skb was queued back
->> to the priv->rx_recycle queue due to RXBD_LAST or RXBD_ERR status.
->> The skb is queued without properly re-setting its state.
->>
->> The patch properly reset the skb state.
->>
->> I have tested this patch on MPC8548 based product and asserted it
->> avoided the skb_over_panic event.
->>
->> Signed-off-by: Eran Liberty <liberty@extricom.com>
->>     
->
-> Eran, this seems to be fixed already.  The code in the current
-> tree now reads:
->
-> 				/*
-> 				 * We need to un-reserve() the skb to what it
-> 				 * was before gfar_new_skb() re-aligned
-> 				 * it to an RXBUF_ALIGNMENT boundary
-> 				 * before we put the skb back on the
-> 				 * recycle list.
-> 				 */
-> 				skb_reserve(skb, -GFAR_CB(skb)->alignamount);
-> 				__skb_queue_head(&priv->rx_recycle, skb);
->
->
->   
-This code has proved to be insufficient and produce skb_over_panic. The 
-proposed patch fix this.
+Hi Axel,
 
--- Liberty
+On Mon, Jun 28, 2010 at 02:30:20PM +0800, Axel Lin wrote:
+> select_keymap calls copy_keymap to allocate a memory for keymap.
+> This patch adds a missing kfree(keymap) in wb_module_init error path.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/input/misc/wistron_btns.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/input/misc/wistron_btns.c b/drivers/input/misc/wistron_btns.c
+> index 4dac8b7..55ce70e 100644
+> --- a/drivers/input/misc/wistron_btns.c
+> +++ b/drivers/input/misc/wistron_btns.c
+> @@ -1371,6 +1371,7 @@ static int __init wb_module_init(void)
+>  	platform_driver_unregister(&wistron_driver);
+>   err_unmap_bios:
+>  	unmap_bios();
+> +	kfree(keymap);
 
+Thank you for the patch, however this is not quite enough - we also need
+to free keymap when map_bios() call fails instead of returning
+immediately.
+
+I fixed up locally and applied the patch.
+
+-- 
+Dmitry
