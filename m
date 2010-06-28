@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab0F1Ip7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 04:45:59 -0400
-Received: from sh.osrg.net ([192.16.179.4]:56699 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754114Ab0F1Ip6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 04:45:58 -0400
-Date: Mon, 28 Jun 2010 17:45:21 +0900
-To: axboe@kernel.dk
-Cc: fujita.tomonori@lab.ntt.co.jp, hch@lst.de, snitzer@redhat.com,
-       dm-devel@redhat.com, James.Bottomley@suse.de,
-       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
-       akpm@linux-foundation.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request 
- payload
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <4C285AE8.9090702@kernel.dk>
-References: <20100628075738.GA26606@lst.de>
-	<20100628171218Q.fujita.tomonori@lab.ntt.co.jp>
-	<4C285AE8.9090702@kernel.dk>
+	id S1754949Ab0F1JBk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 05:01:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35765 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754685Ab0F1JBi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 05:01:38 -0400
+Subject: [PATCH] init: Fix race between init and kthreadd
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ilya Loginov <isloginov@gmail.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20100624172334.ca7e9bef.isloginov@gmail.com>
+References: <20100624001148.61e9da1c.isloginov@gmail.com>
+	 <1277385096.1875.974.camel@laptop>
+	 <20100624172334.ca7e9bef.isloginov@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Jun 2010 11:01:29 +0200
+Message-ID: <1277715689.1875.1104.camel@laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100628174304S.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 28 Jun 2010 17:45:24 +0900 (JST)
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jun 2010 10:18:48 +0200
-Jens Axboe <axboe@kernel.dk> wrote:
-
-> On 2010-06-28 10:14, FUJITA Tomonori wrote:
-> > On Mon, 28 Jun 2010 09:57:38 +0200
-> > Christoph Hellwig <hch@lst.de> wrote:
-> > 
-> >> On Sun, Jun 27, 2010 at 09:32:07PM +0900, FUJITA Tomonori wrote:
-> >>> On Sun, 27 Jun 2010 13:07:12 +0200
-> >>> Christoph Hellwig <hch@lst.de> wrote:
-> >>>
-> >>>>> How about this?
-> >>>>
-> >>>> As I tried to explain before this utterly confuses the I/O completion
-> >>>> path.  With the patch applied even a simple mkfs.xfs that issues discard
-> >>>> just hangs.
-> >>>
-> >>> Wired. I just tried mkfs.xfs against scsi_debug with my block patches
-> >>> (I saw one discard command). Seemed that it worked fine.
-> >>
-> >> I've tracked it down to the call to scsi_requeue_command in scsi_end_request.
-> >> When the command is marked BLOCK_PC we'll just get it back as such in
-> >> ->prep_fn next time, but now it's reverting to the previous state.
-> > 
-> > If scsi_end_request() calls scsi_requeue_command(), the command has a
-> > left over (i.e. hasn't finished all the data), right? You hit such
-> > condition with discard commands?
-> > 
-> > BLOCK_PC requests don't hit this case since blk_end_request() always
-> > return false for PC.
+On Thu, 2010-06-24 at 17:23 +0400, Ilya Loginov wrote:
+> On Thu, 24 Jun 2010 15:11:36 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> You can get requeues on the ->queuecommand() path as well, for a
-> variety of reasons, and that would be what Christoph is hitting.
+> > However I suspect the ordering is like it is because we want init to
+> > have pid 1, if we were to re-order like you suggest kthreadd will end up
+> > with pid 1 and init with pid 2.
+> 
+> Strange, but init does not die after I did this. Fix me if I wrong, but it wants
+> to have pid 1, and die in other case.
 
-Probably, that's would be fine (we need to fix memory leak in that
-path). I guess that requeue with the partial completion commands might
-cause problems.
+Does something like this work for you?
+
+---
+Subject: init: Fix race between init and kthreadd
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon Jun 28 10:49:09 CEST 2010
+
+Ilya reported that on a very slow machine he could reliably reproduce a
+race between forking init and kthreadd. We first fork init so that it 
+obtains pid-1, however since the scheduler is already fully running at
+this point it can preempt and run the init thread before we spawn and
+set kthreadd_task.
+
+The init thread can then attempt spawning kthreads without kthreadd being
+present which results in an OOPS.
+
+Cure this in a crude way by having the init task spin-wait on 
+kthreadd_task. Nicer solutions are more complex and have more overhead
+which doesn't appear worth it.
+
+Reported-by: Ilya Loginov <isloginov@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ init/main.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+Index: linux-2.6/init/main.c
+===================================================================
+--- linux-2.6.orig/init/main.c
++++ linux-2.6/init/main.c
+@@ -426,6 +426,17 @@ static noinline void __init_refok rest_i
+ 	int pid;
+ 
+ 	rcu_scheduler_starting();
++	/*
++	 * Here we first fork the init thread and then the kthreadd so that
++	 * init ends up with pid-1.
++	 *
++	 * Since the scheduler is already fully active we can end up
++	 * running the init thread for long enough to start spawning kthreads
++	 * before this thread continues and spawns/sets kthreadd, which
++	 * would result in an OOPS.
++	 *
++	 * See the serialization against kthreadd_task in kernel_init().
++	 */
+ 	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
+ 	numa_default_policy();
+ 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
+@@ -847,6 +858,14 @@ static noinline int init_post(void)
+ 
+ static int __init kernel_init(void * unused)
+ {
++	/*
++	 * Synchronize against setting kthreadd_task in rest_init().
++	 * Using a mutex would have been a lot nicer, but since its a very
++	 * rare race don't bother wasting the space overhead.
++	 */
++	while (!kthreadd_task)
++		yield();
++
+ 	lock_kernel();
+ 
+ 	/*
+
