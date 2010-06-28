@@ -1,50 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab0F1Mlc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 08:41:32 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43339 "EHLO kernel.dk"
+	id S1754390Ab0F1MmO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 08:42:14 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:21499 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298Ab0F1Mla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 08:41:30 -0400
-Message-ID: <4C28987A.7000701@kernel.dk>
-Date: Mon, 28 Jun 2010 14:41:30 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1753966Ab0F1MmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 08:42:12 -0400
+Message-ID: <4C28989E.9010300@bfs.de>
+Date: Mon, 28 Jun 2010 14:42:06 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Christoph Hellwig <hch@lst.de>, dm-devel@redhat.com,
-       James.Bottomley@suse.de, linux-kernel@vger.kernel.org,
-       martin.petersen@oracle.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 2/2] block: defer the use of inline biovecs for discard
-  requests
-References: <20100622180029.GA15950@redhat.com> <1277582211-10725-2-git-send-email-snitzer@redhat.com> <4C2896C6.9030607@kernel.dk> <20100628123742.GB19497@redhat.com>
-In-Reply-To: <20100628123742.GB19497@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kulikov Vasiliy <segooon@gmail.com>
+CC: trivial@kernel.org, Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Simon Horman <horms@verge.net.au>,
+       Andrea Gelmini <andrea.gelmini@gelma.net>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/16] trivial: use ARRAY_SIZE
+References: <1277726125-24765-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1277726125-24765-1-git-send-email-segooon@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-06-28 14:37, Mike Snitzer wrote:
-> On Mon, Jun 28 2010 at  8:34am -0400,
-> Jens Axboe <axboe@kernel.dk> wrote:
+
+
+Kulikov Vasiliy schrieb:
+> Change sizeof(x) / sizeof(*x) to ARRAY_SIZE(x).
 > 
->> On 2010-06-26 21:56, Mike Snitzer wrote:
->>> Don't alloc discard bio with a biovec in blkdev_issue_discard.  Doing so
->>> means bio_has_data() will not be true until the SCSI layer adds the
->>> payload to the discard request via blk_add_request_payload.
->>
->> Sorry, this looks horrible.
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  drivers/staging/otus/hal/hpreg.c |   17 +++++++----------
+>  1 files changed, 7 insertions(+), 10 deletions(-)
 > 
-> Your judgment isn't giving me much to work with... not sure where I go
-> with "horrible".
+> diff --git a/drivers/staging/otus/hal/hpreg.c b/drivers/staging/otus/hal/hpreg.c
+> index da3b774..9b04653 100644
+> --- a/drivers/staging/otus/hal/hpreg.c
+> +++ b/drivers/staging/otus/hal/hpreg.c
+> @@ -29,9 +29,6 @@
+>  #include "hpreg.h"
+>  #include "hpusb.h"
+>  
+> -/* used throughout this file... */
+> -#define	N(a)	(sizeof(a) / sizeof(a[0]))
+> -
+>  #define HAL_MODE_11A_TURBO	HAL_MODE_108A
+>  #define HAL_MODE_11G_TURBO	HAL_MODE_108G
+>  
+> @@ -1557,7 +1554,7 @@ u8_t GetWmRD(u16_t regionCode, u16_t channelFlag, REG_DOMAIN *rd)
+>  	u64_t flags = NO_REQ;
+>  	REG_DMN_PAIR_MAPPING *regPair = NULL;
+>  
+> -	for (i = 0, found = 0; (i < N(regDomainPairs)) && (!found); i++) {
+> +	for (i = 0, found = 0; (i < ARRAY_SIZE(regDomainPairs)) && (!found); i++) {
+>  		if (regDomainPairs[i].regDmnEnum == regionCode) {
+>  			regPair = &regDomainPairs[i];
+>  			found = 1;
 
-The horrible part is working around that issue by fiddling with the
-assignment of the internal vec. THAT looks like a horrible solution
-to that problem.
 
-How about just adding a check to bio_has_data() for non-zero
-bio->bi_vcnt?
 
--- 
-Jens Axboe
+This looks odd, i do not see the rest of the code but perhaps a break would help
+to eleminate the "found" ??
 
+just my two cents,
+ wh
+
+
+> @@ -1581,7 +1578,7 @@ u8_t GetWmRD(u16_t regionCode, u16_t channelFlag, REG_DOMAIN *rd)
+>  	 * unitary reg domain of the pair
+>  	 */
+>  
+> -	for (i = 0 ; i < N(regDomains) ; i++) {
+> +	for (i = 0 ; i < ARRAY_SIZE(regDomains) ; i++) {
+>  		if (regDomains[i].regDmnEnum == regDmn) {
+>  			if (rd != NULL) {
+>  					zfMemoryCopy((u8_t *)rd, (u8_t *)&regDomains[i],
+> @@ -1653,7 +1650,7 @@ void zfHpGetRegulationTable(zdev_t *dev, u16_t regionCode, u16_t c_lo, u16_t c_h
+>  
+>  	zmw_enter_critical_section(dev);
+>  
+> -	for (cm = modes; cm < &modes[N(modes)]; cm++) {
+> +	for (cm = modes; cm < &modes[ARRAY_SIZE(modes)]; cm++) {
+>  		u16_t c;
+>  		u64_t *channelBM = NULL;
+>  		REG_DOMAIN *rd = NULL;
+> @@ -1846,7 +1843,7 @@ void zfHpGetRegulationTablefromCountry(zdev_t *dev, u16_t CountryCode)
+>  
+>  	zmw_declare_for_critical_section();
+>  
+> -	for (i = 0; i < N(allCountries); i++) {
+> +	for (i = 0; i < ARRAY_SIZE(allCountries); i++) {
+>  		if (CountryCode == allCountries[i].countryCode) {
+>  			RegDomain = allCountries[i].regDmnEnum;
+>  
+> @@ -1881,7 +1878,7 @@ u8_t zfHpGetRegulationTablefromISO(zdev_t *dev, u8_t *countryInfo, u8_t length)
+>  		strLen = 3; */
+>  	}
+>  	/* zm_debug_msg_s("Desired iso name = ", isoName); */
+> -	for (i = 0; i < N(allCountries); i++) {
+> +	for (i = 0; i < ARRAY_SIZE(allCountries); i++) {
+>  		/* zm_debug_msg_s("Current iso name = ", allCountries[i].isoName); */
+>  		if (zfMemoryIsEqual((u8_t *)allCountries[i].isoName, (u8_t *)&countryInfo[2], length-1)) {
+>  			/* DbgPrint("Set current iso name = %s\n", allCountries[i].isoName); */
+> @@ -1937,7 +1934,7 @@ const char *zfHpGetisoNamefromregionCode(zdev_t *dev, u16_t regionCode)
+>  {
+>  	u16_t i;
+>  
+> -	for (i = 0; i < N(allCountries); i++) {
+> +	for (i = 0; i < ARRAY_SIZE(allCountries); i++) {
+>  		if (allCountries[i].regDmnEnum == regionCode)
+>  			return allCountries[i].isoName;
+>  	}
+> @@ -1953,7 +1950,7 @@ u16_t zfHpGetRegionCodeFromIsoName(zdev_t *dev, u8_t *countryIsoName)
+>  	/* if no matching item, return default */
+>  	regionCode = DEF_REGDMN;
+>  
+> -	for (i = 0; i < N(allCountries); i++) {
+> +	for (i = 0; i < ARRAY_SIZE(allCountries); i++) {
+>  		if (zfMemoryIsEqual((u8_t *)allCountries[i].isoName, countryIsoName, 2)) {
+>  			regionCode = allCountries[i].regDmnEnum;
+>  		break;
