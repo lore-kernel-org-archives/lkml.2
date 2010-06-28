@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab0F1GNd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 02:13:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60572 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab0F1GNb (ORCPT
+	id S1753627Ab0F1GR0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 02:17:26 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60163 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab0F1GRZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 02:13:31 -0400
+	Mon, 28 Jun 2010 02:17:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=TxZbE4zysPEA0rShNUfqMmJeuQ/Wy3TA35YymBMULlD12MQCpH4bmQ+LSevc+H6OQz
-         PfC/tKw/7adonxEVOmPCk0yz9onkAKt5KwIGWVCEzHPQc0WA8tucJXzQ/SiMn1n84jym
-         hyfkP5AFndL1ZS3NmLGr3ZqKNWwyznf2COU1Y=
-Message-ID: <4C283D84.6080504@suse.cz>
-Date: Mon, 28 Jun 2010 08:13:24 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wWQwFjZIvTs3Uues8UkAOgI186o8azwrvuc9BrX52VeBMy1KhDkNJs/jL5Bq5F9In3
+         tQcKDCtARrMlD/sNy/zYVnzHlBTVif0qNF6m3j0R4+OEvpimdaK4jG1ymj8kmQ3fdXMp
+         0bEdnC2xPRshSORPI8gjsKKh9eaBzB85KYipk=
 MIME-Version: 1.0
-To: Robert Hancock <hancockrwd@gmail.com>
-CC: lenb@kernel.org, linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH 1/1] ACPI: pci_irq, add PRT_ quirk for IBM Bartolo
-References: <1277673679-21458-1-git-send-email-jslaby@suse.cz> <4C27E965.80508@gmail.com>
-In-Reply-To: <4C27E965.80508@gmail.com>
-X-Enigmail-Version: 1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100625182224.GA14459@kroah.com>
+References: <20100625085511.30949.41045.sendpatchset@t400s>
+	<20100625182224.GA14459@kroah.com>
+Date: Mon, 28 Jun 2010 15:17:22 +0900
+Message-ID: <AANLkTikN_PvSmHlDfqNH1YQ5_RDCJ7k_zzzTiMs0mqP9@mail.gmail.com>
+Subject: Re: [PATCH] firmware: Update hotplug script, remove sysfs files
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+       Johannes Berg <johannes.berg@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+       Marcel Holtmann <marcel@holtmann.org>, Ming Lei <tom.leiming@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2010 02:14 AM, Robert Hancock wrote:
-> On 06/27/2010 03:21 PM, Jiri Slaby wrote:
->> On IBM Bartolo machines, cards in 00:09.0 are defunct (if use
->> interrupts). DSDT says that this slot (with function 0, i.e. pin A) is
->> routed to \_SB_.PCI0.PIB_.LNKB. But it's not, it's wired to LNKC, so
->> interrupts are misrouted. Add a quirk for this to workaround the
->> issue.
-> 
-> That seems a rather serious DSDT flaw. Do devices in that slot work in
-> Windows?
+On Sat, Jun 26, 2010 at 3:22 AM, Greg KH <greg@kroah.com> wrote:
+> On Fri, Jun 25, 2010 at 05:55:11PM +0900, Magnus Damm wrote:
+>> From: Magnus Damm <damm@opensource.se>
+>>
+>> Update the in-kernel hotplug example script to work
+>> properly with recent kernels. Without this fix the
+>> script may load the firmware twice - both at "add"
+>> and "remove" time.
+>>
+>> The second load only triggers in the case when multiple
+>> firmware images are used. A good example is the b43
+>> driver which does not work properly without this fix.
+>>
+>> While at it, make sure sysfs files are removed.
+>
+> Hm, the documentation update applied, but this second part didn't.  Care
+> to redo it against the linux-next tree and resend it as a separate
+> patch?  I've split this up and applied the documentation part now, so
+> you don't have to redo that.
 
-Yes, the DSDT is pretty broken this way there. Regarding Windows, I
-don't know and I doubt anybody will ever try.
+Thanks a lot for splitting up the patch. I don't mind redoing the
+second part of the patch, but I'm not sure if it's actually needed to
+prevent memory leaks. This piece of code serves as an example:
 
-regards,
--- 
-js
-suse labs
++error_unreg2:
++       sysfs_remove_bin_file(&f_dev->kobj, &fw_priv->attr_data);
+ error_unreg:
+        device_unregister(f_dev);
+
+Perhaps device_unregister() call above already removes the kobj which
+makes the added sysfs_remove_bin_file() unnecessary?
+
+Cheers,
+
+/ magnus
