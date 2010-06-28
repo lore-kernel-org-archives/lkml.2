@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab0F1QdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 12:33:23 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:50000 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab0F1QdR (ORCPT
+	id S1751695Ab0F1Qd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 12:33:57 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59738 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab0F1Qd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 12:33:17 -0400
-Date: Mon, 28 Jun 2010 18:33:13 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the sound tree
-Message-ID: <20100628163313.GH2698@buzzloop.caiaq.de>
-References: <20100624130341.0ccf9102.sfr@canb.auug.org.au>
- <s5hbpb1dkp7.wl%tiwai@suse.de>
+	Mon, 28 Jun 2010 12:33:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TIkS7JRp1H6otKsSJ2QlrGmYfm9a/cPLUCEjpo16R1t/ONAnVOd96+7ivJleVwclTF
+         PMHvDHiBKL9DkocsxnDW9sGyY5ayBCHXmXp4YdALUPsGOMU+EXsQvsbCphsCDSvyaqWs
+         DEwrcwLiZLiRKCNpb/wuX5/BSGK6jMipOQBBw=
+Date: Mon, 28 Jun 2010 09:33:50 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Regression: ps2mouse not working in 2.6.34
+Message-ID: <20100628163350.GA11670@core.coreip.homeip.net>
+References: <4C28C81E.4010909@teksavvy.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <s5hbpb1dkp7.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C28C81E.4010909@teksavvy.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 08:11:00AM +0200, Takashi Iwai wrote:
-> At Thu, 24 Jun 2010 13:03:41 +1000,
-> Stephen Rothwell wrote:
-> > 
-> > Hi Takashi,
-> > 
-> > After merging the sound tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> > 
-> > sound/usb/mixer.c: In function 'get_ctl_value_v1':
-> > sound/usb/mixer.c:308: error: 'struct usb_mixer_interface' has no member named 'ctrlif'
-> > 
-> > Caused by commit 3d8d4dcfd423b01ef7ea7c3c97720764b7adb6df ("ALSA:
-> > usb-audio: simplify control interface access").  Grep is your friend ...
-> > 
-> > I have used the sound tree from next-20100623 for today.
+On Mon, Jun 28, 2010 at 12:04:46PM -0400, Mark Lord wrote:
+> Okay, who broke it, and how do I re-enable it?
 > 
-> Fixed now.  I've forgotten the build tests with debug options...
+> The PS/2 mice on my systems here don't do anything with 2.6.34.
+> One system complains that I need to boot with i8042.nopnp to enable it,
+> which I also tried, but still nogo.  Same behaviour with or without
+> /dev/psaux enabled.  64-bit kernel.
+> 
+> The other system, running older userspace, hangs at the X-server startup
+> because it cannot find the mouse.  No i8042 warnings.   32-bit kernel.
+> 
+> Both systems working fine with older kernels.
+> Google finds lots of other people discovering the same problem.
+> 
+> What gives?
+> 
 
-Oops, sorry and thanks for fixing this up!
+Well, lest start small: did it work ifor you with 2.6.33? Does kernel
+discover AUX serio port (dmesg)? What about the mouse itself? Is it
+absent or is it not reporting events?
 
-Daniel
+Thanks.
+
+-- 
+Dmitry
