@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365Ab0F1QdO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 12:33:14 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:41740 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab0F1QdM convert rfc822-to-8bit (ORCPT
+	id S1751584Ab0F1QdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 12:33:23 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:50000 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab0F1QdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 12:33:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=XQPdd1AObGkHHUUVj2/rUHFj/R7E98oYQ3xCmdyWvpBGuzEWiQGoJ/CoNx9EH4bVuY
-         IXYbx43jPY+I8Hw1/N4fZbaKI0j8lZMDcPiPE88x8SfmPErzDL9dVyFkUBD/R0jB2HRm
-         raXcwA0J5HZWPsIkBCti9aAQiJg9nv9QQIkcM=
+	Mon, 28 Jun 2010 12:33:17 -0400
+Date: Mon, 28 Jun 2010 18:33:13 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the sound tree
+Message-ID: <20100628163313.GH2698@buzzloop.caiaq.de>
+References: <20100624130341.0ccf9102.sfr@canb.auug.org.au>
+ <s5hbpb1dkp7.wl%tiwai@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20100628162626.6026.26679.stgit@warthog.procyon.org.uk>
-References: <20100628162626.6026.26679.stgit@warthog.procyon.org.uk>
-Date: Mon, 28 Jun 2010 11:33:10 -0500
-Message-ID: <AANLkTikkaRYyUfHILDCKYzXdLi9ORuQs05Rf9TScF_Tz@mail.gmail.com>
-Subject: Re: [PATCH] Ext4: Make file creation time, i_version and i_generation 
-	available by xattrs
-From: Steve French <smfrench@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@zeniv.linux.org.uk, jlayton@redhat.com, mcao@us.ibm.com,
-       aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       samba-technical@lists.samba.org, sjayaraman@suse.de,
-       linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hbpb1dkp7.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 11:26 AM, David Howells <dhowells@redhat.com> wrote:
-> Make the file creation time, inode data version number and inode generation
-> number available on Ext4 by as xattrs named:
->
->        file.crtime
->        file.i_generation
->        file.i_version (directories only for ext4)
->
-> This could then be used by Samba as the SMB protocol passes the file creation
-> time to the client.
->
-> With this patch, you can see the xattrs providing binary data:
->
-> [root@andromeda ~]# getfattr -d /var/cache/fscache -e hex -m\.*
-> getfattr: Removing leading '/' from absolute path names
-> # file: var/cache/fscache
-> file.crtime=0x53ba244c000000000000000000000000
-> file.i_generation=0x0000000000000000
-> file.i_version=0x0400000000000000
+On Thu, Jun 24, 2010 at 08:11:00AM +0200, Takashi Iwai wrote:
+> At Thu, 24 Jun 2010 13:03:41 +1000,
+> Stephen Rothwell wrote:
+> > 
+> > Hi Takashi,
+> > 
+> > After merging the sound tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > sound/usb/mixer.c: In function 'get_ctl_value_v1':
+> > sound/usb/mixer.c:308: error: 'struct usb_mixer_interface' has no member named 'ctrlif'
+> > 
+> > Caused by commit 3d8d4dcfd423b01ef7ea7c3c97720764b7adb6df ("ALSA:
+> > usb-audio: simplify control interface access").  Grep is your friend ...
+> > 
+> > I have used the sound tree from next-20100623 for today.
+> 
+> Fixed now.  I've forgotten the build tests with debug options...
 
-It would be easy enough to do something similar for crtime for cifs
-(it may also be possible to do something similar to
-i_generation and i_version at least for smb2 but haven't
-experimented to see which servers could return something
-similar to version and generation).  I did have a request for
-someone doing a backup application over cifs to return creation
-time so at least this would make sense.
+Oops, sorry and thanks for fixing this up!
 
-
--- 
-Thanks,
-
-Steve
+Daniel
