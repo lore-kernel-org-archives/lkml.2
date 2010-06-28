@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab0F1ICp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 04:02:45 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54084 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab0F1ICm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 04:02:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Oy6FToAndhyj73PSDLUcK+GBOkbGCvUrc5YmNSS9TKSd6ve9SDOrUgySAXS1D2AhJD
-         VaSOiMtQE+VbyK1NwUvdQwL4YN6iTijqhyFh4u73BzwIFR9HEccqwBdvFCc27y0TbwcM
-         LESa0zfDn24blJpt14U6Fkfa2esxdXcswE0l4=
-Date: Mon, 28 Jun 2010 01:02:35 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Miloslav Trmac <mitr@volny.cz>, Rakib Mullick <rakib.mullick@gmail.com>,
-       TJ <ubuntu@tjworld.net>, Julia Lawall <julia@diku.dk>,
-       Samu Onkalo <samu.p.onkalo@nokia.com>, linux-input@vger.kernel.org
-Subject: Re: [PATCH] wistron_btns: fix a memory leak in wb_module_init error
- path
-Message-ID: <20100628080235.GB25287@core.coreip.homeip.net>
-References: <1277706620.4148.2.camel@mola>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277706620.4148.2.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754655Ab0F1IPI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 04:15:08 -0400
+Received: from sh.osrg.net ([192.16.179.4]:44128 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751439Ab0F1IPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 04:15:04 -0400
+Date: Mon, 28 Jun 2010 17:14:28 +0900
+To: hch@lst.de
+Cc: fujita.tomonori@lab.ntt.co.jp, snitzer@redhat.com, axboe@kernel.dk,
+       dm-devel@redhat.com, James.Bottomley@suse.de,
+       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
+       akpm@linux-foundation.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
+ payload
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100628075738.GA26606@lst.de>
+References: <20100627110712.GA14511@lst.de>
+	<20100627212952D.fujita.tomonori@lab.ntt.co.jp>
+	<20100628075738.GA26606@lst.de>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100628171218Q.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 28 Jun 2010 17:14:31 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+On Mon, 28 Jun 2010 09:57:38 +0200
+Christoph Hellwig <hch@lst.de> wrote:
 
-On Mon, Jun 28, 2010 at 02:30:20PM +0800, Axel Lin wrote:
-> select_keymap calls copy_keymap to allocate a memory for keymap.
-> This patch adds a missing kfree(keymap) in wb_module_init error path.
+> On Sun, Jun 27, 2010 at 09:32:07PM +0900, FUJITA Tomonori wrote:
+> > On Sun, 27 Jun 2010 13:07:12 +0200
+> > Christoph Hellwig <hch@lst.de> wrote:
+> > 
+> > > > How about this?
+> > > 
+> > > As I tried to explain before this utterly confuses the I/O completion
+> > > path.  With the patch applied even a simple mkfs.xfs that issues discard
+> > > just hangs.
+> > 
+> > Wired. I just tried mkfs.xfs against scsi_debug with my block patches
+> > (I saw one discard command). Seemed that it worked fine.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/input/misc/wistron_btns.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/misc/wistron_btns.c b/drivers/input/misc/wistron_btns.c
-> index 4dac8b7..55ce70e 100644
-> --- a/drivers/input/misc/wistron_btns.c
-> +++ b/drivers/input/misc/wistron_btns.c
-> @@ -1371,6 +1371,7 @@ static int __init wb_module_init(void)
->  	platform_driver_unregister(&wistron_driver);
->   err_unmap_bios:
->  	unmap_bios();
-> +	kfree(keymap);
+> I've tracked it down to the call to scsi_requeue_command in scsi_end_request.
+> When the command is marked BLOCK_PC we'll just get it back as such in
+> ->prep_fn next time, but now it's reverting to the previous state.
 
-Thank you for the patch, however this is not quite enough - we also need
-to free keymap when map_bios() call fails instead of returning
-immediately.
+If scsi_end_request() calls scsi_requeue_command(), the command has a
+left over (i.e. hasn't finished all the data), right? You hit such
+condition with discard commands?
 
-I fixed up locally and applied the patch.
+BLOCK_PC requests don't hit this case since blk_end_request() always
+return false for PC.
 
--- 
-Dmitry
+
+> While I see the problems with leaking ressources in that case I still
+> can't quite explain the hang I see.
+
+Any way to reproduce the hang without ssd drives?
