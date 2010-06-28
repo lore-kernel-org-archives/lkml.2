@@ -1,102 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab0F1VL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 17:11:57 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42852 "EHLO hera.kernel.org"
+	id S1755325Ab0F1VMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 17:12:09 -0400
+Received: from mga01.intel.com ([192.55.52.88]:29623 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755182Ab0F1VGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 17:06:12 -0400
-From: Tejun Heo <tj@kernel.org>
-To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       oleg@redhat.com, axboe@kernel.dk, fweisbec@gmail.com,
-       dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
-       andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/35] acpi: use queue_work_on() instead of binding workqueue worker to cpu0
-Date: Mon, 28 Jun 2010 23:03:52 +0200
-Message-Id: <1277759063-24607-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1277759063-24607-1-git-send-email-tj@kernel.org>
-References: <1277759063-24607-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 21:04:59 +0000 (UTC)
+	id S1755165Ab0F1VMG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 17:12:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,499,1272870000"; 
+   d="scan'208";a="812457391"
+From: "Pan, Jacob jun" <jacob.jun.pan@intel.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+       akpm <akpm@linux-foundation.org>,
+       "chuck.lever@oracle.com" <chuck.lever@oracle.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 28 Jun 2010 14:12:03 -0700
+Subject: RE: problem: Re: [PATCH] input: fixup X86_MRST selects
+Thread-Topic: problem: Re: [PATCH] input: fixup X86_MRST selects
+Thread-Index: AcsW/9qfA/aD9qhGRjuz/2LakY8+vwABVhKg
+Message-ID: <43F901BD926A4E43B106BF17856F0755EA339079@orsmsx508.amr.corp.intel.com>
+References: <20100609133443.38f1f957.sfr@canb.auug.org.au>
+ <201006101204.45709.dmitry.torokhov@gmail.com> <4C28F210.7030909@oracle.com>
+ <201006281318.16377.dmitry.torokhov@gmail.com> <4C2904D0.3000409@oracle.com>
+In-Reply-To: <4C2904D0.3000409@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI works need to be executed on cpu0 and acpi/osl.c achieves this by
-creating singlethread workqueue and then binding it to cpu0 from a
-work which is quite unorthodox.  Make it create regular workqueues and
-use queue_work_on() instead.  This is in preparation of concurrency
-managed workqueue and the extra workers won't be a problem after it's
-implemented.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- drivers/acpi/osl.c |   40 +++++++++++-----------------------------
- 1 files changed, 11 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 78418ce..46cce39 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -191,36 +191,11 @@ acpi_status __init acpi_os_initialize(void)
- 	return AE_OK;
- }
- 
--static void bind_to_cpu0(struct work_struct *work)
--{
--	set_cpus_allowed_ptr(current, cpumask_of(0));
--	kfree(work);
--}
--
--static void bind_workqueue(struct workqueue_struct *wq)
--{
--	struct work_struct *work;
--
--	work = kzalloc(sizeof(struct work_struct), GFP_KERNEL);
--	INIT_WORK(work, bind_to_cpu0);
--	queue_work(wq, work);
--}
--
- acpi_status acpi_os_initialize1(void)
- {
--	/*
--	 * On some machines, a software-initiated SMI causes corruption unless
--	 * the SMI runs on CPU 0.  An SMI can be initiated by any AML, but
--	 * typically it's done in GPE-related methods that are run via
--	 * workqueues, so we can avoid the known corruption cases by binding
--	 * the workqueues to CPU 0.
--	 */
--	kacpid_wq = create_singlethread_workqueue("kacpid");
--	bind_workqueue(kacpid_wq);
--	kacpi_notify_wq = create_singlethread_workqueue("kacpi_notify");
--	bind_workqueue(kacpi_notify_wq);
--	kacpi_hotplug_wq = create_singlethread_workqueue("kacpi_hotplug");
--	bind_workqueue(kacpi_hotplug_wq);
-+	kacpid_wq = create_workqueue("kacpid");
-+	kacpi_notify_wq = create_workqueue("kacpi_notify");
-+	kacpi_hotplug_wq = create_workqueue("kacpi_hotplug");
- 	BUG_ON(!kacpid_wq);
- 	BUG_ON(!kacpi_notify_wq);
- 	BUG_ON(!kacpi_hotplug_wq);
-@@ -766,7 +741,14 @@ static acpi_status __acpi_os_execute(acpi_execute_type type,
- 	else
- 		INIT_WORK(&dpc->work, acpi_os_execute_deferred);
- 
--	ret = queue_work(queue, &dpc->work);
-+	/*
-+	 * On some machines, a software-initiated SMI causes corruption unless
-+	 * the SMI runs on CPU 0.  An SMI can be initiated by any AML, but
-+	 * typically it's done in GPE-related methods that are run via
-+	 * workqueues, so we can avoid the known corruption cases by always
-+	 * queueing on CPU 0.
-+	 */
-+	ret = queue_work_on(0, queue, &dpc->work);
- 
- 	if (!ret) {
- 		printk(KERN_ERR PREFIX
--- 
-1.6.4.2
+>-----Original Message-----
+>From: Randy Dunlap [mailto:randy.dunlap@oracle.com]
+>Sent: Monday, June 28, 2010 1:24 PM
+>To: Dmitry Torokhov
+>Cc: Stephen Rothwell; Pan, Jacob jun; linux-next@vger.kernel.org; LKML;
+>linux-input@vger.kernel.org; akpm; chuck.lever@oracle.com
+>Subject: Re: problem: Re: [PATCH] input: fixup X86_MRST selects
+>
+>On 06/28/10 13:18, Dmitry Torokhov wrote:
+>> On Monday, June 28, 2010 12:03:44 pm Randy Dunlap wrote:
+>>> On 06/10/10 12:04, Dmitry Torokhov wrote:
+>>>> On Wednesday, June 09, 2010 03:42:08 pm Randy Dunlap wrote:
+>>>>> On 06/09/10 15:40, Dmitry Torokhov wrote:
+>>>>>> On Wednesday, June 09, 2010 03:29:21 pm Randy Dunlap wrote:
+>>>>>>> +++ linux-next-20100609/drivers/input/keyboard/Kconfig
+>>>>>>> @@ -70,9 +70,10 @@ config KEYBOARD_ATARI
+>>>>>>>
+>>>>>>>  config KEYBOARD_ATKBD
+>>>>>>>
+>>>>>>>         tristate "AT keyboard" if EMBEDDED || !X86
+>>>>>>>
+>>>>>>> +       depends on !X86 || (X86 && !X86_MRST)
+>>>>>>
+>>>>>> Should it be simply 'depends on !X86_MRST' and then we could kill
+>>>>>> '!X86_MRST' conditionals in selects?
+>>>>>
+>>>>> Duh, that sounds good, yes.
+>>>>
+>>>> Actually, I do not think this is a correct approach. While
+>Moorestown
+>>>> does not have i8042 theoretically it is possible to add AT-style
+>>>> keyboard by other means (however unlikely it is) so we should not be
+>>>> disabling it.
+>>>>
+>>>> We should, however, disallow i8042 from being selected. Could you
+>please
+>>>> tell me if the patch below works for you?
+>>>
+>>> Dmitry,
+>>>
+>>> This patch (in current mainline git) causes a problem when X86_MRST
+>is
+>>> enabled. CONFIG_SERIO_I8042 is no longer enabled when X86_MRST is
+>enabled,
+>>> and X86_MRST could be enabled when someone is trying to build a
+>generic
+>>> kernel.
+>>
+>> Randy,
+>>
+>> Looking at arch/x86/kernel/mrst.c I am not sure if generic kernel will
+>> work well witbh X86_MRST set. However if we supposed to support
+>Moorestown
+>> on generic images then, instead of playing with Kconfig, we need to
+>adjust
+>> i8042_platform_init() to abort on Moorestown.
+>
+>OK.  Until something else is done, you might want to revert this patch
+>and just live with the build errors (that caused me to send the original
+>patch).
+>
+We do intend to maintain binary compatibility between generic kernel and Moorestown.
+I guess the challenge is not having enumeration of i8042 pass to the driver. Do you
+prefer abort i8042_platform_init() based on #define CONFIG_X86_MRST? It is no safe
+to probe HW on Moorestown, unfortunately.
 
