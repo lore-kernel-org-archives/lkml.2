@@ -1,49 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab0F1QYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 12:24:36 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:56597 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751284Ab0F1QYe (ORCPT
+	id S1752074Ab0F1Q0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 12:26:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53291 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab0F1Q0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 12:24:34 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEABdoKExQyN9l/2dsb2JhbACfLnLAYg2FFwQ
-Date: Mon, 28 Jun 2010 18:24:30 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Viresh KUMAR <viresh.kumar@st.com>
-Cc: armando.visconti@st.com, shiraz.hashim@st.com,
-       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH resend] Watchdog: Adding support for ARM Primecell
-	SP805 Watchdog
-Message-ID: <20100628162430.GN3788@infomag.iguana.be>
-References: <1275465783-14052-1-git-send-email-viresh.kumar@st.com> <4C11B711.70907@st.com> <20100611053049.GM3788@infomag.iguana.be> <4C285A72.7030303@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C285A72.7030303@st.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 28 Jun 2010 12:26:06 -0400
+Date: Mon, 28 Jun 2010 09:23:41 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Ilya Loginov <isloginov@gmail.com>,
+       torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] init: Fix race between init and kthreadd -v3
+Message-Id: <20100628092341.5b011a0a.randy.dunlap@oracle.com>
+In-Reply-To: <1277736661.3561.110.camel@laptop>
+References: <20100624001148.61e9da1c.isloginov@gmail.com>
+	<1277385096.1875.974.camel@laptop>
+	<20100624172334.ca7e9bef.isloginov@gmail.com>
+	<1277715689.1875.1104.camel@laptop>
+	<1277725997.3561.6.camel@laptop>
+	<20100628141927.GA9306@elte.hu>
+	<1277736661.3561.110.camel@laptop>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C28CD02.0254:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+On Mon, 28 Jun 2010 16:51:01 +0200 Peter Zijlstra wrote:
 
-> > Still need to look at it. First finishing up another project.
-> > Probably for this weekend.
-> > 
-> > Kind regards,
-> > Wim.
-> > 
+> On Mon, 2010-06-28 at 16:19 +0200, Ingo Molnar wrote:
 > 
-> Wim,
+> > I think you may be using a mutex as a completion in essence. Why not use 
+> > completions instead?
 > 
-> Have you reviewed this patch or still need to look at it?
+> Totally forgot about those things.. Yes they fit perfectly.
+> 
+> ---
+> Subject: init: Fix race between init and kthreadd -v2
+> 
+> Ilya reported that on a very slow machine he could reliably reproduce a
+> race between forking init and kthreadd. We first fork init so that it 
+> obtains pid-1, however since the scheduler is already fully running at
+> this point it can preempt and run the init thread before we spawn and
+> set kthreadd_task.
+> 
+> The init thread can then attempt spawning kthreads without kthreadd
+> being present which results in an OOPS.
+> 
+> Reported-by: Ilya Loginov <isloginov@gmail.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  init/main.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/init/main.c b/init/main.c
+> index e2a2bf3..2280f63 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -420,18 +420,26 @@ static void __init setup_command_line(char *command_line)
+>   * gcc-3.4 accidentally inlines this function, so use noinline.
+>   */
+>  
+> +static __initdata DECLARE_COMPLETION(kthreadd_done);
+> +
+>  static noinline void __init_refok rest_init(void)
+>  	__releases(kernel_lock)
+>  {
+>  	int pid;
+>  
+>  	rcu_scheduler_starting();
+> +	/*
+> +	 * We need to spawn init first so that it obtains pid-1, however
 
-I'm chasing another bug and must admit I almost forgot about this one.
-So, yes, I still need to look at this one.
+Would be better to say "pid 1" or "pid=1".
+"pid-1" seems odd to me.
 
-Kind regards,
-Wim.
 
+> +	 * the init task will end up wanting to create kthreads, which, if
+> +	 * we schedule it before we create kthreadd, will OOPS.
+> +	 */
+>  	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
+>  	numa_default_policy();
+>  	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
+>  	rcu_read_lock();
+>  	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
+>  	rcu_read_unlock();
+> +	complete(&kthreadd_done);
+>  	unlock_kernel();
+>  
+>  	/*
+> @@ -847,6 +855,10 @@ static noinline int init_post(void)
+>  
+>  static int __init kernel_init(void * unused)
+>  {
+> +	/*
+> +	 * Wait until kthreadd is all set-up.
+> +	 */
+> +	wait_for_completion(&kthreadd_done);
+>  	lock_kernel();
+>  
+>  	/*
+> 
+> --
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
