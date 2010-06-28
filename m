@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab0F1UG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 16:06:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54267 "EHLO
+	id S1754703Ab0F1UNF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 16:13:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51301 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab0F1UGZ (ORCPT
+	with ESMTP id S1752387Ab0F1UNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 16:06:25 -0400
+	Mon, 28 Jun 2010 16:13:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=RE9VbzBJNdLf0Y+wUw4QEOpTwYyouyV6FgMC4Ie6V+8j6hkHAaBoZsWcqc1FVY6XfD
-         cpouFwuSZyr1ACV5fCvSz+hNVViLc1f3wIRtKQKnDv5v3pv2fDLxdkEltwGzkhE0wndW
-         muwIcXxlyU0Zl83bK69QQwk0YbTgl7GP3Bg+s=
-Date: Tue, 29 Jun 2010 00:06:20 +0400
-From: Ilya Loginov <isloginov@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] init: Fix race between init and kthreadd -v2
-Message-Id: <20100629000620.a7f0a4fe.isloginov@gmail.com>
-In-Reply-To: <1277725997.3561.6.camel@laptop>
-References: <20100624001148.61e9da1c.isloginov@gmail.com>
-	<1277385096.1875.974.camel@laptop>
-	<20100624172334.ca7e9bef.isloginov@gmail.com>
-	<1277715689.1875.1104.camel@laptop>
-	<1277725997.3561.6.camel@laptop>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=lZsNPPkJsoNRe1mpqEWjsdW//C0qhzPJpUJDvjynNjljQKptLFkYaHQm+MMP4MqoxK
+         jojFSvopSSnIvPljOWvopU+aK4+9VJGdjlH4H7/yzhTuZaFGHmBuu5OXrtv9kUSUZLuy
+         17I+rXSNbwPn1CyHYJc2dJOaa4ES91AgAhbok=
+Message-ID: <4C290245.2040001@suse.cz>
+Date: Mon, 28 Jun 2010 22:12:53 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Robert Hancock <hancockrwd@gmail.com>, lenb@kernel.org,
+       linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH 1/1] ACPI: pci_irq, add PRT_ quirk for IBM Bartolo
+References: <1277673679-21458-1-git-send-email-jslaby@suse.cz> <4C27E965.80508@gmail.com> <4C283D84.6080504@suse.cz> <20100628171410.GA27367@srcf.ucam.org>
+In-Reply-To: <20100628171410.GA27367@srcf.ucam.org>
+X-Enigmail-Version: 1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jun 2010 13:53:17 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+On 06/28/2010 07:14 PM, Matthew Garrett wrote:
+> On Mon, Jun 28, 2010 at 08:13:24AM +0200, Jiri Slaby wrote:
+>> On 06/28/2010 02:14 AM, Robert Hancock wrote:
+>>> That seems a rather serious DSDT flaw. Do devices in that slot work in
+>>> Windows?
+>>
+>> Yes, the DSDT is pretty broken this way there. Regarding Windows, I
+>> don't know and I doubt anybody will ever try.
+> 
+> http://www-07.ibm.com/hk/products/pos/300/specs.html indicates that 
+> Windows is supported on this hardware. It would be good to verify that 
+> it also fails before we try a model-specific quirk.
 
-> I just realized its all __init code so its all 'free' anyway, how about
-> the nicer version:
-
-I will try both versions and write about results. But I think, that there is
-some logical inconsistent in these patches (for me). I like v2 more than v1.
-But, I would move mutex_lock/unlock. Anyway, I will try your patches first.
-
-Many thanks.
+It would be good for what? I don't see the point, DSDT is broken on that
+machine and the patch works this around. Why do we need testruns from
+Windows? And why you think Windows will fail anyway, they can very have
+the pretty same quirk there.
 
 -- 
-Ilya Loginov <isloginov@gmail.com>
+js
+suse labs
