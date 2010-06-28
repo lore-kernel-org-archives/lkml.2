@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab0F1Wcq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 18:32:46 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33102 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901Ab0F1Wcp (ORCPT
+	id S1755456Ab0F1Wos (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 18:44:48 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:42700 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab0F1Woq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 18:32:45 -0400
+	Mon, 28 Jun 2010 18:44:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=RhK6FR4ICkq5H698DZURc/5FGSIYFkDE0xXb4LPIe6qmGnFpMHr5xtr8AClRGNu91j
-         Rvn7lz3SL1jNQc1+Nsx/Vk4hETB86A6VI2QHSc41ARwVs+cPe5wtiq5a2oCbVv2DOJ1B
-         OKeB67AmSrYp4ElA+klQzkJolEtwTfXlcy9bY=
-Message-ID: <4C292308.4050906@pobox.com>
-Date: Mon, 28 Jun 2010 18:32:40 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TNeicwijhC6yZzaTatcMyjq3hh6kdN7xWdCpkpbZWgxFRV6vPc0qNgQusLVGmas4XY
+         igKVOI6xMBv9GiwZt/RoH7KIHUx6wKYX3byrobhifCp39NoZ3skt+hh3m804aibqJ9uT
+         HloIvPTvshyDBa8U5SxUgcSPGuhPHourMV6jM=
+Date: Mon, 28 Jun 2010 15:44:40 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Pan, Jacob jun" <jacob.jun.pan@intel.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+       akpm <akpm@linux-foundation.org>,
+       "chuck.lever@oracle.com" <chuck.lever@oracle.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: problem: Re: [PATCH] input: fixup X86_MRST selects
+Message-ID: <20100628224440.GA19087@core.coreip.homeip.net>
+References: <20100609133443.38f1f957.sfr@canb.auug.org.au>
+ <201006101204.45709.dmitry.torokhov@gmail.com>
+ <4C28F210.7030909@oracle.com>
+ <201006281318.16377.dmitry.torokhov@gmail.com>
+ <4C2904D0.3000409@oracle.com>
+ <43F901BD926A4E43B106BF17856F0755EA339079@orsmsx508.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       oleg@redhat.com, axboe@kernel.dk, fweisbec@gmail.com,
-       dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
-       andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
-Subject: Re: [PATCH 33/35] libata: take advantage of cmwq and remove concurrency
- limitations
-References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-34-git-send-email-tj@kernel.org>
-In-Reply-To: <1277759063-24607-34-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <43F901BD926A4E43B106BF17856F0755EA339079@orsmsx508.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2010 05:04 PM, Tejun Heo wrote:
-> libata has two concurrency related limitations.
->
-> a. ata_wq which is used for polling PIO has single thread per CPU.  If
->     there are multiple devices doing polling PIO on the same CPU, they
->     can't be executed simultaneously.
->
-> b. ata_aux_wq which is used for SCSI probing has single thread.  In
->     cases where SCSI probing is stalled for extended period of time
->     which is possible for ATAPI devices, this will stall all probing.
->
-> #a is solved by increasing maximum concurrency of ata_wq.  Please note
-> that polling PIO might be used under allocation path and thus needs to
-> be served by a separate wq with a rescuer.
->
-> #b is solved by using the default wq instead and achieving exclusion
-> via per-port mutex.
->
-> Signed-off-by: Tejun Heo<tj@kernel.org>
-> Cc: Jeff Garzik<jgarzik@pobox.com>
+On Mon, Jun 28, 2010 at 02:12:03PM -0700, Pan, Jacob jun wrote:
+> >
+> We do intend to maintain binary compatibility between generic kernel and Moorestown.
+> I guess the challenge is not having enumeration of i8042 pass to the driver. Do you
+> prefer abort i8042_platform_init() based on #define CONFIG_X86_MRST? It is no safe
+> to probe HW on Moorestown, unfortunately.
 
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+Any check based on CONFIG_X86_MRST means that kernel is not generic.
+We'd need a runtime check (but not necessarily one that bangs ports). Is
+there something in processor flags, or DMI, or similar that woudl allow
+i8042 to see that it runs on Moorestown?
 
-
+-- 
+Dmitry
