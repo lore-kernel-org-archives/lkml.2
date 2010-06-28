@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab0F1Suq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 14:50:46 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:47074 "EHLO kernel.dk"
+	id S1752763Ab0F1Syj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 14:54:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30413 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab0F1Sup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 14:50:45 -0400
-Message-ID: <4C28EF04.7040309@kernel.dk>
-Date: Mon, 28 Jun 2010 20:50:44 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1751896Ab0F1Syi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 14:54:38 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] cfq: always return false from should_idle if slice_idle is set to zero
+References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
+	<1277149789-4493-2-git-send-email-jmoyer@redhat.com>
+	<4C1FC4CA.7030007@kernel.dk>
+	<x49hbkndmoc.fsf@segfault.boston.devel.redhat.com>
+	<4C28EF04.7040309@kernel.dk>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 28 Jun 2010 14:54:35 -0400
+In-Reply-To: <4C28EF04.7040309@kernel.dk> (Jens Axboe's message of "Mon, 28
+	Jun 2010 20:50:44 +0200")
+Message-ID: <x498w5zdm38.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cfq: always return false from should_idle if slice_idle
- is set to zero
-References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>	<1277149789-4493-2-git-send-email-jmoyer@redhat.com>	<4C1FC4CA.7030007@kernel.dk> <x49hbkndmoc.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49hbkndmoc.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/10 20.41, Jeff Moyer wrote:
-> Jens Axboe <axboe@kernel.dk> writes:
-> 
->> On 21/06/10 21.49, Jeff Moyer wrote:
->>> Hi,
->>>
->>> In testing a competing fsync-ing process and a sequential reader on
->>> mid-grade storage, I found that cfq was incapable of achieving the I/O
->>> rates of deadline, no matter how it was tuned.  Investigation, and insight
->>> from Vivek (mostly the latter), led to identifying that we were still
->>> idling for the last queue in the service tree.
->>>
->>> Modifying cfq_should_idle to not idle when slice_idle is set to zero got
->>> us much closer to the performance of deadline for this workload.  I have
->>> one follow-on patch that gets us on-par with deadline, but I think this
->>> patch stands alone.
->>>
->>> Comments, as always, are appreciated.
->>
->> This looks good.
-> 
-> So.... applied to which branch?
+Jens Axboe <axboe@kernel.dk> writes:
 
-Not applied yet, unless I explicitly say it's applied, then it's not
-necessarily in any public git tree yet. But this will go into .35.
+> On 28/06/10 20.41, Jeff Moyer wrote:
+>> Jens Axboe <axboe@kernel.dk> writes:
+>> 
+>>> On 21/06/10 21.49, Jeff Moyer wrote:
+>>>> Hi,
+>>>>
+>>>> In testing a competing fsync-ing process and a sequential reader on
+>>>> mid-grade storage, I found that cfq was incapable of achieving the I/O
+>>>> rates of deadline, no matter how it was tuned.  Investigation, and insight
+>>>> from Vivek (mostly the latter), led to identifying that we were still
+>>>> idling for the last queue in the service tree.
+>>>>
+>>>> Modifying cfq_should_idle to not idle when slice_idle is set to zero got
+>>>> us much closer to the performance of deadline for this workload.  I have
+>>>> one follow-on patch that gets us on-par with deadline, but I think this
+>>>> patch stands alone.
+>>>>
+>>>> Comments, as always, are appreciated.
+>>>
+>>> This looks good.
+>> 
+>> So.... applied to which branch?
+>
+> Not applied yet, unless I explicitly say it's applied, then it's not
+> necessarily in any public git tree yet. But this will go into .35.
 
--- 
-Jens Axboe
+OK, thanks for the clarification.
 
+Cheers,
+Jeff
