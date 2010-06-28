@@ -1,123 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab0F1O4G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 10:56:06 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34120 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753896Ab0F1O4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755192Ab0F1O4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 10:56:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52501 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754964Ab0F1O4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Jun 2010 10:56:03 -0400
-Subject: Re: [PATCH -mm 1/2] scsi: remove dma_is_consistent usage in 53c700
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: akpm@linux-foundation.org, grundler@parisc-linux.org, lethal@linux-sh.org,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-In-Reply-To: <20100628123503Z.fujita.tomonori@lab.ntt.co.jp>
-References: <1277633423-5700-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-	 <1277651328.4366.7.camel@mulgrave.site>
-	 <20100628123503Z.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Jun 2010 09:55:58 -0500
-Message-ID: <1277736958.10879.43.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+Message-ID: <4C28B801.7050709@suse.cz>
+Date: Mon, 28 Jun 2010 16:56:01 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Nicolas Kaiser <nikai@nikai.net>, linux-kbuild@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] Documentation/kbuild: fixed typos and wording
+References: <20100626150021.254b95b3@absol.kitzblitz> <20100626173736.e5946273.randy.dunlap@oracle.com>
+In-Reply-To: <20100626173736.e5946273.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-28 at 12:37 +0900, FUJITA Tomonori wrote:
-> On Sun, 27 Jun 2010 10:08:48 -0500
-> James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
+On 27.6.2010 02:37, Randy Dunlap wrote:
+> On Sat, 26 Jun 2010 15:00:21 +0200 Nicolas Kaiser wrote:
 > 
-> > On Sun, 2010-06-27 at 19:10 +0900, FUJITA Tomonori wrote:
-> > > 53c700 is the only user of dma_is_consistent():
-> > > 
-> > > BUG_ON(!dma_is_consistent(hostdata->dev, pScript) && L1_CACHE_BYTES < dma_get_cache_alignment());
-> > > 
-> > > The above code tries to see if the system can allocate coherent memory
-> > > or not. It's for some old systems that can't allocate coherent memory
-> > > at all (e.g some parisc systems).
-> > 
-> > Actually, that's not the right explanation.  The BUG_ON is because of an
-> > efficiency in the driver ... it's nothing to do with the architecture.
-> > 
-> > The driver uses a set of mailboxes, but for efficiency's sake, it packs
-> > them into a single coherent area and separates the different usages by a
-> > L1 cache stride).  On architectures capable of manufacturing coherent
-> > memory, this is a nice speed up in the DMA infrastructure.  However, for
-> > incoherent architectures, it's fatal if the dma coherence stride is
-> > greater than the L1 cache size, because now we'll get data corruption
-> > due to cacheline interference.  That's what the BUG_ON is checking for.
+>> Fixed some typos and wording.
+>>
+>> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
 > 
-> Sorry, I should have looked the details of the driver.
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+Randy, are you adding this to the kernel-doc tree? There are already
+patches from matt mooney, sometimes touching the same paragraphs as this
+one.
+
+Michal
+
 > 
-> You are talking about the following tricks, right?
+> Thanks.
 > 
-> #define	MSG_ARRAY_SIZE	8
-> #define	MSGOUT_OFFSET	(L1_CACHE_ALIGN(sizeof(SCRIPT)))
-> 	__u8	*msgout;
-> #define MSGIN_OFFSET	(MSGOUT_OFFSET + L1_CACHE_ALIGN(MSG_ARRAY_SIZE))
-> 	__u8	*msgin;
-> #define STATUS_OFFSET	(MSGIN_OFFSET + L1_CACHE_ALIGN(MSG_ARRAY_SIZE))
-> 	__u8	*status;
-> #define SLOTS_OFFSET	(STATUS_OFFSET + L1_CACHE_ALIGN(MSG_ARRAY_SIZE))
-> 	struct NCR_700_command_slot	*slots;
-> #define	TOTAL_MEM_SIZE	(SLOTS_OFFSET + L1_CACHE_ALIGN(sizeof(struct NCR_700_command_slot) * NCR_700_COMMAND_SLOTS_PER_HOST))
-
-Yes, that's it.  The mailboxes themselves are pretty small, and the
-minimum coherent allocation is usually a page, so we'd waste orders of
-magnitude more coherent memory than we actually need without this trick
-(and on a lot of platforms, coherent memory is scarce).
-
-> > > I think that we can safely remove the above usage:
-> > > 
-> > > - such old systems haven't triger the above checking for long.
-> > > 
-> > > - the above condition is important for systems that can't allocate
-> > >   coherent memory if these systems do DMA. So probably it would be
-> > >   better to have such checking in arch's DMA initialization code
-> > >   instead of a driver.
-> > 
-> > Well, we can't check in the architecture because it's a driver specific
-> > thing ... I suppose making it a rule that dma_get_cache_alignment()
-> > *must* be <= L1_CACHE_BYTES fixes it ... we seem to have no architecture
-> > violating that, so just add it to the documentation, and the check can
-> > go.
+>> ---
+>>  Documentation/kbuild/kbuild.txt    |    8 ++++----
+>>  Documentation/kbuild/makefiles.txt |   20 ++++++++++----------
+>>  2 files changed, 14 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
+>> index 634c625..0d8addb 100644
+>> --- a/Documentation/kbuild/kbuild.txt
+>> +++ b/Documentation/kbuild/kbuild.txt
+>> @@ -40,15 +40,15 @@ Set the directory to look for the kernel source when building external
+>>  modules.
+>>  The directory can be specified in several ways:
+>>  1) Use "M=..." on the command line
+>> -2) Environmnet variable KBUILD_EXTMOD
+>> -3) Environmnet variable SUBDIRS
+>> +2) Environment variable KBUILD_EXTMOD
+>> +3) Environment variable SUBDIRS
+>>  The possibilities are listed in the order they take precedence.
+>>  Using "M=..." will always override the others.
+>>  
+>>  KBUILD_OUTPUT
+>>  --------------------------------------------------
+>>  Specify the output directory when building the kernel.
+>> -The output directory can also be specificed using "O=...".
+>> +The output directory can also be specified using "O=...".
+>>  Setting "O=..." takes precedence over KBUILD_OUTPUT.
+>>  
+>>  ARCH
+>> @@ -90,7 +90,7 @@ The script will be called with the following arguments:
+>>      $3 - kernel map file
+>>      $4 - default install path (use root directory if blank)
+>>  
+>> -The implmentation of "make install" is architecture specific
+>> +The implementation of "make install" is architecture specific
+>>  and it may differ from the above.
+>>  
+>>  INSTALLKERNEL is provided to enable the possibility to
+>> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+>> index 71c602d..c0c9b1c 100644
+>> --- a/Documentation/kbuild/makefiles.txt
+>> +++ b/Documentation/kbuild/makefiles.txt
+>> @@ -284,12 +284,12 @@ more details, with real examples.
+>>  --- 3.7 Compilation flags
+>>  
+>>      ccflags-y, asflags-y and ldflags-y
+>> -	The three flags listed above applies only to the kbuild makefile
+>> -	where they are assigned. They are used for all the normal
+>> -	cc, as and ld invocation happenign during a recursive build.
+>> +	These three flags apply only to the kbuild makefile in which they
+>> +	are assigned. They are used for all the normal cc, as and ld
+>> +	invocations happening during a recursive build.
+>>  	Note: Flags with the same behaviour were previously named:
+>>  	EXTRA_CFLAGS, EXTRA_AFLAGS and EXTRA_LDFLAGS.
+>> -	They are yet supported but their use are deprecated.
+>> +	They are still supported but their usage is deprecated.
+>>  
+>>  	ccflags-y specifies options for compiling C files with $(CC).
+>>  
+>> @@ -318,9 +318,9 @@ more details, with real examples.
+>>  		ldflags-y := -x
+>>  
+>>      subdir-ccflags-y, subdir-asflags-y
+>> -	The two flags listed above are similar to ccflags-y and as-falgs-y.
+>> -	The difference is that the subdir- variants has effect for the kbuild
+>> -	file where tey are present and all subdirectories.
+>> +	The two flags listed above are similar to ccflags-y and as-flags-y.
+>> +	The difference is that the subdir- variants have effect for the kbuild
+>> +	file where they are present and all subdirectories.
+>>  	Options specified using subdir-* are added to the commandline before
+>>  	the options specified using the non-subdir variants.
+>>  
+>> @@ -1176,14 +1176,14 @@ When kbuild executes, the following steps are followed (roughly):
+>>  === 7 Kbuild syntax for exported headers
+>>  
+>>  The kernel include a set of headers that is exported to userspace.
+>> -Many headers can be exported as-is but other headers requires  a
+>> +Many headers can be exported as-is but other headers require a
+>>  minimal pre-processing before they are ready for user-space.
+>>  The pre-processing does:
+>>  - drop kernel specific annotations
+>>  - drop include of compiler.h
+>> -- drop all sections that is kernel internat (guarded by ifdef __KERNEL__)
+>> +- drop all sections that are kernel internal (guarded by ifdef __KERNEL__)
+>>  
+>> -Each relevant directory contain a file name "Kbuild" which specify the
+>> +Each relevant directory contains a file name "Kbuild" which specifies the
+>>  headers to be exported.
+>>  See subsequent chapter for the syntax of the Kbuild file.
+>>  
+>> -- 
 > 
-> Seems that on some architectures (arm and mips at least),
-> dma_get_cache_alignment() could greater than L1_CACHE_BYTES. But they
-> simply return the possible maximum size of cache size like:
-> 
-> static inline int dma_get_cache_alignment(void)
-> {
-> 	/* XXX Largest on any MIPS */
-> 	return 128;
-> }
-> 
-> So practically, we should be safe. I guess that we can simply convert
-> them to return L1_CACHE_BYTES.
-
-As long as that's architecturally true, yes.   I mean I can't imagine
-any architecture that had a dma alignment requirement that was greater
-than its L1 cache width ... but I've been surprised be for making
-"Obviously this can't happen ..." type statements where MIPS is
-concerned.
-
-> Some PARISC and mips are only the fully non-coherent architectures
-> that we support now?
-
-I think there might be some ARM SoC systems as well ... there were some
-strange ones that had tight limits on the addresses the other SoC
-components could DMA to which made it very difficult to make consistent
-areas.
-
->  We can remove the above checking if
-> dma_get_cache_alignment() is <= L1_CACHE_BYTES on PARISC and mips?
-
-I don't think we need to check, just document that
-dma_get_cache_alignment cannot be greater than the L1 cache stride.
-
-James
-
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
