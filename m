@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab0F1Poo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 11:44:44 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.61]:44373 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab0F1Pom (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 11:44:42 -0400
-Date: Mon, 28 Jun 2010 11:43:59 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com,
-       menage@google.com, oleg@redhat.com
-Subject: Re: [RFC] [PATCH v3 1/2] cgroups: read-write lock CLONE_THREAD
- forking per threadgroup
-Message-ID: <20100628154359.GA24629@ghc01.ghc.andrew.cmu.edu>
-References: <20100625054541.GA20610@ghc01.ghc.andrew.cmu.edu>
- <20100625054654.GB20610@ghc01.ghc.andrew.cmu.edu>
- <20100628161031.a8c71fce.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754729Ab0F1PuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 11:50:08 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44207 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752977Ab0F1PuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 11:50:03 -0400
+Date: Mon, 28 Jun 2010 08:44:55 -0700
+From: Greg KH <gregkh@suse.de>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] memory hotplug disable boot option
+Message-ID: <20100628154455.GA13918@suse.de>
+References: <87d3vfeage.fsf@basil.nowhere.org>
+ <4C24C279.3050206@austin.ibm.com>
+ <20100628110658.387B.A69D9226@jp.fujitsu.com>
+ <20100628150246.GA13192@suse.de>
+ <4C28C1A8.8010904@austin.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100628161031.a8c71fce.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C28C1A8.8010904@austin.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.6.28.153314
-X-SMTP-Spam-Clean: 8% (
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_2000_2999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 04:10:31PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Fri, 25 Jun 2010 01:46:54 -0400
-> Ben Blum <bblum@andrew.cmu.edu> wrote:
-> 
-> > Adds functionality to read/write lock CLONE_THREAD fork()ing per-threadgroup
+On Mon, Jun 28, 2010 at 10:37:12AM -0500, Nathan Fontenot wrote:
+> On 06/28/2010 10:02 AM, Greg KH wrote:
+> > On Mon, Jun 28, 2010 at 11:20:27AM +0900, KOSAKI Motohiro wrote:
+> >>> On 06/25/2010 04:19 AM, Andi Kleen wrote:
+> >>>> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> writes:
+> >>>>
+> >>>>>> Proposed patch to disable memory hotplug via a boot option,
+> >>>>>> mem_hotplug=[on|off].  The patch only disables memory hotplug in that it 
+> >>>>>> prevents the creation of the memory sysfs directories for memory sections.
+> >>>>>>
+> >>>>>> This patch is meant to help alleviate very long boot times on systems with
+> >>>>>> large memory (1+ TB) and many memory sections (10's of thousands).
+> >>>>>
+> >>>>> Why making simple /sys file is so slowly? Couldn't we fix such performance
+> >>>>> problem?
+> >>>
+> >>> The issue is the large number of sysfs memory directories that get created.
+> >>> On a system with 1 TB of memory I am seeing ~63,00 directories.  The long
+> >>> creation time is due to the string compare check in sysfs code to ensure
+> >>> we are not creating a directory with a duplicate name.
+> >>
+> >> Ah, I see. probably this is sysfs issue. So Let's cc Greg and Eric.
+> >> Greg, I have dumb question. Why sysfs call strcmp() so heavily? I mean why sysfs
+> >> don't have hash based name dupliation check?
 > > 
-> > From: Ben Blum <bblum@andrew.cmu.edu>
+> > Because we have not needed such complexity before.
 > > 
-> > This patch adds an rwsem that lives in a threadgroup's signal_struct that's
-> > taken for reading in the fork path, under CONFIG_CGROUPS. If another part of
-> > the kernel later wants to use such a locking mechanism, the CONFIG_CGROUPS
-> > ifdefs should be changed to a higher-up flag that CGROUPS and the other system
-> > would both depend on.
-> > 
-> > This is a pre-patch for cgroups-procs-write.patch.
+> > You might want to take a step back and asky why you are creating 63
+> > thousand directories in sysfs for large memory systems.  Are you really
+> > going to use all of those directories?  What are they for?  Perhaps
+> > someone created the wrong interface to memory and that needs to be fixed
+> > instead?
 > > 
 > 
-> Hmm, at adding a new lock, please describe its semantics.
-> Following is my understanding, right ?
-> 
-> Lock range:
-> This rwsem is read-locked from cgroup_fork() to cgroup_post_fork(). 
-> Most of works for fork() are between cgroup_fork() and cgroup_post_for().
-> This means if sig->threadgroup_fork_lock is held, no new do_work() can
-> make progress in this process groups. This rwsem is held only when
-> CLONE_THREAD is in clone_flags. IOW, this rwsem is taken only at creating
-> new thread.
-> 
-> What we can do with this:
-> By locking sig->threadgroup_fork_lock, a code can visit _all_ threads
-> in a process group witout any races. So, if you want to implement an
-> atomic operation against a process, taking this lock is an idea.
-> 
-> For what:
-> To implement an atomic process move in cgroup, we need this lock.
+> The directories being created are the standard directories, one for each of the memory
+> sections present at boot.  I think the most used files in each of these directories
+> is the state and removable file used to do memory hotplug.
 
-All good. Should a description like this go in Documentation/ somewhere,
-or above the declaration of the lock?
+And perhaps we shouldn't really be creating so many directories?  Why
+not work with the memory hotplug developers to change their interface to
+not abuse sysfs in such a manner?
 
-> Why this implemantation:
-> Considering cgroup, threads in a cgroup can be under several different
-> cgroup. So, we can't implement lock in cgroup-internal, we use signal
-> struct.
+thanks,
 
-Not entirely, though that's an additional restriction... The reason it's
-in signal_struct: signal_struct is per-threadgroup and has exactly the
-lifetime rules we want. Putting the lock in task_struct and taking
-current->group_leader->signal... seems like it would also work, but
-introduces cacheline conflicts that weren't there before, since fork
-doesn't look at group_leader (but it does bump signal's count).
-
-> By the way, IMHO, hiding lock in cgroup_fork() and cgroup_post_fork() doesn't
-> seem good idea. How about a code like this ?
-> 
->   read_lock_thread_clone(current);
->   cgroup_fork();
->  .....
->   cgroup_post_fork();
->   read_unlock_thrad_clone(current);
-> 
-> We may have chances to move these lock to better position if cgroup is
-> an only user.
-
-I didn't do that out of a desire to change fork.c as little as possible,
-but that does look better than what I've got. Those two functions should
-be in fork.c under #ifdef CONFIG_CGROUPS.
-
-> 
-> Thanks,
-> -Kame
-
-Thanks,
--- Ben
+greg k-h
