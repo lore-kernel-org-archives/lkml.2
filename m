@@ -1,90 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab0F1AZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 20:25:29 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44174 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab0F1AZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 20:25:28 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C27EC01.6030708@jp.fujitsu.com>
-Date: Mon, 28 Jun 2010 09:25:37 +0900
-From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, kaneshige.kenji@jp.fujitsu.com,
-       izumi.taku@jp.fujitsu.com, netdev <netdev@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 4/5] skb: add tracepoints to freeing skb
-References: <4C2312A8.9060903@jp.fujitsu.com>	 <4C23FF55.3090604@jp.fujitsu.com> <1277441711.2481.3.camel@edumazet-laptop>	 <4C2456DA.8030200@jp.fujitsu.com> <1277496347.2481.12.camel@edumazet-laptop>
-In-Reply-To: <1277496347.2481.12.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754340Ab0F1AhX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 20:37:23 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53620 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751715Ab0F1AhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jun 2010 20:37:21 -0400
+Date: Mon, 28 Jun 2010 10:37:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Len Brown <lenb@kernel.org>,
+       Joel Becker <joel.becker@oracle.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Russell King <rmk@arm.linux.org.uk>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: [GIT PULL] Please pull fix patches sitting in linux-next
+Message-Id: <20100628103715.594635f7.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/06/26 5:05), Eric Dumazet wrote:
-> Le vendredi 25 juin 2010 à 16:12 +0900, Koki Sanagi a écrit :
-> 
->>> You might add a trace point to skb_free_datagram_locked() too, since it
->>> contains an inlined consume_skb()
->>>
->>
->> I think it is contrary.
-> 
-> I think you are _very_ wrong.
-> 
->> skb_free_datagram_locked() contains consume_skb(), so tracepoint isn't needed.
->> Because skb_free_datagram_locked() can be traced by trace_consume_skb().
->>
->>
->>
-> 
-> Koki, it would be good if you worked on net-next-2.6, so that my comment
-> applies.
+Hi Linus,
 
-Yes, I am very wrong... I saw skb_free_datagram_locked() at linux-2.6.34.
-It would be good to add tracepoint to it.
+These patches have been sitting in my fixes tree (and thus in linux-next)
+for considerable time and the respective maintainers seem either unaware
+or unwilling to pick them up.  They are just fallout from Tejun's removal
+of slab.h from percpu.h changes that you merged back in April.
+
+The following changes since commit b4322e7057ca851b0a3e15f29e26806efeada100:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu (2010-06-27 11:33:44 -0700)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/~sfr/next-fixes.git fixes
+
+Tejun Heo (5):
+      v4l-dvb: update gfp/slab.h includes
+      arm: update gfp/slab.h includes
+      davinci: update gfp/slab.h includes
+      ocfs2: update gfp/slab.h includes
+      acpi: update gfp/slab.h includes
+
+ arch/arm/mach-vexpress/ct-ca9x4.c     |    1 +
+ drivers/acpi/apei/apei-base.c         |    1 +
+ drivers/acpi/atomicio.c               |    1 +
+ drivers/rtc/rtc-davinci.c             |    1 +
+ drivers/staging/tm6000/tm6000-alsa.c  |    1 +
+ drivers/staging/tm6000/tm6000-cards.c |    1 +
+ drivers/staging/tm6000/tm6000-core.c  |    1 +
+ drivers/staging/tm6000/tm6000-dvb.c   |    1 +
+ fs/ocfs2/reservations.c               |    1 -
+ 9 files changed, 8 insertions(+), 1 deletions(-)
+commit e0fb8c418520b41d57667befdb8861c46cdf69e0
+Author: Tejun Heo <tj@kernel.org>
+Date:   Tue Mar 30 02:52:44 2010 +0900
+
+    acpi: update gfp/slab.h includes
+    
+    Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+    gfp.h or slab.h is included as necessary.
+    
+    Signed-off-by: Tejun Heo <tj@kernel.org>
+    Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+    Cc: Len Brown <lenb@kernel.org>
+    Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
+index db3946e..216e1e9 100644
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -34,6 +34,7 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/acpi.h>
++#include <linux/slab.h>
+ #include <linux/io.h>
+ #include <linux/kref.h>
+ #include <linux/rculist.h>
+diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
+index 814b192..8f8bd73 100644
+--- a/drivers/acpi/atomicio.c
++++ b/drivers/acpi/atomicio.c
+@@ -31,6 +31,7 @@
+ #include <linux/kref.h>
+ #include <linux/rculist.h>
+ #include <linux/interrupt.h>
++#include <linux/slab.h>
+ #include <acpi/atomicio.h>
  
-> Also, not sending this kind of patches on netdev is not going to help
-> very much.
-> 
-> Who is supposed to review them on lkml and Ack them ? 
-> 
-> Nobody.
-> 
-> Please build your future network related patches against net-next-2.6,
-> and send them to nedev and David Miller, the official network
-> maintainer, as stated in MAINTAINERS file.
-> 
-> NETWORKING [GENERAL]
-> M:      "David S. Miller" <davem@davemloft.net>
-> L:      netdev@vger.kernel.org
-> W:      http://www.linuxfoundation.org/en/Net
-> W:      http://patchwork.ozlabs.org/project/netdev/list/
-> T:      git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6.git
-> T:      git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6.git
-> S:      Maintained
-> F:      net/
-> F:      include/net/
-> F:      include/linux/in.h
-> F:      include/linux/net.h
-> F:      include/linux/netdevice.h
+ #define ACPI_PFX "ACPI: "
 
-Yes, my submitting this time has many improper things(address, format and description...).
-I'll check and modify them next time.
+commit 327f935a9ef644c0ec3d050c94bce753756d60c0
+Author: Tejun Heo <tj@kernel.org>
+Date:   Tue Mar 30 02:52:32 2010 +0900
 
-Thanks,
-Koki Sanagi.
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+    ocfs2: update gfp/slab.h includes
+    
+    Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+    gfp.h or slab.h is included as necessary.
+    
+    Signed-off-by: Tejun Heo <tj@kernel.org>
+    Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+    Cc: Joel Becker <joel.becker@oracle.com>
+    Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+diff --git a/fs/ocfs2/reservations.c b/fs/ocfs2/reservations.c
+index 4065002..d8b6e42 100644
+--- a/fs/ocfs2/reservations.c
++++ b/fs/ocfs2/reservations.c
+@@ -26,7 +26,6 @@
+ 
+ #include <linux/fs.h>
+ #include <linux/types.h>
+-#include <linux/slab.h>
+ #include <linux/highmem.h>
+ #include <linux/bitops.h>
+ #include <linux/list.h>
+
+commit f244f31a0d31402c2c1b1950108e0013353cc3f3
+Author: Tejun Heo <tj@kernel.org>
+Date:   Tue Mar 30 02:52:36 2010 +0900
+
+    davinci: update gfp/slab.h includes
+    
+    Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+    gfp.h or slab.h is included as necessary.
+    
+    Signed-off-by: Tejun Heo <tj@kernel.org>
+    Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+    Cc: Kevin Hilman <khilman@deeprootsystems.com>
+    Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
+index 92a8f6c..34647fc 100644
+--- a/drivers/rtc/rtc-davinci.c
++++ b/drivers/rtc/rtc-davinci.c
+@@ -29,6 +29,7 @@
+ #include <linux/bcd.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
++#include <linux/slab.h>
+ 
+ /*
+  * The DaVinci RTC is a simple RTC with the following
+
+commit 68aaae9e95199d2bc46a9e8e3670e403b4a3fe75
+Author: Tejun Heo <tj@kernel.org>
+Date:   Tue Mar 30 02:52:45 2010 +0900
+
+    arm: update gfp/slab.h includes
+    
+    Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+    gfp.h or slab.h is included as necessary.
+    
+    Signed-off-by: Tejun Heo <tj@kernel.org>
+    Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+    Cc: Russell King <linux@arm.linux.org.uk>
+    Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+diff --git a/arch/arm/mach-vexpress/ct-ca9x4.c b/arch/arm/mach-vexpress/ct-ca9x4.c
+index e6f7303..9b11eed 100644
+--- a/arch/arm/mach-vexpress/ct-ca9x4.c
++++ b/arch/arm/mach-vexpress/ct-ca9x4.c
+@@ -2,6 +2,7 @@
+  * Versatile Express Core Tile Cortex A9x4 Support
+  */
+ #include <linux/init.h>
++#include <linux/gfp.h>
+ #include <linux/device.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/platform_device.h>
+
+commit 4ef09889d7b4c7be2aa3e132efb77029f51c95b7
+Author: Tejun Heo <tj@kernel.org>
+Date:   Tue Mar 30 02:52:33 2010 +0900
+
+    v4l-dvb: update gfp/slab.h includes
+    
+    Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+    gfp.h or slab.h is included as necessary.
+    
+    Signed-off-by: Tejun Heo <tj@kernel.org>
+    Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+    Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+    Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+diff --git a/drivers/staging/tm6000/tm6000-alsa.c b/drivers/staging/tm6000/tm6000-alsa.c
+index ce081cd..273e26e 100644
+--- a/drivers/staging/tm6000/tm6000-alsa.c
++++ b/drivers/staging/tm6000/tm6000-alsa.c
+@@ -15,6 +15,7 @@
+ #include <linux/device.h>
+ #include <linux/interrupt.h>
+ #include <linux/usb.h>
++#include <linux/slab.h>
+ 
+ #include <asm/delay.h>
+ #include <sound/core.h>
+diff --git a/drivers/staging/tm6000/tm6000-cards.c b/drivers/staging/tm6000/tm6000-cards.c
+index cedd904..6a9ae40 100644
+--- a/drivers/staging/tm6000/tm6000-cards.c
++++ b/drivers/staging/tm6000/tm6000-cards.c
+@@ -24,6 +24,7 @@
+ #include <linux/i2c.h>
+ #include <linux/usb.h>
+ #include <linux/version.h>
++#include <linux/slab.h>
+ #include <media/v4l2-common.h>
+ #include <media/tuner.h>
+ #include <media/tvaudio.h>
+diff --git a/drivers/staging/tm6000/tm6000-core.c b/drivers/staging/tm6000/tm6000-core.c
+index 27f3f55..c3690e3 100644
+--- a/drivers/staging/tm6000/tm6000-core.c
++++ b/drivers/staging/tm6000/tm6000-core.c
+@@ -22,6 +22,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/kernel.h>
++#include <linux/slab.h>
+ #include <linux/usb.h>
+ #include <linux/i2c.h>
+ #include "tm6000.h"
+diff --git a/drivers/staging/tm6000/tm6000-dvb.c b/drivers/staging/tm6000/tm6000-dvb.c
+index 261e66a..86c1c8b 100644
+--- a/drivers/staging/tm6000/tm6000-dvb.c
++++ b/drivers/staging/tm6000/tm6000-dvb.c
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <linux/kernel.h>
++#include <linux/slab.h>
+ #include <linux/usb.h>
+ 
+ #include "tm6000.h"
 
 
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
