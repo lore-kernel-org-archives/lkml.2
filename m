@@ -1,113 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab0F1CWq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 22:22:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33151 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137Ab0F1CWn convert rfc822-to-8bit (ORCPT
+	id S1755766Ab0F1C0z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 22:26:55 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49950 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab0F1C0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 22:22:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=h1WVE7OIQbMJddyAHNkZ/f/IcgwBrPkvy+KmZKHAxvHqrivqV+8g8l0XeAcDv4B0Dz
-         llMAguZvp04u9lPTcIou/54ccUIFuJ4vDznT0DX6a3f9NRRD4TAglw8rH9P7ifxo89I3
-         sy3JdnMkjmapZvH9+cjT2Cjx9wbeXzTIK+y0s=
+	Sun, 27 Jun 2010 22:26:53 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/2] vmscan: don't subtraction of unsined 
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <alpine.DEB.2.00.1006250912380.18900@router.home>
+References: <20100625202126.806A.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006250912380.18900@router.home>
+Message-Id: <20100628101802.386A.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1276767215-4217-1-git-send-email-andy.shevchenko@gmail.com>
-References: <1276767215-4217-1-git-send-email-andy.shevchenko@gmail.com>
-Date: Mon, 28 Jun 2010 10:22:42 +0800
-Message-ID: <AANLkTim7CGIWmw1W2_XI-ApaVP6dg5ApVEq3bzFVKHnG@mail.gmail.com>
-Subject: Re: [PATCH] kgdb: remove custom hex_to_bin() implementation
-From: Dongdong Deng <libfetion@gmail.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-       Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-       Jason Wessel <jason.wessel@windriver.com>, Martin Hicks <mort@sgi.com>,
-       kgdb-bugreport@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 28 Jun 2010 11:26:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is ok to me. :-)
+> On Fri, 25 Jun 2010, KOSAKI Motohiro wrote:
+> 
+> > 'slab_reclaimable' and 'nr_pages' are unsigned. so, subtraction is
+> > unsafe.
+> 
+> Why? We are subtracting the current value of NR_SLAB_RECLAIMABLE from the
+> earlier one. The result can be negative (maybe concurrent allocations) and
+> then the nr_reclaimed gets decremented instead. This is  okay since we
+> have not reached our goal then of reducing the number of reclaimable slab
+> pages on the zone.
 
-Best Regards,
-Dongdong
+It's unsigned. negative mean very big value. so
 
-On Thu, Jun 17, 2010 at 5:33 PM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
->
-> Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-> Cc: Jason Wessel <jason.wessel@windriver.com>
-> Cc: Martin Hicks <mort@sgi.com>
-> Cc: kgdb-bugreport@lists.sourceforge.net
-> ---
->  kernel/debug/gdbstub.c |   21 +++++----------------
->  1 files changed, 5 insertions(+), 16 deletions(-)
->
-> diff --git a/kernel/debug/gdbstub.c b/kernel/debug/gdbstub.c
-> index 4b17b32..d721b1b 100644
-> --- a/kernel/debug/gdbstub.c
-> +++ b/kernel/debug/gdbstub.c
-> @@ -52,17 +52,6 @@ static unsigned long         gdb_regs[(NUMREGBYTES +
->  * GDB remote protocol parser:
->  */
->
-> -static int hex(char ch)
-> -{
-> -       if ((ch >= 'a') && (ch <= 'f'))
-> -               return ch - 'a' + 10;
-> -       if ((ch >= '0') && (ch <= '9'))
-> -               return ch - '0';
-> -       if ((ch >= 'A') && (ch <= 'F'))
-> -               return ch - 'A' + 10;
-> -       return -1;
-> -}
-> -
->  #ifdef CONFIG_KGDB_KDB
->  static int gdbstub_read_wait(void)
->  {
-> @@ -123,8 +112,8 @@ static void get_packet(char *buffer)
->                buffer[count] = 0;
->
->                if (ch == '#') {
-> -                       xmitcsum = hex(gdbstub_read_wait()) << 4;
-> -                       xmitcsum += hex(gdbstub_read_wait());
-> +                       xmitcsum = hex_to_bin(gdbstub_read_wait()) << 4;
-> +                       xmitcsum += hex_to_bin(gdbstub_read_wait());
->
->                        if (checksum != xmitcsum)
->                                /* failed checksum */
-> @@ -280,8 +269,8 @@ int kgdb_hex2mem(char *buf, char *mem, int count)
->        tmp_hex = tmp_raw - 1;
->        while (tmp_hex >= buf) {
->                tmp_raw--;
-> -               *tmp_raw = hex(*tmp_hex--);
-> -               *tmp_raw |= hex(*tmp_hex--) << 4;
-> +               *tmp_raw = hex_to_bin(*tmp_hex--);
-> +               *tmp_raw |= hex_to_bin(*tmp_hex--) << 4;
->        }
->
->        return probe_kernel_write(mem, tmp_raw, count);
-> @@ -304,7 +293,7 @@ int kgdb_hex2long(char **ptr, unsigned long *long_val)
->                (*ptr)++;
->        }
->        while (**ptr) {
-> -               hex_val = hex(**ptr);
-> +               hex_val = hex_to_bin(**ptr);
->                if (hex_val < 0)
->                        break;
->
-> --
-> 1.6.3.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+"zone_page_state(zone, NR_SLAB_RECLAIMABLE) > slab_reclaimable - nr_pages)" will
+be evaluated false.
+
+ok, your mysterious 'order' parameter (as pointed [1/2]) almostly prevent this case.
+because passing 'order' makes very heavy slab pressure and it avoid negative occur.
+
+but unnaturall coding style can make confusing to reviewers. ya, it's not
+big issue. but I also don't find no fixing reason.
+
+
+> 
+> > @@ -2622,17 +2624,21 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+> >  		 * Note that shrink_slab will free memory on all zones and may
+> >  		 * take a long time.
+> >  		 */
+> > -		while (shrink_slab(sc.nr_scanned, gfp_mask, lru_pages) &&
+> > -			zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
+> > -				slab_reclaimable - nr_pages)
+> 
+> The comparison could be a problem here. So
+> 
+> 			zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages >
+> 				slab_reclaimable
+> 
+> ?
+
+My patch take the same thing. but It avoided two line comparision.
+Do you mean you like this style? (personally, I don't). If so, I'll 
+repost this patch.
+
+
+
+
+
