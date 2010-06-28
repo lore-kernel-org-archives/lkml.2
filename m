@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab0F1MxZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 08:53:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48374 "EHLO mx2.suse.de"
+	id S1754732Ab0F1Mxf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 08:53:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38073 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab0F1MxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 08:53:22 -0400
-Message-ID: <4C289B39.4060901@suse.de>
-Date: Mon, 28 Jun 2010 18:23:13 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091130 SUSE/3.0.0-1.1.1 Thunderbird/3.0
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-Cc: Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 05/10] cifs: define superblock-level cache index
- objects and register them
-References: <22746.1277470713@redhat.com> <4C24A4A0.90408@suse.de> <1277220206-3559-1-git-send-email-sjayaraman@suse.de> <yes> <9720.1277312290@redhat.com> <23204.1277472412@redhat.com>
-In-Reply-To: <23204.1277472412@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754493Ab0F1Mxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 08:53:31 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1277621246-10960-6-git-send-email-justinmattock@gmail.com>
+References: <1277621246-10960-6-git-send-email-justinmattock@gmail.com> <1277621246-10960-1-git-send-email-justinmattock@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>,
+       "Gustavo F. Padovan" <gustavo@padovan.org>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, sds@tycho.nsa.gov,
+       lenb@kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH 5/5]bluetooth:hci_bcsp Fix operation on 'bcsp->msgq_txseq' may be undefined
+Date: Mon, 28 Jun 2010 13:52:56 +0100
+Message-ID: <7323.1277729576@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2010 06:56 PM, David Howells wrote:
-> David Howells <dhowells@redhat.com> wrote:
-> 
->>>> validate the root directory of the share in some way?
->>>
->>> I don't know if there is a way to do this.
->>
->> Is there an inode number or something?  Even the creation time might do.
-> 
-> Looking in cifspdu.h, there are a number of things that it might be possible
-> to use.
-> 
->  (1) FILE_ALL_INFO: CreationTime, IndexNumber, IndexNumber1, FileName
->      (assuming this isn't flattened to '\' or something for the root of a
->      share.
-> 
->  (2) FILE_UNIX_BASIC_INFO: DevMajor, DevMinor, UniqueId.
-> 
->  (3) FILE_INFO_STANDARD: CreationDate, CreationTime.
-> 
->  (4) FILE_INFO_BASIC: CreationTime.
-> 
->  (5) FILE_DIRECTORY_INFO: FileIndex, CreationTime, FileName.
-> 
->  (6) SEARCH_ID_FULL_DIR_INFO: FileIndex, CreationTime, UniqueId, FileName.
-> 
->  (7) FILE_BOTH_DIRECTORY_INFO: FileIndex, CreationTime, ShortName, FileName.
-> 
->  (8) OPEN_RSP_EXT: Fid, CreationTime, VolumeGUID, FileId.
-> 
-> You may have to choose different sets of things, depending on what the server
-> has on offer.  Also, don't forget, if you can't work out whether a share is
+Justin P. Mattock <justinmattock@gmail.com> wrote:
 
-Did you mean we need to validate differently for different servers?
+> -		BT_DBG("Sending packet with seqno %u", bcsp->msgq_txseq);
+> -		bcsp->msgq_txseq = ++(bcsp->msgq_txseq) & 0x07;
+> +		BT_DBG("Sending packet with seqno %u", bcsp->msgq_txseq | ret);
+> +		ret = ++(bcsp->msgq_txseq) & 0x07;
 
-I just did some testing and it looks like we could rely on CreationTime,
-IndexNumber for validating with Windows servers (FileName is relative to
-the mapped drive) and UniqueId for validating with Samba servers. I did
-not test all possibilities (there could be more).
+I don't know what you're trying to do here, but you seem to be trying to send
+the computed value back in time.
 
-> coherent or not from the above, you can always use LastWriteTime, ChangeTime
-> and EndOfFile and just discard the whole subtree if they differ.
-> 
+The problem is that the compiler is confused about why a '++' operator makes
+any sense here.  It doesn't.  It should be a '+ 1' instead.  I think what you
+want is:
 
-Thanks,
+	-	bcsp->msgq_txseq = ++(bcsp->msgq_txseq) & 0x07;
+	+	bcsp->msgq_txseq = (bcsp->msgq_txseq + 1) & 0x07;
 
--- 
-Suresh Jayaraman
+David
