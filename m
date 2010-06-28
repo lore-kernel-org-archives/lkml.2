@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab0F1B2g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jun 2010 21:28:36 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:34732 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab0F1B2d (ORCPT
+	id S1753436Ab0F1BcP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jun 2010 21:32:15 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47239 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162Ab0F1BcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jun 2010 21:28:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=wWmlP6z0FrJt1VN8RWFmVgsH0R42zRvOXPkemW6JujzkoKpItU5Q6IdqoGyJkfn/gq
-         tFSjC9HAMtxPRMHy2/x0bxYY8xEKb2+dnciDOWYCXjmVniIlx9HZF1msjkU8cR5/0jMP
-         fb0WlGxf3oAvs9/9qleU6+7ChgFzxsiTLWSRc=
-Subject: [PATCH] wmi: fix a memory leak in wmi_notify_debug
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>,
-       Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-       Thomas Renninger <trenn@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       platform-driver-x86@vger.kernel.org
-Content-Type: text/plain
-Date: Mon, 28 Jun 2010 09:30:45 +0800
-Message-Id: <1277688645.22992.2.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Sun, 27 Jun 2010 21:32:05 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 1/2] vmscan: shrink_slab() require number of lru_pages, not page order
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <alpine.DEB.2.00.1006250857040.18900@router.home>
+References: <20100625201915.8067.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006250857040.18900@router.home>
+Message-Id: <20100628102342.386D.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 28 Jun 2010 10:32:00 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When acpi_evaluate_object() is passed ACPI_ALLOCATE_BUFFER,
-the caller must kfree the returned buffer if AE_OK is returned.
+> On Fri, 25 Jun 2010, KOSAKI Motohiro wrote:
+> 
+> > Fix simple argument error. Usually 'order' is very small value than
+> > lru_pages. then it can makes unnecessary icache dropping.
+> 
+> This is going to reduce the delta that is added to shrinker->nr
+> significantly thereby increasing the number of times that shrink_slab() is
+> called.
 
-The callers of wmi_get_event_data() pass ACPI_ALLOCATE_BUFFER,
-and thus must check its return value before accessing
-or kfree() on the buffer.
+Yup. But,
 
-This patch adds return value checking for wmi_get_event_data()
-and adds a missing kfree(obj) in the end of wmi_notify_debug
+Smaller shrink -> only makes retry
+Bigger shrink  -> makes unnecessary icache/dcache drop. it can bring
+                  mysterious low performance.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/wmi.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/platform/x86/wmi.c b/drivers/platform/x86/wmi.c
-index e4eaa14..5bb0ae1 100644
---- a/drivers/platform/x86/wmi.c
-+++ b/drivers/platform/x86/wmi.c
-@@ -518,8 +518,13 @@ static void wmi_notify_debug(u32 value, void *context)
- {
- 	struct acpi_buffer response = { ACPI_ALLOCATE_BUFFER, NULL };
- 	union acpi_object *obj;
-+	acpi_status status;
- 
--	wmi_get_event_data(value, &response);
-+	status = wmi_get_event_data(value, &response);
-+	if (status != AE_OK) {
-+		printk(KERN_INFO "wmi: bad event status 0x%x\n", status);
-+		return;
-+	}
- 
- 	obj = (union acpi_object *)response.pointer;
- 
-@@ -543,6 +548,7 @@ static void wmi_notify_debug(u32 value, void *context)
- 	default:
- 		printk("object type 0x%X\n", obj->type);
- 	}
-+	kfree(obj);
- }
- 
- /**
--- 
-1.5.4.3
+> What does the "lru_pages" parameter do in shrink_slab()? Looks
+> like its only role is as a divison factor in a complex calculation of
+> pages to be scanned.
 
+Yes.
+scanned/lru_pages ratio define basic shrink_slab puressure strength.
+
+So, If you intentionally need bigger slab pressure, bigger scanned parameter
+passing is better rather than mysterious 'order' parameter.
+
+> 
+> do_try_to_free_pages passes 0 as "lru_pages" to shrink_slab() when trying
+> to do cgroup lru scans. Why is that?
+
+?
+When cgroup lru scans, do_try_to_free_pages() don't call shrink_slab().
 
 
