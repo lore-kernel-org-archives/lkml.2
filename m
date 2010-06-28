@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab0F1OQW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 10:16:22 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:38019 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab0F1OQV (ORCPT
+	id S1754402Ab0F1OS6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 10:18:58 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:55703 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753828Ab0F1OS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 10:16:21 -0400
-Date: Mon, 28 Jun 2010 16:16:15 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Nathan Fontenot <nfont@austin.ibm.com>,
-       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] memory hotplug disable boot option
-Message-ID: <20100628141615.GA7608@basil.fritz.box>
-References: <87d3vfeage.fsf@basil.nowhere.org>
- <4C24C279.3050206@austin.ibm.com>
- <20100628110658.387B.A69D9226@jp.fujitsu.com>
- <m14ognkd26.fsf@fess.ebiederm.org>
+	Mon, 28 Jun 2010 10:18:57 -0400
+Date: Mon, 28 Jun 2010 10:18:56 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Andrea Righi <arighi@develer.com>
+cc: Rodolfo Giometti <giometti@enneenne.com>,
+       Amit Walambe <amit.walambe@eurotech.com>,
+       Chris Leahy <leahycm@gmail.com>, Giovanni Bajo <rasky@develer.com>,
+       <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: EHCI: fix NULL pointer dererence in HCDs that use
+ HCD_LOCAL_MEM
+In-Reply-To: <20100628141355.GA3807@linux.develer.com>
+Message-ID: <Pine.LNX.4.44L0.1006281017460.1977-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m14ognkd26.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have a prototype patch sitting around somewhere.  I think ultimately
-> it makes sense to do something like extN's htree directory structure
-> in sysfs.  I wanted to get the tagged sysfs support in before I worked
-> on scalability because that slightly changes the requirements.
+On Mon, 28 Jun 2010, Andrea Righi wrote:
+
+> If we use the HCD_LOCAL_MEM flag and dma_declare_coherent_memory() to
+> enforce the host controller's local memory utilization we also need to
+> disable native scatter-gather support, otherwise hcd_alloc_coherent() in
+> map_urb_for_dma() is called with urb->transfer_buffer == NULL, that
+> triggers a NULL pointer dereference.
 > 
-> Improving the scalability here is certainly worth doing, but I am slightly
-> concerned there is something else algorithmically wrong if this is still
-> going to take 33 minutes to boot with 2TB.
+> We can also consider to add a WARN_ON() and return an error code to
+> better catch this problem in the future.
+> 
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> ---
+>  drivers/usb/core/hcd.c      |    5 +++++
+>  drivers/usb/host/ehci-hcd.c |    3 ++-
+>  2 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+> index 12742f1..161c757 100644
+> --- a/drivers/usb/core/hcd.c
+> +++ b/drivers/usb/core/hcd.c
+> @@ -1219,6 +1219,11 @@ static int hcd_alloc_coherent(struct usb_bus *bus,
+>  {
+>  	unsigned char *vaddr;
+>  
+> +	if (*vaddr_handle == NULL) {
+> +		WARN_ON_ONCE(1);
+> +		return -EFAULT;
+> +	}
+> +
+>  	vaddr = hcd_buffer_alloc(bus, size + sizeof(vaddr),
+>  				 mem_flags, dma_handle);
+>  	if (!vaddr)
+> diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+> index a3ef2a9..27e0351 100644
+> --- a/drivers/usb/host/ehci-hcd.c
+> +++ b/drivers/usb/host/ehci-hcd.c
+> @@ -606,7 +606,8 @@ static int ehci_init(struct usb_hcd *hcd)
+>  	ehci->command = temp;
+>  
+>  	/* Accept arbitrarily long scatter-gather lists */
+> -	hcd->self.sg_tablesize = ~0;
+> +	if (!(hcd->driver->flags & HCD_LOCAL_MEM))
+> +		hcd->self.sg_tablesize = ~0;
+>  	return 0;
+>  }
 
-I'm don't think thousands of entries in sysfs is really a good idea. Even if you fix
-the the insert algorithm issues a simple ls will still be very slow and there
-will be likely other issues too. And nobody can claim that's a good interface.
+Looks okay to me.  You can add my Acked-by: when you submit this to 
+Greg KH.
 
-This really needs a better a interface.
-e.g. add some wildcard entry as it was earlier proposed.
-and only generate the wildcard when some threshold is exceeded.
+Alan Stern
 
--Andi
