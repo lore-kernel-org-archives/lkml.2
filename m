@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab0F1IjJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 04:39:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44338 "EHLO hera.kernel.org"
+	id S1755263Ab0F1Ip7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 04:45:59 -0400
+Received: from sh.osrg.net ([192.16.179.4]:56699 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753184Ab0F1IjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 04:39:05 -0400
-Message-ID: <4C285F8F.3040707@kernel.org>
-Date: Mon, 28 Jun 2010 10:38:39 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: simplify the usage of percpu data
-References: <4C285C60.90801@cn.fujitsu.com>
-In-Reply-To: <4C285C60.90801@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754114Ab0F1Ip6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 04:45:58 -0400
+Date: Mon, 28 Jun 2010 17:45:21 +0900
+To: axboe@kernel.dk
+Cc: fujita.tomonori@lab.ntt.co.jp, hch@lst.de, snitzer@redhat.com,
+       dm-devel@redhat.com, James.Bottomley@suse.de,
+       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
+       akpm@linux-foundation.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request 
+ payload
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4C285AE8.9090702@kernel.dk>
+References: <20100628075738.GA26606@lst.de>
+	<20100628171218Q.fujita.tomonori@lab.ntt.co.jp>
+	<4C285AE8.9090702@kernel.dk>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 08:38:37 +0000 (UTC)
+Message-Id: <20100628174304S.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 28 Jun 2010 17:45:24 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2010 10:25 AM, Lai Jiangshan wrote:
-> &percpu_data is compatible with allocated percpu data.
+On Mon, 28 Jun 2010 10:18:48 +0200
+Jens Axboe <axboe@kernel.dk> wrote:
+
+> On 2010-06-28 10:14, FUJITA Tomonori wrote:
+> > On Mon, 28 Jun 2010 09:57:38 +0200
+> > Christoph Hellwig <hch@lst.de> wrote:
+> > 
+> >> On Sun, Jun 27, 2010 at 09:32:07PM +0900, FUJITA Tomonori wrote:
+> >>> On Sun, 27 Jun 2010 13:07:12 +0200
+> >>> Christoph Hellwig <hch@lst.de> wrote:
+> >>>
+> >>>>> How about this?
+> >>>>
+> >>>> As I tried to explain before this utterly confuses the I/O completion
+> >>>> path.  With the patch applied even a simple mkfs.xfs that issues discard
+> >>>> just hangs.
+> >>>
+> >>> Wired. I just tried mkfs.xfs against scsi_debug with my block patches
+> >>> (I saw one discard command). Seemed that it worked fine.
+> >>
+> >> I've tracked it down to the call to scsi_requeue_command in scsi_end_request.
+> >> When the command is marked BLOCK_PC we'll just get it back as such in
+> >> ->prep_fn next time, but now it's reverting to the previous state.
+> > 
+> > If scsi_end_request() calls scsi_requeue_command(), the command has a
+> > left over (i.e. hasn't finished all the data), right? You hit such
+> > condition with discard commands?
+> > 
+> > BLOCK_PC requests don't hit this case since blk_end_request() always
+> > return false for PC.
 > 
-> And we use it and remove the "rda[NR_CPUS]" array.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> You can get requeues on the ->queuecommand() path as well, for a
+> variety of reasons, and that would be what Christoph is hitting.
 
-Looks good to me.
-
-Reviewed-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
-
--- 
-tejun
+Probably, that's would be fine (we need to fix memory leak in that
+path). I guess that requeue with the partial completion commands might
+cause problems.
