@@ -1,127 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab0F1KNV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 06:13:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751398Ab0F1KNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 06:13:18 -0400
-Date: Mon, 28 Jun 2010 13:08:07 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-       Aristeu Rozanski <arozansk@redhat.com>,
-       Herbert Xu <herbert.xu@redhat.com>, Juan Quintela <quintela@redhat.com>,
-       "David S. Miller" <davem@redhat.com>, kvm@vger.kernel.org,
-       virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, ykaul@redhat.com, markmc@redhat.com
-Subject: [PATCHv2] vhost-net: add dhclient work-around from userspace
-Message-ID: <20100628100807.GA30685@redhat.com>
+	id S1752567Ab0F1KOO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 06:14:14 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34454 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab0F1KOL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 06:14:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type
+         :content-transfer-encoding;
+        b=Apa7jg7lihiOGOxiq4EFrq8hQCxk1kiHW5jeOeqAayfpv2OiH9C7HcLag2/vipx8BW
+         fkTiUI62klcwAA8Ggc6WVNvdRTqTA0/GdTTKit0rtCb/j+8IOwe4UKu0tk8x6t2NS2EP
+         XsezCwoSHxXZeGOCuvNiLSl+F5yIsEfwqy6nk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+From: Shihping <c64683@gmail.com>
+Date: Mon, 28 Jun 2010 18:06:55 +0800
+Message-ID: <AANLkTikzAHUU9MK53osJm_sw4tmXFkzz-_ox3pAzjMQg@mail.gmail.com>
+Subject: dmatest:got "__dma_request_channel (fail)" dmesg
+To: linux kernel mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userspace virtio server has the following hack
-so guests rely on it, and we have to replicate it, too:
+Hi,
 
-Use port number to detect incoming IPv4 DHCP response packets,
-and fill in the checksum for these.
+I try to load dmatest module in linux-2.6.34 on Ubuntu x86_64 Server
+system but when I loaded dmatest module, I got
+"__dma_request_channel:fall ((null))"  message.
+It seems unable to allocate DMA channel.
 
-The issue we are solving is that on linux guests, some apps
-that use recvmsg with AF_PACKET sockets, don't know how to
-handle CHECKSUM_PARTIAL;
-The interface to return the relevant information was added
-in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
-and older userspace does not use it.
-One important user of recvmsg with AF_PACKET is dhclient,
-so we add a work-around just for DHCP.
+But I found /proc/dma was registed to cascade mode like # cat /proc/dma
+ 4:cascade
 
-Don't bother applying the hack to IPv6 as userspace virtio does not
-have a work-around for that - let's hope guests will do the right
-thing wrt IPv6.
+So I thought DMA channel should be registed by DMA controller in ICH
+successfully. right?
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+My plaform use Intel E5100(San Clemente) and ICH9R chipset,there were
+2 DMA controller was embedded in ICH9R chip.
+Is dmatest module not work with ICH9R ? or some other reason cause this?
 
-Dave, I'm going to put this patch on the vhost tree,
-no need for you to bother merging it - you'll get
-it with a pull request.
+Sorry about my poor English, and thanks for your answers and responses
 
 
- drivers/vhost/net.c |   44 +++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 43 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index cc19595..03bba6a 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -24,6 +24,10 @@
- #include <linux/if_tun.h>
- #include <linux/if_macvlan.h>
- 
-+#include <linux/ip.h>
-+#include <linux/udp.h>
-+#include <linux/netdevice.h>
-+
- #include <net/sock.h>
- 
- #include "vhost.h"
-@@ -186,6 +190,44 @@ static void handle_tx(struct vhost_net *net)
- 	unuse_mm(net->dev.mm);
- }
- 
-+static int peek_head(struct sock *sk)
-+{
-+	struct sk_buff *skb;
-+
-+	lock_sock(sk);
-+	skb = skb_peek(&sk->sk_receive_queue);
-+	if (unlikely(!skb)) {
-+		release_sock(sk);
-+		return 0;
-+	}
-+	/* Userspace virtio server has the following hack so
-+	 * guests rely on it, and we have to replicate it, too: */
-+	/* Use port number to detect incoming IPv4 DHCP response packets,
-+	 * and fill in the checksum. */
-+
-+	/* The issue we are solving is that on linux guests, some apps
-+	 * that use recvmsg with AF_PACKET sockets, don't know how to
-+	 * handle CHECKSUM_PARTIAL;
-+	 * The interface to return the relevant information was added in
-+	 * 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
-+	 * and older userspace does not use it.
-+	 * One important user of recvmsg with AF_PACKET is dhclient,
-+	 * so we add a work-around just for DHCP. */
-+	if (skb->ip_summed == CHECKSUM_PARTIAL &&
-+	    skb_headlen(skb) >= skb_transport_offset(skb) +
-+				sizeof(struct udphdr) &&
-+	    udp_hdr(skb)->dest == htons(68) &&
-+	    skb_network_header_len(skb) >= sizeof(struct iphdr) &&
-+	    ip_hdr(skb)->protocol == IPPROTO_UDP &&
-+	    skb->protocol == htons(ETH_P_IP)) {
-+		skb_checksum_help(skb);
-+		/* Restore ip_summed value: tun passes it to user. */
-+		skb->ip_summed = CHECKSUM_PARTIAL;
-+	}
-+	release_sock(sk);
-+	return 1;
-+}
-+
- /* Expects to be always run from workqueue - which acts as
-  * read-size critical section for our kind of RCU. */
- static void handle_rx(struct vhost_net *net)
-@@ -222,7 +264,7 @@ static void handle_rx(struct vhost_net *net)
- 	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
- 		vq->log : NULL;
- 
--	for (;;) {
-+	while (peek_head(sock->sk)) {
- 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
- 					 ARRAY_SIZE(vq->iov),
- 					 &out, &in,
--- 
-1.7.1.12.g42b7f
+Shihping Chen
