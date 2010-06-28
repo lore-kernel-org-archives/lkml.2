@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab0F1U7v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 16:59:51 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:41125 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab0F1U7u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 16:59:50 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Przemo Firszt <przemo@firszt.eu>
-Subject: Re: [PATCH] Expose vendor-specific ACM channel on Nokia 5230
-Date: Mon, 28 Jun 2010 22:59:11 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-9-desktop; KDE/4.4.3; x86_64; ; )
-Cc: oliver@neukum.name, gregkh@suse.de, alan@linux.intel.com,
-       francescolavra@interfree.it, julian.calaby@gmail.com,
-       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1277756974-3373-1-git-send-email-przemo@firszt.eu>
-In-Reply-To: <1277756974-3373-1-git-send-email-przemo@firszt.eu>
+	id S1753170Ab0F1VEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 17:04:35 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:48867 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751478Ab0F1VEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 17:04:33 -0400
+Date: Mon, 28 Jun 2010 14:03:42 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] sanitize task->comm to avoid leaking escape codes
+Message-ID: <20100628210342.GW4175@outflux.net>
+References: <20100623181129.GM5876@outflux.net>
+ <20100623194145.GA19628@redhat.com>
+ <20100623202335.GA4424@x200>
+ <20100628130028.73757a46.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006282259.11598.oliver@neukum.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100628130028.73757a46.akpm@linux-foundation.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 28. Juni 2010, 22:29:34 schrieb Przemo Firszt:
-> Nokia S60 phones expose two ACM channels. The first is
-> a modem, the second is 'vendor-specific' but is treated
-> as a serial device at the S60 end, so we want to expose
-> it on Linux too.
-> 
+Hi,
 
-I see. We want to expose it. But do we want to expose it as an acm interface?
+On Mon, Jun 28, 2010 at 01:00:28PM -0700, Andrew Morton wrote:
+> Surely it would be better to fix the tools which display this info
+> rather than making the kernel tell fibs.
 
-	Regards
-		Oliver
+The strncpy in get_task_comm() is totally wrong -- it's testing the length
+of task->comm.  Why should get_task_comm not take a destination buffer
+length argument?  At least consider v2 of the patch -- it just fixes the
+get_task_comm definition and callers.
+
+But, if not, then patches to the kernel that include
+printk(..., get_task_comm(...) ...) shouldn't be considered flawed[1].
+
+-Kees
+
+[1] http://lkml.org/lkml/2010/6/23/132
+
+-- 
+Kees Cook
+Ubuntu Security Team
