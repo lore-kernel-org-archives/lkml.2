@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab0F1Mxf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 08:53:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754493Ab0F1Mxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 08:53:31 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1277621246-10960-6-git-send-email-justinmattock@gmail.com>
-References: <1277621246-10960-6-git-send-email-justinmattock@gmail.com> <1277621246-10960-1-git-send-email-justinmattock@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>,
-       "Gustavo F. Padovan" <gustavo@padovan.org>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, sds@tycho.nsa.gov,
-       lenb@kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH 5/5]bluetooth:hci_bcsp Fix operation on 'bcsp->msgq_txseq' may be undefined
-Date: Mon, 28 Jun 2010 13:52:56 +0100
-Message-ID: <7323.1277729576@redhat.com>
+	id S1754741Ab0F1MyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 08:54:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38012 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456Ab0F1MyJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 08:54:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=a+IPOvcUwi34v4sO2VnJ4Lo466WHcYulACmIQQi6+AsIpAyHyFepmox7x8aq4SMGL0
+         4rK/10GWKEB3VzvndUnGUEuHrvx9TeTrt+1nEHnberAEb/DELi55vjVlSH+5Dwkh3aI6
+         OVIQ7CXwKrzAVnyWkjf6gfXOIiSGzE7Vnv4ZU=
+Date: Mon, 28 Jun 2010 14:52:24 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: trivial@kernel.org, Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Henk de Groot <pe1dnn@amsat.org>,
+       Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/16] trivial: use ARRAY_SIZE
+Message-ID: <20100628125224.GJ19184@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Kulikov Vasiliy <segooon@gmail.com>, trivial@kernel.org,
+	Kernel Janitors <kernel-janitors@vger.kernel.org>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Henk de Groot <pe1dnn@amsat.org>, Joe Perches <joe@perches.com>,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1277726143-24899-1-git-send-email-segooon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277726143-24899-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin P. Mattock <justinmattock@gmail.com> wrote:
+On Mon, Jun 28, 2010 at 03:55:41PM +0400, Kulikov Vasiliy wrote:
+> Change sizeof(x) / sizeof(*x) to ARRAY_SIZE(x).
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  drivers/staging/wlags49_h2/hcf.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/wlags49_h2/hcf.c b/drivers/staging/wlags49_h2/hcf.c
+> index 390628c..c4fe0ec 100644
+> --- a/drivers/staging/wlags49_h2/hcf.c
+> +++ b/drivers/staging/wlags49_h2/hcf.c
+> @@ -502,7 +502,7 @@ HCF_STATIC hcf_16* BASED xxxx[ ] = {
+>  #endif // MSF_COMPONENT_ID
+>  	NULL									//endsentinel
+>    };
+> -#define xxxx_PRI_IDENTITY_OFFSET	(sizeof(xxxx)/sizeof(xxxx[0]) - 3)
+> +#define xxxx_PRI_IDENTITY_OFFSET	(ARRAY_SIZE(xxxx) - 3)
+>  
 
-> -		BT_DBG("Sending packet with seqno %u", bcsp->msgq_txseq);
-> -		bcsp->msgq_txseq = ++(bcsp->msgq_txseq) & 0x07;
-> +		BT_DBG("Sending packet with seqno %u", bcsp->msgq_txseq | ret);
-> +		ret = ++(bcsp->msgq_txseq) & 0x07;
+I would say the more critical problem with this macro is that it doesn't
+work unless you name all your arrays "xxxx[]" so it encourages sub par
+variable names.
 
-I don't know what you're trying to do here, but you seem to be trying to send
-the computed value back in time.
+You could do:
+#define PRI_IDENTITY_OFFSET(x) (ARRAY_SIZE(x) - 3)
 
-The problem is that the compiler is confused about why a '++' operator makes
-any sense here.  It doesn't.  It should be a '+ 1' instead.  I think what you
-want is:
+regards,
+dan carpenter
 
-	-	bcsp->msgq_txseq = ++(bcsp->msgq_txseq) & 0x07;
-	+	bcsp->msgq_txseq = (bcsp->msgq_txseq + 1) & 0x07;
-
-David
