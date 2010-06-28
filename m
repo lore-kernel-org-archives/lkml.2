@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab0F1VIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 17:08:31 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43034 "EHLO hera.kernel.org"
+	id S1755557Ab0F1VHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 17:07:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42969 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755753Ab0F1VI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 17:08:27 -0400
+	id S1755530Ab0F1VHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 17:07:12 -0400
 From: Tejun Heo <tj@kernel.org>
 To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
@@ -13,185 +13,161 @@ To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        oleg@redhat.com, axboe@kernel.dk, fweisbec@gmail.com,
        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
-Cc: Tejun Heo <tj@kernel.org>, Andy Walls <awalls@md.metrocast.net>,
-       ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
-Subject: [PATCH 02/35] ivtv: use kthread_worker instead of workqueue
-Date: Mon, 28 Jun 2010 23:03:50 +0200
-Message-Id: <1277759063-24607-3-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 08/35] workqueue: define masks for work flags and conditionalize STATIC flags
+Date: Mon, 28 Jun 2010 23:03:56 +0200
+Message-Id: <1277759063-24607-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1277759063-24607-1-git-send-email-tj@kernel.org>
 References: <1277759063-24607-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 21:05:01 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 21:05:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Upcoming workqueue updates will no longer guarantee fixed workqueue to
-worker kthread association, so giving RT priority to the irq worker
-won't work.  Use kthread_worker which guarantees specific kthread
-association instead.  This also makes setting the priority cleaner.
+Work flags are about to see more traditional mask handling.  Define
+WORK_STRUCT_*_BIT as the bit position constant and redefine
+WORK_STRUCT_* as bit masks.  Also, make WORK_STRUCT_STATIC_* flags
+conditional
+
+While at it, re-define these constants as enums and use
+WORK_STRUCT_STATIC instead of hard-coding 2 in
+WORK_DATA_STATIC_INIT().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Andy Walls <awalls@md.metrocast.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: ivtv-devel@ivtvdriver.org
-Cc: linux-media@vger.kernel.org
 ---
- drivers/media/video/ivtv/ivtv-driver.c |   26 ++++++++++++++++----------
- drivers/media/video/ivtv/ivtv-driver.h |    8 ++++----
- drivers/media/video/ivtv/ivtv-irq.c    |   15 +++------------
- drivers/media/video/ivtv/ivtv-irq.h    |    2 +-
- 4 files changed, 24 insertions(+), 27 deletions(-)
+ include/linux/workqueue.h |   29 +++++++++++++++++++++--------
+ kernel/workqueue.c        |   12 ++++++------
+ 2 files changed, 27 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/media/video/ivtv/ivtv-driver.c b/drivers/media/video/ivtv/ivtv-driver.c
-index 1b79475..49e0b1c 100644
---- a/drivers/media/video/ivtv/ivtv-driver.c
-+++ b/drivers/media/video/ivtv/ivtv-driver.c
-@@ -695,6 +695,8 @@ done:
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index d89cfc1..d60c570 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -22,12 +22,25 @@ typedef void (*work_func_t)(struct work_struct *work);
   */
- static int __devinit ivtv_init_struct1(struct ivtv *itv)
- {
-+	struct sched_param param = { .sched_priority = 99 };
+ #define work_data_bits(work) ((unsigned long *)(&(work)->data))
+ 
++enum {
++	WORK_STRUCT_PENDING_BIT	= 0,	/* work item is pending execution */
++#ifdef CONFIG_DEBUG_OBJECTS_WORK
++	WORK_STRUCT_STATIC_BIT	= 1,	/* static initializer (debugobjects) */
++#endif
 +
- 	itv->base_addr = pci_resource_start(itv->pdev, 0);
- 	itv->enc_mbox.max_mbox = 2; /* the encoder has 3 mailboxes (0-2) */
- 	itv->dec_mbox.max_mbox = 1; /* the decoder has 2 mailboxes (0-1) */
-@@ -706,13 +708,17 @@ static int __devinit ivtv_init_struct1(struct ivtv *itv)
- 	spin_lock_init(&itv->lock);
- 	spin_lock_init(&itv->dma_reg_lock);
++	WORK_STRUCT_PENDING	= 1 << WORK_STRUCT_PENDING_BIT,
++#ifdef CONFIG_DEBUG_OBJECTS_WORK
++	WORK_STRUCT_STATIC	= 1 << WORK_STRUCT_STATIC_BIT,
++#else
++	WORK_STRUCT_STATIC	= 0,
++#endif
++
++	WORK_STRUCT_FLAG_MASK	= 3UL,
++	WORK_STRUCT_WQ_DATA_MASK = ~WORK_STRUCT_FLAG_MASK,
++};
++
+ struct work_struct {
+ 	atomic_long_t data;
+-#define WORK_STRUCT_PENDING 0		/* T if work item pending execution */
+-#define WORK_STRUCT_STATIC  1		/* static initializer (debugobjects) */
+-#define WORK_STRUCT_FLAG_MASK (3UL)
+-#define WORK_STRUCT_WQ_DATA_MASK (~WORK_STRUCT_FLAG_MASK)
+ 	struct list_head entry;
+ 	work_func_t func;
+ #ifdef CONFIG_LOCKDEP
+@@ -36,7 +49,7 @@ struct work_struct {
+ };
  
--	itv->irq_work_queues = create_singlethread_workqueue(itv->v4l2_dev.name);
--	if (itv->irq_work_queues == NULL) {
--		IVTV_ERR("Could not create ivtv workqueue\n");
-+	init_kthread_worker(&itv->irq_worker);
-+	itv->irq_worker_task = kthread_run(kthread_worker_fn, &itv->irq_worker,
-+					   itv->v4l2_dev.name);
-+	if (IS_ERR(itv->irq_worker_task)) {
-+		IVTV_ERR("Could not create ivtv task\n");
- 		return -1;
- 	}
-+	/* must use the FIFO scheduler as it is realtime sensitive */
-+	sched_setscheduler(itv->irq_worker_task, SCHED_FIFO, &param);
+ #define WORK_DATA_INIT()	ATOMIC_LONG_INIT(0)
+-#define WORK_DATA_STATIC_INIT()	ATOMIC_LONG_INIT(2)
++#define WORK_DATA_STATIC_INIT()	ATOMIC_LONG_INIT(WORK_STRUCT_STATIC)
  
--	INIT_WORK(&itv->irq_work_queue, ivtv_irq_work_handler);
-+	init_kthread_work(&itv->irq_work, ivtv_irq_work_handler);
+ struct delayed_work {
+ 	struct work_struct work;
+@@ -98,7 +111,7 @@ extern void __init_work(struct work_struct *work, int onstack);
+ extern void destroy_work_on_stack(struct work_struct *work);
+ static inline unsigned int work_static(struct work_struct *work)
+ {
+-	return *work_data_bits(work) & (1 << WORK_STRUCT_STATIC);
++	return *work_data_bits(work) & WORK_STRUCT_STATIC;
+ }
+ #else
+ static inline void __init_work(struct work_struct *work, int onstack) { }
+@@ -167,7 +180,7 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
+  * @work: The work item in question
+  */
+ #define work_pending(work) \
+-	test_bit(WORK_STRUCT_PENDING, work_data_bits(work))
++	test_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))
  
- 	/* start counting open_id at 1 */
- 	itv->open_id = 1;
-@@ -996,7 +1002,7 @@ static int __devinit ivtv_probe(struct pci_dev *pdev,
- 	/* PCI Device Setup */
- 	retval = ivtv_setup_pci(itv, pdev, pci_id);
- 	if (retval == -EIO)
--		goto free_workqueue;
-+		goto free_worker;
- 	if (retval == -ENXIO)
- 		goto free_mem;
+ /**
+  * delayed_work_pending - Find out whether a delayable work item is currently
+@@ -182,7 +195,7 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
+  * @work: The work item in question
+  */
+ #define work_clear_pending(work) \
+-	clear_bit(WORK_STRUCT_PENDING, work_data_bits(work))
++	clear_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))
  
-@@ -1208,8 +1214,8 @@ free_mem:
- 	release_mem_region(itv->base_addr + IVTV_REG_OFFSET, IVTV_REG_SIZE);
- 	if (itv->has_cx23415)
- 		release_mem_region(itv->base_addr + IVTV_DECODER_OFFSET, IVTV_DECODER_SIZE);
--free_workqueue:
--	destroy_workqueue(itv->irq_work_queues);
-+free_worker:
-+	kthread_stop(itv->irq_worker_task);
- err:
- 	if (retval == 0)
- 		retval = -ENODEV;
-@@ -1353,9 +1359,9 @@ static void ivtv_remove(struct pci_dev *pdev)
- 	ivtv_set_irq_mask(itv, 0xffffffff);
- 	del_timer_sync(&itv->dma_timer);
+ enum {
+ 	WQ_FREEZEABLE		= 1 << 0, /* freeze during suspend */
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 68e4dd8..5c49d76 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -115,7 +115,7 @@ static int work_fixup_activate(void *addr, enum debug_obj_state state)
+ 		 * statically initialized. We just make sure that it
+ 		 * is tracked in the object tracker.
+ 		 */
+-		if (test_bit(WORK_STRUCT_STATIC, work_data_bits(work))) {
++		if (test_bit(WORK_STRUCT_STATIC_BIT, work_data_bits(work))) {
+ 			debug_object_init(work, &work_debug_descr);
+ 			debug_object_activate(work, &work_debug_descr);
+ 			return 0;
+@@ -232,7 +232,7 @@ static inline void set_wq_data(struct work_struct *work,
+ 	BUG_ON(!work_pending(work));
  
--	/* Stop all Work Queues */
--	flush_workqueue(itv->irq_work_queues);
--	destroy_workqueue(itv->irq_work_queues);
-+	/* Kill irq worker */
-+	flush_kthread_worker(&itv->irq_worker);
-+	kthread_stop(itv->irq_worker_task);
- 
- 	ivtv_streams_cleanup(itv, 1);
- 	ivtv_udma_free(itv);
-diff --git a/drivers/media/video/ivtv/ivtv-driver.h b/drivers/media/video/ivtv/ivtv-driver.h
-index 5b45fd2..51f7f2a 100644
---- a/drivers/media/video/ivtv/ivtv-driver.h
-+++ b/drivers/media/video/ivtv/ivtv-driver.h
-@@ -51,7 +51,7 @@
- #include <linux/unistd.h>
- #include <linux/pagemap.h>
- #include <linux/scatterlist.h>
--#include <linux/workqueue.h>
-+#include <linux/kthread.h>
- #include <linux/mutex.h>
- #include <linux/slab.h>
- #include <asm/uaccess.h>
-@@ -257,7 +257,6 @@ struct ivtv_mailbox_data {
- #define IVTV_F_I_DEC_PAUSED	   20 	/* the decoder is paused */
- #define IVTV_F_I_INITED		   21 	/* set after first open */
- #define IVTV_F_I_FAILED		   22 	/* set if first open failed */
--#define IVTV_F_I_WORK_INITED       23	/* worker thread was initialized */
- 
- /* Event notifications */
- #define IVTV_F_I_EV_DEC_STOPPED	   28	/* decoder stopped event */
-@@ -663,8 +662,9 @@ struct ivtv {
- 	/* Interrupts & DMA */
- 	u32 irqmask;                    /* active interrupts */
- 	u32 irq_rr_idx;                 /* round-robin stream index */
--	struct workqueue_struct *irq_work_queues;       /* workqueue for PIO/YUV/VBI actions */
--	struct work_struct irq_work_queue;              /* work entry */
-+	struct kthread_worker irq_worker;		/* kthread worker for PIO/YUV/VBI actions */
-+	struct task_struct *irq_worker_task;		/* task for irq_worker */
-+	struct kthread_work irq_work;	/* kthread work entry */
- 	spinlock_t dma_reg_lock;        /* lock access to DMA engine registers */
- 	int cur_dma_stream;		/* index of current stream doing DMA (-1 if none) */
- 	int cur_pio_stream;		/* index of current stream doing PIO (-1 if none) */
-diff --git a/drivers/media/video/ivtv/ivtv-irq.c b/drivers/media/video/ivtv/ivtv-irq.c
-index fea1ec3..9b4faf0 100644
---- a/drivers/media/video/ivtv/ivtv-irq.c
-+++ b/drivers/media/video/ivtv/ivtv-irq.c
-@@ -71,19 +71,10 @@ static void ivtv_pio_work_handler(struct ivtv *itv)
- 	write_reg(IVTV_IRQ_ENC_PIO_COMPLETE, 0x44);
+ 	atomic_long_set(&work->data, (unsigned long)cwq | work_static(work) |
+-			(1UL << WORK_STRUCT_PENDING) | extra_flags);
++			WORK_STRUCT_PENDING | extra_flags);
  }
  
--void ivtv_irq_work_handler(struct work_struct *work)
-+void ivtv_irq_work_handler(struct kthread_work *work)
+ /*
+@@ -330,7 +330,7 @@ queue_work_on(int cpu, struct workqueue_struct *wq, struct work_struct *work)
  {
--	struct ivtv *itv = container_of(work, struct ivtv, irq_work_queue);
-+	struct ivtv *itv = container_of(work, struct ivtv, irq_work);
+ 	int ret = 0;
  
--	DEFINE_WAIT(wait);
--
--	if (test_and_clear_bit(IVTV_F_I_WORK_INITED, &itv->i_flags)) {
--		struct sched_param param = { .sched_priority = 99 };
--
--		/* This thread must use the FIFO scheduler as it
--		   is realtime sensitive. */
--		sched_setscheduler(current, SCHED_FIFO, &param);
--	}
- 	if (test_and_clear_bit(IVTV_F_I_WORK_HANDLER_PIO, &itv->i_flags))
- 		ivtv_pio_work_handler(itv);
- 
-@@ -975,7 +966,7 @@ irqreturn_t ivtv_irq_handler(int irq, void *dev_id)
+-	if (!test_and_set_bit(WORK_STRUCT_PENDING, work_data_bits(work))) {
++	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
+ 		__queue_work(cpu, wq, work);
+ 		ret = 1;
  	}
+@@ -380,7 +380,7 @@ int queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
+ 	struct timer_list *timer = &dwork->timer;
+ 	struct work_struct *work = &dwork->work;
  
- 	if (test_and_clear_bit(IVTV_F_I_HAVE_WORK, &itv->i_flags)) {
--		queue_work(itv->irq_work_queues, &itv->irq_work_queue);
-+		queue_kthread_work(&itv->irq_worker, &itv->irq_work);
- 	}
+-	if (!test_and_set_bit(WORK_STRUCT_PENDING, work_data_bits(work))) {
++	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
+ 		BUG_ON(timer_pending(timer));
+ 		BUG_ON(!list_empty(&work->entry));
  
- 	spin_unlock(&itv->dma_reg_lock);
-diff --git a/drivers/media/video/ivtv/ivtv-irq.h b/drivers/media/video/ivtv/ivtv-irq.h
-index f879a58..1e84433 100644
---- a/drivers/media/video/ivtv/ivtv-irq.h
-+++ b/drivers/media/video/ivtv/ivtv-irq.h
-@@ -46,7 +46,7 @@
+@@ -516,7 +516,7 @@ static void insert_wq_barrier(struct cpu_workqueue_struct *cwq,
+ 	 * might deadlock.
+ 	 */
+ 	INIT_WORK_ON_STACK(&barr->work, wq_barrier_func);
+-	__set_bit(WORK_STRUCT_PENDING, work_data_bits(&barr->work));
++	__set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(&barr->work));
+ 	init_completion(&barr->done);
  
- irqreturn_t ivtv_irq_handler(int irq, void *dev_id);
+ 	debug_work_activate(&barr->work);
+@@ -628,7 +628,7 @@ static int try_to_grab_pending(struct work_struct *work)
+ 	struct cpu_workqueue_struct *cwq;
+ 	int ret = -1;
  
--void ivtv_irq_work_handler(struct work_struct *work);
-+void ivtv_irq_work_handler(struct kthread_work *work);
- void ivtv_dma_stream_dec_prepare(struct ivtv_stream *s, u32 offset, int lock);
- void ivtv_unfinished_dma(unsigned long arg);
+-	if (!test_and_set_bit(WORK_STRUCT_PENDING, work_data_bits(work)))
++	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work)))
+ 		return 0;
  
+ 	/*
 -- 
 1.6.4.2
 
