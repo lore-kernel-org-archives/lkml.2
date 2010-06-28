@@ -1,147 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795Ab0F1XR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 19:17:56 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31984 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab0F1XRy (ORCPT
+	id S1752345Ab0F1XSP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 19:18:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35559 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072Ab0F1XSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 19:17:54 -0400
-Message-ID: <4C292D3A.5000208@oracle.com>
-Date: Tue, 29 Jun 2010 07:16:10 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+	Mon, 28 Jun 2010 19:18:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gklXZZ6uQrLmjwNRtRR9GkLmyrw46+6pQNHUyqPBReNNJn+I3jdXns6sx67uuixJCE
+         9o+E74hm7gNulAEPX2BzUVNMkykA/Qb1+KfK5D4grndkXveM8/8X9h1RUuJnbVbt8/vH
+         oQRPKMpEEWdbAJ8h9M735aWf2Ci99cAImQauU=
+Date: Tue, 29 Jun 2010 01:18:14 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       oleg@redhat.com, axboe@kernel.dk, dwalker@codeaurora.org,
+       stefanr@s5r6.in-berlin.de, florian@mickler.org, andi@firstfloor.org,
+       mst@redhat.com, randy.dunlap@oracle.com
+Subject: Re: [PATCHSET] workqueue: concurrency managed workqueue, take#6
+Message-ID: <20100628231812.GC10104@nowhere>
+References: <1277759063-24607-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org,
-       "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
-Subject: Re: [PATCH 0/3 v5][RFC] ext3/4: enhance fsync performance when using
- CFQ
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>	<4C21D442.8080703@oracle.com> <4C22F316.3080009@oracle.com>	<x49k4pk60ye.fsf@segfault.boston.devel.redhat.com>	<4C284419.3000905@oracle.com> <x49hbknfeck.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49hbknfeck.fsf@segfault.boston.devel.redhat.com>
-Content-Type: multipart/mixed;
- boundary="------------030201010505030509040900"
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4C292D93.015E:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277759063-24607-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030201010505030509040900
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Mon, Jun 28, 2010 at 11:03:48PM +0200, Tejun Heo wrote:
+> B. General documentation of Concurrency Managed Workqueue (cmwq)
+> ================================================================
 
-Jeff Moyer wrote:
-> Tao Ma <tao.ma@oracle.com> writes:
->
->   
->> btw, I also met with a NULL pointer deference in cfq_yield. I have
->> attached the null.log also. This seems to be related to the previous
->> deadlock and happens when I try to remount the same volume after
->> reboot and ocfs2 try to do some recovery.
->>     
->
-> Since I can't reproduce your binary kernel even with your .config, could
-> you send me the disassembly of the cfq_yield function from your vmlinux
-> binary?
->   
-no problem. I have attached it.
-btw, if you have any debug patch, I am happy to run it to make the 
-problem more clear to you.
 
-Regards,
-Tao
+It would be nice to get this in Documentation/workqueue-design.txt,
+as the design is complicated enough to deserve this file :)
 
---------------030201010505030509040900
-Content-Type: text/plain;
- name="cfq_yield.txt"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="cfq_yield.txt"
 
-ffffffff821614d8 <cfq_yield>:
-ffffffff821614d8:	41 56                	push   %r14
-ffffffff821614da:	41 55                	push   %r13
-ffffffff821614dc:	49 89 fd             	mov    %rdi,%r13
-ffffffff821614df:	41 54                	push   %r12
-ffffffff821614e1:	55                   	push   %rbp
-ffffffff821614e2:	48 89 f5             	mov    %rsi,%rbp
-ffffffff821614e5:	53                   	push   %rbx
-ffffffff821614e6:	48 8b 47 18          	mov    0x18(%rdi),%rax
-ffffffff821614ea:	4c 8b 60 08          	mov    0x8(%rax),%r12
-ffffffff821614ee:	65 48 8b 04 25 40 b5 	mov    %gs:0xb540,%rax
-ffffffff821614f5:	00 00 
-ffffffff821614f7:	48 8b b0 00 06 00 00 	mov    0x600(%rax),%rsi
-ffffffff821614fe:	4c 89 e7             	mov    %r12,%rdi
-ffffffff82161501:	e8 90 eb ff ff       	callq  ffffffff82160096 <cfq_cic_lookup>
-ffffffff82161506:	48 85 c0             	test   %rax,%rax
-ffffffff82161509:	48 89 c3             	mov    %rax,%rbx
-ffffffff8216150c:	0f 84 f2 00 00 00    	je     ffffffff82161604 <cfq_yield+0x12c>
-ffffffff82161512:	48 8d bd a0 05 00 00 	lea    0x5a0(%rbp),%rdi
-ffffffff82161519:	e8 ab ba 19 00       	callq  ffffffff822fcfc9 <_raw_spin_lock>
-ffffffff8216151e:	48 8b b5 00 06 00 00 	mov    0x600(%rbp),%rsi
-ffffffff82161525:	4c 89 e7             	mov    %r12,%rdi
-ffffffff82161528:	e8 69 eb ff ff       	callq  ffffffff82160096 <cfq_cic_lookup>
-ffffffff8216152d:	49 89 c6             	mov    %rax,%r14
-ffffffff82161530:	48 8b 85 00 06 00 00 	mov    0x600(%rbp),%rax
-ffffffff82161537:	f0 48 ff 00          	lock incq (%rax)
-ffffffff8216153b:	fe 85 a0 05 00 00    	incb   0x5a0(%rbp)
-ffffffff82161541:	4d 85 f6             	test   %r14,%r14
-ffffffff82161544:	0f 84 a6 00 00 00    	je     ffffffff821615f0 <cfq_yield+0x118>
-ffffffff8216154a:	49 8b bd 48 03 00 00 	mov    0x348(%r13),%rdi
-ffffffff82161551:	e8 a0 ba 19 00       	callq  ffffffff822fcff6 <_raw_spin_lock_irq>
-ffffffff82161556:	48 8b 5b 10          	mov    0x10(%rbx),%rbx
-ffffffff8216155a:	48 85 db             	test   %rbx,%rbx
-ffffffff8216155d:	0f 84 83 00 00 00    	je     ffffffff821615e6 <cfq_yield+0x10e>
-ffffffff82161563:	49 39 9c 24 68 03 00 	cmp    %rbx,0x368(%r12)
-ffffffff8216156a:	00 
-ffffffff8216156b:	75 41                	jne    ffffffff821615ae <cfq_yield+0xd6>
-ffffffff8216156d:	41 83 bc 24 54 02 00 	cmpl   $0x1,0x254(%r12)
-ffffffff82161574:	00 01 
-ffffffff82161576:	75 36                	jne    ffffffff821615ae <cfq_yield+0xd6>
-ffffffff82161578:	48 8b 83 d0 00 00 00 	mov    0xd0(%rbx),%rax
-ffffffff8216157f:	8b 70 38             	mov    0x38(%rax),%esi
-ffffffff82161582:	83 fe ff             	cmp    $0xffffffffffffffff,%esi
-ffffffff82161585:	74 27                	je     ffffffff821615ae <cfq_yield+0xd6>
-ffffffff82161587:	48 8b 48 30          	mov    0x30(%rax),%rcx
-ffffffff8216158b:	48 85 c9             	test   %rcx,%rcx
-ffffffff8216158e:	74 1e                	je     ffffffff821615ae <cfq_yield+0xd6>
-ffffffff82161590:	48 63 05 4d f2 5d 00 	movslq 6156877(%rip),%rax        # ffffffff827407e4 <cfq_slice_idle>
-ffffffff82161597:	48 8b 15 e2 42 63 00 	mov    6505186(%rip),%rdx        # ffffffff82795880 <jiffies>
-ffffffff8216159e:	48 01 c8             	add    %rcx,%rax
-ffffffff821615a1:	48 39 d0             	cmp    %rdx,%rax
-ffffffff821615a4:	79 08                	jns    ffffffff821615ae <cfq_yield+0xd6>
-ffffffff821615a6:	3b b3 c0 00 00 00    	cmp    0xc0(%rbx),%esi
-ffffffff821615ac:	75 38                	jne    ffffffff821615e6 <cfq_yield+0x10e>
-ffffffff821615ae:	49 8b 04 24          	mov    (%r12),%rax
-ffffffff821615b2:	48 8b b8 80 04 00 00 	mov    0x480(%rax),%rdi
-ffffffff821615b9:	48 85 ff             	test   %rdi,%rdi
-ffffffff821615bc:	74 1a                	je     ffffffff821615d8 <cfq_yield+0x100>
-ffffffff821615be:	8b 8d 68 02 00 00    	mov    0x268(%rbp),%ecx
-ffffffff821615c4:	8b 93 c0 00 00 00    	mov    0xc0(%rbx),%edx
-ffffffff821615ca:	48 c7 c6 1d 8c 55 82 	mov    $0xffffffff82558c1d,%rsi
-ffffffff821615d1:	31 c0                	xor    %eax,%eax
-ffffffff821615d3:	e8 a1 07 f2 ff       	callq  ffffffff82081d79 <__trace_note_message>
-ffffffff821615d8:	81 4b 04 00 20 00 00 	orl    $0x2000,0x4(%rbx)
-ffffffff821615df:	4c 89 b3 f0 00 00 00 	mov    %r14,0xf0(%rbx)
-ffffffff821615e6:	49 8b 85 48 03 00 00 	mov    0x348(%r13),%rax
-ffffffff821615ed:	fe 00                	incb   (%rax)
-ffffffff821615ef:	fb                   	sti    
-ffffffff821615f0:	5b                   	pop    %rbx
-ffffffff821615f1:	48 8b bd 00 06 00 00 	mov    0x600(%rbp),%rdi
-ffffffff821615f8:	5d                   	pop    %rbp
-ffffffff821615f9:	41 5c                	pop    %r12
-ffffffff821615fb:	41 5d                	pop    %r13
-ffffffff821615fd:	41 5e                	pop    %r14
-ffffffff821615ff:	e9 51 8b ff ff       	jmpq   ffffffff8215a155 <put_io_context>
-ffffffff82161604:	5b                   	pop    %rbx
-ffffffff82161605:	5d                   	pop    %rbp
-ffffffff82161606:	41 5c                	pop    %r12
-ffffffff82161608:	41 5d                	pop    %r13
-ffffffff8216160a:	41 5e                	pop    %r14
-ffffffff8216160c:	c3                   	retq   
 
---------------030201010505030509040900--
+> == B-4. Concurrency managed shared worker pool
+> 
+> For any worker pool, managing the concurrency level (how many workers
+> are executing simultaneously) is an important issue.  cmwq tries to
+> keep the concurrency at minimal but sufficient level.
+> 
+> Concurrency management is implemented by hooking into the scheduler.
+> The gcwq is notified whenever a busy worker wakes up or sleeps and
+> keeps track of the level of concurrency.  Generally, works aren't
+> supposed to be cpu cycle hogs and maintaining just enough concurrency
+> to prevent work processing from stalling is optimal.  As long as
+> there's one or more workers running on the cpu, no new worker is
+> scheduled, but, when the last running worker blocks, the gcwq
+> immediately schedules a new worker so that the cpu doesn't sit idle
+> while there are pending works.
+> 
+> This allows using minimal number of workers without losing execution
+> bandwidth.  Keeping idle workers around doesn't cost other than the
+> memory space for kthreads, so cmwq holds onto idle ones for a while
+> before killing them.
+> 
+> As multiple execution contexts are available for each wq, deadlocks
+> around execution contexts is much harder to create.  The default wq,
+> system_wq, has maximum concurrency level of 256 and unless there is a
+> scenario which can result in a dependency loop involving more than 254
+> workers, it won't deadlock.
+
+
+
+Why this arbitrary limitation?
+
+Thanks.
+
