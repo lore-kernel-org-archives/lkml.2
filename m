@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab0F1Lz6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 07:55:58 -0400
+	id S1753061Ab0F1Lzb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 07:55:31 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:48266 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272Ab0F1Lzq (ORCPT
+	with ESMTP id S1753868Ab0F1LzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 07:55:46 -0400
+	Mon, 28 Jun 2010 07:55:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=PxUXMpJ2MRtY6T8HxutDvNOOg+hmeiubvwtiSJ8KFyv43vtredCCLj1fUS8kui1NnU
-         KHbt5X/s1qrKRv72IZUGCYA9cZXjQeDVas0FIGI7FU7pYPy0EChQ1ILfRRCjMywjAeow
-         1KbAaxQrz/TyZg6xSXJMw4jiVuSLTKiHST7dU=
+        b=melmbZYv1t22pdJeUz37O9oJKUT/+oflrNPaT6rjeXZLUZFv68xwYAjLjpJ1iqp29Q
+         MH4GWqNHHCkXy9fbbOxQ+UweAh3IkaXNX3rxrRSRkf009h9cc0ASrO6+vvNnrbJwTRi8
+         NBAZNAskde1QYiPjHsKbsp0tTgGuPENOplOZk=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: trivial@kernel.org
 Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
        Greg Kroah-Hartman <gregkh@suse.de>,
-       Kulikov Vasiliy <segooon@gmail.com>, Henk de Groot <pe1dnn@amsat.org>,
-       Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 15/16] trivial: use ARRAY_SIZE
-Date: Mon, 28 Jun 2010 15:55:41 +0400
-Message-Id: <1277726143-24899-1-git-send-email-segooon@gmail.com>
+       Kulikov Vasiliy <segooon@gmail.com>, Simon Horman <horms@verge.net.au>,
+       Julia Lawall <julia@diku.dk>, Joe Perches <joe@perches.com>,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/16] trivial: use ARRAY_SIZE
+Date: Mon, 28 Jun 2010 15:55:20 +0400
+Message-Id: <1277726121-24732-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,22 +32,104 @@ Change sizeof(x) / sizeof(*x) to ARRAY_SIZE(x).
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/staging/wlags49_h2/hcf.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/otus/hal/hpmain.c |   28 ++++++++++------------------
+ 1 files changed, 10 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/staging/wlags49_h2/hcf.c b/drivers/staging/wlags49_h2/hcf.c
-index 390628c..c4fe0ec 100644
---- a/drivers/staging/wlags49_h2/hcf.c
-+++ b/drivers/staging/wlags49_h2/hcf.c
-@@ -502,7 +502,7 @@ HCF_STATIC hcf_16* BASED xxxx[ ] = {
- #endif // MSF_COMPONENT_ID
- 	NULL									//endsentinel
-   };
--#define xxxx_PRI_IDENTITY_OFFSET	(sizeof(xxxx)/sizeof(xxxx[0]) - 3)
-+#define xxxx_PRI_IDENTITY_OFFSET	(ARRAY_SIZE(xxxx) - 3)
+diff --git a/drivers/staging/otus/hal/hpmain.c b/drivers/staging/otus/hal/hpmain.c
+index 5f412e0..6d2d358 100644
+--- a/drivers/staging/otus/hal/hpmain.c
++++ b/drivers/staging/otus/hal/hpmain.c
+@@ -430,7 +430,7 @@ void zfInitPhy(zdev_t* dev,  u32_t frequency, u8_t bw40)
+      * Register setting by mode
+      */
  
- #endif // MSF_COMPONENT_ID / HCF_EXT_MB
+-    entries = sizeof(ar5416Modes) / sizeof(*ar5416Modes);
++    entries = ARRAY_SIZE(ar5416Modes);
+     zm_msg1_scan(ZM_LV_2, "Modes register setting entries=", entries);
+     for (i=0; i<entries; i++)
+     {
+@@ -496,7 +496,7 @@ void zfInitPhy(zdev_t* dev,  u32_t frequency, u8_t bw40)
+     /*
+      * Common Register setting
+      */
+-    entries = sizeof(ar5416Common) / sizeof(*ar5416Common);
++    entries = ARRAY_SIZE(ar5416Common);
+     for (i=0; i<entries; i++)
+     {
+         reg_write(ar5416Common[i][0], ar5416Common[i][1]);
+@@ -506,7 +506,7 @@ void zfInitPhy(zdev_t* dev,  u32_t frequency, u8_t bw40)
+     /*
+      * RF Gain setting by freqIndex
+      */
+-    entries = sizeof(ar5416BB_RfGain) / sizeof(*ar5416BB_RfGain);
++    entries = ARRAY_SIZE(ar5416BB_RfGain);
+     for (i=0; i<entries; i++)
+     {
+         reg_write(ar5416BB_RfGain[i][0], ar5416BB_RfGain[i][freqIndex]);
+@@ -963,7 +963,6 @@ u32_t reverse_bits(u32_t chan_sel)
+ /* Bank 0 1 2 3 5 6 7 */
+ void zfSetRfRegs(zdev_t* dev, u32_t frequency)
+ {
+-    u16_t entries;
+     u16_t freqIndex = 0;
+     u16_t i;
  
+@@ -984,33 +983,28 @@ void zfSetRfRegs(zdev_t* dev, u32_t frequency)
+     }
+ 
+ #if 1
+-    entries = sizeof(otusBank) / sizeof(*otusBank);
+-    for (i=0; i<entries; i++)
++    for (i=0; i<ARRAY_SIZE(otusBank); i++)
+     {
+         reg_write(otusBank[i][0], otusBank[i][freqIndex]);
+     }
+ #else
+     /* Bank0 */
+-    entries = sizeof(ar5416Bank0) / sizeof(*ar5416Bank0);
+-    for (i=0; i<entries; i++)
++    for (i=0; i<ARRAY_SIZE(ar5416Bank0); i++)
+     {
+         reg_write(ar5416Bank0[i][0], ar5416Bank0[i][1]);
+     }
+     /* Bank1 */
+-    entries = sizeof(ar5416Bank1) / sizeof(*ar5416Bank1);
+-    for (i=0; i<entries; i++)
++    for (i=0; i<ARRAY_SIZE(ar5416Bank1); i++)
+     {
+         reg_write(ar5416Bank1[i][0], ar5416Bank1[i][1]);
+     }
+     /* Bank2 */
+-    entries = sizeof(ar5416Bank2) / sizeof(*ar5416Bank2);
+-    for (i=0; i<entries; i++)
++    for (i=0; i<ARRAY_SIZE(ar5416Bank2); i++)
+     {
+         reg_write(ar5416Bank2[i][0], ar5416Bank2[i][1]);
+     }
+     /* Bank3 */
+-    entries = sizeof(ar5416Bank3) / sizeof(*ar5416Bank3);
+-    for (i=0; i<entries; i++)
++    for (i=0; i<ARRAY_SIZE(ar5416Bank3); i++)
+     {
+         reg_write(ar5416Bank3[i][0], ar5416Bank3[i][freqIndex]);
+     }
+@@ -1018,14 +1012,12 @@ void zfSetRfRegs(zdev_t* dev, u32_t frequency)
+     reg_write (0x98b0,  0x00000013);
+     reg_write (0x98e4,  0x00000002);
+     /* Bank6 */
+-    entries = sizeof(ar5416Bank6) / sizeof(*ar5416Bank6);
+-    for (i=0; i<entries; i++)
++    for (i=0; i<ARRAY_SIZE(ar5416Bank6); i++)
+     {
+         reg_write(ar5416Bank6[i][0], ar5416Bank6[i][freqIndex]);
+     }
+     /* Bank7 */
+-    entries = sizeof(ar5416Bank7) / sizeof(*ar5416Bank7);
+-    for (i=0; i<entries; i++)
++    for (i=0; i<ARRAY_SIZE(ar5416Bank7); i++)
+     {
+         reg_write(ar5416Bank7[i][0], ar5416Bank7[i][1]);
+     }
 -- 
 1.7.0.4
 
