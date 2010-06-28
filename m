@@ -1,129 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab0F1Grf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 02:47:35 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:40084 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab0F1Grb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 02:47:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Sx9hfl6IPPoPA+4EZlX7AUf9EzYBH63JQiw6L5KzBeYoMzLQrG6e+1wf9NodKNwzgt
-         bquNAq2NOhSegY93wCPPR2i0rRQv/JowVcGHk0tvbOzR+11lnocY31ljZrEjYlFUzNZv
-         qrB8u0sAoi4EEWnbeVFdRHVl2ixk+vuxDLiuU=
-From: Raffaele Recalcati <lamiaposta71@gmail.com>
-To: davinci-linux-open-source@linux.davincidsp.com
-Cc: Raffaele Recalcati <raffaele.recalcati@bticino.it>,
-       Davide Bonfanti <davide.bonfanti@bticino.it>,
-       Russell King <linux@arm.linux.org.uk>,
-       Sandeep Paulraj <s-paulraj@ti.com>, Cyril Chemparathy <cyril@ti.com>,
-       Miguel Aguilar <miguel.aguilar@ridgerun.com>,
-       Thomas Koeller <thomas.koeller@baslerweb.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       Philby John <pjohn@in.mvista.com>,
-       Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       spi-devel-general@lists.sourceforge.net
-Subject: [PATCH] spi: davinci: Added support for chip select using gpio
-Date: Mon, 28 Jun 2010 08:47:35 +0200
-Message-Id: <1277707655-3468-1-git-send-email-lamiaposta71@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754769Ab0F1HDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 03:03:16 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49591 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753911Ab0F1HDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 03:03:14 -0400
+Message-ID: <4C284931.2000908@fusionio.com>
+Date: Mon, 28 Jun 2010 09:03:13 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Mark Lord <kernel@teksavvy.com>
+CC: Brian Bloniarz <bmb@athenacr.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>
+Subject: Re: [GIT PULL] block/io bits for 2.6.35-rc
+References: <4C10EC2A.8060002@fusionio.com> <AANLkTimus1Ajk-6HyDtZBmsYwQjkAf3zW-dvxNJlSlGw@mail.gmail.com> <4C1111ED.6020008@fusionio.com> <4C111685.8010400@athenacr.com> <4C27DA4A.3040708@teksavvy.com>
+In-Reply-To: <4C27DA4A.3040708@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raffaele Recalcati <raffaele.recalcati@bticino.it>
+On 2010-06-28 01:10, Mark Lord wrote:
+> On 10/06/10 12:44 PM, Brian Bloniarz wrote:
+>> On 06/10/2010 12:25 PM, Jens Axboe wrote:
+>>> On 2010-06-10 17:55, Linus Torvalds wrote:
+>>>> On Thu, Jun 10, 2010 at 6:44 AM, Jens Axboe<jaxboe@fusionio.com>  wrote:
+>>>>>
+>>>>> - A set of patches fixing the WB_SYNC_NONE writeback from Christoph. So
+>>>>>   we should finally have both functional and working WB_SYNC_NONE from
+>>>>>   umount context.
+>>>>
+>>>> I _really_ think this is too late, considering how broken it has been.
+>>>> We already reverted the WB_SYNC_NONE things exactly because it didn't
+>>>> work, didn't we? I'm going to be off-line in two days, and this part
+>>>> of the pull request really makes me nervous, if only simply because of
+>>>> the history of it all (ie it's always been broken, why shouldn't it be
+>>>> broken now?).
+>>>>
+>>>> IOW, that's a lot of scary changes, that have historically not been
+>>>> safe or sufficiently tested, and have caused problems for various
+>>>> filesystems. Convince me why they should suddenly be ok to merge?
+>>>
+>>> I agree, it's late and it makes me nervous too. I had them cook for
+>>> a day, didn't see any problems. And Christoph would not send it in
+>>> unless it passes at least xfs qa, which is what found the problems
+>>> last time (the ones we reverted).
+>>>
+>>> It's fixing a regression where umount takes a LONG time if you have
+>>> a lot of dirty inodes, since it basically degenerates to a data
+>>> integrity writeback instead of a simple WB_SYNC_NONE. If it wasn't
+>>> fixing a nasty regression (the distros are all wanting a real fix
+>>> for this, it's a user problem), I would not be submitting this code
+>>> at this point in time.
+>>>
+>>
+>> Reinforcing that last point: from what I could figure out, Fedora 13
+>> is shipping the buggy WB_SYNC_NONE patch currently. Ubuntu 10.04 is
+>> shipping an in-kernel workaround that has serious performance
+>> drawbacks.
+>>
+>> https://bugzilla.kernel.org/show_bug.cgi?id=15906 has links to the
+>> downstream bugs.
+> ..
+> 
+> Jens, this bug has been biting my servers badly here for the past
+> few months -- umount after a backup (from ext4 to ext4) takes 3-4 minutes
+> instead of the expected 3-4 seconds.
+> 
+> Is there a patch file for this against 2.6.34 that I (and others) could use?
 
-    It is not everytime possible, due to hardware constraints,
-    to use the hw chip select available on spi port.
-    So I add this possibility using a gpio as chip select.
-    If controller_data variable is not null it is
-    the gpio to be used as chip select.
-    The default case is compatible with evmdm365.
-    This patch has been developed against the
-    http://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git
-    git tree and has been tested on bmx board (similar to dm365 evm but with
-    gpio as spi chip select).
+It's the patch series from Christoph in my for-linus branch, I intend
+to push it upstream when Linus is back and taking patches.
 
-Signed-off-by: Raffaele Recalcati <raffaele.recalcati@bticino.it>
-Signed-off-by: Davide Bonfanti <davide.bonfanti@bticino.it>
----
- arch/arm/mach-davinci/dm365.c |   10 ++++++----
- drivers/spi/davinci_spi.c     |   27 ++++++++++++++++++---------
- 2 files changed, 24 insertions(+), 13 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
-index a146849..42fd4a4 100644
---- a/arch/arm/mach-davinci/dm365.c
-+++ b/arch/arm/mach-davinci/dm365.c
-@@ -677,10 +677,12 @@ void __init dm365_init_spi0(unsigned chipselect_mask,
- 	davinci_cfg_reg(DM365_SPI0_SDO);
- 
- 	/* not all slaves will be wired up */
--	if (chipselect_mask & BIT(0))
--		davinci_cfg_reg(DM365_SPI0_SDENA0);
--	if (chipselect_mask & BIT(1))
--		davinci_cfg_reg(DM365_SPI0_SDENA1);
-+	if  (!((unsigned long) info->controller_data)) {
-+		if (chipselect_mask & BIT(0))
-+			davinci_cfg_reg(DM365_SPI0_SDENA0);
-+		if (chipselect_mask & BIT(1))
-+			davinci_cfg_reg(DM365_SPI0_SDENA1);
-+	}
- 
- 	spi_register_board_info(info, len);
- 
-diff --git a/drivers/spi/davinci_spi.c b/drivers/spi/davinci_spi.c
-index 95afb6b..621ae46 100644
---- a/drivers/spi/davinci_spi.c
-+++ b/drivers/spi/davinci_spi.c
-@@ -29,6 +29,7 @@
- #include <linux/spi/spi_bitbang.h>
- #include <linux/slab.h>
- 
-+#include <mach/gpio.h>
- #include <mach/spi.h>
- #include <mach/edma.h>
- 
-@@ -270,18 +271,26 @@ static void davinci_spi_chipselect(struct spi_device *spi, int value)
- 	pdata = davinci_spi->pdata;
- 
- 	/*
--	 * Board specific chip select logic decides the polarity and cs
--	 * line for the controller
--	 */
-+	* Board specific chip select logic decides the polarity and cs
-+	* line for the controller
-+	*/
- 	if (value == BITBANG_CS_INACTIVE) {
--		set_io_bits(davinci_spi->base + SPIDEF, CS_DEFAULT);
--
--		data1_reg_val |= CS_DEFAULT << SPIDAT1_CSNR_SHIFT;
--		iowrite32(data1_reg_val, davinci_spi->base + SPIDAT1);
--
-+		if  ((unsigned long) spi->controller_data) {
-+			gpio_set_value(spi->controller_data, \
-+				!(spi->mode & SPI_CS_HIGH));
-+		} else {
-+			set_io_bits(davinci_spi->base + SPIDEF, CS_DEFAULT);
-+
-+			data1_reg_val |= CS_DEFAULT << SPIDAT1_CSNR_SHIFT;
-+			iowrite32(data1_reg_val, davinci_spi->base + SPIDAT1);
-+		}
- 		while ((ioread32(davinci_spi->base + SPIBUF)
--					& SPIBUF_RXEMPTY_MASK) == 0)
-+				& SPIBUF_RXEMPTY_MASK) == 0)
- 			cpu_relax();
-+	} else {
-+		if  ((unsigned long) spi->controller_data)
-+			gpio_set_value(spi->controller_data, \
-+				(spi->mode & SPI_CS_HIGH));
- 	}
- }
- 
 -- 
-1.7.0.4
+Jens Axboe
 
