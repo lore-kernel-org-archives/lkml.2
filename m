@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab0F1HDQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 03:03:16 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49591 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753911Ab0F1HDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 03:03:14 -0400
-Message-ID: <4C284931.2000908@fusionio.com>
-Date: Mon, 28 Jun 2010 09:03:13 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: Brian Bloniarz <bmb@athenacr.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Christoph Hellwig <hch@lst.de>
-Subject: Re: [GIT PULL] block/io bits for 2.6.35-rc
-References: <4C10EC2A.8060002@fusionio.com> <AANLkTimus1Ajk-6HyDtZBmsYwQjkAf3zW-dvxNJlSlGw@mail.gmail.com> <4C1111ED.6020008@fusionio.com> <4C111685.8010400@athenacr.com> <4C27DA4A.3040708@teksavvy.com>
-In-Reply-To: <4C27DA4A.3040708@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754918Ab0F1HPS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 03:15:18 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50285 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773Ab0F1HPP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 03:15:15 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 28 Jun 2010 16:10:31 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+       akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
+       matthltc@us.ibm.com, menage@google.com, oleg@redhat.com
+Subject: Re: [RFC] [PATCH v3 1/2] cgroups: read-write lock CLONE_THREAD
+ forking per threadgroup
+Message-Id: <20100628161031.a8c71fce.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100625054654.GB20610@ghc01.ghc.andrew.cmu.edu>
+References: <20100625054541.GA20610@ghc01.ghc.andrew.cmu.edu>
+	<20100625054654.GB20610@ghc01.ghc.andrew.cmu.edu>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-06-28 01:10, Mark Lord wrote:
-> On 10/06/10 12:44 PM, Brian Bloniarz wrote:
->> On 06/10/2010 12:25 PM, Jens Axboe wrote:
->>> On 2010-06-10 17:55, Linus Torvalds wrote:
->>>> On Thu, Jun 10, 2010 at 6:44 AM, Jens Axboe<jaxboe@fusionio.com>  wrote:
->>>>>
->>>>> - A set of patches fixing the WB_SYNC_NONE writeback from Christoph. So
->>>>>   we should finally have both functional and working WB_SYNC_NONE from
->>>>>   umount context.
->>>>
->>>> I _really_ think this is too late, considering how broken it has been.
->>>> We already reverted the WB_SYNC_NONE things exactly because it didn't
->>>> work, didn't we? I'm going to be off-line in two days, and this part
->>>> of the pull request really makes me nervous, if only simply because of
->>>> the history of it all (ie it's always been broken, why shouldn't it be
->>>> broken now?).
->>>>
->>>> IOW, that's a lot of scary changes, that have historically not been
->>>> safe or sufficiently tested, and have caused problems for various
->>>> filesystems. Convince me why they should suddenly be ok to merge?
->>>
->>> I agree, it's late and it makes me nervous too. I had them cook for
->>> a day, didn't see any problems. And Christoph would not send it in
->>> unless it passes at least xfs qa, which is what found the problems
->>> last time (the ones we reverted).
->>>
->>> It's fixing a regression where umount takes a LONG time if you have
->>> a lot of dirty inodes, since it basically degenerates to a data
->>> integrity writeback instead of a simple WB_SYNC_NONE. If it wasn't
->>> fixing a nasty regression (the distros are all wanting a real fix
->>> for this, it's a user problem), I would not be submitting this code
->>> at this point in time.
->>>
->>
->> Reinforcing that last point: from what I could figure out, Fedora 13
->> is shipping the buggy WB_SYNC_NONE patch currently. Ubuntu 10.04 is
->> shipping an in-kernel workaround that has serious performance
->> drawbacks.
->>
->> https://bugzilla.kernel.org/show_bug.cgi?id=15906 has links to the
->> downstream bugs.
-> ..
-> 
-> Jens, this bug has been biting my servers badly here for the past
-> few months -- umount after a backup (from ext4 to ext4) takes 3-4 minutes
-> instead of the expected 3-4 seconds.
-> 
-> Is there a patch file for this against 2.6.34 that I (and others) could use?
+On Fri, 25 Jun 2010 01:46:54 -0400
+Ben Blum <bblum@andrew.cmu.edu> wrote:
 
-It's the patch series from Christoph in my for-linus branch, I intend
-to push it upstream when Linus is back and taking patches.
+> Adds functionality to read/write lock CLONE_THREAD fork()ing per-threadgroup
+> 
+> From: Ben Blum <bblum@andrew.cmu.edu>
+> 
+> This patch adds an rwsem that lives in a threadgroup's signal_struct that's
+> taken for reading in the fork path, under CONFIG_CGROUPS. If another part of
+> the kernel later wants to use such a locking mechanism, the CONFIG_CGROUPS
+> ifdefs should be changed to a higher-up flag that CGROUPS and the other system
+> would both depend on.
+> 
+> This is a pre-patch for cgroups-procs-write.patch.
+> 
 
--- 
-Jens Axboe
+Hmm, at adding a new lock, please describe its semantics.
+Following is my understanding, right ?
+
+Lock range:
+This rwsem is read-locked from cgroup_fork() to cgroup_post_fork(). 
+Most of works for fork() are between cgroup_fork() and cgroup_post_for().
+This means if sig->threadgroup_fork_lock is held, no new do_work() can
+make progress in this process groups. This rwsem is held only when
+CLONE_THREAD is in clone_flags. IOW, this rwsem is taken only at creating
+new thread.
+
+What we can do with this:
+By locking sig->threadgroup_fork_lock, a code can visit _all_ threads
+in a process group witout any races. So, if you want to implement an
+atomic operation against a process, taking this lock is an idea.
+
+For what:
+To implement an atomic process move in cgroup, we need this lock.
+
+Why this implemantation:
+Considering cgroup, threads in a cgroup can be under several different
+cgroup. So, we can't implement lock in cgroup-internal, we use signal
+struct.
+
+
+By the way, IMHO, hiding lock in cgroup_fork() and cgroup_post_fork() doesn't
+seem good idea. How about a code like this ?
+
+  read_lock_thread_clone(current);
+  cgroup_fork();
+ .....
+  cgroup_post_fork();
+  read_unlock_thrad_clone(current);
+
+We may have chances to move these lock to better position if cgroup is
+an only user.
+
+Thanks,
+-Kame
 
