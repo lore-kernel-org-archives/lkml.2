@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab0F1OMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 10:12:52 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49298 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751284Ab0F1OMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 10:12:51 -0400
-Message-ID: <4C28ADC9.1050706@kernel.org>
-Date: Mon, 28 Jun 2010 18:12:25 +0400
-From: Denis Kirjanov <dkirjanov@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1754212Ab0F1OQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 10:16:58 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:55688 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752772Ab0F1OQy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 10:16:54 -0400
+Date: Mon, 28 Jun 2010 10:16:53 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: linux-pm@lists.linux-foundation.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       mark gross <640e9920@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Mickler <florian@mickler.org>, <linux-pci@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being
+ lost
+In-Reply-To: <201006280159.10885.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1006281006360.1977-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Kulikov Vasiliy <segooon@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Lior Dotan <liodot@gmail.com>,
-       charrer@alacritech.com, "David S. Miller" <davem@davemloft.net>,
-       Jiri Pirko <jpirko@redhat.com>, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] staging: slicoss: Change return codes to -EYYY.
-References: <1277644847-16292-1-git-send-email-segooon@gmail.com> <AANLkTil3gkyn5vY9o0JYluRB4qUp1hdyfOHbX97OZfGJ@mail.gmail.com> <20100628111409.GA20103@shinshilla>
-In-Reply-To: <20100628111409.GA20103@shinshilla>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 14:12:22 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2010 03:14 PM, Kulikov Vasiliy wrote:
->>> @@ -1206,7 +1206,7 @@ static void slic_link_event_handler(struct adapter *adapter)
->>>   #else
->>>         Stop compilation;
->>>   #endif
->>> -       ASSERT((status == STATUS_SUCCESS) || (status == STATUS_PENDING));
->>> +       ASSERT(status == 0);
->>>   }
->>>
->>
->> Now that looks useless since slic_upr_request can return STATUS_PENDING
->> or -ENOMEM. Same for slic_config_get
-> Yes, it seems that slic_link_event_handler&  slic_config_get have to return error codes.
->
->>> @@ -2267,7 +2267,7 @@ static u32 slic_card_locate(struct adapter *adapter)
->>>
->>>         ASSERT(card);
->>>         if (!card)
->>> -               return STATUS_FAILURE;
->>> +               return -ENOMEM;
->>
->> Is -ENOMEM correct for this case?
->>
-> Right, maybe ENXIO?
->
-Yes, I'm fine with this.
+On Mon, 28 Jun 2010, Rafael J. Wysocki wrote:
+
+> > > +bool pm_get_wakeup_count(unsigned long *count)
+> > > +{
+> > > +	bool ret;
+> > > +
+> > > +	spin_lock_irq(&events_lock);
+> > > +	if (capable(CAP_SYS_ADMIN))
+> > > +		events_check_enabled = false;
+> > > +
+> > > +	if (events_in_progress) {
+> > > +		DEFINE_WAIT(wait);
+> > > +
+> > > +		do {
+> > > +			prepare_to_wait(&events_wait_queue, &wait,
+> > > +					TASK_INTERRUPTIBLE);
+> > > +			if (!events_in_progress)
+> > > +				break;
+> > > +			spin_unlock_irq(&events_lock);
+> > > +
+> > > +			schedule();
+> > > +
+> > > +			spin_lock_irq(&events_lock);
+> > > +		} while (!signal_pending(current));
+> > > +		finish_wait(&events_wait_queue, &wait);
+> > > +	}
+> > > +	*count = event_count;
+> > > +	ret = !events_in_progress;
+> > > +	spin_unlock_irq(&events_lock);
+> > > +	return ret;
+> > > +}
+> > 
+> > Here's a thought.  Presumably pm_relax() will end up getting called a 
+> > lot more often than pm_get_wakeup_count().  Instead of using a wait 
+> > queue, you could make pm_get_wakeup_count() poll at 100-ms intervals.  
+> > The total overhead would be smaller.
+> 
+> For that I'd need a separate kernel thread or a work item that would reschedule
+> itself periodically, because pm_get_wakeup_count() is only called via
+> /sys/power/wakeup_count.  It would complicate things quite a bit which I'm not
+> sure is worth it at this point.
+
+What?  All I'm saying is that the do-while loop above should be
+replaced by a loop that sleeps for 100 ms instead of waiting on a
+wait_queue.  That is:
+
+	while (events_in_progress) {
+		if (signal_pending(current))
+			break;
+		spin_unlock_irq(&events_lock);
+
+		schedule_timeout_interruptible(msecs_to_jiffies(100));
+
+		spin_lock_irq(&events_lock);
+	}
+
+And of course, get rid of events_wait_queue.
+
+Alan Stern
+
