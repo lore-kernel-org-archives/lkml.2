@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab0F1VGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 17:06:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42884 "EHLO hera.kernel.org"
+	id S1755459Ab0F1VGh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 17:06:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42878 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755364Ab0F1VG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 17:06:27 -0400
+	id S1755360Ab0F1VGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 17:06:25 -0400
 From: Tejun Heo <tj@kernel.org>
 To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
@@ -13,492 +13,423 @@ To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        oleg@redhat.com, axboe@kernel.dk, fweisbec@gmail.com,
        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
-Subject: [PATCHSET] workqueue: concurrency managed workqueue, take#6
-Date: Mon, 28 Jun 2010 23:03:48 +0200
-Message-Id: <1277759063-24607-1-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 14/35] workqueue: introduce worker
+Date: Mon, 28 Jun 2010 23:04:02 +0200
+Message-Id: <1277759063-24607-15-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 21:05:01 +0000 (UTC)
+In-Reply-To: <1277759063-24607-1-git-send-email-tj@kernel.org>
+References: <1277759063-24607-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 21:05:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, all.
+Separate out worker thread related information to struct worker from
+struct cpu_workqueue_struct and implement helper functions to deal
+with the new struct worker.  The only change which is visible outside
+is that now workqueue worker are all named "kworker/CPUID:WORKERID"
+where WORKERID is allocated from per-cpu ida.
+
+This is in preparation of concurrency managed workqueue where shared
+multiple workers would be available per cpu.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/workqueue.c |  211 +++++++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 150 insertions(+), 61 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index eeec736..0b0c360 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -33,6 +33,7 @@
+ #include <linux/kallsyms.h>
+ #include <linux/debug_locks.h>
+ #include <linux/lockdep.h>
++#include <linux/idr.h>
+ 
+ /*
+  * Structure fields follow one of the following exclusion rules.
+@@ -46,6 +47,15 @@
+  * W: workqueue_lock protected.
+  */
+ 
++struct cpu_workqueue_struct;
++
++struct worker {
++	struct work_struct	*current_work;	/* L: work being processed */
++	struct task_struct	*task;		/* I: worker task */
++	struct cpu_workqueue_struct *cwq;	/* I: the associated cwq */
++	int			id;		/* I: worker id */
++};
++
+ /*
+  * The per-CPU workqueue (if single thread, we always use the first
+  * possible cpu).  The lower WORK_STRUCT_FLAG_BITS of
+@@ -58,15 +68,14 @@ struct cpu_workqueue_struct {
+ 
+ 	struct list_head worklist;
+ 	wait_queue_head_t more_work;
+-	struct work_struct *current_work;
+ 	unsigned int		cpu;
++	struct worker		*worker;
+ 
+ 	struct workqueue_struct *wq;		/* I: the owning workqueue */
+ 	int			work_color;	/* L: current color */
+ 	int			flush_color;	/* L: flushing color */
+ 	int			nr_in_flight[WORK_NR_COLORS];
+ 						/* L: nr of in_flight works */
+-	struct task_struct	*thread;
+ };
+ 
+ /*
+@@ -214,6 +223,9 @@ static inline void debug_work_deactivate(struct work_struct *work) { }
+ /* Serializes the accesses to the list of workqueues. */
+ static DEFINE_SPINLOCK(workqueue_lock);
+ static LIST_HEAD(workqueues);
++static DEFINE_PER_CPU(struct ida, worker_ida);
++
++static int worker_thread(void *__worker);
+ 
+ static int singlethread_cpu __read_mostly;
+ 
+@@ -428,6 +440,105 @@ int queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
+ }
+ EXPORT_SYMBOL_GPL(queue_delayed_work_on);
+ 
++static struct worker *alloc_worker(void)
++{
++	struct worker *worker;
++
++	worker = kzalloc(sizeof(*worker), GFP_KERNEL);
++	return worker;
++}
++
++/**
++ * create_worker - create a new workqueue worker
++ * @cwq: cwq the new worker will belong to
++ * @bind: whether to set affinity to @cpu or not
++ *
++ * Create a new worker which is bound to @cwq.  The returned worker
++ * can be started by calling start_worker() or destroyed using
++ * destroy_worker().
++ *
++ * CONTEXT:
++ * Might sleep.  Does GFP_KERNEL allocations.
++ *
++ * RETURNS:
++ * Pointer to the newly created worker.
++ */
++static struct worker *create_worker(struct cpu_workqueue_struct *cwq, bool bind)
++{
++	int id = -1;
++	struct worker *worker = NULL;
++
++	spin_lock(&workqueue_lock);
++	while (ida_get_new(&per_cpu(worker_ida, cwq->cpu), &id)) {
++		spin_unlock(&workqueue_lock);
++		if (!ida_pre_get(&per_cpu(worker_ida, cwq->cpu), GFP_KERNEL))
++			goto fail;
++		spin_lock(&workqueue_lock);
++	}
++	spin_unlock(&workqueue_lock);
++
++	worker = alloc_worker();
++	if (!worker)
++		goto fail;
++
++	worker->cwq = cwq;
++	worker->id = id;
++
++	worker->task = kthread_create(worker_thread, worker, "kworker/%u:%d",
++				      cwq->cpu, id);
++	if (IS_ERR(worker->task))
++		goto fail;
++
++	if (bind)
++		kthread_bind(worker->task, cwq->cpu);
++
++	return worker;
++fail:
++	if (id >= 0) {
++		spin_lock(&workqueue_lock);
++		ida_remove(&per_cpu(worker_ida, cwq->cpu), id);
++		spin_unlock(&workqueue_lock);
++	}
++	kfree(worker);
++	return NULL;
++}
++
++/**
++ * start_worker - start a newly created worker
++ * @worker: worker to start
++ *
++ * Start @worker.
++ *
++ * CONTEXT:
++ * spin_lock_irq(cwq->lock).
++ */
++static void start_worker(struct worker *worker)
++{
++	wake_up_process(worker->task);
++}
++
++/**
++ * destroy_worker - destroy a workqueue worker
++ * @worker: worker to be destroyed
++ *
++ * Destroy @worker.
++ */
++static void destroy_worker(struct worker *worker)
++{
++	int cpu = worker->cwq->cpu;
++	int id = worker->id;
++
++	/* sanity check frenzy */
++	BUG_ON(worker->current_work);
++
++	kthread_stop(worker->task);
++	kfree(worker);
++
++	spin_lock(&workqueue_lock);
++	ida_remove(&per_cpu(worker_ida, cpu), id);
++	spin_unlock(&workqueue_lock);
++}
++
+ /**
+  * cwq_dec_nr_in_flight - decrement cwq's nr_in_flight
+  * @cwq: cwq of interest
+@@ -468,7 +579,7 @@ static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color)
+ 
+ /**
+  * process_one_work - process single work
+- * @cwq: cwq to process work for
++ * @worker: self
+  * @work: work to process
+  *
+  * Process @work.  This function contains all the logics necessary to
+@@ -480,9 +591,9 @@ static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color)
+  * CONTEXT:
+  * spin_lock_irq(cwq->lock) which is released and regrabbed.
+  */
+-static void process_one_work(struct cpu_workqueue_struct *cwq,
+-			     struct work_struct *work)
++static void process_one_work(struct worker *worker, struct work_struct *work)
+ {
++	struct cpu_workqueue_struct *cwq = worker->cwq;
+ 	work_func_t f = work->func;
+ 	int work_color;
+ #ifdef CONFIG_LOCKDEP
+@@ -497,7 +608,7 @@ static void process_one_work(struct cpu_workqueue_struct *cwq,
+ #endif
+ 	/* claim and process */
+ 	debug_work_deactivate(work);
+-	cwq->current_work = work;
++	worker->current_work = work;
+ 	work_color = get_work_color(work);
+ 	list_del_init(&work->entry);
+ 
+@@ -524,30 +635,33 @@ static void process_one_work(struct cpu_workqueue_struct *cwq,
+ 	spin_lock_irq(&cwq->lock);
+ 
+ 	/* we're done with it, release */
+-	cwq->current_work = NULL;
++	worker->current_work = NULL;
+ 	cwq_dec_nr_in_flight(cwq, work_color);
+ }
+ 
+-static void run_workqueue(struct cpu_workqueue_struct *cwq)
++static void run_workqueue(struct worker *worker)
+ {
++	struct cpu_workqueue_struct *cwq = worker->cwq;
++
+ 	spin_lock_irq(&cwq->lock);
+ 	while (!list_empty(&cwq->worklist)) {
+ 		struct work_struct *work = list_entry(cwq->worklist.next,
+ 						struct work_struct, entry);
+-		process_one_work(cwq, work);
++		process_one_work(worker, work);
+ 	}
+ 	spin_unlock_irq(&cwq->lock);
+ }
+ 
+ /**
+  * worker_thread - the worker thread function
+- * @__cwq: cwq to serve
++ * @__worker: self
+  *
+  * The cwq worker thread function.
+  */
+-static int worker_thread(void *__cwq)
++static int worker_thread(void *__worker)
+ {
+-	struct cpu_workqueue_struct *cwq = __cwq;
++	struct worker *worker = __worker;
++	struct cpu_workqueue_struct *cwq = worker->cwq;
+ 	DEFINE_WAIT(wait);
+ 
+ 	if (cwq->wq->flags & WQ_FREEZEABLE)
+@@ -566,11 +680,11 @@ static int worker_thread(void *__cwq)
+ 		if (kthread_should_stop())
+ 			break;
+ 
+-		if (unlikely(!cpumask_equal(&cwq->thread->cpus_allowed,
++		if (unlikely(!cpumask_equal(&worker->task->cpus_allowed,
+ 					    get_cpu_mask(cwq->cpu))))
+-			set_cpus_allowed_ptr(cwq->thread,
++			set_cpus_allowed_ptr(worker->task,
+ 					     get_cpu_mask(cwq->cpu));
+-		run_workqueue(cwq);
++		run_workqueue(worker);
+ 	}
+ 
+ 	return 0;
+@@ -873,7 +987,7 @@ int flush_work(struct work_struct *work)
+ 			goto already_gone;
+ 		prev = &work->entry;
+ 	} else {
+-		if (cwq->current_work != work)
++		if (!cwq->worker || cwq->worker->current_work != work)
+ 			goto already_gone;
+ 		prev = &cwq->worklist;
+ 	}
+@@ -937,7 +1051,7 @@ static void wait_on_cpu_work(struct cpu_workqueue_struct *cwq,
+ 	int running = 0;
+ 
+ 	spin_lock_irq(&cwq->lock);
+-	if (unlikely(cwq->current_work == work)) {
++	if (unlikely(cwq->worker && cwq->worker->current_work == work)) {
+ 		insert_wq_barrier(cwq, &barr, cwq->worklist.next);
+ 		running = 1;
+ 	}
+@@ -1225,7 +1339,7 @@ int current_is_keventd(void)
+ 	BUG_ON(!keventd_wq);
+ 
+ 	cwq = get_cwq(cpu, keventd_wq);
+-	if (current == cwq->thread)
++	if (current == cwq->worker->task)
+ 		ret = 1;
+ 
+ 	return ret;
+@@ -1273,38 +1387,6 @@ static void free_cwqs(struct cpu_workqueue_struct *cwqs)
+ #endif
+ }
+ 
+-static int create_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
+-{
+-	struct workqueue_struct *wq = cwq->wq;
+-	struct task_struct *p;
+-
+-	p = kthread_create(worker_thread, cwq, "%s/%d", wq->name, cpu);
+-	/*
+-	 * Nobody can add the work_struct to this cwq,
+-	 *	if (caller is __create_workqueue)
+-	 *		nobody should see this wq
+-	 *	else // caller is CPU_UP_PREPARE
+-	 *		cpu is not on cpu_online_map
+-	 * so we can abort safely.
+-	 */
+-	if (IS_ERR(p))
+-		return PTR_ERR(p);
+-	cwq->thread = p;
+-
+-	return 0;
+-}
+-
+-static void start_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
+-{
+-	struct task_struct *p = cwq->thread;
+-
+-	if (p != NULL) {
+-		if (cpu >= 0)
+-			kthread_bind(p, cpu);
+-		wake_up_process(p);
+-	}
+-}
+-
+ struct workqueue_struct *__create_workqueue_key(const char *name,
+ 						unsigned int flags,
+ 						struct lock_class_key *key,
+@@ -1312,7 +1394,8 @@ struct workqueue_struct *__create_workqueue_key(const char *name,
+ {
+ 	bool singlethread = flags & WQ_SINGLE_THREAD;
+ 	struct workqueue_struct *wq;
+-	int err = 0, cpu;
++	bool failed = false;
++	unsigned int cpu;
+ 
+ 	wq = kzalloc(sizeof(*wq), GFP_KERNEL);
+ 	if (!wq)
+@@ -1342,20 +1425,21 @@ struct workqueue_struct *__create_workqueue_key(const char *name,
+ 		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
+ 
+ 		BUG_ON((unsigned long)cwq & WORK_STRUCT_FLAG_MASK);
+-		cwq->wq = wq;
+ 		cwq->cpu = cpu;
++		cwq->wq = wq;
+ 		cwq->flush_color = -1;
+ 		spin_lock_init(&cwq->lock);
+ 		INIT_LIST_HEAD(&cwq->worklist);
+ 		init_waitqueue_head(&cwq->more_work);
+ 
+-		if (err)
++		if (failed)
+ 			continue;
+-		err = create_workqueue_thread(cwq, cpu);
+-		if (cpu_online(cpu) && !singlethread)
+-			start_workqueue_thread(cwq, cpu);
++		cwq->worker = create_worker(cwq,
++					    cpu_online(cpu) && !singlethread);
++		if (cwq->worker)
++			start_worker(cwq->worker);
+ 		else
+-			start_workqueue_thread(cwq, -1);
++			failed = true;
+ 	}
+ 
+ 	spin_lock(&workqueue_lock);
+@@ -1364,7 +1448,7 @@ struct workqueue_struct *__create_workqueue_key(const char *name,
+ 
+ 	cpu_maps_update_done();
+ 
+-	if (err) {
++	if (failed) {
+ 		destroy_workqueue(wq);
+ 		wq = NULL;
+ 	}
+@@ -1400,9 +1484,9 @@ void destroy_workqueue(struct workqueue_struct *wq)
+ 		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
+ 		int i;
+ 
+-		if (cwq->thread) {
+-			kthread_stop(cwq->thread);
+-			cwq->thread = NULL;
++		if (cwq->worker) {
++			destroy_worker(cwq->worker);
++			cwq->worker = NULL;
+ 		}
+ 
+ 		for (i = 0; i < WORK_NR_COLORS; i++)
+@@ -1489,6 +1573,8 @@ EXPORT_SYMBOL_GPL(work_on_cpu);
+ 
+ void __init init_workqueues(void)
+ {
++	unsigned int cpu;
++
+ 	/*
+ 	 * cwqs are forced aligned according to WORK_STRUCT_FLAG_BITS.
+ 	 * Make sure that the alignment isn't lower than that of
+@@ -1497,6 +1583,9 @@ void __init init_workqueues(void)
+ 	BUILD_BUG_ON(__alignof__(struct cpu_workqueue_struct) <
+ 		     __alignof__(unsigned long long));
+ 
++	for_each_possible_cpu(cpu)
++		ida_init(&per_cpu(worker_ida, cpu));
++
+ 	singlethread_cpu = cpumask_first(cpu_possible_mask);
+ 	hotcpu_notifier(workqueue_cpu_callback, 0);
+ 	keventd_wq = create_workqueue("events");
+-- 
+1.6.4.2
 
-This is the sixth take of cmwq (concurrency managed workqueue)
-patchset.  It's on top of v2.6.35-rc3 + sched/core branch.  Git tree
-is available at
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-cmwq
-
-Linus, please read the merge plan section.
-
-Thanks.
-
-
-Table of contents
-=================
-
-A. This take
-A-1. Merge plan
-A-2. Changes from the last take[L]
-A-3. TODOs
-A-4. Patches and diffstat
-
-B. General documentation of Concurrency Managed Workqueue (cmwq)
-B-1. Why?
-B-2. Overview
-B-3. Unified worklist
-B-4. Concurrency managed shared worker pool
-B-5. Performance test results
-
-
-A. This take
-============
-
-== A-1. Merge plan
-
-Until now, cmwq patches haven't been fixed into permanent commits
-mainly because sched patches which they are dependent upon made into
-sched/core tree only recently.  After review, I'll put this take into
-permanent commits.  Further developments or fixes will be done on top.
-
-I believe that expected users of cmwq are generally in favor of the
-flexibility added by cmwq.  In the last take, the following issues
-were raised.
-
-* Andi Kleen wanted to use high priority dispatching for memory fault
-  handlers.  WQ_HIGHPRI is implemented to deal with this and padata
-  integration.
-
-* Andrew Morton raised two issues - workqueue users which use RT
-  priority setting (ivtv) and padata integration.  kthread_worker
-  which provides simple work based interface on top of kthread is
-  added for cases where fixed association with a specific kthread is
-  required for priority setting, cpuset and other task attributes
-  adjustments.  This will also be used by virtnet.
-
-  WQ_CPU_INTENSIVE is added to address padata integration.  When
-  combined with WQ_HIGHPRI, all concurrency management logic is
-  bypassed and cmwq works as a (conceptually) simple context provider
-  and padata should operate without any noticeable difference.
-
-* Daniel Walker objected on the ground that cmwq would make it
-  impossible to adjust priorities of workqueue threads which can be
-  useful as an ad-hoc optimization.  I don't plan to address this
-  concern (suggested solution is to add userland visible knobs to
-  adjust workqueue priorities) at this point because it is an
-  implementation detail that userspace shouldn't diddle with in the
-  first place.  If anyone is interested in the details of the
-  dicussion, please read the dicussion thread on the last take[L].
-
-Unless there are fundamental objections, I'll push the patchset out to
-linux-next and proceed with the followings.
-
-* integrating with other subsystems
-
-* auditing all the workqueue users to better suit cmwq
-
-* implementing features which will depend on cmwq (in-kernel media
-  presence polling is the first target)
-
-I expect there to be some, hopefully not too many, cross tree pulls in
-the process and it will be a bit messy to back out later, so if you
-have any fundamental concerns, please speak sooner than later.
-
-Linus, it would be great if you let me know whether you agree with the
-merge plan.
-
-
-== A-2. Changes from the last take
-
-* kthread_worker is added.  kthread_worker is a minimal work execution
-  wrapper around kthread.  This is to ease using kthread for users
-  which require control over thread attributes like priority, cpuset
-  or whatever.
-
-  kthreads can be created with kthread_worker_fn() directly or
-  kthread_worker_fn() can be called after running any code the kthread
-  needs to run for initialization.  The kthread can be treated the
-  same way as any other kthread.
-
-  - ivtv which used single threaded workqueue and bumped the priority
-    of the worker to RT is converted to use kthread_worker.
-
-* WQ_HIGHPRI and WQ_CPU_INTENSIVE are implemented.
-
-  Works queued to a high priority workqueues are queued at the head of
-  the global worklist and don't get blocked by other works.  They're
-  dispatched to a worker as soon as possible.
-
-  Works queued to a CPU intensive workqueue don't participate in
-  concurrency management and thus don't block other works from
-  executing.  This is to be used by works which are expected to burn
-  considerable amount of CPU cycles.
-
-  Workqueues w/ both WQ_HIGHPRI and WQ_CPU_INTENSIVE set don't get
-  affected by or participate in concurrency management.  Works queued
-  on such workqueues are dispatched immediately and don't affect other
-  works.
-
-  - pcrypt which creates workqueues and uses them for padata is
-    converted to use high priority cpu intensive workqueues with
-    max_active of 1, which should behave about the same as the
-    original implementation.  Going forward, as workqueues themselves
-    don't cost to have around anymore, it would be better to make
-    padata to directly create workqueues for its users.
-
-* To implement HIGHPRI and CPU_INTENSIVE, handling of worker flags
-  which affect the running state for concurrency management has been
-  updated.  worker_{set|clr}_flags() are added which manage the
-  nr_running count according to worker state transitions.  This also
-  makes nr_running counting easier to follow and verify.
-
-* __create_workqueue() is renamed to alloc_workqueue() and is now a
-  public interface.  It now interprets 0 max_active as the default
-  max_active.  In the long run, all create*_workqueue() calls will be
-  replaced with alloc_workqueue().
-
-* Custom workqueue instrumentation via debugfs is removed.  The plan
-  is to implement proper tracing API based instrumentation as
-  suggested by Frederic Weisbecker.
-
-* The original workqueue tracer code removed as suggested by Frederic
-  Weisbecker.
-
-* Comments updated/added.
-
-
-== A-3. TODOs
-
-* fscache/slow-work conversion is not in this series.  It needs to be
-  performance tested and acked by David Howells.
-
-* Audit each workqueue users and
-  - make them use system workqueue instead if possible.
-  - drop emergency worker if possible.
-  - make them use alloc_workqueue() instead.
-
-* Improve lockdep annotations.
-
-* Implement workqueue tracer.
-
-
-== A-4. Patches and diffstat
-
- 0001-kthread-implement-kthread_worker.patch
- 0002-ivtv-use-kthread_worker-instead-of-workqueue.patch
- 0003-kthread-implement-kthread_data.patch
- 0004-acpi-use-queue_work_on-instead-of-binding-workqueue-.patch
- 0005-workqueue-kill-RT-workqueue.patch
- 0006-workqueue-misc-cosmetic-updates.patch
- 0007-workqueue-merge-feature-parameters-into-flags.patch
- 0008-workqueue-define-masks-for-work-flags-and-conditiona.patch
- 0009-workqueue-separate-out-process_one_work.patch
- 0010-workqueue-temporarily-remove-workqueue-tracing.patch
- 0011-workqueue-kill-cpu_populated_map.patch
- 0012-workqueue-update-cwq-alignement.patch
- 0013-workqueue-reimplement-workqueue-flushing-using-color.patch
- 0014-workqueue-introduce-worker.patch
- 0015-workqueue-reimplement-work-flushing-using-linked-wor.patch
- 0016-workqueue-implement-per-cwq-active-work-limit.patch
- 0017-workqueue-reimplement-workqueue-freeze-using-max_act.patch
- 0018-workqueue-introduce-global-cwq-and-unify-cwq-locks.patch
- 0019-workqueue-implement-worker-states.patch
- 0020-workqueue-reimplement-CPU-hotplugging-support-using-.patch
- 0021-workqueue-make-single-thread-workqueue-shared-worker.patch
- 0022-workqueue-add-find_worker_executing_work-and-track-c.patch
- 0023-workqueue-carry-cpu-number-in-work-data-once-executi.patch
- 0024-workqueue-implement-WQ_NON_REENTRANT.patch
- 0025-workqueue-use-shared-worklist-and-pool-all-workers-p.patch
- 0026-workqueue-implement-worker_-set-clr-_flags.patch
- 0027-workqueue-implement-concurrency-managed-dynamic-work.patch
- 0028-workqueue-increase-max_active-of-keventd-and-kill-cu.patch
- 0029-workqueue-s-__create_workqueue-alloc_workqueue-and-a.patch
- 0030-workqueue-implement-several-utility-APIs.patch
- 0031-workqueue-implement-high-priority-workqueue.patch
- 0032-workqueue-implement-cpu-intensive-workqueue.patch
- 0033-libata-take-advantage-of-cmwq-and-remove-concurrency.patch
- 0034-async-use-workqueue-for-worker-pool.patch
- 0035-pcrypt-use-HIGHPRI-and-CPU_INTENSIVE-workqueues-for-.patch
-
- arch/ia64/kernel/smpboot.c             |    2 
- arch/x86/kernel/smpboot.c              |    2 
- crypto/pcrypt.c                        |    4 
- drivers/acpi/osl.c                     |   40 
- drivers/ata/libata-core.c              |   20 
- drivers/ata/libata-eh.c                |    4 
- drivers/ata/libata-scsi.c              |   10 
- drivers/ata/libata-sff.c               |    9 
- drivers/ata/libata.h                   |    1 
- drivers/media/video/ivtv/ivtv-driver.c |   26 
- drivers/media/video/ivtv/ivtv-driver.h |    8 
- drivers/media/video/ivtv/ivtv-irq.c    |   15 
- drivers/media/video/ivtv/ivtv-irq.h    |    2 
- include/linux/cpu.h                    |    2 
- include/linux/kthread.h                |   65 
- include/linux/libata.h                 |    1 
- include/linux/workqueue.h              |  135 +
- include/trace/events/workqueue.h       |   92 
- kernel/async.c                         |  140 -
- kernel/kthread.c                       |  164 +
- kernel/power/process.c                 |   21 
- kernel/trace/Kconfig                   |   11 
- kernel/workqueue.c                     | 3260 +++++++++++++++++++++++++++------
- kernel/workqueue_sched.h               |   13 
- 24 files changed, 3202 insertions(+), 845 deletions(-)
-
-
-B. General documentation of Concurrency Managed Workqueue (cmwq)
-================================================================
-
-== B-1. Why?
-
-cmwq brings the following benefits.
-
-* By using a shared pool of workers for each cpu, cmwq uses resources
-  more efficiently and the system no longer ends up with a lot of
-  kernel threads which sit mostly idle.
-
-  The separate dedicated per-cpu workers of the current workqueue
-  implementation are already becoming an actual scalability issue and
-  with increasing number of cpus it will only get worse.
-
-* cmwq can provide flexible level of concurrency on demand.  While the
-  current workqueue implementation keeps a lot of worker threads
-  around, it still can only provide very limited level of concurrency.
-
-* cmwq makes obtaining and using execution contexts easy, which
-  results in less complexities and awkward compromises in its users.
-  IOW, it transfers complexity from its users to core code.
-
-  This will also allow implementation of things which need a flexible
-  async mechanism but aren't important enough to have dedicated worker
-  pools for.
-
-* Work execution latencies are shorter and more predictable.  They are
-  no longer affected by how long random previous works might take to
-  finish but, in the most part, regulated only by processing cycle
-  availability.
-
-* Much less to worry about causing deadlocks around execution
-  resources.
-
-* All the above while maintaining behavior compatibility with the
-  original workqueue and without any noticeable run time overhead.
-
-
-== B-2. Overview
-
-There are many cases where an execution context is needed and there
-already are several mechanisms for them.  The most commonly used one
-is workqueue (wq) and there also are slow_work, async and some other.
-Although wq has been serving the kernel well for quite some time, it
-has certain limitations which are becoming more apparent.
-
-There are two types of wq, single and multi threaded.  Multi threaded
-(MT) wq keeps a bound thread for each online CPU, while single
-threaded (ST) wq uses single unbound thread.  The number of CPU cores
-is continuously rising and there already are systems which saturate
-the default 32k PID space during boot up.
-
-Frustratingly, although MT wq end up spending a lot of resources, the
-level of concurrency provided is unsatisfactory.  The limitation is
-common to both ST and MT wq although it's less severe on MT ones.
-Worker pools of wq are separate from each other.  A MT wq provides one
-execution context per CPU while a ST wq one for the whole system,
-which leads to various problems.
-
-One of the problems is possible deadlock through dependency on the
-same execution resource.  These can be detected reliably with lockdep
-these days but in most cases the only solution is to create a
-dedicated wq for one of the parties involved in the deadlock, which
-feeds back into the waste of resources problem.  Also, when creating
-such dedicated wq to avoid deadlock, in an attempt to avoid wasting
-large number of threads just for that work, ST wq are often used but
-in most cases ST wq are suboptimal compared to MT wq.
-
-The tension between the provided level of concurrency and resource
-usage forces its users to make unnecessary tradeoffs like libata
-choosing to use ST wq for polling PIOs and accepting a silly
-limitation that no two polling PIOs can progress at the same time.  As
-MT wq don't provide much better concurrency, users which require
-higher level of concurrency, like async or fscache, end up having to
-implement their own worker pool.
-
-Concurrency managed workqueue (cmwq) extends wq with focus on the
-following goals.
-
-* Maintain compatibility with the current workqueue API while removing
-  above mentioned limitations.
-
-* Provide single unified worker pool per cpu which can be shared by
-  all users.  The worker pool and level of concurrency should be
-  regulated automatically so that the API users don't need to worry
-  about such details.
-
-* Use what's necessary and allocate resources lazily on demand while
-  guaranteeing forward progress where necessary.
-
-
-== B-3. Unified worklist
-
-There's a single global cwq (gcwq) per each possible cpu which
-actually serves out execution contexts.  cpu_workqueue's (cwq) of each
-wq are mostly simple frontends to the associated gcwq.  Under normal
-operation, when a work is queued, it's queued to the gcwq of the cpu.
-Each gcwq has its own pool of workers which is used to process all the
-works queued on the cpu.  Works mostly don't care to which wq they're
-queued to and using a unified worklist is straight forward but there
-are a couple of areas where things become more complicated.
-
-First, when queueing works from different wq on the same worklist,
-ordering of works needs some care.  Originally, a MT wq allows a work
-to be executed simultaneously on multiple cpus although it doesn't
-allow the same one to execute simultaneously on the same cpu
-(reentrant).  A ST wq allows only single work to be executed on any
-cpu which guarantees both non-reentrancy and single-threadedness.
-
-cmwq provides three different ordering modes - reentrant (default
-mode), non-reentrant and single-cpu.  Single-cpu can be used to
-achieve single-threadedness and full ordering if combined with
-max_active of 1.  The default mode (reentrant) is the same as the
-original MT wq.  The distinction between non-reentrancy and single-cpu
-is made because some of the current ST wq users dont't need single
-threadedness but only non-reentrancy.
-
-Another area where things are more involved is wq flushing because wq
-act as flushing domains.  cmwq implements it by coloring works and
-tracking how many times each color is used.  When a work is queued to
-a cwq, it's assigned a color and each cwq maintains counters for each
-work color.  The color assignment changes on each wq flush attempt.  A
-cwq can tell that all works queued before a certain wq flush attempt
-have finished by waiting for all the colors upto that point to drain.
-This maintains the original wq flush semantics without adding
-unscalable overhead.
-
-
-== B-4. Concurrency managed shared worker pool
-
-For any worker pool, managing the concurrency level (how many workers
-are executing simultaneously) is an important issue.  cmwq tries to
-keep the concurrency at minimal but sufficient level.
-
-Concurrency management is implemented by hooking into the scheduler.
-The gcwq is notified whenever a busy worker wakes up or sleeps and
-keeps track of the level of concurrency.  Generally, works aren't
-supposed to be cpu cycle hogs and maintaining just enough concurrency
-to prevent work processing from stalling is optimal.  As long as
-there's one or more workers running on the cpu, no new worker is
-scheduled, but, when the last running worker blocks, the gcwq
-immediately schedules a new worker so that the cpu doesn't sit idle
-while there are pending works.
-
-This allows using minimal number of workers without losing execution
-bandwidth.  Keeping idle workers around doesn't cost other than the
-memory space for kthreads, so cmwq holds onto idle ones for a while
-before killing them.
-
-As multiple execution contexts are available for each wq, deadlocks
-around execution contexts is much harder to create.  The default wq,
-system_wq, has maximum concurrency level of 256 and unless there is a
-scenario which can result in a dependency loop involving more than 254
-workers, it won't deadlock.
-
-Such forward progress guarantee relies on that workers can be created
-when more execution contexts are necessary.  This is guaranteed by
-using emergency workers.  All wq which can be used in memory
-allocation path are required to have emergency workers which are
-reserved for execution of that specific wq so that memory allocation
-for worker creation doesn't deadlock on workers.
-
-
-== B-5. Performance test results
-
-NOTE: This is with the third take[3] but nothing which could affect
-      performance noticeably has changed since then.
-
-wq workload is generated by perf-wq.c module which is a very simple
-synthetic wq load generator.  A work is described by five parameters -
-burn_usecs, mean_sleep_msecs, mean_resched_msecs and factor.  It
-randomly splits burn_usecs into two, burns the first part, sleeps for
-0 - 2 * mean_sleep_msecs, burns what's left of burn_usecs and then
-reschedules itself in 0 - 2 * mean_resched_msecs.  factor is used to
-tune the number of cycles to match execution duration.
-
-It issues three types of works - short, medium and long, each with two
-burn durations L and S.
-
-	burn/L(us)	burn/S(us)	mean_sleep(ms)	mean_resched(ms) cycles
- short	50		1		1		10		 454
- medium	50		2		10		50		 125
- long	50		4		100		250		 42
-
-And then these works are put into the following workloads.  The lower
-numbered workloads have more short/medium works.
-
- workload 0
- * 12 wq with 4 short works
- *  2 wq with 2 short  and 2 medium works
- *  4 wq with 2 medium and 1 long works
- *  8 wq with 1 long work
-
- workload 1
- *  8 wq with 4 short works
- *  2 wq with 2 short  and 2 medium works
- *  4 wq with 2 medium and 1 long works
- *  8 wq with 1 long work
-
- workload 2
- *  4 wq with 4 short works
- *  2 wq with 2 short  and 2 medium works
- *  4 wq with 2 medium and 1 long works
- *  8 wq with 1 long work
-
- workload 3
- *  2 wq with 4 short works
- *  2 wq with 2 short  and 2 medium works
- *  4 wq with 2 medium and 1 long works
- *  8 wq with 1 long work
-
- workload 4
- *  2 wq with 4 short works
- *  2 wq with 2 medium works
- *  4 wq with 2 medium and 1 long works
- *  8 wq with 1 long work
-
- workload 5
- *  2 wq with 2 medium works
- *  4 wq with 2 medium and 1 long works
- *  8 wq with 1 long work
-
-The above wq loads are run in parallel with mencoder converting 76M
-mjpeg file into mpeg4 which takes 25.59 seconds with standard
-deviation of 0.19 without wq loading.  The CPU was intel netburst
-celeron running at 2.66GHz which was chosen for its small cache size
-and slowness.  wl0 and 1 are only tested for burn/S.  Each test case
-was run 11 times and the first run was discarded.
-
-	 vanilla/L	cmwq/L		vanilla/S	cmwq/S
- wl0					26.18 d0.24	26.27 d0.29
- wl1					26.50 d0.45	26.52 d0.23
- wl2	26.62 d0.35	26.53 d0.23	26.14 d0.22	26.12 d0.32
- wl3	26.30 d0.25	26.29 d0.26	25.94 d0.25	26.17 d0.30
- wl4	26.26 d0.23	25.93 d0.24	25.90 d0.23	25.91 d0.29
- wl5	25.81 d0.33	25.88 d0.25	25.63 d0.27	25.59 d0.26
-
-There is no significant difference between the two.  Maybe the code
-overhead and benefits coming from context sharing are canceling each
-other nicely.  With longer burns, cmwq looks better but it's nothing
-significant.  With shorter burns, other than wl3 spiking up for
-vanilla which probably would go away if the test is repeated, the two
-are performing virtually identically.
-
-The above is exaggerated synthetic test result and the performance
-difference will be even less noticeable in either direction under
-realistic workloads.
-
---
-tejun
-
-[L] http://thread.gmane.org/gmane.linux.kernel/998652
-[3] http://thread.gmane.org/gmane.linux.kernel/939353
