@@ -1,44 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab0F1RO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 13:14:29 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41522 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab0F1RO0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 13:14:26 -0400
-Date: Mon, 28 Jun 2010 18:14:10 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Robert Hancock <hancockrwd@gmail.com>, lenb@kernel.org,
-       linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH 1/1] ACPI: pci_irq, add PRT_ quirk for IBM Bartolo
-Message-ID: <20100628171410.GA27367@srcf.ucam.org>
-References: <1277673679-21458-1-git-send-email-jslaby@suse.cz> <4C27E965.80508@gmail.com> <4C283D84.6080504@suse.cz>
+	id S1753330Ab0F1ROs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 13:14:48 -0400
+Received: from fn.samba.org ([216.83.154.106]:38044 "EHLO lists.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753201Ab0F1ROq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 13:14:46 -0400
+Date: Mon, 28 Jun 2010 10:14:44 -0700
+From: Jeremy Allison <jra@samba.org>
+To: Steve French <smfrench@gmail.com>
+Cc: Jeremy Allison <jra@samba.org>, David Howells <dhowells@redhat.com>,
+       viro@zeniv.linux.org.uk, jlayton@redhat.com, mcao@us.ibm.com,
+       aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       samba-technical@lists.samba.org, sjayaraman@suse.de,
+       linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] Ext4: Make file creation time, i_version and
+	i_generation available by xattrs
+Message-ID: <20100628171444.GB9979@samba1>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <20100628162626.6026.26679.stgit@warthog.procyon.org.uk> <AANLkTikkaRYyUfHILDCKYzXdLi9ORuQs05Rf9TScF_Tz@mail.gmail.com> <20100628164854.GA9979@samba1> <AANLkTilkfPkvyuQvN9zKrrY3DhJZ5iUfa5RXfErFwTiA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4C283D84.6080504@suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTilkfPkvyuQvN9zKrrY3DhJZ5iUfa5RXfErFwTiA@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 08:13:24AM +0200, Jiri Slaby wrote:
-> On 06/28/2010 02:14 AM, Robert Hancock wrote:
-> > That seems a rather serious DSDT flaw. Do devices in that slot work in
-> > Windows?
+On Mon, Jun 28, 2010 at 12:04:09PM -0500, Steve French wrote:
+> On Mon, Jun 28, 2010 at 11:48 AM, Jeremy Allison <jra@samba.org> wrote:
+> > On Mon, Jun 28, 2010 at 11:33:10AM -0500, Steve French wrote:
+> >>
+> >> It would be easy enough to do something similar for crtime for cifs
+> >> (it may also be possible to do something similar to
+> >> i_generation and i_version at least for smb2 but haven't
+> >> experimented to see which servers could return something
+> >> similar to version and generation).  I did have a request for
+> >> someone doing a backup application over cifs to return creation
+> >> time so at least this would make sense.
+> >
+> > We already have code in Samba to detect "birthtime"
+> > (st_btime) as a returned member of a stat struct.
+> >
+> > This already works on many other platforms, so I'd
+> > rather just have Linux stat fixed to work with
+> > btime.
 > 
-> Yes, the DSDT is pretty broken this way there. Regarding Windows, I
-> don't know and I doubt anybody will ever try.
+> That sounds better but it hits the fs, vfs and libc
+> and seems like libc is near impossible to get changes into.
 
-http://www-07.ibm.com/hk/products/pos/300/specs.html indicates that 
-Windows is supported on this hardware. It would be good to verify that 
-it also fails before we try a model-specific quirk.
+It's a software project, it gets new features. This
+is a new feature that is necessary to support new
+file system features.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> Seems like in the short term adding xattrs is harmless, and
+> doesn't hurt in the longrun
+
+Yes it does. It's trying to do an end-run around
+adding this into the entire stack where it'll be
+useful for all applications. Samba releases live
+forever. Do you want to be still maintaining the
+"btime as xattr" stuff in 20 years ?
+
+Fix it once, fix it right.
+
+Jeremy.
