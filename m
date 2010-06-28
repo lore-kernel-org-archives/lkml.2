@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab0F1Nvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 09:51:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34400 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab0F1Nvl (ORCPT
+	id S1755014Ab0F1NwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 09:52:14 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:58661 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753391Ab0F1NwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 09:51:41 -0400
-Date: Mon, 28 Jun 2010 10:50:38 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv6 2.6.35-rc3-tip 10/12]  perf: Dont adjust symbols on
- name lookup
-Message-ID: <20100628135038.GA8902@ghostprotocols.net>
-References: <20100628055740.6869.77397.sendpatchset@localhost6.localdomain6>
- <20100628055941.6869.59092.sendpatchset@localhost6.localdomain6>
+	Mon, 28 Jun 2010 09:52:10 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAFdGKExLd/sX/2dsb2JhbAAHgxbMU5BSgSmDCXIE
+X-IronPort-AV: E=Sophos;i="4.53,497,1272859200"; 
+   d="scan'208";a="69026888"
+Message-ID: <4C28A8FC.6040605@teksavvy.com>
+Date: Mon, 28 Jun 2010 09:51:56 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100628055941.6869.59092.sendpatchset@localhost6.localdomain6>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: Brian Bloniarz <bmb@athenacr.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>
+Subject: Re: [GIT PULL] block/io bits for 2.6.35-rc
+References: <4C10EC2A.8060002@fusionio.com> <AANLkTimus1Ajk-6HyDtZBmsYwQjkAf3zW-dvxNJlSlGw@mail.gmail.com> <4C1111ED.6020008@fusionio.com> <4C111685.8010400@athenacr.com> <4C27DA4A.3040708@teksavvy.com> <4C284931.2000908@fusionio.com>
+In-Reply-To: <4C284931.2000908@fusionio.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jun 28, 2010 at 11:29:41AM +0530, Srikar Dronamraju escreveu:
-> 
-> perf: Dont adjust symbols on name lookup
-> 
-> Adjusting symbols is not needed if we are searching by name even
-> if the symbols correspond to user space objects.
-> Infact if we adjust and search symbols by name, we get incorrect
-> results.
+On 28/06/10 03:03 AM, Jens Axboe wrote:
+> On 2010-06-28 01:10, Mark Lord wrote:
+>> On 10/06/10 12:44 PM, Brian Bloniarz wrote:
+..
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=15906 has links to the
+>>> downstream bugs.
+>> ..
+>>
+>> Jens, this bug has been biting my servers badly here for the past
+>> few months -- umount after a backup (from ext4 to ext4) takes 3-4 minutes
+>> instead of the expected 3-4 seconds.
+>>
+>> Is there a patch file for this against 2.6.34 that I (and others) could use?
+>
+> It's the patch series from Christoph in my for-linus branch, I intend
+> to push it upstream when Linus is back and taking patches.
+..
 
-I'll review this, but it would be nice to explain why we get incorrect
-results, as we may be just fixing a symptom of some other problem.
+Still looking for a *patch* to fix  this here.
 
-- Arnaldo
+I found these two:
+
+http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=e913fc825dc685a444cb4c1d0f9d32f372f5986
+http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=30fd1e551a730d942e91109762c942786be0ef7c
+
+But they don't apply cleanly to 2.6.34.
+
+Anyone?
+  
+
