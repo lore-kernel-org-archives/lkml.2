@@ -1,81 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab0F1UYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 16:24:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58617 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479Ab0F1UYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 16:24:43 -0400
-Message-ID: <4C2904D0.3000409@oracle.com>
-Date: Mon, 28 Jun 2010 13:23:44 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1754789Ab0F1U0a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 16:26:30 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45920 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752849Ab0F1U03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 16:26:29 -0400
+Date: Mon, 28 Jun 2010 20:24:46 GMT
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+       peterz@infradead.org, isloginov@gmail.com, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+       peterz@infradead.org, tglx@linutronix.de, isloginov@gmail.com,
+       mingo@elte.hu
+In-Reply-To: <1277736661.3561.110.camel@laptop>
+References: <1277736661.3561.110.camel@laptop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] init, sched: Fix race between init and kthreadd
+Message-ID: <tip-b433c3d4549ae74935b585115f076c6fb7bc48fe@git.kernel.org>
+Git-Commit-ID: b433c3d4549ae74935b585115f076c6fb7bc48fe
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Jacob Pan <jacob.jun.pan@intel.com>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
-       akpm <akpm@linux-foundation.org>, chuck.lever@oracle.com
-Subject: Re: problem: Re: [PATCH] input: fixup X86_MRST selects
-References: <20100609133443.38f1f957.sfr@canb.auug.org.au> <201006101204.45709.dmitry.torokhov@gmail.com> <4C28F210.7030909@oracle.com> <201006281318.16377.dmitry.torokhov@gmail.com>
-In-Reply-To: <201006281318.16377.dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4C2904DE.0160:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 20:24:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/10 13:18, Dmitry Torokhov wrote:
-> On Monday, June 28, 2010 12:03:44 pm Randy Dunlap wrote:
->> On 06/10/10 12:04, Dmitry Torokhov wrote:
->>> On Wednesday, June 09, 2010 03:42:08 pm Randy Dunlap wrote:
->>>> On 06/09/10 15:40, Dmitry Torokhov wrote:
->>>>> On Wednesday, June 09, 2010 03:29:21 pm Randy Dunlap wrote:
->>>>>> +++ linux-next-20100609/drivers/input/keyboard/Kconfig
->>>>>> @@ -70,9 +70,10 @@ config KEYBOARD_ATARI
->>>>>>
->>>>>>  config KEYBOARD_ATKBD
->>>>>>  
->>>>>>         tristate "AT keyboard" if EMBEDDED || !X86
->>>>>>
->>>>>> +       depends on !X86 || (X86 && !X86_MRST)
->>>>>
->>>>> Should it be simply 'depends on !X86_MRST' and then we could kill
->>>>> '!X86_MRST' conditionals in selects?
->>>>
->>>> Duh, that sounds good, yes.
->>>
->>> Actually, I do not think this is a correct approach. While Moorestown
->>> does not have i8042 theoretically it is possible to add AT-style
->>> keyboard by other means (however unlikely it is) so we should not be
->>> disabling it.
->>>
->>> We should, however, disallow i8042 from being selected. Could you please
->>> tell me if the patch below works for you?
->>
->> Dmitry,
->>
->> This patch (in current mainline git) causes a problem when X86_MRST is
->> enabled. CONFIG_SERIO_I8042 is no longer enabled when X86_MRST is enabled,
->> and X86_MRST could be enabled when someone is trying to build a generic
->> kernel.
-> 
-> Randy,
-> 
-> Looking at arch/x86/kernel/mrst.c I am not sure if generic kernel will
-> work well witbh X86_MRST set. However if we supposed to support Moorestown
-> on generic images then, instead of playing with Kconfig, we need to adjust
-> i8042_platform_init() to abort on Moorestown.
+Commit-ID:  b433c3d4549ae74935b585115f076c6fb7bc48fe
+Gitweb:     http://git.kernel.org/tip/b433c3d4549ae74935b585115f076c6fb7bc48fe
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Mon, 28 Jun 2010 16:51:01 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 28 Jun 2010 18:21:30 +0200
 
-OK.  Until something else is done, you might want to revert this patch
-and just live with the build errors (that caused me to send the original
-patch).
+init, sched: Fix race between init and kthreadd
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Ilya reported that on a very slow machine he could reliably
+reproduce a race between forking init and kthreadd. We first
+fork init so that it  obtains pid-1, however since the scheduler
+is already fully running at this point it can preempt and run
+the init thread before we spawn and set kthreadd_task.
+
+The init thread can then attempt spawning kthreads without
+kthreadd being present which results in an OOPS.
+
+Reported-by: Ilya Loginov <isloginov@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <1277736661.3561.110.camel@laptop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ init/main.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/init/main.c b/init/main.c
+index 3bdb152..633442f 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -422,18 +422,26 @@ static void __init setup_command_line(char *command_line)
+  * gcc-3.4 accidentally inlines this function, so use noinline.
+  */
+ 
++static __initdata DECLARE_COMPLETION(kthreadd_done);
++
+ static noinline void __init_refok rest_init(void)
+ 	__releases(kernel_lock)
+ {
+ 	int pid;
+ 
+ 	rcu_scheduler_starting();
++	/*
++	 * We need to spawn init first so that it obtains pid-1, however
++	 * the init task will end up wanting to create kthreads, which, if
++	 * we schedule it before we create kthreadd, will OOPS.
++	 */
+ 	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
+ 	numa_default_policy();
+ 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
+ 	rcu_read_lock();
+ 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
+ 	rcu_read_unlock();
++	complete(&kthreadd_done);
+ 	unlock_kernel();
+ 
+ 	/*
+@@ -855,6 +863,10 @@ static noinline int init_post(void)
+ 
+ static int __init kernel_init(void * unused)
+ {
++	/*
++	 * Wait until kthreadd is all set-up.
++	 */
++	wait_for_completion(&kthreadd_done);
+ 	lock_kernel();
+ 
+ 	/*
