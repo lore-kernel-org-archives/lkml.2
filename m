@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405Ab0F1JVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 05:21:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56617 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750777Ab0F1JVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 05:21:32 -0400
-Message-ID: <4C286A8F.9080508@redhat.com>
-Date: Mon, 28 Jun 2010 17:25:35 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S1751554Ab0F1JVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 05:21:40 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42437 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751300Ab0F1JVe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 05:21:34 -0400
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Grant Grundler <grundler@google.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Colin Tuckley <colin.tuckley@arm.com>
+Subject: Re: [PATCH] sata_sil24: Use memory barriers before issuing commands
+References: <20100610145706.15588.4562.stgit@e102109-lin.cambridge.arm.com>
+	<AANLkTimdHs25zHe8DJUaOOo7wYW14Ds4c2ORaSBhRxSg@mail.gmail.com>
+Date: Mon, 28 Jun 2010 10:21:19 +0100
+In-Reply-To: <AANLkTimdHs25zHe8DJUaOOo7wYW14Ds4c2ORaSBhRxSg@mail.gmail.com>
+	(Grant Grundler's message of "Fri, 25 Jun 2010 19:32:22 -0700")
+Message-ID: <tnx39w77bsg.fsf@e102109-lin.cambridge.arm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-       linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 1/2] Makefile: fix missing dash when using make LOCALVERSION=xxx
-References: <20100628030507.5187.95903.sendpatchset@localhost.localdomain> <alpine.DEB.2.00.1006280207580.28072@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1006280207580.28072@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-OriginalArrivalTime: 28 Jun 2010 09:21:23.0393 (UTC) FILETIME=[46D36310:01CB16A3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/10 17:08, David Rientjes wrote:
-> On Sun, 27 Jun 2010, Amerigo Wang wrote:
+Hi Grant,
+
+Grant Grundler <grundler@google.com> wrote:
+> On Thu, Jun 10, 2010 at 7:57 AM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+>> The data in the cmd_block buffers may reach the main memory after the
+>> writel() to the device ports.
 >
->> From: Amerigo Wang<amwang@redhat.com>
->> Date: Mon, 28 Jun 2010 10:42:28 +0800
->>
->> When I use make LOCALVERSION=local and LOCALVERSION_AUTO is not set,
->> I got "2.6.35-rc3local". It is supposed to be "2.6.35-rc3-local".
->>
+> "ia-64 Linux Kernel" (mosberger and eranian) uses exactly this sequence
+> as an example for wmb() on page 303.
 >
-> No, a `-' is not implied when using LOCALVERSION=.
+> I'm curious about the system that exposed this problem. I believe wmb() fixes
+>  an issue not exposed on most machines. Can any general comments be
+> made about cache coherency, memory ordering (weak?), instruction ordering
+>  (super scalar?), etc. ?
+>
+> The explanation above is a bit short (most people won't understand it).
 
-But in your patch description, you said:
+I already posted a second version of this patch, though it triggered a
+longer discussion on whether we should do this (cross-post between LKML,
+linux-ide and linux-arch):
 
-     Without CONFIG_LOCALVERSION_AUTO, "make" results in v2.6.32-rc4+
-     unless the repository is at the Linux v2.6.32-rc4 commit (in which
-     case the version would be v2.6.32-rc4).  If "make LOCALVERSION=kbuild"
-     were used, it results in v2.6.32-rc4-kbuild.
+http://thread.gmane.org/gmane.linux.ide/46414
 
-So, shouldn't that be "make LOCALVERSION=-kbuild"?
+I know IA-64 and a several other architectures have weak memory ordering
+but some of them just add barriers in the I/O accessors (with some
+performance penalty).
+
+Since the (new) patch is already in mainline, please comment on the other
+thread for memory ordering etc.
 
 Thanks.
 
+-- 
+Catalin
