@@ -1,116 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab0F1Q0M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 12:26:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53291 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab0F1Q0G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 12:26:06 -0400
-Date: Mon, 28 Jun 2010 09:23:41 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Ilya Loginov <isloginov@gmail.com>,
-       torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] init: Fix race between init and kthreadd -v3
-Message-Id: <20100628092341.5b011a0a.randy.dunlap@oracle.com>
-In-Reply-To: <1277736661.3561.110.camel@laptop>
-References: <20100624001148.61e9da1c.isloginov@gmail.com>
-	<1277385096.1875.974.camel@laptop>
-	<20100624172334.ca7e9bef.isloginov@gmail.com>
-	<1277715689.1875.1104.camel@laptop>
-	<1277725997.3561.6.camel@laptop>
-	<20100628141927.GA9306@elte.hu>
-	<1277736661.3561.110.camel@laptop>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752365Ab0F1Q0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 12:26:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751106Ab0F1Q0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 12:26:47 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] Ext4: Make file creation time,
+	i_version and i_generation available by xattrs
+To: viro@ZenIV.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
+       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, linux-cifs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       samba-technical@lists.samba.org, sjayaraman@suse.de,
+       linux-ext4@vger.kernel.org
+Date: Mon, 28 Jun 2010 17:26:27 +0100
+Message-ID: <20100628162626.6026.26679.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4C28CD02.0254:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jun 2010 16:51:01 +0200 Peter Zijlstra wrote:
+Make the file creation time, inode data version number and inode generation
+number available on Ext4 by as xattrs named:
 
-> On Mon, 2010-06-28 at 16:19 +0200, Ingo Molnar wrote:
-> 
-> > I think you may be using a mutex as a completion in essence. Why not use 
-> > completions instead?
-> 
-> Totally forgot about those things.. Yes they fit perfectly.
-> 
-> ---
-> Subject: init: Fix race between init and kthreadd -v2
-> 
-> Ilya reported that on a very slow machine he could reliably reproduce a
-> race between forking init and kthreadd. We first fork init so that it 
-> obtains pid-1, however since the scheduler is already fully running at
-> this point it can preempt and run the init thread before we spawn and
-> set kthreadd_task.
-> 
-> The init thread can then attempt spawning kthreads without kthreadd
-> being present which results in an OOPS.
-> 
-> Reported-by: Ilya Loginov <isloginov@gmail.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  init/main.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/init/main.c b/init/main.c
-> index e2a2bf3..2280f63 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -420,18 +420,26 @@ static void __init setup_command_line(char *command_line)
->   * gcc-3.4 accidentally inlines this function, so use noinline.
->   */
->  
-> +static __initdata DECLARE_COMPLETION(kthreadd_done);
-> +
->  static noinline void __init_refok rest_init(void)
->  	__releases(kernel_lock)
->  {
->  	int pid;
->  
->  	rcu_scheduler_starting();
-> +	/*
-> +	 * We need to spawn init first so that it obtains pid-1, however
+	file.crtime
+	file.i_generation
+	file.i_version (directories only for ext4)
 
-Would be better to say "pid 1" or "pid=1".
-"pid-1" seems odd to me.
+This could then be used by Samba as the SMB protocol passes the file creation
+time to the client.
+
+With this patch, you can see the xattrs providing binary data:
+
+[root@andromeda ~]# getfattr -d /var/cache/fscache -e hex -m\.*
+getfattr: Removing leading '/' from absolute path names
+# file: var/cache/fscache
+file.crtime=0x53ba244c000000000000000000000000
+file.i_generation=0x0000000000000000
+file.i_version=0x0400000000000000
+security.selinux=0x73797374656d5f753a6f626a6563745f723a636163686566696c65735f7661725f743a733000
+[root@andromeda ~]# getfattr -d /var/cache/fscache/cull_atimes -e hex -m\.*
+getfattr: Removing leading '/' from absolute path names
+# file: var/cache/fscache/cull_atimes
+file.crtime=0x83ba244c0000000019a3632a00000000
+file.i_generation=0x73ab85f500000000
+security.selinux=0x73797374656d5f753a6f626a6563745f723a636163686566696c65735f7661725f743a733000
+user.CacheFiles.atime_base=0x30303030303030303463323464363239
 
 
-> +	 * the init task will end up wanting to create kthreads, which, if
-> +	 * we schedule it before we create kthreadd, will OOPS.
-> +	 */
->  	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
->  	numa_default_policy();
->  	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
->  	rcu_read_lock();
->  	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
->  	rcu_read_unlock();
-> +	complete(&kthreadd_done);
->  	unlock_kernel();
->  
->  	/*
-> @@ -847,6 +855,10 @@ static noinline int init_post(void)
->  
->  static int __init kernel_init(void * unused)
->  {
-> +	/*
-> +	 * Wait until kthreadd is all set-up.
-> +	 */
-> +	wait_for_completion(&kthreadd_done);
->  	lock_kernel();
->  
->  	/*
-> 
-> --
-
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+ fs/ext4/Makefile      |    4 +-
+ fs/ext4/xattr.c       |   39 ++++++++++++------
+ fs/ext4/xattr.h       |    2 +
+ fs/ext4/xattr_file.c  |  108 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/xattr.h |    3 +
+ 5 files changed, 142 insertions(+), 14 deletions(-)
+ create mode 100644 fs/ext4/xattr_file.c
+
+diff --git a/fs/ext4/Makefile b/fs/ext4/Makefile
+index 8867b2a..034dd27 100644
+--- a/fs/ext4/Makefile
++++ b/fs/ext4/Makefile
+@@ -8,6 +8,8 @@ ext4-y	:= balloc.o bitmap.o dir.o file.o fsync.o ialloc.o inode.o \
+ 		ioctl.o namei.o super.o symlink.o hash.o resize.o extents.o \
+ 		ext4_jbd2.o migrate.o mballoc.o block_validity.o move_extent.o
+ 
+-ext4-$(CONFIG_EXT4_FS_XATTR)		+= xattr.o xattr_user.o xattr_trusted.o
++ext4-$(CONFIG_EXT4_FS_XATTR) += \
++	xattr.o xattr_user.o xattr_trusted.o xattr_file.o
++
+ ext4-$(CONFIG_EXT4_FS_POSIX_ACL)	+= acl.o
+ ext4-$(CONFIG_EXT4_FS_SECURITY)		+= xattr_security.o
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index 0433800..1360f7c 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -111,6 +111,7 @@ static const struct xattr_handler *ext4_xattr_handler_map[] = {
+ 
+ const struct xattr_handler *ext4_xattr_handlers[] = {
+ 	&ext4_xattr_user_handler,
++	&ext4_xattr_file_handler,
+ 	&ext4_xattr_trusted_handler,
+ #ifdef CONFIG_EXT4_FS_POSIX_ACL
+ 	&ext4_xattr_acl_access_handler,
+@@ -427,23 +428,35 @@ cleanup:
+ static int
+ ext4_xattr_list(struct dentry *dentry, char *buffer, size_t buffer_size)
+ {
+-	int i_error, b_error;
++	int ret, result = 0;
+ 
+ 	down_read(&EXT4_I(dentry->d_inode)->xattr_sem);
+-	i_error = ext4_xattr_ibody_list(dentry, buffer, buffer_size);
+-	if (i_error < 0) {
+-		b_error = 0;
+-	} else {
+-		if (buffer) {
+-			buffer += i_error;
+-			buffer_size -= i_error;
+-		}
+-		b_error = ext4_xattr_block_list(dentry, buffer, buffer_size);
+-		if (b_error < 0)
+-			i_error = 0;
++	ret = ext4_xattr_ibody_list(dentry, buffer, buffer_size);
++	if (ret < 0)
++		goto error;
++	result += ret;
++	if (buffer) {
++		buffer += ret;
++		buffer_size -= ret;
++	}
++
++	ret = ext4_xattr_block_list(dentry, buffer, buffer_size);
++	if (ret < 0)
++		goto error;
++	result += ret;
++	if (buffer) {
++		buffer += ret;
++		buffer_size -= ret;
+ 	}
++
++	ret = ext4_xattr_file_list(dentry, buffer, buffer_size);
++	if (ret < 0)
++		goto error;
++	result += ret;
++
++error:
+ 	up_read(&EXT4_I(dentry->d_inode)->xattr_sem);
+-	return i_error + b_error;
++	return ret < 0 ? ret : result;
+ }
+ 
+ /*
+diff --git a/fs/ext4/xattr.h b/fs/ext4/xattr.h
+index 518e96e..f0e3aaf 100644
+--- a/fs/ext4/xattr.h
++++ b/fs/ext4/xattr.h
+@@ -66,12 +66,14 @@ struct ext4_xattr_entry {
+ # ifdef CONFIG_EXT4_FS_XATTR
+ 
+ extern const struct xattr_handler ext4_xattr_user_handler;
++extern const struct xattr_handler ext4_xattr_file_handler;
+ extern const struct xattr_handler ext4_xattr_trusted_handler;
+ extern const struct xattr_handler ext4_xattr_acl_access_handler;
+ extern const struct xattr_handler ext4_xattr_acl_default_handler;
+ extern const struct xattr_handler ext4_xattr_security_handler;
+ 
+ extern ssize_t ext4_listxattr(struct dentry *, char *, size_t);
++extern int ext4_xattr_file_list(struct dentry *, char *, size_t);
+ 
+ extern int ext4_xattr_get(struct inode *, int, const char *, void *, size_t);
+ extern int ext4_xattr_set(struct inode *, int, const char *, const void *, size_t, int);
+diff --git a/fs/ext4/xattr_file.c b/fs/ext4/xattr_file.c
+new file mode 100644
+index 0000000..81044c5
+--- /dev/null
++++ b/fs/ext4/xattr_file.c
+@@ -0,0 +1,108 @@
++/* File-specific xattrs
++ *
++ * Copyright (C) 2010 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#include <linux/module.h>
++#include <linux/string.h>
++#include <linux/capability.h>
++#include <linux/fs.h>
++#include "ext4_jbd2.h"
++#include "ext4.h"
++#include "xattr.h"
++
++static const char *ext4_file_xattrs[] = {
++	"crtime",
++	"i_generation"
++};
++
++static const char *ext4_dir_xattrs[] = {
++	"i_version",
++};
++
++int
++ext4_xattr_file_list(struct dentry *dentry, char *list, size_t list_size)
++{
++	struct ext4_inode_info *ei = EXT4_I(dentry->d_inode);
++	const size_t prefix_len = XATTR_FILE_PREFIX_LEN;
++	int total_len = 0;
++	int loop;
++
++	for (loop = 0; loop < ARRAY_SIZE(ext4_file_xattrs); loop++) {
++		const char *fxname = ext4_file_xattrs[loop];
++		int fxnlen = strlen(fxname);
++
++		total_len += prefix_len + fxnlen + 1;
++		if (list && total_len <= list_size) {
++			memcpy(list, XATTR_FILE_PREFIX, prefix_len);
++			list += prefix_len;
++			memcpy(list, fxname, fxnlen + 1);
++			list += fxnlen + 1;
++		}
++	}
++
++	if (!S_ISDIR(ei->vfs_inode.i_mode))
++		goto out;
++
++	/* Ext4 only supports i_version on directories */
++	for (loop = 0; loop < ARRAY_SIZE(ext4_dir_xattrs); loop++) {
++		const char *fxname = ext4_dir_xattrs[loop];
++		int fxnlen = strlen(fxname);
++
++		total_len += prefix_len + fxnlen + 1;
++		if (list && total_len <= list_size) {
++			memcpy(list, XATTR_FILE_PREFIX, prefix_len);
++			list += prefix_len;
++			memcpy(list, fxname, fxnlen + 1);
++			list += fxnlen + 1;
++		}
++	}
++
++out:
++	return total_len;
++}
++
++static int
++ext4_xattr_file_get(struct dentry *dentry, const char *name, void *buffer,
++		    size_t size, int type)
++{
++	struct ext4_inode_info *ei = EXT4_I(dentry->d_inode);
++	size_t result_size;
++	union {
++		struct timespec ts;
++		u64 val;
++	} result;
++
++	if (strcmp(name, "crtime") == 0) {
++		result_size = sizeof(struct timespec);
++		result.ts = ei->i_crtime;
++	} else if (strcmp(name, "i_version") == 0) {
++		if (!S_ISDIR(ei->vfs_inode.i_mode))
++			return -ENOTDIR;
++		result_size = sizeof(u64);
++		result.val = ei->vfs_inode.i_version;
++	} else if (strcmp(name, "i_generation") == 0) {
++		result_size = sizeof(u64);
++		result.val = ei->vfs_inode.i_generation;
++	} else {
++		return -EINVAL;
++	}
++
++	if (size == 0)
++		return result_size;
++	if (size < result_size)
++		return -E2BIG;
++	memcpy(buffer, &result, result_size);
++	return result_size;
++}
++
++const struct xattr_handler ext4_xattr_file_handler = {
++	.prefix	= XATTR_FILE_PREFIX,
++	.get	= ext4_xattr_file_get,
++};
+diff --git a/include/linux/xattr.h b/include/linux/xattr.h
+index 0cfa1e9..e52a8ce 100644
+--- a/include/linux/xattr.h
++++ b/include/linux/xattr.h
+@@ -33,6 +33,9 @@
+ #define XATTR_USER_PREFIX "user."
+ #define XATTR_USER_PREFIX_LEN (sizeof (XATTR_USER_PREFIX) - 1)
+ 
++#define XATTR_FILE_PREFIX "file."
++#define XATTR_FILE_PREFIX_LEN (sizeof (XATTR_FILE_PREFIX) - 1)
++
+ struct inode;
+ struct dentry;
+ 
+
