@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab0F1LN3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 07:13:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54555 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751182Ab0F1LN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 07:13:27 -0400
-Message-ID: <4C2883D3.2050606@redhat.com>
-Date: Mon, 28 Jun 2010 14:13:23 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1752639Ab0F1LOP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 07:14:15 -0400
+Received: from fg-out-1718.google.com ([72.14.220.155]:40966 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab0F1LOO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 07:14:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=si6RD83bLD9beCKn2sAgPLxDphgncqaE5hd/QlSVvssW3Cwbeeo0DggEq5LC+NIi8l
+         Re4++K+fvTr+ULoOZN0kMTrhOXZIfhaShT9WT/6z0DYtsOHYpy6rL8zugpTfA65CWJNn
+         wt86qMu8GGzULyLOl8SGHhG4FqFP2speSmOwE=
+Date: Mon, 28 Jun 2010 15:14:09 +0400
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: dkirjanov@kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Lior Dotan <liodot@gmail.com>,
+       charrer@alacritech.com, "David S. Miller" <davem@davemloft.net>,
+       Jiri Pirko <jpirko@redhat.com>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] staging: slicoss: Change return codes to -EYYY.
+Message-ID: <20100628111409.GA20103@shinshilla>
+References: <1277644847-16292-1-git-send-email-segooon@gmail.com>
+ <AANLkTil3gkyn5vY9o0JYluRB4qUp1hdyfOHbX97OZfGJ@mail.gmail.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 3/10] KVM: MMU: fix direct sp's access corruptted
-References: <4C2498EC.2010006@cn.fujitsu.com> <4C249BAD.6000609@cn.fujitsu.com> <4C287081.40300@redhat.com> <4C287332.5080803@cn.fujitsu.com>
-In-Reply-To: <4C287332.5080803@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTil3gkyn5vY9o0JYluRB4qUp1hdyfOHbX97OZfGJ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2010 01:02 PM, Xiao Guangrong wrote:
->
-> Avi Kivity wrote:
->
->    
->> Instead of adding a new bit, can you encode the protection in the direct
->> sp's access bits?  So we'll have one sp for read-only or
->> writeable-but-not-dirty small pages, and another sp for
->> writeable-and-dirty small pages.
->>
->>      
-> It looks like it can't solve all problems, it fix the access corrupted,
-> but will cause D bit losed:
->
-> mapping A and mapping B both are writable-and-dirty, when mapping A write
-> #PF occurs, the mapping is writable, then we can't set B's D bit anymore.
->    
+> > @@ -1206,7 +1206,7 @@ static void slic_link_event_handler(struct adapter *adapter)
+> >  #else
+> >        Stop compilation;
+> >  #endif
+> > -       ASSERT((status == STATUS_SUCCESS) || (status == STATUS_PENDING));
+> > +       ASSERT(status == 0);
+> >  }
+> >
+> 
+> Now that looks useless since slic_upr_request can return STATUS_PENDING
+> or -ENOMEM. Same for slic_config_get
+Yes, it seems that slic_link_event_handler & slic_config_get have to return error codes.
 
-If B is writeable-and-dirty, then it's D bit is already set, and we 
-don't need to do anything.
-
-If B is writeable-and-clean, then we'll have an spte pointing to a 
-read-only sp, so we'll get a write fault on access and an opportunity to 
-set the D bit.
-
-> Anyway, i think we should re-intall the mapping when the state is changed. :-(
->    
-
-When the gpte is changed from read-only to writeable or from clean to 
-dirty, we need to update the spte, yes.  But that's true for other sptes 
-as well, not just large gptes.
-
--- 
-error compiling committee.c: too many arguments to function
+> > @@ -2267,7 +2267,7 @@ static u32 slic_card_locate(struct adapter *adapter)
+> >
+> >        ASSERT(card);
+> >        if (!card)
+> > -               return STATUS_FAILURE;
+> > +               return -ENOMEM;
+> 
+> Is -ENOMEM correct for this case?
+> 
+Right, maybe ENXIO?
 
