@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab0F1OVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 10:21:34 -0400
-Received: from trinity.develer.com ([83.149.158.210]:45931 "EHLO
-	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab0F1OVd (ORCPT
+	id S1754706Ab0F1Ode (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 10:33:34 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:13641 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752165Ab0F1Odd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 10:21:33 -0400
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jun 2010 10:21:33 EDT
-Date: Mon, 28 Jun 2010 16:14:06 +0200
-From: Andrea Righi <arighi@develer.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Rodolfo Giometti <giometti@enneenne.com>,
-       Amit Walambe <amit.walambe@eurotech.com>,
-       Chris Leahy <leahycm@gmail.com>, Giovanni Bajo <rasky@develer.com>,
-       linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] USB: EHCI: fix NULL pointer dererence in HCDs that use
- HCD_LOCAL_MEM
-Message-ID: <20100628141355.GA3807@linux.develer.com>
+	Mon, 28 Jun 2010 10:33:33 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBALZPKExLd/sX/2dsb2JhbAAHgxbMbpBRgSmDCXIE
+X-IronPort-AV: E=Sophos;i="4.53,497,1272859200"; 
+   d="scan'208";a="69031201"
+Message-ID: <4C28B2BB.1090107@teksavvy.com>
+Date: Mon, 28 Jun 2010 10:33:31 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Brian Bloniarz <bmb@athenacr.com>
+CC: Jens Axboe <jaxboe@fusionio.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>
+Subject: Re: [GIT PULL] block/io bits for 2.6.35-rc
+References: <4C10EC2A.8060002@fusionio.com> <AANLkTimus1Ajk-6HyDtZBmsYwQjkAf3zW-dvxNJlSlGw@mail.gmail.com> <4C1111ED.6020008@fusionio.com> <4C111685.8010400@athenacr.com> <4C27DA4A.3040708@teksavvy.com> <4C284931.2000908@fusionio.com> <4C28A8FC.6040605@teksavvy.com> <4C28AC1E.8070409@athenacr.com>
+In-Reply-To: <4C28AC1E.8070409@athenacr.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we use the HCD_LOCAL_MEM flag and dma_declare_coherent_memory() to
-enforce the host controller's local memory utilization we also need to
-disable native scatter-gather support, otherwise hcd_alloc_coherent() in
-map_urb_for_dma() is called with urb->transfer_buffer == NULL, that
-triggers a NULL pointer dereference.
+On 28/06/10 10:05 AM, Brian Bloniarz wrote:
+> On 06/28/2010 09:51 AM, Mark Lord wrote:
+..
+>> I found these two:
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=e913fc825dc685a444cb4c1d0f9d32f372f5986
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=30fd1e551a730d942e91109762c942786be0ef7c
+>>
+>>
+>> But they don't apply cleanly to 2.6.34.
+>>
+>> Anyone?
+>
+> Don't use those, they have bugs and have since been reverted.
+>
+> Links to the patch series that Jens mentions are below. I doubt they
+> apply cleanly to older kernels. Somebody's probably going to need to
+> take a crack at backporting them eventually (I could try, even), but
+> I don't know anybody has yet.
+>
+> Christoph Hellwig (8):
+>        writeback: fix writeback completion notifications
+>        writeback: queue work on stack in writeback_inodes_sb
+>        writeback: enforce s_umount locking in writeback_inodes_sb
+>        writeback: fix writeback_inodes_wb from writeback_inodes_sb
+>        writeback: simplify wakeup_flusher_threads
+>        writeback: simplify and split bdi_start_writeback
+>        writeback: add missing requeue_io in writeback_inodes_wb
+>        writeback: fix pin_sb_for_writeback
+>
+> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=2c99721ec6a55b2c1e7ba94945bbdae454e11308
+> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=ebf51611db2cfa33d056b4428f13275f81732fd5
+> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=de3f848fbc24f71174f3bcc7513b5a3fafb37bac
+> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=e15e123275b3ca3eeb378136046ab78eab214169
+> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=dcac2e708d8f8af1a220dd238027af5b4aedfc12
+> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=8163b53a6bfbfa14ae83f8cdbf536f9c191d3279
+> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=22e53a2ca88690c711a954d3c652b468a5e94272
+> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=7eed7cc254e71352e5e2e642c70a9b04cd28cc76
 
-We can also consider to add a WARN_ON() and return an error code to
-better catch this problem in the future.
 
-Signed-off-by: Andrea Righi <arighi@develer.com>
----
- drivers/usb/core/hcd.c      |    5 +++++
- drivers/usb/host/ehci-hcd.c |    3 ++-
- 2 files changed, 7 insertions(+), 1 deletions(-)
+Thanks.  I'll pull those down and backport them here.
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 12742f1..161c757 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -1219,6 +1219,11 @@ static int hcd_alloc_coherent(struct usb_bus *bus,
- {
- 	unsigned char *vaddr;
- 
-+	if (*vaddr_handle == NULL) {
-+		WARN_ON_ONCE(1);
-+		return -EFAULT;
-+	}
-+
- 	vaddr = hcd_buffer_alloc(bus, size + sizeof(vaddr),
- 				 mem_flags, dma_handle);
- 	if (!vaddr)
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index a3ef2a9..27e0351 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -606,7 +606,8 @@ static int ehci_init(struct usb_hcd *hcd)
- 	ehci->command = temp;
- 
- 	/* Accept arbitrarily long scatter-gather lists */
--	hcd->self.sg_tablesize = ~0;
-+	if (!(hcd->driver->flags & HCD_LOCAL_MEM))
-+		hcd->self.sg_tablesize = ~0;
- 	return 0;
- }
- 
+Cheers!
