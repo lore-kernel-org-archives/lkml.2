@@ -1,233 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab0F1KNB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 06:13:01 -0400
-Received: from www.tglx.de ([62.245.132.106]:58399 "EHLO www.tglx.de"
+	id S1751898Ab0F1KNV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 06:13:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12001 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab0F1KNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 06:13:00 -0400
-Date: Mon, 28 Jun 2010 12:12:35 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT pull] perf fixes for 2.6.35
-Message-ID: <alpine.LFD.2.00.1006281212030.2530@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751398Ab0F1KNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 06:13:18 -0400
+Date: Mon, 28 Jun 2010 13:08:07 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>,
+       Aristeu Rozanski <arozansk@redhat.com>,
+       Herbert Xu <herbert.xu@redhat.com>, Juan Quintela <quintela@redhat.com>,
+       "David S. Miller" <davem@redhat.com>, kvm@vger.kernel.org,
+       virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, ykaul@redhat.com, markmc@redhat.com
+Subject: [PATCHv2] vhost-net: add dhclient work-around from userspace
+Message-ID: <20100628100807.GA30685@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Userspace virtio server has the following hack
+so guests rely on it, and we have to replicate it, too:
 
-Please pull the latest perf-fixes-for-linus git tree from:
+Use port number to detect incoming IPv4 DHCP response packets,
+and fill in the checksum for these.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
+The issue we are solving is that on linux guests, some apps
+that use recvmsg with AF_PACKET sockets, don't know how to
+handle CHECKSUM_PARTIAL;
+The interface to return the relevant information was added
+in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
+and older userspace does not use it.
+One important user of recvmsg with AF_PACKET is dhclient,
+so we add a work-around just for DHCP.
 
-Thanks,
+Don't bother applying the hack to IPv6 as userspace virtio does not
+have a work-around for that - let's hope guests will do the right
+thing wrt IPv6.
 
-	tglx
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
------------------->
-Arnaldo Carvalho de Melo (2):
-      perf record: Don't call newt functions when not initialized
-      perf session: Remove threads from tree on PERF_RECORD_EXIT
-
-Ian Munsie (1):
-      perf record: prevent kill(0, SIGTERM);
-
-Stephane Eranian (1):
-      perf_events: Fix Intel Westmere event constraints
-
-Steven Rostedt (1):
-      perf/tracing: Fix regression of perf losing kprobe events
-
-Wu Zhangjin (1):
-      tracing: Fix undeclared ENOSYS in include/linux/tracepoint.h
+Dave, I'm going to put this patch on the vhost tree,
+no need for you to bother merging it - you'll get
+it with a pull request.
 
 
- arch/x86/kernel/cpu/perf_event_intel.c |    1 +
- include/linux/tracepoint.h             |    1 +
- kernel/trace/trace_event_perf.c        |    4 +++-
- tools/perf/builtin-record.c            |    2 +-
- tools/perf/util/event.c                |    4 +++-
- tools/perf/util/newt.c                 |   15 +++++++++++++--
- tools/perf/util/session.c              |   11 +++++++++++
- tools/perf/util/session.h              |    2 ++
- tools/perf/util/thread.h               |    5 ++++-
- 9 files changed, 39 insertions(+), 6 deletions(-)
+ drivers/vhost/net.c |   44 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 43 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index fdbc652..214ac86 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -72,6 +72,7 @@ static struct event_constraint intel_westmere_event_constraints[] =
- 	INTEL_EVENT_CONSTRAINT(0x51, 0x3), /* L1D */
- 	INTEL_EVENT_CONSTRAINT(0x60, 0x1), /* OFFCORE_REQUESTS_OUTSTANDING */
- 	INTEL_EVENT_CONSTRAINT(0x63, 0x3), /* CACHE_LOCK_CYCLES */
-+	INTEL_EVENT_CONSTRAINT(0xb3, 0x1), /* SNOOPQ_REQUEST_OUTSTANDING */
- 	EVENT_CONSTRAINT_END
- };
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index cc19595..03bba6a 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -24,6 +24,10 @@
+ #include <linux/if_tun.h>
+ #include <linux/if_macvlan.h>
  
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 9a59d1f..103d1b6 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -14,6 +14,7 @@
-  * See the file COPYING for more details.
-  */
- 
-+#include <linux/errno.h>
- #include <linux/types.h>
- #include <linux/rcupdate.h>
- 
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index e6f6588..8a2b73f 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -96,7 +96,9 @@ int perf_trace_init(struct perf_event *p_event)
- 	mutex_lock(&event_mutex);
- 	list_for_each_entry(tp_event, &ftrace_events, list) {
- 		if (tp_event->event.type == event_id &&
--		    tp_event->class && tp_event->class->perf_probe &&
-+		    tp_event->class &&
-+		    (tp_event->class->perf_probe ||
-+		     tp_event->class->reg) &&
- 		    try_module_get(tp_event->mod)) {
- 			ret = perf_trace_event_init(tp_event, p_event);
- 			break;
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index dc3435e..711745f 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -193,7 +193,7 @@ static void sig_handler(int sig)
- 
- static void sig_atexit(void)
- {
--	if (child_pid != -1)
-+	if (child_pid > 0)
- 		kill(child_pid, SIGTERM);
- 
- 	if (signr == -1)
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 1f08f00..2fbf6a4 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -538,8 +538,10 @@ int event__process_task(event_t *self, struct perf_session *session)
- 	dump_printf("(%d:%d):(%d:%d)\n", self->fork.pid, self->fork.tid,
- 		    self->fork.ppid, self->fork.ptid);
- 
--	if (self->header.type == PERF_RECORD_EXIT)
-+	if (self->header.type == PERF_RECORD_EXIT) {
-+		perf_session__remove_thread(session, thread);
- 		return 0;
-+	}
- 
- 	if (thread == NULL || parent == NULL ||
- 	    thread__fork(thread, parent) < 0) {
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index cf182ca..7537ca1 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -43,6 +43,9 @@ struct ui_progress *ui_progress__new(const char *title, u64 total)
- 
- 	if (self != NULL) {
- 		int cols;
++#include <linux/ip.h>
++#include <linux/udp.h>
++#include <linux/netdevice.h>
 +
-+		if (use_browser <= 0)	
-+			return self;
- 		newtGetScreenSize(&cols, NULL);
- 		cols -= 4;
- 		newtCenteredWindow(cols, 1, title);
-@@ -67,14 +70,22 @@ out_free_self:
+ #include <net/sock.h>
  
- void ui_progress__update(struct ui_progress *self, u64 curr)
- {
-+	/*
-+	 * FIXME: We should have a per UI backend way of showing progress,
-+	 * stdio will just show a percentage as NN%, etc.
-+	 */
-+	if (use_browser <= 0)
-+		return;
- 	newtScaleSet(self->scale, curr);
- 	newtRefresh();
+ #include "vhost.h"
+@@ -186,6 +190,44 @@ static void handle_tx(struct vhost_net *net)
+ 	unuse_mm(net->dev.mm);
  }
  
- void ui_progress__delete(struct ui_progress *self)
- {
--	newtFormDestroy(self->form);
--	newtPopWindow();
-+	if (use_browser > 0) {
-+		newtFormDestroy(self->form);
-+		newtPopWindow();
-+	}
- 	free(self);
- }
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 8f83a18..c422cd6 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -90,6 +90,7 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
- 
- 	memcpy(self->filename, filename, len);
- 	self->threads = RB_ROOT;
-+	INIT_LIST_HEAD(&self->dead_threads);
- 	self->hists_tree = RB_ROOT;
- 	self->last_match = NULL;
- 	self->mmap_window = 32;
-@@ -131,6 +132,16 @@ void perf_session__delete(struct perf_session *self)
- 	free(self);
- }
- 
-+void perf_session__remove_thread(struct perf_session *self, struct thread *th)
++static int peek_head(struct sock *sk)
 +{
-+	rb_erase(&th->rb_node, &self->threads);
-+	/*
-+	 * We may have references to this thread, for instance in some hist_entry
-+	 * instances, so just move them to a separate list.
-+	 */
-+	list_add_tail(&th->node, &self->dead_threads);
++	struct sk_buff *skb;
++
++	lock_sock(sk);
++	skb = skb_peek(&sk->sk_receive_queue);
++	if (unlikely(!skb)) {
++		release_sock(sk);
++		return 0;
++	}
++	/* Userspace virtio server has the following hack so
++	 * guests rely on it, and we have to replicate it, too: */
++	/* Use port number to detect incoming IPv4 DHCP response packets,
++	 * and fill in the checksum. */
++
++	/* The issue we are solving is that on linux guests, some apps
++	 * that use recvmsg with AF_PACKET sockets, don't know how to
++	 * handle CHECKSUM_PARTIAL;
++	 * The interface to return the relevant information was added in
++	 * 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
++	 * and older userspace does not use it.
++	 * One important user of recvmsg with AF_PACKET is dhclient,
++	 * so we add a work-around just for DHCP. */
++	if (skb->ip_summed == CHECKSUM_PARTIAL &&
++	    skb_headlen(skb) >= skb_transport_offset(skb) +
++				sizeof(struct udphdr) &&
++	    udp_hdr(skb)->dest == htons(68) &&
++	    skb_network_header_len(skb) >= sizeof(struct iphdr) &&
++	    ip_hdr(skb)->protocol == IPPROTO_UDP &&
++	    skb->protocol == htons(ETH_P_IP)) {
++		skb_checksum_help(skb);
++		/* Restore ip_summed value: tun passes it to user. */
++		skb->ip_summed = CHECKSUM_PARTIAL;
++	}
++	release_sock(sk);
++	return 1;
 +}
 +
- static bool symbol__match_parent_regex(struct symbol *sym)
- {
- 	if (sym->name && !regexec(&parent_regex, sym->name, 0, NULL, 0))
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 55c6881..9fa0fc2 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -26,6 +26,7 @@ struct perf_session {
- 	unsigned long		size;
- 	unsigned long		mmap_window;
- 	struct rb_root		threads;
-+	struct list_head	dead_threads;
- 	struct thread		*last_match;
- 	struct machine		host_machine;
- 	struct rb_root		machines;
-@@ -99,6 +100,7 @@ int perf_session__create_kernel_maps(struct perf_session *self);
+ /* Expects to be always run from workqueue - which acts as
+  * read-size critical section for our kind of RCU. */
+ static void handle_rx(struct vhost_net *net)
+@@ -222,7 +264,7 @@ static void handle_rx(struct vhost_net *net)
+ 	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
+ 		vq->log : NULL;
  
- int do_read(int fd, void *buf, size_t size);
- void perf_session__update_sample_type(struct perf_session *self);
-+void perf_session__remove_thread(struct perf_session *self, struct thread *th);
- 
- static inline
- struct machine *perf_session__find_host_machine(struct perf_session *self)
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 1dfd9ff..ee6bbcf 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -6,7 +6,10 @@
- #include "symbol.h"
- 
- struct thread {
--	struct rb_node		rb_node;
-+	union {
-+		struct rb_node	 rb_node;
-+		struct list_head node;
-+	};
- 	struct map_groups	mg;
- 	pid_t			pid;
- 	char			shortname[3];
+-	for (;;) {
++	while (peek_head(sock->sk)) {
+ 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+ 					 ARRAY_SIZE(vq->iov),
+ 					 &out, &in,
+-- 
+1.7.1.12.g42b7f
