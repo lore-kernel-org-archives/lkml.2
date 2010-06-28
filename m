@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab0F1Ode (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 10:33:34 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:13641 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752165Ab0F1Odd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 10:33:33 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBALZPKExLd/sX/2dsb2JhbAAHgxbMbpBRgSmDCXIE
-X-IronPort-AV: E=Sophos;i="4.53,497,1272859200"; 
-   d="scan'208";a="69031201"
-Message-ID: <4C28B2BB.1090107@teksavvy.com>
-Date: Mon, 28 Jun 2010 10:33:31 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Brian Bloniarz <bmb@athenacr.com>
-CC: Jens Axboe <jaxboe@fusionio.com>,
+	id S1754825Ab0F1OhB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 10:37:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52897 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753113Ab0F1Og7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 10:36:59 -0400
+Date: Mon, 28 Jun 2010 16:37:15 +0200
+From: Jakub Jelinek <jakub@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ulrich Drepper <drepper@redhat.com>, Darren Hart <dvhltc@us.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Christoph Hellwig <hch@lst.de>
-Subject: Re: [GIT PULL] block/io bits for 2.6.35-rc
-References: <4C10EC2A.8060002@fusionio.com> <AANLkTimus1Ajk-6HyDtZBmsYwQjkAf3zW-dvxNJlSlGw@mail.gmail.com> <4C1111ED.6020008@fusionio.com> <4C111685.8010400@athenacr.com> <4C27DA4A.3040708@teksavvy.com> <4C284931.2000908@fusionio.com> <4C28A8FC.6040605@teksavvy.com> <4C28AC1E.8070409@athenacr.com>
-In-Reply-To: <4C28AC1E.8070409@athenacr.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andreas Schwab <schwab@redhat.com>, Danny Feng <dfeng@redhat.com>,
+       linux-kernel@vger.kernel.org,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: Q: sys_futex() && timespec_valid()
+Message-ID: <20100628143715.GJ25077@tyan-ft48-01.lab.bos.redhat.com>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <4C2506C3.2000301@us.ibm.com>
+ <2054433814.959851277495348646.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+ <20100628135825.GA17681@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100628135825.GA17681@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/10 10:05 AM, Brian Bloniarz wrote:
-> On 06/28/2010 09:51 AM, Mark Lord wrote:
-..
->> I found these two:
->>
->> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=e913fc825dc685a444cb4c1d0f9d32f372f5986
->>
->> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=30fd1e551a730d942e91109762c942786be0ef7c
->>
->>
->> But they don't apply cleanly to 2.6.34.
->>
->> Anyone?
->
-> Don't use those, they have bugs and have since been reverted.
->
-> Links to the patch series that Jens mentions are below. I doubt they
-> apply cleanly to older kernels. Somebody's probably going to need to
-> take a crack at backporting them eventually (I could try, even), but
-> I don't know anybody has yet.
->
-> Christoph Hellwig (8):
->        writeback: fix writeback completion notifications
->        writeback: queue work on stack in writeback_inodes_sb
->        writeback: enforce s_umount locking in writeback_inodes_sb
->        writeback: fix writeback_inodes_wb from writeback_inodes_sb
->        writeback: simplify wakeup_flusher_threads
->        writeback: simplify and split bdi_start_writeback
->        writeback: add missing requeue_io in writeback_inodes_wb
->        writeback: fix pin_sb_for_writeback
->
-> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=2c99721ec6a55b2c1e7ba94945bbdae454e11308
-> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=ebf51611db2cfa33d056b4428f13275f81732fd5
-> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=de3f848fbc24f71174f3bcc7513b5a3fafb37bac
-> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=e15e123275b3ca3eeb378136046ab78eab214169
-> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=dcac2e708d8f8af1a220dd238027af5b4aedfc12
-> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=8163b53a6bfbfa14ae83f8cdbf536f9c191d3279
-> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=22e53a2ca88690c711a954d3c652b468a5e94272
-> http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commitdiff;h=7eed7cc254e71352e5e2e642c70a9b04cd28cc76
+On Mon, Jun 28, 2010 at 03:58:25PM +0200, Oleg Nesterov wrote:
+> Honestly, it looks a bit strange to me that you blame the correct code,
 
+Whether that is correct or not is what is being disputed.
 
-Thanks.  I'll pull those down and backport them here.
+> and at the same time you ignore the test-case which hangs because the
+> kernel returns -EFAULT saying that this is the caller's problem.
 
-Cheers!
+The userspace code reads the abstime->tv_nsec value, so if it wouldn't
+be valid address, the code would already segfault.  And that's fine, POSIX
+certainly allows that, reporting EFAULT isn't required.  Well, it doesn't
+read abstime->tv_sec in the assembly version, so if you try hard, you can
+avoid the segfault, yet get EFAULT from futex syscall by putting abstime
+8 bytes before start of some page with previous page not mmapped.
+
+	Jakub
