@@ -1,76 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab0F1K1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 06:27:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:47973 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751589Ab0F1K1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 06:27:45 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 5/5] cpumask: reduce cpumask_size
-Date: Mon, 28 Jun 2010 19:57:33 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       Arnd Bergmann <arnd@arndb.de>, anton@samba.org,
-       Mike Travis <travis@sgi.com>
-References: <201006252235.16647.rusty@rustcorp.com.au> <20100628114425.3881.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100628114425.3881.A69D9226@jp.fujitsu.com>
+	id S1752175Ab0F1Kae (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 06:30:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48301 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751266Ab0F1Kad (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 06:30:33 -0400
+Date: Mon, 28 Jun 2010 11:30:30 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Raffaele Recalcati <lamiaposta71@gmail.com>
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+       Raffaele Recalcati <raffaele.recalcati@bticino.it>,
+       Davide Bonfanti <davide.bonfanti@bticino.it>,
+       Russell King <linux@arm.linux.org.uk>,
+       Chaithrika U S <chaithrika@ti.com>,
+       Troy Kisky <troy.kisky@boundarydevices.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+       Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: DaVinci: Added support for cpu clocking I2S
+Message-ID: <20100628103030.GB14247@rakim.wolfsonmicro.main>
+References: <1277707487-3371-1-git-send-email-lamiaposta71@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006281957.34403.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277707487-3371-1-git-send-email-lamiaposta71@gmail.com>
+X-Cookie: Motorized vehicles only.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jun 2010 12:42:23 pm KOSAKI Motohiro wrote:
-> > Now we're sure noone is using old cpumask operators, nor *cpumask, we can
-> > allocate less bits safely.  This reduces the memory usage of off-stack
-> > cpumasks when CONFIG_CPUMASK_OFFSTACK=y but we don't have NR_CPUS actual
-> > cpus.
-> 
-> I have to say I'm sorry. Probably I broke your assumption.
-> If this patch applied, we reintroduce exposing nr_cpu_ids issue and
-> break libnuma again. I think following change is necessary too.
-> 
-> Or, Am I missing something?
+On Mon, Jun 28, 2010 at 08:44:46AM +0200, Raffaele Recalcati wrote:
+> From: Raffaele Recalcati <raffaele.recalcati@bticino.it>
 
-I cc'd you because I remembered you being involved in that libnuma issue
-and couldn't remember the details.
+It's still very hard to understand what this patch is supposed to do.
+As previously mentioned this would probably be a lot clearer if you
+split this into multiple patches, for example one adding support for the
+fast clock mode, one adding support for selecting the pin used for any
+external clock and then further patches with any other changes.
 
-Unfortunately, this solution doesn't work:
+I strongly suggest looking at the commit messages for other patches in
+the kernel and trying to follow a similar style.
 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 18faf4d..c14acad 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -4823,7 +4823,9 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
-> 
->         ret = sched_getaffinity(pid, mask);
->         if (ret == 0) {
-> -               size_t retlen = min_t(size_t, len, cpumask_size());
-> +               size_t retlen = min_t(size_t, len,
-> +                                     BITS_TO_LONGS(NR_CPUS) * sizeof(long));
-> 
+>     Added audio playback support with [frame sync master - clock master] mode
+>     and with [frame sync master - clock slave].
 
-Since mask is a cpumask_var_t, only cpumask_size() is allocated.  We can't
-copy NR_CPUS bits.
+What are these modes - which clock are you talking about?
 
-But I think it's OK, anyway.  libnuma is broken because it gets upset if the
-number of cpus it reads from /sys/.../cpumap is more than the cpumask size
-returned from sys_sched_getaffinity.
+>        i2s_fast_clock switch can be used to have better approximate or
+>        symmetric waveforms.
 
-Currently, getaffinity returns cpumask_size() (ie. based on NR_CPUS), and
-the printing routines use nr_cpumask_bits (ie. based on NR_CPUS for 
-!CPUMASK_OFFSTACK, nr_cpu_ids for CPUMASK_OFFSTACK).
+Why would someone choose not to use this?
 
-(libnuma is OK on CONFIG_CPUMASK_OFFSTACK=y because the sysfs output is
-*shorter* than expected.  I checked the code).
+>        clk_input_pin board info can be used to select it depending on hw
+>        connections
 
-With this patch, cpumask_size() becomes based on nr_cpumask_bits, so both
-getaffinity and sysfs are using the same basis.
+>     3. We haven't changed the evmdm365 support (due also to CPLD that doesn't
+>                                                 help to understand)
+>         We don't know in this mode if audio stereo works on evmdm365.
+>         Probably it does.
 
-Do you agree?
-Rusty.
+This is what makes me unsure if you're trying to add new modes or not -
+if you're adding new modes then I'd expect that existing boards would be
+unaffected with any changes to use the new feature being easily
+seperable.
+
+> +	/*
+> +	 * This define works when both clock and FS are output for the cpu
+> +	 * and makes clock very fast (FS is not simmetrical, but sampling
+
+symmetrical.
+
+> +	 * frequency is better approximated
+> +	 */
+> +	int i2s_fast_clock;
+
+Is this a bool?
+
+> +	/* To be used when cpu gets clock from extenal pin */
+> +	int clk_input_pin;
+> +
+
+How would one use this?
+
+>  	case SND_SOC_DAIFMT_CBM_CFS:
+> -		/* McBSP CLKR pin is the input for the Sample Rate Generator.
+> -		 * McBSP FSR and FSX are driven by the Sample Rate Generator. */
+> -		pcr = DAVINCI_MCBSP_PCR_SCLKME |
+> -			DAVINCI_MCBSP_PCR_FSXM |
+> -			DAVINCI_MCBSP_PCR_FSRM;
+> +		pcr = DAVINCI_MCBSP_PCR_FSRM | DAVINCI_MCBSP_PCR_FSXM;
+> +		if (dev->clk_input_pin == MCBSP_CLKS)
+> +			pcr |= DAVINCI_MCBSP_PCR_CLKXM |
+> +				DAVINCI_MCBSP_PCR_CLKRM;
+> +		else
+> +			/*
+> +			 * McBSP CLKR pin is the input for the Sample Rate
+> +			 * Generator.
+> +			 * McBSP FSR and FSX are driven by the Sample Rate
+> +			 * Generator.
+> +			 */
+> +			pcr |= DAVINCI_MCBSP_PCR_SCLKME;
+
+This looks like you need a switch statement for the clock selection.
+
+> +static int davinci_i2s_dai_set_clkdiv(struct snd_soc_dai *cpu_dai,
+> +				int div_id, int div)
+> +{
+> +	struct davinci_mcbsp_dev *dev = cpu_dai->private_data;
+> +	int srgr;
+> +
+> +	dev->clk_div = div;
+> +	return 0;
+> +}
+> +
+
+I would add a clock ID here in case someone wants to configure another
+clock in the patch.
+
+> +	if (master == SND_SOC_DAIFMT_CBS_CFS) {
+
+Use a switch staetment for this too.
+
+> +		clk = clk_get(NULL, "pll1_sysclk6");
+
+You're doing a clk_get() every time you go through here but never
+freeing it - it would seem better to just do the clk_get() at startup.
+I'd also expect this to be doing a clk_get() using the struct device for
+the DAI so that the driver can function even if the clock tree for a new
+SoC is different.
+
+> +		if (clk)
+> +			freq = clk_get_rate(clk);
+
+clk_get() returns an error pointer on error, not NULL, and...
+
+> +		freq = 122000000; /* FIXME ask to Texas */
+
+...this presumably ought to be in an else clause (or perhaps just not
+using this clocking at all if you can't find the clock?).
+
+> +	} else if (master == SND_SOC_DAIFMT_CBM_CFS) {
+> +		/* Clock given on CLKS */
+
+What if the user selected a different clock source?
+
+> +		if (master == SND_SOC_DAIFMT_CBS_CFS ||
+> +				master == SND_SOC_DAIFMT_CBS_CFM) {
+
+Again, switch statement.
+
+> +	if (master == SND_SOC_DAIFMT_CBS_CFS ||
+> +			master == SND_SOC_DAIFMT_CBS_CFM) {
+
+Here too.
