@@ -1,144 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab0F1VNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 17:13:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42835 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754499Ab0F1VGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 17:06:08 -0400
-From: Tejun Heo <tj@kernel.org>
-To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       oleg@redhat.com, axboe@kernel.dk, fweisbec@gmail.com,
-       dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
-       andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 26/35] workqueue: implement worker_{set|clr}_flags()
-Date: Mon, 28 Jun 2010 23:04:14 +0200
-Message-Id: <1277759063-24607-27-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1277759063-24607-1-git-send-email-tj@kernel.org>
-References: <1277759063-24607-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Jun 2010 21:05:16 +0000 (UTC)
+	id S1754354Ab0F1VQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 17:16:59 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:46906 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab0F1VQ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 17:16:57 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6027"; a="45839626"
+Message-ID: <4C291148.2020402@codeaurora.org>
+Date: Mon, 28 Jun 2010 14:16:56 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: andi@firstfloor.org, mel@csn.ul.ie, dwalker@codeaurora.org,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [RFC] mm: iommu: An API to unify IOMMU, CPU and device memory
+ management
+References: <1277355096-15596-1-git-send-email-zpfeffer@codeaurora.org>	<876318ager.fsf@basil.nowhere.org>	<4C245152.1090301@codeaurora.org> <20100627134401G.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100627134401G.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement worker_{set|clr}_flags() to manipulate worker flags.  These
-are currently simple wrappers but logics to track the current worker
-state and the current level of concurrency will be added.
+FUJITA Tomonori wrote:
+> On Thu, 24 Jun 2010 23:48:50 -0700
+> Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
+> 
+>> Andi Kleen wrote:
+>>> Zach Pfeffer <zpfeffer@codeaurora.org> writes:
+>>>
+>>>> This patch contains the documentation for and the main header file of
+>>>> the API, termed the Virtual Contiguous Memory Manager. Its use would
+>>>> allow all of the IOMMU to VM, VM to device and device to IOMMU
+>>>> interoperation code to be refactored into platform independent code.
+>>> I read all the description and it's still unclear what advantage
+>>> this all has over the current architecture? 
+>>>
+>>> At least all the benefits mentioned seem to be rather nebulous.
+>>>
+>>> Can you describe a concrete use case that is improved by this code
+>>> directly?
+>> Sure. On a SoC with many IOMMUs (10-100), where each IOMMU may have
+>> its own set of page-tables or share page-tables, and where devices
+>> with and without IOMMUs and CPUs with or without MMUS want to
+>> communicate, an abstraction like the VCM helps manage all conceivable
+>> mapping topologies. In the same way that the Linux MM manages pages
+>> apart from page-frames, the VCMM allows the Linux MM to manage ideal
+>> memory regions, VCMs, apart from the actual memory region.
+>>
+>> One real scenario would be video playback from a file on a memory
+>> card. To read and display the video, a DMA engine would read blocks of
+>> data from the memory card controller into memory. These would
+>> typically be managed using a scatter-gather list. This list would be
+>> mapped into a contiguous buffer of the video decoder's IOMMU. The
+>> video decoder would write into a buffer mapped by the display engine's
+>> IOMMU as well as the CPU (if the kernel needed to intercept the
+>> buffers). In this instance, the video decoder's IOMMU and the display
+>> engine's IOMMU use different page-table formats.
+>>
+>> Using the VCM API, this topology can be created without worrying about
+>> the device's IOMMUs or how to map the buffers into the kernel, or how
+>> to interoperate with the scatter-gather list. The call flow would would go:
+> 
+> Can you explain how you can't do the above with the existing API?
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/workqueue.c |   48 ++++++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 40 insertions(+), 8 deletions(-)
+Sure. You can do the same thing with the current API, but the VCM takes a
+wider view; the mapper is a parameter.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index e0a7609..8b90d87 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -412,6 +412,38 @@ static void wake_up_worker(struct global_cwq *gcwq)
- }
- 
- /**
-+ * worker_set_flags - set worker flags
-+ * @worker: worker to set flags for
-+ * @flags: flags to set
-+ * @wakeup: wakeup an idle worker if necessary
-+ *
-+ * Set @flags in @worker->flags.
-+ *
-+ * LOCKING:
-+ * spin_lock_irq(gcwq->lock).
-+ */
-+static inline void worker_set_flags(struct worker *worker, unsigned int flags,
-+				    bool wakeup)
-+{
-+	worker->flags |= flags;
-+}
-+
-+/**
-+ * worker_clr_flags - clear worker flags
-+ * @worker: worker to set flags for
-+ * @flags: flags to clear
-+ *
-+ * Clear @flags in @worker->flags.
-+ *
-+ * LOCKING:
-+ * spin_lock_irq(gcwq->lock).
-+ */
-+static inline void worker_clr_flags(struct worker *worker, unsigned int flags)
-+{
-+	worker->flags &= ~flags;
-+}
-+
-+/**
-  * busy_worker_head - return the busy hash head for a work
-  * @gcwq: gcwq of interest
-  * @work: work to be hashed
-@@ -776,7 +808,7 @@ static void worker_enter_idle(struct worker *worker)
- 	BUG_ON(!list_empty(&worker->entry) &&
- 	       (worker->hentry.next || worker->hentry.pprev));
- 
--	worker->flags |= WORKER_IDLE;
-+	worker_set_flags(worker, WORKER_IDLE, false);
- 	gcwq->nr_idle++;
- 
- 	/* idle_list is LIFO */
-@@ -800,7 +832,7 @@ static void worker_leave_idle(struct worker *worker)
- 	struct global_cwq *gcwq = worker->gcwq;
- 
- 	BUG_ON(!(worker->flags & WORKER_IDLE));
--	worker->flags &= ~WORKER_IDLE;
-+	worker_clr_flags(worker, WORKER_IDLE);
- 	gcwq->nr_idle--;
- 	list_del_init(&worker->entry);
- }
-@@ -890,7 +922,7 @@ fail:
-  */
- static void start_worker(struct worker *worker)
- {
--	worker->flags |= WORKER_STARTED;
-+	worker_set_flags(worker, WORKER_STARTED, false);
- 	worker->gcwq->nr_workers++;
- 	worker_enter_idle(worker);
- 	wake_up_process(worker->task);
-@@ -920,7 +952,7 @@ static void destroy_worker(struct worker *worker)
- 		gcwq->nr_idle--;
- 
- 	list_del_init(&worker->entry);
--	worker->flags |= WORKER_DIE;
-+	worker_set_flags(worker, WORKER_DIE, false);
- 
- 	spin_unlock_irq(&gcwq->lock);
- 
-@@ -2208,10 +2240,10 @@ static int __cpuinit trustee_thread(void *__gcwq)
- 	BUG_ON(gcwq->cpu != smp_processor_id());
- 
- 	list_for_each_entry(worker, &gcwq->idle_list, entry)
--		worker->flags |= WORKER_ROGUE;
-+		worker_set_flags(worker, WORKER_ROGUE, false);
- 
- 	for_each_busy_worker(worker, i, pos, gcwq)
--		worker->flags |= WORKER_ROGUE;
-+		worker_set_flags(worker, WORKER_ROGUE, false);
- 
- 	/*
- 	 * We're now in charge.  Notify and proceed to drain.  We need
-@@ -2318,10 +2350,10 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
- 
- 		/* clear ROGUE from all workers */
- 		list_for_each_entry(worker, &gcwq->idle_list, entry)
--			worker->flags &= ~WORKER_ROGUE;
-+			worker_clr_flags(worker, WORKER_ROGUE);
- 
- 		for_each_busy_worker(worker, i, pos, gcwq)
--			worker->flags &= ~WORKER_ROGUE;
-+			worker_clr_flags(worker, WORKER_ROGUE);
- 		break;
- 	}
- 
+Taking include/linux/iommu.h as a common interface, the key function
+is iommu_map(). This function maps a physical memory region, paddr, of
+gfp_order, to a virtual region starting at iova:
+
+extern int iommu_map(struct iommu_domain *domain, unsigned long iova,
+		     phys_addr_t paddr, int gfp_order, int prot);
+
+Users who call this, kvm_iommu_map_pages() for instance, run similar
+loops:
+
+foreach page 
+	iommu_map(domain, va(page), ...)
+	
+The VCM encapsulates this as vcm_back(). This function iterates over a
+set of physical regions and maps those physical regions to a virtual
+address space that has been associated with a mapper at run-time. The
+loop above, and the other loops (and other associated IOMMU software)
+that don't use the common interface like arch/powerpc/kernel/vio.c all
+do similar work.
+
+In the end the VCM's dynamic virtual region association mechanism (and
+multihomed physical memory targeting) allows all IOMMU mapping code in
+the system to use the same API.
+
+This may seem like syntactic sugar, but treating devices with IOMMUs
+(bus-masters), device with MMUs (CPUs) and devices without MMUs (DMA
+engines) as endpoints in a mapping graph allows new features to be
+developed. One such feature is system-wide memory migration (including
+memory that devices map). With a common API a loop like this can be
+written one place:
+
+foreach mapper of pa_region
+	remap(mapper, new_pa_region)
+
+It could also be used for better power-management:
+
+foreach mapper of soon_to_be_powered_off_pa_region
+	ask(mapper, soon_to_be_powered_off_pa_region)
+
+The VCM is just the first step.
+
+More concretely, the way the VCM works allows the transparent use and
+interoperation of different mapping chunk sizes. This is important in
+multimedia devices because IOMMU TLB misses may cause multimedia
+devices to miss their performance goals. Multi-chunk size support has
+been added for IOMMU mappers and wouldn't be hard to add to CPU
+mappers (CPU mappers still use 4KB).
+
+>> The general point of the VCMM is to allow users a higher level API
+>> than the current IOMMU abstraction provides that solves the general
+>> mapping problem. This means that all of the common mapping code would
+>> be written once. In addition, the API allows all the low level details
+>> of IOMMU programing and VM interoperation to be handled at the right
+>> level.
+>>
+>> Eventually the following functions could all be reworked and their
+>> users could call VCM functions.
+> 
+> There are more IOMMUs (e.g. x86 has calgary, gart too). And what is
+> the point of converting old IOMMUs (the majority of the below)? are
+> there any potential users of your API for such old IOMMUs?
+
+That's a good question. I gave the list of the current IOMMU mapping
+functions to bring awareness to the fact that the general system-wide
+mapping problem hasn't yet been solved and won't be solved completely
+until something that looks at memory mapping from a system-wide
+perspective, like the VCMM, has been built.
+
 -- 
-1.6.4.2
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
