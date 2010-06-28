@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab0F1XWJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 19:22:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:26607 "EHLO mga09.intel.com"
+	id S1752750Ab0F1X16 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 19:27:58 -0400
+Received: from md2.t-2.net ([84.255.209.81]:28665 "EHLO md2.t-2.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108Ab0F1XWG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 19:22:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,499,1272870000"; 
-   d="scan'208";a="531117132"
-From: "Pan, Jacob jun" <jacob.jun.pan@intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-       akpm <akpm@linux-foundation.org>,
-       "chuck.lever@oracle.com" <chuck.lever@oracle.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 28 Jun 2010 16:22:03 -0700
-Subject: RE: problem: Re: [PATCH] input: fixup X86_MRST selects
-Thread-Topic: problem: Re: [PATCH] input: fixup X86_MRST selects
-Thread-Index: AcsXE4KgHqofjGyoQq6ZAE+WOuq6DwAAh/qQ
-Message-ID: <43F901BD926A4E43B106BF17856F0755EA339200@orsmsx508.amr.corp.intel.com>
-References: <20100609133443.38f1f957.sfr@canb.auug.org.au>
- <201006101204.45709.dmitry.torokhov@gmail.com> <4C28F210.7030909@oracle.com>
- <201006281318.16377.dmitry.torokhov@gmail.com> <4C2904D0.3000409@oracle.com>
- <43F901BD926A4E43B106BF17856F0755EA339079@orsmsx508.amr.corp.intel.com>
- <20100628224440.GA19087@core.coreip.homeip.net>
-In-Reply-To: <20100628224440.GA19087@core.coreip.homeip.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751491Ab0F1X14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 19:27:56 -0400
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+From: Samo Pogacnik <samo_pogacnik@t-2.net>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+       linux kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100627143518.104ef190@lxorguk.ukuu.org.uk>
+References: <1273918658.2341.17.camel@itpsd6lap>
+	 <1275171436.2122.29.camel@itpsd6lap>
+	 <20100529235402.296406d9@lxorguk.ukuu.org.uk>
+	 <1275175983.2122.42.camel@itpsd6lap> <1276123020.16010.97.camel@itpsd6lap>
+	 <20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
+	 <1276291932.2154.45.camel@itpsd6lap>
+	 <20100621153858.444695c0@lxorguk.ukuu.org.uk>
+	 <1277244410.2195.47.camel@itpsd6lap>
+	 <20100622232108.26752ff8@lxorguk.ukuu.org.uk>
+	 <1277462596.2143.101.camel@itpsd6lap>
+	 <20100625120329.1303aa61@lxorguk.ukuu.org.uk>
+	 <1277516912.29797.411.camel@itpsd6lap>
+	 <20100627143518.104ef190@lxorguk.ukuu.org.uk>
+Content-Type: text/plain
+Date: Tue, 29 Jun 2010 01:27:45 +0200
+Message-Id: <1277767665.2348.51.camel@itpsd6lap>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
+X-Junkmail-Status: score=10/150, host=md2.t-2.net
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A0B0204.4C292FF3.01A1,ss=1,fgs=0,
+	ip=192.168.1.20,
+	so=2010-02-10 22:08:04,
+	dmn=5.4.3/2007-10-18,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no DMI support yet in MRST FW.
-We have a new x86 HW subarch ID in boot_param, then we use it to select x86_init abstractions. Both boot_param and x86_init are x86 arch specific so I guess we can use them in 8042 driver under CONFIG_X86. Not sure if it is possible to move x86 i8042_platform_init under x86_init (the x86 part).
+Dne 27.06.2010 (ned) ob 14:35 +0100 je Alan Cox zapisal(a):
+> > I thought that this would automatically reduce processor load, which is
+> > obviously not the case. Sorry for the delay, but i am trying to figure
+> > out how to slow down write method when under pressure.
+> 
+> Ok I played with this a bit. Much to my surprise until I thought about it
+> in detail it all works fine without any of the ratelimiting at all. There
+> is a problem if you manage to redirect the console *in kernel* to the
+> printk driver, but that needs stopping anyway and rate limit won't fix it
+> (you blow the stack before it kicks in)
+> 
+> In the case where userspace loads it hard and its a graphical console
+> then we use a lot of CPU power drawing stuff on screen, but killing the
+> process does as is expected.
+> 
+> With a serial console the printk itself blocks which blocks the line
+> discipline which in turn slows stuff down.
+> 
+> The only two bad things I can see how to cause are
+> 
+> - Slowing down output by stuffing lots of extra data into the port (which
+>   I can do anyway just fine) so isn't worse than before.
+> 
+> - Filling up the dmesg log easily and hiding important messages. Not
+>   really a problem in this case bcause the whole point of this is
+>   embedded and capturing those messages as if they were system ones.
+> 
+> So much to my surprise the flow control is a red herring and best left
+> out.
+> 
+> Alan
 
->-----Original Message-----
->From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
->Sent: Monday, June 28, 2010 3:45 PM
->To: Pan, Jacob jun
->Cc: Randy Dunlap; Stephen Rothwell; linux-next@vger.kernel.org; LKML;
->linux-input@vger.kernel.org; akpm; chuck.lever@oracle.com; H. Peter
->Anvin
->Subject: Re: problem: Re: [PATCH] input: fixup X86_MRST selects
->
->On Mon, Jun 28, 2010 at 02:12:03PM -0700, Pan, Jacob jun wrote:
->> >
->> We do intend to maintain binary compatibility between generic kernel
->and Moorestown.
->> I guess the challenge is not having enumeration of i8042 pass to the
->driver. Do you
->> prefer abort i8042_platform_init() based on #define CONFIG_X86_MRST?
->It is no safe
->> to probe HW on Moorestown, unfortunately.
->
->Any check based on CONFIG_X86_MRST means that kernel is not generic.
->We'd need a runtime check (but not necessarily one that bangs ports). Is
->there something in processor flags, or DMI, or similar that woudl allow
->i8042 to see that it runs on Moorestown?
->
->--
->Dmitry
+If without flow control, do you think it makes sense to very slowly
+introduce more and more delay (interruptible) into tty's write operation
+when output rate is "too" high? That way non-error conditions would not
+suffer (not discarding any messages, only delaying additional 1 msec on
+100 writes), when ratelimit would have been exceeded from time to time.
+And on the other hand endless high-volume output, which is probably an
+error condition, would slowly give away more and more of its processing
+time. Maybe this would also help if output is made on behalf of some
+high RT-prioritized process?
+
+Of course, i can easily remove ratelimiting as well, if the situation
+with flow control isn't clear and this only complicates things.
+
+Samo
+
+
