@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab0F1OTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 10:19:39 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:46598 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142Ab0F1OTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 10:19:38 -0400
-Date: Mon, 28 Jun 2010 16:19:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ilya Loginov <isloginov@gmail.com>, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] init: Fix race between init and kthreadd -v2
-Message-ID: <20100628141927.GA9306@elte.hu>
-References: <20100624001148.61e9da1c.isloginov@gmail.com>
- <1277385096.1875.974.camel@laptop>
- <20100624172334.ca7e9bef.isloginov@gmail.com>
- <1277715689.1875.1104.camel@laptop>
- <1277725997.3561.6.camel@laptop>
+	id S1754356Ab0F1OVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 10:21:34 -0400
+Received: from trinity.develer.com ([83.149.158.210]:45931 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab0F1OVd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 10:21:33 -0400
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jun 2010 10:21:33 EDT
+Date: Mon, 28 Jun 2010 16:14:06 +0200
+From: Andrea Righi <arighi@develer.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Rodolfo Giometti <giometti@enneenne.com>,
+       Amit Walambe <amit.walambe@eurotech.com>,
+       Chris Leahy <leahycm@gmail.com>, Giovanni Bajo <rasky@develer.com>,
+       linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] USB: EHCI: fix NULL pointer dererence in HCDs that use
+ HCD_LOCAL_MEM
+Message-ID: <20100628141355.GA3807@linux.develer.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1277725997.3561.6.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.3495]
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If we use the HCD_LOCAL_MEM flag and dma_declare_coherent_memory() to
+enforce the host controller's local memory utilization we also need to
+disable native scatter-gather support, otherwise hcd_alloc_coherent() in
+map_urb_for_dma() is called with urb->transfer_buffer == NULL, that
+triggers a NULL pointer dereference.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+We can also consider to add a WARN_ON() and return an error code to
+better catch this problem in the future.
 
-> +static __initdata DEFINE_MUTEX(kthreadd_lock);
+Signed-off-by: Andrea Righi <arighi@develer.com>
+---
+ drivers/usb/core/hcd.c      |    5 +++++
+ drivers/usb/host/ehci-hcd.c |    3 ++-
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
-> +	/*
-> +	 * We need to spawn init first so that it obtains pid-1, however
-> +	 * the init task will end up wanting to create kthreads, which
-> +	 * if we schedule it before we create kthreadd, will OOPS.
-> +	 */
-> +	mutex_lock(&kthreadd_lock);
->  	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
->  	numa_default_policy();
->  	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
->  	rcu_read_lock();
->  	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
->  	rcu_read_unlock();
-> +	mutex_unlock(&kthreadd_lock);
->  	unlock_kernel();
->  
->  	/*
-> @@ -847,6 +856,13 @@ static noinline int init_post(void)
->  
->  static int __init kernel_init(void * unused)
->  {
-> +	/*
-> +	 * We spawned this thread while holding this lock, ensure the
-> +	 * locked section in rest_init() is complete before proceeding.
-> +	 */
-> +	mutex_lock(&kthreadd_lock);
-> +	mutex_unlock(&kthreadd_lock);
-
-I think you may be using a mutex as a completion in essence. Why not use 
-completions instead?
-
-	Ingo
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 12742f1..161c757 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1219,6 +1219,11 @@ static int hcd_alloc_coherent(struct usb_bus *bus,
+ {
+ 	unsigned char *vaddr;
+ 
++	if (*vaddr_handle == NULL) {
++		WARN_ON_ONCE(1);
++		return -EFAULT;
++	}
++
+ 	vaddr = hcd_buffer_alloc(bus, size + sizeof(vaddr),
+ 				 mem_flags, dma_handle);
+ 	if (!vaddr)
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index a3ef2a9..27e0351 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -606,7 +606,8 @@ static int ehci_init(struct usb_hcd *hcd)
+ 	ehci->command = temp;
+ 
+ 	/* Accept arbitrarily long scatter-gather lists */
+-	hcd->self.sg_tablesize = ~0;
++	if (!(hcd->driver->flags & HCD_LOCAL_MEM))
++		hcd->self.sg_tablesize = ~0;
+ 	return 0;
+ }
+ 
