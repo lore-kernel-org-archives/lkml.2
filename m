@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab0F1TTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 15:19:48 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40624 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752077Ab0F1TTr (ORCPT
+	id S1754238Ab0F1TVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 15:21:19 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50712 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab0F1TVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 15:19:47 -0400
-Date: Mon, 28 Jun 2010 15:19:44 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: linux-pm@lists.linux-foundation.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Florian Mickler <florian@mickler.org>, <linux-pci@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [update] Re: [PATCH] PM: Make it possible to avoid wakeup events
- from being lost
-In-Reply-To: <201006282101.54041.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1006281517100.1977-100000@iolanthe.rowland.org>
+	Mon, 28 Jun 2010 15:21:18 -0400
+Date: Mon, 28 Jun 2010 15:21:05 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Steve French <smfrench@gmail.com>
+Cc: Jeremy Allison <jra@samba.org>, David Howells <dhowells@redhat.com>,
+       viro@zeniv.linux.org.uk, jlayton@redhat.com, mcao@us.ibm.com,
+       aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       samba-technical@lists.samba.org, sjayaraman@suse.de,
+       linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] Ext4: Make file creation time, i_version and
+ i_generation available by xattrs
+Message-ID: <20100628192105.GA23863@infradead.org>
+References: <20100628162626.6026.26679.stgit@warthog.procyon.org.uk>
+ <AANLkTikkaRYyUfHILDCKYzXdLi9ORuQs05Rf9TScF_Tz@mail.gmail.com>
+ <20100628164854.GA9979@samba1>
+ <AANLkTilkfPkvyuQvN9zKrrY3DhJZ5iUfa5RXfErFwTiA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTilkfPkvyuQvN9zKrrY3DhJZ5iUfa5RXfErFwTiA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jun 2010, Rafael J. Wysocki wrote:
+On Mon, Jun 28, 2010 at 12:04:09PM -0500, Steve French wrote:
+> That sounds better but it hits the fs, vfs and libc
+> and seems like libc is near impossible to get changes into.
 
-> Below is the patch I'd like to add to suspend-2.6/linux-next.
-> 
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM: Make it possible to avoid wakeup events from being lost
-> 
-> One of the arguments during the suspend blockers discussion was that
-> the mainline kernel didn't contain any mechanisms making it possible
-> to avoid losing wakeup events during system suspend.
+If you do it properly it's not hard to get changes into libc.
 
-I don't see anything more to complain about in the patch.  :-)
-
-You probably should change the title and the first paragraph of the 
-description to avoid saying that events can get lost.  Like:
-
-PM: Make it possible to avoid races between wakeup and system sleep
-
-Alan Stern
+Let's do it properly instead of adding hacks like that.  Synthetic
+xattrs causes much more problems than they solve.
 
