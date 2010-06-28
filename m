@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab0F1Syj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 14:54:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30413 "EHLO mx1.redhat.com"
+	id S1753493Ab0F1S6l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 14:58:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54116 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751896Ab0F1Syi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 14:54:38 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cfq: always return false from should_idle if slice_idle is set to zero
-References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
-	<1277149789-4493-2-git-send-email-jmoyer@redhat.com>
-	<4C1FC4CA.7030007@kernel.dk>
-	<x49hbkndmoc.fsf@segfault.boston.devel.redhat.com>
-	<4C28EF04.7040309@kernel.dk>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 28 Jun 2010 14:54:35 -0400
-In-Reply-To: <4C28EF04.7040309@kernel.dk> (Jens Axboe's message of "Mon, 28
-	Jun 2010 20:50:44 +0200")
-Message-ID: <x498w5zdm38.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751546Ab0F1S6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 14:58:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,498,1272870000"; 
+   d="scan'208";a="531048322"
+Message-ID: <4C28F0DE.9040109@linux.intel.com>
+Date: Mon, 28 Jun 2010 11:58:38 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, tglx@linutronix.de,
+       linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/alternatives] x86, alternatives: Use 16-bit numbers
+ for cpufeature index
+References: <tip-*@git.kernel.org> <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org> <4C2474EF.4050902@cn.fujitsu.com> <4C24CCB7.2020806@zytor.com> <4C285625.6000806@cn.fujitsu.com>
+In-Reply-To: <4C285625.6000806@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <axboe@kernel.dk> writes:
+On 06/28/2010 12:58 AM, Lai Jiangshan wrote:
+> 
+> There is alternative in use_xsave().
+> use_xsave() should return false in my system, but it returns true after this patch applied.
+> 
 
-> On 28/06/10 20.41, Jeff Moyer wrote:
->> Jens Axboe <axboe@kernel.dk> writes:
->> 
->>> On 21/06/10 21.49, Jeff Moyer wrote:
->>>> Hi,
->>>>
->>>> In testing a competing fsync-ing process and a sequential reader on
->>>> mid-grade storage, I found that cfq was incapable of achieving the I/O
->>>> rates of deadline, no matter how it was tuned.  Investigation, and insight
->>>> from Vivek (mostly the latter), led to identifying that we were still
->>>> idling for the last queue in the service tree.
->>>>
->>>> Modifying cfq_should_idle to not idle when slice_idle is set to zero got
->>>> us much closer to the performance of deadline for this workload.  I have
->>>> one follow-on patch that gets us on-par with deadline, but I think this
->>>> patch stands alone.
->>>>
->>>> Comments, as always, are appreciated.
->>>
->>> This looks good.
->> 
->> So.... applied to which branch?
->
-> Not applied yet, unless I explicitly say it's applied, then it's not
-> necessarily in any public git tree yet. But this will go into .35.
+OK, so a false substitution... strange.
 
-OK, thanks for the clarification.
+	-hpa
 
-Cheers,
-Jeff
