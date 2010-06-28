@@ -1,99 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab0F1PEa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 11:04:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44516 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193Ab0F1PE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 11:04:27 -0400
-Date: Mon, 28 Jun 2010 17:02:08 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Ulrich Drepper <drepper@redhat.com>, Darren Hart <dvhltc@us.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andreas Schwab <schwab@redhat.com>, Danny Feng <dfeng@redhat.com>,
-       linux-kernel@vger.kernel.org,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: Q: sys_futex() && timespec_valid()
-Message-ID: <20100628150208.GA13954@redhat.com>
-References: <4C2506C3.2000301@us.ibm.com> <2054433814.959851277495348646.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <20100628135825.GA17681@redhat.com> <20100628143715.GJ25077@tyan-ft48-01.lab.bos.redhat.com>
+	id S1754628Ab0F1PIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 11:08:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61147 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab0F1PIo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 11:08:44 -0400
+Message-ID: <4C28BAE3.8030909@oracle.com>
+Date: Mon, 28 Jun 2010 08:08:19 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100628143715.GJ25077@tyan-ft48-01.lab.bos.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Michal Marek <mmarek@suse.cz>
+CC: Nicolas Kaiser <nikai@nikai.net>, linux-kbuild@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] Documentation/kbuild: fixed typos and wording
+References: <20100626150021.254b95b3@absol.kitzblitz> <20100626173736.e5946273.randy.dunlap@oracle.com> <4C28B801.7050709@suse.cz>
+In-Reply-To: <4C28B801.7050709@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C28BAF5.0169:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28, Jakub Jelinek wrote:
->
-> On Mon, Jun 28, 2010 at 03:58:25PM +0200, Oleg Nesterov wrote:
-> > Honestly, it looks a bit strange to me that you blame the correct code,
->
-> Whether that is correct or not is what is being disputed.
+On 06/28/10 07:56, Michal Marek wrote:
+> On 27.6.2010 02:37, Randy Dunlap wrote:
+>> On Sat, 26 Jun 2010 15:00:21 +0200 Nicolas Kaiser wrote:
+>>
+>>> Fixed some typos and wording.
+>>>
+>>> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+>>
+>> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Randy, are you adding this to the kernel-doc tree? There are already
+> patches from matt mooney, sometimes touching the same paragraphs as this
+> one.
 
-OK. I only argued with the "buggy" term. Once again, the code works
-as expected.
+Oh, thanks for the warning, I hadn't noticed that.
+I guess that it makes more sense for me to add this one also
+and fix up any merge problems.  Will do.
 
-> > and at the same time you ignore the test-case which hangs because the
-> > kernel returns -EFAULT saying that this is the caller's problem.
->
-> The userspace code reads the abstime->tv_nsec value, so if it wouldn't
-> be valid address, the code would already segfault.  And that's fine, POSIX
-> certainly allows that, reporting EFAULT isn't required.  Well, it doesn't
-> read abstime->tv_sec in the assembly version, so if you try hard, you can
-> avoid the segfault, yet get EFAULT from futex syscall by putting abstime
-> 8 bytes before start of some page with previous page not mmapped.
+> Michal
+> 
+>>
+>> Thanks.
+>>
+>>> ---
+>>>  Documentation/kbuild/kbuild.txt    |    8 ++++----
+>>>  Documentation/kbuild/makefiles.txt |   20 ++++++++++----------
+>>>  2 files changed, 14 insertions(+), 14 deletions(-)
+>>>
+>>> diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
+>>> index 634c625..0d8addb 100644
+>>> --- a/Documentation/kbuild/kbuild.txt
+>>> +++ b/Documentation/kbuild/kbuild.txt
+>>> @@ -40,15 +40,15 @@ Set the directory to look for the kernel source when building external
+>>>  modules.
+>>>  The directory can be specified in several ways:
+>>>  1) Use "M=..." on the command line
+>>> -2) Environmnet variable KBUILD_EXTMOD
+>>> -3) Environmnet variable SUBDIRS
+>>> +2) Environment variable KBUILD_EXTMOD
+>>> +3) Environment variable SUBDIRS
+>>>  The possibilities are listed in the order they take precedence.
+>>>  Using "M=..." will always override the others.
+>>>  
+>>>  KBUILD_OUTPUT
+>>>  --------------------------------------------------
+>>>  Specify the output directory when building the kernel.
+>>> -The output directory can also be specificed using "O=...".
+>>> +The output directory can also be specified using "O=...".
+>>>  Setting "O=..." takes precedence over KBUILD_OUTPUT.
+>>>  
+>>>  ARCH
+>>> @@ -90,7 +90,7 @@ The script will be called with the following arguments:
+>>>      $3 - kernel map file
+>>>      $4 - default install path (use root directory if blank)
+>>>  
+>>> -The implmentation of "make install" is architecture specific
+>>> +The implementation of "make install" is architecture specific
+>>>  and it may differ from the above.
+>>>  
+>>>  INSTALLKERNEL is provided to enable the possibility to
+>>> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+>>> index 71c602d..c0c9b1c 100644
+>>> --- a/Documentation/kbuild/makefiles.txt
+>>> +++ b/Documentation/kbuild/makefiles.txt
+>>> @@ -284,12 +284,12 @@ more details, with real examples.
+>>>  --- 3.7 Compilation flags
+>>>  
+>>>      ccflags-y, asflags-y and ldflags-y
+>>> -	The three flags listed above applies only to the kbuild makefile
+>>> -	where they are assigned. They are used for all the normal
+>>> -	cc, as and ld invocation happenign during a recursive build.
+>>> +	These three flags apply only to the kbuild makefile in which they
+>>> +	are assigned. They are used for all the normal cc, as and ld
+>>> +	invocations happening during a recursive build.
+>>>  	Note: Flags with the same behaviour were previously named:
+>>>  	EXTRA_CFLAGS, EXTRA_AFLAGS and EXTRA_LDFLAGS.
+>>> -	They are yet supported but their use are deprecated.
+>>> +	They are still supported but their usage is deprecated.
+>>>  
+>>>  	ccflags-y specifies options for compiling C files with $(CC).
+>>>  
+>>> @@ -318,9 +318,9 @@ more details, with real examples.
+>>>  		ldflags-y := -x
+>>>  
+>>>      subdir-ccflags-y, subdir-asflags-y
+>>> -	The two flags listed above are similar to ccflags-y and as-falgs-y.
+>>> -	The difference is that the subdir- variants has effect for the kbuild
+>>> -	file where tey are present and all subdirectories.
+>>> +	The two flags listed above are similar to ccflags-y and as-flags-y.
+>>> +	The difference is that the subdir- variants have effect for the kbuild
+>>> +	file where they are present and all subdirectories.
+>>>  	Options specified using subdir-* are added to the commandline before
+>>>  	the options specified using the non-subdir variants.
+>>>  
+>>> @@ -1176,14 +1176,14 @@ When kbuild executes, the following steps are followed (roughly):
+>>>  === 7 Kbuild syntax for exported headers
+>>>  
+>>>  The kernel include a set of headers that is exported to userspace.
+>>> -Many headers can be exported as-is but other headers requires  a
+>>> +Many headers can be exported as-is but other headers require a
+>>>  minimal pre-processing before they are ready for user-space.
+>>>  The pre-processing does:
+>>>  - drop kernel specific annotations
+>>>  - drop include of compiler.h
+>>> -- drop all sections that is kernel internat (guarded by ifdef __KERNEL__)
+>>> +- drop all sections that are kernel internal (guarded by ifdef __KERNEL__)
+>>>  
+>>> -Each relevant directory contain a file name "Kbuild" which specify the
+>>> +Each relevant directory contains a file name "Kbuild" which specifies the
+>>>  headers to be exported.
+>>>  See subsequent chapter for the syntax of the Kbuild file.
 
-And this is exactly what I did to prove that (in my opinion) libc needs
-fixes anyway, even if we change the kernel to treat tv_sec < 0 specially.
 
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <pthread.h>
-	#include <sys/mman.h>
 
-	pthread_rwlock_t rwlock;
-
-	static struct timespec *make_efault_ts(void)
-	{
-		int page_size = sysconf(_SC_PAGESIZE);
-		void *ptr = mmap(0, 2 * page_size, PROT_READ|PROT_WRITE,
-					MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-		munmap(ptr, page_size);
-		return ptr + page_size - sizeof(long);
-	}
-
-	static void *thread_func(void *arg)
-	{
-		int ret = pthread_rwlock_timedwrlock(&rwlock, make_efault_ts());
-		printf("lock: ret=%d %m\n", ret);
-		return NULL;
-	}
-
-	int main(int argv, char *argc[])
-	{
-		pthread_t tid;
-
-		pthread_rwlock_init(&rwlock, NULL);
-		pthread_rwlock_wrlock(&rwlock);
-
-		pthread_create(&tid, NULL, thread_func, NULL);
-		pthread_join(tid, NULL);
-
-		return 0;
-	}
-
-It may hang or segfault on your machine, this depends on libc version.
-It hangs on the testing machine which also suffers from the reported
-timespec_valid() issue. I did this test-case looking at
-"objdump -d /lib64/libpthread.so".
-
-To me, this looks like a bug in libc, but I won't insist.
-
-Oleg.
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
