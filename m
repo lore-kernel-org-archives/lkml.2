@@ -1,157 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab0F1GFH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 02:05:07 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:60791 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab0F1GFB (ORCPT
+	id S1753562Ab0F1GNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 02:13:33 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60572 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab0F1GNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 02:05:01 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Mon, 28 Jun 2010 11:29:56 +0530
-Message-Id: <20100628055956.6869.35527.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20100628055740.6869.77397.sendpatchset@localhost6.localdomain6>
-References: <20100628055740.6869.77397.sendpatchset@localhost6.localdomain6>
-Subject: [PATCHv6 2.6.35-rc3-tip 11/12]  perf: Re-Add make_absolute_path
+	Mon, 28 Jun 2010 02:13:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=TxZbE4zysPEA0rShNUfqMmJeuQ/Wy3TA35YymBMULlD12MQCpH4bmQ+LSevc+H6OQz
+         PfC/tKw/7adonxEVOmPCk0yz9onkAKt5KwIGWVCEzHPQc0WA8tucJXzQ/SiMn1n84jym
+         hyfkP5AFndL1ZS3NmLGr3ZqKNWwyznf2COU1Y=
+Message-ID: <4C283D84.6080504@suse.cz>
+Date: Mon, 28 Jun 2010 08:13:24 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+MIME-Version: 1.0
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: lenb@kernel.org, linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH 1/1] ACPI: pci_irq, add PRT_ quirk for IBM Bartolo
+References: <1277673679-21458-1-git-send-email-jslaby@suse.cz> <4C27E965.80508@gmail.com>
+In-Reply-To: <4C27E965.80508@gmail.com>
+X-Enigmail-Version: 1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/28/2010 02:14 AM, Robert Hancock wrote:
+> On 06/27/2010 03:21 PM, Jiri Slaby wrote:
+>> On IBM Bartolo machines, cards in 00:09.0 are defunct (if use
+>> interrupts). DSDT says that this slot (with function 0, i.e. pin A) is
+>> routed to \_SB_.PCI0.PIB_.LNKB. But it's not, it's wired to LNKC, so
+>> interrupts are misrouted. Add a quirk for this to workaround the
+>> issue.
+> 
+> That seems a rather serious DSDT flaw. Do devices in that slot work in
+> Windows?
 
-perf: Re-Add make_absolute_path
+Yes, the DSDT is pretty broken this way there. Regarding Windows, I
+don't know and I doubt anybody will ever try.
 
-perf probe for uprobes would use make_absolute_path.
-make_absolute_path can be used to convert a file name to a dso name.
-
-so if user specifies the function to be traced as malloc@/lib/libc.so.6
-it needs to be converted to malloc@libc-2.5.so
-
-This patch reverts a part of a41794cdd7ee94a5199e14f642c26d649d383fa5
----
-
- tools/perf/util/abspath.c |   81 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/cache.h   |    1 +
- 2 files changed, 82 insertions(+), 0 deletions(-)
-
-
-diff --git a/tools/perf/util/abspath.c b/tools/perf/util/abspath.c
-index 0e76aff..a791dd4 100644
---- a/tools/perf/util/abspath.c
-+++ b/tools/perf/util/abspath.c
-@@ -1,5 +1,86 @@
- #include "cache.h"
- 
-+/*
-+ * Do not use this for inspecting *tracked* content.  When path is a
-+ * symlink to a directory, we do not want to say it is a directory when
-+ * dealing with tracked content in the working tree.
-+ */
-+static int is_directory(const char *path)
-+{
-+	struct stat st;
-+	return (!stat(path, &st) && S_ISDIR(st.st_mode));
-+}
-+
-+/* We allow "recursive" symbolic links. Only within reason, though. */
-+#define MAXDEPTH 5
-+
-+const char *make_absolute_path(const char *path)
-+{
-+	static char bufs[2][PATH_MAX + 1], *buf = bufs[0], *next_buf = bufs[1];
-+	char cwd[1024] = "";
-+	int buf_index = 1, len;
-+
-+	int depth = MAXDEPTH;
-+	char *last_elem = NULL;
-+	struct stat st;
-+
-+	if (strlcpy(buf, path, PATH_MAX) >= PATH_MAX)
-+		die ("Too long path: %.*s", 60, path);
-+
-+	while (depth--) {
-+		if (!is_directory(buf)) {
-+			char *last_slash = strrchr(buf, '/');
-+			if (last_slash) {
-+				*last_slash = '\0';
-+				last_elem = xstrdup(last_slash + 1);
-+			} else {
-+				last_elem = xstrdup(buf);
-+				*buf = '\0';
-+			}
-+		}
-+
-+		if (*buf) {
-+			if (!*cwd && !getcwd(cwd, sizeof(cwd)))
-+				die ("Could not get current working directory");
-+
-+			if (chdir(buf))
-+				die ("Could not switch to '%s'", buf);
-+		}
-+		if (!getcwd(buf, PATH_MAX))
-+			die ("Could not get current working directory");
-+
-+		if (last_elem) {
-+			len = strlen(buf);
-+
-+			if (len + strlen(last_elem) + 2 > PATH_MAX)
-+				die ("Too long path name: '%s/%s'",
-+						buf, last_elem);
-+			buf[len] = '/';
-+			strcpy(buf + len + 1, last_elem);
-+			free(last_elem);
-+			last_elem = NULL;
-+		}
-+
-+		if (!lstat(buf, &st) && S_ISLNK(st.st_mode)) {
-+			len = readlink(buf, next_buf, PATH_MAX);
-+			if (len < 0)
-+				die ("Invalid symlink: %s", buf);
-+			if (PATH_MAX <= len)
-+				die("symbolic link too long: %s", buf);
-+			next_buf[len] = '\0';
-+			buf = next_buf;
-+			buf_index = 1 - buf_index;
-+			next_buf = bufs[buf_index];
-+		} else
-+			break;
-+	}
-+
-+	if (*cwd && chdir(cwd))
-+		die ("Could not change back to '%s'", cwd);
-+
-+	return buf;
-+}
-+
- static const char *get_pwd_cwd(void)
- {
- 	static char cwd[PATH_MAX + 1];
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 27e9ebe..0dfed40 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -73,6 +73,7 @@ static inline int is_absolute_path(const char *path)
- 	return path[0] == '/';
- }
- 
-+const char *make_absolute_path(const char *path);
- const char *make_nonrelative_path(const char *path);
- char *strip_path_suffix(const char *path, const char *suffix);
- 
+regards,
+-- 
+js
+suse labs
