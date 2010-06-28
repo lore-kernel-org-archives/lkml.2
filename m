@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab0F1LzV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 07:55:21 -0400
+	id S1754338Ab0F1L5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 07:57:08 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:48266 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab0F1LzM (ORCPT
+	with ESMTP id S1753736Ab0F1LzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 07:55:12 -0400
+	Mon, 28 Jun 2010 07:55:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=suO5OQU6cLzrgWuWI8iALRsI1sV7ypHoNSwNYUFlkEmrRgp64fSt3BRp0x+5LAE71B
-         gjeAJAS1FrjT3Sxbi9M9FA4KmF76zJYwsuGwJbjlR1B54eyfb0Z3vxPAZGqMKhW4Q9PS
-         RWzwY3A5zNgkTwJ3l+4YoxXwbBHOxv3C8hPOQ=
+        b=s4aqItmP/uetFo8X3IVtdLG4utBidrSHuoJevc2NYtVGqHQ8oFVOsdEOnMKuAW0jFt
+         NM2QySGVpSRRTd4VL3Zh0nTHfJsLIkirYJbXsvylheLT17R9iAAJjFqYUeazg6TBvsnJ
+         5+CLwllfWZcgqzn1qYQnn7Vh9z6wS7wz/3+P8=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: trivial@kernel.org
 Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       Jing Huang <huangj@brocade.com>,
-       "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       Krishna Gudipati <kgudipat@brocade.com>,
-       Kulikov Vasiliy <segooon@gmail.com>, linux-scsi@vger.kernel.org,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Kulikov Vasiliy <segooon@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dan Carpenter <error27@gmail.com>, devel@driverdev.osuosl.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH 07/16] trivial: use ARRAY_SIZE
-Date: Mon, 28 Jun 2010 15:55:08 +0400
-Message-Id: <1277726109-24633-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH 09/16] trivial: use ARRAY_SIZE
+Date: Mon, 28 Jun 2010 15:55:16 +0400
+Message-Id: <1277726117-24699-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,47 +33,83 @@ Change sizeof(x) / sizeof(*x) to ARRAY_SIZE(x).
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/scsi/bfa/bfa_fcs.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/staging/otus/hal/hpani.c |   16 ++++++----------
+ 1 files changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/scsi/bfa/bfa_fcs.c b/drivers/scsi/bfa/bfa_fcs.c
-index 3516172..153cb2a 100644
---- a/drivers/scsi/bfa/bfa_fcs.c
-+++ b/drivers/scsi/bfa/bfa_fcs.c
-@@ -86,7 +86,7 @@ bfa_fcs_attach(struct bfa_fcs_s *fcs, struct bfa_s *bfa, struct bfad_s *bfad,
- 	bfa_attach_fcs(bfa);
- 	fcbuild_init();
+diff --git a/drivers/staging/otus/hal/hpani.c b/drivers/staging/otus/hal/hpani.c
+index f53e483..9b9420c 100644
+--- a/drivers/staging/otus/hal/hpani.c
++++ b/drivers/staging/otus/hal/hpani.c
+@@ -72,7 +72,6 @@ s32_t BEACON_RSSI(zdev_t *dev)
  
--	for (i = 0; i < sizeof(fcs_modules) / sizeof(fcs_modules[0]); i++) {
-+	for (i = 0; i < ARRAY_SIZE(fcs_modules); i++) {
- 		mod = &fcs_modules[i];
- 		if (mod->attach)
- 			mod->attach(fcs);
-@@ -102,7 +102,7 @@ bfa_fcs_init(struct bfa_fcs_s *fcs)
- 	int             i;
- 	struct bfa_fcs_mod_s  *mod;
- 
--	for (i = 0; i < sizeof(fcs_modules) / sizeof(fcs_modules[0]); i++) {
-+	for (i = 0; i < ARRAY_SIZE(fcs_modules); i++) {
- 		mod = &fcs_modules[i];
- 		if (mod->modinit)
- 			mod->modinit(fcs);
-@@ -163,13 +163,11 @@ void
- bfa_fcs_exit(struct bfa_fcs_s *fcs)
+ void zfHpAniAttach(zdev_t *dev)
  {
- 	struct bfa_fcs_mod_s  *mod;
--	int             nmods, i;
-+	int i;
+-#define N(a)     (sizeof(a) / sizeof(a[0]))
+     u32_t i;
+     struct zsHpPriv *HpPriv;
  
- 	bfa_wc_init(&fcs->wc, bfa_fcs_exit_comp, fcs);
+@@ -125,7 +124,6 @@ void zfHpAniAttach(zdev_t *dev)
+     HpPriv->stats.ast_nodestats.ns_avgbrssi = ZM_RSSI_DUMMY_MARKER;
+     HpPriv->stats.ast_nodestats.ns_avgrssi = ZM_RSSI_DUMMY_MARKER;
+     HpPriv->stats.ast_nodestats.ns_avgtxrssi = ZM_RSSI_DUMMY_MARKER;
+-#undef N
+ }
  
--	nmods = sizeof(fcs_modules) / sizeof(fcs_modules[0]);
--
--	for (i = 0; i < nmods; i++) {
-+	for (i = 0; i < ARRAY_SIZE(fcs_modules); i++) {
+ /*
+@@ -133,7 +131,6 @@ void zfHpAniAttach(zdev_t *dev)
+  */
+ u8_t zfHpAniControl(zdev_t *dev, ZM_HAL_ANI_CMD cmd, int param)
+ {
+-#define N(a) (sizeof(a)/sizeof(a[0]))
+     typedef s32_t TABLE[];
+     struct zsHpPriv *HpPriv;
+     struct zsAniState *aniState;
+@@ -148,9 +145,9 @@ u8_t zfHpAniControl(zdev_t *dev, ZM_HAL_ANI_CMD cmd, int param)
+     {
+         u32_t level = param;
  
- 		mod = &fcs_modules[i];
- 		if (mod->modexit) {
+-        if (level >= N(HpPriv->totalSizeDesired)) {
++        if (level >= ARRAY_SIZE(HpPriv->totalSizeDesired)) {
+           zm_debug_msg1("level out of range, desired level : ", level);
+-          zm_debug_msg1("max level : ", N(HpPriv->totalSizeDesired));
++          zm_debug_msg1("max level : ", ARRAY_SIZE(HpPriv->totalSizeDesired));
+           return FALSE;
+         }
+ 
+@@ -260,10 +257,10 @@ u8_t zfHpAniControl(zdev_t *dev, ZM_HAL_ANI_CMD cmd, int param)
+         const TABLE firstep = { 0, 4, 8 };
+         u32_t level = param;
+ 
+-        if (level >= N(firstep))
++        if (level >= ARRAY_SIZE(firstep))
+         {
+             zm_debug_msg1("level out of range, desired level : ", level);
+-            zm_debug_msg1("max level : ", N(firstep));
++            zm_debug_msg1("max level : ", ARRAY_SIZE(firstep));
+             return FALSE;
+         }
+         zfDelayWriteInternalReg(dev, AR_PHY_FIND_SIG,
+@@ -283,10 +280,10 @@ u8_t zfHpAniControl(zdev_t *dev, ZM_HAL_ANI_CMD cmd, int param)
+         const TABLE cycpwrThr1 = { 2, 4, 6, 8, 10, 12, 14, 16 };
+         u32_t level = param;
+ 
+-        if (level >= N(cycpwrThr1))
++        if (level >= ARRAY_SIZE(cycpwrThr1))
+         {
+             zm_debug_msg1("level out of range, desired level : ", level);
+-            zm_debug_msg1("max level : ", N(cycpwrThr1));
++            zm_debug_msg1("max level : ", ARRAY_SIZE(cycpwrThr1));
+             return FALSE;
+         }
+         zfDelayWriteInternalReg(dev, AR_PHY_TIMING5,
+@@ -335,7 +332,6 @@ u8_t zfHpAniControl(zdev_t *dev, ZM_HAL_ANI_CMD cmd, int param)
+         return FALSE;
+     }
+     return TRUE;
+-#undef  N
+ }
+ 
+ void zfHpAniRestart(zdev_t* dev)
 -- 
 1.7.0.4
 
