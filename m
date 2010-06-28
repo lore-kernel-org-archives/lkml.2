@@ -1,61 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab0F1Qld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 12:41:33 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:44250 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750955Ab0F1Qlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 12:41:31 -0400
-Subject: [PATCH] fs: make sure do_change_type() gets a valid type.
-From: Maxime Bizon <mbizon@freebox.fr>
-Reply-To: mbizon@freebox.fr
-To: viro@zeniv.linux.org.uk
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Organization: Freebox
-Date: Mon, 28 Jun 2010 18:41:22 +0200
-Message-ID: <1277743282.31267.112.camel@sakura.staff.proxad.net>
+	id S1752028Ab0F1Qqa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 12:46:30 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33998 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab0F1QqZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 12:46:25 -0400
+Subject: Re: futex: race in lock and unlock&exit for robust futex with PI?
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Darren Hart <dvhltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20100628163952.GD24127@tiehlicka.suse.cz>
+References: <20100623091307.GA11072@tiehlicka.suse.cz>
+	 <4C2417AA.4030306@us.ibm.com> <20100625082711.GA32765@tiehlicka.suse.cz>
+	 <4C24ED34.9040808@us.ibm.com> <4C253D32.6040304@us.ibm.com>
+	 <20100628144246.GA14201@tiehlicka.suse.cz>
+	 <20100628153214.GA24127@tiehlicka.suse.cz>
+	 <20100628155845.GC24127@tiehlicka.suse.cz>
+	 <20100628163952.GD24127@tiehlicka.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Jun 2010 18:45:50 +0200
+Message-ID: <1277743550.3561.136.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-06-28 at 18:39 +0200, Michal Hocko wrote:
 
-Hi,
+> [I am sorry for bombarding you with emails]
 
-
-Busybox mount does not support --make-shared, and -o shared is used
-instead. This has the side effect that MS_SILENT can be passed too, and
-that prevents do_change_type() from working.
-
-This patch fixes this by computing type using only relevant bits.
-
-Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
----
- fs/namespace.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index f20cb57..5360463 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1456,7 +1456,7 @@ static int do_change_type(struct path *path, int flag)
- {
- 	struct vfsmount *m, *mnt = path->mnt;
- 	int recurse = flag & MS_REC;
--	int type = flag & ~MS_REC;
-+	int type = flag & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE);
- 	int err = 0;
- 
- 	if (!capable(CAP_SYS_ADMIN))
--- 
-1.7.1
-
-
-
--- 
-Maxime
-
-
+You can lessen the burden on all of us by trimming your emails more
+aggressively. Your last one has 4 dead tails in it.
