@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab0F1MwC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 08:52:02 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56099 "EHLO ogre.sisk.pl"
+	id S1754658Ab0F1MxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 08:53:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48374 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754423Ab0F1MwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 08:52:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: markgross@thegnar.org
-Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being lost
-Date: Mon, 28 Jun 2010 14:50:10 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Florian Mickler <florian@mickler.org>, linux-pci@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <201006261514.13491.rjw@sisk.pl> <20100627222804.GA5522@gvim.org>
-In-Reply-To: <20100627222804.GA5522@gvim.org>
+	id S1754456Ab0F1MxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 08:53:22 -0400
+Message-ID: <4C289B39.4060901@suse.de>
+Date: Mon, 28 Jun 2010 18:23:13 +0530
+From: Suresh Jayaraman <sjayaraman@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091130 SUSE/3.0.0-1.1.1 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: David Howells <dhowells@redhat.com>
+Cc: Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 05/10] cifs: define superblock-level cache index
+ objects and register them
+References: <22746.1277470713@redhat.com> <4C24A4A0.90408@suse.de> <1277220206-3559-1-git-send-email-sjayaraman@suse.de> <yes> <9720.1277312290@redhat.com> <23204.1277472412@redhat.com>
+In-Reply-To: <23204.1277472412@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006281450.11285.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 28, 2010, mark gross wrote:
-> Looks good to me!
+On 06/25/2010 06:56 PM, David Howells wrote:
+> David Howells <dhowells@redhat.com> wrote:
+> 
+>>>> validate the root directory of the share in some way?
+>>>
+>>> I don't know if there is a way to do this.
+>>
+>> Is there an inode number or something?  Even the creation time might do.
+> 
+> Looking in cifspdu.h, there are a number of things that it might be possible
+> to use.
+> 
+>  (1) FILE_ALL_INFO: CreationTime, IndexNumber, IndexNumber1, FileName
+>      (assuming this isn't flattened to '\' or something for the root of a
+>      share.
+> 
+>  (2) FILE_UNIX_BASIC_INFO: DevMajor, DevMinor, UniqueId.
+> 
+>  (3) FILE_INFO_STANDARD: CreationDate, CreationTime.
+> 
+>  (4) FILE_INFO_BASIC: CreationTime.
+> 
+>  (5) FILE_DIRECTORY_INFO: FileIndex, CreationTime, FileName.
+> 
+>  (6) SEARCH_ID_FULL_DIR_INFO: FileIndex, CreationTime, UniqueId, FileName.
+> 
+>  (7) FILE_BOTH_DIRECTORY_INFO: FileIndex, CreationTime, ShortName, FileName.
+> 
+>  (8) OPEN_RSP_EXT: Fid, CreationTime, VolumeGUID, FileId.
+> 
+> You may have to choose different sets of things, depending on what the server
+> has on offer.  Also, don't forget, if you can't work out whether a share is
 
-Great, thanks!  May I add your "Acked-by" to the patch, then?
+Did you mean we need to validate differently for different servers?
 
-Rafael
+I just did some testing and it looks like we could rely on CreationTime,
+IndexNumber for validating with Windows servers (FileName is relative to
+the mapped drive) and UniqueId for validating with Samba servers. I did
+not test all possibilities (there could be more).
 
+> coherent or not from the above, you can always use LastWriteTime, ChangeTime
+> and EndOfFile and just discard the whole subtree if they differ.
+> 
 
-> On Sat, Jun 26, 2010 at 03:14:13PM +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > One of the arguments during the suspend blockers discussion was that
-> > the mainline kernel didn't contain any mechanisms making it possible
-> > to avoid losing wakeup events during system suspend.
-> > 
-> > Generally, there are two problems in that area.  First, if a wakeup
-> > event occurs exactly when /sys/power/state is being written to, it
-> > may be delivered to user space right before the freezer kicks in, so
-> > the user space consumer of the event may not be able to process it
-> > before the system is suspended.  Second, if a wakeup event occurs
-> > after user space has been frozen, it is not generally guaranteed that
-> > the ongoing transition of the system into a sleep state will be
-> > aborted.
-> > 
-> > To address these issues introduce a new global sysfs attribute,
-> > /sys/power/wakeup_count, associated with a running counter of wakeup
-> > events and three helper functions, pm_stay_awake(), pm_relax(), and
-> > pm_wakeup_event(), that may be used by kernel subsystems to control
-> > the behavior of this attribute and to request the PM core to abort
-> > system transitions into a sleep state already in progress.
-> > 
-> > The /sys/power/wakeup_count file may be read from or written to by
-> > user space.  Reads will always succeed (unless interrupted by a
-> > signal) and return the current value of the wakeup events counter.
-> > Writes, however, will only succeed if the written number is equal to
-> > the current value of the wakeup events counter.  If a write is
-> > successful, it will cause the kernel to save the current value of the
-> > wakeup events counter and to abort the subsequent system transition
-> > into a sleep state if any wakeup events are reported after the write
-> > has returned.
-> > 
-> > [The assumption is that before writing to /sys/power/state user space
-> > will first read from /sys/power/wakeup_count.  Next, user space
-> > consumers of wakeup events will have a chance to acknowledge or
-> > veto the upcoming system transition to a sleep state.  Finally, if
-> > the transition is allowed to proceed, /sys/power/wakeup_count will
-> > be written to and if that succeeds, /sys/power/state will be written
-> > to as well.  Still, if any wakeup events are reported to the PM core
-> > by kernel subsystems after that point, the transition will be
-> > aborted.]
-> > 
-> > Additionally, put a wakeup events counter into struct dev_pm_info and
-> > make these per-device wakeup event counters available via sysfs,
-> > so that it's possible to check the activity of various wakeup event
-> > sources within the kernel.
-> > 
-> > To illustrate how subsystems can use pm_wakeup_event(), make the
-> > low-level PCI runtime PM wakeup-handling code use it.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
+Thanks,
+
+-- 
+Suresh Jayaraman
