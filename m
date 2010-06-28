@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab0F1IPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 04:15:08 -0400
-Received: from sh.osrg.net ([192.16.179.4]:44128 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751439Ab0F1IPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 04:15:04 -0400
-Date: Mon, 28 Jun 2010 17:14:28 +0900
-To: hch@lst.de
-Cc: fujita.tomonori@lab.ntt.co.jp, snitzer@redhat.com, axboe@kernel.dk,
-       dm-devel@redhat.com, James.Bottomley@suse.de,
-       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
-       akpm@linux-foundation.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
- payload
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100628075738.GA26606@lst.de>
-References: <20100627110712.GA14511@lst.de>
-	<20100627212952D.fujita.tomonori@lab.ntt.co.jp>
-	<20100628075738.GA26606@lst.de>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754947Ab0F1IRW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 04:17:22 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:42887 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753837Ab0F1IRU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 04:17:20 -0400
+Message-ID: <4C285A72.7030303@st.com>
+Date: Mon, 28 Jun 2010 13:46:50 +0530
+From: Viresh KUMAR <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Lightning/1.0b1 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: armando.visconti@st.com, shiraz.hashim@st.com,
+       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH resend] Watchdog: Adding support for ARM Primecell	SP805
+ Watchdog
+References: <1275465783-14052-1-git-send-email-viresh.kumar@st.com>	<4C11B711.70907@st.com> <20100611053049.GM3788@infomag.iguana.be>
+In-Reply-To: <20100611053049.GM3788@infomag.iguana.be>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100628171218Q.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 28 Jun 2010 17:14:31 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jun 2010 09:57:38 +0200
-Christoph Hellwig <hch@lst.de> wrote:
-
-> On Sun, Jun 27, 2010 at 09:32:07PM +0900, FUJITA Tomonori wrote:
-> > On Sun, 27 Jun 2010 13:07:12 +0200
-> > Christoph Hellwig <hch@lst.de> wrote:
-> > 
-> > > > How about this?
-> > > 
-> > > As I tried to explain before this utterly confuses the I/O completion
-> > > path.  With the patch applied even a simple mkfs.xfs that issues discard
-> > > just hangs.
-> > 
-> > Wired. I just tried mkfs.xfs against scsi_debug with my block patches
-> > (I saw one discard command). Seemed that it worked fine.
+On 6/11/2010 11:00 AM, Wim Van Sebroeck wrote:
+> Hi Viresh,
 > 
-> I've tracked it down to the call to scsi_requeue_command in scsi_end_request.
-> When the command is marked BLOCK_PC we'll just get it back as such in
-> ->prep_fn next time, but now it's reverting to the previous state.
+> Still need to look at it. First finishing up another project.
+> Probably for this weekend.
+> 
+> Kind regards,
+> Wim.
+> 
 
-If scsi_end_request() calls scsi_requeue_command(), the command has a
-left over (i.e. hasn't finished all the data), right? You hit such
-condition with discard commands?
+Wim,
 
-BLOCK_PC requests don't hit this case since blk_end_request() always
-return false for PC.
+Have you reviewed this patch or still need to look at it?
 
-
-> While I see the problems with leaking ressources in that case I still
-> can't quite explain the hang I see.
-
-Any way to reproduce the hang without ssd drives?
+viresh.
