@@ -1,137 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab0F1WTq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 18:19:46 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57404 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753292Ab0F1WTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 18:19:45 -0400
-Subject: Re: [PATCHv2] vhost-net: add dhclient work-around from userspace
-From: Sridhar Samudrala <sri@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Aristeu Rozanski <arozansk@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
-       Juan Quintela <quintela@redhat.com>,
-       "David S. Miller" <davem@redhat.com>, kvm@vger.kernel.org,
-       virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, ykaul@redhat.com, markmc@redhat.com
-In-Reply-To: <20100628100807.GA30685@redhat.com>
-References: <20100628100807.GA30685@redhat.com>
-Content-Type: text/plain
-Date: Mon, 28 Jun 2010 15:19:41 -0700
-Message-Id: <1277763581.23755.16.camel@w-sridhar.beaverton.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	id S1755515Ab0F1Wcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 18:32:46 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33102 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901Ab0F1Wcp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 18:32:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=RhK6FR4ICkq5H698DZURc/5FGSIYFkDE0xXb4LPIe6qmGnFpMHr5xtr8AClRGNu91j
+         Rvn7lz3SL1jNQc1+Nsx/Vk4hETB86A6VI2QHSc41ARwVs+cPe5wtiq5a2oCbVv2DOJ1B
+         OKeB67AmSrYp4ElA+klQzkJolEtwTfXlcy9bY=
+Message-ID: <4C292308.4050906@pobox.com>
+Date: Mon, 28 Jun 2010 18:32:40 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       oleg@redhat.com, axboe@kernel.dk, fweisbec@gmail.com,
+       dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+       andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
+Subject: Re: [PATCH 33/35] libata: take advantage of cmwq and remove concurrency
+ limitations
+References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-34-git-send-email-tj@kernel.org>
+In-Reply-To: <1277759063-24607-34-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-28 at 13:08 +0300, Michael S. Tsirkin wrote:
-> Userspace virtio server has the following hack
-> so guests rely on it, and we have to replicate it, too:
-> 
-> Use port number to detect incoming IPv4 DHCP response packets,
-> and fill in the checksum for these.
-> 
-> The issue we are solving is that on linux guests, some apps
-> that use recvmsg with AF_PACKET sockets, don't know how to
-> handle CHECKSUM_PARTIAL;
-> The interface to return the relevant information was added
-> in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
-> and older userspace does not use it.
-> One important user of recvmsg with AF_PACKET is dhclient,
-> so we add a work-around just for DHCP.
-> 
-> Don't bother applying the hack to IPv6 as userspace virtio does not
-> have a work-around for that - let's hope guests will do the right
-> thing wrt IPv6.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
-> 
-> Dave, I'm going to put this patch on the vhost tree,
-> no need for you to bother merging it - you'll get
-> it with a pull request.
-> 
-> 
->  drivers/vhost/net.c |   44 +++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 43 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index cc19595..03bba6a 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -24,6 +24,10 @@
->  #include <linux/if_tun.h>
->  #include <linux/if_macvlan.h>
-> 
-> +#include <linux/ip.h>
-> +#include <linux/udp.h>
-> +#include <linux/netdevice.h>
-> +
->  #include <net/sock.h>
-> 
->  #include "vhost.h"
-> @@ -186,6 +190,44 @@ static void handle_tx(struct vhost_net *net)
->  	unuse_mm(net->dev.mm);
->  }
-> 
-> +static int peek_head(struct sock *sk)
+On 06/28/2010 05:04 PM, Tejun Heo wrote:
+> libata has two concurrency related limitations.
+>
+> a. ata_wq which is used for polling PIO has single thread per CPU.  If
+>     there are multiple devices doing polling PIO on the same CPU, they
+>     can't be executed simultaneously.
+>
+> b. ata_aux_wq which is used for SCSI probing has single thread.  In
+>     cases where SCSI probing is stalled for extended period of time
+>     which is possible for ATAPI devices, this will stall all probing.
+>
+> #a is solved by increasing maximum concurrency of ata_wq.  Please note
+> that polling PIO might be used under allocation path and thus needs to
+> be served by a separate wq with a rescuer.
+>
+> #b is solved by using the default wq instead and achieving exclusion
+> via per-port mutex.
+>
+> Signed-off-by: Tejun Heo<tj@kernel.org>
+> Cc: Jeff Garzik<jgarzik@pobox.com>
 
-This routine is doing more than just peeking the head of sk's receive
-queue. May be this should be named similar to what qemu calls
-'work_around_broken_dhclient()'
-> +{
-> +	struct sk_buff *skb;
-> +
-> +	lock_sock(sk);
-> +	skb = skb_peek(&sk->sk_receive_queue);
-> +	if (unlikely(!skb)) {
-> +		release_sock(sk);
-> +		return 0;
-> +	}
-> +	/* Userspace virtio server has the following hack so
-> +	 * guests rely on it, and we have to replicate it, too: */
-> +	/* Use port number to detect incoming IPv4 DHCP response packets,
-> +	 * and fill in the checksum. */
-> +
-> +	/* The issue we are solving is that on linux guests, some apps
-> +	 * that use recvmsg with AF_PACKET sockets, don't know how to
-> +	 * handle CHECKSUM_PARTIAL;
-> +	 * The interface to return the relevant information was added in
-> +	 * 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
-> +	 * and older userspace does not use it.
-> +	 * One important user of recvmsg with AF_PACKET is dhclient,
-> +	 * so we add a work-around just for DHCP. */
-> +	if (skb->ip_summed == CHECKSUM_PARTIAL &&
-> +	    skb_headlen(skb) >= skb_transport_offset(skb) +
-> +				sizeof(struct udphdr) &&
-> +	    udp_hdr(skb)->dest == htons(68) &&
-> +	    skb_network_header_len(skb) >= sizeof(struct iphdr) &&
-> +	    ip_hdr(skb)->protocol == IPPROTO_UDP &&
-> +	    skb->protocol == htons(ETH_P_IP)) {
+Acked-by: Jeff Garzik <jgarzik@redhat.com>
 
-Isn't it more logical to check for skb->protocol, followed by ip_hdr and
-then udp_hdr?
-
-> +		skb_checksum_help(skb);
-> +		/* Restore ip_summed value: tun passes it to user. */
-> +		skb->ip_summed = CHECKSUM_PARTIAL;
-> +	}
-> +	release_sock(sk);
-> +	return 1;
-> +}
-> +
->  /* Expects to be always run from workqueue - which acts as
->   * read-size critical section for our kind of RCU. */
->  static void handle_rx(struct vhost_net *net)
-> @@ -222,7 +264,7 @@ static void handle_rx(struct vhost_net *net)
->  	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
->  		vq->log : NULL;
-> 
-> -	for (;;) {
-> +	while (peek_head(sock->sk)) {
->  		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
->  					 ARRAY_SIZE(vq->iov),
->  					 &out, &in,
 
