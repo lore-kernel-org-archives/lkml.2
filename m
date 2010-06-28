@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab0F1MPf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 08:15:35 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42540 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab0F1MPd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 08:15:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=XFc+Ddh2M1reMnW2up/ThKfBXpdI3wkZpNhd/quwy9xVAXQE1jWqOx55NW29qA/e1C
-         OVpdPpt1DD1aJhsXvVQiVfIfFsYX8qtIOT78yRO4N7eo4InoQkvLO45mlu/1dtlVZczm
-         lh5wEt45avc99cDkzkxgr5qVYVtB51Qdh7AfY=
-From: Renzo Dani <arons7@gmail.com>
-To: adams.xu@azwave.com.cn
-Cc: arons7@gmail.com, mchehab@infradead.org, rdunlap@xenotime.net,
-       o.endriss@gmx.de, awalls@radix.net, crope@iki.fi, manu@linuxtv.org,
-       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-doc@vger.kernel.org
-Subject: [PATCH 1/1] Retrieve firmware for az6027
-Date: Mon, 28 Jun 2010 14:15:19 +0200
-Message-Id: <1277727319-9498-1-git-send-email-arons7@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752612Ab0F1MQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 08:16:13 -0400
+Received: from verein.lst.de ([213.95.11.210]:39205 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752006Ab0F1MQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 08:16:12 -0400
+Date: Mon, 28 Jun 2010 14:15:54 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: mingo@redhat.com, tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] x86: always use irq stacks
+Message-ID: <20100628121554.GA6605@lst.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Renzo Dani <arons7@gmail.com>
+IRQ stacks provide much better safety against unexpected stack use from
+interrupts, at the minimal downside of slightly higher memory usage.
+Enable irq stacks also for the default 8k stack on 32-bit kernels to
+minimize the problem of stack overflows through interrupt activity.
 
+This is what the 64-bit kernel and various other architectures already do.
 
-Signed-off-by: Renzo Dani <arons7@gmail.com>
----
- Documentation/dvb/get_dvb_firmware |   19 ++++++++++++++++++-
- 1 files changed, 18 insertions(+), 1 deletions(-)
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-diff --git a/Documentation/dvb/get_dvb_firmware b/Documentation/dvb/get_dvb_firmware
-index 239cbdb..507868b 100644
---- a/Documentation/dvb/get_dvb_firmware
-+++ b/Documentation/dvb/get_dvb_firmware
-@@ -26,7 +26,7 @@ use IO::Handle;
- 		"dec3000s", "vp7041", "dibusb", "nxt2002", "nxt2004",
- 		"or51211", "or51132_qam", "or51132_vsb", "bluebird",
- 		"opera1", "cx231xx", "cx18", "cx23885", "pvrusb2", "mpc718",
--		"af9015", "ngene");
-+		"af9015", "ngene", "az6027");
+Index: linux-2.6/arch/x86/Kconfig.debug
+===================================================================
+--- linux-2.6.orig/arch/x86/Kconfig.debug	2010-05-25 18:45:43.048276085 +0200
++++ linux-2.6/arch/x86/Kconfig.debug	2010-05-25 18:45:53.603003841 +0200
+@@ -128,8 +128,7 @@ config 4KSTACKS
+ 	  If you say Y here the kernel will use a 4Kb stacksize for the
+ 	  kernel stack attached to each process/thread. This facilitates
+ 	  running more threads on a system and also reduces the pressure
+-	  on the VM subsystem for higher order allocations. This option
+-	  will also use IRQ stacks to compensate for the reduced stackspace.
++	  on the VM subsystem for higher order allocations.
  
- # Check args
- syntax() if (scalar(@ARGV) != 1);
-@@ -567,6 +567,23 @@ sub ngene {
-     "$file1, $file2";
+ config DOUBLEFAULT
+ 	default y
+Index: linux-2.6/arch/x86/include/asm/irq.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/irq.h	2010-05-25 18:45:43.040025143 +0200
++++ linux-2.6/arch/x86/include/asm/irq.h	2010-05-25 18:45:53.604003981 +0200
+@@ -19,18 +19,16 @@ static inline int irq_canonicalize(int i
+ # define ARCH_HAS_NMI_WATCHDOG
+ #endif
+ 
+-#ifdef CONFIG_4KSTACKS
+-  extern void irq_ctx_init(int cpu);
+-  extern void irq_ctx_exit(int cpu);
+-# define __ARCH_HAS_DO_SOFTIRQ
++#ifdef CONFIG_X86_32
++extern void irq_ctx_init(int cpu);
++extern void irq_ctx_exit(int cpu);
+ #else
+ # define irq_ctx_init(cpu) do { } while (0)
+ # define irq_ctx_exit(cpu) do { } while (0)
+-# ifdef CONFIG_X86_64
+-#  define __ARCH_HAS_DO_SOFTIRQ
+-# endif
+ #endif
+ 
++#define __ARCH_HAS_DO_SOFTIRQ
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ #include <linux/cpumask.h>
+ extern void fixup_irqs(void);
+Index: linux-2.6/arch/x86/kernel/irq_32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/irq_32.c	2010-05-25 18:45:42.981006006 +0200
++++ linux-2.6/arch/x86/kernel/irq_32.c	2010-05-25 18:45:53.606003632 +0200
+@@ -49,7 +49,6 @@ static inline int check_stack_overflow(v
+ static inline void print_stack_overflow(void) { }
+ #endif
+ 
+-#ifdef CONFIG_4KSTACKS
+ /*
+  * per-CPU IRQ handling contexts (thread information and stack)
+  */
+@@ -187,11 +186,6 @@ asmlinkage void do_softirq(void)
+ 	local_irq_restore(flags);
  }
  
-+sub az6027{
-+    my $file = "AZ6027_Linux_Driver.tar.gz";
-+    my $url = "http://linux.terratec.de/files/$file";
-+    my $firmware = "dvb-usb-az6027-03.fw";
-+
-+    wgetfile($file, $url);
-+
-+    #untar
-+    if( system("tar xzvf $file")){
-+        die "failed to untar firmware";
-+    }
-+    if( system("rm -rf AZ6027_Linux_Driver; rm $file")){
-+        die ("unable to remove unnecessary files");
-+    }
-+
-+    $firmware;
-+}
- # ---------------------------------------------------------------
- # Utilities
+-#else
+-static inline int
+-execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq) { return 0; }
+-#endif
+-
+ bool handle_irq(unsigned irq, struct pt_regs *regs)
+ {
+ 	struct irq_desc *desc;
+Index: linux-2.6/Documentation/x86/x86_64/kernel-stacks
+===================================================================
+--- linux-2.6.orig/Documentation/x86/x86_64/kernel-stacks	2010-05-25 18:45:55.631004120 +0200
++++ linux-2.6/Documentation/x86/x86_64/kernel-stacks	2010-05-25 18:46:21.785256528 +0200
+@@ -18,9 +18,9 @@ specialized stacks contain no useful dat
+   Used for external hardware interrupts.  If this is the first external
+   hardware interrupt (i.e. not a nested hardware interrupt) then the
+   kernel switches from the current task to the interrupt stack.  Like
+-  the split thread and interrupt stacks on i386 (with CONFIG_4KSTACKS),
+-  this gives more room for kernel interrupt processing without having
+-  to increase the size of every per thread stack.
++  the split thread and interrupt stacks on i386, this gives more room
++  for kernel interrupt processing without having to increase the size
++  of every per thread stack.
  
--- 
-1.7.1
-
+   The interrupt stack is also used when processing a softirq.
+ 
