@@ -1,138 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab0F1NVB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 09:21:01 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:39494 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab0F1NU7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 09:20:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=HnDNcepbEvqr41b9o93y08cG5L5x+jFVERkG3RKaR4QYtOrgkumTiER/fBiHB4EZ+G
-         V66RwR3tvf/X+0sEcT9A6PeqsISboyuE8Z8MpAz5MvshSr3ZwKQKdtz4ATEpEq8dGkCx
-         RspBnam2idxQCyytDc7y4nawllM1PrpKH1Azg=
-Date: Mon, 28 Jun 2010 15:21:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 05/11] perf: register pmu implementations
-Message-ID: <20100628132101.GB5668@nowhere>
-References: <20100624142804.431553874@chello.nl> <20100624143406.764162308@chello.nl>
+	id S1752118Ab0F1NW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 09:22:57 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:29792 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751395Ab0F1NWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 09:22:54 -0400
+Message-ID: <4C28A229.10503@bfs.de>
+Date: Mon, 28 Jun 2010 15:22:49 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100624143406.764162308@chello.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Kulikov Vasiliy <segooon@gmail.com>
+CC: trivial@kernel.org, Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Simon Horman <horms@verge.net.au>,
+       Andrea Gelmini <andrea.gelmini@gelma.net>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/16] trivial: use ARRAY_SIZE
+References: <1277726125-24765-1-git-send-email-segooon@gmail.com> <4C28989E.9010300@bfs.de>
+In-Reply-To: <4C28989E.9010300@bfs.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 04:28:09PM +0200, Peter Zijlstra wrote:
-> +	if (bp->attr.type != PERF_TYPE_BREAKPOINT)
-> +		return -ENOENT;
-> +
-> +	err = register_perf_hw_breakpoint(bp);
-> +	if (err)
-> +		return err;
-> +
-> +	bp->destroy = bp_perf_event_destroy;
 
 
-
-Seems it would make sense to also have destroy in the pmu, it's the same
-along every events in the same class right?
-
-But this can be for later.
-
-
-> +static LIST_HEAD(pmus);
-> +static DEFINE_MUTEX(pmus_lock);
-> +static struct srcu_struct pmus_srcu;
-> +
-> +int perf_pmu_register(struct pmu *pmu)
-> +{
-> +	mutex_lock(&pmus_lock);
-> +	list_add_rcu(&pmu->entry, &pmus);
-> +	mutex_unlock(&pmus_lock);
-> +
-> +	return 0;
-> +}
-> +
-> +void perf_pmu_unregister(struct pmu *pmu)
-> +{
-> +	mutex_lock(&pmus_lock);
-> +	list_del_rcu(&pmu->entry);
-> +	mutex_unlock(&pmus_lock);
->  
-> -			atomic_inc(&perf_swevent_enabled[event_id]);
-> -			event->destroy = sw_perf_event_destroy;
-> +	synchronize_srcu(&pmus_srcu);
-> +}
-> +
-> +struct pmu *perf_init_event(struct perf_event *event)
-> +{
-> +	struct pmu *pmu = NULL;
-> +	int idx;
-> +
-> +	idx = srcu_read_lock(&pmus_srcu);
-> +	list_for_each_entry_rcu(pmu, &pmus, entry) {
-> +		int ret = pmu->event_init(event);
-> +		if (!ret)
-> +			break;
-> +		if (ret != -ENOENT) {
-> +			pmu = ERR_PTR(ret);
-> +			break;
->  		}
-> -		pmu = &perf_ops_generic;
-> -		break;
->  	}
-> +	srcu_read_unlock(&pmus_srcu, idx);
->  
->  	return pmu;
->  }
-
-
-
-I'm still not sure why all this locking is needed. We don't even
-support pmus in modules.
-
-Is there something coming soon that will use this?
-I remember something about KVM.
-
-And who will have to use srcu? It seems the event fastpath would
-be concerned, right? Will that have an impact on the performances?
+walter harms schrieb:
+> 
+> Kulikov Vasiliy schrieb:
+>> Change sizeof(x) / sizeof(*x) to ARRAY_SIZE(x).
+>>
+>> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+>> ---
+>>  drivers/staging/otus/hal/hpreg.c |   17 +++++++----------
+>>  1 files changed, 7 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/drivers/staging/otus/hal/hpreg.c b/drivers/staging/otus/hal/hpreg.c
+>> index da3b774..9b04653 100644
+>> --- a/drivers/staging/otus/hal/hpreg.c
+>> +++ b/drivers/staging/otus/hal/hpreg.c
+>> @@ -29,9 +29,6 @@
+>>  #include "hpreg.h"
+>>  #include "hpusb.h"
+>>  
+>> -/* used throughout this file... */
+>> -#define	N(a)	(sizeof(a) / sizeof(a[0]))
+>> -
+>>  #define HAL_MODE_11A_TURBO	HAL_MODE_108A
+>>  #define HAL_MODE_11G_TURBO	HAL_MODE_108G
+>>  
+>> @@ -1557,7 +1554,7 @@ u8_t GetWmRD(u16_t regionCode, u16_t channelFlag, REG_DOMAIN *rd)
+>>  	u64_t flags = NO_REQ;
+>>  	REG_DMN_PAIR_MAPPING *regPair = NULL;
+>>  
+>> -	for (i = 0, found = 0; (i < N(regDomainPairs)) && (!found); i++) {
+>> +	for (i = 0, found = 0; (i < ARRAY_SIZE(regDomainPairs)) && (!found); i++) {
+>>  		if (regDomainPairs[i].regDmnEnum == regionCode) {
+>>  			regPair = &regDomainPairs[i];
+>>  			found = 1;
+> 
+> 
+> 
+> This looks odd, i do not see the rest of the code but perhaps a break would help
+> to eleminate the "found" ??
+> 
+> just my two cents,
+>  wh
+> 
+1554 u8_t GetWmRD(u16_t regionCode, u16_t channelFlag, REG_DOMAIN *rd)
+1555 {
+1556         s16_t i, found, regDmn;
+1557         u64_t flags=NO_REQ;
+1558         REG_DMN_PAIR_MAPPING *regPair=NULL;
+1559
+1560         for (i=0, found=0; (i<N(regDomainPairs))&&(!found); i++)
+1561         {
+1562                 if (regDomainPairs[i].regDmnEnum == regionCode)
+1563                 {
+1564                         regPair = &regDomainPairs[i];
+1565                         found = 1;
+1566                 }
+1567         }
+1568         if (!found)
+1569         {
+1570                 zm_debug_msg1("Failed to find reg domain pair ", regionCode);
+1571                 return FALSE;
+1572         }
 
 
+This is would stop at the first hit and work without found.
+Otherwise someone could add an {NULL} at the end of the array
+und use a while () that would eliminate the need for ARRAY_SIZE also.
 
-> @@ -5743,15 +5742,15 @@ perf_cpu_notify(struct notifier_block *s
->  {
->  	unsigned int cpu = (long)hcpu;
->  
-> -	switch (action) {
-> +	switch (action & ~CPU_TASKS_FROZEN) {
->  
->  	case CPU_UP_PREPARE:
-> -	case CPU_UP_PREPARE_FROZEN:
-> +	case CPU_DOWN_FAILED:
->  		perf_event_init_cpu(cpu);
->  		break;
->  
-> +	case CPU_UP_CANCELED:
->  	case CPU_DOWN_PREPARE:
-> -	case CPU_DOWN_PREPARE_FROZEN:
->  		perf_event_exit_cpu(cpu);
->  		break;
+re,
+ wh
+
+for (i=0; i<ARRAY_SIZE(regDomainPairs);i++ )
+	if (regDomainPairs[i].regDmnEnum == regionCode)
+                    { regPair = &regDomainPairs[i]; break ; }
+
+if (!regPair) {
+        zm_debug_msg1("Failed to find reg domain pair ", regionCode);
+        return FALSE;
+}
 
 
-
-That doesn't seem to be related to this patch initial topic.
 
