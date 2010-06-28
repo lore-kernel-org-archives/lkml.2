@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab0F1VVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 17:21:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57770 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753285Ab0F1VVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 17:21:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [update] Re: [PATCH] PM: Make it possible to avoid wakeup events from being lost
-Date: Mon, 28 Jun 2010 23:19:27 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Florian Mickler <florian@mickler.org>, linux-pci@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <Pine.LNX.4.44L0.1006281517100.1977-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1006281517100.1977-100000@iolanthe.rowland.org>
+	id S1755367Ab0F1V1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 17:27:46 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:39301 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510Ab0F1V1o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 17:27:44 -0400
+Date: Tue, 29 Jun 2010 06:27:06 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, akpm@linux-foundation.org,
+       grundler@parisc-linux.org, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH -mm 1/2] scsi: remove dma_is_consistent usage in 53c700
+Message-ID: <20100628212706.GB301@linux-sh.org>
+References: <1277633423-5700-1-git-send-email-fujita.tomonori@lab.ntt.co.jp> <1277651328.4366.7.camel@mulgrave.site> <20100628123503Z.fujita.tomonori@lab.ntt.co.jp> <1277736958.10879.43.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006282319.27758.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277736958.10879.43.camel@mulgrave.site>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 28, 2010, Alan Stern wrote:
-> On Mon, 28 Jun 2010, Rafael J. Wysocki wrote:
-> 
-> > Below is the patch I'd like to add to suspend-2.6/linux-next.
+On Mon, Jun 28, 2010 at 09:55:58AM -0500, James Bottomley wrote:
+> On Mon, 2010-06-28 at 12:37 +0900, FUJITA Tomonori wrote:
+> > Seems that on some architectures (arm and mips at least),
+> > dma_get_cache_alignment() could greater than L1_CACHE_BYTES. But they
+> > simply return the possible maximum size of cache size like:
 > > 
-> > Rafael
+> > static inline int dma_get_cache_alignment(void)
+> > {
+> > 	/* XXX Largest on any MIPS */
+> > 	return 128;
+> > }
 > > 
-> > ---
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > Subject: PM: Make it possible to avoid wakeup events from being lost
-> > 
-> > One of the arguments during the suspend blockers discussion was that
-> > the mainline kernel didn't contain any mechanisms making it possible
-> > to avoid losing wakeup events during system suspend.
+> > So practically, we should be safe. I guess that we can simply convert
+> > them to return L1_CACHE_BYTES.
 > 
-> I don't see anything more to complain about in the patch.  :-)
-
-Great! :-)
-
-> You probably should change the title and the first paragraph of the 
-> description to avoid saying that events can get lost.  Like:
+> As long as that's architecturally true, yes.   I mean I can't imagine
+> any architecture that had a dma alignment requirement that was greater
+> than its L1 cache width ... but I've been surprised be for making
+> "Obviously this can't happen ..." type statements where MIPS is
+> concerned.
 > 
-> PM: Make it possible to avoid races between wakeup and system sleep
+> > Some PARISC and mips are only the fully non-coherent architectures
+> > that we support now?
+> 
+> I think there might be some ARM SoC systems as well ... there were some
+> strange ones that had tight limits on the addresses the other SoC
+> components could DMA to which made it very difficult to make consistent
+> areas.
+> 
+We had similar cases on SH where even though we can generally provide
+consistent memory, it may not be visible or usable by certain
+peripherals. On some of the earlier CPUs when the on-chip bus was being
+overhauled there was an on-chip DMAC and a PCI DMAC on different
+interconnects with their own addressing limitations. PCI DMA needed
+buffers to be allocated from PCI space and would simply generate address
+errors for anything on any of the other interconnects. On those systems
+we could provide consistent memory for other PCI devices if and only if
+we happened to have a PCI video card or something else with spare device
+memory on the bus inserted -- which in turn would not be visible on any
+other interconnects. In those cases it worked out that the DMA alignment
+for PCI memory and L1 line size were the same, but that was really more
+by coincidence than design.
 
-I will, thanks!
+There are still similar cases remaining. Most SH CPUs have a snoop
+controller for snooping PCI <-> external memory transactions, but most
+CPUs do not enable it on account of not being able to have the CPU enter
+idle states while the controller is active. It's only been with the SMP
+parts that a generic snoop controller has been provided that has general
+L1 visibility.
 
-Rafael
+> >  We can remove the above checking if
+> > dma_get_cache_alignment() is <= L1_CACHE_BYTES on PARISC and mips?
+> 
+> I don't think we need to check, just document that
+> dma_get_cache_alignment cannot be greater than the L1 cache stride.
+> 
+Looking at the MIPS stuff, it also seems like there are cases where
+L1_CACHE_BYTES == 32 while the kmalloc minalign value is bumped to 128
+for certain CPU configurations, and kept at 32 for others. Those sorts of
+values look a lot more like the L2 cache stride than the L1, perhaps
+something to do with the snoop controller on exotic ccNUMA
+configurations?
