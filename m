@@ -1,341 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab0F1Gos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 02:44:48 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:59803 "EHLO
+	id S1754789Ab0F1GqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 02:46:21 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:43438 "EHLO
 	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754311Ab0F1Goq (ORCPT
+	with ESMTP id S1754360Ab0F1GqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 02:44:46 -0400
+	Mon, 28 Jun 2010 02:46:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=XIfAL11DS0XOWpEbyNTL+RwJrX+zHE6yutYzrrN1xZR1m07sdX3p1zskUPSnehd3mH
-         jX/WthArLcKLI876UHdv1nELzT2NO5XJyoEC/C30AUk2w/aX8adEcvUKa2dTpuqRI0iq
-         0y1nYfTs3pydisuXso8fODs7hsrqbAqPP6wo4=
+        b=GeBDNnFj1HzAhjaCa3VLV1PNJLW/qWzRZnPHkdqpPFMRnJMpz3j22icGOAT/kIpjOD
+         Yo1hqvai1pQHIpfmvI9rzEHelogMZj8KVxkZSan0Ek/RAiN+qyN559F8mFre0A3S83jx
+         8wqioGptTjOa3maEo9t1Ba2x9yAsDurZIsKYg=
 From: Raffaele Recalcati <lamiaposta71@gmail.com>
 To: davinci-linux-open-source@linux.davincidsp.com
-Cc: Raffaele Recalcati <raffaele.recalcati@bticino.it>,
-       Davide Bonfanti <davide.bonfanti@bticino.it>,
-       Russell King <linux@arm.linux.org.uk>,
-       Chaithrika U S <chaithrika@ti.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Troy Kisky <troy.kisky@boundarydevices.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-       Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: [PATCH] ASoC: DaVinci: Added support for cpu clocking I2S
-Date: Mon, 28 Jun 2010 08:44:46 +0200
-Message-Id: <1277707487-3371-1-git-send-email-lamiaposta71@gmail.com>
+Cc: Davide Bonfanti <davide.bonfanti@bticino.it>,
+       Raffaele Recalcati <raffaele.recalcati@bticino.it>,
+       Russell King <linux@arm.linux.org.uk>, Sekhar Nori <nsekhar@ti.com>,
+       Cyril Chemparathy <cyril@ti.com>, Sandeep Paulraj <s-paulraj@ti.com>,
+       Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+       Miguel Aguilar <miguel.aguilar@ridgerun.com>,
+       Thomas Koeller <thomas.koeller@baslerweb.com>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] DaVinci: dm365: Added clockout2 management and set_sysclk_rate
+Date: Mon, 28 Jun 2010 08:46:22 +0200
+Message-Id: <1277707582-3405-1-git-send-email-lamiaposta71@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raffaele Recalcati <raffaele.recalcati@bticino.it>
+From: Davide Bonfanti <davide.bonfanti@bticino.it>
 
-    Added audio playback support with [frame sync master - clock master] mode
-    and with [frame sync master - clock slave].
+    Added also possibility to set sysclk frequency.
 
-    1. SND_SOC_DAIFMT_CBS_CFS (the cpu generates clock and frame sync)
-       I need to clarify how the McBSP is clocked internally.
-       Reading sprufi3a-1.pdf (TMS320DM36x DMSoC Multichannel Buffered Serial
-       Port (McBSP) Interface) at "2.5.3 Data Clock Generation" paragraph this
-       info not appears really clear if we are in the case of "McBSP internal
-       input clock".
-       I hope some Ti developers can help me.
-       There is a FIXME message in the patch.
+    Added possibility to set clockout2 frequency.
+    Clockout2 is a child of pll1_sysclk9, because they have
+    the same pll divisor.
 
-       i2s_fast_clock switch can be used to have better approximate or
-       symmetric waveforms.
-       clk_input_pin board info can be used to select it depending on hw
-       connections
+    This patch has been developed against the
+    http://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git
+    git tree and tested on bmx board.
 
-    2. SND_SOC_DAIFMT_CBS_CFM (the cpu get clock from external pin
-                               and generates frame sync)
-       Clock slave can be important when the external codec need system clock
-       and bit clock synchronized (tested with uda1345).
-
-    3. We haven't changed the evmdm365 support (due also to CPLD that doesn't
-                                                help to understand)
-        We don't know in this mode if audio stereo works on evmdm365.
-        Probably it does.
-
-	This patch has been developed against the
-		http://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git
-	git tree and has been tested on bmx board (similar to dm365 evm, but using
-	uda1345 as external audio codec).
-
-Signed-off-by: Raffaele Recalcati <raffaele.recalcati@bticino.it>
 Signed-off-by: Davide Bonfanti <davide.bonfanti@bticino.it>
+Signed-off-by: Raffaele Recalcati <raffaele.recalcati@bticino.it>
 ---
- arch/arm/mach-davinci/include/mach/asp.h |   16 ++++
- sound/soc/davinci/davinci-i2s.c          |  126 ++++++++++++++++++++++++++----
- 2 files changed, 128 insertions(+), 14 deletions(-)
+ arch/arm/mach-davinci/clock.c              |  113 +++++++++++++++++++++++++++-
+ arch/arm/mach-davinci/clock.h              |   14 ++++
+ arch/arm/mach-davinci/dm365.c              |   23 +++++-
+ arch/arm/mach-davinci/include/mach/clock.h |    3 +
+ 4 files changed, 146 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/include/mach/asp.h b/arch/arm/mach-davinci/include/mach/asp.h
-index 834725f..f9b6da2 100644
---- a/arch/arm/mach-davinci/include/mach/asp.h
-+++ b/arch/arm/mach-davinci/include/mach/asp.h
-@@ -63,6 +63,16 @@ struct snd_platform_data {
- 	unsigned sram_size_playback;
- 	unsigned sram_size_capture;
+diff --git a/arch/arm/mach-davinci/clock.c b/arch/arm/mach-davinci/clock.c
+index 054c303..464c289 100644
+--- a/arch/arm/mach-davinci/clock.c
++++ b/arch/arm/mach-davinci/clock.c
+@@ -144,6 +144,69 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
+ }
+ EXPORT_SYMBOL(clk_set_rate);
  
-+	/*
-+	 * This define works when both clock and FS are output for the cpu
-+	 * and makes clock very fast (FS is not simmetrical, but sampling
-+	 * frequency is better approximated
-+	 */
-+	int i2s_fast_clock;
++int clkout2_set_rate(struct clk *clk, unsigned long rate)
++{
++	unsigned long flags;
++	int ret = -EINVAL;
++	int i, err, min_err, i_min_err;
++	u32 regval;
++	struct pll_data *pll;
++	struct clk *parent = clk;
 +
-+	/* To be used when cpu gets clock from extenal pin */
-+	int clk_input_pin;
++	if (clk == NULL || IS_ERR(clk))
++		return ret;
++	if (!cpu_is_davinci_dm365())
++		return -ENODEV;
 +
- 	/* McASP specific fields */
- 	int tdm_slots;
- 	u8 op_mode;
-@@ -78,6 +88,12 @@ enum {
- 	MCASP_VERSION_2,	/* DA8xx/OMAPL1x */
++	while (parent->parent->parent)
++		parent = parent->parent;
++
++	parent = clk->parent;
++
++	if (parent == clk)
++		return -EPERM;
++
++	pll = parent->pll_data;
++	regval = __raw_readl(IO_ADDRESS(DAVINCI_SYSTEM_MODULE_BASE +
++			PERI_CLKCTL));
++
++	i_min_err = min_err = INT_MAX;
++	for (i = 0x0F; i > 0; i--) {
++		if (clk->set_rate) {
++			ret = clk_set_rate(clk, rate * i) ;
++			err = clk_get_rate(clk) - rate * i;
++			if (abs(min_err) > abs(err)) {
++				min_err = err;
++				i_min_err = i;
++			}
++		}
++	}
++	i = i_min_err;
++	ret = clk->set_rate(clk, rate * i) ;
++
++	regval &= ~(0x0F << 3);
++	regval |= (i-1) << 3;
++	regval |= 1 << CLOCKOUT2EN;
++	__raw_writel(regval, IO_ADDRESS(DAVINCI_SYSTEM_MODULE_BASE +
++			PERI_CLKCTL));
++	rate *= i;
++
++	spin_lock_irqsave(&clockfw_lock, flags);
++	if (ret == 0) {
++		if (clk->recalc)
++			clk->rate = clk->recalc(clk);
++		propagate_rate(clk);
++		regval &= ~(1 << CLOCKOUT2EN);
++		__raw_writel(regval, IO_ADDRESS(DAVINCI_SYSTEM_MODULE_BASE +
++			PERI_CLKCTL));
++	} else
++		return -EINVAL;
++	spin_unlock_irqrestore(&clockfw_lock, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL(clkout2_set_rate);
++
+ int clk_set_parent(struct clk *clk, struct clk *parent)
+ {
+ 	unsigned long flags;
+@@ -254,7 +317,15 @@ static unsigned long clk_sysclk_recalc(struct clk *clk)
+ 	u32 v, plldiv;
+ 	struct pll_data *pll;
+ 	unsigned long rate = clk->rate;
++	struct clk *parent = clk;
++
++	if (clk == NULL || IS_ERR(clk))
++		return -EINVAL;
++	while (parent->parent->parent)
++		parent = parent->parent;
+ 
++	if (parent == clk)
++		return -EPERM;
+ 	/* If this is the PLL base clock, no more calculations needed */
+ 	if (clk->pll_data)
+ 		return rate;
+@@ -262,13 +333,13 @@ static unsigned long clk_sysclk_recalc(struct clk *clk)
+ 	if (WARN_ON(!clk->parent))
+ 		return rate;
+ 
+-	rate = clk->parent->rate;
++	rate = parent->rate;
++
+ 
+ 	/* Otherwise, the parent must be a PLL */
+-	if (WARN_ON(!clk->parent->pll_data))
++	if (WARN_ON(!parent->pll_data))
+ 		return rate;
+-
+-	pll = clk->parent->pll_data;
++	pll = parent->pll_data;
+ 
+ 	/* If pre-PLL, source clock is before the multiplier and divider(s) */
+ 	if (clk->flags & PRE_PLL)
+@@ -286,6 +357,7 @@ static unsigned long clk_sysclk_recalc(struct clk *clk)
+ 
+ 	return rate;
+ }
++EXPORT_SYMBOL(clk_sysclk_recalc);
+ 
+ static unsigned long clk_leafclk_recalc(struct clk *clk)
+ {
+@@ -433,6 +505,39 @@ int davinci_set_pllrate(struct pll_data *pll, unsigned int prediv,
+ }
+ EXPORT_SYMBOL(davinci_set_pllrate);
+ 
++int set_sysclk_rate(struct clk *clk, unsigned long rate)
++{
++	u32 clk_freq_min, clk_freq_max, plldiv;
++	struct pll_data *pll;
++	struct clk *parent = clk;
++
++	while (parent->parent->parent)
++		parent = parent->parent;
++	if (parent == clk)
++		return -EPERM;
++
++	clk_freq_max = parent->rate;
++	pll = parent->pll_data;
++	if (clk->flags & PRE_PLL)
++		clk_freq_max = pll->input_rate;
++
++	if (!clk->div_reg)
++		return -EPERM;
++
++	clk_freq_min = clk_freq_max / 0x20;
++	if ((rate < clk_freq_min) || (rate > clk_freq_max))
++		return -EINVAL;
++
++	plldiv = clk_freq_max / rate ;
++	if ((clk_freq_max % rate) < (rate >> 1))
++		plldiv--;
++	__raw_writel(plldiv & 0x1F, pll->base + clk->div_reg);
++	__raw_writel(plldiv | 0x8000, pll->base + clk->div_reg);
++	clk->rate = rate;
++	return 0;
++}
++EXPORT_SYMBOL(set_sysclk_rate);
++
+ int __init davinci_clk_init(struct clk_lookup *clocks)
+   {
+ 	struct clk_lookup *c;
+diff --git a/arch/arm/mach-davinci/clock.h b/arch/arm/mach-davinci/clock.h
+index 01e3648..74ba65f 100644
+--- a/arch/arm/mach-davinci/clock.h
++++ b/arch/arm/mach-davinci/clock.h
+@@ -50,6 +50,11 @@
+ #define PLLDIV_EN       BIT(15)
+ #define PLLDIV_RATIO_MASK 0x1f
+ 
++#define PERI_CLKCTL	0x48
++#define CLOCKOUT2EN	2
++#define CLOCKOUT1EN	1
++#define CLOCKOUT0EN	0
++
+ /*
+  * OMAP-L138 system reference guide recommends a wait for 4 OSCIN/CLKIN
+  * cycles to ensure that the PLLC has switched to bypass mode. Delay of 1us
+@@ -95,6 +100,14 @@ struct clk {
+ 	struct list_head	childnode;	/* parent's child list node */
+ 	struct pll_data         *pll_data;
+ 	u32                     div_reg;
++/*
++	u32		sec_div_reg;
++	u32		sec_div_reg_max;
++	u32		sec_div_reg_shift;
++	u32		out_enable_reg;
++	u32		out_enable_bit;
++*/
++
+ 	unsigned long (*recalc) (struct clk *);
+ 	int (*set_rate) (struct clk *clk, unsigned long rate);
+ 	int (*round_rate) (struct clk *clk, unsigned long rate);
+@@ -121,6 +134,7 @@ int davinci_set_pllrate(struct pll_data *pll, unsigned int prediv,
+ 
+ extern struct platform_device davinci_wdt_device;
+ extern void davinci_watchdog_reset(struct platform_device *);
++int set_sysclk_rate(struct clk *clk, unsigned long rate);
+ 
+ #endif
+ 
+diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
+index 42fd4a4..1e97c62 100644
+--- a/arch/arm/mach-davinci/dm365.c
++++ b/arch/arm/mach-davinci/dm365.c
+@@ -40,6 +40,15 @@
+ #include "mux.h"
+ 
+ #define DM365_REF_FREQ		24000000	/* 24 MHz on the DM365 EVM */
++#define PINMUX0		0x00
++#define PINMUX1		0x04
++#define PINMUX2		0x08
++#define PINMUX3		0x0c
++#define PINMUX4		0x10
++#define INTMUX		0x18
++#define EVTMUX		0x1c
++
++
+ 
+ static struct pll_data pll1_data = {
+ 	.num		= 1,
+@@ -124,6 +133,7 @@ static struct clk pll1_sysclk6 = {
+ 	.parent		= &pll1_clk,
+ 	.flags		= CLK_PLL,
+ 	.div_reg	= PLLDIV6,
++	.set_rate	= set_sysclk_rate,
  };
  
-+enum {
-+	MCBSP_CLKR = 0,		/* DM365 */
-+	MCBSP_CLKS,
+ static struct clk pll1_sysclk7 = {
+@@ -147,6 +157,15 @@ static struct clk pll1_sysclk9 = {
+ 	.div_reg	= PLLDIV9,
+ };
+ 
++static struct clk clkout2_clk = {
++	.name		= "clkout2",
++	.parent		= &pll1_sysclk9,
++	.flags		= CLK_PLL,
++	.div_reg	= PLLDIV9,
++	.set_rate       = set_sysclk_rate,
 +};
 +
 +
- #define INACTIVE_MODE	0
- #define TX_MODE		1
- #define RX_MODE		2
-diff --git a/sound/soc/davinci/davinci-i2s.c b/sound/soc/davinci/davinci-i2s.c
-index adadcd3..786ade6 100644
---- a/sound/soc/davinci/davinci-i2s.c
-+++ b/sound/soc/davinci/davinci-i2s.c
-@@ -68,16 +68,21 @@
- #define DAVINCI_MCBSP_RCR_RDATDLY(v)	((v) << 16)
- #define DAVINCI_MCBSP_RCR_RFIG		(1 << 18)
- #define DAVINCI_MCBSP_RCR_RWDLEN2(v)	((v) << 21)
-+#define DAVINCI_MCBSP_RCR_RFRLEN2(v)	((v) << 24)
-+#define DAVINCI_MCBSP_RCR_RPHASE	(1 << 31)
+ static struct clk pll2_clk = {
+ 	.name		= "pll2",
+ 	.parent		= &ref_clk,
+@@ -421,6 +440,7 @@ static struct clk_lookup dm365_clks[] = {
+ 	CLK(NULL, "pll1_sysclk7", &pll1_sysclk7),
+ 	CLK(NULL, "pll1_sysclk8", &pll1_sysclk8),
+ 	CLK(NULL, "pll1_sysclk9", &pll1_sysclk9),
++	CLK(NULL, "clkout2", &clkout2_clk),
+ 	CLK(NULL, "pll2", &pll2_clk),
+ 	CLK(NULL, "pll2_aux", &pll2_aux_clk),
+ 	CLK(NULL, "clkout1", &clkout1_clk),
+@@ -467,9 +487,6 @@ static struct clk_lookup dm365_clks[] = {
  
- #define DAVINCI_MCBSP_XCR_XWDLEN1(v)	((v) << 5)
- #define DAVINCI_MCBSP_XCR_XFRLEN1(v)	((v) << 8)
- #define DAVINCI_MCBSP_XCR_XDATDLY(v)	((v) << 16)
- #define DAVINCI_MCBSP_XCR_XFIG		(1 << 18)
- #define DAVINCI_MCBSP_XCR_XWDLEN2(v)	((v) << 21)
-+#define DAVINCI_MCBSP_XCR_XFRLEN2(v)	((v) << 24)
-+#define DAVINCI_MCBSP_XCR_XPHASE	(1 << 31)
+ /*----------------------------------------------------------------------*/
  
- #define DAVINCI_MCBSP_SRGR_FWID(v)	((v) << 8)
- #define DAVINCI_MCBSP_SRGR_FPER(v)	((v) << 16)
- #define DAVINCI_MCBSP_SRGR_FSGM		(1 << 28)
-+#define DAVINCI_MCBSP_SRGR_CLKSM	(1 << 29)
+-#define INTMUX		0x18
+-#define EVTMUX		0x1c
+-
  
- #define DAVINCI_MCBSP_PCR_CLKRP		(1 << 0)
- #define DAVINCI_MCBSP_PCR_CLKXP		(1 << 1)
-@@ -144,6 +149,11 @@ struct davinci_mcbsp_dev {
- 	 * won't end up being swapped because of the underrun.
- 	 */
- 	unsigned enable_channel_combine:1;
+ static const struct mux_config dm365_pins[] = {
+ #ifdef CONFIG_DAVINCI_MUX
+diff --git a/arch/arm/mach-davinci/include/mach/clock.h b/arch/arm/mach-davinci/include/mach/clock.h
+index a3b0402..4296080 100644
+--- a/arch/arm/mach-davinci/include/mach/clock.h
++++ b/arch/arm/mach-davinci/include/mach/clock.h
+@@ -18,4 +18,7 @@ struct clk;
+ extern int clk_register(struct clk *clk);
+ extern void clk_unregister(struct clk *clk);
+ 
++int clkout2_set_rate(struct clk *clk, unsigned long rate);
 +
-+	int i2s_fast_clock;
-+	unsigned int fmt;
-+	int clk_div;
-+	int clk_input_pin;
- };
- 
- static inline void davinci_mcbsp_write_reg(struct davinci_mcbsp_dev *dev,
-@@ -254,10 +264,12 @@ static int davinci_i2s_set_dai_fmt(struct snd_soc_dai *cpu_dai,
- 	struct davinci_mcbsp_dev *dev = cpu_dai->private_data;
- 	unsigned int pcr;
- 	unsigned int srgr;
-+	/* Attention srgr is updated by hw_params! */
- 	srgr = DAVINCI_MCBSP_SRGR_FSGM |
- 		DAVINCI_MCBSP_SRGR_FPER(DEFAULT_BITPERSAMPLE * 2 - 1) |
- 		DAVINCI_MCBSP_SRGR_FWID(DEFAULT_BITPERSAMPLE - 1);
- 
-+	dev->fmt = fmt;
- 	/* set master/slave audio interface */
- 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
- 	case SND_SOC_DAIFMT_CBS_CFS:
-@@ -268,11 +280,18 @@ static int davinci_i2s_set_dai_fmt(struct snd_soc_dai *cpu_dai,
- 			DAVINCI_MCBSP_PCR_CLKRM;
- 		break;
- 	case SND_SOC_DAIFMT_CBM_CFS:
--		/* McBSP CLKR pin is the input for the Sample Rate Generator.
--		 * McBSP FSR and FSX are driven by the Sample Rate Generator. */
--		pcr = DAVINCI_MCBSP_PCR_SCLKME |
--			DAVINCI_MCBSP_PCR_FSXM |
--			DAVINCI_MCBSP_PCR_FSRM;
-+		pcr = DAVINCI_MCBSP_PCR_FSRM | DAVINCI_MCBSP_PCR_FSXM;
-+		if (dev->clk_input_pin == MCBSP_CLKS)
-+			pcr |= DAVINCI_MCBSP_PCR_CLKXM |
-+				DAVINCI_MCBSP_PCR_CLKRM;
-+		else
-+			/*
-+			 * McBSP CLKR pin is the input for the Sample Rate
-+			 * Generator.
-+			 * McBSP FSR and FSX are driven by the Sample Rate
-+			 * Generator.
-+			 */
-+			pcr |= DAVINCI_MCBSP_PCR_SCLKME;
- 		break;
- 	case SND_SOC_DAIFMT_CBM_CFM:
- 		/* codec is master */
-@@ -372,6 +391,16 @@ static int davinci_i2s_set_dai_fmt(struct snd_soc_dai *cpu_dai,
- 	return 0;
- }
- 
-+static int davinci_i2s_dai_set_clkdiv(struct snd_soc_dai *cpu_dai,
-+				int div_id, int div)
-+{
-+	struct davinci_mcbsp_dev *dev = cpu_dai->private_data;
-+	int srgr;
 +
-+	dev->clk_div = div;
-+	return 0;
-+}
-+
- static int davinci_i2s_hw_params(struct snd_pcm_substream *substream,
- 				 struct snd_pcm_hw_params *params,
- 				 struct snd_soc_dai *dai)
-@@ -380,11 +409,12 @@ static int davinci_i2s_hw_params(struct snd_pcm_substream *substream,
- 	struct davinci_pcm_dma_params *dma_params =
- 					&dev->dma_params[substream->stream];
- 	struct snd_interval *i = NULL;
--	int mcbsp_word_length;
--	unsigned int rcr, xcr, srgr;
-+	int mcbsp_word_length, master;
-+	unsigned int rcr, xcr, srgr, clk_div, freq, framesize;
- 	u32 spcr;
- 	snd_pcm_format_t fmt;
- 	unsigned element_cnt = 1;
-+	struct clk *clk;
- 
- 	/* general line settings */
- 	spcr = davinci_mcbsp_read_reg(dev, DAVINCI_MCBSP_SPCR_REG);
-@@ -396,12 +426,56 @@ static int davinci_i2s_hw_params(struct snd_pcm_substream *substream,
- 		davinci_mcbsp_write_reg(dev, DAVINCI_MCBSP_SPCR_REG, spcr);
- 	}
- 
--	i = hw_param_interval(params, SNDRV_PCM_HW_PARAM_SAMPLE_BITS);
--	srgr = DAVINCI_MCBSP_SRGR_FSGM;
--	srgr |= DAVINCI_MCBSP_SRGR_FWID(snd_interval_value(i) - 1);
-+	master = dev->fmt & SND_SOC_DAIFMT_MASTER_MASK;
-+	fmt = params_format(params);
-+	mcbsp_word_length = asp_word_length[fmt];
- 
--	i = hw_param_interval(params, SNDRV_PCM_HW_PARAM_FRAME_BITS);
--	srgr |= DAVINCI_MCBSP_SRGR_FPER(snd_interval_value(i) - 1);
-+	if (master == SND_SOC_DAIFMT_CBS_CFS) {
-+		clk = clk_get(NULL, "pll1_sysclk6");
-+		if (clk)
-+			freq = clk_get_rate(clk);
-+		freq = 122000000; /* FIXME ask to Texas */
-+		srgr = DAVINCI_MCBSP_SRGR_FSGM |
-+		       DAVINCI_MCBSP_SRGR_CLKSM;
-+		srgr |= DAVINCI_MCBSP_SRGR_FWID(mcbsp_word_length *
-+						8 - 1);
-+		if (dev->i2s_fast_clock) {
-+			clk_div = 256;
-+			do {
-+				framesize = (freq / (--clk_div)) /
-+					    params->rate_num *
-+					    params->rate_den;
-+			} while (((framesize < 33) || (framesize > 4095)) &&
-+				 (clk_div));
-+			clk_div--;
-+			srgr |= DAVINCI_MCBSP_SRGR_FPER(framesize - 1);
-+		} else {
-+			/* symmetric waveforms */
-+			clk_div = freq / (mcbsp_word_length * 16) /
-+				  params->rate_num * params->rate_den;
-+			srgr |= DAVINCI_MCBSP_SRGR_FPER(mcbsp_word_length *
-+							16 - 1);
-+		}
-+		clk_div &= 0xFF;
-+		srgr |= clk_div;
-+	} else if (master == SND_SOC_DAIFMT_CBM_CFS) {
-+		/* Clock given on CLKS */
-+		srgr = DAVINCI_MCBSP_SRGR_FSGM;
-+		clk_div = dev->clk_div - 1;
-+		srgr |= DAVINCI_MCBSP_SRGR_FWID(mcbsp_word_length * 8 - 1);
-+		srgr |= DAVINCI_MCBSP_SRGR_FPER(mcbsp_word_length * 16 - 1);
-+		clk_div &= 0xFF;
-+		srgr |= clk_div;
-+	} else {
-+		i = hw_param_interval(params, SNDRV_PCM_HW_PARAM_SAMPLE_BITS);
-+		srgr = DAVINCI_MCBSP_SRGR_FSGM;
-+		srgr |= DAVINCI_MCBSP_SRGR_FWID(snd_interval_value(i) - 1);
-+		pr_debug("%s - %d  FWID set: re-read srgr = %X\n",
-+			__func__, __LINE__, snd_interval_value(i) - 1);
-+
-+		i = hw_param_interval(params, SNDRV_PCM_HW_PARAM_FRAME_BITS);
-+		srgr |= DAVINCI_MCBSP_SRGR_FPER(snd_interval_value(i) - 1);
-+	}
- 	davinci_mcbsp_write_reg(dev, DAVINCI_MCBSP_SRGR_REG, srgr);
- 
- 	rcr = DAVINCI_MCBSP_RCR_RFIG;
-@@ -426,12 +500,29 @@ static int davinci_i2s_hw_params(struct snd_pcm_substream *substream,
- 			element_cnt = 1;
- 			fmt = double_fmt[fmt];
- 		}
-+		if (master == SND_SOC_DAIFMT_CBS_CFS ||
-+				master == SND_SOC_DAIFMT_CBS_CFM) {
-+			rcr |= DAVINCI_MCBSP_RCR_RFRLEN2(0);
-+			xcr |= DAVINCI_MCBSP_XCR_XFRLEN2(0);
-+			rcr |= DAVINCI_MCBSP_RCR_RPHASE;
-+			xcr |= DAVINCI_MCBSP_XCR_XPHASE;
-+		} else {
-+			rcr |= DAVINCI_MCBSP_RCR_RFRLEN2(element_cnt - 1);
-+			xcr |= DAVINCI_MCBSP_XCR_XFRLEN2(element_cnt - 1);
-+		}
- 	}
- 	dma_params->acnt = dma_params->data_type = data_type[fmt];
- 	dma_params->fifo_level = 0;
- 	mcbsp_word_length = asp_word_length[fmt];
--	rcr |= DAVINCI_MCBSP_RCR_RFRLEN1(element_cnt - 1);
--	xcr |= DAVINCI_MCBSP_XCR_XFRLEN1(element_cnt - 1);
-+
-+	if (master == SND_SOC_DAIFMT_CBS_CFS ||
-+			master == SND_SOC_DAIFMT_CBS_CFM) {
-+		rcr |= DAVINCI_MCBSP_RCR_RFRLEN1(0);
-+		xcr |= DAVINCI_MCBSP_XCR_XFRLEN1(0);
-+	} else {
-+		rcr |= DAVINCI_MCBSP_RCR_RFRLEN1(element_cnt - 1);
-+		xcr |= DAVINCI_MCBSP_XCR_XFRLEN1(element_cnt - 1);
-+	}
- 
- 	rcr |= DAVINCI_MCBSP_RCR_RWDLEN1(mcbsp_word_length) |
- 		DAVINCI_MCBSP_RCR_RWDLEN2(mcbsp_word_length);
-@@ -442,6 +533,10 @@ static int davinci_i2s_hw_params(struct snd_pcm_substream *substream,
- 		davinci_mcbsp_write_reg(dev, DAVINCI_MCBSP_XCR_REG, xcr);
- 	else
- 		davinci_mcbsp_write_reg(dev, DAVINCI_MCBSP_RCR_REG, rcr);
-+
-+	pr_debug("%s - %d  srgr=%X\n", __func__, __LINE__, srgr);
-+	pr_debug("%s - %d  xcr=%X\n", __func__, __LINE__, xcr);
-+	pr_debug("%s - %d  rcr=%X\n", __func__, __LINE__, rcr);
- 	return 0;
- }
- 
-@@ -500,6 +595,7 @@ static struct snd_soc_dai_ops davinci_i2s_dai_ops = {
- 	.trigger	= davinci_i2s_trigger,
- 	.hw_params	= davinci_i2s_hw_params,
- 	.set_fmt	= davinci_i2s_set_dai_fmt,
-+	.set_clkdiv	= davinci_i2s_dai_set_clkdiv,
- 
- };
- 
-@@ -552,6 +648,8 @@ static int davinci_i2s_probe(struct platform_device *pdev)
- 			pdata->sram_size_playback;
- 		dev->dma_params[SNDRV_PCM_STREAM_CAPTURE].sram_size =
- 			pdata->sram_size_capture;
-+		dev->i2s_fast_clock = pdata->i2s_fast_clock;
-+		dev->clk_input_pin = pdata->clk_input_pin;
- 	}
- 	dev->clk = clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(dev->clk)) {
+ #endif
 -- 
 1.7.0.4
 
