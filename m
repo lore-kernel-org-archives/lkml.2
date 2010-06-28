@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab0F1VNJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 17:13:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42836 "EHLO hera.kernel.org"
+	id S1755590Ab0F1VMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 17:12:54 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42844 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754724Ab0F1VGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 17:06:08 -0400
+	id S1754986Ab0F1VGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 17:06:11 -0400
 From: Tejun Heo <tj@kernel.org>
 To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
@@ -14,9 +14,9 @@ To: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/35] workqueue: separate out process_one_work()
-Date: Mon, 28 Jun 2010 23:03:57 +0200
-Message-Id: <1277759063-24607-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 05/35] workqueue: kill RT workqueue
+Date: Mon, 28 Jun 2010 23:03:53 +0200
+Message-Id: <1277759063-24607-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1277759063-24607-1-git-send-email-tj@kernel.org>
 References: <1277759063-24607-1-git-send-email-tj@kernel.org>
@@ -25,131 +25,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate out process_one_work() out of run_workqueue().  This patch
-doesn't cause any behavior change.
+With stop_machine() converted to use cpu_stop, RT workqueue doesn't
+have any user left.  Kill RT workqueue support.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/workqueue.c |  100 +++++++++++++++++++++++++++++++--------------------
- 1 files changed, 61 insertions(+), 39 deletions(-)
+ include/linux/workqueue.h |   20 +++++++++-----------
+ kernel/workqueue.c        |    6 ------
+ 2 files changed, 9 insertions(+), 17 deletions(-)
 
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index 9466e86..0697946 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -181,12 +181,11 @@ static inline void destroy_work_on_stack(struct work_struct *work) { }
+ 
+ 
+ extern struct workqueue_struct *
+-__create_workqueue_key(const char *name, int singlethread,
+-		       int freezeable, int rt, struct lock_class_key *key,
+-		       const char *lock_name);
++__create_workqueue_key(const char *name, int singlethread, int freezeable,
++		       struct lock_class_key *key, const char *lock_name);
+ 
+ #ifdef CONFIG_LOCKDEP
+-#define __create_workqueue(name, singlethread, freezeable, rt)	\
++#define __create_workqueue(name, singlethread, freezeable)	\
+ ({								\
+ 	static struct lock_class_key __key;			\
+ 	const char *__lock_name;				\
+@@ -197,19 +196,18 @@ __create_workqueue_key(const char *name, int singlethread,
+ 		__lock_name = #name;				\
+ 								\
+ 	__create_workqueue_key((name), (singlethread),		\
+-			       (freezeable), (rt), &__key,	\
++			       (freezeable), &__key,		\
+ 			       __lock_name);			\
+ })
+ #else
+-#define __create_workqueue(name, singlethread, freezeable, rt)	\
+-	__create_workqueue_key((name), (singlethread), (freezeable), (rt), \
++#define __create_workqueue(name, singlethread, freezeable)	\
++	__create_workqueue_key((name), (singlethread), (freezeable), \
+ 			       NULL, NULL)
+ #endif
+ 
+-#define create_workqueue(name) __create_workqueue((name), 0, 0, 0)
+-#define create_rt_workqueue(name) __create_workqueue((name), 0, 0, 1)
+-#define create_freezeable_workqueue(name) __create_workqueue((name), 1, 1, 0)
+-#define create_singlethread_workqueue(name) __create_workqueue((name), 1, 0, 0)
++#define create_workqueue(name) __create_workqueue((name), 0, 0)
++#define create_freezeable_workqueue(name) __create_workqueue((name), 1, 1)
++#define create_singlethread_workqueue(name) __create_workqueue((name), 1, 0)
+ 
+ extern void destroy_workqueue(struct workqueue_struct *wq);
+ 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5c49d76..8e3082b 100644
+index 327d2de..1a47fbf 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -402,51 +402,73 @@ int queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
- }
- EXPORT_SYMBOL_GPL(queue_delayed_work_on);
+@@ -62,7 +62,6 @@ struct workqueue_struct {
+ 	const char *name;
+ 	int singlethread;
+ 	int freezeable;		/* Freeze threads during suspend */
+-	int rt;
+ #ifdef CONFIG_LOCKDEP
+ 	struct lockdep_map lockdep_map;
+ #endif
+@@ -947,7 +946,6 @@ init_cpu_workqueue(struct workqueue_struct *wq, int cpu)
  
-+/**
-+ * process_one_work - process single work
-+ * @cwq: cwq to process work for
-+ * @work: work to process
-+ *
-+ * Process @work.  This function contains all the logics necessary to
-+ * process a single work including synchronization against and
-+ * interaction with other workers on the same cpu, queueing and
-+ * flushing.  As long as context requirement is met, any worker can
-+ * call this function to process a work.
-+ *
-+ * CONTEXT:
-+ * spin_lock_irq(cwq->lock) which is released and regrabbed.
-+ */
-+static void process_one_work(struct cpu_workqueue_struct *cwq,
-+			     struct work_struct *work)
-+{
-+	work_func_t f = work->func;
-+#ifdef CONFIG_LOCKDEP
-+	/*
-+	 * It is permissible to free the struct work_struct from
-+	 * inside the function that is called from it, this we need to
-+	 * take into account for lockdep too.  To avoid bogus "held
-+	 * lock freed" warnings as well as problems when looking into
-+	 * work->lockdep_map, make a copy and use that here.
-+	 */
-+	struct lockdep_map lockdep_map = work->lockdep_map;
-+#endif
-+	/* claim and process */
-+	trace_workqueue_execution(cwq->thread, work);
-+	debug_work_deactivate(work);
-+	cwq->current_work = work;
-+	list_del_init(&work->entry);
-+
-+	spin_unlock_irq(&cwq->lock);
-+
-+	BUG_ON(get_wq_data(work) != cwq);
-+	work_clear_pending(work);
-+	lock_map_acquire(&cwq->wq->lockdep_map);
-+	lock_map_acquire(&lockdep_map);
-+	f(work);
-+	lock_map_release(&lockdep_map);
-+	lock_map_release(&cwq->wq->lockdep_map);
-+
-+	if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
-+		printk(KERN_ERR "BUG: workqueue leaked lock or atomic: "
-+		       "%s/0x%08x/%d\n",
-+		       current->comm, preempt_count(), task_pid_nr(current));
-+		printk(KERN_ERR "    last function: ");
-+		print_symbol("%s\n", (unsigned long)f);
-+		debug_show_held_locks(current);
-+		dump_stack();
-+	}
-+
-+	spin_lock_irq(&cwq->lock);
-+
-+	/* we're done with it, release */
-+	cwq->current_work = NULL;
-+}
-+
- static void run_workqueue(struct cpu_workqueue_struct *cwq)
+ static int create_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
  {
- 	spin_lock_irq(&cwq->lock);
- 	while (!list_empty(&cwq->worklist)) {
- 		struct work_struct *work = list_entry(cwq->worklist.next,
- 						struct work_struct, entry);
--		work_func_t f = work->func;
--#ifdef CONFIG_LOCKDEP
--		/*
--		 * It is permissible to free the struct work_struct
--		 * from inside the function that is called from it,
--		 * this we need to take into account for lockdep too.
--		 * To avoid bogus "held lock freed" warnings as well
--		 * as problems when looking into work->lockdep_map,
--		 * make a copy and use that here.
--		 */
--		struct lockdep_map lockdep_map = work->lockdep_map;
--#endif
--		trace_workqueue_execution(cwq->thread, work);
--		debug_work_deactivate(work);
--		cwq->current_work = work;
--		list_del_init(cwq->worklist.next);
--		spin_unlock_irq(&cwq->lock);
--
--		BUG_ON(get_wq_data(work) != cwq);
--		work_clear_pending(work);
--		lock_map_acquire(&cwq->wq->lockdep_map);
--		lock_map_acquire(&lockdep_map);
--		f(work);
--		lock_map_release(&lockdep_map);
--		lock_map_release(&cwq->wq->lockdep_map);
--
--		if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
--			printk(KERN_ERR "BUG: workqueue leaked lock or atomic: "
--					"%s/0x%08x/%d\n",
--					current->comm, preempt_count(),
--				       	task_pid_nr(current));
--			printk(KERN_ERR "    last function: ");
--			print_symbol("%s\n", (unsigned long)f);
--			debug_show_held_locks(current);
--			dump_stack();
--		}
--
--		spin_lock_irq(&cwq->lock);
--		cwq->current_work = NULL;
-+		process_one_work(cwq, work);
- 	}
- 	spin_unlock_irq(&cwq->lock);
- }
+-	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+ 	struct workqueue_struct *wq = cwq->wq;
+ 	const char *fmt = is_wq_single_threaded(wq) ? "%s" : "%s/%d";
+ 	struct task_struct *p;
+@@ -963,8 +961,6 @@ static int create_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
+ 	 */
+ 	if (IS_ERR(p))
+ 		return PTR_ERR(p);
+-	if (cwq->wq->rt)
+-		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
+ 	cwq->thread = p;
+ 
+ 	trace_workqueue_creation(cwq->thread, cpu);
+@@ -986,7 +982,6 @@ static void start_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
+ struct workqueue_struct *__create_workqueue_key(const char *name,
+ 						int singlethread,
+ 						int freezeable,
+-						int rt,
+ 						struct lock_class_key *key,
+ 						const char *lock_name)
+ {
+@@ -1008,7 +1003,6 @@ struct workqueue_struct *__create_workqueue_key(const char *name,
+ 	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
+ 	wq->singlethread = singlethread;
+ 	wq->freezeable = freezeable;
+-	wq->rt = rt;
+ 	INIT_LIST_HEAD(&wq->list);
+ 
+ 	if (singlethread) {
 -- 
 1.6.4.2
 
