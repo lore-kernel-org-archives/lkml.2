@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab0F1MGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 08:06:06 -0400
-Received: from platinum.liacs.nl ([132.229.131.22]:57032 "EHLO
-	platinum.liacs.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab0F1MGA (ORCPT
+	id S1753511Ab0F1MPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 08:15:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42540 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208Ab0F1MPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 08:06:00 -0400
-X-Greylist: delayed 42752 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jun 2010 08:06:00 EDT
-Date: Mon, 28 Jun 2010 01:58:04 +0200
-Message-Id: <201006272358.o5RNw4Q2001493@platinum.liacs.nl>
-From: ACM ICMR <noreply@liacs.nl>
-To: linux-kernel@vger.kernel.org
-Reply-To: noreply@liacs.nl
-Subject: CFO: ACM Int. Conf. Multimedia Retrieval - ICMR2012
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.0 (platinum.liacs.nl [132.229.131.22]); Mon, 28 Jun 2010 01:58:05 +0200 (CEST)
+	Mon, 28 Jun 2010 08:15:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=XFc+Ddh2M1reMnW2up/ThKfBXpdI3wkZpNhd/quwy9xVAXQE1jWqOx55NW29qA/e1C
+         OVpdPpt1DD1aJhsXvVQiVfIfFsYX8qtIOT78yRO4N7eo4InoQkvLO45mlu/1dtlVZczm
+         lh5wEt45avc99cDkzkxgr5qVYVtB51Qdh7AfY=
+From: Renzo Dani <arons7@gmail.com>
+To: adams.xu@azwave.com.cn
+Cc: arons7@gmail.com, mchehab@infradead.org, rdunlap@xenotime.net,
+       o.endriss@gmx.de, awalls@radix.net, crope@iki.fi, manu@linuxtv.org,
+       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-doc@vger.kernel.org
+Subject: [PATCH 1/1] Retrieve firmware for az6027
+Date: Mon, 28 Jun 2010 14:15:19 +0200
+Message-Id: <1277727319-9498-1-git-send-email-arons7@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-ICMR 2012 - Call for Organizers
-
-The ACM ICMR Steering Committee invites interested parties 
-to submit proposals to host and organize  
-
-the ACM International Conference on Multimedia Retrieval, ICMR2012
-
-ICMR is the premier ACM scientific meeting aimed at 
-illuminating the state of the art in multimedia retrieval.  
-Toward that goal, ICMR brings together researchers and 
-practitioners in the field of multimedia retrieval to 
-present high quality, original research papers and for 
-sharing practitioner experiences. 
+From: Renzo Dani <arons7@gmail.com>
 
 
-Submission Deadline: 24 September 2010
+Signed-off-by: Renzo Dani <arons7@gmail.com>
+---
+ Documentation/dvb/get_dvb_firmware |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
 
-Email proposals or questions to the committee chair
+diff --git a/Documentation/dvb/get_dvb_firmware b/Documentation/dvb/get_dvb_firmware
+index 239cbdb..507868b 100644
+--- a/Documentation/dvb/get_dvb_firmware
++++ b/Documentation/dvb/get_dvb_firmware
+@@ -26,7 +26,7 @@ use IO::Handle;
+ 		"dec3000s", "vp7041", "dibusb", "nxt2002", "nxt2004",
+ 		"or51211", "or51132_qam", "or51132_vsb", "bluebird",
+ 		"opera1", "cx231xx", "cx18", "cx23885", "pvrusb2", "mpc718",
+-		"af9015", "ngene");
++		"af9015", "ngene", "az6027");
+ 
+ # Check args
+ syntax() if (scalar(@ARGV) != 1);
+@@ -567,6 +567,23 @@ sub ngene {
+     "$file1, $file2";
+ }
+ 
++sub az6027{
++    my $file = "AZ6027_Linux_Driver.tar.gz";
++    my $url = "http://linux.terratec.de/files/$file";
++    my $firmware = "dvb-usb-az6027-03.fw";
++
++    wgetfile($file, $url);
++
++    #untar
++    if( system("tar xzvf $file")){
++        die "failed to untar firmware";
++    }
++    if( system("rm -rf AZ6027_Linux_Driver; rm $file")){
++        die ("unable to remove unnecessary files");
++    }
++
++    $firmware;
++}
+ # ---------------------------------------------------------------
+ # Utilities
+ 
+-- 
+1.7.1
 
-Michael Lew
-Leiden University
-mlew@liacs.nl
-
-Details are available at 
-
-http://press.liacs.nl/icmr/icmr2012.cfo.final.pdf
-
-All decisions are made by majority vote by the steering committee.
-
-ACM ICMR Steering Committee
-
-Chair: Michael S. Lew, Leiden University
-
-Committee Members:
-Nozha Boujemaa, INRIA
-Tat-Seng Chua, National University of Singapore
-Ling Guan, Ryerson University
-Thomas Huang, University of Illinois at Urbana-Champaign
-Yiannis Kompatsiaris, CERTH/ITI
-Jiebo Luo, Kodak Research
-Stephane Marchand-Maillet, University of Geneva
-Yong Rui, Microsoft Research
-Nicu Sebe, University of Treonto
-Alan Smeaton, Dublin City University
-Qi Tian, University of Arizona
-James Wang, Penn State University
-Marcel Worring, University of Amsterdam
-Hong-Jiang Zhang, Microsoft Research Asia
-
-
-
-
-
-
-
-----------------------
-
-If you prefer to have your address permanently removed, please send an email to icmr@liacs.nl with subject line as "REMOVE ICMR"
