@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab0F1OqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 10:46:22 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65422 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754645Ab0F1OqV (ORCPT
+	id S1755054Ab0F1Ovg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 10:51:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56100 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754901Ab0F1Ovd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 10:46:21 -0400
-Subject: Re: [RFC][PATCH 0/1] kmemleak: Fix false positive with alias
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-Cc: linux-kernel@vger.kernel.org, ext-phil.2.carmody@nokia.com,
-       linux-omap@vger.kernel.org
-In-Reply-To: <1276841055-13843-1-git-send-email-Hiroshi.DOYU@nokia.com>
-References: <1276841055-13843-1-git-send-email-Hiroshi.DOYU@nokia.com>
+	Mon, 28 Jun 2010 10:51:33 -0400
+Subject: [PATCH] init: Fix race between init and kthreadd -v3
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Ilya Loginov <isloginov@gmail.com>, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100628141927.GA9306@elte.hu>
+References: <20100624001148.61e9da1c.isloginov@gmail.com>
+	 <1277385096.1875.974.camel@laptop>
+	 <20100624172334.ca7e9bef.isloginov@gmail.com>
+	 <1277715689.1875.1104.camel@laptop> <1277725997.3561.6.camel@laptop>
+	 <20100628141927.GA9306@elte.hu>
 Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Mon, 28 Jun 2010 15:46:12 +0100
-Message-ID: <1277736372.25271.102.camel@e102109-lin.cambridge.arm.com>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Jun 2010 16:51:01 +0200
+Message-ID: <1277736661.3561.110.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Jun 2010 14:46:12.0508 (UTC) FILETIME=[A73E55C0:01CB16D0]
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2010-06-28 at 16:19 +0200, Ingo Molnar wrote:
 
-(and sorry for the delay)
+> I think you may be using a mutex as a completion in essence. Why not use 
+> completions instead?
 
-On Fri, 2010-06-18 at 07:04 +0100, Hiroshi DOYU wrote:
-> This is another version of "kmemleak: Fix false positive", which
-> introduces another alias tree to keep track of all alias address of
-> each objects, based on the discussion(*1)
-> 
-> You can also find the previous one(*2), which uses special scan area
-> for alias addresses with a conversion function.
-> 
-> Compared with both methods, it seems that the current one takes a bit
-> longer to scan as below, tested with 512 elementes of (*3).
-> 
-> "kmemleak: Fix false positive with alias":
-> # time echo scan > /mnt/kmemleak
-> real    0m 8.40s
-> user    0m 0.00s
-> sys     0m 8.40s
-> 
-> "kmemleak: Fix false positive with special scan":
-> # time echo scan > /mnt/kmemleak
-> real    0m 3.96s
-> user    0m 0.00s
-> sys     0m 3.96s
+Totally forgot about those things.. Yes they fit perfectly.
 
-Have you tried without your patches (just the test module but without
-aliasing the pointers)? I'm curious what's the impact of your first set
-of patches.
+---
+Subject: init: Fix race between init and kthreadd -v2
 
-> For our case(*4) to reduce false positives for the 2nd level IOMMU
-> pagetable allocation, the previous special scan  seems to be enough
-> lightweight, although there might be possiblity to improve alias
-> one and also I might misunderstand the original proposal of aliasing.
+Ilya reported that on a very slow machine he could reliably reproduce a
+race between forking init and kthreadd. We first fork init so that it 
+obtains pid-1, however since the scheduler is already fully running at
+this point it can preempt and run the init thread before we spawn and
+set kthreadd_task.
 
-The performance impact is indeed pretty high, though some parts of the
-code look over-engineered to me (the __scan_block function with a loop
-going through an array of two function pointers - I think the compiler
-cannot figure out what to inline). You could just extend the
-find_and_get_object() to search both trees under a single spinlock
-region (as locking also takes time).
+The init thread can then attempt spawning kthreads without kthreadd
+being present which results in an OOPS.
 
-Anyway, you still get to search two trees for any pointer so there would
-always be some performance impact. I just hoped they weren't be as bad.
-In a normal system (not test module), how many elements would the alias
-tree have?
+Reported-by: Ilya Loginov <isloginov@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ init/main.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-Another approach - if we assume that there is a single alias per object
-and such aliases don't overlap, we could just move (delete + re-insert)
-the corresponding kmemleak_object in the tree to the alias position.
-This way we only keep a single tree and a single object for an allocated
-block. But in your use-case, the physical address of an object may
-actually match the virtual address of a different object, so
-lookup_object() needs to be iterative. You need two new kmemleak API
-functions, e.g. kmemleak_alias() and kmemleak_unalias(), to be called
-after allocation and before freeing a memory block.
-
-If we can't make the performance hit acceptable, we could go for the
-first approach and maybe just extend kmemleak_scan_area with a function
-pointer structure rather than adding a new one. But as I said
-previously, my main issue with your original approach is that I would
-prefer to call the kmemleak API at the point where the false positive is
-allocated rather than where the parent object was.
-
-Thanks for working on this. Regards.
-
--- 
-Catalin
+diff --git a/init/main.c b/init/main.c
+index e2a2bf3..2280f63 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -420,18 +420,26 @@ static void __init setup_command_line(char *command_line)
+  * gcc-3.4 accidentally inlines this function, so use noinline.
+  */
+ 
++static __initdata DECLARE_COMPLETION(kthreadd_done);
++
+ static noinline void __init_refok rest_init(void)
+ 	__releases(kernel_lock)
+ {
+ 	int pid;
+ 
+ 	rcu_scheduler_starting();
++	/*
++	 * We need to spawn init first so that it obtains pid-1, however
++	 * the init task will end up wanting to create kthreads, which, if
++	 * we schedule it before we create kthreadd, will OOPS.
++	 */
+ 	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
+ 	numa_default_policy();
+ 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
+ 	rcu_read_lock();
+ 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
+ 	rcu_read_unlock();
++	complete(&kthreadd_done);
+ 	unlock_kernel();
+ 
+ 	/*
+@@ -847,6 +855,10 @@ static noinline int init_post(void)
+ 
+ static int __init kernel_init(void * unused)
+ {
++	/*
++	 * Wait until kthreadd is all set-up.
++	 */
++	wait_for_completion(&kthreadd_done);
+ 	lock_kernel();
+ 
+ 	/*
 
