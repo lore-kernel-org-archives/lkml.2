@@ -1,36 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab0F1Mtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 08:49:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38998 "EHLO mx1.redhat.com"
+	id S1754616Ab0F1MwC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 08:52:02 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56099 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754463Ab0F1Mtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 08:49:42 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1277621246-10960-5-git-send-email-justinmattock@gmail.com>
-References: <1277621246-10960-5-git-send-email-justinmattock@gmail.com> <1277621246-10960-1-git-send-email-justinmattock@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, sds@tycho.nsa.gov,
-       lenb@kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH 4/5]block:cryptoloop Fix warning: variable 'cipher' set but not used
-Date: Mon, 28 Jun 2010 13:49:12 +0100
-Message-ID: <7245.1277729352@redhat.com>
+	id S1754423Ab0F1MwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 08:52:00 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: markgross@thegnar.org
+Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being lost
+Date: Mon, 28 Jun 2010 14:50:10 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       mark gross <640e9920@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Mickler <florian@mickler.org>, linux-pci@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+References: <201006261514.13491.rjw@sisk.pl> <20100627222804.GA5522@gvim.org>
+In-Reply-To: <20100627222804.GA5522@gvim.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006281450.11285.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin P. Mattock <justinmattock@gmail.com> wrote:
+On Monday, June 28, 2010, mark gross wrote:
+> Looks good to me!
 
-> Im getting this when compiling on gcc 4.6.0
->   CC [M]  drivers/block/cryptoloop.o
-> drivers/block/cryptoloop.c: In function 'cryptoloop_init':
-> drivers/block/cryptoloop.c:46:8: warning: variable 'cipher' set but not used
-> The below fixes it for me. Please have a look and let me know.
-> 
->  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Great, thanks!  May I add your "Acked-by" to the patch, then?
 
-Acked-by: David Howells <dhowells@redhat.com>
+Rafael
+
+
+> On Sat, Jun 26, 2010 at 03:14:13PM +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > One of the arguments during the suspend blockers discussion was that
+> > the mainline kernel didn't contain any mechanisms making it possible
+> > to avoid losing wakeup events during system suspend.
+> > 
+> > Generally, there are two problems in that area.  First, if a wakeup
+> > event occurs exactly when /sys/power/state is being written to, it
+> > may be delivered to user space right before the freezer kicks in, so
+> > the user space consumer of the event may not be able to process it
+> > before the system is suspended.  Second, if a wakeup event occurs
+> > after user space has been frozen, it is not generally guaranteed that
+> > the ongoing transition of the system into a sleep state will be
+> > aborted.
+> > 
+> > To address these issues introduce a new global sysfs attribute,
+> > /sys/power/wakeup_count, associated with a running counter of wakeup
+> > events and three helper functions, pm_stay_awake(), pm_relax(), and
+> > pm_wakeup_event(), that may be used by kernel subsystems to control
+> > the behavior of this attribute and to request the PM core to abort
+> > system transitions into a sleep state already in progress.
+> > 
+> > The /sys/power/wakeup_count file may be read from or written to by
+> > user space.  Reads will always succeed (unless interrupted by a
+> > signal) and return the current value of the wakeup events counter.
+> > Writes, however, will only succeed if the written number is equal to
+> > the current value of the wakeup events counter.  If a write is
+> > successful, it will cause the kernel to save the current value of the
+> > wakeup events counter and to abort the subsequent system transition
+> > into a sleep state if any wakeup events are reported after the write
+> > has returned.
+> > 
+> > [The assumption is that before writing to /sys/power/state user space
+> > will first read from /sys/power/wakeup_count.  Next, user space
+> > consumers of wakeup events will have a chance to acknowledge or
+> > veto the upcoming system transition to a sleep state.  Finally, if
+> > the transition is allowed to proceed, /sys/power/wakeup_count will
+> > be written to and if that succeeds, /sys/power/state will be written
+> > to as well.  Still, if any wakeup events are reported to the PM core
+> > by kernel subsystems after that point, the transition will be
+> > aborted.]
+> > 
+> > Additionally, put a wakeup events counter into struct dev_pm_info and
+> > make these per-device wakeup event counters available via sysfs,
+> > so that it's possible to check the activity of various wakeup event
+> > sources within the kernel.
+> > 
+> > To illustrate how subsystems can use pm_wakeup_event(), make the
+> > low-level PCI runtime PM wakeup-handling code use it.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
