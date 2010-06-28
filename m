@@ -1,76 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab0F1U6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 16:58:04 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:24807 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751470Ab0F1U6A (ORCPT
+	id S1752949Ab0F1U6w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 16:58:52 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42110 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab0F1U6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 16:58:00 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsMBAP2pKExLd/sX/2dsb2JhbAAHgxaXErVqkS6BKYMJcgSGZQ
-X-IronPort-AV: E=Sophos;i="4.53,499,1272859200"; 
-   d="scan'208";a="69071381"
-Message-ID: <4C290CD7.5030200@teksavvy.com>
-Date: Mon, 28 Jun 2010 16:57:59 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Regression: ps2mouse not working in 2.6.34
-References: <4C28C81E.4010909@teksavvy.com> <20100628163350.GA11670@core.coreip.homeip.net> <4C28D96B.6060409@teksavvy.com> <201006281031.32568.dmitry.torokhov@gmail.com>
-In-Reply-To: <201006281031.32568.dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 28 Jun 2010 16:58:50 -0400
+Date: Mon, 28 Jun 2010 13:57:56 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Michal Marek <mmarek@suse.cz>, Nicolas Kaiser <nikai@nikai.net>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-doc@vger.kernel.org
+Subject: Re: [PATCH] Documentation/kbuild: fixed typos and wording
+Message-Id: <20100628135756.7fbaad2d.randy.dunlap@oracle.com>
+In-Reply-To: <4C28BAE3.8030909@oracle.com>
+References: <20100626150021.254b95b3@absol.kitzblitz>
+	<20100626173736.e5946273.randy.dunlap@oracle.com>
+	<4C28B801.7050709@suse.cz>
+	<4C28BAE3.8030909@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4C290D03.0090:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/10 01:31 PM, Dmitry Torokhov wrote:
-> On Monday, June 28, 2010 10:18:35 am Mark Lord wrote:
->> On 28/06/10 12:33 PM, Dmitry Torokhov wrote:
->>> On Mon, Jun 28, 2010 at 12:04:46PM -0400, Mark Lord wrote:
->>>> Okay, who broke it, and how do I re-enable it?
->>>>
->>>> The PS/2 mice on my systems here don't do anything with 2.6.34.
->>>> One system complains that I need to boot with i8042.nopnp to enable it,
->>>> which I also tried, but still nogo.  Same behaviour with or without
->>>> /dev/psaux enabled.  64-bit kernel.
->>>>
->>>> The other system, running older userspace, hangs at the X-server startup
->>>> because it cannot find the mouse.  No i8042 warnings.   32-bit kernel.
->>>>
->>>> Both systems working fine with older kernels.
->>>> Google finds lots of other people discovering the same problem.
->>>>
->>>> What gives?
->>>
->>> Well, lest start small: did it work ifor you with 2.6.33? Does kernel
->>> discover AUX serio port (dmesg)? What about the mouse itself? Is it
->>> absent or is it not reporting events?
->>
->> ..
->>
->> I started by crawling into the wire nest under the table.  :)
->>
->> After a certain amount of experimentation, it appears that the newer
->> kernel is not compatible with the USB-to-PS2 dongle on the end of the
->> mouse. I found a different USB-to-PS2 dongle which does work, though.
->>
->> Very weird.  I can mail you the other dongle if are really interested
->> in figuring out what broke and fixing it.
->
-> Hmm, let me dig out one of my dongles first and see if it is broken too... If
-> not I might be interested in getting yours but no promises - time is tight ;(
-..
+On Mon, 28 Jun 2010 08:08:19 -0700 Randy Dunlap wrote:
 
-I'm beginning to suspect the dongle I was using simply went bad
-at the same time I upgraded kernels.  It no longer works with older stuff either.
+> On 06/28/10 07:56, Michal Marek wrote:
+> > On 27.6.2010 02:37, Randy Dunlap wrote:
+> >> On Sat, 26 Jun 2010 15:00:21 +0200 Nicolas Kaiser wrote:
+> >>
+> >>> Fixed some typos and wording.
+> >>>
+> >>> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> >>
+> >> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > Randy, are you adding this to the kernel-doc tree? There are already
+> > patches from matt mooney, sometimes touching the same paragraphs as this
+> > one.
+> 
+> Oh, thanks for the warning, I hadn't noticed that.
+> I guess that it makes more sense for me to add this one also
+> and fix up any merge problems.  Will do.
 
-So.. unfortunate timing of a hardware failure with kernel upgrade.
+OK, merged with matt mooney's patches.
 
-Nothing to see here.
+Nicolas's resulting patch is here:
+http://oss.oracle.com/~rdunlap/kernel-doc-patches/current/docs-kbuild-typos-wording.patch
 
-Thanks Dmitry!
+Thanks.
 
+> > Michal
+> > 
+> >>
+> >> Thanks.
+> >>
+> >>> ---
+> >>>  Documentation/kbuild/kbuild.txt    |    8 ++++----
+> >>>  Documentation/kbuild/makefiles.txt |   20 ++++++++++----------
+> >>>  2 files changed, 14 insertions(+), 14 deletions(-)
+> >>>
+> >>> diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
+> >>> index 634c625..0d8addb 100644
+> >>> --- a/Documentation/kbuild/kbuild.txt
+> >>> +++ b/Documentation/kbuild/kbuild.txt
+> >>> @@ -40,15 +40,15 @@ Set the directory to look for the kernel source when building external
+> >>>  modules.
+> >>>  The directory can be specified in several ways:
+> >>>  1) Use "M=..." on the command line
+> >>> -2) Environmnet variable KBUILD_EXTMOD
+> >>> -3) Environmnet variable SUBDIRS
+> >>> +2) Environment variable KBUILD_EXTMOD
+> >>> +3) Environment variable SUBDIRS
+> >>>  The possibilities are listed in the order they take precedence.
+> >>>  Using "M=..." will always override the others.
+> >>>  
+> >>>  KBUILD_OUTPUT
+> >>>  --------------------------------------------------
+> >>>  Specify the output directory when building the kernel.
+> >>> -The output directory can also be specificed using "O=...".
+> >>> +The output directory can also be specified using "O=...".
+> >>>  Setting "O=..." takes precedence over KBUILD_OUTPUT.
+> >>>  
+> >>>  ARCH
+> >>> @@ -90,7 +90,7 @@ The script will be called with the following arguments:
+> >>>      $3 - kernel map file
+> >>>      $4 - default install path (use root directory if blank)
+> >>>  
+> >>> -The implmentation of "make install" is architecture specific
+> >>> +The implementation of "make install" is architecture specific
+> >>>  and it may differ from the above.
+> >>>  
+> >>>  INSTALLKERNEL is provided to enable the possibility to
+> >>> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+> >>> index 71c602d..c0c9b1c 100644
+> >>> --- a/Documentation/kbuild/makefiles.txt
+> >>> +++ b/Documentation/kbuild/makefiles.txt
+> >>> @@ -284,12 +284,12 @@ more details, with real examples.
+> >>>  --- 3.7 Compilation flags
+> >>>  
+> >>>      ccflags-y, asflags-y and ldflags-y
+> >>> -	The three flags listed above applies only to the kbuild makefile
+> >>> -	where they are assigned. They are used for all the normal
+> >>> -	cc, as and ld invocation happenign during a recursive build.
+> >>> +	These three flags apply only to the kbuild makefile in which they
+> >>> +	are assigned. They are used for all the normal cc, as and ld
+> >>> +	invocations happening during a recursive build.
+> >>>  	Note: Flags with the same behaviour were previously named:
+> >>>  	EXTRA_CFLAGS, EXTRA_AFLAGS and EXTRA_LDFLAGS.
+> >>> -	They are yet supported but their use are deprecated.
+> >>> +	They are still supported but their usage is deprecated.
+> >>>  
+> >>>  	ccflags-y specifies options for compiling C files with $(CC).
+> >>>  
+> >>> @@ -318,9 +318,9 @@ more details, with real examples.
+> >>>  		ldflags-y := -x
+> >>>  
+> >>>      subdir-ccflags-y, subdir-asflags-y
+> >>> -	The two flags listed above are similar to ccflags-y and as-falgs-y.
+> >>> -	The difference is that the subdir- variants has effect for the kbuild
+> >>> -	file where tey are present and all subdirectories.
+> >>> +	The two flags listed above are similar to ccflags-y and as-flags-y.
+> >>> +	The difference is that the subdir- variants have effect for the kbuild
+> >>> +	file where they are present and all subdirectories.
+> >>>  	Options specified using subdir-* are added to the commandline before
+> >>>  	the options specified using the non-subdir variants.
+> >>>  
+> >>> @@ -1176,14 +1176,14 @@ When kbuild executes, the following steps are followed (roughly):
+> >>>  === 7 Kbuild syntax for exported headers
+> >>>  
+> >>>  The kernel include a set of headers that is exported to userspace.
+> >>> -Many headers can be exported as-is but other headers requires  a
+> >>> +Many headers can be exported as-is but other headers require a
+> >>>  minimal pre-processing before they are ready for user-space.
+> >>>  The pre-processing does:
+> >>>  - drop kernel specific annotations
+> >>>  - drop include of compiler.h
+> >>> -- drop all sections that is kernel internat (guarded by ifdef __KERNEL__)
+> >>> +- drop all sections that are kernel internal (guarded by ifdef __KERNEL__)
+> >>>  
+> >>> -Each relevant directory contain a file name "Kbuild" which specify the
+> >>> +Each relevant directory contains a file name "Kbuild" which specifies the
+> >>>  headers to be exported.
+> >>>  See subsequent chapter for the syntax of the Kbuild file.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
