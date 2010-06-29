@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab0F2HH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 03:07:27 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35850 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab0F2HHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 03:07:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=fKRiAr4vjIz3G0oLHBvyk3sCUKfiQD4WVPNmtNsWFd+fsWQeTuWvpKvRWg+OsLZwAd
-         2bH/P9X9fAJMfPj0A/+LfNloOvpuWCGTVIrXSuysYB9TdwjmXREXEbF+UhBIfTbLLhCM
-         aZEyn+1a+ZOrcbGGt803ht7mAyGOlHZm2naiw=
-Date: Tue, 29 Jun 2010 00:07:17 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: =?iso-8859-1?Q?=C9ric?= Piel <E.A.B.Piel@tudelft.nl>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Regression 2.6.35-rc1?] Sysrq works too well (no need of alt)
-Message-ID: <20100629070717.GD19712@core.coreip.homeip.net>
-References: <4C0E0E51.8050709@tudelft.nl>
- <201006192316.32360.rjw@sisk.pl>
- <4C1D4FA6.6030607@tudelft.nl>
+	id S1753747Ab0F2HHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 03:07:39 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39170 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753579Ab0F2HH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 03:07:26 -0400
+Date: Tue, 29 Jun 2010 07:07:04 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tglx@linutronix.de, laijs@cn.fujitsu.com, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, hpa@linux.intel.com, laijs@cn.fujitsu.com
+In-Reply-To: <4C2474EF.4050902@cn.fujitsu.com>
+References: <4C2474EF.4050902@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/alternatives] x86, alternatives: correct obsolete use of "u8" in static_cpu_has()
+Message-ID: <tip-a3d2d12f275fcd33d7edc34e6b4112b5a3c9d35d@git.kernel.org>
+Git-Commit-ID: a3d2d12f275fcd33d7edc34e6b4112b5a3c9d35d
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C1D4FA6.6030607@tudelft.nl>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 07:07:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 20, 2010 at 01:15:50AM +0200, Éric Piel wrote:
-> Op 19-06-10 23:16, Rafael J. Wysocki schreef:
-> > On Tuesday, June 08, 2010, Éric Piel wrote:
-> >> Hello,
-> >> I haven't investigated much yet, but I have the feeling that since
-> >> 2.6.35-rc1 my "Print Screen/SysRq" key works only as SysRq: if I press
-> >> it (normally assigned to take screenshot in gnome), nothing happens (no
-> >> input event received in userspace) and no key on the keyboard works
-> >> afterwards, until I press Alt. Actually the keys work, but behave as if
-> >> the sysrq key was kept pressed (can be seen in dmesg, or by pressing "b").
-> >>
-> >> Looking at the log, a potential culprit is commit
-> >> 97f5f0cd8cd0a05449cbb77d1e6f02e026875802 (Input: implement SysRq as a
-> >> separate input handler). Probably the logic of "have to press all the
-> >> keys at the same time" changed to "have to press the keys one after each
-> >> other". So pressing alt and later on pressing PrintScreen leads to a SysRq.
-> >>
-> >> Does anybody else see this behaviour? Any suggestion on how to solve
-> >> this bug? I'll try reverting the commit and report if it fixes the
-> >> problem (the git revert fails so I've got to fix the conflict manually).
-> > 
-> > Is this still a problem with 2.6.35-rc3?
-> The bug is still in 2.6.35-rc3. The patch that fixes this regression is
-> in the "for-linus" branch of the input tree, but I think Dmitry hasn't
-> yet sent a pull request to Linus.
-> 
+Commit-ID:  a3d2d12f275fcd33d7edc34e6b4112b5a3c9d35d
+Gitweb:     http://git.kernel.org/tip/a3d2d12f275fcd33d7edc34e6b4112b5a3c9d35d
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Mon, 28 Jun 2010 12:00:18 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 28 Jun 2010 22:04:47 -0700
 
-The fix should be in mainline now.
+x86, alternatives: correct obsolete use of "u8" in static_cpu_has()
 
--- 
-Dmitry
+gcc seems to pass unsigned words on as signed to the assembler, at
+least with the %P format.  As such, it is critical to get the correct
+type.
+
+Furthermore we are no longer limited to features < 256.
+
+Reported-and-tested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+LKML-Reference: <4C2474EF.4050902@cn.fujitsu.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/cpufeature.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 66878c5..e8b8896 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -291,7 +291,7 @@ extern const char * const x86_power_flags[32];
+  * patch the target code for additional performance.
+  *
+  */
+-static __always_inline __pure bool __static_cpu_has(u8 bit)
++static __always_inline __pure bool __static_cpu_has(u16 bit)
+ {
+ #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+ 		asm goto("1: jmp %l[t_no]\n"
+@@ -339,7 +339,7 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
+ (								\
+ 	__builtin_constant_p(boot_cpu_has(bit)) ?		\
+ 		boot_cpu_has(bit) :				\
+-	(__builtin_constant_p(bit) && !((bit) & ~0xff)) ?	\
++	__builtin_constant_p(bit) ?				\
+ 		__static_cpu_has(bit) :				\
+ 		boot_cpu_has(bit)				\
+ )
