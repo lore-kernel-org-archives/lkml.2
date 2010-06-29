@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab0F2SkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 14:40:22 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:59284 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991Ab0F2SkV (ORCPT
+	id S1755269Ab0F2Skb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 14:40:31 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35991 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755221Ab0F2Sk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 14:40:21 -0400
+	Tue, 29 Jun 2010 14:40:28 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Mel Gorman <mel@csn.ul.ie>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -14,176 +14,311 @@ Cc: Mel Gorman <mel@csn.ul.ie>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
        Randy Dunlap <rdunlap@xenotime.net>,
        Arnaldo Carvalho de Melo <acme@infradead.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Roland McGrath <roland@redhat.com>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
        Christoph Hellwig <hch@infradead.org>,
        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Wed, 30 Jun 2010 00:04:54 +0530
-Message-Id: <20100629183454.32537.63582.sendpatchset@localhost6.localdomain6>
-Subject: [PATCHv7 2.6.35-rc3-tip 0/11]  Uprobes Patches:
+Date: Wed, 30 Jun 2010 00:05:04 +0530
+Message-Id: <20100629183504.32537.78986.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20100629183454.32537.63582.sendpatchset@localhost6.localdomain6>
+References: <20100629183454.32537.63582.sendpatchset@localhost6.localdomain6>
+Subject: [PATCHv7 2.6.35-rc3-tip 1/11]  mm: Move replace_page() / write_protect_page() to mm/memory.c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Uprobes Patches
+mm: Move replace_page() / write_protect_page() to mm/memory.c
 
-Changelog from V6:
-  - Addressed comments from Masami on function names in common
-    trace event code. 
-  - Addressed comments from Arnaldo on perf adjust symbol patch.
+User bkpt will use background page replacement approach to insert/delete
+breakpoints. Background page replacement approach will be based on
+replace_page and write_protect_page.
+Now replace_page() loses its static attribute.
 
-Changelog from V5:
-  - Merged user_bkpt and user_bkpt_xol into uprobes.
-  - Addressed comments till now.
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+---
 
-Changelog from V4:
-  - Rebased to tip tree. (2.6.35-rc3-tip)
-
-Changelog from v3:
-  - Reverted to background page replacement as suggested by Peter Zijlstra.
-  - Dso in 'perf probe' can be either be a short name or a absolute path.
-  - Addressed comments from Masami, Frederic, Steven on traceevents and perf
-
-Changelog from v2:
-  - Addressed comments from Oleg, including removal of interrupt context
-    handlers, reverting background page replacement in favour of
-    access_process_vm().
-
-  - Provides perf interface for uprobes.
-
-Changelog from v1:
- - Added trace_event interface for uprobes.
- - Addressed comments from Andrew Morton and Randy Dunlap.
-
-For previous posting: please refer: http://lkml.org/lkml/2010/6/14/41
-http://lkml.org/lkml/2010/3/20/107 and http://lkml.org/lkml/2010/5/18/307
-
-This patchset implements Uprobes which enables you to dynamically break
-into any routine in a user space application and collect information
-non-disruptively.
-
-This patchset is a rework based on suggestions from discussions on lkml
-in January and March 2010 (http://lkml.org/lkml/2010/1/11/92,
-http://lkml.org/lkml/2010/1/27/19, http://lkml.org/lkml/2010/3/20/107
-and http://lkml.org/lkml/2010/3/31/199 ). This implementation of
-uprobes doesnt depend on utrace.
-
-When a uprobe is registered, Uprobes makes a copy of the probed
-instruction, replaces the first byte(s) of the probed instruction with a
-breakpoint instruction. (Uprobes uses background page replacement
-mechanism and ensures that the breakpoint affects only that process.)
-
-When a CPU hits the breakpoint instruction, Uprobes gets notified of
-trap and finds the associated uprobe. It then executes the associated
-handler. Uprobes single-steps its copy of the probed instruction and
-resumes execution of the probed process at the instruction following the
-probepoint. Instruction copies to be single-stepped are stored in a
-per-process "execution out of line (XOL) area". Currently XOL area is
-allocated as one page vma.
-
-Advantages of uprobes over conventional debugging include:
-
-1. Non-disruptive.
-Unlike current ptrace based mechanisms, uprobes tracing wouldnt
-involve signals, stopping threads and context switching between the
-tracer and tracee.
-
-2. Much better handling of multithreaded programs because of XOL.
-Current ptrace based mechanisms use single stepping inline, i.e they
-copy back the original instruction on hitting a breakpoint.  In such
-mechanisms tracers have to stop all the threads on a breakpoint hit or
-tracers will not be able to handle all hits to the location of
-interest. Uprobes uses execution out of line, where the instruction to
-be traced is analysed at the time of breakpoint insertion and a copy
-of instruction is stored at a different location.  On breakpoint hit,
-uprobes jumps to that copied location and singlesteps the same
-instruction and does the necessary fixups post singlestepping.
-
-3. Multiple tracers for an application.
-Multiple uprobes based tracer could work in unison to trace an
-application. There could one tracer that could be interested in
-generic events for a particular set of process. While there could be
-another tracer that is just interested in one specific event of a
-particular process thats part of the previous set of process.
-
-4. Corelating events from kernels and userspace.
-Uprobes could be used with other tools like kprobes, tracepoints or as
-part of higher level tools like perf to give a consolidated set of
-events from kernel and userspace.  In future we could look at a single
-backtrace showing application, library and kernel calls.
-
-Here is the list of TODO Items.
-
-- Allowing probes across fork.
-- Allowing probes per-executable/per dso.
-- Allow multiple probes to share a probepoint.
-- Return probes.
-- Support for other architectures.
-- Uprobes booster.
-- Merge uprobes and kprobes trace_event.
-- replace macro W with bits in inat table.
-
-Please do provide your valuable comments.
-
-Thanks in advance.
-Srikar
- Srikar Dronamraju(11)
-  0: Uprobes Patches
-  1: mm: Move replace_page() / write_protect_page() to mm/memory.c
-  2: uprobes: Breakpoint insertion/removal in user space applications.
-  3: uprobes: Slot allocation for Execution out of line(XOL)
-  4: uprobes: x86 specific functions for user space breakpointing.
-  5: uprobes: Uprobes (un)registration and exception handling.
-  6: uprobes: X86 support for Uprobes
-  7: uprobes: Uprobes Documentation
-  8: trace: Extract out common code for kprobes/uprobes traceevents.
-  9: trace: uprobes trace_event interface
- 10: perf: Re-Add make_absolute_path
- 11: perf: perf interface for uprobes
+ include/linux/mm.h |    4 ++
+ mm/ksm.c           |  112 -------------------------------------------------
+ mm/memory.c        |  120 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 124 insertions(+), 112 deletions(-)
 
 
- Documentation/uprobes.txt          |  193 +++++
- arch/Kconfig                       |    6 +
- arch/x86/Kconfig                   |    1 +
- arch/x86/include/asm/thread_info.h |    2 +
- arch/x86/include/asm/uprobes.h     |   43 ++
- arch/x86/kernel/Makefile           |    2 +
- arch/x86/kernel/signal.c           |   13 +
- arch/x86/kernel/uprobes.c          |  599 ++++++++++++++++
- fs/exec.c                          |    4 +
- include/linux/mm.h                 |    4 +
- include/linux/mm_types.h           |    4 +
- include/linux/sched.h              |    3 +
- include/linux/uprobes.h            |  334 +++++++++
- kernel/Makefile                    |    1 +
- kernel/fork.c                      |   21 +
- kernel/trace/Kconfig               |   20 +
- kernel/trace/Makefile              |    2 +
- kernel/trace/trace.h               |    5 +
- kernel/trace/trace_kprobe.c        |  576 +---------------
- kernel/trace/trace_probe.c         |  510 +++++++++++++
- kernel/trace/trace_probe.h         |  128 ++++
- kernel/trace/trace_uprobe.c        |  738 +++++++++++++++++++
- kernel/uprobes.c                   | 1396 ++++++++++++++++++++++++++++++++++++
- mm/ksm.c                           |  112 ---
- mm/memory.c                        |  120 +++
- tools/perf/builtin-probe.c         |   13 +-
- tools/perf/builtin-top.c           |   20 -
- tools/perf/util/abspath.c          |   81 +++
- tools/perf/util/cache.h            |    1 +
- tools/perf/util/event.c            |   20 +
- tools/perf/util/event.h            |    1 +
- tools/perf/util/probe-event.c      |  466 +++++++++----
- tools/perf/util/probe-event.h      |   37 +-
- tools/perf/util/probe-finder.c     |   20 +-
- tools/perf/util/probe-finder.h     |    6 +-
- 35 files changed, 4626 insertions(+), 876 deletions(-)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b969efb..206008e 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -858,6 +858,10 @@ void account_page_dirtied(struct page *page, struct address_space *mapping);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
++int replace_page(struct vm_area_struct *vma, struct page *page,
++					struct page *kpage, pte_t orig_pte);
++int write_protect_page(struct vm_area_struct *vma, struct page *page,
++						      pte_t *orig_pte);
+ 
+ extern unsigned long move_page_tables(struct vm_area_struct *vma,
+ 		unsigned long old_addr, struct vm_area_struct *new_vma,
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 6c3e99b..ce432e1 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -713,118 +713,6 @@ static inline int pages_identical(struct page *page1, struct page *page2)
+ 	return !memcmp_pages(page1, page2);
+ }
+ 
+-static int write_protect_page(struct vm_area_struct *vma, struct page *page,
+-			      pte_t *orig_pte)
+-{
+-	struct mm_struct *mm = vma->vm_mm;
+-	unsigned long addr;
+-	pte_t *ptep;
+-	spinlock_t *ptl;
+-	int swapped;
+-	int err = -EFAULT;
+-
+-	addr = page_address_in_vma(page, vma);
+-	if (addr == -EFAULT)
+-		goto out;
+-
+-	ptep = page_check_address(page, mm, addr, &ptl, 0);
+-	if (!ptep)
+-		goto out;
+-
+-	if (pte_write(*ptep)) {
+-		pte_t entry;
+-
+-		swapped = PageSwapCache(page);
+-		flush_cache_page(vma, addr, page_to_pfn(page));
+-		/*
+-		 * Ok this is tricky, when get_user_pages_fast() run it doesnt
+-		 * take any lock, therefore the check that we are going to make
+-		 * with the pagecount against the mapcount is racey and
+-		 * O_DIRECT can happen right after the check.
+-		 * So we clear the pte and flush the tlb before the check
+-		 * this assure us that no O_DIRECT can happen after the check
+-		 * or in the middle of the check.
+-		 */
+-		entry = ptep_clear_flush(vma, addr, ptep);
+-		/*
+-		 * Check that no O_DIRECT or similar I/O is in progress on the
+-		 * page
+-		 */
+-		if (page_mapcount(page) + 1 + swapped != page_count(page)) {
+-			set_pte_at(mm, addr, ptep, entry);
+-			goto out_unlock;
+-		}
+-		entry = pte_wrprotect(entry);
+-		set_pte_at_notify(mm, addr, ptep, entry);
+-	}
+-	*orig_pte = *ptep;
+-	err = 0;
+-
+-out_unlock:
+-	pte_unmap_unlock(ptep, ptl);
+-out:
+-	return err;
+-}
+-
+-/**
+- * replace_page - replace page in vma by new ksm page
+- * @vma:      vma that holds the pte pointing to page
+- * @page:     the page we are replacing by kpage
+- * @kpage:    the ksm page we replace page by
+- * @orig_pte: the original value of the pte
+- *
+- * Returns 0 on success, -EFAULT on failure.
+- */
+-static int replace_page(struct vm_area_struct *vma, struct page *page,
+-			struct page *kpage, pte_t orig_pte)
+-{
+-	struct mm_struct *mm = vma->vm_mm;
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	pte_t *ptep;
+-	spinlock_t *ptl;
+-	unsigned long addr;
+-	int err = -EFAULT;
+-
+-	addr = page_address_in_vma(page, vma);
+-	if (addr == -EFAULT)
+-		goto out;
+-
+-	pgd = pgd_offset(mm, addr);
+-	if (!pgd_present(*pgd))
+-		goto out;
+-
+-	pud = pud_offset(pgd, addr);
+-	if (!pud_present(*pud))
+-		goto out;
+-
+-	pmd = pmd_offset(pud, addr);
+-	if (!pmd_present(*pmd))
+-		goto out;
+-
+-	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
+-	if (!pte_same(*ptep, orig_pte)) {
+-		pte_unmap_unlock(ptep, ptl);
+-		goto out;
+-	}
+-
+-	get_page(kpage);
+-	page_add_anon_rmap(kpage, vma, addr);
+-
+-	flush_cache_page(vma, addr, pte_pfn(*ptep));
+-	ptep_clear_flush(vma, addr, ptep);
+-	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+-
+-	page_remove_rmap(page);
+-	put_page(page);
+-
+-	pte_unmap_unlock(ptep, ptl);
+-	err = 0;
+-out:
+-	return err;
+-}
+-
+ /*
+  * try_to_merge_one_page - take two pages and merge them into one
+  * @vma: the vma that holds the pte pointing to page
+diff --git a/mm/memory.c b/mm/memory.c
+index 119b7cc..3fb2b9d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2582,6 +2582,126 @@ void unmap_mapping_range(struct address_space *mapping,
+ }
+ EXPORT_SYMBOL(unmap_mapping_range);
+ 
++/**
++ * replace_page - replace page in vma by new ksm page
++ * @vma:      vma that holds the pte pointing to page
++ * @page:     the page we are replacing by kpage
++ * @kpage:    the ksm page we replace page by
++ * @orig_pte: the original value of the pte
++ *
++ * Returns 0 on success, -EFAULT on failure.
++ */
++int replace_page(struct vm_area_struct *vma, struct page *page,
++			struct page *kpage, pte_t orig_pte)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++	pte_t *ptep;
++	spinlock_t *ptl;
++	unsigned long addr;
++	int err = -EFAULT;
++
++	addr = page_address_in_vma(page, vma);
++	if (addr == -EFAULT)
++		goto out;
++
++	pgd = pgd_offset(mm, addr);
++	if (!pgd_present(*pgd))
++		goto out;
++
++	pud = pud_offset(pgd, addr);
++	if (!pud_present(*pud))
++		goto out;
++
++	pmd = pmd_offset(pud, addr);
++	if (!pmd_present(*pmd))
++		goto out;
++
++	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
++	if (!pte_same(*ptep, orig_pte)) {
++		pte_unmap_unlock(ptep, ptl);
++		goto out;
++	}
++
++	get_page(kpage);
++	page_add_anon_rmap(kpage, vma, addr);
++
++	flush_cache_page(vma, addr, pte_pfn(*ptep));
++	ptep_clear_flush(vma, addr, ptep);
++	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
++
++	page_remove_rmap(page);
++	put_page(page);
++
++	pte_unmap_unlock(ptep, ptl);
++	err = 0;
++out:
++	return err;
++}
++
++/**
++ * write_protect_page - mark the page readonly
++ * @vma:      vma that holds the page we want to mark
++ * @page:     page that needs to be marked readonly
++ * @orig_pte: pte for the protected page.
++ *
++ * Returns 0 on success, -EFAULT on failure.
++ */
++int write_protect_page(struct vm_area_struct *vma, struct page *page,
++						      pte_t *orig_pte)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	unsigned long addr;
++	pte_t *ptep;
++	spinlock_t *ptl;
++	int swapped;
++	int err = -EFAULT;
++
++	addr = page_address_in_vma(page, vma);
++	if (addr == -EFAULT)
++		goto out;
++
++	ptep = page_check_address(page, mm, addr, &ptl, 0);
++	if (!ptep)
++		goto out;
++
++	if (pte_write(*ptep)) {
++		pte_t entry;
++
++		swapped = PageSwapCache(page);
++		flush_cache_page(vma, addr, page_to_pfn(page));
++		/*
++		 * Ok this is tricky, when get_user_pages_fast() run it doesnt
++		 * take any lock, therefore the check that we are going to make
++		 * with the pagecount against the mapcount is racey and
++		 * O_DIRECT can happen right after the check.
++		 * So we clear the pte and flush the tlb before the check
++		 * this assure us that no O_DIRECT can happen after the check
++		 * or in the middle of the check.
++		 */
++		entry = ptep_clear_flush(vma, addr, ptep);
++		/*
++		 * Check that no O_DIRECT or similar I/O is in progress on the
++		 * page
++		 */
++		if (page_mapcount(page) + 1 + swapped != page_count(page)) {
++			set_pte_at(mm, addr, ptep, entry);
++			goto out_unlock;
++		}
++		entry = pte_wrprotect(entry);
++		set_pte_at_notify(mm, addr, ptep, entry);
++	}
++	*orig_pte = *ptep;
++	err = 0;
++
++out_unlock:
++	pte_unmap_unlock(ptep, ptl);
++out:
++	return err;
++}
++
+ int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
