@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab0F2HGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 03:06:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62885 "EHLO mx1.redhat.com"
+	id S1753534Ab0F2HHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 03:07:08 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39159 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097Ab0F2HGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 03:06:47 -0400
-Message-ID: <4C299B7E.5020303@redhat.com>
-Date: Tue, 29 Jun 2010 10:06:38 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1752097Ab0F2HHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 03:07:05 -0400
+Date: Tue, 29 Jun 2010 07:06:44 GMT
+From: "tip-bot for tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org>
+References: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/alternatives] x86, alternatives: Use 16-bit numbers for cpufeature index
+Message-ID: <tip-5dc71d49a7c209b77cd257049a2cdb99ed1008c0@git.kernel.org>
+Git-Commit-ID: 5dc71d49a7c209b77cd257049a2cdb99ed1008c0
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 3/10] KVM: MMU: fix direct sp's access corruptted
-References: <4C2498EC.2010006@cn.fujitsu.com> <4C249BAD.6000609@cn.fujitsu.com> <4C287081.40300@redhat.com> <4C287332.5080803@cn.fujitsu.com> <4C2883D3.2050606@redhat.com> <4C2949A5.1070303@cn.fujitsu.com>
-In-Reply-To: <4C2949A5.1070303@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 07:06:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2010 04:17 AM, Xiao Guangrong wrote:
->
->> If B is writeable-and-dirty, then it's D bit is already set, and we
->> don't need to do anything.
->>
->> If B is writeable-and-clean, then we'll have an spte pointing to a
->> read-only sp, so we'll get a write fault on access and an opportunity to
->> set the D bit.
->>
->>      
-> Sorry, a typo in my reply, i mean mapping A and B both are writable-and-clean,
-> while A occurs write-#PF, we should change A's spte map to writable sp, if we
-> only update the spte in writable-and-clean sp(form readonly to writable), the B's
-> D bit will miss set.
->    
+Commit-ID:  5dc71d49a7c209b77cd257049a2cdb99ed1008c0
+Gitweb:     http://git.kernel.org/tip/5dc71d49a7c209b77cd257049a2cdb99ed1008c0
+Author:     tip-bot for H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Thu, 10 Jun 2010 00:10:43 +0000
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 10 Jun 2010 23:20:34 -0700
 
-Right.
+x86, alternatives: Use 16-bit numbers for cpufeature index
 
-We need to update something to notice this:
+We already have cpufeature indicies above 255, so use a 16-bit number
+for the alternatives index.  This consumes a padding field and so
+doesn't add any size, but it means that abusing the padding field to
+create assembly errors on overflow no longer works.  We can retain the
+test simply by redirecting it to the .discard section, however.
 
-  - FNAME(fetch)() to replace the spte
-  - FNAME(walk_addr)() to invalidate the spte
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+LKML-Reference: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/include/asm/alternative.h |    7 ++++---
+ arch/x86/include/asm/cpufeature.h  |   10 ++++++----
+ 2 files changed, 10 insertions(+), 7 deletions(-)
 
-I think FNAME(walk_addr) is the right place, we're updating the gpte, so 
-we should update the spte at the same time, just like a guest write.  
-But that will be expensive (there could be many sptes, so we have to 
-call kvm_mmu_pte_write()), so perhaps FNAME(fetch) is easier.
-
-We have now
-
-         if (is_shadow_present_pte(*sptep) && !is_large_pte(*sptep))
-             continue;
-
-So we need to add a check, if sp->role.access doesn't match pt_access & 
-pte_access, we need to get a new sp with the correct access (can only 
-change read->write).
-
->>> Anyway, i think we should re-intall the mapping when the state is
->>> changed. :-(
->>>
->>>        
->> When the gpte is changed from read-only to writeable or from clean to
->> dirty, we need to update the spte, yes.  But that's true for other sptes
->> as well, not just large gptes.
->>
->>      
-> I think the indirect sp is not hurt by this bug since for the indirect sp, the access
-> just form its upper-level, and the D bit is only in the last level, when we change the
-> pte's access, is not affect its sp's access.
->
-> But for direct sp, the sp's access is form all level. and different mapping that not share
-> the last mapping page will have the same last sp.
->    
-
-Right.
-
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index 03b6bb5..bc6abb7 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -45,10 +45,9 @@
+ struct alt_instr {
+ 	u8 *instr;		/* original instruction */
+ 	u8 *replacement;
+-	u8  cpuid;		/* cpuid bit set for replacement */
++	u16 cpuid;		/* cpuid bit set for replacement */
+ 	u8  instrlen;		/* length of original instruction */
+ 	u8  replacementlen;	/* length of new instruction, <= instrlen */
+-	u8  pad1;
+ #ifdef CONFIG_X86_64
+ 	u32 pad2;
+ #endif
+@@ -86,9 +85,11 @@ static inline int alternatives_text_reserved(void *start, void *end)
+       _ASM_ALIGN "\n"							\
+       _ASM_PTR "661b\n"				/* label           */	\
+       _ASM_PTR "663f\n"				/* new instruction */	\
+-      "	 .byte " __stringify(feature) "\n"	/* feature bit     */	\
++      "	 .word " __stringify(feature) "\n"	/* feature bit     */	\
+       "	 .byte 662b-661b\n"			/* sourcelen       */	\
+       "	 .byte 664f-663f\n"			/* replacementlen  */	\
++      ".previous\n"							\
++      ".section .discard,\"aw\",@progbits\n"				\
+       "	 .byte 0xff + (664f-663f) - (662b-661b)\n" /* rlen <= slen */	\
+       ".previous\n"							\
+       ".section .altinstr_replacement, \"ax\"\n"			\
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 4681459..66878c5 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -300,11 +300,11 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
+ 			 _ASM_ALIGN "\n"
+ 			 _ASM_PTR "1b\n"
+ 			 _ASM_PTR "0\n" 	/* no replacement */
+-			 " .byte %P0\n"		/* feature bit */
++			 " .word %P0\n"		/* feature bit */
+ 			 " .byte 2b - 1b\n"	/* source len */
+ 			 " .byte 0\n"		/* replacement len */
+-			 " .byte 0xff + 0 - (2b-1b)\n"	/* padding */
+ 			 ".previous\n"
++			 /* skipping size check since replacement size = 0 */
+ 			 : : "i" (bit) : : t_no);
+ 		return true;
+ 	t_no:
+@@ -318,10 +318,12 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
+ 			     _ASM_ALIGN "\n"
+ 			     _ASM_PTR "1b\n"
+ 			     _ASM_PTR "3f\n"
+-			     " .byte %P1\n"		/* feature bit */
++			     " .word %P1\n"		/* feature bit */
+ 			     " .byte 2b - 1b\n"		/* source len */
+ 			     " .byte 4f - 3f\n"		/* replacement len */
+-			     " .byte 0xff + (4f-3f) - (2b-1b)\n" /* padding */
++			     ".previous\n"
++			     ".section .discard,\"aw\",@progbits\n"
++			     " .byte 0xff + (4f-3f) - (2b-1b)\n" /* size check */
+ 			     ".previous\n"
+ 			     ".section .altinstr_replacement,\"ax\"\n"
+ 			     "3: movb $1,%0\n"
