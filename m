@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab0F2E6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 00:58:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43109 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab0F2E6b (ORCPT
+	id S1751972Ab0F2FC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 01:02:26 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:56123 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab0F2FCZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 00:58:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ZB0aum2jF8SmSXTIq6l/yS7k6Jik37DYHTgcegdxDSO8bXTNT6afeWqgpeIgR9ntlk
-         3dd1gKtiPS8DTlcqWdBZfOPaea3J46bWPLilqifYEn5yreTnFnH1pnGL2UEFZKfJMvH3
-         f8ad3Eo2hQ9SK6PQnXACn7hUcU7uZhYQPOctI=
-Subject: Re: [PATCH] sanitize task->comm to avoid leaking escape codes
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Oleg Nesterov <oleg@redhat.com>, john stultz <johnstul@us.ibm.com>
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20100623194145.GA19628@redhat.com>
-References: <20100623181129.GM5876@outflux.net>
-	 <20100623194145.GA19628@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Jun 2010 07:58:25 +0300
-Message-Id: <1277787505.3599.25.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 8bit
+	Tue, 29 Jun 2010 01:02:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100629132907.f857600d.sfr@canb.auug.org.au>
+References: <20100629132907.f857600d.sfr@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 28 Jun 2010 22:02:02 -0700
+X-Google-Sender-Auth: aTc4ggiYB43G0e1n7Odsfhcuv54
+Message-ID: <AANLkTilbN3BBwmF1lRFrMLyNLGcLdwN6vUSX9HEhvj1u@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the spi tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Ernst Schwab <eschwab@online.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-23 at 21:41 +0200, Oleg Nesterov wrote:
-> On 06/23, Kees Cook wrote:
-> >
-> > @@ -956,7 +957,15 @@ void set_task_comm(struct task_struct *tsk, char *buf)
-> >  	 */
-> >  	memset(tsk->comm, 0, TASK_COMM_LEN);
-> >  	wmb();
-> 
-> Off-topic. I'd wish I could understand this barrier. Since the lockless
-> reader doesn't do rmb() I don't see how this can help.
+On Mon, Jun 28, 2010 at 8:29 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+>
+> After merging the spi tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+>
+> drivers/mmc/host/mmc_spi.c: In function 'mmc_spi_readbytes':
+> drivers/mmc/host/mmc_spi.c:185: error: implicit declaration of function 'spi_sync_locked'
+> drivers/mmc/host/mmc_spi.c: In function 'mmc_spi_request':
+> drivers/mmc/host/mmc_spi.c:1088: error: implicit declaration of function 'spi_bus_lock'
+> drivers/mmc/host/mmc_spi.c:1101: error: implicit declaration of function 'spi_bus_unlock'
+>
+> Caused by commit f0168ff4069fba07fdd4b05aa19f283171c8d265 ("spi/mmc_spi:
+> mmc_spi adaptations for SPI bus locking API"). �Maybe updates to another
+> file were missed?
 
-This wmb() looks wrong to me as well. To achieve what the comment in
-this function says, it should be smp_wmb() and we should have smp_rmb()
-in the reading side, AFAIU.
+Yup, bad tree on my part.  Reset back to 2.6.35-rc3 now.
 
->  OTOH, I don't
-> understand why it is needed, we never change ->comm[TASK_COMM_LEN-1] == '0'.
-
-I think the idea was that readers can see incomplete names, but not
-messed up names, consisting of old and new ones.
+g.
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
