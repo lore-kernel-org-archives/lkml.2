@@ -1,98 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab0F2T52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 15:57:28 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41375 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755874Ab0F2T50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 15:57:26 -0400
-Date: Tue, 29 Jun 2010 15:57:24 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: David Brownell <david-b@pacbell.net>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <640e9920@gmail.com>,
-       Neil Brown <neilb@suse.de>, <linux-pci@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       <Arve@smtp1.linux-foundation.org>,
-       Florian Mickler <florian@mickler.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH] PM: Make it possible to avoid wakeup events
- from being lost
-In-Reply-To: <53596.65110.qm@web180310.mail.gq1.yahoo.com>
-Message-ID: <Pine.LNX.4.44L0.1006291533130.1314-100000@iolanthe.rowland.org>
+	id S1756002Ab0F2UDQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 16:03:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37579 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754780Ab0F2UDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 16:03:14 -0400
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 0/3] Extended file stat functions
+To: viro@ZenIV.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
+       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, linux-cifs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       samba-technical@lists.samba.org, sjayaraman@suse.de,
+       linux-ext4@vger.kernel.org
+Date: Tue, 29 Jun 2010 21:02:59 +0100
+Message-ID: <20100629200259.23196.81509.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jun 2010, David Brownell wrote:
+Implement a pair of new system calls to provide extended and further extensible
+stat functions.
 
-> Did someone post the canonical driver changes
-> to make use of this?
+The third of the associated patches provides these new system calls:
 
-No, not really.  The patch itself contains an example (PCI) but it 
-doesn't demonstrate the full range of possible usages.
+	struct xstat_dev {
+		unsigned int	major;
+		unsigned int	minor;
+	};
 
->  Something like
-> 
->   suspend() { /* if wake-enabled, up count */ }
->   resume() { /* if upcounted, downcount */ }
-> 
-> is what first comes to mind.. expecting that
-> the suspend/resume methods in the driver are
-> already doing the right things for enabling
-> and later disabling the "system wake" behavior
-> on the various relevant hardware events...
+	struct xstat_time {
+		unsigned long long	tv_sec;
+		unsigned long long	tv_nsec;
+	};
 
-The PCI example looks like this:
+	struct xstat {
+		unsigned int		struct_version;
+	#define XSTAT_STRUCT_VERSION	0
+		unsigned int		st_mode;
+		unsigned int		st_nlink;
+		unsigned int		st_uid;
+		unsigned int		st_gid;
+		unsigned int		st_blksize;
+		struct xstat_dev	st_rdev;
+		struct xstat_dev	st_dev;
+		unsigned long long	st_ino;
+		unsigned long long	st_size;
+		struct xstat_time	st_atime;
+		struct xstat_time	st_mtime;
+		struct xstat_time	st_ctime;
+		struct xstat_time	st_crtime;
+		unsigned long long	st_blocks;
+		unsigned long long	st_inode_version;
+		unsigned long long	st_data_version;
+		unsigned long long	query_flags;
+	#define XSTAT_QUERY_CREATION_TIME	0x00000001ULL
+	#define XSTAT_QUERY_INODE_VERSION	0x00000002ULL
+	#define XSTAT_QUERY_DATA_VERSION	0x00000004ULL
+		unsigned long long	extra_results[0];
+	};
 
-	resume()
-	{
-		...
-		if (device_may_wakeup(dev))
-			pm_wakeup_event(dev, TIMEOUT_GUESS);
-		...
-	}
+	ssize_t ret = xstat(int dfd,
+			    const char *filename,
+			    unsigned atflag,
+			    struct xstat *buffer,
+			    size_t buflen);
 
-where TIMEOUT_GUESS is an estimate of how long to wait before allowing 
-the system to sleep.
+	ssize_t ret = fxstat(int fd,
+			     struct xstat *buffer,
+			     size_t buflen);
 
-For things like keyboards, an example would go more like this:
+which are more fully documented in that patch's description.
 
-	irq_handler()
-	{
-		...
-		if (key-press event occurred) {
-			...
-			if (input queue is empty)
-				pm_stay_awake(dev);
-			add event to input queue;
-			...
-		}
-		...
-	}
+The bonuses of these new stat functions are:
 
-	read_queue()
-	{
-		...
-		send queued data to userspace
-		if (input queue is empty)
-			pm_relax();
-		...
-	}
+ (1) The fields in the xstat struct are cleaned up.  There are no split or
+     duplicated fields.
 
-I left out the device_may_wakeup tests; things become rather 
-complicated if you can have more than one keyboard feeding the same 
-input queue and some of them are wakeup-enabled while others aren't.
+ (2) Some extra information is made available (file creation time, inode
+     version number and data version number) where provided by the underlying
+     filesystem.
 
-Clearly the appropriate changes will depend on the subsystem and the
-kind of event.  They may also end up depending on the platform; perhaps
-this will be used only on relatively small systems like an Android
-phone.
+     These are implemented here for Ext4 and AFS, but could also be provided
+     for CIFS, NTFS and BtrFS and probably others.
 
-Alan Stern
+ (3) The structure is versioned and extensible, meaning that further new system
+     calls shouldn't be required.
+
+Note that no lstat() equivalent is required as that can be implemented through
+xstat() with atflag == 0.
+
+
+The first patch makes const a bunch of system call userspace string/buffer
+arguments.  I can then make sys_xstat()'s filename pointer const too (though
+the entire first patch is not required for that).
+
+The second patch makes the AFS filesystem use i_generation for the vnode ID
+uniquifier rather than i_version, and assigns i_version to hold the AFS data
+version number, making them more logical for when I want to get at them from
+afs_getattr().
+
+
+There's a test program attached to the description for patch 3.  It can be run
+as follows:
+
+	[root@andromeda ~]# /tmp/xstat /afs/archive/linuxdev/fedora9/i386/repodata/
+	xstat(/afs/archive/linuxdev/fedora9/i386/repodata/) = 152
+	sv=0 qf=6 cr=0.0 iv=7a5 dv=5
+	  Size: 2048            Blocks: 0          IO Block: 4096   directory
+	Device: 00:13           Inode: 83          Links: 2
+	Access: (0755/drwxr-xr-x)  Uid: 75338   Gid: 0
+	Access: 2008-11-05 20:00:12.000000000+0000
+	Modify: 2008-11-05 20:00:12.000000000+0000
+	Change: 2008-11-05 20:00:12.000000000+0000
+	Inode version: 7a5h
+	Data version: 5h
+
+
+Things that need consideration:
+
+ (1) Is it worth retaining the ability to arbitrarily add extra bits onto the
+     end of the stat buffer?  And what's the best way to do this?
+
+     I've defined a way that from userspace involves assigning bits in
+     query_flags to extra results that you might want.  But this could instead
+     be done, say, by just upping the struct version number any time we want to
+     pass back more information.  Alternatively, we could go for a tagged data
+     method, perhaps using the same format as the recvmsg() control message
+     field.
+
+     If we use tagged data then rather than being selective, we could just
+     return as many tagged data items as we feel the user might want and we can
+     cram into the buffer.  That could be rather slow, though.
+
+ (2) What extra bits of information might we like to see available through the
+     stat interface?  Security labels?  NFS file IDs?  Xattrs?
+
+     If we went for a tagged data method, xstat() could be modified to take a
+     list of tags as an argument, and could then return arbitrarily-sized
+     tagged results, including fs-specific stuff.
+
+ (3) Does st_blksize really need to be 64 bits on a 64-bit system?  Or can it
+     be 32-bits?  Are we really likely to see something with a 4Gb+ blocksize?
+
+ (4) Should the inode number and data version number fields be 128-bit?
+
+David
+---
+
+David Howells (3):
+      Add a pair of system calls to make extended file stats available
+      AFS: Use i_generation not i_version for the vnode uniquifier
+      Mark arguments to certain syscalls as being const
+
+
+ arch/alpha/kernel/osf_sys.c             |    6 +
+ arch/alpha/kernel/process.c             |    2 
+ arch/arm/kernel/sys_arm.c               |    4 -
+ arch/arm/kernel/sys_oabi-compat.c       |    6 +
+ arch/avr32/include/asm/syscalls.h       |    2 
+ arch/avr32/kernel/process.c             |    3 -
+ arch/blackfin/kernel/process.c          |    2 
+ arch/frv/kernel/process.c               |    3 -
+ arch/h8300/kernel/process.c             |    2 
+ arch/ia64/include/asm/unistd.h          |    2 
+ arch/ia64/kernel/process.c              |    2 
+ arch/m32r/kernel/process.c              |    3 -
+ arch/m68k/kernel/process.c              |    2 
+ arch/m68knommu/kernel/process.c         |    2 
+ arch/microblaze/kernel/sys_microblaze.c |    2 
+ arch/mips/kernel/syscall.c              |    2 
+ arch/mn10300/kernel/process.c           |    2 
+ arch/parisc/hpux/fs.c                   |    7 +
+ arch/powerpc/kernel/process.c           |    2 
+ arch/powerpc/kernel/sys_ppc32.c         |    2 
+ arch/s390/kernel/compat_linux.c         |   10 +-
+ arch/s390/kernel/compat_linux.h         |   10 +-
+ arch/s390/kernel/entry.h                |    2 
+ arch/s390/kernel/process.c              |    2 
+ arch/sh/include/asm/syscalls_32.h       |    2 
+ arch/sh/include/asm/syscalls_64.h       |    2 
+ arch/sh/kernel/process_64.c             |    2 
+ arch/sparc/kernel/sys_sparc32.c         |    7 +
+ arch/um/kernel/exec.c                   |    6 +
+ arch/um/kernel/internal.h               |    2 
+ arch/um/kernel/syscall.c                |    2 
+ arch/x86/ia32/sys_ia32.c                |   14 +--
+ arch/x86/include/asm/sys_ia32.h         |   12 +-
+ arch/x86/include/asm/syscalls.h         |    2 
+ arch/x86/include/asm/unistd_32.h        |    4 +
+ arch/x86/include/asm/unistd_64.h        |    4 +
+ arch/x86/kernel/entry_64.S              |    4 -
+ arch/x86/kernel/process.c               |    2 
+ arch/xtensa/kernel/process.c            |    2 
+ fs/afs/dir.c                            |    8 +-
+ fs/afs/fsclient.c                       |    3 -
+ fs/afs/inode.c                          |   22 ++--
+ fs/compat.c                             |   23 +++--
+ fs/ext4/ext4.h                          |    2 
+ fs/ext4/file.c                          |    2 
+ fs/ext4/inode.c                         |   27 +++++
+ fs/ext4/namei.c                         |    2 
+ fs/ext4/symlink.c                       |    2 
+ fs/stat.c                               |  154 ++++++++++++++++++++++++++++---
+ fs/utimes.c                             |    7 +
+ include/linux/compat.h                  |    6 +
+ include/linux/fs.h                      |    6 +
+ include/linux/stat.h                    |   46 +++++++++
+ include/linux/syscalls.h                |   25 +++--
+ include/linux/time.h                    |    2 
+ 55 files changed, 353 insertions(+), 133 deletions(-)
 
