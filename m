@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab0F2XgZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 19:36:25 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:50566 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab0F2XgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 19:36:24 -0400
-Date: Tue, 29 Jun 2010 19:36:18 -0400
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-       linux-kernel@vger.kernel.org, davem@davemloft.net,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building
- code  out into drivers/of
-Message-ID: <20100629193618.5a840b8e@dev.queued.net>
-In-Reply-To: <AANLkTinPsrqxj5oQirEDRvVOuOeWgWSdljsMRbw8wn8V@mail.gmail.com>
-References: <20100628215407.2017bf2f@debian>
-	<20100628220037.5744c207@debian>
-	<AANLkTilN3_ntG7AWKi-8LM9X_dZJPPlWM6xRM_V_00xU@mail.gmail.com>
-	<20100629110324.2756cc02@debian>
-	<AANLkTinPsrqxj5oQirEDRvVOuOeWgWSdljsMRbw8wn8V@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.12.12; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755306Ab0F2Xll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 19:41:41 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41849 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404Ab0F2Xlk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 19:41:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fb+5BZlaBvaMZmAQ/NlVErqsbiC0OTU3am4UEqZyTpegXWP3BzfwW7uN6Ckbd4dTeB
+         Qpb8D2NPVdZdLnEBH9CChUBj7GqdXeOp2lGhijZX2pdiwt+oaHmGCFecppNY81tkseLJ
+         tEevr6c2BbCjK5MR2f+sWSSjjRqglxfIBTCQs=
+MIME-Version: 1.0
+In-Reply-To: <4C2A6921.1010405@codemonkey.ws>
+References: <AANLkTinl3ighc51F5V4YP7fuOSscAA_qcynYMtM5j5wk@mail.gmail.com>
+	<4C2A6921.1010405@codemonkey.ws>
+Date: Tue, 29 Jun 2010 19:41:38 -0400
+Message-ID: <AANLkTilmsaCdFN6Wjrea92hyj2V8WtcVmL49FFbztxDE@mail.gmail.com>
+Subject: Re: Hypervisor detection from within a Linux VM
+From: Chetan Loke <chetanloke@gmail.com>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010 15:42:54 -0600
-Grant Likely <grant.likely@secretlab.ca> wrote:
+On Tue, Jun 29, 2010 at 5:44 PM, Anthony Liguori <anthony@codemonkey.ws> wrote:
+> On 06/29/2010 04:25 PM, Chetan Loke wrote:
+> It can be done entirely in userspace.  Take a look at virt-what:
+>
+> http://people.redhat.com/~rjones/virt-what/
+>
 
-> On Tue, Jun 29, 2010 at 9:03 AM, Andres Salomon <dilinger@queued.net>
-> wrote:
-[...]
-> 
-> >  Sparc and OLPC have very similar
-> > mechanisms for getting device tree info from OFW, so it makes sense
-> > to share code between them.
-> 
-> Other than the flattened tree step; is the powerpc method dissimilar
-> from the Sparc and OLPC method for talking to OFW?  (This is not a
-> rhetorical question, I'm want to know if I'm missing some details).
-> The main difference I know about is that OFW can still kept alive at
-> runtime for sparc, which powerpc does not do.  However, keeping OFW
-> callable is a separate issue from how to extract the device tree.
-> 
+Just posted a patch for virt-what.in which can be used as a wrapper
+script. I will be using that for now.
 
-After having a look at powerpc's flatten_device_tree, I don't see any
-obvious reason why OLPC couldn't use this (though it still strikes me
-as weird to go from prom->fdt->dt when the option of prom->dt is
-available and less complex). Do you already have the patches that put
-this into drivers/of/?
+>> Question:
+>> Q1)Is it possible to get this functionality as part of the stock
+>> kernel or is that a bad idea? I suspect there could be other
+>> users/apps who would need to know what *nix hypervisor(or a
+>> non-virtualized environment) they are
+>> running on?
+>
+> It might be reasonable to list the hypervisor signature as a field in
+> /proc/cpuinfo.  There's also a /sys/hypervisor where such information could
+> go.
+>
+
+I like the idea of spitting out a signature under /proc/cpuinfo
+primarily because everyone is familiar with that node.
+
+> Regards,
+> Anthony Liguori
+
+Regards
+Chetan Loke
