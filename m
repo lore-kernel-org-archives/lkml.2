@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab0F2JRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 05:17:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58947 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752354Ab0F2JRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 05:17:30 -0400
-Message-ID: <4C29B948.8070304@cn.fujitsu.com>
-Date: Tue, 29 Jun 2010 17:13:44 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1754333Ab0F2JWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 05:22:12 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39126 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753845Ab0F2JWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 05:22:11 -0400
+Date: Tue, 29 Jun 2010 09:21:39 GMT
+From: tip-bot for Li Zefan <lizf@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       rostedt@goodmis.org, lizf@cn.fujitsu.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       lizf@cn.fujitsu.com, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <4BFA3746.8070100@cn.fujitsu.com>
+References: <4BFA3746.8070100@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: Use a global field list for all syscall exit events
+Message-ID: <tip-c9642c49aae1272d7c24008a40ae614470b957a6@git.kernel.org>
+Git-Commit-ID: c9642c49aae1272d7c24008a40ae614470b957a6
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 3/10] KVM: MMU: fix direct sp's access corruptted
-References: <4C2498EC.2010006@cn.fujitsu.com> <4C249BAD.6000609@cn.fujitsu.com> <4C287081.40300@redhat.com> <4C287332.5080803@cn.fujitsu.com> <4C2883D3.2050606@redhat.com> <4C2949A5.1070303@cn.fujitsu.com> <4C299B7E.5020303@redhat.com> <4C29A25C.7040900@cn.fujitsu.com> <4C29B390.80602@redhat.com> <4C29B700.8040502@cn.fujitsu.com> <4C29B93C.9010101@redhat.com>
-In-Reply-To: <4C29B93C.9010101@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 09:21:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  c9642c49aae1272d7c24008a40ae614470b957a6
+Gitweb:     http://git.kernel.org/tip/c9642c49aae1272d7c24008a40ae614470b957a6
+Author:     Li Zefan <lizf@cn.fujitsu.com>
+AuthorDate: Mon, 24 May 2010 16:22:30 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 28 Jun 2010 17:12:44 -0400
 
+tracing: Use a global field list for all syscall exit events
 
-Avi Kivity wrote:
-> On 06/29/2010 12:04 PM, Xiao Guangrong wrote:
->>
->>> Simply replace (*spte&  SPTE_NO_DIRTY) with a condition that checks
->>> whether sp->access is consistent with gw->pt(e)_access.
->>>
->>>      
->> If the guest mapping is writable and it !dirty, we mark SPTE_NO_DIRTY
->> flag in
->> the spte, when the next #PF occurs, we just need check this flag and
->> see whether
->> gpte's D bit is set, if it's true, we zap this spte and map to the
->> correct sp.
->>    
-> 
-> My point is, SPTE_NO_DIRTY is equivalent to an sp->role.access check
-> (the access check is a bit slower, but that shouldn't matter).
-> 
+All syscall exit events have the same fields.
 
-I see.
+The kernel size drops 2.5K:
 
-> 
->>> Can you write a test case for qemu-kvm.git/kvm/test that demonstrates
->>> the problem and the fix?  It will help ensure we don't regress in this
->>> area.
->>>
->>>      
->> OK, but allow me do it later :-)
->>
->>    
-> 
-> Sure, but please do it soon.
+   text    data     bss     dec     hex filename
+7018612 2034376 7251132 16304120         f8c7f8 vmlinux.o.orig
+7018612 2031888 7251132 16301632         f8be40 vmlinux.o
 
-Sure, i will do it as soon as possible.
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+LKML-Reference: <4BFA3746.8070100@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/syscalls.h      |    2 --
+ include/trace/syscall.h       |    1 -
+ kernel/trace/trace_syscalls.c |    7 ++++---
+ 3 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 7f614ce..7994bd4 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -165,7 +165,6 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 		.enter_event	= &event_enter_##sname,		\
+ 		.exit_event	= &event_exit_##sname,		\
+ 		.enter_fields	= LIST_HEAD_INIT(__syscall_meta_##sname.enter_fields), \
+-		.exit_fields	= LIST_HEAD_INIT(__syscall_meta_##sname.exit_fields), \
+ 	};
+ 
+ #define SYSCALL_DEFINE0(sname)					\
+@@ -180,7 +179,6 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 		.enter_event	= &event_enter__##sname,	\
+ 		.exit_event	= &event_exit__##sname,		\
+ 		.enter_fields	= LIST_HEAD_INIT(__syscall_meta__##sname.enter_fields), \
+-		.exit_fields	= LIST_HEAD_INIT(__syscall_meta__##sname.exit_fields), \
+ 	};							\
+ 	asmlinkage long sys_##sname(void)
+ #else
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index 257e089..31966a4 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -26,7 +26,6 @@ struct syscall_metadata {
+ 	const char	**types;
+ 	const char	**args;
+ 	struct list_head enter_fields;
+-	struct list_head exit_fields;
+ 
+ 	struct ftrace_event_call *enter_event;
+ 	struct ftrace_event_call *exit_event;
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 34e3580..bac752f 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -23,6 +23,9 @@ static int syscall_exit_register(struct ftrace_event_call *event,
+ static int syscall_enter_define_fields(struct ftrace_event_call *call);
+ static int syscall_exit_define_fields(struct ftrace_event_call *call);
+ 
++/* All syscall exit events have the same fields */
++static LIST_HEAD(syscall_exit_fields);
++
+ static struct list_head *
+ syscall_get_enter_fields(struct ftrace_event_call *call)
+ {
+@@ -34,9 +37,7 @@ syscall_get_enter_fields(struct ftrace_event_call *call)
+ static struct list_head *
+ syscall_get_exit_fields(struct ftrace_event_call *call)
+ {
+-	struct syscall_metadata *entry = call->data;
+-
+-	return &entry->exit_fields;
++	return &syscall_exit_fields;
+ }
+ 
+ struct trace_event_functions enter_syscall_print_funcs = {
