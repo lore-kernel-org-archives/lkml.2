@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab0F2Jdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 05:33:44 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54526 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754284Ab0F2Jdm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 05:33:42 -0400
-Date: Tue, 29 Jun 2010 10:36:50 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Veaceslav Falico <vfalico@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Oleg Nesterov <oleg@redhat.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Stefani Seibold <stefani@seibold.net>,
-       Thomas Gleixner <tglx@linutronix.de>, Eric Paris <eparis@redhat.com>,
-       James Morris <jmorris@namei.org>,
-       "Andrew G. Morgan" <morgan@kernel.org>,
-       Dhaval Giani <dhaval.giani@gmail.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>, Steve Grubb <sgrubb@redhat.com>,
-       Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2] sanitize task->comm to avoid leaking escape codes
-Message-ID: <20100629103650.3b80e09f@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100624190527.GD5917@outflux.net>
-References: <20100624190527.GD5917@outflux.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754789Ab0F2Jnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 05:43:50 -0400
+Received: from cantor.suse.de ([195.135.220.2]:42632 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754658Ab0F2Jns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 05:43:48 -0400
+Date: Tue, 29 Jun 2010 11:43:42 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: stable@kernel.org
+Cc: Krzysztof =?utf-8?Q?Ha=C5=82asa?= <khc@pm.waw.pl>,
+       Alan <alan@clueserver.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH for stable] kbuild: Fix modpost segfault
+Message-ID: <20100629094341.GA26045@sepie.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Through get_task_comm() and many direct uses of task->comm in the kernel,
-> it is possible for escape codes and other non-printables to leak into
-> dmesg, syslog, etc.  In the worst case, these strings could be used to
-> attack administrators using vulnerable terminal emulators, and at least
-> cause confusion through the injection of \r characters.
+Hi Greg,
 
-If an administrator has a vulnerable terminal emulator they have other
-problems.
+please add this to stable, it's a bug that started showing up with newer
+gcc. The upstream commit is 1c938663d58b5b2965976a6f54cc51b5d6f691aa.
 
-> This patch sanitizes task->comm to only contain printable characters
-> when it is set.  Additionally, it redefines get_task_comm so that it is
-> more obvious when misused by callers (presently nothing was incorrectly
-> calling get_task_comm's unsafe use of strncpy).
+Thanks,
+Michal
 
-This is a regression for tools that correctly handle unmutilated data.
+From: Krzysztof Halasa <khc@pm.waw.pl>
 
-> +	/* sanitize non-printable characters */
-> +	for (i = 0; buf[i] && i < (sizeof(tsk->comm) - 1); i++) {
-> +		if (!isprint(buf[i]))
-> +			tsk->comm[i] = '?';
+Alan <alan@clueserver.org> writes:
 
-The kernel "isprint" isn't adequate for this. comm is set by the shell
-based on argv[0] usually which means that in normal situations it is a
-UTF-8 string.
+> program: /home/alan/GitTrees/linux-2.6-mid-ref/scripts/mod/modpost -o
+> Module.symvers -S vmlinux.o
+>
+> Program received signal SIGSEGV, Segmentation fault.
 
-Please do any filtering you must in the yama security module where it
-only affects that. One way to approach it without losing data within the
-module might be to use HTML style encoding within Yama so your own tools
-can undo the 'sanitizing' rather than losing information ?
+It just hit me.
+It's the offset calculation in reloc_location() which overflows:
+        return (void *)elf->hdr + sechdrs[section].sh_offset +
+               (r->r_offset - sechdrs[section].sh_addr);
 
-Ideally you want to the dev/inode pair of the thing being executed
-printed as well - that will give real information for security purposes,
-while the ->comm data is much more convenient for general debugging and
-investigation than having to keep looking them up.
+E.g. for the first rodata r entry:
+r->r_offset < sechdrs[section].sh_addr
+and the expression in the parenthesis produces 0xFFFFFFE0 or something
+equally wise.
 
-Alan
+Reported-by: Alan <alan@clueserver.org>
+Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
+Tested-by: Alan <alan@clueserver.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+
+
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 3318692..f877900 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -1342,7 +1342,7 @@ static unsigned int *reloc_location(struct elf_info *elf,
+ 	int section = sechdr->sh_info;
+ 
+ 	return (void *)elf->hdr + sechdrs[section].sh_offset +
+-		(r->r_offset - sechdrs[section].sh_addr);
++		r->r_offset - sechdrs[section].sh_addr;
+ }
+ 
+ static int addend_386_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
