@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab0F2TpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 15:45:05 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62344 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467Ab0F2TpD (ORCPT
+	id S1755969Ab0F2TwH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 15:52:07 -0400
+Received: from n20.bullet.mail.mud.yahoo.com ([68.142.206.147]:48198 "HELO
+	n20.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755874Ab0F2TwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 15:45:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=YHG3yLtxpxo/MXJtDfBLpl+mSCJ9myEesREGFNCwvY+4FRmaVcc2B4Dw3ZtJslTXgL
-         7BbCeIAR9fp6j9XsuTKXPo8h5EiNzBPpvfBpKZQtAYuPTqUpwr6HZm0Lm3hAmSkZnnE8
-         UNJ9GV+7Rd5u+g3J4C0tUhBZhnr7uk9VDmhhA=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]kernel.h Fix #warning message web address.
-Date: Tue, 29 Jun 2010 12:37:24 -0700
-Message-Id: <1277840244-3436-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
+	Tue, 29 Jun 2010 15:52:05 -0400
+X-Yahoo-Newman-Id: 491991.55211.bm@omp414.mail.mud.yahoo.com
+Cc: recipient list not shown:;
+Message-ID: <318237.43139.qm@smtp114.plus.mail.mud.yahoo.com>
+X-Yahoo-SMTP: fHqlUCuswBD8eaFzbliKzcFMg5GeY3Y.2ktnNVB8NYAuMn_HdkeB1LYR
+X-YMail-OSG: u7CzLeMVM1nEpNZ.wbMjKnPmmTZBBzRTl7WbEloyz40AwEV
+ tgzq.2zeWDmFpvTtcvUDq0ltoNvT5v0E3WMdftB_u.PMmNL8fsJZ1De_e46s
+ MmWMcPMRdkChWkmv30Lwx2yJbz8EYnlY__0yEqF.bJgCSipfNsJ1nseRS0gh
+ EzauOa0R.rcv_Jy2bVFvxN3JP3XHamYaHjkrtszIlNd2Reeujv2wIAZBck3p
+ Nktd0yBwEwI1GTkHQgDv2K3NX9V3arw--
+X-Yahoo-Newman-Property: ymail-3
+Reply-To: <dr_teddyalafia_sa@cc.tc>
+From: "Dr.Teddy Alafia." <westgruopsplcuk01@verizon.net>
+Subject: Attention/ Promptly.
+Date: Tue, 29 Jun 2010 08:53:10 -0700
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1081
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Playing around with a printk program I noticed that the #warning
-message is incomplete(when using kernel headers for userspace):
-
- gcc printk.c -o printk
-In file included from printk.c:3:
-include/linux/kernel.h:733:2: warning: #warning Attempt to use kernel headers from user space, see http:
-
-My guess for the web address not being displayed is "//" is treated as a comment.
-So after changing "http://" to "www." I get the web address.(using firefox with this
-address takes me right to the location). The warning looks like this:
-
-In file included from printk.c:3:
-warning: #warning Attempt to use kernel headers from user space, see www.kernelnewbies.org/KernelHeaders 
+Top of the day.
  
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Please do not misconceive this mail for spam.
+It is a genuine mail from Dr.Teddy Alafia, special Assistant to the Minister of Agriculture.
 
----
- include/linux/kernel.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+We have a very workable Investment fund for an establishment in your country, Can you assist us to actualize it?
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 8317ec4..768196a 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -730,7 +730,7 @@ extern int do_sysinfo(struct sysinfo *info);
- 
- #ifndef __EXPORTED_HEADERS__
- #ifndef __KERNEL__
--#warning Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders
-+#warning Attempt to use kernel headers from user space, see www.kernelnewbies.org/KernelHeaders
- #endif /* __KERNEL__ */
- #endif /* __EXPORTED_HEADERS__ */
- 
--- 
-1.6.5.2.180.gc5b3e
+It is a life business and I can assure you that No risk involved.
+
+Note. You present job or position does not matter in this meaningful/ bi-lateral Relationship.
+
+Reply promptly to enable your details and meeting face to face.
+
+Yours Truly,
+
+Dr Teddy Alafia.
+Special Assistant.
 
