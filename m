@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab0F2CG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 22:06:56 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:30004 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279Ab0F2CGy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 22:06:54 -0400
-Date: Mon, 28 Jun 2010 19:04:20 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1752949Ab0F2CVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 22:21:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39435 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752344Ab0F2CVO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 22:21:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100629015822.GD24343@mail.oracle.com>
+References: <20100628173529.GA10573@mail.oracle.com>
+	<20100629002421.GY6590@dastard>
+	<20100629005403.GC24343@mail.oracle.com>
+	<AANLkTil1R9I94pVXLE50JAMPIwpiaZuroJAg4wcwyBUb@mail.gmail.com>
+	<20100629015822.GD24343@mail.oracle.com>
+Date: Mon, 28 Jun 2010 19:20:33 -0700
+Message-ID: <AANLkTil5y7F9w-18mVi0G1S5pSv9MiKq6XL5MWAMFBQM@mail.gmail.com>
+Subject: Re: [Ocfs2-devel] [PATCH] Revert "writeback: limit write_cache_pages 
+	integrity scanning to current EOF"
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       Dave Chinner <david@fromorbit.com>,
        Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
        Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
        Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [PATCH] Revert "writeback: limit write_cache_pages integrity
- scanning to current EOF"
-Message-ID: <20100629020420.GE24343@mail.oracle.com>
-Mail-Followup-To: Dave Chinner <david@fromorbit.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	ocfs2-devel@oss.oracle.com, Tao Ma <tao.ma@oracle.com>,
-	Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-	Mark Fasheh <mfasheh@suse.com>
-References: <20100628173529.GA10573@mail.oracle.com>
- <20100629002421.GY6590@dastard>
- <20100629005403.GC24343@mail.oracle.com>
- <20100629015615.GZ6590@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100629015615.GZ6590@dastard>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C295500.01E5:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 11:56:15AM +1000, Dave Chinner wrote:
-> > 	Regarding XFS, how do you handle catching the tail of an
-> > allocation with an lseek(2)'d write?  That is, your current allocation
-> > has a few blocks outside of i_size, then I lseek(2) a gigabyte past EOF
-> > and write there.  The code has to recognize to zero around old_i_size
-> > before moving out to new_i_size, right?  I think that's where our old
-> > approaches had problems.
-> 
-> xfs_file_aio_write() handles both those cases for us via
-> xfs_zero_eof().  What it does is map the region from the old EOF to
-> the start of the new write and zeroes any allocated blocks that are
-> not marked unwritten that lie within the range. It does this via the
-> internal mapping interface because we hide allocated blocks past EOF
-> from the page cache and higher layers.
+On Mon, Jun 28, 2010 at 6:58 PM, Joel Becker <Joel.Becker@oracle.com> wrote:
+>
+>        Well, shit.  Something has changed in here, or we're really
+> really (un)lucky.  We visited this code a year ago or so when we had
+> serious zeroing problems, and we tested the hell out of it.  Now it is
+> broken again.  And it sure looks like that block_write_full_page() check
+> has been there since before git.
 
-	Makes sense as an approach.  We deliberately do this through the
-page cache to take advantage of its I/O patterns and tie in with JBD2.
-Also, we don't feel like maintaining an entire shadow page cache ;-)
+Hmm. I'm actually starting to worry that we should do the revert after all.
 
-Joel
+Why? Locking. That page-writeback.c thing decides to limit the end to
+the inode size the same way that block_write_full_page() does, but
+block_write_full_page() holds the page lock, while page-writeback.c
+does not. Which means that as a race against somebody else doing a
+truncate(), the two things really are pretty different.
 
--- 
+That said, write_cache_pages() obviously doesn't actually invalidate
+the page (the way block_write_full_page() does), so locking matters a
+whole lot less for it. If somebody is doing a concurrent truncate or a
+concurrent write, then for the data to really show up reliably on disk
+there would obviously have to be a separate sync operation involved,
+so even with the lack of any locking, it should be safe.
 
-Life's Little Instruction Book #356
+I dunno. Filesystem corruption makes me nervous. So I'm certainly
+totally willing to do the revert if that makes ocfs2 work again. Even
+if "work again" happens to be partly by mistake, and for some reason
+that isn't obvious.
 
-	"Be there when people need you."
+Your call, I guess.  If any ocfs2 fix looks scary, and you'd prefer to
+have an -rc4 (in a few days - not today) with just the revert, I'm ok
+with that. Even if it's only a "at least no worse than 2.6.34"
+situation rather than a real fix.
 
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+                 Linus
