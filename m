@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab0F2H5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 03:57:37 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42696 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab0F2H5f (ORCPT
+	id S1754210Ab0F2IA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 04:00:57 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:48097 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751069Ab0F2IAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 03:57:35 -0400
-Date: Tue, 29 Jun 2010 03:57:34 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Alex Elder <aelder@sgi.com>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/15] xfs: minimize DMAPI footprint
-Message-ID: <20100629075734.GA31118@infradead.org>
-References: <1277762653.2040.554.camel@doink>
+	Tue, 29 Jun 2010 04:00:55 -0400
+Message-ID: <4C29A833.1060704@panasas.com>
+Date: Tue, 29 Jun 2010 11:00:51 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277762653.2040.554.camel@doink>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: James Bottomley <James.Bottomley@suse.de>,
+       Mike Snitzer <snitzer@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, linux-scsi@vger.kernel.org,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
+ payload
+References: <20100622180029.GA15950@redhat.com>	<1277582211-10725-1-git-send-email-snitzer@redhat.com>	<1277652576.4366.19.camel@mulgrave.site> <yq1sk47dqmd.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1sk47dqmd.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Jun 2010 08:00:54.0485 (UTC) FILETIME=[32FC4050:01CB1761]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> SGI has a product that uses the DMAPI support code that's
-> included in mainline XFS, along with some additional code
-> (the "never merged" stuff Christoph refers to) that we
-> maintain separately.  To our customers that need it, this
-> is an extremely important feature.
+On 06/28/2010 08:16 PM, Martin K. Petersen wrote:
+> I'm still dreaming of the day where libata moves out from under SCSI so
+> we don't have to translate square pegs into round holes...
+> 
 
-So why don't you bother to get HSM support upstream properly,
-or at least maintain it somewhere where you can get at it?
-What sourcxe tree do those important customers use it?
+Hi Martin.
 
-> What follows is a set of patches that I think accomplishes
-> these goals.  The net result of these changes is:
+Is that on the Radar still? what would you say are the major issues holding
+it back?
 
-While this is a lot better than the old DMAPI supoort, it's still
-lots of dead code in the mainline tree, that won't ever be used
-there, as proper HSM suport if it ever was merged would sit at
-the VFS layer.
+* Is it just the missing new ULD, Will we be using a new ULD?
+* Is it the ata midlayer that would duplicate some of scsi-midlayer.
+  (Not so much these days, lots of good code went into blk_rq_)
+* Is it the distro's setup procedures changing yet again back to the
+  hd vs sd times.
 
-In addition to that the people who effectively maintain XFS for both
-the community and lots of paying customers have done a large amount
-of work ontop of the DMAPI removal of the last 1 1/2 month.  So I'd
-say rebase your changes over
-
-	http://git.kernel.org/?p=linux/kernel/git/dgc/xfsdev.git;a=shortlog;h=refs/heads/for-2.6.36
-
-and keep them in a separate branch dmapi-dev branch where SGI can pull
-the code for it's customers from.  This branch could also include the
-actual dmapi code and core kernel modifications, so that people that
-want dmapi support actually have chance to find a complete kernel tree
-for it.  I'd also hope you have fixed grave bugs like the oops on
-unmount after multiple mount one I pointed out to SGI about two years
-ago, but which still wasn't fixed inthe last dmapi enabled tree.
-
+Thanks
+Boaz
