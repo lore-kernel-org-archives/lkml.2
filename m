@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab0F2QlA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 12:41:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3418 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932138Ab0F2Qkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 12:40:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,505,1272870000"; 
-   d="scan'208";a="581111801"
-Message-ID: <4C2A220B.8080006@linux.intel.com>
-Date: Tue, 29 Jun 2010 09:40:43 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S932193Ab0F2QlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 12:41:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41308 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932124Ab0F2QlR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 12:41:17 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
-       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
-       akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, oleg@redhat.com,
-       axboe@kernel.dk, dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de,
-       florian@mickler.org, andi@firstfloor.org, mst@redhat.com,
-       randy.dunlap@oracle.com, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 34/35] async: use workqueue for worker pool
-References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org>
-In-Reply-To: <4C2A176F.1090101@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100629084230.GE6215@tiehlicka.suse.cz>
+References: <20100623091307.GA11072@tiehlicka.suse.cz>
+	<4C2417AA.4030306@us.ibm.com>
+	<20100625082711.GA32765@tiehlicka.suse.cz>
+	<4C24ED34.9040808@us.ibm.com>
+	<4C253D32.6040304@us.ibm.com>
+	<20100628144246.GA14201@tiehlicka.suse.cz>
+	<20100628153214.GA24127@tiehlicka.suse.cz>
+	<20100628155845.GC24127@tiehlicka.suse.cz>
+	<20100628163952.GD24127@tiehlicka.suse.cz>
+	<1277743748.3561.139.camel@laptop>
+	<20100629084230.GE6215@tiehlicka.suse.cz>
+Date: Tue, 29 Jun 2010 09:41:02 -0700
+Message-ID: <AANLkTinyoyZVg8iYOuUx6aA4XlUlLywl4q6GLXmeYP-x@mail.gmail.com>
+Subject: Re: [PATCH] futex: futex_find_get_task make credentials check 
+	conditional
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Ingo Molnar <mingo@elte.hu>, Darren Hart <dvhltc@us.ibm.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/29/2010 8:55 AM, Tejun Heo wrote:
-> Hello,
+On Tue, Jun 29, 2010 at 1:42 AM, Michal Hocko <mhocko@suse.cz> wrote:
 >
-> On 06/29/2010 05:52 PM, Frederic Weisbecker wrote:
->    
->>>> If there is a question of slow ports to probe, then cmwq wouldn't seem the
->>>> right thing here, as it only forks when we go to sleep.
->>>>          
->>> I lost you here.  If something during boot has to burn cpu cycles
->>> (which it shouldn't, really), it has to burn cpu cycles and having
->>> multiple concurent threads won't help anything.
->>>        
->> It would on SMP.
->>      
-> Oh, I see.  Parallel cpu hogs.  We don't have such users for async and
-> I think using padata would be the right solution for those situations.
->    
+> futex_find_get_task is currently used (through lookup_pi_state) from two
+> contexts, futex_requeue and futex_lock_pi_atomic. While credentials check
+> makes sense in the first code path, the second one is more problematic
+> because this check requires that the PI lock holder (pid parameter) has
+> the same uid and euid as the process's euid which is trying to lock the
+> same futex (current).
 
-uh? clearly the assumption is that if I have a 16 CPU machine, and 12 
-items of work get scheduled,
-that we get all 12 running in parallel. All the smarts of cmwq surely 
-only kick in once you've reached the
-"one work item per cpu" threshold ???
+So exactly why does it make sense to check the credentials in the
+first code path then? Shouldn't the futex issue in the end depend on
+whether you have a shared page or not - and not on credentials at all?
+Any two processes that share a futex in the same shared page should be
+able to use that without any regard for whether they are the same
+user. That's kind of the point, no?
+
+IOW, I personally dislike these kinds of conditional checks,
+especially since the discussion (at least the part I've seen) hasn't
+made it clear why it should be conditional - or exist - in the first
+place.
+
+So I'd like the patch to include an explanation of exactly why the two
+cases are different.
+
+The other thing I'd like to see is to move the whole cred checking up
+a level. There's no reason to check the credentials in
+futex_find_get_task() that I can see - why not do it in the caller
+instead? IOW, I think futex_find_get_task() should just look something
+like this instead:
 
 
+  static struct task_struct * futex_find_get_task(pid_t pid)
+  {
+        struct task_struct *p;
+
+        rcu_read_lock();
+        p = find_task_by_vpid(pid);
+        if (p)
+                get_task_struct(p);
+        rcu_read_unlock();
+
+        return p;
+  }
+
+and then in the caller we'd do something like
+
+      p = futex_find_get_task(pid);
+      if (!p)
+         return -ESEARCH;
+
+      if ( .. check p credentials is necessary and fails..)
+         goto put_task_and_exit;
+
+because especially with not everybody needing the credentials check, I
+do not think it should be done at the lowest level (it's clearly not
+fundamental to the operation, so it shouldn't be part of the core
+lookup).
+
+With some re-factoring, it might even be possible to avoid a dynamic
+check at all, and just have two different static paths for the two
+cases. That's a separate issue, though.
+
+                  Linus
