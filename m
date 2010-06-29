@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab0F2Qm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 12:42:56 -0400
-Received: from office.altell.ru ([80.246.246.162]:27917 "EHLO office.altell.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755786Ab0F2Qmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 12:42:55 -0400
-Date: Tue, 29 Jun 2010 20:42:47 +0400
-From: Dan Kruchinin <kruchinin@altell.ru>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [PATCH 0/2] padata: Separate cpumasks for cb_cpus and parallel
- workers
-Message-ID: <20100629204247.392855dc@leibniz>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S932187Ab0F2QtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 12:49:13 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34222 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755786Ab0F2QtL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 12:49:11 -0400
+Subject: Re: 2.6.35-rc3 regression: IBM Maia system is unbootable [ACPI
+ related?]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+In-Reply-To: <alpine.LFD.2.00.1006282346320.16755@localhost.localdomain>
+References: <1277136189.10998.63.camel@mulgrave.site>
+	 <87pqzkqrzq.fsf@basil.nowhere.org>
+	 <1277138034.10998.69.camel@mulgrave.site>
+	 <1277139286.10998.72.camel@mulgrave.site>
+	 <1277141166.10998.79.camel@mulgrave.site>
+	 <alpine.LFD.2.00.1006282346320.16755@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Jun 2010 11:49:08 -0500
+Message-ID: <1277830148.4379.14.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
-X-Altell-MailScanner-ID: B4D0D53E6.99532
-X-Altell-MailScanner: Found to be clean
-X-Altell-MailScanner-From: kruchinin@altell.ru
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, 2010-06-28 at 23:49 -0400, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
+> Subject: [PATCH] ACPI: handle systems which asynchoronously enable ACPI mode
+> 
+> Folklore suggested that such systems existed
+> in the pre-history of ACPI.
+> 
+> However, we removed the SCI_EN polling loop from
+> acpi_hw_set_mode() in b430acbd7c4b919886fa7fd92eeb7a695f1940d3
+> because it delayed resume by 3 seconds on boxes
+> that refused to set SCI_EN.
+> 
+> Matthew removed the call to acpi_enable() from
+> the suspend resume path.
+> 
+> James found a modern system that still needs to be polled
+> upon boot.
+> 
+> So here we restore the workaround, except that we
+> put it in acpi_enable() rather than the low level
+> acpi_hw_set_mode().
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=16271
+> 
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> ---
+> 
+> James, What does the IBM system see with this patch?
 
-The main point of my patches is to make two separate cpumasks. One for
-parallel and another for serial workers(callback cpus). It'll perform to
-bind non-intersecting groups of CPUs for serial and parallel workers and
-do more thin tuning of padata subsystem.
+The output is this:
 
-My tests shows that proper configuration of serial and parallel cpu
-masks gives a bit better performance. For example (aes-asm,
-sha1-generic. Two 16-core machines):
-1) 1 point-to-point connection:
-Non-modified padata gives ~650Mbit of TCP and ~780Mbit of UDP
-When I exclude callback CPUs from parallel cpumask padata gives
-~750Mbit of TCP and ~900Mbit of UDP.
-2) 2 IPSEC tunnels between 16-core machines and 4 clients
-communicating via tunnels with each-other
-Non-modified padata gives ~1.5Gbit of UDP
-padata with non-intersecting cpumasks for parallel and serial workers
-gives ~1.8Gbit
+[    0.084088] ACPI: Core revision 20100428
+[    0.119451] ACPI Warning: Platform took > 100 usec to enter ACPI mode (20100428/evxfevnt-106)
+[    0.128231] Setting APIC routing to physical flat
 
-Besides the performance growth, there may be situations when serial job
-takes a lot of time. For example if I add several dozens of firewall
-rules, serial worker will work slower and padata_do_parallel will
-continue to enqueue requests into the queue of CPU serial worker
-executes on.
-It may significantly slow down parallelization and reordering because
-one CPU(that is shared by both parallel and serial workers) will always
-have more requests in its parallel queue than others CPUs(because
-serialization takes a lot of time). In such cases user may exclude
-callback CPUs from cpumask for parallel workers.
+So it's very fast ... actually it's behaving like there's some caching
+issue and it needs two reads to return the correct value
 
--- 
-W.B.R.
-Dan Kruchinin
+James
+
+
