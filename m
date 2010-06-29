@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab0F2Pde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 11:33:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35130 "EHLO mga09.intel.com"
+	id S1756076Ab0F2PeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 11:34:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39186 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753731Ab0F2Pdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 11:33:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,505,1272870000"; 
-   d="scan'208";a="634699076"
-Date: Tue, 29 Jun 2010 17:33:27 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Rabin VINCENT <rabin.vincent@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       "l.fu@pengutronix.de" <l.fu@pengutronix.de>
-Subject: Re: [PATCHv2 1/3] mfd: add STMPE I/O Expander support
-Message-ID: <20100629153326.GA4752@sortiz-mobl>
-References: <20100621154514.GA416@pengutronix.de>
- <1277214929-32240-1-git-send-email-rabin.vincent@stericsson.com>
- <20100627235515.GB9264@sortiz-mobl>
- <20100629031324.GA6430@bnru02.bnr.st.com>
+	id S1753912Ab0F2PeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 11:34:16 -0400
+Message-ID: <4C2A125B.4050504@zytor.com>
+Date: Tue, 29 Jun 2010 08:33:47 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100629031324.GA6430@bnru02.bnr.st.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ingo Molnar <mingo@elte.hu>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+       hpa@linux.intel.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/alternatives] x86, alternatives: Use 16-bit numbers
+ for cpufeature index
+References: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org> <tip-5dc71d49a7c209b77cd257049a2cdb99ed1008c0@git.kernel.org> <20100629091535.GA28302@elte.hu>
+In-Reply-To: <20100629091535.GA28302@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rabin,
-
-On Tue, Jun 29, 2010 at 08:43:26AM +0530, Rabin VINCENT wrote:
-> Hi Samuel,
+On 06/29/2010 02:15 AM, Ingo Molnar wrote:
 > 
-> On Mon, Jun 28, 2010 at 01:55:16 +0200, Samuel Ortiz wrote:
-> > On Tue, Jun 22, 2010 at 07:25:27PM +0530, Rabin Vincent wrote:
-> > > +int stmpe_reg_read(struct stmpe *stmpe, u8 reg)
-> > > +{
-> > > +	int ret;
-> > > +
-> > > +	ret = i2c_smbus_read_byte_data(stmpe->i2c, reg);
-> > > +	if (ret < 0)
-> > > +		dev_err(stmpe->dev, "failed to read reg %#x: %d\n",
-> > > +			reg, ret);
-> > > +
-> > > +	dev_vdbg(stmpe->dev, "rd: reg %#x => data %#x\n", reg, ret);
-> > > +
-> > > +	return ret;
-> > > +}
-> > > +EXPORT_SYMBOL(stmpe_reg_read);
-> > I think your locking is broken here.
-> > If your exporting this routine (and the next ones below), you'd better make
-> > sure you're under stmpe->lock for the stmpe register concurrent access.
+> Hm, this patch is causing trouble in -tip testing again - it's triggering a 
+> colorful boot crash:
 > 
-> stmpe_reg_read() and stmpe_reg_write() are just a call to one
-> i2c_smbus_* function, and the I2C core takes a bus_lock internally
-> preventing concurrent accesses.
+> [    2.220002] calling  inet_init+0x0/0x23d @ 1
+> [    2.223343] NET: Registered protocol family 2
+> [    2.226727] IP route cache hash table entries: 32768 (order: 6, 262144 bytes)
+> [    2.233492] ------------[ cut here ]------------
+> [    2.236671] WARNING: at mm/vmalloc.c:107 vmap_page_range_noflush+0x309/0x3a0()
+> [    2.240001] Modules linked in:
+> ...
+> [    3.090002] Kernel panic - not syncing: Failed to allocate TCP established hash table
 > 
-> The only place where the I2C core locking is not sufficient is the
-> read/modify/write sequence, and we provide stmpe_set_bits() for that,
-> which takes a lock.  If someone uses reg_read()/reg_write() sequences on
-> registers where they should be using set_bits(), adding extra locking in
-> reg_read()/reg_write() will not provide any additional safeguard.
+> So i've zapped them again. We really need to get to the bottom of this. Config 
+> and bootlog attached.
 > 
-> The same scheme is used by adp5520.
+> The crash looks very weird - and it's consistent with possible effects of some 
+> sort of code patching failure/mismatch.
 > 
-> Could you please explain why more locking is needed?
-Without the extra locking, there's nothing preventing me from writing to a
-register while you're in the middle of a stmpe_set_bits() call.
-
-> > > +/**
-> > > + * stmpe_block_write() - write multiple stmpe registers
-> > > + * @stmpe:	device to write to
-> > > + * @reg:	first register
-> > > + * @length:	number of registers
-> > > + * @values:	values to write
-> > > + */
-> > > +int stmpe_block_write(struct stmpe *stmpe, u8 reg, u8 length,
-> > > +			const u8 *values)
-> > > +{
-> > > +	int ret;
-> > > +
-> > > +	dev_vdbg(stmpe->dev, "wr: regs %#x (%d)\n", reg, length);
-> > > +#ifdef VERBOSE_DEBUG
-> > > +	print_hex_dump_bytes("stmpe wr: ", dump_prefix_offset, values, length);
-> > > +#endif
-> > I don't really enjoy this part for 2 reasons:
-> > - You should use a less generic ifdef switch, prefixed with STMPE_ for
-> > example.
+> It goes away if i revert these two:
 > 
-> The dev_vdbg() in the previous line is activated via VERBOSE_DEBUG, so
-> the idea was to have this dump use the same config.  
-Ah, I didnt realize VERBOSE_DEBUG was defined from device.h. Should have
-grepped for it in your patch, sorry.
-I would still like it to be part of your header file though.
+>  a3d2d12: x86, alternatives: correct obsolete use of "u8" in static_cpu_has()
+>  5dc71d4: x86, alternatives: Use 16-bit numbers for cpufeature index
+> 
+> I reproduced the crash twice before testing the revert.
+> 
 
-> I'll fix it as your recommended, though.  Will fix your other comments too.
-Thanks in advance.
+Hi Ingo,
 
-Cheers,
-Samuel.
+I'm pretty sure that these are related to gcc and/or binutils
+differences, so it would be nice to get the .o and .s files of the
+failing locations (in this case mm/vmalloc.[so]) *as built on the
+failing machines*.
 
-
-> Rabin
+	-hpa
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
