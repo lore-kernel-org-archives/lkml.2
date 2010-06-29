@@ -1,209 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab0F2O4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 10:56:39 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:43268 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756327Ab0F2O4g (ORCPT
+	id S1756320Ab0F2O6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 10:58:10 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:57121 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756274Ab0F2O6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 10:56:36 -0400
-Message-ID: <4C2A0986.1000807@us.ibm.com>
-Date: Tue, 29 Jun 2010 07:56:06 -0700
-From: Darren Hart <dvhltc@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	Tue, 29 Jun 2010 10:58:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jvDOUsSxLrvG0x/z9z296S2BgEig2zE42mauXCqLzi7rzS0Ak2ICMZsSwB9kFE6wzg
+         mItQl4vy6e3WomIt8U7rtmzV2dEyupeUTGBDdWzEYG1o732nT5AUfiWyQNkvGAHEABcz
+         MRJZK51UoG09wAkLus4HaN0VxmJpNQlOILCY4=
+Date: Tue, 29 Jun 2010 16:58:11 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 09/11] perf: Default PMU ops
+Message-ID: <20100629145806.GE5318@nowhere>
+References: <20100624142804.431553874@chello.nl> <20100624143406.993794468@chello.nl>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] futex: futex_find_get_task make credentials check conditional
-References: <20100623091307.GA11072@tiehlicka.suse.cz> <4C2417AA.4030306@us.ibm.com> <20100625082711.GA32765@tiehlicka.suse.cz> <4C24ED34.9040808@us.ibm.com> <4C253D32.6040304@us.ibm.com> <20100628144246.GA14201@tiehlicka.suse.cz> <20100628153214.GA24127@tiehlicka.suse.cz> <20100628155845.GC24127@tiehlicka.suse.cz> <20100628163952.GD24127@tiehlicka.suse.cz> <1277743748.3561.139.camel@laptop> <20100629084230.GE6215@tiehlicka.suse.cz>
-In-Reply-To: <20100629084230.GE6215@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100624143406.993794468@chello.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2010 01:42 AM, Michal Hocko wrote:
-> On Mon 28-06-10 18:49:08, Peter Zijlstra wrote:
->> On Mon, 2010-06-28 at 18:39 +0200, Michal Hocko wrote:
->>> Would something like the following be acceptable (just a compile
->>> tested without comments). It simply makes caller of lookup_pi_state to
->>> decide whether credentials should be checked.
->>
->> So it was Ingo, who in c87e2837be8 (pi-futex:
->> futex_lock_pi/futex_unlock_pi support) introduced the euid checks:
->>
->> +futex_find_get_task():
->> +       if ((current->euid != p->euid)&&  (current->euid != p->uid)) {
->> +               p = NULL;
->> +               goto out_unlock;
->> +       }
->>
->> Ingo, do you remember the rationale behind that? It seems to be causing
->> grief when two different users contend on the same (shared) futex.
->>
->> See the below proposed solution.
->
-> Here is the patch with comments and rationale:
-> (reference to the original discussion: http://lkml.org/lkml/2010/6/23/52)
->
-> --
->  From f477a6d989dfde11c5bb5f28d5ce21d0682f4e25 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko<mhocko@suse.cz>
-> Date: Tue, 29 Jun 2010 10:02:58 +0200
-> Subject: [PATCH] futex: futex_find_get_task make credentials check conditional
->
-> futex_find_get_task is currently used (through lookup_pi_state) from two
-> contexts, futex_requeue and futex_lock_pi_atomic. While credentials check
-> makes sense in the first code path, the second one is more problematic
-> because this check requires that the PI lock holder (pid parameter) has
-> the same uid and euid as the process's euid which is trying to lock the
-> same futex (current).
->
-> This results in glibc assert failure or process hang (if glibc is
-> compiled without assert support) for shared robust pthread mutex with
-> priority inheritance if a process tries to lock already held lock owned
-> by a process with a different euid:
->
-> pthread_mutex_lock.c:312: __pthread_mutex_lock_full: Assertion `(-(e)) != 3 || !robust' failed.
->
-> The problem is that futex_lock_pi_atomic which is called when we try to
-> lock already held lock checks the current holder (tid is stored in the
-> futex value) to get the PI state. It uses lookup_pi_state which in turn
-> gets task struct from futex_find_get_task. ESRCH is returned either when
-> the task is not found or if credentials check fails.
-> futex_lock_pi_atomic simply returns if it gets ESRCH. glibc code,
-> however,  doesn't expect that robust lock returns with ESRCH because it
-> should get either success or owner died.
->
-> Let's make credentials check conditional (as a new parameter) in
-> futex_find_get_task. Then we can prevent from check in the pi lock path
-> and still preserve it in the futex_requeue path.
->
-
-
-Hi Michal,
-
-All the above is accurate, however I think it emphasizes glibc's 
-expectations when the core of the issue is that shared PI futexes don't 
-work across processes with different uid's.
-
-It seems like most users of shared futexes do so from the same uid, 
-however I can think of situations where it would be useful to use them 
-from different uid's. Since shared futexes key on their physical 
-address, their shouldn't be any security issues with allowing different 
-uids.
-
-
-> Signed-off-by: Michal Hocko<mhocko@suse.cz>
+On Thu, Jun 24, 2010 at 04:28:13PM +0200, Peter Zijlstra wrote:
+> Provide default implementations for the pmu txn methods, this allows
+> us to remove some conditional code.
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 > ---
->   kernel/futex.c |   24 +++++++++++++++---------
->   1 files changed, 15 insertions(+), 9 deletions(-)
->
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index e7a35f1..79b69e5 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -425,8 +425,9 @@ static void free_pi_state(struct futex_pi_state *pi_state)
->   /*
->    * Look up the task based on what TID userspace gave us.
->    * We dont trust it.
-> + * Check the credentials if required by check_cred
+>  kernel/perf_event.c |   48 ++++++++++++++++++++++++++++++++++++------------
+>  1 file changed, 36 insertions(+), 12 deletions(-)
+> 
+> Index: linux-2.6/kernel/perf_event.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/perf_event.c
+> +++ linux-2.6/kernel/perf_event.c
+> @@ -656,21 +656,14 @@ group_sched_in(struct perf_event *group_
+>  {
+>  	struct perf_event *event, *partial_group = NULL;
+>  	struct pmu *pmu = group_event->pmu;
+> -	bool txn = false;
+>  
+>  	if (group_event->state == PERF_EVENT_STATE_OFF)
+>  		return 0;
+>  
+> -	/* Check if group transaction availabe */
+> -	if (pmu->start_txn)
+> -		txn = true;
+> -
+> -	if (txn)
+> -		pmu->start_txn(pmu);
+> +	pmu->start_txn(pmu);
+>  
+>  	if (event_sched_in(group_event, cpuctx, ctx)) {
+> -		if (txn)
+> -			pmu->cancel_txn(pmu);
+> +		pmu->cancel_txn(pmu);
+>  		return -EAGAIN;
+>  	}
+>  
+> @@ -684,7 +677,7 @@ group_sched_in(struct perf_event *group_
+>  		}
+>  	}
+>  
+> -	if (!txn || !pmu->commit_txn(pmu))
+> +	if (!pmu->commit_txn(pmu))
+>  		return 0;
+>  
+>  group_error:
+> @@ -699,8 +692,7 @@ group_error:
+>  	}
+>  	event_sched_out(group_event, cpuctx, ctx);
+>  
+> -	if (txn)
+> -		pmu->cancel_txn(pmu);
+> +	pmu->cancel_txn(pmu);
+>  
+>  	return -EAGAIN;
+>  }
+> @@ -4755,6 +4747,26 @@ static struct list_head pmus;
+>  static DEFINE_MUTEX(pmus_lock);
+>  static struct srcu_struct pmus_srcu;
+>  
+> +static void perf_pmu_nop(struct pmu *pmu)
+> +{
+> +}
+> +
+> +static void perf_pmu_start_txn(struct pmu *pmu)
+> +{
+> +	perf_pmu_disable(pmu);
+> +}
+> +
+> +static int perf_pmu_commit_txn(struct pmu *pmu)
+> +{
+> +	perf_pmu_enable(pmu);
+> +	return 0;
+> +}
+> +
+> +static void perf_pmu_cancel_txn(struct pmu *pmu)
+> +{
+> +	perf_pmu_enable(pmu);
+> +}
 
-While we're changing comment blocks, please update it to a proper 
-kerneldoc function descriptor:
 
-/**
-  * futex_find_get_task() - Lookup task by TID
-  * @pid:	TID of the task_struct to find
-  * @check_cred:	check credentials (1) or not (0)
-  *
-  * Look up the task based on the TID userspace gave us. We don't trust
-  * it. Optionally check the credentials.
-  *
-  * Returns a valid task_struct pointer or an error code embedded in the
-  * pointer value.
-  */
+So why do you need perf_pmu_*able wrappers now that you brings stubs
+if none is provided?
 
-The above should probably also include whatever motivation Ingo comes 
-back with for having done the uid check in the first place - which I 
-confess I am not seeing.
+Actually, one problem is that it makes calling two indirect nops
+for software events.
 
->    */
-> -static struct task_struct * futex_find_get_task(pid_t pid)
-> +static struct task_struct * futex_find_get_task(pid_t pid, bool check_cred)
+Should the txn things really map to the enable/disable ops is the
+off-case? Probably better let pmu implementations deal with that.
+If they didn't provide txn implementations, it means they don't need it,
+hence it should directly map to a nop.
 
-bool is nice, not used elsewhere, but clearly defines purpose. I may 
-need to update some of the other flags throughout the file in a 
-follow-on patch.
-
->   {
->   	struct task_struct *p;
->   	const struct cred *cred = current_cred(), *pcred;
-> @@ -436,10 +437,12 @@ static struct task_struct * futex_find_get_task(pid_t pid)
->   	if (!p) {
->   		p = ERR_PTR(-ESRCH);
->   	} else {
-> -		pcred = __task_cred(p);
-> -		if (cred->euid != pcred->euid&&
-> -		    cred->euid != pcred->uid)
-> -			p = ERR_PTR(-ESRCH);
-> +		if (check_cred) {
-> +			pcred = __task_cred(p);
-> +			if (cred->euid != pcred->euid&&
-> +			    cred->euid != pcred->uid)
-> +				p = ERR_PTR(-ESRCH);
-> +		}
->   		else
->   			get_task_struct(p);
->   	}
-> @@ -504,9 +507,10 @@ void exit_pi_state_list(struct task_struct *curr)
->   	raw_spin_unlock_irq(&curr->pi_lock);
->   }
->
-> +/* check_cred is just passed through to futex_find_get_task */
->   static int
->   lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
-> -		union futex_key *key, struct futex_pi_state **ps)
-> +		union futex_key *key, struct futex_pi_state **ps, bool check_cred)
-
-Wrap at 80.
-
->   {
->   	struct futex_pi_state *pi_state = NULL;
->   	struct futex_q *this, *next;
-> @@ -563,7 +567,7 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
->   	 */
->   	if (!pid)
->   		return -ESRCH;
-> -	p = futex_find_get_task(pid);
-> +	p = futex_find_get_task(pid, check_cred);
->   	if (IS_ERR(p))
->   		return PTR_ERR(p);
->
-> @@ -704,8 +708,10 @@ retry:
->   	/*
->   	 * We dont have the lock. Look up the PI state (or create it if
->   	 * we are the first waiter):
-> +	 * Do not ask for credentials check because we want to share the
-> +	 * lock between processes with different (e)uids
-
-Please merge the new comments into the old. Keeping the original colon 
-confuses the comment block. Try:
-
-    	/*
-    	 * We dont have the lock. Look up the PI state (or create it if
-    	 * we are the first waiter). Don't ask for a credentials check
-	 * as we need to allow shared locks between processes with
-	 * different (e)uids.
-
-Thanks,
-
--- 
-Darren Hart
-IBM Linux Technology Center
-Real-Time Linux Team
