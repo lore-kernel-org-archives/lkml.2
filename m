@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab0F2R7L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 13:59:11 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:51570 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab0F2R7I (ORCPT
+	id S1754574Ab0F2SCS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 14:02:18 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:43438 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754343Ab0F2SCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 13:59:08 -0400
-Date: Tue, 29 Jun 2010 23:23:42 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+	Tue, 29 Jun 2010 14:02:16 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 23/25] x86: Have nobootmem version setup_bootmem_allocator()
+Date: Tue, 29 Jun 2010 12:02:57 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv6 2.6.35-rc3-tip 10/12]  perf: Dont adjust symbols on
- name lookup
-Message-ID: <20100629175342.GE23231@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100628055740.6869.77397.sendpatchset@localhost6.localdomain6>
- <20100628055941.6869.59092.sendpatchset@localhost6.localdomain6>
- <20100628135038.GA8902@ghostprotocols.net>
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+References: <1277227614-11581-1-git-send-email-yinghai@kernel.org> <1277227614-11581-24-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1277227614-11581-24-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100628135038.GA8902@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006291202.58730.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > perf: Dont adjust symbols on name lookup
-> > 
-> > Adjusting symbols is not needed if we are searching by name even
-> > if the symbols correspond to user space objects.
-> > Infact if we adjust and search symbols by name, we get incorrect
-> > results.
+On Tuesday, June 22, 2010 11:26:52 am Yinghai Lu wrote:
+> We can reduce #ifdef number from 3 to one in init_32.c
 > 
-> I'll review this, but it would be nice to explain why we get incorrect
-> results, as we may be just fixing a symptom of some other problem.
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  arch/x86/mm/init_32.c |   15 ++++++++++-----
+>  1 files changed, 10 insertions(+), 5 deletions(-)
 > 
+> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+> index e3ae067..f172aa3 100644
+> --- a/arch/x86/mm/init_32.c
+> +++ b/arch/x86/mm/init_32.c
+> @@ -771,11 +771,9 @@ static unsigned long __init setup_node_bootmem(int nodeid,
+>  
+>  	return bootmap + bootmap_size;
+>  }
+> -#endif
+>  
+>  void __init setup_bootmem_allocator(void)
+>  {
+> -#ifndef CONFIG_NO_BOOTMEM
+>  	int nodeid;
+>  	unsigned long bootmap_size, bootmap;
+>  	/*
+> @@ -787,13 +785,11 @@ void __init setup_bootmem_allocator(void)
+>  	if (bootmap == (unsigned long)LMB_ERROR)
+>  		panic("Cannot find bootmem map of size %ld\n", bootmap_size);
+>  	lmb_reserve_range(bootmap, bootmap + bootmap_size, "BOOTMAP");
+> -#endif
+>  
+>  	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
+>  		 max_pfn_mapped<<PAGE_SHIFT);
+>  	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
+>  
+> -#ifndef CONFIG_NO_BOOTMEM
+>  	for_each_online_node(nodeid) {
+>  		 unsigned long start_pfn, end_pfn;
+>  
+> @@ -811,10 +807,19 @@ void __init setup_bootmem_allocator(void)
+>  		bootmap = setup_node_bootmem(nodeid, start_pfn, end_pfn,
+>  						 bootmap);
+>  	}
+> -#endif
+>  
+>  	after_bootmem = 1;
+>  }
+> +#else
+> +void __init setup_bootmem_allocator(void)
+> +{
+> +	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
+> +		 max_pfn_mapped<<PAGE_SHIFT);
+> +	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
 
-You are right. I removed this patch and still see no change in
-behaviour. Earlier without this patch, I saw that perf report
-would show a wrong function name(around 2.6.34-rc5 and I carried it
-to 2.6.35-tip). However the number of events recorded would
-correspond to the probed function. 
+Please use %pR format here and fix up the other printks above in the
+other #ifdef branch.
 
-Since I am seeing correct behaviour even without this patch, I
-will drop this patch in the next posting of the patchset.
-
---
-Thanks
-Srikar
+> +
+> +	after_bootmem = 1;
+> +}
+> +#endif
+>  
+>  /*
+>   * paging_init() sets up the page tables - note that the first 8MB are
+> 
