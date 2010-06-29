@@ -1,144 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab0F2PDE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 11:03:04 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:38606 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755796Ab0F2PDB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 11:03:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xN8I4Lt9swNwKe8hDG/tCFE4wDjXgXw9f4H/rVlIbWf2I+OaUTuyWTSU9Y4BWrTrTY
-         S3/60psxAa0ieoeNVOn7wAGehcCsYEVZvJRlMWTYaZL3IOHiweInFpArIpdOTCsX6Csx
-         0dXNYsE+pgXw14n4zDXvZbPh4ocUf5YNHODAw=
-Date: Tue, 29 Jun 2010 17:03:10 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 09/11] perf: Default PMU ops
-Message-ID: <20100629150305.GG5318@nowhere>
-References: <20100624142804.431553874@chello.nl> <20100624143406.993794468@chello.nl> <20100629145806.GE5318@nowhere> <1277823591.1868.43.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277823591.1868.43.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756447Ab0F2PDh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 11:03:37 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:35622 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756377Ab0F2PDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 11:03:35 -0400
+Date: Tue, 29 Jun 2010 11:03:24 -0400
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
+       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
+       linux-kernel@vger.kernel.org, davem@davemloft.net,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building
+ code  out into drivers/of
+Message-ID: <20100629110324.2756cc02@debian>
+In-Reply-To: <AANLkTilN3_ntG7AWKi-8LM9X_dZJPPlWM6xRM_V_00xU@mail.gmail.com>
+References: <20100628215407.2017bf2f@debian>
+	<20100628220037.5744c207@debian>
+	<AANLkTilN3_ntG7AWKi-8LM9X_dZJPPlWM6xRM_V_00xU@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 04:59:51PM +0200, Peter Zijlstra wrote:
-> On Tue, 2010-06-29 at 16:58 +0200, Frederic Weisbecker wrote:
-> > On Thu, Jun 24, 2010 at 04:28:13PM +0200, Peter Zijlstra wrote:
-> > > Provide default implementations for the pmu txn methods, this allows
-> > > us to remove some conditional code.
-> > > 
-> > > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > ---
-> > >  kernel/perf_event.c |   48 ++++++++++++++++++++++++++++++++++++------------
-> > >  1 file changed, 36 insertions(+), 12 deletions(-)
-> > > 
-> > > Index: linux-2.6/kernel/perf_event.c
-> > > ===================================================================
-> > > --- linux-2.6.orig/kernel/perf_event.c
-> > > +++ linux-2.6/kernel/perf_event.c
-> > > @@ -656,21 +656,14 @@ group_sched_in(struct perf_event *group_
-> > >  {
-> > >  	struct perf_event *event, *partial_group = NULL;
-> > >  	struct pmu *pmu = group_event->pmu;
-> > > -	bool txn = false;
-> > >  
-> > >  	if (group_event->state == PERF_EVENT_STATE_OFF)
-> > >  		return 0;
-> > >  
-> > > -	/* Check if group transaction availabe */
-> > > -	if (pmu->start_txn)
-> > > -		txn = true;
-> > > -
-> > > -	if (txn)
-> > > -		pmu->start_txn(pmu);
-> > > +	pmu->start_txn(pmu);
-> > >  
-> > >  	if (event_sched_in(group_event, cpuctx, ctx)) {
-> > > -		if (txn)
-> > > -			pmu->cancel_txn(pmu);
-> > > +		pmu->cancel_txn(pmu);
-> > >  		return -EAGAIN;
-> > >  	}
-> > >  
-> > > @@ -684,7 +677,7 @@ group_sched_in(struct perf_event *group_
-> > >  		}
-> > >  	}
-> > >  
-> > > -	if (!txn || !pmu->commit_txn(pmu))
-> > > +	if (!pmu->commit_txn(pmu))
-> > >  		return 0;
-> > >  
-> > >  group_error:
-> > > @@ -699,8 +692,7 @@ group_error:
-> > >  	}
-> > >  	event_sched_out(group_event, cpuctx, ctx);
-> > >  
-> > > -	if (txn)
-> > > -		pmu->cancel_txn(pmu);
-> > > +	pmu->cancel_txn(pmu);
-> > >  
-> > >  	return -EAGAIN;
-> > >  }
-> > > @@ -4755,6 +4747,26 @@ static struct list_head pmus;
-> > >  static DEFINE_MUTEX(pmus_lock);
-> > >  static struct srcu_struct pmus_srcu;
-> > >  
-> > > +static void perf_pmu_nop(struct pmu *pmu)
-> > > +{
-> > > +}
-> > > +
-> > > +static void perf_pmu_start_txn(struct pmu *pmu)
-> > > +{
-> > > +	perf_pmu_disable(pmu);
-> > > +}
-> > > +
-> > > +static int perf_pmu_commit_txn(struct pmu *pmu)
-> > > +{
-> > > +	perf_pmu_enable(pmu);
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static void perf_pmu_cancel_txn(struct pmu *pmu)
-> > > +{
-> > > +	perf_pmu_enable(pmu);
-> > > +}
-> > 
-> > 
-> > So why do you need perf_pmu_*able wrappers now that you brings stubs
-> > if none is provided?
-> > 
-> > Actually, one problem is that it makes calling two indirect nops
-> > for software events.
-> > 
-> > Should the txn things really map to the enable/disable ops is the
-> > off-case? Probably better let pmu implementations deal with that.
-> > If they didn't provide txn implementations, it means they don't need it,
-> > hence it should directly map to a nop.
-> > 
+On Tue, 29 Jun 2010 00:50:08 -0700
+Grant Likely <grant.likely@secretlab.ca> wrote:
+
+> On Mon, Jun 28, 2010 at 7:00 PM, Andres Salomon <dilinger@queued.net> wrote:
+> >
+> > Stick code into drivers/of/pdt.c (Prom Device Tree) that other
+> > architectures with OpenFirmware resident in memory can make use of.
+> >
+> > Signed-off-by: Andres Salomon <dilinger@queued.net>
 > 
-> You mean, if (!pmu->start_txn && pmu->pmu_enable) { /* install defaults
-> */ } ?
+> Hi Andres,
+> 
+> The patch itself looks fine, but there are currently two methods for
+> extracting the device tree from open firmware; one in arch/powerpc
+> using the flattened format, and one in arch/sparc.  I don't want to
+> end up maintaining both methods in drivers/of, and there has also some
+> discussions on moving the powerpc version into common code.  I've been
+> thinking about using the powerpc approach to support ARM platforms
+> using both the flat tree and real OFW.
+> 
+> Ben, what say you?  Before I do anything I'd like to have your opinion.
+> 
 
+So you're saying that you want ARM (and sparc, and OLPC) to generate a
+flat tree by calling into OFW?  Sparc and OLPC have very similar
+mechanisms for getting device tree info from OFW, so it makes sense to
+share code between them.
 
-Not really. pmu_*able and txn are there for different purposes.
-A pmu implementation may want to provide enable/disable things
-but not require any txn. Or one may just not need any of those,
-like software events.
-
-It should simply map to a nop if nothing is provided.
 
