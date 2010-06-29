@@ -1,83 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313Ab0F2O4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 10:56:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756274Ab0F2O40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 10:56:26 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Tao Ma <tao.ma@oracle.com>
-Cc: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, Joel Becker <joel.becker@oracle.com>,
-       Sunil Mushran <sunil.mushran@oracle.com>,
-       "ocfs2-devel\@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
-Subject: Re: [PATCH 0/3 v5][RFC] ext3/4: enhance fsync performance when using CFQ
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
-	<4C21D442.8080703@oracle.com> <4C22F316.3080009@oracle.com>
-	<x49k4pk60ye.fsf@segfault.boston.devel.redhat.com>
-	<4C284419.3000905@oracle.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 29 Jun 2010 10:56:15 -0400
-In-Reply-To: <4C284419.3000905@oracle.com> (Tao Ma's message of "Mon, 28 Jun
-	2010 14:41:29 +0800")
-Message-ID: <x49wrthlwfk.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1756350Ab0F2O4j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 10:56:39 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:43268 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756327Ab0F2O4g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 10:56:36 -0400
+Message-ID: <4C2A0986.1000807@us.ibm.com>
+Date: Tue, 29 Jun 2010 07:56:06 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Michal Hocko <mhocko@suse.cz>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] futex: futex_find_get_task make credentials check conditional
+References: <20100623091307.GA11072@tiehlicka.suse.cz> <4C2417AA.4030306@us.ibm.com> <20100625082711.GA32765@tiehlicka.suse.cz> <4C24ED34.9040808@us.ibm.com> <4C253D32.6040304@us.ibm.com> <20100628144246.GA14201@tiehlicka.suse.cz> <20100628153214.GA24127@tiehlicka.suse.cz> <20100628155845.GC24127@tiehlicka.suse.cz> <20100628163952.GD24127@tiehlicka.suse.cz> <1277743748.3561.139.camel@laptop> <20100629084230.GE6215@tiehlicka.suse.cz>
+In-Reply-To: <20100629084230.GE6215@tiehlicka.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tao Ma <tao.ma@oracle.com> writes:
-
-> Hi Jeff,
+On 06/29/2010 01:42 AM, Michal Hocko wrote:
+> On Mon 28-06-10 18:49:08, Peter Zijlstra wrote:
+>> On Mon, 2010-06-28 at 18:39 +0200, Michal Hocko wrote:
+>>> Would something like the following be acceptable (just a compile
+>>> tested without comments). It simply makes caller of lookup_pi_state to
+>>> decide whether credentials should be checked.
+>>
+>> So it was Ingo, who in c87e2837be8 (pi-futex:
+>> futex_lock_pi/futex_unlock_pi support) introduced the euid checks:
+>>
+>> +futex_find_get_task():
+>> +       if ((current->euid != p->euid)&&  (current->euid != p->uid)) {
+>> +               p = NULL;
+>> +               goto out_unlock;
+>> +       }
+>>
+>> Ingo, do you remember the rationale behind that? It seems to be causing
+>> grief when two different users contend on the same (shared) futex.
+>>
+>> See the below proposed solution.
 >
-> On 06/27/2010 09:48 PM, Jeff Moyer wrote:
->> Tao Ma<tao.ma@oracle.com>  writes:
->>> I am sorry to say that the patch make jbd2 locked up when I tested
->>> fs_mark using ocfs2.
->>> I have attached the log from my netconsole server. After I reverted
->>> the patch [3/3], the box works again.
->>
->> I can't reproduce this, unfortunately.  Also, when building with the
->> .config you sent me, the disassembly doesn't line up with the stack
->> trace you posted.
->>
->> I'm not sure why yielding the queue would cause a deadlock.  The only
->> explanation I can come up with is that I/O is not being issued.  I'm
->> assuming that no other I/O will be completed to the file system in
->> question.  Is that right?  Could you send along the output from sysrq-t?
-> yes, I just mounted it and begin the test, so there should be no
-> outstanding I/O. So do you need me to setup another disk for test?
-> I have attached the sysrq output in sysrq.log. please check.
+> Here is the patch with comments and rationale:
+> (reference to the original discussion: http://lkml.org/lkml/2010/6/23/52)
+>
+> --
+>  From f477a6d989dfde11c5bb5f28d5ce21d0682f4e25 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko<mhocko@suse.cz>
+> Date: Tue, 29 Jun 2010 10:02:58 +0200
+> Subject: [PATCH] futex: futex_find_get_task make credentials check conditional
+>
+> futex_find_get_task is currently used (through lookup_pi_state) from two
+> contexts, futex_requeue and futex_lock_pi_atomic. While credentials check
+> makes sense in the first code path, the second one is more problematic
+> because this check requires that the PI lock holder (pid parameter) has
+> the same uid and euid as the process's euid which is trying to lock the
+> same futex (current).
+>
+> This results in glibc assert failure or process hang (if glibc is
+> compiled without assert support) for shared robust pthread mutex with
+> priority inheritance if a process tries to lock already held lock owned
+> by a process with a different euid:
+>
+> pthread_mutex_lock.c:312: __pthread_mutex_lock_full: Assertion `(-(e)) != 3 || !robust' failed.
+>
+> The problem is that futex_lock_pi_atomic which is called when we try to
+> lock already held lock checks the current holder (tid is stored in the
+> futex value) to get the PI state. It uses lookup_pi_state which in turn
+> gets task struct from futex_find_get_task. ESRCH is returned either when
+> the task is not found or if credentials check fails.
+> futex_lock_pi_atomic simply returns if it gets ESRCH. glibc code,
+> however,  doesn't expect that robust lock returns with ESRCH because it
+> should get either success or owner died.
+>
+> Let's make credentials check conditional (as a new parameter) in
+> futex_find_get_task. Then we can prevent from check in the pi lock path
+> and still preserve it in the futex_requeue path.
+>
 
-Well, if it doesn't take long to reproduce, then it might be helpful to
-see a blktrace of the run.  However, it might also just be worth waiting
-for the next version of the patch to see if that fixes your issue.
 
-> btw, I also met with a NULL pointer deference in cfq_yield. I have
-> attached the null.log also. This seems to be related to the previous
-> deadlock and happens when I try to remount the same volume after
-> reboot and ocfs2 try to do some recovery.
+Hi Michal,
 
- Pid: 4130, comm: ocfs2_wq Not tainted 2.6.35-rc3+ #5 0MM599/OptiPlex 745                  
- RIP: 0010:[<ffffffff82161537>] 
-  [<ffffffff82161537>] cfq_yield+0x5f/0x135 
- RSP: 0018:ffff880123061c60  EFLAGS: 00010246 
- RAX: 0000000000000000 RBX: ffff88012c2b5ea8 RCX: ffff88012c3a30d0 
+All the above is accurate, however I think it emphasizes glibc's 
+expectations when the core of the issue is that shared PI futexes don't 
+work across processes with different uid's.
 
-ffffffff82161528:	e8 69 eb ff ff       	callq  ffffffff82160096 <cfq_cic_lookup>
-ffffffff8216152d:	49 89 c6             	mov    %rax,%r14
-ffffffff82161530:	48 8b 85 00 06 00 00 	mov    0x600(%rbp),%rax
-ffffffff82161537:	f0 48 ff 00          	lock incq (%rax)
+It seems like most users of shared futexes do so from the same uid, 
+however I can think of situations where it would be useful to use them 
+from different uid's. Since shared futexes key on their physical 
+address, their shouldn't be any security issues with allowing different 
+uids.
 
-I'm pretty sure that's a NULL pointer deref of the tsk->iocontext that
-was passed into the yield function.  I've since fixed that, so your
-recovery code should be safe in the newest version (which I've not yet
-posted).
 
-Cheers,
-Jeff
+> Signed-off-by: Michal Hocko<mhocko@suse.cz>
+> ---
+>   kernel/futex.c |   24 +++++++++++++++---------
+>   1 files changed, 15 insertions(+), 9 deletions(-)
+>
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index e7a35f1..79b69e5 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -425,8 +425,9 @@ static void free_pi_state(struct futex_pi_state *pi_state)
+>   /*
+>    * Look up the task based on what TID userspace gave us.
+>    * We dont trust it.
+> + * Check the credentials if required by check_cred
+
+While we're changing comment blocks, please update it to a proper 
+kerneldoc function descriptor:
+
+/**
+  * futex_find_get_task() - Lookup task by TID
+  * @pid:	TID of the task_struct to find
+  * @check_cred:	check credentials (1) or not (0)
+  *
+  * Look up the task based on the TID userspace gave us. We don't trust
+  * it. Optionally check the credentials.
+  *
+  * Returns a valid task_struct pointer or an error code embedded in the
+  * pointer value.
+  */
+
+The above should probably also include whatever motivation Ingo comes 
+back with for having done the uid check in the first place - which I 
+confess I am not seeing.
+
+>    */
+> -static struct task_struct * futex_find_get_task(pid_t pid)
+> +static struct task_struct * futex_find_get_task(pid_t pid, bool check_cred)
+
+bool is nice, not used elsewhere, but clearly defines purpose. I may 
+need to update some of the other flags throughout the file in a 
+follow-on patch.
+
+>   {
+>   	struct task_struct *p;
+>   	const struct cred *cred = current_cred(), *pcred;
+> @@ -436,10 +437,12 @@ static struct task_struct * futex_find_get_task(pid_t pid)
+>   	if (!p) {
+>   		p = ERR_PTR(-ESRCH);
+>   	} else {
+> -		pcred = __task_cred(p);
+> -		if (cred->euid != pcred->euid&&
+> -		    cred->euid != pcred->uid)
+> -			p = ERR_PTR(-ESRCH);
+> +		if (check_cred) {
+> +			pcred = __task_cred(p);
+> +			if (cred->euid != pcred->euid&&
+> +			    cred->euid != pcred->uid)
+> +				p = ERR_PTR(-ESRCH);
+> +		}
+>   		else
+>   			get_task_struct(p);
+>   	}
+> @@ -504,9 +507,10 @@ void exit_pi_state_list(struct task_struct *curr)
+>   	raw_spin_unlock_irq(&curr->pi_lock);
+>   }
+>
+> +/* check_cred is just passed through to futex_find_get_task */
+>   static int
+>   lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+> -		union futex_key *key, struct futex_pi_state **ps)
+> +		union futex_key *key, struct futex_pi_state **ps, bool check_cred)
+
+Wrap at 80.
+
+>   {
+>   	struct futex_pi_state *pi_state = NULL;
+>   	struct futex_q *this, *next;
+> @@ -563,7 +567,7 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+>   	 */
+>   	if (!pid)
+>   		return -ESRCH;
+> -	p = futex_find_get_task(pid);
+> +	p = futex_find_get_task(pid, check_cred);
+>   	if (IS_ERR(p))
+>   		return PTR_ERR(p);
+>
+> @@ -704,8 +708,10 @@ retry:
+>   	/*
+>   	 * We dont have the lock. Look up the PI state (or create it if
+>   	 * we are the first waiter):
+> +	 * Do not ask for credentials check because we want to share the
+> +	 * lock between processes with different (e)uids
+
+Please merge the new comments into the old. Keeping the original colon 
+confuses the comment block. Try:
+
+    	/*
+    	 * We dont have the lock. Look up the PI state (or create it if
+    	 * we are the first waiter). Don't ask for a credentials check
+	 * as we need to allow shared locks between processes with
+	 * different (e)uids.
+
+Thanks,
+
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
