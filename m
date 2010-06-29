@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab0F2R5J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 13:57:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4452 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753239Ab0F2R5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 13:57:07 -0400
-Date: Tue, 29 Jun 2010 19:54:22 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Mandeep Singh Baines <msb@google.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: while_each_thread() under rcu_read_lock() is broken?
-Message-ID: <20100629175422.GB18440@redhat.com>
-References: <20100622212357.GA19670@redhat.com> <20100622221226.GP2290@linux.vnet.ibm.com> <20100623152421.GA8445@redhat.com> <20100624180726.GK2373@linux.vnet.ibm.com> <20100624215702.GA21360@redhat.com> <20100625034105.GD2391@linux.vnet.ibm.com> <20100625095548.GA6292@redhat.com> <20100628234358.GJ2357@linux.vnet.ibm.com> <20100629130503.GA5237@redhat.com> <20100629153445.GC2765@linux.vnet.ibm.com>
+	id S1754137Ab0F2R6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 13:58:13 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:41910 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab0F2R6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 13:58:11 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 18/25] x86, lmb: Use lmb_debug to control debug message print out
+Date: Tue, 29 Jun 2010 11:58:52 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+References: <1277227614-11581-1-git-send-email-yinghai@kernel.org> <1277227614-11581-19-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1277227614-11581-19-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100629153445.GC2765@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006291158.54280.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29, Paul E. McKenney wrote:
->
-> On Tue, Jun 29, 2010 at 03:05:03PM +0200, Oleg Nesterov wrote:
-> >
-> > Paul, please let me know if I misunderstood your concerns, or if I missed
-> > something.
->
-> Thank you very much for laying this out completely!  I was having a hard
-> time believing that it was OK to miss threads in the "ls /proc/2910/task"
-> case.  But of course similar issues can arise when running "ls" on a
-> directory with lots of files that are coming and going quickly in the
-> meantime, I guess.
+On Tuesday, June 22, 2010 11:26:47 am Yinghai Lu wrote:
+> Also let lmb_reserve_range/lmb_free_range could print out name if lmb=debug is
+> specified
+> 
+> will also print ther name when reserve_lmb_area/free_lmb_area are called.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  arch/x86/mm/lmb.c |   24 ++++++++++++++++++------
+>  1 files changed, 18 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+> index bd2f60b..209f25b 100644
+> --- a/arch/x86/mm/lmb.c
+> +++ b/arch/x86/mm/lmb.c
+> @@ -122,10 +122,12 @@ static void __init subtract_lmb_reserved(struct range *range, int az)
+>  
+>  	count  = lmb.reserved.cnt;
+>  
+> -	pr_info("Subtract (%d early reservations)\n", count);
+> +	if (lmb_debug)
+> +		pr_info("Subtract (%d early reservations)\n", count);
+>  
+>  	for_each_lmb(reserved, r) {
+> -		pr_info("  [%010llx - %010llx]\n", (u64)r->base, (u64)r->base + r->size);
 
-Yes. And again, even if 2910 is not the group leader and it is exiting,
-"ls /proc/2910/task" will work because proc_task_readdir() akways starts
-at 2910->group_leader == 2008.
+Use %pR format (looks like this is rework on top of a previous patch,
+so this comment is probably redundant).
 
-It doesn't work only if proc_task_readdir() can't find its leader, in
-this particular case this just means 2910 no longer exists, and thus
-/proc/2910/ is dead even if we can still find this dentry.
-
-> And if proc_task_fill_cache() fails, we can miss
-> tasks as well, correct?
-
-Well, yes and no.
-
-Sure, if proc_task_fill_cache() fails we didn't reported all threads.
-But if /bin/ls does readdir() again after that, proc_task_readdir()
-tries to contunue starting from the last-pid-we-failed-to-report.
-If there is no task with that pid, we start from the group_leader
-and skip the number-of-already-reported-threads.
-
-So, we have a lot of issues here, we can miss some thread because
-"skip the number-of-already-reported-threads" can't be really accurate.
-
-
-But, to clarify, this has almost nothing to do with the original problem.
-Afaics, if we change first_tid() to use next_thread_careful() instead
-of next_thread(), we close the pure-theoretical race with exec but that
-is all. (and I am still not sure this race does exist, and even if it
-does we can fix it without next_thread_careful).
-
-> Given all this, I believe that your fix really does work.
-
-Great. I'll send the patch once I inspect zap_threads() and
-current_is_single_threaded() to figure out which changes they need.
-
-Oleg.
-
+> +		if (lmb_debug)
+> +			pr_info("  [%010llx - %010llx]\n", (u64)r->base, (u64)r->base + r->size);
+>  		final_start = PFN_DOWN(r->base);
+>  		final_end = PFN_UP(r->base + r->size);
+>  		if (final_start >= final_end)
+> @@ -198,16 +200,20 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+>  		lmb_free(__pa(lmb.reserved.regions), sizeof(struct lmb_region) * lmb.reserved.max);
+>  
+>  	count  = lmb.reserved.cnt;
+> -	pr_info("(%d early reservations) ==> bootmem [%010llx - %010llx]\n", count, start, end);
+> +	if (lmb_debug)
+> +		pr_info("(%d early reservations) ==> bootmem [%010llx - %010llx]\n", count, start, end);
+>  	for_each_lmb(reserved, r) {
+> -		pr_info("  [%010llx - %010llx] ", (u64)r->base, (u64)r->base + r->size);
+> +		if (lmb_debug)
+> +			pr_info("  [%010llx - %010llx] ", (u64)r->base, (u64)r->base + r->size);
+>  		final_start = max(start, r->base);
+>  		final_end = min(end, r->base + r->size);
+>  		if (final_start >= final_end) {
+> -			pr_cont("\n");
+> +			if (lmb_debug)
+> +				pr_cont("\n");
+>  			continue;
+>  		}
+> -		pr_cont(" ==> [%010llx - %010llx]\n", final_start, final_end);
+> +		if (lmb_debug)
+> +			pr_cont(" ==> [%010llx - %010llx]\n", final_start, final_end);
+>  		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
+>  	}
+>  
+> @@ -289,6 +295,9 @@ void __init lmb_reserve_range(u64 start, u64 end, char *name)
+>  	if (WARN_ONCE(start > end, "lmb_reserve_range: wrong range [%#llx, %#llx]\n", start, end))
+>  		return;
+>  
+> +	if (lmb_debug)
+> +		pr_info("    lmb_reserve_range: [%010llx, %010llx] %16s\n", start, end, name);
+> +
+>  	lmb_reserve(start, end - start);
+>  }
+>  
+> @@ -300,6 +309,9 @@ void __init lmb_free_range(u64 start, u64 end)
+>  	if (WARN_ONCE(start > end, "lmb_free_range: wrong range [%#llx, %#llx]\n", start, end))
+>  		return;
+>  
+> +	if (lmb_debug)
+> +		pr_info("       lmb_free_range: [%010llx, %010llx]\n", start, end);
+> +
+>  	lmb_free(start, end - start);
+>  }
+>  
+> 
