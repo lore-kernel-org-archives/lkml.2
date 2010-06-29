@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960Ab0F2CAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 22:00:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20932 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab0F2CAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 22:00:41 -0400
-Date: Mon, 28 Jun 2010 18:58:23 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
-       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [Ocfs2-devel] [PATCH] Revert "writeback: limit
- write_cache_pages integrity scanning to current EOF"
-Message-ID: <20100629015822.GD24343@mail.oracle.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Dave Chinner <david@fromorbit.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	ocfs2-devel@oss.oracle.com, Tao Ma <tao.ma@oracle.com>,
-	Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-	Mark Fasheh <mfasheh@suse.com>
-References: <20100628173529.GA10573@mail.oracle.com>
- <20100629002421.GY6590@dastard>
- <20100629005403.GC24343@mail.oracle.com>
- <AANLkTil1R9I94pVXLE50JAMPIwpiaZuroJAg4wcwyBUb@mail.gmail.com>
+	id S1753009Ab0F2CCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 22:02:06 -0400
+Received: from ozlabs.org ([203.10.76.45]:44611 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752470Ab0F2CCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 22:02:04 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>
+X-GPG-Fingerprint: 9B25 DC2A C58D 2C8D 47C2  457E 0887 E86F 32E6 BE16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTil1R9I94pVXLE50JAMPIwpiaZuroJAg4wcwyBUb@mail.gmail.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C29538D.01FF:SCFMA4539814,ss=1,fgs=0
+Subject: [PATCH] sched: fix spelling of sibling
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
+Date: Tue, 29 Jun 2010 12:02:01 +1000
+Message-ID: <15249.1277776921@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 06:12:35PM -0700, Linus Torvalds wrote:
-> On Mon, Jun 28, 2010 at 5:54 PM, Joel Becker <Joel.Becker@oracle.com> wrote:
-> >        Your contention is that we've never gotten those tail blocks to
-> > disk.  Instead, our code either handles the future extensions of i_size
-> > or we've just gotten lucky with our testing.  Our current BUG trigger is
-> > because we have a new check that catches this case.  Does that summarize
-> > your position correctly?
-> 
-> Maybe Dave has some more exhaustive answer, but his point that
-> block_write_full_page() already just drops the page does seem to be
-> very valid.  Which makes me suspect that it would be better to remove
-> the ocfs2 BUG_ON() as a stop-gap measure, rather than reverting the
-> commit. It seems to be true that the "don't bother flushing past EOF"
-> commit really just uncovered an older bug.
+No logic changes, only spelling.
 
-	Well, shit.  Something has changed in here, or we're really
-really (un)lucky.  We visited this code a year ago or so when we had
-serious zeroing problems, and we tested the hell out of it.  Now it is
-broken again.  And it sure looks like that block_write_full_page() check
-has been there since before git.
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+---
+ arch/powerpc/kernel/process.c |    2 +-
+ include/linux/topology.h      |    2 +-
+ kernel/sched_fair.c           |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-> So maybe ocfs2 should just replace the bug-on with invalidating the
-> page (perhaps with a WARN_ONCE() to make sure the problem doesn't get
-> forgotten about?)
-
-	Oh, no, that's not it at all.  This is a disaster.  I can't see
-for the life of me why we haven't had 100,000 bug reports.  You're going
-to have an ocfs2 patch by the end of the week.  It will be ugly, I'm
-sure of it, but it has to be done.  For every extend, we're going to
-have to zero and potentially CoW around old_i_size if the old allocation
-isn't within the bounds of the current write.
-
-Joel
-
--- 
-
-"In a crisis, don't hide behind anything or anybody. They're going
- to find you anyway."
-	- Paul "Bear" Bryant
-
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+Index: linux-tip/arch/powerpc/kernel/process.c
+===================================================================
+--- linux-tip.orig/arch/powerpc/kernel/process.c
++++ linux-tip/arch/powerpc/kernel/process.c
+@@ -1270,7 +1270,7 @@ unsigned long randomize_et_dyn(unsigned 
+ }
+ 
+ #ifdef CONFIG_SMP
+-int arch_sd_sibiling_asym_packing(void)
++int arch_sd_sibling_asym_packing(void)
+ {
+ 	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
+ 		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
+Index: linux-tip/include/linux/topology.h
+===================================================================
+--- linux-tip.orig/include/linux/topology.h
++++ linux-tip/include/linux/topology.h
+@@ -103,7 +103,7 @@ int arch_update_cpu_topology(void);
+ 				| 1*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
+ 				| 0*SD_PREFER_SIBLING			\
+-				| arch_sd_sibiling_asym_packing()	\
++				| arch_sd_sibling_asym_packing()	\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+Index: linux-tip/kernel/sched_fair.c
+===================================================================
+--- linux-tip.orig/kernel/sched_fair.c
++++ linux-tip/kernel/sched_fair.c
+@@ -2567,7 +2567,7 @@ static inline void update_sd_lb_stats(st
+ 	} while (sg != sd->groups);
+ }
+ 
+-int __weak arch_sd_sibiling_asym_packing(void)
++int __weak arch_sd_sibling_asym_packing(void)
+ {
+        return 0*SD_ASYM_PACKING;
+ }
