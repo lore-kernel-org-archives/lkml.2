@@ -1,143 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab0F2HKk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 03:10:40 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42497 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097Ab0F2HKj (ORCPT
+	id S1753404Ab0F2HMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 03:12:06 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43150
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752700Ab0F2HMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 03:10:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Yhlx1uVgjFhzyP0Bm5l3cc/HJhyDNlEPRoPy6IlsWarDlmI21hn7P02IwlIrmxNMgE
-         UOvsOaX03UULu22bgysBb89R0PFwRS+GJvQ4P8gccJPVRV866eKQk9m/xCxzszbeonUw
-         bZb2fkcBifc3sIH5rpQbDrVVX1k9hcK78snmM=
-MIME-Version: 1.0
-Date: Tue, 29 Jun 2010 15:10:38 +0800
-Message-ID: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
-Subject: [PATCH] avoid race condition in pick_next_task_fair in 
-	kernel/sched_fair.c
-From: shenghui <crosslonelyover@gmail.com>
-To: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, peterz@infradead.org, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 29 Jun 2010 03:12:03 -0400
+Date: Tue, 29 Jun 2010 00:12:16 -0700 (PDT)
+Message-Id: <20100629.001216.91341775.davem@davemloft.net>
+To: ospite@studenti.unina.it
+Cc: alan@signal11.us, marcel@holtmann.org, jkosina@suse.cz,
+       mdpoole@troilus.org, hadess@hadess.net, eric.dumazet@gmail.com,
+       linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw
+ HIDIOCGFEATURE and HIDIOCSFEATURE
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100628131437.bde782b6.ospite@studenti.unina.it>
+References: <1276467601-9066-1-git-send-email-alan@signal11.us>
+	<20100628131437.bde782b6.ospite@studenti.unina.it>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Antonio Ospite <ospite@studenti.unina.it>
+Date: Mon, 28 Jun 2010 13:14:37 +0200
 
-      I walked some code in kernel/sched_fair.c in version 2.6.35-rc3, and
-got the following potential failure:
+> On Sun, 13 Jun 2010 18:20:01 -0400
+> Alan Ott <alan@signal11.us> wrote:
+> 
+>> This patch adds support or getting and setting feature reports for bluetooth
+>> HID devices from HIDRAW.
+>> 
+>> Signed-off-by: Alan Ott <alan@signal11.us>
+>> ---
+> 
+> Ping.
 
-static struct task_struct *pick_next_task_fair(struct rq *rq)
-{
-...
-	if (!cfs_rq->nr_running)
-		return NULL;
+We effectively don't have a bluetooth maintainer at the current point
+in time.  I've tried to let patches sit for a while hoping the listed
+maintainer would do something, at least occaisionally, but that simply
+isn't happening.
 
-	do {
-		se = pick_next_entity(cfs_rq);
-		set_next_entity(cfs_rq, se);
-		cfs_rq = group_cfs_rq(se);
-	} while (cfs_rq);
-...
-}
+So I'll just pick patches up directly as I find time to review them,
+but I have to warn that for me it's going to be done in a very low
+priority way because I really don't find bluetooth all that exciting. :-)
 
-/*
- * The dequeue_task method is called after nr_running is
- * decreased. We remove the task from the rbtree and
- * update the fair scheduling stats:
- */
-static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
-{
-...
-		dequeue_entity(cfs_rq, se, flags);
-...
-}
-
-static void
-dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
-{
-...
-	if (se != cfs_rq->curr)
-		__dequeue_entity(cfs_rq, se);
-        account_entity_dequeue(cfs_rq, se);
-	update_min_vruntime(cfs_rq);
-...
-}
-
-dequeue_task_fair() is used to dequeue some task, and it calls
-dequeue_entity() to finish the job. While dequeue_entity() calls
-__dequeue_entity() first, then calls account_entity_dequeue()
-to do substraction on cfs_rq->nr_running.
-Here, if one task is dequeued, then cfs_rq->nr_running will be
-changed later, e.g 1 to 0.
-In the pick_next_task_fair(), the if check will get passed before
-nr_running is set 0 and the following while structure is executed.
-
-	do {
-		se = pick_next_entity(cfs_rq);
-		set_next_entity(cfs_rq, se);
-		cfs_rq = group_cfs_rq(se);
-	} while (cfs_rq);
-
-We may get se set NULL here, and set_next_entity may deference
-NULL pointer, which can lead to Oops.
-
-I think some lock on the metadata can fix this issue, but we may
-change plenty of code to add support for lock. I think the easist
-way is just substacting nr_running before dequing tasks.
-
-Following is my patch, please check it.
-
-
->From 4fe38deac173c7777cd02096950e979749170873 Mon Sep 17 00:00:00 2001
-From: Wang Sheng-Hui <crosslonelyover@gmail.com>
-Date: Tue, 29 Jun 2010 14:49:05 +0800
-Subject: [PATCH] avoid race condition in pick_next_task_fair in
-kernel/sched_fair.c
-
-
-Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
----
- kernel/sched_fair.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index eed35ed..93073ff 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -823,9 +823,9 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct
-sched_entity *se, int flags)
-
- 	clear_buddies(cfs_rq, se);
-
-+	account_entity_dequeue(cfs_rq, se);
- 	if (se != cfs_rq->curr)
- 		__dequeue_entity(cfs_rq, se);
--	account_entity_dequeue(cfs_rq, se);
- 	update_min_vruntime(cfs_rq);
-
- 	/*
-@@ -1059,7 +1059,7 @@ enqueue_task_fair(struct rq *rq, struct
-task_struct *p, int flags)
- }
-
- /*
-- * The dequeue_task method is called before nr_running is
-+ * The dequeue_task method is called after nr_running is
-  * decreased. We remove the task from the rbtree and
-  * update the fair scheduling stats:
-  */
--- 
-1.6.3.3
-
-
-
--- 
-
-
-Thanks and Best Regards,
-shenghui
