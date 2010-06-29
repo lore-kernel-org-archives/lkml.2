@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab0F2Qc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 12:32:59 -0400
-Received: from office.altell.ru ([80.246.246.162]:42698 "EHLO office.altell.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756581Ab0F2Qc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 12:32:57 -0400
-X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jun 2010 12:32:57 EDT
-Date: Tue, 29 Jun 2010 20:26:43 +0400
-From: Dan Kruchinin <kruchinin@altell.ru>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [PATCH 0/2] padata: Separate cpumasks for cb_cpus and parallel
- workers
-Message-ID: <20100629202643.00a80cfb@leibniz>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S932129Ab0F2Qe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 12:34:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56806 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756581Ab0F2QeZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 12:34:25 -0400
+Subject: Re: [RFC][PATCH 09/11] perf: Default PMU ops
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100629150305.GG5318@nowhere>
+References: <20100624142804.431553874@chello.nl>
+	 <20100624143406.993794468@chello.nl> <20100629145806.GE5318@nowhere>
+	 <1277823591.1868.43.camel@laptop>  <20100629150305.GG5318@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 29 Jun 2010 18:34:10 +0200
+Message-ID: <1277829250.1868.46.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Altell-MailScanner-ID: 9724B46E0.09DB3
-X-Altell-MailScanner: Found to be clean
-X-Altell-MailScanner-From: kruchinin@altell.ru
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, 2010-06-29 at 17:03 +0200, Frederic Weisbecker wrote:
+> > You mean, if (!pmu->start_txn && pmu->pmu_enable) { /* install defaults
+> > */ } ?
+> 
+> 
+> Not really. pmu_*able and txn are there for different purposes.
+> A pmu implementation may want to provide enable/disable things
+> but not require any txn. Or one may just not need any of those,
+> like software events.
+> 
+> It should simply map to a nop if nothing is provided. 
 
-The main point of my patches is to make two separate cpumasks. One for
-parallel and another for serial workers(callback cpus). It'll perform to
-bind non-intersecting groups of CPUs for serial and parallel workers and
-do more thin tuning of padata subsystem.
+Thing is, using at least the pmu_enable/disable fallback when no txn
+methods are provided can save bunch of hardware writes. So this trivial
+fallback makes sense.
 
-My tests shows that proper configuration of serial and parallel cpu
-masks gives a bit better performance. For example (aes-asm,
-sha1-generic. Two 16-core machines):
-1) 1 point-to-point connection:
-Non-modified padata gives ~650Mbit of TCP and ~780Mbit of UDP
-When I exclude callback CPUs from parallel cpumask padata gives
-~750Mbit of TCP and ~900Mbit of UDP.
-2) 2 IPSEC tunnels between 16-core machines and 4 clients
-communicating via tunnels with each-other
-Non-modified padata gives ~1.5Gbit of UDP
-padata with non-intersecting cpumasks for parallel and serial workers
-gives ~1.8Gbit
 
-Besides the performance growth, there may be situations when serial job
-takes a lot of time. For example if I add several dozens of firewall
-rules, serial worker will work slower and padata_do_parallel will
-continue to enqueue requests into the queue of CPU serial worker
-executes on.
-It may significantly slow down parallelization and reordering because
-one CPU(that is shared by both parallel and serial workers) will always
-have more requests in its parallel queue than others CPUs(because
-serialization takes a lot of time). In such cases user may exclude
-callback CPUs from cpumask for parallel workers.
-
--- 
-W.B.R.
-Dan Kruchinin
