@@ -1,101 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab0F2HeY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 03:34:24 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37617 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab0F2HeW convert rfc822-to-8bit (ORCPT
+	id S1753297Ab0F2Hgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 03:36:36 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36513
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752606Ab0F2Hge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 03:34:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100628220048.6a07c5ee@debian>
-References: <20100628215407.2017bf2f@debian> <20100628220048.6a07c5ee@debian>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 29 Jun 2010 00:33:59 -0700
-X-Google-Sender-Auth: 5oo4Cb6o1whTvWx6312__FRnjAg
-Message-ID: <AANLkTil30jVU79NGdPdAw516-_AOTzbX6DQdwahv4evx@mail.gmail.com>
-Subject: Re: [PATCH 3/4] proc: unify PROC_DEVICETREE config
-To: Andres Salomon <dilinger@queued.net>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-       linux-kernel@vger.kernel.org, davem@davemloft.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 29 Jun 2010 03:36:34 -0400
+Date: Tue, 29 Jun 2010 00:36:47 -0700 (PDT)
+Message-Id: <20100629.003647.214219303.davem@davemloft.net>
+To: mst@redhat.com
+Cc: arozansk@redhat.com, herbert.xu@redhat.com, quintela@redhat.com,
+       kvm@vger.kernel.org, virtualization@lists.osdl.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org, ykaul@redhat.com,
+       markmc@redhat.com
+Subject: Re: [PATCHv2] vhost-net: add dhclient work-around from userspace
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100628100807.GA30685@redhat.com>
+References: <20100628100807.GA30685@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 7:00 PM, Andres Salomon <dilinger@queued.net> wrote:
->
-> Microblaze and PPC both use PROC_DEVICETREE, and OLPC will as well.. put
-> the Kconfig option into fs/ rather than in arch/*/Kconfig.
->
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  arch/microblaze/Kconfig |    8 --------
->  arch/powerpc/Kconfig    |    8 --------
->  fs/proc/Kconfig         |    8 ++++++++
->  3 files changed, 8 insertions(+), 16 deletions(-)
->
-> diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-> index 76818f9..b66c962 100644
-> --- a/arch/microblaze/Kconfig
-> +++ b/arch/microblaze/Kconfig
-> @@ -128,14 +128,6 @@ config OF
->        def_bool y
->        select OF_FLATTREE
->
-> -config PROC_DEVICETREE
-> -       bool "Support for device tree in /proc"
-> -       depends on PROC_FS
-> -       help
-> -         This option adds a device-tree directory under /proc which contains
-> -         an image of the device tree that the kernel copies from Open
-> -         Firmware or other boot firmware. If unsure, say Y here.
-> -
->  endmenu
->
->  menu "Advanced setup"
-> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-> index 328774b..8a56e8b 100644
-> --- a/arch/powerpc/Kconfig
-> +++ b/arch/powerpc/Kconfig
-> @@ -578,14 +578,6 @@ config SCHED_SMT
->          when dealing with POWER5 cpus at a cost of slightly increased
->          overhead in some places. If unsure say N here.
->
-> -config PROC_DEVICETREE
-> -       bool "Support for device tree in /proc"
-> -       depends on PROC_FS
-> -       help
-> -         This option adds a device-tree directory under /proc which contains
-> -         an image of the device tree that the kernel copies from Open
-> -         Firmware or other boot firmware. If unsure, say Y here.
-> -
->  config CMDLINE_BOOL
->        bool "Default bootloader kernel arguments"
->
-> diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
-> index 50f8f06..858a859 100644
-> --- a/fs/proc/Kconfig
-> +++ b/fs/proc/Kconfig
-> @@ -39,6 +39,14 @@ config PROC_VMCORE
->         help
->         Exports the dump image of crashed kernel in ELF format.
->
-> +config PROC_DEVICETREE
-> +       bool "Support for device tree in /proc"
-> +       depends on PROC_FS && (PPC || MICROBLAZE)
-> +       help
-> +         This option adds a device-tree directory under /proc which contains
-> +         an image of the device tree that the kernel copies from Open
-> +         Firmware or other boot firmware. If unsure, say Y here.
-> +
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Mon, 28 Jun 2010 13:08:07 +0300
 
-Looks good to me.  However, I've changed the depends line to the following.
+> Userspace virtio server has the following hack
+> so guests rely on it, and we have to replicate it, too:
+> 
+> Use port number to detect incoming IPv4 DHCP response packets,
+> and fill in the checksum for these.
+> 
+> The issue we are solving is that on linux guests, some apps
+> that use recvmsg with AF_PACKET sockets, don't know how to
+> handle CHECKSUM_PARTIAL;
+> The interface to return the relevant information was added
+> in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
+> and older userspace does not use it.
+> One important user of recvmsg with AF_PACKET is dhclient,
+> so we add a work-around just for DHCP.
+> 
+> Don't bother applying the hack to IPv6 as userspace virtio does not
+> have a work-around for that - let's hope guests will do the right
+> thing wrt IPv6.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-depends on PROC_FS && OF && !SPARC
+Yikes, this is awful too.
 
-Cheers,
-g.
+Nothing in the kernel should be mucking around with procotol packets
+like this by default.  In particular, what the heck does port 67 mean?
+Locally I can use it for whatever I want for my own purposes, I don't
+have to follow the conventions for service ports as specified by the
+IETF.
+
+But I can't have the packet checksum state be left alone for port 67
+traffic on a box using virtio because you have this hack there.
+
+And yes it's broken on machines using the qemu thing, but at least the
+hack there is restricted to userspace.
+
+I really don't want anything in the kernel that looks like this.
+
+These applications are broken, and we've provided a way for them to
+work properly.  What's the point of having fixed applications if
+all of these hacks grow like fungus over every virtualization transport?
+
+It just means that people won't fix the apps, since they don't have
+to.  There is no incentive, and the mechanism we created to properly
+handle this loses it's value.
+
+At best, you can write a netfilter module that mucks up the packet
+checksum state in these situations.  At least in that case, you can
+make it generic (it mangles iff a packet matches a certain rule,
+so for your virtio guests you'd make it match for DHCP frames) instead
+of being some hard-coded DHCP thing by design.
+
+And since this is so cleanly seperated and portable you don't even
+need to push it upstream.  It's a temporary workaround for a temporary
+problem.  You can just delete it as soon as the majority of guests
+have the fixed dhcp.  The qemu crap should disappear similarly.
