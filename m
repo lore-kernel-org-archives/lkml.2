@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab0F2BER (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 21:04:17 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42961 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab0F2BEP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 21:04:15 -0400
-Date: Mon, 28 Jun 2010 21:04:05 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Miao Xie <miaox@cn.fujitsu.com>
-Cc: Dan Carpenter <error27@gmail.com>, Yan Zheng <zheng.yan@oracle.com>,
-       Diego Calleja <diegocg@gmail.com>, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] btrfs: make code reachable in btrfs_insert_some_items()
-Message-ID: <20100629010405.GU1993@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Miao Xie <miaox@cn.fujitsu.com>, Dan Carpenter <error27@gmail.com>,
-	Yan Zheng <zheng.yan@oracle.com>, Diego Calleja <diegocg@gmail.com>,
-	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-References: <20100628111726.GI19184@bicker>
- <4C294512.8070302@cn.fujitsu.com>
+	id S1751735Ab0F2BNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 21:13:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38882 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751278Ab0F2BNc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 21:13:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C294512.8070302@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0209.4C294689.0066:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <20100629005403.GC24343@mail.oracle.com>
+References: <20100628173529.GA10573@mail.oracle.com>
+	<20100629002421.GY6590@dastard>
+	<20100629005403.GC24343@mail.oracle.com>
+Date: Mon, 28 Jun 2010 18:12:35 -0700
+Message-ID: <AANLkTil1R9I94pVXLE50JAMPIwpiaZuroJAg4wcwyBUb@mail.gmail.com>
+Subject: Re: [PATCH] Revert "writeback: limit write_cache_pages integrity 
+	scanning to current EOF"
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
+       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 08:57:54AM +0800, Miao Xie wrote:
-> Hi,
-> 
-> on 2010-6-28 19:17, Dan Carpenter wrote:
-> > The break was in front of the "nr = i" assignment so that was never hit.
-> 
-> This bug has been fixed a month ago, and the patch has been merged into the
-> btrfs-unstable tree.
+On Mon, Jun 28, 2010 at 5:54 PM, Joel Becker <Joel.Becker@oracle.com> wrote:
+> On Tue, Jun 29, 2010 at 10:24:21AM +1000, Dave Chinner wrote:
+>>
+>> Looking at ocfs2_writepage(), it simply calls
+>> block_write_full_page(), which does:
+>>
+>>       /* Is the page fully outside i_size? (truncate in progress) */
+>>       offset = i_size & (PAGE_CACHE_SIZE-1);
+>>       if (page->index >= end_index+1 || !offset) {
+>>               /*
+>>                * The page may have dirty, unmapped buffers.  For example,
+>>                * they may have been added in ext3_writepage().  Make them
+>>                * freeable here, so the page does not leak.
+>>                */
+>>               do_invalidatepage(page, 0);
+>>               unlock_page(page);
+>>               return 0; /* don't care */
+>>       }
+>>
+>> i.e. pages beyond EOF get invalidated.  If it somehow gets through
+>> that check, __block_write_full_page() will avoid writing dirty
+>> bufferheads beyond EOF because the write is "racing with truncate".
+>
+>        Your contention is that we've never gotten those tail blocks to
+> disk.  Instead, our code either handles the future extensions of i_size
+> or we've just gotten lucky with our testing.  Our current BUG trigger is
+> because we have a new check that catches this case.  Does that summarize
+> your position correctly?
 
-This was one that we took out to keep the pull request down to the
-critical fixes.  That function actually isn't called, I'll just remove
-it.
+Maybe Dave has some more exhaustive answer, but his point that
+block_write_full_page() already just drops the page does seem to be
+very valid.  Which makes me suspect that it would be better to remove
+the ocfs2 BUG_ON() as a stop-gap measure, rather than reverting the
+commit. It seems to be true that the "don't bother flushing past EOF"
+commit really just uncovered an older bug.
 
--chris
+So maybe ocfs2 should just replace the bug-on with invalidating the
+page (perhaps with a WARN_ONCE() to make sure the problem doesn't get
+forgotten about?)
 
-> 
->   http://marc.info/?l=linux-btrfs&m=127434036913484&w=2
-> 
-> Thanks
-> Miao
-> > 
-> > Signed-off-by: Dan Carpenter <error27@gmail.com>
-> > 
-> > diff --git a/fs/btrfs/ctree.c b/fs/btrfs/ctree.c
-> > index 0d1d966..ceb8ad2 100644
-> > --- a/fs/btrfs/ctree.c
-> > +++ b/fs/btrfs/ctree.c
-> > @@ -3453,8 +3453,8 @@ int btrfs_insert_some_items(struct btrfs_trans_handle *trans,
-> >  	for (i = 0; i < nr; i++) {
-> >  		if (total_size + data_size[i] + sizeof(struct btrfs_item) >
-> >  		    BTRFS_LEAF_DATA_SIZE(root)) {
-> > -			break;
-> >  			nr = i;
-> > +			break;
-> >  		}
-> >  		total_data += data_size[i];
-> >  		total_size += data_size[i] + sizeof(struct btrfs_item);
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+                 Linus
