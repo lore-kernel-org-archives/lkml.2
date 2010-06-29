@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab0F2SN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 14:13:58 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:46815 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab0F2SN4 convert rfc822-to-8bit (ORCPT
+	id S1754820Ab0F2SRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 14:17:05 -0400
+Received: from mail80c7.megamailservers.com ([69.49.98.180]:50624 "EHLO
+	mail80c7.megamailservers.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754354Ab0F2SRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 14:13:56 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.0 c=1 a=o9CK1RTiBG0A:10 a=ygRHs6EKU7oA:10 a=VphdPIyG4kEA:10
- a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=81fKdhF2Zd8y9jJC7oIA:9
- a=qNmrfnJqmYCbbJ0rRCQA:7 a=N8pNo9sonwGIHLFp9IK5AMTo8koA:4 a=CjuIK1q_8ugA:10
-Subject: Re: [PATCH] Ext4: Make file creation time, i_version and i_generation	available by xattrs
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <AANLkTikhZn15GmOTe-fsM2IgxHFxtZIRBOb_4kPWSR4E@mail.gmail.com>
-Date: Tue, 29 Jun 2010 12:13:54 -0600
-Cc: David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk,
-       jlayton@redhat.com, mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-       sjayaraman@suse.de, linux-ext4@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E7B61059-6CF2-4269-A1E7-E398F7B97CCF@dilger.ca>
-References: <20100628162626.6026.26679.stgit@warthog.procyon.org.uk> <19AAF9AA-2445-4C73-808B-4AD9C5C7E769@dilger.ca> <8831.1277753903@redhat.com> <AANLkTikhZn15GmOTe-fsM2IgxHFxtZIRBOb_4kPWSR4E@mail.gmail.com>
-To: Steve French <smfrench@gmail.com>
-X-Mailer: Apple Mail (2.1078)
+	Tue, 29 Jun 2010 14:17:03 -0400
+X-Greylist: delayed 3999 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jun 2010 14:17:03 EDT
+X-Authenticated-User: paulkf.microgate.com
+Message-ID: <4C2A36C6.3020101@microgate.com>
+Date: Tue, 29 Jun 2010 12:09:10 -0600
+From: Paul Fulghum <paulkf@microgate.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
+MIME-Version: 1.0
+To: Kulikov Vasiliy <segooon@gmail.com>
+CC: trivial@kernel.org, Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/16] trivial: use ARRAY_SIZE
+References: <1277726089-24467-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1277726089-24467-1-git-send-email-segooon@gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-CSC: 0
+X-CHA: v=1.1 cv=mS14aLXsVDjuqhCeSQYt5ooTdy5XXOZhHx7Vus2DgyA= c=1 sm=1
+		a=4Tz1Q6VkXRsA:10 a=ood2b7iyd8MA:10 a=8nJEP1OIZ-IA:10
+		a=NZZe3g19dmt1xztwQ50WRw==:17 a=pGLkceISAAAA:8 a=ijWuk3ZyAAAA:8
+		a=w9rof2AGrn1jCrruHmUA:9 a=bZfmuX8Xq4pLgkWYQbCWHy_TF1kA:4 a=wPNLvfGTeEIA:10
+		a=MSl-tDqOz04A:10 a=fEugV1Gw4pQA:10 a=NZZe3g19dmt1xztwQ50WRw==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-06-28, at 13:41, Steve French wrote:
-> I think backing them up makes sense, even if they can't easily
-> be restored (ie just for reporting).
+On 6/28/2010 5:54 AM, Kulikov Vasiliy wrote:
+> Change sizeof(x) / sizeof(*x) to ARRAY_SIZE(x).
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  drivers/char/synclink_gt.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
+> index 4561ce2..334cf5c 100644
+> --- a/drivers/char/synclink_gt.c
+> +++ b/drivers/char/synclink_gt.c
+> @@ -4845,7 +4845,7 @@ static int register_test(struct slgt_info *info)
+>  {
+>  	static unsigned short patterns[] =
+>  		{0x0000, 0xffff, 0xaaaa, 0x5555, 0x6969, 0x9696};
+> -	static unsigned int count = sizeof(patterns)/sizeof(patterns[0]);
+> +	static unsigned int count = ARRAY_SIZE(patterns);
+>  	unsigned int i;
+>  	int rc = 0;
+>  
 
-Right.  I think being able to restore the crtime (as root) makes sense, I don't think restoring i_generation and i_version make sense however, given that we can't preserve the inode number.  The filesystem can silently ignore them when they are written as xattrs (returning an error gives "tar" and "cp" heartburn, we've found).
+Acked-by: Paul Fulghum <paulkf@microgate.com>
 
-> Are there security differences between the "trusted" namespace that
-> would make it harder for an app to read them (the man page did not list
-> the security differences between trusted and user xattrs).
+with the exception of the trailing CR :-)
 
-"trusted." is only writeable by root and the kernel.  "user." is writeable by regular users.
-
-Cheers, Andreas
-
-
-
-
-
+-- 
+Paul Fulghum
+MicroGate Systems, Ltd.
