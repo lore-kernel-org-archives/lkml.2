@@ -1,185 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab0F2JYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 05:24:08 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39212 "EHLO hera.kernel.org"
+	id S1754828Ab0F2JXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 05:23:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14290 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754191Ab0F2JYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 05:24:02 -0400
-Date: Tue, 29 Jun 2010 09:23:40 GMT
-From: tip-bot for Li Zefan <lizf@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       rostedt@goodmis.org, lizf@cn.fujitsu.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       lizf@cn.fujitsu.com, rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <4BFA37E9.1020106@cn.fujitsu.com>
-References: <4BFA37E9.1020106@cn.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Remove open-coded __trace_add_event_call()
-Message-ID: <tip-67ead0a6ceb001b4cb891d782e440f0e79493ba2@git.kernel.org>
-Git-Commit-ID: 67ead0a6ceb001b4cb891d782e440f0e79493ba2
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 09:23:44 +0000 (UTC)
+	id S1754212Ab0F2JXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 05:23:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,503,1272870000"; 
+   d="scan'208";a="634599238"
+Subject: Re: [rfc] Describe events in a structured way via sysfs
+From: Lin Ming <ming.m.lin@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+       Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <20100629085532.GE22344@elte.hu>
+References: <1277110509.18390.28.camel@minggr.sh.intel.com>
+	 <1277112858.3618.16.camel@jlt3.sipsolutions.net>
+	 <1277187920.4467.3.camel@minggr.sh.intel.com>
+	 <1277189971.3637.5.camel@jlt3.sipsolutions.net>
+	 <1277191359.5025.4.camel@minggr.sh.intel.com>
+	 <1277192007.3637.8.camel@jlt3.sipsolutions.net>
+	 <20100624093625.GA26931@elte.hu>
+	 <1277396053.3870.16.camel@jlt3.sipsolutions.net>
+	 <20100624173315.GA30403@elte.hu>
+	 <1277792114.5400.5.camel@minggr.sh.intel.com>
+	 <20100629085532.GE22344@elte.hu>
+Content-Type: text/plain
+Date: Tue, 29 Jun 2010 17:20:48 +0800
+Message-Id: <1277803248.5400.16.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  67ead0a6ceb001b4cb891d782e440f0e79493ba2
-Gitweb:     http://git.kernel.org/tip/67ead0a6ceb001b4cb891d782e440f0e79493ba2
-Author:     Li Zefan <lizf@cn.fujitsu.com>
-AuthorDate: Mon, 24 May 2010 16:25:13 +0800
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 28 Jun 2010 17:12:55 -0400
+On Tue, 2010-06-29 at 16:55 +0800, Ingo Molnar wrote:
+> * Lin Ming <ming.m.lin@intel.com> wrote:
+> 
+> > On Fri, 2010-06-25 at 01:33 +0800, Ingo Molnar wrote:
+> > > * Johannes Berg <johannes@sipsolutions.net> wrote:
+> > > 
+> > > > On Thu, 2010-06-24 at 11:36 +0200, Ingo Molnar wrote:
+> > > > 
+> > > > > That's probably best achieved via a TRACE_EVENT() variant, by passing in the 
+> > > > > sysfs location.
+> > > > > 
+> > > > > It might even make sense to make this a part of TRACE_EVENT() itself and make 
+> > > > > 'NULL' the current default, non-sysfs-enumerated behavior. That way we can 
+> > > > > gradually (and non-intrusively) find all the right sysfs places for events.
+> > > > 
+> > > > No, this doesn't work. A lot of events are multi-instance. Say you have an 
+> > > > event for each USB device. This event would have to show up in many places 
+> > > > in sysfs, and each trace_foo() invocation needs to get the struct device 
+> > > > pointer, not just the TRACE_EVENT() definition. Additionally, to 
+> > > > create/destroy the sysfs pieces we need something like init_trace_foo(dev) 
+> > > > and destroy_trace_foo(dev) be called when the sysfs points for the device 
+> > > > should be created/destroyed.
+> > > 
+> > > Yes - but even this could be expressed via TRACE_EVENT(): by giving it a 
+> > > device-specific function pointer and then instantiating individual events from 
+> > > a single, central place in sysfs.
+> > > 
+> > > That is the place where we already know where it ends up in sysfs, and where 
+> > > the event-specific function can match up whether that particular node belongs 
+> > > to it and whether an additional event directory should be created for that 
+> > > particular sysfs node.
+> > > 
+> > > > The TRACE_EVENT() just defines the template, but such multi-instance events 
+> > > > really should be standardised in terms of their struct device (or maybe 
+> > > > kobject).
+> > > > 
+> > > > I think that needs some TRACE_DEVICE_EVENT macro that creates the required 
+> > > > inlines etc, and including the init/destroy that are called when the event 
+> > > > should show up in sysfs.
+> > > > 
+> > > > There's no way you can have the event show up in sysfs at the right spot 
+> > > > with _just_ a TRACE_EVENT macro, since at define time in the header file you 
+> > > > don't even have a valid struct device pointer.
+> > > 
+> > > That would be another possible way to do it - to explicitly create the events 
+> > > directory. It looks a bit simpler as we wouldnt have to touch TRACE_EVENT() 
+> > > and because it directly expresses the 'this node has an events directory' 
+> > > property at the place where we create the device node.
+> > 
+> > Let me take i915 tracepoints as an example.
+> > Do you mean something like below?
+> > 
+> > diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+> > index 423dc90..9e7e4a0 100644
+> > --- a/drivers/gpu/drm/i915/i915_drv.c
+> > +++ b/drivers/gpu/drm/i915/i915_drv.c
+> > @@ -28,6 +28,7 @@
+> >   */
+> >  
+> >  #include <linux/device.h>
+> > +#include <linux/perf_event.h>
+> >  #include "drmP.h"
+> >  #include "drm.h"
+> >  #include "i915_drm.h"
+> > @@ -413,7 +414,17 @@ int i965_reset(struct drm_device *dev, u8 flags)
+> >  static int __devinit
+> >  i915_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+> >  {
+> > -	return drm_get_dev(pdev, ent, &driver);
+> > +	struct kobject *kobj;
+> > +	int ret;
+> > +
+> > +	ret = drm_get_dev(pdev, ent, &driver);
+> > +
+> > +	if (!ret) {
+> > +		kobj = &pdev->dev.kobj;
+> > +		perf_sys_register_tp(kobj, "i915");
+> > +	}
+> > +
+> > +	return ret;
+> 
+> Yeah, something like that - assuming that this means that we'll add the events 
+> directory to the device directory, to all the 
+> /sys/bus/pci/drivers/i915/*/events/ driver directories right? (i havent 
+> checked the DRM code)
 
-tracing: Remove open-coded __trace_add_event_call()
+I haven't run the code, but I think yes.
 
-Let trace_module_add_events() and event_trace_init() call
-__trace_add_event_call().
+> 
+> Small detail, it could be written a bit more compactly, like:
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-LKML-Reference: <4BFA37E9.1020106@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_events.c |   70 +++++++++++-------------------------------
- 1 files changed, 19 insertions(+), 51 deletions(-)
+Thanks for the tip.
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 5bad9cb..69bee4c 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1009,11 +1009,17 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
- 	return 0;
- }
- 
--static int __trace_add_event_call(struct ftrace_event_call *call)
-+static int
-+__trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
-+		       const struct file_operations *id,
-+		       const struct file_operations *enable,
-+		       const struct file_operations *filter,
-+		       const struct file_operations *format)
- {
- 	struct dentry *d_events;
- 	int ret;
- 
-+	/* The linker may leave blanks */
- 	if (!call->name)
- 		return -EINVAL;
- 
-@@ -1021,8 +1027,8 @@ static int __trace_add_event_call(struct ftrace_event_call *call)
- 		ret = call->class->raw_init(call);
- 		if (ret < 0) {
- 			if (ret != -ENOSYS)
--				pr_warning("Could not initialize trace "
--				"events/%s\n", call->name);
-+				pr_warning("Could not initialize trace events/%s\n",
-+					   call->name);
- 			return ret;
- 		}
- 	}
-@@ -1031,11 +1037,10 @@ static int __trace_add_event_call(struct ftrace_event_call *call)
- 	if (!d_events)
- 		return -ENOENT;
- 
--	ret = event_create_dir(call, d_events, &ftrace_event_id_fops,
--				&ftrace_enable_fops, &ftrace_event_filter_fops,
--				&ftrace_event_format_fops);
-+	ret = event_create_dir(call, d_events, id, enable, filter, format);
- 	if (!ret)
- 		list_add(&call->list, &ftrace_events);
-+	call->mod = mod;
- 
- 	return ret;
- }
-@@ -1045,7 +1050,10 @@ int trace_add_event_call(struct ftrace_event_call *call)
- {
- 	int ret;
- 	mutex_lock(&event_mutex);
--	ret = __trace_add_event_call(call);
-+	ret = __trace_add_event_call(call, NULL, &ftrace_event_id_fops,
-+				     &ftrace_enable_fops,
-+				     &ftrace_event_filter_fops,
-+				     &ftrace_event_format_fops);
- 	mutex_unlock(&event_mutex);
- 	return ret;
- }
-@@ -1162,8 +1170,6 @@ static void trace_module_add_events(struct module *mod)
- {
- 	struct ftrace_module_file_ops *file_ops = NULL;
- 	struct ftrace_event_call *call, *start, *end;
--	struct dentry *d_events;
--	int ret;
- 
- 	start = mod->trace_events;
- 	end = mod->trace_events + mod->num_trace_events;
-@@ -1171,38 +1177,14 @@ static void trace_module_add_events(struct module *mod)
- 	if (start == end)
- 		return;
- 
--	d_events = event_trace_events_dir();
--	if (!d_events)
-+	file_ops = trace_create_file_ops(mod);
-+	if (!file_ops)
- 		return;
- 
- 	for_each_event(call, start, end) {
--		/* The linker may leave blanks */
--		if (!call->name)
--			continue;
--		if (call->class->raw_init) {
--			ret = call->class->raw_init(call);
--			if (ret < 0) {
--				if (ret != -ENOSYS)
--					pr_warning("Could not initialize trace "
--					"point events/%s\n", call->name);
--				continue;
--			}
--		}
--		/*
--		 * This module has events, create file ops for this module
--		 * if not already done.
--		 */
--		if (!file_ops) {
--			file_ops = trace_create_file_ops(mod);
--			if (!file_ops)
--				return;
--		}
--		call->mod = mod;
--		ret = event_create_dir(call, d_events,
-+		__trace_add_event_call(call, mod,
- 				       &file_ops->id, &file_ops->enable,
- 				       &file_ops->filter, &file_ops->format);
--		if (!ret)
--			list_add(&call->list, &ftrace_events);
- 	}
- }
- 
-@@ -1333,24 +1315,10 @@ static __init int event_trace_init(void)
- 		pr_warning("tracing: Failed to allocate common fields");
- 
- 	for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
--		/* The linker may leave blanks */
--		if (!call->name)
--			continue;
--		if (call->class->raw_init) {
--			ret = call->class->raw_init(call);
--			if (ret < 0) {
--				if (ret != -ENOSYS)
--					pr_warning("Could not initialize trace "
--					"point events/%s\n", call->name);
--				continue;
--			}
--		}
--		ret = event_create_dir(call, d_events, &ftrace_event_id_fops,
-+		__trace_add_event_call(call, NULL, &ftrace_event_id_fops,
- 				       &ftrace_enable_fops,
- 				       &ftrace_event_filter_fops,
- 				       &ftrace_event_format_fops);
--		if (!ret)
--			list_add(&call->list, &ftrace_events);
- 	}
- 
- 	while (true) {
+> 
+> > +	int ret;
+> > +
+> > +	ret = drm_get_dev(pdev, ent, &driver);
+> > +	if (!ret)
+> > +		perf_sys_register_tp(&pdev->dev.kobj, "i915");
+> > +
+> > +	return ret;
+> 
+> Also, we can (optionally) consider 'generic', subsystem level events to also 
+> show up under:
+> 
+>    /sys/bus/pci/drivers/i915/events/
+> 
+> This would give a model to non-device-specific events to be listed one level 
+> higher in the sysfs hierarchy.
+> 
+> This too would be done in the driver, not by generic code. It's generally the 
+> driver which knows how the events should be categorized.
+
+This is a bit difficult. I'd like not to touch TRACE_EVENT().
+How does the driver know if an event is 'generic' if TRACE_EVENT is not
+touched?
+
+> 
+> I'd imagine something similar for wireless drivers as well - most currently 
+> defined events would show up on a per device basis there.
+> 
+> Can you see practical problems with this scheme?
+
+Not now. I may find some problems when write more detail code.
+
+Lin Ming
+
+> 
+> 	Ingo
+
