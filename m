@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab0F2KQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 06:16:01 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:47959 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab0F2KP5 (ORCPT
+	id S1755306Ab0F2KP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 06:15:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33660 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754983Ab0F2KPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 06:15:57 -0400
+	Tue, 29 Jun 2010 06:15:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=I8BfAZmCEQ+NPy/0KaiYiVa9ZSnkHdDyl3dBpCBV8Z8LKsOG2o5e5yLeir2cmCsZTj
-         CyWgA/q0OdG+M6JAHxMUajmYg5h000IUGnTGoa1fMuExvSMfX7285Fzo+uDGQHm1MWLN
-         f+wyXG/+qCW1B2ddqnXg0PjBv6Xh+3SJRK97c=
+        b=Oaz1miRQsX6Um5s5g2D1PtstDGXFvxkrRRiUSpdO27uKT/E2EfjoZqHYE/o3kpiijh
+         mT85ywM4Q8gLp9raD0idXDhmNXpZ+gzWl8vCUGmKCDpPDPI9IwL9O/D6cHQGNjlblLXR
+         GgHVwELth4ujKgzyFyiWJGAttVj44zKv1cJjo=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Bob Beers <bob.beers@gmail.com>,
-       Randy Dunlap <randy.dunlap@oracle.com>, Joe Perches <joe@perches.com>,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 15/25] linux: remove casts from void*
-Date: Tue, 29 Jun 2010 14:15:52 +0400
-Message-Id: <1277806553-31214-1-git-send-email-segooon@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Olimpiu Pascariu <olimpiu.pascariu@gmail.com>,
+       Tejun Heo <tj@kernel.org>,
+       Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
+       sai gopal <tsg321@gmail.com>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 14/25] cx25821-alsa: remove casts from void*
+Date: Tue, 29 Jun 2010 14:15:47 +0400
+Message-Id: <1277806548-31180-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,31 +34,22 @@ Remove unnesessary casts from void*.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/staging/cxt1e1/linux.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/cx25821/cx25821-alsa.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-index 134e756..baa4b54 100644
---- a/drivers/staging/cxt1e1/linux.c
-+++ b/drivers/staging/cxt1e1/linux.c
-@@ -461,7 +461,7 @@ chan_get_stats (struct net_device * ndev)
-     {
-         struct c4_priv *priv;
+diff --git a/drivers/staging/cx25821/cx25821-alsa.c b/drivers/staging/cx25821/cx25821-alsa.c
+index 1798975..ce2c6f1 100644
+--- a/drivers/staging/cx25821/cx25821-alsa.c
++++ b/drivers/staging/cx25821/cx25821-alsa.c
+@@ -699,7 +699,7 @@ static int cx25821_audio_initdev(struct cx25821_dev *dev)
  
--        priv = (struct c4_priv *) dev_to_hdlc (ndev)->priv;
-+        priv = dev_to_hdlc (ndev)->priv;
-         channum = priv->channum;
-     }
- #endif
-@@ -886,7 +886,7 @@ do_deluser (struct net_device * ndev, int lockit)
- #if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
-         priv = DEV_TO_PRIV (ndev);
- #else
--        priv = (struct c4_priv *) dev_to_hdlc (ndev)->priv;
-+        priv = dev_to_hdlc (ndev)->priv;
- #endif
-         ci = priv->ci;
-         channum = priv->channum;
+ 	/* Card "creation" */
+ 	card->private_free = snd_cx25821_dev_free;
+-	chip = (struct cx25821_audio_dev *) card->private_data;
++	chip = card->private_data;
+ 	spin_lock_init(&chip->reg_lock);
+ 
+ 	chip->dev = dev;
 -- 
 1.7.0.4
 
