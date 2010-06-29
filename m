@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab0F2Iu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 04:50:29 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40898 "EHLO mx1.suse.de"
+	id S1754523Ab0F2IvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 04:51:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61172 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241Ab0F2Iu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 04:50:27 -0400
-Date: Tue, 29 Jun 2010 10:50:24 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: David Miller <davem@davemloft.net>
-Cc: ospite@studenti.unina.it, alan@signal11.us, marcel@holtmann.org,
-       mdpoole@troilus.org, hadess@hadess.net, eric.dumazet@gmail.com,
-       linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw HIDIOCGFEATURE
- and HIDIOCSFEATURE
-In-Reply-To: <20100629.001216.91341775.davem@davemloft.net>
-Message-ID: <alpine.LNX.2.00.1006291047560.13809@pobox.suse.cz>
-References: <1276467601-9066-1-git-send-email-alan@signal11.us> <20100628131437.bde782b6.ospite@studenti.unina.it> <20100629.001216.91341775.davem@davemloft.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754240Ab0F2IvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 04:51:12 -0400
+Message-ID: <4C29B3FD.8040802@redhat.com>
+Date: Tue, 29 Jun 2010 11:51:09 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 3/10] KVM: MMU: fix direct sp's access corruptted
+References: <4C2498EC.2010006@cn.fujitsu.com> <4C249BAD.6000609@cn.fujitsu.com> <4C287081.40300@redhat.com> <4C287332.5080803@cn.fujitsu.com> <4C2883D3.2050606@redhat.com> <4C2949A5.1070303@cn.fujitsu.com> <4C299B7E.5020303@redhat.com> <4C29A30A.8020107@redhat.com> <4C29A49C.8040804@cn.fujitsu.com>
+In-Reply-To: <4C29A49C.8040804@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010, David Miller wrote:
+On 06/29/2010 10:45 AM, Xiao Guangrong wrote:
+>
+>> - there was once talk that instead of folding pt_access and pte_access
+>> together into the leaf sp->role.access, each sp level would have its own
+>> access permissions.  In this case we don't even have to get a new direct
+>> sp, only change the PT_DIRECTORY_LEVEL spte to add write permissions
+>> (all direct sp's would be writeable and permissions would be controlled
+>> at their parent_pte level).  Of course that's a much bigger change than
+>> this bug fix.
+>>
+>>      
+> Yeah, i have considered this way, but it will change the shadow page's mapping
+> way: it control the access at the upper level, but in the current code, we allow
+> the upper level have the ALL_ACCESS and control the access right at the last level.
+> It will break many things, such as write-protected...
+>    
 
-> >> This patch adds support or getting and setting feature reports for bluetooth
-> >> HID devices from HIDRAW.
-> >> 
-> >> Signed-off-by: Alan Ott <alan@signal11.us>
-> >> ---
-> > 
-> > Ping.
-> 
-> We effectively don't have a bluetooth maintainer at the current point in 
-> time.  I've tried to let patches sit for a while hoping the listed 
-> maintainer would do something, at least occaisionally, but that simply 
-> isn't happening.
-
-Frankly, I don't understand what exactly the current situation with 
-in-kernel bluetooth stack is anyway. 
-
-What is the relation between what we have in net/bluetooth and the tree at 
-[1], which seems to be quite actively developed?
-
-> So I'll just pick patches up directly as I find time to review them, but 
-> I have to warn that for me it's going to be done in a very low priority 
-> way because I really don't find bluetooth all that exciting. :-)
-
-If needed, I can at least take over the net/bluetooth/hidp part, as I 
-maintain the rest of the HID code anyway.
-
-[1] http://git.kernel.org/?p=bluetooth/bluez.git;a=summary
+spte's access bits have dual purpose, both to map guest protection and 
+for host protection (like for shadowed pages, or ksm pages).  So the 
+last level sptes still need to consider host write protection.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+error compiling committee.c: too many arguments to function
+
