@@ -1,98 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252Ab0F2NHd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 09:07:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8402 "EHLO mx1.redhat.com"
+	id S1755840Ab0F2NK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 09:10:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64609 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412Ab0F2NHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 09:07:31 -0400
-Date: Tue, 29 Jun 2010 15:05:03 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Mandeep Singh Baines <msb@google.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: while_each_thread() under rcu_read_lock() is broken?
-Message-ID: <20100629130503.GA5237@redhat.com>
-References: <20100621170919.GA13826@redhat.com> <20100621205128.GI2354@linux.vnet.ibm.com> <20100622212357.GA19670@redhat.com> <20100622221226.GP2290@linux.vnet.ibm.com> <20100623152421.GA8445@redhat.com> <20100624180726.GK2373@linux.vnet.ibm.com> <20100624215702.GA21360@redhat.com> <20100625034105.GD2391@linux.vnet.ibm.com> <20100625095548.GA6292@redhat.com> <20100628234358.GJ2357@linux.vnet.ibm.com>
+	id S1751412Ab0F2NKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 09:10:24 -0400
+Date: Tue, 29 Jun 2010 16:04:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: arozansk@redhat.com, herbert.xu@redhat.com, quintela@redhat.com,
+       kvm@vger.kernel.org, virtualization@lists.osdl.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org, ykaul@redhat.com,
+       markmc@redhat.com
+Subject: Re: [PATCHv2] vhost-net: add dhclient work-around from userspace
+Message-ID: <20100629130439.GD3603@redhat.com>
+References: <20100628100807.GA30685@redhat.com> <20100629.003647.214219303.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100628234358.GJ2357@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100629.003647.214219303.davem@davemloft.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28, Paul E. McKenney wrote:
->
-> On Fri, Jun 25, 2010 at 11:55:48AM +0200, Oleg Nesterov wrote:
-> > On 06/24, Paul E. McKenney wrote:
-> > >
-> > > So it is OK to skip some of the other threads in this case, even
-> > > though they were present throughout the whole procedure?
-> >
-> > I think, yes. We can miss them in any case, they can go away before
-> > while_each_thread(g, t) starts the scan.
-> >
-> > If g == group_leader (old or new), then we should notice this thread
-> > at least.
-> >
-> > Otherwise we can miss them all, with or without next_thread_careful().
->
-> Just to be sure that we are actually talking about the same scenario...
->
-> Suppose that a task group is lead by 2908 and has member 2909, 2910,
-> 2911, and 2912.  Suppose that 2910 does pthread_exit() just as some
-> other task is "ls"ing the relevant /proc entry.  Is it really OK for
-> "ls" to show 2909 but not 2911 and 2912, even though 2911 and 2912
-> were alive and kicking the entire time?
+On Tue, Jun 29, 2010 at 12:36:47AM -0700, David Miller wrote:
+> From: "Michael S. Tsirkin" <mst@redhat.com>
+> Date: Mon, 28 Jun 2010 13:08:07 +0300
+> 
+> > Userspace virtio server has the following hack
+> > so guests rely on it, and we have to replicate it, too:
+> > 
+> > Use port number to detect incoming IPv4 DHCP response packets,
+> > and fill in the checksum for these.
+> > 
+> > The issue we are solving is that on linux guests, some apps
+> > that use recvmsg with AF_PACKET sockets, don't know how to
+> > handle CHECKSUM_PARTIAL;
+> > The interface to return the relevant information was added
+> > in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
+> > and older userspace does not use it.
+> > One important user of recvmsg with AF_PACKET is dhclient,
+> > so we add a work-around just for DHCP.
+> > 
+> > Don't bother applying the hack to IPv6 as userspace virtio does not
+> > have a work-around for that - let's hope guests will do the right
+> > thing wrt IPv6.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> Yikes, this is awful too.
+> 
+> Nothing in the kernel should be mucking around with procotol packets
+> like this by default.  In particular, what the heck does port 67 mean?
+> Locally I can use it for whatever I want for my own purposes, I don't
+> have to follow the conventions for service ports as specified by the
+> IETF.
+> 
+> But I can't have the packet checksum state be left alone for port 67
+> traffic on a box using virtio because you have this hack there.
+> 
+> And yes it's broken on machines using the qemu thing, but at least the
+> hack there is restricted to userspace.
 
-Confused.
+Yes, and I think it was a mistake to add the hack there. This is what
+prevented applications from using the new interface in the 3 years
+since it was first introduced.
 
-Let's return to
+> I really don't want anything in the kernel that looks like this.
+> 
+> These applications are broken, and we've provided a way for them to
+> work properly.  What's the point of having fixed applications if
+> all of these hacks grow like fungus over every virtualization transport?
+> 
+> It just means that people won't fix the apps, since they don't have
+> to.  There is no incentive, and the mechanism we created to properly
+> handle this loses it's value.
+> 
+> At best, you can write a netfilter module that mucks up the packet
+> checksum state in these situations.  At least in that case, you can
+> make it generic (it mangles iff a packet matches a certain rule,
+> so for your virtio guests you'd make it match for DHCP frames) instead
+> of being some hard-coded DHCP thing by design.
 
-	do
-		printk("%d\n", t->pid);
-	while_each_thread(g, t);
-
-for the moment.
-
-In that case, if g != 2910 (the exiting thread) we will print all pids,
-except we can miss 2910. With or without next_thread_careful().
-
-Only if we start at g == 2910, then
-
-	current code:		print 2910, then spin forever printing
-				other pids
-
-	next_thread_careful:	stop printing when we notice that 2910
-				was unhashed.
-
-				So, yes, in this case we can miss all
-				other threads.
-
-As for "ls"ing the relevant /proc entry. proc_task_readdir() is complicated,
-it can drop rcu lock, sleep, etc. But basically it mimics while_each_thread()
-logic. Let's assume that proc_task_fill_cache() never fails.
-
-proc_task_readdir() always starts at the group_leader, 2908. So, with or
-without next_thread_careful() we can only miss the exiting 2910.
-
-But (again, unless I missed something) the current code can race with exec,
-and s/next_thread/next_thread_careful/ in first_tid() can fix the race.
-(just in case, we can fix it differently).
-
-But, of course, if you do "ls /proc/2910/task" instead of "ls /proc/2908/task"
-you can miss _all_ threads if 2910 exits before proc_task_readdir() finds
-its leader, 2908. Again, this is with or without next_thread_careful().
+Nod.
+One question on implementation:
+why does skb_checksum_help set the checksum state to
+CHECKSUM_NONE? Shouldn't it be CHECKSUM_COMPLETE?
 
 
-Paul, please let me know if I misunderstood your concerns, or if I missed
-something.
 
-Oleg.
+> And since this is so cleanly seperated and portable you don't even
+> need to push it upstream.  It's a temporary workaround for a temporary
+> problem.  You can just delete it as soon as the majority of guests
+> have the fixed dhcp.  The qemu crap should disappear similarly.
 
+Since using the module involves updating the management tools
+as well, if we go down this route it will be much less painful
+for everyone to do push it upstream.
+
+-- 
+MST
