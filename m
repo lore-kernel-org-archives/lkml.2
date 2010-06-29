@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab0F2NfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 09:35:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2913 "EHLO mx1.redhat.com"
+	id S1755389Ab0F2Ngd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 09:36:33 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39486 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752564Ab0F2NfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 09:35:01 -0400
-Date: Tue, 29 Jun 2010 15:31:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: john stultz <johnstul@us.ibm.com>, Kees Cook <kees.cook@canonical.com>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] sanitize task->comm to avoid leaking escape codes
-Message-ID: <20100629133131.GB5237@redhat.com>
-References: <20100623181129.GM5876@outflux.net> <20100623194145.GA19628@redhat.com> <1277787505.3599.25.camel@localhost.localdomain>
+	id S1753988Ab0F2Ngc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 09:36:32 -0400
+From: Nicolas Palix <npalix@diku.dk>
+To: Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH] Documentation: fix ubuntu distro name
+Date: Tue, 29 Jun 2010 15:36:25 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Kulikov Vasiliy <segooon@gmail.com>, k@suse.de,
+       Randy Dunlap <rdunlap@xenotime.net>, Julia Lawall <julia@diku.dk>,
+       Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+       linux-doc@vger.kernel.org
+References: <1277814677-1944-1-git-send-email-segooon@gmail.com> <20100629125858.GA2279@shinshilla> <alpine.LNX.2.00.1006291500360.13809@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1006291500360.13809@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277787505.3599.25.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006291536.25807.npalix@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29, Artem Bityutskiy wrote:
->
-> On Wed, 2010-06-23 at 21:41 +0200, Oleg Nesterov wrote:
-> > On 06/23, Kees Cook wrote:
-> > >
-> > > @@ -956,7 +957,15 @@ void set_task_comm(struct task_struct *tsk, char *buf)
-> > >  	 */
-> > >  	memset(tsk->comm, 0, TASK_COMM_LEN);
-> > >  	wmb();
-> >
-> > Off-topic. I'd wish I could understand this barrier. Since the lockless
-> > reader doesn't do rmb() I don't see how this can help.
->
-> This wmb() looks wrong to me as well. To achieve what the comment in
-> this function says, it should be smp_wmb() and we should have smp_rmb()
-> in the reading side, AFAIU.
->
-> >  OTOH, I don't
-> > understand why it is needed, we never change ->comm[TASK_COMM_LEN-1] == '0'.
->
-> I think the idea was that readers can see incomplete names, but not
-> messed up names, consisting of old and new ones.
+On Tuesday 29 June 2010 15:01:14 Jiri Kosina wrote:
+> On Tue, 29 Jun 2010, Kulikov Vasiliy wrote:
+> 
+> > > Indeed. I mixed things.
+> > > 
+> > > But Coccinelle was already in Karmic [1].
+> > > Can you submit a patch with 9.10 instead of 10.04 ?
+> > > 
+> > > I will Ack it.
+> > > 
+> > > Thanks.
+> > > 
+> > > [1] https://launchpad.net/ubuntu/+source/coccinelle
+> > 
+> > As you see in [1], coccinelle version in Karmic is 0.1.9.
+> > I don't know if it is buggy for linux.
+> > 
+> > In documentation it is 0.2.0:
+> > > Coccinelle (>=0.2.0) is available through the package manager
+> > > of many distributions, e.g. :
+> > > 
+> > >  - Debian (>=squeeze)
+> > >  - Fedora (>=13)
+> > >  - Ubuntu (>=10.04 Lucid Lynx)
+> > >  - OpenSUSE
+> > >  - Arch Linux
+> > >  - NetBSD
+> > >  - FreeBSD
+> > 
+> > So, if 0.1.9 is OK, I can make smth like this: 
+> > >  - Ubuntu (>=9.04 Karmic Koala, coccinelle = 0.1.9)
+> 
+> Do we really want all this in kernel documentation in the first place?
+> 
 
-OK, agreed, comm[TASK_COMM_LEN-1] == '0' can't help to avoid the
-messed names.
+It addresses a comment [1] I got during the review process.
 
-But nether can help smp_rmb() in the reading (lockless) side?
+[1] http://lkml.org/lkml/2010/5/10/316
 
-Say,
+> 
 
-	printk("comm=%s\n", current->comm);
-
-if we add rmb() before printk, it can't make any difference. The lockless
-code should do something like
-
-	get_comm_lockless(char *to, char *comm)
-	{
-		while (*comm++ = *to++)
-			rmb();
-	}
-
-to ensure it sees the result of
-
-	memset(tsk->comm, 0, TASK_COMM_LEN);
-	wmb();
-	strcpy(tsk->comm, buf);
-
-in the right order.
-
-otherwise printk("comm=%s\n", current->comm) can read, say, comm[1]
-before set_task_comm->memset(), and comm[0] after set_task_comm->strcpy().
-
-So, afaics, set_task_comm()->wmb() buys nothing and should be removed.
-The last zero char in task_struct->comm[] is always here, at least this
-guarantees that strcpy(char *dest, tsk->comm) is always safe.
-
-(I cc'ed the expert, Paul can correct me)
-
-Oleg.
-
+-- 
+Nicolas Palix
+Tel: (+33) 1 44 27 87 25
+Tel: (+33) 6 81 07 91 72
+Web: http://www.diku.dk/~npalix/
