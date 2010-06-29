@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678Ab0F2Hjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 03:39:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57218 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab0F2Hjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 03:39:45 -0400
-Message-ID: <4C29A25C.7040900@cn.fujitsu.com>
-Date: Tue, 29 Jun 2010 15:35:56 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 3/10] KVM: MMU: fix direct sp's access corruptted
-References: <4C2498EC.2010006@cn.fujitsu.com> <4C249BAD.6000609@cn.fujitsu.com> <4C287081.40300@redhat.com> <4C287332.5080803@cn.fujitsu.com> <4C2883D3.2050606@redhat.com> <4C2949A5.1070303@cn.fujitsu.com> <4C299B7E.5020303@redhat.com>
-In-Reply-To: <4C299B7E.5020303@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754015Ab0F2HkE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 03:40:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21014 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753919Ab0F2Hj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 03:39:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,503,1272870000"; 
+   d="scan'208";a="531269807"
+Subject: Re: [PATCH 00/28] mm: preemptibility -v3
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>,
+       "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1277373331.1875.940.camel@laptop>
+References: <20100607110654.606530953@chello.nl>
+	 <1276134311.2096.438.camel@ymzhang.sh.intel.com>
+	 <1276152750.2046.2485.camel@twins>
+	 <1276153198.2096.465.camel@ymzhang.sh.intel.com>
+	 <1277115718.1875.490.camel@laptop>  <1277373331.1875.940.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 29 Jun 2010 15:40:19 +0800
+Message-Id: <1277797219.2096.884.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-06-24 at 11:55 +0200, Peter Zijlstra wrote:
+> On Mon, 2010-06-21 at 12:21 +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-06-10 at 14:59 +0800, Zhang, Yanmin wrote:
+> > 
+> > > > > I applied it against 2.6.35-rc2 on x86_64 machine, but kernel booting panic.
+> > 
+> > <snip panic>
+> > 
+> > > > Oi, that's no good. Happen to have your .config handy, I didn't actually
+> > > > see my machine do that.
+> > 
+> > > See the attachment.
+> > 
+> > That .config build and booted on my x86_64 machine, no funnies there.
+> > 
+> > I pushed a git tree out to kernel.org but somehow its refusing to show
+> > up on git.kernel.org..
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-mmu_preempt.git mmu_preempt
+We tested the tree on many machines with many benchmarks. Comparing with pure kernel 2.6.35-rc3,
+there is no clear performance regression/improvement. We didn't run into panic again.
+
+Yanmin
 
 
-Avi Kivity wrote:
-> On 06/29/2010 04:17 AM, Xiao Guangrong wrote:
->>
->>> If B is writeable-and-dirty, then it's D bit is already set, and we
->>> don't need to do anything.
->>>
->>> If B is writeable-and-clean, then we'll have an spte pointing to a
->>> read-only sp, so we'll get a write fault on access and an opportunity to
->>> set the D bit.
->>>
->>>      
->> Sorry, a typo in my reply, i mean mapping A and B both are
->> writable-and-clean,
->> while A occurs write-#PF, we should change A's spte map to writable
->> sp, if we
->> only update the spte in writable-and-clean sp(form readonly to
->> writable), the B's
->> D bit will miss set.
->>    
-> 
-> Right.
-> 
-> We need to update something to notice this:
-> 
->  - FNAME(fetch)() to replace the spte
->  - FNAME(walk_addr)() to invalidate the spte
-> 
-> I think FNAME(walk_addr) is the right place, we're updating the gpte, so
-> we should update the spte at the same time, just like a guest write. 
-> But that will be expensive (there could be many sptes, so we have to
-> call kvm_mmu_pte_write()), so perhaps FNAME(fetch) is easier.
-> 
-
-I agree.
-
-> We have now
-> 
->         if (is_shadow_present_pte(*sptep) && !is_large_pte(*sptep))
->             continue;
-> 
-> So we need to add a check, if sp->role.access doesn't match pt_access &
-> pte_access, we need to get a new sp with the correct access (can only
-> change read->write).
-> 
-
-Umm, we should update the spte at the gw->level, so we need get the child
-sp, and compare its access at this point, just like this:
-
-if (level == gw->level && is_shadow_present_pte(*sptep)) {
-	child_sp = page_header(__pa(*sptep & PT64_BASE_ADDR_MASK));
-
-	if (child_sp->access != pt_access & pte_access & (diry ? 1 : ~ACC_WRITE_MASK )) {
-		/* Zap sptep */
-		......
-	}
-		
-}
-
-So, why not use the new spte flag (SPTE_NO_DIRTY in my patch) to mark this spte then we can see
-this spte whether need updated directly? i think it more simpler ;-)
