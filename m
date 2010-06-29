@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab0F2D3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 23:29:14 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50522 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320Ab0F2D3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 23:29:13 -0400
-Date: Tue, 29 Jun 2010 13:29:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Ernst Schwab <eschwab@online.de>
-Subject: linux-next: build failure after merge of the spi tree
-Message-Id: <20100629132907.f857600d.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__29_Jun_2010_13_29_07_+1000_UWWNuSpSSHT8E60Z"
+	id S1752594Ab0F2DuH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 23:50:07 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:47816 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab0F2DuF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 23:50:05 -0400
+Date: Mon, 28 Jun 2010 23:49:46 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: 2.6.35-rc3 regression: IBM Maia system is unbootable [ACPI
+ related?]
+In-reply-to: <1277141166.10998.79.camel@mulgrave.site>
+Message-id: <alpine.LFD.2.00.1006282346320.16755@localhost.localdomain>
+References: <1277136189.10998.63.camel@mulgrave.site>
+ <87pqzkqrzq.fsf@basil.nowhere.org>  <1277138034.10998.69.camel@mulgrave.site>
+ <1277139286.10998.72.camel@mulgrave.site>
+ <1277141166.10998.79.camel@mulgrave.site>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__29_Jun_2010_13_29_07_+1000_UWWNuSpSSHT8E60Z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Len Brown <len.brown@intel.com>
+Subject: [PATCH] ACPI: handle systems which asynchoronously enable ACPI mode
 
-Hi Grant,
+Folklore suggested that such systems existed
+in the pre-history of ACPI.
 
-After merging the spi tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+However, we removed the SCI_EN polling loop from
+acpi_hw_set_mode() in b430acbd7c4b919886fa7fd92eeb7a695f1940d3
+because it delayed resume by 3 seconds on boxes
+that refused to set SCI_EN.
 
-drivers/mmc/host/mmc_spi.c: In function 'mmc_spi_readbytes':
-drivers/mmc/host/mmc_spi.c:185: error: implicit declaration of function 'sp=
-i_sync_locked'
-drivers/mmc/host/mmc_spi.c: In function 'mmc_spi_request':
-drivers/mmc/host/mmc_spi.c:1088: error: implicit declaration of function 's=
-pi_bus_lock'
-drivers/mmc/host/mmc_spi.c:1101: error: implicit declaration of function 's=
-pi_bus_unlock'
+Matthew removed the call to acpi_enable() from
+the suspend resume path.
 
-Caused by commit f0168ff4069fba07fdd4b05aa19f283171c8d265 ("spi/mmc_spi:
-mmc_spi adaptations for SPI bus locking API").  Maybe updates to another
-file were missed?
+James found a modern system that still needs to be polled
+upon boot.
 
-I have used the spi tree from next-20100628 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+So here we restore the workaround, except that we
+put it in acpi_enable() rather than the low level
+acpi_hw_set_mode().
 
---Signature=_Tue__29_Jun_2010_13_29_07_+1000_UWWNuSpSSHT8E60Z
-Content-Type: application/pgp-signature
+https://bugzilla.kernel.org/show_bug.cgi?id=16271
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
 
-iQEcBAEBAgAGBQJMKWiDAAoJEDMEi1NhKgbsvBQH/0QitJVZDT6DFLZLD5ahuNfJ
-UqzPjrx7SLdw22B8KEb3iXIoM6GBcBmL7y0BdvPmc7Zl6B3E6G1zcrKmLvPbxhlC
-enmRuAUhiGu3n8rba8WDWrbpizkDBTh7VuLWF66+crCFJwxaCtIK0fxduR280tV4
-nDgXqaDDb4Wig1zMXewXngnl9TPFDF8OxUEzZ9y34PMI6YRU9R0ezuTrH6uJN9Lz
-BI08/JU2ZAyTksDjzDXSkJpUPz1iA9HVefBF5BNGW21shJKbbEIgYxXIoJtHwuEx
-XVvOVnFBTXXNXLXqty/k6tuW0GuJDC4TkcMv4cCAdNj1Snwyn62Dj05auns3A5Y=
-=Jt5g
------END PGP SIGNATURE-----
+James, What does the IBM system see with this patch?
 
---Signature=_Tue__29_Jun_2010_13_29_07_+1000_UWWNuSpSSHT8E60Z--
+thanks,
+-Len
+
+ drivers/acpi/acpica/evxfevnt.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/acpi/acpica/evxfevnt.c b/drivers/acpi/acpica/evxfevnt.c
+index d97b8dc..18b3f14 100644
+--- a/drivers/acpi/acpica/evxfevnt.c
++++ b/drivers/acpi/acpica/evxfevnt.c
+@@ -70,6 +70,7 @@ acpi_ev_get_gpe_device(struct acpi_gpe_xrupt_info *gpe_xrupt_info,
+ acpi_status acpi_enable(void)
+ {
+ 	acpi_status status;
++	int retry;
+ 
+ 	ACPI_FUNCTION_TRACE(acpi_enable);
+ 
+@@ -98,16 +99,18 @@ acpi_status acpi_enable(void)
+ 
+ 	/* Sanity check that transition succeeded */
+ 
+-	if (acpi_hw_get_mode() != ACPI_SYS_MODE_ACPI) {
+-		ACPI_ERROR((AE_INFO,
+-			    "Hardware did not enter ACPI mode"));
+-		return_ACPI_STATUS(AE_NO_HARDWARE_RESPONSE);
++	for (retry = 0; retry < 30000; ++retry) {
++		if (acpi_hw_get_mode() == ACPI_SYS_MODE_ACPI) {
++			if (retry != 0)
++				ACPI_WARNING((AE_INFO,
++				"Platform took > %d00 usec to enter ACPI mode", retry));
++			return_ACPI_STATUS(AE_OK);
++		}
++		acpi_os_stall(100);	/* 100 usec */
+ 	}
+ 
+-	ACPI_DEBUG_PRINT((ACPI_DB_INIT,
+-			  "Transition to ACPI mode successful\n"));
+-
+-	return_ACPI_STATUS(AE_OK);
++	ACPI_ERROR((AE_INFO, "Hardware did not enter ACPI mode"));
++	return_ACPI_STATUS(AE_NO_HARDWARE_RESPONSE);
+ }
+ 
+ ACPI_EXPORT_SYMBOL(acpi_enable)
+-- 
+1.7.2.rc0
+
