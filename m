@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab0F2O1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 10:27:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55541 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754509Ab0F2O1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 10:27:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ABz33ObCEsJdkG+TeBTmFPcXY/2BRsJJEFXeSiGYJWG3IFoIfi1Y3XalXSa7jD+IxQ
-         ftmccS8AIWZw825FwfbzQoB7a3ZxxZ4Y6naeAYAx26tMlTihbjd8xQA1p8R35qs6+jqY
-         2iQwB9s4+2WtMjS4p42qq89P8yERR3hub1PQs=
-MIME-Version: 1.0
-In-Reply-To: <1277811288-5195-2-git-send-email-mel@csn.ul.ie>
-References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
-	<1277811288-5195-2-git-send-email-mel@csn.ul.ie>
-Date: Tue, 29 Jun 2010 23:27:05 +0900
-Message-ID: <AANLkTilwzGf2rikXYAe4Evl41lqjk8voVSG4ICfAgUI1@mail.gmail.com>
-Subject: Re: [PATCH 01/14] vmscan: Fix mapping use after free
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756155Ab0F2OaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 10:30:00 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:39616 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756127Ab0F2O37 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Tue, 29 Jun 2010 10:29:59 -0400
+Message-Id: <4C2A1F9F02000078000089DE@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Tue, 29 Jun 2010 15:30:22 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <jeremy.fitzhardinge@citrix.com>, "Ky Srinivasan" <KSrinivasan@novell.com>,
+       <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4, v2] x86: enlightenment for ticket spin locks
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 8:34 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> From: Nick Piggin <npiggin@suse.de>
->
-> Use lock_page_nosync in handle_write_error as after writepage we have no
-> reference to the mapping when taking the page lock.
->
-> Signed-off-by: Nick Piggin <npiggin@suse.de>
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+With the pv-ops based spinlocks reportedly having measurable overhead
+on native execution, and with them also not easily fit (at least) fully
+virtualized Xen guests, this patch series introduces a replacement
+mechanism based on alternative instruction patching, and then uses it
+for fully virtualized Xen guests. While coded to be orthogonal to
+pv-ops, it really isn't, and it shouldn't be difficult to make pv-ops guests
+use this in place of pv-ops spin locks.
 
-Trivial.
-Please modify description of the function if you have a next turn.
-"run sleeping lock_page()" -> "run sleeping lock_page_nosync"
+The only additional overhead this introduces for native execution is
+(in the optional fourth patch) the writing of the owning CPU in the
+lock acquire paths. If this is considered a problem but the patch
+otherwise is deemed useful, even that code could be eliminated for
+native execution (by further alternative instruction patching).
 
+(1) base implementation
+(2) Xen implementation
+(3) [optional] eliminate NOPs in unlock path (introduced in (1))
+(4) [optional] improve behavior on Xen by yielding earlier in
+    certain cases
 
--- 
-Kind regards,
-Minchan Kim
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: KY Srinivasan <ksrinivasan@novell.com>
+
