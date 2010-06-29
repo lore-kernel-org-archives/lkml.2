@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab0F2NDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 09:03:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:57909 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560Ab0F2NDT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 09:03:19 -0400
-X-Authority-Analysis: v=1.1 cv=4GK1Slht3WUdSXXcSOu+TCe3GQnvEFDsQSvVHKX2gdo= c=1 sm=0 a=RJKtCkfBdskA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=kcL8E1igYm8vRKDrUs8A:9 a=IPiQxuxxcb5GbF8l1cwA:7 a=7km2U3g0TBQcdRH83rZ3K1tWBBkA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] trace-cmd: Add to ignore event not found error
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: John Kacur <jkacur@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100629144832.38C6.A69D9226@jp.fujitsu.com>
-References: <20100629144832.38C6.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 29 Jun 2010 09:03:17 -0400
-Message-ID: <1277816597.9181.73.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751252Ab0F2NHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 09:07:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8402 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412Ab0F2NHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 09:07:31 -0400
+Date: Tue, 29 Jun 2010 15:05:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Jerome Marchand <jmarchan@redhat.com>,
+       Mandeep Singh Baines <msb@google.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: while_each_thread() under rcu_read_lock() is broken?
+Message-ID: <20100629130503.GA5237@redhat.com>
+References: <20100621170919.GA13826@redhat.com> <20100621205128.GI2354@linux.vnet.ibm.com> <20100622212357.GA19670@redhat.com> <20100622221226.GP2290@linux.vnet.ibm.com> <20100623152421.GA8445@redhat.com> <20100624180726.GK2373@linux.vnet.ibm.com> <20100624215702.GA21360@redhat.com> <20100625034105.GD2391@linux.vnet.ibm.com> <20100625095548.GA6292@redhat.com> <20100628234358.GJ2357@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100628234358.GJ2357@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-29 at 15:06 +0900, KOSAKI Motohiro wrote:
-> Usually trace-cmd die If 'trace-cmd start' find wrong -e argument.
-> It mean an admin can't pass the trace point of unloaded kernel module.
-> It can cause nightmare if he manage lots and various computers.
-> 
-> That said, admin want to use the same trace configuration. but, example,
-> some machine loaded ext4 module, others unloaded. It makes harder to
-> reuse.
-> 
-> So, I simply implement ignore option.
+On 06/28, Paul E. McKenney wrote:
+>
+> On Fri, Jun 25, 2010 at 11:55:48AM +0200, Oleg Nesterov wrote:
+> > On 06/24, Paul E. McKenney wrote:
+> > >
+> > > So it is OK to skip some of the other threads in this case, even
+> > > though they were present throughout the whole procedure?
+> >
+> > I think, yes. We can miss them in any case, they can go away before
+> > while_each_thread(g, t) starts the scan.
+> >
+> > If g == group_leader (old or new), then we should notice this thread
+> > at least.
+> >
+> > Otherwise we can miss them all, with or without next_thread_careful().
+>
+> Just to be sure that we are actually talking about the same scenario...
+>
+> Suppose that a task group is lead by 2908 and has member 2909, 2910,
+> 2911, and 2912.  Suppose that 2910 does pthread_exit() just as some
+> other task is "ls"ing the relevant /proc entry.  Is it really OK for
+> "ls" to show 2909 but not 2911 and 2912, even though 2911 and 2912
+> were alive and kicking the entire time?
 
-Thanks! I'll pull it and I'll also update the documentation to reflect
-this change.
+Confused.
 
--- Steve
+Let's return to
 
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  trace-cmd.c |   11 ++++++++---
->  1 files changed, 8 insertions(+), 3 deletions(-)
-> 
-> diff --git a/trace-cmd.c b/trace-cmd.c
-> index cdb0735..b4eb0fe 100644
-> --- a/trace-cmd.c
-> +++ b/trace-cmd.c
-> @@ -113,6 +113,8 @@ struct events {
->  
->  static struct tracecmd_recorder *recorder;
->  
-> +static int ignore_event_not_found = 0;
-> +
->  static char *get_temp_file(int cpu)
->  {
->  	char *file = NULL;
-> @@ -738,7 +740,7 @@ static void update_event(const char *name, const char *filter,
->  
->  		ret = update_glob(str, filter, filter_only, update);
->  		free(str);
-> -		if (!ret)
-> +		if (!ret && !ignore_event_not_found)
->  			die("No events enabled with %s", name);
->  		return;
->  	}
-> @@ -752,7 +754,7 @@ static void update_event(const char *name, const char *filter,
->  	ret2 = update_glob(str, filter, filter_only, update);
->  	free(str);
->  
-> -	if (!ret && !ret2)
-> +	if (!ret && !ret2 && !ignore_event_not_found)
->  		goto fail;
->  
->  	return;
-> @@ -1431,7 +1433,7 @@ int main (int argc, char **argv)
->  		   (strcmp(argv[1], "start") == 0) ||
->  		   ((extract = strcmp(argv[1], "extract") == 0))) {
->  
-> -		while ((c = getopt(argc-1, argv+1, "+he:f:Fp:do:O:s:r:vg:l:n:P:N:tb:k")) >= 0) {
-> +		while ((c = getopt(argc-1, argv+1, "+he:f:Fp:do:O:s:r:vg:l:n:P:N:tb:ki")) >= 0) {
->  			switch (c) {
->  			case 'h':
->  				usage(argv);
-> @@ -1543,6 +1545,9 @@ int main (int argc, char **argv)
->  			case 'k':
->  				keep = 1;
->  				break;
-> +			case 'i':
-> +				ignore_event_not_found = 1;
-> +				break;
->  			}
->  		}
->  
+	do
+		printk("%d\n", t->pid);
+	while_each_thread(g, t);
 
+for the moment.
+
+In that case, if g != 2910 (the exiting thread) we will print all pids,
+except we can miss 2910. With or without next_thread_careful().
+
+Only if we start at g == 2910, then
+
+	current code:		print 2910, then spin forever printing
+				other pids
+
+	next_thread_careful:	stop printing when we notice that 2910
+				was unhashed.
+
+				So, yes, in this case we can miss all
+				other threads.
+
+As for "ls"ing the relevant /proc entry. proc_task_readdir() is complicated,
+it can drop rcu lock, sleep, etc. But basically it mimics while_each_thread()
+logic. Let's assume that proc_task_fill_cache() never fails.
+
+proc_task_readdir() always starts at the group_leader, 2908. So, with or
+without next_thread_careful() we can only miss the exiting 2910.
+
+But (again, unless I missed something) the current code can race with exec,
+and s/next_thread/next_thread_careful/ in first_tid() can fix the race.
+(just in case, we can fix it differently).
+
+But, of course, if you do "ls /proc/2910/task" instead of "ls /proc/2908/task"
+you can miss _all_ threads if 2910 exits before proc_task_readdir() finds
+its leader, 2908. Again, this is with or without next_thread_careful().
+
+
+Paul, please let me know if I misunderstood your concerns, or if I missed
+something.
+
+Oleg.
 
