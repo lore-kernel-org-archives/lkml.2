@@ -1,42 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279Ab0F2ByM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 21:54:12 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:46918 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab0F2ByK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 21:54:10 -0400
-Date: Mon, 28 Jun 2010 21:54:07 -0400
-From: Andres Salomon <dilinger@queued.net>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: sparclinux@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
-       mingo@redhat.com, hpa@zytor.com, cjb@laptop.org,
-       Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-       linux-kernel@vger.kernel.org, davem@davemloft.net,
-       grant.likely@secretlab.ca
-Subject: [PATCH 0/4] RFC: OLPC/x86 device tree code
-Message-ID: <20100628215407.2017bf2f@debian>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752345Ab0F2B5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 21:57:10 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:39049 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751278Ab0F2B5J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 21:57:09 -0400
+Date: Tue, 29 Jun 2010 11:56:15 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
+       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH] Revert "writeback: limit write_cache_pages integrity
+ scanning to current EOF"
+Message-ID: <20100629015615.GZ6590@dastard>
+References: <20100628173529.GA10573@mail.oracle.com>
+ <20100629002421.GY6590@dastard>
+ <20100629005403.GC24343@mail.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100629005403.GC24343@mail.oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jun 28, 2010 at 05:54:04PM -0700, Joel Becker wrote:
+> On Tue, Jun 29, 2010 at 10:24:21AM +1000, Dave Chinner wrote:
+> > On Mon, Jun 28, 2010 at 10:35:29AM -0700, Joel Becker wrote:
+> > > This reverts commit d87815cb2090e07b0b0b2d73dc9740706e92c80c.
+> > 
+> > Hi Joel,
+> > 
+> > I have no problems with it being reverted - it's a really just a
+> > WAR for the simplest case of the sync hold holdoff.
+> 
+> 	I have to insist that we revert it until we find a way to make
+> ocfs2 work.  The rest of the email will discuss the ocfs2 issues
+> therein.
+> 
+> > > This patch causes any filesystem with an allocation unit larger than the
+> > > filesystem blocksize will leak unzeroed data. During a file extend, the
+> > > entire allocation unit is zeroed.
+> > 
+> > XFS has this same underlying issue - it can have uninitialised,
+> > allocated blocks past EOF that have to be zeroed when extending the
+> > file.
+> 
+> 	Does XFS do this in get_blocks()?  We deliberately do no
+> allocation in get_blocks(), which is where our need for up-front
+> allocation comes from.
 
-I'm looking for input on the following patches; they're based upon the
-OFW patch that's currently in the x86-tip tree[0], and they've only been
-compile tested (on x86 and sparc64).  This stuff takes the sparc
-device tree creation code and makes it available for multiple
-architectures, which OLPC then makes use of to build the tree.
-There's still a bunch of little stuff that I need to fix (and of
-course, I need to verify that it actually remains compatible w/ the
-old promfs code that OLPC's been using[1]).
+No, it does it in xfs_file_aio_write() (i.e. ->aio_write()) so it
+catches both buffered and direct IO.  This can't be done in the
+get_blocks() callback because (IMO) there really isn't the context
+available to know exactly how we are extending the file in
+get_blocks().
 
-[0]
-http://git.kernel.org/?p=linux/kernel/git/mingo/linux-2.6-x86.git;a=commit;h=fd699c76552bb
 
-[1]
-http://dev.laptop.org/git/olpc-2.6/commit/?id=0b9734dc5f0b3d24e8f3dfedaeacb61675c838ff
+> > > However, this patch prevents the tail
+> > > blocks of the allocation unit from being written back to disk.  When the
+> > > file is next extended, i_size will now cover these unzeroed blocks,
+> > > leaking the old contents of the disk to userspace and creating a corrupt
+> > > file.
+> > 
+> > XFS doesn't zero blocks at allocation. Instead, XFS zeros the range
+> > between the old EOF and the new EOF on each extending write. Hence
+> > these pages get written because they fall inside the new i_size that
+> > is set during the write.  The i_size on disk doesn't get changed
+> > until after the data writes have completed, so even on a crash we
+> > don't expose uninitialised blocks.
+> 
+> 	We do the same, but we zero the entire allocation.  This works
+> both when filling holes and when extending, though obviously the
+> extending is what we're worried about here.  We change i_size in
+> write_end, so our guarantee is the same as yours for the page containing
+> i_size.
+
+Ok, so the you've got cached pages covering the file and the tail of
+the last page/block zeroed in memory. I'd guess that ordered mode
+journalling then ensures the inode size update doesn't hit the disk
+until after the data does, so this is crash-safe. That would explain
+(to me, at least) why you are not seeing stale data exposure on
+crashes.
+
+> > Looking at ocfs2_writepage(), it simply calls
+> > block_write_full_page(), which does:
+> > 
+> > 	/* Is the page fully outside i_size? (truncate in progress) */
+> > 	offset = i_size & (PAGE_CACHE_SIZE-1);
+> > 	if (page->index >= end_index+1 || !offset) {
+> > 		/*
+> > 		 * The page may have dirty, unmapped buffers.  For example,
+> > 		 * they may have been added in ext3_writepage().  Make them
+> > 		 * freeable here, so the page does not leak.
+> > 		 */
+> > 		do_invalidatepage(page, 0);
+> > 		unlock_page(page);
+> > 		return 0; /* don't care */
+> > 	}
+> > 
+> > i.e. pages beyond EOF get invalidated.  If it somehow gets through
+> > that check, __block_write_full_page() will avoid writing dirty
+> > bufferheads beyond EOF because the write is "racing with truncate".
+> 
+> 	Your contention is that we've never gotten those tail blocks to
+> disk.  Instead, our code either handles the future extensions of i_size
+> or we've just gotten lucky with our testing.  Our current BUG trigger is
+> because we have a new check that catches this case.  Does that summarize
+> your position correctly?
+
+Yes, that summarises it pretty well ;)
+
+> 	I'm not averse to having a zero-only-till-i_size policy, but I
+> know we've visited this problem before and got bit.  I have to go reload
+> that context.
+
+There's no hurry from my perspective - I just prefer to understand the
+the root cause of a problem before jumping....
+
+> 	Regarding XFS, how do you handle catching the tail of an
+> allocation with an lseek(2)'d write?  That is, your current allocation
+> has a few blocks outside of i_size, then I lseek(2) a gigabyte past EOF
+> and write there.  The code has to recognize to zero around old_i_size
+> before moving out to new_i_size, right?  I think that's where our old
+> approaches had problems.
+
+xfs_file_aio_write() handles both those cases for us via
+xfs_zero_eof().  What it does is map the region from the old EOF to
+the start of the new write and zeroes any allocated blocks that are
+not marked unwritten that lie within the range. It does this via the
+internal mapping interface because we hide allocated blocks past EOF
+from the page cache and higher layers.
+
+FWIW, the way XFS does this is safe against crashes because the
+inode size does not get updated on disk or in the journal until
+after the data has hit the disk. Ordered journalling should also
+provide this guarantee, i think.
+
+Cheers,
+
+Dave.
+
+-- 
+Dave Chinner
+david@fromorbit.com
