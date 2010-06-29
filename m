@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471Ab0F2WvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 18:51:17 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59331 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab0F2WvP (ORCPT
+	id S1755690Ab0F2WxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 18:53:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57078 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750733Ab0F2WxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 18:51:15 -0400
-Date: Tue, 29 Jun 2010 15:48:44 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Ulrich Drepper <drepper@gmail.com>, viro@zeniv.linux.org.uk,
-       smfrench@gmail.com, jlayton@redhat.com, mcao@us.ibm.com,
-       aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       samba-technical@lists.samba.org, sjayaraman@suse.de,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file
- stats available
-Message-ID: <20100629224844.GF4150@mail.oracle.com>
-Mail-Followup-To: David Howells <dhowells@redhat.com>,
-	Ulrich Drepper <drepper@gmail.com>, viro@zeniv.linux.org.uk,
-	smfrench@gmail.com, jlayton@redhat.com, mcao@us.ibm.com,
-	aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-	samba-technical@lists.samba.org, sjayaraman@suse.de,
-	linux-ext4@vger.kernel.org
-References: <AANLkTimSU_pCXW5zR8__Q3-fzgxwEUX8rPqLeZtPD_hX@mail.gmail.com>
- <20100629200259.23196.81509.stgit@warthog.procyon.org.uk>
- <20100629200315.23196.68742.stgit@warthog.procyon.org.uk>
- <26026.1277851016@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <26026.1277851016@redhat.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C2A78B1.016E:SCFMA4539814,ss=1,fgs=0
+	Tue, 29 Jun 2010 18:53:08 -0400
+Date: Tue, 29 Jun 2010 15:51:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       djwong@us.ibm.com, muli@il.ibm.com, cschultz@linux.vnet.ibm.com,
+       stable@kernel.org, tglx@linutronix.de, mingo@elte.hu
+Cc: "tip-bot for Darrick J. Wong" <djwong@us.ibm.com>,
+       linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+       hpa@zytor.com, mingo@redhat.com, muli@il.ibm.com,
+       cschultz@linux.vnet.ibm.com, stable@kernel.org, tglx@linutronix.de,
+       mingo@elte.hu
+Subject: Re: [tip:x86/urgent] x86, Calgary: Increase max PHB number
+Message-Id: <20100629155151.7caaff4b.akpm@linux-foundation.org>
+In-Reply-To: <tip-499a00e92dd9a75395081f595e681629eb1eebad@git.kernel.org>
+References: <20100624212647.GI15515@tux1.beaverton.ibm.com>
+	<tip-499a00e92dd9a75395081f595e681629eb1eebad@git.kernel.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 11:36:56PM +0100, David Howells wrote:
-> Ulrich Drepper <drepper@gmail.com> wrote:
-> > And while you're at it, maybe some spare fields at the end are nice.
+On Fri, 25 Jun 2010 15:29:50 GMT
+"tip-bot for Darrick J. Wong" <djwong@us.ibm.com> wrote:
+
+> Commit-ID:  499a00e92dd9a75395081f595e681629eb1eebad
+> Gitweb:     http://git.kernel.org/tip/499a00e92dd9a75395081f595e681629eb1eebad
+> Author:     Darrick J. Wong <djwong@us.ibm.com>
+> AuthorDate: Thu, 24 Jun 2010 14:26:47 -0700
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Fri, 25 Jun 2010 16:14:58 +0200
 > 
-> I made it so that the syscall can return variable length data: the main xstat
-> struct, plus extra records yet to be defined.  They could even be variable
-> length and assembled/disassembled with something like the control message
-> macros for recvmsg().
+> x86, Calgary: Increase max PHB number
 
-	The less variable length stuff the better, I think.  At least,
-for the stuff stat(2) already returns, you should have a fixed-size
-structure.  Even if I only pass the GIVE_ME_UIDS flag, I don't want to
-have to deal with the variable size stuff until I've actually asked for
-esoteric things.  I'll know that the non-UIDS fields are garbage by the
-fact that I didn't ask for them.
+arch/x86/kernel/pci-calgary_64.c: In function 'calgary_init_one':
+arch/x86/kernel/pci-calgary_64.c:1059: warning: comparison is always false due to limited range of data type
 
-Joel
+from
 
--- 
+        BUG_ON(dev->bus->number >= MAX_PHB_BUS_NUM);
 
-"Time is an illusion, lunchtime doubly so."
-        -Douglas Adams
+with
 
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+http://userweb.kernel.org/~akpm/stuff/config-akpm2.txt
