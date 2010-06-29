@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279Ab0F2AEc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 20:04:32 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:37888 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab0F2AEb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 20:04:31 -0400
-Subject: Re: [PATCH] memory hotplug disable boot option
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Nathan Fontenot <nfont@austin.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-In-Reply-To: <20100628154455.GA13918@suse.de>
-References: <87d3vfeage.fsf@basil.nowhere.org>
-	 <4C24C279.3050206@austin.ibm.com>
-	 <20100628110658.387B.A69D9226@jp.fujitsu.com>
-	 <20100628150246.GA13192@suse.de> <4C28C1A8.8010904@austin.ibm.com>
-	 <20100628154455.GA13918@suse.de>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Mon, 28 Jun 2010 17:04:27 -0700
-Message-ID: <1277769867.8354.531.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1751735Ab0F2AO6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 20:14:58 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35638 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751278Ab0F2AO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 20:14:57 -0400
+Date: Tue, 29 Jun 2010 02:14:31 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Joe Perches <joe@perches.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch/x86/kernel/cpu/mtrr/cleanup.c: Use ";" not "," to
+ terminate statements
+Message-ID: <20100629001431.GC12255@elte.hu>
+References: <1277768808.29157.280.camel@Joe-Laptop.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277768808.29157.280.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 1.0
+X-ELTE-SpamLevel: s
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
+	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
+	[score: 0.4509]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-28 at 08:44 -0700, Greg KH wrote:
-> > The directories being created are the standard directories, one for each of the memory
-> > sections present at boot.  I think the most used files in each of these directories
-> > is the state and removable file used to do memory hotplug.
+
+* Joe Perches <joe@perches.com> wrote:
+
+> Needed if pr_<level> becomes a bit more space efficient.
 > 
-> And perhaps we shouldn't really be creating so many directories?  Why
-> not work with the memory hotplug developers to change their interface to
-> not abuse sysfs in such a manner? 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  arch/x86/kernel/cpu/mtrr/cleanup.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+> index 06130b5..c5f59d0 100644
+> --- a/arch/x86/kernel/cpu/mtrr/cleanup.c
+> +++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+> @@ -632,9 +632,9 @@ static void __init mtrr_print_out_one_result(int i)
+>  	unsigned long gran_base, chunk_base, lose_base;
+>  	char gran_factor, chunk_factor, lose_factor;
+>  
+> -	gran_base = to_size_factor(result[i].gran_sizek, &gran_factor),
+> -	chunk_base = to_size_factor(result[i].chunk_sizek, &chunk_factor),
+> -	lose_base = to_size_factor(result[i].lose_cover_sizek, &lose_factor),
+> +	gran_base = to_size_factor(result[i].gran_sizek, &gran_factor);
+> +	chunk_base = to_size_factor(result[i].chunk_sizek, &chunk_factor);
+> +	lose_base = to_size_factor(result[i].lose_cover_sizek, &lose_factor);
 
-Heh, it wasn't abuse until we got this much memory.  But, I think this
-one is pretty much 100% my fault.
+That file and this subsystem needs a lot more cleanups than just this. Would 
+you be willing to do them all, so that we can get over with the churn in a 
+single well-defined patch (or patches)?
 
-Nathan, I think the right fix here is probably to untie sysfs from the
-sections a bit.  We should be able to have sysfs dirs that represent
-more than one contiguous SECTION_SIZE area of memory.
+I dont see much point in piecemail single-comma patches - i'd rather wait for 
+someone else who'd fix this and other details in one go.
 
-It will mean re-teaching some of the tools how things work.  They'll
-have to know that you can split mem sections, and we'll have to come up
-with a way to do the splitting.  
+Thanks,
 
-Does ppc *really* remove 16MB sections of RAM these days?  It's probably
-worth checking with the firmware folks to see what the limits are in
-practice.
-
--- Dave
-
+	Ingo
