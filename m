@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab0F2LKl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 07:10:41 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:52677 "EHLO
+	id S1755576Ab0F2LNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 07:13:10 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:52683 "EHLO
 	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232Ab0F2LKj (ORCPT
+	with ESMTP id S1755232Ab0F2LNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 07:10:39 -0400
+	Tue, 29 Jun 2010 07:13:08 -0400
 To: Jens Axboe <axboe@kernel.dk>
 CC: xiaosuo@gmail.com, tim.gardner@canonical.com,
        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org
 In-reply-to: <E1OTYfk-0008GY-PJ@pomaz-ex.szeredi.hu> (message from Miklos
 	Szeredi on Tue, 29 Jun 2010 13:08:12 +0200)
-Subject: [PATCH 2/3] splice: check f_mode for seekable file
+Subject: [PATCH 3/3] splice: fix misuse of SPLICE_F_NONBLOCK
 References: <E1OTYfk-0008GY-PJ@pomaz-ex.szeredi.hu>
-Message-Id: <E1OTYi4-0008IE-Aq@pomaz-ex.szeredi.hu>
+Message-Id: <E1OTYkT-0008Io-0s@pomaz-ex.szeredi.hu>
 From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 29 Jun 2010 13:10:36 +0200
+Date: Tue, 29 Jun 2010 13:13:05 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Changli Gao <xiaosuo@gmail.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-check f_mode for seekable file
+SPLICE_F_NONBLOCK is clearly documented to only affect blocking on the
+destination pipe and not on the source file.
 
-As a seekable file is allowed without a llseek function, so the old way isn't
-work any more.
+In __generic_file_splice_read(), however, it returns EAGAIN if the
+page is currently being read.
 
-Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+This makes it impossible to write an application that only wants
+failure if the pipe buffer is full.  For example if the same process
+is handling both ends of a pipe and isn't otherwise able to determine
+whether a splice to the pipe will fit or not.
+
+We could make the read non-blocking on O_NONBLOCK or some other splice
+flag, but for now this is the simplest fix.
+
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-----
- fs/splice.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+---
+ fs/splice.c |   12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
+
 Index: linux-2.6/fs/splice.c
 ===================================================================
---- linux-2.6.orig/fs/splice.c	2010-06-29 12:46:28.000000000 +0200
-+++ linux-2.6/fs/splice.c	2010-06-29 12:46:30.000000000 +0200
-@@ -1372,8 +1372,7 @@ static long do_splice(struct file *in, l
- 		if (off_in)
- 			return -ESPIPE;
- 		if (off_out) {
--			if (!out->f_op || !out->f_op->llseek ||
--			    out->f_op->llseek == no_llseek)
-+			if (!(out->f_mode & FMODE_PWRITE))
- 				return -EINVAL;
- 			if (copy_from_user(&offset, off_out, sizeof(loff_t)))
- 				return -EFAULT;
-@@ -1393,8 +1392,7 @@ static long do_splice(struct file *in, l
- 		if (off_out)
- 			return -ESPIPE;
- 		if (off_in) {
--			if (!in->f_op || !in->f_op->llseek ||
--			    in->f_op->llseek == no_llseek)
-+			if (!(in->f_mode & FMODE_PREAD))
- 				return -EINVAL;
- 			if (copy_from_user(&offset, off_in, sizeof(loff_t)))
- 				return -EFAULT;
+--- linux-2.6.orig/fs/splice.c	2010-06-29 12:46:30.000000000 +0200
++++ linux-2.6/fs/splice.c	2010-06-29 12:46:32.000000000 +0200
+@@ -399,17 +399,7 @@ __generic_file_splice_read(struct file *
+ 		 * If the page isn't uptodate, we may need to start io on it
+ 		 */
+ 		if (!PageUptodate(page)) {
+-			/*
+-			 * If in nonblock mode then dont block on waiting
+-			 * for an in-flight io page
+-			 */
+-			if (flags & SPLICE_F_NONBLOCK) {
+-				if (!trylock_page(page)) {
+-					error = -EAGAIN;
+-					break;
+-				}
+-			} else
+-				lock_page(page);
++			lock_page(page);
+ 
+ 			/*
+ 			 * Page was truncated, or invalidated by the
