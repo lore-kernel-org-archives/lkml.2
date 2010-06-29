@@ -1,54 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab0F2Rwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 13:52:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55421 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753007Ab0F2Rwj (ORCPT
+	id S1753666Ab0F2Rz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 13:55:57 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:37267 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab0F2Rzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 13:52:39 -0400
+	Tue, 29 Jun 2010 13:55:55 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 12/25] x86, lmb: Add get_free_all_memory_range()
+Date: Tue, 29 Jun 2010 11:56:36 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org, Jan Beulich <jbeulich@novell.com>
+References: <1277227614-11581-1-git-send-email-yinghai@kernel.org> <1277227614-11581-13-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1277227614-11581-13-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20100629174122.GN28364@laptop>
-References: <20100624030212.676457061@suse.de>
-	<20100624030725.885831564@suse.de>
-	<20100629130214.GA21410@infradead.org>
-	<20100629145617.GG28364@laptop>
-	<AANLkTinCVQdekiLlU4_tRkkcSGYWV6NG7nlvTirl5xZF@mail.gmail.com>
-	<20100629174122.GN28364@laptop>
-Date: Tue, 29 Jun 2010 10:52:03 -0700
-Message-ID: <AANLkTinr_Ljn48o3YecbuYt15xbP02sbg9D6qqobt1wE@mail.gmail.com>
-Subject: Re: [patch 02/52] fs: fix superblock iteration race
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-       Frank Mayhar <fmayhar@google.com>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006291156.38178.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 10:41 AM, Nick Piggin <npiggin@suse.de> wrote:
-> On Tue, Jun 29, 2010 at 10:35:47AM -0700, Linus Torvalds wrote:
->>
->> I'll apply it. We have a couple of oopses listed for the superblock
->> iterator, and I haven't heard from Al. And the patch looks obviously
->> fine, whether it's actually the cause of some of the bugs or not.
->
-> OK. I only have managed to get it into an infininte loop but I think
-> it would be surely possible to oops it because the next pointer can
-> be uninitialised memory at that point.
+On Tuesday, June 22, 2010 11:26:41 am Yinghai Lu wrote:
 
-Look for "2.6.35-rc3 oops trying to suspend" on lkml, for example. No
-guarantee that it's the same thing, but it's "iterate_supers()"
-getting an oops when it does "down_read(&sb->s_umount)". Which really
-looks suspiciously like "sb" just being totally bogus, most likely
-because of this same issue.
+> +	pr_info("Subtract (%d early reservations)\n", count);
+> +
+> +	for_each_lmb(reserved, r) {
+> +		pr_info("  [%010llx - %010llx]\n", (u64)r->base, (u64)r->base + r->size);
 
-So I dunno, but I asked Al to look at it, and haven't heard back.
+Use %pR format and consider adding text to the line, e.g.,
+"lmb: early reservation [%#010llx-%#010llx] removed" so that
+grep output is useful all by itself, without requiring the
+context of the preceding lines.
 
-Regardless, I think your patch is the right thing to do (modulo any
-syntactic issues - and I think your final version was the best of the
-lot).
-
-                    Linus
+> +		final_start = PFN_DOWN(r->base);
+> +		final_end = PFN_UP(r->base + r->size);
+> +		if (final_start >= final_end)
+> +			continue;
+> +		subtract_range(range, az, final_start, final_end);
+> +	}
+> +	/* Put region array back ? */
+> +	if (lmb.reserved.regions != lmb_reserved_init_regions)
+> +		lmb_reserve(__pa(lmb.reserved.regions), sizeof(struct lmb_region) * lmb.reserved.max);
+> +}
+> +
+> +struct count_data {
+> +	int nr;
+> +};
+> +
+> +static int __init count_work_fn(unsigned long start_pfn,
+> +				unsigned long end_pfn, void *datax)
+> +{
+> +	struct count_data *data = datax;
+> +
+> +	data->nr++;
+> +
+> +	return 0;
+> +}
+> +
+> +static int __init count_early_node_map(int nodeid)
+> +{
+> +	struct count_data data;
+> +
+> +	data.nr = 0;
+> +	work_with_active_regions(nodeid, count_work_fn, &data);
+> +
+> +	return data.nr;
+> +}
+> +
+> +int __init get_free_all_memory_range(struct range **rangep, int nodeid)
+> +{
+> +	int count;
+> +	struct range *range;
+> +	int nr_range;
+> +
+> +	count = (lmb.reserved.cnt + count_early_node_map(nodeid)) * 2;
+> +
+> +	range = find_range_array(count);
+> +	nr_range = 0;
+> +
+> +	/*
+> +	 * Use early_node_map[] and lmb.reserved.region to get range array
+> +	 * at first
+> +	 */
+> +	nr_range = add_from_early_node_map(range, count, nr_range, nodeid);
+> +#ifdef CONFIG_X86_32
+> +	subtract_range(range, count, max_low_pfn, -1ULL);
+> +#endif
+> +	subtract_lmb_reserved(range, count);
+> +	nr_range = clean_sort_range(range, count);
+> +
+> +	*rangep = range;
+> +	return nr_range;
+> +}
+> +#else
+>  void __init lmb_to_bootmem(u64 start, u64 end)
+>  {
+>  	int count;
+> 
