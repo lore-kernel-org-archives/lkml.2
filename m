@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab0F2Lgs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 07:36:48 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:42905 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755702Ab0F2Le4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755712Ab0F2Le4 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 29 Jun 2010 07:34:56 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:42825 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754412Ab0F2Lex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 07:34:53 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-mm@kvack.org
@@ -17,9 +17,9 @@ Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Andrew Morton <akpm@linux-foundation.org>,
        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 09/14] vmscan: Setup pagevec as late as possible in shrink_inactive_list()
-Date: Tue, 29 Jun 2010 12:34:43 +0100
-Message-Id: <1277811288-5195-10-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 01/14] vmscan: Fix mapping use after free
+Date: Tue, 29 Jun 2010 12:34:35 +0100
+Message-Id: <1277811288-5195-2-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
 References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
@@ -27,158 +27,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shrink_inactive_list() sets up a pagevec to release unfreeable pages. It
-uses significant amounts of stack doing this. This patch splits
-shrink_inactive_list() to take the stack usage out of the main path so
-that callers to writepage() do not contain an unused pagevec on the
-stack.
+From: Nick Piggin <npiggin@suse.de>
 
+Use lock_page_nosync in handle_write_error as after writepage we have no
+reference to the mapping when taking the page lock.
+
+Signed-off-by: Nick Piggin <npiggin@suse.de>
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Rik van Riel <riel@redhat.com>
 ---
- mm/vmscan.c |   99 +++++++++++++++++++++++++++++++++-------------------------
- 1 files changed, 56 insertions(+), 43 deletions(-)
+ mm/vmscan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 509d093..8b4ed48 100644
+index 9c7e57c..62a30fe 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1129,19 +1129,65 @@ static int too_many_isolated(struct zone *zone, int file,
- }
- 
- /*
-+ * TODO: Try merging with migrations version of putback_lru_pages
-+ */
-+static noinline_for_stack void
-+putback_lru_pages(struct zone *zone, struct zone_reclaim_stat *reclaim_stat,
-+				unsigned long nr_anon, unsigned long nr_file,
-+				struct list_head *page_list)
-+{
-+	struct page *page;
-+	struct pagevec pvec;
-+
-+	pagevec_init(&pvec, 1);
-+
-+	/*
-+	 * Put back any unfreeable pages.
-+	 */
-+	spin_lock(&zone->lru_lock);
-+	while (!list_empty(page_list)) {
-+		int lru;
-+		page = lru_to_page(page_list);
-+		VM_BUG_ON(PageLRU(page));
-+		list_del(&page->lru);
-+		if (unlikely(!page_evictable(page, NULL))) {
-+			spin_unlock_irq(&zone->lru_lock);
-+			putback_lru_page(page);
-+			spin_lock_irq(&zone->lru_lock);
-+			continue;
-+		}
-+		SetPageLRU(page);
-+		lru = page_lru(page);
-+		add_page_to_lru_list(zone, page, lru);
-+		if (is_active_lru(lru)) {
-+			int file = is_file_lru(lru);
-+			reclaim_stat->recent_rotated[file]++;
-+		}
-+		if (!pagevec_add(&pvec, page)) {
-+			spin_unlock_irq(&zone->lru_lock);
-+			__pagevec_release(&pvec);
-+			spin_lock_irq(&zone->lru_lock);
-+		}
-+	}
-+	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
-+	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
-+
-+	spin_unlock_irq(&zone->lru_lock);
-+	pagevec_release(&pvec);
-+}
-+
-+/*
-  * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
-  * of reclaimed pages
-  */
--static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
--			struct zone *zone, struct scan_control *sc,
--			int priority, int file)
-+static noinline_for_stack unsigned long
-+shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
-+			struct scan_control *sc, int priority, int file)
+@@ -296,7 +296,7 @@ static int may_write_to_queue(struct backing_dev_info *bdi)
+ static void handle_write_error(struct address_space *mapping,
+ 				struct page *page, int error)
  {
- 	LIST_HEAD(page_list);
--	struct pagevec pvec;
- 	unsigned long nr_scanned;
- 	unsigned long nr_reclaimed = 0;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
--	struct page *page;
- 	unsigned long nr_taken;
- 	unsigned long nr_active;
- 	unsigned int count[NR_LRU_LISTS] = { 0, };
-@@ -1157,8 +1203,6 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
- 	}
- 
- 
--	pagevec_init(&pvec, 1);
--
- 	lru_add_drain();
- 	spin_lock_irq(&zone->lru_lock);
- 
-@@ -1186,8 +1230,10 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
- 		 */
- 	}
- 
--	if (nr_taken == 0)
--		goto done;
-+	if (nr_taken == 0) {
-+		spin_unlock_irq(&zone->lru_lock);
-+		return 0;
-+	}
- 
- 	nr_active = clear_active_flags(&page_list, count);
- 	__count_vm_events(PGDEACTIVATE, nr_active);
-@@ -1237,40 +1283,7 @@ static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
- 		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
- 	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
- 
--	spin_lock(&zone->lru_lock);
--	/*
--	 * Put back any unfreeable pages.
--	 */
--	while (!list_empty(&page_list)) {
--		int lru;
--		page = lru_to_page(&page_list);
--		VM_BUG_ON(PageLRU(page));
--		list_del(&page->lru);
--		if (unlikely(!page_evictable(page, NULL))) {
--			spin_unlock_irq(&zone->lru_lock);
--			putback_lru_page(page);
--			spin_lock_irq(&zone->lru_lock);
--			continue;
--		}
--		SetPageLRU(page);
--		lru = page_lru(page);
--		add_page_to_lru_list(zone, page, lru);
--		if (is_active_lru(lru)) {
--			int file = is_file_lru(lru);
--			reclaim_stat->recent_rotated[file]++;
--		}
--		if (!pagevec_add(&pvec, page)) {
--			spin_unlock_irq(&zone->lru_lock);
--			__pagevec_release(&pvec);
--			spin_lock_irq(&zone->lru_lock);
--		}
--	}
--	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
--	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
--
--done:
--	spin_unlock_irq(&zone->lru_lock);
--	pagevec_release(&pvec);
-+	putback_lru_pages(zone, reclaim_stat, nr_anon, nr_file, &page_list);
- 	return nr_reclaimed;
- }
- 
+-	lock_page(page);
++	lock_page_nosync(page);
+ 	if (page_mapping(page) == mapping)
+ 		mapping_set_error(mapping, error);
+ 	unlock_page(page);
 -- 
 1.7.1
 
