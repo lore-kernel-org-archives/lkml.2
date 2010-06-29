@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab0F2Ub4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 16:31:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49274 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab0F2Uby (ORCPT
+	id S1755619Ab0F2Uiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 16:38:51 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:60310 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab0F2Uit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 16:31:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH] serial: fix termios settings in open
-Date: Tue, 29 Jun 2010 22:31:40 +0200
-Message-Id: <1277843500-14680-1-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.1
-X-Provags-ID: V01U2FsdGVkX1+qwrU3PbgYBUbYGRyHtETZakGb9oAh2tpp8G1
- iPJQPcpjhHyBAanS4IG+VXIBriTDPMj60X6j2x9JydVRPsmMFe
- cuFsriZ786FCulFEyEMmQ==
+	Tue, 29 Jun 2010 16:38:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=ZbzMN3gDTsBdnhLOq70NVV2KX7eLUYaEXVdQTxlIAFDwfmuN04hC03HYhRSjRgghHP
+         EowC6kwL+vv6nFLHTfkS8EVudKqbjFDZhGnbRZcfnXSGTHaHf3KuddF6mVsn1dqUbhoD
+         TNZ1VmnyHRnFbP1bhMdpZ67V2CkCuhn5hZi+4=
+From: Chris Clayton <chris2553@googlemail.com>
+Reply-To: chris2553@googlemail.com
+To: Nick Piggin <npiggin@suse.de>
+Subject: Re: [patch 02/52] fs: fix superblock iteration race
+Date: Tue, 29 Jun 2010 21:38:40 +0100
+User-Agent: KMail/1.9.10
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+       Frank Mayhar <fmayhar@google.com>, Al Viro <viro@zeniv.linux.org.uk>
+References: <20100624030212.676457061@suse.de> <201006292104.33778.chris2553@googlemail.com> <20100629201409.GO28364@laptop>
+In-Reply-To: <20100629201409.GO28364@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201006292138.40293.chris2553@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move termios initialization in open into uart_dtr_rts to make sure
-it always gets called when necessary. Based on a suggestion from
-Alan Cox.
+On Tuesday 29 June 2010, Nick Piggin wrote:
+> On Tue, Jun 29, 2010 at 09:04:33PM +0100, Chris Clayton wrote:
+> > On Tuesday 29 June 2010, Linus Torvalds wrote:
+> > > On Tue, Jun 29, 2010 at 10:52 AM, Linus Torvalds
+> > >
+> > > <torvalds@linux-foundation.org> wrote:
+> > > > Look for "2.6.35-rc3 oops trying to suspend" on lkml, for example. No
+> > > > guarantee that it's the same thing, but it's "iterate_supers()"
+> > > > getting an oops [..]
+> > >
+> > > Also, "Oops during closedown with 2.6.35-rc3-git3" is an
+> > > iterate_supers oops (in the jpg) and Chris says it's repeatable for
+> > > him.
+> > >
+> > > Chris - you could try testing current -git now that I've merged Nick's
+> > > patch. It's commit 57439f878af ("fs: fix superblock iteration race"),
+> > > and I just pushed it out (so it might take a few minutes to mirror out
+> > > to the public git trees, but it should be there shortly).
+> >
+> > Well, it was repeatable this morning, but despite 30+ shutdowns this
+> > evening, I haven't had a single oops. Perhaps I'm just not doing enough
+> > computing stuff between startup and shutdown to create the conditions
+> > under which I got the oopses this morning. Moreover, I've been using this
+> > kernel every day with, maybe two or three shutdowns a day, for two weeks
+> > or so now (since just after Linus went on vacation) with no oopses. (The
+> > kernel is -rc3 + John Fastabend's "net: fix deliver_no_wcard regression
+> > on loopback device" patch).
+> >
+> > I'll spend a couple of hours doing stuff and see if I can generate an
+> > oops. Trouble is, of course, that when I pull and build the latest and
+> > greatest, I won't know why I'm not getting oopses, assuming I don't.
+>
+> Don't worry too much if you can't reproduce. I'd say it is likely to be
+> this bug, and if so, it is going to depend significantly on timing and
+> ordering of mounts/umounts.
 
-Alan writes:
-Ok this sort of makes sense. Something isn't getting initialised and both
-getty and minicom will do a termios set which is sorting it out.
-This is occurring because the generic block_til_ready sets
-ASYNCB_NORMAL_ACTIVE so the termios updating gets skipped.
+Yes, that makes sense. I did quite a bit of copying files to and from USB 
+storage devices this morning. I've got some more to do, so I'll see what that 
+produces.
 
-This patch should cure it and then we can think about doing it more
-elegantly by getting the serial layer to use tty_port_open, kfifo and
-the like and removing the tons of repeated crap in all the drivers.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Reported-by: Tony Luck <tony.luck@intel.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Tony Luck <tony.luck@intel.com>
----
-
-Greg, please apply to you tty series. I thought there was a bug
-in this patch but it turns out that this was incorrect. There
-is still something fishy on my system with hardware flow control,
-but it seems to be a preexisting condition, so this patch is actually
-good, unlike what I said before. Please apply next to "serial: Use
-block_til_ready helper", which introduces the ploblem.
-
- drivers/serial/serial_core.c |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
-index 78b1eac..cd85112 100644
---- a/drivers/serial/serial_core.c
-+++ b/drivers/serial/serial_core.c
-@@ -1533,8 +1533,16 @@ static void uart_dtr_rts(struct tty_port *port, int onoff)
- 	struct uart_state *state = container_of(port, struct uart_state, port);
- 	struct uart_port *uport = state->uart_port;
- 
--	if (onoff)
-+	if (onoff) {
- 		uart_set_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
-+
-+		/*
-+		 * If this is the first open to succeed,
-+		 * adjust things to suit.
-+		 */
-+		if (!test_and_set_bit(ASYNCB_NORMAL_ACTIVE, &port->flags))
-+			uart_update_termios(port->tty, state);
-+	}
- 	else
- 		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
- }
-@@ -1649,15 +1657,6 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
- 	if (retval == 0)
- 		retval = tty_port_block_til_ready(port, tty, filp);
- 
--	/*
--	 * If this is the first open to succeed, adjust things to suit.
--	 */
--	if (retval == 0 && !(port->flags & ASYNC_NORMAL_ACTIVE)) {
--		set_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
--
--		uart_update_termios(tty, state);
--	}
--
- fail:
- 	return retval;
- }
 -- 
-1.7.1
-
+The more I see, the more I know. The more I know, the less I understand. 
+Changing Man - Paul Weller
