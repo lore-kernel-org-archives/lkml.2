@@ -1,100 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab0F2VnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 17:43:17 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33340 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603Ab0F2VnP convert rfc822-to-8bit (ORCPT
+	id S1755760Ab0F2VoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 17:44:03 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50385 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136Ab0F2VoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 17:43:15 -0400
+	Tue, 29 Jun 2010 17:44:00 -0400
+Message-ID: <4C2A6921.1010405@codemonkey.ws>
+Date: Tue, 29 Jun 2010 16:44:01 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100629110324.2756cc02@debian>
-References: <20100628215407.2017bf2f@debian> <20100628220037.5744c207@debian> 
-	<AANLkTilN3_ntG7AWKi-8LM9X_dZJPPlWM6xRM_V_00xU@mail.gmail.com> 
-	<20100629110324.2756cc02@debian>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 29 Jun 2010 15:42:54 -0600
-X-Google-Sender-Auth: 6lfVkjOm2mEjTsn64L5u_2gnXes
-Message-ID: <AANLkTinPsrqxj5oQirEDRvVOuOeWgWSdljsMRbw8wn8V@mail.gmail.com>
-Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building code 
-	out into drivers/of
-To: Andres Salomon <dilinger@queued.net>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-       linux-kernel@vger.kernel.org, davem@davemloft.net,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Chetan Loke <chetanloke@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
+Subject: Re: Hypervisor detection from within a Linux VM
+References: <AANLkTinl3ighc51F5V4YP7fuOSscAA_qcynYMtM5j5wk@mail.gmail.com>
+In-Reply-To: <AANLkTinl3ighc51F5V4YP7fuOSscAA_qcynYMtM5j5wk@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 9:03 AM, Andres Salomon <dilinger@queued.net> wrote:
-> On Tue, 29 Jun 2010 00:50:08 -0700
-> Grant Likely <grant.likely@secretlab.ca> wrote:
+On 06/29/2010 04:25 PM, Chetan Loke wrote:
+> Hello,
 >
->> On Mon, Jun 28, 2010 at 7:00 PM, Andres Salomon <dilinger@queued.net> wrote:
->> >
->> > Stick code into drivers/of/pdt.c (Prom Device Tree) that other
->> > architectures with OpenFirmware resident in memory can make use of.
->> >
->> > Signed-off-by: Andres Salomon <dilinger@queued.net>
->>
->> Hi Andres,
->>
->> The patch itself looks fine, but there are currently two methods for
->> extracting the device tree from open firmware; one in arch/powerpc
->> using the flattened format, and one in arch/sparc.  I don't want to
->> end up maintaining both methods in drivers/of, and there has also some
->> discussions on moving the powerpc version into common code.  I've been
->> thinking about using the powerpc approach to support ARM platforms
->> using both the flat tree and real OFW.
->>
->> Ben, what say you?  Before I do anything I'd like to have your opinion.
->>
 >
-> So you're saying that you want ARM (and sparc, and OLPC) to generate a
-> flat tree by calling into OFW?
+> Requirement:
+> I have the need to support my apps(running on a Linux VM) on different
+> *nix hypervisors(ESX/Xen etc). I need to know on which hypervisor my
+> app is running. I read the CPUID usage thread -
+> http://thread.gmane.org/gmane.comp.emulators.kvm.devel/22643 but to be
+> honest in the end I looked at
+> http://lxr.linux.no/#linux+v2.6.34/arch/x86/kernel/cpu/vmware.c#L88
+> The vmware_platform() detection code is straight forward.
+>
+> Current-hack:
+> As a quick hack we just grep lspci for VMware's pci-ids.
+>
+> Solution:
+> I can write a bare minimal driver, check the cpu-id as VMware's
+> balloon driver does and then emit a proc/sysfs node. The setup
+> packages and the apps can then check for this node-string.I'm
+> currently working on ESX and I am hoping that this thin-driver will
+> work.
+>    
 
-ARM: yes, it will use the same mechanism as powerpc and microblaze.
-Direct usage of the flat representation will be more common that
-machines with real OFW.  I'm following the powerpc lead here because
-the powerpc approach already supports both the flat tree and OFW in
-the same kernel.
+It can be done entirely in userspace.  Take a look at virt-what:
 
-Sparc: I don't have a strong opinion.  Sparc and PowerPC have a lot of
-shared code, but they've diverged quite a bit.  I have no intention to
-force a model changes onto sparc.  For a lot of the merge work that
-I'm doing I'm leaving the sparc code as-is in the arch/sparc tree with
-the assumption that support for new architectures will use the common
-code in drivers/of.
+http://people.redhat.com/~rjones/virt-what/
 
-There of course is a gap when it comes to talking to OFW in that both
-the current powerpc and sparc variants still remain in arch code.
+> Question:
+> Q1)Is it possible to get this functionality as part of the stock
+> kernel or is that a bad idea? I suspect there could be other
+> users/apps who would need to know what *nix hypervisor(or a
+> non-virtualized environment) they are
+> running on?
+> Q2)If this is not the right approach then can someone please suggest
+> another approach?
+>    
 
-x86:  I've also just received patches that make use of the flattened
-representation on x86 for FPGA add in boards.  It is conceivable that
-a single kernel will want support for both OFW and FDT.  Since PowerPC
-already supports this use case, my preference is for the powerpc
-implementation of OFW.
+It might be reasonable to list the hypervisor signature as a field in 
+/proc/cpuinfo.  There's also a /sys/hypervisor where such information 
+could go.
 
-I'm squeamish about having both the powerpc and sparc methods in
-common drivers/of code, but I'm not saying no.  I want to hear from
-Ben and David who are more familiar with the history before I make a
-decision.  I do know that Ben has been talking about generalizing the
-powerpc version of the code, and I definitely don't want two methods
-for extracting the OFW device tree in drivers/of.
+Regards,
 
->  Sparc and OLPC have very similar
-> mechanisms for getting device tree info from OFW, so it makes sense to
-> share code between them.
+Anthony Liguori
 
-Other than the flattened tree step; is the powerpc method dissimilar
-from the Sparc and OLPC method for talking to OFW?  (This is not a
-rhetorical question, I'm want to know if I'm missing some details).
-The main difference I know about is that OFW can still kept alive at
-runtime for sparc, which powerpc does not do.  However, keeping OFW
-callable is a separate issue from how to extract the device tree.
+> Regards
+> Chetan Loke
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>    
 
-g.
