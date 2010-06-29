@@ -1,68 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab0F2LNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 07:13:10 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:52683 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232Ab0F2LNI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 07:13:08 -0400
-To: Jens Axboe <axboe@kernel.dk>
+	id S1755619Ab0F2LPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 07:15:08 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43351 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755232Ab0F2LPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 07:15:06 -0400
+Message-ID: <4C29D5B9.9040401@kernel.dk>
+Date: Tue, 29 Jun 2010 13:15:05 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Miklos Szeredi <miklos@szeredi.hu>
 CC: xiaosuo@gmail.com, tim.gardner@canonical.com,
        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org
-In-reply-to: <E1OTYfk-0008GY-PJ@pomaz-ex.szeredi.hu> (message from Miklos
-	Szeredi on Tue, 29 Jun 2010 13:08:12 +0200)
-Subject: [PATCH 3/3] splice: fix misuse of SPLICE_F_NONBLOCK
+Subject: Re: [PATCH 0/3] splice fixes
 References: <E1OTYfk-0008GY-PJ@pomaz-ex.szeredi.hu>
-Message-Id: <E1OTYkT-0008Io-0s@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 29 Jun 2010 13:13:05 +0200
+In-Reply-To: <E1OTYfk-0008GY-PJ@pomaz-ex.szeredi.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On 2010-06-29 13:08, Miklos Szeredi wrote:
+> These patches fix bugs that affect real-world users of splice(2) and
+> sendfile(2) interfaces.
+> 
+> Not sure if some or all of them are appropriate for 2.6.35 and/or
+> -stable?
 
-SPLICE_F_NONBLOCK is clearly documented to only affect blocking on the
-destination pipe and not on the source file.
+I think that 1-2 should go into 2.6.35 directly, and 3 for .36 with
+a stable backport as well. Agree?
 
-In __generic_file_splice_read(), however, it returns EAGAIN if the
-page is currently being read.
+-- 
+Jens Axboe
 
-This makes it impossible to write an application that only wants
-failure if the pipe buffer is full.  For example if the same process
-is handling both ends of a pipe and isn't otherwise able to determine
-whether a splice to the pipe will fit or not.
-
-We could make the read non-blocking on O_NONBLOCK or some other splice
-flag, but for now this is the simplest fix.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/splice.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
-
-Index: linux-2.6/fs/splice.c
-===================================================================
---- linux-2.6.orig/fs/splice.c	2010-06-29 12:46:30.000000000 +0200
-+++ linux-2.6/fs/splice.c	2010-06-29 12:46:32.000000000 +0200
-@@ -399,17 +399,7 @@ __generic_file_splice_read(struct file *
- 		 * If the page isn't uptodate, we may need to start io on it
- 		 */
- 		if (!PageUptodate(page)) {
--			/*
--			 * If in nonblock mode then dont block on waiting
--			 * for an in-flight io page
--			 */
--			if (flags & SPLICE_F_NONBLOCK) {
--				if (!trylock_page(page)) {
--					error = -EAGAIN;
--					break;
--				}
--			} else
--				lock_page(page);
-+			lock_page(page);
- 
- 			/*
- 			 * Page was truncated, or invalidated by the
