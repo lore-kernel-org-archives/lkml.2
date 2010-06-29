@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab0F2SRc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 14:17:32 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40158 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754354Ab0F2SRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 14:17:31 -0400
-Message-ID: <4C2A385B.3010909@kernel.org>
-Date: Tue, 29 Jun 2010 20:15:55 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
-       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
-       akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, oleg@redhat.com,
-       axboe@kernel.dk, dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de,
-       florian@mickler.org, andi@firstfloor.org, mst@redhat.com,
-       randy.dunlap@oracle.com, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 34/35] async: use workqueue for worker pool
-References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <4C2A2688.1020206@kernel.org> <4C2A3652.7030806@linux.intel.com>
-In-Reply-To: <4C2A3652.7030806@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 18:16:02 +0000 (UTC)
+	id S1754854Ab0F2STO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 14:19:14 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59759 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652Ab0F2STM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 14:19:12 -0400
+Subject: Re: [RFC][PATCH 09/11] perf: Default PMU ops
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100629181104.GC11967@nowhere>
+References: <20100624142804.431553874@chello.nl>
+	 <20100624143406.993794468@chello.nl> <20100629145806.GE5318@nowhere>
+	 <1277823591.1868.43.camel@laptop> <20100629150305.GG5318@nowhere>
+	 <1277829250.1868.46.camel@laptop> <20100629180745.GA11967@nowhere>
+	 <1277834950.1868.56.camel@laptop>  <20100629181104.GC11967@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 29 Jun 2010 20:19:03 +0200
+Message-ID: <1277835543.1868.57.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Arjan.
-
-On 06/29/2010 08:07 PM, Arjan van de Ven wrote:
-> we might be talking past eachother. ;-)
+On Tue, 2010-06-29 at 20:11 +0200, Frederic Weisbecker wrote:
+> On Tue, Jun 29, 2010 at 08:09:10PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2010-06-29 at 20:07 +0200, Frederic Weisbecker wrote:
+> > > On Tue, Jun 29, 2010 at 06:34:10PM +0200, Peter Zijlstra wrote:
+> > > > On Tue, 2010-06-29 at 17:03 +0200, Frederic Weisbecker wrote:
+> > > > > > You mean, if (!pmu->start_txn && pmu->pmu_enable) { /* install defaults
+> > > > > > */ } ?
+> > 
+> > > neglected pmu implementations shouldn't impact software pmus.
+> > 
+> > With the above and not providing ->pmu_enable you get that.
 > 
-> let me define an example that is simple so that we can get on the same page
 > 
-> assume a system with "enough" cpus, say 32.
-> lets say we have 2 async tasks, that each do an mdelay(1000); (yes I
-> know stupid, but exagerating things makes things easier to talk about)
+> But we don't need to provide a pmu_enable for software events, right?
 
-That's the main point to discuss tho.  If you exaggerate the use case
-out of proportion, you'll end up with something which in the end is
-useful only in the imagination and we'll be doing things just because
-we can.  Creating full number of unbound threads might look like a
-good idea to extract maximum cpu parallelism if you exaggerate the use
-case like the above but with the current actual use case, it's not
-gonna buy us anything and might even cost us more via unnecessary
-thread creations.
-
-So, let's talk about whether it's _actually_ useful for the current
-use cases.  If so, sure, let's do it that way.  If not, there is no
-reason to go there, right?
-
-Thanks.
-
--- 
-tejun
+My point exactly.
