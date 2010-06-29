@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab0F2M7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 08:59:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64019 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560Ab0F2M7F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 08:59:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CqJm43arUt2ZZCZkJtqtHi7YTCMbBpzGlaLQIxLNbUVdx1C2zll/0a14bLf815ZLpG
-         FCKt1VNkb4lSMq7ns7vmveXU7aXTVGg/kV+NRq3jm6z7shnM/g6GwPLTzx0RaCCViZTt
-         oSn5+m+Dapvm79O3+A2eFYnV2GcJJ8wXG0qhc=
-Date: Tue, 29 Jun 2010 16:59:01 +0400
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Nicolas Palix <npalix@diku.dk>, k@shinshilla
-Cc: trivial@kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-       Julia Lawall <julia@diku.dk>, Michal Marek <mmarek@suse.cz>,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation: fix ubuntu distro name
-Message-ID: <20100629125858.GA2279@shinshilla>
-References: <1277814677-1944-1-git-send-email-segooon@gmail.com>
- <201006291447.16073.npalix@diku.dk>
+	id S1755925Ab0F2NAz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 09:00:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755282Ab0F2NAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 09:00:53 -0400
+From: Steve Grubb <sgrubb@redhat.com>
+Organization: Red Hat
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH v2] sanitize task->comm to avoid leaking escape codes
+Date: Tue, 29 Jun 2010 08:58:49 -0400
+User-Agent: KMail/1.13.3 (Linux/2.6.33.5-124.fc13.x86_64; KDE/4.4.4; x86_64; ; )
+Cc: Stefani Seibold <stefani@seibold.net>, Kees Cook <kees.cook@canonical.com>,
+       linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+       Veaceslav Falico <vfalico@redhat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Roland McGrath <roland@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Eric Paris <eparis@redhat.com>,
+       James Morris <jmorris@namei.org>,
+       "Andrew G. Morgan" <morgan@kernel.org>,
+       Dhaval Giani <dhaval.giani@gmail.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>, Christoph Hellwig <hch@lst.de>,
+       linux-fsdevel@vger.kernel.org
+References: <20100625082722.8031.A69D9226@jp.fujitsu.com> <1277747318.4840.9.camel@wall-e.seibold.net> <20100629115957.38BF.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100629115957.38BF.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006291447.16073.npalix@diku.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006290858.50387.sgrubb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 14:47 +0200, Nicolas Palix wrote:
-> Hi Kulikov,
-> 
-> Indeed. I mixed things.
-> 
-> But Coccinelle was already in Karmic [1].
-> Can you submit a patch with 9.10 instead of 10.04 ?
-> 
-> I will Ack it.
-> 
-> Thanks.
-> 
-> [1] https://launchpad.net/ubuntu/+source/coccinelle
+On Monday, June 28, 2010 11:05:56 pm KOSAKI Motohiro wrote:
+> > Am Freitag, den 25.06.2010, 08:56 +0900 schrieb KOSAKI Motohiro:
+> > > > Through get_task_comm() and many direct uses of task->comm in the
+> > > > kernel, it is possible for escape codes and other non-printables to
+> > > > leak into dmesg, syslog, etc.  In the worst case, these strings
+> > > > could be used to attack administrators using vulnerable terminal
+> > > > emulators, and at least cause confusion through the injection of \r
+> > > > characters.
+> > > > 
+> > > > This patch sanitizes task->comm to only contain printable characters
+> > > > when it is set.  Additionally, it redefines get_task_comm so that it
+> > > > is more obvious when misused by callers (presently nothing was
+> > > > incorrectly calling get_task_comm's unsafe use of strncpy).
 
-As you see in [1], coccinelle version in Karmic is 0.1.9.
-I don't know if it is buggy for linux.
+For the audit system, we want the real, unsanitized task->comm. We record it 
+in a special format to the audit logs such that unprintable characters are 
+included. We want it exactly this way for certification purposes as well as 
+forensic evidence if someone was playing games. If you do sanitize it for 
+other areas of the kernel, please give us a way to get the unsanitized text.
 
-In documentation it is 0.2.0:
-> Coccinelle (>=0.2.0) is available through the package manager
-> of many distributions, e.g. :
+-Steve
+
+
+> > > > Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> > > 
+> > > I've reviewed this patch briefly, Here is my personal concern...
+> > > 
+> > > On Linux, non-printable leaking is fundamental, only fixing task->comm
+> > > doesn't solve syslog exploit issue. Probably all /proc/kmsg user should
+> > > have escaping non-pritables code.
+> > > 
+> > > However, task->comm is one of most easy injection data of kernel,
+> > > because we have prctl(PR_SET_NAME), attacker don't need root
+> > > privilege. So, conservative assumption seems guard from crappy fault.
+> > > Plus, this patch is very small and our small TASK_COMM_LEN lead that
+> > > we don't need big performance concern.
+> > > 
+> > > So, I don't find demerit in this proposal. but I'm not security
+> > > specialist, it's only personal thinking.
+> > 
+> > Agree. I think a escaped printk should be a more generic solution.
 > 
->  - Debian (>=squeeze)
->  - Fedora (>=13)
->  - Ubuntu (>=10.04 Lucid Lynx)
->  - OpenSUSE
->  - Arch Linux
->  - NetBSD
->  - FreeBSD
-
-So, if 0.1.9 is OK, I can make smth like this: 
->  - Ubuntu (>=9.04 Karmic Koala, coccinelle = 0.1.9)
+> Is this possible? printk() doesn't know userland locale. how do it escape
+> correctly? When we only concern task->comm, assuming ascii-only string is
+> enough practical. but printk generic logic should allow non-ascii, I
+> think.
+> 
+> I think userland reader process only know correct escaping way.
