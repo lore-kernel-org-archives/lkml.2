@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944Ab0F2MkP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 08:40:15 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:19701 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab0F2MkN convert rfc822-to-8bit (ORCPT
+	id S1754929Ab0F2MoX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 08:44:23 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56191 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330Ab0F2MoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 08:40:13 -0400
+	Tue, 29 Jun 2010 08:44:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YKAJdj7i/+Ql7cXOWbiHUB0LiVYt8+aPa978GvtJARh2uRUMtb3S7XHghBSGXptMXl
-         3D/kWaGdl6sNXZ+2vwgE8V9FZGEomDyGxW0QLnMXMhVLJuiWVTZcl7HsOtnJKKFydt2p
-         BffDtHt9FEE/DiJ17ntG95vrFqpaHfXIfL0Xk=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=kDeNDnsUkTz/ofm9yR+tudyxQU8gjaHMO236GI1H+KEQ5F9Sv0FcdO8yYJzMh7mZf6
+         0cMQrsR2GKvmfrTJRBdvgc00XhJKfc+De1EBhyaw1efOrY5XF9JfNZyXxgtR6BOTMm5v
+         PdIznaZwOk7oYsETjGn+EXnh3ja3bgyx8rCKA=
+Date: Tue, 29 Jun 2010 16:44:15 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: Rupjyoti Sarmah <rsarmah@amcc.com>, linux-ide@vger.kernel.org, sr@denx.de,
+       jgarzik@pobox.com, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH]460EX on-chip SATA driver<kernel 2.6.33><resubmission>
+Message-ID: <20100629124415.GA32738@oksana.dev.rtsoft.ru>
+References: <201006041226.o54CQH2V017366@amcc.com>
+ <201006290333.50673.marek.vasut@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20100629.001216.91341775.davem@davemloft.net>
-References: <1276467601-9066-1-git-send-email-alan@signal11.us>
-	<20100628131437.bde782b6.ospite@studenti.unina.it>
-	<20100629.001216.91341775.davem@davemloft.net>
-Date: Tue, 29 Jun 2010 15:40:10 +0300
-Message-ID: <AANLkTiktvYWdZmpQs_k7mJRqMCqgfhy1b0T8tX8emmtU@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw 
-	HIDIOCGFEATURE and HIDIOCSFEATURE
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: ospite@studenti.unina.it, alan@signal11.us, marcel@holtmann.org,
-       jkosina@suse.cz, mdpoole@troilus.org, hadess@hadess.net,
-       eric.dumazet@gmail.com, linux-bluetooth@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201006290333.50673.marek.vasut@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jun 29, 2010 at 03:33:50AM +0200, Marek Vasut wrote:
+> Dne Pá 4. června 2010 14:26:17 Rupjyoti Sarmah napsal(a):
+> > This patch enables the on-chip DWC SATA controller of the AppliedMicro
+> > processor 460EX.
+> > 
+> > Signed-off-by: Rupjyoti Sarmah <rsarmah@appliedmicro.com>
+> > Signed-off-by: Mark Miesfeld <mmiesfeld@appliedmicro.com>
+> > Signed-off-by: Prodyut Hazarika <phazarika@appliedmicro.com>
+> > 
+> 
+> --SNIP--
+> 
+> > +		dev_err(ap->dev, "%s: Command not pending cmd_issued=%d "
+> > +			"(tag=%d) DMA NOT started\n", __func__,
+> > +			hsdevp->cmd_issued[tag], tag);
+> 
+> Just a nitpick, but don't break strings if possible.
 
-On Tue, Jun 29, 2010 at 10:12 AM, David Miller <davem@davemloft.net> wrote:
-> From: Antonio Ospite <ospite@studenti.unina.it>
-> Date: Mon, 28 Jun 2010 13:14:37 +0200
->
->> On Sun, 13 Jun 2010 18:20:01 -0400
->> Alan Ott <alan@signal11.us> wrote:
->>
->>> This patch adds support or getting and setting feature reports for bluetooth
->>> HID devices from HIDRAW.
->>>
->>> Signed-off-by: Alan Ott <alan@signal11.us>
->>> ---
->>
->> Ping.
->
-> We effectively don't have a bluetooth maintainer at the current point
-> in time. �I've tried to let patches sit for a while hoping the listed
-> maintainer would do something, at least occaisionally, but that simply
-> isn't happening.
-> So I'll just pick patches up directly as I find time to review them,
-> but I have to warn that for me it's going to be done in a very low
-> priority way because I really don't find bluetooth all that exciting. :-)
+Note that in this particular case breaking strings was OK, and
+was actually done in a clever manner.
 
-This would be good. We have a backlog of bluetooth kernel patches
-waiting for several months.
-This takes too much time to return to them again and again...
+That is, I doubt that anyone grep for error messages with
+regexps, so grep "Command not pending" or grep "DMA NOT started"
+would work.
 
-Please keep this ML informed.
+This makes the code more readable (literally, because you don't
+have to scroll to see dev_err's arguments) without sacrificing
+grep'ability.
 
-Regards,
-Andrei Emeltchenko
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
