@@ -1,37 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab0F3MYA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 08:24:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35797 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752290Ab0F3MX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 08:23:58 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100630121127.GA22713@infradead.org>
-References: <20100630121127.GA22713@infradead.org> <52423201-3DF9-4045-8E8B-FAA915053D56@dilger.ca> <20100630011656.18960.4255.stgit@warthog.procyon.org.uk> <26505.1277899544@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: dhowells@redhat.com, Andreas Dilger <adilger@dilger.ca>,
-       viro@ZenIV.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
-       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-       sjayaraman@suse.de, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3] Extended file stat functions [ver #2]
-Date: Wed, 30 Jun 2010 13:23:43 +0100
-Message-ID: <8106.1277900623@redhat.com>
+	id S1755928Ab0F3M0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 08:26:52 -0400
+Received: from 217-156-13-3.rdsnet.ro ([217.156.13.3]:41117 "EHLO mail.m-ol.ro"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752244Ab0F3M0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 08:26:51 -0400
+X-Greylist: delayed 10426 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Jun 2010 08:26:51 EDT
+Message-ID: <3950.84.79.222.81.1277844407.squirrel@mail.m-ol.ro>
+Date: Tue, 29 Jun 2010 23:46:47 +0300 (EEST)
+Subject: Lieber Freund!!!
+From: "Luther Zihiri." <marknuluk@gmx.de>
+Reply-To: lutherzhiri@aim.com
+User-Agent: SquirrelMail/1.4.8
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> wrote:
 
-> The cost of adding a syscall is much smaller than adding all the wanking
-> in your system call.
 
-Simply, if inelegantly put.
 
-David
+Lieber Freund!!!
+
+Ich vermute das diese E-Mail eine Überraschung für Sie sein wird, aber es
+ist wahr.Ich bin bei einer routinen Überprüfung in meiner Bank (Standard
+Bank von Süd Afrika) wo ich arbeite, auf einem Konto gestoßen, was nicht
+in anspruch genommen worden ist, wo derzeit $12,500,000
+(zwölfmillionenfünfhundert US Dollar) gutgeschrieben sind.
+
+Dieses Konto gehörte Herrn Manfred Becker, der ein Kunde in unsere Bank
+war, der leider verstorben ist. Herr Becker war ein gebürtiger
+Deutscher.Damit es mir möglich ist dieses Geld $12,500,000 inanspruch
+zunehmen, benötige ich die zusammenarbeit eines Ausländischen Partners wie
+Sie,den ich als Verwandter und Erbe des verstorbenen Herrn Becker
+vorstellen kann,damit wir das Geld inanspruch nehmen können.
+
+Für diese Unterstützung erhalten Sie 30% der Erbschaftsumme und die
+restlichen 70% teile ich mir mit meinen zwei Arbeitskollegen, die mich bei
+dieser Transaktion ebenfalls unterstützen.Wenn Sie interessiert sind,
+können Sie mir bitte eine E-Mail schicken, damit ich Ihnen mehr Details
+zukommen lassen kann.Schicken Sie bitte Ihre Antwort auf diese E-Mail
+Adresse: (lutherzhiri@aim.com)
+
+Mit freundlichen Grüßen
+Luther Zihiri.
+
