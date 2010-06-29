@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab0F2SRF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 14:17:05 -0400
-Received: from mail80c7.megamailservers.com ([69.49.98.180]:50624 "EHLO
-	mail80c7.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754354Ab0F2SRD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 14:17:03 -0400
-X-Greylist: delayed 3999 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jun 2010 14:17:03 EDT
-X-Authenticated-User: paulkf.microgate.com
-Message-ID: <4C2A36C6.3020101@microgate.com>
-Date: Tue, 29 Jun 2010 12:09:10 -0600
-From: Paul Fulghum <paulkf@microgate.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
+	id S1754898Ab0F2SRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 14:17:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40158 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754354Ab0F2SRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 14:17:31 -0400
+Message-ID: <4C2A385B.3010909@kernel.org>
+Date: Tue, 29 Jun 2010 20:15:55 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Kulikov Vasiliy <segooon@gmail.com>
-CC: trivial@kernel.org, Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/16] trivial: use ARRAY_SIZE
-References: <1277726089-24467-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1277726089-24467-1-git-send-email-segooon@gmail.com>
-X-Enigmail-Version: 1.0.1
+To: Arjan van de Ven <arjan@linux.intel.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
+       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
+       akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, oleg@redhat.com,
+       axboe@kernel.dk, dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de,
+       florian@mickler.org, andi@firstfloor.org, mst@redhat.com,
+       randy.dunlap@oracle.com, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH 34/35] async: use workqueue for worker pool
+References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <4C2A2688.1020206@kernel.org> <4C2A3652.7030806@linux.intel.com>
+In-Reply-To: <4C2A3652.7030806@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-CSC: 0
-X-CHA: v=1.1 cv=mS14aLXsVDjuqhCeSQYt5ooTdy5XXOZhHx7Vus2DgyA= c=1 sm=1
-		a=4Tz1Q6VkXRsA:10 a=ood2b7iyd8MA:10 a=8nJEP1OIZ-IA:10
-		a=NZZe3g19dmt1xztwQ50WRw==:17 a=pGLkceISAAAA:8 a=ijWuk3ZyAAAA:8
-		a=w9rof2AGrn1jCrruHmUA:9 a=bZfmuX8Xq4pLgkWYQbCWHy_TF1kA:4 a=wPNLvfGTeEIA:10
-		a=MSl-tDqOz04A:10 a=fEugV1Gw4pQA:10 a=NZZe3g19dmt1xztwQ50WRw==:117
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 18:16:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/28/2010 5:54 AM, Kulikov Vasiliy wrote:
-> Change sizeof(x) / sizeof(*x) to ARRAY_SIZE(x).
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  drivers/char/synclink_gt.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
-> index 4561ce2..334cf5c 100644
-> --- a/drivers/char/synclink_gt.c
-> +++ b/drivers/char/synclink_gt.c
-> @@ -4845,7 +4845,7 @@ static int register_test(struct slgt_info *info)
->  {
->  	static unsigned short patterns[] =
->  		{0x0000, 0xffff, 0xaaaa, 0x5555, 0x6969, 0x9696};
-> -	static unsigned int count = sizeof(patterns)/sizeof(patterns[0]);
-> +	static unsigned int count = ARRAY_SIZE(patterns);
->  	unsigned int i;
->  	int rc = 0;
->  
+Hello, Arjan.
 
-Acked-by: Paul Fulghum <paulkf@microgate.com>
+On 06/29/2010 08:07 PM, Arjan van de Ven wrote:
+> we might be talking past eachother. ;-)
+> 
+> let me define an example that is simple so that we can get on the same page
+> 
+> assume a system with "enough" cpus, say 32.
+> lets say we have 2 async tasks, that each do an mdelay(1000); (yes I
+> know stupid, but exagerating things makes things easier to talk about)
 
-with the exception of the trailing CR :-)
+That's the main point to discuss tho.  If you exaggerate the use case
+out of proportion, you'll end up with something which in the end is
+useful only in the imagination and we'll be doing things just because
+we can.  Creating full number of unbound threads might look like a
+good idea to extract maximum cpu parallelism if you exaggerate the use
+case like the above but with the current actual use case, it's not
+gonna buy us anything and might even cost us more via unnecessary
+thread creations.
+
+So, let's talk about whether it's _actually_ useful for the current
+use cases.  If so, sure, let's do it that way.  If not, there is no
+reason to go there, right?
+
+Thanks.
 
 -- 
-Paul Fulghum
-MicroGate Systems, Ltd.
+tejun
