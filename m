@@ -1,120 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab0F2OtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 10:49:17 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:43385 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756247Ab0F2OtO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 10:49:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XUsyBn1E60Q1r9q3fYN/o3eV7+teIdV/+lztaznPWvFn/PfoOTys0b49pSoklwi67C
-         bWjAqIK5u02/Wc4QuVaK8+fHyU+37ABl6C3AxZMy8REwm7yoW//OjfzPxJX8MK9yKMof
-         sv1hyf++SjvvqwV5UdbOi8y7wTROGi/ypFfEw=
-Date: Tue, 29 Jun 2010 16:49:23 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 09/11] perf: Default PMU ops
-Message-ID: <20100629144920.GD5318@nowhere>
-References: <20100624142804.431553874@chello.nl> <20100624143406.993794468@chello.nl>
+	id S1755792Ab0F2Ox2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 10:53:28 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:42012 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753919Ab0F2Ox1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 10:53:27 -0400
+Date: Tue, 29 Jun 2010 07:51:37 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+       Veaceslav Falico <vfalico@redhat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Oleg Nesterov <oleg@redhat.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Stefani Seibold <stefani@seibold.net>,
+       Thomas Gleixner <tglx@linutronix.de>, Eric Paris <eparis@redhat.com>,
+       James Morris <jmorris@namei.org>,
+       "Andrew G. Morgan" <morgan@kernel.org>,
+       Dhaval Giani <dhaval.giani@gmail.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>, Steve Grubb <sgrubb@redhat.com>,
+       Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2] sanitize task->comm to avoid leaking escape codes
+Message-ID: <20100629145137.GD4175@outflux.net>
+References: <20100624190527.GD5917@outflux.net>
+ <20100629103650.3b80e09f@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100624143406.993794468@chello.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100629103650.3b80e09f@lxorguk.ukuu.org.uk>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 04:28:13PM +0200, Peter Zijlstra wrote:
-> Provide default implementations for the pmu txn methods, this allows
-> us to remove some conditional code.
+On Tue, Jun 29, 2010 at 10:36:50AM +0100, Alan Cox wrote:
+> > Through get_task_comm() and many direct uses of task->comm in the kernel,
+> > it is possible for escape codes and other non-printables to leak into
+> > dmesg, syslog, etc.  In the worst case, these strings could be used to
+> > attack administrators using vulnerable terminal emulators, and at least
+> > cause confusion through the injection of \r characters.
 > 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/perf_event.c |   48 ++++++++++++++++++++++++++++++++++++------------
->  1 file changed, 36 insertions(+), 12 deletions(-)
-> 
-> Index: linux-2.6/kernel/perf_event.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/perf_event.c
-> +++ linux-2.6/kernel/perf_event.c
-> @@ -656,21 +656,14 @@ group_sched_in(struct perf_event *group_
->  {
->  	struct perf_event *event, *partial_group = NULL;
->  	struct pmu *pmu = group_event->pmu;
-> -	bool txn = false;
->  
->  	if (group_event->state == PERF_EVENT_STATE_OFF)
->  		return 0;
->  
-> -	/* Check if group transaction availabe */
-> -	if (pmu->start_txn)
-> -		txn = true;
-> -
-> -	if (txn)
-> -		pmu->start_txn(pmu);
-> +	pmu->start_txn(pmu);
->  
->  	if (event_sched_in(group_event, cpuctx, ctx)) {
-> -		if (txn)
-> -			pmu->cancel_txn(pmu);
-> +		pmu->cancel_txn(pmu);
->  		return -EAGAIN;
->  	}
->  
-> @@ -684,7 +677,7 @@ group_sched_in(struct perf_event *group_
->  		}
->  	}
->  
-> -	if (!txn || !pmu->commit_txn(pmu))
-> +	if (!pmu->commit_txn(pmu))
->  		return 0;
->  
->  group_error:
-> @@ -699,8 +692,7 @@ group_error:
->  	}
->  	event_sched_out(group_event, cpuctx, ctx);
->  
-> -	if (txn)
-> -		pmu->cancel_txn(pmu);
-> +	pmu->cancel_txn(pmu);
->  
->  	return -EAGAIN;
->  }
-> @@ -4755,6 +4747,26 @@ static struct list_head pmus;
->  static DEFINE_MUTEX(pmus_lock);
->  static struct srcu_struct pmus_srcu;
->  
-> +static void perf_pmu_nop(struct pmu *pmu)
-> +{
-> +}
-> +
-> +static void perf_pmu_start_txn(struct pmu *pmu)
-> +{
-> +	perf_pmu_disable(pmu);
-> +}
-> +
-> +static int perf_pmu_commit_txn(struct pmu *pmu)
-> +{
-> +	perf_pmu_enable(pmu);
-> +	return 0;
-> +}
-> +
-> +static void perf_pmu_cancel_txn(struct pmu *pmu)
-> +{
-> +	perf_pmu_enable(pmu);
+> If an administrator has a vulnerable terminal emulator they have other
+> problems.
 
+Totally agreed.
 
-Did you mean disable here?
+> Please do any filtering you must in the yama security module where it
+> only affects that. One way to approach it without losing data within the
+> module might be to use HTML style encoding within Yama so your own tools
+> can undo the 'sanitizing' rather than losing information ?
 
+I'm not interested in sanitizing this in Yama.  The use of task->comm via
+printk was seen as a flaw.  I didn't agree (see above about terminal),
+and suggested that if it was a flaw, it was a flaw with printk or
+task->comm itself.  Since "fixing" both of those have been vetoed,
+I have no more interest in the filtering.
+
+What I do have interest in is fixing get_task_comm's use of buffers, which
+is theoretically problematic in some future where someone accidentally
+calls it with a buffer smaller than sizeof(task->comm).
+
+I'll send a patch that only fixes that and leaves out the filtering.
+
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
