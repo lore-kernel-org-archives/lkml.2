@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab0F2RMc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 13:12:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63593 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924Ab0F2RMb (ORCPT
+	id S1756667Ab0F2ROX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 13:14:23 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42739 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917Ab0F2ROV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 13:12:31 -0400
+	Tue, 29 Jun 2010 13:14:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=message-id:date:from:user-agent:mime-version:to:cc:subject
          :references:in-reply-to:content-type:content-transfer-encoding;
-        b=nUi0tfvza+2rEIltnrjc5gHQqS+L8xwpNSLLhJFCAWpUrk1ZyzVpDQqtUpb1EWWcRS
-         LsTtMeoyOKn8Ckkt9aKs6kPe+rTJfflhC13A5mcM8psLNtB0QvQ6QwG6EsoCqvdaKE9Q
-         p13zrzQ28MX8idqO0E/MVaOc+QZIYLAW2fDq0=
-Message-ID: <4C2A2979.3000609@gmail.com>
-Date: Tue, 29 Jun 2010 19:12:25 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+        b=FDGkqCudzAyoJCAJIAf7uPEFUZ8uq/BvcfhAqUzc1sBgHm7NVdN+P9XYgE6X3S5thW
+         1UFi4mq4kC9zOKMejymAPMS/F/C7LnuPr6ZQaDz68/KKYPS2iPgrr0GqOSIiK21GRZSq
+         Yhj7yzkLVHjT7AO7YqFrP2rKTG3v+RIIV8hxc=
+Message-ID: <4C2A2A01.9010307@gmail.com>
+Date: Tue, 29 Jun 2010 10:14:41 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
-       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
-       akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, oleg@redhat.com,
-       axboe@kernel.dk, dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de,
-       florian@mickler.org, andi@firstfloor.org, mst@redhat.com,
-       randy.dunlap@oracle.com, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 34/35] async: use workqueue for worker pool
-References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <4C2A2688.1020206@kernel.org>
-In-Reply-To: <4C2A2688.1020206@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Howells <dhowells@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org
+Subject: Re: [PATCH 3/5]acpi:glue.c Fix warning: variable 'ret' set but not
+ used
+References: <4C29674C.9070503@gmail.com> <4C28E14D.5050701@gmail.com> <1277621246-10960-4-git-send-email-justinmattock@gmail.com> <1277621246-10960-1-git-send-email-justinmattock@gmail.com> <7214.1277729293@redhat.com> <8066.1277750854@redhat.com> <22319.1277826461@redhat.com>
+In-Reply-To: <22319.1277826461@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2010 06:59 PM, Tejun Heo wrote:
-> Hello, Arjan.
-> 
-> On 06/29/2010 06:40 PM, Arjan van de Ven wrote:
->> uh? clearly the assumption is that if I have a 16 CPU machine, and 12
->> items of work get scheduled,
->> that we get all 12 running in parallel. All the smarts of cmwq surely
->> only kick in once you've reached the
->> "one work item per cpu" threshold ???
-> 
-> Hmmm... workqueue workers are bound to certain cpu, so if you schedule
-> a work on a specific CPU, it will run there.  Once a cpu gets
-> saturated, the issuing thread will be moved elsewhere.  I don't think
-> it matters to any of the current async users one way or the other,
-> would it?
+On 06/29/2010 08:47 AM, David Howells wrote:
+> Justin P. Mattock<justinmattock@gmail.com>  wrote:
+>
+>> +	if (fn) {
+>> + 			printk(KERN_WARNING "dev%d: Failed to create
+>> firmware_node: %d\n", status, fn);
+>> +	}else if (pn) {
+>> +			printk(KERN_WARNING "dev%d: Failed to create
+>> physical_node: %d\n", status, pn);
+>> + 			return 0;
+>> +		}
+>
+> The if-statement should be correctly indented (it's inside another
+> if-body, so needs to be one more tab over) and there needs to be a space
+> before the else.
+>
+o.k., so it should look something like this:
+if (fn) {
+	code...
+	} else if (pn) {
 
-Thinking more about it.  It's now not difficult to add a gcwq for an
-unbound pseudo CPU number and use it as host for workers which can run
-on any CPU.  The automatic concurrency management doesn't make much
-sense for those workers, so @max_active can be used as the explicit
-concurrency throttle.  It's not even gonna take a lot of code but I'm
-just not convinced that there's much benefit in doing that.  So, yeah,
-if necessary, sure, but let's think whether it's gonna be actually
-useful.
 
-Thanks.
+> You should probably split your printks up so they don't exceed 80 chars too,
+> for example:
+>
+> 			printk(KERN_WARNING
+> 			       "dev%d: Failed to create physical_node: %d\n",
+> 			       status, pn);
+>
+> Also 'status' is probably the wrong thing to print as the number in "dev%d".
+> If it worked, that should be unconditionally AE_OK, I think.  Can you not use
+> dev_warn() or similar instead or printk?
+>
+> David
+>
 
--- 
-tejun
+alright, I'll look at this today. I'm not the best at making printks in 
+fact I'm more intimidated by them..(so with this in mind, I'm going to 
+sit and make myself learn this, so I atleast have a better idea of doing 
+these than I have now.)
+
+Justin P. Mattock
+
+
+
+
+
+
+
+
