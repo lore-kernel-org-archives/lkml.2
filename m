@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab0F2NPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 09:15:51 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:4158 "EHLO
+	id S1756008Ab0F2NQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 09:16:18 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:35831 "EHLO
 	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097Ab0F2NPt convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752097Ab0F2NQQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 09:15:49 -0400
+	Tue, 29 Jun 2010 09:16:16 -0400
 Content-class: urn:content-classes:message
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Subject: [PATCHv4 5/11] REGULATOR: Removal of testing framework and redundancy
-Date: Tue, 29 Jun 2010 14:15:46 +0100
-Message-ID: <3495EC08FA53E94AAA00CC4743D5BA7E013FA7EB@pandora.diasemi.com>
+Subject: [RFC][PATCH 9/11] BACKLIGHT: Initial submission of Backlight device driver for DA9052 PMIC
+Date: Tue, 29 Jun 2010 14:16:13 +0100
+Message-ID: <3495EC08FA53E94AAA00CC4743D5BA7E013FA7EC@pandora.diasemi.com>
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCHv4 5/11] REGULATOR: Removal of testing framework and redundancy
-Thread-Index: AcsXjS+H/4xzydTrSI+Cji/1ExXrPA==
+Thread-Topic: [RFC][PATCH 9/11] BACKLIGHT: Initial submission of Backlight device driver for DA9052 PMIC
+Thread-Index: AcsXjT+HF2FaSrzTSPCDn8n0ChtyPA==
 From: "David Dajun Chen" <Dajun.Chen@diasemi.com>
-To: <lrg@slimlogic.co.uk>, <broonie@opensource.wolfsonmicro.com>
+To: <rpurdie@rpsys.net>
 Cc: <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 29 Jun 2010 13:15:47.0759 (UTC) FILETIME=[304113F0:01CB178D]
+X-OriginalArrivalTime: 29 Jun 2010 13:16:14.0555 (UTC) FILETIME=[4039D2B0:01CB178D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-REGULATOR module of the device driver for DA9052 PMIC device from Dialog
-Semiconductor.
-
-Changes made since last submission:
-. registration of regulator driver is done via MFD
-. removal of driver test framework
-. removal of redundant printk and comments
-. removal of redundant headers
+Initial submission of backlight module of the device driver for DA9052
+PMIC device from Dialog Semiconductor.
 
 Linux Kernel Version: 2.6.34
 
 Signed-off-by: D. Chen <dchen@diasemi.com>
 ---
-diff -urpN linux-2.6.34/drivers/mfd/da9052-core.c
+diff -uprN linux-2.6.34/drivers/mfd/da9052-core.c
 linux-2.6.34_test/drivers/mfd/da9052-core.c
 --- linux-2.6.34/drivers/mfd/da9052-core.c	2010-06-28
-19:48:06.000000000 +0500
+19:40:28.000000000 +0500
 +++ linux-2.6.34_test/drivers/mfd/da9052-core.c	2010-06-28
-19:47:32.000000000 +0500
-@@ -532,6 +532,7 @@ static int __init da9052_ssc_init(void)
- 	int ret, cnt;
- 	struct da9052 *da9052;
- 	struct da9052_platform_data *pdata;
-+	struct da9052_regulator_platform_data regulator_pdata;
+19:41:15.000000000 +0500
+@@ -554,6 +554,9 @@ static int __init da9052_ssc_init(void)
+ 	if (ret)
+ 		return -EIO;
  
- 	da9052 = kzalloc(sizeof(*da9052), GFP_KERNEL);
- 	if (!da9052)
-@@ -558,6 +559,16 @@ static int __init da9052_ssc_init(void)
- 	da9052_add_subdevice(da9052, "da9052-backlight");
- 	da9052_add_subdevice(da9052, "da9052-rtc");
- 
-+#if defined(CONFIG_MFD_DA9052_SPI)
-+	pdata = dev_get_platdata(&da9052->spi_dev->dev);
-+#elif defined(CONFIG_MFD_DA9052_I2C)
-+	pdata = dev_get_platdata(da9052->dev);
-+#endif
-+	regulator_pdata.num_regulators = pdata->num_regulators;
-+	regulator_pdata.regulators = pdata->regulators;
-+	da9052_add_subdevice_pdata(da9052, "da9052-regulator",
-+				&regulator_pdata,
-sizeof(regulator_pdata));
++	/* Add the DA9052 modules */
++	da9052_add_subdevice(da9052, "da9052-backlight");
 +
  	/* Initialize ssc cache */
  	da9052_init_ssc_cache();
  
-diff -urpN linux-2.6.34/drivers/regulator/da9052-regulator.c
-linux-2.6.34_test/drivers/regulator/da9052-regulator.c
---- linux-2.6.34/drivers/regulator/da9052-regulator.c	1970-01-01
+diff -uprN linux-2.6.34/drivers/video/backlight/da9052_bl.c
+linux-2.6.34_test/drivers/video/backlight/da9052_bl.c
+--- linux-2.6.34/drivers/video/backlight/da9052_bl.c	1970-01-01
 05:00:00.000000000 +0500
-+++ linux-2.6.34_test/drivers/regulator/da9052-regulator.c
-2010-06-28 19:49:08.000000000 +0500
-@@ -0,0 +1,455 @@
++++ linux-2.6.34_test/drivers/video/backlight/da9052_bl.c
+2010-06-28 19:42:05.000000000 +0500
+@@ -0,0 +1,296 @@
 +/*
 + * Copyright(c) 2009 Dialog Semiconductor Ltd.
 + *
@@ -87,516 +65,339 @@ linux-2.6.34_test/drivers/regulator/da9052-regulator.c
 + * the Free Software Foundation; either version 2 of the License, or
 + * (at your option) any later version.
 + *
-+ * da9052-regulator.c: Regulator driver for DA9052
++ * da9052_bl.c: Backlight driver for DA9052
 + */
 +
 +#include <linux/platform_device.h>
++#include <linux/fb.h>
 +#include <linux/init.h>
 +#include <linux/module.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
++#include <linux/backlight.h>
 +
-+#include <linux/mfd/da9052/da9052.h>
 +#include <linux/mfd/da9052/reg.h>
-+#include <linux/mfd/da9052/pm.h>
++#include <linux/mfd/da9052/bl.h>
++#include <linux/mfd/da9052/da9052.h>
 +
-+static struct regulator_ops da9052_ldo_buck_ops;
++#define DRIVER_NAME		"da9052-backlight"
 +
-+#define DA9052_LDO(_id, max, min, step_v, reg, mbits, cbits) \
-+{\
-+	.reg_desc	= {\
-+		.name		= #_id,\
-+		.ops		= &da9052_ldo_buck_ops,\
-+		.type		= REGULATOR_VOLTAGE,\
-+		.id			= _id,\
-+		.owner		= THIS_MODULE,\
-+	},\
-+	.reg_const = {\
-+		.max_uV		= (max) * 1000,\
-+		.min_uV		= (min) * 1000,\
-+	},\
-+	.step_uV		= (step_v) * 1000,\
-+	.reg_add		= (reg),\
-+	.mask_bits		= (mbits),\
-+	.en_bit_mask	= (cbits),\
-+}
++/* These flags define if Backlight LEDs are present */
++/* Set the following macros to 1, if LEDs are present. Otherwise set to
+0 */
++#define DA9052_LED1_PRESENT	1
++#define DA9052_LED2_PRESENT	1
++#define DA9052_LED3_PRESENT	1
 +
-+struct regulator_info {
-+	struct regulator_desc reg_desc;
-+	struct regulation_constraints reg_const;
-+	int step_uV;
-+	unsigned char reg_add;
-+	unsigned char mask_bits;
-+	unsigned char en_bit_mask;
-+};
++#define DA9052_MAX_BRIGHTNESS	0xFF
 +
-+struct da9052_regulator_priv {
++struct da9052_backlight_data {
++	struct device *da9052_dev;
++	int current_brightness;
 +	struct da9052 *da9052;
-+	struct regulator_dev *regulators[];
++
++	int is_led1_present;
++	int is_led2_present;
++	int is_led3_present;
 +};
 +
-+struct regulator_info da9052_regulators[] = {
-+	/* LD01 - LDO10*/
-+	DA9052_LDO(DA9052_LDO1, LDO1_VOLT_UPPER, LDO1_VOLT_LOWER,
-+			LDO1_VOLT_STEP, DA9052_LDO1_REG,
-+			DA9052_LDO1_VLDO1, DA9052_LDO1_LDO1EN),
-+
-+	DA9052_LDO(DA9052_LDO2, LDO2_VOLT_UPPER, LDO2_VOLT_LOWER,
-+			LDO2_VOLT_STEP, DA9052_LDO2_REG,
-DA9052_LDO2_VLDO2,\
-+			DA9052_LDO2_LDO2EN),
-+
-+	DA9052_LDO(DA9052_LDO3, LDO34_VOLT_UPPER, LDO34_VOLT_LOWER,\
-+			LDO34_VOLT_STEP, DA9052_LDO3_REG,\
-+			DA9052_LDO3_VLDO3, DA9052_LDO3_LDO3EN),
-+
-+	DA9052_LDO(DA9052_LDO4, LDO34_VOLT_UPPER, LDO34_VOLT_LOWER,\
-+			LDO34_VOLT_STEP, DA9052_LDO4_REG,\
-+			DA9052_LDO4_VLDO4, DA9052_LDO4_LDO4EN),
-+
-+	DA9052_LDO(DA9052_LDO5, LDO567810_VOLT_UPPER,
-LDO567810_VOLT_LOWER,\
-+			LDO567810_VOLT_STEP, DA9052_LDO5_REG,\
-+			DA9052_LDO5_VLDO5, DA9052_LDO5_LDO5EN),
-+
-+	DA9052_LDO(DA9052_LDO6, LDO567810_VOLT_UPPER,
-LDO567810_VOLT_LOWER,\
-+			LDO567810_VOLT_STEP, DA9052_LDO6_REG,\
-+			DA9052_LDO6_VLDO6, DA9052_LDO6_LDO6EN),
-+
-+	DA9052_LDO(DA9052_LDO7, LDO567810_VOLT_UPPER,
-LDO567810_VOLT_LOWER,\
-+			LDO567810_VOLT_STEP, DA9052_LDO7_REG,\
-+			DA9052_LDO7_VLDO7, DA9052_LDO7_LDO7EN),
-+
-+	DA9052_LDO(DA9052_LDO8, LDO567810_VOLT_UPPER,
-LDO567810_VOLT_LOWER,\
-+			LDO567810_VOLT_STEP, DA9052_LDO8_REG,\
-+			DA9052_LDO8_VLDO8, DA9052_LDO8_LDO8EN),
-+
-+	DA9052_LDO(DA9052_LDO9, LDO9_VOLT_UPPER, LDO9_VOLT_LOWER,\
-+			LDO9_VOLT_STEP, DA9052_LDO9_REG,
-DA9052_LDO9_VLDO9,\
-+			DA9052_LDO9_LDO9EN),
-+
-+	DA9052_LDO(DA9052_LDO10, LDO567810_VOLT_UPPER,
-LDO567810_VOLT_LOWER,\
-+			LDO567810_VOLT_STEP, DA9052_LDO10_REG,\
-+			DA9052_LDO10_VLDO10, DA9052_LDO10_LDO10EN),
-+
-+	/* BUCKS */
-+	DA9052_LDO(DA9052_BUCK_CORE, BUCK_CORE_PRO_VOLT_UPPER,
-+			BUCK_CORE_PRO_VOLT_LOWER,\
-+			BUCK_CORE_PRO_STEP, DA9052_BUCKCORE_REG,\
-+			DA9052_BUCKCORE_VBCORE,
-DA9052_BUCKCORE_BCOREEN),
-+
-+	DA9052_LDO(DA9052_BUCK_PRO, BUCK_CORE_PRO_VOLT_UPPER,
-+			BUCK_CORE_PRO_VOLT_LOWER,\
-+			BUCK_CORE_PRO_STEP, DA9052_BUCKPRO_REG,\
-+			DA9052_BUCKPRO_VBPRO, DA9052_BUCKPRO_BPROEN),
-+
-+	DA9052_LDO(DA9052_BUCK_MEM, BUCK_MEM_VOLT_UPPER,
-BUCK_MEM_VOLT_LOWER,\
-+			BUCK_MEM_STEP, DA9052_BUCKMEM_REG,\
-+			DA9052_BUCKMEM_VBMEM, DA9052_BUCKMEM_BMEMEN),
-+
-+	/* To be done */
-+	DA9052_LDO(DA9052_BUCK_PERI, BUCK_PERI_VOLT_UPPER,
-+			BUCK_PERI_VOLT_LOWER,\
-+			BUCK_PERI_STEP_BELOW_3000, DA9052_BUCKPERI_REG,\
-+			DA9052_BUCKPERI_VBPERI,
-DA9052_BUCKPERI_BPERIEN),
++enum da9052_led_number {
++	LED1 = 1,
++	LED2,
++	LED3,
 +};
 +
-+static int da9052_ldo_buck_enable(struct regulator_dev *rdev)
++static int da9052_backlight_brightness_set(struct da9052_backlight_data
+*data,
++			int brightness, enum da9052_led_number led)
 +{
-+	struct da9052_regulator_priv *priv = rdev_get_drvdata(rdev);
-+	int id = rdev_get_id(rdev);
-+	int ret;
-+	struct da9052_ssc_msg ssc_msg;
++	/*
++	 * Mechanism for brightness control:
++	 * For brightness control, current is used.
++	 * PWM feature is not used.
++	 * To use PWM feature, a fixed value of current should be
+defined.
++	 */
 +
-+	ssc_msg.addr = da9052_regulators[id].reg_add;
-+	ssc_msg.data = 0;
++	int ret = 0;
 +
-+	da9052_lock(priv->da9052);
-+	ret = priv->da9052->read(priv->da9052, &ssc_msg);
-+	if (ret) {
-+		da9052_unlock(priv->da9052);
-+		return -EIO;
-+	}
-+	da9052_unlock(priv->da9052);
++	unsigned int led_ramp_bit;
++	unsigned int led_current_register;
++	unsigned int led_current_sink_bit;
++	unsigned int led_boost_en_bit;
 +
-+	ssc_msg.data = (ssc_msg.data |
-da9052_regulators[id].en_bit_mask);
++	struct da9052_ssc_msg msg;
 +
-+	da9052_lock(priv->da9052);
-+	ret = priv->da9052->write(priv->da9052, &ssc_msg);
-+	if (ret) {
-+		da9052_unlock(priv->da9052);
-+		return -EIO;
-+	}
-+	da9052_unlock(priv->da9052);
-+
-+	return 0;
-+}
-+
-+static int da9052_ldo_buck_disable(struct regulator_dev *rdev)
-+{
-+	struct da9052_regulator_priv *priv = rdev_get_drvdata(rdev);
-+	int id = rdev_get_id(rdev);
-+	int ret;
-+	struct da9052_ssc_msg ssc_msg;
-+
-+	ssc_msg.addr = da9052_regulators[id].reg_add;
-+	ssc_msg.data = 0;
-+
-+	da9052_lock(priv->da9052);
-+	ret = priv->da9052->read(priv->da9052, &ssc_msg);
-+	if (ret) {
-+		da9052_unlock(priv->da9052);
-+		return -EIO;
-+	}
-+	da9052_unlock(priv->da9052);
-+
-+	ssc_msg.data = (ssc_msg.data &
-~(da9052_regulators[id].en_bit_mask));
-+
-+	da9052_lock(priv->da9052);
-+	ret = priv->da9052->write(priv->da9052, &ssc_msg);
-+	if (ret) {
-+		da9052_unlock(priv->da9052);
-+		return -EIO;
-+	}
-+	da9052_unlock(priv->da9052);
-+
-+	return 0;
-+}
-+
-+static int da9052_ldo_buck_is_enabled(struct regulator_dev *rdev)
-+{
-+	struct da9052_regulator_priv *priv = rdev_get_drvdata(rdev);
-+	int id = rdev_get_id(rdev);
-+	int ret;
-+	struct da9052_ssc_msg ssc_msg;
-+
-+	ssc_msg.addr = da9052_regulators[id].reg_add;
-+	ssc_msg.data = 0;
-+
-+	da9052_lock(priv->da9052);
-+	ret = priv->da9052->read(priv->da9052, &ssc_msg);
-+	if (ret) {
-+		da9052_unlock(priv->da9052);
-+		return -EIO;
-+	}
-+	da9052_unlock(priv->da9052);
-+
-+	return (ssc_msg.data & da9052_regulators[id].en_bit_mask) != 0;
-+}
-+
-+static int da9052_ldo_buck_set_voltage(struct regulator_dev *rdev,\
-+					int min_uV, int max_uV)
-+{
-+	struct da9052_regulator_priv *priv = rdev_get_drvdata(rdev);
-+	struct da9052_ssc_msg ssc_msg;
-+	int id = rdev_get_id(rdev);
-+	int ret;
-+	int ldo_volt = 0;
-+
-+	/* Compare voltage range */
-+	if (min_uV > max_uV)
-+		return -EINVAL;
-+
-+	/* Check Minimum/ Maximum voltage range */
-+	if (min_uV < da9052_regulators[id].reg_const.min_uV ||\
-+		min_uV > da9052_regulators[id].reg_const.max_uV)
-+		return -EINVAL;
-+	if (max_uV < da9052_regulators[id].reg_const.min_uV ||\
-+		max_uV > da9052_regulators[id].reg_const.max_uV)
-+		return -EINVAL;
-+
-+	/* Get the ldo register value */
-+	/* Varying step size for BUCK PERI */
-+	if ((da9052_regulators[id].reg_desc.id == DA9052_BUCK_PERI) &&\
-+			(min_uV >= BUCK_PERI_VALUES_3000)) {
-+		ldo_volt = (BUCK_PERI_VALUES_3000 -\
-+			da9052_regulators[id].reg_const.min_uV)/\
-+			(da9052_regulators[id].step_uV);
-+		ldo_volt += (min_uV - BUCK_PERI_VALUES_3000)/\
-+			(BUCK_PERI_STEP_ABOVE_3000);
-+	} else{
-+		ldo_volt = (min_uV -
-da9052_regulators[id].reg_const.min_uV)/\
-+			(da9052_regulators[id].step_uV);
-+		/* Check for maximum value */
-+		if ((ldo_volt * da9052_regulators[id].step_uV) +\
-+			da9052_regulators[id].reg_const.min_uV > max_uV)
-+			return -EINVAL;
-+	}
-+
-+	/* Configure LDO Voltage, CONF bits */
-+	ssc_msg.addr = da9052_regulators[id].reg_add;
-+	ssc_msg.data = 0;
-+
-+	/* Read register */
-+	da9052_lock(priv->da9052);
-+	ret = priv->da9052->read(priv->da9052, &ssc_msg);
-+	if (ret) {
-+		da9052_unlock(priv->da9052);
-+		return -EIO;
-+	}
-+	da9052_unlock(priv->da9052);
-+
-+	ssc_msg.data = (ssc_msg.data &
-~(da9052_regulators[id].mask_bits));
-+	ssc_msg.data |= ldo_volt;
-+
-+	/* Write register */
-+	da9052_lock(priv->da9052);
-+	ret = priv->da9052->write(priv->da9052, &ssc_msg);
-+	if (ret) {
-+		da9052_unlock(priv->da9052);
-+		return -EIO;
-+	}
-+	da9052_unlock(priv->da9052);
-+
-+	/* Set the GO LDO/BUCk bits so that the voltage changes */
-+	ssc_msg.addr = DA9052_SUPPLY_REG;
-+	ssc_msg.data = 0;
-+
-+	da9052_lock(priv->da9052);
-+	ret = priv->da9052->read(priv->da9052, &ssc_msg);
-+	if (ret) {
-+		da9052_unlock(priv->da9052);
-+		return -EIO;
-+	}
-+	da9052_unlock(priv->da9052);
-+
-+	switch (id) {
-+	case DA9052_LDO2:
-+		ssc_msg.data = (ssc_msg.data | DA9052_SUPPLY_VLDO2GO);
++	switch (led) {
++	case LED1:
++		led_ramp_bit = DA9052_LEDCONT_LED1RAMP;
++		led_current_register = DA9052_LED1CONF_REG;
++		led_current_sink_bit = DA9052_LEDCONT_LED1EN;
++		led_boost_en_bit = DA9052_BOOST_LED1INEN;
 +		break;
-+	case DA9052_LDO3:
-+		ssc_msg.data = (ssc_msg.data | DA9052_SUPPLY_VLDO3GO);
++	case LED2:
++		led_ramp_bit = DA9052_LEDCONT_LED2RAMP;
++		led_current_register = DA9052_LED2CONF_REG;
++		led_current_sink_bit = DA9052_LEDCONT_LED2EN;
++		led_boost_en_bit = DA9052_BOOST_LED2INEN;
 +		break;
-+	case DA9052_BUCK_CORE:
-+		ssc_msg.data = (ssc_msg.data | DA9052_SUPPLY_VBCOREGO);
-+		break;
-+	case DA9052_BUCK_PRO:
-+		ssc_msg.data = (ssc_msg.data | DA9052_SUPPLY_VBPROGO);
-+		break;
-+	case DA9052_BUCK_MEM:
-+		ssc_msg.data = (ssc_msg.data | DA9052_SUPPLY_VBMEMGO);
++	case LED3:
++		led_ramp_bit = DA9052_LEDCONT_LED3RAMP;
++		led_current_register = DA9052_LED3CONF_REG;
++		led_current_sink_bit = DA9052_LEDCONT_LED3EN;
++		led_boost_en_bit = DA9052_BOOST_LED3INEN;
 +		break;
 +	default:
-+		return INVALID_LDO_NUM;
-+		break;
-+	}
-+
-+	da9052_lock(priv->da9052);
-+	ret = priv->da9052->write(priv->da9052, &ssc_msg);
-+	if (ret) {
-+		da9052_unlock(priv->da9052);
 +		return -EIO;
 +	}
-+	da9052_unlock(priv->da9052);
++
++	/*
++	 * 3 registers to be written
++	 * 1. LED current for brightness
++	 * 2. LED enable/disable depending on the brightness
++	 * 3. BOOST enable/disable depending on the brightness
++	 */
++
++	/* Configure LED current i.e. brightness */
++	msg.addr = led_current_register;
++	msg.data = brightness;
++	/* Write to the DA9052 register */
++	da9052_lock(data->da9052);
++	ret = data->da9052->write(data->da9052, &msg);
++	if (ret) {
++		da9052_unlock(data->da9052);
++		return ret;
++	}
++	da9052_unlock(data->da9052);
++
++	/*
++	 * Check if brightness = 0
++	 * and decide if led to be disabled
++	 */
++	msg.addr = DA9052_LEDCONT_REG;
++	msg.data = 0;
++
++	/* Read LED_CONT register */
++	da9052_lock(data->da9052);
++	ret = data->da9052->read(data->da9052, &msg);
++	if (ret) {
++		da9052_unlock(data->da9052);
++		return ret;
++	}
++	da9052_unlock(data->da9052);
++
++	/* Set/Clear the LED current sink bit */
++	msg.data = brightness ? (msg.data | led_current_sink_bit) :
++			(msg.data & ~(led_current_sink_bit));
++	/* Disable current ramping */
++	msg.data = (msg.data & ~(led_ramp_bit));
++
++	/* Write to the DA9052 register */
++	da9052_lock(data->da9052);
++	ret = data->da9052->write(data->da9052, &msg);
++	if (ret) {
++		da9052_unlock(data->da9052);
++		return ret;
++	}
++	da9052_unlock(data->da9052);
++
++	/* Configure BOOST */
++	msg.addr = DA9052_BOOST_REG;
++	msg.data = 0;
++
++	/* Read LED_CONT register */
++	da9052_lock(data->da9052);
++	ret = data->da9052->read(data->da9052, &msg);
++	if (ret) {
++		da9052_unlock(data->da9052);
++		return ret;
++	}
++	da9052_unlock(data->da9052);
++
++	/* Set/Clear the LED BOOST enable bit */
++	msg.data = brightness ? (msg.data | led_boost_en_bit) :
++			(msg.data & ~(led_boost_en_bit));
++	/* Set/Clear the BOOST converter enable bit */
++	msg.data = brightness ? (msg.data | DA9052_BOOST_BOOSTEN) :
++			(msg.data & ~(DA9052_BOOST_BOOSTEN));
++
++	/* Write to the DA9052 register */
++	da9052_lock(data->da9052);
++	ret = data->da9052->write(data->da9052, &msg);
++	if (ret) {
++		da9052_unlock(data->da9052);
++		return ret;
++	}
++	da9052_unlock(data->da9052);
 +
 +	return 0;
 +}
 +
-+static int da9052_ldo_buck_get_voltage(struct regulator_dev *rdev)
++static int da9052_backlight_set(struct backlight_device *bl, int
+brightness)
 +{
-+	struct da9052_regulator_priv *priv = rdev_get_drvdata(rdev);
-+	struct da9052_ssc_msg ssc_msg;
-+	int id = rdev_get_id(rdev);
-+	int ldo_volt = 0;
-+	int ldo_volt_uV = 0;
-+	int ret;
++	struct da9052_backlight_data *data = bl_get_data(bl);
++	int ret = 0;
 +
-+	ssc_msg.addr = da9052_regulators[id].reg_add;
-+	ssc_msg.data = 0;
-+	/* Read register */
-+	da9052_lock(priv->da9052);
-+	ret = priv->da9052->read(priv->da9052, &ssc_msg);
-+	if (ret) {
-+		da9052_unlock(priv->da9052);
-+		return -EIO;
++	/* Check for LED1 */
++	if (1 == data->is_led1_present) {
++		ret = da9052_backlight_brightness_set(data, brightness,
+LED1);
++		if (ret)
++			return ret;
 +	}
-+	da9052_unlock(priv->da9052);
-+
-+	ldo_volt = ssc_msg.data & da9052_regulators[id].mask_bits;
-+	if (da9052_regulators[id].reg_desc.id == DA9052_BUCK_PERI) {
-+		if (ldo_volt >= BUCK_PERI_VALUES_UPTO_3000) {
-+			ldo_volt_uV = ((BUCK_PERI_VALUES_UPTO_3000 *\
-+				da9052_regulators[id].step_uV)\
-+				+
-da9052_regulators[id].reg_const.min_uV);
-+			ldo_volt_uV = (ldo_volt_uV +\
-+				(ldo_volt - BUCK_PERI_VALUES_UPTO_3000)\
-+				* (BUCK_PERI_STEP_ABOVE_3000));
-+		} else {
-+			ldo_volt_uV =
-+				(ldo_volt *
-da9052_regulators[id].step_uV)\
-+				+
-da9052_regulators[id].reg_const.min_uV;
-+		}
-+	} else {
-+		ldo_volt_uV = (ldo_volt * da9052_regulators[id].step_uV)
-+\
-+				da9052_regulators[id].reg_const.min_uV;
++	/* Check for LED2 */
++	if (1 == data->is_led1_present) {
++		ret = da9052_backlight_brightness_set(data, brightness,
+LED2);
++		if (ret)
++			return ret;
 +	}
-+	return ldo_volt_uV;
++	/* Check for LED3 */
++	if (1 == data->is_led1_present) {
++		ret = da9052_backlight_brightness_set(data, brightness,
+LED3);
++		if (ret)
++			return ret;
++	}
 +
++	data->current_brightness = brightness;
++	return 0;
 +}
 +
++static int da9052_backlight_update_status(struct backlight_device *bl)
++{
++	int brightness = bl->props.brightness;
 +
-+static struct regulator_ops da9052_ldo_buck_ops = {
-+	.is_enabled = da9052_ldo_buck_is_enabled,
-+	.enable = da9052_ldo_buck_enable,
-+	.disable = da9052_ldo_buck_disable,
-+	.get_voltage = da9052_ldo_buck_get_voltage,
-+	.set_voltage = da9052_ldo_buck_set_voltage,
++	if (bl->props.power != FB_BLANK_UNBLANK)
++		brightness = 0;
++
++	if (bl->props.fb_blank != FB_BLANK_UNBLANK)
++		brightness = 0;
++
++	return da9052_backlight_set(bl, brightness);
++}
++
++static int da9052_backlight_get_brightness(struct backlight_device *bl)
++{
++	struct da9052_backlight_data *data = bl_get_data(bl);
++	return data->current_brightness;
++}
++
++static const struct backlight_ops da9052_backlight_ops = {
++	.update_status	= da9052_backlight_update_status,
++	.get_brightness	= da9052_backlight_get_brightness,
 +};
 +
-+
-+
-+static inline struct regulator_info *find_regulator_info(int id)
++static int da9052_backlight_probe(struct platform_device *pdev)
 +{
-+	struct regulator_info *ri;
-+	int i;
++	struct da9052_backlight_data *data;
++	struct backlight_device *bl;
++	struct backlight_properties props;
 +
-+	for (i = 0; i < ARRAY_SIZE(da9052_regulators); i++) {
-+		ri = &da9052_regulators[i];
-+		if (ri->reg_desc.id == id)
-+			return ri;
-+	}
-+	return NULL;
-+}
-+
-+
-+static int __devinit da9052_regulator_probe(struct platform_device
-*pdev)
-+{
-+
-+	struct da9052_regulator_priv *priv;
-+	struct da9052 *da9052 = dev_get_drvdata(pdev->dev.parent);
-+	struct da9052_regulator_platform_data *pdata =
-+		dev_get_platdata(&pdev->dev);
-+	struct da9052_regulator_init_data *init_data;
-+	int i, ret = 0;
-+
-+	priv = kzalloc(sizeof(*priv) +
-+			pdata->num_regulators *
-sizeof(priv->regulators[0]),
-+			GFP_KERNEL);
-+	if (!priv)
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	if (data == NULL)
 +		return -ENOMEM;
 +
-+	priv->da9052 = da9052;
++	data->da9052_dev = pdev->dev.parent;
++	data->current_brightness = 0;
++	data->is_led1_present = DA9052_LED1_PRESENT;
++	data->is_led2_present = DA9052_LED2_PRESENT;
++	data->is_led3_present = DA9052_LED3_PRESENT;
 +
-+	for (i = 0; i < pdata->num_regulators; i++) {
-+		init_data = &pdata->regulators[i];
-+
-+		priv->regulators[i] = regulator_register(
-+
-&da9052_regulators[init_data->id].reg_desc,
-+				&pdev->dev, init_data->init_data, priv);
-+
-+		if (IS_ERR(priv->regulators[i])) {
-+			ret = PTR_ERR(priv->regulators[i]);
-+			goto err;
-+		}
++	bl = backlight_device_register(pdev->name, data->da9052_dev,
++			data, &da9052_backlight_ops, &props);
++	if (IS_ERR(bl)) {
++		dev_err(&pdev->dev, "failed to register backlight\n");
++		kfree(data);
++		return PTR_ERR(bl);
 +	}
-+	platform_set_drvdata(pdev, priv);
++
++	bl->props.max_brightness = DA9052_MAX_BRIGHTNESS;
++	bl->props.brightness = 0;
++
++	platform_set_drvdata(pdev, bl);
++	backlight_update_status(bl);
++
++	/*
++	 * NOTE:
++	 * The default settings for DA9052 registers depends upon OTP
+values.
++	 * E.g. The configuration of BOOST register, minimum value for
+LED
++	 *      current etc. are taken from OTP
++	 */
++
 +	return 0;
-+err:
-+	while (--i >= 0)
-+		regulator_unregister(priv->regulators[i]);
-+
-+	kfree(priv);
-+
-+	return ret;
 +}
 +
-+static int __devexit da9052_regulator_remove(struct platform_device
-*pdev)
++static int da9052_backlight_remove(struct platform_device *pdev)
 +{
-+	struct da9052_regulator_priv *priv = platform_get_drvdata(pdev);
-+	struct da9052_regulator_platform_data *pdata =
-+		dev_get_platdata(&pdev->dev);
-+	int i;
++	struct backlight_device *bl = platform_get_drvdata(pdev);
++	struct da9052_backlight_data *data = bl_get_data(bl);
 +
-+	for (i = 0; i < pdata->num_regulators; i++)
-+		regulator_unregister(priv->regulators[i]);
-+
++	backlight_device_unregister(bl);
++	kfree(data);
 +	return 0;
 +}
 +
-+static struct platform_driver da9052_regulator_driver = {
-+	.probe		= da9052_regulator_probe,
-+	.remove		= __devexit_p(da9052_regulator_remove),
++static struct platform_driver da9052_backlight_driver = {
 +	.driver		= {
-+		.name	= DA9052_PM_DEVICE_NAME,
++		.name	= DRIVER_NAME,
 +		.owner	= THIS_MODULE,
 +	},
++	.probe		= da9052_backlight_probe,
++	.remove		= da9052_backlight_remove,
 +};
 +
-+static int __init da9052_regulator_init(void)
++static int __init da9052_backlight_init(void)
 +{
-+	return platform_driver_register(&da9052_regulator_driver);
++	return platform_driver_register(&da9052_backlight_driver);
 +}
-+subsys_initcall(da9052_regulator_init);
++module_init(da9052_backlight_init);
 +
-+static void __exit da9052_regulator_exit(void)
++static void __exit da9052_backlight_exit(void)
 +{
-+	platform_driver_unregister(&da9052_regulator_driver);
++	platform_driver_unregister(&da9052_backlight_driver);
 +}
-+module_exit(da9052_regulator_exit);
++module_exit(da9052_backlight_exit);
 +
 +MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("Power Regulator driver for Dialog DA9052 PMIC");
++MODULE_DESCRIPTION("Backlight driver for Dialog DA9052 PMIC");
 +MODULE_LICENSE("GPL v2");
 +MODULE_ALIAS("platform:" DRIVER_NAME);
-diff -urpN linux-2.6.34/drivers/regulator/Kconfig
-linux-2.6.34_test/drivers/regulator/Kconfig
---- linux-2.6.34/drivers/regulator/Kconfig	2010-05-17
+diff -uprN linux-2.6.34/drivers/video/backlight/Kconfig
+linux-2.6.34_test/drivers/video/backlight/Kconfig
+--- linux-2.6.34/drivers/video/backlight/Kconfig	2010-05-17
 02:17:36.000000000 +0500
-+++ linux-2.6.34_test/drivers/regulator/Kconfig	2010-06-28
-19:49:22.000000000 +0500
-@@ -201,5 +201,11 @@ config REGULATOR_88PM8607
++++ linux-2.6.34_test/drivers/video/backlight/Kconfig	2010-06-28
+19:42:23.000000000 +0500
+@@ -282,3 +282,8 @@ config BACKLIGHT_88PM860X
  	help
- 	  This driver supports 88PM8607 voltage regulator chips.
+ 	  Say Y to enable the backlight driver for Marvell 88PM8606.
  
-+config REGULATOR_DA9052
-+	tristate "Support regulators on Dialog Semiconductor DA9052
-PMIC"
-+	depends on PMIC_DA9052
++config BACKLIGHT_DA9052
++	tristate "Backlight Driver for DA9052 using WLED"
++	depends on BACKLIGHT_CLASS_DEVICE && PMIC_DA9052
 +	help
-+	  Say y here to support the BUCKs and LDOs regulators found on
-+	  Dialog Semiconductor DA9052 PMIC.
- endif
- 
-diff -urpN linux-2.6.34/drivers/regulator/Makefile
-linux-2.6.34_test/drivers/regulator/Makefile
---- linux-2.6.34/drivers/regulator/Makefile	2010-05-17
++	  Enable the DA9052 Backlight Driver
+diff -uprN linux-2.6.34/drivers/video/backlight/Makefile
+linux-2.6.34_test/drivers/video/backlight/Makefile
+--- linux-2.6.34/drivers/video/backlight/Makefile	2010-05-17
 02:17:36.000000000 +0500
-+++ linux-2.6.34_test/drivers/regulator/Makefile	2010-06-28
-19:49:16.000000000 +0500
-@@ -31,5 +31,6 @@ obj-$(CONFIG_REGULATOR_AB3100) += ab3100
- obj-$(CONFIG_REGULATOR_TPS65023) += tps65023-regulator.o
- obj-$(CONFIG_REGULATOR_TPS6507X) += tps6507x-regulator.o
- obj-$(CONFIG_REGULATOR_88PM8607) += 88pm8607.o
-+obj-$(CONFIG_REGULATOR_DA9052)  += da9052-regulator.o
++++ linux-2.6.34_test/drivers/video/backlight/Makefile	2010-06-28
+19:42:14.000000000 +0500
+@@ -31,4 +31,5 @@ obj-$(CONFIG_BACKLIGHT_WM831X)	+= wm831x
+ obj-$(CONFIG_BACKLIGHT_ADX)    += adx_bl.o
+ obj-$(CONFIG_BACKLIGHT_ADP5520)	+= adp5520_bl.o
+ obj-$(CONFIG_BACKLIGHT_88PM860X) += 88pm860x_bl.o
++obj-$(CONFIG_BACKLIGHT_DA9052)	+= da9052_bl.o
  
- ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
-diff -urpN linux-2.6.34/include/linux/mfd/da9052/pm.h
-linux-2.6.34_test/include/linux/mfd/da9052/pm.h
---- linux-2.6.34/include/linux/mfd/da9052/pm.h	1970-01-01
+diff -uprN linux-2.6.34/include/linux/mfd/da9052/bl.h
+linux-2.6.34_test/include/linux/mfd/da9052/bl.h
+--- linux-2.6.34/include/linux/mfd/da9052/bl.h	1970-01-01
 05:00:00.000000000 +0500
-+++ linux-2.6.34_test/include/linux/mfd/da9052/pm.h	2010-06-28
-19:49:53.000000000 +0500
-@@ -0,0 +1,87 @@
++++ linux-2.6.34_test/include/linux/mfd/da9052/bl.h	2010-06-28
+19:42:59.000000000 +0500
+@@ -0,0 +1,279 @@
 +/*
 + * Copyright(c) 2009 Dialog Semiconductor Ltd.
 + *
@@ -605,85 +406,278 @@ linux-2.6.34_test/include/linux/mfd/da9052/pm.h
 + * the Free Software Foundation; either version 2 of the License, or
 + * (at your option) any later version.
 + *
-+ * pm.h: Power Manager for DA9052
-+ * Header file contain the structure, prototype and defines needed for
-+ * PM driver API's
++ * bl.h: DA9052 Header file for backlight
 + */
 +
-+#ifndef _PM_H
-+#define _PM_H
++#ifndef _BL_H
++#define _BL_H
 +
-+/* PM Device name and static Major number macros */
-+#define DA9052_PM_DEVICE_NAME		"da9052_regulator"
++/*
++ * enum da9052_bl_current_value - Enum for current values of LED
++ * DA9052_BL_CURRENT_50_0UA: represents 50.0 uA current value
++ */
++enum da9052_bl_current_value {
++/* Current Value for LEDMIN, LED1_CONF, LED2_CONF, LED3_CONF Registers
+*/
++	DA9052_BL_CURRENT_50_0UA = 0,
++	DA9052_BL_CURRENT_51_2UA,
++	DA9052_BL_CURRENT_52_5UA,
++	DA9052_BL_CURRENT_53_7UA,
++	DA9052_BL_CURRENT_55_1UA,
++	DA9052_BL_CURRENT_56_4UA,
++	DA9052_BL_CURRENT_57_8UA,
++	DA9052_BL_CURRENT_59_3UA,
++	DA9052_BL_CURRENT_60_7UA,
++	DA9052_BL_CURRENT_62_2UA,
++	DA9052_BL_CURRENT_63_8UA,
++	DA9052_BL_CURRENT_65_3UA,
++	DA9052_BL_CURRENT_67_0UA,
++	DA9052_BL_CURRENT_68_6UA,
++	DA9052_BL_CURRENT_70_3UA,
++	DA9052_BL_CURRENT_72_0UA,
++	DA9052_BL_CURRENT_73_8UA,
++	DA9052_BL_CURRENT_75_7UA,
++	DA9052_BL_CURRENT_77_5UA,
++	DA9052_BL_CURRENT_79_4UA,
++	DA9052_BL_CURRENT_81_4UA,
++	DA9052_BL_CURRENT_83_4UA,
++	DA9052_BL_CURRENT_85_5UA,
++	DA9052_BL_CURRENT_87_6UA,
++	DA9052_BL_CURRENT_89_8UA,
++	DA9052_BL_CURRENT_92_0UA,
++	DA9052_BL_CURRENT_94_2UA,
++	DA9052_BL_CURRENT_96_6UA,
++	DA9052_BL_CURRENT_99_0UA,
++	DA9052_BL_CURRENT_101_4UA,
++	DA9052_BL_CURRENT_103_9UA,
++	DA9052_BL_CURRENT_106_5UA,
++	DA9052_BL_CURRENT_109_1UA,
++	DA9052_BL_CURRENT_111_8UA,
++	DA9052_BL_CURRENT_114_6UA,
++	DA9052_BL_CURRENT_117_4UA,
++	DA9052_BL_CURRENT_120_6UA,
++	DA9052_BL_CURRENT_123_3UA,
++	DA9052_BL_CURRENT_126_3UA,
++	DA9052_BL_CURRENT_129_4UA,
++	DA9052_BL_CURRENT_132_6UA,
++	DA9052_BL_CURRENT_135_9UA,
++	DA9052_BL_CURRENT_139_3UA,
++	DA9052_BL_CURRENT_142_7UA,
++	DA9052_BL_CURRENT_146_2UA,
++	DA9052_BL_CURRENT_149_9UA,
++	DA9052_BL_CURRENT_153_6UA,
++	DA9052_BL_CURRENT_157_4UA,
++	DA9052_BL_CURRENT_161_2UA,
++	DA9052_BL_CURRENT_165_2UA,
++	DA9052_BL_CURRENT_169_3UA,
++	DA9052_BL_CURRENT_173_5UA,
++	DA9052_BL_CURRENT_177_8UA,
++	DA9052_BL_CURRENT_182_2UA,
++	DA9052_BL_CURRENT_186_7UA,
++	DA9052_BL_CURRENT_191_3UA,
++	DA9052_BL_CURRENT_196_0UA,
++	DA9052_BL_CURRENT_200_9UA,
++	DA9052_BL_CURRENT_205_8UA,
++	DA9052_BL_CURRENT_210_9UA,
++	DA9052_BL_CURRENT_216_1UA,
++	DA9052_BL_CURRENT_221_4UA,
++	DA9052_BL_CURRENT_226_9UA,
++	DA9052_BL_CURRENT_232_5UA,
++	DA9052_BL_CURRENT_238_3UA,
++	DA9052_BL_CURRENT_244_2UA,
++	DA9052_BL_CURRENT_250_2UA,
++	DA9052_BL_CURRENT_256_4UA,
++	DA9052_BL_CURRENT_262_7UA,
++	DA9052_BL_CURRENT_269_2UA,
++	DA9052_BL_CURRENT_275_8UA,
++	DA9052_BL_CURRENT_282_7UA,
++	DA9052_BL_CURRENT_289_6UA,
++	DA9052_BL_CURRENT_296_8UA,
++	DA9052_BL_CURRENT_304_1UA,
++	DA9052_BL_CURRENT_311_6UA,
++	DA9052_BL_CURRENT_319_3UA,
++	DA9052_BL_CURRENT_327_2UA,
++	DA9052_BL_CURRENT_335_3UA,
++	DA9052_BL_CURRENT_343_6UA,
++	DA9052_BL_CURRENT_352_1UA,
++	DA9052_BL_CURRENT_360_8UA,
++	DA9052_BL_CURRENT_369_7UA,
++	DA9052_BL_CURRENT_378_8UA,
++	DA9052_BL_CURRENT_388_2UA,
++	DA9052_BL_CURRENT_397_8UA,
++	DA9052_BL_CURRENT_407_6UA,
++	DA9052_BL_CURRENT_417_7UA,
++	DA9052_BL_CURRENT_428_0UA,
++	DA9052_BL_CURRENT_438_6UA,
++	DA9052_BL_CURRENT_449_4UA,
++	DA9052_BL_CURRENT_460_5UA,
++	DA9052_BL_CURRENT_471_9UA,
++	DA9052_BL_CURRENT_483_5UA,
++	DA9052_BL_CURRENT_495_5UA,
++	DA9052_BL_CURRENT_507_7UA,
++	DA9052_BL_CURRENT_520_3UA,
++	DA9052_BL_CURRENT_533_1UA,
++	DA9052_BL_CURRENT_546_3UA,
++	DA9052_BL_CURRENT_559_8UA,
++	DA9052_BL_CURRENT_573_6UA,
++	DA9052_BL_CURRENT_587_8UA,
++	DA9052_BL_CURRENT_602_3UA,
++	DA9052_BL_CURRENT_617_2UA,
++	DA9052_BL_CURRENT_632_4UA,
++	DA9052_BL_CURRENT_648_0UA,
++	DA9052_BL_CURRENT_664_0UA,
++	DA9052_BL_CURRENT_680_4UA,
++	DA9052_BL_CURRENT_697_2UA,
++	DA9052_BL_CURRENT_714_5UA,
++	DA9052_BL_CURRENT_732_1UA,
++	DA9052_BL_CURRENT_750_2UA,
++	DA9052_BL_CURRENT_768_7UA,
++	DA9052_BL_CURRENT_787_7UA,
++	DA9052_BL_CURRENT_807_2UA,
++	DA9052_BL_CURRENT_827_1UA,
++	DA9052_BL_CURRENT_847_6UA,
++	DA9052_BL_CURRENT_868_5UA,
++	DA9052_BL_CURRENT_889_9UA,
++	DA9052_BL_CURRENT_911_9UA,
++	DA9052_BL_CURRENT_934_4UA,
++	DA9052_BL_CURRENT_957_5UA,
++	DA9052_BL_CURRENT_981_2UA,
++	DA9052_BL_CURRENT_1005_4UA,
++	DA9052_BL_CURRENT_1030_3UA,
++	DA9052_BL_CURRENT_1055_7UA,
++	DA9052_BL_CURRENT_1081_8UA,
++	DA9052_BL_CURRENT_1108_5UA,
++	DA9052_BL_CURRENT_1135_9UA,
++	DA9052_BL_CURRENT_1163_9UA,
++	DA9052_BL_CURRENT_1192_7UA,
++	DA9052_BL_CURRENT_1222_2UA,
++	DA9052_BL_CURRENT_1252_3UA,
++	DA9052_BL_CURRENT_1283_3UA,
++	DA9052_BL_CURRENT_1315_0UA,
++	DA9052_BL_CURRENT_1347_5UA,
++	DA9052_BL_CURRENT_1380_7UA,
++	DA9052_BL_CURRENT_1414_8UA,
++	DA9052_BL_CURRENT_1449_8UA,
++	DA9052_BL_CURRENT_1485_6UA,
++	DA9052_BL_CURRENT_1522_3UA,
++	DA9052_BL_CURRENT_1559_9UA,
++	DA9052_BL_CURRENT_1598_4UA,
++	DA9052_BL_CURRENT_1637_9UA,
++	DA9052_BL_CURRENT_1678_4UA,
++	DA9052_BL_CURRENT_1719_8UA,
++	DA9052_BL_CURRENT_1762_3UA,
++	DA9052_BL_CURRENT_1805_8UA,
++	DA9052_BL_CURRENT_1850_4UA,
++	DA9052_BL_CURRENT_1896_1UA,
++	DA9052_BL_CURRENT_1943_0UA,
++	DA9052_BL_CURRENT_1991_0UA,
++	DA9052_BL_CURRENT_2040_2UA,
++	DA9052_BL_CURRENT_2090_5UA,
++	DA9052_BL_CURRENT_2142_2UA,
++	DA9052_BL_CURRENT_2195_1UA,
++	DA9052_BL_CURRENT_2249_3UA,
++	DA9052_BL_CURRENT_2304_9UA,
++	DA9052_BL_CURRENT_2361_8UA,
++	DA9052_BL_CURRENT_2420_1UA,
++	DA9052_BL_CURRENT_2479_9UA,
++	DA9052_BL_CURRENT_2541_2UA,
++	DA9052_BL_CURRENT_2604_0UA,
++	DA9052_BL_CURRENT_2668_3UA,
++	DA9052_BL_CURRENT_2734_2UA,
++	DA9052_BL_CURRENT_2801_7UA,
++	DA9052_BL_CURRENT_2870_9UA,
++	DA9052_BL_CURRENT_2941_8UA,
++	DA9052_BL_CURRENT_3014_5UA,
++	DA9052_BL_CURRENT_3089_0UA,
++	DA9052_BL_CURRENT_3165_3UA,
++	DA9052_BL_CURRENT_3243_4UA,
++	DA9052_BL_CURRENT_3323_5UA,
++	DA9052_BL_CURRENT_3405_6UA,
++	DA9052_BL_CURRENT_3489_8UA,
++	DA9052_BL_CURRENT_3576_0UA,
++	DA9052_BL_CURRENT_3664_3UA,
++	DA9052_BL_CURRENT_3754_8UA,
++	DA9052_BL_CURRENT_3847_5UA,
++	DA9052_BL_CURRENT_3942_6UA,
++	DA9052_BL_CURRENT_4040_0UA,
++	DA9052_BL_CURRENT_4139_7UA,
++	DA9052_BL_CURRENT_4242_0UA,
++	DA9052_BL_CURRENT_4346_8UA,
++	DA9052_BL_CURRENT_4454_1UA,
++	DA9052_BL_CURRENT_4564_2UA,
++	DA9052_BL_CURRENT_4676_9UA,
++	DA9052_BL_CURRENT_4792_4UA,
++	DA9052_BL_CURRENT_4910_8UA,
++	DA9052_BL_CURRENT_5032_1UA,
++	DA9052_BL_CURRENT_5156_4UA,
++	DA9052_BL_CURRENT_5283_7UA,
++	DA9052_BL_CURRENT_5414_3UA,
++	DA9052_BL_CURRENT_5548_0UA,
++	DA9052_BL_CURRENT_5685_0UA,
++	DA9052_BL_CURRENT_5825_5UA,
++	DA9052_BL_CURRENT_5969_3UA,
++	DA9052_BL_CURRENT_6116_8UA,
++	DA9052_BL_CURRENT_6267_9UA,
++	DA9052_BL_CURRENT_6422_7UA,
++	DA9052_BL_CURRENT_6581_3UA,
++	DA9052_BL_CURRENT_6743_9UA,
++	DA9052_BL_CURRENT_6910_5UA,
++	DA9052_BL_CURRENT_7081_2UA,
++	DA9052_BL_CURRENT_7256_1UA,
++	DA9052_BL_CURRENT_7435_3UA,
++	DA9052_BL_CURRENT_7618_9UA,
++	DA9052_BL_CURRENT_7807_1UA,
++	DA9052_BL_CURRENT_8000_0UA,
++	DA9052_BL_CURRENT_8197_6UA,
++	DA9052_BL_CURRENT_8400_0UA,
++	DA9052_BL_CURRENT_8607_5UA,
++	DA9052_BL_CURRENT_8820_1UA,
++	DA9052_BL_CURRENT_9038_0UA,
++	DA9052_BL_CURRENT_9261_2UA,
++	DA9052_BL_CURRENT_9490_0UA,
++	DA9052_BL_CURRENT_9724_4UA,
++	DA9052_BL_CURRENT_9964_6UA,
++	DA9052_BL_CURRENT_10210_7UA,
++	DA9052_BL_CURRENT_10462_9UA,
++	DA9052_BL_CURRENT_10721_4UA,
++	DA9052_BL_CURRENT_10986_4UA,
++	DA9052_BL_CURRENT_11257_5UA,
++	DA9052_BL_CURRENT_11535_6UA,
++	DA9052_BL_CURRENT_11820_5UA,
++	DA9052_BL_CURRENT_12112_5UA,
++	DA9052_BL_CURRENT_12411_7UA,
++	DA9052_BL_CURRENT_12718_2UA,
++	DA9052_BL_CURRENT_13032_4UA,
++	DA9052_BL_CURRENT_13354_3UA,
++	DA9052_BL_CURRENT_13684_1UA,
++	DA9052_BL_CURRENT_14022_1UA,
++	DA9052_BL_CURRENT_14368_5UA,
++	DA9052_BL_CURRENT_14723_4UA,
++	DA9052_BL_CURRENT_15087_1UA,
++	DA9052_BL_CURRENT_15459_7UA,
++	DA9052_BL_CURRENT_15841_6UA,
++	DA9052_BL_CURRENT_16232_9UA,
++	DA9052_BL_CURRENT_16633_8UA,
++	DA9052_BL_CURRENT_17044_7UA,
++	DA9052_BL_CURRENT_17465_7UA,
++	DA9052_BL_CURRENT_17897_1UA,
++	DA9052_BL_CURRENT_18339_1UA,
++	DA9052_BL_CURRENT_18792_1UA,
++	DA9052_BL_CURRENT_19256_3UA,
++	DA9052_BL_CURRENT_19731_9UA,
++	DA9052_BL_CURRENT_20219_3UA,
++	DA9052_BL_CURRENT_20718_7UA,
++	DA9052_BL_CURRENT_21230_5UA,
++	DA9052_BL_CURRENT_21754_8UA,
++	DA9052_BL_CURRENT_22292_2UA,
++	DA9052_BL_CURRENT_22842_8UA,
++	DA9052_BL_CURRENT_23407_0UA,
++	DA9052_BL_CURRENT_23985_2UA,
++	DA9052_BL_CURRENT_24577_6UA,
++	DA9052_BL_CURRENT_25000_0UA,
++};
 +
-+/* PM Device Macros */
-+#define DA9052_LDO1			1
-+#define DA9052_LDO2			2
-+#define DA9052_LDO3			3
-+#define DA9052_LDO4			4
-+#define DA9052_LDO5			5
-+#define DA9052_LDO6			6
-+#define DA9052_LDO7			7
-+#define DA9052_LDO8			8
-+#define DA9052_LDO9			9
-+#define DA9052_LDO10			10
-+#define DA9052_BUCK_CORE		11
-+#define DA9052_BUCK_PRO			12
-+#define DA9052_BUCK_MEM			13
-+#define DA9052_BUCK_PERI		14
-+
-+/* PM Device Error Codes */
-+#define INVALID_BUCK_NUM			2
-+#define INVALID_LDO_NUM				3
-+#define INVALID_PM_EVENT			4
-+#define INVALID_BUCKCORE_VOLT_VALUE		5
-+#define INVALID_BUCKPRO_VOLT_VALUE		6
-+#define INVALID_BUCKMEM_VOLT_VALUE		7
-+#define INVALID_BUCKPERI_VOLT_VALUE		8
-+#define INVALID_LDO1_VOLT_VALUE			9
-+#define INVALID_LDO2_VOLT_VALUE			10
-+#define INVALID_LDO3_VOLT_VALUE			11
-+#define INVALID_LDO4_VOLT_VALUE			12
-+#define INVALID_LDO5_VOLT_VALUE			13
-+#define INVALID_LDO6_VOLT_VALUE			14
-+#define INVALID_LDO7_VOLT_VALUE			15
-+#define INVALID_LDO8_VOLT_VALUE			16
-+#define INVALID_LDO9_VOLT_VALUE			17
-+#define INVALID_LDO10_VOLT_VALUE		18
-+#define INVALID_PM_IOCTL			19
-+#define INVALID_OPERATION_ON_MERGED_BUCK	20
-+#define INVALID_PD_FUNCTION			21
-+
-+/* Buck Config Validation Macros */
-+#define BUCK_CORE_PRO_VOLT_UPPER	2075
-+#define BUCK_CORE_PRO_VOLT_LOWER	500
-+#define BUCK_CORE_PRO_STEP		25
-+#define BUCK_MEM_VOLT_UPPER		2500
-+#define BUCK_MEM_VOLT_LOWER		925
-+#define BUCK_MEM_STEP			25
-+#define BUCK_PERI_VOLT_UPPER		3600
-+#define BUCK_PERI_VOLT_LOWER		1800
-+#define BUCK_PERI_STEP_BELOW_3000	50
-+#define BUCK_PERI_STEP_ABOVE_3000	100000
-+#define BUCK_PERI_VALUES_UPTO_3000	24
-+#define BUCK_PERI_VALUES_3000		3000000
-+#define LDO1_VOLT_UPPER			1800
-+#define LDO1_VOLT_LOWER			600
-+#define LDO1_VOLT_STEP			50
-+#define LDO2_VOLT_UPPER			1800
-+#define LDO2_VOLT_LOWER			600
-+#define LDO2_VOLT_STEP			25
-+#define LDO34_VOLT_UPPER		3300
-+#define LDO34_VOLT_LOWER		1725
-+#define LDO34_VOLT_STEP			25
-+#define LDO567810_VOLT_UPPER		3600
-+#define LDO567810_VOLT_LOWER		1200
-+#define LDO567810_VOLT_STEP		50
-+#define LDO9_VOLT_UPPER			3650
-+#define LDO9_VOLT_LOWER			1250
-+#define LDO9_VOLT_STEP			50
-+
-+#endif /* _PM_H */
++#endif /* _BL_H */
 Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information, 
 some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it
 is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure, 
