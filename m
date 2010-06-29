@@ -1,22 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320Ab0F2O6K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 10:58:10 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:57121 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756274Ab0F2O6G (ORCPT
+	id S1756376Ab0F2O6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 10:58:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37263 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756328Ab0F2O6M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 10:58:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jvDOUsSxLrvG0x/z9z296S2BgEig2zE42mauXCqLzi7rzS0Ak2ICMZsSwB9kFE6wzg
-         mItQl4vy6e3WomIt8U7rtmzV2dEyupeUTGBDdWzEYG1o732nT5AUfiWyQNkvGAHEABcz
-         MRJZK51UoG09wAkLus4HaN0VxmJpNQlOILCY4=
-Date: Tue, 29 Jun 2010 16:58:11 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Tue, 29 Jun 2010 10:58:12 -0400
+Subject: Re: [RFC][PATCH 09/11] perf: Default PMU ops
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
        Robert Richter <robert.richter@amd.com>,
        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
@@ -24,107 +17,40 @@ Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
        Yanmin <yanmin_zhang@linux.intel.com>,
        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 09/11] perf: Default PMU ops
-Message-ID: <20100629145806.GE5318@nowhere>
-References: <20100624142804.431553874@chello.nl> <20100624143406.993794468@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100624143406.993794468@chello.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100629144920.GD5318@nowhere>
+References: <20100624142804.431553874@chello.nl>
+	 <20100624143406.993794468@chello.nl>  <20100629144920.GD5318@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 29 Jun 2010 16:57:53 +0200
+Message-ID: <1277823473.1868.42.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 04:28:13PM +0200, Peter Zijlstra wrote:
-> Provide default implementations for the pmu txn methods, this allows
-> us to remove some conditional code.
+On Tue, 2010-06-29 at 16:49 +0200, Frederic Weisbecker wrote:
+> > +static void perf_pmu_start_txn(struct pmu *pmu)
+> > +{
+> > +     perf_pmu_disable(pmu);
+> > +}
+> > +
+> > +static int perf_pmu_commit_txn(struct pmu *pmu)
+> > +{
+> > +     perf_pmu_enable(pmu);
+> > +     return 0;
+> > +}
+> > +
+> > +static void perf_pmu_cancel_txn(struct pmu *pmu)
+> > +{
+> > +     perf_pmu_enable(pmu);
 > 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/perf_event.c |   48 ++++++++++++++++++++++++++++++++++++------------
->  1 file changed, 36 insertions(+), 12 deletions(-)
 > 
-> Index: linux-2.6/kernel/perf_event.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/perf_event.c
-> +++ linux-2.6/kernel/perf_event.c
-> @@ -656,21 +656,14 @@ group_sched_in(struct perf_event *group_
->  {
->  	struct perf_event *event, *partial_group = NULL;
->  	struct pmu *pmu = group_event->pmu;
-> -	bool txn = false;
->  
->  	if (group_event->state == PERF_EVENT_STATE_OFF)
->  		return 0;
->  
-> -	/* Check if group transaction availabe */
-> -	if (pmu->start_txn)
-> -		txn = true;
-> -
-> -	if (txn)
-> -		pmu->start_txn(pmu);
-> +	pmu->start_txn(pmu);
->  
->  	if (event_sched_in(group_event, cpuctx, ctx)) {
-> -		if (txn)
-> -			pmu->cancel_txn(pmu);
-> +		pmu->cancel_txn(pmu);
->  		return -EAGAIN;
->  	}
->  
-> @@ -684,7 +677,7 @@ group_sched_in(struct perf_event *group_
->  		}
->  	}
->  
-> -	if (!txn || !pmu->commit_txn(pmu))
-> +	if (!pmu->commit_txn(pmu))
->  		return 0;
->  
->  group_error:
-> @@ -699,8 +692,7 @@ group_error:
->  	}
->  	event_sched_out(group_event, cpuctx, ctx);
->  
-> -	if (txn)
-> -		pmu->cancel_txn(pmu);
-> +	pmu->cancel_txn(pmu);
->  
->  	return -EAGAIN;
->  }
-> @@ -4755,6 +4747,26 @@ static struct list_head pmus;
->  static DEFINE_MUTEX(pmus_lock);
->  static struct srcu_struct pmus_srcu;
->  
-> +static void perf_pmu_nop(struct pmu *pmu)
-> +{
-> +}
-> +
-> +static void perf_pmu_start_txn(struct pmu *pmu)
-> +{
-> +	perf_pmu_disable(pmu);
-> +}
-> +
-> +static int perf_pmu_commit_txn(struct pmu *pmu)
-> +{
-> +	perf_pmu_enable(pmu);
-> +	return 0;
-> +}
-> +
-> +static void perf_pmu_cancel_txn(struct pmu *pmu)
-> +{
-> +	perf_pmu_enable(pmu);
-> +}
+> Did you mean disable here? 
 
+Nope, start_txn() will disable the pmu, both commit_txn and cancel_txn
+can be used to close the transaction and should thus enable the pmu
+again.
 
-So why do you need perf_pmu_*able wrappers now that you brings stubs
-if none is provided?
-
-Actually, one problem is that it makes calling two indirect nops
-for software events.
-
-Should the txn things really map to the enable/disable ops is the
-off-case? Probably better let pmu implementations deal with that.
-If they didn't provide txn implementations, it means they don't need it,
-hence it should directly map to a nop.
 
