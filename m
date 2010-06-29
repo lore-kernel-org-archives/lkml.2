@@ -1,89 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab0F2G6r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 02:58:47 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58398 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097Ab0F2G6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 02:58:45 -0400
-Date: Tue, 29 Jun 2010 08:58:17 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-       Russell King <linux@arm.linux.org.uk>, Baruch Siach <baruch@tkos.co.il>,
-       Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       linux-kbuild@vger.kernel.org
-Subject: Re: Subject: [PATCH] arm: fix KConfig warning for mach-mx25
-Message-ID: <20100629065817.GA23160@pengutronix.de>
-References: <201006290005.20875.PeterHuewe@gmx.de>
+	id S1753160Ab0F2HBR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 03:01:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24697 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752810Ab0F2HBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 03:01:16 -0400
+Date: Tue, 29 Jun 2010 09:55:59 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sridhar Samudrala <sri@us.ibm.com>
+Cc: Aristeu Rozanski <arozansk@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
+       Juan Quintela <quintela@redhat.com>,
+       "David S. Miller" <davem@redhat.com>, kvm@vger.kernel.org,
+       virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, ykaul@redhat.com, markmc@redhat.com
+Subject: Re: [PATCHv2] vhost-net: add dhclient work-around from userspace
+Message-ID: <20100629065559.GB3603@redhat.com>
+References: <20100628100807.GA30685@redhat.com> <1277763581.23755.16.camel@w-sridhar.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201006290005.20875.PeterHuewe@gmx.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1277763581.23755.16.camel@w-sridhar.beaverton.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hiho,
-
-[added linux-kbuild@vger.kernel.org to Cc:]
-
-On Tue, Jun 29, 2010 at 12:05:20AM +0200, Peter Hüwe wrote:
-> From: Peter Huewe <peterhuewe@gmx.de
+On Mon, Jun 28, 2010 at 03:19:41PM -0700, Sridhar Samudrala wrote:
+> On Mon, 2010-06-28 at 13:08 +0300, Michael S. Tsirkin wrote:
+> > Userspace virtio server has the following hack
+> > so guests rely on it, and we have to replicate it, too:
+> > 
+> > Use port number to detect incoming IPv4 DHCP response packets,
+> > and fill in the checksum for these.
+> > 
+> > The issue we are solving is that on linux guests, some apps
+> > that use recvmsg with AF_PACKET sockets, don't know how to
+> > handle CHECKSUM_PARTIAL;
+> > The interface to return the relevant information was added
+> > in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
+> > and older userspace does not use it.
+> > One important user of recvmsg with AF_PACKET is dhclient,
+> > so we add a work-around just for DHCP.
+> > 
+> > Don't bother applying the hack to IPv6 as userspace virtio does not
+> > have a work-around for that - let's hope guests will do the right
+> > thing wrt IPv6.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> > 
+> > Dave, I'm going to put this patch on the vhost tree,
+> > no need for you to bother merging it - you'll get
+> > it with a pull request.
+> > 
+> > 
+> >  drivers/vhost/net.c |   44 +++++++++++++++++++++++++++++++++++++++++++-
+> >  1 files changed, 43 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> > index cc19595..03bba6a 100644
+> > --- a/drivers/vhost/net.c
+> > +++ b/drivers/vhost/net.c
+> > @@ -24,6 +24,10 @@
+> >  #include <linux/if_tun.h>
+> >  #include <linux/if_macvlan.h>
+> > 
+> > +#include <linux/ip.h>
+> > +#include <linux/udp.h>
+> > +#include <linux/netdevice.h>
+> > +
+> >  #include <net/sock.h>
+> > 
+> >  #include "vhost.h"
+> > @@ -186,6 +190,44 @@ static void handle_tx(struct vhost_net *net)
+> >  	unuse_mm(net->dev.mm);
+> >  }
+> > 
+> > +static int peek_head(struct sock *sk)
 > 
-> This patch fixes a KConfig warning:
-> "arch/arm/mach-mx25/Kconfig:18:warning: choice value used outside its
-> choice group"
+> This routine is doing more than just peeking the head of sk's receive
+> queue. May be this should be named similar to what qemu calls
+> 'work_around_broken_dhclient()'
+> > +{
+> > +	struct sk_buff *skb;
+> > +
+> > +	lock_sock(sk);
+> > +	skb = skb_peek(&sk->sk_receive_queue);
+> > +	if (unlikely(!skb)) {
+> > +		release_sock(sk);
+> > +		return 0;
+> > +	}
+> > +	/* Userspace virtio server has the following hack so
+> > +	 * guests rely on it, and we have to replicate it, too: */
+> > +	/* Use port number to detect incoming IPv4 DHCP response packets,
+> > +	 * and fill in the checksum. */
+> > +
+> > +	/* The issue we are solving is that on linux guests, some apps
+> > +	 * that use recvmsg with AF_PACKET sockets, don't know how to
+> > +	 * handle CHECKSUM_PARTIAL;
+> > +	 * The interface to return the relevant information was added in
+> > +	 * 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
+> > +	 * and older userspace does not use it.
+> > +	 * One important user of recvmsg with AF_PACKET is dhclient,
+> > +	 * so we add a work-around just for DHCP. */
+> > +	if (skb->ip_summed == CHECKSUM_PARTIAL &&
+> > +	    skb_headlen(skb) >= skb_transport_offset(skb) +
+> > +				sizeof(struct udphdr) &&
+> > +	    udp_hdr(skb)->dest == htons(68) &&
+> > +	    skb_network_header_len(skb) >= sizeof(struct iphdr) &&
+> > +	    ip_hdr(skb)->protocol == IPPROTO_UDP &&
+> > +	    skb->protocol == htons(ETH_P_IP)) {
 > 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-The problem also goes away when renaming one of the two
-MACH_EUKREA_MBIMXSD_BASEBOARD (the other MACH_EUKREA_MBIMXSD_BASEBOARD
-is in arch/arm/mach-mx3/Kconfig).  AFAIK Eric already sent a patch to
-fix this.  I think this is the real issue, I don't know why the warning
-goes away with your patch.
+> Isn't it more logical to check for skb->protocol, followed by ip_hdr and
+> then udp_hdr?
 
-Nevertheless I like your patch.  And note there are two other variables
-in arch/arm/mach-mx2 that could benefit from the same "fix".  (But as I
-moved this file in my tree I suggest to wait until my changes hit Linus'
-tree and then fix arch/arm/mach-imx/Kconfig.)
 
-Best regards
-Uwe
+Yes, but then we'll only exit after checking them all.
+My way we'll almost always exit after port check.
 
-> ---
-> KernelVersion: linux-next-20100628
->  arch/arm/mach-mx25/Kconfig |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-mx25/Kconfig b/arch/arm/mach-mx25/Kconfig
-> index 3a6668e..2f436ed 100644
-> --- a/arch/arm/mach-mx25/Kconfig
-> +++ b/arch/arm/mach-mx25/Kconfig
-> @@ -15,8 +15,7 @@ choice
->  	default MACH_EUKREA_MBIMXSD_BASEBOARD
->  
->  config MACH_EUKREA_MBIMXSD_BASEBOARD
-> -	prompt "Eukrea MBIMXSD development board"
-> -	bool
-> +	bool "Eukrea MBIMXSD development board"
->  	help
->  	  This adds board specific devices that can be found on Eukrea's
->  	  MBIMXSD evaluation board.
-> -- 
-> 1.7.1
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> > +		skb_checksum_help(skb);
+> > +		/* Restore ip_summed value: tun passes it to user. */
+> > +		skb->ip_summed = CHECKSUM_PARTIAL;
+> > +	}
+> > +	release_sock(sk);
+> > +	return 1;
+> > +}
+> > +
+> >  /* Expects to be always run from workqueue - which acts as
+> >   * read-size critical section for our kind of RCU. */
+> >  static void handle_rx(struct vhost_net *net)
+> > @@ -222,7 +264,7 @@ static void handle_rx(struct vhost_net *net)
+> >  	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
+> >  		vq->log : NULL;
+> > 
+> > -	for (;;) {
+> > +	while (peek_head(sock->sk)) {
+> >  		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+> >  					 ARRAY_SIZE(vq->iov),
+> >  					 &out, &in,
