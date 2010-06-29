@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab0F2DGB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 23:06:01 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57128 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab0F2DGA (ORCPT
+	id S1753058Ab0F2DHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 23:07:34 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:56384 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab0F2DHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 23:06:00 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Stefani Seibold <stefani@seibold.net>
-Subject: Re: [PATCH v2] sanitize task->comm to avoid leaking escape codes
-Cc: kosaki.motohiro@jp.fujitsu.com, Kees Cook <kees.cook@canonical.com>,
-       linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Veaceslav Falico <vfalico@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Roland McGrath <roland@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Eric Paris <eparis@redhat.com>,
-       James Morris <jmorris@namei.org>,
-       "Andrew G. Morgan" <morgan@kernel.org>,
-       Dhaval Giani <dhaval.giani@gmail.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>, Steve Grubb <sgrubb@redhat.com>,
-       Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org
-In-Reply-To: <1277747318.4840.9.camel@wall-e.seibold.net>
-References: <20100625082722.8031.A69D9226@jp.fujitsu.com> <1277747318.4840.9.camel@wall-e.seibold.net>
-Message-Id: <20100629115957.38BF.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Mon, 28 Jun 2010 23:07:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=mQQI4uc68J++a2K2Fy23rM/q4u9hOlUDb85mjZzfidMeYWVgf35llEamCJ4FT7nj2F
+         QjV9UAFNNdXqNfDj5zEi8Ewad2tAAsyEod/T6P3z0yAFFuFCiscCYTN81WWM/CuqgKiQ
+         lKJoFbHaGdhsjJKANgI4VaEbC52mVNa/tI0Cc=
+Subject: [PATCH] asus-laptop: fix a memory leak in asus_laptop_get_info
+	error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>,
+       Len Brown <len.brown@intel.com>,
+       Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+       acpi4asus-user@lists.sourceforge.net,
+       platform-driver-x86@vger.kernel.org
+Content-Type: text/plain
+Date: Tue, 29 Jun 2010 11:09:47 +0800
+Message-Id: <1277780987.5478.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 29 Jun 2010 12:05:56 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Am Freitag, den 25.06.2010, 08:56 +0900 schrieb KOSAKI Motohiro:
-> > > Through get_task_comm() and many direct uses of task->comm in the kernel,
-> > > it is possible for escape codes and other non-printables to leak into
-> > > dmesg, syslog, etc.  In the worst case, these strings could be used to
-> > > attack administrators using vulnerable terminal emulators, and at least
-> > > cause confusion through the injection of \r characters.
-> > > 
-> > > This patch sanitizes task->comm to only contain printable characters
-> > > when it is set.  Additionally, it redefines get_task_comm so that it is
-> > > more obvious when misused by callers (presently nothing was incorrectly
-> > > calling get_task_comm's unsafe use of strncpy).
-> > > 
-> > > Signed-off-by: Kees Cook <kees.cook@canonical.com>
-> > 
-> > I've reviewed this patch briefly, Here is my personal concern...
-> > 
-> > On Linux, non-printable leaking is fundamental, only fixing task->comm
-> > doesn't solve syslog exploit issue. Probably all /proc/kmsg user should
-> > have escaping non-pritables code.
-> > 
-> > However, task->comm is one of most easy injection data of kernel, because
-> > we have prctl(PR_SET_NAME), attacker don't need root privilege. So,
-> > conservative assumption seems guard from crappy fault. Plus, this patch
-> > is very small and our small TASK_COMM_LEN lead that we don't need
-> > big performance concern.
-> > 
-> > So, I don't find demerit in this proposal. but I'm not security specialist,
-> > it's only personal thinking.
-> > 
-> Agree. I think a escaped printk should be a more generic solution.
+The callers of write_acpi_int_ret() pass ACPI_ALLOCATE_BUFFER,
+the caller must kfree the returned buffer if AE_OK is returned.
 
-Is this possible? printk() doesn't know userland locale. how do it escape correctly?
-When we only concern task->comm, assuming ascii-only string is enough practical.
-but printk generic logic should allow non-ascii, I think.
+This patch adds a missing kfree(buffer.pointer) before return -ENOMEM
+if kstrdup fail.
 
-I think userland reader process only know correct escaping way.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/asus-laptop.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index 71db2ef..3d76c6a 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -1397,8 +1397,10 @@ static int asus_laptop_get_info(struct asus_laptop *asus)
+ 		}
+ 	}
+ 	asus->name = kstrdup(string, GFP_KERNEL);
+-	if (!asus->name)
++	if (!asus->name) {
++		kfree(buffer.pointer);
+ 		return -ENOMEM;
++	}
+ 
+ 	if (*string)
+ 		pr_notice("  %s model detected\n", string);
+-- 
+1.5.4.3
 
 
 
