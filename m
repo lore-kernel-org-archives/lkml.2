@@ -1,15 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab0F2SJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 14:09:23 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:44765 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab0F2SJV convert rfc822-to-8bit (ORCPT
+	id S1754591Ab0F2SJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 14:09:41 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:55915 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405Ab0F2SJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 14:09:21 -0400
-Subject: Re: [RFC][PATCH 09/11] perf: Default PMU ops
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
+	Tue, 29 Jun 2010 14:09:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jTgVvL3/f2cGPcCUJsXcHNZRp4UDX0+Ikd1PJGa6ZeL4JnjtaRwLbqWZZUSTiNGbO0
+         zNFExS/DiDv2hvSekRVoqToGCAk4FcoUHG2lwMZ/dr6T2BMz2sWHNknoqyfX9Vj5Ck1J
+         SkJeNRQQUKFNbu5dGJLLFY/jEvYxGfLrX1+uY=
+Date: Tue, 29 Jun 2010 20:09:49 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
        Robert Richter <robert.richter@amd.com>,
        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
@@ -17,29 +24,32 @@ Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
        Yanmin <yanmin_zhang@linux.intel.com>,
        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100629180745.GA11967@nowhere>
-References: <20100624142804.431553874@chello.nl>
-	 <20100624143406.993794468@chello.nl> <20100629145806.GE5318@nowhere>
-	 <1277823591.1868.43.camel@laptop> <20100629150305.GG5318@nowhere>
-	 <1277829250.1868.46.camel@laptop>  <20100629180745.GA11967@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 29 Jun 2010 20:09:10 +0200
-Message-ID: <1277834950.1868.56.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Subject: Re: [RFC][PATCH 11/11] perf: Rework the PMU methods
+Message-ID: <20100629180947.GB11967@nowhere>
+References: <20100624142804.431553874@chello.nl> <20100624143407.106583261@chello.nl> <20100629153753.GI5318@nowhere> <1277829601.1868.50.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277829601.1868.50.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-29 at 20:07 +0200, Frederic Weisbecker wrote:
-> On Tue, Jun 29, 2010 at 06:34:10PM +0200, Peter Zijlstra wrote:
-> > On Tue, 2010-06-29 at 17:03 +0200, Frederic Weisbecker wrote:
-> > > > You mean, if (!pmu->start_txn && pmu->pmu_enable) { /* install defaults
-> > > > */ } ?
+On Tue, Jun 29, 2010 at 06:40:01PM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-06-29 at 17:37 +0200, Frederic Weisbecker wrote:
+> 
+> > Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> I know it breaks at least x86 (although subtle, takes a few perf records
+> to daze and confuse), arm and sh.
+> 
+> I need to get back to this patch-set and sort that :-)
 
-> neglected pmu implementations shouldn't impact software pmus.
 
-With the above and not providing ->pmu_enable you get that.
+Ok :)
 
+But at least the whole idea looks good. Concerning the software parts
+I will make a second pass to optimize from my exclusion patchset, but
+other than that, it sets a nice background for it.
 
