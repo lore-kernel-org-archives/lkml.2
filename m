@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab0F2Tim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 15:38:42 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:55057 "EHLO bamako.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754097Ab0F2Tik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 15:38:40 -0400
-Date: Tue, 29 Jun 2010 21:38:37 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-       LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org,
-       linux-next@vger.kernel.org, Huaxu Wan <huaxu.wan@intel.com>
-Subject: Re: [lm-sensors] linux-next: Tree for June 29 (hwmon/coretemp)
-Message-ID: <20100629213837.50a64edc@hyperion.delvare>
-In-Reply-To: <20100629210532.314250ba@hyperion.delvare>
-References: <20100629151938.6981044d.sfr@canb.auug.org.au>
-	<20100629080257.43b365dd.randy.dunlap@oracle.com>
-	<20100629210532.314250ba@hyperion.delvare>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755467Ab0F2TpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 15:45:05 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62344 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754467Ab0F2TpD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 15:45:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=YHG3yLtxpxo/MXJtDfBLpl+mSCJ9myEesREGFNCwvY+4FRmaVcc2B4Dw3ZtJslTXgL
+         7BbCeIAR9fp6j9XsuTKXPo8h5EiNzBPpvfBpKZQtAYuPTqUpwr6HZm0Lm3hAmSkZnnE8
+         UNJ9GV+7Rd5u+g3J4C0tUhBZhnr7uk9VDmhhA=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]kernel.h Fix #warning message web address.
+Date: Tue, 29 Jun 2010 12:37:24 -0700
+Message-Id: <1277840244-3436-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010 21:05:32 +0200, Jean Delvare wrote:
-> Hi Randy,
-> 
-> On Tue, 29 Jun 2010 08:02:57 -0700, Randy Dunlap wrote:
-> > On Tue, 29 Jun 2010 15:19:38 +1000 Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > Changes since 20100628:
-> > > 
-> > > My fixes tree is now empty.
-> > 
-> > 
-> > when CONFIG_SMP is not enabled:
-> > 
-> > drivers/hwmon/coretemp.c:308: error: 'struct cpuinfo_x86' has no member named 'cpu_core_id'
-> > drivers/hwmon/coretemp.c:428: error: 'struct cpuinfo_x86' has no member named 'phys_proc_id'
-> > drivers/hwmon/coretemp.c:429: error: 'struct cpuinfo_x86' has no member named 'cpu_core_id'
-> > drivers/hwmon/coretemp.c:457: error: 'struct cpuinfo_x86' has no member named 'phys_proc_id'
-> > drivers/hwmon/coretemp.c:458: error: 'struct cpuinfo_x86' has no member named 'cpu_core_id'
-> 
-> Thanks for the heads up, I hadn't considered the no-SMP case. I'll take
-> a look immediately.
+Playing around with a printk program I noticed that the #warning
+message is incomplete(when using kernel headers for userspace):
 
-Should be fixed now, thanks again.
+ gcc printk.c -o printk
+In file included from printk.c:3:
+include/linux/kernel.h:733:2: warning: #warning Attempt to use kernel headers from user space, see http:
 
+My guess for the web address not being displayed is "//" is treated as a comment.
+So after changing "http://" to "www." I get the web address.(using firefox with this
+address takes me right to the location). The warning looks like this:
+
+In file included from printk.c:3:
+warning: #warning Attempt to use kernel headers from user space, see www.kernelnewbies.org/KernelHeaders 
+ 
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+---
+ include/linux/kernel.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 8317ec4..768196a 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -730,7 +730,7 @@ extern int do_sysinfo(struct sysinfo *info);
+ 
+ #ifndef __EXPORTED_HEADERS__
+ #ifndef __KERNEL__
+-#warning Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders
++#warning Attempt to use kernel headers from user space, see www.kernelnewbies.org/KernelHeaders
+ #endif /* __KERNEL__ */
+ #endif /* __EXPORTED_HEADERS__ */
+ 
 -- 
-Jean Delvare
+1.6.5.2.180.gc5b3e
+
