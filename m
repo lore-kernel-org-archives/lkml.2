@@ -1,162 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab0F2W30 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 18:29:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372Ab0F2W3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 18:29:24 -0400
-Date: Tue, 29 Jun 2010 18:28:55 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: device-mapper development <dm-devel@redhat.com>
-cc: Mike Snitzer <snitzer@redhat.com>, axboe@kernel.dk,
-       linux-scsi@vger.kernel.org, martin.petersen@oracle.com,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Christoph Hellwig <hch@lst.de>
-Subject: Re: [dm-devel] [PATCH 1/2] block: fix leaks associated with discard
- request payload
-In-Reply-To: <1277652576.4366.19.camel@mulgrave.site>
-Message-ID: <Pine.LNX.4.64.1006291811300.27462@hs20-bc2-1.build.redhat.com>
-References: <20100622180029.GA15950@redhat.com> <1277582211-10725-1-git-send-email-snitzer@redhat.com>
- <1277652576.4366.19.camel@mulgrave.site>
+	id S1756543Ab0F2Wav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 18:30:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42536 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756298Ab0F2Wau convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 18:30:50 -0400
+X-Greylist: delayed 445 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jun 2010 18:30:50 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PaIBHRck6PKjdsqh1iQ06e0ZeGtVy894Xy6dUx0eTECmQoDmx7IzD4F8XLR++nCv+4
+         2eS3iGbaDTv1N2MiOuZ0SCAQoCj33jGWChDGp7XHcBmE3GeySmR4v+4PUcLq51rnQIdF
+         Jcwt7/Zh903E0kmZWiaGh2xUvw22Ar0E7Vmsw=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <AANLkTineRed7JZIwIP8SQYm5uj5vrO1s1_wP-KyR4Tiy@mail.gmail.com>
+References: <AANLkTila2rrYcBUZKwywHTP6g8rsj7Z1ck6LSoC9GaUY@mail.gmail.com>
+	<AANLkTikbQLTC8HLB2m8LoPtZ0JVUzRl6PvRL5yTC0pZV@mail.gmail.com>
+	<1277496077.6141.30.camel@heimdal.trondhjem.org>
+	<AANLkTikH-jOOOzJ7xium-O3jwHpgh_czAFlkFkwnxpkK@mail.gmail.com>
+	<1277499572.6141.46.camel@heimdal.trondhjem.org>
+	<AANLkTimOiRTaGLBhPWiyRfBaC4Pau5DDK7zV_2_MNMJu@mail.gmail.com>
+	<1277502630.6141.57.camel@heimdal.trondhjem.org>
+	<AANLkTinAzT7lrFpnZWOhjHxYNYqV2e-cv3NqNSs8_p1y@mail.gmail.com>
+	<1277506467.6141.64.camel@heimdal.trondhjem.org>
+	<AANLkTimV4yABFKQQYqsk87j3oDu1P0ugh0uUTl4berBp@mail.gmail.com>
+	<5970B547-E179-4FBD-B23B-0FA1C135C408@fys.uio.no>
+	<AANLkTineRed7JZIwIP8SQYm5uj5vrO1s1_wP-KyR4Tiy@mail.gmail.com>
+Date: Tue, 29 Jun 2010 15:23:21 -0700
+Message-ID: <AANLkTim-GJ9ObZ19jriNvAxMYNZ2JdKGxVRVE53emNvr@mail.gmail.com>
+Subject: Fwd: fs/exec.c core dumping on NFS mounted directory
+From: Lei Sun <leisun124@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: trond.myklebust@fys.uio.no
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>>>
+>>>>>> The fixing of Bug-3043 clearly broke the logic of dumping core on NFS
+>>>>>> mounted file system with different UID.
+>>>>>> If my patch is not accepted. I am hopping the bug-3043 to be
+>>>>>> re-opened. and to be fixed
+>>>>>
+>>>>> Using different uids on the client and server for NFSv2 and NFSv3 is a
+>>>>> broken setup. Don't do it.
+>>>>> The only way such a NFS client can be sure that the file was really
+>>>>> created by itself would be to use an exclusive create. That would break
+>>>>> if the file 'core' already exists, though.
+>>>>>
+>>>>> Can't you use NFSv4 instead? If set up correctly, that will allow you to
+>>>>> use different uid and gid mappings on the client and server (provided
+>>>>> that the user name and group names are the same).
+>>>>>
+>>>>>
+>>>>>
+>>>>>
+>>>> NFS mount is just one problem out of other potential breaks. We are
+>>>> working on embedded Linux and mount to company filer via NFS and
+>>>> observed this issue. Even I could change the NFS server(Not to mention
+>>>> that we have a big IT department handles it), other people could still
+>>>> see the problems.
+>>>>
+>>>> The checking of "inode->i_uid != current_fsuid" could break in :
+>>>>
+>>>> 1) NFS mount using root_squash: if current_fsuid() == 0, inode->i_uid
+>>>> will be nonzero.  Very common in embedded development.
+>>>
+>>> Definitely a case where you want to _disallow_ core dumping. The
+>>> resulting core dump is owned by someone other than the process that
+>>> created it.
+>>>
+>>>> 2) Writable VFAT mount (e.g. umask=0): current_fsuid() might not match
+>>>> the filesystem ownership, so a process that has permission to write to a
+>>>> directory still can't dump core there.  On embedded platforms the VFAT
+>>>> filesystem is likely to reside on an SDHC/eMMC card, USB flash drive,
+>>>> external HDD, etc.
+>>>
+>>> Ditto.
+>>>
+>>>> 3) Host is using 32-bit UIDs, but the filesystem can only handle 16-bit
+>>>> UIDs.  current_fsuid() may not match inode->i_uid in the case of overflow.
+>>>
+>>> Ditto.
+>>>
+>>>
+>>
+>> I really don't understand in all above 3 case, why am I not allowed to
+>> dumping core...
+>> Taking NFS mount as an example.
+>> Yes, the process will dump out core file owned by other user. So will
+>> be the "copy file over to NFS directory. Should it disallow copying
+>> local file to NFS directory as well? if the NFS doesn't preserve the
+>> original UID/GID?
+>>
+>> So you are saying, it is not a bug, it is expected behavour, e.g. I
+>> can't dump core on above 3 cases?
+>
+> Yes
+>
+>> Although I don't see any security
+>> threat of dumping core on NFS/USB and owned by other user.
+>
+> The security threat lies in the fact that core files are a memory dump. They can contain all sorts of information, such as passwords, ssl session data, ssh keys, private emails, etc. Stuff that you might not want to expose to other people.
+>
+> Trond
 
+I understand the security concern. The original fix was for general cases.
+What I am asking is "is it legitimate thing to do for a root user
+process to dump core file on NFS directory?", there are two cases:
 
-On Sun, 27 Jun 2010, James Bottomley wrote:
+1. The NFS server doesn't change the UID/GID, in this case, the
+current kernel allow dumping core over NFS.
+2. The NFS server does change UID/GID, in this case the current kernel
+doesn't allow core dumping.
 
-> linux-scsi cc added, since it's a SCSI patch.
-> 
-> On Sat, 2010-06-26 at 15:56 -0400, Mike Snitzer wrote:
-> > Fix leaks introduced via "block: don't allocate a payload for discard
-> > request" commit a1d949f5f44.
-> > 
-> > sd_done() is not called for REQ_TYPE_BLOCK_PC commands so cleanup
-> > discard request's payload directly in scsi_finish_command().
-> > 
-> > Also cleanup page allocated for discard payload in
-> > scsi_setup_discard_cmnd's scsi_setup_blk_pc_cmnd error path.
-> > 
-> > Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> > ---
-> >  block/blk-core.c       |   23 +++++++++++++++++++++++
-> >  drivers/scsi/scsi.c    |    8 ++++++++
-> >  drivers/scsi/sd.c      |   18 ++++++++----------
-> >  include/linux/blkdev.h |    1 +
-> >  4 files changed, 40 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/block/blk-core.c b/block/blk-core.c
-> > index 98b4cee..07925aa 100644
-> > --- a/block/blk-core.c
-> > +++ b/block/blk-core.c
-> > @@ -1167,6 +1167,29 @@ void blk_add_request_payload(struct request *rq, struct page *page,
-> >  }
-> >  EXPORT_SYMBOL_GPL(blk_add_request_payload);
-> >  
-> > +/**
-> > + * blk_clear_request_payload - clear a request's payload
-> > + * @rq: request to update
-> > + *
-> > + * The driver needs to take care of freeing the payload itself.
-> > + */
-> > +void blk_clear_request_payload(struct request *rq)
-> > +{
-> > +	struct bio *bio = rq->bio;
-> > +
-> > +	rq->__data_len = rq->resid_len = 0;
-> > +	rq->nr_phys_segments = 0;
-> > +	rq->buffer = NULL;
-> > +
-> > +	bio->bi_size = 0;
-> > +	bio->bi_vcnt = 0;
-> > +	bio->bi_phys_segments = 0;
-> > +
-> > +	bio->bi_io_vec->bv_page = NULL;
-> > +	bio->bi_io_vec->bv_len = 0;
-> > +}
-> > +EXPORT_SYMBOL_GPL(blk_clear_request_payload);
-> > +
-> >  void init_request_from_bio(struct request *req, struct bio *bio)
-> >  {
-> >  	req->cpu = bio->bi_comp_cpu;
-> > diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-> > index ad0ed21..69c7ea4 100644
-> > --- a/drivers/scsi/scsi.c
-> > +++ b/drivers/scsi/scsi.c
-> > @@ -851,6 +851,14 @@ void scsi_finish_command(struct scsi_cmnd *cmd)
-> >  		 */
-> >  		if (good_bytes == old_good_bytes)
-> >  			good_bytes -= scsi_get_resid(cmd);
-> > +	} else if (cmd->request->cmd_flags & REQ_DISCARD) {
-> > +		/*
-> > +		 * If this is a discard request that originated from the kernel
-> > +		 * we need to free our payload here.  Note that we need to check
-> > +		 * the request flag as the normal payload rules apply for
-> > +		 * pass-through UNMAP / WRITE SAME requests.
-> > +		 */
-> > +		__free_page(bio_page(cmd->request->bio));
-> 
-> This is another layering violation:  the page is allocated in the Upper
-> layer and freed in the mid-layer.
-> 
-> I really hate these growing contortions for discard.  They're a clear
-> signal that we haven't implemented it right.
-> 
-> So let's first work out how it should be done.  I really like Tomo's
-> idea of doing discard through the normal REQ_TYPE_FS route, which means
-> we can control the setup in prep and the tear down in done, all confined
-> to the ULD.
-> 
-> Where I think I'm at is partially what Christoph says:  The command
-> transformation belongs in the ULD so that's where the allocation and
-> deallocation should be, and partly what Tomo says in that we should
-> eliminate the special case paths.
-> 
-> The payload vs actual request size should be a red herring if we've got
-> everything correct:  only the ULD cares about the request parameters.
-> Once we've got everything set up, the mid layer and LLD should only care
-> about the parameters in the command, so we can confine the size changing
-> part to the ULD doing the discard.
-> 
-> Could someone take a stab at this and see if it works without layering
-> violations or any other problematic signals?
-> 
-> Thanks,
-> 
-> James
+So current kernel didn't answer the question, because it behave
+differently based on different NFS server setting.  Vital information
+is not protected for case #1, isn't it?
 
-Well, I think that you overestimate the importance of scsi code too much.
+Hi Trond:
+   Any more comments on the question above?
 
-There is a layering violation in the code. So what --- you either fix the 
-layering violation or let it be there and grind your teeth on it. But in 
-either case, that layering violation won't affect anyone except scsi 
-developers.
-
-On the other hand, if you say "because we want to avoid layering violation 
-in SCSI, every issuer of discard request must supply an empty page", you 
-create havoc all over the Linux codebase. md, dm, drbd, xvd, virtio --- 
-whatever you think of, will be allocating a dummy page when constructing 
-a discard request.
-
-If the layering violation spans only scsi code, it can be eventually 
-fixed, but this, much worse "layering violation" that will be spanning all 
-block device midlayers, won't ever be fixed.
-
-Imagine for example --- a discard request arrivers at a dm-snapshot 
-device. The driver splits it into chunks, remaps each chunk to the 
-physical chunk, submits the requests, the elevator merges adjacent 
-requests and submits fewer bigger requests to the device. Now, if you had 
-to allocate a zeroed page each time you are splitting the request, that 
-would exhaust memory and burn cpu needlessly. You delete a 100MB file? --- 
-fine, allocate a 100MB of zeroed pages.
-
-So I say --- let there be a layering violation in the scsi code, but don't 
-put this problem with a page allocation to all the other bio midlayer 
-developers.
-
-Mikulas
+Thanks
