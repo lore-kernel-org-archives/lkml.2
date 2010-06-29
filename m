@@ -1,132 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab0F2JZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 05:25:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39299 "EHLO hera.kernel.org"
+	id S1754833Ab0F2JZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 05:25:46 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39309 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab0F2JZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 05:25:24 -0400
-Date: Tue, 29 Jun 2010 09:24:41 GMT
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, ananth@in.ibm.com, hpa@zytor.com,
-       mingo@redhat.com, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, ananth@in.ibm.com,
-       linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-       tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4C298A6E.8070609@hitachi.com>
-References: <4C298A6E.8070609@hitachi.com>
+	id S1754509Ab0F2JZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 05:25:44 -0400
+Date: Tue, 29 Jun 2010 09:25:03 GMT
+From: tip-bot for Michael Neuling <mikey@neuling.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       peterz@infradead.org, dhowells@redhat.com, tglx@linutronix.de,
+       mikey@neuling.org, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       peterz@infradead.org, dhowells@redhat.com, tglx@linutronix.de,
+       mikey@neuling.org, mingo@elte.hu
+In-Reply-To: <15249.1277776921@neuling.org>
+References: <15249.1277776921@neuling.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] kprobes/x86: Fix kprobes to skip prefixes correctly
-Message-ID: <tip-567a9fd86735ccdc897768ed2dacdd5e83a13509@git.kernel.org>
-Git-Commit-ID: 567a9fd86735ccdc897768ed2dacdd5e83a13509
+Subject: [tip:sched/core] sched: Fix spelling of sibling
+Message-ID: <tip-2ec57d448b2e8fcfba539a46701b43f14f037f17@git.kernel.org>
+Git-Commit-ID: 2ec57d448b2e8fcfba539a46701b43f14f037f17
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 09:24:48 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 09:25:15 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  567a9fd86735ccdc897768ed2dacdd5e83a13509
-Gitweb:     http://git.kernel.org/tip/567a9fd86735ccdc897768ed2dacdd5e83a13509
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Tue, 29 Jun 2010 14:53:50 +0900
+Commit-ID:  2ec57d448b2e8fcfba539a46701b43f14f037f17
+Gitweb:     http://git.kernel.org/tip/2ec57d448b2e8fcfba539a46701b43f14f037f17
+Author:     Michael Neuling <mikey@neuling.org>
+AuthorDate: Tue, 29 Jun 2010 12:02:01 +1000
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 29 Jun 2010 10:43:41 +0200
+CommitDate: Tue, 29 Jun 2010 10:44:29 +0200
 
-kprobes/x86: Fix kprobes to skip prefixes correctly
+sched: Fix spelling of sibling
 
-Fix resume_execution() and is_IF_modifier() to skip x86
-instruction prefixes correctly by using x86 instruction
-attribute.
+No logic changes, only spelling.
 
-Without this fix, resume_execution() can't handle instructions
-which have non-REX prefixes (REX prefixes are skipped). This
-will cause unexpected kernel panic by hitting bad address when a
-kprobe hits on two-byte ret (e.g. "repz ret" generated for
-Athlon/K8 optimization), because it just checks "repz" and can't
-recognize the "ret" instruction.
-
-These prefixes can be found easily with x86 instruction
-attribute. This patch introduces skip_prefixes() and uses it in
-resume_execution() and is_IF_modifier() to skip prefixes.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-LKML-Reference: <4C298A6E.8070609@hitachi.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Cc: linuxppc-dev@ozlabs.org
+Cc: David Howells <dhowells@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+LKML-Reference: <15249.1277776921@neuling.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/kprobes.c |   33 +++++++++++++++++----------------
- 1 files changed, 17 insertions(+), 16 deletions(-)
+ arch/powerpc/kernel/process.c |    2 +-
+ include/linux/topology.h      |    2 +-
+ kernel/sched_fair.c           |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index 345a4b1..175f85c 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -126,16 +126,22 @@ static void __kprobes synthesize_reljump(void *from, void *to)
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index 9b41ece..22f08cb 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -1270,7 +1270,7 @@ unsigned long randomize_et_dyn(unsigned long base)
  }
  
- /*
-- * Check for the REX prefix which can only exist on X86_64
-- * X86_32 always returns 0
-+ * Skip the prefixes of the instruction.
-  */
--static int __kprobes is_REX_prefix(kprobe_opcode_t *insn)
-+static kprobe_opcode_t *__kprobes skip_prefixes(kprobe_opcode_t *insn)
+ #ifdef CONFIG_SMP
+-int arch_sd_sibiling_asym_packing(void)
++int arch_sd_sibling_asym_packing(void)
  {
-+	insn_attr_t attr;
-+
-+	attr = inat_get_opcode_attribute((insn_byte_t)*insn);
-+	while (inat_is_legacy_prefix(attr)) {
-+		insn++;
-+		attr = inat_get_opcode_attribute((insn_byte_t)*insn);
-+	}
- #ifdef CONFIG_X86_64
--	if ((*insn & 0xf0) == 0x40)
--		return 1;
-+	if (inat_is_rex_prefix(attr))
-+		insn++;
- #endif
--	return 0;
-+	return insn;
+ 	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
+ 		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index cf57f30..b572e43 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -103,7 +103,7 @@ int arch_update_cpu_topology(void);
+ 				| 1*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
+ 				| 0*SD_PREFER_SIBLING			\
+-				| arch_sd_sibiling_asym_packing()	\
++				| arch_sd_sibling_asym_packing()	\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 5e8f98c..b4da534 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2567,7 +2567,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+ 	} while (sg != sd->groups);
  }
  
- /*
-@@ -272,6 +278,9 @@ static int __kprobes can_probe(unsigned long paddr)
-  */
- static int __kprobes is_IF_modifier(kprobe_opcode_t *insn)
+-int __weak arch_sd_sibiling_asym_packing(void)
++int __weak arch_sd_sibling_asym_packing(void)
  {
-+	/* Skip prefixes */
-+	insn = skip_prefixes(insn);
-+
- 	switch (*insn) {
- 	case 0xfa:		/* cli */
- 	case 0xfb:		/* sti */
-@@ -280,13 +289,6 @@ static int __kprobes is_IF_modifier(kprobe_opcode_t *insn)
- 		return 1;
- 	}
- 
--	/*
--	 * on X86_64, 0x40-0x4f are REX prefixes so we need to look
--	 * at the next byte instead.. but of course not recurse infinitely
--	 */
--	if (is_REX_prefix(insn))
--		return is_IF_modifier(++insn);
--
- 	return 0;
+        return 0*SD_ASYM_PACKING;
  }
- 
-@@ -803,9 +805,8 @@ static void __kprobes resume_execution(struct kprobe *p,
- 	unsigned long orig_ip = (unsigned long)p->addr;
- 	kprobe_opcode_t *insn = p->ainsn.insn;
- 
--	/*skip the REX prefix*/
--	if (is_REX_prefix(insn))
--		insn++;
-+	/* Skip prefixes */
-+	insn = skip_prefixes(insn);
- 
- 	regs->flags &= ~X86_EFLAGS_TF;
- 	switch (*insn) {
