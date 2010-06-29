@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab0F2Rg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 13:36:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48867 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932175Ab0F2RgY (ORCPT
+	id S932267Ab0F2Rht (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 13:37:49 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50076 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932175Ab0F2Rhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 13:36:24 -0400
+	Tue, 29 Jun 2010 13:37:47 -0400
+Date: Tue, 29 Jun 2010 23:02:26 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: [Bugfix] [2.6.35-rc3-tip] perf build failure on latest tip.
+Message-ID: <20100629173226.GC23231@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20100629145617.GG28364@laptop>
-References: <20100624030212.676457061@suse.de>
-	<20100624030725.885831564@suse.de>
-	<20100629130214.GA21410@infradead.org>
-	<20100629145617.GG28364@laptop>
-Date: Tue, 29 Jun 2010 10:35:47 -0700
-Message-ID: <AANLkTinCVQdekiLlU4_tRkkcSGYWV6NG7nlvTirl5xZF@mail.gmail.com>
-Subject: Re: [patch 02/52] fs: fix superblock iteration race
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-       Frank Mayhar <fmayhar@google.com>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 7:56 AM, Nick Piggin <npiggin@suse.de> wrote:
-> On Tue, Jun 29, 2010 at 09:02:14AM -0400, Christoph Hellwig wrote:
->> This should actually be on it's way to Linus for .35, shouldn't it?
->
-> Yeah, I was waiting for Al to reappear, but I think this is
-> probably the nicest way to solve the problem. Linus?
+When compiling perf on latest tip/master
+I see the following error
 
-I'll apply it. We have a couple of oopses listed for the superblock
-iterator, and I haven't heard from Al. And the patch looks obviously
-fine, whether it's actually the cause of some of the bugs or not.
+cc1: warnings being treated as errors
+util/newt.c: In function ‘hist_entry__tui_annotate’:
+util/newt.c:764: warning: ‘ret’ is used uninitialized in this function
+make: *** [util/newt.o] Error 1
 
-              Linus
+I think the problem was introduced by commit 
+13f499f076c67675e6e3022973729b5d906a84e9
+
+Below is a patch that fixes the problem.
+
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index 89c52fc..06f248f 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -753,7 +753,7 @@ int hist_entry__tui_annotate(struct hist_entry *self)
+ 
+ 	browser.width += 18; /* Percentage */
+ 	ui_browser__show(&browser, self->ms.sym->name);
+-	ui_browser__run(&browser, &es);
++	ret = ui_browser__run(&browser, &es);
+ 	newtFormDestroy(browser.form);
+ 	newtPopWindow();
+ 	list_for_each_entry_safe(pos, n, &head, node) {
