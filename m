@@ -1,403 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab0F2XtL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 19:49:11 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:62634 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab0F2XtI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 19:49:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
-	:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=I0dilx+NzDytFw4oxlV
-	20wrPr92ZSSbq8aCVoy9s/X0rCCiTyaEymN6kfJV/B1xw8TniAaqqhsiDWXtVdhO
-	48Bt6cAz5ncVfDM9HAC+R/TEGU42ivLzOhlQL/u9lkxJXIRw2FfyiqhxmwrFR55K
-	8lN+n4lDgl9OlByqBITsyfmE=
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.1.1
-From: Junio C Hamano <gitster@pobox.com>
-Date: Tue, 29 Jun 2010 16:48:57 -0700
-Message-ID: <7vk4ph8knq.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1754882Ab0F2XxY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 19:53:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19115 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753160Ab0F2XxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 19:53:23 -0400
+Date: Tue, 29 Jun 2010 19:51:04 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+       device-mapper development <dm-devel@redhat.com>, axboe@kernel.dk,
+       linux-scsi@vger.kernel.org, martin.petersen@oracle.com,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
+ payload
+Message-ID: <20100629235104.GA23641@redhat.com>
+References: <20100622180029.GA15950@redhat.com>
+ <1277582211-10725-1-git-send-email-snitzer@redhat.com>
+ <1277652576.4366.19.camel@mulgrave.site>
+ <Pine.LNX.4.64.1006291811300.27462@hs20-bc2-1.build.redhat.com>
+ <1277852600.4379.211.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: E5F2C83A-83D8-11DF-ABE9-9056EE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277852600.4379.211.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.1.1 is available at the
-usual places:
-
-  http://www.kernel.org/pub/software/scm/git/
-
-  git-1.7.1.1.tar.{gz,bz2}			(source tarball)
-  git-htmldocs-1.7.1.1.tar.{gz,bz2}		(preformatted docs)
-  git-manpages-1.7.1.1.tar.{gz,bz2}		(preformatted docs)
-
-The RPM binary packages for a few architectures are found in:
-
-  RPMS/$arch/git-*-1.7.1.1-1.fc11.$arch.rpm	(RPM)
-
-Git v1.7.1.1 Release Notes
-==========================
-
-Fixes since v1.7.1
-------------------
-
- * Authentication over http transport can now be made lazily, in that the
-   request can first go to a URL without username, get a 401 response and
-   then the client will ask for the username to use.
-
- * We used to mistakenly think "../work" is a subdirectory of the current
-   directory when we are in "../work-xyz".
-
- * The attribute mechanism now allows an entry that uses an attribute
-   macro that set/unset one attribute, immediately followed by an
-   overriding setting; this makes attribute macros much easier to use.
-
- * We didn't recognize timezone "Z" as a synonym for "UTC" (75b37e70).
-
- * In 1.7.0, read-tree and user commands that use the mechanism such as
-   checkout and merge were fixed to handle switching between branches one
-   of which has a file while the other has a directory at the same path
-   correctly even when there are some "confusing" pathnames in them.  But
-   the algorithm used for this fix was suboptimal and had a terrible
-   performance degradation especially in larger trees.
-
- * "git am -3" did not show diagnosis when the patch in the message was corrupt.
-
- * After "git apply --whitespace=fix" removed trailing blank lines in an
-   patch in a patch series, it failed to apply later patches that depend
-   on the presence of such blank lines.
-
- * "git bundle --stdin" segfaulted.
-
- * "git checkout" and "git rebase" overwrote paths that are marked "assume
-   unchanged".
-
- * "git commit --amend" on a commit with an invalid author-name line that
-   lacks the display name didn't work.
-
- * "git describe" did not tie-break tags that point at the same commit
-   correctly; newer ones are preferred by paying attention to the
-   tagger date now.
-
- * "git diff" used to tell underlying xdiff machinery to work very hard to
-   minimize the output, but this often was spending too many extra cycles
-   for very little gain.
-
- * "git diff --color" did not paint extended diff headers per line
-   (i.e. the coloring escape sequence didn't end at the end of line),
-   which confused "less -R".
-
- * "git fetch" over HTTP verifies the downloaded packfiles more robustly.
-
- * The memory usage by "git index-pack" (run during "git fetch" and "git
-   push") got leaner.
-
- * "GIT_DIR=foo.git git init --bare bar.git" created foo.git instead of bar.git.
-
- * "git log --abbrev=$num --format='%h' ignored --abbrev=$num.
-
- * "git ls-files ../out/side/cwd" refused to work.
-
- * "git merge --log" used to replace the custom message given by "-m" with
-   the shortlog, instead of appending to it.
-
- * "git notes copy" without any other argument segfaulted.
-
- * "git pull" accepted "--dry-run", gave it to underlying "git fetch" but
-   ignored the option itself, resulting in a bogus attempt to merge
-   unrelated commit.
-
- * "git rebase" did not faithfully reproduce a malformed author ident, that
-   is often seen in a repository converted from foreign SCMs.
-
- * "git reset --hard" started from a wrong directory and a working tree in
-   a nonstandard location is in use got confused.
-
- * "git send-email" lacked a way to specify the domainname used in the
-   EHLO/HELO exchange, causing rejected connection from picky servers.
-   It learned --smtp-domain option to solve this issue.
-
- * "git send-email" did not declare a content-transfer-encoding and
-   content-type even when its payload needs to be sent in 8-bit.
-
- * "git show -C -C" and other corner cases lost diff metainfo output
-   in 1.7.0.
-
- * "git stash" incorrectly lost paths in the working tree that were
-   previously removed from the index.
-
- * "git status" stopped refreshing the index by mistake in 1.7.1.
-
- * "git status" showed excess "hints" even when advice.statusHints is set to false.
-
-And other minor fixes and documentation updates.
-
-----------------------------------------------------------------
-
-Changes since v1.7.1 are as follows:
-
-Alexey Mahotkin (1):
-      xdiff/xmerge.c: use memset() instead of explicit for-loop
-
-Bert Wesarg (1):
-      diff: fix coloring of extended diff headers
-
-Björn Gustavsson (1):
-      apply: Allow blank *trailing* context lines to match beyond EOF
-
-Björn Steinbrink (1):
-      diff: Support visibility modifiers in the PHP hunk header regexp
-
-Bo Yang (1):
-      blame-options.txt: Add default value for `-M/-C` options.
-
-Brandon Casey (1):
-      t/t9001: use egrep when regular expressions are involved
-
-Brian Downing (1):
-      unpack-trees: Make index lookahead less pessimal
-
-Brian Gernhardt (4):
-      send-email: Cleanup { style
-      send-email: Don't use FQDNs without a '.'
-      Document send-email --smtp-domain
-      send-email: Cleanup smtp-domain and add config
-
-Charles Bailey (2):
-      stash: Don't overwrite files that have gone from the index
-      stash tests: stash can lose data in a file removed from the index
-
-Chris Webb (1):
-      exec_cmd.c: replace hard-coded path list with one from <paths.h>
-
-Christian Couder (3):
-      diff: fix "git show -C -C" output when renaming a binary file
-      commit: use value of GIT_REFLOG_ACTION env variable as reflog message
-      Documentation: grep: fix asciidoc problem with --
-
-Clemens Buchacher (7):
-      do not overwrite files marked "assume unchanged"
-      Documentation: git-add does not update files marked "assume unchanged"
-      test get_git_work_tree() return value for NULL
-      get_cwd_relative(): do not misinterpret suffix as subdirectory
-      setup: document prefix
-      quote.c: separate quoting and relative path generation
-      ls-files: allow relative pathspec
-
-Dmitry Potapov (1):
-      hash_object: correction for zero length file
-
-Gary V. Vaughan (1):
-      git-compat-util.h: use apparently more common __sgi macro to detect SGI IRIX
-
-Gerrit Pape (1):
-      git-submodule.sh: properly initialize shell variables
-
-Henrik Grubbström (3):
-      attr: Fixed debug output for macro expansion.
-      attr: Allow multiple changes to an attribute on the same line.
-      attr: Expand macros immediately when encountered.
-
-Ian McLean (1):
-      Fix "Out of memory? mmap failed" for files larger than 4GB on Windows
-
-Ian Ward Comfort (1):
-      rebase -i: Abort cleanly if new base cannot be checked out
-
-Jakub Narebski (1):
-      autoconf: Check if <paths.h> exists and set HAVE_PATHS_H
-
-Jay Soffian (3):
-      commit.txt: clarify how --author argument is used
-      am: use get_author_ident_from_commit instead of mailinfo when rebasing
-      gitweb/Makefile: fix typo in gitweb.min.css rule
-
-Jeff King (7):
-      handle "git --bare init <dir>" properly
-      docs: clarify meaning of -M for git-log
-      remove over-eager caching in sha1_file_name
-      pull: do nothing on --dry-run
-      commit: give advice on empty amend
-      Makefile: default pager on AIX to "more"
-      notes: check number of parameters to "git notes copy"
-
-Johannes Sixt (1):
-      Thread-safe xmalloc and xrealloc needs a recursive mutex
-
-Jonathan Nieder (25):
-      t7006: guard cleanup with test_expect_success
-      t5704 (bundle): add tests for bundle --stdin
-      fix "bundle --stdin" segfault
-      test-lib: Let tests specify commands to be run at end of test
-      commit --amend: cope with missing display name
-      Documentation/shortlog: scripted users should not rely on implicit HEAD
-      t4201 (shortlog): guard setup with test_expect_success
-      t4201 (shortlog): Test output format with multiple authors
-      shortlog: Document and test --format option
-      test-lib: some shells do not let $? propagate into an eval
-      cherry-pick: do not dump core when iconv fails
-      Documentation/notes: document format of notes trees
-      Documentation/notes: describe content of notes blobs
-      Documentation/notes: add configuration section
-      Documentation/notes: simplify treatment of default notes ref
-      Documentation/log: add a CONFIGURATION section
-      Documentation/notes: simplify treatment of default display refs
-      Documentation/notes: clean up description of rewriting configuration
-      Documentation/notes: nitpicks
-      post-receive-email: document command-line mode
-      Documentation/checkout: clarify description
-      gitignore.5: Clarify matching rules
-      rebase -i -p: document shortcomings
-      Documentation/checkout: clarify description
-      add-interactive: Clarify “remaining hunks in the file”
-
-Junio C Hamano (10):
-      am -3: recover the diagnostic messages for corrupt patches
-      clone: quell the progress report from init and report on clone
-      t9129: fix UTF-8 locale detection
-      common_prefix: simplify and fix scanning for prefixes
-      Prepare draft release notes to 1.7.1.1
-      Update draft release notes to 1.7.1.1
-      tests: remove unnecessary '^' from 'expr' regular expression
-      Update draft release notes to 1.7.1.1
-      Update draft release notes to 1.7.1.1
-      Git 1.7.1.1
-
-Leif Arne Storset (1):
-      Documentation/config.txt: GIT_NOTES_REWRITE_REF overrides notes.rewriteRef
-
-Marcus Comstedt (1):
-      Add "Z" as an alias for the timezone "UTC"
-
-Markus Heidelberg (4):
-      t7508: add test for "git status" refreshing the index
-      git status: refresh the index if possible
-      t7508: add a test for "git status" in a read-only repository
-      Documentation: rebase -i ignores options passed to "git am"
-
-Michael J Gruber (10):
-      index-pack: fix trivial typo in usage string
-      t7508: test advice.statusHints
-      wt-status: take advice.statusHints seriously
-      Documentation: fix minor inconsistency
-      Documentation/gitdiffcore: fix order in pickaxe description
-      Documentation/SubmittingPatches: clarify GMail section and SMTP
-      completion: --set-upstream option for git-branch
-      Makefile: reenable install with NO_CURL
-      Documentation/config: describe status.submodulesummary
-      Documentation: A...B shortcut for checkout and rebase
-
-Michal Sojka (1):
-      test-lib.sh: Add explicit license detail, with change from GPLv2 to GPLv2+.
-
-Nazri Ramliy (1):
-      Documentation/pretty-{formats,options}: better reference for "format:<string>"
-
-Nicolas Pitre (4):
-      Make xmalloc and xrealloc thread-safe
-      index-pack: smarter memory usage when resolving deltas
-      index-pack: rationalize unpack_entry_data()
-      index-pack: smarter memory usage when appending objects
-
-Pete Harlan (1):
-      clone: reword messages to match the end-user perception
-
-Peter Collingbourne (4):
-      Generalise the unlink_or_warn function
-      Implement the rmdir_or_warn function
-      Introduce remove_or_warn function
-      Remove a redundant errno test in a usage of remove_path
-
-Philippe Bruhat (1):
-      Git.pm: better error message
-
-Ping Yin (1):
-      Documentation/git-send-email: Add "Use gmail as the smtp server"
-
-Ramkumar Ramachandra (1):
-      SubmittingPatches: Add new section about what to base work on
-
-Ramsay Allan Jones (4):
-      Makefile: Fix 'clean' target to remove all gitweb build files
-      msvc: Fix some "expr evaluates to function" compiler warnings
-      msvc: Fix some compiler warnings
-      notes: Initialise variable to appease gcc
-
-René Scharfe (3):
-      git diff too slow for a file
-      remove ecb parameter from xdi_diff_outf()
-      Fix checkout of large files to network shares on Windows XP
-
-Scott Chacon (1):
-      Prompt for a username when an HTTP request 401s
-
-Shawn O. Pearce (16):
-      tag.c: Correct indentation
-      tag.h: Remove unused signature field
-      tag.c: Refactor parse_tag_buffer to be saner to program
-      tag.c: Parse tagger date (if present)
-      describe: Break annotated tag ties by tagger date
-      http.c: Remove bad free of static block
-      t5550-http-fetch: Use subshell for repository operations
-      http.c: Tiny refactoring of finish_http_pack_request
-      http.c: Drop useless != NULL test in finish_http_pack_request
-      http.c: Don't store destination name in request structures
-      http.c: Remove unnecessary strdup of sha1_to_hex result
-      Introduce close_pack_index to permit replacement
-      Extract verify_pack_index for reuse from verify_pack
-      Allow parse_pack_index on temporary files
-      http-fetch: Use index-pack rather than verify-pack to check packs
-      http-fetch: Use temporary files for pack-*.idx until verified
-
-Sverre Rabbelier (1):
-      Gitweb: ignore built file
-
-Tay Ray Chuan (18):
-      t5541-http-push: add test for URLs with trailing slash
-      http: make end_url_with_slash() public
-      remote-curl: ensure that URLs have a trailing slash
-      http.c::new_http_pack_request: do away with the temp variable filename
-      t7604-merge-custom-message: shift expected output creation
-      t7604-merge-custom-message: show that --log doesn't append to -m
-      merge: update comment
-      merge: rename variable
-      fmt-merge-msg: minor refactor of fmt_merge_msg()
-      fmt-merge-msg: refactor merge title formatting
-      fmt-merge-msg: add function to append shortlog only
-      merge: --log appends shortlog to message if specified
-      GIT-VERSION-GEN: restrict tags used
-      t7502-commit: fix spelling
-      show-branch: use DEFAULT_ABBREV instead of 7
-      t7502-commit: add tests for summary output
-      t7502-commit: add summary output tests for empty and merge commits
-      commit::print_summary(): don't use format_commit_message()
-
-Thomas Rast (2):
-      t/README: document --root option
-      send-email: ask about and declare 8bit mails
-
-Tim Henigan (1):
-      Documentation/SubmittingPatches: Fix typo in GMail section
-
-Tor Arntsen (1):
-      Change C99 comments to old-style C comments
-
-Will Palmer (1):
-      pretty: Respect --abbrev option
-
-Zhang Le (1):
-      git-mailinfo documentation: clarify -u/--encoding
-
-bert Dvornik (1):
-      start_command: close cmd->err descriptor when fork/spawn fails
-
-Ævar Arnfjörð Bjarmason (3):
-      Move t6000lib.sh to lib-*
-      Turn setup code in t2007-checkout-symlink.sh into a test
-      notes: Initialize variable to appease Sun Studio
-
+On Tue, Jun 29 2010 at  7:03pm -0400,
+James Bottomley <James.Bottomley@suse.de> wrote:
+
+> On Tue, 2010-06-29 at 18:28 -0400, Mikulas Patocka wrote:
+> > 
+> > On Sun, 27 Jun 2010, James Bottomley wrote:
+> > 
+> > > linux-scsi cc added, since it's a SCSI patch.
+> > > 
+> > > On Sat, 2010-06-26 at 15:56 -0400, Mike Snitzer wrote:
+> > > > Fix leaks introduced via "block: don't allocate a payload for discard
+> > > > request" commit a1d949f5f44.
+> > > > 
+> > > > sd_done() is not called for REQ_TYPE_BLOCK_PC commands so cleanup
+> > > > discard request's payload directly in scsi_finish_command().
+> > > > 
+> > > > Also cleanup page allocated for discard payload in
+> > > > scsi_setup_discard_cmnd's scsi_setup_blk_pc_cmnd error path.
+> > > > 
+> > > > Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+> > > > ---
+> > > >  block/blk-core.c       |   23 +++++++++++++++++++++++
+> > > >  drivers/scsi/scsi.c    |    8 ++++++++
+> > > >  drivers/scsi/sd.c      |   18 ++++++++----------
+> > > >  include/linux/blkdev.h |    1 +
+> > > >  4 files changed, 40 insertions(+), 10 deletions(-)
+> > > > 
+> > > > diff --git a/block/blk-core.c b/block/blk-core.c
+> > > > index 98b4cee..07925aa 100644
+> > > > --- a/block/blk-core.c
+> > > > +++ b/block/blk-core.c
+> > > > @@ -1167,6 +1167,29 @@ void blk_add_request_payload(struct request *rq, struct page *page,
+> > > >  }
+> > > >  EXPORT_SYMBOL_GPL(blk_add_request_payload);
+> > > >  
+> > > > +/**
+> > > > + * blk_clear_request_payload - clear a request's payload
+> > > > + * @rq: request to update
+> > > > + *
+> > > > + * The driver needs to take care of freeing the payload itself.
+> > > > + */
+> > > > +void blk_clear_request_payload(struct request *rq)
+> > > > +{
+> > > > +	struct bio *bio = rq->bio;
+> > > > +
+> > > > +	rq->__data_len = rq->resid_len = 0;
+> > > > +	rq->nr_phys_segments = 0;
+> > > > +	rq->buffer = NULL;
+> > > > +
+> > > > +	bio->bi_size = 0;
+> > > > +	bio->bi_vcnt = 0;
+> > > > +	bio->bi_phys_segments = 0;
+> > > > +
+> > > > +	bio->bi_io_vec->bv_page = NULL;
+> > > > +	bio->bi_io_vec->bv_len = 0;
+> > > > +}
+> > > > +EXPORT_SYMBOL_GPL(blk_clear_request_payload);
+> > > > +
+> > > >  void init_request_from_bio(struct request *req, struct bio *bio)
+> > > >  {
+> > > >  	req->cpu = bio->bi_comp_cpu;
+> > > > diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> > > > index ad0ed21..69c7ea4 100644
+> > > > --- a/drivers/scsi/scsi.c
+> > > > +++ b/drivers/scsi/scsi.c
+> > > > @@ -851,6 +851,14 @@ void scsi_finish_command(struct scsi_cmnd *cmd)
+> > > >  		 */
+> > > >  		if (good_bytes == old_good_bytes)
+> > > >  			good_bytes -= scsi_get_resid(cmd);
+> > > > +	} else if (cmd->request->cmd_flags & REQ_DISCARD) {
+> > > > +		/*
+> > > > +		 * If this is a discard request that originated from the kernel
+> > > > +		 * we need to free our payload here.  Note that we need to check
+> > > > +		 * the request flag as the normal payload rules apply for
+> > > > +		 * pass-through UNMAP / WRITE SAME requests.
+> > > > +		 */
+> > > > +		__free_page(bio_page(cmd->request->bio));
+> > > 
+> > > This is another layering violation:  the page is allocated in the Upper
+> > > layer and freed in the mid-layer.
+> > > 
+> > > I really hate these growing contortions for discard.  They're a clear
+> > > signal that we haven't implemented it right.
+> > > 
+> > > So let's first work out how it should be done.  I really like Tomo's
+> > > idea of doing discard through the normal REQ_TYPE_FS route, which means
+> > > we can control the setup in prep and the tear down in done, all confined
+> > > to the ULD.
+> > > 
+> > > Where I think I'm at is partially what Christoph says:  The command
+> > > transformation belongs in the ULD so that's where the allocation and
+> > > deallocation should be, and partly what Tomo says in that we should
+> > > eliminate the special case paths.
+> > > 
+> > > The payload vs actual request size should be a red herring if we've got
+> > > everything correct:  only the ULD cares about the request parameters.
+> > > Once we've got everything set up, the mid layer and LLD should only care
+> > > about the parameters in the command, so we can confine the size changing
+> > > part to the ULD doing the discard.
+> > > 
+> > > Could someone take a stab at this and see if it works without layering
+> > > violations or any other problematic signals?
+> > > 
+> > > Thanks,
+> > > 
+> > > James
+> > 
+> > Well, I think that you overestimate the importance of scsi code too much.
+> 
+> Not, I think, a deadly sin for a SCSI maintainer.
+
+Indeed ;)
+
+> > There is a layering violation in the code. So what --- you either fix the 
+> > layering violation or let it be there and grind your teeth on it. But in 
+> > either case, that layering violation won't affect anyone except scsi 
+> > developers.
+> 
+> A layering violation is a signal of bad design wherever it occurs, so
+> that wasn't a SCSI centric argument.
+> 
+> > On the other hand, if you say "because we want to avoid layering violation 
+> > in SCSI, every issuer of discard request must supply an empty page", you 
+> > create havoc all over the Linux codebase. md, dm, drbd, xvd, virtio --- 
+> > whatever you think of, will be allocating a dummy page when constructing 
+> > a discard request.
+> 
+> Since I didn't actually say any of that, I suggest you re-read text you
+> quoted above.  The phrase "The command transformation belongs in the ULD
+> so that's where the allocation and deallocation should be" might be a
+> relevant one to concentrate on.
+
+Right, freeing the page, that was allocated in SCSI's ULD, from the SCSI
+midlayer is a SCSI layering violation.  I think Mikulas was reacting to
+the desire to maintain the existing, arguably more problematic, layering
+violation that spans the block and SCSI layers.
+
+> > If the layering violation spans only scsi code, it can be eventually 
+> > fixed, but this, much worse "layering violation" that will be spanning all 
+> > block device midlayers, won't ever be fixed.
+> > 
+> > Imagine for example --- a discard request arrivers at a dm-snapshot 
+> > device. The driver splits it into chunks, remaps each chunk to the 
+> > physical chunk, submits the requests, the elevator merges adjacent 
+> > requests and submits fewer bigger requests to the device. Now, if you had 
+> > to allocate a zeroed page each time you are splitting the request, that 
+> > would exhaust memory and burn cpu needlessly. You delete a 100MB file? --- 
+> > fine, allocate a 100MB of zeroed pages.
+> 
+> This is a straw man:  You've tried to portray a position I've never
+> taken as mine then attack it ... with what is effectively another bogus
+> argument.
+> 
+> It's not an either/or choice.  I've asked the relevant parties to
+> combine the approaches and see if a REQ_TYPE_FS path that does the
+> allocations in the appropriate place, likely the ULD, produces a good
+> design.
+
+If in the end we can fix up SCSI properly then everyone is happy.  So
+lets just keep working toward that.  The various attempts to convert
+discard over to REQ_TYPE_FS have fallen short.  Hopefully we'll have a
+break through shortly.
+
+Thanks for your guidance James,
+Mike
