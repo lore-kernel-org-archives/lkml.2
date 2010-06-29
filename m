@@ -1,69 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab0F2XX0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 19:23:26 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44447 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab0F2XXY (ORCPT
+	id S1754971Ab0F2X3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 19:29:09 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58293 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab0F2X3F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 19:23:24 -0400
+	Tue, 29 Jun 2010 19:29:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=YHjhzAIwG01ZGOPYzCTlsYImcOC8NyyupPbUqcpcyckxmJNoDIPBldCgT84Ed1sLNv
-         rJ3CjDtl6odG+xnRTZqa04HG0HVskJYbOuP1SNMVZOSHrrvv7L1DB7bWc/xuIyzb1pXo
-         Skk0qC0CrTr3dkRTuSh3J4nneCDUBrzGxOd1I=
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=TkFKezOjGGY4VUyB6iXc2GHrglw2IWWelbK5BjVZ7vchu3f+A31XKJAHHhEIY2h5RC
+         eNqQ62vgRmUJX0xPAzSFMIzsYXK0/mfU+F4/pcnkcXX/nPKUUPL7a0258mCWTgG/Km79
+         1lwPrsv08lGhmzZaycnvKZf419DCpa9zoDMkM=
 MIME-Version: 1.0
-In-Reply-To: <4C2A3E27.4060407@suse.cz>
-References: <1277673679-21458-1-git-send-email-jslaby@suse.cz>
-	<4C27E965.80508@gmail.com>
-	<4C283D84.6080504@suse.cz>
-	<20100628171410.GA27367@srcf.ucam.org>
-	<4C290245.2040001@suse.cz>
-	<20100628204820.GA32503@srcf.ucam.org>
-	<AANLkTil-sdbojCXBp6sR_4xL3JIe6ZENqXuueB61VJ8c@mail.gmail.com>
-	<4C2A3E27.4060407@suse.cz>
-Date: Tue, 29 Jun 2010 17:23:19 -0600
-Message-ID: <AANLkTimkElR1u-iRyFfCEQR5VTZvcyEIGQodfmFNtbC_@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ACPI: pci_irq, add PRT_ quirk for IBM Bartolo
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, lenb@kernel.org,
-       linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Tue, 29 Jun 2010 19:29:01 -0400
+Message-ID: <AANLkTim1m-HIRMHVIkJLSZitXCh1ZwKh2eAN3UxUxJ1E@mail.gmail.com>
+Subject: [PATCH] virt-what.in: Added VMware virt detection using cpuid in 
+	wrapper script
+From: Chetan Loke <chetanloke@gmail.com>
+To: Anthony Liguori <anthony@codemonkey.ws>, rjones@trick.home.annexia.org,
+       rjones@redhat.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+       Tzy-Jye Daniel Lin <ephemient@gmail.com>, chetanloke@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 12:40 PM, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 06/28/2010 11:37 PM, Robert Hancock wrote:
->> On Mon, Jun 28, 2010 at 2:48 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->>> I can guarantee to you that a generic Windows install does not have a
->>> quirk for an IBM PoS system released years after that CD was pressed.
->
-> The system in question is very old, any current Windows release is newer
-> than that.
->
->>> The relevance is that if Windows works without a quirk, then somewhere
->>> our behaviour diverges from that of Windows and it's likely that other
->>> machines are also hit by the same issue. Users of those systems may not
->>> have a support contract with a commercial Linux vendor and may just
->>> decide to use Windows instead, so there's an incentive for us to
->>> determine if that's the case and fix Linux's behaviour to match Windows
->>> rather than to just quirk over it.
->>
->> Exactly, this seems like a pretty obvious failure, so either IBM's
->> testing on this machine under Windows was hopelessly inadequate and it
->> is broken there too, or else Windows is doing something different and
->> maybe we should be doing the same thing..
->
-> The answer I got is "it works there with a driver" whatever it means
-> (I'm no expert on windows drivers and have no idea what they can do and
-> what quirks can be implemented that way).
+Brief discussion thread - http://lkml.org/lkml/2010/6/29/355
 
-What kind of slot is it, and what kind of device was being used,
-something designed for this machine or just some random card? Can they
-tell what IRQ the device is reportedly using in Windows and if it
-matches what Linux reports?
+Added VMware detection via cpuid.Mimic'd VMware's balloon driver's init-time
+check(cpuid followed by dmi-checks). Moved the existing logic into a simple
+function to achieve that.
+
+Tested virt-what.in(ran as a script) and virt-what-cpuid-helper within
+a Linux guest on ESX. Thanks.
+
+Signed-off-by: Chetan Loke <loke.c@alumni.neu.edu>
+
+---
+
+virt-what.in | 150 ++++++++++++++++++++++++++++++++++++-----------------------
+1 file changed, 93 insertions(+), 57 deletions(-)
+
+
+
+--- virt-what.in.orig   2010-06-29 18:42:20.166647585 -0400
++++ virt-what.in        2010-06-29 18:59:54.765647739 -0400
+@@ -25,9 +25,19 @@
+ #
+ # The following resources were useful in writing this script:
+ # . http://www.dmo.ca/blog/20080530151107
++#
++#
++# Added VMware detection using cpuid.
++# Added functions to check the environment type
++# 06/29/2010 - Chetan Loke <loke.c@alumni.neu.edu>
++#
++
+
+ VERSION="@VERSION@"
+
++cpuid=
++is_xen=1
++
+ function fail {
+    echo "virt-what: $1"
+    exit 1
+@@ -38,7 +48,8 @@
+    echo "Options:"
+    echo "  --help          Display this help"
+    echo "  --version       Display version and exit"
+-    exit 0
++    # exit after printing
++    exit 1
+ }
+
+ # Handle the command line arguments, if any.
+@@ -70,74 +81,99 @@
+ exec_prefix=@exec_prefix@
+ PATH=@libexecdir@:/sbin:/usr/sbin:$PATH
+
+-# Check for various products in the BIOS information.
++detect_virt_env_using_misc_info() {
+
+-dmi=`dmidecode 2>&1`
++       # Check for various products in the BIOS information.
+
+-if echo "$dmi" | grep -q 'Manufacturer: VMware'; then
+-    echo vmware
+-fi
++       dmi=`dmidecode 2>&1`
+
+-if echo "$dmi" | grep -q 'Manufacturer: Microsoft Corporation'; then
+-    echo virtualpc
+-fi
++       if echo "$dmi" | grep -q 'Manufacturer: VMware'; then
++               echo vmware
++               exit 0
++       fi
+
+-# Check for VirtualBox.
+-# Added by Laurent Léonard.
+-if echo "$dmi" | grep -q 'Manufacturer: innotek GmbH'; then
+-    echo virtualbox
+-fi
++       if echo "$dmi" | grep -q 'Manufacturer: Microsoft Corporation'; then
++               echo virtualpc
++               exit 0
++       fi
+
+-# Check for OpenVZ / Virtuozzo.
+-# Added by Evgeniy Sokolov.
+-# /proc/vz - always exists if OpenVZ kernel is running (inside and outside
+-# container)
+-# /proc/bc - exists on node, but not inside container.
++       # Check for VirtualBox.
++       # Added by Laurent Léonard.
++       if echo "$dmi" | grep -q 'Manufacturer: innotek GmbH'; then
++               echo virtualbox
++               exit 0
++       fi
+
+-if [ -d /proc/vz -a ! -d /proc/bc ]; then
+-    echo openvz
+-fi
++       # Check for OpenVZ / Virtuozzo.
++       # Added by Evgeniy Sokolov.
++       # /proc/vz - always exists if OpenVZ kernel is running (inside
+and outside
++       # container)
++       # /proc/bc - exists on node, but not inside container.
++
++       if [ -d /proc/vz -a ! -d /proc/bc ]; then
++               echo openvz
++               exit 0
++       fi
+
+-# Check for UML.
+-# Added by Laurent Léonard.
+-if grep -q 'UML' /proc/cpuinfo; then
+-       echo uml
+-fi
++       # Check for UML.
++       # Added by Laurent Léonard.
++       if grep -q 'UML' /proc/cpuinfo; then
++               echo uml
++               exit 0
++       fi
++
++       exit 1
++}
+
+ # To tell if it is Xen and KVM HVM (fully virtualized) we can use this
+ # helper C program.
+
+-cpuid=`virt-what-cpuid-helper`
+-
+-# Check for Xen.
++detect_virt_env_using_cpuid () {
++       cpuid=`virt-what-cpuid-helper`
++
++       # Check for Xen.
++
++       if [ "$cpuid" = "XenVMMXenVMM" ]; then
++               echo xen; echo xen-hvm
++               exit 0
++       elif [ -f /proc/xen/privcmd ]; then
++               echo xen; echo xen-dom0
++               exit 0
++       elif [ -f /proc/xen/capabilities ]; then
++               echo xen; echo xen-domU
++               exit 0
++       elif [ -d /proc/xen ]; then
++               # This directory can be present when Xen paravirt drivers are
++               # installed, even on baremetal.  Don't confuse people by
++               # printing anything.
++               :
++       fi
+
+-if [ "$cpuid" = "XenVMMXenVMM" ]; then
+-    echo xen; echo xen-hvm
+-    is_xen=1
+-elif [ -f /proc/xen/privcmd ]; then
+-    echo xen; echo xen-dom0
+-    is_xen=1
+-elif [ -f /proc/xen/capabilities ]; then
+-    echo xen; echo xen-domU
+-    is_xen=1
+-elif [ -d /proc/xen ]; then
+-    # This directory can be present when Xen paravirt drivers are
+-    # installed, even on baremetal.  Don't confuse people by
+-    # printing anything.
+-    :
+-fi
++       # Check for QEMU/KVM.
+
+-# Check for QEMU/KVM.
++       if [ ! "$is_xen" ]; then
++               # Disable this test if we know this is Xen already, because Xen
++               # uses QEMU for its device model.
++
++       if grep -q 'QEMU' /proc/cpuinfo; then
++               if [ "$cpuid" = "KVMKVMKVM" ]; then
++                       echo kvm
++                       exit 0
++               else
++                       echo qemu
++                       exit 0
++               fi
++    fi
++       fi
+
+-if [ ! "$is_xen" ]; then
+-    # Disable this test if we know this is Xen already, because Xen
+-    # uses QEMU for its device model.
+-
+-    if grep -q 'QEMU' /proc/cpuinfo; then
+-       if [ "$cpuid" = "KVMKVMKVM" ]; then
+-           echo kvm
+-       else
+-           echo qemu
++       # Check for VMware
++       if [ "$cpuid" = "VMwareVMware" ]; then
++               echo vmware
++               exit 0
+       fi
+-    fi
+-fi
++}
++
++
++detect_virt_env_using_cpuid
++# If the above fails then call the next function
++detect_virt_env_using_misc_info
