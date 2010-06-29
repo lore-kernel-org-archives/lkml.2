@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab0F2BNd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 21:13:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38882 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751278Ab0F2BNc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 21:13:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100629005403.GC24343@mail.oracle.com>
-References: <20100628173529.GA10573@mail.oracle.com>
-	<20100629002421.GY6590@dastard>
-	<20100629005403.GC24343@mail.oracle.com>
-Date: Mon, 28 Jun 2010 18:12:35 -0700
-Message-ID: <AANLkTil1R9I94pVXLE50JAMPIwpiaZuroJAg4wcwyBUb@mail.gmail.com>
-Subject: Re: [PATCH] Revert "writeback: limit write_cache_pages integrity 
-	scanning to current EOF"
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
-       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751967Ab0F2BTG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 21:19:06 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42355 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab0F2BTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 21:19:03 -0400
+Content-Type: text/plain; charset=UTF-8
+Cc: Jason Baron <jbaron@redhat.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       linuxppc-dev <linuxppc-dev@ozlabs.org>, Ingo Molnar <mingo@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+Subject: Re: [PATCH 01/40] ftrace syscalls: don't add events for unmapped syscalls
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+In-reply-to: <1277305339.9181.33.camel@gandalf.stny.rr.com>
+References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com> <1277287401-28571-2-git-send-email-imunsie@au1.ibm.com> <1277305339.9181.33.camel@gandalf.stny.rr.com>
+Date: Tue, 29 Jun 2010 11:18:38 +1000
+Message-Id: <1277773447-sup-8783@au1.ibm.com>
+User-Agent: Sup/0.11
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 5:54 PM, Joel Becker <Joel.Becker@oracle.com> wrote:
-> On Tue, Jun 29, 2010 at 10:24:21AM +1000, Dave Chinner wrote:
->>
->> Looking at ocfs2_writepage(), it simply calls
->> block_write_full_page(), which does:
->>
->>       /* Is the page fully outside i_size? (truncate in progress) */
->>       offset = i_size & (PAGE_CACHE_SIZE-1);
->>       if (page->index >= end_index+1 || !offset) {
->>               /*
->>                * The page may have dirty, unmapped buffers.  For example,
->>                * they may have been added in ext3_writepage().  Make them
->>                * freeable here, so the page does not leak.
->>                */
->>               do_invalidatepage(page, 0);
->>               unlock_page(page);
->>               return 0; /* don't care */
->>       }
->>
->> i.e. pages beyond EOF get invalidated.  If it somehow gets through
->> that check, __block_write_full_page() will avoid writing dirty
->> bufferheads beyond EOF because the write is "racing with truncate".
->
->        Your contention is that we've never gotten those tail blocks to
-> disk.  Instead, our code either handles the future extensions of i_size
-> or we've just gotten lucky with our testing.  Our current BUG trigger is
-> because we have a new check that catches this case.  Does that summarize
-> your position correctly?
+Excerpts from Steven Rostedt's message of Thu Jun 24 01:02:19 +1000 2010:
+> > diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> > index 34e3580..82246ce 100644
+> > --- a/kernel/trace/trace_syscalls.c
+> > +++ b/kernel/trace/trace_syscalls.c
+> > @@ -431,6 +431,14 @@ void unreg_event_syscall_exit(struct ftrace_event_call *call)
+> >  int init_syscall_trace(struct ftrace_event_call *call)
+> >  {
+> >      int id;
+> > +    int num;
+> > +
+> > +    num = ((struct syscall_metadata *)call->data)->syscall_nr;
+> > +    if (num < 0 || num >= NR_syscalls) {
+> > +        pr_debug("syscall %s metadata not mapped, disabling ftrace event\n",
+> > +                ((struct syscall_metadata *)call->data)->name);
+> > +        return -ENOSYS;
+> > +    }
+> 
+> Perhaps this should be:
+> 
+>     if (WARN_ON_ONCE(num < 0 || num >= NR_syscalls)
+>         return -ENOSYS;
+> 
+> -- Steve
 
-Maybe Dave has some more exhaustive answer, but his point that
-block_write_full_page() already just drops the page does seem to be
-very valid.  Which makes me suspect that it would be better to remove
-the ocfs2 BUG_ON() as a stop-gap measure, rather than reverting the
-commit. It seems to be true that the "don't bother flushing past EOF"
-commit really just uncovered an older bug.
 
-So maybe ocfs2 should just replace the bug-on with invalidating the
-page (perhaps with a WARN_ONCE() to make sure the problem doesn't get
-forgotten about?)
+Hi Steven,
 
-                 Linus
+I don't think this should produce a warning - it signifies that a
+syscall defined in the code has not successfully matched a syscall at
+boot.
+
+That may signify the matching failed, but it may just as likely signify
+that the syscall isn't used on that arch (for instance, if an arch uses
+an arch specific implementation in favour of a generic implementation,
+or doesn't implement a particular syscall at all that is defined in the
+generic code).
+
+The problem case is actually the other way around - when a syscall
+number from an arch's syscall table has not successfully mapped to some
+syscall meta-data. Patch #37 prints out those cases with KERN_DEBUG so
+booting a kernel with loglevel=8 can track them down.
+
+This pr_debug may still be useful, for example to help locate unused
+syscalls which can be removed if no arch uses them.
+
+Cheers,
+-Ian
