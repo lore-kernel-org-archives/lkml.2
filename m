@@ -1,118 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab0F2AZB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 20:25:01 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:52074 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751446Ab0F2AZA (ORCPT
+	id S1751967Ab0F2A1l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 20:27:41 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49375 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446Ab0F2A1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 20:25:00 -0400
-Date: Tue, 29 Jun 2010 10:24:21 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
-       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [PATCH] Revert "writeback: limit write_cache_pages integrity
- scanning to current EOF"
-Message-ID: <20100629002421.GY6590@dastard>
-References: <20100628173529.GA10573@mail.oracle.com>
+	Mon, 28 Jun 2010 20:27:40 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C293E09.6010402@jp.fujitsu.com>
+Date: Tue, 29 Jun 2010 09:27:53 +0900
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100628173529.GA10573@mail.oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: rostedt@goodmis.org
+CC: linux-kernel@vger.kernel.org, kaneshige.kenji@jp.fujitsu.com,
+       izumi.taku@jp.fujitsu.com
+Subject: Re: [RFC PATCH v2 3/5] netdev: add tracepoints to netdev layer
+References: <4C2312A8.9060903@jp.fujitsu.com>	 <4C23FF3E.1080503@jp.fujitsu.com> <1277748598.9181.71.camel@gandalf.stny.rr.com>
+In-Reply-To: <1277748598.9181.71.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 10:35:29AM -0700, Joel Becker wrote:
-> This reverts commit d87815cb2090e07b0b0b2d73dc9740706e92c80c.
-
-Hi Joel,
-
-I have no problems with it being reverted - it's a really just a
-WAR for the simplest case of the sync hold holdoff.
-
-However, I had no idea that any filesystem relied on being able to
-write pages beyond EOF, and I'd like to understand the implications
-of it on the higher level code and, more importantly, understand how
-the writes are getting to disk through multiple layers of
-page-beyond-i_size checks in the writeback code....
-
-> This patch causes any filesystem with an allocation unit larger than the
-> filesystem blocksize will leak unzeroed data. During a file extend, the
-> entire allocation unit is zeroed.
-
-XFS has this same underlying issue - it can have uninitialised,
-allocated blocks past EOF that have to be zeroed when extending the
-file.
-
-> However, this patch prevents the tail
-> blocks of the allocation unit from being written back to disk.  When the
-> file is next extended, i_size will now cover these unzeroed blocks,
-> leaking the old contents of the disk to userspace and creating a corrupt
-> file.
-
-XFS doesn't zero blocks at allocation. Instead, XFS zeros the range
-between the old EOF and the new EOF on each extending write. Hence
-these pages get written because they fall inside the new i_size that
-is set during the write.  The i_size on disk doesn't get changed
-until after the data writes have completed, so even on a crash we
-don't expose uninitialised blocks.
-
-> This affects ocfs2 directly.  As Tao Ma mentioned in his reporting
-> email:
+(2010/06/29 3:09), Steven Rostedt wrote:
+> On Fri, 2010-06-25 at 09:58 +0900, Koki Sanagi wrote:
+>> This patch adds tracepoint to dev_queue_xmit, dev_hard_start_xmit and
+>> netif_receive_skb. These tracepints help you to monitor network driver's
+>> input/output.
+>>
+>>             sshd-4445  [001] 241367.066046: net_dev_queue: dev=eth3 skbaddr=dd6b2538 len=114
+>>             sshd-4445  [001] 241367.066047: net_dev_xmit: dev=eth3 skbaddr=dd6b2538 len=114 rc=0
+>>           <idle>-0     [001] 241367.067472: net_dev_receive: dev=eth3 skbaddr=f5e59000 len=52
+>>
+>> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+>> ---
+>>  include/trace/events/net.h |   83 ++++++++++++++++++++++++++++++++++++++++++++
+>>  net/core/dev.c             |    5 +++
+>>  net/core/net-traces.c      |    1 +
+>>  3 files changed, 89 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/trace/events/net.h b/include/trace/events/net.h
+>> new file mode 100644
+>> index 0000000..ee10970
+>> --- /dev/null
+>> +++ b/include/trace/events/net.h
+>> @@ -0,0 +1,83 @@
+>> +#undef TRACE_SYSTEM
+>> +#define TRACE_SYSTEM net
+>> +
+>> +#if !defined(_TRACE_NET_H) || defined(TRACE_HEADER_MULTI_READ)
+>> +#define _TRACE_NET_H
+>> +
+>> +#include <linux/skbuff.h>
+>> +#include <linux/netdevice.h>
+>> +#include <linux/ip.h>
+>> +#include <linux/tracepoint.h>
+>> +
+>> +TRACE_EVENT(net_dev_xmit,
+>> +
+>> +	TP_PROTO(struct sk_buff *skb,
+>> +		 int rc),
+>> +
+>> +	TP_ARGS(skb, rc),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(	void *,		skbaddr		)
+>> +		__field(	unsigned int,	len		)
+>> +		__field(	int,		rc		)
+>> +		__string(	name,		skb->dev->name	)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->skbaddr = skb;
+>> +		__entry->len = skb->len;
+>> +		__entry->rc = rc;
+>> +		__assign_str(name, skb->dev->name);
+>> +	),
+>> +
+>> +	TP_printk("dev=%s skbaddr=%p len=%u rc=%d",
+>> +		__get_str(name), __entry->skbaddr, __entry->len, __entry->rc)
+>> +);
+>> +
+>> +TRACE_EVENT(net_dev_queue,
+>> +
+>> +	TP_PROTO(struct sk_buff *skb),
+>> +
+>> +	TP_ARGS(skb),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(	void *,		skbaddr		)
+>> +		__field(	unsigned int,	len		)
+>> +		__string(	name,		skb->dev->name	)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->skbaddr = skb;
+>> +		__entry->len = skb->len;
+>> +		__assign_str(name, skb->dev->name);
+>> +	),
+>> +
+>> +	TP_printk("dev=%s skbaddr=%p len=%u",
+>> +		__get_str(name), __entry->skbaddr, __entry->len)
+>> +);
+>> +
+>> +TRACE_EVENT(net_dev_receive,
 > 
-> 1. all the place we use filemap_fdatawrite in ocfs2 doesn't flush pages
-> after i_size now.
-> 2. sync, fsync, fdatasync and umount don't flush pages after i_size(they
-> are called from writeback_single_inode).
+> This and net_dev_queue are identical. Please use DECLARE_EVENT_CLASS()
+> and DEFINE_EVENT() to create these, otherwise it bloats the kernel.
+> 
+> -- Steve
 
-I'm not sure this was ever supposed to work - my understanding is
-that we should never do anything with pages beyong i_size as pages
-beyond EOF as being beyond i_size implies we are racing with a
-truncate and the page is no longer valid. In that case, we should
-definitely not write it back to disk.
+OK, I'll do that.
 
-Looking at ocfs2_writepage(), it simply calls
-block_write_full_page(), which does:
+Thanks,
+Koki Sanagi.
+> 
+>> +
+>> +	TP_PROTO(struct sk_buff *skb),
+>> +
+>> +	TP_ARGS(skb),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(	void *,		skbaddr		)
+>> +		__field(	unsigned int,	len		)
+>> +		__string(	name,		skb->dev->name	)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->skbaddr = skb;
+>> +		__entry->len = skb->len;
+>> +		__assign_str(name, skb->dev->name);
+>> +	),
+>> +
+>> +	TP_printk("dev=%s skbaddr=%p len=%u",
+>> +		__get_str(name), __entry->skbaddr, __entry->len)
+>> +);
+>> +#endif /* _TRACE_NET_H */
+>> +
+> 
+> 
+> 
+> 
 
-	/* Is the page fully outside i_size? (truncate in progress) */
-	offset = i_size & (PAGE_CACHE_SIZE-1);
-	if (page->index >= end_index+1 || !offset) {
-		/*
-		 * The page may have dirty, unmapped buffers.  For example,
-		 * they may have been added in ext3_writepage().  Make them
-		 * freeable here, so the page does not leak.
-		 */
-		do_invalidatepage(page, 0);
-		unlock_page(page);
-		return 0; /* don't care */
-	}
 
-i.e. pages beyond EOF get invalidated.  If it somehow gets through
-that check, __block_write_full_page() will avoid writing dirty
-bufferheads beyond EOF because the write is "racing with truncate".
-
-Hence there are multiple layers of protection against writing past
-i_size, so I'm wondering how these pages are even getting to disk in
-the first place....
-
-> 3. reflink have a BUG_ON triggered because we have some dirty pages
-> while during CoW. http://oss.oracle.com/bugzilla/show_bug.cgi?id=1265
-
-I'd suggest that the reason you see the BUG_ON() with this patch is
-that the pages beyond EOF are not being invalidated because they are
-not being passed to ->writepage and hence are remaining dirty in the
-cache.  IOWs, I suspect that this commit has uncovered a bug in
-ocfs2, not that it has caused a regression.
-
-Your thoughts, Joel?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
