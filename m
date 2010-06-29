@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab0F2SFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 14:05:33 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:44342 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab0F2SFb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 14:05:31 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH -v19 00/25] Use lmb with x86
-Date: Tue, 29 Jun 2010 12:06:12 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-References: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
+	id S1754894Ab0F2SFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 14:05:42 -0400
+Received: from www.tglx.de ([62.245.132.106]:45800 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754557Ab0F2SFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 14:05:40 -0400
+Date: Tue, 29 Jun 2010 20:03:54 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Darren Hart <dvhltc@us.ibm.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       Peter Zijlstra <peterz@infradead.org>, Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH] futex: futex_find_get_task make credentials check
+ conditional
+In-Reply-To: <4C2A2627.3080408@us.ibm.com>
+Message-ID: <alpine.LFD.2.00.1006291950420.2480@localhost.localdomain>
+References: <20100623091307.GA11072@tiehlicka.suse.cz> <4C2417AA.4030306@us.ibm.com> <20100625082711.GA32765@tiehlicka.suse.cz> <4C24ED34.9040808@us.ibm.com> <4C253D32.6040304@us.ibm.com> <20100628144246.GA14201@tiehlicka.suse.cz> <20100628153214.GA24127@tiehlicka.suse.cz>
+ <20100628155845.GC24127@tiehlicka.suse.cz> <20100628163952.GD24127@tiehlicka.suse.cz> <1277743748.3561.139.camel@laptop> <20100629084230.GE6215@tiehlicka.suse.cz> <AANLkTinyoyZVg8iYOuUx6aA4XlUlLywl4q6GLXmeYP-x@mail.gmail.com> <4C2A2627.3080408@us.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006291206.13332.bjorn.helgaas@hp.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 22, 2010 11:26:29 am Yinghai Lu wrote:
-> New lmb could be used to replace early_res in x86.
+On Tue, 29 Jun 2010, Darren Hart wrote:
+> On 06/29/2010 09:41 AM, Linus Torvalds wrote:
+> > 
+> > The other thing I'd like to see is to move the whole cred checking up
+> > a level. There's no reason to check the credentials in
+> > futex_find_get_task() that I can see - why not do it in the caller
+> > instead? IOW, I think futex_find_get_task() should just look something
+> > like this instead:
+> 
+> 
+> /me beats head on desk, duh. Still, I'm hoping this isn't necessary and we can
+> lose the credentials checking entirely.
 
-Since you're fiddling in e820 anyway, can you fix places like
-e820_print_map() so they use the %pR format?  I think it'd be
-cleaner if e820_print_type() just returned a string pointer
-rather than calling printk directly.  Then we'd only need a
-single printk per region and wouldn't need the KERN_CONT junk.
+I did some archaeology in my mail and code archives.
+
+The only hint I found from the early days of the PI futex code is a
+mail which mutters something about pid reuse. The euid/uid check
+surfaced in the code archive right after that, but to be honest I fail
+to see how it should be related. I rather believe that the whole thing
+resulted out of being overly paranoid about the PI usage.
+
+Jakub, any idea why this check got there ?
+
+Today I cannot see a real reason to keep that check, it just adds a
+restriction for no benefit.
+
+Thanks,
+
+	tglx
