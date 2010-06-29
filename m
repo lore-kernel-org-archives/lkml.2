@@ -1,98 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab0F2Rd4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 13:33:56 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:39068 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756680Ab0F2Rdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 13:33:55 -0400
-Date: Tue, 29 Jun 2010 10:33:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>, john stultz <johnstul@us.ibm.com>,
-       Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+	id S932252Ab0F2RgB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 13:36:01 -0400
+Received: from mail.gmx.net ([213.165.64.20]:44720 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932232Ab0F2Rf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 13:35:59 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/mC4kWVrPm652MAEyJ8i/zkgSvj8W8iMTb2sDx96
+	dknkZfJLYHIyUR
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Haavard Skinnemoen <hskinnemoen@atmel.com>,
+       Claudio Scordino <claudio@evidence.eu.com>
+Subject: [PATCH] serial: fix rs485 for atmel_serial on avr32
+Date: Tue, 29 Jun 2010 19:35:39 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, Howard Chu <hyc@symas.com>,
+       Peter Ma <pma@mediamatech.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] sanitize task->comm to avoid leaking escape codes
-Message-ID: <20100629173349.GH2765@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100623181129.GM5876@outflux.net>
- <20100623194145.GA19628@redhat.com>
- <1277787505.3599.25.camel@localhost.localdomain>
- <20100629133131.GB5237@redhat.com>
- <20100629162334.GE2765@linux.vnet.ibm.com>
- <20100629171846.GA18440@redhat.com>
+       Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+       Alan Cox <alan@linux.intel.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       Sebastian Heutling <Sebastian.Heutling@who-ing.de>,
+       Bernhard Roth <br@pwrnet.de>, Ryan Mallon <ryan@bluewatersys.com>,
+       Michael Trimarchi <michael@evidence.eu.com>,
+       Rick Bronson <rick@efn.org>,
+       Sebastian Heutling <Sebastian.Heutling@who-ing.de>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       linux-kernel@vger.kernel.org, kernel@avr32linux.org,
+       linux-arm-kernel@lists.infradead.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100629171846.GA18440@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006291935.40229.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 07:18:46PM +0200, Oleg Nesterov wrote:
-> On 06/29, Paul E. McKenney wrote:
-> >
-> > On Tue, Jun 29, 2010 at 03:31:31PM +0200, Oleg Nesterov wrote:
-> >
-> > > So, afaics, set_task_comm()->wmb() buys nothing and should be removed.
-> > > The last zero char in task_struct->comm[] is always here, at least this
-> > > guarantees that strcpy(char *dest, tsk->comm) is always safe.
-> > >
-> > > (I cc'ed the expert, Paul can correct me)
-> >
-> > First, all of the implementations that I can see do task_lock(tsk), which
-> > should prevent readers from seeing any changes.  So I am guessing that
-> > you guys want to allow readers to get at ->comm without having to acquire
-> > this lock.
-> 
-> Ah, sorry for confusion.
-> 
-> No, we are not trying to invent the lockless get_task_comm(). I'd say
-> it is not needed, if we really care about the precise ->comm we can
-> take task->alloc_lock.
-> 
-> The only problem is that I believe that set_task_comm() wrongly pretends
-> wmb() can help the lockless reader, it does:
-> 
-> 	task_lock(tsk);
-> 
-> 	/*
-> 	 * Threads may access current->comm without holding
-> 	 * the task lock, so write the string carefully.
-> 	 * Readers without a lock may see incomplete new
-> 	 * names but are safe from non-terminating string reads.
-> 	 */
-> 	memset(tsk->comm, 0, TASK_COMM_LEN);
-> 	wmb();
-> 	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
-> 	task_unlock(tsk);
-> 
-> but afaics this wmb() buys absolutely nothing if we race with the
-> reader doing, say,
-> 
-> 	printk("my name is %s\n", current->comm);
-> 
-> Afaics, this wmb()
-> 
-> 	- can't prevent from printing the mixture of the old/new data
-> 
-> 	- is not needed to make strcpy(somewhere, task->comm) safe,
-> 	  the final char is always '0', we never change it.
-> 
-> 	- adds the unnecessary confusion
+From: Peter Huewe <peterhuewe@gmx.de>
 
-I agree -- I cannot see how this wmb() can help.
+This patch fixes a build failure [1-4] in the atmel_serial code introduced by
+patch the patch ARM: 6092/1: atmel_serial: support for RS485
+communications (e8faff7330a3501eafc9bfe5f4f15af444be29f5)
 
-> > [... snip a lot of good ideas ...]
-> 
-> Thanks a lot, Paul ;)
+The build failure was caused by missing struct field and missing defines
+for the avr32 board - the patch fixes this.
 
-Glad you liked them.  ;-)
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+Despite so many reviewers of the original patch no one seemed to 
+notice this issue :/
 
-							Thanx, Paul
+KernelVersion: linux-next-20100629
+
+References:
+[1] http://kisskb.ellerman.id.au/kisskb/buildresult/2575242/ - first failure
+in linux-next, may 11th
+[2] http://kisskb.ellerman.id.au/kisskb/buildresult/2816418/ - still
+exists as of today
+[3] http://kisskb.ellerman.id.au/kisskb/buildresult/2617511/ - first
+failure in Linus' tree - May 20th - did really no one notice this?!
+[4] http://kisskb.ellerman.id.au/kisskb/buildresult/2813956/ - still
+exists in Linus' tree as of today
+
+ arch/avr32/include/asm/ioctls.h             |    3 +++
+ arch/avr32/mach-at32ap/include/mach/board.h |    2 ++
+ drivers/serial/atmel_serial.c               |    1 +
+ 3 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/arch/avr32/include/asm/ioctls.h b/arch/avr32/include/asm/ioctls.h
+index bb32b6f..b7dd324 100644
+--- a/arch/avr32/include/asm/ioctls.h
++++ b/arch/avr32/include/asm/ioctls.h
+@@ -55,6 +55,9 @@
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
+ #define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
++#define TIOCGRS485      0x542E
++#define TIOCSRS485      0x542F
++
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
+ #define FIOASYNC	0x5452
+diff --git a/arch/avr32/mach-at32ap/include/mach/board.h b/arch/avr32/mach-at32ap/include/mach/board.h
+index c7f25bb..6174020 100644
+--- a/arch/avr32/mach-at32ap/include/mach/board.h
++++ b/arch/avr32/mach-at32ap/include/mach/board.h
+@@ -5,6 +5,7 @@
+ #define __ASM_ARCH_BOARD_H
+ 
+ #include <linux/types.h>
++#include <linux/serial.h>
+ 
+ #define GPIO_PIN_NONE	(-1)
+ 
+@@ -35,6 +36,7 @@ struct atmel_uart_data {
+ 	short		use_dma_tx;	/* use transmit DMA? */
+ 	short		use_dma_rx;	/* use receive DMA? */
+ 	void __iomem	*regs;		/* virtual base address, if any */
++	struct serial_rs485	rs485;		/* rs485 settings */
+ };
+ void at32_map_usart(unsigned int hw_id, unsigned int line, int flags);
+ struct platform_device *at32_add_device_usart(unsigned int id);
+diff --git a/drivers/serial/atmel_serial.c b/drivers/serial/atmel_serial.c
+index eed3c2d..a182def 100644
+--- a/drivers/serial/atmel_serial.c
++++ b/drivers/serial/atmel_serial.c
+@@ -41,6 +41,7 @@
+ #include <linux/uaccess.h>
+ 
+ #include <asm/io.h>
++#include <asm/ioctls.h>
+ 
+ #include <asm/mach/serial_at91.h>
+ #include <mach/board.h>
+-- 
+1.7.1
+
