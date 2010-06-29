@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab0F2HkE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 03:40:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21014 "EHLO mga09.intel.com"
+	id S1754044Ab0F2Hkq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 03:40:46 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56297 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753919Ab0F2Hj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 03:39:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,503,1272870000"; 
-   d="scan'208";a="531269807"
-Subject: Re: [PATCH 00/28] mm: preemptibility -v3
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>,
-       "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1277373331.1875.940.camel@laptop>
-References: <20100607110654.606530953@chello.nl>
-	 <1276134311.2096.438.camel@ymzhang.sh.intel.com>
-	 <1276152750.2046.2485.camel@twins>
-	 <1276153198.2096.465.camel@ymzhang.sh.intel.com>
-	 <1277115718.1875.490.camel@laptop>  <1277373331.1875.940.camel@laptop>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 29 Jun 2010 15:40:19 +0800
-Message-Id: <1277797219.2096.884.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+	id S1753480Ab0F2Hkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 03:40:45 -0400
+Message-ID: <4C29A33D.2060407@kernel.org>
+Date: Tue, 29 Jun 2010 09:39:41 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       oleg@redhat.com, axboe@kernel.dk, dwalker@codeaurora.org,
+       stefanr@s5r6.in-berlin.de, florian@mickler.org, andi@firstfloor.org,
+       mst@redhat.com, randy.dunlap@oracle.com
+Subject: Re: [PATCH 12/35] workqueue: update cwq alignement
+References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-13-git-send-email-tj@kernel.org> <20100628224755.GA10104@nowhere>
+In-Reply-To: <20100628224755.GA10104@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 07:39:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-24 at 11:55 +0200, Peter Zijlstra wrote:
-> On Mon, 2010-06-21 at 12:21 +0200, Peter Zijlstra wrote:
-> > On Thu, 2010-06-10 at 14:59 +0800, Zhang, Yanmin wrote:
-> > 
-> > > > > I applied it against 2.6.35-rc2 on x86_64 machine, but kernel booting panic.
-> > 
-> > <snip panic>
-> > 
-> > > > Oi, that's no good. Happen to have your .config handy, I didn't actually
-> > > > see my machine do that.
-> > 
-> > > See the attachment.
-> > 
-> > That .config build and booted on my x86_64 machine, no funnies there.
-> > 
-> > I pushed a git tree out to kernel.org but somehow its refusing to show
-> > up on git.kernel.org..
+Hello,
+
+On 06/29/2010 12:47 AM, Frederic Weisbecker wrote:
+>>  void __init init_workqueues(void)
+>>  {
+>> +	/*
+>> +	 * cwqs are forced aligned according to WORK_STRUCT_FLAG_BITS.
+>> +	 * Make sure that the alignment isn't lower than that of
+>> +	 * unsigned long long.
+>> +	 */
+>> +	BUILD_BUG_ON(__alignof__(struct cpu_workqueue_struct) <
+>> +		     __alignof__(unsigned long long));
+>> +
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-mmu_preempt.git mmu_preempt
-We tested the tree on many machines with many benchmarks. Comparing with pure kernel 2.6.35-rc3,
-there is no clear performance regression/improvement. We didn't run into panic again.
+> But they are not allocated contiguously as we use the per cpu offsets.
+> So why does the struct itself need to be aligned? Only the base pointer
+> of its dynamic allocation needs to be aligned. Or am I missing something?
 
-Yanmin
+work->data doesn't store the percpu pointer but the address of cwq of
+that specific cpu as returned by per_cpu_ptr(), so each element needs
+to be aligned.  Besides, if the percpu ptr is aligned the elements are
+aligned so they aren't different things.
 
+> This is crashing my build in x86-32, unless I force an alignment to 8, or
+> I just remove this build check.
 
+Heh, how did that happen?  I'll investigate.  Can you please attach
+your .config?
+
+Thanks.
+
+-- 
+tejun
