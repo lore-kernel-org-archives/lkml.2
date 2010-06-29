@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab0F2TwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 15:52:07 -0400
-Received: from n20.bullet.mail.mud.yahoo.com ([68.142.206.147]:48198 "HELO
-	n20.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755874Ab0F2TwF (ORCPT
+	id S1755981Ab0F2T52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 15:57:28 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41375 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755874Ab0F2T50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 15:52:05 -0400
-X-Yahoo-Newman-Id: 491991.55211.bm@omp414.mail.mud.yahoo.com
-Cc: recipient list not shown:;
-Message-ID: <318237.43139.qm@smtp114.plus.mail.mud.yahoo.com>
-X-Yahoo-SMTP: fHqlUCuswBD8eaFzbliKzcFMg5GeY3Y.2ktnNVB8NYAuMn_HdkeB1LYR
-X-YMail-OSG: u7CzLeMVM1nEpNZ.wbMjKnPmmTZBBzRTl7WbEloyz40AwEV
- tgzq.2zeWDmFpvTtcvUDq0ltoNvT5v0E3WMdftB_u.PMmNL8fsJZ1De_e46s
- MmWMcPMRdkChWkmv30Lwx2yJbz8EYnlY__0yEqF.bJgCSipfNsJ1nseRS0gh
- EzauOa0R.rcv_Jy2bVFvxN3JP3XHamYaHjkrtszIlNd2Reeujv2wIAZBck3p
- Nktd0yBwEwI1GTkHQgDv2K3NX9V3arw--
-X-Yahoo-Newman-Property: ymail-3
-Reply-To: <dr_teddyalafia_sa@cc.tc>
-From: "Dr.Teddy Alafia." <westgruopsplcuk01@verizon.net>
-Subject: Attention/ Promptly.
-Date: Tue, 29 Jun 2010 08:53:10 -0700
+	Tue, 29 Jun 2010 15:57:26 -0400
+Date: Tue, 29 Jun 2010 15:57:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: David Brownell <david-b@pacbell.net>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <640e9920@gmail.com>,
+       Neil Brown <neilb@suse.de>, <linux-pci@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       <Arve@smtp1.linux-foundation.org>,
+       Florian Mickler <florian@mickler.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH] PM: Make it possible to avoid wakeup events
+ from being lost
+In-Reply-To: <53596.65110.qm@web180310.mail.gq1.yahoo.com>
+Message-ID: <Pine.LNX.4.44L0.1006291533130.1314-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1081
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Top of the day.
- 
-Please do not misconceive this mail for spam.
-It is a genuine mail from Dr.Teddy Alafia, special Assistant to the Minister of Agriculture.
+On Mon, 28 Jun 2010, David Brownell wrote:
 
-We have a very workable Investment fund for an establishment in your country, Can you assist us to actualize it?
+> Did someone post the canonical driver changes
+> to make use of this?
 
-It is a life business and I can assure you that No risk involved.
+No, not really.  The patch itself contains an example (PCI) but it 
+doesn't demonstrate the full range of possible usages.
 
-Note. You present job or position does not matter in this meaningful/ bi-lateral Relationship.
+>  Something like
+> 
+>   suspend() { /* if wake-enabled, up count */ }
+>   resume() { /* if upcounted, downcount */ }
+> 
+> is what first comes to mind.. expecting that
+> the suspend/resume methods in the driver are
+> already doing the right things for enabling
+> and later disabling the "system wake" behavior
+> on the various relevant hardware events...
 
-Reply promptly to enable your details and meeting face to face.
+The PCI example looks like this:
 
-Yours Truly,
+	resume()
+	{
+		...
+		if (device_may_wakeup(dev))
+			pm_wakeup_event(dev, TIMEOUT_GUESS);
+		...
+	}
 
-Dr Teddy Alafia.
-Special Assistant.
+where TIMEOUT_GUESS is an estimate of how long to wait before allowing 
+the system to sleep.
+
+For things like keyboards, an example would go more like this:
+
+	irq_handler()
+	{
+		...
+		if (key-press event occurred) {
+			...
+			if (input queue is empty)
+				pm_stay_awake(dev);
+			add event to input queue;
+			...
+		}
+		...
+	}
+
+	read_queue()
+	{
+		...
+		send queued data to userspace
+		if (input queue is empty)
+			pm_relax();
+		...
+	}
+
+I left out the device_may_wakeup tests; things become rather 
+complicated if you can have more than one keyboard feeding the same 
+input queue and some of them are wakeup-enabled while others aren't.
+
+Clearly the appropriate changes will depend on the subsystem and the
+kind of event.  They may also end up depending on the platform; perhaps
+this will be used only on relatively small systems like an Android
+phone.
+
+Alan Stern
 
