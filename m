@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab0F2Im5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 04:42:57 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60776 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103Ab0F2Imz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 04:42:55 -0400
-Date: Tue, 29 Jun 2010 10:42:31 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 0/9] [GI PULL][2.6.36] tracing: various updates
-Message-ID: <20100629084231.GC22344@elte.hu>
-References: <20100629030836.222433712@goodmis.org>
+	id S1754412Ab0F2IpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 04:45:21 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56189 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754370Ab0F2IpS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 04:45:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Jgnf4GV38YbLZxn0u5JGQcXS1I0hRayXxuo2zHNYbgMijlPElDAxFbCDSsqcGiQZYZ
+         k3M4HrKvOWVUXwD/BGuJ6fD0p5VCvsPoc+bb8Lc3ejyeYIU7qVJbMna2FQ8zSHpAwAGW
+         LF47htQoTd25GDT0yLx65YCUij/noYiwOB6XY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100629030836.222433712@goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100628210342.GW4175@outflux.net>
+References: <20100623181129.GM5876@outflux.net>
+	<20100623194145.GA19628@redhat.com>
+	<20100623202335.GA4424@x200>
+	<20100628130028.73757a46.akpm@linux-foundation.org>
+	<20100628210342.GW4175@outflux.net>
+Date: Tue, 29 Jun 2010 11:45:14 +0300
+Message-ID: <AANLkTinlrnSEwnWn_qcvdfqXM6b_bA3hbBjBrqgpQnKX@mail.gmail.com>
+Subject: Re: [PATCH] sanitize task->comm to avoid leaking escape codes
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 29, 2010 at 12:03 AM, Kees Cook <kees.cook@canonical.com> wrote:
+> On Mon, Jun 28, 2010 at 01:00:28PM -0700, Andrew Morton wrote:
+>> Surely it would be better to fix the tools which display this info
+>> rather than making the kernel tell fibs.
+>
+> The strncpy in get_task_comm() is totally wrong -- it's testing the length
+> of task->comm.
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+It also fills not just any buffer but buffer which is TASK_COMM_LEN byte wide.
 
-> Ingo,
-> 
-> I pushed some of these to you before, but you wanted to wait
-> till after the merge window to pull them.
-> 
-> The last patch is the full fix for the perf kprobe regression. But
-> since it was too big of a change for the -rc release we did
-> a quick fix. This reverts that change back to the true fix for
-> 2.6.36.
-> 
-> Please pull the latest tip/perf/core tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/core
-> 
-> 
-> Chase Douglas (1):
->       tracing/function-graph: Use correct string size for snprintf
-> 
-> Li Zefan (7):
->       tracing: Use a global field list for all syscall exit events
->       tracing: Don't allocate common fields for every trace events
->       tracing: Convert some timer events to DEFINE_EVENT
->       tracing: Convert more sched events to DEFINE_EVENT
->       tracing: Remove test of NULL define_fields callback
->       tracing: Remove redundant raw_init callbacks
->       tracing: Remove open-coded __trace_add_event_call()
-> 
-> Steven Rostedt (1):
->       tracing: Use class->reg() for all registering of events
-> 
-> ----
->  include/linux/ftrace_event.h         |    3 +
->  include/linux/syscalls.h             |    2 -
->  include/trace/events/sched.h         |   32 +----
->  include/trace/events/timer.h         |   80 ++++------
->  include/trace/ftrace.h               |    2 +
->  include/trace/syscall.h              |    1 -
->  kernel/trace/trace.h                 |    2 +
->  kernel/trace/trace_event_perf.c      |   19 +--
->  kernel/trace/trace_events.c          |  264 +++++++++++++++++-----------------
->  kernel/trace/trace_events_filter.c   |   27 ++--
->  kernel/trace/trace_export.c          |    8 +-
->  kernel/trace/trace_functions_graph.c |    3 +-
->  kernel/trace/trace_kprobe.c          |   10 +--
->  kernel/trace/trace_syscalls.c        |    7 +-
->  14 files changed, 203 insertions(+), 257 deletions(-)
+> Why should get_task_comm not take a destination buffer length argument?
 
-Pulled, thanks a lot Steve!
-
-	Ingo
+If you pass too small, you needlessly truncate output.
+If you pass too large, you waste space.
