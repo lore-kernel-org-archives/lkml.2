@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab0F2Hkq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 03:40:46 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56297 "EHLO hera.kernel.org"
+	id S1753754Ab0F2Hnv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 03:43:51 -0400
+Received: from sh.osrg.net ([192.16.179.4]:48233 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753480Ab0F2Hkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 03:40:45 -0400
-Message-ID: <4C29A33D.2060407@kernel.org>
-Date: Tue, 29 Jun 2010 09:39:41 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       oleg@redhat.com, axboe@kernel.dk, dwalker@codeaurora.org,
-       stefanr@s5r6.in-berlin.de, florian@mickler.org, andi@firstfloor.org,
-       mst@redhat.com, randy.dunlap@oracle.com
-Subject: Re: [PATCH 12/35] workqueue: update cwq alignement
-References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-13-git-send-email-tj@kernel.org> <20100628224755.GA10104@nowhere>
-In-Reply-To: <20100628224755.GA10104@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753337Ab0F2Hnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 03:43:50 -0400
+Date: Tue, 29 Jun 2010 16:43:45 +0900
+To: cmetcalf@tilera.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH -next] tile: set ARCH_KMALLOC_MINALIGN
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 07:39:48 +0000 (UTC)
+Message-Id: <20100629164117Z.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 29 Jun 2010 16:43:45 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The minimum alignment and width of DMA is L2_CACHE_BYTES (because your
+dma_get_cache_alignment() returns L2_CACHE_BYTES), right?
 
-On 06/29/2010 12:47 AM, Frederic Weisbecker wrote:
->>  void __init init_workqueues(void)
->>  {
->> +	/*
->> +	 * cwqs are forced aligned according to WORK_STRUCT_FLAG_BITS.
->> +	 * Make sure that the alignment isn't lower than that of
->> +	 * unsigned long long.
->> +	 */
->> +	BUILD_BUG_ON(__alignof__(struct cpu_workqueue_struct) <
->> +		     __alignof__(unsigned long long));
->> +
-> 
-> But they are not allocated contiguously as we use the per cpu offsets.
-> So why does the struct itself need to be aligned? Only the base pointer
-> of its dynamic allocation needs to be aligned. Or am I missing something?
+=
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH -next] tile: set ARCH_KMALLOC_MINALIGN
 
-work->data doesn't store the percpu pointer but the address of cwq of
-that specific cpu as returned by per_cpu_ptr(), so each element needs
-to be aligned.  Besides, if the percpu ptr is aligned the elements are
-aligned so they aren't different things.
+Architectures that handle DMA-non-coherent memory need to set
+ARCH_KMALLOC_MINALIGN to make sure that kmalloc'ed buffer is DMA-safe:
+the buffer doesn't share a cache with the others.
 
-> This is crashing my build in x86-32, unless I force an alignment to 8, or
-> I just remove this build check.
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+---
+ arch/tile/include/asm/cache.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Heh, how did that happen?  I'll investigate.  Can you please attach
-your .config?
-
-Thanks.
-
+diff --git a/arch/tile/include/asm/cache.h b/arch/tile/include/asm/cache.h
+index ee59714..e08d9e8 100644
+--- a/arch/tile/include/asm/cache.h
++++ b/arch/tile/include/asm/cache.h
+@@ -31,6 +31,8 @@
+ #define L2_CACHE_BYTES		(1 << L2_CACHE_SHIFT)
+ #define L2_CACHE_ALIGN(x)	(((x)+(L2_CACHE_BYTES-1)) & -L2_CACHE_BYTES)
+ 
++#define ARCH_KMALLOC_MINALIGN	L2_CACHE_BYTES
++
+ /* use the cache line size for the L2, which is where it counts */
+ #define SMP_CACHE_BYTES_SHIFT	L2_CACHE_SHIFT
+ #define SMP_CACHE_BYTES		L2_CACHE_BYTES
 -- 
-tejun
+1.6.5
+
