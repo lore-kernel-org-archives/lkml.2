@@ -1,184 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab0F2JXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 05:23:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14290 "EHLO mga02.intel.com"
+	id S1754882Ab0F2JY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 05:24:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39228 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754212Ab0F2JXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 05:23:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,503,1272870000"; 
-   d="scan'208";a="634599238"
-Subject: Re: [rfc] Describe events in a structured way via sysfs
-From: Lin Ming <ming.m.lin@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-       Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <20100629085532.GE22344@elte.hu>
-References: <1277110509.18390.28.camel@minggr.sh.intel.com>
-	 <1277112858.3618.16.camel@jlt3.sipsolutions.net>
-	 <1277187920.4467.3.camel@minggr.sh.intel.com>
-	 <1277189971.3637.5.camel@jlt3.sipsolutions.net>
-	 <1277191359.5025.4.camel@minggr.sh.intel.com>
-	 <1277192007.3637.8.camel@jlt3.sipsolutions.net>
-	 <20100624093625.GA26931@elte.hu>
-	 <1277396053.3870.16.camel@jlt3.sipsolutions.net>
-	 <20100624173315.GA30403@elte.hu>
-	 <1277792114.5400.5.camel@minggr.sh.intel.com>
-	 <20100629085532.GE22344@elte.hu>
-Content-Type: text/plain
-Date: Tue, 29 Jun 2010 17:20:48 +0800
-Message-Id: <1277803248.5400.16.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1754209Ab0F2JYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 05:24:24 -0400
+Date: Tue, 29 Jun 2010 09:24:00 GMT
+From: tip-bot for Chase Douglas <chase.douglas@canonical.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       rostedt@goodmis.org, chase.douglas@canonical.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       rostedt@goodmis.org, tglx@linutronix.de, chase.douglas@canonical.com
+In-Reply-To: <1276619355-18116-1-git-send-email-chase.douglas@canonical.com>
+References: <1276619355-18116-1-git-send-email-chase.douglas@canonical.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing/function-graph: Use correct string size for snprintf
+Message-ID: <tip-d62f85d1e22e537192ce494c89540e1ac0d8bfc7@git.kernel.org>
+Git-Commit-ID: d62f85d1e22e537192ce494c89540e1ac0d8bfc7
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 09:24:06 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-29 at 16:55 +0800, Ingo Molnar wrote:
-> * Lin Ming <ming.m.lin@intel.com> wrote:
-> 
-> > On Fri, 2010-06-25 at 01:33 +0800, Ingo Molnar wrote:
-> > > * Johannes Berg <johannes@sipsolutions.net> wrote:
-> > > 
-> > > > On Thu, 2010-06-24 at 11:36 +0200, Ingo Molnar wrote:
-> > > > 
-> > > > > That's probably best achieved via a TRACE_EVENT() variant, by passing in the 
-> > > > > sysfs location.
-> > > > > 
-> > > > > It might even make sense to make this a part of TRACE_EVENT() itself and make 
-> > > > > 'NULL' the current default, non-sysfs-enumerated behavior. That way we can 
-> > > > > gradually (and non-intrusively) find all the right sysfs places for events.
-> > > > 
-> > > > No, this doesn't work. A lot of events are multi-instance. Say you have an 
-> > > > event for each USB device. This event would have to show up in many places 
-> > > > in sysfs, and each trace_foo() invocation needs to get the struct device 
-> > > > pointer, not just the TRACE_EVENT() definition. Additionally, to 
-> > > > create/destroy the sysfs pieces we need something like init_trace_foo(dev) 
-> > > > and destroy_trace_foo(dev) be called when the sysfs points for the device 
-> > > > should be created/destroyed.
-> > > 
-> > > Yes - but even this could be expressed via TRACE_EVENT(): by giving it a 
-> > > device-specific function pointer and then instantiating individual events from 
-> > > a single, central place in sysfs.
-> > > 
-> > > That is the place where we already know where it ends up in sysfs, and where 
-> > > the event-specific function can match up whether that particular node belongs 
-> > > to it and whether an additional event directory should be created for that 
-> > > particular sysfs node.
-> > > 
-> > > > The TRACE_EVENT() just defines the template, but such multi-instance events 
-> > > > really should be standardised in terms of their struct device (or maybe 
-> > > > kobject).
-> > > > 
-> > > > I think that needs some TRACE_DEVICE_EVENT macro that creates the required 
-> > > > inlines etc, and including the init/destroy that are called when the event 
-> > > > should show up in sysfs.
-> > > > 
-> > > > There's no way you can have the event show up in sysfs at the right spot 
-> > > > with _just_ a TRACE_EVENT macro, since at define time in the header file you 
-> > > > don't even have a valid struct device pointer.
-> > > 
-> > > That would be another possible way to do it - to explicitly create the events 
-> > > directory. It looks a bit simpler as we wouldnt have to touch TRACE_EVENT() 
-> > > and because it directly expresses the 'this node has an events directory' 
-> > > property at the place where we create the device node.
-> > 
-> > Let me take i915 tracepoints as an example.
-> > Do you mean something like below?
-> > 
-> > diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-> > index 423dc90..9e7e4a0 100644
-> > --- a/drivers/gpu/drm/i915/i915_drv.c
-> > +++ b/drivers/gpu/drm/i915/i915_drv.c
-> > @@ -28,6 +28,7 @@
-> >   */
-> >  
-> >  #include <linux/device.h>
-> > +#include <linux/perf_event.h>
-> >  #include "drmP.h"
-> >  #include "drm.h"
-> >  #include "i915_drm.h"
-> > @@ -413,7 +414,17 @@ int i965_reset(struct drm_device *dev, u8 flags)
-> >  static int __devinit
-> >  i915_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
-> >  {
-> > -	return drm_get_dev(pdev, ent, &driver);
-> > +	struct kobject *kobj;
-> > +	int ret;
-> > +
-> > +	ret = drm_get_dev(pdev, ent, &driver);
-> > +
-> > +	if (!ret) {
-> > +		kobj = &pdev->dev.kobj;
-> > +		perf_sys_register_tp(kobj, "i915");
-> > +	}
-> > +
-> > +	return ret;
-> 
-> Yeah, something like that - assuming that this means that we'll add the events 
-> directory to the device directory, to all the 
-> /sys/bus/pci/drivers/i915/*/events/ driver directories right? (i havent 
-> checked the DRM code)
+Commit-ID:  d62f85d1e22e537192ce494c89540e1ac0d8bfc7
+Gitweb:     http://git.kernel.org/tip/d62f85d1e22e537192ce494c89540e1ac0d8bfc7
+Author:     Chase Douglas <chase.douglas@canonical.com>
+AuthorDate: Tue, 15 Jun 2010 12:29:15 -0400
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 28 Jun 2010 21:11:39 -0400
 
-I haven't run the code, but I think yes.
+tracing/function-graph: Use correct string size for snprintf
 
-> 
-> Small detail, it could be written a bit more compactly, like:
+The nsecs_str string is a local variable defined as:
 
-Thanks for the tip.
+char nsecs_str[5];
 
-> 
-> > +	int ret;
-> > +
-> > +	ret = drm_get_dev(pdev, ent, &driver);
-> > +	if (!ret)
-> > +		perf_sys_register_tp(&pdev->dev.kobj, "i915");
-> > +
-> > +	return ret;
-> 
-> Also, we can (optionally) consider 'generic', subsystem level events to also 
-> show up under:
-> 
->    /sys/bus/pci/drivers/i915/events/
-> 
-> This would give a model to non-device-specific events to be listed one level 
-> higher in the sysfs hierarchy.
-> 
-> This too would be done in the driver, not by generic code. It's generally the 
-> driver which knows how the events should be categorized.
+It is possible for the snprintf call to use a size value larger than the
+size of the string. This should not cause a buffer overrun as it is
+written now due to the value for the string format "%03lu" can not be
+larger than 1000. However, this change makes it correct. By making the
+size correct we guard against potential future changes that could actually
+cause a buffer overrun.
 
-This is a bit difficult. I'd like not to touch TRACE_EVENT().
-How does the driver know if an event is 'generic' if TRACE_EVENT is not
-touched?
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+LKML-Reference: <1276619355-18116-1-git-send-email-chase.douglas@canonical.com>
 
-> 
-> I'd imagine something similar for wireless drivers as well - most currently 
-> defined events would show up on a per device basis there.
-> 
-> Can you see practical problems with this scheme?
+[ added 'UL' to number 8 to fix gcc warning comparing it to sizeof() ]
 
-Not now. I may find some problems when write more detail code.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_functions_graph.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Lin Ming
-
-> 
-> 	Ingo
-
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 79f4bac..6bff236 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -641,7 +641,8 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
+ 
+ 	/* Print nsecs (we don't want to exceed 7 numbers) */
+ 	if (len < 7) {
+-		snprintf(nsecs_str, 8 - len, "%03lu", nsecs_rem);
++		snprintf(nsecs_str, min(sizeof(nsecs_str), 8UL - len), "%03lu",
++			 nsecs_rem);
+ 		ret = trace_seq_printf(s, ".%s", nsecs_str);
+ 		if (!ret)
+ 			return TRACE_TYPE_PARTIAL_LINE;
