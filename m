@@ -1,162 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab0F2OXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 10:23:48 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:33834 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754509Ab0F2OXr convert rfc822-to-8bit (ORCPT
+	id S1756141Ab0F2O1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 10:27:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55541 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509Ab0F2O1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 10:23:47 -0400
-Date: Tue, 29 Jun 2010 10:23:39 -0400
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-       linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH 4/4] x86: OLPC: add OLPC device-tree support
-Message-ID: <20100629102339.5e8a30b6@dev.queued.net>
-In-Reply-To: <AANLkTinUy_FGuN9DiF5KtMCsqYUbByfS6g2Mdw0ATvtQ@mail.gmail.com>
-References: <20100628215407.2017bf2f@debian>
-	<20100628220058.19e8f143@debian>
-	<AANLkTinUy_FGuN9DiF5KtMCsqYUbByfS6g2Mdw0ATvtQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.12.12; i486-pc-linux-gnu)
-Mime-Version: 1.0
+	Tue, 29 Jun 2010 10:27:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ABz33ObCEsJdkG+TeBTmFPcXY/2BRsJJEFXeSiGYJWG3IFoIfi1Y3XalXSa7jD+IxQ
+         ftmccS8AIWZw825FwfbzQoB7a3ZxxZ4Y6naeAYAx26tMlTihbjd8xQA1p8R35qs6+jqY
+         2iQwB9s4+2WtMjS4p42qq89P8yERR3hub1PQs=
+MIME-Version: 1.0
+In-Reply-To: <1277811288-5195-2-git-send-email-mel@csn.ul.ie>
+References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
+	<1277811288-5195-2-git-send-email-mel@csn.ul.ie>
+Date: Tue, 29 Jun 2010 23:27:05 +0900
+Message-ID: <AANLkTilwzGf2rikXYAe4Evl41lqjk8voVSG4ICfAgUI1@mail.gmail.com>
+Subject: Re: [PATCH 01/14] vmscan: Fix mapping use after free
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010 01:12:36 -0700
-Grant Likely <grant.likely@secretlab.ca> wrote:
+On Tue, Jun 29, 2010 at 8:34 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> From: Nick Piggin <npiggin@suse.de>
+>
+> Use lock_page_nosync in handle_write_error as after writepage we have no
+> reference to the mapping when taking the page lock.
+>
+> Signed-off-by: Nick Piggin <npiggin@suse.de>
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
-> Hi Andres, comments below....
-
-Thanks!
-
-
-> 
-> On Mon, Jun 28, 2010 at 7:00 PM, Andres Salomon <dilinger@queued.net>
-> wrote:
-> >
-> > Make use of PROC_DEVICETREE to export the tree, and sparc's
-> > PROMTREE code to call into OLPC's Open Firmware to build the tree.
-> >
-> > (Yes, I know this leaks memory by simply using kmalloc)
-> >
-> > Signed-off-by: Andres Salomon <dilinger@queued.net>
-> > ---
-> >  arch/x86/Kconfig                 |    5 ++
-> >  arch/x86/include/asm/olpc_prom.h |   42 +++++++++++
-> >  arch/x86/include/asm/prom.h      |    5 ++
-> >  arch/x86/kernel/Makefile         |    1 +
-> >  arch/x86/kernel/olpc_ofw.c       |   13 ++++
-> >  arch/x86/kernel/olpc_prom.c      |  148
-> > ++++++++++++++++++++++++++++++++++++++ fs/proc/Kconfig
-> >      |    2 +- 7 files changed, 215 insertions(+), 1 deletions(-)
-> >  create mode 100644 arch/x86/include/asm/olpc_prom.h
-> >  create mode 100644 arch/x86/include/asm/prom.h
-> >  create mode 100644 arch/x86/kernel/olpc_prom.c
-> >
-> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> > index 71c194d..7aea004 100644
-> > --- a/arch/x86/Kconfig
-> > +++ b/arch/x86/Kconfig
-> > @@ -2071,6 +2071,11 @@ config OLPC_OPENFIRMWARE
-> >          that is used on the OLPC XO-1 Children's Machine.
-> >          If unsure, say N here.
-> >
-> > +config OF
-> > +       def_bool y
-> > +       depends on OLPC_OPENFIRMWARE
-> > +       select OF_PROMTREE
-> > +
-> 
-> This hunk will need to be respun on top of Stephen's CONFIG_OF change.
->  It's currently in my test-devicetree branch on
-> git://git.secretlab.ca/git/linux-2.6
-
-Yep, I've changed it locally.
-
-> 
-> >  endif # X86_32
-> >
-> >  config K8_NB
-> > diff --git a/arch/x86/include/asm/olpc_prom.h
-> > b/arch/x86/include/asm/olpc_prom.h new file mode 100644
-> > index 0000000..96cdcee
-> > --- /dev/null
-> > +++ b/arch/x86/include/asm/olpc_prom.h
-> > @@ -0,0 +1,42 @@
-> > +#include <linux/of.h>  /* linux/of.h gets to determine #include
-> > ordering */ +/*
-> > + * Definitions for talking to the Open Firmware PROM on
-> > + * Power Macintosh computers.
-> > + *
-> > + * Copyright (C) 1996-2005 Paul Mackerras.
-> > + *
-> > + * Updates for PPC64 by Peter Bergner & David Engebretsen, IBM
-> > Corp.
-> > + * Updates for SPARC by David S. Miller
-> > + * Updates for x86/OLPC by Andres Salomon
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License
-> > + * as published by the Free Software Foundation; either version
-> > + * 2 of the License, or (at your option) any later version.
-> > + */
-> > +
-> > +#ifndef _X86_PROM_OLPC_H
-> > +#define _X86_PROM_OLPC_H
-> > +#ifdef __KERNEL__
-> > +
-> > +#define OF_ROOT_NODE_ADDR_CELLS_DEFAULT 2
-> > +#define OF_ROOT_NODE_SIZE_CELLS_DEFAULT 1
-> 
-> Do you really need to override these from the default?
-> 
-> > +#define of_compat_cmp(s1, s2, l)       strncmp((s1), (s2), (l))
-> > +#define of_prop_cmp(s1, s2)            strcasecmp((s1), (s2))
-> > +#define of_node_cmp(s1, s2)            strcmp((s1), (s2))
-> 
-> Ditto here?
-
-They're based upon what the old promfs patch used.  I need to test and
-verify that strings are being mangled in the same way before I start
-making changes here.
+Trivial.
+Please modify description of the function if you have a next turn.
+"run sleeping lock_page()" -> "run sleeping lock_page_nosync"
 
 
-> 
-> > +extern void prom_build_devicetree(void);
-> > +
-> > +extern void *prom_early_alloc(unsigned long size);
-> > +
-> > +extern char *prom_firstprop(phandle node, char *buf);
-> > +extern char *prom_nextprop(phandle node, const char *prev, char
-> > *buf); +extern int prom_getproplen(phandle node, const char *prop);
-> > +extern int prom_getproperty(phandle node, const char *prop,
-> > +                            char *buffer, int bufsize);
-> > +extern phandle prom_getchild(phandle node);
-> > +extern phandle prom_getsibling(phandle node);
-> > +
-> > +#endif /* __KERNEL__ */
-> > +#endif /* _X86_PROM_OLPC_H */
-> > diff --git a/arch/x86/include/asm/prom.h
-> > b/arch/x86/include/asm/prom.h new file mode 100644
-> > index 0000000..7b561b2
-> > --- /dev/null
-> > +++ b/arch/x86/include/asm/prom.h
-> > @@ -0,0 +1,5 @@
-> > +#ifdef CONFIG_OLPC_OPENFIRMWARE
-> > +# include <asm/olpc_prom.h>
-> > +#else
-> > +# error "No OFW prom defined for x86!"
-> > +#endif
-> 
-> Personally, I wouldn't bother with the header file redirection.
-
-The reason for the header file redirection is because this is
-OLPC-only; the x86 folks don't want me claiming this to be the One
-True x86 OFW.
-
+-- 
+Kind regards,
+Minchan Kim
