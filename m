@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab0F2Prb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 11:47:31 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59542 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756610Ab0F2Pr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 11:47:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LtQTFCKdpufF08dxKR8n8VMMhMAaWhUn/jfNJlpEpAVV3OjhvWgAYTlbfhkNmdmL16
-         kxvY7n1Km+156bLrzVSPgLAwsWL/LU3kVg9HOnDfWCVWRNC40vw/ef/SMOt+Zqb7Dxcz
-         hm5b0Ted4GJzxUBrV9UInAGZRGWYeaoHy92Jc=
-Date: Tue, 29 Jun 2010 17:47:39 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       oleg@redhat.com, axboe@kernel.dk, dwalker@codeaurora.org,
-       stefanr@s5r6.in-berlin.de, florian@mickler.org, andi@firstfloor.org,
-       mst@redhat.com, randy.dunlap@oracle.com
-Subject: Re: [PATCH 12/35] workqueue: update cwq alignement
-Message-ID: <20100629154738.GJ5318@nowhere>
-References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-13-git-send-email-tj@kernel.org> <20100628224755.GA10104@nowhere> <4C29A33D.2060407@kernel.org> <20100629123632.GB5318@nowhere> <4C2A145E.8030608@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C2A145E.8030608@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756638Ab0F2Prv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 11:47:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5982 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756587Ab0F2Prs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 11:47:48 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4C29674C.9070503@gmail.com>
+References: <4C29674C.9070503@gmail.com> <4C28E14D.5050701@gmail.com> <1277621246-10960-4-git-send-email-justinmattock@gmail.com> <1277621246-10960-1-git-send-email-justinmattock@gmail.com> <7214.1277729293@redhat.com> <8066.1277750854@redhat.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+       linux-acpi@vger.kernel.org, lenb@kernel.org
+Subject: Re: [PATCH 3/5]acpi:glue.c Fix warning: variable 'ret' set but not used
+Date: Tue, 29 Jun 2010 16:47:41 +0100
+Message-ID: <22319.1277826461@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 05:42:22PM +0200, Tejun Heo wrote:
-> Hello,
-> 
-> On 06/29/2010 02:36 PM, Frederic Weisbecker wrote:
-> > But then, if each cpu pointers are aligned, the struct itself doesn't need
-> > to be aligned in its size right? It would need to if multiple elements
-> > were allocated per cpu but for this struct we only have one per cpu. So
-> > what seems to matter wrt alignment is only the base pointer of these structs,
-> > not the size.
-> 
-> Yeap, sure, but how does it matter?
+Justin P. Mattock <justinmattock@gmail.com> wrote:
 
+> +	if (fn) {
+> + 			printk(KERN_WARNING "dev%d: Failed to create
+> firmware_node: %d\n", status, fn);
+> +	}else if (pn) {
+> +			printk(KERN_WARNING "dev%d: Failed to create
+> physical_node: %d\n", status, pn);
+> + 			return 0;
+> +		}
 
-It means the size of the struct itself doesn't need to aligned to anything.
+The if-statement should be correctly indented (it's inside another
+if-body, so needs to be one more tab over) and there needs to be a space
+before the else.
 
+You should probably split your printks up so they don't exceed 80 chars too,
+for example:
+
+			printk(KERN_WARNING
+			       "dev%d: Failed to create physical_node: %d\n",
+			       status, pn);
+
+Also 'status' is probably the wrong thing to print as the number in "dev%d".
+If it worked, that should be unconditionally AE_OK, I think.  Can you not use
+dev_warn() or similar instead or printk?
+
+David
