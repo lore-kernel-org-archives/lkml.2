@@ -1,62 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab0F2A4E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 20:56:04 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61295 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab0F2A4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 20:56:01 -0400
-Message-ID: <4C294512.8070302@cn.fujitsu.com>
-Date: Tue, 29 Jun 2010 08:57:54 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1753618Ab0F2A4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 20:56:39 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53746 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963Ab0F2A4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 20:56:37 -0400
+Date: Mon, 28 Jun 2010 17:54:04 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
+       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH] Revert "writeback: limit write_cache_pages integrity
+ scanning to current EOF"
+Message-ID: <20100629005403.GC24343@mail.oracle.com>
+Mail-Followup-To: Dave Chinner <david@fromorbit.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	ocfs2-devel@oss.oracle.com, Tao Ma <tao.ma@oracle.com>,
+	Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+	Mark Fasheh <mfasheh@suse.com>
+References: <20100628173529.GA10573@mail.oracle.com>
+ <20100629002421.GY6590@dastard>
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>, Chris Mason <chris.mason@oracle.com>,
-       Yan Zheng <zheng.yan@oracle.com>, Diego Calleja <diegocg@gmail.com>,
-       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [patch] btrfs: make code reachable in btrfs_insert_some_items()
-References: <20100628111726.GI19184@bicker>
-In-Reply-To: <20100628111726.GI19184@bicker>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100629002421.GY6590@dastard>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C29449B.0095:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-on 2010-6-28 19:17, Dan Carpenter wrote:
-> The break was in front of the "nr = i" assignment so that was never hit.
-
-This bug has been fixed a month ago, and the patch has been merged into the
-btrfs-unstable tree.
-
-  http://marc.info/?l=linux-btrfs&m=127434036913484&w=2
-
-Thanks
-Miao
+On Tue, Jun 29, 2010 at 10:24:21AM +1000, Dave Chinner wrote:
+> On Mon, Jun 28, 2010 at 10:35:29AM -0700, Joel Becker wrote:
+> > This reverts commit d87815cb2090e07b0b0b2d73dc9740706e92c80c.
 > 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> Hi Joel,
 > 
-> diff --git a/fs/btrfs/ctree.c b/fs/btrfs/ctree.c
-> index 0d1d966..ceb8ad2 100644
-> --- a/fs/btrfs/ctree.c
-> +++ b/fs/btrfs/ctree.c
-> @@ -3453,8 +3453,8 @@ int btrfs_insert_some_items(struct btrfs_trans_handle *trans,
->  	for (i = 0; i < nr; i++) {
->  		if (total_size + data_size[i] + sizeof(struct btrfs_item) >
->  		    BTRFS_LEAF_DATA_SIZE(root)) {
-> -			break;
->  			nr = i;
-> +			break;
->  		}
->  		total_data += data_size[i];
->  		total_size += data_size[i] + sizeof(struct btrfs_item);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I have no problems with it being reverted - it's a really just a
+> WAR for the simplest case of the sync hold holdoff.
 
+	I have to insist that we revert it until we find a way to make
+ocfs2 work.  The rest of the email will discuss the ocfs2 issues
+therein.
 
+> > This patch causes any filesystem with an allocation unit larger than the
+> > filesystem blocksize will leak unzeroed data. During a file extend, the
+> > entire allocation unit is zeroed.
+> 
+> XFS has this same underlying issue - it can have uninitialised,
+> allocated blocks past EOF that have to be zeroed when extending the
+> file.
+
+	Does XFS do this in get_blocks()?  We deliberately do no
+allocation in get_blocks(), which is where our need for up-front
+allocation comes from.
+
+> > However, this patch prevents the tail
+> > blocks of the allocation unit from being written back to disk.  When the
+> > file is next extended, i_size will now cover these unzeroed blocks,
+> > leaking the old contents of the disk to userspace and creating a corrupt
+> > file.
+> 
+> XFS doesn't zero blocks at allocation. Instead, XFS zeros the range
+> between the old EOF and the new EOF on each extending write. Hence
+> these pages get written because they fall inside the new i_size that
+> is set during the write.  The i_size on disk doesn't get changed
+> until after the data writes have completed, so even on a crash we
+> don't expose uninitialised blocks.
+
+	We do the same, but we zero the entire allocation.  This works
+both when filling holes and when extending, though obviously the
+extending is what we're worried about here.  We change i_size in
+write_end, so our guarantee is the same as yours for the page containing
+i_size.
+
+> Looking at ocfs2_writepage(), it simply calls
+> block_write_full_page(), which does:
+> 
+> 	/* Is the page fully outside i_size? (truncate in progress) */
+> 	offset = i_size & (PAGE_CACHE_SIZE-1);
+> 	if (page->index >= end_index+1 || !offset) {
+> 		/*
+> 		 * The page may have dirty, unmapped buffers.  For example,
+> 		 * they may have been added in ext3_writepage().  Make them
+> 		 * freeable here, so the page does not leak.
+> 		 */
+> 		do_invalidatepage(page, 0);
+> 		unlock_page(page);
+> 		return 0; /* don't care */
+> 	}
+> 
+> i.e. pages beyond EOF get invalidated.  If it somehow gets through
+> that check, __block_write_full_page() will avoid writing dirty
+> bufferheads beyond EOF because the write is "racing with truncate".
+
+	Your contention is that we've never gotten those tail blocks to
+disk.  Instead, our code either handles the future extensions of i_size
+or we've just gotten lucky with our testing.  Our current BUG trigger is
+because we have a new check that catches this case.  Does that summarize
+your position correctly?
+	I'm not averse to having a zero-only-till-i_size policy, but I
+know we've visited this problem before and got bit.  I have to go reload
+that context.
+	Regarding XFS, how do you handle catching the tail of an
+allocation with an lseek(2)'d write?  That is, your current allocation
+has a few blocks outside of i_size, then I lseek(2) a gigabyte past EOF
+and write there.  The code has to recognize to zero around old_i_size
+before moving out to new_i_size, right?  I think that's where our old
+approaches had problems.
+
+Joel
+
+-- 
+
+"The real reason GNU ls is 8-bit-clean is so that they can
+ start using ISO-8859-1 option characters."
+	- Christopher Davis (ckd@loiosh.kei.com)
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
