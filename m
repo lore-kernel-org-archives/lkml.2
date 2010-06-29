@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab0F2CVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 22:21:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39435 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752344Ab0F2CVO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 22:21:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100629015822.GD24343@mail.oracle.com>
-References: <20100628173529.GA10573@mail.oracle.com>
-	<20100629002421.GY6590@dastard>
-	<20100629005403.GC24343@mail.oracle.com>
-	<AANLkTil1R9I94pVXLE50JAMPIwpiaZuroJAg4wcwyBUb@mail.gmail.com>
-	<20100629015822.GD24343@mail.oracle.com>
-Date: Mon, 28 Jun 2010 19:20:33 -0700
-Message-ID: <AANLkTil5y7F9w-18mVi0G1S5pSv9MiKq6XL5MWAMFBQM@mail.gmail.com>
-Subject: Re: [Ocfs2-devel] [PATCH] Revert "writeback: limit write_cache_pages 
-	integrity scanning to current EOF"
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Dave Chinner <david@fromorbit.com>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
-       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753101Ab0F2CWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 22:22:36 -0400
+Received: from lo.gmane.org ([80.91.229.12]:41232 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751286Ab0F2CWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jun 2010 22:22:35 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Andres Salomon <dilinger@queued.net>
+Subject: Re: [RFC PATCH 1/3] kbuild: Warn on selecting symbols with unmet
+ direct dependencies
+Date: Mon, 28 Jun 2010 22:22:21 -0400
+Message-ID: <20100628222221.620987a9@debian>
+References: <20100608162046.21870.5615.stgit@e102109-lin.cambridge.arm.com>
+	<20100608162556.21870.5952.stgit@e102109-lin.cambridge.arm.com>
+	<20100611133119.f372bbe1.randy.dunlap@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: dhcp-18-111-83-38.dyn.mit.edu
+In-Reply-To: <20100611133119.f372bbe1.randy.dunlap@oracle.com>
+X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Cc: linux-geode@bombadil.infradead.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 6:58 PM, Joel Becker <Joel.Becker@oracle.com> wrote:
->
->        Well, shit.  Something has changed in here, or we're really
-> really (un)lucky.  We visited this code a year ago or so when we had
-> serious zeroing problems, and we tested the hell out of it.  Now it is
-> broken again.  And it sure looks like that block_write_full_page() check
-> has been there since before git.
+On Fri, 11 Jun 2010 13:31:19 -0700
+Randy Dunlap <randy.dunlap@oracle.com> wrote:
 
-Hmm. I'm actually starting to worry that we should do the revert after all.
+> On Tue, 08 Jun 2010 17:25:57 +0100 Catalin Marinas wrote:
+> 
+> > The "select" statement in Kconfig files allows the enabling of options
+> > even if they have unmet direct dependencies (i.e. "depends on" expands
+> > to "no"). Currently, the "depends on" clauses are used in calculating
+> > the visibility but they do not affect the reverse dependencies in any
+> > way.
+> > 
+> > The patch introduces additional tracking of the "depends on" statements
+> > and prints a warning on selecting an option if its direct dependencies
+> > are not met.
+> 
+> 
+> Hi Catalin,
+> 
+> Can these messages (on linux-next-20100611) be modified to include the
+> kconfig symbol that is causing them?
+> 
+> warning: (IP_VS_PROTO_ESP && NET && NETFILTER && IP_VS || IP_VS_PROTO_AH && NET && NETFILTER && IP_VS) selects IP_VS_PROTO_AH_ESP which has unmet direct dependencies (UNDEFINED)
+> warning: (SCx200_GPIO && SCx200 || PC8736x_GPIO && X86) selects NSC_GPIO which has unmet direct dependencies (X86_32)
+> 
+> Ah!  It's the first symbol listed in each "phrase":
+> 
+> SCx200_GPIO and PC8736x_GPIO both have this problem.
+> (I haven't looked at IP_VS yet).
 
-Why? Locking. That page-writeback.c thing decides to limit the end to
-the inode size the same way that block_write_full_page() does, but
-block_write_full_page() holds the page lock, while page-writeback.c
-does not. Which means that as a race against somebody else doing a
-truncate(), the two things really are pretty different.
+It's unclear why NSC_GPIO depends upon X86_32 (davej sent the patch,
+699352c30da8525a).  While geode stuff will probably only ever exist on x86,
+there's nothing in the driver that's X86_32-specific.
 
-That said, write_cache_pages() obviously doesn't actually invalidate
-the page (the way block_write_full_page() does), so locking matters a
-whole lot less for it. If somebody is doing a concurrent truncate or a
-concurrent write, then for the data to really show up reliably on disk
-there would obviously have to be a separate sync operation involved,
-so even with the lack of any locking, it should be safe.
 
-I dunno. Filesystem corruption makes me nervous. So I'm certainly
-totally willing to do the revert if that makes ocfs2 work again. Even
-if "work again" happens to be partly by mistake, and for some reason
-that isn't obvious.
+> 
+> Jordan, is GEODE always 32-bit, so that some of these dependencies could be
+> cleaned up by using X86_32?
 
-Your call, I guess.  If any ocfs2 fix looks scary, and you'd prefer to
-have an -rc4 (in a few days - not today) with just the revert, I'm ok
-with that. Even if it's only a "at least no worse than 2.6.34"
-situation rather than a real fix.
+Sadly, I don't think Jordan tracks this list any more.
 
-                 Linus
+
+
