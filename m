@@ -1,302 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792Ab0F2LfC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 07:35:02 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:42883 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755686Ab0F2Lez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 07:34:55 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org
-Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
-       Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 07/14] vmscan: simplify shrink_inactive_list()
-Date: Tue, 29 Jun 2010 12:34:41 +0100
-Message-Id: <1277811288-5195-8-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
-References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
+	id S1755849Ab0F2LfY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 07:35:24 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:47633 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919Ab0F2LfV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 07:35:21 -0400
+Subject: Re: [PATCH] avoid race condition in pick_next_task_fair in 
+ kernel/sched_fair.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: shenghui <crosslonelyover@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+       mingo@elte.hu, Greg KH <greg@kroah.com>
+In-Reply-To: <AANLkTik4PXpgkc_ob-INohfmlTwe3wqDmif_ohXBxHHX@mail.gmail.com>
+References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
+	 <1277808215.1868.5.camel@laptop>
+	 <AANLkTik4PXpgkc_ob-INohfmlTwe3wqDmif_ohXBxHHX@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 29 Jun 2010 13:35:16 +0200
+Message-ID: <1277811316.1868.40.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Tue, 2010-06-29 at 19:24 +0800, shenghui wrote:
 
-Now, max_scan of shrink_inactive_list() is always passed less than
-SWAP_CLUSTER_MAX. then, we can remove scanning pages loop in it.
-This patch also help stack diet.
+> I wonder is there any chance set_next_entity() can get NULL for
+> parameter se if so?
 
-detail
- - remove "while (nr_scanned < max_scan)" loop
- - remove nr_freed (now, we use nr_reclaimed directly)
- - remove nr_scan (now, we use nr_scanned directly)
- - rename max_scan to nr_to_scan
- - pass nr_to_scan into isolate_pages() directly instead
-   using SWAP_CLUSTER_MAX
+Well, if your machine crashes that way, maybe, but I haven't seen that
+happen in a long while.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
- mm/vmscan.c |  211 ++++++++++++++++++++++++++++-------------------------------
- 1 files changed, 100 insertions(+), 111 deletions(-)
+> And will you please give me some instructions on where rq->lock
+> is required?
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f3d95c6..d964cfa 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1132,15 +1132,21 @@ static int too_many_isolated(struct zone *zone, int file,
-  * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
-  * of reclaimed pages
-  */
--static unsigned long shrink_inactive_list(unsigned long max_scan,
-+static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
- 			struct zone *zone, struct scan_control *sc,
- 			int priority, int file)
- {
- 	LIST_HEAD(page_list);
- 	struct pagevec pvec;
--	unsigned long nr_scanned = 0;
-+	unsigned long nr_scanned;
- 	unsigned long nr_reclaimed = 0;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-+	struct page *page;
-+	unsigned long nr_taken;
-+	unsigned long nr_active;
-+	unsigned int count[NR_LRU_LISTS] = { 0, };
-+	unsigned long nr_anon;
-+	unsigned long nr_file;
- 
- 	while (unlikely(too_many_isolated(zone, file, sc))) {
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
-@@ -1155,129 +1161,112 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
- 
- 	lru_add_drain();
- 	spin_lock_irq(&zone->lru_lock);
--	do {
--		struct page *page;
--		unsigned long nr_taken;
--		unsigned long nr_scan;
--		unsigned long nr_freed;
--		unsigned long nr_active;
--		unsigned int count[NR_LRU_LISTS] = { 0, };
--		int mode = sc->lumpy_reclaim_mode ? ISOLATE_BOTH : ISOLATE_INACTIVE;
--		unsigned long nr_anon;
--		unsigned long nr_file;
- 
--		if (scanning_global_lru(sc)) {
--			nr_taken = isolate_pages_global(SWAP_CLUSTER_MAX,
--							&page_list, &nr_scan,
--							sc->order, mode,
--							zone, 0, file);
--			zone->pages_scanned += nr_scan;
--			if (current_is_kswapd())
--				__count_zone_vm_events(PGSCAN_KSWAPD, zone,
--						       nr_scan);
--			else
--				__count_zone_vm_events(PGSCAN_DIRECT, zone,
--						       nr_scan);
--		} else {
--			nr_taken = mem_cgroup_isolate_pages(SWAP_CLUSTER_MAX,
--							&page_list, &nr_scan,
--							sc->order, mode,
--							zone, sc->mem_cgroup,
--							0, file);
--			/*
--			 * mem_cgroup_isolate_pages() keeps track of
--			 * scanned pages on its own.
--			 */
--		}
-+	if (scanning_global_lru(sc)) {
-+		nr_taken = isolate_pages_global(nr_to_scan,
-+			&page_list, &nr_scanned, sc->order,
-+			sc->lumpy_reclaim_mode ? ISOLATE_BOTH : ISOLATE_INACTIVE,
-+			zone, 0, file);
-+		zone->pages_scanned += nr_scanned;
-+		if (current_is_kswapd())
-+			__count_zone_vm_events(PGSCAN_KSWAPD, zone,
-+					       nr_scanned);
-+		else
-+			__count_zone_vm_events(PGSCAN_DIRECT, zone,
-+					       nr_scanned);
-+	} else {
-+		nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
-+			&page_list, &nr_scanned, sc->order,
-+			sc->lumpy_reclaim_mode ? ISOLATE_BOTH : ISOLATE_INACTIVE,
-+			zone, sc->mem_cgroup,
-+			0, file);
-+		/*
-+		 * mem_cgroup_isolate_pages() keeps track of
-+		 * scanned pages on its own.
-+		 */
-+	}
- 
--		if (nr_taken == 0)
--			goto done;
-+	if (nr_taken == 0)
-+		goto done;
- 
--		nr_active = clear_active_flags(&page_list, count);
--		__count_vm_events(PGDEACTIVATE, nr_active);
-+	nr_active = clear_active_flags(&page_list, count);
-+	__count_vm_events(PGDEACTIVATE, nr_active);
- 
--		__mod_zone_page_state(zone, NR_ACTIVE_FILE,
--						-count[LRU_ACTIVE_FILE]);
--		__mod_zone_page_state(zone, NR_INACTIVE_FILE,
--						-count[LRU_INACTIVE_FILE]);
--		__mod_zone_page_state(zone, NR_ACTIVE_ANON,
--						-count[LRU_ACTIVE_ANON]);
--		__mod_zone_page_state(zone, NR_INACTIVE_ANON,
--						-count[LRU_INACTIVE_ANON]);
-+	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
-+					-count[LRU_ACTIVE_FILE]);
-+	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
-+					-count[LRU_INACTIVE_FILE]);
-+	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
-+					-count[LRU_ACTIVE_ANON]);
-+	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
-+					-count[LRU_INACTIVE_ANON]);
- 
--		nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
--		nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
--		__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
--		__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
-+	nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-+	nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-+	__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
-+	__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
- 
--		reclaim_stat->recent_scanned[0] += nr_anon;
--		reclaim_stat->recent_scanned[1] += nr_file;
-+	reclaim_stat->recent_scanned[0] += nr_anon;
-+	reclaim_stat->recent_scanned[1] += nr_file;
- 
--		spin_unlock_irq(&zone->lru_lock);
-+	spin_unlock_irq(&zone->lru_lock);
- 
--		nr_scanned += nr_scan;
--		nr_freed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
-+	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
-+
-+	/*
-+	 * If we are direct reclaiming for contiguous pages and we do
-+	 * not reclaim everything in the list, try again and wait
-+	 * for IO to complete. This will stall high-order allocations
-+	 * but that should be acceptable to the caller
-+	 */
-+	if (nr_reclaimed < nr_taken && !current_is_kswapd() && sc->lumpy_reclaim_mode) {
-+		congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
- 		/*
--		 * If we are direct reclaiming for contiguous pages and we do
--		 * not reclaim everything in the list, try again and wait
--		 * for IO to complete. This will stall high-order allocations
--		 * but that should be acceptable to the caller
-+		 * The attempt at page out may have made some
-+		 * of the pages active, mark them inactive again.
- 		 */
--		if (nr_freed < nr_taken && !current_is_kswapd() &&
--		    sc->lumpy_reclaim_mode) {
--			congestion_wait(BLK_RW_ASYNC, HZ/10);
--
--			/*
--			 * The attempt at page out may have made some
--			 * of the pages active, mark them inactive again.
--			 */
--			nr_active = clear_active_flags(&page_list, count);
--			count_vm_events(PGDEACTIVATE, nr_active);
--
--			nr_freed += shrink_page_list(&page_list, sc,
--							PAGEOUT_IO_SYNC);
--		}
-+		nr_active = clear_active_flags(&page_list, count);
-+		count_vm_events(PGDEACTIVATE, nr_active);
- 
--		nr_reclaimed += nr_freed;
-+		nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
-+	}
- 
--		local_irq_disable();
--		if (current_is_kswapd())
--			__count_vm_events(KSWAPD_STEAL, nr_freed);
--		__count_zone_vm_events(PGSTEAL, zone, nr_freed);
-+	local_irq_disable();
-+	if (current_is_kswapd())
-+		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
-+	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
- 
--		spin_lock(&zone->lru_lock);
--		/*
--		 * Put back any unfreeable pages.
--		 */
--		while (!list_empty(&page_list)) {
--			int lru;
--			page = lru_to_page(&page_list);
--			VM_BUG_ON(PageLRU(page));
--			list_del(&page->lru);
--			if (unlikely(!page_evictable(page, NULL))) {
--				spin_unlock_irq(&zone->lru_lock);
--				putback_lru_page(page);
--				spin_lock_irq(&zone->lru_lock);
--				continue;
--			}
--			SetPageLRU(page);
--			lru = page_lru(page);
--			add_page_to_lru_list(zone, page, lru);
--			if (is_active_lru(lru)) {
--				int file = is_file_lru(lru);
--				reclaim_stat->recent_rotated[file]++;
--			}
--			if (!pagevec_add(&pvec, page)) {
--				spin_unlock_irq(&zone->lru_lock);
--				__pagevec_release(&pvec);
--				spin_lock_irq(&zone->lru_lock);
--			}
-+	spin_lock(&zone->lru_lock);
-+	/*
-+	 * Put back any unfreeable pages.
-+	 */
-+	while (!list_empty(&page_list)) {
-+		int lru;
-+		page = lru_to_page(&page_list);
-+		VM_BUG_ON(PageLRU(page));
-+		list_del(&page->lru);
-+		if (unlikely(!page_evictable(page, NULL))) {
-+			spin_unlock_irq(&zone->lru_lock);
-+			putback_lru_page(page);
-+			spin_lock_irq(&zone->lru_lock);
-+			continue;
- 		}
--		__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
--		__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
--
--  	} while (nr_scanned < max_scan);
-+		SetPageLRU(page);
-+		lru = page_lru(page);
-+		add_page_to_lru_list(zone, page, lru);
-+		if (is_active_lru(lru)) {
-+			int file = is_file_lru(lru);
-+			reclaim_stat->recent_rotated[file]++;
-+		}
-+		if (!pagevec_add(&pvec, page)) {
-+			spin_unlock_irq(&zone->lru_lock);
-+			__pagevec_release(&pvec);
-+			spin_lock_irq(&zone->lru_lock);
-+		}
-+	}
-+	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
-+	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
- 
- done:
- 	spin_unlock_irq(&zone->lru_lock);
--- 
-1.7.1
+Pretty much everywhere, if you look at sched.c the only sched_class
+method not called with rq->lock held is ::task_fork().
+
+The interesting bits are that schedule()->pre_schedule()/idle_balance()
+can drop rq->lock as well as ->select_task_rq().
+
+
 
