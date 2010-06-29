@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab0F2Coo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 22:44:44 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:52218 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751031Ab0F2Con (ORCPT
+	id S1752537Ab0F2C4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 22:56:23 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48903 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab0F2C4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 22:44:43 -0400
-Date: Tue, 29 Jun 2010 12:44:06 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
-       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [Ocfs2-devel] [PATCH] Revert "writeback: limit
- write_cache_pages integrity scanning to current EOF"
-Message-ID: <20100629024406.GB6590@dastard>
-References: <20100628173529.GA10573@mail.oracle.com>
- <20100629002421.GY6590@dastard>
- <20100629005403.GC24343@mail.oracle.com>
- <AANLkTil1R9I94pVXLE50JAMPIwpiaZuroJAg4wcwyBUb@mail.gmail.com>
- <20100629015822.GD24343@mail.oracle.com>
- <AANLkTil5y7F9w-18mVi0G1S5pSv9MiKq6XL5MWAMFBQM@mail.gmail.com>
+	Mon, 28 Jun 2010 22:56:21 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH] memory hotplug disable boot option
+Cc: kosaki.motohiro@jp.fujitsu.com, Greg KH <gregkh@suse.de>,
+       Nathan Fontenot <nfont@austin.ibm.com>,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+In-Reply-To: <1277769867.8354.531.camel@nimitz>
+References: <20100628154455.GA13918@suse.de> <1277769867.8354.531.camel@nimitz>
+Message-Id: <20100629115232.38BC.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTil5y7F9w-18mVi0G1S5pSv9MiKq6XL5MWAMFBQM@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 29 Jun 2010 11:56:18 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 07:20:33PM -0700, Linus Torvalds wrote:
-> On Mon, Jun 28, 2010 at 6:58 PM, Joel Becker <Joel.Becker@oracle.com> wrote:
-> >
-> >        Well, shit.  Something has changed in here, or we're really
-> > really (un)lucky.  We visited this code a year ago or so when we had
-> > serious zeroing problems, and we tested the hell out of it.  Now it is
-> > broken again.  And it sure looks like that block_write_full_page() check
-> > has been there since before git.
+> On Mon, 2010-06-28 at 08:44 -0700, Greg KH wrote:
+> > > The directories being created are the standard directories, one for each of the memory
+> > > sections present at boot.  I think the most used files in each of these directories
+> > > is the state and removable file used to do memory hotplug.
+> > 
+> > And perhaps we shouldn't really be creating so many directories?  Why
+> > not work with the memory hotplug developers to change their interface to
+> > not abuse sysfs in such a manner? 
 > 
-> Hmm. I'm actually starting to worry that we should do the revert after all.
+> Heh, it wasn't abuse until we got this much memory.  But, I think this
+> one is pretty much 100% my fault.
 > 
-> Why? Locking. That page-writeback.c thing decides to limit the end to
-> the inode size the same way that block_write_full_page() does, but
-> block_write_full_page() holds the page lock, while page-writeback.c
-> does not. Which means that as a race against somebody else doing a
-> truncate(), the two things really are pretty different.
+> Nathan, I think the right fix here is probably to untie sysfs from the
+> sections a bit.  We should be able to have sysfs dirs that represent
+> more than one contiguous SECTION_SIZE area of memory.
+
+Why do we need abi breakage? Yourself talked about we guess ppc don't
+actually need 16MB section. I think IBM folks have to confirm it.
+If our guessing is correct, the firmware fixing is only necessary.
+
+Thats said, I don't 100% refuse your idea. it's interesting. but, 
+In generical I hate _unncessary_ abi change.
+
+
+> It will mean re-teaching some of the tools how things work.  They'll
+> have to know that you can split mem sections, and we'll have to come up
+> with a way to do the splitting.  
 > 
-> That said, write_cache_pages() obviously doesn't actually invalidate
-> the page (the way block_write_full_page() does), so locking matters a
-> whole lot less for it. If somebody is doing a concurrent truncate or a
-> concurrent write, then for the data to really show up reliably on disk
-> there would obviously have to be a separate sync operation involved,
-> so even with the lack of any locking, it should be safe.
-
-Yes, that is the premise on which the "stop @ EOF" code in
-write_cache_pages() is based. It's simply a snapshot of the EOF when
-the data integrity sync starts and as such any subsequent extensions
-to it that happen after the sync started are not something we have
-to worry about for this sync operation.
-
-OTOH, if there is a concurrent truncation while the loop is
-operating, then the existing checks for truncation after locking the
-page _must_ be sufficent to avoid writeback of such truncated pages
-otherwise truncate would already be broken.
-
-> I dunno. Filesystem corruption makes me nervous.
-
-You're not alone in that feeling. :/
-
-FWIW, it's taken us quite a long while (years) to iron out all of
-the known sync+crash bugs in XFS and as a result f the process we
-have a fair number of regression tests that tell us quickly when
-sync is has been broken. This test hasn't indicated any problems
-with XFS, so I'm fairly confident the change is safe.
-
-That said, ....
-
-> So I'm certainly
-> totally willing to do the revert if that makes ocfs2 work again. Even
-> if "work again" happens to be partly by mistake, and for some reason
-> that isn't obvious.
+> Does ppc *really* remove 16MB sections of RAM these days?  It's probably
+> worth checking with the firmware folks to see what the limits are in
+> practice.
 > 
-> Your call, I guess.  If any ocfs2 fix looks scary, and you'd prefer to
-> have an -rc4 (in a few days - not today) with just the revert, I'm ok
-> with that. Even if it's only a "at least no worse than 2.6.34"
-> situation rather than a real fix.
+> -- Dave
+> 
 
-... I agree with this.
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
