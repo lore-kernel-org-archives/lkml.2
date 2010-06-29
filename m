@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab0F2It0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 04:49:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23916 "EHLO mx1.redhat.com"
+	id S1754500Ab0F2Iu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 04:50:29 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40898 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754114Ab0F2ItZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 04:49:25 -0400
-Message-ID: <4C29B390.80602@redhat.com>
-Date: Tue, 29 Jun 2010 11:49:20 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1754241Ab0F2Iu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 04:50:27 -0400
+Date: Tue, 29 Jun 2010 10:50:24 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: David Miller <davem@davemloft.net>
+Cc: ospite@studenti.unina.it, alan@signal11.us, marcel@holtmann.org,
+       mdpoole@troilus.org, hadess@hadess.net, eric.dumazet@gmail.com,
+       linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw HIDIOCGFEATURE
+ and HIDIOCSFEATURE
+In-Reply-To: <20100629.001216.91341775.davem@davemloft.net>
+Message-ID: <alpine.LNX.2.00.1006291047560.13809@pobox.suse.cz>
+References: <1276467601-9066-1-git-send-email-alan@signal11.us> <20100628131437.bde782b6.ospite@studenti.unina.it> <20100629.001216.91341775.davem@davemloft.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 3/10] KVM: MMU: fix direct sp's access corruptted
-References: <4C2498EC.2010006@cn.fujitsu.com> <4C249BAD.6000609@cn.fujitsu.com> <4C287081.40300@redhat.com> <4C287332.5080803@cn.fujitsu.com> <4C2883D3.2050606@redhat.com> <4C2949A5.1070303@cn.fujitsu.com> <4C299B7E.5020303@redhat.com> <4C29A25C.7040900@cn.fujitsu.com>
-In-Reply-To: <4C29A25C.7040900@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2010 10:35 AM, Xiao Guangrong wrote:
->
->> We have now
->>
->>          if (is_shadow_present_pte(*sptep)&&  !is_large_pte(*sptep))
->>              continue;
->>
->> So we need to add a check, if sp->role.access doesn't match pt_access&
->> pte_access, we need to get a new sp with the correct access (can only
->> change read->write).
->>
->>      
-> Umm, we should update the spte at the gw->level, so we need get the child
-> sp, and compare its access at this point, just like this:
->
-> if (level == gw->level&&  is_shadow_present_pte(*sptep)) {
-> 	child_sp = page_header(__pa(*sptep&  PT64_BASE_ADDR_MASK));
->
-> 	if (child_sp->access != pt_access&  pte_access&  (diry ? 1 : ~ACC_WRITE_MASK )) {
-> 		/* Zap sptep */
-> 		......
-> 	}
-> 		
-> }
->
-> So, why not use the new spte flag (SPTE_NO_DIRTY in my patch) to mark this spte then we can see
-> this spte whether need updated directly? i think it more simpler ;-)
->    
+On Tue, 29 Jun 2010, David Miller wrote:
 
-It's new state, and new state means more maintenance of that state and 
-the need to consider the state in all relevant code paths.
+> >> This patch adds support or getting and setting feature reports for bluetooth
+> >> HID devices from HIDRAW.
+> >> 
+> >> Signed-off-by: Alan Ott <alan@signal11.us>
+> >> ---
+> > 
+> > Ping.
+> 
+> We effectively don't have a bluetooth maintainer at the current point in 
+> time.  I've tried to let patches sit for a while hoping the listed 
+> maintainer would do something, at least occaisionally, but that simply 
+> isn't happening.
 
-In terms of maintainability, changing walk_addr() is best, since it 
-maintains the tight invariant that PT_PAGE_DIRECTORY_LEVEL sptes are 
-always consistent with their sptes.  Updating fetch() to allow for a 
-relaxed invariant (spte may be read-only while gpte is write-dirty) is 
-more complicated, but performs better.  This is also consistent with 
-what we do with PT_PAGE_TABLE_LEVEL gptes/sptes and with unsync pages.
+Frankly, I don't understand what exactly the current situation with 
+in-kernel bluetooth stack is anyway. 
 
-btw, how can the patch work?
+What is the relation between what we have in net/bluetooth and the tree at 
+[1], which seems to be quite actively developed?
 
->
-> +		if (level == gw->level&&  !dirty&&
-> +		      access&  gw->pte_access&  ACC_WRITE_MASK)
-> +			spte |= SPTE_NO_DIRTY;
-> +
->   		spte = __pa(sp->spt)
->   			| PT_PRESENT_MASK | PT_ACCESSED_MASK
->   			| PT_WRITABLE_MASK | PT_USER_MASK;
->    
+> So I'll just pick patches up directly as I find time to review them, but 
+> I have to warn that for me it's going to be done in a very low priority 
+> way because I really don't find bluetooth all that exciting. :-)
 
-spte is immediately overwritten by the following assignment.
+If needed, I can at least take over the net/bluetooth/hidp part, as I 
+maintain the rest of the HID code anyway.
 
-However, the other half of the patch can be adapted:
-
->
-> +		if (*sptep&  SPTE_NO_DIRTY) {
-> +			struct kvm_mmu_page *child;
-> +
-> +			WARN_ON(level !=  gw->level);
-> +			WARN_ON(!is_shadow_present_pte(*sptep));
-> +			if (dirty) {
-> +				child = page_header(*sptep&
-> +						      PT64_BASE_ADDR_MASK);
-> +				mmu_page_remove_parent_pte(child, sptep);
-> +				__set_spte(sptep, shadow_trap_nonpresent_pte);
-> +				kvm_flush_remote_tlbs(vcpu->kvm);
-> +			}
-> +		}
-> +
->   		if (is_shadow_present_pte(*sptep)&&  !is_large_pte(*sptep))
->   			continue;
->    
-
-Simply replace (*spte & SPTE_NO_DIRTY) with a condition that checks 
-whether sp->access is consistent with gw->pt(e)_access.
-
-Can you write a test case for qemu-kvm.git/kvm/test that demonstrates 
-the problem and the fix?  It will help ensure we don't regress in this area.
+[1] http://git.kernel.org/?p=bluetooth/bluez.git;a=summary
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
