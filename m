@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab0F2GGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 02:06:22 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36451 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab0F2GGV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 02:06:21 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Steven Rostedt <rostedt@goodmis.org>, John Kacur <jkacur@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] trace-cmd: Add to ignore event not found error
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20100629144832.38C6.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 29 Jun 2010 15:06:18 +0900 (JST)
+	id S1751972Ab0F2GPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 02:15:55 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52479 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751456Ab0F2GPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 02:15:53 -0400
+Date: Tue, 29 Jun 2010 16:15:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andres Salomon <dilinger@queued.net>
+Cc: devicetree-discuss@lists.ozlabs.org, pgf@laptop.org, x86@kernel.org,
+       linux-kernel@vger.kernel.org, Mitch Bradley <wmb@laptop.org>,
+       mingo@redhat.com, hpa@zytor.com, sparclinux@vger.kernel.org,
+       tglx@linutronix.de, cjb@laptop.org, davem@davemloft.net
+Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building
+ code out into drivers/of
+Message-Id: <20100629161544.e0af63f0.sfr@canb.auug.org.au>
+In-Reply-To: <20100628220037.5744c207@debian>
+References: <20100628215407.2017bf2f@debian>
+	<20100628220037.5744c207@debian>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__29_Jun_2010_16_15_44_+1000_WUxM38Ip/cO_C_Xo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Usually trace-cmd die If 'trace-cmd start' find wrong -e argument.
-It mean an admin can't pass the trace point of unloaded kernel module.
-It can cause nightmare if he manage lots and various computers.
+--Signature=_Tue__29_Jun_2010_16_15_44_+1000_WUxM38Ip/cO_C_Xo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That said, admin want to use the same trace configuration. but, example,
-some machine loaded ext4 module, others unloaded. It makes harder to
-reuse.
+Hi Andres,
 
-So, I simply implement ignore option.
+On Mon, 28 Jun 2010 22:00:37 -0400 Andres Salomon <dilinger@queued.net> wro=
+te:
+>
+> diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+> index 6f1470b..b4cb63b 100644
+> --- a/arch/sparc/Kconfig
+> +++ b/arch/sparc/Kconfig
+> @@ -150,6 +150,7 @@ config ARCH_NO_VIRT_TO_BUS
+> =20
+>  config OF
+>  	def_bool y
+> +	select OF_PROMTREE
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- trace-cmd.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+Please put this select in CONFIG_SPARC instead as we want to move
+CONFIG_OF to drivers/og/Kconfig
 
-diff --git a/trace-cmd.c b/trace-cmd.c
-index cdb0735..b4eb0fe 100644
---- a/trace-cmd.c
-+++ b/trace-cmd.c
-@@ -113,6 +113,8 @@ struct events {
- 
- static struct tracecmd_recorder *recorder;
- 
-+static int ignore_event_not_found = 0;
-+
- static char *get_temp_file(int cpu)
- {
- 	char *file = NULL;
-@@ -738,7 +740,7 @@ static void update_event(const char *name, const char *filter,
- 
- 		ret = update_glob(str, filter, filter_only, update);
- 		free(str);
--		if (!ret)
-+		if (!ret && !ignore_event_not_found)
- 			die("No events enabled with %s", name);
- 		return;
- 	}
-@@ -752,7 +754,7 @@ static void update_event(const char *name, const char *filter,
- 	ret2 = update_glob(str, filter, filter_only, update);
- 	free(str);
- 
--	if (!ret && !ret2)
-+	if (!ret && !ret2 && !ignore_event_not_found)
- 		goto fail;
- 
- 	return;
-@@ -1431,7 +1433,7 @@ int main (int argc, char **argv)
- 		   (strcmp(argv[1], "start") == 0) ||
- 		   ((extract = strcmp(argv[1], "extract") == 0))) {
- 
--		while ((c = getopt(argc-1, argv+1, "+he:f:Fp:do:O:s:r:vg:l:n:P:N:tb:k")) >= 0) {
-+		while ((c = getopt(argc-1, argv+1, "+he:f:Fp:do:O:s:r:vg:l:n:P:N:tb:ki")) >= 0) {
- 			switch (c) {
- 			case 'h':
- 				usage(argv);
-@@ -1543,6 +1545,9 @@ int main (int argc, char **argv)
- 			case 'k':
- 				keep = 1;
- 				break;
-+			case 'i':
-+				ignore_event_not_found = 1;
-+				break;
- 			}
- 		}
- 
--- 
-1.6.5.2
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__29_Jun_2010_16_15_44_+1000_WUxM38Ip/cO_C_Xo
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMKY+QAAoJEDMEi1NhKgbsDJMH/0lTOUhiEzu+od7cSu8EyqVL
++rHJhvo0mqAbEIF0qMuPj2JqsPJ6/O1cAPTBJ5eSDUXtxTZoLlnFzeU0tD8rtmca
+DiXT8+9rYS+vlx93yZe306RNjuCIhwWMoDfraAuo6WUErGN+mzfX26vUbXhHmoYN
+22p3jjD/DraYNq+l689oC3LFQCy8fSMpPxlULDijk6sMXgEE1+gTa3OAEVty7QvS
+j30YyGrqU3x+Q1co1rC+iw5C9Zc48Fy891Amf6DGPssI74xLqIJNw5euE2pdy4EL
+keCZrpK/KJZ8ujcyznRyrClcIc7eqbtsiLZYY2/VVC531yPuJg6C99e4U4xrsig=
+=+saU
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__29_Jun_2010_16_15_44_+1000_WUxM38Ip/cO_C_Xo--
