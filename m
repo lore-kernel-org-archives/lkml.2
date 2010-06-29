@@ -1,111 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab0F2EnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 00:43:13 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:56421 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab0F2EnL (ORCPT
+	id S1751920Ab0F2Eog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 00:44:36 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:42843 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab0F2Eof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 00:43:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QwNN1hYot70Rjwnt49vHZ+teJ47fpUOCSMmY2QVPGNHvff4u6xWJj1zBQZaOJLegMw
-         wYB1azuwwCPq7rgo21+0RwwRYQz/Tg0HRJ7DJtlqlA+VhHcaXCZhkmXG4MQeCf7RQ0ok
-         8QS5cqNrBs7bZSt8CCtb2yG/Pr1MaC+7Yoj8c=
-Date: Mon, 28 Jun 2010 21:43:32 -0700
-From: mark gross <640e9920@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: markgross@thegnar.org, linux-pm@lists.linux-foundation.org,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Florian Mickler <florian@mickler.org>, linux-pci@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being
- lost
-Message-ID: <20100629044332.GD6250@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <201006261514.13491.rjw@sisk.pl>
- <20100627222804.GA5522@gvim.org>
- <201006281450.11285.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006281450.11285.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 29 Jun 2010 00:44:35 -0400
+Date: Tue, 29 Jun 2010 07:44:23 +0300 (EEST)
+Message-Id: <20100629.074423.71111160.Hiroshi.DOYU@nokia.com>
+To: catalin.marinas@arm.com
+Cc: linux-kernel@vger.kernel.org, ext-phil.2.carmody@nokia.com,
+       linux-omap@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/1] kmemleak: Fix false positive with alias
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+In-Reply-To: <1277736372.25271.102.camel@e102109-lin.cambridge.arm.com>
+References: <1276841055-13843-1-git-send-email-Hiroshi.DOYU@nokia.com>
+	<1277736372.25271.102.camel@e102109-lin.cambridge.arm.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Jun 2010 04:44:25.0627 (UTC) FILETIME=[C04746B0:01CB1745]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 02:50:10PM +0200, Rafael J. Wysocki wrote:
-> On Monday, June 28, 2010, mark gross wrote:
-> > Looks good to me!
-> 
-> Great, thanks!  May I add your "Acked-by" to the patch, then?
-yes.
+From: ext Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [RFC][PATCH 0/1] kmemleak: Fix false positive with alias
+Date: Mon, 28 Jun 2010 16:46:12 +0200
 
-Acked-by: markgross <markgross@thegnar.org>
+> Hi,
+> 
+> (and sorry for the delay)
+> 
+> On Fri, 2010-06-18 at 07:04 +0100, Hiroshi DOYU wrote:
+>> This is another version of "kmemleak: Fix false positive", which
+>> introduces another alias tree to keep track of all alias address of
+>> each objects, based on the discussion(*1)
+>> 
+>> You can also find the previous one(*2), which uses special scan area
+>> for alias addresses with a conversion function.
+>> 
+>> Compared with both methods, it seems that the current one takes a bit
+>> longer to scan as below, tested with 512 elementes of (*3).
+>> 
+>> "kmemleak: Fix false positive with alias":
+>> # time echo scan > /mnt/kmemleak
+>> real    0m 8.40s
+>> user    0m 0.00s
+>> sys     0m 8.40s
+>> 
+>> "kmemleak: Fix false positive with special scan":
+>> # time echo scan > /mnt/kmemleak
+>> real    0m 3.96s
+>> user    0m 0.00s
+>> sys     0m 3.96s
+> 
+> Have you tried without your patches (just the test module but without
+> aliasing the pointers)? I'm curious what's the impact of your first set
+> of patches.
 
---mgross
- 
-> Rafael
+IIRC, not much difference against the one with the first patches. I'll
+measure it again later.
+
+>> For our case(*4) to reduce false positives for the 2nd level IOMMU
+>> pagetable allocation, the previous special scan  seems to be enough
+>> lightweight, although there might be possiblity to improve alias
+>> one and also I might misunderstand the original proposal of aliasing.
 > 
-> 
-> > On Sat, Jun 26, 2010 at 03:14:13PM +0200, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > > 
-> > > One of the arguments during the suspend blockers discussion was that
-> > > the mainline kernel didn't contain any mechanisms making it possible
-> > > to avoid losing wakeup events during system suspend.
-> > > 
-> > > Generally, there are two problems in that area.  First, if a wakeup
-> > > event occurs exactly when /sys/power/state is being written to, it
-> > > may be delivered to user space right before the freezer kicks in, so
-> > > the user space consumer of the event may not be able to process it
-> > > before the system is suspended.  Second, if a wakeup event occurs
-> > > after user space has been frozen, it is not generally guaranteed that
-> > > the ongoing transition of the system into a sleep state will be
-> > > aborted.
-> > > 
-> > > To address these issues introduce a new global sysfs attribute,
-> > > /sys/power/wakeup_count, associated with a running counter of wakeup
-> > > events and three helper functions, pm_stay_awake(), pm_relax(), and
-> > > pm_wakeup_event(), that may be used by kernel subsystems to control
-> > > the behavior of this attribute and to request the PM core to abort
-> > > system transitions into a sleep state already in progress.
-> > > 
-> > > The /sys/power/wakeup_count file may be read from or written to by
-> > > user space.  Reads will always succeed (unless interrupted by a
-> > > signal) and return the current value of the wakeup events counter.
-> > > Writes, however, will only succeed if the written number is equal to
-> > > the current value of the wakeup events counter.  If a write is
-> > > successful, it will cause the kernel to save the current value of the
-> > > wakeup events counter and to abort the subsequent system transition
-> > > into a sleep state if any wakeup events are reported after the write
-> > > has returned.
-> > > 
-> > > [The assumption is that before writing to /sys/power/state user space
-> > > will first read from /sys/power/wakeup_count.  Next, user space
-> > > consumers of wakeup events will have a chance to acknowledge or
-> > > veto the upcoming system transition to a sleep state.  Finally, if
-> > > the transition is allowed to proceed, /sys/power/wakeup_count will
-> > > be written to and if that succeeds, /sys/power/state will be written
-> > > to as well.  Still, if any wakeup events are reported to the PM core
-> > > by kernel subsystems after that point, the transition will be
-> > > aborted.]
-> > > 
-> > > Additionally, put a wakeup events counter into struct dev_pm_info and
-> > > make these per-device wakeup event counters available via sysfs,
-> > > so that it's possible to check the activity of various wakeup event
-> > > sources within the kernel.
-> > > 
-> > > To illustrate how subsystems can use pm_wakeup_event(), make the
-> > > low-level PCI runtime PM wakeup-handling code use it.
-> > > 
-> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > ---
+> The performance impact is indeed pretty high, though some parts of the
+> code look over-engineered to me (the __scan_block function with a loop
+> going through an array of two function pointers - I think the compiler
+> cannot figure out what to inline). You could just extend the
+> find_and_get_object() to search both trees under a single spinlock
+> region (as locking also takes time).
+
+Ok, a good point.
+
+> Anyway, you still get to search two trees for any pointer so there would
+> always be some performance impact. I just hoped they weren't be as bad.
+> In a normal system (not test module), how many elements would the alias
+> tree have?
+
+Just in our case, it's 512 at most.
+
+> Another approach - if we assume that there is a single alias per object
+> and such aliases don't overlap, we could just move (delete + re-insert)
+> the corresponding kmemleak_object in the tree to the alias position.
+> This way we only keep a single tree and a single object for an allocated
+> block. But in your use-case, the physical address of an object may
+> actually match the virtual address of a different object, so
+> lookup_object() needs to be iterative. You need two new kmemleak API
+> functions, e.g. kmemleak_alias() and kmemleak_unalias(), to be called
+> after allocation and before freeing a memory block.
+>
+> If we can't make the performance hit acceptable, we could go for the
+> first approach and maybe just extend kmemleak_scan_area with a function
+> pointer structure rather than adding a new one. But as I said
+> previously, my main issue with your original approach is that I would
+> prefer to call the kmemleak API at the point where the false positive is
+> allocated rather than where the parent object was.
+
+I'll try both and measure their impact again. Thank you for your comment.
