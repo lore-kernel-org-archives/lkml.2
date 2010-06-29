@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab0F2UlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 16:41:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38770 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754825Ab0F2UlN convert rfc822-to-8bit (ORCPT
+	id S1755223Ab0F2Use (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 16:48:34 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57252 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab0F2Usd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 16:41:13 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <AANLkTimIh9ZAasPnN5xxGxbupwkct7UihHcMe26r-MD7@mail.gmail.com>
-References: <AANLkTimIh9ZAasPnN5xxGxbupwkct7UihHcMe26r-MD7@mail.gmail.com> <20100629200259.23196.81509.stgit@warthog.procyon.org.uk>
-To: Steve French <smfrench@gmail.com>
-Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, jlayton@redhat.com,
-       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-       sjayaraman@suse.de, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3] Extended file stat functions
+	Tue, 29 Jun 2010 16:48:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=BqNzTdxK7txIKhfjzdXdLqNLdAXlb3jTyeKwZRkzSxNrfcJlmsYHRp22Il4VRZMZC1
+         UN1AXwUP8vA6+ArKbRhdjmLkJRcHINDVAEAiK4wCORhvD6RMsMEdZvr7WggqeOiM3T9R
+         PBdNJYsr/Ik2wodV5AXvb5tDQYzQNTmSiMBDs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 29 Jun 2010 21:41:01 +0100
-Message-ID: <23973.1277844061@redhat.com>
+Date: Tue, 29 Jun 2010 13:48:31 -0700
+Message-ID: <AANLkTikgMbxsivH__PDrbOIi8biVDCqf26Is5RWENB9d@mail.gmail.com>
+Subject: Length and alignment in scsi_execute_async and blk_rq_map_user
+From: Brett Dennis <brettldennis@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steve French <smfrench@gmail.com> wrote:
+Hello,
 
-> How does a fs return an "unknown" value for one
-> (e.g. version field) ... 0  or -1  or ...
+Question for linux-scsi: In kernel 2.6.26, the implementation of
+__blk_rq_map_user changed and now includes a call to bio_copy_user:
 
-Well, for the new creation time, inode version and data version fields, the
-query_flags field has a bit for each that's set if the field contains a value,
-and is clear if it doesn't.
+uaddr = (unsigned long) ubuf;
+alignment = queue_dma_alignment(q) | q->dma_pad_mask;
+if (!(uaddr & alignment) && !(len & alignment))
 
-See the test program on patch 3.
+bio = bio_map_user(q, NULL, uaddr, len, reading);
 
-> One hole that this reminded me about is how to return the superblock
-> time granularity (for NFSv4 this is attribute 51 "time_delta" which
-> is called on a superblock not on a file).  We run into time rounding
-> issues with Samba too.
+else
 
-That sounds like something that should be accessible through statfs.  But it
-could be made accessible here too.  It would also apply to FAT, which I
-believe has a 2s granularity.
-
-> >  (4) Should the inode number and data version number fields be 128-bit?
-> This is tricky for SMB2, if you can also provide a device id (or an object
-> id of some sort for the superblock) then 64 bit inode number is ok.
-
-A remote device ID?  That would be possible.  That could be used by AFS to
-return the numeric volume ID (32 bits) and by NFS to return the FSID (128
-bits).  Would you be using the VolumeGUID (128 bits) for SMB2?
+bio = bio_copy_user(q, uaddr, len, reading);
 
 
-David
+bio_copy_user uses the HBA's scatter-gather pages for the copy.  The
+problem I face is that if the data size is not aligned properly, or
+the len parameter does not divide properly, and the transfer is
+greater than the number of scatter-gather pages, the IO operation will
+fail.  I am considering increasing the size of my data buffer to meet
+the length-alignment requirement and changing the 'len' parameter
+passed into blk_rq_map_user to include a larger size than my CDB
+transfer length.  The tape device should still honor the CDB write
+length, so unless there are other limitations imposed by the Linux
+kernel or SCSI subsystem, I think this is a workable solution.  Does
+anyone in this list know if there is are requirements against sending
+a larger buffer length than CDB transfer length?
+
+Thanks in advance.
+
+Brett Dennis
+IBM tape device driver developer
