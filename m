@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab0F2HtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 03:49:20 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55817 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753388Ab0F2HtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 03:49:19 -0400
-Message-ID: <4C29A49C.8040804@cn.fujitsu.com>
-Date: Tue, 29 Jun 2010 15:45:32 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 3/10] KVM: MMU: fix direct sp's access corruptted
-References: <4C2498EC.2010006@cn.fujitsu.com> <4C249BAD.6000609@cn.fujitsu.com> <4C287081.40300@redhat.com> <4C287332.5080803@cn.fujitsu.com> <4C2883D3.2050606@redhat.com> <4C2949A5.1070303@cn.fujitsu.com> <4C299B7E.5020303@redhat.com> <4C29A30A.8020107@redhat.com>
-In-Reply-To: <4C29A30A.8020107@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754025Ab0F2HtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 03:49:14 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58015 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752928Ab0F2HtM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 03:49:12 -0400
+Subject: Re: [PATCH 00/28] mm: preemptibility -v3
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>,
+       "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1277797219.2096.884.camel@ymzhang.sh.intel.com>
+References: <20100607110654.606530953@chello.nl>
+	 <1276134311.2096.438.camel@ymzhang.sh.intel.com>
+	 <1276152750.2046.2485.camel@twins>
+	 <1276153198.2096.465.camel@ymzhang.sh.intel.com>
+	 <1277115718.1875.490.camel@laptop>  <1277373331.1875.940.camel@laptop>
+	 <1277797219.2096.884.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 29 Jun 2010 09:48:33 +0200
+Message-ID: <1277797713.1868.0.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-06-29 at 15:40 +0800, Zhang, Yanmin wrote:
+> On Thu, 2010-06-24 at 11:55 +0200, Peter Zijlstra wrote:
 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-mmu_preempt.git mmu_preempt
 
-Avi Kivity wrote:
+> We tested the tree on many machines with many benchmarks. Comparing with pure kernel 2.6.35-rc3,
+> there is no clear performance regression/improvement. We didn't run into panic again.
 
-> 
-> Note:
-> 
-> - modifying walk_addr() to call kvm_mmu_pte_write() is probably not so
-> bad.  It's rare that a large pte walk sets the dirty bit, and it's
-> probably rare to share those large ptes.  Still, I think the fetch()
-> change is better since it's more local.
-> 
-> - there was once talk that instead of folding pt_access and pte_access
-> together into the leaf sp->role.access, each sp level would have its own
-> access permissions.  In this case we don't even have to get a new direct
-> sp, only change the PT_DIRECTORY_LEVEL spte to add write permissions
-> (all direct sp's would be writeable and permissions would be controlled
-> at their parent_pte level).  Of course that's a much bigger change than
-> this bug fix.
-> 
-
-Yeah, i have considered this way, but it will change the shadow page's mapping
-way: it control the access at the upper level, but in the current code, we allow
-the upper level have the ALL_ACCESS and control the access right at the last level.
-It will break many things, such as write-protected...
+Most awesome, thanks!
