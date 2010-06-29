@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab0F2Jnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 05:43:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42632 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754658Ab0F2Jns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 05:43:48 -0400
-Date: Tue, 29 Jun 2010 11:43:42 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: stable@kernel.org
-Cc: Krzysztof =?utf-8?Q?Ha=C5=82asa?= <khc@pm.waw.pl>,
-       Alan <alan@clueserver.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH for stable] kbuild: Fix modpost segfault
-Message-ID: <20100629094341.GA26045@sepie.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754867Ab0F2KPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 06:15:06 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:3013 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab0F2KPC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 06:15:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=GCzIHRIxaS+DGqMaP2dKuDsVzHt1Sr0qluuGptueUexRVf3IYmBKeO7wUwAGkAauJr
+         Iu4HFlDx417Ihyn/evGsHgk+p5Mu3ZUgNDPSWJA8N0rmmgurlqib+Lf56K902Jp/W78P
+         DsbomIsLr2gxkLNg/AINuAfnwv7Ok6dAUx+XU=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: Kernel Janitors <kernel-janitors@vger.kernel.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
+       linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/25] r852: remove casts from void*
+Date: Tue, 29 Jun 2010 14:14:57 +0400
+Message-Id: <1277806498-30738-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Remove unnesessary casts from void*.
 
-please add this to stable, it's a bug that started showing up with newer
-gcc. The upstream commit is 1c938663d58b5b2965976a6f54cc51b5d6f691aa.
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/mtd/nand/r852.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-Michal
-
-From: Krzysztof Halasa <khc@pm.waw.pl>
-
-Alan <alan@clueserver.org> writes:
-
-> program: /home/alan/GitTrees/linux-2.6-mid-ref/scripts/mod/modpost -o
-> Module.symvers -S vmlinux.o
->
-> Program received signal SIGSEGV, Segmentation fault.
-
-It just hit me.
-It's the offset calculation in reloc_location() which overflows:
-        return (void *)elf->hdr + sechdrs[section].sh_offset +
-               (r->r_offset - sechdrs[section].sh_addr);
-
-E.g. for the first rodata r entry:
-r->r_offset < sechdrs[section].sh_addr
-and the expression in the parenthesis produces 0xFFFFFFE0 or something
-equally wise.
-
-Reported-by: Alan <alan@clueserver.org>
-Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
-Tested-by: Alan <alan@clueserver.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-
-
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index 3318692..f877900 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1342,7 +1342,7 @@ static unsigned int *reloc_location(struct elf_info *elf,
- 	int section = sechdr->sh_info;
- 
- 	return (void *)elf->hdr + sechdrs[section].sh_offset +
--		(r->r_offset - sechdrs[section].sh_addr);
-+		r->r_offset - sechdrs[section].sh_addr;
+diff --git a/drivers/mtd/nand/r852.c b/drivers/mtd/nand/r852.c
+index 78a4232..c0a9835 100644
+--- a/drivers/mtd/nand/r852.c
++++ b/drivers/mtd/nand/r852.c
+@@ -64,8 +64,8 @@ static inline void r852_write_reg_dword(struct r852_device *dev,
+ /* returns pointer to our private structure */
+ static inline struct r852_device *r852_get_dev(struct mtd_info *mtd)
+ {
+-	struct nand_chip *chip = (struct nand_chip *)mtd->priv;
+-	return (struct r852_device *)chip->priv;
++	struct nand_chip *chip = mtd->priv;
++	return chip->priv;
  }
  
- static int addend_386_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
+ 
+-- 
+1.7.0.4
+
