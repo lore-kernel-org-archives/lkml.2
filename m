@@ -1,54 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab0F2IpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 04:45:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56189 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754370Ab0F2IpS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 04:45:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Jgnf4GV38YbLZxn0u5JGQcXS1I0hRayXxuo2zHNYbgMijlPElDAxFbCDSsqcGiQZYZ
-         k3M4HrKvOWVUXwD/BGuJ6fD0p5VCvsPoc+bb8Lc3ejyeYIU7qVJbMna2FQ8zSHpAwAGW
-         LF47htQoTd25GDT0yLx65YCUij/noYiwOB6XY=
+	id S1754400Ab0F2It0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 04:49:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23916 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754114Ab0F2ItZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 04:49:25 -0400
+Message-ID: <4C29B390.80602@redhat.com>
+Date: Tue, 29 Jun 2010 11:49:20 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100628210342.GW4175@outflux.net>
-References: <20100623181129.GM5876@outflux.net>
-	<20100623194145.GA19628@redhat.com>
-	<20100623202335.GA4424@x200>
-	<20100628130028.73757a46.akpm@linux-foundation.org>
-	<20100628210342.GW4175@outflux.net>
-Date: Tue, 29 Jun 2010 11:45:14 +0300
-Message-ID: <AANLkTinlrnSEwnWn_qcvdfqXM6b_bA3hbBjBrqgpQnKX@mail.gmail.com>
-Subject: Re: [PATCH] sanitize task->comm to avoid leaking escape codes
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 3/10] KVM: MMU: fix direct sp's access corruptted
+References: <4C2498EC.2010006@cn.fujitsu.com> <4C249BAD.6000609@cn.fujitsu.com> <4C287081.40300@redhat.com> <4C287332.5080803@cn.fujitsu.com> <4C2883D3.2050606@redhat.com> <4C2949A5.1070303@cn.fujitsu.com> <4C299B7E.5020303@redhat.com> <4C29A25C.7040900@cn.fujitsu.com>
+In-Reply-To: <4C29A25C.7040900@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 12:03 AM, Kees Cook <kees.cook@canonical.com> wrote:
-> On Mon, Jun 28, 2010 at 01:00:28PM -0700, Andrew Morton wrote:
->> Surely it would be better to fix the tools which display this info
->> rather than making the kernel tell fibs.
+On 06/29/2010 10:35 AM, Xiao Guangrong wrote:
 >
-> The strncpy in get_task_comm() is totally wrong -- it's testing the length
-> of task->comm.
+>> We have now
+>>
+>>          if (is_shadow_present_pte(*sptep)&&  !is_large_pte(*sptep))
+>>              continue;
+>>
+>> So we need to add a check, if sp->role.access doesn't match pt_access&
+>> pte_access, we need to get a new sp with the correct access (can only
+>> change read->write).
+>>
+>>      
+> Umm, we should update the spte at the gw->level, so we need get the child
+> sp, and compare its access at this point, just like this:
+>
+> if (level == gw->level&&  is_shadow_present_pte(*sptep)) {
+> 	child_sp = page_header(__pa(*sptep&  PT64_BASE_ADDR_MASK));
+>
+> 	if (child_sp->access != pt_access&  pte_access&  (diry ? 1 : ~ACC_WRITE_MASK )) {
+> 		/* Zap sptep */
+> 		......
+> 	}
+> 		
+> }
+>
+> So, why not use the new spte flag (SPTE_NO_DIRTY in my patch) to mark this spte then we can see
+> this spte whether need updated directly? i think it more simpler ;-)
+>    
 
-It also fills not just any buffer but buffer which is TASK_COMM_LEN byte wide.
+It's new state, and new state means more maintenance of that state and 
+the need to consider the state in all relevant code paths.
 
-> Why should get_task_comm not take a destination buffer length argument?
+In terms of maintainability, changing walk_addr() is best, since it 
+maintains the tight invariant that PT_PAGE_DIRECTORY_LEVEL sptes are 
+always consistent with their sptes.  Updating fetch() to allow for a 
+relaxed invariant (spte may be read-only while gpte is write-dirty) is 
+more complicated, but performs better.  This is also consistent with 
+what we do with PT_PAGE_TABLE_LEVEL gptes/sptes and with unsync pages.
 
-If you pass too small, you needlessly truncate output.
-If you pass too large, you waste space.
+btw, how can the patch work?
+
+>
+> +		if (level == gw->level&&  !dirty&&
+> +		      access&  gw->pte_access&  ACC_WRITE_MASK)
+> +			spte |= SPTE_NO_DIRTY;
+> +
+>   		spte = __pa(sp->spt)
+>   			| PT_PRESENT_MASK | PT_ACCESSED_MASK
+>   			| PT_WRITABLE_MASK | PT_USER_MASK;
+>    
+
+spte is immediately overwritten by the following assignment.
+
+However, the other half of the patch can be adapted:
+
+>
+> +		if (*sptep&  SPTE_NO_DIRTY) {
+> +			struct kvm_mmu_page *child;
+> +
+> +			WARN_ON(level !=  gw->level);
+> +			WARN_ON(!is_shadow_present_pte(*sptep));
+> +			if (dirty) {
+> +				child = page_header(*sptep&
+> +						      PT64_BASE_ADDR_MASK);
+> +				mmu_page_remove_parent_pte(child, sptep);
+> +				__set_spte(sptep, shadow_trap_nonpresent_pte);
+> +				kvm_flush_remote_tlbs(vcpu->kvm);
+> +			}
+> +		}
+> +
+>   		if (is_shadow_present_pte(*sptep)&&  !is_large_pte(*sptep))
+>   			continue;
+>    
+
+Simply replace (*spte & SPTE_NO_DIRTY) with a condition that checks 
+whether sp->access is consistent with gw->pt(e)_access.
+
+Can you write a test case for qemu-kvm.git/kvm/test that demonstrates 
+the problem and the fix?  It will help ensure we don't regress in this area.
+
+-- 
+error compiling committee.c: too many arguments to function
+
