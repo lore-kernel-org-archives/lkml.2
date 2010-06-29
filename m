@@ -1,110 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab0F2Rz5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 13:55:57 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:37267 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab0F2Rzz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 13:55:55 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 12/25] x86, lmb: Add get_free_all_memory_range()
-Date: Tue, 29 Jun 2010 11:56:36 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Jan Beulich <jbeulich@novell.com>
-References: <1277227614-11581-1-git-send-email-yinghai@kernel.org> <1277227614-11581-13-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1277227614-11581-13-git-send-email-yinghai@kernel.org>
+	id S1753946Ab0F2R5J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 13:57:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4452 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753239Ab0F2R5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 13:57:07 -0400
+Date: Tue, 29 Jun 2010 19:54:22 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Jerome Marchand <jmarchan@redhat.com>,
+       Mandeep Singh Baines <msb@google.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: while_each_thread() under rcu_read_lock() is broken?
+Message-ID: <20100629175422.GB18440@redhat.com>
+References: <20100622212357.GA19670@redhat.com> <20100622221226.GP2290@linux.vnet.ibm.com> <20100623152421.GA8445@redhat.com> <20100624180726.GK2373@linux.vnet.ibm.com> <20100624215702.GA21360@redhat.com> <20100625034105.GD2391@linux.vnet.ibm.com> <20100625095548.GA6292@redhat.com> <20100628234358.GJ2357@linux.vnet.ibm.com> <20100629130503.GA5237@redhat.com> <20100629153445.GC2765@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006291156.38178.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100629153445.GC2765@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 22, 2010 11:26:41 am Yinghai Lu wrote:
+On 06/29, Paul E. McKenney wrote:
+>
+> On Tue, Jun 29, 2010 at 03:05:03PM +0200, Oleg Nesterov wrote:
+> >
+> > Paul, please let me know if I misunderstood your concerns, or if I missed
+> > something.
+>
+> Thank you very much for laying this out completely!  I was having a hard
+> time believing that it was OK to miss threads in the "ls /proc/2910/task"
+> case.  But of course similar issues can arise when running "ls" on a
+> directory with lots of files that are coming and going quickly in the
+> meantime, I guess.
 
-> +	pr_info("Subtract (%d early reservations)\n", count);
-> +
-> +	for_each_lmb(reserved, r) {
-> +		pr_info("  [%010llx - %010llx]\n", (u64)r->base, (u64)r->base + r->size);
+Yes. And again, even if 2910 is not the group leader and it is exiting,
+"ls /proc/2910/task" will work because proc_task_readdir() akways starts
+at 2910->group_leader == 2008.
 
-Use %pR format and consider adding text to the line, e.g.,
-"lmb: early reservation [%#010llx-%#010llx] removed" so that
-grep output is useful all by itself, without requiring the
-context of the preceding lines.
+It doesn't work only if proc_task_readdir() can't find its leader, in
+this particular case this just means 2910 no longer exists, and thus
+/proc/2910/ is dead even if we can still find this dentry.
 
-> +		final_start = PFN_DOWN(r->base);
-> +		final_end = PFN_UP(r->base + r->size);
-> +		if (final_start >= final_end)
-> +			continue;
-> +		subtract_range(range, az, final_start, final_end);
-> +	}
-> +	/* Put region array back ? */
-> +	if (lmb.reserved.regions != lmb_reserved_init_regions)
-> +		lmb_reserve(__pa(lmb.reserved.regions), sizeof(struct lmb_region) * lmb.reserved.max);
-> +}
-> +
-> +struct count_data {
-> +	int nr;
-> +};
-> +
-> +static int __init count_work_fn(unsigned long start_pfn,
-> +				unsigned long end_pfn, void *datax)
-> +{
-> +	struct count_data *data = datax;
-> +
-> +	data->nr++;
-> +
-> +	return 0;
-> +}
-> +
-> +static int __init count_early_node_map(int nodeid)
-> +{
-> +	struct count_data data;
-> +
-> +	data.nr = 0;
-> +	work_with_active_regions(nodeid, count_work_fn, &data);
-> +
-> +	return data.nr;
-> +}
-> +
-> +int __init get_free_all_memory_range(struct range **rangep, int nodeid)
-> +{
-> +	int count;
-> +	struct range *range;
-> +	int nr_range;
-> +
-> +	count = (lmb.reserved.cnt + count_early_node_map(nodeid)) * 2;
-> +
-> +	range = find_range_array(count);
-> +	nr_range = 0;
-> +
-> +	/*
-> +	 * Use early_node_map[] and lmb.reserved.region to get range array
-> +	 * at first
-> +	 */
-> +	nr_range = add_from_early_node_map(range, count, nr_range, nodeid);
-> +#ifdef CONFIG_X86_32
-> +	subtract_range(range, count, max_low_pfn, -1ULL);
-> +#endif
-> +	subtract_lmb_reserved(range, count);
-> +	nr_range = clean_sort_range(range, count);
-> +
-> +	*rangep = range;
-> +	return nr_range;
-> +}
-> +#else
->  void __init lmb_to_bootmem(u64 start, u64 end)
->  {
->  	int count;
-> 
+> And if proc_task_fill_cache() fails, we can miss
+> tasks as well, correct?
+
+Well, yes and no.
+
+Sure, if proc_task_fill_cache() fails we didn't reported all threads.
+But if /bin/ls does readdir() again after that, proc_task_readdir()
+tries to contunue starting from the last-pid-we-failed-to-report.
+If there is no task with that pid, we start from the group_leader
+and skip the number-of-already-reported-threads.
+
+So, we have a lot of issues here, we can miss some thread because
+"skip the number-of-already-reported-threads" can't be really accurate.
+
+
+But, to clarify, this has almost nothing to do with the original problem.
+Afaics, if we change first_tid() to use next_thread_careful() instead
+of next_thread(), we close the pure-theoretical race with exec but that
+is all. (and I am still not sure this race does exist, and even if it
+does we can fix it without next_thread_careful).
+
+> Given all this, I believe that your fix really does work.
+
+Great. I'll send the patch once I inspect zap_threads() and
+current_is_single_threaded() to figure out which changes they need.
+
+Oleg.
+
