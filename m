@@ -1,347 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab0F2INE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 04:13:04 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38475 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911Ab0F2IM7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 04:12:59 -0400
+	id S1753598Ab0F2IOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 04:14:23 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52686 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752481Ab0F2IOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 04:14:20 -0400
+Message-ID: <4C29AADD.1070503@kernel.org>
+Date: Tue, 29 Jun 2010 10:12:13 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100628220058.19e8f143@debian>
-References: <20100628215407.2017bf2f@debian> <20100628220058.19e8f143@debian>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 29 Jun 2010 01:12:36 -0700
-X-Google-Sender-Auth: PxgJo0jJvm72veUCRGmxgXvC3Fo
-Message-ID: <AANLkTinUy_FGuN9DiF5KtMCsqYUbByfS6g2Mdw0ATvtQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] x86: OLPC: add OLPC device-tree support
-To: Andres Salomon <dilinger@queued.net>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-       linux-kernel@vger.kernel.org, davem@davemloft.net
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       oleg@redhat.com, axboe@kernel.dk, dwalker@codeaurora.org,
+       stefanr@s5r6.in-berlin.de, florian@mickler.org, andi@firstfloor.org,
+       mst@redhat.com, randy.dunlap@oracle.com
+Subject: [PATCH UPDATED 12/35] workqueue: update cwq alignement
+References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-13-git-send-email-tj@kernel.org> <20100628224755.GA10104@nowhere>
+In-Reply-To: <20100628224755.GA10104@nowhere>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 08:12:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andres, comments below....
+work->data field is used for two purposes.  It points to cwq it's
+queued on and the lower bits are used for flags.  Currently, two bits
+are reserved which is always safe as 4 byte alignment is guaranteed on
+every architecture.  However, future changes will need more flag bits.
 
-On Mon, Jun 28, 2010 at 7:00 PM, Andres Salomon <dilinger@queued.net> wrote:
->
-> Make use of PROC_DEVICETREE to export the tree, and sparc's PROMTREE code to
-> call into OLPC's Open Firmware to build the tree.
->
-> (Yes, I know this leaks memory by simply using kmalloc)
->
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  arch/x86/Kconfig                 |    5 ++
->  arch/x86/include/asm/olpc_prom.h |   42 +++++++++++
->  arch/x86/include/asm/prom.h      |    5 ++
->  arch/x86/kernel/Makefile         |    1 +
->  arch/x86/kernel/olpc_ofw.c       |   13 ++++
->  arch/x86/kernel/olpc_prom.c      |  148 ++++++++++++++++++++++++++++++++++++++
->  fs/proc/Kconfig                  |    2 +-
->  7 files changed, 215 insertions(+), 1 deletions(-)
->  create mode 100644 arch/x86/include/asm/olpc_prom.h
->  create mode 100644 arch/x86/include/asm/prom.h
->  create mode 100644 arch/x86/kernel/olpc_prom.c
->
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 71c194d..7aea004 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -2071,6 +2071,11 @@ config OLPC_OPENFIRMWARE
->          that is used on the OLPC XO-1 Children's Machine.
->          If unsure, say N here.
->
-> +config OF
-> +       def_bool y
-> +       depends on OLPC_OPENFIRMWARE
-> +       select OF_PROMTREE
-> +
+On SMP, the percpu allocator is capable of honoring larger alignment
+(there are other users which depend on it) and larger alignment works
+just fine.  On UP, percpu allocator is a thin wrapper around
+kzalloc/kfree() and don't honor alignment request.
 
-This hunk will need to be respun on top of Stephen's CONFIG_OF change.
- It's currently in my test-devicetree branch on
-git://git.secretlab.ca/git/linux-2.6
+This patch introduces WORK_STRUCT_FLAG_BITS and implements
+alloc/free_cwqs() which guarantees max(1 << WORK_STRUCT_FLAG_BITS,
+__alignof__(unsigned long long) alignment both on SMP and UP.  On SMP,
+simply wrapping percpu allocator is enough.  On UP, extra space is
+allocated so that cwq can be aligned and the original pointer can be
+stored after it which is used in the free path.
 
->  endif # X86_32
->
->  config K8_NB
-> diff --git a/arch/x86/include/asm/olpc_prom.h b/arch/x86/include/asm/olpc_prom.h
-> new file mode 100644
-> index 0000000..96cdcee
-> --- /dev/null
-> +++ b/arch/x86/include/asm/olpc_prom.h
-> @@ -0,0 +1,42 @@
-> +#include <linux/of.h>  /* linux/of.h gets to determine #include ordering */
-> +/*
-> + * Definitions for talking to the Open Firmware PROM on
-> + * Power Macintosh computers.
-> + *
-> + * Copyright (C) 1996-2005 Paul Mackerras.
-> + *
-> + * Updates for PPC64 by Peter Bergner & David Engebretsen, IBM Corp.
-> + * Updates for SPARC by David S. Miller
-> + * Updates for x86/OLPC by Andres Salomon
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + */
-> +
-> +#ifndef _X86_PROM_OLPC_H
-> +#define _X86_PROM_OLPC_H
-> +#ifdef __KERNEL__
-> +
-> +#define OF_ROOT_NODE_ADDR_CELLS_DEFAULT 2
-> +#define OF_ROOT_NODE_SIZE_CELLS_DEFAULT 1
+* Alignment problem on UP is reported by Michal Simek.
 
-Do you really need to override these from the default?
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Reported-by: Michal Simek <michal.simek@petalogix.com>
+---
 
-> +#define of_compat_cmp(s1, s2, l)       strncmp((s1), (s2), (l))
-> +#define of_prop_cmp(s1, s2)            strcasecmp((s1), (s2))
-> +#define of_node_cmp(s1, s2)            strcmp((s1), (s2))
+Never mind of about config.  This was originally after workqueue
+flushing patch so there were enough flag bits to avoid triggering that
+BUILD_BUG_ON().  I updated alloc_cwqs() to just take the larger
+alignment.  After this change, 0023 fails to apply but it's trivial
+context conflict.  I've updated the git tree with the refreshed
+patches.
 
-Ditto here?
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-cmwq
 
-> +extern void prom_build_devicetree(void);
-> +
-> +extern void *prom_early_alloc(unsigned long size);
-> +
-> +extern char *prom_firstprop(phandle node, char *buf);
-> +extern char *prom_nextprop(phandle node, const char *prev, char *buf);
-> +extern int prom_getproplen(phandle node, const char *prop);
-> +extern int prom_getproperty(phandle node, const char *prop,
-> +                            char *buffer, int bufsize);
-> +extern phandle prom_getchild(phandle node);
-> +extern phandle prom_getsibling(phandle node);
-> +
-> +#endif /* __KERNEL__ */
-> +#endif /* _X86_PROM_OLPC_H */
-> diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-> new file mode 100644
-> index 0000000..7b561b2
-> --- /dev/null
-> +++ b/arch/x86/include/asm/prom.h
-> @@ -0,0 +1,5 @@
-> +#ifdef CONFIG_OLPC_OPENFIRMWARE
-> +# include <asm/olpc_prom.h>
-> +#else
-> +# error "No OFW prom defined for x86!"
-> +#endif
+Thanks.
 
-Personally, I wouldn't bother with the header file redirection.
+ include/linux/workqueue.h |    5 +++
+ kernel/workqueue.c        |   60 ++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 59 insertions(+), 6 deletions(-)
 
-> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-> index 0925676..3d7e535 100644
-> --- a/arch/x86/kernel/Makefile
-> +++ b/arch/x86/kernel/Makefile
-> @@ -105,6 +105,7 @@ scx200-y                    += scx200_32.o
->
->  obj-$(CONFIG_OLPC)             += olpc.o
->  obj-$(CONFIG_OLPC_OPENFIRMWARE)        += olpc_ofw.o
-> +obj-$(CONFIG_PROC_DEVICETREE)  += olpc_prom.o
->  obj-$(CONFIG_X86_MRST)         += mrst.o
->
->  microcode-y                            := microcode_core.o
-> diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
-> index 3e13a4b..8838edb 100644
-> --- a/arch/x86/kernel/olpc_ofw.c
-> +++ b/arch/x86/kernel/olpc_ofw.c
-> @@ -6,6 +6,7 @@
->  #include <asm/io.h>
->  #include <asm/pgtable.h>
->  #include <asm/olpc_ofw.h>
-> +#include <asm/prom.h>
->
->  /* address of OFW callback interface; will be NULL if OFW isn't found */
->  static int (*olpc_ofw_cif)(int *);
-> @@ -103,3 +104,15 @@ void __init olpc_ofw_detect(void)
->                        (unsigned long)olpc_ofw_cif, (-start) >> 20);
->        reserve_top_address(-start);
->  }
-> +
-> +#ifdef CONFIG_PROC_DEVICETREE
-> +static int __init olpc_ofw_build_devicetree(void)
-> +{
-> +       /* initialize the device-tree that proc uses */
-> +       if (olpc_ofw_cif)
-> +               prom_build_devicetree();
-> +
-> +       return 0;
-> +}
-> +arch_initcall(olpc_ofw_build_devicetree);
-> +#endif /* CONFIG_PROC_DEVICETREE */
-> diff --git a/arch/x86/kernel/olpc_prom.c b/arch/x86/kernel/olpc_prom.c
-> new file mode 100644
-> index 0000000..1128f3f
-> --- /dev/null
-> +++ b/arch/x86/kernel/olpc_prom.c
-> @@ -0,0 +1,148 @@
-> +/*
-> + * olpc_prom.c: OLPC-specific OFW device tree support code.
-> + *
-> + * Paul Mackerras      August 1996.
-> + * Copyright (C) 1996-2005 Paul Mackerras.
-> + *
-> + *  Adapted for 64bit PowerPC by Dave Engebretsen and Peter Bergner.
-> + *    {engebret|bergner}@us.ibm.com
-> + *
-> + *  Adapted for sparc by David S. Miller davem@davemloft.net
-> + *
-> + *      This program is free software; you can redistribute it and/or
-> + *      modify it under the terms of the GNU General Public License
-> + *      as published by the Free Software Foundation; either version
-> + *      2 of the License, or (at your option) any later version.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/errno.h>
-> +#include <linux/slab.h>
-> +#include <linux/of.h>
-> +#include <linux/of_pdt.h>
-> +#include <asm/olpc_ofw.h>
-> +#include <asm/prom.h>
-> +
-> +phandle prom_getsibling(phandle node)
-> +{
-> +       const void *args[] = { (void *)node };
-> +       void *res[] = { &node };
-> +
-> +       if (node == -1)
-> +               return -1;
-> +
-> +       if (olpc_ofw("peer", args, res) || node == -1)
-> +               return -1;
-> +
-> +       return node;
-> +}
-> +
-> +phandle prom_getchild(phandle node)
-> +{
-> +       const void *args[] = { (void *)node };
-> +       void *res[] = { &node };
-> +
-> +       if (node == -1)
-> +               return 0;
-> +
-> +       if (olpc_ofw("child", args, res) || node == -1) {
-> +               printk(KERN_ERR "PROM: %s: fetching child failed!\n", __func__);
-> +               return 0;
-> +       }
-> +
-> +       return node;
-> +}
-> +
-> +int prom_getproplen(phandle node, const char *prop)
-> +{
-> +       const void *args[] = { (void *)node, prop };
-> +       int len;
-> +       void *res[] = { &len };
-> +
-> +       if (node == -1)
-> +               return 0;
-> +
-> +       if (olpc_ofw("getproplen", args, res)) {
-> +               printk(KERN_ERR "PROM: %s: getproplen failed!\n", __func__);
-> +               return 0;
-> +       }
-> +
-> +       return len;
-> +}
-> +
-> +int prom_getproperty(phandle node, const char *prop, char *buf,
-> +               int bufsize)
-> +{
-> +       int plen;
-> +
-> +       plen = prom_getproplen(node, prop);
-> +       if (plen > bufsize || plen < 1)
-> +               return -1;
-> +       else {
-> +               const void *args[] = { (void *)node, prop, buf, (void *)plen };
-> +               void *res[] = { &plen };
-> +
-> +               if (olpc_ofw("getprop", args, res)) {
-> +                       printk(KERN_ERR "PROM: %s: getprop failed!\n", __func__);
-> +                       return -1;
-> +               }
-> +               //((unsigned char *)buf)[plen] = '\0';
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +char *prom_firstprop(phandle node, char *buf)
-> +{
-> +       buf[0] = '\0';
-> +
-> +       if (node == -1)
-> +               return NULL;
-> +
-> +       return prom_nextprop(node, "", buf);
-> +}
-> +
-> +char *prom_nextprop(phandle node, const char *prev, char *buf)
-> +{
-> +       const void *args[] = { (void *)node, prev, buf };
-> +       int success;
-> +       void *res[] = { &success };
-> +
-> +       buf[0] = '\0';
-> +
-> +       if (node == -1)
-> +               return NULL;
-> +
-> +       if (olpc_ofw("nextprop", args, res) || success != 1) {
-> +               printk(KERN_ERR "PROM: %s: nextprop failed!\n", __func__);
-> +               return NULL;
-> +       }
-> +
-> +       return buf;
-> +}
-> +
-> +void * __init prom_early_alloc(unsigned long size)
-> +{
-> +       /* unlike SPARC, we don't bother keeping track of prom memory */
-> +       return kzalloc(size, GFP_KERNEL);
-> +}
-> +
-> +void __init prom_build_devicetree(void)
-> +{
-> +       struct device_node **nextp;
-> +       phandle root;
-> +
-> +       root = prom_getsibling(0);
-> +       if (root < 0) {
-> +               printk(KERN_ERR "PROM: unable to get root node from OFW!\n");
-> +               return;
-> +       }
-> +
-> +       allnodes = prom_create_node(root, NULL);
-> +       allnodes->full_name = "/";
-> +
-> +       nextp = &allnodes->allnext;
-> +       allnodes->child = prom_build_tree(allnodes,
-> +                       prom_getchild(allnodes->phandle), &nextp);
-> +}
-> diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
-> index 858a859..86f67ce 100644
-> --- a/fs/proc/Kconfig
-> +++ b/fs/proc/Kconfig
-> @@ -41,7 +41,7 @@ config PROC_VMCORE
->
->  config PROC_DEVICETREE
->        bool "Support for device tree in /proc"
-> -       depends on PROC_FS && (PPC || MICROBLAZE)
-> +       depends on PROC_FS && (PPC || MICROBLAZE || OLPC_OPENFIRMWARE)
+Index: work/include/linux/workqueue.h
+===================================================================
+--- work.orig/include/linux/workqueue.h
++++ work/include/linux/workqueue.h
+@@ -26,6 +26,9 @@ enum {
+ 	WORK_STRUCT_PENDING_BIT	= 0,	/* work item is pending execution */
+ #ifdef CONFIG_DEBUG_OBJECTS_WORK
+ 	WORK_STRUCT_STATIC_BIT	= 1,	/* static initializer (debugobjects) */
++	WORK_STRUCT_FLAG_BITS	= 2,
++#else
++	WORK_STRUCT_FLAG_BITS	= 1,
+ #endif
 
-This change should no longer be necessary with the way I've modified patch 3/4.
+ 	WORK_STRUCT_PENDING	= 1 << WORK_STRUCT_PENDING_BIT,
+@@ -35,7 +38,7 @@ enum {
+ 	WORK_STRUCT_STATIC	= 0,
+ #endif
 
-Cheers,
-g.
+-	WORK_STRUCT_FLAG_MASK	= 3UL,
++	WORK_STRUCT_FLAG_MASK	= (1UL << WORK_STRUCT_FLAG_BITS) - 1,
+ 	WORK_STRUCT_WQ_DATA_MASK = ~WORK_STRUCT_FLAG_MASK,
+ };
+
+Index: work/kernel/workqueue.c
+===================================================================
+--- work.orig/kernel/workqueue.c
++++ work/kernel/workqueue.c
+@@ -46,7 +46,9 @@
+
+ /*
+  * The per-CPU workqueue (if single thread, we always use the first
+- * possible cpu).
++ * possible cpu).  The lower WORK_STRUCT_FLAG_BITS of
++ * work_struct->data are used for flags and thus cwqs need to be
++ * aligned at two's power of the number of flag bits.
+  */
+ struct cpu_workqueue_struct {
+
+@@ -59,7 +61,7 @@ struct cpu_workqueue_struct {
+
+ 	struct workqueue_struct *wq;		/* I: the owning workqueue */
+ 	struct task_struct	*thread;
+-} ____cacheline_aligned;
++};
+
+ /*
+  * The externally visible workqueue abstraction is an array of
+@@ -967,6 +969,53 @@ int current_is_keventd(void)
+
+ }
+
++static struct cpu_workqueue_struct *alloc_cwqs(void)
++{
++	/*
++	 * cwqs are forced aligned according to WORK_STRUCT_FLAG_BITS.
++	 * Make sure that the alignment isn't lower than that of
++	 * unsigned long long.
++	 */
++	const size_t size = sizeof(struct cpu_workqueue_struct);
++	const size_t align = max_t(size_t, 1 << WORK_STRUCT_FLAG_BITS,
++				   __alignof__(unsigned long long));
++	struct cpu_workqueue_struct *cwqs;
++#ifndef CONFIG_SMP
++	void *ptr;
++
++	/*
++	 * On UP, percpu allocator doesn't honor alignment parameter
++	 * and simply uses arch-dependent default.  Allocate enough
++	 * room to align cwq and put an extra pointer at the end
++	 * pointing back to the originally allocated pointer which
++	 * will be used for free.
++	 *
++	 * FIXME: This really belongs to UP percpu code.  Update UP
++	 * percpu code to honor alignment and remove this ugliness.
++	 */
++	ptr = __alloc_percpu(size + align + sizeof(void *), 1);
++	cwqs = PTR_ALIGN(ptr, align);
++	*(void **)per_cpu_ptr(cwqs + 1, 0) = ptr;
++#else
++	/* On SMP, percpu allocator can do it itself */
++	cwqs = __alloc_percpu(size, align);
++#endif
++	/* just in case, make sure it's actually aligned */
++	BUG_ON(!IS_ALIGNED((unsigned long)cwqs, align));
++	return cwqs;
++}
++
++static void free_cwqs(struct cpu_workqueue_struct *cwqs)
++{
++#ifndef CONFIG_SMP
++	/* on UP, the pointer to free is stored right after the cwq */
++	if (cwqs)
++		free_percpu(*(void **)per_cpu_ptr(cwqs + 1, 0));
++#else
++	free_percpu(cwqs);
++#endif
++}
++
+ static int create_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
+ {
+ 	struct workqueue_struct *wq = cwq->wq;
+@@ -1012,7 +1061,7 @@ struct workqueue_struct *__create_workqu
+ 	if (!wq)
+ 		goto err;
+
+-	wq->cpu_wq = alloc_percpu(struct cpu_workqueue_struct);
++	wq->cpu_wq = alloc_cwqs();
+ 	if (!wq->cpu_wq)
+ 		goto err;
+
+@@ -1031,6 +1080,7 @@ struct workqueue_struct *__create_workqu
+ 	for_each_possible_cpu(cpu) {
+ 		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
+
++		BUG_ON((unsigned long)cwq & WORK_STRUCT_FLAG_MASK);
+ 		cwq->wq = wq;
+ 		cwq->cpu = cpu;
+ 		spin_lock_init(&cwq->lock);
+@@ -1059,7 +1109,7 @@ struct workqueue_struct *__create_workqu
+ 	return wq;
+ err:
+ 	if (wq) {
+-		free_percpu(wq->cpu_wq);
++		free_cwqs(wq->cpu_wq);
+ 		kfree(wq);
+ 	}
+ 	return NULL;
+@@ -1112,7 +1162,7 @@ void destroy_workqueue(struct workqueue_
+ 	for_each_possible_cpu(cpu)
+ 		cleanup_workqueue_thread(get_cwq(cpu, wq));
+
+-	free_percpu(wq->cpu_wq);
++	free_cwqs(wq->cpu_wq);
+ 	kfree(wq);
+ }
+ EXPORT_SYMBOL_GPL(destroy_workqueue);
