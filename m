@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab0F2GvQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 02:51:16 -0400
-Received: from sh.osrg.net ([192.16.179.4]:45540 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752058Ab0F2GvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 02:51:14 -0400
-Date: Tue, 29 Jun 2010 15:50:50 +0900
-To: linux-parisc@vger.kernel.org
-Cc: kyle@mcmartin.ca, deller@gmx.de, jejb@parisc-linux.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] parisc: set ARCH_KMALLOC_MINALIGN
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100629154801C.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 29 Jun 2010 15:50:52 +0900 (JST)
+	id S1752805Ab0F2G6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 02:58:47 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58398 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab0F2G6p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 02:58:45 -0400
+Date: Tue, 29 Jun 2010 08:58:17 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: Sascha Hauer <kernel@pengutronix.de>,
+       Russell King <linux@arm.linux.org.uk>, Baruch Siach <baruch@tkos.co.il>,
+       Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       linux-kbuild@vger.kernel.org
+Subject: Re: Subject: [PATCH] arm: fix KConfig warning for mach-mx25
+Message-ID: <20100629065817.GA23160@pengutronix.de>
+References: <201006290005.20875.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201006290005.20875.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a resend:
+Hiho,
 
-http://marc.info/?t=127432584100006&r=1&w=2
+[added linux-kbuild@vger.kernel.org to Cc:]
 
-I thought that it was merged but seems that it was lost somewhere?
+On Tue, Jun 29, 2010 at 12:05:20AM +0200, Peter Hüwe wrote:
+> From: Peter Huewe <peterhuewe@gmx.de
+> 
+> This patch fixes a KConfig warning:
+> "arch/arm/mach-mx25/Kconfig:18:warning: choice value used outside its
+> choice group"
+> 
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+The problem also goes away when renaming one of the two
+MACH_EUKREA_MBIMXSD_BASEBOARD (the other MACH_EUKREA_MBIMXSD_BASEBOARD
+is in arch/arm/mach-mx3/Kconfig).  AFAIK Eric already sent a patch to
+fix this.  I think this is the real issue, I don't know why the warning
+goes away with your patch.
 
-=
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH] parisc: set ARCH_KMALLOC_MINALIGN
+Nevertheless I like your patch.  And note there are two other variables
+in arch/arm/mach-mx2 that could benefit from the same "fix".  (But as I
+moved this file in my tree I suggest to wait until my changes hit Linus'
+tree and then fix arch/arm/mach-imx/Kconfig.)
 
-Architectures that handle DMA-non-coherent memory need to set
-ARCH_KMALLOC_MINALIGN to make sure that kmalloc'ed buffer is DMA-safe:
-the buffer doesn't share a cache with the others.
+Best regards
+Uwe
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Helge Deller <deller@gmx.de>
-Cc: James E.J. Bottomley <jejb@parisc-linux.org>
-Cc: stable@kernel.org
----
- arch/parisc/include/asm/cache.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> ---
+> KernelVersion: linux-next-20100628
+>  arch/arm/mach-mx25/Kconfig |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-mx25/Kconfig b/arch/arm/mach-mx25/Kconfig
+> index 3a6668e..2f436ed 100644
+> --- a/arch/arm/mach-mx25/Kconfig
+> +++ b/arch/arm/mach-mx25/Kconfig
+> @@ -15,8 +15,7 @@ choice
+>  	default MACH_EUKREA_MBIMXSD_BASEBOARD
+>  
+>  config MACH_EUKREA_MBIMXSD_BASEBOARD
+> -	prompt "Eukrea MBIMXSD development board"
+> -	bool
+> +	bool "Eukrea MBIMXSD development board"
+>  	help
+>  	  This adds board specific devices that can be found on Eukrea's
+>  	  MBIMXSD evaluation board.
+> -- 
+> 1.7.1
 
-diff --git a/arch/parisc/include/asm/cache.h b/arch/parisc/include/asm/cache.h
-index 45effe6..5d87f27 100644
---- a/arch/parisc/include/asm/cache.h
-+++ b/arch/parisc/include/asm/cache.h
-@@ -22,6 +22,8 @@
- #define L1_CACHE_SHIFT 5
- #endif
- 
-+#define ARCH_KMALLOC_MINALIGN	L1_CACHE_BYTES
-+
- #ifndef __ASSEMBLY__
- 
- #define L1_CACHE_ALIGN(x)       (((x)+(L1_CACHE_BYTES-1))&~(L1_CACHE_BYTES-1))
 -- 
-1.6.5
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
