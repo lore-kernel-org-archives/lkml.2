@@ -1,20 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab0F2SWP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 14:22:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:49989 "EHLO mga03.intel.com"
+	id S1755117Ab0F2Sh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 14:37:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34205 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754084Ab0F2SWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 14:22:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,506,1272870000"; 
-   d="scan'208";a="294408031"
-Message-ID: <4C2A39D4.8040505@linux.intel.com>
-Date: Tue, 29 Jun 2010 11:22:12 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1754965Ab0F2Sh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 14:37:57 -0400
+Message-ID: <4C2A3CD0.70706@kernel.org>
+Date: Tue, 29 Jun 2010 20:34:56 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
 CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
        mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
        akpm@linux-foundation.org, rusty@rustcorp.com.au,
@@ -23,52 +20,54 @@ CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
        florian@mickler.org, andi@firstfloor.org, mst@redhat.com,
        randy.dunlap@oracle.com, Arjan van de Ven <arjan@infradead.org>
 Subject: Re: [PATCH 34/35] async: use workqueue for worker pool
-References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <4C2A2688.1020206@kernel.org> <4C2A3652.7030806@linux.intel.com> <4C2A385B.3010909@kernel.org>
-In-Reply-To: <4C2A385B.3010909@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+References: <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <4C2A2688.1020206@kernel.org> <4C2A3652.7030806@linux.intel.com> <4C2A385B.3010909@kernel.org> <4C2A39D4.8040505@linux.intel.com>
+In-Reply-To: <4C2A39D4.8040505@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 29 Jun 2010 18:35:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/29/2010 11:15 AM, Tejun Heo wrote:
-> Hello, Arjan.
->
-> On 06/29/2010 08:07 PM, Arjan van de Ven wrote:
->    
->> we might be talking past eachother. ;-)
->>
->> let me define an example that is simple so that we can get on the same page
->>
->> assume a system with "enough" cpus, say 32.
->> lets say we have 2 async tasks, that each do an mdelay(1000); (yes I
->> know stupid, but exagerating things makes things easier to talk about)
->>      
-> That's the main point to discuss tho.  If you exaggerate the use case
-> out of proportion, you'll end up with something which in the end is
-> useful only in the imagination and we'll be doing things just because
-> we can.  Creating full number of unbound threads might look like a
-> good idea to extract maximum cpu parallelism if you exaggerate the use
-> case like the above but with the current actual use case, it's not
-> gonna buy us anything and might even cost us more via unnecessary
-> thread creations.
->    
+Hello,
 
-I'm not trying to suggest "unbound".
-I'm trying to suggest "don't start bounding until you hit # threads >= # 
-cpus
-you have some clever tricks to deal with bounding things; but lets make 
-sure that the simple case
-of having less work to run in parallel than the number of cpus gets 
-dealt with simple and unbound.
-You also consolidate the thread pools so that you have one global pool, 
-so unlike the current situation
-where you get O(Nr pools * Nr cpus), you only get O(Nr cpus) number of 
-threads... that's not too burdensome imo.
-If you want to go below that then I think you're going too far in 
-reducing the number of threads in your pool. Really.
+On 06/29/2010 08:22 PM, Arjan van de Ven wrote:
+> I'm not trying to suggest "unbound".  I'm trying to suggest "don't
+> start bounding until you hit # threads >= # cpus you have some
+> clever tricks to deal with bounding things; but lets make sure that
+> the simple case of having less work to run in parallel than the
+> number of cpus gets dealt with simple and unbound.
 
+Well, the thing is, for most cases, binding to cpus is simply better.
+That's the reason why our default workqueue was per-cpu to begin with.
+There just are a lot more opportunities for optimization for both
+memory access and synchronization overheads.
 
-so... back to my question; will those two tasks run in parallel or 
-sequential ?
+> You also consolidate the thread pools so that you have one global
+> pool, so unlike the current situation where you get O(Nr pools * Nr
+> cpus), you only get O(Nr cpus) number of threads... that's not too
+> burdensome imo.  If you want to go below that then I think you're
+> going too far in reducing the number of threads in your
+> pool. Really.
 
+I lost you in the above paragraph, but I think it would be better to
+keep kthread pools separate.  It behaves much better regarding memory
+access locality (work issuer and worker are on the same cpu and stack
+and other memory used by worker are likely to be already hot).  Also,
+we don't do it yet, but when creating kthreads we can allocate the
+stack considering NUMA too.
+
+> so... back to my question; will those two tasks run in parallel or
+> sequential ?
+
+If they are scheduled on the same cpu, they won't.  If that's
+something actually necessary, let's implement it.  I have no problem
+with that.  cmwq already can serve as simple execution context
+provider without concurrency control and pumping contexts to async
+isn't hard at all.  I just wanna know whether it's something which is
+actually useful.  So, where would that be useful?
+
+Thanks.
+
+-- 
+tejun
