@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab0F2Skb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 14:40:31 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35991 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab0F2Sk2 (ORCPT
+	id S1755438Ab0F2Sk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 14:40:57 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42875 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274Ab0F2Skw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 14:40:28 -0400
+	Tue, 29 Jun 2010 14:40:52 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Mel Gorman <mel@csn.ul.ie>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -14,9 +14,9 @@ Cc: Mel Gorman <mel@csn.ul.ie>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
        Randy Dunlap <rdunlap@xenotime.net>,
        Arnaldo Carvalho de Melo <acme@infradead.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
        Christoph Hellwig <hch@infradead.org>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
@@ -26,299 +26,383 @@ Cc: Mel Gorman <mel@csn.ul.ie>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
        "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
        LKML <linux-kernel@vger.kernel.org>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Wed, 30 Jun 2010 00:05:04 +0530
-Message-Id: <20100629183504.32537.78986.sendpatchset@localhost6.localdomain6>
+Date: Wed, 30 Jun 2010 00:05:24 +0530
+Message-Id: <20100629183524.32537.52866.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20100629183454.32537.63582.sendpatchset@localhost6.localdomain6>
 References: <20100629183454.32537.63582.sendpatchset@localhost6.localdomain6>
-Subject: [PATCHv7 2.6.35-rc3-tip 1/11]  mm: Move replace_page() / write_protect_page() to mm/memory.c
+Subject: [PATCHv7 2.6.35-rc3-tip 3/11]  uprobes: Slot allocation for Execution out of line(XOL)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-mm: Move replace_page() / write_protect_page() to mm/memory.c
+uprobes: Slot allocation for Execution out of line(XOL)
 
-User bkpt will use background page replacement approach to insert/delete
-breakpoints. Background page replacement approach will be based on
-replace_page and write_protect_page.
-Now replace_page() loses its static attribute.
+Changelog from V5: Merged into uprobes.
 
+Changelog form V3:
+   * Added a memory barrier after the slot gets initialized.
+
+Changelog from V2: (addressing Oleg's comments)
+   * Removed code in !CONFIG_UPROBES_XOL
+   * Functions now pass pointer to uprobes_xol_area instead of pointer
+     to void.
+
+Provides slot allocation mechanism for execution out of line for use
+with user space breakpointing.
+
+Traditional method of replacing the original instructions on
+breakpoint hit are racy when used on multithreaded applications.
+
+Alternatives for the traditional method include:
+	- Emulating the breakpointed instruction.
+	- Execution out of line.
+
+Emulating the instruction:
+	This approach would use a in-kernel instruction emulator to
+emulate the breakpointed instruction. This approach could be looked in
+at a later point of time.
+
+Execution out of line:
+	In execution out of line strategy, a new vma is injected into
+the target process, a copy of the instructions which are breakpointed
+is stored in one of the slots. On breakpoint hit, the copy of the
+instruction is single-stepped leaving the breakpoint instruction as
+is.  This method is architecture independent.
+
+This method is useful while handling multithreaded processes.
+
+This patch allocates one page per process for slots to be used to copy
+the breakpointed instructions.
+
+Current slot allocation mechanism:
+1. Allocate one dedicated slot per user breakpoint. Each slot is big
+enuf to accomodate the biggest instruction for that architecture. (16
+bytes for x86).
+2. We currently allocate only one page for slots. Hence the number of
+slots is limited to active breakpoint hits on that process.
+3. Bitmap to track used slots.
+
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 ---
 
- include/linux/mm.h |    4 ++
- mm/ksm.c           |  112 -------------------------------------------------
- mm/memory.c        |  120 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 124 insertions(+), 112 deletions(-)
+ include/linux/uprobes.h |    2 
+ kernel/uprobes.c        |  283 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 285 insertions(+), 0 deletions(-)
 
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index b969efb..206008e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -858,6 +858,10 @@ void account_page_dirtied(struct page *page, struct address_space *mapping);
- int set_page_dirty(struct page *page);
- int set_page_dirty_lock(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
-+int replace_page(struct vm_area_struct *vma, struct page *page,
-+					struct page *kpage, pte_t orig_pte);
-+int write_protect_page(struct vm_area_struct *vma, struct page *page,
-+						      pte_t *orig_pte);
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 02d9927..a5146f5 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -37,6 +37,8 @@ struct user_bkpt_task_arch_info {};
+ struct user_bkpt_arch_info user_bkpt_arch_info;
+ #endif
  
- extern unsigned long move_page_tables(struct vm_area_struct *vma,
- 		unsigned long old_addr, struct vm_area_struct *new_vma,
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 6c3e99b..ce432e1 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -713,118 +713,6 @@ static inline int pages_identical(struct page *page1, struct page *page2)
- 	return !memcmp_pages(page1, page2);
++#define UINSNS_PER_PAGE	(PAGE_SIZE/UPROBES_XOL_SLOT_BYTES)
++#define MAX_UPROBES_XOL_SLOTS UINSNS_PER_PAGE
+ 
+ struct task_struct;
+ struct pt_regs;
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index 8439175..22be2c1 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -30,6 +30,12 @@
+ #include <linux/uaccess.h>
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
++#include <linux/err.h>
++#include <linux/errno.h>
++#include <linux/mman.h>
++#include <linux/file.h>
++#include <linux/pid.h>
++#include <linux/slab.h>
+ 
+ struct user_bkpt_arch_info *arch = &user_bkpt_arch_info;
+ 
+@@ -434,6 +440,283 @@ static int missing_arch_func(const char *func_name)
+ 	return -ENOSYS;
  }
  
--static int write_protect_page(struct vm_area_struct *vma, struct page *page,
--			      pte_t *orig_pte)
--{
--	struct mm_struct *mm = vma->vm_mm;
--	unsigned long addr;
--	pte_t *ptep;
--	spinlock_t *ptl;
--	int swapped;
--	int err = -EFAULT;
--
--	addr = page_address_in_vma(page, vma);
--	if (addr == -EFAULT)
--		goto out;
--
--	ptep = page_check_address(page, mm, addr, &ptl, 0);
--	if (!ptep)
--		goto out;
--
--	if (pte_write(*ptep)) {
--		pte_t entry;
--
--		swapped = PageSwapCache(page);
--		flush_cache_page(vma, addr, page_to_pfn(page));
--		/*
--		 * Ok this is tricky, when get_user_pages_fast() run it doesnt
--		 * take any lock, therefore the check that we are going to make
--		 * with the pagecount against the mapcount is racey and
--		 * O_DIRECT can happen right after the check.
--		 * So we clear the pte and flush the tlb before the check
--		 * this assure us that no O_DIRECT can happen after the check
--		 * or in the middle of the check.
--		 */
--		entry = ptep_clear_flush(vma, addr, ptep);
--		/*
--		 * Check that no O_DIRECT or similar I/O is in progress on the
--		 * page
--		 */
--		if (page_mapcount(page) + 1 + swapped != page_count(page)) {
--			set_pte_at(mm, addr, ptep, entry);
--			goto out_unlock;
--		}
--		entry = pte_wrprotect(entry);
--		set_pte_at_notify(mm, addr, ptep, entry);
--	}
--	*orig_pte = *ptep;
--	err = 0;
--
--out_unlock:
--	pte_unmap_unlock(ptep, ptl);
--out:
--	return err;
--}
--
--/**
-- * replace_page - replace page in vma by new ksm page
-- * @vma:      vma that holds the pte pointing to page
-- * @page:     the page we are replacing by kpage
-- * @kpage:    the ksm page we replace page by
-- * @orig_pte: the original value of the pte
-- *
-- * Returns 0 on success, -EFAULT on failure.
-- */
--static int replace_page(struct vm_area_struct *vma, struct page *page,
--			struct page *kpage, pte_t orig_pte)
--{
--	struct mm_struct *mm = vma->vm_mm;
--	pgd_t *pgd;
--	pud_t *pud;
--	pmd_t *pmd;
--	pte_t *ptep;
--	spinlock_t *ptl;
--	unsigned long addr;
--	int err = -EFAULT;
--
--	addr = page_address_in_vma(page, vma);
--	if (addr == -EFAULT)
--		goto out;
--
--	pgd = pgd_offset(mm, addr);
--	if (!pgd_present(*pgd))
--		goto out;
--
--	pud = pud_offset(pgd, addr);
--	if (!pud_present(*pud))
--		goto out;
--
--	pmd = pmd_offset(pud, addr);
--	if (!pmd_present(*pmd))
--		goto out;
--
--	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
--	if (!pte_same(*ptep, orig_pte)) {
--		pte_unmap_unlock(ptep, ptl);
--		goto out;
--	}
--
--	get_page(kpage);
--	page_add_anon_rmap(kpage, vma, addr);
--
--	flush_cache_page(vma, addr, pte_pfn(*ptep));
--	ptep_clear_flush(vma, addr, ptep);
--	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
--
--	page_remove_rmap(page);
--	put_page(page);
--
--	pte_unmap_unlock(ptep, ptl);
--	err = 0;
--out:
--	return err;
--}
--
- /*
-  * try_to_merge_one_page - take two pages and merge them into one
-  * @vma: the vma that holds the pte pointing to page
-diff --git a/mm/memory.c b/mm/memory.c
-index 119b7cc..3fb2b9d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2582,6 +2582,126 @@ void unmap_mapping_range(struct address_space *mapping,
- }
- EXPORT_SYMBOL(unmap_mapping_range);
- 
-+/**
-+ * replace_page - replace page in vma by new ksm page
-+ * @vma:      vma that holds the pte pointing to page
-+ * @page:     the page we are replacing by kpage
-+ * @kpage:    the ksm page we replace page by
-+ * @orig_pte: the original value of the pte
-+ *
-+ * Returns 0 on success, -EFAULT on failure.
++/* Slot allocation for XOL */
++
++/*
++ * Every probepoint gets its own slot.  Once it's assigned a slot, it
++ * keeps that slot until the probepoint goes away. Only definite number
++ * of slots are allocated.
 + */
-+int replace_page(struct vm_area_struct *vma, struct page *page,
-+			struct page *kpage, pte_t orig_pte)
++
++struct uprobes_xol_area {
++	spinlock_t lock;	/* protects bitmap and slot (de)allocation*/
++	unsigned long *bitmap;	/* 0 = free slot */
++
++	/*
++	 * We keep the vma's vm_start rather than a pointer to the vma
++	 * itself.  The probed process or a naughty kernel module could make
++	 * the vma go away, and we must handle that reasonably gracefully.
++	 */
++	unsigned long vaddr;		/* Page(s) of instruction slots */
++};
++
++static int xol_add_vma(struct uprobes_xol_area *area)
 +{
-+	struct mm_struct *mm = vma->vm_mm;
-+	pgd_t *pgd;
-+	pud_t *pud;
-+	pmd_t *pmd;
-+	pte_t *ptep;
-+	spinlock_t *ptl;
++	struct vm_area_struct *vma;
++	struct mm_struct *mm;
++	struct file *file;
 +	unsigned long addr;
-+	int err = -EFAULT;
 +
-+	addr = page_address_in_vma(page, vma);
-+	if (addr == -EFAULT)
-+		goto out;
++	mm = get_task_mm(current);
++	if (!mm)
++		return -ESRCH;
 +
-+	pgd = pgd_offset(mm, addr);
-+	if (!pgd_present(*pgd))
-+		goto out;
-+
-+	pud = pud_offset(pgd, addr);
-+	if (!pud_present(*pud))
-+		goto out;
-+
-+	pmd = pmd_offset(pud, addr);
-+	if (!pmd_present(*pmd))
-+		goto out;
-+
-+	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
-+	if (!pte_same(*ptep, orig_pte)) {
-+		pte_unmap_unlock(ptep, ptl);
-+		goto out;
++	down_write(&mm->mmap_sem);
++	/*
++	 * Find the end of the top mapping and skip a page.
++	 * If there is no space for PAGE_SIZE above
++	 * that, mmap will ignore our address hint.
++	 *
++	 * We allocate a "fake" unlinked shmem file because
++	 * anonymous memory might not be granted execute
++	 * permission when the selinux security hooks have
++	 * their way.
++	 */
++	vma = rb_entry(rb_last(&mm->mm_rb), struct vm_area_struct, vm_rb);
++	addr = vma->vm_end + PAGE_SIZE;
++	file = shmem_file_setup("uprobes/xol", PAGE_SIZE, VM_NORESERVE);
++	if (!file) {
++		printk(KERN_ERR "uprobes_xol failed to setup shmem_file "
++			"while allocating vma for pid/tgid %d/%d for "
++			"single-stepping out of line.\n",
++			current->pid, current->tgid);
++		goto fail;
 +	}
++	addr = do_mmap_pgoff(file, addr, PAGE_SIZE, PROT_EXEC, MAP_PRIVATE, 0);
++	fput(file);
 +
-+	get_page(kpage);
-+	page_add_anon_rmap(kpage, vma, addr);
++	if (addr & ~PAGE_MASK) {
++		printk(KERN_ERR "uprobes_xol failed to allocate a vma for "
++				"pid/tgid %d/%d for single-stepping out of "
++				"line.\n", current->pid, current->tgid);
++		goto fail;
++	}
++	vma = find_vma(mm, addr);
 +
-+	flush_cache_page(vma, addr, pte_pfn(*ptep));
-+	ptep_clear_flush(vma, addr, ptep);
-+	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
++	/* Don't expand vma on mremap(). */
++	vma->vm_flags |= VM_DONTEXPAND | VM_DONTCOPY;
++	area->vaddr = vma->vm_start;
++	up_write(&mm->mmap_sem);
++	mmput(mm);
++	return 0;
 +
-+	page_remove_rmap(page);
-+	put_page(page);
-+
-+	pte_unmap_unlock(ptep, ptl);
-+	err = 0;
-+out:
-+	return err;
++fail:
++	up_write(&mm->mmap_sem);
++	mmput(mm);
++	return -ENOMEM;
 +}
 +
-+/**
-+ * write_protect_page - mark the page readonly
-+ * @vma:      vma that holds the page we want to mark
-+ * @page:     page that needs to be marked readonly
-+ * @orig_pte: pte for the protected page.
++/*
++ * xol_alloc_area - Allocate process's uprobes_xol_area.
++ * This area will be used for storing instructions for execution out of
++ * line.
 + *
-+ * Returns 0 on success, -EFAULT on failure.
++ * Called with mm->uproc->mutex locked.
++ * Returns the allocated area or NULL.
 + */
-+int write_protect_page(struct vm_area_struct *vma, struct page *page,
-+						      pte_t *orig_pte)
++static struct uprobes_xol_area *xol_alloc_area(void)
 +{
-+	struct mm_struct *mm = vma->vm_mm;
-+	unsigned long addr;
-+	pte_t *ptep;
-+	spinlock_t *ptl;
-+	int swapped;
-+	int err = -EFAULT;
++	struct uprobes_xol_area *area = NULL;
 +
-+	addr = page_address_in_vma(page, vma);
-+	if (addr == -EFAULT)
-+		goto out;
++	area = kzalloc(sizeof(*area), GFP_USER);
++	if (unlikely(!area))
++		return NULL;
 +
-+	ptep = page_check_address(page, mm, addr, &ptl, 0);
-+	if (!ptep)
-+		goto out;
++	area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long),
++								GFP_USER);
 +
-+	if (pte_write(*ptep)) {
-+		pte_t entry;
-+
-+		swapped = PageSwapCache(page);
-+		flush_cache_page(vma, addr, page_to_pfn(page));
-+		/*
-+		 * Ok this is tricky, when get_user_pages_fast() run it doesnt
-+		 * take any lock, therefore the check that we are going to make
-+		 * with the pagecount against the mapcount is racey and
-+		 * O_DIRECT can happen right after the check.
-+		 * So we clear the pte and flush the tlb before the check
-+		 * this assure us that no O_DIRECT can happen after the check
-+		 * or in the middle of the check.
-+		 */
-+		entry = ptep_clear_flush(vma, addr, ptep);
-+		/*
-+		 * Check that no O_DIRECT or similar I/O is in progress on the
-+		 * page
-+		 */
-+		if (page_mapcount(page) + 1 + swapped != page_count(page)) {
-+			set_pte_at(mm, addr, ptep, entry);
-+			goto out_unlock;
-+		}
-+		entry = pte_wrprotect(entry);
-+		set_pte_at_notify(mm, addr, ptep, entry);
++	if (!area->bitmap)
++		goto fail;
++	if (xol_add_vma(area)) {
++		kfree(area->bitmap);
++		goto fail;
 +	}
-+	*orig_pte = *ptep;
-+	err = 0;
++	spin_lock_init(&area->lock);
++	return area;
 +
-+out_unlock:
-+	pte_unmap_unlock(ptep, ptl);
-+out:
-+	return err;
++fail:
++	kfree(area);
++	return NULL;
 +}
 +
- int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
++/*
++ * xol_free_area - Free the area allocated for slots.
++ * @xol_area refers the unique per process uprobes_xol_area for
++ * this process.
++ *
++ */
++static void xol_free_area(struct uprobes_xol_area *xol_area)
++{
++	kfree(xol_area->bitmap);
++	kfree(xol_area);
++}
++
++/*
++ * Find a slot
++ *  - searching in existing vmas for a free slot.
++ *  - If no free slot in existing vmas, return 0;
++ *
++ * Called when holding xol_area->lock
++ */
++static unsigned long xol_take_insn_slot(struct uprobes_xol_area *area)
++{
++	unsigned long slot_addr;
++	int slot_nr;
++
++	slot_nr = find_first_zero_bit(area->bitmap, UINSNS_PER_PAGE);
++	if (slot_nr < UINSNS_PER_PAGE) {
++		set_bit(slot_nr, area->bitmap);
++		slot_addr = area->vaddr +
++				(slot_nr * UPROBES_XOL_SLOT_BYTES);
++		return slot_addr;
++	}
++
++	return 0;
++}
++
++/*
++ * xol_get_insn_slot - If user_bkpt  was not allocated a slot, then
++ * allocate a slot. If uprobes_insert_bkpt is already called, (i.e
++ * user_bkpt.vaddr != 0) then copy the instruction into the slot.
++ * @user_bkpt: probepoint information
++ * @xol_area refers the unique per process uprobes_xol_area for
++ * this process.
++ *
++ * Called with mm->uproc->mutex locked.
++ * Returns the allocated slot address or 0.
++ */
++static unsigned long xol_get_insn_slot(struct user_bkpt *user_bkpt,
++				struct uprobes_xol_area *xol_area)
++{
++	unsigned long flags, xol_vaddr = 0;
++	int len;
++
++	if (unlikely(!xol_area))
++		return 0;
++
++	if (user_bkpt->xol_vaddr)
++		return user_bkpt->xol_vaddr;
++
++	spin_lock_irqsave(&xol_area->lock, flags);
++	xol_vaddr = xol_take_insn_slot(xol_area);
++	spin_unlock_irqrestore(&xol_area->lock, flags);
++
++	/*
++	 * Initialize the slot if user_bkpt->vaddr points to valid
++	 * instruction slot.
++	 */
++	if (likely(xol_vaddr) && user_bkpt->vaddr) {
++		len = access_process_vm(current, xol_vaddr, user_bkpt->insn,
++						UPROBES_XOL_SLOT_BYTES, 1);
++		if (unlikely(len < UPROBES_XOL_SLOT_BYTES))
++			printk(KERN_ERR "Failed to copy instruction at %#lx "
++					"len = %d\n", user_bkpt->vaddr, len);
++	}
++
++	/*
++	 * Update user_bkpt->xol_vaddr after giving a chance for the slot to
++	 * be initialized.
++	 */
++	mb();
++	user_bkpt->xol_vaddr = xol_vaddr;
++	return user_bkpt->xol_vaddr;
++}
++
++/*
++ * xol_free_insn_slot - If slot was earlier allocated by
++ * @xol_get_insn_slot(), make the slot available for
++ * subsequent requests.
++ * @slot_addr: slot address as returned by
++ * @xol_get_insn_area().
++ * @xol_area refers the unique per process uprobes_xol_area for
++ * this process.
++ */
++static void xol_free_insn_slot(unsigned long slot_addr,
++				struct uprobes_xol_area *xol_area)
++{
++	unsigned long vma_end;
++	int found = 0;
++
++	if (unlikely(!slot_addr || IS_ERR_VALUE(slot_addr)))
++		return;
++
++	if (unlikely(!xol_area))
++		return;
++
++	vma_end = xol_area->vaddr + PAGE_SIZE;
++	if (xol_area->vaddr <= slot_addr && slot_addr < vma_end) {
++		int slot_nr;
++		unsigned long offset = slot_addr - xol_area->vaddr;
++		unsigned long flags;
++
++		BUG_ON(offset % UPROBES_XOL_SLOT_BYTES);
++
++		slot_nr = offset / UPROBES_XOL_SLOT_BYTES;
++		BUG_ON(slot_nr >= UINSNS_PER_PAGE);
++
++		spin_lock_irqsave(&xol_area->lock, flags);
++		clear_bit(slot_nr, xol_area->bitmap);
++		spin_unlock_irqrestore(&xol_area->lock, flags);
++		found = 1;
++	}
++
++	if (!found)
++		printk(KERN_ERR "%s: no XOL vma for slot address %#lx\n",
++						__func__, slot_addr);
++}
++
++/*
++ * xol_validate_vaddr - Verify if the specified address is in an
++ * executable vma, but not in an XOL vma.
++ *	- Return 0 if the specified virtual address is in an
++ *	  executable vma, but not in an XOL vma.
++ *	- Return 1 if the specified virtual address is in an
++ *	  XOL vma.
++ *	- Return -EINTR otherwise.(i.e non executable vma, or
++ *	  not a valid address
++ * @pid: the probed process
++ * @vaddr: virtual address of the instruction to be validated.
++ * @xol_area refers the unique per process uprobes_xol_area for
++ * this process.
++ */
++static int xol_validate_vaddr(struct pid *pid, unsigned long vaddr,
++				struct uprobes_xol_area *xol_area)
++{
++	struct task_struct *tsk;
++	unsigned long vma_end;
++	int result;
++
++	if (unlikely(!xol_area))
++		return 0;
++
++	tsk = get_pid_task(pid, PIDTYPE_PID);
++	if (unlikely(!tsk))
++		return -EINVAL;
++
++	result = validate_insn_addr(tsk, vaddr);
++	if (result != 0)
++		goto validate_end;
++
++	vma_end = xol_area->vaddr + PAGE_SIZE;
++	if (xol_area->vaddr <= vaddr && vaddr < vma_end)
++		result = 1;
++
++validate_end:
++	put_task_struct(tsk);
++	return result;
++}
++/* end of slot allocation for XOL */
++
+ static int __init init_uprobes(void)
  {
- 	struct address_space *mapping = inode->i_mapping;
+ 	int result = 0;
