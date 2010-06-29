@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736Ab0F2DL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jun 2010 23:11:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:46608 "EHLO
+	id S1751967Ab0F2DMR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jun 2010 23:12:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:46718 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab0F2DKr (ORCPT
+	with ESMTP id S1752981Ab0F2DKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jun 2010 23:10:47 -0400
-X-Authority-Analysis: v=1.1 cv=fhltGCNqn7I0vuW4QMEj3LCOhQQl14bnXIhcDW1W0Bg= c=1 sm=0 a=Pp8iW8DaAZkA:10 a=hO-oPbc3tlwA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=ZwnnlKpAyDbT_5MkDpEA:9 a=2F8-xdeJ_McpgAyFOiWsAvKUabMA:4 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+	Mon, 28 Jun 2010 23:10:46 -0400
+X-Authority-Analysis: v=1.1 cv=4GK1Slht3WUdSXXcSOu+TCe3GQnvEFDsQSvVHKX2gdo= c=1 sm=0 a=kCOdILz_--8A:10 a=1CvaPgNKC-EA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=DfNHnWVPAAAA:8 a=meVymXHHAAAA:8 a=OmWx_Ei-vZGLHS3O8-IA:9 a=8670kolLWbrwiF4xID4A:7 a=3uRNDRfgckDEUsPC8z8yy0H2-8MA:4 a=lBRciGGoxdUA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Message-Id: <20100629031044.142201095@goodmis.org>
+Message-Id: <20100629031044.693053496@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 28 Jun 2010 23:08:42 -0400
+Date: Mon, 28 Jun 2010 23:08:44 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
        Thomas Gleixner <tglx@linutronix.de>,
        Frederic Weisbecker <fweisbec@gmail.com>,
-       Li Zefan <lizf@cn.fujitsu.com>
-Subject: [PATCH 6/9] tracing: Remove redundant raw_init callbacks
+       Chase Douglas <chase.douglas@canonical.com>
+Subject: [PATCH 8/9] tracing/function-graph: Use correct string size for snprintf
 References: <20100629030836.222433712@goodmis.org>
-Content-Disposition: inline; filename=0006-tracing-Remove-redundant-raw_init-callbacks.patch
+Content-Disposition: inline; filename=0008-tracing-function-graph-Use-correct-string-size-for-s.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+From: Chase Douglas <chase.douglas@canonical.com>
 
-raw_init callback is optional.
+The nsecs_str string is a local variable defined as:
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-LKML-Reference: <4BFA37D4.7070500@cn.fujitsu.com>
+char nsecs_str[5];
+
+It is possible for the snprintf call to use a size value larger than the
+size of the string. This should not cause a buffer overrun as it is
+written now due to the value for the string format "%03lu" can not be
+larger than 1000. However, this change makes it correct. By making the
+size correct we guard against potential future changes that could actually
+cause a buffer overrun.
+
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+LKML-Reference: <1276619355-18116-1-git-send-email-chase.douglas@canonical.com>
+
+[ added 'UL' to number 8 to fix gcc warning comparing it to sizeof() ]
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_export.c |    8 +-------
- kernel/trace/trace_kprobe.c |   10 +---------
- 2 files changed, 2 insertions(+), 16 deletions(-)
+ kernel/trace/trace_functions_graph.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index 8536e2a..4ba44de 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -125,12 +125,6 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 79f4bac..6bff236 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -641,7 +641,8 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
  
- #include "trace_entries.h"
- 
--static int ftrace_raw_init_event(struct ftrace_event_call *call)
--{
--	INIT_LIST_HEAD(&call->class->fields);
--	return 0;
--}
--
- #undef __entry
- #define __entry REC
- 
-@@ -158,7 +152,7 @@ static int ftrace_raw_init_event(struct ftrace_event_call *call)
- struct ftrace_event_class event_class_ftrace_##call = {			\
- 	.system			= __stringify(TRACE_SYSTEM),		\
- 	.define_fields		= ftrace_define_fields_##call,		\
--	.raw_init		= ftrace_raw_init_event,		\
-+	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
- };									\
- 									\
- struct ftrace_event_call __used						\
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index f52b5f5..3b831d8 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1214,11 +1214,6 @@ static void probe_event_disable(struct ftrace_event_call *call)
- 	}
- }
- 
--static int probe_event_raw_init(struct ftrace_event_call *event_call)
--{
--	return 0;
--}
--
- #undef DEFINE_FIELD
- #define DEFINE_FIELD(type, item, name, is_signed)			\
- 	do {								\
-@@ -1486,15 +1481,12 @@ static int register_probe_event(struct trace_probe *tp)
- 	int ret;
- 
- 	/* Initialize ftrace_event_call */
-+	INIT_LIST_HEAD(&call->class->fields);
- 	if (probe_is_return(tp)) {
--		INIT_LIST_HEAD(&call->class->fields);
- 		call->event.funcs = &kretprobe_funcs;
--		call->class->raw_init = probe_event_raw_init;
- 		call->class->define_fields = kretprobe_event_define_fields;
- 	} else {
--		INIT_LIST_HEAD(&call->class->fields);
- 		call->event.funcs = &kprobe_funcs;
--		call->class->raw_init = probe_event_raw_init;
- 		call->class->define_fields = kprobe_event_define_fields;
- 	}
- 	if (set_print_fmt(tp) < 0)
+ 	/* Print nsecs (we don't want to exceed 7 numbers) */
+ 	if (len < 7) {
+-		snprintf(nsecs_str, 8 - len, "%03lu", nsecs_rem);
++		snprintf(nsecs_str, min(sizeof(nsecs_str), 8UL - len), "%03lu",
++			 nsecs_rem);
+ 		ret = trace_seq_printf(s, ".%s", nsecs_str);
+ 		if (!ret)
+ 			return TRACE_TYPE_PARTIAL_LINE;
 -- 
 1.7.1
 
