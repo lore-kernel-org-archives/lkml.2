@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab0F2Wow (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 18:44:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab0F2Wou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 18:44:50 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100628164854.GA9979@samba1>
-References: <20100628164854.GA9979@samba1> <20100628162626.6026.26679.stgit@warthog.procyon.org.uk> <AANLkTikkaRYyUfHILDCKYzXdLi9ORuQs05Rf9TScF_Tz@mail.gmail.com>
-To: Jeremy Allison <jra@samba.org>
-Cc: dhowells@redhat.com, Steve French <smfrench@gmail.com>,
-       viro@zeniv.linux.org.uk, jlayton@redhat.com, mcao@us.ibm.com,
+	id S1755788Ab0F2Wrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 18:47:40 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:54988 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab0F2Wri (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 18:47:38 -0400
+Date: Tue, 29 Jun 2010 15:48:59 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: David Howells <dhowells@redhat.com>
+cc: Ulrich Drepper <drepper@gmail.com>, viro@zeniv.linux.org.uk,
+       smfrench@gmail.com, jlayton@redhat.com, mcao@us.ibm.com,
        aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
        samba-technical@lists.samba.org, sjayaraman@suse.de,
        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] Ext4: Make file creation time, i_version and i_generation available by xattrs
-Date: Tue, 29 Jun 2010 23:44:37 +0100
-Message-ID: <26197.1277851477@redhat.com>
+Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file
+ stats available
+In-Reply-To: <26026.1277851016@redhat.com>
+Message-ID: <Pine.LNX.4.64.1006291542400.5576@cobra.newdream.net>
+References: <AANLkTimSU_pCXW5zR8__Q3-fzgxwEUX8rPqLeZtPD_hX@mail.gmail.com>
+ <20100629200259.23196.81509.stgit@warthog.procyon.org.uk>
+ <20100629200315.23196.68742.stgit@warthog.procyon.org.uk> <26026.1277851016@redhat.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeremy Allison <jra@samba.org> wrote:
+On Tue, 29 Jun 2010, David Howells wrote:
+> Ulrich Drepper <drepper@gmail.com> wrote:
+> 
+> > On Tue, Jun 29, 2010 at 13:03, David Howells <dhowells@redhat.com> wrote:
+> > > Add a pair of system calls to make extended file stats available,
+> > > including file creation time, inode version and data version where
+> > > available through the underlying filesystem:
+> > 
+> > If you add something like this you might want to integrate another
+> > extension.  This has been discussed a long time ago.  In almost no
+> > situation all the information is needed.  Some of the pieces of
+> > information returned by the syscall might be harder to collect than
+> > other.
+> 
+> Trond mentioned this:
+> 
+> 	There has been a lot of interest in allowing the user to specify
+> 	exactly which fields they want the filesystem to return, and whether
+> 	or not the kernel can use cached data or not. The main use is to allow
+> 	specification of a 'stat light' that could help speed up
+> 	"readdir()+multiple stat()" type queries. At last year's Filesystem
+> 	and Storage Workshop, Mark Fasheh actually came up with an initial
+> 	design:
+> 
+> 	  http://www.kerneltrap.com/mailarchive/linux-fsdevel/2009/4/7/5427274
+> 
+> It'd be easy enough to absorb the functionality from that patch.
 
-> We already have code in Samba to detect "birthtime"
-> (st_btime) as a returned member of a stat struct.
+That would be nice.  HPC folks have been looking for this functionality 
+for some time now.
 
-Is it, though?
+> > It makes sense in such a situation to allow the caller to specify what she
+> > is interested in.  A bitmask of some sort.
+> 
+> I have one of those.  See the query_flags field.  One question, though, is how
+> to break things down.  Obvious groupings of the already extant stat stuff
+> might be:
+> 
+> 	- st_dev, st_ino, st_mode, st_nlink, st_uid, st_gid, st_rdev, st_size
+> 	- st_block, st_blksize
+> 	- st_atime, st_mtime, st_ctime
+> 
+> However, what seems obvious to me might not be for some netfs or other.
 
-Googling for st_btime suggests it could also be taken as the time last
-archived.  That may just be a NetWareism though.
+The problem is that groupings that may seem logical now may not match 
+reality for some specific file system for various implementation reasons.  
+IMO a bit per field makes the most sense, with some simple way to include 
+all fields (-1 or 0).  A mask argument that is separate from flags might 
+make that simpler?
 
-David
+sage
