@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab0F2KQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 06:16:32 -0400
+	id S1755495Ab0F2KRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 06:17:06 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:33660 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755429Ab0F2KQZ (ORCPT
+	with ESMTP id S1755404Ab0F2KQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 06:16:25 -0400
+	Tue, 29 Jun 2010 06:16:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ugwguE46ny3ufs/KciCwXioJa7s1ppP7rXNthyB1T4aRAYa5F2WbT6fevSngZUa4Nm
-         cSXEUSi4Qvbpl3kXgdbL79ccaAT+klrjzdDxvJ7JWBAWd225CJsQlda+nWd12xswFhRC
-         o4Udjw7n7oAhaBXI0JouOhOX75SpJ/8UCZDMU=
+        b=ASCN4FwVrorKY1VN31Ff9G5h6Ro8nG2lXNBd3ZRuGd7N9rO/r7vlxNn5ZXGXNjh4kr
+         KBEIp8Y00oMMfX0zw5j1kKVqj/iMeyN+u8vdnJnlAujSOYWTOHeChRVnLXxGlz16w+wG
+         fYHCFPsu7Zzr36U1z/hpmvsOLe/gaCyWZCIE0=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Martyn Welch <martyn.welch@ge.com>,
-       Julia Lawall <julia@diku.dk>, devel@driverdev.osuosl.org,
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+       "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jpirko@redhat.com>,
+       Henk de Groot <pe1dnn@amsat.org>,
+       Andrew Morton <akpm@linux-foundation.org>, devel@driverdev.osuosl.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH 22/25] vme_tsi148: remove casts from void*
-Date: Tue, 29 Jun 2010 14:16:20 +0400
-Message-Id: <1277806581-31452-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH 23/25] wl_netdev: remove casts from void*
+Date: Tue, 29 Jun 2010 14:16:25 +0400
+Message-Id: <1277806586-31486-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,58 +32,24 @@ Remove unnesessary casts from void*.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/staging/vme/bridges/vme_tsi148.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/staging/wlags49_h2/wl_netdev.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
-index abe88a3..4685a31 100644
---- a/drivers/staging/vme/bridges/vme_tsi148.c
-+++ b/drivers/staging/vme/bridges/vme_tsi148.c
-@@ -1649,7 +1649,7 @@ int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
- 	/* Fill out source part */
- 	switch (src->type) {
- 	case VME_DMA_PATTERN:
--		pattern_attr = (struct vme_dma_pattern *)src->private;
-+		pattern_attr = src->private;
+diff --git a/drivers/staging/wlags49_h2/wl_netdev.c b/drivers/staging/wlags49_h2/wl_netdev.c
+index 1aa61db..e2a7ad0 100644
+--- a/drivers/staging/wlags49_h2/wl_netdev.c
++++ b/drivers/staging/wlags49_h2/wl_netdev.c
+@@ -1905,8 +1905,8 @@ int wl_rx_dma( struct net_device *dev )
+     DBG_FUNC("wl_rx")
+     DBG_PARAM(DbgInfo, "dev", "%s (0x%p)", dev->name, dev);
  
- 		entry->descriptor.dsal = pattern_attr->pattern;
- 		entry->descriptor.dsat = TSI148_LCSR_DSAT_TYP_PAT;
-@@ -1663,7 +1663,7 @@ int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
+-    if((( lp = (struct wl_private *)dev->priv ) != NULL ) &&
+-          !( lp->flags & WVLAN2_UIL_BUSY )) {
++    if((( lp = dev->priv ) != NULL ) &&
++	!( lp->flags & WVLAN2_UIL_BUSY )) {
  
- 		break;
- 	case VME_DMA_PCI:
--		pci_attr = (struct vme_dma_pci *)src->private;
-+		pci_attr = src->private;
- 
- 		reg_split((unsigned long long)pci_attr->address, &address_high,
- 			&address_low);
-@@ -1672,7 +1672,7 @@ int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
- 		entry->descriptor.dsat = TSI148_LCSR_DSAT_TYP_PCI;
- 		break;
- 	case VME_DMA_VME:
--		vme_attr = (struct vme_dma_vme *)src->private;
-+		vme_attr = src->private;
- 
- 		reg_split((unsigned long long)vme_attr->address, &address_high,
- 			&address_low);
-@@ -1701,7 +1701,7 @@ int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
- 	/* Fill out destination part */
- 	switch (dest->type) {
- 	case VME_DMA_PCI:
--		pci_attr = (struct vme_dma_pci *)dest->private;
-+		pci_attr = dest->private;
- 
- 		reg_split((unsigned long long)pci_attr->address, &address_high,
- 			&address_low);
-@@ -1710,7 +1710,7 @@ int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
- 		entry->descriptor.ddat = TSI148_LCSR_DDAT_TYP_PCI;
- 		break;
- 	case VME_DMA_VME:
--		vme_attr = (struct vme_dma_vme *)dest->private;
-+		vme_attr = dest->private;
- 
- 		reg_split((unsigned long long)vme_attr->address, &address_high,
- 			&address_low);
+ #ifdef USE_RTS
+         if( lp->useRTS == 1 ) {
 -- 
 1.7.0.4
 
