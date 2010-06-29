@@ -1,32 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab0F2Rik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 13:38:40 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:46414 "EHLO h5.dl5rb.org.uk"
+	id S1756698Ab0F2Rl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 13:41:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58947 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932175Ab0F2Rij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 13:38:39 -0400
-Date: Mon, 28 Jun 2010 14:42:38 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Christoph Egger <siccegge@cs.fau.de>, Yang Shi <yang.shi@windriver.com>,
-       Herbert Xu <herbert@gondor.hengli.com.au>, Tejun Heo <tj@kernel.org>,
-       linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 2/9] Removing dead CONFIG_GDB_CONSOLE
-Message-ID: <20100628134238.GB29229@linux-mips.org>
-References: <cover.1275925108.git.siccegge@cs.fau.de>
- <598418d662edd83225b8b47ead59a5cf18a26fc6.1275925108.git.siccegge@cs.fau.de>
- <4C0FC741.4020505@caviumnetworks.com>
+	id S1755367Ab0F2Rl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 13:41:27 -0400
+Date: Wed, 30 Jun 2010 03:41:22 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+       Frank Mayhar <fmayhar@google.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [patch 02/52] fs: fix superblock iteration race
+Message-ID: <20100629174122.GN28364@laptop>
+References: <20100624030212.676457061@suse.de>
+ <20100624030725.885831564@suse.de>
+ <20100629130214.GA21410@infradead.org>
+ <20100629145617.GG28364@laptop>
+ <AANLkTinCVQdekiLlU4_tRkkcSGYWV6NG7nlvTirl5xZF@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C0FC741.4020505@caviumnetworks.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <AANLkTinCVQdekiLlU4_tRkkcSGYWV6NG7nlvTirl5xZF@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks folks.  Queued for 2.6.36 as well.
+On Tue, Jun 29, 2010 at 10:35:47AM -0700, Linus Torvalds wrote:
+> On Tue, Jun 29, 2010 at 7:56 AM, Nick Piggin <npiggin@suse.de> wrote:
+> > On Tue, Jun 29, 2010 at 09:02:14AM -0400, Christoph Hellwig wrote:
+> >> This should actually be on it's way to Linus for .35, shouldn't it?
+> >
+> > Yeah, I was waiting for Al to reappear, but I think this is
+> > probably the nicest way to solve the problem. Linus?
+> 
+> I'll apply it. We have a couple of oopses listed for the superblock
+> iterator, and I haven't heard from Al. And the patch looks obviously
+> fine, whether it's actually the cause of some of the bugs or not.
 
-  Ralf
+OK. I only have managed to get it into an infininte loop but I think
+it would be surely possible to oops it because the next pointer can
+be uninitialised memory at that point.
+
