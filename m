@@ -1,117 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab0F3PYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 11:24:46 -0400
-Received: from kroah.org ([198.145.64.141]:39956 "EHLO coco.kroah.org"
+	id S1756774Ab0F3PZf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 11:25:35 -0400
+Received: from kroah.org ([198.145.64.141]:40053 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756650Ab0F3PY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 11:24:27 -0400
-Date: Wed, 30 Jun 2010 08:23:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for 2.6.35-git
-Message-ID: <20100630152326.GB11236@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756650Ab0F3PZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 11:25:32 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Dongdong Deng <dongdong.deng@windriver.com>, stable <stable@kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 1/1] serial: cpm_uart: implement the cpm_uart_early_write() function for console poll
+Date: Wed, 30 Jun 2010 08:25:29 -0700
+Message-Id: <1277911529-11401-1-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100630152318.GA11236@kroah.com>
+References: <20100630152318.GA11236@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are a few USB bugfixes for your 2.6.35-git tree.
+From: Dongdong Deng <dongdong.deng@windriver.com>
 
-The most changes here are in the gadget drivers, but there are also a
-number of other needed fixes as well.
+The cpm_uart_early_write() function which was used for console poll
+isn't implemented in the cpm uart driver.
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/
+Implementing this function both fixes the build when CONFIG_CONSOLE_POLL
+is set and allows kgdboc to work via the cpm uart.
 
-All of these patches have been in the linux-next and mm trees.
+Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
+Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+Cc: stable <stable@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/serial/cpm_uart/cpm_uart_core.c |  143 +++++++++++++++++--------------
+ 1 files changed, 79 insertions(+), 64 deletions(-)
 
-The full patches will be sent to the linux-usb mailing list, if anyone
-wants to see them.
-
-thanks,
-
-greg k-h
-
-------------
-
- drivers/usb/core/driver.c           |   13 +--
- drivers/usb/core/message.c          |    7 +-
- drivers/usb/gadget/f_eem.c          |    3 +-
- drivers/usb/gadget/f_mass_storage.c |  194 +++++++++++++----------------------
- drivers/usb/gadget/g_ffs.c          |   11 ++
- drivers/usb/gadget/printer.c        |   32 +++---
- drivers/usb/gadget/s3c2410_udc.c    |    6 +-
- drivers/usb/gadget/u_serial.c       |   16 +---
- drivers/usb/host/ehci-mxc.c         |   13 ++-
- drivers/usb/host/isp1362-hcd.c      |   15 ++-
- drivers/usb/host/r8a66597-hcd.c     |    2 +-
- drivers/usb/host/xhci-ring.c        |   62 ++++++++---
- drivers/usb/musb/musb_core.c        |   13 +--
- drivers/usb/musb/musb_core.h        |    6 +-
- drivers/usb/musb/musbhsdma.c        |   13 +--
- drivers/usb/otg/ulpi.c              |   15 ++-
- drivers/usb/serial/ftdi_sio.c       |    1 -
- drivers/usb/serial/ftdi_sio_ids.h   |    7 --
- drivers/usb/serial/qcserial.c       |    3 +
- 19 files changed, 208 insertions(+), 224 deletions(-)
-
----------------
-
-Alan Stern (2):
-      USB: fix oops in usb_sg_init()
-      USB: obey the sysfs power/wakeup setting
-
-Axel Lin (1):
-      USB: qcserial: fix a memory leak in qcprobe error path
-
-Daniel Sangorrin (1):
-      USB: serial: ftdi: correct merge conflict with CONTEC id
-
-Hema HK (1):
-      USB: musb: Enable the maximum supported burst mode for DMA
-
-Jiri Pinkava (1):
-      USB: gadget eth: Fix calculate CRC32 in EEM
-
-Jiri Slaby (2):
-      USB: isp1362-hcd, fix double lock
-      USB: gadget/printer, fix sleep inside atomic
-
-Jon Povey (2):
-      USB: g_serial: don't set low_latency flag
-      USB: g_serial: fix tty cleanup on unload
-
-Maulik Mankad (1):
-      usb: musb: Fix a bug by making suspend interrupt available in device mode
-
-Michal Nazarewicz (3):
-      USB: gadget: g_fs: possible invalid pointer reference bug fixed
-      USB: gadget: f_mass_storage: fixed fs descriptors not being updated
-      USB: gadget: f_mass_storage: stale common->fsg value bug fix
-
-Mike Frysinger (1):
-      USB: musb: fix Blackfin ulpi stubs
-
-Nobuhiro Iwamatsu (1):
-      USB: r8a66597: Fix failure in change of status
-
-Sarah Sharp (1):
-      USB: xHCI: Fix bug in link TRB activation change.
-
-Sergei Shtylyov (2):
-      USB: musb_core: make disconnect and suspend interrupts work again
-      USB: MUSB: make non-OMAP platforms build with CONFIG_PM=y
-
-Vladimir Zapolskiy (1):
-      USB: s3c2410: deactivate endpoints before gadget unbinding
-
-Wolfram Sang (2):
-      USB: otg/ulpi: bail out on read errors
-      USB: ehci-mxc: bail out on transceiver problems
+diff --git a/drivers/serial/cpm_uart/cpm_uart_core.c b/drivers/serial/cpm_uart/cpm_uart_core.c
+index 9eb62a2..cd6cf57 100644
+--- a/drivers/serial/cpm_uart/cpm_uart_core.c
++++ b/drivers/serial/cpm_uart/cpm_uart_core.c
+@@ -930,6 +930,83 @@ static void cpm_uart_config_port(struct uart_port *port, int flags)
+ 	}
+ }
+ 
++#if defined(CONFIG_CONSOLE_POLL) || defined(CONFIG_SERIAL_CPM_CONSOLE)
++/*
++ * Write a string to the serial port
++ * Note that this is called with interrupts already disabled
++ */
++static void cpm_uart_early_write(struct uart_cpm_port *pinfo,
++		const char *string, u_int count)
++{
++	unsigned int i;
++	cbd_t __iomem *bdp, *bdbase;
++	unsigned char *cpm_outp_addr;
++
++	/* Get the address of the host memory buffer.
++	 */
++	bdp = pinfo->tx_cur;
++	bdbase = pinfo->tx_bd_base;
++
++	/*
++	 * Now, do each character.  This is not as bad as it looks
++	 * since this is a holding FIFO and not a transmitting FIFO.
++	 * We could add the complexity of filling the entire transmit
++	 * buffer, but we would just wait longer between accesses......
++	 */
++	for (i = 0; i < count; i++, string++) {
++		/* Wait for transmitter fifo to empty.
++		 * Ready indicates output is ready, and xmt is doing
++		 * that, not that it is ready for us to send.
++		 */
++		while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
++			;
++
++		/* Send the character out.
++		 * If the buffer address is in the CPM DPRAM, don't
++		 * convert it.
++		 */
++		cpm_outp_addr = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr),
++					pinfo);
++		*cpm_outp_addr = *string;
++
++		out_be16(&bdp->cbd_datlen, 1);
++		setbits16(&bdp->cbd_sc, BD_SC_READY);
++
++		if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
++			bdp = bdbase;
++		else
++			bdp++;
++
++		/* if a LF, also do CR... */
++		if (*string == 10) {
++			while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
++				;
++
++			cpm_outp_addr = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr),
++						pinfo);
++			*cpm_outp_addr = 13;
++
++			out_be16(&bdp->cbd_datlen, 1);
++			setbits16(&bdp->cbd_sc, BD_SC_READY);
++
++			if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
++				bdp = bdbase;
++			else
++				bdp++;
++		}
++	}
++
++	/*
++	 * Finally, Wait for transmitter & holding register to empty
++	 *  and restore the IER
++	 */
++	while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
++		;
++
++	pinfo->tx_cur = bdp;
++}
++#endif
++
+ #ifdef CONFIG_CONSOLE_POLL
+ /* Serial polling routines for writing and reading from the uart while
+  * in an interrupt or debug context.
+@@ -999,7 +1076,7 @@ static void cpm_put_poll_char(struct uart_port *port,
+ 	static char ch[2];
+ 
+ 	ch[0] = (char)c;
+-	cpm_uart_early_write(pinfo->port.line, ch, 1);
++	cpm_uart_early_write(pinfo, ch, 1);
+ }
+ #endif /* CONFIG_CONSOLE_POLL */
+ 
+@@ -1130,9 +1207,6 @@ static void cpm_uart_console_write(struct console *co, const char *s,
+ 				   u_int count)
+ {
+ 	struct uart_cpm_port *pinfo = &cpm_uart_ports[co->index];
+-	unsigned int i;
+-	cbd_t __iomem *bdp, *bdbase;
+-	unsigned char *cp;
+ 	unsigned long flags;
+ 	int nolock = oops_in_progress;
+ 
+@@ -1142,66 +1216,7 @@ static void cpm_uart_console_write(struct console *co, const char *s,
+ 		spin_lock_irqsave(&pinfo->port.lock, flags);
+ 	}
+ 
+-	/* Get the address of the host memory buffer.
+-	 */
+-	bdp = pinfo->tx_cur;
+-	bdbase = pinfo->tx_bd_base;
+-
+-	/*
+-	 * Now, do each character.  This is not as bad as it looks
+-	 * since this is a holding FIFO and not a transmitting FIFO.
+-	 * We could add the complexity of filling the entire transmit
+-	 * buffer, but we would just wait longer between accesses......
+-	 */
+-	for (i = 0; i < count; i++, s++) {
+-		/* Wait for transmitter fifo to empty.
+-		 * Ready indicates output is ready, and xmt is doing
+-		 * that, not that it is ready for us to send.
+-		 */
+-		while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
+-			;
+-
+-		/* Send the character out.
+-		 * If the buffer address is in the CPM DPRAM, don't
+-		 * convert it.
+-		 */
+-		cp = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr), pinfo);
+-		*cp = *s;
+-
+-		out_be16(&bdp->cbd_datlen, 1);
+-		setbits16(&bdp->cbd_sc, BD_SC_READY);
+-
+-		if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
+-			bdp = bdbase;
+-		else
+-			bdp++;
+-
+-		/* if a LF, also do CR... */
+-		if (*s == 10) {
+-			while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
+-				;
+-
+-			cp = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr), pinfo);
+-			*cp = 13;
+-
+-			out_be16(&bdp->cbd_datlen, 1);
+-			setbits16(&bdp->cbd_sc, BD_SC_READY);
+-
+-			if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
+-				bdp = bdbase;
+-			else
+-				bdp++;
+-		}
+-	}
+-
+-	/*
+-	 * Finally, Wait for transmitter & holding register to empty
+-	 *  and restore the IER
+-	 */
+-	while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
+-		;
+-
+-	pinfo->tx_cur = bdp;
++	cpm_uart_early_write(pinfo, s, count);
+ 
+ 	if (unlikely(nolock)) {
+ 		local_irq_restore(flags);
+-- 
+1.7.1
 
