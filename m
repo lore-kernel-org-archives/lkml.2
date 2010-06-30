@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab0F3OGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 10:06:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9276 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753817Ab0F3OGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 10:06:09 -0400
-Date: Wed, 30 Jun 2010 10:05:53 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Christoph Hellwig <hch@infradead.org>, David Howells <dhowells@redhat.com>,
-       Andreas Dilger <adilger@dilger.ca>, viro@zeniv.linux.org.uk,
-       smfrench@gmail.com, mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-       sjayaraman@suse.de, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3] Extended file stat functions [ver #2]
-Message-ID: <20100630100553.707785c7@tlielax.poochiereds.net>
-In-Reply-To: <201006301531.39365.arnd@arndb.de>
-References: <52423201-3DF9-4045-8E8B-FAA915053D56@dilger.ca>
-	<26505.1277899544@redhat.com>
-	<20100630121127.GA22713@infradead.org>
-	<201006301531.39365.arnd@arndb.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756139Ab0F3OKO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 10:10:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47153 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756074Ab0F3OKM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 10:10:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ee8E7doWIR2oRBDvwln2lR8b8SLHWl0ZZTjjxddD7JJpXtx44Jv+9tt2b7gUBsh/Y/
+         pgUDQaYOFM8oKe9fW3XtyH5CiDAtM9ys3DnZWfncO8rGdl627DDHsYsx3n/hSOEWz19X
+         n1ElHaVGnee5IA+9XwsuybpONbh9uaWbF9fwU=
+Date: Wed, 30 Jun 2010 23:10:03 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 06/11] oom: kill duplicate OOM_DISABLE check
+Message-ID: <20100630141003.GD15644@barrios-desktop>
+References: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
+ <20100630183019.AA59.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100630183019.AA59.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010 15:31:39 +0200
-Arnd Bergmann <arnd@arndb.de> wrote:
-
-> On Wednesday 30 June 2010, Christoph Hellwig wrote:
-> > The cost of adding a syscall is much smaller
+On Wed, Jun 30, 2010 at 06:31:00PM +0900, KOSAKI Motohiro wrote:
 > 
-> Ack. No need for different struct layout version since we
-> can add another stat syscall every ten years.
+> select_bad_process() and badness() have the same OOM_DISABLE check.
+> This patch kill one.
 > 
-> > So adding a few fields of padding at the end for new members is fine,
-> > but doing overkill of versioning including queries for supported
-> > versions doesn't.
-> 
-> The ability to request and return a subset of the fields seems useful
-> regardless and it can be used to avoid the need for this kind of padding.
-> A sufficient amount of padding wouldn't be too bad either, but I guess
-> we should not have both the padding _and_ the option for extending the
-> structure after the padding.
-> 
-> With the padding, the 'size' argument can go away, though I'd argue that
-> even without the padding we can safely add extra fixed-length fields
-> when needed and not need a size argument.
-> 
-
-Simply having a flags field seems sufficient to me too. I don't think
-we need padding, version or a size. Just make it a "rule" that if you
-add a new field that it has to go at the end of the struct and a new
-flag has to go with it. The kernel will need to only fill out fields
-that are requested and that it knows about.
-
-In the event that we approach running out of flags, we could even use
-the last flag as a "HAS_FLAGS2" flag, to add a new flags field at the
-end. Ugly, but it would avoid the need for a new syscall. We can kick
-that potential problem down the road though. With 64 flags to play
-with, it likely won't be a problem for a while.
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Kind regards,
+Minchan Kim
