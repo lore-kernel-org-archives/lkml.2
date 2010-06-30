@@ -1,153 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab0F3Pak (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 11:30:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60047 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074Ab0F3Pai convert rfc822-to-8bit (ORCPT
+	id S1753056Ab0F3Pe4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 11:34:56 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41585 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab0F3Pez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 11:30:38 -0400
+	Wed, 30 Jun 2010 11:34:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=T1RyrkEpsgPU+WlK9wwnspprep0z4pr2NMIBQNbzFkd4ZIMEVQ7ZyGx+MAFJQSGZbw
-         hjJLGtIGqRe/WCJelmZqs94PTUsFKLXQqk5wxCrsvlPW9XSk/T/ZANhBCLGwO8A82Hmd
-         SwAHfYKMaWpX7lt2rtGfDFF3sfnM+fdPIcogI=
+         :cc:content-type;
+        b=S/ySCaWIqZyMzwKUzKkmQPrqfYrIQ9LPvPL7pcwHkI5jK/E4vZk1spQJ43RNTcZ0t0
+         DNmMtht9yljkueYepC5cJF5CZ36+6WedD1nhhQXe5PtJB8sSdVnTbUhKTljEsPKA1UeN
+         1p4plLwul/+ZbMkZSeoHDJY2W6h6ar0u1+n3U=
 MIME-Version: 1.0
-In-Reply-To: <20100629123032.GC7094@redhat.com>
-References: <20100621110436.GA4056@lst.de>
-	<4C1FB5F7.3070908@kernel.dk>
-	<20100621191410.GA24213@lst.de>
-	<20100621213618.GC6474@redhat.com>
-	<20100623100138.GA9575@lst.de>
-	<20100624014420.GB3297@redhat.com>
-	<20100625110319.GA12855@lst.de>
-	<20100626033509.GA2435@redhat.com>
-	<x49wrtk32g1.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTiktd7GxqDkezq7LJ3vN8D0wFgzKePdQBAY3bz17@mail.gmail.com>
-	<20100629123032.GC7094@redhat.com>
-Date: Wed, 30 Jun 2010 17:30:35 +0200
-Message-ID: <AANLkTimttvpIuS-NybdlWOR7-7v2gfXWvJQdeOo_02AR@mail.gmail.com>
-Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20100630151449.GA1748@arch.tripp.de>
+References: <alpine.DEB.2.00.1006300202190.30052@skynet.skynet.ie>
+	<20100630065440.GA1736@arch.tripp.de>
+	<20100630073145.GA1722@arch.tripp.de>
+	<AANLkTimr33Bar73xO9IjDWhPWidZr0HB663oRU8fDCyt@mail.gmail.com>
+	<20100630145859.GC1722@arch.tripp.de>
+	<AANLkTil58kym4SgjMDv8RCXWkoUHKVYfTpT775uufoDJ@mail.gmail.com>
+	<20100630151449.GA1748@arch.tripp.de>
+Date: Wed, 30 Jun 2010 11:34:53 -0400
+Message-ID: <AANLkTikHDUSpYrx4yCLFPNuTw4FFyLcf2kvJ2gVWicZA@mail.gmail.com>
+Subject: Re: [git pull] drm fixes + agp + one fb patch (bisected)
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
+Content-Type: multipart/mixed; boundary=000e0cdfc5be67ffbb048a41185f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 2:30 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Tue, Jun 29, 2010 at 11:06:19AM +0200, Corrado Zoccolo wrote:
->
-> [..]
->> > I'm now testing OCFS2, and I'm seeing performance that is not great
->> > (even with the blk_yield patches applied).  What happens is that we
->> > successfully yield the queue to the journal thread, but then idle on the
->> > journal thread (even though RQ_NOIDLE was set).
+--000e0cdfc5be67ffbb048a41185f
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Jun 30, 2010 at 11:14 AM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+> On Wed, Jun 30, 2010 at 11:03:33AM -0400, Alex Deucher wrote:
+>> On Wed, Jun 30, 2010 at 10:58 AM, Markus Trippelsdorf
+>> <markus@trippelsdorf.de> wrote:
+>> > On Wed, Jun 30, 2010 at 10:49:41AM -0400, Alex Deucher wrote:
+>> >> On Wed, Jun 30, 2010 at 3:31 AM, Markus Trippelsdorf
+>> >> <markus@trippelsdorf.de> wrote:
+>> >> > On Wed, Jun 30, 2010 at 08:54:40AM +0200, Markus Trippelsdorf wrote=
+:
+>> >> >> On Wed, Jun 30, 2010 at 02:03:04AM +0100, Dave Airlie wrote:
+>> >> >> >
+>> >> >> > one fb layer fix in a flag I introduced,
+>> >> >> >
+>> >> >> > the rest are drm fixes:
+>> >> >> > radeon fixes: the larger ones in the command stream checker for =
+older cards,
+>> >> >> > which was causing a lot of userspace apps to fail. Also some pow=
+erpc server fixes.
+>> >> >> > along with some updates to the evergreen command stream checker =
+introduced in -rc1.
+>> >> >> >
+>> >> >> > agp: fix issue with warning on memory allocation + fallback to v=
+malloc.
+>> >> >> > ttm: fix regression introduced in -rc1 in memory allocation path=
+s.
+>> >> >> >
+>> >> >> > The following changes since commit 7e27d6e778cd87b6f2415515d7127=
+eba53fe5d02:
+>> >> >> >
+>> >> >> > =A0 Linux 2.6.35-rc3 (2010-06-11 19:14:04 -0700)
+>> >> >> >
+>> >> >>
+>> >> >> I've tested these patches and they break my setup (RS780). On rebo=
+ot, the
+>> >> >> monitor goes straight to powersaving mode and no framebuffer is sh=
+own.
+>> >> >
+>> >> > This is the result of the bisection:
+>> >> >
+>> >> > 07d4190327b02ab3aaad25a2d168f79d92e8f8c2 is the first bad commit
+>> >> > commit 07d4190327b02ab3aaad25a2d168f79d92e8f8c2
+>> >> > Author: Alex Deucher <alexdeucher@gmail.com>
+>> >> > Date: =A0 Sat Jun 12 11:50:13 2010 -0400
+>> >> >
+>> >> > =A0 =A0drm/radeon/kms: fix bandwidth calculation when sideport is p=
+resent
+>> >> >
+>> >> > =A0 =A0Fixes fdo bug 27529:
+>> >> > =A0 =A0https://bugs.freedesktop.org/show_bug.cgi?id=3D27529
+>> >> >
+>> >> > =A0 =A0Reported-by: steckdenis@yahoo.fr
+>> >> > =A0 =A0Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+>> >> > =A0 =A0Cc: stable <stable@kernel.org>
+>> >> > =A0 =A0Signed-off-by: Dave Airlie <airlied@redhat.com>
+>> >>
+>> >> Markus, can you send me a copy of your vbios? as root:
+>> >> cd /sys/bus/pci/devices/<pci bus id of video card>
+>> >> echo 1 > rom
+>> >> cat rom ? /tmp/vbio.rom
+>> >> echo 0 > rom
 >> >
->> > So, can we just get rid of idling when RQ_NOIDLE is set?
->> Hi Jeff,
->> I think I spotted a problem with the initial implementation of the
->> tree-wide idle when RQ_NOIDLE is set: I assumed that a queue would
->> either send possibly-idling requests or no-idle requests, but it seems
->> that RQ_NOIDLE is being used to mark the end of a stream of
->> possibly-idling requests (in my initial implementation, this will then
->> cause an unintended idle). The attached patch should fix it, and I
->> think the logic is simpler than Vivek's. Can you give it a spin?
->> Otherwise, I think that reverting the "noidle_tree_requires_idle"
->> behaviour completely may be better than adding complexity, since it is
->> really trying to solve corner cases (that maybe happen only on
->> synthetic workloads), but affecting negatively more common cases.
+>> > Attached.
+>> >
+>> >>
+>> >> Also, when you say "on reboot" do you mean the card comes up ok
+>> >> initially with the new kernel and then fails after a reboot, or fails
+>> >> directly after booting the new kernel? =A0Also, is there an oops or
+>> >> anything like that in dmesg?
+>> >
+>> > It fails directly after booting the new kernel. There is no oops or
+>> > anything like it in dmesg, because the kernel fails so early that it
+>> > could not log anything.
 >>
+>> Is the machine still pingable? =A0Can you ssh in? or is it completely de=
+ad?
 >
-> Hi Corrado,
->
-> I think you forgot to attach the patch? Can't find it.
-No, it's there:
-http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-06/msg10854.html
->
->
->> About what it is trying to solve, since I think it was not clear:
->> - we have a workload of 2 queues, both issuing requests that are being
->> put in the no-idle tree (e.g. they are random) + 1 queue issuing
->> idling requests (e.g. sequential).
->> - if one of the 2 "random" queues marks its requests as RQ_NOIDLE,
->> then the timeslice for the no-idle tree is not preserved, causing
->> unfairness, as soon as an RQ_NOIDLE request is serviced and the tree
->> is empty.
->
-> I think Jeff's primary regressions were coming from the fact that we
-> will continue to idle on SYNC_WORKLOAD even if RQ_NOIDLE() was set.
+> I don't think so. There is no disk activivy after the hang, but maybe
+> the kernel displays an oops, which I just can't see.
 
-I see. There are probably two ways of handling this:
-- make sure the queues sending RQ_NOIDLE requests are marked as
-SYNC_NOIDLE_WORKLOAD. Something like this should work, even if it will
-increase switching between trees:
-@@ -3046,6 +3046,7 @@ cfq_update_idle_window(struct cfq_data *cfqd,
-struct cfq_queue *cfqq,
-                cfq_mark_cfqq_deep(cfqq);
+The attached patch should fix the issue.
 
-        if (!atomic_read(&cic->ioc->nr_tasks) || !cfqd->cfq_slice_idle ||
-+           (cfqq->next_rq && rq_noidle(cfqq->next_rq)) ||
-            (!cfq_cfqq_deep(cfqq) && CFQQ_SEEKY(cfqq)))
-                enable_idle = 0;
-        else if (sample_valid(cic->ttime_samples)) {
+Alex
 
-- or we could explicitly check the rq_noidle() in
-cfq_completed_request for SYNC_WORKLOAD:
-@@ -3360,8 +3360,10 @@ static void cfq_completed_request(struct
-request_queue *q, struct request *rq)
-                         * SYNC_NOIDLE_WORKLOAD idles at the end of the tree
-                         * only if we processed at least one !rq_noidle request
-                         */
--                       if (cfqd->serving_type == SYNC_WORKLOAD
--                           || cfqd->noidle_tree_requires_idle
-+                       if ((cfqd->serving_type == SYNC_WORKLOAD
-+                            && !rq_noidle(rq))
-+                           || (cfqd->serving_type == SYNC_NOIDLE_WORKLOAD
-+                               && cfqd->noidle_tree_requires_idle)
-                            || cfqq->cfqg->nr_cfqq == 1)
-                                cfq_arm_slice_timer(cfqd);
-                }
+--000e0cdfc5be67ffbb048a41185f
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-drm-radeon-kms-igp-fix-possible-divide-by-0-in-bandw.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-radeon-kms-igp-fix-possible-divide-by-0-in-bandw.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gb2buc6u0
 
-> Regarding giving up idling on sync-noidle workload, I think it still
-> makes some sense to keep track if some other random queue is doing IO on
-> that tree or not and if yes, then continue to idle. That's a different
-> thing that current logic if more coarse and could be fine grained a bit.
-
-The patch in previous message should fix this.
-
->
-> Because I don't have a practical workload example at this point of time, I
-> also don't mind reverting your old patch and restoring the policy of not
-> idling if RQ_NOIDLE() was set.
->
-> But it still does not answer the question that why O_DIRECT and O_SYNC
-> paths be different when it comes to RQ_NOIDLE.
-This is outside my knowledge.
-
-Thanks
-Corrado
->
-> Thanks
-> Vivek
->
-
-
-
--- 
-__________________________________________________________________________
-
-dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
-PhD - Department of Computer Science - University of Pisa, Italy
---------------------------------------------------------------------------
-The self-confidence of a warrior is not the self-confidence of the average
-man. The average man seeks certainty in the eyes of the onlooker and calls
-that self-confidence. The warrior seeks impeccability in his own eyes and
-calls that humbleness.
-                               Tales of Power - C. Castaneda
+RnJvbSAzYjJmZWYzOWUwMTcyMDk5YTc2NmNlNTM2NDg5ZDAwOGI0NDRjNDhiIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhkZXVjaGVyQGdtYWlsLmNvbT4K
+RGF0ZTogV2VkLCAzMCBKdW4gMjAxMCAxMTozMToxMyAtMDQwMApTdWJqZWN0OiBbUEFUQ0hdIGRy
+bS9yYWRlb24va21zL2lncDogZml4IHBvc3NpYmxlIGRpdmlkZSBieSAwIGluIGJhbmR3aWR0aCBj
+b2RlCgpTb21lIElHUCBzeXN0ZW1zIHNwZWNpZnkgdGhlIHN5c3RlbSBtZW1vcnkgY2xvY2sgaW4g
+dGhlIEZpcm13YXJlCnRhYmxlIHJhdGhlciB0aGFuIHRoZSBJR1AgaW5mbyB0YWJsZS4gIENoZWNr
+IGJvdGggYW5kIG1ha2Ugc3VyZQp3ZSBoYXZlIGEgdmFsdWUgc3lzdGVtIG1lbW9yeSBjbG9jayB2
+YWx1ZS4KClNpZ25lZC1vZmYtYnk6IEFsZXggRGV1Y2hlciA8YWxleGRldWNoZXJAZ21haWwuY29t
+PgotLS0KIGRyaXZlcnMvZ3B1L2RybS9yYWRlb24vcnM2OTAuYyB8ICAgMzUgKysrKysrKysrKysr
+KysrKysrKy0tLS0tLS0tLS0tLS0tLS0KIDEgZmlsZXMgY2hhbmdlZCwgMTkgaW5zZXJ0aW9ucygr
+KSwgMTYgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9y
+czY5MC5jIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yczY5MC5jCmluZGV4IDY0Yjk0YTguLmY0
+ZjBhNjEgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcnM2OTAuYworKysgYi9k
+cml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JzNjkwLmMKQEAgLTc5LDcgKzc5LDEzIEBAIHZvaWQgcnM2
+OTBfcG1faW5mbyhzdHJ1Y3QgcmFkZW9uX2RldmljZSAqcmRldikKIAkJCXRtcC5mdWxsID0gZGZp
+eGVkX2NvbnN0KDEwMCk7CiAJCQlyZGV2LT5wbS5pZ3Bfc2lkZXBvcnRfbWNsay5mdWxsID0gZGZp
+eGVkX2NvbnN0KGluZm8tPmluZm8udWxCb290VXBNZW1vcnlDbG9jayk7CiAJCQlyZGV2LT5wbS5p
+Z3Bfc2lkZXBvcnRfbWNsay5mdWxsID0gZGZpeGVkX2RpdihyZGV2LT5wbS5pZ3Bfc2lkZXBvcnRf
+bWNsaywgdG1wKTsKLQkJCXJkZXYtPnBtLmlncF9zeXN0ZW1fbWNsay5mdWxsID0gZGZpeGVkX2Nv
+bnN0KGxlMTZfdG9fY3B1KGluZm8tPmluZm8udXNLOE1lbW9yeUNsb2NrKSk7CisJCQlpZiAoaW5m
+by0+aW5mby51c0s4TWVtb3J5Q2xvY2spCisJCQkJcmRldi0+cG0uaWdwX3N5c3RlbV9tY2xrLmZ1
+bGwgPSBkZml4ZWRfY29uc3QobGUxNl90b19jcHUoaW5mby0+aW5mby51c0s4TWVtb3J5Q2xvY2sp
+KTsKKwkJCWVsc2UgaWYgKHJkZXYtPmNsb2NrLmRlZmF1bHRfbWNsaykgeworCQkJCXJkZXYtPnBt
+LmlncF9zeXN0ZW1fbWNsay5mdWxsID0gZGZpeGVkX2NvbnN0KHJkZXYtPmNsb2NrLmRlZmF1bHRf
+bWNsayk7CisJCQkJcmRldi0+cG0uaWdwX3N5c3RlbV9tY2xrLmZ1bGwgPSBkZml4ZWRfZGl2KHJk
+ZXYtPnBtLmlncF9zeXN0ZW1fbWNsaywgdG1wKTsKKwkJCX0gZWxzZQorCQkJCXJkZXYtPnBtLmln
+cF9zeXN0ZW1fbWNsay5mdWxsID0gZGZpeGVkX2NvbnN0KDQwMCk7CiAJCQlyZGV2LT5wbS5pZ3Bf
+aHRfbGlua19jbGsuZnVsbCA9IGRmaXhlZF9jb25zdChsZTE2X3RvX2NwdShpbmZvLT5pbmZvLnVz
+RlNCQ2xvY2spKTsKIAkJCXJkZXYtPnBtLmlncF9odF9saW5rX3dpZHRoLmZ1bGwgPSBkZml4ZWRf
+Y29uc3QoaW5mby0+aW5mby51Y0hUTGlua1dpZHRoKTsKIAkJCWJyZWFrOwpAQCAtODcsMzQgKzkz
+LDMxIEBAIHZvaWQgcnM2OTBfcG1faW5mbyhzdHJ1Y3QgcmFkZW9uX2RldmljZSAqcmRldikKIAkJ
+CXRtcC5mdWxsID0gZGZpeGVkX2NvbnN0KDEwMCk7CiAJCQlyZGV2LT5wbS5pZ3Bfc2lkZXBvcnRf
+bWNsay5mdWxsID0gZGZpeGVkX2NvbnN0KGluZm8tPmluZm9fdjIudWxCb290VXBTaWRlUG9ydENs
+b2NrKTsKIAkJCXJkZXYtPnBtLmlncF9zaWRlcG9ydF9tY2xrLmZ1bGwgPSBkZml4ZWRfZGl2KHJk
+ZXYtPnBtLmlncF9zaWRlcG9ydF9tY2xrLCB0bXApOwotCQkJcmRldi0+cG0uaWdwX3N5c3RlbV9t
+Y2xrLmZ1bGwgPSBkZml4ZWRfY29uc3QoaW5mby0+aW5mb192Mi51bEJvb3RVcFVNQUNsb2NrKTsK
+KwkJCWlmIChpbmZvLT5pbmZvX3YyLnVsQm9vdFVwVU1BQ2xvY2spCisJCQkJcmRldi0+cG0uaWdw
+X3N5c3RlbV9tY2xrLmZ1bGwgPSBkZml4ZWRfY29uc3QoaW5mby0+aW5mb192Mi51bEJvb3RVcFVN
+QUNsb2NrKTsKKwkJCWVsc2UgaWYgKHJkZXYtPmNsb2NrLmRlZmF1bHRfbWNsaykKKwkJCQlyZGV2
+LT5wbS5pZ3Bfc3lzdGVtX21jbGsuZnVsbCA9IGRmaXhlZF9jb25zdChyZGV2LT5jbG9jay5kZWZh
+dWx0X21jbGspOworCQkJZWxzZQorCQkJCXJkZXYtPnBtLmlncF9zeXN0ZW1fbWNsay5mdWxsID0g
+ZGZpeGVkX2NvbnN0KDY2NzAwKTsKIAkJCXJkZXYtPnBtLmlncF9zeXN0ZW1fbWNsay5mdWxsID0g
+ZGZpeGVkX2RpdihyZGV2LT5wbS5pZ3Bfc3lzdGVtX21jbGssIHRtcCk7CiAJCQlyZGV2LT5wbS5p
+Z3BfaHRfbGlua19jbGsuZnVsbCA9IGRmaXhlZF9jb25zdChpbmZvLT5pbmZvX3YyLnVsSFRMaW5r
+RnJlcSk7CiAJCQlyZGV2LT5wbS5pZ3BfaHRfbGlua19jbGsuZnVsbCA9IGRmaXhlZF9kaXYocmRl
+di0+cG0uaWdwX2h0X2xpbmtfY2xrLCB0bXApOwogCQkJcmRldi0+cG0uaWdwX2h0X2xpbmtfd2lk
+dGguZnVsbCA9IGRmaXhlZF9jb25zdChsZTE2X3RvX2NwdShpbmZvLT5pbmZvX3YyLnVzTWluSFRM
+aW5rV2lkdGgpKTsKIAkJCWJyZWFrOwogCQlkZWZhdWx0OgotCQkJdG1wLmZ1bGwgPSBkZml4ZWRf
+Y29uc3QoMTAwKTsKIAkJCS8qIFdlIGFzc3VtZSB0aGUgc2xvd2VyIHBvc3NpYmxlIGNsb2NrIGll
+IHdvcnN0IGNhc2UgKi8KLQkJCS8qIEREUiAzMzNNaHogKi8KLQkJCXJkZXYtPnBtLmlncF9zaWRl
+cG9ydF9tY2xrLmZ1bGwgPSBkZml4ZWRfY29uc3QoMzMzKTsKLQkJCS8qIEZJWE1FOiBzeXN0ZW0g
+Y2xvY2sgPyAqLwotCQkJcmRldi0+cG0uaWdwX3N5c3RlbV9tY2xrLmZ1bGwgPSBkZml4ZWRfY29u
+c3QoMTAwKTsKLQkJCXJkZXYtPnBtLmlncF9zeXN0ZW1fbWNsay5mdWxsID0gZGZpeGVkX2Rpdihy
+ZGV2LT5wbS5pZ3Bfc3lzdGVtX21jbGssIHRtcCk7Ci0JCQlyZGV2LT5wbS5pZ3BfaHRfbGlua19j
+bGsuZnVsbCA9IGRmaXhlZF9jb25zdCgyMDApOworCQkJcmRldi0+cG0uaWdwX3NpZGVwb3J0X21j
+bGsuZnVsbCA9IGRmaXhlZF9jb25zdCgyMDApOworCQkJcmRldi0+cG0uaWdwX3N5c3RlbV9tY2xr
+LmZ1bGwgPSBkZml4ZWRfY29uc3QoMjAwKTsKKwkJCXJkZXYtPnBtLmlncF9odF9saW5rX2Nsay5m
+dWxsID0gZGZpeGVkX2NvbnN0KDEwMDApOwogCQkJcmRldi0+cG0uaWdwX2h0X2xpbmtfd2lkdGgu
+ZnVsbCA9IGRmaXhlZF9jb25zdCg4KTsKIAkJCURSTV9FUlJPUigiTm8gaW50ZWdyYXRlZCBzeXN0
+ZW0gaW5mbyBmb3IgeW91ciBHUFUsIHVzaW5nIHNhZmUgZGVmYXVsdFxuIik7CiAJCQlicmVhazsK
+IAkJfQogCX0gZWxzZSB7Ci0JCXRtcC5mdWxsID0gZGZpeGVkX2NvbnN0KDEwMCk7CiAJCS8qIFdl
+IGFzc3VtZSB0aGUgc2xvd2VyIHBvc3NpYmxlIGNsb2NrIGllIHdvcnN0IGNhc2UgKi8KLQkJLyog
+RERSIDMzM01oeiAqLwotCQlyZGV2LT5wbS5pZ3Bfc2lkZXBvcnRfbWNsay5mdWxsID0gZGZpeGVk
+X2NvbnN0KDMzMyk7Ci0JCS8qIEZJWE1FOiBzeXN0ZW0gY2xvY2sgPyAqLwotCQlyZGV2LT5wbS5p
+Z3Bfc3lzdGVtX21jbGsuZnVsbCA9IGRmaXhlZF9jb25zdCgxMDApOwotCQlyZGV2LT5wbS5pZ3Bf
+c3lzdGVtX21jbGsuZnVsbCA9IGRmaXhlZF9kaXYocmRldi0+cG0uaWdwX3N5c3RlbV9tY2xrLCB0
+bXApOwotCQlyZGV2LT5wbS5pZ3BfaHRfbGlua19jbGsuZnVsbCA9IGRmaXhlZF9jb25zdCgyMDAp
+OworCQlyZGV2LT5wbS5pZ3Bfc2lkZXBvcnRfbWNsay5mdWxsID0gZGZpeGVkX2NvbnN0KDIwMCk7
+CisJCXJkZXYtPnBtLmlncF9zeXN0ZW1fbWNsay5mdWxsID0gZGZpeGVkX2NvbnN0KDIwMCk7CisJ
+CXJkZXYtPnBtLmlncF9odF9saW5rX2Nsay5mdWxsID0gZGZpeGVkX2NvbnN0KDEwMDApOwogCQly
+ZGV2LT5wbS5pZ3BfaHRfbGlua193aWR0aC5mdWxsID0gZGZpeGVkX2NvbnN0KDgpOwogCQlEUk1f
+RVJST1IoIk5vIGludGVncmF0ZWQgc3lzdGVtIGluZm8gZm9yIHlvdXIgR1BVLCB1c2luZyBzYWZl
+IGRlZmF1bHRcbiIpOwogCX0KLS0gCjEuNy4wLjEKCg==
+--000e0cdfc5be67ffbb048a41185f--
