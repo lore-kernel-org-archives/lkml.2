@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab0F3HL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 03:11:28 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:36687 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398Ab0F3HL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 03:11:27 -0400
-Date: Wed, 30 Jun 2010 09:10:38 +0200
-From: Florian Mickler <florian@mickler.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       linux-pm@lists.linux-foundation.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>,
-       Arve =?ISO-8859-15?B?SGr4bm5lduVn?= <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-pci@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [update] Re: [PATCH] PM: Make it possible to avoid wakeup
- events from being lost
-Message-ID: <20100630091038.6af2a53b@schatten.dmk.lab>
-In-Reply-To: <201006282101.54041.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1006281006360.1977-100000@iolanthe.rowland.org>
-	<201006282101.54041.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752773Ab0F3HNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 03:13:52 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55152 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472Ab0F3HNv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 03:13:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=nG/2YS4RWPykX2sTMkP4nYAAwIVLSXzudGAkIwRq90om5fN3Lfu2ZiHmoEXj3BaKQw
+         WejXNaexMLETT6cQPrPj6cNG4NVhgNT2vCFirKwwKHjCsblK8LNlTbQE6HxHBKQ9XIpU
+         uD6ExSZTythGSY2WHuyrKRk6ST30HPBJBUsb0=
+From: Chris Clayton <chris2553@googlemail.com>
+Reply-To: chris2553@googlemail.com
+To: Nick Piggin <npiggin@suse.de>
+Subject: Re: [patch 02/52] fs: fix superblock iteration race
+Date: Wed, 30 Jun 2010 08:13:31 +0100
+User-Agent: KMail/1.9.10
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+       Frank Mayhar <fmayhar@google.com>, Al Viro <viro@zeniv.linux.org.uk>
+References: <20100624030212.676457061@suse.de> <20100629201409.GO28364@laptop> <201006292138.40293.chris2553@googlemail.com>
+In-Reply-To: <201006292138.40293.chris2553@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201006300813.31762.chris2553@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael!
+On Tuesday 29 June 2010, Chris Clayton wrote:
+> On Tuesday 29 June 2010, Nick Piggin wrote:
+> > On Tue, Jun 29, 2010 at 09:04:33PM +0100, Chris Clayton wrote:
 
-On Mon, 28 Jun 2010 21:01:53 +0200
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > >
+> > > I'll spend a couple of hours doing stuff and see if I can generate an
+> > > oops. Trouble is, of course, that when I pull and build the latest and
+> > > greatest, I won't know why I'm not getting oopses, assuming I don't.
+> >
+> > Don't worry too much if you can't reproduce. I'd say it is likely to be
+> > this bug, and if so, it is going to depend significantly on timing and
+> > ordering of mounts/umounts.
+>
+> Yes, that makes sense. I did quite a bit of copying files to and from USB
+> storage devices this morning. I've got some more to do, so I'll see what
+> that produces.
 
-> On Monday, June 28, 2010, Alan Stern wrote:
-> > On Mon, 28 Jun 2010, Rafael J. Wysocki wrote:
+Well, try as I may, these oopses are like London buses - firstly you get three 
+in quick succession when you don't need them and then when you do, none turn 
+up. Oh well!
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM: Make it possible to avoid wakeup events from being lost
+Chris
 
-I have nothing substantial to add, but just wanted to let you know that
-this approach seems like a good alternative to me. As far as I can see
-the userspace suspend-blocker interface could be expressed in terms of
-this kernel facility which brings android closer to mainline.
-
-The only thing I haven't thought through yet is the 'maintain a discrete
-set of constraints' vs 'just increment a number' thing. Especially if
-what we loose in information through that (in comparison to 'the other
-approach') is made up for by easier in-kernel-API.  I _think_ if there
-is any need for in-kernel-accounting (i don't know that) it could be
-retro-fitted by using the trace event infrastructure?
-
-Cheers,
-Flo
+-- 
+The more I see, the more I know. The more I know, the less I understand. 
+Changing Man - Paul Weller
