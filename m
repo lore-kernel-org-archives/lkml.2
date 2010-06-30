@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab0F3SXN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 14:23:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58901 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab0F3SXL convert rfc822-to-8bit (ORCPT
+	id S932262Ab0F3SXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 14:23:32 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:54513 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132Ab0F3SXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 14:23:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=vUrZA+Vc4eoG4y8nMo1+RTRnC5cg6yDADd9sVVwtUabh6Ufwr9bXyMKINhwbLbhh+7
-         ExutkxPa1FPLdPNwlLGO+J3amH3S6teidLlLOFCJd4ZBa7q4x6t/5A6fEN/SFvbQKtyl
-         IXsMapnODKr60jdWwmNIYedw/mzeioYQaigNs=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 08/33] Removing dead SA1101
-Date: Wed, 30 Jun 2010 20:20:52 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.33-2-amd64; KDE/4.4.3; x86_64; ; )
-Cc: Nicolas Pitre <nico@fluxnic.net>, Christoph Egger <siccegge@cs.fau.de>,
-       vamos@i4.informatik.uni-erlangen.de,
-       Russell King <linux@arm.linux.org.uk>,
-       lkml <linux-kernel@vger.kernel.org>
-References: <cover.1277911345.git.siccegge@cs.fau.de> <7488ec29cdb90212e965f6cd1173141c576c0955.1277911346.git.siccegge@cs.fau.de> <alpine.LFD.2.00.1006301255260.24097@xanadu.home>
-In-Reply-To: <alpine.LFD.2.00.1006301255260.24097@xanadu.home>
+	Wed, 30 Jun 2010 14:23:31 -0400
+X-Auth-Info: LiLm2ItddMr6RrCEFas0rbgLxDvUX/0vin72jXJlI10=
+To: Rupjyoti Sarmah <rsarmah@apm.com>
+cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, jgarzik@pobox.com,
+       sr@denx.de, linuxppc-dev@ozlabs.org
+From: Wolfgang Denk <wd@denx.de>
+Subject: Re: [PATCH v1]460EX on-chip SATA driver<resubmisison>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201006302020.52270.marek.vasut@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+In-reply-to: <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com>
+References: <201006241327.o5ODRY6m032299@amcc.com> <20100630115808.2D9241524EC@gemini.denx.de> <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com>
+Comments: In-reply-to Rupjyoti Sarmah <rsarmah@apm.com>
+   message dated "Wed, 30 Jun 2010 18:14:47 +0530."
+Date: Wed, 30 Jun 2010 20:23:26 +0200
+Message-Id: <20100630182326.3A48B1524EC@gemini.denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne St 30. června 2010 18:57:43 Nicolas Pitre napsal(a):
-> On Wed, 30 Jun 2010, Christoph Egger wrote:
-> > SA1101 doesn't exist in Kconfig, therefore removing all
-> > references for it from the source code.
-> > 
-> > Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> 
-> Acked-by: Nicolas Pitre <nico@fluxnic.net>
+Dear Rupjyoti Sarmah,
 
-You're dropping support for a whole CPU here ... is the code redundant or 
-something ?
+In message <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com> you wrote:
 > 
-> > ---
-> > 
-> >  arch/arm/mach-sa1100/include/mach/SA-1101.h  |  925
-> >  -------------------------- arch/arm/mach-sa1100/include/mach/hardware.h
-> >  |    4 -
-> >  2 files changed, 0 insertions(+), 929 deletions(-)
-> >  delete mode 100644 arch/arm/mach-sa1100/include/mach/SA-1101.h
+> I took the mainline kernel v2.6.35-rc3 and downloaded using the git
+> download link.
+> I created the patch on 6/24/2010 after doing a git pull.
 > 
-> [...]
-> 
-> 
-> Nicolas
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> With the kernel tree on 6/24/2010 the driver compiled. I also tested the
+> functionality on the SATA drive & it worked.
+
+v2.6.35-rc3 was released on June 11, 13 days before 6/24/2010.
+
+Can you please give the exact git commit ID so I can try reproducing
+this?
+
+Best regards,
+
+Wolfgang Denk
+
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+There comes to all races an ultimate crisis which  you  have  yet  to
+face  ....  One  day  our  minds became so powerful we dared think of
+ourselves as gods.
+	-- Sargon, "Return to Tomorrow", stardate 4768.3
