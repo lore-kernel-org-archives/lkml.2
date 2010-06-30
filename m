@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756396Ab0F3OdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 10:33:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45165 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752165Ab0F3OdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 10:33:07 -0400
-Date: Wed, 30 Jun 2010 22:05:02 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 29/52] fs: icache lock i_count
-Message-ID: <20100630120502.GB21358@laptop>
-References: <20100624030212.676457061@suse.de>
- <20100624030730.245992858@suse.de>
- <20100630072702.GF24712@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756416Ab0F3OgM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 10:36:12 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:35760 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752966Ab0F3OgL convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Wed, 30 Jun 2010 10:36:11 -0400
+Message-Id: <4C2B72950200007800008DBA@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 30 Jun 2010 15:36:37 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Jeremy Fitzhardinge" <jeremy@goop.org>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+       "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       "Ky Srinivasan" <KSrinivasan@novell.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH 2/4, v2] x86: enlightenment for ticket spin locks -
+	 Xen implementation
+References: <4C2A200F02000078000089E4@vpn.id2.novell.com>
+ <4C2B1769.5090107@goop.org> <4C2B47190200007800008CB7@vpn.id2.novell.com>
+ <4C2B4564.7030203@goop.org> <4C2B6AD60200007800008D90@vpn.id2.novell.com>
+ <4C2B53D1.90101@goop.org>
+In-Reply-To: <4C2B53D1.90101@goop.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20100630072702.GF24712@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 05:27:02PM +1000, Dave Chinner wrote:
-> On Thu, Jun 24, 2010 at 01:02:41PM +1000, npiggin@suse.de wrote:
-> > Protect inode->i_count with i_lock, rather than having it atomic.
-> > Next step should also be to move things together (eg. the refcount increment
-> > into d_instantiate, which will remove a lock/unlock cycle on i_lock).
-> .....
-> > Index: linux-2.6/fs/inode.c
-> > ===================================================================
-> > --- linux-2.6.orig/fs/inode.c
-> > +++ linux-2.6/fs/inode.c
-> > @@ -33,14 +33,13 @@
-> >   * inode_hash_lock protects:
-> >   *   inode hash table, i_hash
-> >   * inode->i_lock protects:
-> > - *   i_state
-> > + *   i_state, i_count
-> >   *
-> >   * Ordering:
-> >   * inode_lock
-> >   *   sb_inode_list_lock
-> >   *     inode->i_lock
-> > - * inode_lock
-> > - *   inode_hash_lock
-> > + *       inode_hash_lock
-> >   */
+>>> On 30.06.10 at 16:25, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+> On 06/30/2010 04:03 PM, Jan Beulich wrote:
+>> Afaics the unlock still involves a function call *in all cases* with
+>> pvops spinlocks, whereas it's a single inline instruction without.
+>>   
 > 
-> I thought that the rule governing the use of inode->i_lock was that
-> it can be used anywhere as long as it is the innermost lock.
-> 
-> Hmmm, no references in the code or documentation. Google gives a
-> pretty good reference:
-> 
-> http://www.mail-archive.com/linux-ext4@vger.kernel.org/msg02584.html
-> 
-> Perhaps a different/new lock needs to be used here?
+> No.  The unlock path can see if there are any further waiters by looking
+> at the ticket in the, and only do the kick call if there are some.
 
-Well I just changed the order (and documented it to boot :)). It's
-pretty easy to verify that LOR is no problem. inode hash is only
-taken in a very few places so other code outside inode.c is fine to
-use i_lock as an innermost lock.
+Are we perhaps talking about different things? I'm referring to
+
+static __always_inline void arch_spin_unlock(struct arch_spinlock *lock)
+{
+	PVOP_VCALL1(pv_lock_ops.spin_unlock, lock);
+}
+
+which is an indirect call which, as I understand it, gets replaced
+with a direct one at runtime. But it remains to be a call (as opposed
+to being a single inc instructions without CONFIG_PARAVIRT_SPINLOCKS).
+
+Jan
 
