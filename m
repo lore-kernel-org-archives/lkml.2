@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab0F3VXG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 17:23:06 -0400
-Received: from xenotime.net ([72.52.115.56]:60815 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757226Ab0F3VXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 17:23:04 -0400
-Date: Wed, 30 Jun 2010 14:22:59 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]kernel.h Fix #warning message web address.
-Message-Id: <20100630142259.a5f4dcb5.rdunlap@xenotime.net>
-In-Reply-To: <4C2BB52A.7070404@gmail.com>
-References: <1277840244-3436-1-git-send-email-justinmattock@gmail.com>
-	<alpine.LNX.2.00.1006301147490.13809@pobox.suse.cz>
-	<4C2BB52A.7070404@gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757287Ab0F3VY0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 17:24:26 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:48009 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757226Ab0F3VYZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 17:24:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=RnvZzCt/lzDt6o8GBJSWGzxDg7k6IhzetEEW+DW7g56x0RSaWm3R82U2eNkcPj+Te
+	i6ONqYPQdMX6KEw9/G1Nw==
+MIME-Version: 1.0
+In-Reply-To: <1277136847-13266-10-git-send-email-stefano@stabellini.net>
+References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
+	<1277136847-13266-10-git-send-email-stefano@stabellini.net>
+Date: Wed, 30 Jun 2010 14:24:21 -0700
+Message-ID: <AANLkTilecD4_542ftaoCIuAzlHgCI63i7rio9C-zuwZH@mail.gmail.com>
+Subject: Re: [PATCH 10/13] Do not try to disable hpet if it hasn't been 
+	initialized before
+From: Venkatesh Pallipadi <venki@google.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+       Stefano.Stabellini@eu.citrix.com, sheng@linux.intel.com,
+       ddutile@redhat.com, jeremy@goop.org, stefano@stabellini.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010 14:20:42 -0700 Justin P. Mattock wrote:
+Looks Good.
+Acked-by: Venkatesh Pallipadi <venki@google.com>
 
-> 
-> > Hehe, ugly. How about making it a single string? GCC preprocessor
-> > documentation suggests the same anyway ...
-> >
-> > 	Neither `#error' nor `#warning' macro-expands its argument.
-> > 	Internal whitespace sequences are each replaced with a single space.
-> > 	The line must consist of complete tokens.  It is wisest to make the
-> > 	argument of these directives be a single string constant; this avoids
-> > 	problems with apostrophes and the like.
+Copying Thomas/Ingo/Peter.
 
-Doesn't that mean just put double quotation marks around the entire message string??
-
-
-
-> o.k. jiri, here is what I came up with, after re-reading and looking at 
-> other in the kernel(below).
-> 
-> 
-> 
->  From 45f24db45faa06aad01cfc62ff4b475380e5cb11 Mon Sep 17 00:00:00 2001
-> From: Justin P. Mattock <justinmattock@gmail.com>
-> Date: Wed, 30 Jun 2010 14:06:18 -0700
-> Subject: [PATCH]kernel.h Fix #warning message according to the GCC 
-> preprocessor docs.
-> 
-> received this #warning from a simple printk program and noticed the web
-> address is not showing up:
->   gcc printk.c -o printk
-> In file included from printk.c:3:
-> include/linux/kernel.h:733:2: warning: #warning Attempt to use kernel 
-> headers from user space, see http:
-> 
-> after the changes the warning should just say:
-> #warning Attempt to use kernel headers from user space!
-> 
->   Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+On Mon, Jun 21, 2010 at 9:14 AM,  <stefano@stabellini.net> wrote:
+> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>
+> hpet_disable is called unconditionally on machine reboot if hpet support
+> is compiled in the kernel.
+> hpet_disable only checks if the machine is hpet capable but doesn't make
+> sure that hpet has been initialized.
+>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > ---
->   include/linux/kernel.h |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 8317ec4..b542961 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -730,7 +730,7 @@ extern int do_sysinfo(struct sysinfo *info);
-> 
->   #ifndef __EXPORTED_HEADERS__
->   #ifndef __KERNEL__
-> -#warning Attempt to use kernel headers from user space, see 
-> http://kernelnewbies.org/KernelHeaders
-> +#warning Attempt to use kernel headers from user space!
->   #endif /* __KERNEL__ */
->   #endif /* __EXPORTED_HEADERS__ */
-> 
-> -- 
-> 1.7.1.rc1.21.gf3bd6
-> 
-> 
-> now I'm wondering if there should be a lead to the documentation with 
-> this web address(seems grep is not finding anything that I might be able 
-> to use).or just leave as is, and let people connect-the-dots!!
-> 
-> let me know..
-> 
-> Justin P. Mattock
+>  arch/x86/kernel/hpet.c |   18 ++++++++++--------
+>  1 files changed, 10 insertions(+), 8 deletions(-)
+>
+> diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+> index 23b4ecd..2b299da 100644
+> --- a/arch/x86/kernel/hpet.c
+> +++ b/arch/x86/kernel/hpet.c
+> @@ -959,16 +959,18 @@ fs_initcall(hpet_late_init);
+>
+>  void hpet_disable(void)
+>  {
+> -       if (is_hpet_capable()) {
+> -               unsigned int cfg = hpet_readl(HPET_CFG);
+> +       unsigned int cfg;
+>
+> -               if (hpet_legacy_int_enabled) {
+> -                       cfg &= ~HPET_CFG_LEGACY;
+> -                       hpet_legacy_int_enabled = 0;
+> -               }
+> -               cfg &= ~HPET_CFG_ENABLE;
+> -               hpet_writel(cfg, HPET_CFG);
+> +       if (!is_hpet_capable() || !hpet_address || !hpet_virt_address)
+> +               return;
+> +
+> +       cfg = hpet_readl(HPET_CFG);
+> +       if (hpet_legacy_int_enabled) {
+> +               cfg &= ~HPET_CFG_LEGACY;
+> +               hpet_legacy_int_enabled = 0;
+>        }
+> +       cfg &= ~HPET_CFG_ENABLE;
+> +       hpet_writel(cfg, HPET_CFG);
+>  }
+>
+>  #ifdef CONFIG_HPET_EMULATE_RTC
+> --
+> 1.7.0.4
+>
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
