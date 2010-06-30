@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab0F3LZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 07:25:04 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:50166 "EHLO
+	id S1755634Ab0F3Lai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 07:30:38 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:52557 "EHLO
 	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928Ab0F3LZB convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751455Ab0F3Lah convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Wed, 30 Jun 2010 07:25:01 -0400
-Message-Id: <4C2B45C60200007800008CA6@vpn.id2.novell.com>
+	Wed, 30 Jun 2010 07:30:37 -0400
+Message-Id: <4C2B47190200007800008CB7@vpn.id2.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 30 Jun 2010 12:25:26 +0100
+Date: Wed, 30 Jun 2010 12:31:05 +0100
 From: "Jan Beulich" <JBeulich@novell.com>
 To: "Jeremy Fitzhardinge" <jeremy@goop.org>
-Cc: "mingo@elte.hu" <mingo@elte.hu>, "Peter Zijlstra" <peterz@infradead.org>,
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+       "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
        "tglx@linutronix.de" <tglx@linutronix.de>,
        "Ky Srinivasan" <KSrinivasan@novell.com>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH 4/4, v2] x86: enlightenment for ticket spin locks -
-	 improve yield behavior on Xen
-References: <4C2A20E30200007800008A17@vpn.id2.novell.com>
- <1277885485.1868.74.camel@laptop>
- <4C2B21300200007800008BDC@vpn.id2.novell.com> <4C2B180E.9060104@goop.org>
-In-Reply-To: <4C2B180E.9060104@goop.org>
+Subject: Re: [PATCH 2/4, v2] x86: enlightenment for ticket spin locks -
+	 Xen  implementation
+References: <4C2A200F02000078000089E4@vpn.id2.novell.com>
+ <4C2B1769.5090107@goop.org>
+In-Reply-To: <4C2B1769.5090107@goop.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -31,30 +31,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.06.10 at 12:10, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> On 06/30/2010 10:49 AM, Jan Beulich wrote:
->>>>> On 30.06.10 at 10:11, Peter Zijlstra <peterz@infradead.org> wrote:
->>>>>         
->>> On Tue, 2010-06-29 at 15:35 +0100, Jan Beulich wrote:
->>>     
->>>> The (only) additional overhead this introduces for native execution is
->>>> the writing of the owning CPU in the lock acquire paths. 
->>>>       
->>> Uhm, and growing the size of spinlock_t to 6 (or 8 bytes when aligned)
->>> bytes when NR_CPUS>256.
->>>     
->> Indeed, I should have mentioned that. Will do so in an eventual
->> next version.
+>>> On 30.06.10 at 12:07, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+> On 06/29/2010 04:32 PM, Jan Beulich wrote:
+>> Use the (alternative instructions based) callout hooks to the ticket
+>> spinlock code to enlighten ticket locks when running fully virtualized
+>> on Xen. Ultimately, this code might also be a candidate to be used
+>> when running para-virtualized.
 >>   
 > 
-> Rather than increasing the lock size, why not just disable the
-> enlightenment if the number of (possible) cpus is > 256?  I don't think
-> a VM will ever have that many cpus, so it will only apply in the case of
-> booting the kernel on large physical machine.
+> I'm not sure what the gain is by making this independent of all the rest
+> of the Xen support in the kernel.  Stefano is working on a series
+> (posted a few times now) to add more paravirtual features for Xen HVM
+> guests, and this work is conceptually very similar.
 
-While that would be an option, I think the decision to go either
-way should really be left to the user (after all that's why there
-is a config option in the first place).
+The intention really is for PARAVIRT_SPINLOCKS to go away as soon
+as pv-ops Xen can be switched over to this mechanism.
+
+> Also, I'm not very keen on adding yet another kind of patching mechanism
+> to the kernel.  While they're easy enough to get working in the first
+> place, they do tend to be fragile when other changes get introduced
+> (like changes to how the kernel is mapped RO/NX, etc), and this one will
+> be exercised relatively rarely.  I don't see why the pvops mechanism
+> couldn't be reused, especially now that each set of ops can be
+> individually configured on/off.
+
+Wasn't the main complaint with using pvops patching that it
+introduced extra calls into the native execution path? The point
+of this "new" (it's not really new, it's using existing infrastructure)
+mechanism is just to avoid such overhead for native.
+
+> This is especially acute in the case where you are using a full
+> pvops-using PV kernel, where it ends up using two mechanisms to put
+> paravirtualizations in place.
+
+And I see nothing wrong with this - if the individual pieces are
+separate anyway, why shouldn't each of them use the most
+efficient technique? Or if a single mechanism is desirable, shouldn't
+one rather ask to convert the newer pvops patching mechanism
+to the alternative instruction patching one, as that had been in
+place long before?
 
 Jan
 
