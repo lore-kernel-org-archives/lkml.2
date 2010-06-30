@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab0F3WXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 18:23:10 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:38459 "EHLO
-	eddie.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab0F3WXI (ORCPT
+	id S1757399Ab0F3W1P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 18:27:15 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16685 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646Ab0F3W1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 18:23:08 -0400
-Date: Wed, 30 Jun 2010 23:23:07 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Alexandre Julliard <julliard@winehq.org>,
-       "H . Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Prasad <prasad@linux.vnet.ibm.com>,
-       "2 . 6 . 33 . x 2 . 6 . 34 . x" <stable@kernel.org>
-Subject: Re: [GIT PULL] x86 breakpoint regression fix
-In-Reply-To: <20100630190405.GB5243@nowhere>
-Message-ID: <alpine.LFD.2.00.1006302315420.13070@eddie.linux-mips.org>
-References: <1277906559-10624-1-git-send-regression-fweisbec@gmail.com> <alpine.LFD.2.00.1006301535480.13070@eddie.linux-mips.org> <20100630190405.GB5243@nowhere>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 30 Jun 2010 18:27:14 -0400
+Date: Wed, 30 Jun 2010 15:27:01 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [PATCH] fs-writeback: fix kernel-doc warnings
+Message-Id: <20100630152701.0c476a44.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B020B.4C2BC4B8.0186:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010, Frederic Weisbecker wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> Right, in fact it was quite easy to find any documentation about it, it's
-> just officially undocumented.
+Fix kernel-doc to match the function's changed args.
 
- I think it's simply not a part of the architecture.  IOW they are free to 
-remove it at any time, though most likely it will be kept forever.  It's 
-not like rocket science or whatever else to be kept hidden -- "everybody" 
-knows this instruction (myself for at least 15 years).  That's stuff like 
-FFREEP, etc. ;)
+Warning(fs/fs-writeback.c:190): No description found for parameter 'args'
+Warning(fs/fs-writeback.c:190): Excess function parameter 'sb' description in 'bdi_queue_work_onstack'
 
-  Maciej
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+---
+ fs/fs-writeback.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-2.6.35-rc3-git4.orig/fs/fs-writeback.c
++++ linux-2.6.35-rc3-git4/fs/fs-writeback.c
+@@ -179,7 +179,7 @@ static void bdi_alloc_queue_work(struct 
+ 
+ /**
+  * bdi_queue_work_onstack - start and wait for writeback
+- * @sb: write inodes from this super_block
++ * @args: parameters to control the work queue writeback
+  *
+  * Description:
+  *   This function initiates writeback and waits for the operation to
