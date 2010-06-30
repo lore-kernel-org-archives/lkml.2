@@ -1,65 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab0F3S7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 14:59:14 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:54980 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757124Ab0F3S7M (ORCPT
+	id S1757155Ab0F3TAO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 15:00:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39877 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757070Ab0F3TAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 14:59:12 -0400
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_fSTFMPupBfpCklOGM/nQiw)"
-Date: Wed, 30 Jun 2010 14:59:05 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Christoph Egger <siccegge@cs.fau.de>,
-       vamos@i4.informatik.uni-erlangen.de,
-       Russell King <linux@arm.linux.org.uk>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/33] Removing dead SA1101
-In-reply-to: <201006302020.52270.marek.vasut@gmail.com>
-Message-id: <alpine.LFD.2.00.1006301453450.24097@xanadu.home>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
- <7488ec29cdb90212e965f6cd1173141c576c0955.1277911346.git.siccegge@cs.fau.de>
- <alpine.LFD.2.00.1006301255260.24097@xanadu.home>
- <201006302020.52270.marek.vasut@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 30 Jun 2010 15:00:12 -0400
+Date: Wed, 30 Jun 2010 14:53:20 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2010-06-30
+Message-ID: <20100630185319.GA2618@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+David,
 
---Boundary_(ID_fSTFMPupBfpCklOGM/nQiw)
-Content-type: TEXT/PLAIN; charset=utf-8
-Content-transfer-encoding: 8BIT
+Here are a few more fixes intended for 2.6.35.  Included are a couple of
+small regression fixes for iwlwifi, one that causes connection stalls with
+802.11n on some devices and another which could disable multicast traffic.
+Also included is an ath9k fix which avoids a null pointer dereference
+resulting from a timer leak.
 
-On Wed, 30 Jun 2010, Marek Vasut wrote:
+Please let me know if there are problems!
 
-> Dne St 30. června 2010 18:57:43 Nicolas Pitre napsal(a):
-> > On Wed, 30 Jun 2010, Christoph Egger wrote:
-> > > SA1101 doesn't exist in Kconfig, therefore removing all
-> > > references for it from the source code.
-> > > 
-> > > Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> > 
-> > Acked-by: Nicolas Pitre <nico@fluxnic.net>
-> 
-> You're dropping support for a whole CPU here ... is the code redundant or 
-> something ?
+John
 
-The SA1101 is not a CPU.  It is a companion chipset for the SA1100.  And 
-so far we have no target using it in the tree, and that isn't likely to 
-change more than 10 years after the chip availability.  Needless to say 
-that the SA1101 has long been unavailable either.
+---
 
-We also have support for the SA1111 which is a similar companion chipset 
-for the SA1110.  This is not going away as at least the Neponset 
-expansion board for the Assabet development board is using a SA1111.
+The following changes since commit d3ead2413cb99d3e6265577b12537434e229d8c2:
+  Guillaume Gaudonville (1):
+        ixgbe: skip non IPv4 packets in ATR filter
 
+are available in the git repository at:
 
-Nicolas
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
 
---Boundary_(ID_fSTFMPupBfpCklOGM/nQiw)--
+Johannes Berg (1):
+      iwlwifi: fix multicast
+
+Vasanthakumar Thiagarajan (1):
+      ath9k: Fix bug in starting ani
+
+Wey-Yi Guy (1):
+      iwlwifi: set TX_CMD_FLAG_PROT_REQUIRE_MSK in tx_flag
+
+ drivers/net/wireless/ath/ath9k/ath9k.h      |    1 +
+ drivers/net/wireless/ath/ath9k/main.c       |   11 ++++++++++-
+ drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c |    6 +-----
+ drivers/net/wireless/iwlwifi/iwl-core.c     |    7 ++++++-
+ 4 files changed, 18 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/ath9k.h b/drivers/net/wireless/ath/ath9k/ath9k.h
+index fbb7dec..5ea8773 100644
+--- a/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -445,6 +445,7 @@ void ath_deinit_leds(struct ath_softc *sc);
+ #define SC_OP_TSF_RESET              BIT(11)
+ #define SC_OP_BT_PRIORITY_DETECTED   BIT(12)
+ #define SC_OP_BT_SCAN		     BIT(13)
++#define SC_OP_ANI_RUN		     BIT(14)
+ 
+ /* Powersave flags */
+ #define PS_WAIT_FOR_BEACON        BIT(0)
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index abfa049..1e2a68e 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -336,6 +336,10 @@ set_timer:
+ static void ath_start_ani(struct ath_common *common)
+ {
+ 	unsigned long timestamp = jiffies_to_msecs(jiffies);
++	struct ath_softc *sc = (struct ath_softc *) common->priv;
++
++	if (!(sc->sc_flags & SC_OP_ANI_RUN))
++		return;
+ 
+ 	common->ani.longcal_timer = timestamp;
+ 	common->ani.shortcal_timer = timestamp;
+@@ -872,11 +876,13 @@ static void ath9k_bss_assoc_info(struct ath_softc *sc,
+ 		/* Reset rssi stats */
+ 		sc->sc_ah->stats.avgbrssi = ATH_RSSI_DUMMY_MARKER;
+ 
++		sc->sc_flags |= SC_OP_ANI_RUN;
+ 		ath_start_ani(common);
+ 	} else {
+ 		ath_print(common, ATH_DBG_CONFIG, "Bss Info DISASSOC\n");
+ 		common->curaid = 0;
+ 		/* Stop ANI */
++		sc->sc_flags &= ~SC_OP_ANI_RUN;
+ 		del_timer_sync(&common->ani.timer);
+ 	}
+ }
+@@ -1478,8 +1484,10 @@ static int ath9k_add_interface(struct ieee80211_hw *hw,
+ 
+ 	if (vif->type == NL80211_IFTYPE_AP    ||
+ 	    vif->type == NL80211_IFTYPE_ADHOC ||
+-	    vif->type == NL80211_IFTYPE_MONITOR)
++	    vif->type == NL80211_IFTYPE_MONITOR) {
++		sc->sc_flags |= SC_OP_ANI_RUN;
+ 		ath_start_ani(common);
++	}
+ 
+ out:
+ 	mutex_unlock(&sc->mutex);
+@@ -1500,6 +1508,7 @@ static void ath9k_remove_interface(struct ieee80211_hw *hw,
+ 	mutex_lock(&sc->mutex);
+ 
+ 	/* Stop ANI */
++	sc->sc_flags &= ~SC_OP_ANI_RUN;
+ 	del_timer_sync(&common->ani.timer);
+ 
+ 	/* Reclaim beacon resources */
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c b/drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c
+index 44ef5d9..01658cf 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c
+@@ -212,11 +212,7 @@ static void iwlagn_chain_noise_reset(struct iwl_priv *priv)
+ static void iwlagn_rts_tx_cmd_flag(struct ieee80211_tx_info *info,
+ 			__le32 *tx_flags)
+ {
+-	if ((info->control.rates[0].flags & IEEE80211_TX_RC_USE_RTS_CTS) ||
+-	    (info->control.rates[0].flags & IEEE80211_TX_RC_USE_CTS_PROTECT))
+-		*tx_flags |= TX_CMD_FLG_RTS_CTS_MSK;
+-	else
+-		*tx_flags &= ~TX_CMD_FLG_RTS_CTS_MSK;
++	*tx_flags |= TX_CMD_FLG_RTS_CTS_MSK;
+ }
+ 
+ /* Calc max signal level (dBm) among 3 possible receivers */
+diff --git a/drivers/net/wireless/iwlwifi/iwl-core.c b/drivers/net/wireless/iwlwifi/iwl-core.c
+index 426e955..5bbc529 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-core.c
++++ b/drivers/net/wireless/iwlwifi/iwl-core.c
+@@ -1314,7 +1314,6 @@ void iwl_configure_filter(struct ieee80211_hw *hw,
+ 			changed_flags, *total_flags);
+ 
+ 	CHK(FIF_OTHER_BSS | FIF_PROMISC_IN_BSS, RXON_FILTER_PROMISC_MSK);
+-	CHK(FIF_ALLMULTI, RXON_FILTER_ACCEPT_GRP_MSK);
+ 	CHK(FIF_CONTROL, RXON_FILTER_CTL2HOST_MSK);
+ 	CHK(FIF_BCN_PRBRESP_PROMISC, RXON_FILTER_BCON_AWARE_MSK);
+ 
+@@ -1329,6 +1328,12 @@ void iwl_configure_filter(struct ieee80211_hw *hw,
+ 
+ 	mutex_unlock(&priv->mutex);
+ 
++	/*
++	 * Receiving all multicast frames is always enabled by the
++	 * default flags setup in iwl_connection_init_rx_config()
++	 * since we currently do not support programming multicast
++	 * filters into the device.
++	 */
+ 	*total_flags &= FIF_OTHER_BSS | FIF_ALLMULTI | FIF_PROMISC_IN_BSS |
+ 			FIF_BCN_PRBRESP_PROMISC | FIF_CONTROL;
+ }
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
