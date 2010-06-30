@@ -1,242 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab0F3GIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 02:08:47 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50563 "EHLO smtps.tip.net.au"
+	id S1752325Ab0F3GO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 02:14:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7048 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866Ab0F3GIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 02:08:46 -0400
-Date: Wed, 30 Jun 2010 16:08:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org,
-       Michal Marek <mmarek@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
-       Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH] powerpc: fix module building for gcc 4.5 and 64 bit
-Message-Id: <20100630160842.c2a69fc2.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752232Ab0F3GOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 02:14:54 -0400
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Tom Lyon <pugs@cisco.com>
+Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de, mst@redhat.com,
+       avi@redhat.com, gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
+In-Reply-To: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Jun 2010 00:14:12 -0600
+Message-ID: <1277878452.3164.26.camel@x201>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gcc 4.5 is now generating out of line register save and restore
-in the function prefix and postfix when we use -Os.
+On Tue, 2010-06-08 at 14:21 -0700, Tom Lyon wrote:
+> The VFIO "driver" is used to allow privileged AND non-privileged processes to 
+> implement user-level device drivers for any well-behaved PCI, PCI-X, and PCIe
+> devices.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Hi Tom,
+
+I found a few bugs.  Patch below.  The first chunk clears the
+pci_config_map on close, otherwise we end up passing virtualized state
+from one user to the next.  The second is an off by one in the basic
+perms.  Finally, vfio_bar_fixup() needs an overhaul.  It wasn't setting
+the lower bits right and is allowing virtual writes of bits that aren't
+aligned to the size.  This section probably needs another pass or two of
+refinement.  Thanks,
+
+Alex
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- arch/powerpc/Makefile        |    4 +-
- arch/powerpc/lib/Makefile    |    4 +-
- arch/powerpc/lib/crtsavres.S |  129 ++++++++++++++++++++++++++++++++++++++++++
- scripts/mod/modpost.c        |    5 ++
- 4 files changed, 138 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
-index 42dcd3f..77cfe7a 100644
---- a/arch/powerpc/Makefile
-+++ b/arch/powerpc/Makefile
-@@ -92,10 +92,10 @@ endif
- else
- 	KBUILD_CFLAGS += $(call cc-option,-mtune=power4)
- endif
--else
--LDFLAGS_MODULE	+= arch/powerpc/lib/crtsavres.o
- endif
+diff --git a/drivers/vfio/vfio_main.c b/drivers/vfio/vfio_main.c
+index 96639e5..a0e8227 100644
+--- a/drivers/vfio/vfio_main.c
++++ b/drivers/vfio/vfio_main.c
+@@ -129,6 +129,10 @@ static int vfio_release(struct inode *inode, struct file *filep)
+ 			eventfd_ctx_put(vdev->ev_msi);
+ 			vdev->ev_irq = NULL;
+ 		}
++		if (vdev->pci_config_map) {
++			kfree(vdev->pci_config_map);
++			vdev->pci_config_map = NULL;
++		}
+ 		vfio_domain_unset(vdev);
+ 		/* reset to known state if we can */
+ 		(void) pci_reset_function(vdev->pdev);
+diff --git a/drivers/vfio/vfio_pci_config.c b/drivers/vfio/vfio_pci_config.c
+index c821b5d..f6e26b1 100644
+--- a/drivers/vfio/vfio_pci_config.c
++++ b/drivers/vfio/vfio_pci_config.c
+@@ -79,18 +79,18 @@ struct perm_bits {
+ static struct perm_bits pci_cap_basic_perm[] = {
+ 	{ 0xFFFFFFFF,	0, },		/* 0x00 vendor & device id - RO */
+ 	{ 0,		0xFFFFFFFC, },	/* 0x04 cmd & status except mem/io */
+-	{ 0,		0xFF00FFFF, },	/* 0x08 bist, htype, lat, cache */
+-	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x0c bar */
++	{ 0,		0, },		/* 0x08 class code & revision id */
++	{ 0,		0xFF00FFFF, },	/* 0x0c bist, htype, lat, cache */
+ 	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x10 bar */
+ 	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x14 bar */
+ 	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x18 bar */
+ 	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x1c bar */
+ 	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x20 bar */
+-	{ 0,		0, },		/* 0x24 cardbus - not yet */
+-	{ 0,		0, },		/* 0x28 subsys vendor & dev */
+-	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x2c rom bar */
+-	{ 0,		0, },		/* 0x30 capability ptr & resv */
+-	{ 0,		0, },		/* 0x34 resv */
++	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x24 bar */
++	{ 0,		0, },		/* 0x28 cardbus - not yet */
++	{ 0,		0, },		/* 0x2c subsys vendor & dev */
++	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x30 rom bar */
++	{ 0,		0, },		/* 0x34 capability ptr & resv */
+ 	{ 0,		0, },		/* 0x38 resv */
+ 	{ 0x000000FF,	0x000000FF, },	/* 0x3c max_lat ... irq */
+ };
+@@ -318,30 +318,55 @@ static void vfio_virt_init(struct vfio_dev *vdev)
+ static void vfio_bar_fixup(struct vfio_dev *vdev)
+ {
+ 	struct pci_dev *pdev = vdev->pdev;
+-	int bar;
+-	u32 *lp;
+-	u32 len;
++	int bar, mem64 = 0;
++	u32 *lp = NULL;
++	u64 len = 0;
  
-+LDFLAGS_MODULE	+= arch/powerpc/lib/crtsavres.o
+ 	for (bar = 0; bar <= 5; bar++) {
+-		len = pci_resource_len(pdev, bar);
+-		lp = (u32 *)&vdev->vinfo.bar[bar * 4];
+-		if (len == 0) {
+-			*lp = 0;
+-		} else if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM) {
+-			*lp &= ~0x1;
+-			*lp = (*lp & ~(len-1)) |
+-				(*lp & ~PCI_BASE_ADDRESS_MEM_MASK);
+-			if (*lp & PCI_BASE_ADDRESS_MEM_TYPE_64)
+-				bar++;
+-		} else if (pci_resource_flags(pdev, bar) & IORESOURCE_IO) {
++		if (!mem64) {
++			len = pci_resource_len(pdev, bar);
++			lp = (u32 *)&vdev->vinfo.bar[bar * 4];
++			if (len == 0) {
++				*lp = 0;
++				continue;
++			}
 +
- ifeq ($(CONFIG_TUNE_CELL),y)
- 	KBUILD_CFLAGS += $(call cc-option,-mtune=cell)
- endif
-diff --git a/arch/powerpc/lib/Makefile b/arch/powerpc/lib/Makefile
-index 3040dac..111da1c 100644
---- a/arch/powerpc/lib/Makefile
-+++ b/arch/powerpc/lib/Makefile
-@@ -12,8 +12,8 @@ CFLAGS_REMOVE_code-patching.o = -pg
- CFLAGS_REMOVE_feature-fixups.o = -pg
- 
- obj-y			:= string.o alloc.o \
--			   checksum_$(CONFIG_WORD_SIZE).o
--obj-$(CONFIG_PPC32)	+= div64.o copy_32.o crtsavres.o
-+			   checksum_$(CONFIG_WORD_SIZE).o crtsavres.o
-+obj-$(CONFIG_PPC32)	+= div64.o copy_32.o
- obj-$(CONFIG_HAS_IOMEM)	+= devres.o
- 
- obj-$(CONFIG_PPC64)	+= copypage_64.o copyuser_64.o \
-diff --git a/arch/powerpc/lib/crtsavres.S b/arch/powerpc/lib/crtsavres.S
-index 70a9cd8..1c893f0 100644
---- a/arch/powerpc/lib/crtsavres.S
-+++ b/arch/powerpc/lib/crtsavres.S
-@@ -6,6 +6,7 @@
-  *   Written By Michael Meissner
-  *
-  * Based on gcc/config/rs6000/crtsavres.asm from gcc
-+ * 64 bit additions from reading the PPC elf64abi document.
-  *
-  * This file is free software; you can redistribute it and/or modify it
-  * under the terms of the GNU General Public License as published by the
-@@ -44,6 +45,8 @@
- 
- #ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
- 
-+#ifndef CONFIG_PPC64
++			len = ~(len - 1);
++		} else
++			len >>= 32;
 +
- /* Routines for saving integer registers, called by the compiler.  */
- /* Called with r11 pointing to the stack header word of the caller of the */
- /* function, just beyond the end of the integer save area.  */
-@@ -226,4 +229,130 @@ _GLOBAL(_rest32gpr_31_x)
- 	mtlr	0
- 	mr	1,11
- 	blr
++		if (*lp == ~0U)
++			*lp = (u32)len;
++		else
++			*lp &= (u32)len;
++		
++		if (mem64) {
++			mem64 = 0;
++			continue;
++		}
 +
-+#else /* CONFIG_PPC64 */
++		if (pci_resource_flags(pdev, bar) & IORESOURCE_IO)
+ 			*lp |= PCI_BASE_ADDRESS_SPACE_IO;
+-			*lp = (*lp & ~(len-1)) |
+-				(*lp & ~PCI_BASE_ADDRESS_IO_MASK);
++		else {
++			*lp |= PCI_BASE_ADDRESS_SPACE_MEMORY;
++			if (pci_resource_flags(pdev, bar) & IORESOURCE_PREFETCH)
++				*lp |= PCI_BASE_ADDRESS_MEM_PREFETCH;
++			if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM_64) {
++				*lp |= PCI_BASE_ADDRESS_MEM_TYPE_64;
++				mem64 = 1;
++			}
+ 		}
+ 	}
 +
-+.globl	_savegpr0_14
-+_savegpr0_14:
-+	std	r14,-144(r1)
-+.globl	_savegpr0_15
-+_savegpr0_15:
-+	std	r15,-136(r1)
-+.globl	_savegpr0_16
-+_savegpr0_16:
-+	std	r16,-128(r1)
-+.globl	_savegpr0_17
-+_savegpr0_17:
-+	std	r17,-120(r1)
-+.globl	_savegpr0_18
-+_savegpr0_18:
-+	std	r18,-112(r1)
-+.globl	_savegpr0_19
-+_savegpr0_19:
-+	std	r19,-104(r1)
-+.globl	_savegpr0_20
-+_savegpr0_20:
-+	std	r20,-96(r1)
-+.globl	_savegpr0_21
-+_savegpr0_21:
-+	std	r21,-88(r1)
-+.globl	_savegpr0_22
-+_savegpr0_22:
-+	std	r22,-80(r1)
-+.globl	_savegpr0_23
-+_savegpr0_23:
-+	std	r23,-72(r1)
-+.globl	_savegpr0_24
-+_savegpr0_24:
-+	std	r24,-64(r1)
-+.globl	_savegpr0_25
-+_savegpr0_25:
-+	std	r25,-56(r1)
-+.globl	_savegpr0_26
-+_savegpr0_26:
-+	std	r26,-48(r1)
-+.globl	_savegpr0_27
-+_savegpr0_27:
-+	std	r27,-40(r1)
-+.globl	_savegpr0_28
-+_savegpr0_28:
-+	std	r28,-32(r1)
-+.globl	_savegpr0_29
-+_savegpr0_29:
-+	std	r29,-24(r1)
-+.globl	_savegpr0_30
-+_savegpr0_30:
-+	std	r30,-16(r1)
-+.globl	_savegpr0_31
-+_savegpr0_31:
-+	std	r31,-8(r1)
-+	std	r0,16(r1)
-+	blr
+ 	lp = (u32 *)vdev->vinfo.rombar;
+ 	len = pci_resource_len(pdev, PCI_ROM_RESOURCE);
+-	*lp = *lp & PCI_ROM_ADDRESS_MASK & ~(len-1);
++	len = ~(len - 1);
 +
-+.globl	_restgpr0_14
-+_restgpr0_14:
-+	ld	r14,-144(r1)
-+.globl	_restgpr0_15
-+_restgpr0_15:
-+	ld	r15,-136(r1)
-+.globl	_restgpr0_16
-+_restgpr0_16:
-+	ld	r16,-128(r1)
-+.globl	_restgpr0_17
-+_restgpr0_17:
-+	ld	r17,-120(r1)
-+.globl	_restgpr0_18
-+_restgpr0_18:
-+	ld	r18,-112(r1)
-+.globl	_restgpr0_19
-+_restgpr0_19:
-+	ld	r19,-104(r1)
-+.globl	_restgpr0_20
-+_restgpr0_20:
-+	ld	r20,-96(r1)
-+.globl	_restgpr0_21
-+_restgpr0_21:
-+	ld	r21,-88(r1)
-+.globl	_restgpr0_22
-+_restgpr0_22:
-+	ld	r22,-80(r1)
-+.globl	_restgpr0_23
-+_restgpr0_23:
-+	ld	r23,-72(r1)
-+.globl	_restgpr0_24
-+_restgpr0_24:
-+	ld	r24,-64(r1)
-+.globl	_restgpr0_25
-+_restgpr0_25:
-+	ld	r25,-56(r1)
-+.globl	_restgpr0_26
-+_restgpr0_26:
-+	ld	r26,-48(r1)
-+.globl	_restgpr0_27
-+_restgpr0_27:
-+	ld	r27,-40(r1)
-+.globl	_restgpr0_28
-+_restgpr0_28:
-+	ld	r28,-32(r1)
-+.globl	_restgpr0_29
-+_restgpr0_29:
-+	ld	r0,16(r1)
-+	ld	r29,-24(r1)
-+	mtlr	r0
-+	ld	r30,-16(r1)
-+	ld	r31,-8(r1)
-+	blr
++	if (*lp == ~PCI_ROM_ADDRESS_ENABLE)
++	    *lp = (u32)len;
++	else
++	    *lp = *lp & ((u32)len | PCI_ROM_ADDRESS_ENABLE);
 +
-+.globl	_restgpr0_30
-+_restgpr0_30:
-+	ld	r30,-16(r1)
-+.globl	_restgpr0_31
-+_restgpr0_31:
-+	ld	r0,16(r1)
-+	ld	r31,-8(r1)
-+	mtlr	r0
-+	blr
-+
-+#endif /* CONFIG_PPC64 */
-+
- #endif
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index f877900..f6127b9 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -503,6 +503,11 @@ static int ignore_undef_symbol(struct elf_info *info, const char *symname)
- 		    strncmp(symname, "_rest32gpr_", sizeof("_rest32gpr_") - 1) == 0 ||
- 		    strncmp(symname, "_save32gpr_", sizeof("_save32gpr_") - 1) == 0)
- 			return 1;
-+	if (info->hdr->e_machine == EM_PPC64)
-+		/* Special register function linked on all modules during final link of .ko */
-+		if (strncmp(symname, "_restgpr0_", sizeof("_restgpr0_") - 1) == 0 ||
-+		    strncmp(symname, "_savegpr0_", sizeof("_savegpr0_") - 1) == 0)
-+			return 1;
- 	/* Do not ignore this symbol */
- 	return 0;
+ 	vdev->vinfo.bardirty = 0;
  }
--- 
-1.7.1
+ 
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+
