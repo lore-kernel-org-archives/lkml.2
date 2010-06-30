@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab0F3Jo5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:44:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:32933 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab0F3Jo4 convert rfc822-to-8bit (ORCPT
+	id S1755318Ab0F3JqF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 05:46:05 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:24018 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab0F3JqB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:44:56 -0400
-Subject: Re: [Bugfix] unregister_trace_probe needs to be called under mutex
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <srostedt@redhat.com>
-In-Reply-To: <20100630084548.GA10325@linux.vnet.ibm.com>
-References: <20100630084548.GA10325@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 30 Jun 2010 05:46:01 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.0 c=1 a=_meyTIPSnzEA:10 a=ygRHs6EKU7oA:10 a=VphdPIyG4kEA:10
+ a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=WuWbhNWRJEFkVPsS4pwA:9
+ a=ag-LXmlOxWIch3TgJvifVdvUpMQA:4 a=CjuIK1q_8ugA:10
+Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file stats available [ver #2]
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20100630011712.18960.3723.stgit@warthog.procyon.org.uk>
+Date: Wed, 30 Jun 2010 03:45:59 -0600
+Cc: viro@ZenIV.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
+       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       sjayaraman@suse.de, linux-ext4@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 30 Jun 2010 11:44:26 +0200
-Message-ID: <1277891066.1868.107.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Message-Id: <B82FC7EE-93D2-4D86-906D-5D6AFA502709@dilger.ca>
+References: <20100630011656.18960.4255.stgit@warthog.procyon.org.uk> <20100630011712.18960.3723.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-30 at 14:15 +0530, Srikar Dronamraju wrote:
-> Comment in unregister_trace_probe() says probe_lock will be held
-> when it gets called. However there is a case where it might called
-> without the probe_lock being held. Also since we are traversing the
-> probe_list and deleting an element from the probe_list, probe_lock
-> should be held.
-> 
-> This was first pointed in uprobes traceevent review by Frederic
-> Weisbecker here.  (http://lkml.org/lkml/2010/5/12/106)
-> 
-> This patch is needed for both 2.6.35-rc3 and 2.6.35-rc3-tip
-> 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
-> 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 4f11a56..67670cd 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -269,14 +269,17 @@ static int create_trace_probe(int argc, char **argv)
->  			pr_info("Delete command needs an event name.\n");
->  			return -EINVAL;
->  		}
-> +		mutex_lock(&probe_lock);
->  		tp = find_probe_event(event, group);
->  		if (!tp) {
-> +			mutex_unlock(&probe_lock);
->  			pr_info("Event %s/%s doesn't exist.\n", group, event);
->  			return -ENOENT;
->  		}
->  		/* delete an event */
->  		unregister_trace_probe(tp);
->  		free_trace_probe(tp);
-> +		mutex_unlock(&probe_lock);
->  		return 0;
->  	}
+On 2010-06-29, at 19:17, David Howells wrote:
+> int ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
+> 		 struct kstat *stat)
+> {
+> +	if (S_ISDIR(inode->i_mode)) {
+> +		stat->result_flags |= XSTAT_QUERY_DATA_VERSION;
+> +		stat->data_version = inode->i_version;
+> +	}
 
-Shouldn't all that go through steven's ->reg() interface?
+Note that when ext4 is mounted with the "i_version" option that the i_version field is also updated on regular files, for use by NFSv4.  See, for example, ext4_mark_iloc_dirty().
+
+I had a hard time finding this, even though I knew it was there somewhere, because it isn't modifying "i_version" directly, but rather calling a helper function inode_inc_iversion().
+
+It probably makes sense to always return i_version, unless it is 0.
+
+Cheers, Andreas
+
+
+
+
+
