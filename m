@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373Ab0F3BHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 21:07:10 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34478 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab0F3BHI convert rfc822-to-8bit (ORCPT
+	id S1755496Ab0F3BKE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 21:10:04 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:60935 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab0F3BKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 21:07:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=gh7xjXaThe/Q47ObBMSU8tIgwgd2PbqnzADaeyX5jPJaI7ivhJL277QM5httt7INUw
-         hpK5KgrypcAPrn4Jt85Lhsh5O+gtgpD2v03ero55zxUMecvAV0Kc8yfVlB33tN5ylRbF
-         x3H7IQB6tgkPC6rNBk//0jFNiWYSxp/7BtWUI=
+	Tue, 29 Jun 2010 21:10:00 -0400
+Message-Id: <201006300109.o5U19s1N043912@www262.sakura.ne.jp>
+Subject: Re: [PATCH 2/2] Yama: add PTRACE exception tracking
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: kees.cook@canonical.com
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <4C2A8879.8010000@intel.com>
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
-	<4C29420D.2010406@intel.com>
-	<AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>
-	<4C2A8879.8010000@intel.com>
-Date: Tue, 29 Jun 2010 18:07:06 -0700
-X-Google-Sender-Auth: hMCK8k2ZQnVOI020ri8RxbD5DWs
-Message-ID: <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-From: Chris Li <lkml@chrisli.org>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+Date: Wed, 30 Jun 2010 10:09:54 +0900
+References: <20100630003844.GE4837@outflux.net> <20100630004027.GG4837@outflux.net>
+In-Reply-To: <20100630004027.GG4837@outflux.net>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 29062010 #4014306, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 4:57 PM, Dan Williams <dan.j.williams@intel.com> wrote:
->> 0000:00:0f.0: ioat2_timer_event: Channel halted (10)
->
-> This says that we got an invalid chain address error when trying to start
-> the engine.  If there was a driver problem with init I would have expected
-> to see reports from other systems.  The attached patch will print out what
-> chain address we are setting.  The hardware expects a 64-byte aligned
-> address which should be guaranteed by the use of pci_pool_alloc().
+Kees Cook wrote:
+> +static spinlock_t ptracer_relations_lock;
+static DEFINE_SPINLOCK(ptracer_relations_lock);
 
-OK. I can't do this test remotely so I will get back to you tomorrow.
+> +static int yama_ptracer_add(struct task_struct *tracer,
+> +			    struct task_struct *tracee)
+> +{
+> +	struct ptrace_relation *relation;
+> +
+> +	relation = kzalloc(sizeof(*relation), GFP_KERNEL);
+You can use kmalloc() since all fields are initialized within this function.
+> +	if (!relation)
+> +		return -ENOMEM;
+> +	relation->tracer = tracer;
+> +	relation->tracee = tracee;
+> +	spin_lock(&ptracer_relations_lock);
+> +	list_add(&relation->node, &ptracer_relations);
+> +	spin_unlock(&ptracer_relations_lock);
+> +
+> +	return 0;
+> +}
 
->
-> However, if you are up for another experiment, I'd like to see what happens
-> if you disable VT-d.  Maybe it is a misconfigured iommu table that is
-> blocking the engine's access to memory?
+> +static int ptracer_exception_found(struct task_struct *tracer,
+> +				   struct task_struct *tracee)
+> +{
+> +	int rc = 0;
+> +	struct ptrace_relation *relation;
+> +	struct task_struct *parent = NULL;
+> +
+> +	spin_lock(&ptracer_relations_lock);
+> +	list_for_each_entry(relation, &ptracer_relations, node)
+> +		if (relation->tracee == tracee) {
+> +			parent = relation->tracer;
+> +			break;
+> +		}
+> +	if (task_is_descendant(parent, tracer))
+> +		rc = 1;
+> +	spin_unlock(&ptracer_relations_lock);
 
-You mean disable VT-d in kernel config or the BIOS?
+Can't we release ptracer_relations_lock before calling
+task_is_descendant() since task_is_descendant() won't
+access "struct ptrace_relation" on ptracer_relations list.
 
-BTW, I don't know how to disable VT-d in Mac BIOS. It use EFI, then simulate
-a normal BIOS in the boot camp mode to boot Linux.
+> @@ -32,27 +204,20 @@ static int yama_ptrace_access_check(struct task_struct *child,
+>  {
+>  	int rc;
+>  
+> +	/* If standard caps disallows it, so does Yama.  We should
+> +	 * should only tighten restrictions further.
+s/should should/should/
+> +	 */
 
-Another stab in the dark is that, it is Mac. It has some strange SMI interaction
-like TSC drifting even after boot. I notice that in the past.
-
-Chris
+> @@ -221,6 +388,8 @@ static __init int yama_init(void)
+>  
+>  	printk(KERN_INFO "Yama: becoming mindful.\n");
+>  
+> +	spin_lock_init(&ptracer_relations_lock);
+> +
+You can statically initialize by using DEFINE_SPINLOCK().
