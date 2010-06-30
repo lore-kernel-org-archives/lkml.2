@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab0F3UCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 16:02:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39889 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755033Ab0F3UCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 16:02:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,514,1272870000"; 
-   d="scan'208";a="531906767"
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-From: David Woodhouse <David.Woodhouse@intel.com>
-To: "Williams, Dan J" <dan.j.williams@intel.com>
-Cc: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C2B9DAC.1030806@intel.com>
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
-	 <4C29420D.2010406@intel.com>
-	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>
-	 <4C2A8879.8010000@intel.com>
-	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>
-	 <4C2AC55E.3040303@intel.com>
-	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
-	 <1277923422.16256.8.camel@localhost>  <4C2B9DAC.1030806@intel.com>
+	id S1756610Ab0F3UDq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 16:03:46 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:62396 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755038Ab0F3UDo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 16:03:44 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6029"; a="46087637"
+Subject: Re: [PATCH 04/33] Removing dead MSM7X00A_IDLE
+From: Daniel Walker <dwalker@codeaurora.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Christoph Egger <siccegge@cs.fau.de>, David Brown <davidb@codeaurora.org>,
+       Bryan Huntsman <bryanh@codeaurora.org>,
+       Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       vamos@i4.informatik.uni-erlangen.de,
+       Brian Swetland <swetland@google.com>
+In-Reply-To: <20100630195933.GD3969@shutemov.name>
+References: <cover.1277911345.git.siccegge@cs.fau.de>
+	 <c7e75d44aebaaabfdff9cf5fbda54512d0062728.1277911346.git.siccegge@cs.fau.de>
+	 <20100630195933.GD3969@shutemov.name>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation
-Date: Wed, 30 Jun 2010 21:02:05 +0100
-Message-ID: <1277928125.18854.0.camel@localhost>
+Date: Wed, 30 Jun 2010 13:03:31 -0700
+Message-ID: <1277928211.30401.39.camel@c-dwalke-linux.qualcomm.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.31.4 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-30 at 20:40 +0100, Williams, Dan J wrote:
->  From the dmesg:
-> > IOMMU 0: reg_base_addr fe710000 ver 1:0 cap 900000c2f0462 ecap e01
-> > DMAR: DRHD base: 0x000000fe714000 flags: 0x0
-> > IOMMU 1: reg_base_addr fe714000 ver 1:0 cap 900000c2f0462 ecap e01
-> > DMAR: DRHD base: 0x000000fe719000 flags: 0x0
-> > IOMMU 2: reg_base_addr fe719000 ver 1:0 cap 900000c2f0462 ecap e01
-> > DMAR: DRHD base: 0x000000fe718000 flags: 0x1
-> > IOMMU 3: reg_base_addr fe718000 ver 1:0 cap 900000c2f0462 ecap e01
+On Wed, 2010-06-30 at 22:59 +0300, Kirill A. Shutemov wrote:
+> On Wed, Jun 30, 2010 at 05:55:03PM +0200, Christoph Egger wrote:
+> > MSM7X00A_IDLE doesn't exist in Kconfig, therefore removing all
+> > references for it from the source code.
 > 
-> Where we expect bit 54 to be set for the DMA iommu, and it does not 
-> appear to show up.
+> It was removed in commit 1637de0c9. I'm not sure if it's correct.
+> 
+> Brian Swetland added to CC list.
 
-So the BIOS is lying to us about which PCI devices are attached to which
-IOMMU?
+Yeah, it looks like it was missed in the original commit.
+
+Daniel
 
 -- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
