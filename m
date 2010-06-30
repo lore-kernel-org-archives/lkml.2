@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab0F3JjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:39:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16271 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751673Ab0F3JjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:39:18 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] KEYS: Reinstate lost passing of process keyring ID in
-	call_sbin_request_key()
-To: linux-security-module@vger.kernel.org
-Cc: keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-       "Justin P. Mattock" <justinmattock@gmail.com>,
-       David Howells <dhowells@redhat.com>
-Date: Wed, 30 Jun 2010 10:39:11 +0100
-Message-ID: <20100630093911.28103.73746.stgit@warthog.procyon.org.uk>
-In-Reply-To: <1277861297-13824-1-git-send-email-justinmattock@gmail.com>
-References: <1277861297-13824-1-git-send-email-justinmattock@gmail.com>
-User-Agent: StGIT/0.14.3
+	id S1755261Ab0F3Jkr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 05:40:47 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:62049 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab0F3Jko (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 05:40:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=hOEYKF4Pw/VAIQ/BwU7PajUBOX2N6z33Ppn+21kuoax1JFho8b0qBzl6t19pNOvPvs
+         +Jb+k8LcCN/xeo+m3mePPbBRRnvOVozFpD5a+YMkXxFmZCQXjGGFajiyqMjcvp/k83fD
+         elu5UlAvZrFibGb5+r2ebI4wGvHW50H7lIuFk=
+Message-ID: <4C2B1127.50203@suse.cz>
+Date: Wed, 30 Jun 2010 11:40:55 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+CC: Robert Hancock <hancockrwd@gmail.com>,
+       Matthew Garrett <mjg59@srcf.ucam.org>, lenb@kernel.org,
+       linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH 1/1] ACPI: pci_irq, add PRT_ quirk for IBM Bartolo
+References: <1277673679-21458-1-git-send-email-jslaby@suse.cz>	<4C27E965.80508@gmail.com>	<4C283D84.6080504@suse.cz>	<20100628171410.GA27367@srcf.ucam.org>	<4C290245.2040001@suse.cz>	<20100628204820.GA32503@srcf.ucam.org>	<AANLkTil-sdbojCXBp6sR_4xL3JIe6ZENqXuueB61VJ8c@mail.gmail.com>	<4C2A3E27.4060407@suse.cz> <AANLkTimkElR1u-iRyFfCEQR5VTZvcyEIGQodfmFNtbC_@mail.gmail.com> <4C2B0C73.9050200@suse.cz>
+In-Reply-To: <4C2B0C73.9050200@suse.cz>
+X-Enigmail-Version: 1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Justin P. Mattock <justinmattock@gmail.com>
+On 06/30/2010 11:20 AM, Jiri Slaby wrote:
+> I still no point in comparing this to Windows' setup. We can't find out
+> whether it is quirked or better (without some bug) handled there.
 
-In commit bb952bb98a7e479262c7eb25d5592545a3af147d there was the accidental
-deletion of a statement from call_sbin_request_key() to render the process
-keyring ID to a text string so that it can be passed to /sbin/request-key.
+Whatever, how can one find the interrupt links setup on windows?
+Something like
+ACPI: PCI Interrupt Link [LNKA] (IRQs 5 7 9 10 *11 12)
+etc.? Without that it doesn't make much sense.
 
-With gcc 4.6.0 this causes the following warning:
-
-  CC      security/keys/request_key.o
-security/keys/request_key.c: In function 'call_sbin_request_key':
-security/keys/request_key.c:102:15: warning: variable 'prkey' set but not used
-
-This patch reinstates that statement.
-
-Without this statement, /sbin/request-key will get some random rubbish from the
-stack as that parameter.
-
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- security/keys/request_key.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index f5ec9ac..0d26f68 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -144,6 +144,7 @@ static int call_sbin_request_key(struct key_construction *cons,
- 	prkey = 0;
- 	if (cred->tgcred->process_keyring)
- 		prkey = cred->tgcred->process_keyring->serial;
-+	sprintf(keyring_str[1], "%d", prkey);
- 
- 	rcu_read_lock();
- 	session = rcu_dereference(cred->tgcred->session_keyring);
-
+regards,
+-- 
+js
+suse labs
