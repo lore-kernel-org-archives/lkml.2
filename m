@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab0F3ACy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 20:02:54 -0400
-Received: from koto.vergenet.net ([210.128.90.7]:41324 "EHLO koto.vergenet.net"
+	id S1754857Ab0F3AML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 20:12:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755312Ab0F3ACw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 20:02:52 -0400
-Date: Wed, 30 Jun 2010 09:02:50 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-       Nobhiro KUSUNO <n-kusuno@fc4.so-net.ne.jp>,
-       Sebastian =?utf-8?Q?Dalfu=C3=9F?= <sd@sedf.de>,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 20/25] usb_main_dev: remove casts from void*
-Message-ID: <20100630000250.GC2138@verge.net.au>
-References: <1277806573-31384-1-git-send-email-segooon@gmail.com>
+	id S1752850Ab0F3AMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 20:12:09 -0400
+Date: Tue, 29 Jun 2010 20:11:49 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: James Bottomley <James.Bottomley@suse.de>
+cc: device-mapper development <dm-devel@redhat.com>,
+       Mike Snitzer <snitzer@redhat.com>, axboe@kernel.dk,
+       linux-scsi@vger.kernel.org, martin.petersen@oracle.com,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Christoph Hellwig <hch@lst.de>
+Subject: Re: [dm-devel] [PATCH 1/2] block: fix leaks associated with discard
+ request payload
+In-Reply-To: <1277852600.4379.211.camel@mulgrave.site>
+Message-ID: <Pine.LNX.4.64.1006291925480.11847@hs20-bc2-1.build.redhat.com>
+References: <20100622180029.GA15950@redhat.com> 
+ <1277582211-10725-1-git-send-email-snitzer@redhat.com> 
+ <1277652576.4366.19.camel@mulgrave.site>  <Pine.LNX.4.64.1006291811300.27462@hs20-bc2-1.build.redhat.com>
+ <1277852600.4379.211.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277806573-31384-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 02:16:12PM +0400, Kulikov Vasiliy wrote:
-> Remove unnesessary casts from void*.
-
-No objections here.
-
-FWIW, Reviewed-by: Simon Horman <horms@verge.net.au>
-
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  drivers/staging/rt2860/usb_main_dev.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
+> > If the layering violation spans only scsi code, it can be eventually 
+> > fixed, but this, much worse "layering violation" that will be spanning all 
+> > block device midlayers, won't ever be fixed.
+> > 
+> > Imagine for example --- a discard request arrivers at a dm-snapshot 
+> > device. The driver splits it into chunks, remaps each chunk to the 
+> > physical chunk, submits the requests, the elevator merges adjacent 
+> > requests and submits fewer bigger requests to the device. Now, if you had 
+> > to allocate a zeroed page each time you are splitting the request, that 
+> > would exhaust memory and burn cpu needlessly. You delete a 100MB file? --- 
+> > fine, allocate a 100MB of zeroed pages.
 > 
-> diff --git a/drivers/staging/rt2860/usb_main_dev.c b/drivers/staging/rt2860/usb_main_dev.c
-> index b740662..40eab25 100644
-> --- a/drivers/staging/rt2860/usb_main_dev.c
-> +++ b/drivers/staging/rt2860/usb_main_dev.c
-> @@ -421,8 +421,8 @@ int MlmeThread(IN void *Context)
->  	int status;
->  	status = 0;
->  
-> -	pTask = (struct rt_rtmp_os_task *)Context;
-> -	pAd = (struct rt_rtmp_adapter *)pTask->priv;
-> +	pTask = Context;
-> +	pAd = pTask->priv;
->  
->  	RtmpOSTaskCustomize(pTask);
->  
-> @@ -490,8 +490,8 @@ int RTUSBCmdThread(IN void *Context)
->  	int status;
->  	status = 0;
->  
-> -	pTask = (struct rt_rtmp_os_task *)Context;
-> -	pAd = (struct rt_rtmp_adapter *)pTask->priv;
-> +	pTask = Context;
-> +	pAd = pTask->priv;
->  
->  	RtmpOSTaskCustomize(pTask);
->  
-> -- 
-> 1.7.0.4
+> This is a straw man:  You've tried to portray a position I've never
+> taken as mine then attack it ... with what is effectively another bogus
+> argument.
+>
+> It's not an either/or choice.
+
+It is either/or choice. If the interface isn't fixed NOW, the existing 
+flawed zeroed-page-allocation interface gets into RHEL and I and others 
+will have to support it for 7 years.
+
+> I've asked the relevant parties to
+> combine the approaches and see if a REQ_TYPE_FS path that does the
+> allocations in the appropriate place, likely the ULD, produces a good
+> design.
+
+OK, but before you do this research, fix the interface.
+
+> > So I say --- let there be a layering violation in the scsi code, but don't 
+> > put this problem with a page allocation to all the other bio midlayer 
+> > developers.
+> 
+> Thanks for explaining that you have nothing to contribute, I'll make
+> sure you're not on my list of relevant parties.
+
+You misunderstand what I meant. You admit that there are design problems 
+in SCSI. So don't burden other developers with these problems. Don't force 
+the others to allocate dummy pages just because you want a cleaner scsi 
+code.
+
+You intend to fix the design of SCSI and then remove the dummy pages. But 
+by the time you finish it, it will be already late and there will be 
+midlayer drivers allocating these dummy pages.
+
+What I mean is that "layering violation" inside one driver is smaller 
+problem than misdesigned interface between drivers. So accept the patch 
+that creates "layering violation" but cleans up the interface.
+
+Mikulas
