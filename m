@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab0F3K5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 06:57:34 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:1054 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752345Ab0F3K5d (ORCPT
+	id S1753829Ab0F3LBN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 07:01:13 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46680 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab0F3LBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 06:57:33 -0400
-Message-ID: <4C2B2318.1030107@panasas.com>
-Date: Wed, 30 Jun 2010 13:57:28 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	Wed, 30 Jun 2010 07:01:12 -0400
+Date: Wed, 30 Jun 2010 12:01:03 +0100
+From: Eric B Munson <ebmunson@us.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@elte.hu, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Anton Blanchard <anton@samba.org>
+Subject: Re: [PATCH] Add munmap events to perf
+Message-ID: <20100630110103.GA8216@us.ibm.com>
+References: <1277748484-23882-1-git-send-email-ebmunson@us.ibm.com>
+ <1277755486.3561.140.camel@laptop>
+ <20100629083323.GA6917@us.ibm.com>
+ <1277810866.1868.32.camel@laptop>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: James Bottomley <James.Bottomley@suse.de>,
-       Mike Snitzer <snitzer@redhat.com>, axboe@kernel.dk, dm-devel@redhat.com,
-       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
-       akpm@linux-foundation.org, linux-scsi@vger.kernel.org,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
- payload
-References: <20100622180029.GA15950@redhat.com> <1277582211-10725-1-git-send-email-snitzer@redhat.com> <1277652576.4366.19.camel@mulgrave.site> <4C2B012B.2000407@panasas.com> <20100630084204.GA27609@lst.de> <4C2B1B7D.2090607@panasas.com> <20100630104155.GA1370@lst.de>
-In-Reply-To: <20100630104155.GA1370@lst.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 30 Jun 2010 10:57:31.0991 (UTC) FILETIME=[0A011670:01CB1843]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nFreZHaLTZJo0R7j"
+Content-Disposition: inline
+In-Reply-To: <1277810866.1868.32.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2010 01:41 PM, Christoph Hellwig wrote:
-> On Wed, Jun 30, 2010 at 01:25:01PM +0300, Boaz Harrosh wrote:
->> OK, Thanks, I see. Is it one of these operations, (like we have in OSD) where
->> the CDB information spills into the payload? like the scatter-gather and extent
->> lists and such.
-> 
-> For UNMAP the payload is a list of block number / length pairs, while
-> the CDB itself doesn't contain any information like that.  It's a rather
-> awkward command.
-> 
 
-How big can that be? could we, maybe, use the sense_buffer, properly allocated
-already?
+--nFreZHaLTZJo0R7j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> Do we actually use a WRITE_SAME which is not zero? for what use?
-> 
-> The kernel doesn't issue any WRITE SAME without the unmap bit set.
+On Tue, 29 Jun 2010, Peter Zijlstra wrote:
 
-So if the unmap bit is set then the page can just be zero, right?
+> On Tue, 2010-06-29 at 09:33 +0100, Eric B Munson wrote:
+> > On Mon, 28 Jun 2010, Peter Zijlstra wrote:
+> >=20
+> > > On Mon, 2010-06-28 at 19:08 +0100, Eric B Munson wrote:
+> > > > This patch adds a new software event for munmaps.  It will allows
+> > > > users to profile changes to address space.  munmaps will be tracked
+> > > > with mmaps.
+> > >=20
+> > > Why?
+> > >=20
+> >=20
+> > It is going to be used by a tool that will model memory usage over the
+> > lifetime of a process.
+>=20
+> Wouldn't it be better to use some tracepoints for that instead? I want
+> to keep the sideband data to a minimum required to interpret the sample
+> data, and you don't need unmap events for that.
+>=20
+>=20
 
-I still think a static zero-page is a worth while optimization. And
-block-drivers can take care with special needs with a private mem_pool
-or something. For the discard-type user and generic block layer the
-page is just an implementation specific residue, No?
+Sure, I will get it moved to a tracepoint event instead.
 
-But don't mind me, I'm just babbling. Not that I'll do anything about it.
-Boaz
+--=20
+Eric B Munson
+IBM Linux Technology Center
+ebmunson@us.ibm.com
+
+
+--nFreZHaLTZJo0R7j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwrI+8ACgkQsnv9E83jkzr4WgCfQqLAuPW3/56uAF8bxSYeN6OG
+5YYAnRTBBaJmmS6ubEGCs9ZuLbOpAtBN
+=EmkR
+-----END PGP SIGNATURE-----
+
+--nFreZHaLTZJo0R7j--
