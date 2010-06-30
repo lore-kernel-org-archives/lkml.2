@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757478Ab0F3X2K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 19:28:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49924 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab0F3X2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 19:28:07 -0400
-Message-ID: <4C2BD2CE.1090201@zytor.com>
-Date: Wed, 30 Jun 2010 16:27:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757503Ab0F3X2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 19:28:36 -0400
+Received: from smh05.opentransfer.com ([98.130.1.173]:39595 "EHLO
+	smh05.opentransfer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757452Ab0F3X2d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 19:28:33 -0400
+X-Opentransfer-Authenticated: erics@stephensbuilders.com
+Message-ID: <20100630184821.93iqm0i50k40skw4@webmail.opentransfer.com>
+Date: Wed, 30 Jun 2010 18:48:21 -0400
+From: Fish Meal Loan Managemwnt <loansinvestment@info.com>
+Reply-to: loansinvestment60@gmail.com
+To: undisclosed-recipients:;
+Subject: financial advancement
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Andreas Dilger <adilger@dilger.ca>, viro@ZenIV.linux.org.uk,
-       smfrench@gmail.com, jlayton@redhat.com, mcao@us.ibm.com,
-       aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       samba-technical@lists.samba.org, sjayaraman@suse.de,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3] Extended file stat functions [ver #2]
-References: <FB78A152-53D3-4000-ABDB-9D6051ECB887@dilger.ca> <52423201-3DF9-4045-8E8B-FAA915053D56@dilger.ca> <20100630011656.18960.4255.stgit@warthog.procyon.org.uk> <26505.1277899544@redhat.com> <30875.1277939713@redhat.com>
-In-Reply-To: <30875.1277939713@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+X-Originating-IP: 41.204.252.206
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2010 04:15 PM, David Howells wrote:
-> 
-> gcc for 32-bit platforms can handle 64-bit numbers.  gcc doesn't handle 128-bit
-> numbers.
-> 
+Greetings,
 
-gcc for 64-bit platforms does handle 128-bit numbers, but I don't think
-it does on 32-bit platforms.
+An opportunity is here for your financial advancement this year.With fish meal
+loan organization, your thirst for cheap and legitimate loan is over.We give
+loan at the lowest percentage rate of 2% annually. We offer all kinds  
+of loan to
+anybody who is interested. Send the following information to
+(fishmealloanandinvestmentlimited@ymail.com or loansinvestment60@gmail.com)
+Name.... Address... Amount needed.... Duration....and your cell phone  
+number all
+this is needed.Fish Meal world site www.dupps.com/fishmeal.html.You can also
+contact us through cell phone +447 0111 388 557,+234 8051 253412 Your  
+success is
+our pride.
 
-	-hpa
