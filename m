@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab0F3JNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:13:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46064 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191Ab0F3JNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:13:46 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4C2A6B6C.1000306@gmail.com>
-References: <4C2A6B6C.1000306@gmail.com> <4C29674C.9070503@gmail.com> <4C28E14D.5050701@gmail.com> <1277621246-10960-4-git-send-email-justinmattock@gmail.com> <1277621246-10960-1-git-send-email-justinmattock@gmail.com> <7214.1277729293@redhat.com> <8066.1277750854@redhat.com> <22319.1277826461@redhat.com> 
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-       linux-acpi@vger.kernel.org, lenb@kernel.org
-Subject: Re: [PATCH 3/5]acpi:glue.c Fix warning: variable 'ret' set but not used
-Date: Wed, 30 Jun 2010 10:13:35 +0100
-Message-ID: <25800.1277889215@redhat.com>
+	id S1754527Ab0F3JUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 05:20:54 -0400
+Received: from fg-out-1718.google.com ([72.14.220.154]:48786 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab0F3JUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 05:20:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=NAcrki4HRuufgOkIHeRPDAIuXtgpaJeRk6QkwqYiC0vlf60b2q62OgAxSup8wFtwgm
+         vVUrPhRf8/wYc79jXNPyaGTLeyIWsLG8IW+kMOOzZsUWGrLPYtkdqsZ3dQtO1mZzzs5J
+         P3+PEyB6o9AgSh2OsUbXPQ4py1uKiesUCe6yk=
+Message-ID: <4C2B0C73.9050200@suse.cz>
+Date: Wed, 30 Jun 2010 11:20:51 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+MIME-Version: 1.0
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>, lenb@kernel.org,
+       linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH 1/1] ACPI: pci_irq, add PRT_ quirk for IBM Bartolo
+References: <1277673679-21458-1-git-send-email-jslaby@suse.cz>	<4C27E965.80508@gmail.com>	<4C283D84.6080504@suse.cz>	<20100628171410.GA27367@srcf.ucam.org>	<4C290245.2040001@suse.cz>	<20100628204820.GA32503@srcf.ucam.org>	<AANLkTil-sdbojCXBp6sR_4xL3JIe6ZENqXuueB61VJ8c@mail.gmail.com>	<4C2A3E27.4060407@suse.cz> <AANLkTimkElR1u-iRyFfCEQR5VTZvcyEIGQodfmFNtbC_@mail.gmail.com>
+In-Reply-To: <AANLkTimkElR1u-iRyFfCEQR5VTZvcyEIGQodfmFNtbC_@mail.gmail.com>
+X-Enigmail-Version: 1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin P. Mattock <justinmattock@gmail.com> wrote:
+On 06/30/2010 01:23 AM, Robert Hancock wrote:
+> What kind of slot is it, and what kind of device was being used,
+> something designed for this machine or just some random card?
 
->  	if (!ACPI_FAILURE(status)) {
-> -		int ret;
-> 
-> -		ret = sysfs_create_link(&dev->kobj, &acpi_dev->dev.kobj,
-> +		fn = sysfs_create_link(&dev->kobj, &acpi_dev->dev.kobj,
->  				"firmware_node");
-> -		ret = sysfs_create_link(&acpi_dev->dev.kobj, &dev->kobj,
-> +		pn = sysfs_create_link(&acpi_dev->dev.kobj, &dev->kobj,
->  				"physical_node");
-> +	if (fn) {
+It's a netmos 9835 serial card with 2 ports. PCI, there is no PCIe in
+the machine as far as I can see.
 
-That new if-statement still needs indenting one more tab stop.  It's indented
-the same as the previous if-statement, but is actually in the body of that
-previous if-statement.
+> Can they
+> tell what IRQ the device is reportedly using in Windows and if it
+> matches what Linux reports?
 
-The body of the second if-statement should be indented one tab beyond the if,
-and else/else-if statements and the final closing brace should be indented
-level with the if:
+I can ask them. What I know is that with acpi=noirq (or with the quirk)
+the IRQ number is 10, with acpi without the quirk, it's 11:
 
-	if (...) {
-		body;
-	} else if (...) {
-		body;
-	} else {
-		body;
-	}
+PCI: setting IRQ 2 as level-triggered
+serial 0000:00:09.0: found PCI INT A -> IRQ 2
+0000:00:09.0: ttyS4 at I/O 0x1898 (irq = 10) is a 16550A
+0000:00:09.0: ttyS5 at I/O 0x1890 (irq = 10) is a 16550A
 
-so that they line up vertically.
+ACPI: PCI Interrupt Link [LNKB] enabled at IRQ 11
+PCI: setting IRQ 11 as level-triggered
+serial 0000:00:09.0: PCI INT A -> Link[LNKB] -> GSI 11 (level, low) ->
+IRQ 11
+0000:00:09.0: ttyS4 at I/O 0x1898 (irq = 11) is a 16550A
+0000:00:09.0: ttyS5 at I/O 0x1890 (irq = 11) is a 16550A
 
-> +		dev_warn(dev, "dev:%p Failed to create firmware_node: %d\n",
-> +			acpi_dev, fn);
+I still no point in comparing this to Windows' setup. We can't find out
+whether it is quirked or better (without some bug) handled there.
 
-The "dev:%p " seems like it ought to be superfluous if you're using
-dev_warn(), and certainly, returning the pointer isn't really useful, I
-suspect.
-
-However, at this point you have two device struct pointers: dev and
-&acip_dev->dev, so printing them both is may be good.  Perhaps something like:
-
-+		dev_warn(&acpi_dev->dev,
-+			 "Failed to create firmware_node link to %s %s: %d\n",
-+			 dev_driver_string(dev), dev_name(dev), fn);
-
-David
+regards,
+-- 
+js
+suse labs
