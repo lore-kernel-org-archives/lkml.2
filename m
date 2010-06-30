@@ -1,135 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908Ab0F3Qnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 12:43:46 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:34669 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754530Ab0F3Qno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 12:43:44 -0400
-Message-ID: <4C2B742F.6050403@us.ibm.com>
-Date: Wed, 30 Jun 2010 09:43:27 -0700
-From: Darren Hart <dvhltc@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1756870Ab0F3Qs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 12:48:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45781 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754830Ab0F3Qs1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 12:48:27 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] futex: futex_find_get_task remove credentails check
-References: <4C24ED34.9040808@us.ibm.com> <4C253D32.6040304@us.ibm.com> <20100628144246.GA14201@tiehlicka.suse.cz> <20100628153214.GA24127@tiehlicka.suse.cz> <20100628155845.GC24127@tiehlicka.suse.cz> <20100628163952.GD24127@tiehlicka.suse.cz> <1277743748.3561.139.camel@laptop> <20100629084230.GE6215@tiehlicka.suse.cz> <AANLkTinyoyZVg8iYOuUx6aA4XlUlLywl4q6GLXmeYP-x@mail.gmail.com> <20100630070115.GB3890@tiehlicka.suse.cz> <20100630095525.GA5840@tiehlicka.suse.cz>
-In-Reply-To: <20100630095525.GA5840@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87mxuc91r2.fsf@linux.vnet.ibm.com>
+References: <AANLkTik3ax1SlAKRo6laMfACdzh6IUKLGSvMK4Gp9GY9@mail.gmail.com>
+	<alpine.LFD.2.00.1006071654290.4506@i5.linux-foundation.org>
+	<20100608004102.GQ31073@ZenIV.linux.org.uk>
+	<87pqzrexon.fsf@linux.vnet.ibm.com>
+	<871vbwe6lp.fsf@linux.vnet.ibm.com>
+	<AANLkTiksmwITS6aCuXXZGR916OTEBm9VQ1MSzzEt8F7S@mail.gmail.com>
+	<AANLkTikyqHtazndL_zBux7Zk0qZSJuNEvitHj8wkuSWW@mail.gmail.com>
+	<87mxuc91r2.fsf@linux.vnet.ibm.com>
+Date: Wed, 30 Jun 2010 09:48:15 -0700
+Message-ID: <AANLkTim0YCgTr_9GRo31kgwojIjeAyR895cyvbkFMmDg@mail.gmail.com>
+Subject: Re: [V9fs-developer] [GIT PULL] 9p file system bug fixes for 
+	2.6.35-rc2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>,
+       V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+       Al Viro <viro@zeniv.linux.org.uk>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2010 02:55 AM, Michal Hocko wrote:
-> On Wed 30-06-10 09:01:15, Michal Hocko wrote:
->> On Tue 29-06-10 09:41:02, Linus Torvalds wrote:
->>> On Tue, Jun 29, 2010 at 1:42 AM, Michal Hocko<mhocko@suse.cz>  wrote:
->>>>
->>>> futex_find_get_task is currently used (through lookup_pi_state) from two
->>>> contexts, futex_requeue and futex_lock_pi_atomic. While credentials check
->>>> makes sense in the first code path, the second one is more problematic
->>>> because this check requires that the PI lock holder (pid parameter) has
->>>> the same uid and euid as the process's euid which is trying to lock the
->>>> same futex (current).
->>>
->>> So exactly why does it make sense to check the credentials in the
->>> first code path then?
->>
->> I though that requeue needs this for security reasons (don't let requeue
->> process for other user), but when I thought about that again you are
->> right and the only what matters should be accessibility of the shared
->> memory.
+On Wed, Jun 30, 2010 at 4:52 AM, Aneesh Kumar K. V
+<aneesh.kumar@linux.vnet.ibm.com> wrote:
 >
-> And here is the patch which does the thing.
->
-> --
->
->  From 082c5ad2c482a8e78b61b17e213e750b006176aa Mon Sep 17 00:00:00 2001
-> From: Michal Hocko<mhocko@suse.cz>
-> Date: Wed, 30 Jun 2010 09:51:19 +0200
-> Subject: [PATCH] futex: futex_find_get_task remove credentails check
->
-> futex_find_get_task is currently used (through lookup_pi_state) from two
-> contexts, futex_requeue and futex_lock_pi_atomic. None of the paths
-> looks it needs the credentials check, though. Different (e)uids
-> shouldn't matter at all because the only thing that is important for
-> shared futex is the accessibility of the shared memory.
->
-> The credentail check results in glibc assert failure or process hang (if
-> glibc is compiled without assert support) for shared robust pthread
-> mutex with priority inheritance if a process tries to lock already held
-> lock owned by a process with a different euid:
->
-> pthread_mutex_lock.c:312: __pthread_mutex_lock_full: Assertion `(-(e)) != 3 || !robust' failed.
->
-> The problem is that futex_lock_pi_atomic which is called when we try to
-> lock already held lock checks the current holder (tid is stored in the
-> futex value) to get the PI state. It uses lookup_pi_state which in turn
-> gets task struct from futex_find_get_task. ESRCH is returned either when
-> the task is not found or if credentials check fails.
-> futex_lock_pi_atomic simply returns if it gets ESRCH. glibc code,
-> however,  doesn't expect that robust lock returns with ESRCH because it
-> should get either success or owner died.
->
-> Signed-off-by: Michal Hocko<mhocko@suse.cz>
+> You are correct. we cannot drop the rename lock in between. I also found
+> another issue in that we are using dentry->d_name.name directly. That
+> would imply we need to hold the rename_lock even during the
+> client_walk.
 
-Without hearing back from Ingo on the original intent of the credentials 
-check, this looks right to me.
+Yes.
 
-Acked-by: Darren Hart <dvhltc@us.ibm.com>
+> How about the patch below ?. I updated the patch to hold
+> rename_lock during multiple path walk. Also the rename path is updated
+> to hold the lock during p9_client_rename operations.
 
+I'm not finding any obvious problems with this, and you're right that
+you also need to hold the rename write-lock even for regular renames
+(not just cross-directory ones) in order to protect the name itself.
+So those two patches together seem to be ok at a quick glance.
 
-> ---
->   kernel/futex.c |   17 ++++-------------
->   1 files changed, 4 insertions(+), 13 deletions(-)
->
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index e7a35f1..6a3a5fa 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -429,20 +429,11 @@ static void free_pi_state(struct futex_pi_state *pi_state)
->   static struct task_struct * futex_find_get_task(pid_t pid)
->   {
->   	struct task_struct *p;
-> -	const struct cred *cred = current_cred(), *pcred;
->
->   	rcu_read_lock();
->   	p = find_task_by_vpid(pid);
-> -	if (!p) {
-> -		p = ERR_PTR(-ESRCH);
-> -	} else {
-> -		pcred = __task_cred(p);
-> -		if (cred->euid != pcred->euid&&
-> -		    cred->euid != pcred->uid)
-> -			p = ERR_PTR(-ESRCH);
-> -		else
-> -			get_task_struct(p);
-> -	}
-> +	if (p)
-> +		get_task_struct(p);
->
->   	rcu_read_unlock();
->
-> @@ -564,8 +555,8 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
->   	if (!pid)
->   		return -ESRCH;
->   	p = futex_find_get_task(pid);
-> -	if (IS_ERR(p))
-> -		return PTR_ERR(p);
-> +	if (!p)
-> +		return -ESRCH;
->
->   	/*
->   	 * We need to look at the task state flags to figure out,
+That said, I do wonder if you wouldn't be better off copying the name
+components in order to then drop the lock earlier. That way you'd only
+need to hold the lock while walking the dentries, and could possibly
+release it during the actual walk (unless you need the names to be
+stable, but I don't think you can rely on that anyway, since other
+clients might be doing renames concurrently.. I don't know)
 
-
--- 
-Darren Hart
-IBM Linux Technology Center
-Real-Time Linux Team
+                       Linus
