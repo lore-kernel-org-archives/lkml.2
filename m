@@ -1,119 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab0F3NpY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 09:45:24 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:52987 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986Ab0F3NpW convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Wed, 30 Jun 2010 09:45:22 -0400
-Message-Id: <4C2B66AD0200007800008D77@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 30 Jun 2010 14:45:49 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86-64: use symbolics instead of raw numbers in
-	 entry_64.S
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754467Ab0F3Nrd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 09:47:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48281 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785Ab0F3Nrb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 09:47:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EqyHIg7OQg+CHSeHPv3UM31l8HonAR5a7W90tdQVB/YP0O9kxLgeBAyQaNRh0sCD2x
+         mBVM7ZBKpOeexWbhH+cXxO16g7BNbZAZ7avz5agKVQ29n8dlDc8GDloH+sOenJHkj41M
+         VjZIJMf7yiF4pVvayH7ttmekKPVo2EC2kIr2U=
+Date: Wed, 30 Jun 2010 06:47:50 -0700
+From: mark gross <640e9920@gmail.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
+       linux-pm@lists.linux-foundation.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       mark gross <640e9920@gmail.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-pci@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [update] Re: [PATCH] PM: Make it possible to avoid wakeup
+ events from being lost
+Message-ID: <20100630134750.GA16978@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <Pine.LNX.4.44L0.1006281006360.1977-100000@iolanthe.rowland.org>
+ <201006282101.54041.rjw@sisk.pl>
+ <20100630091038.6af2a53b@schatten.dmk.lab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100630091038.6af2a53b@schatten.dmk.lab>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-... making the code a little less fragile.
+On Wed, Jun 30, 2010 at 09:10:38AM +0200, Florian Mickler wrote:
+> Hi Rafael!
+> 
+> On Mon, 28 Jun 2010 21:01:53 +0200
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> > On Monday, June 28, 2010, Alan Stern wrote:
+> > > On Mon, 28 Jun 2010, Rafael J. Wysocki wrote:
+> 
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: PM: Make it possible to avoid wakeup events from being lost
+> 
+> I have nothing substantial to add, but just wanted to let you know that
+> this approach seems like a good alternative to me. As far as I can see
+> the userspace suspend-blocker interface could be expressed in terms of
+> this kernel facility which brings android closer to mainline.
+> 
+> The only thing I haven't thought through yet is the 'maintain a discrete
+> set of constraints' vs 'just increment a number' thing. Especially if
+> what we loose in information through that (in comparison to 'the other
+> approach') is made up for by easier in-kernel-API.  I _think_ if there
+> is any need for in-kernel-accounting (i don't know that) it could be
+> retro-fitted by using the trace event infrastructure?
 
-Also use pushq_cfi instead of raw CFI annotations in two more places,
-and add two missing annotations after stack pointer adjustments which
-got modified here anyway.
+Adding ftracing hooks and some less invasive partial state or trace
+support to this and pm_qos is likely the next order of business.
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
+--mgross
 
---- linux-2.6.35-rc3/arch/x86/kernel/entry_64.S
-+++ 2.6.35-rc3-x86_64-unwind-annotations/arch/x86/kernel/entry_64.S
-@@ -796,8 +795,8 @@ END(interrupt)
- 
- /* 0(%rsp): ~(interrupt number) */
- 	.macro interrupt func
--	subq $10*8, %rsp
--	CFI_ADJUST_CFA_OFFSET 10*8
-+	subq $ORIG_RAX-ARGOFFSET+8, %rsp
-+	CFI_ADJUST_CFA_OFFSET ORIG_RAX-ARGOFFSET+8
- 	call save_args
- 	PARTIAL_FRAME 0
- 	call \func
-@@ -1036,8 +1035,8 @@ ENTRY(\sym)
- 	INTR_FRAME
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
--	subq $15*8,%rsp
--	CFI_ADJUST_CFA_OFFSET 15*8
-+	subq $ORIG_RAX-R15, %rsp
-+	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
- 	call error_entry
- 	DEFAULT_FRAME 0
- 	movq %rsp,%rdi		/* pt_regs pointer */
-@@ -1052,9 +1051,9 @@ END(\sym)
- ENTRY(\sym)
- 	INTR_FRAME
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
--	pushq $-1		/* ORIG_RAX: no syscall to restart */
--	CFI_ADJUST_CFA_OFFSET 8
--	subq $15*8, %rsp
-+	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
-+	subq $ORIG_RAX-R15, %rsp
-+	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
- 	call save_paranoid
- 	TRACE_IRQS_OFF
- 	movq %rsp,%rdi		/* pt_regs pointer */
-@@ -1069,9 +1068,9 @@ END(\sym)
- ENTRY(\sym)
- 	INTR_FRAME
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
--	pushq $-1		/* ORIG_RAX: no syscall to restart */
--	CFI_ADJUST_CFA_OFFSET 8
--	subq $15*8, %rsp
-+	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
-+	subq $ORIG_RAX-R15, %rsp
-+	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
- 	call save_paranoid
- 	TRACE_IRQS_OFF
- 	movq %rsp,%rdi		/* pt_regs pointer */
-@@ -1089,8 +1088,8 @@ END(\sym)
- ENTRY(\sym)
- 	XCPT_FRAME
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
--	subq $15*8,%rsp
--	CFI_ADJUST_CFA_OFFSET 15*8
-+	subq $ORIG_RAX-R15, %rsp
-+	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
- 	call error_entry
- 	DEFAULT_FRAME 0
- 	movq %rsp,%rdi			/* pt_regs pointer */
-@@ -1107,8 +1106,8 @@ END(\sym)
- ENTRY(\sym)
- 	XCPT_FRAME
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
--	subq $15*8,%rsp
--	CFI_ADJUST_CFA_OFFSET 15*8
-+	subq $ORIG_RAX-R15, %rsp
-+	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
- 	call save_paranoid
- 	DEFAULT_FRAME 0
- 	TRACE_IRQS_OFF
-@@ -1495,8 +1494,8 @@ ENTRY(nmi)
- 	INTR_FRAME
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	pushq_cfi $-1
--	subq $15*8, %rsp
--	CFI_ADJUST_CFA_OFFSET 15*8
-+	subq $ORIG_RAX-R15, %rsp
-+	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
- 	call save_paranoid
- 	DEFAULT_FRAME 0
- 	/* paranoidentry do_nmi, 0; without TRACE_IRQS_OFF */
-
-
-
+> 
+> Cheers,
+> Flo
