@@ -1,42 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab0F3HFR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 03:05:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19487 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047Ab0F3HFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 03:05:16 -0400
-Message-Id: <89khjo$fr177d@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,510,1272870000"; 
-   d="scan'208";a="531668205"
-Date: Wed, 30 Jun 2010 08:05:08 +0100
-To: Dave Airlie <airlied@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
-Cc: earny@net4u.de, Roman Jarosz <kedgedev@gmail.com>,
-       intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-       jcnengel@googlemail.com, "A. Boulan" <arnaud.boulan@libertysurf.fr>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
-       michael@reinelt.co.at, stable@kernel.org
-References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain> <1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk> <alpine.LFD.2.00.1001270738220.24253@localhost.localdomain> <89k77n$ms73l9@fmsmga001.fm.intel.com> <alpine.LFD.2.00.1001270917120.24253@localhost.localdomain> <AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
+	id S1752706Ab0F3HGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 03:06:55 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:45836 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab0F3HGy convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Wed, 30 Jun 2010 03:06:54 -0400
+Message-Id: <4C2B09450200007800008B95@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 30 Jun 2010 08:07:17 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: <jeremy.fitzhardinge@citrix.com>, <mingo@elte.hu>, <tglx@linutronix.de>,
+       "Ky Srinivasan" <KSrinivasan@novell.com>,
+       <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4, v2] x86: enlightenment for ticket spin locks -
+	 eliminate NOPs introduced by first patch
+References: <4C2A205902000078000089E7@vpn.id2.novell.com>
+ <4C2A9A1E.6010005@zytor.com>
+In-Reply-To: <4C2A9A1E.6010005@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010 16:54:07 +1000, Dave Airlie <airlied@gmail.com> wrote:
-> Chris's patch has been reported to cause a regression in hibernate,
+>>> On 30.06.10 at 03:13, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> On 06/29/2010 07:33 AM, Jan Beulich wrote:
+>> Under the assumption that the nop-s added by the base ticket spinlock
+>> enlightenment patch might be considered undesirable (or worse), here
+>> is an optional patch to eliminate these nop-s again. This is done
+>> through extending the memory operands of the inc instructions used for
+>> unlocking ticket locks to the necessary size, using assembler and
+>> linker features.
+>> 
+>> --- 2.6.35-rc3-virt-spinlocks.orig/arch/x86/include/asm/spinlock.h
+>> +++ 2.6.35-rc3-virt-spinlocks/arch/x86/include/asm/spinlock.h
+>> @@ -10,7 +10,6 @@
+>>  
+>>  #ifdef CONFIG_ENLIGHTEN_SPINLOCKS
+>>  #include <asm/alternative.h>
+>> -#include <asm/nops.h>
+>>  /* Including asm/smp.h here causes a cyclic include dependency. */
+>>  #include <asm/percpu.h>
+>>  DECLARE_PER_CPU(int, cpu_number);
+>> @@ -156,8 +155,7 @@ static __always_inline void __ticket_spi
+>>  #else
+>>  	unsigned int token;
+>>  
+>> -	alternative_io(UNLOCK_LOCK_PREFIX "incb %[lock]\n\t"
+>> -		ASM_NOP3,
+>> +	alternative_io(UNLOCK_LOCK_PREFIX "unary incb %[lock]\n\t",
+>>  		ALTERNATIVE_TICKET_UNLOCK_HEAD
+>>  		UNLOCK_LOCK_PREFIX "incb %[lock]\n\t"
+>>  		"movzwl %[lock], %[token]\n\t"
+>> @@ -228,8 +226,7 @@ static __always_inline void __ticket_spi
+>>  #else
+>>  	unsigned int token, tmp;
+>>  
+>> -	alternative_io(UNLOCK_LOCK_PREFIX "incw %[lock]\n\t"
+>> -		ASM_NOP2,
+>> +	alternative_io(UNLOCK_LOCK_PREFIX "unary incw %[lock]\n\t",
+>>  		ALTERNATIVE_TICKET_UNLOCK_HEAD
+>>  		UNLOCK_LOCK_PREFIX "incw %[lock]\n\t"
+>>  		"movl %[lock], %[token]\n\t"
+> 
+> If you're stretching (bloating) them anyway, perhaps we should be using
+> "add" instructions instead, with their better EFLAGS behavior?
 
-Reviewing the patch again, we no longer set the default gfpmask on the
-inode to contain NORETRY and instead add the NORETRY at the one spot in
-the code where we are trying to do a large allocation and our shrinker
-would be prevented from running (due to contention on struct_mutex).
+Hmm, yes, that possibility I didn't even consider. Would have
+the potential to get away without that admittedly ugly "unary"
+assembler macro altogether, though at the price of growing all
+instructions rather than just those that have a non-symbolic
+and small displacement. Since unlock generally gets inlined, I'm
+not certain this additional growth in code size would be
+acceptable...
 
-I do not know how this causes memory corruption across hibernate and would
-appreciate any insights.
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Please let me know, though before submitting an eventual third
+version I'd appreciate knowing especially the first two patches
+need further changes in order to get accepted.
+
+Thanks, Jan
+
