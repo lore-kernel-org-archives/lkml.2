@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab0F3OmY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 10:42:24 -0400
-Received: from claw.goop.org ([74.207.240.146]:59967 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab0F3OmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 10:42:23 -0400
-Message-ID: <4C2B57CA.3070807@goop.org>
-Date: Wed, 30 Jun 2010 16:42:18 +0200
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1756503Ab0F3Orj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 10:47:39 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63540 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754235Ab0F3Orh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 10:47:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=P4fgbis/SOuwBsg8thzmcX+TPGTU5UonG2kzNU9GLX93Us+PeYL4YRmlDrKFMJKL15
+         4uo3Jz0vHiKkMKBiuIjqU+XaLIowGbuUZQQO1jIjVPbVgVg+ztyVBv2QiNJA7+szEyAc
+         Z94RfNibowB2cJZbAYIz15M0xyN86buNfndSs=
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: "mingo@elte.hu" <mingo@elte.hu>,
-       Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       Ky Srinivasan <KSrinivasan@novell.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH 2/4, v2] x86: enlightenment for ticket spin locks -	 Xen
- implementation
-References: <4C2A200F02000078000089E4@vpn.id2.novell.com> <4C2B1769.5090107@goop.org> <4C2B47190200007800008CB7@vpn.id2.novell.com> <4C2B4564.7030203@goop.org> <4C2B6AD60200007800008D90@vpn.id2.novell.com> <4C2B53D1.90101@goop.org> <4C2B72950200007800008DBA@vpn.id2.novell.com>
-In-Reply-To: <4C2B72950200007800008DBA@vpn.id2.novell.com>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <20100630063844.GB27891@liondog.tnic>
+References: <AANLkTingidlvRUaD4FwNDybaZ29Qrr_507Pto1vVqo-a@mail.gmail.com>
+	<20100630063844.GB27891@liondog.tnic>
+Date: Wed, 30 Jun 2010 08:47:36 -0600
+Message-ID: <AANLkTinu1rzaHY4udBxVWRTCHB0XDicF5tz6FFnsUhfD@mail.gmail.com>
+Subject: Re: 2.6.34 Northbridge Chipset Errors on HP Proliant 4 x Opteron in 
+	x86_64 mode
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Jeffrey Merkey <jeffmerkey@gmail.com>,
+       linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2010 04:36 PM, Jan Beulich wrote:
-> Are we perhaps talking about different things? I'm referring to
+On Wed, Jun 30, 2010 at 12:38 AM, Borislav Petkov <bp@alien8.de> wrote:
+> From: Jeffrey Merkey <jeffmerkey@gmail.com>
+> Date: Tue, Jun 29, 2010 at 03:13:03PM -0600
 >
-> static __always_inline void arch_spin_unlock(struct arch_spinlock *lock)
-> {
-> 	PVOP_VCALL1(pv_lock_ops.spin_unlock, lock);
-> }
+>> On a 4 x Opteron HP Proliant Server with a CCISS array controller in
+>> x86_64 mode, under very heavy (saturated) disk IO, 2.6.34 reports the
+>> following error:
+>>
+>> Jun 29 02:02:08  kernel: Northbridge Error, node 0, core: 0
+>> Jun 29 02:02:08  kernel: ECC/ChipKill ECC error.
+>> Jun 29 02:02:08  kernel: EDAC amd64 MC0: CE ERROR_ADDRESS= 0xc7358280
+>> Jun 29 02:02:08  kernel: EDAC amd64: get_channel_from_ecc_syndrome:
+>> error reading F3x180.
+>> Jun 29 02:02:08  kernel: EDAC MC0: CE page 0xc7358, offset 0x280,
+>> grain 0, syndrome 0xa4c1, row 3, channel 0, label "": amd64_edac
+>> Jun 29 02:03:21  kernel: Northbridge Error, node 0
+>> Jun 29 02:03:21  kernel: ECC/ChipKill ECC error.
+>> Jun 29 02:03:21  kernel: EDAC amd64 MC0: CE ERROR_ADDRESS= 0xc7358280
+>> Jun 29 02:03:21  kernel: EDAC amd64: get_channel_from_ecc_syndrome:
+>> error reading F3x180.
 >
-> which is an indirect call which, as I understand it, gets replaced
-> with a direct one at runtime. But it remains to be a call (as opposed
-> to being a single inc instructions without CONFIG_PARAVIRT_SPINLOCKS).
->   
+> It looks like you don't have extended PCI config space accesses enabled
+> on that machine. Can you send me the whole dmesg?
+>
+>> Jun 29 02:03:21  kernel: EDAC MC0: CE page 0xc7358, offset 0x280,
+>> grain 0, syndrome 0xa4c1, row 3, channel 0, label "": amd64_edac
+>>
+>> The error is reproduceable by subjecting the server to excessive disk
+>> loads > 350 MB/S stream to disk.
+>
+> DRAM ECC errors. It looks most probably like the first DIMM on node 0,
+> whichever that is, might be slowly failing.
+>
+> Pinpointing it is not that straightforward, here's what you can do:
+>
+> Try to figure which it is by looking at the silkscreen labels on the
+> motherboard. They're normally named like "DIMM_Ax" where x is in (1,
+> 2, ...) or "DIMM_Bx" or a similar scheme. If the layout on the mobo is
+> sane, I'm guessing the first DIMM in that naming scheme should be it.
+> Try swapping it out to see if the errors disappear.
+>
+> --
+> Regards/Gruss,
+>    Boris.
+>
 
-Sorry, I'm referring to pv ticketlocks, not the current
-PARAVIRT_SPINLOCKS code.  I agree the current PARAVIRT_SPINLOCKS
-implementation is suboptimal and needs to be replaced with something
-that's only called on the slow path.  I just think the existing
-paravirt_ops mechanism can be used to implement it rather than adding
-something new.
+This makes sense.  I replaced the DIMM modules in this unit because
+one of them had failed.  Looks like its twin
+is slowly failing as well.  I have a spare and will replce today and
+see if the error persists.
 
-    J
+Thanks
+
+Jeff
