@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab0F3QBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 12:01:06 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40003 "EHLO
+	id S932187Ab0F3QBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 12:01:24 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40025 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754561Ab0F3QBD (ORCPT
+	by vger.kernel.org with ESMTP id S1754561Ab0F3QBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 12:01:03 -0400
-Date: Wed, 30 Jun 2010 18:01:01 +0200
+	Wed, 30 Jun 2010 12:01:22 -0400
+Date: Wed, 30 Jun 2010 18:01:20 +0200
 From: Christoph Egger <siccegge@cs.fau.de>
-To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-       Hari Kanigeri <h-kanigeri2@ti.com>,
-       Hiroshi DOYU <Hiroshi.DOYU@nokia.com>, linux-omap@vger.kernel.org,
+To: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+       Pavel Machek <pavel@ucw.cz>, Arnaud Patard <arnaud.patard@rtp-net.org>,
+       Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>,
+       Kristoffer Ericson <kristoffer.ericson@gmail.com>,
        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
-Message-ID: <fcfa44a43c21c70f89ced96b96d7c1489d28cc51.1277911346.git.siccegge@cs.fau.de>
+Subject: [PATCH 23/33] Removing dead BACKLIGHT_CORGI
+Message-ID: <daefd019d1a302665a0cc5817ed50cfb4b7b1c44.1277911346.git.siccegge@cs.fau.de>
 References: <cover.1277911345.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,54 +27,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MPU_{BRIDGE,TESLA}_IOMMU doesn't exist in Kconfig, therefore removing
-all references for it from the source code.
+BACKLIGHT_CORGI doesn't exist in Kconfig, therefore removing all
+references for it from the source code.
 
 Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 ---
- arch/arm/mach-omap2/omap-iommu.c |   22 ----------------------
- 1 files changed, 0 insertions(+), 22 deletions(-)
+ arch/arm/mach-pxa/corgi_pm.c   |    2 --
+ arch/arm/mach-pxa/sharpsl_pm.c |   15 ---------------
+ arch/arm/mach-pxa/spitz_pm.c   |    2 --
+ 3 files changed, 0 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap-iommu.c b/arch/arm/mach-omap2/omap-iommu.c
-index eb9bee7..3aa3fe9 100644
---- a/arch/arm/mach-omap2/omap-iommu.c
-+++ b/arch/arm/mach-omap2/omap-iommu.c
-@@ -35,17 +35,6 @@ static struct iommu_device omap3_devices[] = {
- 			.clk_name = "cam_ick",
- 		},
- 	},
--#if defined(CONFIG_MPU_BRIDGE_IOMMU)
--	{
--		.base = 0x5d000000,
--		.irq = 28,
--		.pdata = {
--			.name = "iva2",
--			.nr_tlb_entries = 32,
--			.clk_name = "iva2_ck",
--		},
--	},
+diff --git a/arch/arm/mach-pxa/corgi_pm.c b/arch/arm/mach-pxa/corgi_pm.c
+index 3f1dc74..a735205 100644
+--- a/arch/arm/mach-pxa/corgi_pm.c
++++ b/arch/arm/mach-pxa/corgi_pm.c
+@@ -165,8 +165,6 @@ static struct sharpsl_charger_machinfo corgi_pm_machinfo = {
+ 	.should_wakeup   = corgi_should_wakeup,
+ #if defined(CONFIG_LCD_CORGI)
+ 	.backlight_limit = corgi_lcd_limit_intensity,
+-#elif defined(CONFIG_BACKLIGHT_CORGI)
+-	.backlight_limit = corgibl_limit_intensity,
+ #endif
+ 	.charge_on_volt	  = SHARPSL_CHARGE_ON_VOLT,
+ 	.charge_on_temp	  = SHARPSL_CHARGE_ON_TEMP,
+diff --git a/arch/arm/mach-pxa/sharpsl_pm.c b/arch/arm/mach-pxa/sharpsl_pm.c
+index cb47672..582701e 100644
+--- a/arch/arm/mach-pxa/sharpsl_pm.c
++++ b/arch/arm/mach-pxa/sharpsl_pm.c
+@@ -277,21 +277,6 @@ static void sharpsl_battery_thread(struct work_struct *private_)
+ 	dev_dbg(sharpsl_pm.dev, "Battery: voltage: %d, status: %d, percentage: %d, time: %ld\n", voltage,
+ 			sharpsl_pm.battstat.mainbat_status, sharpsl_pm.battstat.mainbat_percent, jiffies);
+ 
+-#ifdef CONFIG_BACKLIGHT_CORGI
+-	/* If battery is low. limit backlight intensity to save power. */
+-	if ((sharpsl_pm.battstat.ac_status != APM_AC_ONLINE)
+-	    && ((sharpsl_pm.battstat.mainbat_status == APM_BATTERY_STATUS_LOW)
+-	    || (sharpsl_pm.battstat.mainbat_status == APM_BATTERY_STATUS_CRITICAL))) {
+-		if (!(sharpsl_pm.flags & SHARPSL_BL_LIMIT)) {
+-			sharpsl_pm.machinfo->backlight_limit(1);
+-			sharpsl_pm.flags |= SHARPSL_BL_LIMIT;
+-		}
+-	} else if (sharpsl_pm.flags & SHARPSL_BL_LIMIT) {
+-		sharpsl_pm.machinfo->backlight_limit(0);
+-		sharpsl_pm.flags &= ~SHARPSL_BL_LIMIT;
+-	}
 -#endif
- };
- #define NR_OMAP3_IOMMU_DEVICES ARRAY_SIZE(omap3_devices)
- static struct platform_device *omap3_iommu_pdev[NR_OMAP3_IOMMU_DEVICES];
-@@ -66,17 +55,6 @@ static struct iommu_device omap4_devices[] = {
- 			.clk_name = "ducati_ick",
- 		},
- 	},
--#if defined(CONFIG_MPU_TESLA_IOMMU)
--	{
--		.base = OMAP4_MMU2_BASE,
--		.irq = INT_44XX_DSP_MMU,
--		.pdata = {
--			.name = "tesla",
--			.nr_tlb_entries = 32,
--			.clk_name = "tesla_ick",
--		},
--	},
--#endif
- };
- #define NR_OMAP4_IOMMU_DEVICES ARRAY_SIZE(omap4_devices)
- static struct platform_device *omap4_iommu_pdev[NR_OMAP4_IOMMU_DEVICES];
+-
+ 	/* Suspend if critical battery level */
+ 	if ((sharpsl_pm.battstat.ac_status != APM_AC_ONLINE)
+ 	     && (sharpsl_pm.battstat.mainbat_status == APM_BATTERY_STATUS_CRITICAL)
+diff --git a/arch/arm/mach-pxa/spitz_pm.c b/arch/arm/mach-pxa/spitz_pm.c
+index 4209ddf..b36f0ae 100644
+--- a/arch/arm/mach-pxa/spitz_pm.c
++++ b/arch/arm/mach-pxa/spitz_pm.c
+@@ -212,8 +212,6 @@ struct sharpsl_charger_machinfo spitz_pm_machinfo = {
+ 	.should_wakeup    = spitz_should_wakeup,
+ #if defined(CONFIG_LCD_CORGI)
+ 	.backlight_limit = corgi_lcd_limit_intensity,
+-#elif defined(CONFIG_BACKLIGHT_CORGI)
+-	.backlight_limit  = corgibl_limit_intensity,
+ #endif
+ 	.charge_on_volt	  = SHARPSL_CHARGE_ON_VOLT,
+ 	.charge_on_temp	  = SHARPSL_CHARGE_ON_TEMP,
 -- 
 1.7.0.4
 
