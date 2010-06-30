@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab0F3Sdk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 14:33:40 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:34831 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756962Ab0F3Sdj (ORCPT
+	id S1757037Ab0F3Sm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 14:42:58 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:16938 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab0F3Sm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 14:33:39 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Latchesar Ionkov <lucho@ionkov.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Eric Van Hensbergen <ericvh@gmail.com>,
-       V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-       Al Viro <viro@zeniv.linux.org.uk>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [V9fs-developer] [GIT PULL] 9p file system bug fixes for 2.6.35-rc2
-In-Reply-To: <AANLkTimmEi-3WF3pMcXmKiyElG9O7QLHNImPN0eJ05D3@mail.gmail.com>
-References: <AANLkTik3ax1SlAKRo6laMfACdzh6IUKLGSvMK4Gp9GY9@mail.gmail.com> <alpine.LFD.2.00.1006071654290.4506@i5.linux-foundation.org> <20100608004102.GQ31073@ZenIV.linux.org.uk> <87pqzrexon.fsf@linux.vnet.ibm.com> <871vbwe6lp.fsf@linux.vnet.ibm.com> <AANLkTiksmwITS6aCuXXZGR916OTEBm9VQ1MSzzEt8F7S@mail.gmail.com> <AANLkTikyqHtazndL_zBux7Zk0qZSJuNEvitHj8wkuSWW@mail.gmail.com> <87mxuc91r2.fsf@linux.vnet.ibm.com> <AANLkTimmEi-3WF3pMcXmKiyElG9O7QLHNImPN0eJ05D3@mail.gmail.com>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Thu, 01 Jul 2010 00:03:29 +0530
-Message-ID: <87bpas8j5y.fsf@linux.vnet.ibm.com>
+	Wed, 30 Jun 2010 14:42:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=bkbYZmi1w2L7GIyIo8OZ87qtTnWKizjarZtXHaioYlUAAFAZX2RlMJ6BrZ0XtJ+uYm
+         J9dv5/Qv0rdBtfaMFEcBfxquPJ2lBt5mnFveUuhQ22ySxq1J4uy3xVZp86Dz+5WQQQZl
+         yrNeiybNHfH48/7plpoyS5w/GjhZJsp2wi8w0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Date: Wed, 30 Jun 2010 14:42:53 -0400
+Message-ID: <AANLkTimmIG6GF-hKBk7JsZpvZNEAj1Tlt4GrPXexN0_0@mail.gmail.com>
+Subject: RE: [PATCH] VMware balloon: force compiling as a module
+From: Chetan Loke <chetanloke@gmail.com>
+To: dtor@vmware.com, pv-drivers@vmware.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       akpm@linux-foundation.org, chetanloke@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010 12:16:15 -0600, Latchesar Ionkov <lucho@ionkov.net> wrote:
-> I think that you need to use the s_vfs_rename_mutex in the super_block
-> struct instead of introducing a new rename_lock in the v9fs session.
-> 
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Dmitry Torokhov
+> Sent: June 28, 2010 7:01 PM
+> VMware Tools installer requires the upstream driver to be compiled
+> as a module in order to detect its presence and avoid installing
+> our own version on top of it. To avoid surprises with 2 versions
+> of the driver being installed and fighting with each other, let's
+> force the driver to be compiled as a module unless user selects
+> CONFIG_EMBEDDED.
+>
 
-I guess that will have lock dependency issue with inode->i_mutex. Also as Linus
-suggested with dentry name copied we can avoid holding the lock when
-doing 9P operation.
- 
--aneesh
+>  config VMWARE_BALLOON
+>  	tristate "VMware Balloon Driver"
+> -	depends on X86
+> +	depends on X86 && (EMBEDDED || m)
+
+None of the following questions are related to this patch.
+
+Q1)Does vmtools handle pvscsi correctly?
+
+Q2)In case if a VM wants to be a good citizen, is there a way for a
+guest to know about the balloon-event?
+
+Q3)What if an app mlock's its memory resources and driver's have
+pinned down their pages then how does inflation work?
+
+
+regards
+Chetan Loke
