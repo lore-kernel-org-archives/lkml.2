@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558Ab0F3DtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 23:49:21 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:61472 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab0F3DtU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 23:49:20 -0400
-Message-ID: <4C2ABEBC.1010609@tilera.com>
-Date: Tue, 29 Jun 2010 23:49:16 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1751702Ab0F3DvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 23:51:14 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:37833 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192Ab0F3DvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 23:51:12 -0400
+Date: Tue, 29 Jun 2010 20:51:09 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 2/2] Yama: add PTRACE exception tracking
+Message-ID: <20100630035109.GK4837@outflux.net>
+References: <20100630003844.GE4837@outflux.net>
+ <20100630004027.GG4837@outflux.net>
+ <201006300109.o5U19s1N043912@www262.sakura.ne.jp>
 MIME-Version: 1.0
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] tile: set ARCH_KMALLOC_MINALIGN
-References: <20100629164117Z.fujita.tomonori@lab.ntt.co.jp>	<4C2A0592.50709@tilera.com> <20100630110749V.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100630110749V.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006300109.o5U19s1N043912@www262.sakura.ne.jp>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/29/2010 10:10 PM, FUJITA Tomonori wrote:
-> Ok, here's the second version.
->
-> Can I assume that you'll merge the patch into your git tree on
-> kernel.org?
->   
+Hi Tetsuo,
 
-Sure, I'll take this patch into my arch/tile tree on kernel.org.  I
-already took (a superset of) the one removing L1_CACHE_ALIGN as well. 
-Thanks.
+On Wed, Jun 30, 2010 at 10:09:54AM +0900, Tetsuo Handa wrote:
+> Kees Cook wrote:
+> > +static spinlock_t ptracer_relations_lock;
+> static DEFINE_SPINLOCK(ptracer_relations_lock);
 
-> =
-> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> Subject: [PATCH] tile: set ARCH_KMALLOC_MINALIGN
->
-> Architectures that handle DMA-non-coherent memory need to set
-> ARCH_KMALLOC_MINALIGN to make sure that kmalloc'ed buffer is DMA-safe:
-> the buffer doesn't share a cache with the others.
->
-> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> ---
->  arch/tile/include/asm/cache.h |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/tile/include/asm/cache.h b/arch/tile/include/asm/cache.h
-> index ee59714..869a14f 100644
-> --- a/arch/tile/include/asm/cache.h
-> +++ b/arch/tile/include/asm/cache.h
-> @@ -31,6 +31,14 @@
->  #define L2_CACHE_BYTES		(1 << L2_CACHE_SHIFT)
->  #define L2_CACHE_ALIGN(x)	(((x)+(L2_CACHE_BYTES-1)) & -L2_CACHE_BYTES)
->  
-> +/*
-> + * TILE-Gx is fully coherents so we don't need to define
-> + * ARCH_KMALLOC_MINALIGN.
-> + */
-> +#ifndef __tilegx__
-> +#define ARCH_KMALLOC_MINALIGN	L2_CACHE_BYTES
-> +#endif
-> +
->  /* use the cache line size for the L2, which is where it counts */
->  #define SMP_CACHE_BYTES_SHIFT	L2_CACHE_SHIFT
->  #define SMP_CACHE_BYTES		L2_CACHE_BYTES
->   
+Ah, very cool, I missed that while reading through spinlock code. :)
+
+> > +	relation = kzalloc(sizeof(*relation), GFP_KERNEL);
+> You can use kmalloc() since all fields are initialized within this function.
+
+I wasn't sure if list_add needed a zeroed ->node, so I opted for safety
+here.  Is list_add safe to use on an uninitialized ->node?  (Looks like it
+is on code review, I'll just use regular kmalloc.)
+
+> > +static int ptracer_exception_found(struct task_struct *tracer,
+> > +				   struct task_struct *tracee)
+> > +{
+> > +	int rc = 0;
+> > +	struct ptrace_relation *relation;
+> > +	struct task_struct *parent = NULL;
+> > +
+> > +	spin_lock(&ptracer_relations_lock);
+> > +	list_for_each_entry(relation, &ptracer_relations, node)
+> > +		if (relation->tracee == tracee) {
+> > +			parent = relation->tracer;
+> > +			break;
+> > +		}
+> > +	if (task_is_descendant(parent, tracer))
+> > +		rc = 1;
+> > +	spin_unlock(&ptracer_relations_lock);
+> 
+> Can't we release ptracer_relations_lock before calling
+> task_is_descendant() since task_is_descendant() won't
+> access "struct ptrace_relation" on ptracer_relations list.
+
+This is where it gets a little funny.  I need to keep that lock so that
+task_is_descendant isn't racing yama_task_free.  I don't want to be in
+the position where I've left the lock only to have another CPU free the
+task_struct that was just located, so I have to keep the lock until I've
+finished using "parent".  (And I can't take the task with get_task since
+it's already too late, and if I take it during _add, the task will never
+be freed.)
+
+> > @@ -32,27 +204,20 @@ static int yama_ptrace_access_check(struct task_struct *child,
+> >  {
+> >  	int rc;
+> >  
+> > +	/* If standard caps disallows it, so does Yama.  We should
+> > +	 * should only tighten restrictions further.
+> s/should should/should/
+
+Agh, thanks.
+
+-Kees
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Kees Cook
+Ubuntu Security Team
