@@ -1,285 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab0F3INR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 04:13:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54392 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125Ab0F3INP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 04:13:15 -0400
-Message-ID: <4C2AFBB8.7090605@cn.fujitsu.com>
-Date: Wed, 30 Jun 2010 16:09:28 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1753665Ab0F3IVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 04:21:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53389 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394Ab0F3IVL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 04:21:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file stats available
+Date: Wed, 30 Jun 2010 10:20:53 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3+; KDE/4.4.90; x86_64; ; )
+Cc: viro@zeniv.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
+       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       sjayaraman@suse.de, linux-ext4@vger.kernel.org
+References: <20100629200259.23196.81509.stgit@warthog.procyon.org.uk> <20100629200315.23196.68742.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100629200315.23196.68742.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: [PATCH v3 11/11] KVM: MMU: trace pte prefetch
-References: <4C2AF9FA.9020601@cn.fujitsu.com>
-In-Reply-To: <4C2AF9FA.9020601@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006301020.53978.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX193kl+pnTFOIqPxusHU/lx/zhZbhXDpUJFytWt
+ SSkLz17DttmhTjG+11NybaE38ctKrJ7br4oJ1xbRGGrkQTZjFy
+ GZCnWlZa91RhuFV+XTHTw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trace pte prefetch, it can help us to improve the prefetch's performance
+On Tuesday 29 June 2010 22:03:15 David Howells wrote:
+>         ssize_t ret = xstat(int dfd,
+>                             const char *filename,
+>                             unsigned atflag,
+>                             struct xstat *buffer,
+>                             size_t buflen);
+> 
+>         ssize_t ret = fxstat(int fd,
+>                              struct xstat *buffer,
+>                              size_t buflen);
+> 
+> 
+> The dfd, filename, atflag and fd parameters indicate the file to query.  There
+> is no equivalent of lstat() as that can be emulated with xstat(), passing 0
+> instead of AT_SYMLINK_NOFOLLOW as atflag.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c         |   45 +++++++++++++++++++++++++++++++++----------
- arch/x86/kvm/mmutrace.h    |   33 ++++++++++++++++++++++++++++++++
- arch/x86/kvm/paging_tmpl.h |   23 ++++++++++++++++-----
- 3 files changed, 84 insertions(+), 17 deletions(-)
+Do we actually need the fxstat variant? IIRC, some *at syscalls just
+operate on dfd when filename==NULL, which would be trivial to do here.
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index fadfafe..0894ed8 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -91,6 +91,12 @@ module_param(oos_shadow, bool, 0644);
- 
- #define PTE_PREFETCH_NUM	16
- 
-+#define PREFETCH_SUCCESS		0
-+#define PREFETCH_ERR_GFN2PFN		1
-+#define PREFETCH_ERR_ALLOC_MEM		2
-+#define PREFETCH_ERR_RSVD_BITS_SET	3
-+#define PREFETCH_ERR_MMIO		4
-+
- #define PT_FIRST_AVAIL_BITS_SHIFT 9
- #define PT64_SECOND_AVAIL_BITS_SHIFT 52
- 
-@@ -2004,7 +2010,7 @@ static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
- 
- static int direct_pte_prefetch_many(struct kvm_vcpu *vcpu,
- 				    struct kvm_mmu_page *sp,
--				    u64 *start, u64 *end)
-+				    u64 *start, u64 *end, u64 address)
- {
- 	gfn_t gfn;
- 	struct page *pages[PTE_PREFETCH_NUM];
-@@ -2015,36 +2021,52 @@ static int direct_pte_prefetch_many(struct kvm_vcpu *vcpu,
- 		int entry, j, ret;
- 
- 		addr = gfn_to_hva_many(vcpu->kvm, gfn, &entry);
--		if (kvm_is_error_hva(addr))
-+		if (kvm_is_error_hva(addr)) {
-+			trace_pte_prefetch(true, address, 0,
-+					   PREFETCH_ERR_MMIO);
- 			return -1;
-+		}
- 
- 		entry = min(entry, (int)(end - start));
- 		ret = __get_user_pages_fast(addr, entry, 1, pages);
--		if (ret <= 0)
-+		if (ret <= 0) {
-+			trace_pte_prefetch(true, address, 0,
-+					   PREFETCH_ERR_GFN2PFN);
- 			return -1;
-+		}
- 
--		for (j = 0; j < ret; j++, gfn++, start++)
-+		for (j = 0; j < ret; j++, gfn++, start++) {
-+			trace_pte_prefetch(true, address, 0,
-+					   PREFETCH_SUCCESS);
- 			mmu_set_spte(vcpu, start, ACC_ALL,
- 				     sp->role.access, 0, 0, 1, NULL,
- 				     sp->role.level, gfn,
- 				     page_to_pfn(pages[j]), true, false);
-+		}
- 
--		if (ret < entry)
-+		if (ret < entry) {
-+			trace_pte_prefetch(true, address, 0,
-+					   PREFETCH_ERR_GFN2PFN);
- 			return -1;
-+		}
- 	}
- 	return 0;
- }
- 
- static void __direct_pte_prefetch(struct kvm_vcpu *vcpu,
--				  struct kvm_mmu_page *sp, u64 *sptep)
-+				  struct kvm_mmu_page *sp, u64 *sptep,
-+				  u64 addr)
- {
- 	u64 *start = NULL;
- 	int index, i, max;
- 
- 	WARN_ON(!sp->role.direct);
- 
--	if (pte_prefetch_topup_memory_cache(vcpu))
-+	if (pte_prefetch_topup_memory_cache(vcpu)) {
-+		trace_pte_prefetch(true, addr, 0,
-+				   PREFETCH_ERR_ALLOC_MEM);
- 		return;
-+	}
- 
- 	index = sptep - sp->spt;
- 	i = index & ~(PTE_PREFETCH_NUM - 1);
-@@ -2056,7 +2078,8 @@ static void __direct_pte_prefetch(struct kvm_vcpu *vcpu,
- 		if (*spte != shadow_trap_nonpresent_pte || spte == sptep) {
- 			if (!start)
- 				continue;
--			if (direct_pte_prefetch_many(vcpu, sp, start, spte) < 0)
-+			if (direct_pte_prefetch_many(vcpu, sp, start,
-+							spte, addr) < 0)
- 				break;
- 			start = NULL;
- 		} else if (!start)
-@@ -2064,7 +2087,7 @@ static void __direct_pte_prefetch(struct kvm_vcpu *vcpu,
- 	}
- }
- 
--static void direct_pte_prefetch(struct kvm_vcpu *vcpu, u64 *sptep)
-+static void direct_pte_prefetch(struct kvm_vcpu *vcpu, u64 *sptep, u64 addr)
- {
- 	struct kvm_mmu_page *sp;
- 
-@@ -2081,7 +2104,7 @@ static void direct_pte_prefetch(struct kvm_vcpu *vcpu, u64 *sptep)
- 	if (sp->role.level > PT_PAGE_TABLE_LEVEL)
- 		return;
- 
--	__direct_pte_prefetch(vcpu, sp, sptep);
-+	__direct_pte_prefetch(vcpu, sp, sptep, addr);
- }
- 
- static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
-@@ -2097,7 +2120,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL, ACC_ALL,
- 				     0, write, 1, &pt_write,
- 				     level, gfn, pfn, false, true);
--			direct_pte_prefetch(vcpu, iterator.sptep);
-+			direct_pte_prefetch(vcpu, iterator.sptep, gfn << PAGE_SHIFT);
- 			++vcpu->stat.pf_fixed;
- 			break;
- 		}
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index 3aab0f0..c07b6a6 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -195,6 +195,39 @@ DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_prepare_zap_page,
- 
- 	TP_ARGS(sp)
- );
-+
-+#define pte_prefetch_err					\
-+	{PREFETCH_SUCCESS,		"SUCCESS"	},	\
-+	{PREFETCH_ERR_GFN2PFN,		"ERR_GFN2PFN"	},	\
-+	{PREFETCH_ERR_ALLOC_MEM,	"ERR_ALLOC_MEM"	},	\
-+	{PREFETCH_ERR_RSVD_BITS_SET,	"ERR_RSVD_BITS_SET"},	\
-+	{PREFETCH_ERR_MMIO,		"ERR_MMIO"	}
-+
-+TRACE_EVENT(
-+	pte_prefetch,
-+	TP_PROTO(bool direct, u64 addr, u64 gpte, int err_code),
-+
-+	TP_ARGS(direct, addr, gpte, err_code),
-+
-+	TP_STRUCT__entry(
-+		__field(bool, direct)
-+		__field(u64, addr)
-+		__field(u64, gpte)
-+		__field(int, err_code)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->direct = direct;
-+		__entry->addr = addr;
-+		__entry->gpte = gpte;
-+		__entry->err_code = err_code;
-+	),
-+
-+	TP_printk("%s address:%llx gpte:%llx %s",
-+		  __entry->direct ? "direct" : "indirect",
-+		  __entry->addr, __entry->gpte,
-+		  __print_symbolic(__entry->err_code, pte_prefetch_err))
-+	);
- #endif /* _TRACE_KVMMMU_H */
- 
- #undef TRACE_INCLUDE_PATH
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 3e047b4..ec7f148 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -318,7 +318,7 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- }
- 
- static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu,
--				struct guest_walker *gw, u64 *sptep)
-+				struct guest_walker *gw, u64 *sptep, u64 addr)
- {
- 	struct kvm_mmu_page *sp;
- 	pt_element_t *gptep;
-@@ -331,7 +331,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu,
- 		return;
- 
- 	if (sp->role.direct)
--		return __direct_pte_prefetch(vcpu, sp, sptep);
-+		return __direct_pte_prefetch(vcpu, sp, sptep, addr);
- 
- 	index = sptep - sp->spt;
- 	i = index & ~(PTE_PREFETCH_NUM - 1);
-@@ -339,8 +339,10 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu,
- 
- 	gptep = gw->prefetch_ptes;
- 
--	if (pte_prefetch_topup_memory_cache(vcpu))
-+	if (pte_prefetch_topup_memory_cache(vcpu)) {
-+		trace_pte_prefetch(false, addr, 0, PREFETCH_ERR_ALLOC_MEM);
- 		return;
-+	}
- 
- 	for (j = 0; i < max; i++, j++) {
- 		pt_element_t gpte;
-@@ -357,15 +359,21 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu,
- 
- 		gpte = gptep[j];
- 
--		if (is_rsvd_bits_set(vcpu, gpte, PT_PAGE_TABLE_LEVEL))
-+		if (is_rsvd_bits_set(vcpu, gpte, PT_PAGE_TABLE_LEVEL)) {
-+			trace_pte_prefetch(false, addr, gpte,
-+					   PREFETCH_ERR_RSVD_BITS_SET);
- 			break;
-+		}
- 
- 		if (!(gpte & PT_ACCESSED_MASK))
- 			continue;
- 
- 		if (!is_present_gpte(gpte)) {
--			if (!sp->unsync)
-+			if (!sp->unsync) {
-+				trace_pte_prefetch(false, addr, gpte,
-+						   PREFETCH_SUCCESS);
- 				__set_spte(spte, shadow_notrap_nonpresent_pte);
-+			}
- 			continue;
- 		}
- 
-@@ -373,10 +381,13 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu,
- 
- 		pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
- 		if (is_error_pfn(pfn)) {
-+			trace_pte_prefetch(false, addr, gpte,
-+					   PREFETCH_ERR_GFN2PFN);
- 			kvm_release_pfn_clean(pfn);
- 			break;
- 		}
- 
-+		trace_pte_prefetch(false, addr, gpte, PREFETCH_SUCCESS);
- 		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
- 		mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
- 			     is_dirty_gpte(gpte), NULL, sp->role.level, gfn,
-@@ -420,7 +431,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 				     user_fault, write_fault,
- 				     dirty, ptwrite, level,
- 				     gw->gfn, pfn, false, true);
--			FNAME(pte_prefetch)(vcpu, gw, sptep);
-+			FNAME(pte_prefetch)(vcpu, gw, sptep, addr);
- 			break;
- 		}
- 
--- 
-1.6.1.2
-
-
+	Arnd
