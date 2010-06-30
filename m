@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab0F3J6S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:58:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18111 "EHLO mx1.redhat.com"
+	id S1754943Ab0F3KBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 06:01:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60580 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752336Ab0F3J6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:58:16 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-       Vegard Nossum <vegard.nossum@gmail.com>,
-       Dmitry Monakhov <dmonakhov@openvz.org>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       David Rientjes <rientjes@google.com>
-Subject: [PATCH V2] slab: fix caller tracking on !CONFIG_DEBUG_SLAB && CONFIG_TRACING
-Date: Wed, 30 Jun 2010 17:57:22 +0800
-Message-Id: <1277891842-18898-1-git-send-email-dfeng@redhat.com>
-In-Reply-To: <alpine.DEB.2.00.1004090947030.10992@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1004090947030.10992@chino.kir.corp.google.com>
+	id S1751569Ab0F3KBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 06:01:33 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <201006301131.37241.arnd@arndb.de>
+References: <201006301131.37241.arnd@arndb.de> <201006301030.52235.arnd@arndb.de> <20100630011712.18960.3723.stgit@warthog.procyon.org.uk> <25470.1277888151@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, smfrench@gmail.com,
+       jlayton@redhat.com, mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       sjayaraman@suse.de, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file stats available [ver #2]
+Date: Wed, 30 Jun 2010 11:01:08 +0100
+Message-ID: <29346.1277892068@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In slab, all __xxx_track_caller is defined on CONFIG_DEBUG_SLAB || CONFIG_TRACING,
-thus caller tracking function should be worked for CONFIG_TRACING. But if
-CONFIG_DEBUG_SLAB is not set, include/linux/slab.h will define xxx_track_caller to
-__xxx() without consideration of CONFIG_TRACING. This will break the caller tracking
-behaviour then.
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Vegard Nossum <vegard.nossum@gmail.com>
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: David Rientjes <rientjes@google.com>
----
- include/linux/slab.h |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+> It also makes things like strace more complicated.
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 49d1247..59260e2 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -268,7 +268,8 @@ static inline void *kmem_cache_alloc_node(struct kmem_cache *cachep,
-  * allocator where we care about the real place the memory allocation
-  * request comes from.
-  */
--#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB)
-+#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB) || \
-+	(defined(CONFIG_SLAB) && defined(CONFIG_TRACING))
- extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
- #define kmalloc_track_caller(size, flags) \
- 	__kmalloc_track_caller(size, flags, _RET_IP_)
-@@ -286,7 +287,8 @@ extern void *__kmalloc_track_caller(size_t, gfp_t, unsigned long);
-  * standard allocator where we care about the real place the memory
-  * allocation request comes from.
-  */
--#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB)
-+#if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_SLUB) || \
-+	(defined(CONFIG_SLAB) && defined(CONFIG_TRACING))
- extern void *__kmalloc_node_track_caller(size_t, gfp_t, int, unsigned long);
- #define kmalloc_node_track_caller(size, flags, node) \
- 	__kmalloc_node_track_caller(size, flags, node, \
--- 
-1.7.0.1
+That's the most compelling argument.
 
+> No, I think that would be worse than the current version. But if you remove
+> the structure version in favor of the flags, you only need six arguments
+> anyway.
+
+I want to keep the structure version, just in case we need to expand fields in
+the stat struct in future.  Otherwise we may need to create yet another stat
+syscall.
+
+> You can also go further and fold the structure length into flags, because
+> the length is just a function of the data you are passing.
+
+The potential problem with passing the flags as a syscall argument is that
+we're then limited to a single 32-bit integer.  It might be enough, but if I
+do as at least one person has suggested and assign each field in the struct
+its own bit, that uses up half right there, plus I'd like to add at least one
+operational flag (to force synchronisation with the server).
+
+> Having a system call with flags, size and version is like wearing a belt,
+> braces and suspenders. An unsigned long flags argument should be enough to
+> hold up your pants[1].
+
+I would like the size argument for two reasons: firstly, to prevent buffer
+overruns and, secondly, because I can see some scope for variable-size fields
+(such as for volume IDs or security labels), though the latter might be better
+handled through getxattr() (which would mean extra overhead).
+
+David
