@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab0F3Cj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 22:39:58 -0400
-Received: from sh.osrg.net ([192.16.179.4]:41473 "EHLO sh.osrg.net"
+	id S1753809Ab0F3C5w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 22:57:52 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38583 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752805Ab0F3Cjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 22:39:55 -0400
-Date: Wed, 30 Jun 2010 11:39:12 +0900
-To: James.Bottomley@HansenPartnership.com
-Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
-       grundler@parisc-linux.org, lethal@linux-sh.org,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH -mm 1/2] scsi: remove dma_is_consistent usage in 53c700
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1277818655.4379.5.camel@mulgrave.site>
-References: <1277736958.10879.43.camel@mulgrave.site>
-	<20100629150201C.fujita.tomonori@lab.ntt.co.jp>
-	<1277818655.4379.5.camel@mulgrave.site>
+	id S1753204Ab0F3C5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 22:57:50 -0400
+Date: Wed, 30 Jun 2010 12:57:47 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alasdair G Kergon <agk@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Christoph Hellwig <hch@lst.de>, Mike Snitzer <snitzer@redhat.com>,
+       Jens Axboe <axboe@kernel.dk>
+Subject: linux-next: build failure after merge of the device-mapper tree
+Message-Id: <20100630125747.860b2027.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100630113548K.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 30 Jun 2010 11:39:14 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010 08:37:35 -0500
-James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
+Hi Alasdair,
 
-> > How about using ARCH_KMALLOC_MINALIGN instead of L1_CACHE_BYTES?
+After merging the device-mapper tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-(snip)
+drivers/md/dm.c: In function '__clone_and_map':
+/data/sfr/next/drivers/md/dm.c:1245: error: implicit declaration of function 'bio_rw_flagged'
+/data/sfr/next/drivers/md/dm.c:1245: error: 'BIO_RW_DISCARD' undeclared (first use in this function)
 
-> Actually, I'd rather not do this.  The reason is that L1_CACHE_ALIGN is
-> quite a big performance optimisation on x86 for the driver.  Without it,
-> it's functionally correct, but the DMA use of the mailboxes really
-> thrashes the cache which damages performance (x86 has
-> ARCH_KMALLOC_MINALIGN set to 8 ... the default)
+Caused by commit d134095c1564b101987d8f2920d0928cae669be2
+("dm-linear-support-discard") interacting with commit
+74450be123b6f3cb480c358a056be398cce6aa6e ("block: unify flags for struct
+bio and struct request") from the block tree.
 
-Ah, I see.
+I hate API changes :-)
 
-If slab.h doesn't define ARCH_KMALLOC_MINALIGN for architectures that
-don't define it, the driver could do something like:
+I applied the following merge fix up patch:
 
-#ifdef ARCH_KMALLOC_MINALIGN
-#define DMA_ALIGN(x) ALIGN(x, ARCH_KMALLOC_MINALIGN)
-#else
-#define DMA_ALIGN(x) ALIGN(x, L1_CACHE_BYTES)
-#endif
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 30 Jun 2010 12:54:22 +1000
+Subject: [PATCH] device-mapper: fix for bio API change
 
-Seems that it's better to rename ARCH_KMALLOC_MINALIGN to something
-like ARCH_DMA_MINALIGN and make ARCH_KMALLOC_MINALIGN the slab
-internal thing.
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/md/dm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 518bfe0..20b4248 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -1242,7 +1242,7 @@ static int __clone_and_map(struct clone_info *ci)
+ 	if (unlikely(bio_empty_barrier(bio)))
+ 		return __clone_and_map_empty_barrier(ci);
+ 
+-	if (unlikely(bio_rw_flagged(bio, BIO_RW_DISCARD)))
++	if (unlikely(bio->bi_rw & REQ_DISCARD))
+ 		return __clone_and_map_discard(ci);
+ 
+ 	ti = dm_table_find_target(ci->map, ci->sector);
+-- 
+1.7.1
 
 
-> The only correctness problem, which the BUG is checking for is mismatch
-> in dma alignment ... as I said, I'm happy just to rely on that being
-> correct on every incoherent platform the driver operates on.
-
-Ok, it's fine by me too. let's simply remove the BUG_ON.
-
-I think that you want to document that dma_get_cache_alignment()
-cannot be greater than the L1 cache stride. However, seems that
-dma_get_cache_alignment() is greater than L1_CACHE_BYTES on some
-architectures (they have some reasons, I assume). So I'll just remove
-the BUG_ON.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
