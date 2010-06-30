@@ -1,63 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab0F3Q0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 12:26:45 -0400
-Received: from lechat.rtp-net.org ([88.191.19.38]:53387 "EHLO
-	lechat.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab0F3Q0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 12:26:44 -0400
-X-Greylist: delayed 503 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Jun 2010 12:26:44 EDT
-From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-       Kukjin Kim <kgene.kim@samsung.com>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       Thomas Abraham <thomas.ab@samsung.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 30/33] Removing dead S3C_DEV_ADC
-References: <cover.1277911345.git.siccegge@cs.fau.de>
-	<7baaebb4983ce9482e3f83ca42240b864157cb79.1277911346.git.siccegge@cs.fau.de>
-Organization: RtpNet
-Date: Wed, 30 Jun 2010 18:24:20 +0200
-In-Reply-To: <7baaebb4983ce9482e3f83ca42240b864157cb79.1277911346.git.siccegge@cs.fau.de> (Christoph Egger's message of "Wed\, 30 Jun 2010 18\:03\:26 +0200")
-Message-ID: <876310pjyj.fsf@lechat.rtp-net.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756946Ab0F3Q1B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 12:27:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49248 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756934Ab0F3Q06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 12:26:58 -0400
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
+ payload
+From: James Bottomley <James.Bottomley@suse.de>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+       device-mapper development <dm-devel@redhat.com>, axboe@kernel.dk,
+       linux-scsi@vger.kernel.org, martin.petersen@oracle.com,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Christoph Hellwig <hch@lst.de>
+In-Reply-To: <20100630153602.GA6036@redhat.com>
+References: <20100622180029.GA15950@redhat.com>
+	 <1277582211-10725-1-git-send-email-snitzer@redhat.com>
+	 <1277652576.4366.19.camel@mulgrave.site>
+	 <Pine.LNX.4.64.1006291811300.27462@hs20-bc2-1.build.redhat.com>
+	 <1277852600.4379.211.camel@mulgrave.site>
+	 <Pine.LNX.4.64.1006291925480.11847@hs20-bc2-1.build.redhat.com>
+	 <1277907738.2839.9.camel@mulgrave.site>  <20100630153602.GA6036@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Jun 2010 11:26:48 -0500
+Message-ID: <1277915208.2839.111.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Egger <siccegge@cs.fau.de> writes:
+On Wed, 2010-06-30 at 11:36 -0400, Mike Snitzer wrote:
+> On Wed, Jun 30 2010 at 10:22am -0400,
+> James Bottomley <James.Bottomley@suse.de> wrote:
+> 
+> > On Tue, 2010-06-29 at 20:11 -0400, Mikulas Patocka wrote:
+> > > > > If the layering violation spans only scsi code, it can be eventually 
+> > > > > fixed, but this, much worse "layering violation" that will be spanning all 
+> > > > > block device midlayers, won't ever be fixed.
+> > > > > 
+> > > > > Imagine for example --- a discard request arrivers at a dm-snapshot 
+> > > > > device. The driver splits it into chunks, remaps each chunk to the 
+> > > > > physical chunk, submits the requests, the elevator merges adjacent 
+> > > > > requests and submits fewer bigger requests to the device. Now, if you had 
+> > > > > to allocate a zeroed page each time you are splitting the request, that 
+> > > > > would exhaust memory and burn cpu needlessly. You delete a 100MB file? --- 
+> > > > > fine, allocate a 100MB of zeroed pages.
+> > > > 
+> > > > This is a straw man:  You've tried to portray a position I've never
+> > > > taken as mine then attack it ... with what is effectively another bogus
+> > > > argument.
+> > > >
+> > > > It's not an either/or choice.
+> > > 
+> > > It is either/or choice. If the interface isn't fixed NOW, the existing 
+> > > flawed zeroed-page-allocation interface gets into RHEL
+> > 
+> > That's a false dichotomy.  You might see an either apply this hack now
+> > or support the interface choice with RHEL, but upstream has the option
+> > to fix stuff correctly.  RHEL has never needed my blessing to apply
+> > random crap to their kernel before ... why is this patch any different?
+> > 
+> > > and I and others will have to support it for 7 years.
+> > 
+> > It's called a business model ... I believe it's what they pay you for.
+> > 
+> > > > I've asked the relevant parties to
+> > > > combine the approaches and see if a REQ_TYPE_FS path that does the
+> > > > allocations in the appropriate place, likely the ULD, produces a good
+> > > > design.
+> > > 
+> > > OK, but before you do this research, fix the interface.
+> > 
+> > So even in the RHEL world, I think you'd find that analysing the problem
+> > *before* comping up with a fix is a good way of doing things.
+> > 
+> > > > > So I say --- let there be a layering violation in the scsi code, but don't 
+> > > > > put this problem with a page allocation to all the other bio midlayer 
+> > > > > developers.
+> > > > 
+> > > > Thanks for explaining that you have nothing to contribute, I'll make
+> > > > sure you're not on my list of relevant parties.
+> > > 
+> > > You misunderstand what I meant. You admit that there are design problems 
+> > > in SCSI.
+> > 
+> > No I didn't.
+> > 
+> > And the rest of this rubbish is based on that false premise.  It might
+> > help you to take off your SCSI antipathy and see this as a system
+> > problem: it actually originates in block and spills out from there.
+> > Thus it requires a system solution.
+> 
+> As fun as it is for the others monitoring these lists to see redhat.com
+> vs suse.de banter I think framing this discussion like you (and Mikulas)
+> continue to do is a complete distraction.
 
-> S3C_DEV_ADC doesn't exist in Kconfig, therefore removing all
-> references for it from the source code.
->
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> ---
->  arch/arm/mach-s5pv210/cpu.c |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/arm/mach-s5pv210/cpu.c b/arch/arm/mach-s5pv210/cpu.c
-> index 411a4a9..c5d53ab 100644
-> --- a/arch/arm/mach-s5pv210/cpu.c
-> +++ b/arch/arm/mach-s5pv210/cpu.c
-> @@ -76,10 +76,6 @@ static void s5pv210_idle(void)
->  
->  void __init s5pv210_map_io(void)
->  {
-> -#ifdef CONFIG_S3C_DEV_ADC
-> -	s3c_device_adc.name	= "s3c64xx-adc";
-> -#endif
-> -
+Well, it's not SUSE v Red Hat, it's upstream v Enterprise ... and it's
+partly my job to explain why upstream does correct fixes not enterprise
+workarounds (whether the enterprise is RHEL or SLES).  But I agree it's
+becoming a pointless distraction.
 
-too bad, should have been SAMSUNG_DEV_ADC :(
-Anyway, a patch called "[PATCH] ARM: SAMSUNG: Implement set_name
-function for ADC devices" has been sent for review today and is
-addressing this same issue.
+> I tried to elevate (and defuse) the discussion yesterday.  But simply
+> put: patches speak volumes.  I look forward to working with Tomo, hch
+> and anyone else who has something to contribute that moves us toward a
+> real fix for discards.
 
-Thanks,
-Arnaud
+Right, so thanks for that.
+
+Most of our problem is tied up in the fact that we need to allocate in
+the prepare path, but we don't have a corresponding clear unprepare path
+to do the deallocation in.  Introducing that into block might sort out
+this tangle better ... error handling on the backend is very convoluted
+and we can't really free the page until after it's complete (and the
+->done function doesn't mark completion of error handling terms).  I
+think the bones of a solution to this might be that
+scsi_unprep_request() needs to call into block (instead of setting the
+flags itself), say blk_unprep_request.  Block also needs to call
+blk_unprep_request based on the REQ_DONTPREP status in its completion
+path.  This would then give us a hook to hang the deallocation correctly
+on.
+
+James
+
+
