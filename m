@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab0F3NvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 09:51:04 -0400
-Received: from core.signal11.us ([64.251.29.136]:48587 "EHLO core.signal11.us"
+	id S1754578Ab0F3Nym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 09:54:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20493 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756008Ab0F3NvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 09:51:00 -0400
-From: Alan Ott <alan@signal11.us>
-To: Jiri Kosina <jkosina@suse.cz>, Alan Stern <stern@rowland.harvard.edu>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Alan Ott <alan@signal11.us>,
-       Marcel Holtmann <marcel@holtmann.org>,
-       Antonio Ospite <ospite@studenti.unina.it>,
-       Amit Nagal <helloin.amit@gmail.com>, linux-usb@vger.kernel.org,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Alan Ott <alan@signal11.us>
-Subject: [PATCH 1/1] HID: Send Report ID when numbered reports are sent over the control endpoint.
-Date: Wed, 30 Jun 2010 09:50:36 -0400
-Message-Id: <1277905836-3949-2-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.LNX.2.00.1006301126130.13809@pobox.suse.cz>
-References: <alpine.LNX.2.00.1006301126130.13809@pobox.suse.cz>
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Jun 30 09:50:59 2010
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4c2b4bc3209491927612659
-X-DSPAM-Factors: 27,
-	reports, 0.01000,
-	Received*26+177, 0.01000,
-	control+endpoint, 0.01000,
-	Cc*<alan, 0.01000,
-	To*linux+input, 0.01000,
-	usbhid_output_raw_report(struct, 0.01000,
-	<<, 0.01000,
-	bInterfaceNumber, 0.01000,
-	bInterfaceNumber, 0.01000,
-	To*Ospite+<ospite, 0.01000,
-	To*suse.de>, 0.01000,
-	10, 0.01000,
-	>desc, 0.01000,
-	>desc, 0.01000,
-	interface, 0.01000,
-	interface, 0.01000,
-	of, 0.01000,
-	of, 0.01000,
-	the+control, 0.01000,
-	(ret+>, 0.01000,
-	(ret+>, 0.01000,
-	c+|, 0.01000,
-	interface+>desc, 0.01000,
-	interface+>desc, 0.01000,
-	send, 0.01000,
-	Received*ESMTP, 0.01000,
-	=+usb_control_msg(dev, 0.01000
+	id S1752986Ab0F3Nyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 09:54:41 -0400
+Message-ID: <4C2B4C98.80208@redhat.com>
+Date: Wed, 30 Jun 2010 09:54:32 -0400
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: tytso@mit.edu, Christoph Hellwig <hch@infradead.org>,
+       Mingming Cao <cmm@us.ibm.com>, djwong@us.ibm.com,
+       linux-ext4 <linux-ext4@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [RFC] ext4: Don't send extra barrier during fsync if there are
+ no dirty pages.
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <20100504154553.GA22777@infradead.org> <20100630124832.GA1333@thunk.org> <4C2B44C0.3090002@redhat.com> <20100630134429.GE1333@thunk.org>
+In-Reply-To: <20100630134429.GE1333@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Report ID wasn't sent as part of the payload for reports which were sent
-over the control endpoint. This is required by section 8.1 of the HID spec.
+On 06/30/2010 09:44 AM, tytso@mit.edu wrote:
+> On Wed, Jun 30, 2010 at 09:21:04AM -0400, Ric Wheeler wrote:
+>>
+>> The problem with not issuing a cache flush when you have dirty meta
+>> data or data is that it does not have any tie to the state of the
+>> volatile write cache of the target storage device.
+>
+> We track whether or not there is any metadata updates associated with
+> the inode already; if it does, we force a journal commit, and this
+> implies a barrier operation.
+>
+> The case we're talking about here is one where either (a) there is no
+> journal, or (b) there have been no metadata updates (I'm simplifying a
+> little here; in fact we track whether there have been fdatasync()- vs
+> fsync()- worthy metadata updates), and so there hasn't been a journal
+> commit to do the cache flush.
+>
+> In this case, we want to track when is the last time an fsync() has
+> been issued, versus when was the last time data blocks for a
+> particular inode have been pushed out to disk.
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- drivers/hid/usbhid/hid-core.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+I think that the state that we want to track is the last time the write cache on 
+the target device has been flushed. If the last fsync() did do a full barrier, 
+that would be equivalent :-)
 
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index deef816..1697687 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -854,14 +854,21 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
- 				ret++;
- 		}
- 	} else {
-+		int skipped_report_id = 0;
-+		if (buf[0] == 0x0) {
-+			/* Don't send the Report ID */
-+			buf++;
-+			count--;
-+			skipped_report_id = 1;
-+		}
- 		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
- 			HID_REQ_SET_REPORT,
- 			USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
- 			((report_type + 1) << 8) | *buf,
--			interface->desc.bInterfaceNumber, buf + 1, count - 1,
-+			interface->desc.bInterfaceNumber, buf, count,
- 			USB_CTRL_SET_TIMEOUT);
--		/* count also the report id */
--		if (ret > 0)
-+		/* count also the report id, if this was a numbered report. */
-+		if (ret > 0 && skipped_report_id)
- 			ret++;
- 	}
- 
--- 
-1.7.0.4
+ric
 
+>
+> To use an example I used as motivation for why we might want an
+> fsync2(int fd[], int flags[], int num) syscall, consider the situation
+> of:
+>
+> 	fsync(control_fd);
+> 	fdatasync(data_fd);
+>
+> The first fsync() will have executed a cache flush operation.  So when
+> we do the fdatasync() (assuming that no metadata needs to be flushed
+> out to disk), there is no need for the cache flush operation.
+>
+> If we had an enhanced fsync command, we would also be able to
+> eliminate a second journal commit in the case where data_fd also had
+> some metadata that needed to be flushed out to disk.
+>
+>> It would definitely be *very* useful to have an array of fd's that
+>> all need fsync()'ed at home time....
+>
+> Yes, but it would require applications to change their code.
+>
+> One thing that I would like about a new fsync2() system call is with a
+> flags field, we could add some new, more expressive flags:
+>
+> #define FSYNC_DATA    0x0001 /* Only flush metadata if needed to access data */
+> #define FSYNC_NOWAIT  0x0002 /* Initiate the flush operations but don't wait
+> 		      	        for them to complete */
+> #define FSYNC_NOBARRER 0x004 /* FS may skip the barrier if not needed for fs
+> 		       	     	consistency */
+>
+> etc.
+>
+> 					- Ted
 
