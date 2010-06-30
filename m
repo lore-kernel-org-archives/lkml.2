@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab0F3OYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 10:24:39 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48517 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab0F3OYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 10:24:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OQ7HSAnBUNASN38Bx0cdgUqlPYsH2jRaXwxKnxHcmLTBITAlNEfb2BaQpHdNs7Xrwt
-         olKrOwRQg/sBuhpTSIo9h1CT424n4wJMtil7KETCtH0+KTcMQny4kCI4xZ5h9uic3/1y
-         L2hQ/SeRCcs5ThPcb8+rl6I9QBD2ftO5ABtfk=
-Date: Wed, 30 Jun 2010 22:55:03 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 02/11] oom: oom_kill_process() doesn't select kthread
- child
-Message-ID: <20100630135503.GA15644@barrios-desktop>
-References: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
- <20100630182715.AA4B.A69D9226@jp.fujitsu.com>
+	id S1756267Ab0F3OZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 10:25:28 -0400
+Received: from claw.goop.org ([74.207.240.146]:41389 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754016Ab0F3OZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 10:25:27 -0400
+Message-ID: <4C2B53D1.90101@goop.org>
+Date: Wed, 30 Jun 2010 16:25:21 +0200
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100630182715.AA4B.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Beulich <JBeulich@novell.com>
+CC: "mingo@elte.hu" <mingo@elte.hu>,
+       Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       Ky Srinivasan <KSrinivasan@novell.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH 2/4, v2] x86: enlightenment for ticket spin locks -	 Xen
+ implementation
+References: <4C2A200F02000078000089E4@vpn.id2.novell.com> <4C2B1769.5090107@goop.org> <4C2B47190200007800008CB7@vpn.id2.novell.com> <4C2B4564.7030203@goop.org> <4C2B6AD60200007800008D90@vpn.id2.novell.com>
+In-Reply-To: <4C2B6AD60200007800008D90@vpn.id2.novell.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 06:27:52PM +0900, KOSAKI Motohiro wrote:
-> Now, select_bad_process() have PF_KTHREAD check, but oom_kill_process
-> doesn't. It mean oom_kill_process() may choose wrong task, especially,
-> when the child are using use_mm().
+On 06/30/2010 04:03 PM, Jan Beulich wrote:
+>>>> On 30.06.10 at 15:23, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>>>>         
+>> For spinlocks, the pvop calls should only be in the slow case: when a
+>> spinlock has been spinning for long enough, and on unlock when there's
+>> someone waiting for the lock.  The fastpath (no contention lock and
+>> unlock) should have no extra calls.
+>>     
+> Then what was all that performance regression noise concerning
+> pvops spinlocks about, leading to CONFIG_PARAVIRT_SPINLOCKS
+> being separated from the base CONFIG_PARAVIRT?
+>   
 
-Is it possible child is kthread even though parent isn't kthread?
+Nobody knows.  The pv spinlocks appeared to cause a 5% performance
+regression on some benchmarks, which is wildly huge.  It appears to
+trigger some kind of microarchitectural catastrophe on some Intel cpus,
+perhaps relating to the extra call in the path or something.
+ 
+> Afaics the unlock still involves a function call *in all cases* with
+> pvops spinlocks, whereas it's a single inline instruction without.
+>   
 
--- 
-Kind regards,
-Minchan Kim
+No.  The unlock path can see if there are any further waiters by looking
+at the ticket in the, and only do the kick call if there are some.
+
+    J
