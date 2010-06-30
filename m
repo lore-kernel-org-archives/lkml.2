@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057Ab0F3Sog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 14:44:36 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47726 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab0F3Soe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 14:44:34 -0400
-From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
-To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-       "siccegge@cs.fau.de" <siccegge@cs.fau.de>
-CC: "tony@atomide.com" <tony@atomide.com>,
-       "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "vamos@i4.informatik.uni-erlangen.de" 
-	<vamos@i4.informatik.uni-erlangen.de>
-Date: Wed, 30 Jun 2010 13:44:14 -0500
-Subject: RE: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
-Thread-Topic: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
-Thread-Index: AcsYgWoI3iWF+krYSEyLfcx8ervh7gAAlHVA
-Message-ID: <8F7AF80515AF0D4D93307E594F3CB40E4CA55915@dlee03.ent.ti.com>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
-	<fcfa44a43c21c70f89ced96b96d7c1489d28cc51.1277911346.git.siccegge@cs.fau.de>
- <20100630.212346.226780589.Hiroshi.DOYU@nokia.com>
-In-Reply-To: <20100630.212346.226780589.Hiroshi.DOYU@nokia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757052Ab0F3Spf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 14:45:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17592 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab0F3Spd convert rfc822-to-8bit (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 30 Jun 2010 14:45:33 -0400
+Date: Wed, 30 Jun 2010 14:43:57 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Matt Turner <mattst88@gmail.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+       rth@twiddle.net, ink@jurassic.park.msu.ru, mcree@orcon.net.nz,
+       jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
+       dri-devel@lists.freedesktop.org, airlied@gmail.com,
+       alexdeucher@gmail.com, jglisse@redhat.com
+Subject: Re: Problems with alpha/pci + radeon/ttm
+Message-ID: <20100630184357.GE16488@phenom.dumpdata.com>
+References: <AANLkTinG-5iKW5cigIQHPHRZuAMtG_xY-74XLL6vE5kb@mail.gmail.com>
+ <20100622145805R.fujita.tomonori@lab.ntt.co.jp>
+ <AANLkTimTOTM8Tt5A7eBVbxcYaGQVn_Q6-9hL8B1B4bjY@mail.gmail.com>
+ <20100627130717M.fujita.tomonori@lab.ntt.co.jp>
+ <AANLkTim0JbmNLY1yG5MIWhcjM34h4HHVjS58jEobmPO0@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <AANLkTim0JbmNLY1yG5MIWhcjM34h4HHVjS58jEobmPO0@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C2B90B5.022B:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jun 27, 2010 at 12:58:07AM -0400, Matt Turner wrote:
+> On Sun, Jun 27, 2010 at 12:20 AM, FUJITA Tomonori
+> <fujita.tomonori@lab.ntt.co.jp> wrote:
+> > On Thu, 24 Jun 2010 10:53:52 -0400
+> > Matt Turner <mattst88@gmail.com> wrote:
+> >
+> >> > Seems that the IOMMU can't find 128 pages. It's likely due to:
+> >> >
+> >> > - out of the IOMMU space (possibly someone doesn't free the IOMMU
+> >> >  space).
+> >> >
+> >> > or
+> >> >
+> >> > - the mapping parameters (such as align) aren't appropriate so the
+> >> >  IOMMU can't find space.
+> >> >
+> >> >
+> >> >> Is this the cause of the bug we're seeing in the report [1]?
 
-> -----Original Message-----
-> From: Hiroshi DOYU [mailto:Hiroshi.DOYU@nokia.com]
-> Sent: Wednesday, June 30, 2010 1:24 PM
-> To: siccegge@cs.fau.de; Kanigeri, Hari
-> Cc: tony@atomide.com; linux@arm.linux.org.uk; linux-omap@vger.kernel.org;
-> linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
-> vamos@i4.informatik.uni-erlangen.de
-> Subject: Re: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
-> 
-> From: ext Christoph Egger <siccegge@cs.fau.de>
-> Subject: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
-> Date: Wed, 30 Jun 2010 18:01:01 +0200
-> 
-> > MPU_{BRIDGE,TESLA}_IOMMU doesn't exist in Kconfig, therefore removing
-> > all references for it from the source code.
-> 
-> Coming soon, I guess. Hari?
+For the fun I did:
+ cat /tmp/screenlog.0 | grep iommu_arena | wc
+  28509  199588 2167164
 
-Coming soon for both Bridge and Tesla. As I am writing this email, Fernando is preparing the Bridge patches to migrate to iommu.
+Which is to say 28509 * 4096 = 116736000. That looks to be about 111MB.
 
-Thank you,
-Best regards,
-Hari
+That does not look right when you are trying to allocate 128 pages. You
+are sure it is 128 pages? Can you make the ttm_ code print out the total
+of pages it is trying to PCI map ? It might also be interesting to see
+how many pages the pci_iommu.c has already set aside for other devices.
+
+The BAR is 128MB, but that would have been an ioremap call - and done
+much earlier I think.
