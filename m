@@ -1,92 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab0F3XPa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 19:15:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047Ab0F3XP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 19:15:28 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <FB78A152-53D3-4000-ABDB-9D6051ECB887@dilger.ca>
-References: <FB78A152-53D3-4000-ABDB-9D6051ECB887@dilger.ca> <52423201-3DF9-4045-8E8B-FAA915053D56@dilger.ca> <20100630011656.18960.4255.stgit@warthog.procyon.org.uk> <26505.1277899544@redhat.com>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk, smfrench@gmail.com,
-       jlayton@redhat.com, mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-       sjayaraman@suse.de, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3] Extended file stat functions [ver #2]
-Date: Thu, 01 Jul 2010 00:15:13 +0100
-Message-ID: <30875.1277939713@redhat.com>
+	id S1757441Ab0F3XYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 19:24:22 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62137 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab0F3XYU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 19:24:20 -0400
+Message-ID: <4C2BD235.5080506@codemonkey.ws>
+Date: Wed, 30 Jun 2010 18:24:37 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Lightning/1.0b1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: David Miller <davem@davemloft.net>, arozansk@redhat.com,
+       herbert.xu@redhat.com, quintela@redhat.com, kvm@vger.kernel.org,
+       virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, ykaul@redhat.com, markmc@redhat.com
+Subject: Re: [PATCHv2] vhost-net: add dhclient work-around from userspace
+References: <20100628100807.GA30685@redhat.com> <20100629.003647.214219303.davem@davemloft.net> <20100629130439.GD3603@redhat.com> <4C2BC04B.3000100@codemonkey.ws> <20100630223157.GA25537@redhat.com>
+In-Reply-To: <20100630223157.GA25537@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Dilger <adilger@dilger.ca> wrote:
+On 06/30/2010 05:31 PM, Michael S. Tsirkin wrote:
+> On Wed, Jun 30, 2010 at 05:08:11PM -0500, Anthony Liguori wrote:
+>    
+>> On 06/29/2010 08:04 AM, Michael S. Tsirkin wrote:
+>>      
+>>> On Tue, Jun 29, 2010 at 12:36:47AM -0700, David Miller wrote:
+>>>        
+>>>> From: "Michael S. Tsirkin"<mst@redhat.com>
+>>>> Date: Mon, 28 Jun 2010 13:08:07 +0300
+>>>>
+>>>>          
+>>>>> Userspace virtio server has the following hack
+>>>>> so guests rely on it, and we have to replicate it, too:
+>>>>>
+>>>>> Use port number to detect incoming IPv4 DHCP response packets,
+>>>>> and fill in the checksum for these.
+>>>>>
+>>>>> The issue we are solving is that on linux guests, some apps
+>>>>> that use recvmsg with AF_PACKET sockets, don't know how to
+>>>>> handle CHECKSUM_PARTIAL;
+>>>>> The interface to return the relevant information was added
+>>>>> in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
+>>>>> and older userspace does not use it.
+>>>>> One important user of recvmsg with AF_PACKET is dhclient,
+>>>>> so we add a work-around just for DHCP.
+>>>>>
+>>>>> Don't bother applying the hack to IPv6 as userspace virtio does not
+>>>>> have a work-around for that - let's hope guests will do the right
+>>>>> thing wrt IPv6.
+>>>>>
+>>>>> Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
+>>>>>            
+>>>> Yikes, this is awful too.
+>>>>
+>>>> Nothing in the kernel should be mucking around with procotol packets
+>>>> like this by default.  In particular, what the heck does port 67 mean?
+>>>> Locally I can use it for whatever I want for my own purposes, I don't
+>>>> have to follow the conventions for service ports as specified by the
+>>>> IETF.
+>>>>
+>>>> But I can't have the packet checksum state be left alone for port 67
+>>>> traffic on a box using virtio because you have this hack there.
+>>>>
+>>>> And yes it's broken on machines using the qemu thing, but at least the
+>>>> hack there is restricted to userspace.
+>>>>          
+>>> Yes, and I think it was a mistake to add the hack there. This is what
+>>> prevented applications from using the new interface in the 3 years
+>>> since it was first introduced.
+>>>        
+>> It's far more complicated than that.  dhclient is part of ISC's DHCP
+>> package.  They do not have a public SCM and instead require you to
+>> join their Software Guild to get access to it.
+>>
+>> This problem was identified in one distribution and the patch was
+>> pushed upstream but because they did not have a public SCM, most
+>> other distributions did not see the fix until it appeared in a
+>> release.  ISC has a pretty long release cycle historically.
+>>
+>> ISC's had the fix for a long time but there was a 3-year gap in
+>> their releases and since their SCM isn't public, users are stuck
+>> with the last release.
+>>
+>> This hack makes sense in QEMU as we have a few hacks like this to
+>> fix broken guests.
+>>   A primary use of virtualization is to run old
+>> applications so it makes sense for us to do that.
+>>      
+> IMO it was wrong to put it in qemu: originally, if a distro shipped
+> a broken virtio/dhclient combo, it was it's own bug to fix.
+> But now that qemu has shipped the work-around for so long,
+> broken guests seemed work.
 
-> For the cost of those extra bytes it would definitely save a lot of extra
-> complexity in every application packing and unpacking the struct.  At a
-> minimum put a 32-bit padding that is zero-filled for now.
+The guests were broken before qemu implemented this.
 
-Blech.  I'd prefer to just expand the fields to 64-bits.
+virtio-net had checksum offload long before it was ever implemented in 
+qemu.  Not even lguest implemented it because the interfaces weren't 
+available in tun/tap.  I'm not sure how Rusty ever tested it.  We only 
+discovered this bug after checksum offload was implemented in tun/tap 
+and we were able to enable it in QEMU.  At that point, the guests had 
+shipped and were in the wild.
 
-Note that you can't just arbitrarily pass a raw 64-bit UID, say, back to
-vfs_getattr() and expect it to be coped with.  Those stat syscalls that return
-32-bit (or even 16-bit) would have to do something with it, and glibc would
-have to do something with it.
+The real problem was that we implemented a feature in a guest driver 
+without having a backend implementation and then shipped the code.  
+Shipping untested code is a recipe for failure.
 
-I think we'd need extra request bits to ask for the longer UID/GID - at which
-point the extra result data can be appended and extra capacity in the basic
-part of the struct is not required.
+If we had implemented the front-end feature only when a backend 
+implementation was available, we would have caught this, fixed it in the 
+guests, and not be in the situation because there wouldn't be these 
+broken guests.
 
-> > so perhaps something like:
-> > 
-> > 	struct xstat_u128 { unsigned long long lsw, msw; };
-> > 
-> > however, I suspect the kernel will require a bit of reengineering to handle
-> > a pgoff_t and loff_t of 128-bits.
+
+>   So we *still* see the bug re-surface in new guests.
+>    
+
+Which guests?  Newer versions of dhclient should work as expected.
+
+> And since they are fairly new, it is interesting to
+> get decent performance from them now.
 >
-> Well, not any different from having 32-bit platforms work with two 32-bit
-> values for 64-bit offsets today, except that we would be doing this with two
-> 64-bit values.
+>    
+>> I don't think it makes sense for vhost to do this.  These guests are
+>> so old that they don't have the requisite features to achieve really
+>> high performance anyway.
+>>
+>> I've always thought making vhost totally transparent was a bad idea
+>> and this is one of the reasons.
+>>      
+> It does not have to be fully transparent. You can insert your own ring
+> in the middle, and copy descriptors around.  And we stop on errors and
+> let userspace handle.  This will come handy if we get e.g. virtio bug
+> that we need to work around.
+>    
 
-gcc for 32-bit platforms can handle 64-bit numbers.  gcc doesn't handle 128-bit
-numbers.
+I mean from a UI perspective.  IOW, if users have to explicitly choose 
+to use vhost-net, then it's okay to force them to use newer guests that 
+support vhost-net.  However, if we make it transparent, then it has to 
+support everything that QEMU virtio has ever supported which is 
+problematic for exactly the reasons you are now encountering.
 
-This can be handled as suggested above by allocating extra result bits to get
-the upper halves of longer fields:
+>> We can do a lot of ugly things in
+>> userspace that we shouldn't be doing in the kernel.
+>>
+>> Regards,
+>>
+>> Anthony Liguori
+>>      
+> QEMU is only userspace for the host. It is the hardware for the guest.
+> So IMO we should not be doing the ugly things there either.
+>    
 
-	XSTAT_REQUEST_SIZE__MSW
-	XSTAT_REQUEST_BLOCKS__MSW
+Shouldn't we apply the same argument to the Windows RTC implementation 
+and say that Windows should not rely on counting interrupts?  Or that it 
+shouldn't spin in a tight loop checking interrupt status with interrupts 
+disabled after receiving an interrupt?
 
-for example.
+Supporting broken guests is a big part of what we do in QEMU.  We do 
+what we need to do to make guests that we cannot change work.  When this 
+first was implemented, there were a good number of pre-existing guests 
+that broke because we enabled checksum offload.
 
-> > Passing -1 (or ULONGLONG_MAX) to get everything would be reasonable.
-> 
-> NOOOO.  That is exactly what we _don't_ want, since it makes it impossible
-> for the kernel to actually understand which fields the application is ready
-> to handle.  If the application always uses XSTAT_QUERY_ALL, instead of "-1",
-> then the kernel can easily tell which fields are present in the userspace
-> structure, and what it should avoid touching.
-> 
-> If applications start using "-1" to mean "all fields", then it will work so
-> long as the kernel and userspace agree on the size of struct xstat, but as
-> soon as the kernel understands some new field, but userspace does not, the
-> application will segfault or clobber random memory because the kernel thinks
-> it is asking for XSTAT_QUERY_NEXT_NEW_FIELD|... when it really isn't asking
-> for that at all.
+If we can fix the guests to avoid doing ugly things in QEMU, we should, 
+but we can't regress an otherwise working guest just because we think 
+the solution is ugly in QEMU.
 
-As long as the field bits allocated in order and the extra results are tacked
-on in bit number order, will it actually be a problem?  Userspace must know how
-to deal with all the bits up to the last one it knows about; anything beyond
-that is irrelevant.
+Regards,
 
-What would you have me do?  Return an error if a request is made that the
-kernel doesn't support?  That's bad too.  This can be handled simply by
-clearing the result bit for any unsupported field.
+Anthony Liguori
 
-David
+
