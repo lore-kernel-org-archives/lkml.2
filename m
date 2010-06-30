@@ -1,187 +1,577 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab0F3VNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 17:13:52 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64468 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab0F3VNr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 17:13:47 -0400
+	id S1757213Ab0F3VPY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 17:15:24 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:36157 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753562Ab0F3VPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 17:15:22 -0400
+Date: Wed, 30 Jun 2010 14:15:16 -0700
+From: Ram Pai <linuxram@us.ibm.com>
+To: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, clemens@ladisch.de,
+       Yinghai Lu <yinghai@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [RFC PATCH 1/1] PCI: skip release and reallocation of io port
+	resources
+Message-ID: <20100630211516.GA25991@us.ibm.com>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20100629102339.5e8a30b6@dev.queued.net>
-References: <20100628215407.2017bf2f@debian> <20100628220058.19e8f143@debian> 
-	<AANLkTinUy_FGuN9DiF5KtMCsqYUbByfS6g2Mdw0ATvtQ@mail.gmail.com> 
-	<20100629102339.5e8a30b6@dev.queued.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 30 Jun 2010 15:13:26 -0600
-X-Google-Sender-Auth: tzE5EWQ3B5wr-hW3p6CzN7AqAHg
-Message-ID: <AANLkTik7rqaGz7RtsOlhoSZw_-6bhv43YlWETsB17__4@mail.gmail.com>
-Subject: Re: [PATCH 4/4] x86: OLPC: add OLPC device-tree support
-To: Andres Salomon <dilinger@queued.net>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-       linux-kernel@vger.kernel.org, davem@davemloft.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 8:23 AM, Andres Salomon <dilinger@queued.net> wrote:
-> On Tue, 29 Jun 2010 01:12:36 -0700
-> Grant Likely <grant.likely@secretlab.ca> wrote:
->
->> Hi Andres, comments below....
->
-> Thanks!
->
->
->>
->> On Mon, Jun 28, 2010 at 7:00 PM, Andres Salomon <dilinger@queued.net>
->> wrote:
->> >
->> > Make use of PROC_DEVICETREE to export the tree, and sparc's
->> > PROMTREE code to call into OLPC's Open Firmware to build the tree.
->> >
->> > (Yes, I know this leaks memory by simply using kmalloc)
->> >
->> > Signed-off-by: Andres Salomon <dilinger@queued.net>
->> > ---
->> >  arch/x86/Kconfig                 |    5 ++
->> >  arch/x86/include/asm/olpc_prom.h |   42 +++++++++++
->> >  arch/x86/include/asm/prom.h      |    5 ++
->> >  arch/x86/kernel/Makefile         |    1 +
->> >  arch/x86/kernel/olpc_ofw.c       |   13 ++++
->> >  arch/x86/kernel/olpc_prom.c      |  148
->> > ++++++++++++++++++++++++++++++++++++++ fs/proc/Kconfig
->> >      |    2 +- 7 files changed, 215 insertions(+), 1 deletions(-)
->> >  create mode 100644 arch/x86/include/asm/olpc_prom.h
->> >  create mode 100644 arch/x86/include/asm/prom.h
->> >  create mode 100644 arch/x86/kernel/olpc_prom.c
->> >
->> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
->> > index 71c194d..7aea004 100644
->> > --- a/arch/x86/Kconfig
->> > +++ b/arch/x86/Kconfig
->> > @@ -2071,6 +2071,11 @@ config OLPC_OPENFIRMWARE
->> >          that is used on the OLPC XO-1 Children's Machine.
->> >          If unsure, say N here.
->> >
->> > +config OF
->> > +       def_bool y
->> > +       depends on OLPC_OPENFIRMWARE
->> > +       select OF_PROMTREE
->> > +
->>
->> This hunk will need to be respun on top of Stephen's CONFIG_OF change.
->>  It's currently in my test-devicetree branch on
->> git://git.secretlab.ca/git/linux-2.6
->
-> Yep, I've changed it locally.
->
->>
->> >  endif # X86_32
->> >
->> >  config K8_NB
->> > diff --git a/arch/x86/include/asm/olpc_prom.h
->> > b/arch/x86/include/asm/olpc_prom.h new file mode 100644
->> > index 0000000..96cdcee
->> > --- /dev/null
->> > +++ b/arch/x86/include/asm/olpc_prom.h
->> > @@ -0,0 +1,42 @@
->> > +#include <linux/of.h>  /* linux/of.h gets to determine #include
->> > ordering */ +/*
->> > + * Definitions for talking to the Open Firmware PROM on
->> > + * Power Macintosh computers.
->> > + *
->> > + * Copyright (C) 1996-2005 Paul Mackerras.
->> > + *
->> > + * Updates for PPC64 by Peter Bergner & David Engebretsen, IBM
->> > Corp.
->> > + * Updates for SPARC by David S. Miller
->> > + * Updates for x86/OLPC by Andres Salomon
->> > + *
->> > + * This program is free software; you can redistribute it and/or
->> > + * modify it under the terms of the GNU General Public License
->> > + * as published by the Free Software Foundation; either version
->> > + * 2 of the License, or (at your option) any later version.
->> > + */
->> > +
->> > +#ifndef _X86_PROM_OLPC_H
->> > +#define _X86_PROM_OLPC_H
->> > +#ifdef __KERNEL__
->> > +
->> > +#define OF_ROOT_NODE_ADDR_CELLS_DEFAULT 2
->> > +#define OF_ROOT_NODE_SIZE_CELLS_DEFAULT 1
->>
->> Do you really need to override these from the default?
->>
->> > +#define of_compat_cmp(s1, s2, l)       strncmp((s1), (s2), (l))
->> > +#define of_prop_cmp(s1, s2)            strcasecmp((s1), (s2))
->> > +#define of_node_cmp(s1, s2)            strcmp((s1), (s2))
->>
->> Ditto here?
->
-> They're based upon what the old promfs patch used.  I need to test and
-> verify that strings are being mangled in the same way before I start
-> making changes here.
+       PCI: skip release and reallocation of io port resources
+    
+       git commit 977d17bb1749517b353874ccdc9b85abc7a58c2a
+       released  and   reallocated  all resources, ioport and memory, when 
+       allocation  of   any  resource   of  any  type failed. This  caused
+       failure to reallocate fragile  io  port  resources, as reported in
+    	https://bugzilla.kernel.org/show_bug.cgi?id=15960
+    
+       The problem was solved by reverting the commit, through
+       git commit 	769d9968e42c995eaaf61ac5583d998f32e0769a.
+    
+       However reverting the original patch fails MMIO resource allocation
+       for SRIOV PCI-Bars on some platforms. Especially on  platforms
+       where the BIOS is unaware of SRIOV resource BARs.
+    
+       The following code, an  idea  proposed by Yinghai Lu, skips release
+       and  re-allocation  of  io port  resources   if its  allocation has
+       not failed in the first place.
+    
+       This patch applies on top of patch corresponding to
+       git commit 977d17bb1749517b353874ccdc9b85abc7a58c2a
+    
+Signed-off-by: Ram Pai <linuxram@us.ibm.com>
 
-The defaults should do the right thing.  I would be very surprised if
-stfncmp() was what you wanted to use because truncates compatible
-values on compare.  I believe Sparc has historical reasons for using
-it, but new platforms shouldn't need it.
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 4fe36d2..a41af3c 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -72,7 +72,8 @@ static void free_failed_list(struct resource_list_x *head)
+ }
+ 
+ static void __dev_sort_resources(struct pci_dev *dev,
+-				 struct resource_list *head)
++				 struct resource_list *head,
++				 unsigned long resource_mask)
+ {
+ 	u16 class = dev->class >> 8;
+ 
+@@ -88,7 +89,7 @@ static void __dev_sort_resources(struct pci_dev *dev,
+ 			return;
+ 	}
+ 
+-	pdev_sort_resources(dev, head);
++	pdev_sort_resources(dev, head, resource_mask);
+ }
+ 
+ static void __assign_resources_sorted(struct resource_list *head,
+@@ -123,25 +124,27 @@ static void __assign_resources_sorted(struct resource_list *head,
+ }
+ 
+ static void pdev_assign_resources_sorted(struct pci_dev *dev,
+-				 struct resource_list_x *fail_head)
++				 struct resource_list_x *fail_head,
++				 unsigned long resource_mask)
+ {
+ 	struct resource_list head;
+ 
+ 	head.next = NULL;
+-	__dev_sort_resources(dev, &head);
++	__dev_sort_resources(dev, &head, resource_mask);
+ 	__assign_resources_sorted(&head, fail_head);
+ 
+ }
+ 
+ static void pbus_assign_resources_sorted(const struct pci_bus *bus,
+-					 struct resource_list_x *fail_head)
++				 struct resource_list_x *fail_head,
++				 unsigned long resource_mask)
+ {
+ 	struct pci_dev *dev;
+ 	struct resource_list head;
+ 
+ 	head.next = NULL;
+ 	list_for_each_entry(dev, &bus->devices, bus_list)
+-		__dev_sort_resources(dev, &head);
++		__dev_sort_resources(dev, &head, resource_mask);
+ 
+ 	__assign_resources_sorted(&head, fail_head);
+ }
+@@ -330,57 +333,64 @@ static void pci_setup_bridge(struct pci_bus *bus)
+ /* Check whether the bridge supports optional I/O and
+    prefetchable memory ranges. If not, the respective
+    base/limit registers must be read-only and read as 0. */
+-static void pci_bridge_check_ranges(struct pci_bus *bus)
++static void pci_bridge_check_ranges(struct pci_bus *bus, unsigned long resource_mask)
+ {
+ 	u16 io;
+ 	u32 pmem;
+ 	struct pci_dev *bridge = bus->self;
+-	struct resource *b_res;
++	struct resource *b_res = &bridge->resource[PCI_BRIDGE_RESOURCES];
+ 
+-	b_res = &bridge->resource[PCI_BRIDGE_RESOURCES];
+-	b_res[1].flags |= IORESOURCE_MEM;
++	if (resource_mask & IORESOURCE_MEM)
++		b_res[1].flags |= IORESOURCE_MEM;
+ 
+-	pci_read_config_word(bridge, PCI_IO_BASE, &io);
+-	if (!io) {
+-		pci_write_config_word(bridge, PCI_IO_BASE, 0xf0f0);
++	if (resource_mask & IORESOURCE_IO) {
+ 		pci_read_config_word(bridge, PCI_IO_BASE, &io);
+- 		pci_write_config_word(bridge, PCI_IO_BASE, 0x0);
+- 	}
+- 	if (io)
+-		b_res[0].flags |= IORESOURCE_IO;
+-	/*  DECchip 21050 pass 2 errata: the bridge may miss an address
+-	    disconnect boundary by one PCI data phase.
+-	    Workaround: do not use prefetching on this device. */
+-	if (bridge->vendor == PCI_VENDOR_ID_DEC && bridge->device == 0x0001)
+-		return;
+-	pci_read_config_dword(bridge, PCI_PREF_MEMORY_BASE, &pmem);
+-	if (!pmem) {
+-		pci_write_config_dword(bridge, PCI_PREF_MEMORY_BASE,
+-					       0xfff0fff0);
+-		pci_read_config_dword(bridge, PCI_PREF_MEMORY_BASE, &pmem);
+-		pci_write_config_dword(bridge, PCI_PREF_MEMORY_BASE, 0x0);
+-	}
+-	if (pmem) {
+-		b_res[2].flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH;
+-		if ((pmem & PCI_PREF_RANGE_TYPE_MASK) ==
+-		    PCI_PREF_RANGE_TYPE_64) {
+-			b_res[2].flags |= IORESOURCE_MEM_64;
+-			b_res[2].flags |= PCI_PREF_RANGE_TYPE_64;
++		if (!io) {
++			pci_write_config_word(bridge, PCI_IO_BASE, 0xf0f0);
++			pci_read_config_word(bridge, PCI_IO_BASE, &io);
++			pci_write_config_word(bridge, PCI_IO_BASE, 0x0);
+ 		}
++		if (io)
++			b_res[0].flags |= IORESOURCE_IO;
+ 	}
+ 
+-	/* double check if bridge does support 64 bit pref */
+-	if (b_res[2].flags & IORESOURCE_MEM_64) {
+-		u32 mem_base_hi, tmp;
+-		pci_read_config_dword(bridge, PCI_PREF_BASE_UPPER32,
+-					 &mem_base_hi);
+-		pci_write_config_dword(bridge, PCI_PREF_BASE_UPPER32,
+-					       0xffffffff);
+-		pci_read_config_dword(bridge, PCI_PREF_BASE_UPPER32, &tmp);
+-		if (!tmp)
+-			b_res[2].flags &= ~IORESOURCE_MEM_64;
+-		pci_write_config_dword(bridge, PCI_PREF_BASE_UPPER32,
+-				       mem_base_hi);
++
++	if (resource_mask & IORESOURCE_PREFETCH) {
++		/*  DECchip 21050 pass 2 errata: the bridge may miss an address
++		    disconnect boundary by one PCI data phase.
++		    Workaround: do not use prefetching on this device. */
++		if (bridge->vendor == PCI_VENDOR_ID_DEC && bridge->device == 0x0001)
++			return;
++
++		pci_read_config_dword(bridge, PCI_PREF_MEMORY_BASE, &pmem);
++		if (!pmem) {
++			pci_write_config_dword(bridge, PCI_PREF_MEMORY_BASE,
++						       0xfff0fff0);
++			pci_read_config_dword(bridge, PCI_PREF_MEMORY_BASE, &pmem);
++			pci_write_config_dword(bridge, PCI_PREF_MEMORY_BASE, 0x0);
++		}
++		if (pmem) {
++			b_res[2].flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH;
++			if ((pmem & PCI_PREF_RANGE_TYPE_MASK) ==
++			    PCI_PREF_RANGE_TYPE_64) {
++				b_res[2].flags |= IORESOURCE_MEM_64;
++				b_res[2].flags |= PCI_PREF_RANGE_TYPE_64;
++			}
++		}
++
++		/* double check if bridge does support 64 bit pref */
++		if (b_res[2].flags & IORESOURCE_MEM_64) {
++			u32 mem_base_hi, tmp;
++			pci_read_config_dword(bridge, PCI_PREF_BASE_UPPER32,
++						 &mem_base_hi);
++			pci_write_config_dword(bridge, PCI_PREF_BASE_UPPER32,
++						       0xffffffff);
++			pci_read_config_dword(bridge, PCI_PREF_BASE_UPPER32, &tmp);
++			if (!tmp)
++				b_res[2].flags &= ~IORESOURCE_MEM_64;
++			pci_write_config_dword(bridge, PCI_PREF_BASE_UPPER32,
++					       mem_base_hi);
++		}
+ 	}
+ }
+ 
+@@ -392,13 +402,13 @@ static struct resource *find_free_bus_resource(struct pci_bus *bus, unsigned lon
+ {
+ 	int i;
+ 	struct resource *r;
+-	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
++	unsigned long resource_mask = IORESOURCE_IO | IORESOURCE_MEM |
+ 				  IORESOURCE_PREFETCH;
+ 
+ 	pci_bus_for_each_resource(bus, r, i) {
+ 		if (r == &ioport_resource || r == &iomem_resource)
+ 			continue;
+-		if (r && (r->flags & type_mask) == type && !r->parent)
++		if (r && (r->flags & resource_mask) == type && !r->parent)
+ 			return r;
+ 	}
+ 	return NULL;
+@@ -553,56 +563,64 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 	return 1;
+ }
+ 
+-static void pci_bus_size_cardbus(struct pci_bus *bus)
++static void pci_bus_size_cardbus(struct pci_bus *bus, unsigned long resource_mask)
+ {
+ 	struct pci_dev *bridge = bus->self;
+ 	struct resource *b_res = &bridge->resource[PCI_BRIDGE_RESOURCES];
+ 	u16 ctrl;
+ 
+-	/*
+-	 * Reserve some resources for CardBus.  We reserve
+-	 * a fixed amount of bus space for CardBus bridges.
+-	 */
+-	b_res[0].start = 0;
+-	b_res[0].end = pci_cardbus_io_size - 1;
+-	b_res[0].flags |= IORESOURCE_IO | IORESOURCE_SIZEALIGN;
++	if (resource_mask & IORESOURCE_IO) {
++		/*
++		 * Reserve some resources for CardBus.  We reserve
++		 * a fixed amount of bus space for CardBus bridges.
++		 */
++		b_res[0].start = 0;
++		b_res[0].end = pci_cardbus_io_size - 1;
++		b_res[0].flags |= IORESOURCE_IO | IORESOURCE_SIZEALIGN;
+ 
+-	b_res[1].start = 0;
+-	b_res[1].end = pci_cardbus_io_size - 1;
+-	b_res[1].flags |= IORESOURCE_IO | IORESOURCE_SIZEALIGN;
++		b_res[1].start = 0;
++		b_res[1].end = pci_cardbus_io_size - 1;
++		b_res[1].flags |= IORESOURCE_IO | IORESOURCE_SIZEALIGN;
++	}
+ 
+-	/*
+-	 * Check whether prefetchable memory is supported
+-	 * by this bridge.
+-	 */
+-	pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
+-	if (!(ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM0)) {
+-		ctrl |= PCI_CB_BRIDGE_CTL_PREFETCH_MEM0;
+-		pci_write_config_word(bridge, PCI_CB_BRIDGE_CONTROL, ctrl);
++
++	if (resource_mask & IORESOURCE_PREFETCH) {
++		/*
++		 * Check whether prefetchable memory is supported
++		 * by this bridge.
++		 */
+ 		pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
++		if (!(ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM0)) {
++			ctrl |= PCI_CB_BRIDGE_CTL_PREFETCH_MEM0;
++			pci_write_config_word(bridge, PCI_CB_BRIDGE_CONTROL, ctrl);
++			pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
++		}
++		/*
++		 * If we have prefetchable memory support, allocate
++		 * two regions.  Otherwise, allocate one region of
++		 * twice the size.
++		 */
++		if (ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM0) {
++			b_res[2].start = 0;
++			b_res[2].end = pci_cardbus_mem_size - 1;
++			b_res[2].flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH | 
++						IORESOURCE_SIZEALIGN;
++
++			b_res[3].start = 0;
++			b_res[3].end = pci_cardbus_mem_size - 1;
++			b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
++			return;
++		}
+ 	}
+ 
+-	/*
+-	 * If we have prefetchable memory support, allocate
+-	 * two regions.  Otherwise, allocate one region of
+-	 * twice the size.
+-	 */
+-	if (ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM0) {
+-		b_res[2].start = 0;
+-		b_res[2].end = pci_cardbus_mem_size - 1;
+-		b_res[2].flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH | IORESOURCE_SIZEALIGN;
+-
+-		b_res[3].start = 0;
+-		b_res[3].end = pci_cardbus_mem_size - 1;
+-		b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
+-	} else {
++	if ( resource_mask & IORESOURCE_MEM ) {
+ 		b_res[3].start = 0;
+ 		b_res[3].end = pci_cardbus_mem_size * 2 - 1;
+ 		b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
+ 	}
+ }
+ 
+-void __ref pci_bus_size_bridges(struct pci_bus *bus)
++static void __ref __pci_bus_size_bridges(struct pci_bus *bus, unsigned long resource_mask)
+ {
+ 	struct pci_dev *dev;
+ 	unsigned long mask, prefmask;
+@@ -615,12 +633,12 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
+ 
+ 		switch (dev->class >> 8) {
+ 		case PCI_CLASS_BRIDGE_CARDBUS:
+-			pci_bus_size_cardbus(b);
++			pci_bus_size_cardbus(b, resource_mask);
+ 			break;
+ 
+ 		case PCI_CLASS_BRIDGE_PCI:
+ 		default:
+-			pci_bus_size_bridges(b);
++			__pci_bus_size_bridges(b, resource_mask);
+ 			break;
+ 		}
+ 	}
+@@ -635,20 +653,21 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
+ 		break;
+ 
+ 	case PCI_CLASS_BRIDGE_PCI:
+-		pci_bridge_check_ranges(bus);
++		pci_bridge_check_ranges(bus, resource_mask);
+ 		if (bus->self->is_hotplug_bridge) {
+ 			min_io_size  = pci_hotplug_io_size;
+ 			min_mem_size = pci_hotplug_mem_size;
+ 		}
+ 	default:
+-		pbus_size_io(bus, min_io_size);
++		if (resource_mask & IORESOURCE_IO)
++			pbus_size_io(bus, min_io_size);
+ 		/* If the bridge supports prefetchable range, size it
+ 		   separately. If it doesn't, or its prefetchable window
+ 		   has already been allocated by arch code, try
+ 		   non-prefetchable range for both types of PCI memory
+ 		   resources. */
+-		mask = IORESOURCE_MEM;
+-		prefmask = IORESOURCE_MEM | IORESOURCE_PREFETCH;
++		mask = (IORESOURCE_MEM & resource_mask);
++		prefmask = (IORESOURCE_MEM | IORESOURCE_PREFETCH) & resource_mask;
+ 		if (pbus_size_mem(bus, prefmask, prefmask, min_mem_size))
+ 			mask = prefmask; /* Success, size non-prefetch only. */
+ 		else
+@@ -657,22 +676,28 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
+ 		break;
+ 	}
+ }
++void __ref pci_bus_size_bridges(struct pci_bus *bus)
++{
++	__pci_bus_size_bridges(bus, IORESOURCE_IO | 
++			IORESOURCE_MEM | IORESOURCE_PREFETCH );
++}
+ EXPORT_SYMBOL(pci_bus_size_bridges);
+ 
+ static void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
+-					 struct resource_list_x *fail_head)
++				struct resource_list_x *fail_head,
++				unsigned long resource_mask)
+ {
+ 	struct pci_bus *b;
+ 	struct pci_dev *dev;
+ 
+-	pbus_assign_resources_sorted(bus, fail_head);
++	pbus_assign_resources_sorted(bus, fail_head, resource_mask);
+ 
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		b = dev->subordinate;
+ 		if (!b)
+ 			continue;
+ 
+-		__pci_bus_assign_resources(b, fail_head);
++		__pci_bus_assign_resources(b, fail_head, resource_mask);
+ 
+ 		switch (dev->class >> 8) {
+ 		case PCI_CLASS_BRIDGE_PCI:
+@@ -694,22 +719,25 @@ static void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
+ 
+ void __ref pci_bus_assign_resources(const struct pci_bus *bus)
+ {
+-	__pci_bus_assign_resources(bus, NULL);
++	__pci_bus_assign_resources(bus, NULL,  
++		IORESOURCE_IO | IORESOURCE_MEM | IORESOURCE_PREFETCH);
+ }
+ EXPORT_SYMBOL(pci_bus_assign_resources);
+ 
+ static void __ref __pci_bridge_assign_resources(const struct pci_dev *bridge,
+-					 struct resource_list_x *fail_head)
++					 struct resource_list_x *fail_head,
++					 unsigned long resource_mask)
+ {
+ 	struct pci_bus *b;
+ 
+-	pdev_assign_resources_sorted((struct pci_dev *)bridge, fail_head);
++	pdev_assign_resources_sorted((struct pci_dev *)bridge, fail_head, 
++			resource_mask);
+ 
+ 	b = bridge->subordinate;
+ 	if (!b)
+ 		return;
+ 
+-	__pci_bus_assign_resources(b, fail_head);
++	__pci_bus_assign_resources(b, fail_head, resource_mask);
+ 
+ 	switch (bridge->class >> 8) {
+ 	case PCI_CLASS_BRIDGE_PCI:
+@@ -733,14 +761,14 @@ static void pci_bridge_release_resources(struct pci_bus *bus,
+ 	bool changed = false;
+ 	struct pci_dev *dev;
+ 	struct resource *r;
+-	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
++	unsigned long resource_mask = IORESOURCE_IO | IORESOURCE_MEM |
+ 				  IORESOURCE_PREFETCH;
+ 
+ 	dev = bus->self;
+ 	for (idx = PCI_BRIDGE_RESOURCES; idx <= PCI_BRIDGE_RESOURCE_END;
+ 	     idx++) {
+ 		r = &dev->resource[idx];
+-		if ((r->flags & type_mask) != type)
++		if ((r->flags & resource_mask) != type)
+ 			continue;
+ 		if (!r->parent)
+ 			continue;
+@@ -884,7 +912,7 @@ pci_assign_unassigned_resources(void)
+ 	int tried_times = 0;
+ 	enum release_type rel_type = leaf_only;
+ 	struct resource_list_x head, *list;
+-	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
++	unsigned long resource_mask = IORESOURCE_IO | IORESOURCE_MEM |
+ 				  IORESOURCE_PREFETCH;
+ 	unsigned long failed_type;
+ 	int max_depth = pci_get_max_depth();
+@@ -900,11 +928,11 @@ again:
+ 	/* Depth first, calculate sizes and alignments of all
+ 	   subordinate buses. */
+ 	list_for_each_entry(bus, &pci_root_buses, node) {
+-		pci_bus_size_bridges(bus);
++		__pci_bus_size_bridges(bus, resource_mask);
+ 	}
+ 	/* Depth last, allocate resources and update the hardware. */
+ 	list_for_each_entry(bus, &pci_root_buses, node) {
+-		__pci_bus_assign_resources(bus, &head);
++		__pci_bus_assign_resources(bus, &head, resource_mask);
+ 	}
+ 	tried_times++;
+ 
+@@ -920,7 +948,7 @@ again:
+ 	 * io port are tight, don't try extra
+ 	 * or if reach the limit, don't want to try more
+ 	 */
+-	failed_type &= type_mask;
++	failed_type &= resource_mask;
+ 	if ((failed_type == IORESOURCE_IO) || (tried_times >= pci_try_num)) {
+ 		free_failed_list(&head);
+ 		goto enable_and_dump;
+@@ -929,20 +957,31 @@ again:
+ 	printk(KERN_DEBUG "PCI: No. %d try to assign unassigned res\n",
+ 			 tried_times + 1);
+ 
++
+ 	/* third times and later will not check if it is leaf */
+ 	if ((tried_times + 1) > 2)
+ 		rel_type = whole_subtree;
+ 
++	/* 
++         * skip release and allocation of io port resources. IO port resource
++         * are fragile. Since io port resource allocation has not failed the
++         * first time, keep them intact. And dont try io resource allocation
++         * hence forth.
++         */
++	resource_mask &= ~IORESOURCE_IO;
++
+ 	/*
+ 	 * Try to release leaf bridge's resources that doesn't fit resource of
+ 	 * child device under that bridge
+ 	 */
+ 	for (list = head.next; list;) {
+ 		bus = list->dev->bus;
+-		pci_bus_release_bridge_resources(bus, list->flags & type_mask,
++		pci_bus_release_bridge_resources(bus, list->flags & resource_mask,
+ 						  rel_type);
+ 		list = list->next;
+ 	}
++
++
+ 	/* restore size and flags */
+ 	for (list = head.next; list;) {
+ 		struct resource *res = list->res;
+@@ -976,14 +1015,14 @@ void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
+ 	int tried_times = 0;
+ 	struct resource_list_x head, *list;
+ 	int retval;
+-	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
++	unsigned long resource_mask = IORESOURCE_IO | IORESOURCE_MEM |
+ 				  IORESOURCE_PREFETCH;
+ 
+ 	head.next = NULL;
+ 
+ again:
+-	pci_bus_size_bridges(parent);
+-	__pci_bridge_assign_resources(bridge, &head);
++	__pci_bus_size_bridges(parent, resource_mask);
++	__pci_bridge_assign_resources(bridge, &head, resource_mask);
+ 	retval = pci_reenable_device(bridge);
+ 	pci_set_master(bridge);
+ 	pci_enable_bridges(parent);
+@@ -1010,7 +1049,7 @@ again:
+ 		struct pci_bus *bus = list->dev->bus;
+ 		unsigned long flags = list->flags;
+ 
+-		pci_bus_release_bridge_resources(bus, flags & type_mask,
++		pci_bus_release_bridge_resources(bus, flags & resource_mask,
+ 						 whole_subtree);
+ 		list = list->next;
+ 	}
+diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
+index 92379e2..0af9145 100644
+--- a/drivers/pci/setup-res.c
++++ b/drivers/pci/setup-res.c
+@@ -211,7 +211,9 @@ int pci_assign_resource(struct pci_dev *dev, int resno)
+ }
+ 
+ /* Sort resources by alignment */
+-void pdev_sort_resources(struct pci_dev *dev, struct resource_list *head)
++void pdev_sort_resources(struct pci_dev *dev, 
++			struct resource_list *head,
++			unsigned long resource_mask)
+ {
+ 	int i;
+ 
+@@ -225,6 +227,9 @@ void pdev_sort_resources(struct pci_dev *dev, struct resource_list *head)
+ 		if (r->flags & IORESOURCE_PCI_FIXED)
+ 			continue;
+ 
++		if (!(r->flags & resource_mask))
++			continue;
++
+ 		if (!(r->flags) || r->parent)
+ 			continue;
+ 
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 7cb0084..7027ff5 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -845,7 +845,7 @@ int pci_claim_resource(struct pci_dev *, int);
+ void pci_assign_unassigned_resources(void);
+ void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge);
+ void pdev_enable_device(struct pci_dev *);
+-void pdev_sort_resources(struct pci_dev *, struct resource_list *);
++void pdev_sort_resources(struct pci_dev *, struct resource_list *, unsigned long);
+ int pci_enable_resources(struct pci_dev *, int mask);
+ void pci_fixup_irqs(u8 (*)(struct pci_dev *, u8 *),
+ 		    int (*)(struct pci_dev *, u8, u8));
 
-On that point, I think I'm going to change the default override to
-specifically test for CONFIG_SPARC instead of doing the weird
-defined(OF_ROOT_NODE_ADDR_CELLS_DEFAULT)/defined(of_compat_cmp) I
-currently have it doing.  That would probably make this separate
-header completely unnecessary (see below).
-
->> > +extern void prom_build_devicetree(void);
->> > +
->> > +extern void *prom_early_alloc(unsigned long size);
->> > +
->> > +extern char *prom_firstprop(phandle node, char *buf);
->> > +extern char *prom_nextprop(phandle node, const char *prev, char
->> > *buf); +extern int prom_getproplen(phandle node, const char *prop);
->> > +extern int prom_getproperty(phandle node, const char *prop,
->> > +                            char *buffer, int bufsize);
->> > +extern phandle prom_getchild(phandle node);
->> > +extern phandle prom_getsibling(phandle node);
->> > +
->> > +#endif /* __KERNEL__ */
->> > +#endif /* _X86_PROM_OLPC_H */
->> > diff --git a/arch/x86/include/asm/prom.h
->> > b/arch/x86/include/asm/prom.h new file mode 100644
->> > index 0000000..7b561b2
->> > --- /dev/null
->> > +++ b/arch/x86/include/asm/prom.h
->> > @@ -0,0 +1,5 @@
->> > +#ifdef CONFIG_OLPC_OPENFIRMWARE
->> > +# include <asm/olpc_prom.h>
->> > +#else
->> > +# error "No OFW prom defined for x86!"
->> > +#endif
->>
->> Personally, I wouldn't bother with the header file redirection.
->
-> The reason for the header file redirection is because this is
-> OLPC-only; the x86 folks don't want me claiming this to be the One
-> True x86 OFW.
-
-However, the #ifdef/#elseif/#else/#endif approach also makes the
-assumption that only one kind of OFW will be supported by any given
-kernel.  Or for that matter, both OFW and the flattened tree also
-become mutually exclusive due to the default behaviour override.
-
-Besides, aren't the function declarations just the interface defined
-by the prom extraction code?  Is there any need to #ifdef that API?  I
-would think those function prototypes should be defined by the header
-for the prom extraction code.
-
-g.
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
