@@ -1,150 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab0F3Jd2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:33:28 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60948 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754980Ab0F3Jd0 (ORCPT
+	id S1755001Ab0F3Jdy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 05:33:54 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:16939 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003Ab0F3Jdv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:33:26 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 10/11] oom: give the dying task a higher priority
-Cc: kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
-References: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
-Message-Id: <20100630183243.AA65.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 30 Jun 2010 18:33:23 +0900 (JST)
+	Wed, 30 Jun 2010 05:33:51 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.0 c=1 a=_meyTIPSnzEA:10 a=ygRHs6EKU7oA:10 a=VphdPIyG4kEA:10
+ a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=WRyMqZt7usigIdCacfwA:9
+ a=Xfe715nsxeLss5Ol7TwLUKFMYUIA:4 a=CjuIK1q_8ugA:10
+Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file stats available [ver #2]
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <1277862536.9326.3.camel@heimdal.trondhjem.org>
+Date: Wed, 30 Jun 2010 03:33:49 -0600
+Cc: David Howells <dhowells@redhat.com>, viro@ZenIV.linux.org.uk,
+       smfrench@gmail.com, jlayton@redhat.com, mcao@us.ibm.com,
+       aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       samba-technical@lists.samba.org, sjayaraman@suse.de,
+       linux-ext4@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <CE3451EE-F8B2-47EF-AC1C-4EEEBE68B30F@dilger.ca>
+References: <20100630011656.18960.4255.stgit@warthog.procyon.org.uk> <20100630011712.18960.3723.stgit@warthog.procyon.org.uk> <1277862536.9326.3.camel@heimdal.trondhjem.org>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luis Claudio R. Goncalves <lclaudio@uudg.org>
+On 2010-06-29, at 19:48, Trond Myklebust wrote:
+>> When the system call is executed, the struct_version ID and query_flags bitmask are read from the buffer to work out what the user is requesting.
+> 
+> Yes, but could we please also add a flag that allows you to specify that
+> the kernel _must_ provide up to date attributes.
 
-In a system under heavy load it was observed that even after the
-oom-killer selects a task to die, the task may take a long time to die.
+To my reading, if the query_flags are set in the input buffer, then the attributes MUST be fetched.  If they are unset, then they MAY be fetched, and the corresponding query_flags will be set in the return buffer.  If the query_flags are not set in the return buffer then I assume the output values are undefined.
 
-Right after sending a SIGKILL to the task selected by the oom-killer
-this task has it's priority increased so that it can exit() exit soon,
-freeing memory. That is accomplished by:
+In discussions about the proposed "statlite()" API (which this is very similar to) it was desirable that there be separate flags for the individual fields (at least AMC_TIME should be split), since it isn't always clear whether it is "free" to get all of these timestamps, if just one is desired.  For Lustre, in particular, the mtime is stored with the file data (where it is updated), and it is more costly to get this if it isn't needed.
 
-        /*
-         * We give our sacrificial lamb high priority and access to
-         * all the memory it needs. That way it should be able to
-         * exit() and clear out its resources quickly...
-         */
- 	p->rt.time_slice = HZ;
- 	set_tsk_thread_flag(p, TIF_MEMDIE);
+Cheers, Andreas
 
-It sounds plausible giving the dying task an even higher priority to be
-sure it will be scheduled sooner and free the desired memory. It was
-suggested on LKML using SCHED_FIFO:1, the lowest RT priority so that
-this task won't interfere with any running RT task.
 
-If the dying task is already an RT task, leave it untouched.
-Another good suggestion, implemented here, was to avoid boosting the
-dying task priority in case of mem_cgroup OOM.
-
-Signed-off-by: Luis Claudio R. Goncalves <lclaudio@uudg.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |   34 +++++++++++++++++++++++++++++++---
- 1 files changed, 31 insertions(+), 3 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index b5678bf..0858b18 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -82,6 +82,24 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
- #endif /* CONFIG_NUMA */
- 
- /*
-+ * If this is a system OOM (not a memcg OOM) and the task selected to be
-+ * killed is not already running at high (RT) priorities, speed up the
-+ * recovery by boosting the dying task to the lowest FIFO priority.
-+ * That helps with the recovery and avoids interfering with RT tasks.
-+ */
-+static void boost_dying_task_prio(struct task_struct *p,
-+				  struct mem_cgroup *mem)
-+{
-+	struct sched_param param = { .sched_priority = 1 };
-+
-+	if (mem)
-+		return;
-+
-+	if (!rt_task(p))
-+		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
-+}
-+
-+/*
-  * The process p may have detached its own ->mm while exiting or through
-  * use_mm(), but one or more of its subthreads may still have a valid
-  * pointer.  Return p, or any of its subthreads with a valid ->mm, with
-@@ -421,7 +439,7 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
- }
- 
- #define K(x) ((x) << (PAGE_SHIFT-10))
--static int oom_kill_task(struct task_struct *p)
-+static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
- {
- 	p = find_lock_task_mm(p);
- 	if (!p) {
-@@ -434,9 +452,17 @@ static int oom_kill_task(struct task_struct *p)
- 		K(get_mm_counter(p->mm, MM_FILEPAGES)));
- 	task_unlock(p);
- 
--	p->rt.time_slice = HZ;
-+
- 	set_tsk_thread_flag(p, TIF_MEMDIE);
- 	force_sig(SIGKILL, p);
-+
-+	/*
-+	 * We give our sacrificial lamb high priority and access to
-+	 * all the memory it needs. That way it should be able to
-+	 * exit() and clear out its resources quickly...
-+	 */
-+	boost_dying_task_prio(p, mem);
-+
- 	return 0;
- }
- #undef K
-@@ -460,6 +486,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	 */
- 	if (p->flags & PF_EXITING) {
- 		set_tsk_thread_flag(p, TIF_MEMDIE);
-+		boost_dying_task_prio(p, mem);
- 		return 0;
- 	}
- 
-@@ -489,7 +516,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 		}
- 	} while_each_thread(p, t);
- 
--	return oom_kill_task(victim);
-+	return oom_kill_task(victim, mem);
- }
- 
- /*
-@@ -670,6 +697,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 	 */
- 	if (fatal_signal_pending(current)) {
- 		set_thread_flag(TIF_MEMDIE);
-+		boost_dying_task_prio(current, NULL);
- 		return;
- 	}
- 
--- 
-1.6.5.2
 
 
 
