@@ -1,72 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab0F3WSQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 18:18:16 -0400
-Received: from xenotime.net ([72.52.115.56]:40436 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752754Ab0F3WSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 18:18:15 -0400
-Date: Wed, 30 Jun 2010 15:18:06 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Kees Bakker <kees.bakker@xs4all.nl>
-Cc: linux-kernel@vger.kernel.org, Keith Packard <keithp@keithp.com>
-Subject: Re: Filename case conflict Documentation/io-mapping.txt and
- Documentation/IO-mapping.txt
-Message-Id: <20100630151806.08a1823c.rdunlap@xenotime.net>
-In-Reply-To: <97A9C0E5-DA16-4C78-89A3-BBC08EF16518@xs4all.nl>
-References: <97A9C0E5-DA16-4C78-89A3-BBC08EF16518@xs4all.nl>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757406Ab0F3WVg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 18:21:36 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:44845 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab0F3WVf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 18:21:35 -0400
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.53,515,1272844800"; 
+   d="scan'208";a="220042408"
+From: Tom Lyon <pugs@lyon-about.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+Date: Wed, 30 Jun 2010 15:17:55 -0700
+User-Agent: KMail/1.9.9
+Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de, mst@redhat.com,
+       avi@redhat.com, gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com> <1277878452.3164.26.camel@x201>
+In-Reply-To: <1277878452.3164.26.camel@x201>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201006301517.55957.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010 22:58:21 +0200 Kees Bakker wrote:
+Thanks, Alex!
+Am incorporating...
 
-> Hi,
+On Tuesday 29 June 2010 11:14:12 pm Alex Williamson wrote:
+> On Tue, 2010-06-08 at 14:21 -0700, Tom Lyon wrote:
+> > The VFIO "driver" is used to allow privileged AND non-privileged processes to 
+> > implement user-level device drivers for any well-behaved PCI, PCI-X, and PCIe
+> > devices.
 > 
-> Do we really want these two filenames as they are right now?
-> We have:
->    Documentation/IO-mapping.txt
->    Documentation/io-mapping.txt
+> Hi Tom,
 > 
-> kees@plankie:~/src/linux-2.6$ git blame Documentation/IO-mapping.txt|head
-> ^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   1) [ NOTE: The virt_to_bus() and bus_to_virt() functions have been
-> 5872fb94 (Randy Dunlap      2009-01-29 16:28:02 -0800   2) 	superseded by the functionality provided by the PCI DMA interface
-> 5872fb94 (Randy Dunlap      2009-01-29 16:28:02 -0800   3) 	(see Documentation/PCI/PCI-DMA-mapping.txt).  They continue
-> ^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   4) 	to be documented below for historical purposes, but new code
-> ^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   5) 	must not use them. --davidm 00/12/12 ]
-> ^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   6) 
-> ^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   7) [ This is a mail message in response to a query on IO mapping, thus the
-> ^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   8)   strange format for a "document" ]
-> ^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   9) 
-> ^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700  10) The AHA-1542 is a bus-master device, and your patch makes the driver give the
+> I found a few bugs.  Patch below.  The first chunk clears the
+> pci_config_map on close, otherwise we end up passing virtualized state
+> from one user to the next.  The second is an off by one in the basic
+> perms.  Finally, vfio_bar_fixup() needs an overhaul.  It wasn't setting
+> the lower bits right and is allowing virtual writes of bits that aren't
+> aligned to the size.  This section probably needs another pass or two of
+> refinement.  Thanks,
 > 
-> kees@plankie:~/src/linux-2.6$ git blame Documentation/io-mapping.txt|head
-> 9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  1) The io_mapping functions in linux/io-mapping.h provide an abstraction for
-> 9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  2) efficiently mapping small regions of an I/O device to the CPU. The initial
-> 9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  3) usage is to support the large graphics aperture on 32-bit processors where
-> 9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  4) ioremap_wc cannot be used to statically map the entire aperture to the CPU
-> 9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  5) as it would consume too much of the kernel address space.
-> 9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  6) 
-> 9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  7) A mapping object is created during driver initialization using
-> 9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  8) 
-> 9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  9) 	struct io_mapping *io_mapping_create_wc(unsigned long base,
-> 9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700 10) 						unsigned long size)
+> Alex
 > 
-> So the IO-mapping.txt was there first. Keith, can't we rename your
-> file? For example,
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
 > 
->    Documentation/io-mapping.txt => Documentation/io-mapping.h.txt
-> -- 
+> diff --git a/drivers/vfio/vfio_main.c b/drivers/vfio/vfio_main.c
+> index 96639e5..a0e8227 100644
+> --- a/drivers/vfio/vfio_main.c
+> +++ b/drivers/vfio/vfio_main.c
+> @@ -129,6 +129,10 @@ static int vfio_release(struct inode *inode, struct file *filep)
+>  			eventfd_ctx_put(vdev->ev_msi);
+>  			vdev->ev_irq = NULL;
+>  		}
+> +		if (vdev->pci_config_map) {
+> +			kfree(vdev->pci_config_map);
+> +			vdev->pci_config_map = NULL;
+> +		}
+>  		vfio_domain_unset(vdev);
+>  		/* reset to known state if we can */
+>  		(void) pci_reset_function(vdev->pdev);
+> diff --git a/drivers/vfio/vfio_pci_config.c b/drivers/vfio/vfio_pci_config.c
+> index c821b5d..f6e26b1 100644
+> --- a/drivers/vfio/vfio_pci_config.c
+> +++ b/drivers/vfio/vfio_pci_config.c
+> @@ -79,18 +79,18 @@ struct perm_bits {
+>  static struct perm_bits pci_cap_basic_perm[] = {
+>  	{ 0xFFFFFFFF,	0, },		/* 0x00 vendor & device id - RO */
+>  	{ 0,		0xFFFFFFFC, },	/* 0x04 cmd & status except mem/io */
+> -	{ 0,		0xFF00FFFF, },	/* 0x08 bist, htype, lat, cache */
+> -	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x0c bar */
+> +	{ 0,		0, },		/* 0x08 class code & revision id */
+> +	{ 0,		0xFF00FFFF, },	/* 0x0c bist, htype, lat, cache */
+>  	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x10 bar */
+>  	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x14 bar */
+>  	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x18 bar */
+>  	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x1c bar */
+>  	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x20 bar */
+> -	{ 0,		0, },		/* 0x24 cardbus - not yet */
+> -	{ 0,		0, },		/* 0x28 subsys vendor & dev */
+> -	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x2c rom bar */
+> -	{ 0,		0, },		/* 0x30 capability ptr & resv */
+> -	{ 0,		0, },		/* 0x34 resv */
+> +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x24 bar */
+> +	{ 0,		0, },		/* 0x28 cardbus - not yet */
+> +	{ 0,		0, },		/* 0x2c subsys vendor & dev */
+> +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x30 rom bar */
+> +	{ 0,		0, },		/* 0x34 capability ptr & resv */
+>  	{ 0,		0, },		/* 0x38 resv */
+>  	{ 0x000000FF,	0x000000FF, },	/* 0x3c max_lat ... irq */
+>  };
+> @@ -318,30 +318,55 @@ static void vfio_virt_init(struct vfio_dev *vdev)
+>  static void vfio_bar_fixup(struct vfio_dev *vdev)
+>  {
+>  	struct pci_dev *pdev = vdev->pdev;
+> -	int bar;
+> -	u32 *lp;
+> -	u32 len;
+> +	int bar, mem64 = 0;
+> +	u32 *lp = NULL;
+> +	u64 len = 0;
+>  
+>  	for (bar = 0; bar <= 5; bar++) {
+> -		len = pci_resource_len(pdev, bar);
+> -		lp = (u32 *)&vdev->vinfo.bar[bar * 4];
+> -		if (len == 0) {
+> -			*lp = 0;
+> -		} else if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM) {
+> -			*lp &= ~0x1;
+> -			*lp = (*lp & ~(len-1)) |
+> -				(*lp & ~PCI_BASE_ADDRESS_MEM_MASK);
+> -			if (*lp & PCI_BASE_ADDRESS_MEM_TYPE_64)
+> -				bar++;
+> -		} else if (pci_resource_flags(pdev, bar) & IORESOURCE_IO) {
+> +		if (!mem64) {
+> +			len = pci_resource_len(pdev, bar);
+> +			lp = (u32 *)&vdev->vinfo.bar[bar * 4];
+> +			if (len == 0) {
+> +				*lp = 0;
+> +				continue;
+> +			}
+> +
+> +			len = ~(len - 1);
+> +		} else
+> +			len >>= 32;
+> +
+> +		if (*lp == ~0U)
+> +			*lp = (u32)len;
+> +		else
+> +			*lp &= (u32)len;
+> +		
+> +		if (mem64) {
+> +			mem64 = 0;
+> +			continue;
+> +		}
+> +
+> +		if (pci_resource_flags(pdev, bar) & IORESOURCE_IO)
+>  			*lp |= PCI_BASE_ADDRESS_SPACE_IO;
+> -			*lp = (*lp & ~(len-1)) |
+> -				(*lp & ~PCI_BASE_ADDRESS_IO_MASK);
+> +		else {
+> +			*lp |= PCI_BASE_ADDRESS_SPACE_MEMORY;
+> +			if (pci_resource_flags(pdev, bar) & IORESOURCE_PREFETCH)
+> +				*lp |= PCI_BASE_ADDRESS_MEM_PREFETCH;
+> +			if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM_64) {
+> +				*lp |= PCI_BASE_ADDRESS_MEM_TYPE_64;
+> +				mem64 = 1;
+> +			}
+>  		}
+>  	}
+> +
+>  	lp = (u32 *)vdev->vinfo.rombar;
+>  	len = pci_resource_len(pdev, PCI_ROM_RESOURCE);
+> -	*lp = *lp & PCI_ROM_ADDRESS_MASK & ~(len-1);
+> +	len = ~(len - 1);
+> +
+> +	if (*lp == ~PCI_ROM_ADDRESS_ENABLE)
+> +	    *lp = (u32)len;
+> +	else
+> +	    *lp = *lp & ((u32)len | PCI_ROM_ADDRESS_ENABLE);
+> +
+>  	vdev->vinfo.bardirty = 0;
+>  }
+>  
+> 
+> 
+> 
 
-Alternatively:
 
-$ git mv Documentation/IO-mapping.txt Documentation/bus-virt-phys-mapping.txt
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
