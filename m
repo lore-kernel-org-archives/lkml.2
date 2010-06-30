@@ -1,38 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757470Ab0F3XGR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 19:06:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59011 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755862Ab0F3XGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 19:06:15 -0400
-Message-ID: <4C2BCDC6.1010004@zytor.com>
-Date: Wed, 30 Jun 2010 16:05:42 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757474Ab0F3XHL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 19:07:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37306 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756561Ab0F3XHJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 19:07:09 -0400
 MIME-Version: 1.0
-To: djwong@us.ibm.com
-CC: Andrew Morton <akpm@linux-foundation.org>, mingo@redhat.com,
-       linux-kernel@vger.kernel.org, muli@il.ibm.com,
-       cschultz@linux.vnet.ibm.com, stable@kernel.org, tglx@linutronix.de,
-       mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH] x86, Calgary: Increase max PHB number
-References: <20100624212647.GI15515@tux1.beaverton.ibm.com> <tip-499a00e92dd9a75395081f595e681629eb1eebad@git.kernel.org> <20100629155151.7caaff4b.akpm@linux-foundation.org> <4C2BB7C0.9040000@zytor.com> <20100630214923.GP15515@tux1.beaverton.ibm.com>
-In-Reply-To: <20100630214923.GP15515@tux1.beaverton.ibm.com>
+In-Reply-To: <89khjo$fr177d@orsmga002.jf.intel.com>
+References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain>
+	<1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk>
+	<alpine.LFD.2.00.1001270738220.24253@localhost.localdomain>
+	<89k77n$ms73l9@fmsmga001.fm.intel.com>
+	<alpine.LFD.2.00.1001270917120.24253@localhost.localdomain>
+	<AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
+	<89khjo$fr177d@orsmga002.jf.intel.com>
+Date: Wed, 30 Jun 2010 16:07:01 -0700
+Message-ID: <AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@gmail.com>, earny@net4u.de,
+       Roman Jarosz <kedgedev@gmail.com>, intel-gfx@lists.freedesktop.org,
+       linux-kernel@vger.kernel.org, jcnengel@googlemail.com,
+       "A. Boulan" <arnaud.boulan@libertysurf.fr>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
+       michael@reinelt.co.at, stable@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2010 02:49 PM, Darrick J. Wong wrote:
-> Newer systems (x3950M2) can have 48 PHBs per chassis and 4 chassis, so bump the
-> limits up and provide an explanation of the requirements for each class.  Since
-> we can't have more than 256 PCI buses in these systems, we don't need the array
-> check.
+On Wed, Jun 30, 2010 at 12:05 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>
+> Reviewing the patch again, we no longer set the default gfpmask on the
+> inode to contain NORETRY and instead add the NORETRY at the one spot in
+> the code where we are trying to do a large allocation and our shrinker
+> would be prevented from running (due to contention on struct_mutex).
+>
+> I do not know how this causes memory corruption across hibernate and would
+> appreciate any insights.
 
-The 384-entry patch is already upstream.  Can you send a patch relative
-to current -linus?
+Hmm. More likely is the __GFP_MOVABLE flag, I think.
 
-	-hpa
+That commit changes the page cache allocation to use
 
++                                          mapping_gfp_mask (mapping) |
++                                          __GFP_COLD |
++                                          gfpmask);
+
+if I read it right. And the default mapping_gfp_mask() is
+GFP_HIGHUSER_MOVABLE, so I think you get all of
+(__GFP_WAIT | __GFP_IO | __GFP_FS | __GFP_HARDWALL | __GFP_HIGHMEM)
+set by default.
+
+The old code didn't just play games with ~__GFP_NORETRY and change
+that at runtime (which was buggy - no locking, no protection, no
+nothing), it also initialized the gfp mask. And that code also got
+removed:
+
+-       /* Basically we want to disable the OOM killer and handle ENOMEM
+-        * ourselves by sacrificing pages from cached buffers.
+-        * XXX shmem_file_[gs]et_gfp_mask()
+-        */
+-       mapping_set_gfp_mask(obj->filp->f_path.dentry->d_inode->i_mapping,
+-                            GFP_HIGHUSER |
+-                            __GFP_COLD |
+-                            __GFP_FS |
+-                            __GFP_RECLAIMABLE |
+-                            __GFP_NORETRY |
+-                            __GFP_NOWARN |
+-                            __GFP_NOMEMALLOC);
+
+(and note how it doesn't have __GFP_MOVABLE set).
+
+So I wonder if we shouldn't re-instate that mapping_set_gfp_mask() for
+the _initial_ setting when the file descriptor is created. That part
+wasn't the bug - the bug was the code that used to try to do that
+whole per-allocation dance with the bits incorrectly (ie this part of
+the change:
+
+-               gfp = i915_gem_object_get_page_gfp_mask(obj);
+-               i915_gem_object_set_page_gfp_mask(obj, gfp & ~__GFP_NORETRY);
+-               ret = i915_gem_object_get_pages(obj);
+-               i915_gem_object_set_page_gfp_mask (obj, gfp);
+
+in that patch).
+
+I could easily see that something would get very unhappy and corrupt
+memory if the suspend-to-disk phase ends up compacting memory and
+moving the pages around from under the i915 driver.
+
+I dunno. But that seems more likely than the __GFP_NORETRY flag, which
+should have no semantic meaning (except making it more likely for
+allocations to fail, of course, but that's what the i915 code
+_wanted_).
+
+                      Linus
