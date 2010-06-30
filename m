@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab0F3HGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 03:06:55 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:45836 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab0F3HGy convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Wed, 30 Jun 2010 03:06:54 -0400
-Message-Id: <4C2B09450200007800008B95@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 30 Jun 2010 08:07:17 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: <jeremy.fitzhardinge@citrix.com>, <mingo@elte.hu>, <tglx@linutronix.de>,
-       "Ky Srinivasan" <KSrinivasan@novell.com>,
-       <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4, v2] x86: enlightenment for ticket spin locks -
-	 eliminate NOPs introduced by first patch
-References: <4C2A205902000078000089E7@vpn.id2.novell.com>
- <4C2A9A1E.6010005@zytor.com>
-In-Reply-To: <4C2A9A1E.6010005@zytor.com>
+	id S1752744Ab0F3HL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 03:11:28 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:36687 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752398Ab0F3HL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 03:11:27 -0400
+Date: Wed, 30 Jun 2010 09:10:38 +0200
+From: Florian Mickler <florian@mickler.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       linux-pm@lists.linux-foundation.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       mark gross <640e9920@gmail.com>,
+       Arve =?ISO-8859-15?B?SGr4bm5lduVn?= <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-pci@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [update] Re: [PATCH] PM: Make it possible to avoid wakeup
+ events from being lost
+Message-ID: <20100630091038.6af2a53b@schatten.dmk.lab>
+In-Reply-To: <201006282101.54041.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1006281006360.1977-100000@iolanthe.rowland.org>
+	<201006282101.54041.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.06.10 at 03:13, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> On 06/29/2010 07:33 AM, Jan Beulich wrote:
->> Under the assumption that the nop-s added by the base ticket spinlock
->> enlightenment patch might be considered undesirable (or worse), here
->> is an optional patch to eliminate these nop-s again. This is done
->> through extending the memory operands of the inc instructions used for
->> unlocking ticket locks to the necessary size, using assembler and
->> linker features.
->> 
->> --- 2.6.35-rc3-virt-spinlocks.orig/arch/x86/include/asm/spinlock.h
->> +++ 2.6.35-rc3-virt-spinlocks/arch/x86/include/asm/spinlock.h
->> @@ -10,7 +10,6 @@
->>  
->>  #ifdef CONFIG_ENLIGHTEN_SPINLOCKS
->>  #include <asm/alternative.h>
->> -#include <asm/nops.h>
->>  /* Including asm/smp.h here causes a cyclic include dependency. */
->>  #include <asm/percpu.h>
->>  DECLARE_PER_CPU(int, cpu_number);
->> @@ -156,8 +155,7 @@ static __always_inline void __ticket_spi
->>  #else
->>  	unsigned int token;
->>  
->> -	alternative_io(UNLOCK_LOCK_PREFIX "incb %[lock]\n\t"
->> -		ASM_NOP3,
->> +	alternative_io(UNLOCK_LOCK_PREFIX "unary incb %[lock]\n\t",
->>  		ALTERNATIVE_TICKET_UNLOCK_HEAD
->>  		UNLOCK_LOCK_PREFIX "incb %[lock]\n\t"
->>  		"movzwl %[lock], %[token]\n\t"
->> @@ -228,8 +226,7 @@ static __always_inline void __ticket_spi
->>  #else
->>  	unsigned int token, tmp;
->>  
->> -	alternative_io(UNLOCK_LOCK_PREFIX "incw %[lock]\n\t"
->> -		ASM_NOP2,
->> +	alternative_io(UNLOCK_LOCK_PREFIX "unary incw %[lock]\n\t",
->>  		ALTERNATIVE_TICKET_UNLOCK_HEAD
->>  		UNLOCK_LOCK_PREFIX "incw %[lock]\n\t"
->>  		"movl %[lock], %[token]\n\t"
-> 
-> If you're stretching (bloating) them anyway, perhaps we should be using
-> "add" instructions instead, with their better EFLAGS behavior?
+Hi Rafael!
 
-Hmm, yes, that possibility I didn't even consider. Would have
-the potential to get away without that admittedly ugly "unary"
-assembler macro altogether, though at the price of growing all
-instructions rather than just those that have a non-symbolic
-and small displacement. Since unlock generally gets inlined, I'm
-not certain this additional growth in code size would be
-acceptable...
+On Mon, 28 Jun 2010 21:01:53 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-Please let me know, though before submitting an eventual third
-version I'd appreciate knowing especially the first two patches
-need further changes in order to get accepted.
+> On Monday, June 28, 2010, Alan Stern wrote:
+> > On Mon, 28 Jun 2010, Rafael J. Wysocki wrote:
 
-Thanks, Jan
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM: Make it possible to avoid wakeup events from being lost
 
+I have nothing substantial to add, but just wanted to let you know that
+this approach seems like a good alternative to me. As far as I can see
+the userspace suspend-blocker interface could be expressed in terms of
+this kernel facility which brings android closer to mainline.
+
+The only thing I haven't thought through yet is the 'maintain a discrete
+set of constraints' vs 'just increment a number' thing. Especially if
+what we loose in information through that (in comparison to 'the other
+approach') is made up for by easier in-kernel-API.  I _think_ if there
+is any need for in-kernel-accounting (i don't know that) it could be
+retro-fitted by using the trace event infrastructure?
+
+Cheers,
+Flo
