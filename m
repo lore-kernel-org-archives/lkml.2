@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab0F3BKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 21:10:04 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:60935 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab0F3BKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 21:10:00 -0400
-Message-Id: <201006300109.o5U19s1N043912@www262.sakura.ne.jp>
-Subject: Re: [PATCH 2/2] Yama: add PTRACE exception tracking
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: kees.cook@canonical.com
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+	id S1754409Ab0F3BN3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 21:13:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56499 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752858Ab0F3BN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 21:13:28 -0400
+Message-ID: <4C2A9A1E.6010005@zytor.com>
+Date: Tue, 29 Jun 2010 18:13:02 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
+To: Jan Beulich <JBeulich@novell.com>
+CC: mingo@elte.hu, tglx@linutronix.de, jeremy.fitzhardinge@citrix.com,
+       Ky Srinivasan <KSrinivasan@novell.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4, v2] x86: enlightenment for ticket spin locks -	 eliminate
+ NOPs introduced by first patch
+References: <4C2A205902000078000089E7@vpn.id2.novell.com>
+In-Reply-To: <4C2A205902000078000089E7@vpn.id2.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Wed, 30 Jun 2010 10:09:54 +0900
-References: <20100630003844.GE4837@outflux.net> <20100630004027.GG4837@outflux.net>
-In-Reply-To: <20100630004027.GG4837@outflux.net>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 29062010 #4014306, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook wrote:
-> +static spinlock_t ptracer_relations_lock;
-static DEFINE_SPINLOCK(ptracer_relations_lock);
-
-> +static int yama_ptracer_add(struct task_struct *tracer,
-> +			    struct task_struct *tracee)
-> +{
-> +	struct ptrace_relation *relation;
-> +
-> +	relation = kzalloc(sizeof(*relation), GFP_KERNEL);
-You can use kmalloc() since all fields are initialized within this function.
-> +	if (!relation)
-> +		return -ENOMEM;
-> +	relation->tracer = tracer;
-> +	relation->tracee = tracee;
-> +	spin_lock(&ptracer_relations_lock);
-> +	list_add(&relation->node, &ptracer_relations);
-> +	spin_unlock(&ptracer_relations_lock);
-> +
-> +	return 0;
-> +}
-
-> +static int ptracer_exception_found(struct task_struct *tracer,
-> +				   struct task_struct *tracee)
-> +{
-> +	int rc = 0;
-> +	struct ptrace_relation *relation;
-> +	struct task_struct *parent = NULL;
-> +
-> +	spin_lock(&ptracer_relations_lock);
-> +	list_for_each_entry(relation, &ptracer_relations, node)
-> +		if (relation->tracee == tracee) {
-> +			parent = relation->tracer;
-> +			break;
-> +		}
-> +	if (task_is_descendant(parent, tracer))
-> +		rc = 1;
-> +	spin_unlock(&ptracer_relations_lock);
-
-Can't we release ptracer_relations_lock before calling
-task_is_descendant() since task_is_descendant() won't
-access "struct ptrace_relation" on ptracer_relations list.
-
-> @@ -32,27 +204,20 @@ static int yama_ptrace_access_check(struct task_struct *child,
->  {
->  	int rc;
+On 06/29/2010 07:33 AM, Jan Beulich wrote:
+> Under the assumption that the nop-s added by the base ticket spinlock
+> enlightenment patch might be considered undesirable (or worse), here
+> is an optional patch to eliminate these nop-s again. This is done
+> through extending the memory operands of the inc instructions used for
+> unlocking ticket locks to the necessary size, using assembler and
+> linker features.
+> 
+> --- 2.6.35-rc3-virt-spinlocks.orig/arch/x86/include/asm/spinlock.h
+> +++ 2.6.35-rc3-virt-spinlocks/arch/x86/include/asm/spinlock.h
+> @@ -10,7 +10,6 @@
 >  
-> +	/* If standard caps disallows it, so does Yama.  We should
-> +	 * should only tighten restrictions further.
-s/should should/should/
-> +	 */
+>  #ifdef CONFIG_ENLIGHTEN_SPINLOCKS
+>  #include <asm/alternative.h>
+> -#include <asm/nops.h>
+>  /* Including asm/smp.h here causes a cyclic include dependency. */
+>  #include <asm/percpu.h>
+>  DECLARE_PER_CPU(int, cpu_number);
+> @@ -156,8 +155,7 @@ static __always_inline void __ticket_spi
+>  #else
+>  	unsigned int token;
+>  
+> -	alternative_io(UNLOCK_LOCK_PREFIX "incb %[lock]\n\t"
+> -		ASM_NOP3,
+> +	alternative_io(UNLOCK_LOCK_PREFIX "unary incb %[lock]\n\t",
+>  		ALTERNATIVE_TICKET_UNLOCK_HEAD
+>  		UNLOCK_LOCK_PREFIX "incb %[lock]\n\t"
+>  		"movzwl %[lock], %[token]\n\t"
+> @@ -228,8 +226,7 @@ static __always_inline void __ticket_spi
+>  #else
+>  	unsigned int token, tmp;
+>  
+> -	alternative_io(UNLOCK_LOCK_PREFIX "incw %[lock]\n\t"
+> -		ASM_NOP2,
+> +	alternative_io(UNLOCK_LOCK_PREFIX "unary incw %[lock]\n\t",
+>  		ALTERNATIVE_TICKET_UNLOCK_HEAD
+>  		UNLOCK_LOCK_PREFIX "incw %[lock]\n\t"
+>  		"movl %[lock], %[token]\n\t"
 
-> @@ -221,6 +388,8 @@ static __init int yama_init(void)
->  
->  	printk(KERN_INFO "Yama: becoming mindful.\n");
->  
-> +	spin_lock_init(&ptracer_relations_lock);
-> +
-You can statically initialize by using DEFINE_SPINLOCK().
+If you're stretching (bloating) them anyway, perhaps we should be using
+"add" instructions instead, with their better EFLAGS behavior?
+
+	-hpa
