@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab0F3OTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 10:19:00 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42502 "EHLO
+	id S1756233Ab0F3OTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 10:19:54 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34778 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756113Ab0F3OS7 (ORCPT
+	with ESMTP id S1756113Ab0F3OTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 10:18:59 -0400
+	Wed, 30 Jun 2010 10:19:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=rQYZc2jk6yJIYYUa3I4iJUwDUvUJ9TfbUmxpBzUCw+5tKVMgbVyhs6f44jtnL7O/zn
-         xqf57j8BpnFQcsvNmRQ3+4iAhtPuSzTafNXe8PbN7hmkJv08otjc6nvjYxxwP5MXGyX0
-         kLoJzoqGYq1yl3DbpsbEQye5XXbn8qB7+1tVM=
-From: Afzal Mohammed <lazfamam@gmail.com>
-To: tomi.valkeinen@nokia.com
-Cc: ville.syrjala@nokia.com, tj@kernel.org, lazfamam@gmail.com,
-       linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] OMAP:DSS2:OMAPFB: Fix probe error path
-Date: Wed, 30 Jun 2010 19:45:27 +0530
-Message-Id: <1277907327-3443-1-git-send-email-lazfamam@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Ck2AIVoZI1fTgPxOJREG/izSV/KO9bK5iMr3wN/Aouc7o803qKZFALc6hBtHW4v2db
+         nyh5Sc+AwFH+qJVqgTZkGX7U/NZMSXbOWMFLnjB/yiW07pah8yXy6cCmZVgBqKDWUOGi
+         pYN5NFtUirnEqBw78517SAEJcfNxFlRlfOO7Q=
+Date: Wed, 30 Jun 2010 23:19:44 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 03/11] oom: make oom_unkillable_task() helper function
+Message-ID: <20100630141944.GE15644@barrios-desktop>
+References: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
+ <20100630182752.AA4E.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100630182752.AA4E.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If enabling fb0 fails in omapfb_create_framebuffers(), remove
-sysfs file before returning to probe. This is required to complete
-the cleanup in the above mentioned error case.
+On Wed, Jun 30, 2010 at 06:28:37PM +0900, KOSAKI Motohiro wrote:
+> Now, we have the same task check in two places. Unify it.
+> 
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  mm/oom_kill.c |   33 ++++++++++++++++++++++-----------
+>  1 files changed, 22 insertions(+), 11 deletions(-)
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index dc8589e..a4a5439 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -101,6 +101,26 @@ static struct task_struct *find_lock_task_mm(struct task_struct *p)
+>  	return NULL;
+>  }
+>  
+> +/* return true if the task is not adequate as candidate victim task. */
+> +static bool oom_unkillable_task(struct task_struct *p, struct mem_cgroup *mem,
+> +			   const nodemask_t *nodemask)
+> +{
+> +	if (is_global_init(p))
+> +		return true;
+> +	if (p->flags & PF_KTHREAD)
+> +		return true;
+> +
+> +	/* When mem_cgroup_out_of_memory() and p is not member of the group */
+> +	if (mem && !task_in_mem_cgroup(p, mem))
+> +		return true;
+> +
+> +	/* p may not have freeable memory in nodemask */
+> +	if (!has_intersects_mems_allowed(p, nodemask))
+> +		return true;
+> +
+> +	return false;
+> +}
+> +
 
-Signed-off-by: Afzal Mohammed <lazfamam@gmail.com>
----
- drivers/video/omap2/omapfb/omapfb-main.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I returend this patch as review 7/11. 
+Why didn't you check p->signal->oom_adj == OOM_DISABLE in here?
+I don't figure out code after your patches are applied totally.
+But I think it would be check it in this function as function's name says.
 
-diff --git a/drivers/video/omap2/omapfb/omapfb-main.c b/drivers/video/omap2/omapfb/omapfb-main.c
-index 4b4506d..2319b81 100644
---- a/drivers/video/omap2/omapfb/omapfb-main.c
-+++ b/drivers/video/omap2/omapfb/omapfb-main.c
-@@ -1945,6 +1945,7 @@ static int omapfb_create_framebuffers(struct omapfb2_device *fbdev)
- 			r = omapfb_overlay_enable(ovl, 1);
- 
- 			if (r) {
-+				omapfb_remove_sysfs(fbdev);
- 				dev_err(fbdev->dev,
- 						"failed to enable overlay\n");
- 				return r;
+
 -- 
-1.7.0.4
-
+Kind regards,
+Minchan Kim
