@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262Ab0F3SXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 14:23:32 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:54513 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab0F3SXb (ORCPT
+	id S1757017Ab0F3SYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 14:24:18 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:43587 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755521Ab0F3SYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 14:23:31 -0400
-X-Auth-Info: LiLm2ItddMr6RrCEFas0rbgLxDvUX/0vin72jXJlI10=
-To: Rupjyoti Sarmah <rsarmah@apm.com>
-cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, jgarzik@pobox.com,
-       sr@denx.de, linuxppc-dev@ozlabs.org
-From: Wolfgang Denk <wd@denx.de>
-Subject: Re: [PATCH v1]460EX on-chip SATA driver<resubmisison>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-In-reply-to: <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com>
-References: <201006241327.o5ODRY6m032299@amcc.com> <20100630115808.2D9241524EC@gemini.denx.de> <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com>
-Comments: In-reply-to Rupjyoti Sarmah <rsarmah@apm.com>
-   message dated "Wed, 30 Jun 2010 18:14:47 +0530."
-Date: Wed, 30 Jun 2010 20:23:26 +0200
-Message-Id: <20100630182326.3A48B1524EC@gemini.denx.de>
+	Wed, 30 Jun 2010 14:24:16 -0400
+Date: Wed, 30 Jun 2010 21:23:46 +0300 (EEST)
+Message-Id: <20100630.212346.226780589.Hiroshi.DOYU@nokia.com>
+To: siccegge@cs.fau.de, h-kanigeri2@ti.com
+Cc: tony@atomide.com, linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+In-Reply-To: <fcfa44a43c21c70f89ced96b96d7c1489d28cc51.1277911346.git.siccegge@cs.fau.de>
+References: <cover.1277911345.git.siccegge@cs.fau.de>
+	<fcfa44a43c21c70f89ced96b96d7c1489d28cc51.1277911346.git.siccegge@cs.fau.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Jun 2010 18:23:51.0994 (UTC) FILETIME=[642141A0:01CB1881]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Rupjyoti Sarmah,
+From: ext Christoph Egger <siccegge@cs.fau.de>
+Subject: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
+Date: Wed, 30 Jun 2010 18:01:01 +0200
 
-In message <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com> you wrote:
+> MPU_{BRIDGE,TESLA}_IOMMU doesn't exist in Kconfig, therefore removing
+> all references for it from the source code.
+
+Coming soon, I guess. Hari?
+
+> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> ---
+>  arch/arm/mach-omap2/omap-iommu.c |   22 ----------------------
+>  1 files changed, 0 insertions(+), 22 deletions(-)
 > 
-> I took the mainline kernel v2.6.35-rc3 and downloaded using the git
-> download link.
-> I created the patch on 6/24/2010 after doing a git pull.
+> diff --git a/arch/arm/mach-omap2/omap-iommu.c b/arch/arm/mach-omap2/omap-iommu.c
+> index eb9bee7..3aa3fe9 100644
+> --- a/arch/arm/mach-omap2/omap-iommu.c
+> +++ b/arch/arm/mach-omap2/omap-iommu.c
+> @@ -35,17 +35,6 @@ static struct iommu_device omap3_devices[] = {
+>  			.clk_name = "cam_ick",
+>  		},
+>  	},
+> -#if defined(CONFIG_MPU_BRIDGE_IOMMU)
+> -	{
+> -		.base = 0x5d000000,
+> -		.irq = 28,
+> -		.pdata = {
+> -			.name = "iva2",
+> -			.nr_tlb_entries = 32,
+> -			.clk_name = "iva2_ck",
+> -		},
+> -	},
+> -#endif
+>  };
+>  #define NR_OMAP3_IOMMU_DEVICES ARRAY_SIZE(omap3_devices)
+>  static struct platform_device *omap3_iommu_pdev[NR_OMAP3_IOMMU_DEVICES];
+> @@ -66,17 +55,6 @@ static struct iommu_device omap4_devices[] = {
+>  			.clk_name = "ducati_ick",
+>  		},
+>  	},
+> -#if defined(CONFIG_MPU_TESLA_IOMMU)
+> -	{
+> -		.base = OMAP4_MMU2_BASE,
+> -		.irq = INT_44XX_DSP_MMU,
+> -		.pdata = {
+> -			.name = "tesla",
+> -			.nr_tlb_entries = 32,
+> -			.clk_name = "tesla_ick",
+> -		},
+> -	},
+> -#endif
+>  };
+>  #define NR_OMAP4_IOMMU_DEVICES ARRAY_SIZE(omap4_devices)
+>  static struct platform_device *omap4_iommu_pdev[NR_OMAP4_IOMMU_DEVICES];
+> -- 
+> 1.7.0.4
 > 
-> With the kernel tree on 6/24/2010 the driver compiled. I also tested the
-> functionality on the SATA drive & it worked.
-
-v2.6.35-rc3 was released on June 11, 13 days before 6/24/2010.
-
-Can you please give the exact git commit ID so I can try reproducing
-this?
-
-Best regards,
-
-Wolfgang Denk
-
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
-Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
-There comes to all races an ultimate crisis which  you  have  yet  to
-face  ....  One  day  our  minds became so powerful we dared think of
-ourselves as gods.
-	-- Sargon, "Return to Tomorrow", stardate 4768.3
