@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab0F3W1P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 18:27:15 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16685 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab0F3W1O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 18:27:14 -0400
-Date: Wed, 30 Jun 2010 15:27:01 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [PATCH] fs-writeback: fix kernel-doc warnings
-Message-Id: <20100630152701.0c476a44.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B020B.4C2BC4B8.0186:SCFMA4539814,ss=1,fgs=0
+	id S932137Ab0F3WiY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 18:38:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13821 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757409Ab0F3WiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 18:38:19 -0400
+Date: Thu, 1 Jul 2010 01:32:56 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tom Lyon <pugs@lyon-about.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, randy.dunlap@oracle.com,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       joro@8bytes.org, hjk@linutronix.de, avi@redhat.com, gregkh@suse.de,
+       aafabbri@cisco.com, scofeldm@cisco.com
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100630223256.GB25537@redhat.com>
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
+ <1277878452.3164.26.camel@x201>
+ <201006301517.55957.pugs@lyon-about.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006301517.55957.pugs@lyon-about.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, Jun 30, 2010 at 03:17:55PM -0700, Tom Lyon wrote:
+> Thanks, Alex!
+> Am incorporating...
 
-Fix kernel-doc to match the function's changed args.
+I get it there's no chance you'll drop the "virtualization"
+from the driver then?
 
-Warning(fs/fs-writeback.c:190): No description found for parameter 'args'
-Warning(fs/fs-writeback.c:190): Excess function parameter 'sb' description in 'bdi_queue_work_onstack'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <jaxboe@fusionio.com>
----
- fs/fs-writeback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-2.6.35-rc3-git4.orig/fs/fs-writeback.c
-+++ linux-2.6.35-rc3-git4/fs/fs-writeback.c
-@@ -179,7 +179,7 @@ static void bdi_alloc_queue_work(struct 
- 
- /**
-  * bdi_queue_work_onstack - start and wait for writeback
-- * @sb: write inodes from this super_block
-+ * @args: parameters to control the work queue writeback
-  *
-  * Description:
-  *   This function initiates writeback and waits for the operation to
+-- 
+MST
