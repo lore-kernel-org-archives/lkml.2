@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab0F3Jbk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:31:40 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59951 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab0F3Jbj (ORCPT
+	id S1755116Ab0F3Jbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 05:31:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51890 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754340Ab0F3Jbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:31:39 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 07/11] oom: move OOM_DISABLE check from oom_kill_task to out_of_memory()
-Cc: kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
-References: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
-Message-Id: <20100630183059.AA5C.A69D9226@jp.fujitsu.com>
+	Wed, 30 Jun 2010 05:31:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file stats available [ver #2]
+Date: Wed, 30 Jun 2010 11:31:37 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3+; KDE/4.4.90; x86_64; ; )
+Cc: viro@zeniv.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
+       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       sjayaraman@suse.de, linux-ext4@vger.kernel.org
+References: <201006301030.52235.arnd@arndb.de> <20100630011712.18960.3723.stgit@warthog.procyon.org.uk> <25470.1277888151@redhat.com>
+In-Reply-To: <25470.1277888151@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 30 Jun 2010 18:31:36 +0900 (JST)
+Message-Id: <201006301131.37241.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX182S5jEutiKJdMvxFE2GSc9ZMpFz8FNO6A863r
+ MbUFvcUwrllv/ns3ujo04kcrVfVDNT7Lcjl1NVqbq/qqLnOPm4
+ zpnp4Lj7EFeN+23J4OYjQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, if oom_kill_allocating_task is enabled and current have
-OOM_DISABLED, following printk in oom_kill_process is called twice.
+On Wednesday 30 June 2010 10:55:51 David Howells wrote:
+> Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > I think it would be better to leave the structure as write-only from
+> > the kernel
+> 
+> Why?
 
-    pr_err("%s: Kill process %d (%s) score %lu or sacrifice child\n",
-            message, task_pid_nr(p), p->comm, points);
+Consistency mostly. stat and stat64 don't read it, so I think xstat
+also shouldn't if we can easily avoid it.
 
-So, OOM_DISABLE check should be more early.
+It also makes things like strace more complicated.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+> > and pass the query_flags and struct_version as syscall arguments, though it
+> > makes sense to store them in the result as well.
+> 
+> The problem with that is that the number of syscall arguments is limited, and
+> there is no SYSCALL_DEFINE7.
+> 
+> On the other hand, I could make a separate argument block struct and pass a
+> pointer to it...
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index f5d903f..75f6dbc 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -424,7 +424,7 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
- static int oom_kill_task(struct task_struct *p)
- {
- 	p = find_lock_task_mm(p);
--	if (!p || p->signal->oom_adj == OOM_DISABLE) {
-+	if (!p) {
- 		task_unlock(p);
- 		return 1;
- 	}
-@@ -686,7 +686,8 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 
- 	read_lock(&tasklist_lock);
- 	if (sysctl_oom_kill_allocating_task &&
--	    !oom_unkillable_task(current, NULL, nodemask)) {
-+	    !oom_unkillable_task(current, NULL, nodemask) &&
-+	    (current->signal->oom_adj != OOM_DISABLE)) {
- 		/*
- 		 * oom_kill_process() needs tasklist_lock held.  If it returns
- 		 * non-zero, current could not be killed so we must fallback to
--- 
-1.6.5.2
+No, I think that would be worse than the current version. But if you remove
+the structure version in favor of the flags, you only need six arguments
+anyway.
 
+You can also go further and fold the structure length into flags, because
+the length is just a function of the data you are passing.
 
+Having a system call with flags, size and version is like wearing a belt,
+braces and suspenders. An unsigned long flags argument should be enough to
+hold up your pants[1].
 
+	Arnd
+
+[1] I hope I managed to make this sound wrong in both American and proper
+English.
