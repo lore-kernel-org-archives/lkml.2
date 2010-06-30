@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab0F3Lyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 07:54:31 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:44970 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab0F3Lya convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Wed, 30 Jun 2010 07:54:30 -0400
-Message-Id: <4C2B4CB10200007800008CDE@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 30 Jun 2010 12:54:57 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Peter Zijlstra" <peterz@infradead.org>
-Cc: "mingo@elte.hu" <mingo@elte.hu>, "Jeremy Fitzhardinge" <jeremy@goop.org>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       "Ky Srinivasan" <KSrinivasan@novell.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH 1/4, v2] x86: enlightenment for ticket spin locks -
-	 base implementation
-References: <4C2A1FE902000078000089E1@vpn.id2.novell.com>
- <1277885133.1868.71.camel@laptop>
- <4C2B23CD0200007800008BFA@vpn.id2.novell.com>
- <1277889116.1868.95.camel@laptop> <4C2B14BE.6080505@goop.org>
- <4C2B4A100200007800008CC5@vpn.id2.novell.com>
- <1277898525.1868.108.camel@laptop>
-In-Reply-To: <1277898525.1868.108.camel@laptop>
+	id S1753979Ab0F3L4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 07:56:22 -0400
+Received: from sh.osrg.net ([192.16.179.4]:50578 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751695Ab0F3L4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 07:56:20 -0400
+Date: Wed, 30 Jun 2010 20:55:09 +0900
+To: hch@lst.de
+Cc: fujita.tomonori@lab.ntt.co.jp, snitzer@redhat.com, axboe@kernel.dk,
+       dm-devel@redhat.com, James.Bottomley@suse.de,
+       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
+       akpm@linux-foundation.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
+ payload
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100628152536.GA16013@lst.de>
+References: <20100628075738.GA26606@lst.de>
+	<20100628171218Q.fujita.tomonori@lab.ntt.co.jp>
+	<20100628152536.GA16013@lst.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100630205458C.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 30 Jun 2010 20:55:10 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.06.10 at 13:48, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2010-06-30 at 12:43 +0100, Jan Beulich wrote:
+On Mon, 28 Jun 2010 17:25:36 +0200
+Christoph Hellwig <hch@lst.de> wrote:
+
+> On Mon, Jun 28, 2010 at 05:14:28PM +0900, FUJITA Tomonori wrote:
+> > > While I see the problems with leaking ressources in that case I still
+> > > can't quite explain the hang I see.
+> > 
+> > Any way to reproduce the hang without ssd drives?
 > 
->> It does tickle just the new owner - that's what the list is for.
-> 
-> But if you have a FIFO list you don't need the ticket stuff and can
-> implement a FIFO lock instead.
+> Actually the SSDs don't fully hang, they just causes lots of I/O errors
+> and hit the error handler hard.  The hard hang is when running under
+> qemu.  Apply the patch below, then create an if=scsi drive that resides
+> on an XFS filesystem, and you'll have scsi TP support in the guest:
 
-The list is LIFO (not FIFO, as only the most recently added entry is
-a candidate for needing wakeup as long as there's no interrupt
-re-enabling in irqsave lock paths), and is only used for tickling (not
-for deciding who's going to be the next owner).
+Ok, I figured out what's wrong.
 
-Jan
+As I suspected, it's due to the partial completion.
 
+qemu scsi driver tells that the WRITE_SAME command was successful but
+somehow the command has resid. So we retry it again and again (and
+leak some memory).
+
+I don't know yet why qemu scsi driver is broken. Maybe there is a bug
+in it or converting discard to FS sends broken commands to the driver.
+
+I'll try to figure out it tomorrow.
+
+I've put a patch to complete discard command in the all-or-nothing
+manner:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/tomo/linux-2.6-misc.git discard
+
+
+At least, the guest kernel doesn't hang for me.
