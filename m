@@ -1,83 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757456Ab0F3W7s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 18:59:48 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38518 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab0F3W7q (ORCPT
+	id S1757438Ab0F3XDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 19:03:10 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51264 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754477Ab0F3XDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 18:59:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=AIO09mQAmPmooC3baSdJSJwgw+6LJB87QNKa6JUKWK7CJMcwPMCbkTLpT63WCjERVv
-         Lo5A3oWT8ZcSnlWMoQ9WTAKr24jSdbB3Xs9rg5q6dB43fWG/Q/FIWIdWCleM/aepEwOh
-         tyaWArdn3nzmSjLxQvBj8EUBJQtEKCkUlgo+o=
-Date: Thu, 1 Jul 2010 00:57:54 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Peter Pan <wppan@redflag-linux.com>
-Cc: jack@suse.cz, hch@lst.de, viro@zeniv.linux.org.uk, npiggin@suse.de,
-       jblunck@suse.de, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] ext2:delete misused ext2_free_blocks
-Message-ID: <20100630225754.GT19184@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Peter Pan <wppan@redflag-linux.com>, jack@suse.cz, hch@lst.de,
-	viro@zeniv.linux.org.uk, npiggin@suse.de, jblunck@suse.de,
-	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <1277893287-25916-1-git-send-email-wppan@redflag-linux.com>
+	Wed, 30 Jun 2010 19:03:07 -0400
+Message-ID: <4C2BCC5D.3080402@kernel.org>
+Date: Wed, 30 Jun 2010 15:59:41 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277893287-25916-1-git-send-email-wppan@redflag-linux.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ram Pai <linuxram@us.ibm.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+       clemens@ladisch.de
+Subject: Re: [RFC PATCH 1/1] PCI: skip release and reallocation of io port
+ resources
+References: <20100630211516.GA25991@us.ibm.com>
+In-Reply-To: <20100630211516.GA25991@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C2BCD1C.0298,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 06:21:27PM +0800, Peter Pan wrote:
-> if ext2_new_blocks returns error, no blocks need to be freed.
-> 
+On 06/30/2010 02:15 PM, Ram Pai wrote:
+>        PCI: skip release and reallocation of io port resources
+>     
+>        git commit 977d17bb1749517b353874ccdc9b85abc7a58c2a
+>        released  and   reallocated  all resources, ioport and memory, when 
+>        allocation  of   any  resource   of  any  type failed. This  caused
+>        failure to reallocate fragile  io  port  resources, as reported in
+>     	https://bugzilla.kernel.org/show_bug.cgi?id=15960
+>     
+>        The problem was solved by reverting the commit, through
+>        git commit 	769d9968e42c995eaaf61ac5583d998f32e0769a.
+>     
+>        However reverting the original patch fails MMIO resource allocation
+>        for SRIOV PCI-Bars on some platforms. Especially on  platforms
+>        where the BIOS is unaware of SRIOV resource BARs.
+>     
+>        The following code, an  idea  proposed by Yinghai Lu, skips release
+>        and  re-allocation  of  io port  resources   if its  allocation has
+>        not failed in the first place.
+>     
+>        This patch applies on top of patch corresponding to
+>        git commit 977d17bb1749517b353874ccdc9b85abc7a58c2a
+>     
 
-Hi Peter,
+for safe all, i would suggest
 
-Your patch isn't right.  The original code is OK as is.
+1. put back 
+977d17bb1749517b353874ccdc9b85abc7a58c2a
+2. and apply following patch.
 
-Are you seeing a kernel panic?  Perhaps we can help you fix it.
+[PATCH] pci: disable pci trying to reallocate pci bridge by default.
 
-regards,
-dan carpenter
+it broken Linus's Nouveau
 
-> Signed-off-by: Peter Pan <wppan@redflag-linux.com>
-> ---
->  fs/ext2/inode.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-> index 3675088..f858847 100644
-> --- a/fs/ext2/inode.c
-> +++ b/fs/ext2/inode.c
-> @@ -385,6 +385,8 @@ static int ext2_alloc_blocks(struct inode *inode,
->  	ext2_fsblk_t current_block = 0;
->  	int ret = 0;
->  
-> +	*err = -ENOSPC;
-> +
->  	/*
->  	 * Here we try to allocate the requested multiple blocks at once,
->  	 * on a best-effort basis.
-> @@ -421,8 +423,6 @@ static int ext2_alloc_blocks(struct inode *inode,
->  	*err = 0;
->  	return ret;
->  failed_out:
-> -	for (i = 0; i <index; i++)
-> -		ext2_free_blocks(inode, new_blocks[i], 1);
->  	return ret;
->  }
->  
-> -- 
-> 1.6.6
+bisected:to commit 977d17bb17
+| PCI: update bridge resources to get more big ranges in PCI assign unssigned
+
+so try disable it by default.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ Documentation/kernel-parameters.txt |    6 ++++++
+ drivers/pci/pci.c                   |    4 ++++
+ drivers/pci/pci.h                   |    2 ++
+ drivers/pci/setup-bus.c             |   14 +++++++++-----
+ 4 files changed, 21 insertions(+), 5 deletions(-)
+
+Index: linux-2.6/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-2.6.orig/Documentation/kernel-parameters.txt
++++ linux-2.6/Documentation/kernel-parameters.txt
+@@ -2009,6 +2009,12 @@ and is between 256 and 4096 characters.
+ 				for broken drivers that don't call it.
+ 		skip_isa_align	[X86] do not align io start addr, so can
+ 				handle more pci cards
++		try=n		set the pci_try_num to reallocate the pci bridge resource
++				1: default
++				2: will set the num to max_depth, and try to reallocate res
++				   to get big range for the bridge. assume the pci peer root
++				   resource is right from _CRS or from hostbridge pci reg
++				   reading out.
+ 		firmware	[ARM] Do not re-enumerate the bus but instead
+ 				just use the configuration from the
+ 				bootloader. This is currently used on
+Index: linux-2.6/drivers/pci/pci.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci.c
++++ linux-2.6/drivers/pci/pci.c
+@@ -2983,6 +2983,10 @@ static int __init pci_setup(char *str)
+ 				pci_no_aer();
+ 			} else if (!strcmp(str, "nodomains")) {
+ 				pci_no_domains();
++			} else if (!strncmp(str, "try=", 4)) {
++				int try_num = memparse(str + 4, &str);
++				if (try_num > 0)
++					pci_try_num = try_num;
+ 			} else if (!strncmp(str, "cbiosize=", 9)) {
+ 				pci_cardbus_io_size = memparse(str + 9, &str);
+ 			} else if (!strncmp(str, "cbmemsize=", 10)) {
+Index: linux-2.6/drivers/pci/pci.h
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci.h
++++ linux-2.6/drivers/pci/pci.h
+@@ -212,6 +212,8 @@ static inline int pci_ari_enabled(struct
+ 	return bus->self && bus->self->ari_enabled;
+ }
+ 
++extern int pci_try_num;
++
+ #ifdef CONFIG_PCI_QUIRKS
+ extern int pci_is_reassigndev(struct pci_dev *dev);
+ resource_size_t pci_specified_resource_alignment(struct pci_dev *dev);
+Index: linux-2.6/drivers/pci/setup-bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/setup-bus.c
++++ linux-2.6/drivers/pci/setup-bus.c
+@@ -869,6 +869,7 @@ static int __init pci_get_max_depth(void
+  * second  and later try will clear small leaf bridge res
+  * will stop till to the max  deepth if can not find good one
+  */
++int pci_try_num = 1;
+ void __init
+ pci_assign_unassigned_resources(void)
+ {
+@@ -879,14 +880,17 @@ pci_assign_unassigned_resources(void)
+ 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+ 				  IORESOURCE_PREFETCH;
+ 	unsigned long failed_type;
+-	int max_depth = pci_get_max_depth();
+-	int pci_try_num;
+ 
+ 	head.next = NULL;
+ 
+-	pci_try_num = max_depth + 1;
+-	printk(KERN_DEBUG "PCI: max bus depth: %d pci_try_num: %d\n",
+-		 max_depth, pci_try_num);
++	if (pci_try_num > 1) {
++		int max_depth = pci_get_max_depth();
++
++		if (max_depth + 1 > pci_try_num)
++			pci_try_num = max_depth + 1;
++		printk(KERN_DEBUG "PCI: max bus depth: %d pci_try_num: %d\n",
++			 max_depth, pci_try_num);
++	}
+ 
+ again:
+ 	/* Depth first, calculate sizes and alignments of all
