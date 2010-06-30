@@ -1,116 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab0F3BwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 21:52:19 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62905 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab0F3BwR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 21:52:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kFRpJIIheVD54SzwmcSJeqoXUJvW1JdBjXeE6v9ox2cDzo0qjqkJ4Eb5jpNf0Ow4f0
-         7gDA2BAEi6oaF+t2JExj4Zbdjfe/+WqRM+kaH+qxvkCpTuH4JM9iSE7boYMnmsNYB37r
-         T7PPHrRX8cn8+LywUecxUWxJ4fXAiszLe9UxM=
-MIME-Version: 1.0
-In-Reply-To: <20100628222920.1127f8eb@neptune.home>
-References: <20100509184911.3f136b77@neptune.home>
-	<AANLkTik0EkPYKdnhrpF7yK6eXIrHMsNYrzSC6tyeBR0P@mail.gmail.com>
-	<20100510080047.5adade6f@pluto.restena.lu>
-	<20100526215829.28a4aa47@neptune.home>
-	<20100530130945.5c03797f@neptune.home>
-	<20100623123225.4c16e653@neptune.home>
-	<alpine.LNX.2.00.1006241053360.13809@pobox.suse.cz>
-	<20100628222641.489c955a@neptune.home>
-	<20100628222920.1127f8eb@neptune.home>
-Date: Wed, 30 Jun 2010 09:52:13 +0800
-Message-ID: <AANLkTingjmM4OmkdXl9IOUe5zsj0QxTdix1h34pVHWGl@mail.gmail.com>
-Subject: Re: [PATCH 1/4] HID: picolcd: fix deferred_io init/cleanup to 
-	(un)register_framebuffer ordering
-From: Jaya Kumar <jayakumar.lkml@gmail.com>
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-fbdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753007Ab0F3CKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 22:10:17 -0400
+Received: from sh.osrg.net ([192.16.179.4]:54312 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752363Ab0F3CKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 22:10:15 -0400
+Date: Wed, 30 Jun 2010 11:10:08 +0900
+To: cmetcalf@tilera.com
+Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] tile: set ARCH_KMALLOC_MINALIGN
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4C2A0592.50709@tilera.com>
+References: <20100629164117Z.fujita.tomonori@lab.ntt.co.jp>
+	<4C2A0592.50709@tilera.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100630110749V.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 30 Jun 2010 11:10:09 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 4:29 AM, Bruno Prémont
-<bonbons@linux-vserver.org> wrote:
-> We need to call fb_deferred_io_init() before we register_framebuffer()
-> as otherwise, in case fbcon uses our framebuffer, we will get a BUG()
-> because in picolcd_fb_imageblit() we schedule defio which has not
-> been initialized yet.
+On Tue, 29 Jun 2010 10:39:14 -0400
+Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-Hi Bruno,
+> This sounds OK.   The TILE-Gx chip does coherent DMA, so won't need
+> this, I assume?  If you want to guard this suitably, you can add
+> "#ifndef __tilegx__" around it and add a comment that TILE-Gx has
+> coherent IO.  Thanks.
 
-The comment above seems confusing to me in that it talks about fbcon
-and defio schedule.
+On Tue, 29 Jun 2010 10:39:14 -0400
+Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-What I see is that you originally had in picolcd:
+> This sounds OK.   The TILE-Gx chip does coherent DMA, so won't need
+> this, I assume?
 
->        error = register_framebuffer(info);
-...
->        fb_deferred_io_init(info);
+Yeah, if it's fully coherent (the hardware guarantees that the data in
+the CPU cache and data in main memory is always identical), you don't
+need.
 
-which was a bug because it called register_framebuffer (ie: made the
-framebuffer available for use) and only then initialized the defio
-handlers which were needed for that framebuffer memory to be used.
-Drivers must always call defio_init _before_ register_framebuffer. The
-bug fix to picolcd below looks correct because it now does that
-sequence in the correct order.
+> If you want to guard this suitably, you can add
+> "#ifndef __tilegx__" around it and add a comment that TILE-Gx has
+> coherent IO.  Thanks.
 
-Thanks,
-jaya
+Ok, here's the second version.
 
+Can I assume that you'll merge the patch into your git tree on
+kernel.org?
 
 
->
-> Note: this BUG() deadlocks ttys.
->
-> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
-> ---
->  drivers/hid/hid-picolcd.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-> index 95253b3..883d720 100644
-> --- a/drivers/hid/hid-picolcd.c
-> +++ b/drivers/hid/hid-picolcd.c
-> @@ -707,18 +707,19 @@ static int picolcd_init_framebuffer(struct picolcd_data *data)
->                dev_err(dev, "failed to create sysfs attributes\n");
->                goto err_cleanup;
->        }
-> +       fb_deferred_io_init(info);
->        data->fb_info    = info;
->        error = register_framebuffer(info);
->        if (error) {
->                dev_err(dev, "failed to register framebuffer\n");
->                goto err_sysfs;
->        }
-> -       fb_deferred_io_init(info);
->        /* schedule first output of framebuffer */
->        schedule_delayed_work(&info->deferred_work, 0);
->        return 0;
->
->  err_sysfs:
-> +       fb_deferred_io_cleanup(info);
->        device_remove_file(dev, &dev_attr_fb_update_rate);
->  err_cleanup:
->        data->fb_vbitmap = NULL;
-> @@ -747,7 +748,6 @@ static void picolcd_exit_framebuffer(struct picolcd_data *data)
->        data->fb_bpp     = 0;
->        data->fb_info    = NULL;
->        device_remove_file(&data->hdev->dev, &dev_attr_fb_update_rate);
-> -       fb_deferred_io_cleanup(info);
->        unregister_framebuffer(info);
->        vfree(fb_bitmap);
->        kfree(fb_vbitmap);
-> --
-> 1.7.1
->
->
+=
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH] tile: set ARCH_KMALLOC_MINALIGN
+
+Architectures that handle DMA-non-coherent memory need to set
+ARCH_KMALLOC_MINALIGN to make sure that kmalloc'ed buffer is DMA-safe:
+the buffer doesn't share a cache with the others.
+
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+---
+ arch/tile/include/asm/cache.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/arch/tile/include/asm/cache.h b/arch/tile/include/asm/cache.h
+index ee59714..869a14f 100644
+--- a/arch/tile/include/asm/cache.h
++++ b/arch/tile/include/asm/cache.h
+@@ -31,6 +31,14 @@
+ #define L2_CACHE_BYTES		(1 << L2_CACHE_SHIFT)
+ #define L2_CACHE_ALIGN(x)	(((x)+(L2_CACHE_BYTES-1)) & -L2_CACHE_BYTES)
+ 
++/*
++ * TILE-Gx is fully coherents so we don't need to define
++ * ARCH_KMALLOC_MINALIGN.
++ */
++#ifndef __tilegx__
++#define ARCH_KMALLOC_MINALIGN	L2_CACHE_BYTES
++#endif
++
+ /* use the cache line size for the L2, which is where it counts */
+ #define SMP_CACHE_BYTES_SHIFT	L2_CACHE_SHIFT
+ #define SMP_CACHE_BYTES		L2_CACHE_BYTES
+-- 
+1.6.5
+
