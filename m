@@ -1,124 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757396Ab0F3Wh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 18:37:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752754Ab0F3Wh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 18:37:56 -0400
-Date: Thu, 1 Jul 2010 01:31:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: David Miller <davem@davemloft.net>, arozansk@redhat.com,
-       herbert.xu@redhat.com, quintela@redhat.com, kvm@vger.kernel.org,
-       virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, ykaul@redhat.com, markmc@redhat.com
-Subject: Re: [PATCHv2] vhost-net: add dhclient work-around from userspace
-Message-ID: <20100630223157.GA25537@redhat.com>
-References: <20100628100807.GA30685@redhat.com>
- <20100629.003647.214219303.davem@davemloft.net>
- <20100629130439.GD3603@redhat.com>
- <4C2BC04B.3000100@codemonkey.ws>
+	id S1756988Ab0F3WxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 18:53:12 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:31257 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab0F3WxL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 18:53:11 -0400
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.53,515,1272844800"; 
+   d="scan'208";a="220049660"
+From: Tom Lyon <pugs@lyon-about.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+Date: Wed, 30 Jun 2010 15:49:32 -0700
+User-Agent: KMail/1.9.9
+Cc: Alex Williamson <alex.williamson@redhat.com>, randy.dunlap@oracle.com,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       joro@8bytes.org, hjk@linutronix.de, avi@redhat.com, gregkh@suse.de,
+       aafabbri@cisco.com, scofeldm@cisco.com
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com> <201006301517.55957.pugs@lyon-about.com> <20100630223256.GB25537@redhat.com>
+In-Reply-To: <20100630223256.GB25537@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4C2BC04B.3000100@codemonkey.ws>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Message-Id: <201006301549.32953.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 05:08:11PM -0500, Anthony Liguori wrote:
-> On 06/29/2010 08:04 AM, Michael S. Tsirkin wrote:
-> >On Tue, Jun 29, 2010 at 12:36:47AM -0700, David Miller wrote:
-> >>From: "Michael S. Tsirkin"<mst@redhat.com>
-> >>Date: Mon, 28 Jun 2010 13:08:07 +0300
-> >>
-> >>>Userspace virtio server has the following hack
-> >>>so guests rely on it, and we have to replicate it, too:
-> >>>
-> >>>Use port number to detect incoming IPv4 DHCP response packets,
-> >>>and fill in the checksum for these.
-> >>>
-> >>>The issue we are solving is that on linux guests, some apps
-> >>>that use recvmsg with AF_PACKET sockets, don't know how to
-> >>>handle CHECKSUM_PARTIAL;
-> >>>The interface to return the relevant information was added
-> >>>in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
-> >>>and older userspace does not use it.
-> >>>One important user of recvmsg with AF_PACKET is dhclient,
-> >>>so we add a work-around just for DHCP.
-> >>>
-> >>>Don't bother applying the hack to IPv6 as userspace virtio does not
-> >>>have a work-around for that - let's hope guests will do the right
-> >>>thing wrt IPv6.
-> >>>
-> >>>Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
-> >>Yikes, this is awful too.
-> >>
-> >>Nothing in the kernel should be mucking around with procotol packets
-> >>like this by default.  In particular, what the heck does port 67 mean?
-> >>Locally I can use it for whatever I want for my own purposes, I don't
-> >>have to follow the conventions for service ports as specified by the
-> >>IETF.
-> >>
-> >>But I can't have the packet checksum state be left alone for port 67
-> >>traffic on a box using virtio because you have this hack there.
-> >>
-> >>And yes it's broken on machines using the qemu thing, but at least the
-> >>hack there is restricted to userspace.
-> >Yes, and I think it was a mistake to add the hack there. This is what
-> >prevented applications from using the new interface in the 3 years
-> >since it was first introduced.
+On Wednesday 30 June 2010 03:32:56 pm Michael S. Tsirkin wrote:
+> On Wed, Jun 30, 2010 at 03:17:55PM -0700, Tom Lyon wrote:
+> > Thanks, Alex!
+> > Am incorporating...
 > 
-> It's far more complicated than that.  dhclient is part of ISC's DHCP
-> package.  They do not have a public SCM and instead require you to
-> join their Software Guild to get access to it.
+> I get it there's no chance you'll drop the "virtualization"
+> from the driver then?
 > 
-> This problem was identified in one distribution and the patch was
-> pushed upstream but because they did not have a public SCM, most
-> other distributions did not see the fix until it appeared in a
-> release.  ISC has a pretty long release cycle historically.
-> 
-> ISC's had the fix for a long time but there was a 3-year gap in
-> their releases and since their SCM isn't public, users are stuck
-> with the last release.
-> 
-> This hack makes sense in QEMU as we have a few hacks like this to
-> fix broken guests.
->  A primary use of virtualization is to run old
-> applications so it makes sense for us to do that.
+I think it'll get a whole lot simpler by depending on iommu interrupt remapping,
+but  I thinke some of it is still useful.
 
-IMO it was wrong to put it in qemu: originally, if a distro shipped
-a broken virtio/dhclient combo, it was it's own bug to fix.
-But now that qemu has shipped the work-around for so long,
-broken guests seemed work. So we *still* see the bug re-surface in new guests.
+I am now stuck trying to get access to a system with interrupt remapping.
+Turns out my Intel IOMMU doesn't have it.
 
-And since they are fairly new, it is interesting to
-get decent performance from them now.
-
-> 
-> I don't think it makes sense for vhost to do this.  These guests are
-> so old that they don't have the requisite features to achieve really
-> high performance anyway.
-> 
-> I've always thought making vhost totally transparent was a bad idea
-> and this is one of the reasons.
-
-It does not have to be fully transparent. You can insert your own ring
-in the middle, and copy descriptors around.  And we stop on errors and
-let userspace handle.  This will come handy if we get e.g. virtio bug
-that we need to work around.
-
-> We can do a lot of ugly things in
-> userspace that we shouldn't be doing in the kernel.
-> 
-> Regards,
-> 
-> Anthony Liguori
-
-QEMU is only userspace for the host. It is the hardware for the guest.
-So IMO we should not be doing the ugly things there either.
-
--- 
-MST
