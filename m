@@ -1,86 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab0F3Vc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 17:32:28 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:54291 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177Ab0F3VcY convert rfc822-to-8bit (ORCPT
+	id S932294Ab0F3Vgp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 17:36:45 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49335 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756678Ab0F3Vgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 17:32:24 -0400
-Date: Wed, 30 Jun 2010 17:32:18 -0400
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-       linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH 4/4] x86: OLPC: add OLPC device-tree support
-Message-ID: <20100630173218.2bdd18d4@dev.queued.net>
-In-Reply-To: <AANLkTik7rqaGz7RtsOlhoSZw_-6bhv43YlWETsB17__4@mail.gmail.com>
-References: <20100628215407.2017bf2f@debian>
-	<20100628220058.19e8f143@debian>
-	<AANLkTinUy_FGuN9DiF5KtMCsqYUbByfS6g2Mdw0ATvtQ@mail.gmail.com>
-	<20100629102339.5e8a30b6@dev.queued.net>
-	<AANLkTik7rqaGz7RtsOlhoSZw_-6bhv43YlWETsB17__4@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.12.12; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 Jun 2010 17:36:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=bRlXARDM7RA/NTxgPUeZu33oq1kl5LZ5/Ud1LcGD/oKFP4gq28/zHnREpHnsLn8qsq
+         H6JM9JF8TAXZLotRXiwW5Z7pqIQt4JabCgpVkJ3w2p6GyLnVExyxynKbBb3jLIbJPKxe
+         kNxfPZjiHi3N1LDBlFn8XiEwLmTZNbxir+ucM=
+Message-ID: <4C2BB901.4060009@gmail.com>
+Date: Wed, 30 Jun 2010 14:37:05 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]kernel.h Fix #warning message web address.
+References: <1277840244-3436-1-git-send-email-justinmattock@gmail.com>	<alpine.LNX.2.00.1006301147490.13809@pobox.suse.cz>	<4C2BB52A.7070404@gmail.com> <20100630142259.a5f4dcb5.rdunlap@xenotime.net>
+In-Reply-To: <20100630142259.a5f4dcb5.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010 15:13:26 -0600
-Grant Likely <grant.likely@secretlab.ca> wrote:
+On 06/30/2010 02:22 PM, Randy Dunlap wrote:
+> On Wed, 30 Jun 2010 14:20:42 -0700 Justin P. Mattock wrote:
+>
+>>
+>>> Hehe, ugly. How about making it a single string? GCC preprocessor
+>>> documentation suggests the same anyway ...
+>>>
+>>> 	Neither `#error' nor `#warning' macro-expands its argument.
+>>> 	Internal whitespace sequences are each replaced with a single space.
+>>> 	The line must consist of complete tokens.  It is wisest to make the
+>>> 	argument of these directives be a single string constant; this avoids
+>>> 	problems with apostrophes and the like.
+>
+> Doesn't that mean just put double quotation marks around the entire message string??
+>
 
-> On Tue, Jun 29, 2010 at 8:23 AM, Andres Salomon <dilinger@queued.net>
-> wrote:
-> > On Tue, 29 Jun 2010 01:12:36 -0700
-> > Grant Likely <grant.likely@secretlab.ca> wrote:
-[...]
-> >> > +extern void prom_build_devicetree(void);
-> >> > +
-> >> > +extern void *prom_early_alloc(unsigned long size);
-> >> > +
-> >> > +extern char *prom_firstprop(phandle node, char *buf);
-> >> > +extern char *prom_nextprop(phandle node, const char *prev, char
-> >> > *buf); +extern int prom_getproplen(phandle node, const char
-> >> > *prop); +extern int prom_getproperty(phandle node, const char
-> >> > *prop,
-> >> > +                            char *buffer, int bufsize);
-> >> > +extern phandle prom_getchild(phandle node);
-> >> > +extern phandle prom_getsibling(phandle node);
-> >> > +
-> >> > +#endif /* __KERNEL__ */
-> >> > +#endif /* _X86_PROM_OLPC_H */
-> >> > diff --git a/arch/x86/include/asm/prom.h
-> >> > b/arch/x86/include/asm/prom.h new file mode 100644
-> >> > index 0000000..7b561b2
-> >> > --- /dev/null
-> >> > +++ b/arch/x86/include/asm/prom.h
-> >> > @@ -0,0 +1,5 @@
-> >> > +#ifdef CONFIG_OLPC_OPENFIRMWARE
-> >> > +# include <asm/olpc_prom.h>
-> >> > +#else
-> >> > +# error "No OFW prom defined for x86!"
-> >> > +#endif
-> >>
-> >> Personally, I wouldn't bother with the header file redirection.
-> >
-> > The reason for the header file redirection is because this is
-> > OLPC-only; the x86 folks don't want me claiming this to be the One
-> > True x86 OFW.
-> 
-> However, the #ifdef/#elseif/#else/#endif approach also makes the
-> assumption that only one kind of OFW will be supported by any given
-> kernel.  Or for that matter, both OFW and the flattened tree also
-> become mutually exclusive due to the default behaviour override.
-> 
-> Besides, aren't the function declarations just the interface defined
-> by the prom extraction code?  Is there any need to #ifdef that API?  I
-> would think those function prototypes should be defined by the header
-> for the prom extraction code.
+didnt even notice that. but to answer your question your right. updated 
+patch below.
 
-Mm, both are good points; I suppose for now it doesn't hurt to lose the
-#ifdefs, and deal w/ additional x86 proms support if it comes up.
+>
+>
+>> o.k. jiri, here is what I came up with, after re-reading and looking at
+>> other in the kernel(below).
+>>
+>>
+>>
+>>   From 45f24db45faa06aad01cfc62ff4b475380e5cb11 Mon Sep 17 00:00:00 2001
+>> From: Justin P. Mattock<justinmattock@gmail.com>
+>> Date: Wed, 30 Jun 2010 14:06:18 -0700
+>> Subject: [PATCH]kernel.h Fix #warning message according to the GCC
+>> preprocessor docs.
+>>
+>> received this #warning from a simple printk program and noticed the web
+>> address is not showing up:
+>>    gcc printk.c -o printk
+>> In file included from printk.c:3:
+>> include/linux/kernel.h:733:2: warning: #warning Attempt to use kernel
+>> headers from user space, see http:
+>>
+>> after the changes the warning should just say:
+>> #warning Attempt to use kernel headers from user space!
+>>
+>>    Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>> ---
+>>    include/linux/kernel.h |    2 +-
+>>    1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+>> index 8317ec4..b542961 100644
+>> --- a/include/linux/kernel.h
+>> +++ b/include/linux/kernel.h
+>> @@ -730,7 +730,7 @@ extern int do_sysinfo(struct sysinfo *info);
+>>
+>>    #ifndef __EXPORTED_HEADERS__
+>>    #ifndef __KERNEL__
+>> -#warning Attempt to use kernel headers from user space, see
+>> http://kernelnewbies.org/KernelHeaders
+>> +#warning Attempt to use kernel headers from user space!
+>>    #endif /* __KERNEL__ */
+>>    #endif /* __EXPORTED_HEADERS__ */
+>>
+>> --
+>> 1.7.1.rc1.21.gf3bd6
+>>
+>>
+>> now I'm wondering if there should be a lead to the documentation with
+>> this web address(seems grep is not finding anything that I might be able
+>> to use).or just leave as is, and let people connect-the-dots!!
+>>
+>> let me know..
+>>
+>> Justin P. Mattock
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
 
+
+
+ From 5e0b59283521c4b222c1131626e306752cd157f3 Mon Sep 17 00:00:00 2001
+From: Justin P. Mattock <justinmattock@gmail.com>
+Date: Wed, 30 Jun 2010 14:30:22 -0700
+Subject: [PATCH]kernel.h Add quotation marks around the message so the 
+web address is shown.
+
+Add quotation marks around the message so the web address is shown.
+before:
+gcc printk.c -o printk
+In file included from printk.c:3:
+include/linux/kernel.h:733:2: warning: #warning Attempt to use kernel
+headers from user space, see http:
+after:
+gcc printk.c -o printk
+In file included from printk.c:3:
+warning: #warning "Attempt to use kernel headers from user space,
+see http://kernelnewbies.org/KernelHeaders"
+  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+---
+  include/linux/kernel.h |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 8317ec4..4055858 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -730,7 +730,7 @@ extern int do_sysinfo(struct sysinfo *info);
+
+  #ifndef __EXPORTED_HEADERS__
+  #ifndef __KERNEL__
+-#warning Attempt to use kernel headers from user space, see 
+http://kernelnewbies.org/KernelHeaders
++#warning "Attempt to use kernel headers from user space, see 
+http://kernelnewbies.org/KernelHeaders"
+  #endif /* __KERNEL__ */
+  #endif /* __EXPORTED_HEADERS__ */
+
+-- 
+1.6.5.2.180.gc5b3e
+
+
+of the two whatever works best.
+
+Justin P. Mattock
