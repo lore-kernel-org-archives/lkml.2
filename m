@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab0F3MjX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 08:39:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:61292 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab0F3MjV (ORCPT
+	id S1752623Ab0F3Mog (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 08:44:36 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62864 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab0F3Moe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 08:39:21 -0400
-X-Authority-Analysis: v=1.1 cv=hVjE12FRt4v4sD2HVuppbi620CRC5en4UNTr7KPd1ng= c=1 sm=0 a=BpbFXrSub_kA:10 a=GQCbJdZ--msA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=DfNHnWVPAAAA:8 a=2zKFJmWSJVO2KywTfbAA:9 a=qEP96ZfGZv183IuboDMA:7 a=8SOwWJhL0N-fcsQLs7cf6k7sbrEA:4 a=CjuIK1q_8ugA:10 a=lBRciGGoxdUA:10 wl=env:18 a=Nqdp4+S2FArj7gZzHVn+tA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.120.198.24
-Date: Wed, 30 Jun 2010 07:40:06 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Yama: add PTRACE exception tracking
-Message-ID: <20100630124006.GA18155@hallyn.com>
-References: <20100630003844.GE4837@outflux.net>
- <20100630004027.GG4837@outflux.net>
- <20100630035609.GA16307@hallyn.com>
- <20100630052752.GL4837@outflux.net>
+	Wed, 30 Jun 2010 08:44:34 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file stats available [ver #2]
+Date: Wed, 30 Jun 2010 14:44:10 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: viro@zeniv.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
+       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       sjayaraman@suse.de, linux-ext4@vger.kernel.org
+References: <201006301346.41902.arnd@arndb.de> <29346.1277892068@redhat.com> <26650.1277900050@redhat.com>
+In-Reply-To: <26650.1277900050@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100630052752.GL4837@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006301444.11194.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19NlZNiiN1s/Q/2w06bGUmn0oAJ7uu/8g7ZkXe
+ StbMQUQRD5+Xi89eXMw4sOG+99GzO0mYxO0mVMSq7NI7NxONPF
+ Ufr6ln2HvFsrSETFzsLPg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kees Cook (kees.cook@canonical.com):
-> Hi Serge,
+On Wednesday 30 June 2010, David Howells wrote:
+> Arnd Bergmann <arnd@arndb.de> wrote:
 > 
-> On Tue, Jun 29, 2010 at 10:56:09PM -0500, Serge E. Hallyn wrote:
-> > Quoting Kees Cook (kees.cook@canonical.com):
-> > > Some application suites have external crash handlers that depend on
-> > > being able to use PTRACE to generate crash reports (KDE, Chromium, etc).
-> > > Since the inferior process generally knows the PID of the debugger,
-> > > it can use PR_SET_PTRACER to allow a specific PID and its descendants
-> > > to perform the PTRACE instead of only a direct ancestor.
-> > > 
-> > > Signed-off-by: Kees Cook <kees.cook@canonical.com>
-> > > ---
-> > 
-> > Hi Kees - very nice, overall.  One little note though:
+> > Given a 64 bit flag word, you can start using bits for the version from
+> > the top and bits from the bottom for fields:
 > 
-> Thanks for looking it over!
-> 
-> > >  	rc = cap_ptrace_access_check(child, mode);
-> > 
-> > This means that if capable(CAP_SYS_PTRACE) we'll always shortcut
-> > here, so
-> > 
-> > > +	if (mode == PTRACE_MODE_ATTACH &&
-> > > +	    ptrace_scope &&
-> > > +	    !capable(CAP_SYS_PTRACE) &&
-> > > +	    !task_is_descendant(current, child) &&
-> > > +	    !ptracer_exception_found(current, child))
-> > > +		rc = -EPERM;
-> > 
-> > You don't need the CAP_SYS_PTRACE check here AFAICS.
-> 
-> I don't think that's true -- the capable(CAP_SYS_PTRACE) tests
-> are always done in the negative since we only ever abort with error
+> I suppose.  It's cleaner, though, to keep them separate.
 
-Haha, you're right, I looked at that wrong  :)
+Yes, but it's a tradeoff. If separating them means you have to add
+another structure, I'd prefer having just a flags word with different
+kinds of bits. In particular since I don't think we actually need
+to worry about wildly different layouts. If struct oldstat had
+come with an extensibility concept like what you propose here, we
+would not have needed newstat, stat64 and xstat.
 
--serge
+> > Alternatively, you can also make it a 64 bit argument everywhere, which has
+> > some other small disadvantages.
+> 
+> No, you can't.  32-bit systems can only pass 32-bit arguments.  If you're
+> suggesting passing a pointer to a 64-bit argument instead, how's that any
+> different from my suggestion of a separate parameter block?
+
+I was thinking of splitting the 64 bit argument into two registers on
+32 bit systems, like we do with other 64 bit input arguments (e.g. loff_t).
+While there is not much of a difference, I'd always prefer passing
+input arguments by register to a memory location when possible.
+
+> > The idea of a syscall API with multiple fixed-length and variable-length
+> > fields in the same structure scares me. If you want to go this far,
+> > it may be better to base the interface on netlink and allow querying
+> > multiple files at once.
+> 
+> Urgh.  Netlink is way too much overhead and even scarier.  That's pretty much
+> a guarantee that people won't use it.  It also has to work if CONFIG_NET=n.
+
+Exactly. Just resist the urge to add complexity bordering what we already
+have in netlink.
+
+	Arnd
