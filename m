@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab0F3Icv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 04:32:51 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:62399 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752340Ab0F3Ict (ORCPT
+	id S1752466Ab0F3IdF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 04:33:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52765 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009Ab0F3IdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 04:32:49 -0400
-Message-ID: <4C2B012B.2000407@panasas.com>
-Date: Wed, 30 Jun 2010 11:32:43 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Mike Snitzer <snitzer@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-       martin.petersen@oracle.com, akpm@linux-foundation.org,
-       linux-scsi@vger.kernel.org,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
- payload
-References: <20100622180029.GA15950@redhat.com>	 <1277582211-10725-1-git-send-email-snitzer@redhat.com> <1277652576.4366.19.camel@mulgrave.site>
-In-Reply-To: <1277652576.4366.19.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 30 Jun 2010 04:33:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=g3+ySwSse0+T91Mx1j0SZN1PROq0OyGxLoLjNclHC6r7NA+gURYzinF/aHupy5O9b4
+         7UOpyqmm5EJcDtSkEPHFy0RFkIFJiQQXzWcIse81owfVq4Nef9K+aiIIlgt+t3vH5HEL
+         06cDlbg9Nk3UaFRHDAyYF1g4BkmQPOCy40W2w=
+Date: Wed, 30 Jun 2010 12:32:49 +0400
+From: Ilya Loginov <isloginov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, torvalds@linux-foundation.org,
+       randy.dunlap@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] init: Fix race between init and kthreadd -v3
+Message-Id: <20100630123249.ce966c83.isloginov@gmail.com>
+In-Reply-To: <1277736661.3561.110.camel@laptop>
+References: <20100624001148.61e9da1c.isloginov@gmail.com>
+	<1277385096.1875.974.camel@laptop>
+	<20100624172334.ca7e9bef.isloginov@gmail.com>
+	<1277715689.1875.1104.camel@laptop>
+	<1277725997.3561.6.camel@laptop>
+	<20100628141927.GA9306@elte.hu>
+	<1277736661.3561.110.camel@laptop>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 30 Jun 2010 08:32:46.0554 (UTC) FILETIME=[D11493A0:01CB182E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2010 06:29 PM, James Bottomley wrote:
-<snip>
->> +		/*
->> +		 * If this is a discard request that originated from the kernel
->> +		 * we need to free our payload here.  Note that we need to check
->> +		 * the request flag as the normal payload rules apply for
->> +		 * pass-through UNMAP / WRITE SAME requests.
->> +		 */
->> +		__free_page(bio_page(cmd->request->bio));
-> 
-> This is another layering violation:  the page is allocated in the Upper
-> layer and freed in the mid-layer.
-> 
+I have tested patch v3. All works fine for me.
 
-May I ask a silly question? Why the dynamic allocation?
+I agree with Randy. The commentary should be fixed.
 
-Why not have a const-static single global page at the block-layer somewhere
-that will be used for all discard-type operations and be done with it once and
-for all. A single page can be used for any size bio , any number of concurrent
-discards, any ZERO needed operation. It can also be used by other operations
-like padding and others. In fact isn't there one for the libsata padding?
-
-(It could be dynamical allocated on first use for embedded system)
-
-just my $0.017
-Boaz
+-- 
+Ilya Loginov <isloginov@gmail.com>
