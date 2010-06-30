@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab0F3AtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 20:49:17 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:52914 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229Ab0F3AtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 20:49:16 -0400
-Date: Tue, 29 Jun 2010 17:49:12 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: James Morris <jmorris@namei.org>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v4] security: Yama LSM
-Message-ID: <20100630004911.GI4837@outflux.net>
-References: <20100628184200.GU4175@outflux.net>
- <alpine.LRH.2.00.1006300854170.14620@tundra.namei.org>
+	id S1754028Ab0F3BCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 21:02:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52911 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752677Ab0F3BCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 21:02:09 -0400
+Message-ID: <4C2A96AE.6020103@cn.fujitsu.com>
+Date: Wed, 30 Jun 2010 08:58:22 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1006300854170.14620@tundra.namei.org>
-Organization: Canonical
-X-HELO: www.outflux.net
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 8/10] KVM: MMU: prefetch ptes when intercepted guest
+ #PF
+References: <4C2498EC.2010006@cn.fujitsu.com> <4C249BEA.1030908@cn.fujitsu.com> <20100628130431.GA6209@amt.cnet> <4C29A9CC.2080508@cn.fujitsu.com> <20100629114446.GB26369@amt.cnet>
+In-Reply-To: <20100629114446.GB26369@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Wed, Jun 30, 2010 at 09:18:32AM +1000, James Morris wrote:
-> On Mon, 28 Jun 2010, Kees Cook wrote:
+
+Marcelo Tosatti wrote:
+
+>>> Also prefetch should be disabled for EPT, due to lack of accessed bit.
+>>>
+>> But we call mmu_set_spte() with speculative == false, it not touch the accessed bit.
 > 
-> > This adds the Yama Linux Security Module to collect several security
-> > features (symlink, hardlink, and PTRACE restrictions) that have existed
-> > in various forms over the years and have been carried outside the mainline
-> > kernel by other Linux distributions like Openwall and grsecurity.
-> > 
-> > Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> There is no accessed bit on EPT. So the aging code (kvm_age_rmapp)
+> considers any present translation as accessed. There is no way to
+> distinguish between actually accessed translations and prefetched (but
+> unused) ones.
 > 
-> There were no further complaints, and we seem to have reached a workable 
-> consensus on the topic.
-> 
-> It's not clear yet whether existing LSMs will modify their base policies 
-> to incorporate these protections, utilize the Yama code more directly, or 
-> implement some combination of both.
 
-I'm hoping we can implement really simple chaining -- nothing fancy.
-Trying to chain comprehensive LSMs seems like it will always fail, but
-putting little LSMs in front of big LSMs seems like an easy win.
-
-> If you're a user of an existing LSM and want these protections, bug the 
-> developers for a solution :-)
-> 
-> Applied to
-> git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
-
-Thanks!
-
--Kees
-
--- 
-Kees Cook
-Ubuntu Security Team
+You are right, i'll disable the prefetch for EPT in the next version, thanks for
+you point it out.
