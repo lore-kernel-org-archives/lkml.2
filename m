@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052Ab0F3Spf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 14:45:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17592 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab0F3Spd convert rfc822-to-8bit (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 30 Jun 2010 14:45:33 -0400
-Date: Wed, 30 Jun 2010 14:43:57 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Matt Turner <mattst88@gmail.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
-       rth@twiddle.net, ink@jurassic.park.msu.ru, mcree@orcon.net.nz,
-       jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
-       dri-devel@lists.freedesktop.org, airlied@gmail.com,
-       alexdeucher@gmail.com, jglisse@redhat.com
-Subject: Re: Problems with alpha/pci + radeon/ttm
-Message-ID: <20100630184357.GE16488@phenom.dumpdata.com>
-References: <AANLkTinG-5iKW5cigIQHPHRZuAMtG_xY-74XLL6vE5kb@mail.gmail.com>
- <20100622145805R.fujita.tomonori@lab.ntt.co.jp>
- <AANLkTimTOTM8Tt5A7eBVbxcYaGQVn_Q6-9hL8B1B4bjY@mail.gmail.com>
- <20100627130717M.fujita.tomonori@lab.ntt.co.jp>
- <AANLkTim0JbmNLY1yG5MIWhcjM34h4HHVjS58jEobmPO0@mail.gmail.com>
+	id S1757041Ab0F3Src (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 14:47:32 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:45198 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab0F3Srb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 14:47:31 -0400
+X-Auth-Info: EjcDjPmzw1xoDUlWPvbx4rCpXJVuyx2zLDZDWva1joo=
+To: Rupjyoti Sarmah <rsarmah@apm.com>
+cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, jgarzik@pobox.com,
+       sr@denx.de, linuxppc-dev@ozlabs.org
+From: Wolfgang Denk <wd@denx.de>
+Subject: Re: [PATCH v1]460EX on-chip SATA driver<resubmisison>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <AANLkTim0JbmNLY1yG5MIWhcjM34h4HHVjS58jEobmPO0@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C2B90B5.022B:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+In-reply-to: <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com>
+References: <201006241327.o5ODRY6m032299@amcc.com> <20100630115808.2D9241524EC@gemini.denx.de> <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com>
+Comments: In-reply-to Rupjyoti Sarmah <rsarmah@apm.com>
+   message dated "Wed, 30 Jun 2010 18:14:47 +0530."
+Date: Wed, 30 Jun 2010 20:47:28 +0200
+Message-Id: <20100630184728.C02D014EBF9@gemini.denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 27, 2010 at 12:58:07AM -0400, Matt Turner wrote:
-> On Sun, Jun 27, 2010 at 12:20 AM, FUJITA Tomonori
-> <fujita.tomonori@lab.ntt.co.jp> wrote:
-> > On Thu, 24 Jun 2010 10:53:52 -0400
-> > Matt Turner <mattst88@gmail.com> wrote:
-> >
-> >> > Seems that the IOMMU can't find 128 pages. It's likely due to:
-> >> >
-> >> > - out of the IOMMU space (possibly someone doesn't free the IOMMU
-> >> >  space).
-> >> >
-> >> > or
-> >> >
-> >> > - the mapping parameters (such as align) aren't appropriate so the
-> >> >  IOMMU can't find space.
-> >> >
-> >> >
-> >> >> Is this the cause of the bug we're seeing in the report [1]?
+Dear Rupjyoti Sarmah,
 
-For the fun I did:
- cat /tmp/screenlog.0 | grep iommu_arena | wc
-  28509  199588 2167164
+In message <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com> you wrote:
+> 
+> I took the mainline kernel v2.6.35-rc3 and downloaded using the git
+> download link.
+> I created the patch on 6/24/2010 after doing a git pull.
 
-Which is to say 28509 * 4096 = 116736000. That looks to be about 111MB.
+I don;t think that you used v2.6.35-rc3; using this version, I still
+get this:
 
-That does not look right when you are trying to allocate 128 pages. You
-are sure it is 128 pages? Can you make the ttm_ code print out the total
-of pages it is trying to PCI map ? It might also be interesting to see
-how many pages the pci_iommu.c has already set aside for other devices.
+drivers/ata/sata_dwc_460ex.c:43:1: warning: "DRV_NAME" redefined
+In file included from drivers/ata/sata_dwc_460ex.c:38:
+drivers/ata/libata.h:31:1: warning: this is the location of the previous definition
+drivers/ata/sata_dwc_460ex.c:44:1: warning: "DRV_VERSION" redefined
+drivers/ata/libata.h:32:1: warning: this is the location of the previous definition
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_scr_read':
+drivers/ata/sata_dwc_460ex.c:777: error: 'struct ata_port' has no member named 'ioaddr'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_scr_write':
+drivers/ata/sata_dwc_460ex.c:793: error: 'struct ata_port' has no member named 'ioaddr'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_error_intr':
+drivers/ata/sata_dwc_460ex.c:844: error: 'struct ata_port_operations' has no member named 'sff_check_status'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_isr':
+drivers/ata/sata_dwc_460ex.c:953: error: 'struct ata_port_operations' has no member named 'sff_check_status'
+drivers/ata/sata_dwc_460ex.c:957: error: 'struct ata_port_operations' has no member named 'sff_check_status'
+drivers/ata/sata_dwc_460ex.c:991: error: implicit declaration of function 'ata_sff_hsm_move'
+drivers/ata/sata_dwc_460ex.c:1030: error: 'struct ata_port_operations' has no member named 'sff_check_status'
+drivers/ata/sata_dwc_460ex.c: At top level:
+drivers/ata/sata_dwc_460ex.c:1213: warning: 'struct ata_ioports' declared inside parameter list
+drivers/ata/sata_dwc_460ex.c:1213: warning: its scope is only this definition or declaration, which is probably not what you want
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_setup_port':
+drivers/ata/sata_dwc_460ex.c:1215: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1216: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1218: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1219: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1221: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1223: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1224: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1225: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1227: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1228: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1229: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1231: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c:1232: error: dereferencing pointer to incomplete type
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_port_start':
+drivers/ata/sata_dwc_460ex.c:1273: error: 'struct ata_port' has no member named 'bmdma_prd'
+drivers/ata/sata_dwc_460ex.c:1274: error: 'struct ata_port' has no member named 'bmdma_prd_dma'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_exec_command_by_tag':
+drivers/ata/sata_dwc_460ex.c:1356: warning: passing argument 1 of 'ata_get_cmd_descript' makes integer from pointer without a cast
+drivers/ata/sata_dwc_460ex.c:1369: error: implicit declaration of function 'ata_sff_exec_command'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_qc_issue':
+drivers/ata/sata_dwc_460ex.c:1512: error: 'struct ata_port_operations' has no member named 'sff_tf_load'
+drivers/ata/sata_dwc_460ex.c:1516: error: implicit declaration of function 'ata_sff_qc_issue'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_error_handler':
+drivers/ata/sata_dwc_460ex.c:1545: error: implicit declaration of function 'ata_sff_error_handler'
+drivers/ata/sata_dwc_460ex.c: At top level:
+drivers/ata/sata_dwc_460ex.c:1564: error: 'ata_sff_port_ops' undeclared here (not in a function)
+drivers/ata/sata_dwc_460ex.c:1577: error: unknown field 'bmdma_setup' specified in initializer
+drivers/ata/sata_dwc_460ex.c:1577: warning: initialization from incompatible pointer type
+drivers/ata/sata_dwc_460ex.c:1578: error: unknown field 'bmdma_start' specified in initializer
+drivers/ata/sata_dwc_460ex.c:1578: warning: initialization from incompatible pointer type
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_probe':
+drivers/ata/sata_dwc_460ex.c:1638: error: 'struct ata_port' has no member named 'ioaddr'
+drivers/ata/sata_dwc_460ex.c:1639: error: 'struct ata_port' has no member named 'ioaddr'
+drivers/ata/sata_dwc_460ex.c:1641: error: 'struct ata_port' has no member named 'ioaddr'
+make[2]: *** [drivers/ata/sata_dwc_460ex.o] Error 1
+make[1]: *** [drivers/ata] Error 2
+make: *** [drivers] Error 2
 
-The BAR is 128MB, but that would have been an ioremap call - and done
-much earlier I think.
+
+Best regards,
+
+Wolfgang Denk
+
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+Often it is fatal to live too long.                          - Racine
