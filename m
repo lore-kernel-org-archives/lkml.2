@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab0F3PuR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 11:50:17 -0400
-Received: from smtp-out-161.synserver.de ([212.40.180.161]:1115 "HELO
-	smtp-out-161.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751758Ab0F3PuP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 11:50:15 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 22222
-Date: Wed, 30 Jun 2010 17:50:07 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
-Subject: Re: [git pull] drm fixes + agp + one fb patch (bisected)
-Message-ID: <20100630155007.GA1696@arch.tripp.de>
-References: <alpine.DEB.2.00.1006300202190.30052@skynet.skynet.ie>
- <20100630065440.GA1736@arch.tripp.de>
- <20100630073145.GA1722@arch.tripp.de>
- <AANLkTimr33Bar73xO9IjDWhPWidZr0HB663oRU8fDCyt@mail.gmail.com>
- <20100630145859.GC1722@arch.tripp.de>
- <AANLkTil58kym4SgjMDv8RCXWkoUHKVYfTpT775uufoDJ@mail.gmail.com>
- <20100630151449.GA1748@arch.tripp.de>
- <AANLkTikHDUSpYrx4yCLFPNuTw4FFyLcf2kvJ2gVWicZA@mail.gmail.com>
+	id S1754779Ab0F3PwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 11:52:24 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:55679 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752232Ab0F3PwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 11:52:21 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+       Hans de Goede <hdegoede@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Samuel Ortiz <sameo@linux.intel.com>
+CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH v6 0/3] hwmon: Driver for SMM665 Six-Channel Active DC Output Controller/Monitor
+Date: Wed, 30 Jun 2010 08:50:41 -0700
+Message-ID: <1277913044-28322-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.0.87.g0901d
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikHDUSpYrx4yCLFPNuTw4FFyLcf2kvJ2gVWicZA@mail.gmail.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 11:34:53AM -0400, Alex Deucher wrote:
-> On Wed, Jun 30, 2010 at 11:14 AM, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
-> > On Wed, Jun 30, 2010 at 11:03:33AM -0400, Alex Deucher wrote:
-> >> On Wed, Jun 30, 2010 at 10:58 AM, Markus Trippelsdorf
-> >> <markus@trippelsdorf.de> wrote:
-> >> > On Wed, Jun 30, 2010 at 10:49:41AM -0400, Alex Deucher wrote:
-> >> >> On Wed, Jun 30, 2010 at 3:31 AM, Markus Trippelsdorf
-> >> >> <markus@trippelsdorf.de> wrote:
-> >> >> > On Wed, Jun 30, 2010 at 08:54:40AM +0200, Markus Trippelsdorf wrote:
-> >> >> >> On Wed, Jun 30, 2010 at 02:03:04AM +0100, Dave Airlie wrote:
-> >> >> >> >
-> >> >> >> > one fb layer fix in a flag I introduced,
-> >> >> >> >
-> >> >> >> > the rest are drm fixes:
-> >> >> >> > radeon fixes: the larger ones in the command stream checker for older cards,
-> >> >> >> > which was causing a lot of userspace apps to fail. Also some powerpc server fixes.
-> >> >> >> > along with some updates to the evergreen command stream checker introduced in -rc1.
-> >> >> >> >
-> >> >> >> > agp: fix issue with warning on memory allocation + fallback to vmalloc.
-> >> >> >> > ttm: fix regression introduced in -rc1 in memory allocation paths.
-> >> >> >> >
-> >> >> >> > The following changes since commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02:
-> >> >> >> >
-> >> >> >> >   Linux 2.6.35-rc3 (2010-06-11 19:14:04 -0700)
-> >> >> >> >
-> >> >> >>
-> >> >> >> I've tested these patches and they break my setup (RS780). On reboot, the
-> >> >> >> monitor goes straight to powersaving mode and no framebuffer is shown.
-> >> >> >
-> >> >> > This is the result of the bisection:
-> >> >> >
-> >> >> > 07d4190327b02ab3aaad25a2d168f79d92e8f8c2 is the first bad commit
-> >> >> > commit 07d4190327b02ab3aaad25a2d168f79d92e8f8c2
-> >> >> > Author: Alex Deucher <alexdeucher@gmail.com>
-> >> >> > Date:   Sat Jun 12 11:50:13 2010 -0400
-> >> >> >
-> >> >> >    drm/radeon/kms: fix bandwidth calculation when sideport is present
-> >> >> >
-> >> >> >    Fixes fdo bug 27529:
-> >> >> >    https://bugs.freedesktop.org/show_bug.cgi?id=27529
-> >> >> >
-> >> >> >    Reported-by: steckdenis@yahoo.fr
-> >> >> >    Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-> >> >> >    Cc: stable <stable@kernel.org>
-> >> >> >    Signed-off-by: Dave Airlie <airlied@redhat.com>
-> >> >>
-> >> >> Markus, can you send me a copy of your vbios? as root:
-> >> >> cd /sys/bus/pci/devices/<pci bus id of video card>
-> >> >> echo 1 > rom
-> >> >> cat rom ? /tmp/vbio.rom
-> >> >> echo 0 > rom
-> >> >
-> >> > Attached.
-> >> >
-> >> >>
-> >> >> Also, when you say "on reboot" do you mean the card comes up ok
-> >> >> initially with the new kernel and then fails after a reboot, or fails
-> >> >> directly after booting the new kernel?  Also, is there an oops or
-> >> >> anything like that in dmesg?
-> >> >
-> >> > It fails directly after booting the new kernel. There is no oops or
-> >> > anything like it in dmesg, because the kernel fails so early that it
-> >> > could not log anything.
-> >>
-> >> Is the machine still pingable?  Can you ssh in? or is it completely dead?
-> >
-> > I don't think so. There is no disk activivy after the hang, but maybe
-> > the kernel displays an oops, which I just can't see.
-> 
-> The attached patch should fix the issue.
+This patchset adds support for the monitoring features of the Summit
+Microelectronics SMM665 Six-Channel Active DC Output Controller/Monitor.
 
-Sorry, but it does not. I've still the same issue with your patch
-applied.
--- 
-Markus
+------
+
+v2 changes:
+- Added (untested) support for SMM465, SMM764, and SMM766.
+- Added vref module parameter to support non-default values of VREF_ADC.
+- Added an explanation describing what the chip does with _min and _max limit
+  values.
+- Removed alarm sysfs files (since the chip does not report alarm status in a
+  register, alarm detection was implemented by comparing limits with ADC readings,
+  which can as well be done in userland).
+- Replaced register enums with defines.
+- Made limit variable names better readable.
+- Removed retries from smm665_read_adc().
+- Check error reply from i2c_smbus_read_byte_data() and only accept ENXIO
+  when expecting NACK.
+- Explained reason for byte swap after reading ADC registers in some more detail.
+- Added debug messages to display the error reason when reading ADC registers
+  failed.
+
+v3 changes:
+- Return error codes from smm665_read_adc().
+- Abort after first error in smm665_update_device() and return error code.
+- Return ADC read errors to user.
+- Added inX_lcrit and inX_crit attributes for min/max critical voltages.
+- Added tempX_lcrit attribute for critical low temperature.
+- Updated sysfs-interface to document support for new attributes.
+
+v4 changes:
+- Added missing unlock in error handling of smm665_update_device().
+- Fixed minor style issue in MAINTAINERS
+- Removed update to sysfs-interface from patchset since it has already
+  been applied.
+- Added lcrit and crit attributes to driver documentation.
+
+v5 changes:
+- Removed obsolete comment
+- Added datasheet links to driver documentation.
+
+v6 changes:
+- Renamed fault attributes to crit_alarm, to reflect that the conditions
+  occur if critical limits were reached or exceeded and not due to a faulty
+  sensor.
