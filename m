@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab0F3RIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 13:08:40 -0400
-Received: from tango.tkos.co.il ([62.219.50.35]:48629 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754732Ab0F3RIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 13:08:39 -0400
-Date: Wed, 30 Jun 2010 20:07:31 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Kevin Hilman <davinci-linux-open-source@linux.davincidsp.com>,
-       Russell King <linux@arm.linux.org.uk>,
-       Sandeep Paulraj <s-paulraj@ti.com>,
-       Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
-       Steve Chen <schen@mvista.com>, Cyril Chemparathy <cyril@ti.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 02/33] Removing dead ARCH_DAVINCI_TNETV107X
-Message-ID: <20100630170730.GE23534@tarshish>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
- <88ee583babc6f0aecb2238a57644f64159d5c395.1277911346.git.siccegge@cs.fau.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <88ee583babc6f0aecb2238a57644f64159d5c395.1277911346.git.siccegge@cs.fau.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932149Ab0F3RJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 13:09:28 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:23694 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932075Ab0F3RJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 13:09:26 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:from:to:cc:in-reply-to:references:content-type:
+	organization:date:message-id:mime-version:x-mailer:
+	content-transfer-encoding:x-system-of-record;
+	b=Rxi3jCkZjIKOZE+DQAOtXp4zrq+Me5itWVUsGR1GDDZ89DzvA3MtZoq4Z9YWiJwiR
+	Gg/8yI4ni+bPukOwBoRTA==
+Subject: Re: [patch 00/52] vfs scalability patches updated
+From: Frank Mayhar <fmayhar@google.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: npiggin@suse.de, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>
+In-Reply-To: <20100630113054.GL24712@dastard>
+References: <20100624030212.676457061@suse.de>
+	 <20100630113054.GL24712@dastard>
+Content-Type: text/plain
+Organization: Google, Inc.
+Date: Wed, 30 Jun 2010 10:08:54 -0700
+Message-Id: <1277917734.4624.26.camel@bobble.smo.corp.google.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+On Wed, 2010-06-30 at 21:30 +1000, Dave Chinner wrote:
+> Sure, but I have to question how much of this is actually necessary?
+> A lot of it looks like scalability for scalabilities sake, not
+> because there is a demonstrated need...
 
-On Wed, Jun 30, 2010 at 06:05:38PM +0200, Christoph Egger wrote:
-> ARCH_DAVINCI_TNETV107X doesn't exist in Kconfig, therefore removing
-> all references for it from the source code.
-> 
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> ---
->  arch/arm/mach-davinci/include/mach/cputype.h |    6 ------
->  1 files changed, 0 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/mach-davinci/include/mach/cputype.h b/arch/arm/mach-davinci/include/mach/cputype.h
-> index cea6b89..6143022 100644
-> --- a/arch/arm/mach-davinci/include/mach/cputype.h
-> +++ b/arch/arm/mach-davinci/include/mach/cputype.h
-> @@ -85,10 +85,4 @@ IS_DAVINCI_CPU(tnetv107x, DAVINCI_CPU_ID_TNETV107X)
->  #define cpu_is_davinci_da850() 0
->  #endif
->  
-> -#ifdef CONFIG_ARCH_DAVINCI_TNETV107X
-> -#define cpu_is_davinci_tnetv107x() is_davinci_tnetv107x()
-> -#else
-> -#define cpu_is_davinci_tnetv107x() 0
+Well, we've repeatedly run into problems with contention on the
+dcache_lock as well as the inode_lock; changes that improve those paths
+are extremely interesting to us.  I've also seen numbers from systems
+with large (i.e. 32 to 64) numbers of cores that clearly show serious
+problems in this area.
 
-Why remove the #else part?
+Further, while this seems like a bunch of patches, a close look shows
+that it basically just pushes the dcache and inode locks down as far as
+possible, making other improvements (such as removal of a few atomics
+and no longer batching inode reclaims, among other things) based on that
+work.  I would be hard-pressed to find much to cherry-pick from this
+patch set.
 
-baruch
-
-> -#endif
-> -
->  #endif
-> -- 
-> 1.7.0.4
-
+One interesting thing might be to do a set of performance tests for
+kernels with increasingly more of the patchset, just to see the effect
+of the earlier patches against a vanilla kernel and to measure the
+cumulative effect of the later patches.  (I'm not volunteering, however:
+ENOTIME.)
 -- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+Frank Mayhar <fmayhar@google.com>
+Google, Inc.
+
