@@ -1,88 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab0F3Psc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 11:48:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38873 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311Ab0F3Psb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 11:48:31 -0400
-Date: Wed, 30 Jun 2010 08:47:55 -0700
-From: Greg KH <gregkh@suse.de>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Nathan Fontenot <nfont@austin.ibm.com>,
-       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] memory hotplug disable boot option
-Message-ID: <20100630154755.GB12158@suse.de>
-References: <20100628154455.GA13918@suse.de>
- <1277769867.8354.531.camel@nimitz>
- <20100629115232.38BC.A69D9226@jp.fujitsu.com>
- <1277827384.8354.3413.camel@nimitz>
- <20100629180415.GB1240@suse.de>
- <20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753912Ab0F3PuR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 11:50:17 -0400
+Received: from smtp-out-161.synserver.de ([212.40.180.161]:1115 "HELO
+	smtp-out-161.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751758Ab0F3PuP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 11:50:15 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 22222
+Date: Wed, 30 Jun 2010 17:50:07 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
+Subject: Re: [git pull] drm fixes + agp + one fb patch (bisected)
+Message-ID: <20100630155007.GA1696@arch.tripp.de>
+References: <alpine.DEB.2.00.1006300202190.30052@skynet.skynet.ie>
+ <20100630065440.GA1736@arch.tripp.de>
+ <20100630073145.GA1722@arch.tripp.de>
+ <AANLkTimr33Bar73xO9IjDWhPWidZr0HB663oRU8fDCyt@mail.gmail.com>
+ <20100630145859.GC1722@arch.tripp.de>
+ <AANLkTil58kym4SgjMDv8RCXWkoUHKVYfTpT775uufoDJ@mail.gmail.com>
+ <20100630151449.GA1748@arch.tripp.de>
+ <AANLkTikHDUSpYrx4yCLFPNuTw4FFyLcf2kvJ2gVWicZA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikHDUSpYrx4yCLFPNuTw4FFyLcf2kvJ2gVWicZA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 09:32:51AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Tue, 29 Jun 2010 11:04:15 -0700
-> Greg KH <gregkh@suse.de> wrote:
+On Wed, Jun 30, 2010 at 11:34:53AM -0400, Alex Deucher wrote:
+> On Wed, Jun 30, 2010 at 11:14 AM, Markus Trippelsdorf
+> <markus@trippelsdorf.de> wrote:
+> > On Wed, Jun 30, 2010 at 11:03:33AM -0400, Alex Deucher wrote:
+> >> On Wed, Jun 30, 2010 at 10:58 AM, Markus Trippelsdorf
+> >> <markus@trippelsdorf.de> wrote:
+> >> > On Wed, Jun 30, 2010 at 10:49:41AM -0400, Alex Deucher wrote:
+> >> >> On Wed, Jun 30, 2010 at 3:31 AM, Markus Trippelsdorf
+> >> >> <markus@trippelsdorf.de> wrote:
+> >> >> > On Wed, Jun 30, 2010 at 08:54:40AM +0200, Markus Trippelsdorf wrote:
+> >> >> >> On Wed, Jun 30, 2010 at 02:03:04AM +0100, Dave Airlie wrote:
+> >> >> >> >
+> >> >> >> > one fb layer fix in a flag I introduced,
+> >> >> >> >
+> >> >> >> > the rest are drm fixes:
+> >> >> >> > radeon fixes: the larger ones in the command stream checker for older cards,
+> >> >> >> > which was causing a lot of userspace apps to fail. Also some powerpc server fixes.
+> >> >> >> > along with some updates to the evergreen command stream checker introduced in -rc1.
+> >> >> >> >
+> >> >> >> > agp: fix issue with warning on memory allocation + fallback to vmalloc.
+> >> >> >> > ttm: fix regression introduced in -rc1 in memory allocation paths.
+> >> >> >> >
+> >> >> >> > The following changes since commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02:
+> >> >> >> >
+> >> >> >> >   Linux 2.6.35-rc3 (2010-06-11 19:14:04 -0700)
+> >> >> >> >
+> >> >> >>
+> >> >> >> I've tested these patches and they break my setup (RS780). On reboot, the
+> >> >> >> monitor goes straight to powersaving mode and no framebuffer is shown.
+> >> >> >
+> >> >> > This is the result of the bisection:
+> >> >> >
+> >> >> > 07d4190327b02ab3aaad25a2d168f79d92e8f8c2 is the first bad commit
+> >> >> > commit 07d4190327b02ab3aaad25a2d168f79d92e8f8c2
+> >> >> > Author: Alex Deucher <alexdeucher@gmail.com>
+> >> >> > Date:   Sat Jun 12 11:50:13 2010 -0400
+> >> >> >
+> >> >> >    drm/radeon/kms: fix bandwidth calculation when sideport is present
+> >> >> >
+> >> >> >    Fixes fdo bug 27529:
+> >> >> >    https://bugs.freedesktop.org/show_bug.cgi?id=27529
+> >> >> >
+> >> >> >    Reported-by: steckdenis@yahoo.fr
+> >> >> >    Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+> >> >> >    Cc: stable <stable@kernel.org>
+> >> >> >    Signed-off-by: Dave Airlie <airlied@redhat.com>
+> >> >>
+> >> >> Markus, can you send me a copy of your vbios? as root:
+> >> >> cd /sys/bus/pci/devices/<pci bus id of video card>
+> >> >> echo 1 > rom
+> >> >> cat rom ? /tmp/vbio.rom
+> >> >> echo 0 > rom
+> >> >
+> >> > Attached.
+> >> >
+> >> >>
+> >> >> Also, when you say "on reboot" do you mean the card comes up ok
+> >> >> initially with the new kernel and then fails after a reboot, or fails
+> >> >> directly after booting the new kernel?  Also, is there an oops or
+> >> >> anything like that in dmesg?
+> >> >
+> >> > It fails directly after booting the new kernel. There is no oops or
+> >> > anything like it in dmesg, because the kernel fails so early that it
+> >> > could not log anything.
+> >>
+> >> Is the machine still pingable?  Can you ssh in? or is it completely dead?
+> >
+> > I don't think so. There is no disk activivy after the hang, but maybe
+> > the kernel displays an oops, which I just can't see.
 > 
-> > On Tue, Jun 29, 2010 at 09:03:04AM -0700, Dave Hansen wrote:
-> > > On Tue, 2010-06-29 at 11:56 +0900, KOSAKI Motohiro wrote:
-> > > > > On Mon, 2010-06-28 at 08:44 -0700, Greg KH wrote:
-> > > > > > > The directories being created are the standard directories, one for each of the memory
-> > > > > > > sections present at boot.  I think the most used files in each of these directories
-> > > > > > > is the state and removable file used to do memory hotplug.
-> > > > > > 
-> > > > > > And perhaps we shouldn't really be creating so many directories?  Why
-> > > > > > not work with the memory hotplug developers to change their interface to
-> > > > > > not abuse sysfs in such a manner? 
-> > > > > 
-> > > > > Heh, it wasn't abuse until we got this much memory.  But, I think this
-> > > > > one is pretty much 100% my fault.
-> > > > > 
-> > > > > Nathan, I think the right fix here is probably to untie sysfs from the
-> > > > > sections a bit.  We should be able to have sysfs dirs that represent
-> > > > > more than one contiguous SECTION_SIZE area of memory.
-> > > > 
-> > > > Why do we need abi breakage? Yourself talked about we guess ppc don't
-> > > > actually need 16MB section. I think IBM folks have to confirm it.
-> > > > If our guessing is correct, the firmware fixing is only necessary.
-> > > 
-> > > >From the mouth of the kernel dumbass who coded this up: it's not the
-> > > firmware's fault.  We shouldn't punt this to them, and the proper fix
-> > > _isn't_ in the firmware, plus they may have other more fundamental
-> > > reasons to keep the LMB sizes what they are.
-> > 
-> > I agree, this should be fixed in the api to userspace, having this many
-> > sysfs directories and/or files is just looney.
-> > 
-> > thanks,
-> > 
-> 
-> Hmm, adding 
->  CONFIG_NEW_MEMORY_SYSFS_LAYOUT or
+> The attached patch should fix the issue.
 
-It will not be "NEW" in a year :)
-
->  memory_sysfs_layout=small boot option
-
-Yes, that sounds good.
-
-> and adding a scalable interface for large scale machines ?
-> I'd like to consider something..
-
-Dynamically changing the layout on big memory boxes makes sense to me,
-how about you?
-
-thanks,
-
-greg k-h
+Sorry, but it does not. I've still the same issue with your patch
+applied.
+-- 
+Markus
