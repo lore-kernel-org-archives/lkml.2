@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab0F3GyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 02:54:11 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56348 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab0F3GyI (ORCPT
+	id S1752596Ab0F3Gyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 02:54:47 -0400
+Received: from smtp-out-152.synserver.de ([212.40.180.152]:1052 "HELO
+	smtp-out-152.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752240Ab0F3Gyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 02:54:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=DnMbXDJkYpT6KY36JtHS/HQJiaoUxpewAMRJIcW/QFGjlbA0sY1QOJqpSMm5xWP8az
-         QYKqIItAIVwk2ZZASzlxCip+paOwTGVLCOQclGLv2rSy1gdTcJ4JMoOzz4M1lDU36Bay
-         pG8mOd6zB4/HXjUSWDzW8G3T37Ay7/+IjYI20=
+	Wed, 30 Jun 2010 02:54:46 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 4034
+Date: Wed, 30 Jun 2010 08:54:40 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Dave Airlie <airlied@linux.ie>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+       dri-devel@lists.sf.net
+Subject: Re: [git pull] drm fixes + agp + one fb patch
+Message-ID: <20100630065440.GA1736@arch.tripp.de>
+References: <alpine.DEB.2.00.1006300202190.30052@skynet.skynet.ie>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1001270917120.24253@localhost.localdomain>
-References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain>
-	<1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk>
-	<alpine.LFD.2.00.1001270738220.24253@localhost.localdomain>
-	<89k77n$ms73l9@fmsmga001.fm.intel.com>
-	<alpine.LFD.2.00.1001270917120.24253@localhost.localdomain>
-Date: Wed, 30 Jun 2010 16:54:07 +1000
-Message-ID: <AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, earny@net4u.de,
-       Roman Jarosz <kedgedev@gmail.com>, intel-gfx@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org, jcnengel@googlemail.com,
-       "A. Boulan" <arnaud.boulan@libertysurf.fr>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
-       michael@reinelt.co.at, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1006300202190.30052@skynet.skynet.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 28, 2010 at 3:19 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
->
-> On Wed, 27 Jan 2010, Chris Wilson wrote:
->>
->> Yes, it survives a short torture test that leaks lots of bo objects from
->> X. Obviously this patch depends upon the new interface.
->
-> All right. I'll apply my patch, since i'd rather have any half-way complex
-> logic for handling mappings in the generic mm code. And then I'll apply
-> yours, because now I can look at it without wanting to dig my eyes out.
->
+On Wed, Jun 30, 2010 at 02:03:04AM +0100, Dave Airlie wrote:
+> 
+> Hi Linus,
+> 
+> one fb layer fix in a flag I introduced,
+> 
+> the rest are drm fixes:
+> radeon fixes: the larger ones in the command stream checker for older cards,
+> which was causing a lot of userspace apps to fail. Also some powerpc server fixes.
+> along with some updates to the evergreen command stream checker introduced in -rc1.
+> 
+> agp: fix issue with warning on memory allocation + fallback to vmalloc.
+> ttm: fix regression introduced in -rc1 in memory allocation paths.
+> 
+> The following changes since commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02:
+> 
+>   Linux 2.6.35-rc3 (2010-06-11 19:14:04 -0700)
+> 
 
-Chris's patch has been reported to cause a regression in hibernate,
+I've tested these patches and they break my setup (RS780). On reboot, the
+monitor goes straight to powersaving mode and no framebuffer is shown.
 
-I haven't set up a reproducer yet, and it might be a stable issue
-(someone bisected it in stable).
-
-https://bugzilla.kernel.org/show_bug.cgi?id=13811
-
-Hopefully I can spend some time tomorrow setting up a machine to test.
-
-Dave.
+-- 
+Markus
