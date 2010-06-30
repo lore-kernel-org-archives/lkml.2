@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab0F3Px4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 11:53:56 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:39469 "EHLO
+	id S1756150Ab0F3Pyq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 11:54:46 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:39505 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754015Ab0F3Pxz (ORCPT
+	by vger.kernel.org with ESMTP id S1754015Ab0F3Pyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 11:53:55 -0400
-Date: Wed, 30 Jun 2010 17:53:52 +0200
+	Wed, 30 Jun 2010 11:54:44 -0400
+Date: Wed, 30 Jun 2010 17:54:42 +0200
 From: Christoph Egger <siccegge@cs.fau.de>
-To: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
-       "Antonio R. Costa" <costa.antonior@gmail.com>,
-       Nicolas Ferre <nicolas.ferre@atmel.com>, Dmitry Torokhov <dtor@mail.ru>,
-       Andrea Gelmini <andrea.gelmini@gelma.net>,
+To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+       Cory Maccarrone <darkstar6262@gmail.com>,
+       "Zebediah C. McClure" <zmc@lurian.net>,
+       Alistair Buxton <a.j.buxton@gmail.com>, linux-omap@vger.kernel.org,
        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: [PATCH 01/33] Removing dead MTD_NAND_AT91_BUSWIDTH_16
-Message-ID: <4c6fe9a4c298214223ff89d06401ac7b66f81c98.1277911346.git.siccegge@cs.fau.de>
+Subject: [PATCH 03/33] Removing dead OMAP_MUX_ERRORS
+Message-ID: <b6ca168f9459162f2c96aa8ef999047a3c4f6f9c.1277911346.git.siccegge@cs.fau.de>
 References: <cover.1277911345.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,47 +27,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MTD_NAND_AT91_BUSWIDTH_16 doesn't exist in Kconfig, therefore removing
-all references for it from the source code.
+OMAP_MUX_ERRORS doesn't exist in Kconfig, therefore removing all
+references for it from the source code.
 
 Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 ---
- arch/arm/mach-at91/board-at572d940hf_ek.c |    4 ----
- arch/arm/mach-at91/board-sam9m10g45ek.c   |    4 ----
- 2 files changed, 0 insertions(+), 8 deletions(-)
+ arch/arm/mach-omap1/mux.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-at91/board-at572d940hf_ek.c b/arch/arm/mach-at91/board-at572d940hf_ek.c
-index 5daff27..889a442 100644
---- a/arch/arm/mach-at91/board-at572d940hf_ek.c
-+++ b/arch/arm/mach-at91/board-at572d940hf_ek.c
-@@ -216,11 +216,7 @@ static struct atmel_nand_data __initdata eb_nand_data = {
- /*	.rdy_pin	= AT91_PIN_PC16, */
- 	.enable_pin	= AT91_PIN_PA15,
- 	.partition_info	= nand_partitions,
--#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
--	.bus_width_16	= 1,
+diff --git a/arch/arm/mach-omap1/mux.c b/arch/arm/mach-omap1/mux.c
+index 8434137..1ddb02c 100644
+--- a/arch/arm/mach-omap1/mux.c
++++ b/arch/arm/mach-omap1/mux.c
+@@ -439,12 +439,7 @@ int __init_or_module omap1_cfg_reg(const struct pin_config *cfg)
+ 			       cfg->pull_name, cfg->pull_reg, pull_orig, pull);
+ 	}
+ #endif
+-
+-#ifdef CONFIG_OMAP_MUX_ERRORS
+-	return warn ? -ETXTBSY : 0;
 -#else
- 	.bus_width_16	= 0,
+ 	return 0;
 -#endif
- };
+ }
  
- static struct sam9_smc_config __initdata eb_nand_smc_config = {
-diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
-index ee80059..49ef850 100644
---- a/arch/arm/mach-at91/board-sam9m10g45ek.c
-+++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
-@@ -135,11 +135,7 @@ static struct atmel_nand_data __initdata ek_nand_data = {
- 	.rdy_pin	= AT91_PIN_PC8,
- 	.enable_pin	= AT91_PIN_PC14,
- 	.partition_info	= nand_partitions,
--#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
--	.bus_width_16	= 1,
--#else
- 	.bus_width_16	= 0,
--#endif
- };
- 
- static struct sam9_smc_config __initdata ek_nand_smc_config = {
+ int __init omap1_mux_init(void)
 -- 
 1.7.0.4
 
