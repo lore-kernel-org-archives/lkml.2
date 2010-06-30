@@ -1,118 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab0F3L6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 07:58:14 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:32874 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785Ab0F3L6N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 07:58:13 -0400
-X-Auth-Info: AHOtIsXN/jIL7LzxtQpwQNcWE2iFAAC0Ld/Bq2y82ek=
-To: Rupjyoti Sarmah <rsarmah@amcc.com>
-cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, jgarzik@pobox.com,
-       sr@denx.de, rsarmah@apm.com, linuxppc-dev@ozlabs.org
-From: Wolfgang Denk <wd@denx.de>
-Subject: Re: [PATCH v1]460EX on-chip SATA driver<resubmisison>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-In-reply-to: <201006241327.o5ODRY6m032299@amcc.com>
-References: <201006241327.o5ODRY6m032299@amcc.com>
-Comments: In-reply-to Rupjyoti Sarmah <rsarmah@amcc.com>
-   message dated "Thu, 24 Jun 2010 18:57:34 +0530."
-Date: Wed, 30 Jun 2010 13:58:08 +0200
-Message-Id: <20100630115808.2D9241524EC@gemini.denx.de>
+	id S1755492Ab0F3MGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 08:06:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31580 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753763Ab0F3MGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 08:06:01 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <52423201-3DF9-4045-8E8B-FAA915053D56@dilger.ca>
+References: <52423201-3DF9-4045-8E8B-FAA915053D56@dilger.ca> <20100630011656.18960.4255.stgit@warthog.procyon.org.uk>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk, smfrench@gmail.com,
+       jlayton@redhat.com, mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       sjayaraman@suse.de, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 0/3] Extended file stat functions [ver #2]
+Date: Wed, 30 Jun 2010 13:05:44 +0100
+Message-ID: <26505.1277899544@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Rupjyoti Sarmah,
+Andreas Dilger <adilger@dilger.ca> wrote:
 
-In message <201006241327.o5ODRY6m032299@amcc.com> you wrote:
-> This patch enables the on-chip DWC SATA controller of the AppliedMicro processor 460EX.
+> Doesn't glibc use two 64-bit values for devices?
+
+So it would seem.  Does Linux need to, though?
+
+> I dislike sequential "version" fields (which are "all or nothing"), and
+> prefer the ext2/3/4-like "feature flags" that allow the caller to state what
+> features and fields it expects and/or understands.  This allows
+> extensibility without unduly breaking compatibility.
+
+My aim was to avoid the need to create new stat syscalls in the future by
+making it possible to increment the version number you're asking for.
+
+> > 		unsigned int		st_uid;
+> > 		unsigned int		st_gid;
 > 
-> Signed-off-by: Rupjyoti Sarmah <rsarmah@appliedmicro.com> 
-> Signed-off-by: Mark Miesfeld <mmiesfeld@appliedmicro.com>
-> Signed-off-by: Prodyut Hazarika <phazarika@appliedmicro.com>
+> In struct stat64 it uses "unsigned long" for both st_uid and st_gid.  Having
+> a 64-bit value here is useful for CIFS servers to be able to remap different
+> UID domains into a 32-bit domain and a 32-bit UID.  If you change this,
+> please remember to reorder the fields for proper 64-bit alignment.
+
+glibc, on the other hand, only supports 32-bits for these.
+
+My thought was that I could add extension fields to provide access to the
+remote username/UID/GID values as well as the local UID/GID (since the latter
+are used by the permission checking routines in the local VFS).
+
+> I wouldn't object to having a 128-bit st_ino field, since this is what
+> Lustre will be using internally in the next release.
+
+I wonder how best to represent 128-bit numbers.
+
+	unsigned long long long
+
+gives:
+
+	include/linux/stat.h:151: error: 'long long long' is too long for GCC
+
+so perhaps something like:
+
+	struct xstat_u128 { unsigned long long lsw, msw; };
+
+however, I suspect the kernel will require a bit of reengineering to handle a
+pgoff_t and loff_t of 128-bits.
+
+> What is also very convenient that I learned Solaris stat() does is it
+> returns the device size in st_size for a block device file.  This is very
+> convenient, and avoids the morass of ioctls and "binary llseek guessing"
+> used by libext2fs and libblkid to determine the size of a block device.  Any
+> reason not to add this into this new syscall?
+
+That's a separate problem.  That can be implemented now by overriding getattr
+on blockdev files.  You could also set st_blocks and st_blksize to indicate
+parameters of the blockdev - though that may upset df, I suppose.
+
+> It is inconsistent to have all the other fields use the "st_" prefix, but
+> "query_flags" and "struct_version" do not have this prefix.
+
+They are a different sort of field (metametadata, I suppose).  But I can add
+that on if you'd prefer.
+
+> It wouldn't be a bad idea to interleave these flags with each of the fields
+> that they represent, to make it more clear what is included in each.
+
+Or comments could be used for that.
+
+> > 	#define XSTAT_QUERY__ORDINARY_SET	0x00000017ULL
+> > 	#define XSTAT_QUERY__GET_ANYWAY		0x0000007fULL
 > 
-> ---
-> This patch incorporates the changes advised in the mailing list. The device
-> tree changes were submitted as a seperate patch. 
+> Could you provide some information what the semantic distinction between
+> these is?  It might be useful to have an "XSTAT_QUERY_LEGACY_STAT" mask that
+> returns only the fields that are in the previous struct stat, unless that is
+> what "ORDINARY_SET" means, in which case it should be renamed I think.
 
-Which kernel is this patch supposed to be applied to?
+XSTAT_QUERY_LEGACY_STAT is XSTAT_QUERY__ORDINARY_SET.  Is "legacy" an
+appropriate appellation, though?  They're the set most people expect to see
+and want to use.
 
-Using current mainline (v2.6.35-rc3-262-g984bc96) the patch applies
-without problems, but when I enable it in the kernel configuration I
-get this:
+> > 	#define XSTAT_QUERY__DEFINED_SET	0x0000007fULL
+> 
+> It is smart to have a "DEFINED_SET" mask that maps to the
+> currently-understood fields.  This ensures that applications compiled
+> against a specific set of headers/struct will not request fields which they
+> don't understand.  It might be better to call this "XSTAT_QUERY_ALL" so that
+> it is more easily understood and used by callers, instead of the incorrect
+> "-1" or "~0" that some may be tempted to use if they don't understand what
+> "__DEFINED_SET" means.
 
-drivers/ata/sata_dwc_460ex.c:43:1: warning: "DRV_NAME" redefined
-In file included from drivers/ata/sata_dwc_460ex.c:38:
-drivers/ata/libata.h:31:1: warning: this is the location of the previous definition
-drivers/ata/sata_dwc_460ex.c:44:1: warning: "DRV_VERSION" redefined
-drivers/ata/libata.h:32:1: warning: this is the location of the previous definition
-drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_scr_read':
-drivers/ata/sata_dwc_460ex.c:777: error: 'struct ata_port' has no member named 'ioaddr'
-drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_scr_write':
-drivers/ata/sata_dwc_460ex.c:793: error: 'struct ata_port' has no member named 'ioaddr'
-drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_error_intr':
-drivers/ata/sata_dwc_460ex.c:844: error: 'struct ata_port_operations' has no member named 'sff_check_status'
-drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_isr':
-drivers/ata/sata_dwc_460ex.c:953: error: 'struct ata_port_operations' has no member named 'sff_check_status'
-drivers/ata/sata_dwc_460ex.c:957: error: 'struct ata_port_operations' has no member named 'sff_check_status'
-drivers/ata/sata_dwc_460ex.c:991: error: implicit declaration of function 'ata_sff_hsm_move'
-drivers/ata/sata_dwc_460ex.c:1030: error: 'struct ata_port_operations' has no member named 'sff_check_status'
-drivers/ata/sata_dwc_460ex.c: At top level:
-drivers/ata/sata_dwc_460ex.c:1213: warning: 'struct ata_ioports' declared inside parameter list
-drivers/ata/sata_dwc_460ex.c:1213: warning: its scope is only this definition or declaration, which is probably not what you want
-drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_setup_port':
-drivers/ata/sata_dwc_460ex.c:1215: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1216: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1218: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1219: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1221: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1223: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1224: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1225: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1227: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1228: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1229: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1231: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c:1232: error: dereferencing pointer to incomplete type
-drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_port_start':
-drivers/ata/sata_dwc_460ex.c:1273: error: 'struct ata_port' has no member named 'bmdma_prd'
-drivers/ata/sata_dwc_460ex.c:1274: error: 'struct ata_port' has no member named 'bmdma_prd_dma'
-drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_exec_command_by_tag':
-drivers/ata/sata_dwc_460ex.c:1356: warning: passing argument 1 of 'ata_get_cmd_descript' makes integer from pointer without a cast
-drivers/ata/sata_dwc_460ex.c:1369: error: implicit declaration of function 'ata_sff_exec_command'
-drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_qc_issue':
-drivers/ata/sata_dwc_460ex.c:1512: error: 'struct ata_port_operations' has no member named 'sff_tf_load'
-drivers/ata/sata_dwc_460ex.c:1516: error: implicit declaration of function 'ata_sff_qc_issue'
-drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_error_handler':
-drivers/ata/sata_dwc_460ex.c:1545: error: implicit declaration of function 'ata_sff_error_handler'
-drivers/ata/sata_dwc_460ex.c: At top level:
-drivers/ata/sata_dwc_460ex.c:1564: error: 'ata_sff_port_ops' undeclared here (not in a function)
-drivers/ata/sata_dwc_460ex.c:1577: error: unknown field 'bmdma_setup' specified in initializer
-drivers/ata/sata_dwc_460ex.c:1577: warning: initialization from incompatible pointer type
-drivers/ata/sata_dwc_460ex.c:1578: error: unknown field 'bmdma_start' specified in initializer
-drivers/ata/sata_dwc_460ex.c:1578: warning: initialization from incompatible pointer type
-drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_probe':
-drivers/ata/sata_dwc_460ex.c:1638: error: 'struct ata_port' has no member named 'ioaddr'
-drivers/ata/sata_dwc_460ex.c:1639: error: 'struct ata_port' has no member named 'ioaddr'
-drivers/ata/sata_dwc_460ex.c:1641: error: 'struct ata_port' has no member named 'ioaddr'
-make[2]: *** [drivers/ata/sata_dwc_460ex.o] Error 1
-make[1]: *** [drivers/ata] Error 2
-make: *** [drivers] Error 2
+Passing -1 (or ULONGLONG_MAX) to get everything would be reasonable.
 
+This should probably be an internal kernel constant.
 
-Does this require any specific kernel version?
-
-Best regards,
-
-Wolfgang Denk
-
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
-Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
-A direct quote from the Boss: "We passed over a lot of good people to
-get the ones we hired."
+David
