@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab0F3HBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 03:01:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48064 "EHLO mx1.suse.de"
+	id S1752585Ab0F3HFR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 03:05:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19487 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398Ab0F3HBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 03:01:20 -0400
-Date: Wed, 30 Jun 2010 09:01:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Darren Hart <dvhltc@us.ibm.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] futex: futex_find_get_task make credentials check
- conditional
-Message-ID: <20100630070115.GB3890@tiehlicka.suse.cz>
-References: <20100625082711.GA32765@tiehlicka.suse.cz>
- <4C24ED34.9040808@us.ibm.com>
- <4C253D32.6040304@us.ibm.com>
- <20100628144246.GA14201@tiehlicka.suse.cz>
- <20100628153214.GA24127@tiehlicka.suse.cz>
- <20100628155845.GC24127@tiehlicka.suse.cz>
- <20100628163952.GD24127@tiehlicka.suse.cz>
- <1277743748.3561.139.camel@laptop>
- <20100629084230.GE6215@tiehlicka.suse.cz>
- <AANLkTinyoyZVg8iYOuUx6aA4XlUlLywl4q6GLXmeYP-x@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinyoyZVg8iYOuUx6aA4XlUlLywl4q6GLXmeYP-x@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751047Ab0F3HFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 03:05:16 -0400
+Message-Id: <89khjo$fr177d@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,510,1272870000"; 
+   d="scan'208";a="531668205"
+Date: Wed, 30 Jun 2010 08:05:08 +0100
+To: Dave Airlie <airlied@gmail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
+Cc: earny@net4u.de, Roman Jarosz <kedgedev@gmail.com>,
+       intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+       jcnengel@googlemail.com, "A. Boulan" <arnaud.boulan@libertysurf.fr>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
+       michael@reinelt.co.at, stable@kernel.org
+References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain> <1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk> <alpine.LFD.2.00.1001270738220.24253@localhost.localdomain> <89k77n$ms73l9@fmsmga001.fm.intel.com> <alpine.LFD.2.00.1001270917120.24253@localhost.localdomain> <AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 29-06-10 09:41:02, Linus Torvalds wrote:
-> On Tue, Jun 29, 2010 at 1:42 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> >
-> > futex_find_get_task is currently used (through lookup_pi_state) from two
-> > contexts, futex_requeue and futex_lock_pi_atomic. While credentials check
-> > makes sense in the first code path, the second one is more problematic
-> > because this check requires that the PI lock holder (pid parameter) has
-> > the same uid and euid as the process's euid which is trying to lock the
-> > same futex (current).
-> 
-> So exactly why does it make sense to check the credentials in the
-> first code path then? 
+On Wed, 30 Jun 2010 16:54:07 +1000, Dave Airlie <airlied@gmail.com> wrote:
+> Chris's patch has been reported to cause a regression in hibernate,
 
-I though that requeue needs this for security reasons (don't let requeue
-process for other user), but when I thought about that again you are
-right and the only what matters should be accessibility of the shared
-memory.
+Reviewing the patch again, we no longer set the default gfpmask on the
+inode to contain NORETRY and instead add the NORETRY at the one spot in
+the code where we are trying to do a large allocation and our shrinker
+would be prevented from running (due to contention on struct_mutex).
 
-
+I do not know how this causes memory corruption across hibernate and would
+appreciate any insights.
 -- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Chris Wilson, Intel Open Source Technology Centre
