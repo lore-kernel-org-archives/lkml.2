@@ -1,88 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab0F3Oto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 10:49:44 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:39134 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877Ab0F3Otn convert rfc822-to-8bit (ORCPT
+	id S1756604Ab0F3Oxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 10:53:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50436 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753630Ab0F3Oxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 10:49:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PeKxcgnt8EFnvNt3cwXD3SIhrOmq6RG3K7hgTwJxweiGgBi8qEueiVCondrBvF82YJ
-         TfO7cJ4WvhJQfmKq54rOvZn6/Ccu5DU1DgIFOrltUofuYG7OTCyj5weg6lUYWsAAqeeR
-         8vnXuZVWxcVd0My6VpWfxmi75JGoRu2xfDPZg=
+	Wed, 30 Jun 2010 10:53:45 -0400
+Date: Wed, 30 Jun 2010 15:53:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Raffaele Recalcati <lamiaposta71@gmail.com>
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+       Raffaele Recalcati <raffaele.recalcati@bticino.it>,
+       Davide Bonfanti <davide.bonfanti@bticino.it>,
+       Russell King <linux@arm.linux.org.uk>,
+       Chaithrika U S <chaithrika@ti.com>,
+       Troy Kisky <troy.kisky@boundarydevices.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+       Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: DaVinci: Added support for cpu clocking I2S
+Message-ID: <20100630145342.GE3634@rakim.wolfsonmicro.main>
+References: <1277707487-3371-1-git-send-email-lamiaposta71@gmail.com>
+ <20100628103030.GB14247@rakim.wolfsonmicro.main>
+ <AANLkTimedG3X-rQbZvS6QfxUGkPIAtCgliI0xWknmNA9@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20100630073145.GA1722@arch.tripp.de>
-References: <alpine.DEB.2.00.1006300202190.30052@skynet.skynet.ie>
-	<20100630065440.GA1736@arch.tripp.de>
-	<20100630073145.GA1722@arch.tripp.de>
-Date: Wed, 30 Jun 2010 10:49:41 -0400
-Message-ID: <AANLkTimr33Bar73xO9IjDWhPWidZr0HB663oRU8fDCyt@mail.gmail.com>
-Subject: Re: [git pull] drm fixes + agp + one fb patch (bisected)
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimedG3X-rQbZvS6QfxUGkPIAtCgliI0xWknmNA9@mail.gmail.com>
+X-Cookie: I'm also against BODY-SURFING!!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 3:31 AM, Markus Trippelsdorf
-<markus@trippelsdorf.de> wrote:
-> On Wed, Jun 30, 2010 at 08:54:40AM +0200, Markus Trippelsdorf wrote:
->> On Wed, Jun 30, 2010 at 02:03:04AM +0100, Dave Airlie wrote:
->> >
->> > one fb layer fix in a flag I introduced,
->> >
->> > the rest are drm fixes:
->> > radeon fixes: the larger ones in the command stream checker for older cards,
->> > which was causing a lot of userspace apps to fail. Also some powerpc server fixes.
->> > along with some updates to the evergreen command stream checker introduced in -rc1.
->> >
->> > agp: fix issue with warning on memory allocation + fallback to vmalloc.
->> > ttm: fix regression introduced in -rc1 in memory allocation paths.
->> >
->> > The following changes since commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02:
->> >
->> >   Linux 2.6.35-rc3 (2010-06-11 19:14:04 -0700)
->> >
->>
->> I've tested these patches and they break my setup (RS780). On reboot, the
->> monitor goes straight to powersaving mode and no framebuffer is shown.
->
-> This is the result of the bisection:
->
-> 07d4190327b02ab3aaad25a2d168f79d92e8f8c2 is the first bad commit
-> commit 07d4190327b02ab3aaad25a2d168f79d92e8f8c2
-> Author: Alex Deucher <alexdeucher@gmail.com>
-> Date:   Sat Jun 12 11:50:13 2010 -0400
->
->    drm/radeon/kms: fix bandwidth calculation when sideport is present
->
->    Fixes fdo bug 27529:
->    https://bugs.freedesktop.org/show_bug.cgi?id=27529
->
->    Reported-by: steckdenis@yahoo.fr
->    Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
->    Cc: stable <stable@kernel.org>
->    Signed-off-by: Dave Airlie <airlied@redhat.com>
+On Wed, Jun 30, 2010 at 10:17:40AM +0200, Raffaele Recalcati wrote:
+> 2010/6/28 Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Markus, can you send me a copy of your vbios? as root:
-cd /sys/bus/pci/devices/<pci bus id of video card>
-echo 1 > rom
-cat rom ? /tmp/vbio.rom
-echo 0 > rom
+> > It's still very hard to understand what this patch is supposed to do.
+> > As previously mentioned this would probably be a lot clearer if you
+> > split this into multiple patches, for example one adding support for the
+> > fast clock mode, one adding support for selecting the pin used for any
+> > external clock and then further patches with any other changes.
 
-Also, when you say "on reboot" do you mean the card comes up ok
-initially with the new kernel and then fails after a reboot, or fails
-directly after booting the new kernel?  Also, is there an oops or
-anything like that in dmesg?
+> Looking at other paches, they are simpler than mine.
 
-Thanks,
+The big problem is you're just making some general (and not particularly
+clear) statements about features without saying anything concrete about
+what the patch actually does - is there a bug being fixed, a feature
+implemented, or what?  
 
-Alex
+> > >     Added audio playback support with [frame sync master - clock master]
+> > mode
+> > >     and with [frame sync master - clock slave].
+
+> > What are these modes - which clock are you talking about?
+
+> McBSP i2s interface to external codec.
+
+Perhaps you mean the bit clock on the I2S interface?  There are multiple
+clocks on the actual I2S link itself, and often people lump in the
+master clock for the I2S interface into the interface itself.
+
+> > >        i2s_fast_clock switch can be used to have better approximate or
+> > >        symmetric waveforms.
+
+> > Why would someone choose not to use this?
+
+> I was not sure if symmetric waveform can be a must.
+> In general I think it is better a non symmetric, but better approximate,
+> waveform.
+> Anyway, it is better to have the possibility to choose in my opinion,
+> because I have not so much experience in i2s communication.
+
+If I understand this correctly when you say "approximate" what you mean
+is "approximate clock rate" so the tradeoff is between the accuracy of
+the rate generated and the duty cycle of the output signal?
+
+> > > +     /* To be used when cpu gets clock from extenal pin */
+> > > +     int clk_input_pin;
+
+> > How would one use this?
+
+> looking at 2.5 Clock, Frames, and Data in
+> you can select MCBSP_CLKS or other input clock pins.
+
+You need to put this in the comments.
+
+> > > +static int davinci_i2s_dai_set_clkdiv(struct snd_soc_dai *cpu_dai,
+> > > +                             int div_id, int div)
+> > > +{
+> > > +     struct davinci_mcbsp_dev *dev = cpu_dai->private_data;
+> > > +     int srgr;
+> > > +
+> > > +     dev->clk_div = div;
+> > > +     return 0;
+> > > +}
+
+> > I would add a clock ID here in case someone wants to configure another
+> > clock in the patch.
+
+> Can you explain better,
+> please?
+
+You need to require a value for div_id.
+
+> > I'd also expect this to be doing a clk_get() using the struct device for
+> > the DAI so that the driver can function even if the clock tree for a new..
+> > SoC is different.
+
+> Sorry, I don't understand, can you explain me better?
+
+clk_get() takes two parameters, a struct device and a name.  You should
+be using a clock specified in terms of a particular device, not one with
+a NULL pointer for the struct device.
+
+> > > +             freq = 122000000; /* FIXME ask to Texas */
+
+> > ...this presumably ought to be in an else clause (or perhaps just not
+> > using this clocking at all if you can't find the clock?).
+
+> freq is used to obtain clk_div.
+> The real problem is that, as explained in the manual, it is not clear its
+> value.
+> I hope someone can help!!
+
+I would very strongly expect that the division would be from the clock
+rate of the source clock which you can obtain by using clk_get().
