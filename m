@@ -1,340 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab0F3LwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 07:52:10 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:57660 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab0F3LwF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 07:52:05 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Eric Van Hensbergen <ericvh@gmail.com>
-Cc: V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-       Al Viro <viro@zeniv.linux.org.uk>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [V9fs-developer] [GIT PULL] 9p file system bug fixes for 2.6.35-rc2
-In-Reply-To: <AANLkTikyqHtazndL_zBux7Zk0qZSJuNEvitHj8wkuSWW@mail.gmail.com>
-References: <AANLkTik3ax1SlAKRo6laMfACdzh6IUKLGSvMK4Gp9GY9@mail.gmail.com> <alpine.LFD.2.00.1006071654290.4506@i5.linux-foundation.org> <20100608004102.GQ31073@ZenIV.linux.org.uk> <87pqzrexon.fsf@linux.vnet.ibm.com> <871vbwe6lp.fsf@linux.vnet.ibm.com> <AANLkTiksmwITS6aCuXXZGR916OTEBm9VQ1MSzzEt8F7S@mail.gmail.com> <AANLkTikyqHtazndL_zBux7Zk0qZSJuNEvitHj8wkuSWW@mail.gmail.com>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Wed, 30 Jun 2010 17:22:01 +0530
-Message-ID: <87mxuc91r2.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1753537Ab0F3Lyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 07:54:31 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:44970 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab0F3Lya convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Wed, 30 Jun 2010 07:54:30 -0400
+Message-Id: <4C2B4CB10200007800008CDE@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 30 Jun 2010 12:54:57 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Peter Zijlstra" <peterz@infradead.org>
+Cc: "mingo@elte.hu" <mingo@elte.hu>, "Jeremy Fitzhardinge" <jeremy@goop.org>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       "Ky Srinivasan" <KSrinivasan@novell.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH 1/4, v2] x86: enlightenment for ticket spin locks -
+	 base implementation
+References: <4C2A1FE902000078000089E1@vpn.id2.novell.com>
+ <1277885133.1868.71.camel@laptop>
+ <4C2B23CD0200007800008BFA@vpn.id2.novell.com>
+ <1277889116.1868.95.camel@laptop> <4C2B14BE.6080505@goop.org>
+ <4C2B4A100200007800008CC5@vpn.id2.novell.com>
+ <1277898525.1868.108.camel@laptop>
+In-Reply-To: <1277898525.1868.108.camel@laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010 13:38:57 -0700, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Tue, Jun 29, 2010 at 1:18 PM, Eric Van Hensbergen <ericvh@gmail.com> wrote:
-> >
-> > Does this approach satisfy your concerns?  We've been going over
-> > several different options on how to proceed, but this seems to be the
-> > best option.
+>>> On 30.06.10 at 13:48, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-06-30 at 12:43 +0100, Jan Beulich wrote:
 > 
-> Using a p9fs rename lock does seem to be a reasonable option.
+>> It does tickle just the new owner - that's what the list is for.
 > 
-> That said, the patch itself seems to not be valid. You drop the lock
-> too early in v9fs_fid_lookup() as far as I can tell. You then re-take
-> it before doing that whole
-> 
->    for (d = dentry, i = (n-1); i >= 0; i--, d = d->d_parent)
-> 
-> loop with it held again, but that's totally bogus - because you
-> dropped the lock, your 'n-1' count has absolutely no meaning any more,
-> since a cross-directory rename might have changed the depth of the
-> thing in the meantime.
-> 
-> And if the depth changes, you aren't at all guaranteed to stay on the
-> same p9fs filesystem, so now you're doing that d_parent access without
-> the proper locking (sure: you hold the rename lock, but it's not at
-> all guaranteed that the rename lock is the _right_ lock any more as
-> you traverse the list down!)
-> 
-> But I didn't look deeply at the patch. There might be some reason why
-> it's safe (I doubt it, though), and there might be other places where
-> you do the same. But in general, dropping and re-taking a lock is a
-> bad idea. If you dropped the lock, you can't depend on anything you
-> found out while having held it.
+> But if you have a FIFO list you don't need the ticket stuff and can
+> implement a FIFO lock instead.
 
-You are correct. we cannot drop the rename lock in between. I also found
-another issue in that we are using dentry->d_name.name directly. That
-would imply we need to hold the rename_lock even during the
-client_walk.  How about the patch below ?. I updated the patch to hold
-rename_lock during multiple path walk. Also the rename path is updated
-to hold the lock during p9_client_rename operations.
+The list is LIFO (not FIFO, as only the most recently added entry is
+a candidate for needing wakeup as long as there's no interrupt
+re-enabling in irqsave lock paths), and is only used for tickling (not
+for deciding who's going to be the next owner).
 
-commit 79f6f20dbb70ad35db37b674957c95de20662a75
-Author: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Date:   Wed Jun 30 15:37:58 2010 +0530
+Jan
 
-    fs/9p: Prevent parallel rename when doing fid_lookup
-    
-    During fid lookup we need to make sure that the dentry->d_parent doesn't
-    change so that we can safely walk the parent dentries. To ensure that
-    we need to prevent cross directory rename during fid_lookup. Add a
-    per superblock rename_lock rwlock to prevent parallel fid lookup and rename.
-    
-    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-
-diff --git a/fs/9p/fid.c b/fs/9p/fid.c
-index 5d6cfcb..7b387fe 100644
---- a/fs/9p/fid.c
-+++ b/fs/9p/fid.c
-@@ -97,6 +97,34 @@ static struct p9_fid *v9fs_fid_find(struct dentry *dentry, u32 uid, int any)
- 	return ret;
- }
- 
-+/*
-+ * We need to hold v9ses->rename_lock as long as we hold references
-+ * to returned path array. Array element contain pointers to
-+ * dentry names.
-+ */
-+static int build_path_from_dentry(struct v9fs_session_info *v9ses,
-+				  struct dentry *dentry, char ***names)
-+{
-+	int n = 0, i;
-+	char **wnames;
-+	struct dentry *ds;
-+
-+	for (ds = dentry; !IS_ROOT(ds); ds = ds->d_parent)
-+		n++;
-+
-+	wnames = kmalloc(sizeof(char *) * n, GFP_KERNEL);
-+	if (!wnames)
-+		goto err_out;
-+
-+	for (ds = dentry, i = (n-1); i >= 0; i--, ds = ds->d_parent)
-+		wnames[i] = (char  *)ds->d_name.name;
-+
-+	*names = wnames;
-+	return n;
-+err_out:
-+	return -ENOMEM;
-+}
-+
- /**
-  * v9fs_fid_lookup - lookup for a fid, try to walk if not found
-  * @dentry: dentry to look for fid in
-@@ -112,7 +140,7 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
- 	int i, n, l, clone, any, access;
- 	u32 uid;
- 	struct p9_fid *fid, *old_fid = NULL;
--	struct dentry *d, *ds;
-+	struct dentry *ds;
- 	struct v9fs_session_info *v9ses;
- 	char **wnames, *uname;
- 
-@@ -139,50 +167,63 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
- 	fid = v9fs_fid_find(dentry, uid, any);
- 	if (fid)
- 		return fid;
--
-+	/*
-+	 * we don't have a matching fid. To do a TWALK we need
-+	 * parent fid. We need to prevent rename when we want to
-+	 * look at the parent.
-+	 */
-+	read_lock(&v9ses->rename_lock);
- 	ds = dentry->d_parent;
- 	fid = v9fs_fid_find(ds, uid, any);
--	if (!fid) { /* walk from the root */
--		n = 0;
--		for (ds = dentry; !IS_ROOT(ds); ds = ds->d_parent)
--			n++;
--
--		fid = v9fs_fid_find(ds, uid, any);
--		if (!fid) { /* the user is not attached to the fs yet */
--			if (access == V9FS_ACCESS_SINGLE)
--				return ERR_PTR(-EPERM);
--
--			if (v9fs_proto_dotu(v9ses) ||
--				v9fs_proto_dotl(v9ses))
--				uname = NULL;
--			else
--				uname = v9ses->uname;
-+	if (fid) {
-+		/* Found the parent fid do a lookup with that */
-+		fid = p9_client_walk(fid, 1, (char **)&ds->d_name.name, 1);
-+		read_unlock(&v9ses->rename_lock);
-+		return fid;
-+	}
-+	read_unlock(&v9ses->rename_lock);
- 
--			fid = p9_client_attach(v9ses->clnt, NULL, uname, uid,
--				v9ses->aname);
-+	/* start from the root and try to do a lookup */
-+	fid = v9fs_fid_find(dentry->d_sb->s_root, uid, any);
-+	if (!fid) {
-+		/* the user is not attached to the fs yet */
-+		if (access == V9FS_ACCESS_SINGLE)
-+			return ERR_PTR(-EPERM);
- 
--			if (IS_ERR(fid))
--				return fid;
-+		if (v9fs_proto_dotu(v9ses) || v9fs_proto_dotl(v9ses))
-+				uname = NULL;
-+		else
-+			uname = v9ses->uname;
- 
--			v9fs_fid_add(ds, fid);
--		}
--	} else /* walk from the parent */
--		n = 1;
-+		fid = p9_client_attach(v9ses->clnt, NULL, uname, uid,
-+				       v9ses->aname);
-+		if (IS_ERR(fid))
-+			return fid;
- 
--	if (ds == dentry)
-+		v9fs_fid_add(dentry->d_sb->s_root, fid);
-+	}
-+	/* If we are root ourself just return that */
-+	if (dentry->d_sb->s_root == dentry)
- 		return fid;
--
--	wnames = kmalloc(sizeof(char *) * n, GFP_KERNEL);
--	if (!wnames)
--		return ERR_PTR(-ENOMEM);
--
--	for (d = dentry, i = (n-1); i >= 0; i--, d = d->d_parent)
--		wnames[i] = (char *) d->d_name.name;
--
-+	/*
-+	 * Do a multipath walk with attached root.
-+	 * When walking parent we need to make sure we
-+	 * don't have a parallel rename happening
-+	 */
-+	read_lock(&v9ses->rename_lock);
-+	n  = build_path_from_dentry(v9ses, dentry, &wnames);
-+	if (n < 0) {
-+		fid = ERR_CAST(ERR_PTR(n));
-+		goto err_out;
-+	}
- 	clone = 1;
- 	i = 0;
- 	while (i < n) {
- 		l = min(n - i, P9_MAXWELEM);
-+		/*
-+		 * We need to hold rename lock when doing a multipath
-+		 * walk to ensure none of the patch component change
-+		 */
- 		fid = p9_client_walk(fid, l, &wnames[i], clone);
- 		if (IS_ERR(fid)) {
- 			if (old_fid) {
-@@ -194,15 +235,16 @@ struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
- 				p9_client_clunk(old_fid);
- 			}
- 			kfree(wnames);
--			return fid;
-+			goto err_out;
- 		}
- 		old_fid = fid;
- 		i += l;
- 		clone = 0;
- 	}
--
- 	kfree(wnames);
- 	v9fs_fid_add(dentry, fid);
-+err_out:
-+	read_unlock(&v9ses->rename_lock);
- 	return fid;
- }
- 
-diff --git a/fs/9p/v9fs.c b/fs/9p/v9fs.c
-index 3c49201..b41bcef 100644
---- a/fs/9p/v9fs.c
-+++ b/fs/9p/v9fs.c
-@@ -237,6 +237,7 @@ struct p9_fid *v9fs_session_init(struct v9fs_session_info *v9ses,
- 		__putname(v9ses->uname);
- 		return ERR_PTR(-ENOMEM);
- 	}
-+	rwlock_init(&v9ses->rename_lock);
- 
- 	rc = bdi_setup_and_register(&v9ses->bdi, "9p", BDI_CAP_MAP_COPY);
- 	if (rc) {
-diff --git a/fs/9p/v9fs.h b/fs/9p/v9fs.h
-index bec4d0b..dee4f26 100644
---- a/fs/9p/v9fs.h
-+++ b/fs/9p/v9fs.h
-@@ -104,6 +104,7 @@ struct v9fs_session_info {
- 	struct p9_client *clnt;	/* 9p client */
- 	struct list_head slist; /* list of sessions registered with v9fs */
- 	struct backing_dev_info bdi;
-+	rwlock_t rename_lock;
- };
- 
- struct p9_fid *v9fs_session_init(struct v9fs_session_info *, const char *,
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index 503a6a2..eae89ad 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -964,6 +964,7 @@ static struct dentry *v9fs_vfs_lookup(struct inode *dir, struct dentry *dentry,
- 
- 	sb = dir->i_sb;
- 	v9ses = v9fs_inode2v9ses(dir);
-+	/* We can walk d_parent because we hold the dir->i_mutex */
- 	dfid = v9fs_fid_lookup(dentry->d_parent);
- 	if (IS_ERR(dfid))
- 		return ERR_CAST(dfid);
-@@ -1049,7 +1050,7 @@ v9fs_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	struct p9_fid *olddirfid;
- 	struct p9_fid *newdirfid;
- 	struct p9_wstat wstat;
--	int retval;
-+	int retval, cross_dir_rename = 0;
- 
- 	P9_DPRINTK(P9_DEBUG_VFS, "\n");
- 	retval = 0;
-@@ -1070,6 +1071,9 @@ v9fs_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		retval = PTR_ERR(newdirfid);
- 		goto clunk_olddir;
- 	}
-+	cross_dir_rename = (old_dentry->d_parent != new_dentry->d_parent);
-+	if (cross_dir_rename)
-+		write_lock(&v9ses->rename_lock);
- 
- 	if (v9fs_proto_dotl(v9ses)) {
- 		retval = p9_client_rename(oldfid, newdirfid,
-@@ -1077,21 +1081,27 @@ v9fs_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		if (retval != -ENOSYS)
- 			goto clunk_newdir;
- 	}
-+	if (cross_dir_rename) {
-+		/*
-+		 * 9P .u can only handle file rename in the same directory
-+		 */
- 
--	/* 9P can only handle file rename in the same directory */
--	if (memcmp(&olddirfid->qid, &newdirfid->qid, sizeof(newdirfid->qid))) {
- 		P9_DPRINTK(P9_DEBUG_ERROR,
- 				"old dir and new dir are different\n");
- 		retval = -EXDEV;
- 		goto clunk_newdir;
- 	}
--
- 	v9fs_blank_wstat(&wstat);
- 	wstat.muid = v9ses->uname;
- 	wstat.name = (char *) new_dentry->d_name.name;
- 	retval = p9_client_wstat(oldfid, &wstat);
- 
- clunk_newdir:
-+	if (!retval)
-+		/* successful rename */
-+		d_move(old_dentry, new_dentry);
-+	if (cross_dir_rename)
-+		write_unlock(&v9ses->rename_lock);
- 	p9_client_clunk(newdirfid);
- 
- clunk_olddir:
-diff --git a/fs/9p/vfs_super.c b/fs/9p/vfs_super.c
-index 0740675..3abc3ec 100644
---- a/fs/9p/vfs_super.c
-+++ b/fs/9p/vfs_super.c
-@@ -287,4 +287,5 @@ struct file_system_type v9fs_fs_type = {
- 	.get_sb = v9fs_get_sb,
- 	.kill_sb = v9fs_kill_super,
- 	.owner = THIS_MODULE,
-+	.fs_flags = FS_RENAME_DOES_D_MOVE,
- };
