@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab0F3H15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 03:27:57 -0400
-Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:40131 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752682Ab0F3H1z (ORCPT
+	id S1752800Ab0F3Hbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 03:31:52 -0400
+Received: from smtp-out-153.synserver.de ([212.40.180.153]:1036 "HELO
+	smtp-out-153.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751758Ab0F3Hbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 03:27:55 -0400
-Date: Wed, 30 Jun 2010 17:27:02 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: npiggin@suse.de
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 29/52] fs: icache lock i_count
-Message-ID: <20100630072702.GF24712@dastard>
-References: <20100624030212.676457061@suse.de>
- <20100624030730.245992858@suse.de>
+	Wed, 30 Jun 2010 03:31:51 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 25933
+Date: Wed, 30 Jun 2010 09:31:45 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Dave Airlie <airlied@linux.ie>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+       dri-devel@lists.sf.net, alexdeucher@gmail.com
+Subject: Re: [git pull] drm fixes + agp + one fb patch (bisected)
+Message-ID: <20100630073145.GA1722@arch.tripp.de>
+References: <alpine.DEB.2.00.1006300202190.30052@skynet.skynet.ie>
+ <20100630065440.GA1736@arch.tripp.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100624030730.245992858@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100630065440.GA1736@arch.tripp.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 01:02:41PM +1000, npiggin@suse.de wrote:
-> Protect inode->i_count with i_lock, rather than having it atomic.
-> Next step should also be to move things together (eg. the refcount increment
-> into d_instantiate, which will remove a lock/unlock cycle on i_lock).
-.....
-> Index: linux-2.6/fs/inode.c
-> ===================================================================
-> --- linux-2.6.orig/fs/inode.c
-> +++ linux-2.6/fs/inode.c
-> @@ -33,14 +33,13 @@
->   * inode_hash_lock protects:
->   *   inode hash table, i_hash
->   * inode->i_lock protects:
-> - *   i_state
-> + *   i_state, i_count
->   *
->   * Ordering:
->   * inode_lock
->   *   sb_inode_list_lock
->   *     inode->i_lock
-> - * inode_lock
-> - *   inode_hash_lock
-> + *       inode_hash_lock
->   */
+On Wed, Jun 30, 2010 at 08:54:40AM +0200, Markus Trippelsdorf wrote:
+> On Wed, Jun 30, 2010 at 02:03:04AM +0100, Dave Airlie wrote:
+> > 
+> > one fb layer fix in a flag I introduced,
+> > 
+> > the rest are drm fixes:
+> > radeon fixes: the larger ones in the command stream checker for older cards,
+> > which was causing a lot of userspace apps to fail. Also some powerpc server fixes.
+> > along with some updates to the evergreen command stream checker introduced in -rc1.
+> > 
+> > agp: fix issue with warning on memory allocation + fallback to vmalloc.
+> > ttm: fix regression introduced in -rc1 in memory allocation paths.
+> > 
+> > The following changes since commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02:
+> > 
+> >   Linux 2.6.35-rc3 (2010-06-11 19:14:04 -0700)
+> > 
+> 
+> I've tested these patches and they break my setup (RS780). On reboot, the
+> monitor goes straight to powersaving mode and no framebuffer is shown.
 
-I thought that the rule governing the use of inode->i_lock was that
-it can be used anywhere as long as it is the innermost lock.
+This is the result of the bisection:
 
-Hmmm, no references in the code or documentation. Google gives a
-pretty good reference:
+07d4190327b02ab3aaad25a2d168f79d92e8f8c2 is the first bad commit
+commit 07d4190327b02ab3aaad25a2d168f79d92e8f8c2
+Author: Alex Deucher <alexdeucher@gmail.com>
+Date:   Sat Jun 12 11:50:13 2010 -0400
 
-http://www.mail-archive.com/linux-ext4@vger.kernel.org/msg02584.html
+    drm/radeon/kms: fix bandwidth calculation when sideport is present
+    
+    Fixes fdo bug 27529:
+    https://bugs.freedesktop.org/show_bug.cgi?id=27529
+    
+    Reported-by: steckdenis@yahoo.fr
+    Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+    Cc: stable <stable@kernel.org>
+    Signed-off-by: Dave Airlie <airlied@redhat.com>
 
-Perhaps a different/new lock needs to be used here?
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Markus
