@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab0F3WzR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 18:55:17 -0400
-Received: from sj-iport-3.cisco.com ([171.71.176.72]:57371 "EHLO
-	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab0F3WzP (ORCPT
+	id S1757447Ab0F3WzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 18:55:24 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:35762 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab0F3WzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 18:55:15 -0400
-Authentication-Results: sj-iport-3.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.53,515,1272844800"; 
-   d="scan'208";a="228800825"
-Date: Wed, 30 Jun 2010 15:51:37 -0700
-From: "Tom Lyon" <pugs@cisco.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       iommu@lists.linux-foundation.org, chrisw@sous-sol.org, mst@redhat.com,
-       dwmw2@infradead.org, joerg.roedel@amd.com
-Cc: aafabbri@cisco.com, scofeldm@cisco.com
-Subject: [PATCH] 2.6.34: simple IOMMU API extension to check safe
- interrupt remapping
-Message-ID: <4c2bca79.ZO9rQQJbYvPk39gc%pugs@cisco.com>
-User-Agent: Heirloom mailx 12.2 01/07/07
+	Wed, 30 Jun 2010 18:55:19 -0400
+X-Auth-Info: XE0+hH3jMVAyrOIWREdOZcLsAq2btm4sMLrgByw9Q98=
+To: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org, sr@denx.de,
+       Rupjyoti Sarmah <rsarmah@apm.com>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org
+From: Wolfgang Denk <wd@denx.de>
+Subject: Re: [PATCH v1]460EX on-chip SATA driver<resubmisison>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+In-reply-to: <20100630200325.GD7756@zod.rchland.ibm.com>
+References: <201006241327.o5ODRY6m032299@amcc.com> <20100630115808.2D9241524EC@gemini.denx.de> <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com> <20100630184728.C02D014EBF9@gemini.denx.de> <4C2B9831.9020801@pobox.com> <20100630200325.GD7756@zod.rchland.ibm.com>
+Comments: In-reply-to Josh Boyer <jwboyer@linux.vnet.ibm.com>
+   message dated "Wed, 30 Jun 2010 16:03:25 -0400."
+Date: Thu, 01 Jul 2010 00:55:16 +0200
+Message-Id: <20100630225516.8F9D3152442@gemini.denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows IOMMU users to determine whether the hardware and software
-support safe, isolated interrupt remapping.  Not all Intel IOMMUs have the
-hardware, and the software for AMD is not there yet.
-	Signed-off-by: Tom Lyon <pugs@cisco.com>
----
+Dear Josh Boyer,
 
-MST has convinced me that any user level driver for PCI master devices can't 
-be safe unless there is an IOMMU protecting the APIC MSI/MSI-X interrupt 
-addresses from device writes.  This interrupt remapping is not present in all
-Intel IOMMUs and the code for the interrupt mapping in the AMD IOMMUs is not
-implemented yet.
+In message <20100630200325.GD7756@zod.rchland.ibm.com> you wrote:
+>
+> The driver doesn't depend on CONFIG_ATA_SFF in it's Kconfig file, but seems to
+> require it at build time.  Isn't that something that needs fixing in the
+> driver?
 
-Needed by not-yet-accepted VFIO driver.
+Right.  Next question is if this is really needed for this driver. 
 
-diff -uprN linux-2.6.34/drivers/pci/intel-iommu.c iommuapi-linux-2.6.34/drivers/pci/intel-iommu.c
---- linux-2.6.34/drivers/pci/intel-iommu.c	2010-05-16 14:17:36.000000000 -0700
-+++ iommuapi-linux-2.6.34/drivers/pci/intel-iommu.c	2010-06-30 15:47:10.000000000 -0700
-@@ -3705,6 +3705,10 @@ static int intel_iommu_domain_has_cap(st
- 
- 	if (cap == IOMMU_CAP_CACHE_COHERENCY)
- 		return dmar_domain->iommu_snooping;
-+#ifdef CONFIG_INTR_REMAP
-+	if (cap == IOMMU_CAP_SAFE_INTR_REMAP)
-+		return intr_remapping_enabled;
-+#endif
- 
- 	return 0;
- }
-diff -uprN linux-2.6.34/include/linux/iommu.h iommuapi-linux-2.6.34/include/linux/iommu.h
---- linux-2.6.34/include/linux/iommu.h	2010-05-16 14:17:36.000000000 -0700
-+++ iommuapi-linux-2.6.34/include/linux/iommu.h	2010-06-30 15:47:34.000000000 -0700
-@@ -30,6 +30,7 @@ struct iommu_domain {
- };
- 
- #define IOMMU_CAP_CACHE_COHERENCY	0x1
-+#define IOMMU_CAP_SAFE_INTR_REMAP	0x2	/* isolates device intrs */
- 
- struct iommu_ops {
- 	int (*domain_init)(struct iommu_domain *domain);
+Best regards,
+
+Wolfgang Denk
+
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+Copy from one, it's plagiarism; copy from two, it's research.
