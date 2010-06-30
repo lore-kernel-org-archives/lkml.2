@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab0F3Th7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 15:37:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36883 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab0F3Th6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 15:37:58 -0400
-Message-ID: <4C2B9D43.4070504@colorfullife.com>
-Date: Wed, 30 Jun 2010 21:38:43 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757178Ab0F3Tka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 15:40:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:54192 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754743Ab0F3Tk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 15:40:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,514,1272870000"; 
+   d="scan'208";a="581556033"
+Message-ID: <4C2B9DAC.1030806@intel.com>
+Date: Wed, 30 Jun 2010 12:40:28 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Christoph Lameter <cl@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
-       Nick Piggin <npiggin@suse.de>, Matt Mackall <mpm@selenic.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [S+Q 01/16] [PATCH] ipc/sem.c: Bugfix for semop() not reporting
- successful operation
-References: <20100625212026.810557229@quilx.com> <20100625212101.622422748@quilx.com> <AANLkTinmvRtH24uflD9e7MknaW6tgMSnN75vVgaj0IM6@mail.gmail.com> <alpine.DEB.2.00.1006291042100.16135@router.home> <20100629120857.00f4b42d.akpm@linux-foundation.org>
-In-Reply-To: <20100629120857.00f4b42d.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+CC: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	 <4C29420D.2010406@intel.com>	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	 <4C2A8879.8010000@intel.com>	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	 <4C2AC55E.3040303@intel.com>	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com> <1277923422.16256.8.camel@localhost>
+In-Reply-To: <1277923422.16256.8.camel@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-
-On 06/29/2010 09:08 PM, Andrew Morton wrote:
-> On Tue, 29 Jun 2010 10:42:42 -0500 (CDT)
-> Christoph Lameter<cl@linux-foundation.org>  wrote:
->
->    
->> This is a patch from Manfred. Required to make 2.6.35-rc3 work.
+On 6/30/2010 11:43 AM, Woodhouse, David wrote:
+> On Wed, 2010-06-30 at 19:26 +0100, Chris Li wrote:
 >>
->>      
-> My current version of the patch is below.
+>> The delta seems to be this line:
+>> ioatdma 0000:00:0f.0: ioat2_set_chainaddr: chainaddr: ffffe000
 >
-> I believe that Luca has still seen problems with this patch applied so
-> its current status is "stuck, awaiting developments".
+> That's a reasonable address if the IOMMU is enabled. We start at 4GiB
+> and work down, so that's the second page given out (or the first 8KiB
+> chunk).
 >
-> Is that a correct determination?
->    
+> It looks like the DMA is going AWOL causing the initialisation to
+> fail... but it's interesting that there are no DMA faults reported by
+> the IOMMU.
+>
 
-I would propose that you forward a patch to Linus - either the one you 
-have in your tree or the v2 that I've just posted.
-With stock 2.6.35-rc3, my semtimedop() stress tests produces an oops or 
-an invalid return value (i.e.:semtimedop() returns with "1") within a 
-fraction of a second.
+It seems the 5400 has a dedicated remapping engine just for the DMA 
+device [1], is Linux only setting up the iommus per root port (which the 
+DMA bypasses)??
 
-With either of the patches applied, my test apps show the expected behavior.
+ From the dmesg:
+> IOMMU 0: reg_base_addr fe710000 ver 1:0 cap 900000c2f0462 ecap e01
+> DMAR: DRHD base: 0x000000fe714000 flags: 0x0
+> IOMMU 1: reg_base_addr fe714000 ver 1:0 cap 900000c2f0462 ecap e01
+> DMAR: DRHD base: 0x000000fe719000 flags: 0x0
+> IOMMU 2: reg_base_addr fe719000 ver 1:0 cap 900000c2f0462 ecap e01
+> DMAR: DRHD base: 0x000000fe718000 flags: 0x1
+> IOMMU 3: reg_base_addr fe718000 ver 1:0 cap 900000c2f0462 ecap e01
+
+Where we expect bit 54 to be set for the DMA iommu, and it does not 
+appear to show up.
 
 --
-     Manfred
+Dan
 
-
+[1]: http://www.intel.com/Assets/PDF/datasheet/318610.pdf (Section 
+3.11.2 page 256)
