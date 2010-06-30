@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab0F3Nbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 09:31:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62562 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab0F3Nbt (ORCPT
+	id S1752739Ab0F3NeT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 09:34:19 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:34433 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab0F3NeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 09:31:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 0/3] Extended file stat functions [ver #2]
-Date: Wed, 30 Jun 2010 15:31:39 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: David Howells <dhowells@redhat.com>, Andreas Dilger <adilger@dilger.ca>,
-       viro@zeniv.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
-       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-       sjayaraman@suse.de, linux-ext4@vger.kernel.org
-References: <52423201-3DF9-4045-8E8B-FAA915053D56@dilger.ca> <26505.1277899544@redhat.com> <20100630121127.GA22713@infradead.org>
-In-Reply-To: <20100630121127.GA22713@infradead.org>
+	Wed, 30 Jun 2010 09:34:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=L3AAPL7ro5cz/7Nnrqm1vFfWBjBtve68H+UzBAUNH0l80n37t4LQk/UPdOld1Kv01M
+         3kiCsySZFl5axGk8JyvwuJ78AqEcsmPQjv5IP1tW9TOC/Skbf23JL20tww2gNg3tqZmm
+         9Cgwbj2nKThhBvXsIMlHaH8yquWaDGVk3xS1I=
+Message-ID: <4C2B468F.3020600@gmail.com>
+Date: Wed, 30 Jun 2010 06:28:47 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]kernel.h Fix #warning message web address.
+References: <1277840244-3436-1-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1006301147490.13809@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1006301147490.13809@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006301531.39365.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+C8pEFvNlGgTnatwa61kUlJ+bbKOYF2VQq4Cz
- KELevEKkGboW3Ydo8GinqZYGVBbKV9roqT87Wq2X2x+dE+guYm
- mQ634En9gUmZ5ZwwQEeyQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 June 2010, Christoph Hellwig wrote:
-> The cost of adding a syscall is much smaller
+On 06/30/2010 02:48 AM, Jiri Kosina wrote:
+> On Tue, 29 Jun 2010, Justin P. Mattock wrote:
+>
+>> Playing around with a printk program I noticed that the #warning
+>> message is incomplete(when using kernel headers for userspace):
+>>
+>>   gcc printk.c -o printk
+>> In file included from printk.c:3:
+>> include/linux/kernel.h:733:2: warning: #warning Attempt to use kernel headers from user space, see http:
+>>
+>> My guess for the web address not being displayed is "//" is treated as a comment.
+>> So after changing "http://" to "www." I get the web address.(using firefox with this
+>> address takes me right to the location). The warning looks like this:
+>>
+>> In file included from printk.c:3:
+>> warning: #warning Attempt to use kernel headers from user space, see www.kernelnewbies.org/KernelHeaders
+>>
+>>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>
+>> ---
+>>   include/linux/kernel.h |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+>> index 8317ec4..768196a 100644
+>> --- a/include/linux/kernel.h
+>> +++ b/include/linux/kernel.h
+>> @@ -730,7 +730,7 @@ extern int do_sysinfo(struct sysinfo *info);
+>>
+>>   #ifndef __EXPORTED_HEADERS__
+>>   #ifndef __KERNEL__
+>> -#warning Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders
+>> +#warning Attempt to use kernel headers from user space, see www.kernelnewbies.org/KernelHeaders
+>>   #endif /* __KERNEL__ */
+>>   #endif /* __EXPORTED_HEADERS__ */
+>
+> Hehe, ugly. How about making it a single string? GCC preprocessor
+> documentation suggests the same anyway ...
+>
+> 	Neither `#error' nor `#warning' macro-expands its argument.
+> 	Internal whitespace sequences are each replaced with a single space.
+> 	The line must consist of complete tokens.  It is wisest to make the
+> 	argument of these directives be a single string constant; this avoids
+> 	problems with apostrophes and the like.
+>
 
-Ack. No need for different struct layout version since we
-can add another stat syscall every ten years.
 
-> So adding a few fields of padding at the end for new members is fine,
-> but doing overkill of versioning including queries for supported
-> versions doesn't.
+before the www. idea, I was thinking maybe sending the address to a file 
+somewhere in documentation
+something in this area:
 
-The ability to request and return a subset of the fields seems useful
-regardless and it can be used to avoid the need for this kind of padding.
-A sufficient amount of padding wouldn't be too bad either, but I guess
-we should not have both the padding _and_ the option for extending the
-structure after the padding.
+#warning Using kernel headers from user space, please see Documentation/*
 
-With the padding, the 'size' argument can go away, though I'd argue that
-even without the padding we can safely add extra fixed-length fields
-when needed and not need a size argument.
+but I still need to re-read what the above says, seems a bit technical..
 
-	Arnd
+Justin P. Mattock
