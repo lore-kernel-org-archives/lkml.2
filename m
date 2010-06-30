@@ -1,81 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab0F3AML (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 20:12:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752850Ab0F3AMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 20:12:09 -0400
-Date: Tue, 29 Jun 2010 20:11:49 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: James Bottomley <James.Bottomley@suse.de>
-cc: device-mapper development <dm-devel@redhat.com>,
-       Mike Snitzer <snitzer@redhat.com>, axboe@kernel.dk,
-       linux-scsi@vger.kernel.org, martin.petersen@oracle.com,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Christoph Hellwig <hch@lst.de>
-Subject: Re: [dm-devel] [PATCH 1/2] block: fix leaks associated with discard
- request payload
-In-Reply-To: <1277852600.4379.211.camel@mulgrave.site>
-Message-ID: <Pine.LNX.4.64.1006291925480.11847@hs20-bc2-1.build.redhat.com>
-References: <20100622180029.GA15950@redhat.com> 
- <1277582211-10725-1-git-send-email-snitzer@redhat.com> 
- <1277652576.4366.19.camel@mulgrave.site>  <Pine.LNX.4.64.1006291811300.27462@hs20-bc2-1.build.redhat.com>
- <1277852600.4379.211.camel@mulgrave.site>
+	id S1755511Ab0F3AQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 20:16:23 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:42553 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760Ab0F3AQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 20:16:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:cc:date:message-id:mime-version:content-type;
+        b=PsGb9W2Tb+Qy9/Ar3fxQWUzllWt0KWGzJJw7aDBdEnMaNZzt3adEo9V/AsMVG9vttt
+         zZ6jiN3lPLPg0x4qUiouUOVXjljXr0bMAReG5g//+/H2//O2mGX3NEEiktWY2z7tVh/1
+         lc1pGzKlyh6nflO3z0gFYrSQFyGsGf5nKIwZ4=
+From: "Patrick J. LoPresti" <lopresti@gmail.com>
+To: ocfs2-devel@oss.oracle.com
+Subject: [PATCH] OCFS2: Allow huge (> 16 TiB) volumes to mount
+CC: linux-kernel@vger.kernel.org
+Date: Tue, 29 Jun 2010 17:16:11 -0700
+Message-ID: <87mxud74tw.fsf@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > If the layering violation spans only scsi code, it can be eventually 
-> > fixed, but this, much worse "layering violation" that will be spanning all 
-> > block device midlayers, won't ever be fixed.
-> > 
-> > Imagine for example --- a discard request arrivers at a dm-snapshot 
-> > device. The driver splits it into chunks, remaps each chunk to the 
-> > physical chunk, submits the requests, the elevator merges adjacent 
-> > requests and submits fewer bigger requests to the device. Now, if you had 
-> > to allocate a zeroed page each time you are splitting the request, that 
-> > would exhaust memory and burn cpu needlessly. You delete a 100MB file? --- 
-> > fine, allocate a 100MB of zeroed pages.
-> 
-> This is a straw man:  You've tried to portray a position I've never
-> taken as mine then attack it ... with what is effectively another bogus
-> argument.
->
-> It's not an either/or choice.
+The OCFS2 developers have already done all of the hard work to allow
+volumes larger than 16 TiB.  But there is still a "sanity check" in
+fs/ocfs2/super.c that prevents the mounting of such volumes, even when
+the cluster size and journal options would allow it.
 
-It is either/or choice. If the interface isn't fixed NOW, the existing 
-flawed zeroed-page-allocation interface gets into RHEL and I and others 
-will have to support it for 7 years.
+This patch replaces that sanity check with a more sophisticated one to
+mount a huge volume provided that (a) it is addressable by the raw
+word/address size of the system (borrowing a test from ext4); (b) the
+volume is using JBD2; and (c) the JBD2_FEATURE_INCOMPAT_64BIT flag is
+set on the journal.
 
-> I've asked the relevant parties to
-> combine the approaches and see if a REQ_TYPE_FS path that does the
-> allocations in the appropriate place, likely the ULD, produces a good
-> design.
+I factored out the sanity check into its own function.  I also moved it
+from ocfs2_initialize_super() down to ocfs2_check_volume(); any earlier,
+and the journal's flags have not been read from disk yet.
 
-OK, but before you do this research, fix the interface.
+I have tested this patch on small volumes, huge volumes, and huge
+volumes without 64-bit block support in the journal.  All of them appear
+to work or to fail gracefully, as appropriate.
 
-> > So I say --- let there be a layering violation in the scsi code, but don't 
-> > put this problem with a page allocation to all the other bio midlayer 
-> > developers.
-> 
-> Thanks for explaining that you have nothing to contribute, I'll make
-> sure you're not on my list of relevant parties.
+Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
 
-You misunderstand what I meant. You admit that there are design problems 
-in SCSI. So don't burden other developers with these problems. Don't force 
-the others to allocate dummy pages just because you want a cleaner scsi 
-code.
 
-You intend to fix the design of SCSI and then remove the dummy pages. But 
-by the time you finish it, it will be already late and there will be 
-midlayer drivers allocating these dummy pages.
-
-What I mean is that "layering violation" inside one driver is smaller 
-problem than misdesigned interface between drivers. So accept the patch 
-that creates "layering violation" but cleans up the interface.
-
-Mikulas
+diff --git a/fs/ocfs2/super.c b/fs/ocfs2/super.c
+index 0eaa929..3db233d 100644
+--- a/fs/ocfs2/super.c
++++ b/fs/ocfs2/super.c
+@@ -1991,6 +1991,47 @@ static int ocfs2_setup_osb_uuid(struct ocfs2_super *osb, const unsigned char *uu
+ 	return 0;
+ }
+ 
++/* Check to make sure entire volume is addressable on this system.
++   Requires osb_clusters_at_boot to be valid and for the journal to
++   have been read by jbd2_journal_load(). */
++static int ocfs2_check_addressable(struct ocfs2_super *osb)
++{
++	int status = 0;
++	u64 max_block =
++		ocfs2_clusters_to_blocks(osb->sb,
++					 osb->osb_clusters_at_boot) - 1;
++
++	/* Absolute addressability check (borrowed from ext4/super.c) */
++	if ((max_block >
++	     (sector_t)(~0LL) >> (osb->sb->s_blocksize_bits - 9)) ||
++	    (max_block > (pgoff_t)(~0LL) >> (PAGE_CACHE_SHIFT -
++					     osb->sb->s_blocksize_bits))) {
++		mlog(ML_ERROR, "Volume too large "
++		     "to mount safely on this system");
++		status = -EFBIG;
++		goto out;
++	}
++
++	/* 32-bit block number is always OK. */
++	if (max_block <= (u32)~0UL)
++		goto out;
++
++	/* Volume is "huge", so see if our journal is new enough to
++	   support it. */
++	if (!(OCFS2_HAS_COMPAT_FEATURE(osb->sb,
++				       OCFS2_FEATURE_COMPAT_JBD2_SB) &&
++	      jbd2_journal_check_used_features(osb->journal->j_journal, 0, 0,
++					       JBD2_FEATURE_INCOMPAT_64BIT))) {
++		mlog(ML_ERROR, "The journal cannot address the entire volume. "
++		     "Enable the 'block64' journal option with tunefs.ocfs2");
++		status = -EFBIG;
++		goto out;
++	}
++
++ out:
++	return status;
++}
++
+ static int ocfs2_initialize_super(struct super_block *sb,
+ 				  struct buffer_head *bh,
+ 				  int sector_size,
+@@ -2215,14 +2256,6 @@ static int ocfs2_initialize_super(struct super_block *sb,
+ 		goto bail;
+ 	}
+ 
+-	if (ocfs2_clusters_to_blocks(osb->sb, le32_to_cpu(di->i_clusters) - 1)
+-	    > (u32)~0UL) {
+-		mlog(ML_ERROR, "Volume might try to write to blocks beyond "
+-		     "what jbd can address in 32 bits.\n");
+-		status = -EINVAL;
+-		goto bail;
+-	}
+-
+ 	if (ocfs2_setup_osb_uuid(osb, di->id2.i_super.s_uuid,
+ 				 sizeof(di->id2.i_super.s_uuid))) {
+ 		mlog(ML_ERROR, "Out of memory trying to setup our uuid.\n");
+@@ -2404,6 +2437,12 @@ static int ocfs2_check_volume(struct ocfs2_super *osb)
+ 		goto finally;
+ 	}
+ 
++	/* Now that journal has been loaded, check to make sure entire
++	   volume is addressable. */
++	status = ocfs2_check_addressable(osb);
++	if (status)
++		goto finally;
++
+ 	if (dirty) {
+ 		/* recover my local alloc if we didn't unmount cleanly. */
+ 		status = ocfs2_begin_local_alloc_recovery(osb,
