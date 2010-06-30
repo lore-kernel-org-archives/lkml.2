@@ -1,163 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757598Ab0F3XwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 19:52:07 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52312 "EHLO comal.ext.ti.com"
+	id S1757459Ab0F3Xxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 19:53:46 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37897 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756056Ab0F3Xue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 19:50:34 -0400
-From: Fernando Guzman Lugo <x0095840@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Cc: <ohad@wizery.com>, <hiroshi.doyo@nokia.com>, <ameya.palande@nokia.com>,
-       <felipe.contreras@nokia.com>, Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCHv3 9/9] dspbridge: cleanup bridge_dev_context and cfg_hostres structures
-Date: Wed, 30 Jun 2010 19:00:01 -0500
-Message-Id: <1277942401-3566-10-git-send-email-x0095840@ti.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1277942401-3566-9-git-send-email-x0095840@ti.com>
-References: <1277942401-3566-1-git-send-email-x0095840@ti.com>
- <1277942401-3566-2-git-send-email-x0095840@ti.com>
- <1277942401-3566-3-git-send-email-x0095840@ti.com>
- <1277942401-3566-4-git-send-email-x0095840@ti.com>
- <1277942401-3566-5-git-send-email-x0095840@ti.com>
- <1277942401-3566-6-git-send-email-x0095840@ti.com>
- <1277942401-3566-7-git-send-email-x0095840@ti.com>
- <1277942401-3566-8-git-send-email-x0095840@ti.com>
- <1277942401-3566-9-git-send-email-x0095840@ti.com>
+	id S1752551Ab0F3Xxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 19:53:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [update] Re: [PATCH] PM: Make it possible to avoid wakeup events from being lost
+Date: Thu, 1 Jul 2010 01:52:03 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       mark gross <640e9920@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Mickler <florian@mickler.org>, linux-pci@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+References: <Pine.LNX.4.44L0.1006301535450.1707-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1006301535450.1707-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007010152.03869.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch cleans up cfg_hostres and bridge_dev_context
-structures of custom mmu code not needed anymore.
+On Wednesday, June 30, 2010, Alan Stern wrote:
+> On Wed, 30 Jun 2010, Rafael J. Wysocki wrote:
+> 
+> > > Since there's no longer any way to cancel a call to pm_wakeup_event()  
+> > > or close the "no suspend" period early, there is no need to use
+> > > dynamically-allocated delayed_work structures.  You can make do with a
+> > > single static timer; always keep it set to expire at the latest time
+> > > passed to pm_wakeup_event().
+> > 
+> > The decremenations of events_in_progress wouldn't be balanced with
+> > incrementations this way.  Or do you have any clever way of dealing with
+> > that in mind?
+> 
+> Keep track of the current expiration time in a static variable called
+> wakeup_timeout, and use 0 to indicate there is no timeout.
 
-Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+I invented a slightly different version in the meantime, which is appended
+as a patch on top of the original one (I don't want to modify the original
+patch, since it's been reviewed already by several people and went to my
+linux-next branch).
+
+> In pm_wakeup_event() (everything protected by the spinlock):
+> 
+> 	unsigned long new_timeout = jiffies + msecs_to_jiffies(msecs);
+> 	if (new_timeout == 0)
+> 		new_timeout = 1;
+> 
+> 	++event_count;
+> 	if (!wakeup_timeout || time_after(new_timeout, wakeup_timeout)) {
+> 		if (!wakeup_timeout)
+> 			++events_in_progress;
+> 		wakeup_timeout = new_timeout;
+> 		mod_timer(&wakeup_timer, wakeup_timeout);
+> 	}
+> 
+> In the timer routine:
+> 
+> 	if (wakeup_timeout && time_before_eq(wakeup_timeout, jiffies)) {
+> 		--events_in_progres;
+> 		wakeup_timeout = 0;
+> 	}
+> 
+
 ---
- arch/arm/plat-omap/include/dspbridge/cfgdefs.h |    1 -
- drivers/dsp/bridge/core/_tiomap.h              |    5 -----
- drivers/dsp/bridge/core/tiomap3430.c           |    8 --------
- drivers/dsp/bridge/core/tiomap_io.c            |    2 +-
- drivers/dsp/bridge/rmgr/drv.c                  |    4 ----
- 5 files changed, 1 insertions(+), 19 deletions(-)
+ drivers/base/power/wakeup.c |   47 +++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 36 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/plat-omap/include/dspbridge/cfgdefs.h b/arch/arm/plat-omap/include/dspbridge/cfgdefs.h
-index 38122db..dfb55cc 100644
---- a/arch/arm/plat-omap/include/dspbridge/cfgdefs.h
-+++ b/arch/arm/plat-omap/include/dspbridge/cfgdefs.h
-@@ -68,7 +68,6 @@ struct cfg_hostres {
- 	void __iomem *dw_per_base;
- 	u32 dw_per_pm_base;
- 	u32 dw_core_pm_base;
--	void __iomem *dw_dmmu_base;
- 	void __iomem *dw_sys_ctrl_base;
- };
+Index: linux-2.6/drivers/base/power/wakeup.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/wakeup.c
++++ linux-2.6/drivers/base/power/wakeup.c
+@@ -9,6 +9,7 @@
+ #include <linux/device.h>
+ #include <linux/slab.h>
+ #include <linux/sched.h>
++#include <linux/ktime.h>
+ #include <linux/capability.h>
+ #include <linux/suspend.h>
+ #include <linux/pm.h>
+@@ -28,6 +29,12 @@ static unsigned long events_in_progress;
  
-diff --git a/drivers/dsp/bridge/core/_tiomap.h b/drivers/dsp/bridge/core/_tiomap.h
-index 8a9a822..82bce7d 100644
---- a/drivers/dsp/bridge/core/_tiomap.h
-+++ b/drivers/dsp/bridge/core/_tiomap.h
-@@ -323,7 +323,6 @@ struct bridge_dev_context {
- 	 */
- 	u32 dw_dsp_ext_base_addr;	/* See the comment above */
- 	u32 dw_api_reg_base;	/* API mem map'd registers */
--	void __iomem *dw_dsp_mmu_base;	/* DSP MMU Mapped registers */
- 	u32 dw_api_clk_base;	/* CLK Registers */
- 	u32 dw_dsp_clk_m2_base;	/* DSP Clock Module m2 */
- 	u32 dw_public_rhea;	/* Pub Rhea */
-@@ -347,10 +346,6 @@ struct bridge_dev_context {
- 	/* DMMU TLB entries */
- 	struct bridge_ioctl_extproc atlb_entry[BRDIOCTL_NUMOFMMUTLB];
- 	u32 dw_brd_state;	/* Last known board state. */
--	u32 ul_int_mask;	/* int mask */
--	u16 io_base;		/* Board I/O base */
--	u32 num_tlb_entries;	/* DSP MMU TLB entry counter */
--	u32 fixed_tlb_entries;	/* Fixed DSPMMU TLB entry count */
+ static DEFINE_SPINLOCK(events_lock);
  
- 	/* TC Settings */
- 	bool tc_word_swap_on;	/* Traffic Controller Word Swap */
-diff --git a/drivers/dsp/bridge/core/tiomap3430.c b/drivers/dsp/bridge/core/tiomap3430.c
-index aa6e999..83a9561 100644
---- a/drivers/dsp/bridge/core/tiomap3430.c
-+++ b/drivers/dsp/bridge/core/tiomap3430.c
-@@ -753,7 +753,6 @@ static int bridge_dev_create(OUT struct bridge_dev_context
- 		dev_context->atlb_entry[entry_ndx].ul_gpp_pa =
- 		    dev_context->atlb_entry[entry_ndx].ul_dsp_va = 0;
++static void pm_wakeup_timer_fn(unsigned long data);
++
++static DEFINE_TIMER(events_timer, pm_wakeup_timer_fn, 0, 0);
++static unsigned long events_timer_expires;
++static unsigned long delayed_count;
++
+ /*
+  * The functions below use the observation that each wakeup event starts a
+  * period in which the system should not be suspended.  The moment this period
+@@ -103,17 +110,23 @@ void pm_relax(void)
+ }
+ 
+ /**
+- * pm_wakeup_work_fn - Deferred closing of a wakeup event.
++ * pm_wakeup_timer_fn - Deferred closing of a wakeup event.
+  *
+  * Execute pm_relax() for a wakeup event detected in the past and free the
+  * work item object used for queuing up the work.
+  */
+-static void pm_wakeup_work_fn(struct work_struct *work)
++static void pm_wakeup_timer_fn(unsigned long data)
+ {
+-	struct delayed_work *dwork = to_delayed_work(work);
++	unsigned long flags;
+ 
+-	pm_relax();
+-	kfree(dwork);
++	spin_lock_irqsave(&events_lock, flags);
++	if (events_timer_expires && time_after(jiffies, events_timer_expires)) {
++		events_in_progress -= delayed_count;
++		event_count += delayed_count;
++		delayed_count = 0;
++		events_timer_expires = 0;
++	}
++	spin_unlock_irqrestore(&events_lock, flags);
+ }
+ 
+ /**
+@@ -132,19 +145,31 @@ static void pm_wakeup_work_fn(struct wor
+ void pm_wakeup_event(struct device *dev, unsigned int msec)
+ {
+ 	unsigned long flags;
+-	struct delayed_work *dwork;
+-
+-	dwork = msec ? kzalloc(sizeof(*dwork), GFP_ATOMIC) : NULL;
+ 
+ 	spin_lock_irqsave(&events_lock, flags);
+ 	if (dev)
+ 		dev->power.wakeup_count++;
+ 
+-	if (dwork) {
+-		INIT_DELAYED_WORK(dwork, pm_wakeup_work_fn);
+-		schedule_delayed_work(dwork, msecs_to_jiffies(msec));
++	if (msec) {
++		ktime_t kt;
++		struct timespec ts;
++		unsigned long expires;
++
++		kt = ktime_get();
++		kt = ktime_add_ns(kt, msec * NSEC_PER_MSEC);
++		ts = ktime_to_timespec(kt);
++		expires = timespec_to_jiffies(&ts);
++		if (!expires)
++			expires = 1;
++
++		if (!events_timer_expires
++		    || time_after(expires, events_timer_expires)) {
++			mod_timer(&events_timer, expires);
++			events_timer_expires = expires;
++		}
+ 
+ 		events_in_progress++;
++		delayed_count++;
+ 	} else {
+ 		event_count++;
  	}
--	dev_context->num_tlb_entries = 0;
- 	dev_context->dw_dsp_base_addr = (u32) MEM_LINEAR_ADDRESS((void *)
- 								 (pConfig->
- 								  dw_mem_base
-@@ -766,11 +765,7 @@ static int bridge_dev_create(OUT struct bridge_dev_context
- 
- 	if (DSP_SUCCEEDED(status)) {
- 		dev_context->tc_word_swap_on = drv_datap->tc_wordswapon;
--		/* MMU address is obtained from the host
--		 * resources struct */
--		dev_context->dw_dsp_mmu_base = resources->dw_dmmu_base;
- 		dev_context->hdev_obj = hdev_obj;
--		dev_context->ul_int_mask = 0;
- 		/* Store current board state. */
- 		dev_context->dw_brd_state = BRD_STOPPED;
- 		dev_context->resources = resources;
-@@ -887,8 +882,6 @@ static int bridge_dev_destroy(struct bridge_dev_context *hDevContext)
- 			iounmap((void *)host_res->dw_mem_base[3]);
- 		if (host_res->dw_mem_base[4])
- 			iounmap((void *)host_res->dw_mem_base[4]);
--		if (host_res->dw_dmmu_base)
--			iounmap(host_res->dw_dmmu_base);
- 		if (host_res->dw_per_base)
- 			iounmap(host_res->dw_per_base);
- 		if (host_res->dw_per_pm_base)
-@@ -902,7 +895,6 @@ static int bridge_dev_destroy(struct bridge_dev_context *hDevContext)
- 		host_res->dw_mem_base[2] = (u32) NULL;
- 		host_res->dw_mem_base[3] = (u32) NULL;
- 		host_res->dw_mem_base[4] = (u32) NULL;
--		host_res->dw_dmmu_base = NULL;
- 		host_res->dw_sys_ctrl_base = NULL;
- 
- 		kfree(host_res);
-diff --git a/drivers/dsp/bridge/core/tiomap_io.c b/drivers/dsp/bridge/core/tiomap_io.c
-index 3c0d3a3..2f2f8c2 100644
---- a/drivers/dsp/bridge/core/tiomap_io.c
-+++ b/drivers/dsp/bridge/core/tiomap_io.c
-@@ -437,7 +437,7 @@ int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val)
- 		omap_mbox_restore_ctx(dev_context->mbox);
- 
- 		/* Access MMU SYS CONFIG register to generate a short wakeup */
--		__raw_readl(resources->dw_dmmu_base + 0x10);
-+		iommu_read_reg(dev_context->dsp_mmu, MMU_SYSCONFIG);
- 
- 		dev_context->dw_brd_state = BRD_RUNNING;
- 	} else if (dev_context->dw_brd_state == BRD_RETENTION) {
-diff --git a/drivers/dsp/bridge/rmgr/drv.c b/drivers/dsp/bridge/rmgr/drv.c
-index c6e38e5..7804479 100644
---- a/drivers/dsp/bridge/rmgr/drv.c
-+++ b/drivers/dsp/bridge/rmgr/drv.c
-@@ -829,7 +829,6 @@ static int request_bridge_resources(struct cfg_hostres *res)
- 	host_res->dw_sys_ctrl_base = ioremap(OMAP_SYSC_BASE, OMAP_SYSC_SIZE);
- 	dev_dbg(bridge, "dw_mem_base[0] 0x%x\n", host_res->dw_mem_base[0]);
- 	dev_dbg(bridge, "dw_mem_base[3] 0x%x\n", host_res->dw_mem_base[3]);
--	dev_dbg(bridge, "dw_dmmu_base %p\n", host_res->dw_dmmu_base);
- 
- 	/* for 24xx base port is not mapping the mamory for DSP
- 	 * internal memory TODO Do a ioremap here */
-@@ -883,8 +882,6 @@ int drv_request_bridge_res_dsp(void **phost_resources)
- 							 OMAP_PER_PRM_SIZE);
- 		host_res->dw_core_pm_base = (u32) ioremap(OMAP_CORE_PRM_BASE,
- 							  OMAP_CORE_PRM_SIZE);
--		host_res->dw_dmmu_base = ioremap(OMAP_DMMU_BASE,
--						 OMAP_DMMU_SIZE);
- 
- 		dev_dbg(bridge, "dw_mem_base[0] 0x%x\n",
- 			host_res->dw_mem_base[0]);
-@@ -896,7 +893,6 @@ int drv_request_bridge_res_dsp(void **phost_resources)
- 			host_res->dw_mem_base[3]);
- 		dev_dbg(bridge, "dw_mem_base[4] 0x%x\n",
- 			host_res->dw_mem_base[4]);
--		dev_dbg(bridge, "dw_dmmu_base %p\n", host_res->dw_dmmu_base);
- 
- 		shm_size = drv_datap->shm_size;
- 		if (shm_size >= 0x10000) {
--- 
-1.7.0.4
-
