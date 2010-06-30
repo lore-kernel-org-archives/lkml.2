@@ -1,141 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab0F3Jzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:55:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54617 "EHLO mx1.suse.de"
+	id S1755056Ab0F3J4U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 05:56:20 -0400
+Received: from claw.goop.org ([74.207.240.146]:41126 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752948Ab0F3Jz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:55:29 -0400
-Date: Wed, 30 Jun 2010 11:55:25 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Darren Hart <dvhltc@us.ibm.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] futex: futex_find_get_task remove credentails check
-Message-ID: <20100630095525.GA5840@tiehlicka.suse.cz>
-References: <4C24ED34.9040808@us.ibm.com>
- <4C253D32.6040304@us.ibm.com>
- <20100628144246.GA14201@tiehlicka.suse.cz>
- <20100628153214.GA24127@tiehlicka.suse.cz>
- <20100628155845.GC24127@tiehlicka.suse.cz>
- <20100628163952.GD24127@tiehlicka.suse.cz>
- <1277743748.3561.139.camel@laptop>
- <20100629084230.GE6215@tiehlicka.suse.cz>
- <AANLkTinyoyZVg8iYOuUx6aA4XlUlLywl4q6GLXmeYP-x@mail.gmail.com>
- <20100630070115.GB3890@tiehlicka.suse.cz>
+	id S1752763Ab0F3J4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 05:56:19 -0400
+Message-ID: <4C2B14BE.6080505@goop.org>
+Date: Wed, 30 Jun 2010 11:56:14 +0200
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100630070115.GB3890@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Jan Beulich <JBeulich@novell.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       ksrinivasan <ksrinivasan@novell.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH 1/4, v2] x86: enlightenment for ticket spin locks - base
+ implementation
+References: <4C2A1FE902000078000089E1@vpn.id2.novell.com>	 <1277885133.1868.71.camel@laptop>	 <4C2B23CD0200007800008BFA@vpn.id2.novell.com> <1277889116.1868.95.camel@laptop>
+In-Reply-To: <1277889116.1868.95.camel@laptop>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 30-06-10 09:01:15, Michal Hocko wrote:
-> On Tue 29-06-10 09:41:02, Linus Torvalds wrote:
-> > On Tue, Jun 29, 2010 at 1:42 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> > >
-> > > futex_find_get_task is currently used (through lookup_pi_state) from two
-> > > contexts, futex_requeue and futex_lock_pi_atomic. While credentials check
-> > > makes sense in the first code path, the second one is more problematic
-> > > because this check requires that the PI lock holder (pid parameter) has
-> > > the same uid and euid as the process's euid which is trying to lock the
-> > > same futex (current).
-> > 
-> > So exactly why does it make sense to check the credentials in the
-> > first code path then? 
-> 
-> I though that requeue needs this for security reasons (don't let requeue
-> process for other user), but when I thought about that again you are
-> right and the only what matters should be accessibility of the shared
-> memory.
+On 06/30/2010 11:11 AM, Peter Zijlstra wrote:
+> On Wed, 2010-06-30 at 10:00 +0100, Jan Beulich wrote:
+>   
+>>>>> On 30.06.10 at 10:05, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>>>           
+>>> On Tue, 2010-06-29 at 15:31 +0100, Jan Beulich wrote:
+>>>       
+>>>> Add optional (alternative instructions based) callout hooks to the
+>>>> contended ticket lock and the ticket unlock paths, to allow hypervisor
+>>>> specific code to be used for reducing/eliminating the bad effects
+>>>> ticket locks have on performance when running virtualized.
+>>>>         
+>>> Uhm, I'd much rather see a single alternative implementation, not a
+>>> per-hypervisor lock implementation.
+>>>       
+>> How would you imaging this to work? I can't see how the mechanism
+>> could be hypervisor agnostic. Just look at the Xen implementation
+>> (patch 2) - do you really see room for meaningful abstraction there?
+>>     
+> I tried not to, it made my eyes bleed.. 
+>
+> But from what I hear all virt people are suffering from spinlocks (and
+> fair spinlocks in particular), so I was thinking it'd be a good idea to
+> get all interested parties to collaborate on one. Fragmentation like
+> this hardly ever works out well.
+>   
 
-And here is the patch which does the thing.
+The fastpath of the spinlocks can be common, but if it ends up spinning
+too long (however that might be defined), then it needs to call out to a
+hypervisor-specific piece of code which is effectively "yield this vcpu
+until its worth trying again".  In Xen we can set up an event channel
+that the waiting CPU can block on, and the current lock holder can
+tickle it when it releases the lock (ideally it would just tickle the
+CPU with the next ticket, but that's a further refinement).
 
---
+I'm not sure what the corresponding implementation for KVM or HyperV
+would look like.  Modern Intel chips have a "do a VMEXIT if you've run
+pause in a tight loop for too long" feature, which deals with the
+"spinning too long" part, but I'm not sure about the blocking mechanism
+(something based on monitor/mwait perhaps).
 
->From 082c5ad2c482a8e78b61b17e213e750b006176aa Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Wed, 30 Jun 2010 09:51:19 +0200
-Subject: [PATCH] futex: futex_find_get_task remove credentails check
-
-futex_find_get_task is currently used (through lookup_pi_state) from two
-contexts, futex_requeue and futex_lock_pi_atomic. None of the paths
-looks it needs the credentials check, though. Different (e)uids
-shouldn't matter at all because the only thing that is important for
-shared futex is the accessibility of the shared memory.
-
-The credentail check results in glibc assert failure or process hang (if
-glibc is compiled without assert support) for shared robust pthread
-mutex with priority inheritance if a process tries to lock already held
-lock owned by a process with a different euid:
-
-pthread_mutex_lock.c:312: __pthread_mutex_lock_full: Assertion `(-(e)) != 3 || !robust' failed.
-
-The problem is that futex_lock_pi_atomic which is called when we try to
-lock already held lock checks the current holder (tid is stored in the
-futex value) to get the PI state. It uses lookup_pi_state which in turn
-gets task struct from futex_find_get_task. ESRCH is returned either when
-the task is not found or if credentials check fails.
-futex_lock_pi_atomic simply returns if it gets ESRCH. glibc code,
-however,  doesn't expect that robust lock returns with ESRCH because it
-should get either success or owner died.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- kernel/futex.c |   17 ++++-------------
- 1 files changed, 4 insertions(+), 13 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index e7a35f1..6a3a5fa 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -429,20 +429,11 @@ static void free_pi_state(struct futex_pi_state *pi_state)
- static struct task_struct * futex_find_get_task(pid_t pid)
- {
- 	struct task_struct *p;
--	const struct cred *cred = current_cred(), *pcred;
- 
- 	rcu_read_lock();
- 	p = find_task_by_vpid(pid);
--	if (!p) {
--		p = ERR_PTR(-ESRCH);
--	} else {
--		pcred = __task_cred(p);
--		if (cred->euid != pcred->euid &&
--		    cred->euid != pcred->uid)
--			p = ERR_PTR(-ESRCH);
--		else
--			get_task_struct(p);
--	}
-+	if (p)
-+		get_task_struct(p);
- 
- 	rcu_read_unlock();
- 
-@@ -564,8 +555,8 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 	if (!pid)
- 		return -ESRCH;
- 	p = futex_find_get_task(pid);
--	if (IS_ERR(p))
--		return PTR_ERR(p);
-+	if (!p)
-+		return -ESRCH;
- 
- 	/*
- 	 * We need to look at the task state flags to figure out,
--- 
-1.7.1
-
-
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+    J
