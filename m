@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab0F3Snh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 14:43:37 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42003 "EHLO mx2.mail.elte.hu"
+	id S1757074Ab0F3SoA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 14:44:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52058 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753170Ab0F3Snf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 14:43:35 -0400
-Date: Wed, 30 Jun 2010 20:43:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Alexandre Julliard <julliard@winehq.org>,
-       "H . Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Prasad <prasad@linux.vnet.ibm.com>,
-       "2 . 6 . 33 . x 2 . 6 . 34 . x" <stable@kernel.org>
-Subject: Re: [GIT PULL] x86 breakpoint regression fix
-Message-ID: <20100630184318.GA30759@elte.hu>
-References: <1277906559-10624-1-git-send-regression-fweisbec@gmail.com>
- <20100630141758.GA5243@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100630141758.GA5243@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0143]
+	id S1755267Ab0F3Sn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 14:43:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,514,1272870000"; 
+   d="scan'208";a="294888579"
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+From: David Woodhouse <David.Woodhouse@intel.com>
+To: Chris Li <lkml@chrisli.org>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
+	 <4C29420D.2010406@intel.com>
+	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>
+	 <4C2A8879.8010000@intel.com>
+	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>
+	 <4C2AC55E.3040303@intel.com>
+	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation
+Date: Wed, 30 Jun 2010 19:43:42 +0100
+Message-ID: <1277923422.16256.8.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.31.4 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> On Wed, Jun 30, 2010 at 04:02:39PM +0200, Frederic Weisbecker wrote:
-> > Ingo,
-> > 
-> > Please pull the perf/urgent branch that can be found at:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> > 	perf/urgent
+On Wed, 2010-06-30 at 19:26 +0100, Chris Li wrote:
 > 
-> 
-> Please actually pull my perf/urgent-2 branch, it has the appropriate
-> Tested-by tag.
+> The delta seems to be this line:
+> ioatdma 0000:00:0f.0: ioat2_set_chainaddr: chainaddr: ffffe000 
 
-Pulled, thanks Frederic!
+That's a reasonable address if the IOMMU is enabled. We start at 4GiB
+and work down, so that's the second page given out (or the first 8KiB
+chunk).
 
-	Ingo
+It looks like the DMA is going AWOL causing the initialisation to
+fail... but it's interesting that there are no DMA faults reported by
+the IOMMU.
+
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
