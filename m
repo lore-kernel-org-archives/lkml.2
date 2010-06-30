@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab0F3GBq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 02:01:46 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59559 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab0F3GBp (ORCPT
+	id S1752062Ab0F3GIT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 02:08:19 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48132 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab0F3GIS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 02:01:45 -0400
+	Wed, 30 Jun 2010 02:08:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=p8kCO4inomvwOJKzEod3M7qeW3KSghXVgD0Sl090Jzf98Ks7VR62rAJFadbXtdN/ap
-         cWLXH26M/nK7bnJnPsuvYLiWb6zonvPCculhRsDBx/wAnTIF/gu22JU7/M4TJdL+Kghq
-         /HnFEXsXLzc55mmW2asPAmwNfSNw7CPxPRWX0=
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=eByRDVtqIhegYlsRc0ty2I+jkr2q/zjZtzNPcfpgK3iL2wc0YsmZ2mnbTd1ecp9fvy
+         fpquyvYdtfq1gEt3YC6NGpgRx/BAUWgrwQqFNu1SLo6xrgvCDpsc09U12KNy0CeurqyF
+         avwbx6zqjegRUSxfJSfDG7RY6p1oB7WTxS+/g=
 MIME-Version: 1.0
-Date: Wed, 30 Jun 2010 00:01:44 -0600
-Message-ID: <AANLkTinN9JWHrORsypcgcv1rzkREJrhT0i3kK-6Kh9i4@mail.gmail.com>
-Subject: [ANNOUNCE] MDB Merkey's Kernel Debugger x86_64 2.6.34 06-29-2010 
-	Release 2
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
+Date: Wed, 30 Jun 2010 11:38:17 +0530
+Message-ID: <AANLkTimFw9HQ6qvjSWIQ4vUFs4lU9j-jcjVKQIPKJ-pn@mail.gmail.com>
+Subject: Interrupt Affinity in SMP
+From: Hari LKML <hari.lkml@gmail.com>
 To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://merkeydebugger.googlecode.com/files/mdb-2.6.34-x86_64-06-29-2010.patch
+Hi All,
 
+We have HP DL380 Server with 48GB of DDR3/1333 MHz RAM, 4 1Gbps NIC
+Ports, 1 External RAID Card, 1 Internal RAID Card and 2  Intel(R)
+Xeon(R) CPU X5570  @ 2.93GHz used as an NFS storage server. Running
+Ubuntu 9.10 2.6.31-14-server.
+(The Storage is used as an NFS storage for more than 300VMs running
+using Citrix XenServer)
 
-The remaining issues are not critical path and MDB is stable on x86_64
-and ia32 with this release.  Will update the TODO items as I have
-time.  email me if there are additional features or issues found.
+For More info on the Hard ware configuration
+http://h18000.www1.hp.com/products/quickspecs/12028_div/12028_div.html
 
-FIXES:
-- fixed DS and W commands to output qwords in stack argument dump
-- add find_extend_vma and follow_page to exported symbols
-- add ds: and es: segment lookups in disassembler
-- enable .TM flag to toggle memory read between physical and user
-space read/write for addresses < PAGE_OFFSET
+With HTT enabled in BIOS i can see 16 CPU(0-15) as per cat /proc/cpuinfo.
 
-TODO
-- continue to investigate rex64 sysret instruction issue
-- add page mapping mode flag to dump commands to specify between
-logical, physical, and userspace page maps during data dumps i.e. d
-10000u (user), d 10000p (phys), d 10000 or d 10000m (mapped)
-- enable segment:address lookups in the disassembler for fs: and gs:,
-handle ptr_regs() and OP_E segment:address dereferencing
+The problem is all the interrupts are handled by CPU0, as per
+/proc/interrupts including the timer interrupts.
+And the value of /proc/irq default_smp_affinity is ffff.
+Also for all the interrupts the smp_affinity is ffff.
 
+What i believe is with these setting all the interrupts should be
+handled by the First 8 CPUs in a Round robin Fashion.
+Or in our case at worse by the first 4 cores (since HTT is enabled -
+*not clear with this concept though some once please put some light
+over here also for better understanding :-)* ).
 
-Jeffrey Vernon Merkey
+Also i tried to edit the smp_affinity of an interrupt to a value 0004
+to test that if the interrupt is handled by some other core. But i was
+unable to edit this value in a running system i got the access denied
+error so i can't do this.
+
+Please help me in distributing the interrupts among the other cores of
+my system which might increase some performance of my system.
+
+let me know if you need some log of the system or some other info
+about the system.
+
+Hari
