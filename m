@@ -1,100 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab0F3Pp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 11:45:57 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:65154 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab0F3Ppz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 11:45:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jn3xPWRWgrFRkihoPlL71TmnERUjfKPR0kLLSZabSjpfVGZ1LA6EUMOGelRY/AqpDF
-         NdOb/AVujeny5L9Jlhha92jlwdf13Kihhs5/cqGRiJAlMeCx5ruGVaeFC8AhzTDkWiay
-         CtJiBSHTH9dMUsuij1HSLbNGP6cYl7uYDzwUg=
+	id S1753094Ab0F3Psc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 11:48:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38873 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab0F3Psb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 11:48:31 -0400
+Date: Wed, 30 Jun 2010 08:47:55 -0700
+From: Greg KH <gregkh@suse.de>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Nathan Fontenot <nfont@austin.ibm.com>,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] memory hotplug disable boot option
+Message-ID: <20100630154755.GB12158@suse.de>
+References: <20100628154455.GA13918@suse.de>
+ <1277769867.8354.531.camel@nimitz>
+ <20100629115232.38BC.A69D9226@jp.fujitsu.com>
+ <1277827384.8354.3413.camel@nimitz>
+ <20100629180415.GB1240@suse.de>
+ <20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <201006301213.01962.rjw@sisk.pl>
-References: <alpine.DEB.2.00.1006300202190.30052@skynet.skynet.ie>
-	<201006301213.01962.rjw@sisk.pl>
-Date: Wed, 30 Jun 2010 11:45:53 -0400
-Message-ID: <AANLkTin3kCdjH5L9s_EpxuKC760HCiwNYY7wl95Ah2Zf@mail.gmail.com>
-Subject: Re: [git pull] drm fixes + agp + one fb patch
-From: Alex Deucher <alexdeucher@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 6:13 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Wednesday, June 30, 2010, Dave Airlie wrote:
->>
->> Hi Linus,
->>
->> one fb layer fix in a flag I introduced,
->>
->> the rest are drm fixes:
->> radeon fixes: the larger ones in the command stream checker for older cards,
->> which was causing a lot of userspace apps to fail. Also some powerpc server fixes.
->> along with some updates to the evergreen command stream checker introduced in -rc1.
->>
->> agp: fix issue with warning on memory allocation + fallback to vmalloc.
->> ttm: fix regression introduced in -rc1 in memory allocation paths.
->>
->> The following changes since commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02:
->>
->>   Linux 2.6.35-rc3 (2010-06-11 19:14:04 -0700)
->>
->> are available in the git repository at:
->>   ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
->>
->> Adam Jackson (1):
->>       drm/fb: Fix video= mode computation
->>
->> Alex Deucher (7):
->>       drm/radeon/kms: fix bandwidth calculation when sideport is present
->>       drm/radeon/kms: fix DP after DPMS cycle
->>       drm/radeon/kms: fix typo in evergreen_gpu_init
->>       drm/radeon/kms: disable frac fb dividers for rs6xx
->>       drm/radeon/kms: avoid oops on mac r4xx cards
->>       drm/radeon/kms: fix typos in evergreen command checker
->>       drm/radeon/kms: add some missing regs to evergreen gpu init
->>
->> Cedric Godin (1):
->>       drm/radeon/kms: fix dpms state on resume
->>
->> Dave Airlie (7):
->>       drm/radeon: fix dual-head on rv250
->>       radeon/kms: fix powerpc/rn50 untiled behaviour.
->>       agp: drop vmalloc flag.
->>       agp: add no warn since we have a fallback to vmalloc paths
->>       drm/radeon: add fake RN50 table for powerpc
->>       drm/radeon/kms: don't read attempt to read bios from VRAM on unposted GPU.
->>       fb: fix colliding defines for fb flags.
->>
->> Jerome Glisse (2):
->>       drm/ttm: non pooled page allocation should have GFP_USER set
->>       drm/radeon/kms: Force HDP_NONSURF to maximum size
->>
->> Matt Turner (1):
->>       drm/radeon/kms: return ret in cursor_set failure path
->>
->> Roland Scheidegger (3):
->>       drm/radeon/kms: CS checker texture fixes for r1xx/r2xx/r3xx
->>       drm/radeon/r200: handle more hw tex coord types
->>       drm/radeon/r100/r200: fix calculation of compressed cube maps
->
-> Hmm.  What about:
->
-> https://patchwork.kernel.org/patch/106757/ ?
->
-> It fixes a regression from 2.6.34.
+On Wed, Jun 30, 2010 at 09:32:51AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 29 Jun 2010 11:04:15 -0700
+> Greg KH <gregkh@suse.de> wrote:
+> 
+> > On Tue, Jun 29, 2010 at 09:03:04AM -0700, Dave Hansen wrote:
+> > > On Tue, 2010-06-29 at 11:56 +0900, KOSAKI Motohiro wrote:
+> > > > > On Mon, 2010-06-28 at 08:44 -0700, Greg KH wrote:
+> > > > > > > The directories being created are the standard directories, one for each of the memory
+> > > > > > > sections present at boot.  I think the most used files in each of these directories
+> > > > > > > is the state and removable file used to do memory hotplug.
+> > > > > > 
+> > > > > > And perhaps we shouldn't really be creating so many directories?  Why
+> > > > > > not work with the memory hotplug developers to change their interface to
+> > > > > > not abuse sysfs in such a manner? 
+> > > > > 
+> > > > > Heh, it wasn't abuse until we got this much memory.  But, I think this
+> > > > > one is pretty much 100% my fault.
+> > > > > 
+> > > > > Nathan, I think the right fix here is probably to untie sysfs from the
+> > > > > sections a bit.  We should be able to have sysfs dirs that represent
+> > > > > more than one contiguous SECTION_SIZE area of memory.
+> > > > 
+> > > > Why do we need abi breakage? Yourself talked about we guess ppc don't
+> > > > actually need 16MB section. I think IBM folks have to confirm it.
+> > > > If our guessing is correct, the firmware fixing is only necessary.
+> > > 
+> > > >From the mouth of the kernel dumbass who coded this up: it's not the
+> > > firmware's fault.  We shouldn't punt this to them, and the proper fix
+> > > _isn't_ in the firmware, plus they may have other more fundamental
+> > > reasons to keep the LMB sizes what they are.
+> > 
+> > I agree, this should be fixed in the api to userspace, having this many
+> > sysfs directories and/or files is just looney.
+> > 
+> > thanks,
+> > 
+> 
+> Hmm, adding 
+>  CONFIG_NEW_MEMORY_SYSFS_LAYOUT or
 
-This patch should definitely go in as well.
+It will not be "NEW" in a year :)
 
-Alex
+>  memory_sysfs_layout=small boot option
+
+Yes, that sounds good.
+
+> and adding a scalable interface for large scale machines ?
+> I'd like to consider something..
+
+Dynamically changing the layout on big memory boxes makes sense to me,
+how about you?
+
+thanks,
+
+greg k-h
