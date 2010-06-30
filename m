@@ -1,101 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab0F3Phi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 11:37:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9766 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab0F3Phh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 11:37:37 -0400
-Date: Wed, 30 Jun 2010 11:37:10 -0400
-From: Rik van Riel <riel@redhat.com>
-To: akpm@linux-foundation.org
-Cc: aarcange@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       kosaki.motohiro@jp.fujitsu.com
-Subject: [PATCH -mm] rmap: add exclusive page to private anon_vma on swapin
-Message-ID: <20100630113710.3b376e6a@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753314Ab0F3Pla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 11:41:30 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43740 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310Ab0F3Pl2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 11:41:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100630004027.GG4837@outflux.net>
+References: <20100630003844.GE4837@outflux.net>
+	<20100630004027.GG4837@outflux.net>
+Date: Wed, 30 Jun 2010 11:41:26 -0400
+Message-ID: <AANLkTim_RShqD7CKwjyeeGf3-1NZaVE4K2XUlrsoS1xx@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Yama: add PTRACE exception tracking
+From: Eric Paris <eparis@parisplace.org>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On swapin it is fairly common for a page to be owned exclusively
-by one process.  In that case we want to add the page to the
-anon_vma of that process's VMA, instead of to the root anon_vma.
+On Tue, Jun 29, 2010 at 8:40 PM, Kees Cook <kees.cook@canonical.com> wrote:
+> Some application suites have external crash handlers that depend on
+> being able to use PTRACE to generate crash reports (KDE, Chromium, etc).
+> Since the inferior process generally knows the PID of the debugger,
+> it can use PR_SET_PTRACER to allow a specific PID and its descendants
+> to perform the PTRACE instead of only a direct ancestor.
+>
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
 
-This will reduce the amount of rmap searching that the swapout
-code needs to do.
+any normal unpriv application:
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
+while(1) {
+        prctl(PR_SET_PTRACER, 1, 0, 0, 0);
+}
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index 369bdb4..31b2fd7 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -162,6 +162,8 @@ static inline void anon_vma_merge(struct vm_area_struct *vma,
-  */
- void page_move_anon_rmap(struct page *, struct vm_area_struct *, unsigned long);
- void page_add_anon_rmap(struct page *, struct vm_area_struct *, unsigned long);
-+void do_page_add_anon_rmap(struct page *, struct vm_area_struct *,
-+			   unsigned long, int);
- void page_add_new_anon_rmap(struct page *, struct vm_area_struct *, unsigned long);
- void page_add_file_rmap(struct page *);
- void page_remove_rmap(struct page *);
-diff --git a/mm/memory.c b/mm/memory.c
-index 119b7cc..c0d984c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2620,6 +2620,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	swp_entry_t entry;
- 	pte_t pte;
- 	struct mem_cgroup *ptr = NULL;
-+	int exclusive = 0;
- 	int ret = 0;
- 
- 	if (!pte_unmap_same(mm, pmd, page_table, orig_pte))
-@@ -2714,10 +2715,11 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if ((flags & FAULT_FLAG_WRITE) && reuse_swap_page(page)) {
- 		pte = maybe_mkwrite(pte_mkdirty(pte), vma);
- 		flags &= ~FAULT_FLAG_WRITE;
-+		exclusive = 1;
- 	}
- 	flush_icache_page(vma, page);
- 	set_pte_at(mm, address, page_table, pte);
--	page_add_anon_rmap(page, vma, address);
-+	do_page_add_anon_rmap(page, vma, address, exclusive);
- 	/* It's better to call commit-charge after rmap is established */
- 	mem_cgroup_commit_charge_swapin(page, ptr);
- 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 73d497e..a129679 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -831,6 +831,17 @@ static void __page_check_anon_rmap(struct page *page,
- void page_add_anon_rmap(struct page *page,
- 	struct vm_area_struct *vma, unsigned long address)
- {
-+	do_page_add_anon_rmap(page, vma, address, 0);
-+}
-+
-+/*
-+ * Special version of the above for do_swap_page, which often runs
-+ * into pages that are exclusively owned by the current process.
-+ * Everybody else should continue to use page_add_anon_rmap above.
-+ */
-+void do_page_add_anon_rmap(struct page *page,
-+	struct vm_area_struct *vma, unsigned long address, int exclusive)
-+{
- 	int first = atomic_inc_and_test(&page->_mapcount);
- 	if (first)
- 		__inc_zone_page_state(page, NR_ANON_PAGES);
-@@ -840,7 +851,7 @@ void page_add_anon_rmap(struct page *page,
- 	VM_BUG_ON(!PageLocked(page));
- 	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
- 	if (first)
--		__page_set_anon_rmap(page, vma, address, 0);
-+		__page_set_anon_rmap(page, vma, address, exclusive);
- 	else
- 		__page_check_anon_rmap(page, vma, address);
- }
+watch kernel run out of memory and bring down the box.  Seems like
+quite the DoS.....
+
+-Eric
