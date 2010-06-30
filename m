@@ -1,1276 +1,736 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab0F3XgY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 19:36:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1856 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752648Ab0F3XgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 19:36:21 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] Add a pair of system calls to make extended file stats
-	available [ver #3]
-To: linux-fsdevel@vger.kernel.org
-Cc: dhowells@redhat.com, linux-cifs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-       linux-ext4@vger.kernel.org
-Date: Thu, 01 Jul 2010 00:36:16 +0100
-Message-ID: <20100630233614.32422.97038.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1757485Ab0F3Xly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 19:41:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18123 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755240Ab0F3Xlw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 19:41:52 -0400
+Date: Wed, 30 Jun 2010 16:40:58 -0700
+From: Randy Dunlap <randy.dunlap@Oracle.COM>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: mel@csn.ul.ie, andi@firstfloor.org, dwalker@codeaurora.org,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3] mm: iommu: An API to unify IOMMU, CPU and device
+ memory management
+Message-Id: <20100630164058.aa6aa3a2.randy.dunlap@oracle.com>
+In-Reply-To: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org>
+References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C2BD61B.024F:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a pair of system calls to make extended file stats available, including
-file creation time, inode version and data version where available through the
-underlying filesystem.
-
-[This depends on the previously posted pair of patches to (a) constify a number
- of syscall string and buffer arguments and (b) rearrange AFS's use of
- i_version and i_generation].
-
-The following structures are defined for their use:
-
-	struct xstat_parameters {
-		unsigned long long	request_mask;
-	};
-
-	struct xstat_dev {
-		unsigned int		major, minor;
-	};
-
-	struct xstat_time {
-		unsigned long long	tv_sec, tv_nsec;
-	};
-
-	struct xstat {
-		unsigned int		st_mode;
-		unsigned int		st_nlink;
-		unsigned int		st_uid;
-		unsigned int		st_gid;
-		struct xstat_dev	st_rdev;
-		struct xstat_dev	st_dev;
-		struct xstat_time	st_atime;
-		struct xstat_time	st_mtime;
-		struct xstat_time	st_ctime;
-		struct xstat_time	st_btime;
-		unsigned long long	st_ino;
-		unsigned long long	st_size;
-		unsigned long long	st_blksize;
-		unsigned long long	st_blocks;
-		unsigned long long	st_gen;
-		unsigned long long	st_data_version;
-		unsigned long long	st_result_mask;
-		unsigned long long	st_extra_results[0];
-	};
-
-where st_btime is the file creation time, st_gen is the inode generation
-(i_generation), st_data_version is the data version number (i_version),
-request_mask and st_result_mask are bitmasks of data desired/provided and
-st_extra_results[] is where as-yet undefined fields are appended.
-
-The defined bits in request_mask and st_result_mask are:
-
-	XSTAT_REQUEST_MODE		Want/got st_mode
-	XSTAT_REQUEST_NLINK		Want/got st_nlink
-	XSTAT_REQUEST_UID		Want/got st_uid
-	XSTAT_REQUEST_GID		Want/got st_gid
-	XSTAT_REQUEST_RDEV		Want/got st_rdev
-	XSTAT_REQUEST_ATIME		Want/got st_atime
-	XSTAT_REQUEST_MTIME		Want/got st_mtime
-	XSTAT_REQUEST_CTIME		Want/got st_ctime
-	XSTAT_REQUEST_INO		Want/got st_ino
-	XSTAT_REQUEST_SIZE		Want/got st_size
-	XSTAT_REQUEST_BLOCKS		Want/got st_blocks
-	XSTAT_REQUEST__BASIC_STATS	The stuff in the normal stat struct
-	XSTAT_REQUEST_BTIME		Want/got st_btime
-	XSTAT_REQUEST_GEN		Want/got st_gen
-	XSTAT_REQUEST_DATA_VERSION	Want/got st_data_version
-	XSTAT_REQUEST__EXTENDED_STATS	The stuff in the xstat struct
-	XSTAT_REQUEST__ALL_STATS	The defined set of requestables
-
-The system calls are:
-
-	ssize_t ret = xstat(int dfd,
-			    const char *filename,
-			    unsigned flags,
-			    const struct xstat_parameters *params,
-			    struct xstat *buffer,
-			    size_t buflen);
-
-	ssize_t ret = fxstat(unsigned fd,
-			     unsigned flags,
-			     const struct xstat_parameters *params,
-			     struct xstat *buffer,
-			     size_t buflen);
-
+On Tue, 29 Jun 2010 22:55:48 -0700 Zach Pfeffer wrote:
+
+> This patch contains the documentation for the API, termed the Virtual
+> Contiguous Memory Manager. Its use would allow all of the IOMMU to VM,
+> VM to device and device to IOMMU interoperation code to be refactored
+> into platform independent code.
+> 
+> Comments, suggestions and criticisms are welcome and wanted.
+> 
+> Signed-off-by: Zach Pfeffer <zpfeffer@codeaurora.org>
+> ---
+>  Documentation/vcm.txt |  583 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 583 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/vcm.txt
+> 
+> diff --git a/Documentation/vcm.txt b/Documentation/vcm.txt
+> new file mode 100644
+> index 0000000..d29c757
+> --- /dev/null
+> +++ b/Documentation/vcm.txt
+> @@ -0,0 +1,583 @@
+> +What is this document about?
+> +============================
+> +
+> +This document covers how to use the Virtual Contiguous Memory Manager
+> +(VCMM), how the first implmentation works with a specific low-level
+> +Input/Output Memory Management Unit (IOMMU) and the way the VCMM is used
+> +from user-space. It also contains a section that describes why something
+> +like the VCMM is needed in the kernel.
+> +
+> +If anything in this document is wrong please send patches to the
+
+                                is wrong,
+
+> +maintainer of this file, listed at the bottom of the document.
+> +
+> +
+> +The Virtual Contiguous Memory Manager
+> +=====================================
+> +
+> +The VCMM was built to solve the system-wide memory mapping issues that
+> +occur when many bus-masters have IOMMUs.
+> +
+> +An IOMMU maps device addresses to physical addresses. It also insulates
+> +the system from spurious or malicious device bus transactions and allows
+> +fine-grained mapping attribute control. The Linux kernel core does not
+> +contain a generic API to handle IOMMU mapped memory; device driver writers
+> +must implement device specific code to interoperate with the Linux kernel
+> +core. As the number of IOMMUs increases, coordinating the many address
+> +spaces mapped by all discrete IOMMUs becomes difficult without in-kernel
+> +support.
+> +
+> +The VCMM API enables device independent IOMMU control, virtual memory
+> +manager (VMM) interoperation and non-IOMMU enabled device interoperation
+> +by treating devices with or without IOMMUs and all CPUs with or without
+> +MMUs, their mapping contexts and their mappings using common
+> +abstractions. Physical hardware is given a generic device type and mapping
+> +contexts are abstracted into Virtual Contiguous Memory (VCM)
+> +regions. Users "reserve" memory from VCMs and "back" their reservations
+> +with physical memory.
+> +
+> +Why the VCMM is Needed
+> +----------------------
+> +
+> +Driver writers who control devices with IOMMUs must contend with device
+> +control and memory management. Driver writers have a large device driver
+> +API that they can leverage to control their devices, but they are lacking
+> +a unified API to help them program mappings into IOMMUs and share those
+> +mappings with other devices and CPUs in the system.
+> +
+> +Sharing is complicated by Linux's CPU centric VMM. The CPU centric model
+
+                                     CPU-centric          CPU-centric
+
+> +generally makes sense because average hardware only contains a MMU for the
+> +CPU and possibly a graphics MMU. If every device in the system has one or
+> +more MMUs the CPU centric memory management (MM) programming model breaks
+
+                 ditto
+
+> +down.
+> +
+> +Abstracting IOMMU device programming into a common API has already begun
+> +in the Linux kernel. It was built to abstract the difference between AMDs
+
+                                                                        AMD's
+(or just "AMD")
+
+> +and Intels IOMMUs to support x86 virtualization on both platforms. The
+
+       Intel's (or just "Intel")
+
+> +interface is listed in kernel/include/linux/iommu.h. It contains
+
+                          drop "kernel/"
+
+> +interfaces for mapping and unmapping as well as domain management. This
+> +interface has not gained widespread use outside the x86; PA-RISC, Alpha
+> +and SPARC architectures and ARM and PowerPC platforms all use their own
+> +mapping modules to control their IOMMUs. The VCMM contains an IOMMU
+> +programming layer, but since its abstraction supports map management
+> +independent of device control, the layer is not used directly. This
+> +higher-level view enables a new kernel service, not just an IOMMU
+> +interoperation layer.
+> +
+> +The General Idea: Map Management using Graphs
+> +---------------------------------------------
+> +
+> +Looking at mapping from a system-wide perspective reveals a general graph
+> +problem. The VCMMs API is built to manage the general mapping graph. Each
+
+                VMCC's
+
+> +node that talks to memory, either through an MMU or directly (physically
+> +mapped) can be thought of as the device-end of a mapping edge. The other
+> +edge is the physical memory (or intermediate virtual space) that is
+> +mapped.
+> +
+> +In the direct mapped case the device is assigned a one-to-one MMU. This
+
+          direct-mapped
+
+> +scheme allows direct mapped devices to participate in general graph
+> +management.
+> +
+> +The CPU nodes can also be brought under the same mapping abstraction with
+> +the use of a light overlay on the existing VMM. This light overlay allows
+> +VMM managed mappings to interoperate with the common API. The light
+
+   VMM-managed
+
+> +overlay enables this without substantial modifications to the existing
+> +VMM.
+> +
+> +In addition to CPU nodes that are running Linux (and the VMM), remote CPU
+> +nodes that may be running other operating systems can be brought into the
+> +general abstraction. Routing all memory management requests from a remote
+> +node through the central memory management framework enables new features
+> +like system-wide memory migration. This feature may only be feasible for
+> +large buffers that are managed outside of the fast-path, but having remote
+> +allocation in a system enables features that are impossible to build
+> +without it.
+> +
+> +The fundamental objects that support graph-based map management are:
+> +
+> +1) Virtual Contiguous Memory Regions
+> +
+> +2) Reservations
+> +
+> +3) Associated Virtual Contiguous Memory Regions
+> +
+> +4) Memory Targets
+> +
+> +5) Physical Memory Allocations
+> +
+> +Usage Overview
+> +--------------
+> +
+> +In a nut-shell, users allocate Virtual Contiguous Memory Regions and
+
+        nutshell,
+
+> +associate those regions with one or more devices by creating an Associated
+> +Virtual Contiguous Memory Region. Users then create Reservations from the
+> +Virtual Contiguous Memory Region. At this point no physical memory has
+> +been committed to the reservation. To associate physical memory with a
+> +reservation a Physical Memory Allocation is created and the Reservation is
+> +backed with this allocation.
+> +
+> +include/linux/vcm.h includes comments documenting each API.
+> +
+> +Virtual Contiguous Memory Regions
+> +---------------------------------
+> +
+> +A Virtual Contiguous Memory Region (VCM) abstracts the memory space a
+> +device sees. The addresses of the region are only used by the devices
+> +which are associated with the region. This address space would normally be
+> +implemented as a device page-table.
+
+                           page table.
+
+> +
+> +A VCM is created and destroyed with three functions:
+> +
+> +    struct vcm *vcm_create(size_t start_addr, size_t len);
+
+Seems odd to use size_t for start_addr.
+
+> +    struct vcm *vcm_create_from_prebuilt(size_t ext_vcm_id);
+> +
+> +    int vcm_free(struct vcm *vcm);
+> +
+> +start_addr is an offset into the address space where allocations will
+> +start from. len is the length from start_addr of the VCM. Both functions
+> +generate an instance of a VCM.
+> +
+> +ext_vcm_id is used to pass a request to the VMM to generate a VCM
+> +instance. In the current implementation the call simply makes a note that
+> +the VCM instance is a VMM VCM instance for other interfaces usage. This
+> +muxing is seen throughout the implementation.
+> +
+> +vcm_create() and vcm_create_from_prebuilt() produce VCM instances for
+> +virtually mapped devices (IOMMUs and CPUs). To create a one-to-one mapped
+> +VCM users pass the start_addr and len of the physical region. The VCMM
+
+   VCM,
+
+> +matches this and records that the VCM instance is a one-to-one VCM.
+> +
+> +The newly created VCM instance can be passed to any function that needs to
+> +operate on or with a virtual contiguous memory region. Its main attributes
+> +are a start_addr and a len as well as an internal setting that allows the
+> +implementation to mux between true virtual spaces, one-to-one mapped
+> +spaces and VMM managed spaces.
+> +
+> +The current implementation uses the genalloc library to manage the VCM for
+> +IOMMU devices. Return values and more in-depth per-function documentation
+> +for these and the ones listed below are in include/linux/vcm.h.
+> +
+> +Reservations
+> +------------
+> +
+> +A Reservation is a contiguous region allocated from a VCM. There is no
+> +physical memory associated with it.
+> +
+> +A Reservation is created and destroyed with:
+> +
+> +    struct res *vcm_reserve(struct vcm *vcm, size_t len, uint32_t attr);
+
+s/uint32_t/u32/ ?
+
+> +    int vcm_unreserve(struct res *res);
+> +
+> +A vcm is a VCM created above. len is the length of the request. It can be
+> +up to the length of the VCM region the reservation is being created
+> +from. attr are mapping attributes: read, write, execute, user, supervisor,
+> +secure, not-cached, write-back/write-allocate, write-back/no
+> +write-allocate, write-through. These attrs are appropriate for ARM but can
+> +be changed to match to any architecture.
+> +
+> +The implementation calls gen_pool_alloc() for IOMMU devices,
+> +alloc_vm_area() for VMM areas and is a pass through for one-to-one mapped
+
+                                          pass-through
+
+> +areas.
+> +
+> +Associated Virtual Contiguous Memory Regions and Activation
+> +-----------------------------------------------------------
+> +
+> +An Associated Virtual Contiguous Memory Region (AVCM) is a mapping of a
+> +VCM to a device. The mapping can be active or inactive.
+> +
+> +An AVCM is managed with:
+> +
+> +struct avcm *vcm_assoc(struct vcm *vcm, size_t dev, uint32_t attr);
+> +
+> +    int vcm_deassoc(struct avcm *avcm);
+> +
+> +    int vcm_activate(struct avcm *avcm);
+> +
+> +    int vcm_deactivate(struct avcm *avcm);
+> +
+> +A VCM instance is a VCM created above. A dev is an opaque device handle
+> +thats passed down to the device driver the VCMM muxes in to handle a
+> +request. attr are association attributes: split, use-high or
+
+size_t used for an opaque device handle seems odd.
+
+> +use-low. split controls which transactions hit a high-address page-table
+> +and which transactions hit a low-address page-table. For instance, all
+> +transactions whose most significant address bit is one would use the
+> +high-address page-table, any other transaction would use the low address
+> +page-table. This scheme is ARM specific and could be changed in other
+
+                              ARM-specific
+
+> +architectures. One VCM instance can be associated with many devices and
+> +many VCM instances can be associated with one device.
+> +
+> +An AVCM is only a link. To program and deprogram a device with a VCM the
+> +user calls vcm_activate() and vcm_deactivate().For IOMMU devices,
+
+                                 vcm_deactivate(). For
+
+> +activating a mapping programs the base address of a page-table into an
+
+                                                       page table
+
+> +IOMMU. For VMM and one-to-one based devices, mappings are active
+> +immediately but the API does require an activation call for them for
+> +internal reference counting.
+> +
+> +Memory Targets
+> +--------------
+> +
+> +A Memory Target is a platform independent way of specifying a physical
+> +pool; it abstracts a pool of physical memory. The physical memory pool may
+> +be physically discontiguous, need to be allocated from in a unique way or
+> +have other user-defined attributes.
+> +
+> +Physical Memory Allocation and Reservation Backing
+> +--------------------------------------------------
+> +
+> +Physical memory is allocated as a separate step from reserving
+> +memory. This allows multiple reservations to back the same physical
+> +memory.
+> +
+> +A Physical Memory Allocation is managed using the following functions:
+> +
+> +    struct physmem *vcm_phys_alloc(enum memtype_t memtype, size_t len,
+> +                                   uint32_t attr);
+> +
+> +    int vcm_phys_free(struct physmem *physmem);
+> +
+> +    int vcm_back(struct res *res, struct physmem *physmem);
+> +
+> +    int vcm_unback(struct res *res);
+> +
+> +attr can include an alignment request, a specification to map memory using
+> +various block sizes and/or to use physically contiguous memory. memtype is
+> +one of the memory types listed in Memory Targets.
+> +
+> +The current implementation manages two pools of memory. One pool is a
+> +contiguous block of memory and the other is a set of contiguous block
+> +pools. In the current implementation the block pools contain 4K, 64K and
+> +1M blocks. The physical allocator does not try to split blocks from the
+> +contiguous block pools to satisfy requests.
+> +
+> +The use of 4K, 64K and 1M blocks solves a problem with some IOMMU
+> +hardware. IOMMUs are placed in front of multimedia engines to provide a
+> +contiguous address space to the device. Multimedia devices need large
+> +buffers and large buffers may map to a large number of physical
+> +blocks. IOMMUs tend to have small translation lookaside buffers
+> +(TLBs). Since the TLB is small the number of physical blocks that map a
+> +given range needs to be small or else the IOMMU will continually fetch new
+> +translations during a typical streamed multimedia flow. By using a 1 MB
+> +mapping (or 64K mapping) instead of a 4K mapping the number of misses can
+> +be minimized, allowing the multimedia block to meet its performance goals.
+> +
+> +Low Level Control
+> +-----------------
+> +
+> +It is necessary in some instances to access attributes and provide
+> +higher-level control of the low-level hardware abstraction. The API
+> +contains many functions for this task but the two that are typically used
+> +are:
+> +
+> +    size_t vcm_get_dev_addr(struct res *res);
+> +
+> +    int vcm_hook(size_t dev, vcm_handler handler, void *data);
+> +
+> +The first function, vcm_get_dev_addr() returns a device address given a
+> +reservation. This device address is a virtual IOMMU address for
+> +reservations on IOMMU VCMs, a virtual VMM address for reservations on VMM
+> +VCMs and a virtual (really physical since its one-to-one mapped) address
+> +for one-to-one devices.
+> +
+> +The second function, vcm_hook allows a caller in the kernel to register a
+
+                        vcm_hook,
+
+> +user_handler. The handler is passed the data member passed to vcm_hook
+> +during a fault. The user can return 1 to indicate that the underlying
+> +driver should handle the fault and retry the transaction or they can
+> +return 0 to halt the transaction. If the user doesn't register a handler
+> +the low-level driver will print a warning and terminate the transaction.
+> +
+> +A Detailed Walk Through
+> +-----------------------
+> +
+> +The following call sequence walks through a typical allocation
+> +sequence. In the first stage the memory for a device is reserved and
+> +backed. This occurs without mapping the memory into a VMM VCM region. The
+> +second stage maps the first VCM region into a VMM VCM region so the kernel
+> +can read or write it. The second stage is not necessary if the VMM does
+> +not need to read or modify the contents of the original mapping.
+> +
+> +    Stage 1: Map and Allocate Memory for a Device
+> +
+> +    The call sequence starts by creating a VCM region:
+> +
+> +        vcm = vcm_create(start_addr, len);
+> +
+> +    The next call associates a VCM region with a device:
+> +
+> +        avcm = vcm_assoc(vcm, dev, attr);
+> +
+> +    To activate the association users call vcm_activate() on the avcm from
+
+                       association,
+
+> +    the associate call. This programs the underlining device with the
+> +    mappings.
+> +
+> +        ret = vcm_activate(avcm);
+> +
+> +    Once a VCM region is created and associated it can be reserved from
+> +    with:
+> +
+> +        res = vcm_reserve(vcm, res_len, res_attr);
+> +
+> +    A user then allocates physical memory with:
+> +
+> +        physmem = vcm_phys_alloc(memtype, len, phys_attr);
+> +
+> +    To back the reservation with the physical memory allocation the user
+> +    calls:
+> +
+> +        vcm_back(res, physmem);
+> +
+> +
+> +    Stage 2: Map the Device's Memory into the VMM's VCM region
+> +
+> +    If the VMM needs to read and/or write the region that was just created
+
+                                                                      created,
+
+> +    the following calls are made.
+> +
+> +    The first call creates a prebuilt VCM with:
+> +
+> +        vcm_vmm = vcm_from_prebuilt(ext_vcm_id);
+> +
+> +    The prebuilt VCM is associated with the CPU device and activated with:
+> +
+> +        avcm_vmm = vcm_assoc(vcm_vmm, dev_cpu, attr);
+> +        vcm_activate(avcm_vmm);
+> +
+> +    A reservation is made on the VMM VCM with:
+> +
+> +        res_vmm = vcm_reserve(vcm_vmm, res_len, attr);
+> +
+> +    Finally, once the topology has been set up a vcm_back() allows the VMM
+> +    to read the memory using the physmem generated in stage 1:
+> +
+> +        vcm_back(res_vmm, physmem);
+> +
+> +Mapping IOMMU, one-to-one and VMM Reservations
+> +----------------------------------------------
+> +
+> +The following example demonstrates mapping IOMMU, one-to-one and VMM
+> +reservations to the same physical memory. It shows the use of phys_addr
+> +and phys_size to create a contiguous VCM for one-to-one mapped devices.
+> +
+> +    The user allocates physical memory:
+> +
+> +        physmem = vcm_phys_alloc(memtype, SZ_2MB + SZ_4K, CONTIGUOUS);
+> +
+> +    Creates an IOMMU VCM:
+> +
+> +        vcm_iommu = vcm_create(SZ_1K, SZ_16M);
+> +
+> +    Creates an one-to-one VCM:
+
+               a one-to-one
+
+> +
+> +        vcm_onetoone = vcm_create(phys_addr, phys_size);
+> +
+> +    Creates a Prebuit VCM:
+> +
+> +        vcm_vmm = vcm_from_prebuit(ext_vcm_id);
+> +
+> +    Associate and activate all three to their respective devices:
+> +
+> +        avcm_iommu = vcm_assoc(vcm_iommu, dev_iommu, attr0);
+> +        avcm_onetoone = vcm_assoc(vcm_onetoone, dev_onetoone, attr1);
+> +        avcm_vmm = vcm_assoc(vcm_vmm, dev_cpu, attr2);
+
+error handling on vcm_assoc() failures?
+
+> +        vcm_activate(avcm_iommu);
+> +        vcm_activate(avcm_onetoone);
+> +        vcm_activate(avcm_vmm);
+> +
+> +    And finally, creates and backs reservations on all 3 such that they
+> +    all point to the same memory:
+> +
+> +        res_iommu = vcm_reserve(vcm_iommu, SZ_2MB + SZ_4K, attr);
+> +        res_onetoone = vcm_reserve(vcm_onetoone, SZ_2MB + SZ_4K, attr);
+> +        res_vmm = vcm_reserve(vcm_vmm, SZ_2MB + SZ_4K, attr);
+
+error handling?
+
+> +        vcm_back(res_iommu, physmem);
+> +        vcm_back(res_onetoone, physmem);
+> +        vcm_back(res_vmm, physmem);
+> +
+> +VCM Summary
+> +-----------
+> +
+> +The VCMM is an attempt to abstract attributes of three distinct classes of
+> +mappings into one API. The VCMM allows users to reason about mappings as
+> +first class objects. It also allows memory mappings to flow from the
+> +traditional 4K mappings prevalent on systems today to more efficient block
+> +sizes. Finally, it allows users to manage mapping interoperation without
+> +becoming VMM experts. These features will allow future systems with many
+> +MMU mapped devices to interoperate simply and therefore correctly.
+> +
+> +
+> +IOMMU Hardware Control
+> +======================
+> +
+> +The VCM currently supports a single type of IOMMU, a Qualcomm System MMU
+> +(SMMU). The SMMU interface contains functions to map and unmap virtual
+> +addresses, perform address translations and initialize hardware. A
+> +Qualcomm SMMU can contain multiple MMU contexts. Each context can
+> +translate in parallel. All contexts in a SMMU share one global translation
+> +look-aside buffer (TLB).
+> +
+> +To support context muxing the SMMU module creates and manages device
+> +independent virtual contexts. These context abstractions are bound to
+> +actual contexts at run-time. Once bound, a context can be activated. This
+> +activation programs the underlying context with the virtual context
+> +affecting a context switch.
+> +
+> +The following functions are all documented in:
+> +
+> +    arch/arm/mach-msm/include/mach/smmu_driver.h.
+> +
+> +Mapping
+> +-------
+> +
+> +To map and unmap a virtual page into physical space the VCM calls:
+> +
+> +    int smmu_map(struct smmu_dev *dev, unsigned long pa,
+> +                 unsigned long va, unsigned long len, unsigned int attr);
+> +
+> +    int smmu_unmap(struct smmu_dev *dev, unsigned long va,
+> +                   unsigned long len);
+> +
+> +    int smmu_update_start(struct smmu_dev *dev);
+> +
+> +    int smmu_update_done(struct smmu_dev *dev);
+> +
+> +The size given to map must be 4K, 64K, 1M or 16M and the VA and PA must be
+> +aligned to the given size. smmu_update_start() and smmu_update_done()
+> +should be called before and after each map or unmap.
+> +
+> +Translation
+> +-----------
+> +
+> +To request a hardware VA to PA translation on a single address the VCM
+> +calls:
+> +
+> +    unsigned long smmu_translate(struct smmu_dev *dev,
+> +                                 unsigned long va);
+> +
+> +Fault Handling
+> +--------------
+> +
+> +To register an interrupt handler for a context the VCM calls:
+> +
+> +    int smmu_hook_irpt(struct smmu_dev *dev, vcm_handler handler,
+> +                       void *data);
+
+We try to spell out things like "interrupt" in function names
+because I/we can't remember just how you decided to abbreviate it.
+
+> +
+> +The registered interrupt handler should return 1 if it wants the SMMU
+> +driver to retry the transaction again and 0 if it wants the SMMU driver to
+> +terminate the transaction.
+> +
+> +Managing SMMU Initialization and Contexts
+> +-----------------------------------------
+> +
+> +SMMU hardware initialization and management happens in 2 steps. The first
+> +step initializes global SMMU devices and abstract device contexts. The
+> +second step binds contexts and devices.
+> +
+> +A SMMU hardware instance is built with:
+
+   An SMMU
+
+> +
+> +    int smmu_drvdata_init(struct smmu_driver *drv, unsigned long base,
+> +                          int irq);
+> +
+> +A SMMU context is Initialized and deinitialized with:
+
+   An SMMU           initialized
+
+> +
+> +    struct smmu_dev *smmu_ctx_init(int ctx);
+> +    int smmu_ctx_deinit(struct smmu_dev *dev);
+> +
+> +An abstract SMMU context is bound to a particular SMMU with:
+> +
+> +    int smmu_ctx_bind(struct smmu_dev *ctx, struct smmu_driver *drv);
+> +
+> +Activation
+> +----------
+> +
+> +Activation affects a context switch.
+> +
+> +Activation, deactivation and activation state testing are done with:
+> +
+> +    int smmu_activate(struct smmu_dev *dev);
+> +    int smmu_deactivate(struct smmu_dev *dev);
+> +    int smmu_is_active(struct smmu_dev *dev);
+> +
+> +
+> +Userspace Access to Devices with IOMMUs
+> +=======================================
+> +
+> +A device that issues transactions through an IOMMU must work with two
+> +APIs. The first API is the VCM. The VCM API is device independent. Users
+> +pass the VCM a dev_id and the VCM makes calls on the hardware device it
+> +has been configured with using this dev_id. The second API is whatever
+> +device topology has been created to organize the particular IOMMUs in a
+> +system. The only constraint on this second API is that it must give the
+> +user a single dev_id that it can pass through the VCM.
+> +
+> +For the Qualcomm SMMUs the second API consists of a tree of platform
+> +devices and two platform drivers as well as a context lookup function that
+> +traverses the device tree and returns a dev_id given a context name.
+> +
+> +Qualcomm SMMU Device Tree
+> +-------------------------
+> +
+> +The current tree organizes the devices into a tree that looks like the
+> +following:
+> +
+> +smmu/
+> +               smmu0/
+> +                                ctx0
+> +                                ctx1
+> +                                ctx2
+> +               smmu1/
+> +                                ctx3
+> +
+> +
+> +Each context, ctx[n] and each smmu, smmu[n] is given a name. Since users
+> +are interested in contexts not smmus, the contexts name is passed to a
+
+                                             context
+
+> +function to find the dev_id associated with that name. The functions to
+> +find, free and get the base address (since the device probe function calls
+> +ioremap to map the SMMUs configuration registers into the kernel) are
+> +listed here:
+> +
+> +    struct smmu_dev *smmu_get_ctx_instance(char *ctx_name);
+> +    int smmu_free_ctx_instance(struct smmu_dev *dev);
+> +    unsigned long smmu_get_base_addr(struct smmu_dev *dev);
+> +
+> +Documentation for these functions is in:
+> +
+> +    arch/arm/mach-msm/include/mach/smmu_device.h
+> +
+> +Each context is given a dev node named after the context. For example:
+> +
+> +    /dev/vcodec_a_mm1
+> +    /dev/vcodec_b_mm2
+> +    /dev/vcodec_stream
+> +    etc...
+> +
+> +Users open, close and mmap these nodes to access VCM buffers from
+> +userspace in the same way that they used to open, close and mmap /dev
+> +nodes that represented large physically contiguous buffers (called PMEM
+> +buffers on Android).
+> +
+> +Example
+> +-------
+> +
+> +An abbreviated example is shown here:
+> +
+> +Users get the dev_id associated with their target context, create a VCM
+> +topology appropriate for their device and finally associate the VCMs of
+> +the topology with the contexts that will take the VCMs:
+> +
+> +    dev_id = smmu_get_ctx_instance(vcodec_a_stream);
+> +
+> +create vcm and needed topology
+> +
+> +    avcm = vcm_assoc(vcm, dev_id, attr);
+> +
+> +Tying it all Together
+> +---------------------
+> +
+> +VCMs, IOMMUs and the device tree all work to support system-wide memory
+> +mappings. The use of each API in this system allows users to concentrate
+> +on the relevant details without needing to worry about low-level
+> +details. The APIs clear separation of memory spaces and the devices that
+
+                API's
+
+> +support those memory spaces continues Linuxs tradition of abstracting the
+
+                                         the Linux tradition
+
+> +what from the how.
+> +
+> +
+> +Maintainer: Zach Pfeffer <zpfeffer@codeaurora.org>
+> -- 
 
-The dfd, filename, flags and fd parameters indicate the file to query.  There
-is no equivalent of lstat() as that can be emulated with xstat() by passing
-AT_SYMLINK_NOFOLLOW in flags.
-
-AT_FORCE_ATTR_SYNC can also be set in flags.  This will require a network
-filesystem to synchronise its attributes with the server.
-
-When the system call is executed, the request_mask bitmask is read from the
-parameter block to work out what the user is requesting.  If params is NULL,
-then request_mask will be assumed to be XSTAT_REQUEST__GET_ANYWAY.
-
-The request_mask should be set by the caller to specify extra results that the
-caller may desire.  These come in a number of classes:
-
- (0) dev, blksize.
-
-     These are local data and are always available.
 
- (1) mode, nlinks, uid, gid, [amc]time, ino, size, blocks.
-
-     These will be returned whether the caller asks for them or not.  The
-     corresponding bits in result_mask will be set to indicate their presence.
-
-     If the caller didn't ask for them, then they may be approximated.  For
-     example, NFS won't waste any time updating them from the server, unless as
-     a byproduct of updating something requested.
-
- (2) rdev.
-
-     As for class (1), but this won't be returned if the file is not a blockdev
-     or chardev.  The bit will be cleared if the value is not returned.
-
- (3) File creation time, inode generation and data version.
-
-     These will be returned if available whether the caller asked for them or
-     not.  The corresponding bits in result_mask will be set or cleared as
-     appropriate to indicate their presence.
-
-     If the caller didn't ask for them, then they may be approximated.  For
-     example, NFS won't waste any time updating them from the server, unless
-     as a byproduct of updating something requested.
-
- (4) Extra results.
-
-     These will only be returned if the caller asked for them by setting their
-     bits in request_mask.  They will be placed in the buffer after the xstat
-     struct in ascending result_mask bit order.  Any bit set in request_mask
-     mask will be left set in result_mask if the result is available and
-     cleared otherwise.
-
-     The pointer into the results list will be rounded up to the nearest 8-byte
-     boundary after each result is written in.  The size of each extra result
-     is specific to the definition for that result.
-
-     No extra results are currently defined.
-
-If the buffer is insufficiently big, the syscall returns the amount of space it
-will need to write the complete result set and returns a partial result in the
-buffer.
-
-At the moment, this will only work on x86_64 as it requires system calls to be
-wired up.
-
-
-===========
-FILESYSTEMS
-===========
-
-The following filesystems have been modified to make use of this facility:
-
- (*) Ext4.  This will return the creation time and inode version number for all
-     files.  It will, however, only return the data version number for
-     directories unless the I_VERSION option is set on the filesystem.
-
- (*) AFS.  This will return the vnode ID uniquifier as the inode version and
-     the AFS data version number as the data version.  There is no file
-     creation time available.
-
-     AFS should go to the server if AT_FORCE_ATTR_SYNC is specified.
-
- (*) NFS.  This will return the change attribute if NFSv4 only.  No other extra
-     values are returned at this time.
-
-     If AT_FORCE_ATTR_SYNC is set or mtime, ctime or data_version (NFSv4 only)
-     are asked for then the outstanding writes will be written to the server
-     first.
-
-     If AT_FORCE_ATTR_SYNC is set or atime is requested then the attributes
-     will be reread unconditionally, otherwise if any of data version (NFSv4
-     only) XSTAT_REQUEST__BASIC_STATS are requested, then the attributes will
-     be reread if the cached attributes have expired.
-
-
-=======
-TESTING
-=======
-
-The following test program can be used to test the xstat system call:
-
-	#define _GNU_SOURCE
-	#define _ATFILE_SOURCE
-	#include <stdio.h>
-	#include <stdlib.h>
-	#include <string.h>
-	#include <unistd.h>
-	#include <fcntl.h>
-	#include <time.h>
-	#include <sys/syscall.h>
-	#include <sys/stat.h>
-	#include <sys/types.h>
-
-	#define AT_FORCE_ATTR_SYNC	0x800
-
-	struct xstat_parameters {
-		unsigned long long	request_mask;
-	#define XSTAT_REQUEST_MODE		0x00000001ULL
-	#define XSTAT_REQUEST_NLINK		0x00000002ULL
-	#define XSTAT_REQUEST_UID		0x00000004ULL
-	#define XSTAT_REQUEST_GID		0x00000008ULL
-	#define XSTAT_REQUEST_RDEV		0x00000010ULL
-	#define XSTAT_REQUEST_ATIME		0x00000020ULL
-	#define XSTAT_REQUEST_MTIME		0x00000040ULL
-	#define XSTAT_REQUEST_CTIME		0x00000080ULL
-	#define XSTAT_REQUEST_INO		0x00000100ULL
-	#define XSTAT_REQUEST_SIZE		0x00000200ULL
-	#define XSTAT_REQUEST_BLOCKS		0x00000400ULL
-	#define XSTAT_REQUEST__BASIC_STATS	0x000007ffULL
-	#define XSTAT_REQUEST_BTIME		0x00000800ULL
-	#define XSTAT_REQUEST_GEN		0x00001000ULL
-	#define XSTAT_REQUEST_DATA_VERSION	0x00002000ULL
-	#define XSTAT_REQUEST__EXTENDED_STATS	0x00003fffULL
-	#define XSTAT_REQUEST__ALL_STATS	0x00003fffULL
-	};
-
-	struct xstat_dev {
-		unsigned int	major;
-		unsigned int	minor;
-	};
-
-	struct xstat_time {
-		unsigned long long	tv_sec;
-		unsigned long long	tv_nsec;
-	};
-
-	struct xstat {
-		unsigned int		st_mode;
-		unsigned int		st_nlink;
-		unsigned int		st_uid;
-		unsigned int		st_gid;
-		struct xstat_dev	st_rdev;
-		struct xstat_dev	st_dev;
-		struct xstat_time	st_atim;
-		struct xstat_time	st_mtim;
-		struct xstat_time	st_ctim;
-		struct xstat_time	st_btim;
-		unsigned long long	st_ino;
-		unsigned long long	st_size;
-		unsigned long long	st_blksize;
-		unsigned long long	st_blocks;
-		unsigned long long	st_gen;
-		unsigned long long	st_data_version;
-		unsigned long long	st_result_mask;
-		unsigned long long	st_extra_results[0];
-	};
-
-	#define __NR_xstat				300
-	#define __NR_fxstat				301
-
-	static __attribute__((unused))
-	ssize_t xstat(int dfd, const char *filename, unsigned flags,
-		      struct xstat_parameters *params,
-		      struct xstat *buffer, size_t bufsize)
-	{
-		return syscall(__NR_xstat, dfd, filename, flags,
-			       params, buffer, bufsize);
-	}
-
-	static __attribute__((unused))
-	ssize_t fxstat(int fd, unsigned flags,
-		       struct xstat_parameters *params,
-		       struct xstat *buffer, size_t bufsize)
-	{
-		return syscall(__NR_fxstat, fd, flags,
-			       params, buffer, bufsize);
-	}
-
-	static void print_time(const char *field, const struct xstat_time *xstm)
-	{
-		struct tm tm;
-		time_t tim;
-		char buffer[100];
-		int len;
-
-		tim = xstm->tv_sec;
-		if (!localtime_r(&tim, &tm)) {
-			perror("localtime_r");
-			exit(1);
-		}
-		len = strftime(buffer, 100, "%F %T", &tm);
-		if (len == 0) {
-			perror("strftime");
-			exit(1);
-		}
-		printf("%s", field);
-		fwrite(buffer, 1, len, stdout);
-		printf(".%09llu", xstm->tv_nsec);
-		len = strftime(buffer, 100, "%z", &tm);
-		if (len == 0) {
-			perror("strftime2");
-			exit(1);
-		}
-		fwrite(buffer, 1, len, stdout);
-		printf("\n");
-	}
-
-	static void dump_xstat(struct xstat *xst)
-	{
-		char buffer[256], ft;
-
-		printf("results=%llx\n", xst->st_result_mask);
-
-		printf(" ");
-		if (xst->st_result_mask & XSTAT_REQUEST_SIZE)
-			printf(" Size: %-15llu", xst->st_size);
-		if (xst->st_result_mask & XSTAT_REQUEST_BLOCKS)
-			printf(" Blocks: %-10llu", xst->st_blocks);
-		printf(" IO Block: %-6llu ", xst->st_blksize);
-		if (xst->st_result_mask & XSTAT_REQUEST_MODE) {
-			switch (xst->st_mode & S_IFMT) {
-			case S_IFIFO:	printf(" FIFO\n");			ft = 'p'; break;
-			case S_IFCHR:	printf(" character special file\n");	ft = 'c'; break;
-			case S_IFDIR:	printf(" directory\n");			ft = 'd'; break;
-			case S_IFBLK:	printf(" block special file\n");	ft = 'b'; break;
-			case S_IFREG:	printf(" regular file\n");		ft = '-'; break;
-			case S_IFLNK:	printf(" symbolic link\n");		ft = 'l'; break;
-			case S_IFSOCK:	printf(" socket\n");			ft = 's'; break;
-			default:
-				printf("unknown type (%o)\n", xst->st_mode & S_IFMT);
-				ft = '?';
-				break;
-			}
-		}
-
-		sprintf(buffer, "%02x:%02x", xst->st_dev.major, xst->st_dev.minor);
-		printf("Device: %-15s", buffer);
-		if (xst->st_result_mask & XSTAT_REQUEST_INO)
-			printf(" Inode: %-11llu", xst->st_ino);
-		if (xst->st_result_mask & XSTAT_REQUEST_SIZE)
-			printf(" Links: %-5u", xst->st_nlink);
-		if (xst->st_result_mask & XSTAT_REQUEST_RDEV)
-			printf(" Device type: %u,%u",
-			       xst->st_rdev.major, xst->st_rdev.minor);
-		printf("\n");
-
-		if (xst->st_result_mask & XSTAT_REQUEST_MODE)
-			printf("Access: (%04o/%c%c%c%c%c%c%c%c%c%c)  ",
-			       xst->st_mode & 07777,
-			       ft,
-			       xst->st_mode & S_IRUSR ? 'r' : '-',
-			       xst->st_mode & S_IWUSR ? 'w' : '-',
-			       xst->st_mode & S_IXUSR ? 'x' : '-',
-			       xst->st_mode & S_IRGRP ? 'r' : '-',
-			       xst->st_mode & S_IWGRP ? 'w' : '-',
-			       xst->st_mode & S_IXGRP ? 'x' : '-',
-			       xst->st_mode & S_IROTH ? 'r' : '-',
-			       xst->st_mode & S_IWOTH ? 'w' : '-',
-			       xst->st_mode & S_IXOTH ? 'x' : '-');
-		if (xst->st_result_mask & XSTAT_REQUEST_UID)
-			printf("Uid: %d   \n", xst->st_uid);
-		if (xst->st_result_mask & XSTAT_REQUEST_GID)
-			printf("Gid: %u\n", xst->st_gid);
-
-		if (xst->st_result_mask & XSTAT_REQUEST_ATIME)
-			print_time("Access: ", &xst->st_atim);
-		if (xst->st_result_mask & XSTAT_REQUEST_MTIME)
-			print_time("Modify: ", &xst->st_mtim);
-		if (xst->st_result_mask & XSTAT_REQUEST_CTIME)
-			print_time("Change: ", &xst->st_ctim);
-		if (xst->st_result_mask & XSTAT_REQUEST_BTIME)
-			print_time("Create: ", &xst->st_btim);
-
-		if (xst->st_result_mask & XSTAT_REQUEST_GEN)
-			printf("Inode version: %llxh\n", xst->st_gen);
-		if (xst->st_result_mask & XSTAT_REQUEST_DATA_VERSION)
-			printf("Data version: %llxh\n", xst->st_data_version);
-	}
-
-	int main(int argc, char **argv)
-	{
-		struct xstat_parameters params;
-		struct xstat xst;
-		int ret, atflag = AT_SYMLINK_NOFOLLOW;
-
-		unsigned long long query =
-			XSTAT_REQUEST__BASIC_STATS |
-			XSTAT_REQUEST_BTIME |
-			XSTAT_REQUEST_GEN |
-			XSTAT_REQUEST_DATA_VERSION;
-
-		for (argv++; *argv; argv++) {
-			if (strcmp(*argv, "-F") == 0) {
-				atflag |= AT_FORCE_ATTR_SYNC;
-				continue;
-			}
-			if (strcmp(*argv, "-L") == 0) {
-				atflag &= ~AT_SYMLINK_NOFOLLOW;
-				continue;
-			}
-			if (strcmp(*argv, "-O") == 0) {
-				query &= ~XSTAT_REQUEST__BASIC_STATS;
-				continue;
-			}
-
-			memset(&xst, 0xbf, sizeof(xst));
-			params.request_mask = query;
-			ret = xstat(AT_FDCWD, *argv, atflag, &params, &xst, sizeof(xst));
-			printf("xstat(%s) = %d\n", *argv, ret);
-			if (ret < 0) {
-				perror(*argv);
-				exit(1);
-			}
-
-			dump_xstat(&xst);
-		}
-		return 0;
-	}
-
-Just compile and run, passing it paths to the files you want to examine:
-
-	[root@andromeda ~]# /tmp/xstat -O /dev/tty
-	xstat(/dev/tty) = 152
-	results=7ff
-	  Size: 0               Blocks: 0          IO Block: 4096    character special file
-	Device: 00:0f           Inode: 246         Links: 1     Device type: 5,0
-	Access: (0666/crw-rw-rw-)  Uid: 0
-	Gid: 5
-	Access: 2010-06-30 16:25:01.813517001+0100
-	Modify: 2010-06-30 16:25:01.813517001+0100
-	Change: 2010-06-30 16:25:01.813517001+0100
-
-	[root@andromeda ~]# /tmp/xstat /var/cache/fscache/cache/
-	xstat(/var/cache/fscache/cache/) = 152
-	results=3fef
-	  Size: 4096            Blocks: 16         IO Block: 4096    directory
-	Device: 08:06           Inode: 130561      Links: 3
-	Access: (0700/drwx------)  Uid: 0
-	Gid: 0
-	Access: 2010-06-29 18:16:33.680703545+0100
-	Modify: 2010-06-29 18:16:20.132786632+0100
-	Change: 2010-06-29 18:16:20.132786632+0100
-	Create: 2010-06-25 15:17:39.471199293+0100
-	Inode version: f585ab70h
-	Data version: 2h
-
-Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-
- arch/x86/include/asm/unistd_32.h |    4 +
- arch/x86/include/asm/unistd_64.h |    4 +
- fs/afs/inode.c                   |   11 +-
- fs/ecryptfs/inode.c              |    2 
- fs/ext4/ext4.h                   |    2 
- fs/ext4/file.c                   |    2 
- fs/ext4/inode.c                  |   27 +++++-
- fs/ext4/namei.c                  |    2 
- fs/ext4/symlink.c                |    2 
- fs/nfs/inode.c                   |   46 +++++++---
- fs/nfsd/nfs3proc.c               |    2 
- fs/nfsd/nfs3xdr.c                |    4 +
- fs/nfsd/nfs4xdr.c                |    4 +
- fs/nfsd/nfsproc.c                |    6 +
- fs/nfsd/nfsxdr.c                 |    2 
- fs/stat.c                        |  175 ++++++++++++++++++++++++++++++++++----
- include/linux/fcntl.h            |    1 
- include/linux/fs.h               |    2 
- include/linux/stat.h             |  103 ++++++++++++++++++++++
- include/linux/syscalls.h         |    9 ++
- 20 files changed, 368 insertions(+), 42 deletions(-)
-
-diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
-index beb9b5f..a9953cc 100644
---- a/arch/x86/include/asm/unistd_32.h
-+++ b/arch/x86/include/asm/unistd_32.h
-@@ -343,10 +343,12 @@
- #define __NR_rt_tgsigqueueinfo	335
- #define __NR_perf_event_open	336
- #define __NR_recvmmsg		337
-+#define __NR_xstat		338
-+#define __NR_fxstat		339
- 
- #ifdef __KERNEL__
- 
--#define NR_syscalls 338
-+#define NR_syscalls 340
- 
- #define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index ff4307b..c90d240 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -663,6 +663,10 @@ __SYSCALL(__NR_rt_tgsigqueueinfo, sys_rt_tgsigqueueinfo)
- __SYSCALL(__NR_perf_event_open, sys_perf_event_open)
- #define __NR_recvmmsg				299
- __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
-+#define __NR_xstat				300
-+__SYSCALL(__NR_xstat, sys_xstat)
-+#define __NR_fxstat				301
-+__SYSCALL(__NR_fxstat, sys_fxstat)
- 
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/fs/afs/inode.c b/fs/afs/inode.c
-index ee3190a..f624c5a 100644
---- a/fs/afs/inode.c
-+++ b/fs/afs/inode.c
-@@ -300,16 +300,17 @@ error_unlock:
- /*
-  * read the attributes of an inode
-  */
--int afs_getattr(struct vfsmount *mnt, struct dentry *dentry,
--		      struct kstat *stat)
-+int afs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- {
--	struct inode *inode;
--
--	inode = dentry->d_inode;
-+	struct inode *inode = dentry->d_inode;
- 
- 	_enter("{ ino=%lu v=%u }", inode->i_ino, inode->i_generation);
- 
- 	generic_fillattr(inode, stat);
-+
-+	stat->result_mask |= XSTAT_REQUEST_GEN | XSTAT_REQUEST_DATA_VERSION;
-+	stat->gen = inode->i_generation;
-+	stat->data_version = inode->i_version;
- 	return 0;
- }
- 
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index 31ef525..0b02272 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -994,6 +994,8 @@ int ecryptfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 	struct kstat lower_stat;
- 	int rc;
- 
-+	lower_stat.query_flags = stat->query_flags;
-+	lower_stat.request_mask = stat->request_mask | XSTAT_REQUEST_BLOCKS;
- 	rc = vfs_getattr(ecryptfs_dentry_to_lower_mnt(dentry),
- 			 ecryptfs_dentry_to_lower(dentry), &lower_stat);
- 	if (!rc) {
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 19a4de5..96823f3 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1571,6 +1571,8 @@ extern int  ext4_write_inode(struct inode *, struct writeback_control *);
- extern int  ext4_setattr(struct dentry *, struct iattr *);
- extern int  ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 				struct kstat *stat);
-+extern int  ext4_file_getattr(struct vfsmount *mnt, struct dentry *dentry,
-+				struct kstat *stat);
- extern void ext4_delete_inode(struct inode *);
- extern int  ext4_sync_inode(handle_t *, struct inode *);
- extern void ext4_dirty_inode(struct inode *);
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 5313ae4..18c29ab 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -150,7 +150,7 @@ const struct file_operations ext4_file_operations = {
- const struct inode_operations ext4_file_inode_operations = {
- 	.truncate	= ext4_truncate,
- 	.setattr	= ext4_setattr,
--	.getattr	= ext4_getattr,
-+	.getattr	= ext4_file_getattr,
- #ifdef CONFIG_EXT4_FS_XATTR
- 	.setxattr	= generic_setxattr,
- 	.getxattr	= generic_getxattr,
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 42272d6..f9a730a 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -5550,12 +5550,33 @@ err_out:
- int ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 		 struct kstat *stat)
- {
--	struct inode *inode;
--	unsigned long delalloc_blocks;
-+	struct inode *inode = dentry->d_inode;
- 
--	inode = dentry->d_inode;
- 	generic_fillattr(inode, stat);
- 
-+	stat->result_mask |= XSTAT_REQUEST_BTIME;
-+	stat->btime.tv_sec = EXT4_I(inode)->i_crtime.tv_sec;
-+	stat->btime.tv_nsec = EXT4_I(inode)->i_crtime.tv_nsec;
-+
-+	if (inode->i_ino != EXT4_ROOT_INO) {
-+		stat->result_mask |= XSTAT_REQUEST_GEN;
-+		stat->gen = inode->i_generation;
-+	}
-+	if (S_ISDIR(inode->i_mode) || test_opt(inode->i_sb, I_VERSION)) {
-+		stat->result_mask |= XSTAT_REQUEST_DATA_VERSION;
-+		stat->data_version = inode->i_version;
-+	}
-+	return 0;
-+}
-+
-+int ext4_file_getattr(struct vfsmount *mnt, struct dentry *dentry,
-+		      struct kstat *stat)
-+{
-+	struct inode *inode = dentry->d_inode;
-+	unsigned long delalloc_blocks;
-+
-+	ext4_getattr(mnt, dentry, stat);
-+
- 	/*
- 	 * We can't update i_blocks if the block allocation is delayed
- 	 * otherwise in the case of system crash before the real block
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index a43e661..0f776c7 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2542,6 +2542,7 @@ const struct inode_operations ext4_dir_inode_operations = {
- 	.mknod		= ext4_mknod,
- 	.rename		= ext4_rename,
- 	.setattr	= ext4_setattr,
-+	.getattr	= ext4_getattr,
- #ifdef CONFIG_EXT4_FS_XATTR
- 	.setxattr	= generic_setxattr,
- 	.getxattr	= generic_getxattr,
-@@ -2554,6 +2555,7 @@ const struct inode_operations ext4_dir_inode_operations = {
- 
- const struct inode_operations ext4_special_inode_operations = {
- 	.setattr	= ext4_setattr,
-+	.getattr	= ext4_getattr,
- #ifdef CONFIG_EXT4_FS_XATTR
- 	.setxattr	= generic_setxattr,
- 	.getxattr	= generic_getxattr,
-diff --git a/fs/ext4/symlink.c b/fs/ext4/symlink.c
-index ed9354a..d8fe7fb 100644
---- a/fs/ext4/symlink.c
-+++ b/fs/ext4/symlink.c
-@@ -35,6 +35,7 @@ const struct inode_operations ext4_symlink_inode_operations = {
- 	.follow_link	= page_follow_link_light,
- 	.put_link	= page_put_link,
- 	.setattr	= ext4_setattr,
-+	.getattr	= ext4_getattr,
- #ifdef CONFIG_EXT4_FS_XATTR
- 	.setxattr	= generic_setxattr,
- 	.getxattr	= generic_getxattr,
-@@ -47,6 +48,7 @@ const struct inode_operations ext4_fast_symlink_inode_operations = {
- 	.readlink	= generic_readlink,
- 	.follow_link	= ext4_follow_link,
- 	.setattr	= ext4_setattr,
-+	.getattr	= ext4_getattr,
- #ifdef CONFIG_EXT4_FS_XATTR
- 	.setxattr	= generic_setxattr,
- 	.getxattr	= generic_getxattr,
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 099b351..8c6de96 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -495,11 +495,21 @@ void nfs_setattr_update_inode(struct inode *inode, struct iattr *attr)
- int nfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- {
- 	struct inode *inode = dentry->d_inode;
-+	unsigned force = stat->query_flags & AT_FORCE_ATTR_SYNC;
- 	int need_atime = NFS_I(inode)->cache_validity & NFS_INO_INVALID_ATIME;
- 	int err;
- 
--	/* Flush out writes to the server in order to update c/mtime.  */
--	if (S_ISREG(inode->i_mode)) {
-+	if (NFS_SERVER(inode)->nfs_client->rpc_ops->version < 4)
-+		stat->request_mask &= ~XSTAT_REQUEST_DATA_VERSION;
-+
-+	/* Flush out writes to the server in order to update c/mtime
-+	 * or data version if the user wants them */
-+	if ((force || stat->request_mask & (XSTAT_REQUEST_MTIME |
-+					    XSTAT_REQUEST_CTIME |
-+					    XSTAT_REQUEST_DATA_VERSION
-+					    )) &&
-+	    S_ISREG(inode->i_mode)
-+	    ) {
- 		err = filemap_write_and_wait(inode->i_mapping);
- 		if (err)
- 			goto out;
-@@ -514,18 +524,30 @@ int nfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- 	 *  - NFS never sets MS_NOATIME or MS_NODIRATIME so there is
- 	 *    no point in checking those.
- 	 */
-- 	if ((mnt->mnt_flags & MNT_NOATIME) ||
-- 	    ((mnt->mnt_flags & MNT_NODIRATIME) && S_ISDIR(inode->i_mode)))
-+	if (!(stat->request_mask & XSTAT_REQUEST_ATIME) ||
-+	    (mnt->mnt_flags & MNT_NOATIME) ||
-+	    ((mnt->mnt_flags & MNT_NODIRATIME) && S_ISDIR(inode->i_mode)))
- 		need_atime = 0;
- 
--	if (need_atime)
--		err = __nfs_revalidate_inode(NFS_SERVER(inode), inode);
--	else
--		err = nfs_revalidate_inode(NFS_SERVER(inode), inode);
--	if (!err) {
--		generic_fillattr(inode, stat);
--		stat->ino = nfs_compat_user_ino64(NFS_FILEID(inode));
-+	if (force || stat->request_mask & (XSTAT_REQUEST__BASIC_STATS |
-+					   XSTAT_REQUEST_DATA_VERSION)
-+	    ) {
-+		if (force || need_atime)
-+			err = __nfs_revalidate_inode(NFS_SERVER(inode), inode);
-+		else
-+			err = nfs_revalidate_inode(NFS_SERVER(inode), inode);
-+		if (err)
-+			goto out;
- 	}
-+
-+	generic_fillattr(inode, stat);
-+	stat->ino = nfs_compat_user_ino64(NFS_FILEID(inode));
-+
-+	if (stat->request_mask & XSTAT_REQUEST_DATA_VERSION) {
-+		stat->data_version = NFS_I(inode)->change_attr;
-+		stat->result_mask |= XSTAT_REQUEST_DATA_VERSION;
-+	}
-+
- out:
- 	return err;
- }
-@@ -770,7 +792,7 @@ int nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
- static int nfs_invalidate_mapping(struct inode *inode, struct address_space *mapping)
- {
- 	struct nfs_inode *nfsi = NFS_I(inode);
--	
-+
- 	if (mapping->nrpages != 0) {
- 		int ret = invalidate_inode_pages2(mapping);
- 		if (ret < 0)
-diff --git a/fs/nfsd/nfs3proc.c b/fs/nfsd/nfs3proc.c
-index 3d68f45..310ff05 100644
---- a/fs/nfsd/nfs3proc.c
-+++ b/fs/nfsd/nfs3proc.c
-@@ -55,6 +55,8 @@ nfsd3_proc_getattr(struct svc_rqst *rqstp, struct nfsd_fhandle  *argp,
- 	if (nfserr)
- 		RETURN_STATUS(nfserr);
- 
-+	resp->stat.query_flags = 0;
-+	resp->stat.request_mask = XSTAT_REQUEST__EXTENDED_STATS;
- 	err = vfs_getattr(resp->fh.fh_export->ex_path.mnt,
- 			  resp->fh.fh_dentry, &resp->stat);
- 	nfserr = nfserrno(err);
-diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
-index 2a533a0..eaa3c3b 100644
---- a/fs/nfsd/nfs3xdr.c
-+++ b/fs/nfsd/nfs3xdr.c
-@@ -205,6 +205,8 @@ encode_post_op_attr(struct svc_rqst *rqstp, __be32 *p, struct svc_fh *fhp)
- 	        int err;
- 		struct kstat stat;
- 
-+		stat.query_flags = 0;
-+		stat.request_mask = XSTAT_REQUEST__EXTENDED_STATS;
- 		err = vfs_getattr(fhp->fh_export->ex_path.mnt, dentry, &stat);
- 		if (!err) {
- 			*p++ = xdr_one;		/* attributes follow */
-@@ -257,6 +259,8 @@ void fill_post_wcc(struct svc_fh *fhp)
- 	if (fhp->fh_post_saved)
- 		printk("nfsd: inode locked twice during operation.\n");
- 
-+	fhp->fh_post_attr.query_flags = 0;
-+	fhp->fh_post_attr.request_mask = XSTAT_REQUEST__EXTENDED_STATS;
- 	err = vfs_getattr(fhp->fh_export->ex_path.mnt, fhp->fh_dentry,
- 			&fhp->fh_post_attr);
- 	fhp->fh_post_change = fhp->fh_dentry->d_inode->i_version;
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index ac17a70..e9d1b59 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -1769,6 +1769,8 @@ nfsd4_encode_fattr(struct svc_fh *fhp, struct svc_export *exp,
- 			goto out;
- 	}
- 
-+	stat.query_flags = 0;
-+	stat.request_mask = XSTAT_REQUEST__EXTENDED_STATS;
- 	err = vfs_getattr(exp->ex_path.mnt, dentry, &stat);
- 	if (err)
- 		goto out_nfserr;
-@@ -2139,6 +2141,8 @@ out_acl:
- 				if (path.dentry != path.mnt->mnt_root)
- 					break;
- 			}
-+			stat.query_flags = 0;
-+			stat.request_mask = XSTAT_REQUEST__EXTENDED_STATS;
- 			err = vfs_getattr(path.mnt, path.dentry, &stat);
- 			path_put(&path);
- 			if (err)
-diff --git a/fs/nfsd/nfsproc.c b/fs/nfsd/nfsproc.c
-index a047ad6..7c0e74b 100644
---- a/fs/nfsd/nfsproc.c
-+++ b/fs/nfsd/nfsproc.c
-@@ -26,6 +26,8 @@ static __be32
- nfsd_return_attrs(__be32 err, struct nfsd_attrstat *resp)
- {
- 	if (err) return err;
-+	resp->stat.query_flags = 0;
-+	resp->stat.request_mask = XSTAT_REQUEST__EXTENDED_STATS;
- 	return nfserrno(vfs_getattr(resp->fh.fh_export->ex_path.mnt,
- 				    resp->fh.fh_dentry,
- 				    &resp->stat));
-@@ -34,6 +36,8 @@ static __be32
- nfsd_return_dirop(__be32 err, struct nfsd_diropres *resp)
- {
- 	if (err) return err;
-+	resp->stat.query_flags = 0;
-+	resp->stat.request_mask = XSTAT_REQUEST__EXTENDED_STATS;
- 	return nfserrno(vfs_getattr(resp->fh.fh_export->ex_path.mnt,
- 				    resp->fh.fh_dentry,
- 				    &resp->stat));
-@@ -150,6 +154,8 @@ nfsd_proc_read(struct svc_rqst *rqstp, struct nfsd_readargs *argp,
- 				  &resp->count);
- 
- 	if (nfserr) return nfserr;
-+	resp->stat.query_flags = 0;
-+	resp->stat.request_mask = XSTAT_REQUEST__EXTENDED_STATS;
- 	return nfserrno(vfs_getattr(resp->fh.fh_export->ex_path.mnt,
- 				    resp->fh.fh_dentry,
- 				    &resp->stat));
-diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
-index 4ce005d..a595fb6 100644
---- a/fs/nfsd/nfsxdr.c
-+++ b/fs/nfsd/nfsxdr.c
-@@ -197,6 +197,8 @@ encode_fattr(struct svc_rqst *rqstp, __be32 *p, struct svc_fh *fhp,
- __be32 *nfs2svc_encode_fattr(struct svc_rqst *rqstp, __be32 *p, struct svc_fh *fhp)
- {
- 	struct kstat stat;
-+	stat.query_flags = 0;
-+	stat.request_mask = XSTAT_REQUEST__EXTENDED_STATS;
- 	vfs_getattr(fhp->fh_export->ex_path.mnt, fhp->fh_dentry, &stat);
- 	return encode_fattr(rqstp, p, fhp, &stat);
- }
-diff --git a/fs/stat.c b/fs/stat.c
-index 12e90e2..2fb1527 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -33,6 +33,9 @@ void generic_fillattr(struct inode *inode, struct kstat *stat)
- 	stat->size = i_size_read(inode);
- 	stat->blocks = inode->i_blocks;
- 	stat->blksize = (1 << inode->i_blkbits);
-+	stat->result_mask |= XSTAT_REQUEST__BASIC_STATS & ~XSTAT_REQUEST_RDEV;
-+	if (unlikely(S_ISBLK(stat->mode) || S_ISCHR(stat->mode)))
-+		stat->result_mask |= XSTAT_REQUEST_RDEV;
- }
- 
- EXPORT_SYMBOL(generic_fillattr);
-@@ -42,6 +45,8 @@ int vfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- 	struct inode *inode = dentry->d_inode;
- 	int retval;
- 
-+	stat->result_mask = 0;
-+
- 	retval = security_inode_getattr(mnt, dentry);
- 	if (retval)
- 		return retval;
-@@ -55,41 +60,64 @@ int vfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- 
- EXPORT_SYMBOL(vfs_getattr);
- 
--int vfs_fstat(unsigned int fd, struct kstat *stat)
-+/*
-+ * VFS entrypoint to get extended stats by file descriptor
-+ */
-+int vfs_fxstat(unsigned int fd, int flags, struct kstat *stat)
- {
- 	struct file *f = fget(fd);
- 	int error = -EBADF;
- 
-+	if (flags & ~KSTAT_QUERY_FLAGS)
-+		return -EINVAL;
-+	stat->query_flags = flags;
-+
- 	if (f) {
- 		error = vfs_getattr(f->f_path.mnt, f->f_path.dentry, stat);
- 		fput(f);
- 	}
- 	return error;
- }
-+EXPORT_SYMBOL(vfs_fxstat);
-+
-+int vfs_fstat(unsigned int fd, struct kstat *stat)
-+{
-+	stat->request_mask = XSTAT_REQUEST__BASIC_STATS;
-+	return vfs_fxstat(fd, 0, stat);
-+}
- EXPORT_SYMBOL(vfs_fstat);
- 
--int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
--		int flag)
-+/*
-+ * VFS entrypoint to get extended stats by filename
-+ */
-+int vfs_xstat(int dfd, const char __user *filename, int flags,
-+	      struct kstat *stat)
- {
- 	struct path path;
--	int error = -EINVAL;
--	int lookup_flags = 0;
-+	int error, lookup_flags;
- 
--	if ((flag & ~AT_SYMLINK_NOFOLLOW) != 0)
--		goto out;
-+	if (flags & ~(AT_SYMLINK_NOFOLLOW | KSTAT_QUERY_FLAGS))
-+		return -EINVAL;
- 
--	if (!(flag & AT_SYMLINK_NOFOLLOW))
--		lookup_flags |= LOOKUP_FOLLOW;
-+	stat->query_flags = flags;
-+	lookup_flags = (flags & AT_SYMLINK_NOFOLLOW) ? 0 : LOOKUP_FOLLOW;
- 
- 	error = user_path_at(dfd, filename, lookup_flags, &path);
--	if (error)
--		goto out;
--
--	error = vfs_getattr(path.mnt, path.dentry, stat);
--	path_put(&path);
--out:
-+	if (!error) {
-+		error = vfs_getattr(path.mnt, path.dentry, stat);
-+		path_put(&path);
-+	}
- 	return error;
- }
-+EXPORT_SYMBOL(vfs_xstat);
-+
-+int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
-+		int flags)
-+{
-+	stat->request_mask = XSTAT_REQUEST__BASIC_STATS;
-+	stat->query_flags = 0;
-+	return vfs_xstat(dfd, filename, flags, stat);
-+}
- EXPORT_SYMBOL(vfs_fstatat);
- 
- int vfs_stat(const char __user *name, struct kstat *stat)
-@@ -115,7 +143,7 @@ static int cp_old_stat(struct kstat *stat, struct __old_kernel_stat __user * sta
- {
- 	static int warncount = 5;
- 	struct __old_kernel_stat tmp;
--	
-+
- 	if (warncount > 0) {
- 		warncount--;
- 		printk(KERN_WARNING "VFS: Warning: %s using old stat() call. Recompile your binary.\n",
-@@ -140,7 +168,7 @@ static int cp_old_stat(struct kstat *stat, struct __old_kernel_stat __user * sta
- #if BITS_PER_LONG == 32
- 	if (stat->size > MAX_NON_LFS)
- 		return -EOVERFLOW;
--#endif	
-+#endif
- 	tmp.st_size = stat->size;
- 	tmp.st_atime = stat->atime.tv_sec;
- 	tmp.st_mtime = stat->mtime.tv_sec;
-@@ -222,7 +250,7 @@ static int cp_new_stat(struct kstat *stat, struct stat __user *statbuf)
- #if BITS_PER_LONG == 32
- 	if (stat->size > MAX_NON_LFS)
- 		return -EOVERFLOW;
--#endif	
-+#endif
- 	tmp.st_size = stat->size;
- 	tmp.st_atime = stat->atime.tv_sec;
- 	tmp.st_mtime = stat->mtime.tv_sec;
-@@ -408,6 +436,117 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
- }
- #endif /* __ARCH_WANT_STAT64 */
- 
-+/*
-+ * Get the xstat parameters if supplied
-+ */
-+static int xstat_get_params(struct xstat_parameters __user *_params,
-+			    struct kstat *stat)
-+{
-+	struct xstat_parameters params;
-+
-+	memset(stat, 0xde, sizeof(*stat));	// DEBUGGING
-+
-+	if (_params) {
-+		if (copy_from_user(&params, _params, sizeof(params)) != 0)
-+			return -EFAULT;
-+		stat->request_mask =
-+			params.request_mask & XSTAT_REQUEST__ALL_STATS;
-+	} else {
-+		stat->request_mask = XSTAT_REQUEST__EXTENDED_STATS;
-+	}
-+	stat->result_mask = 0;
-+	return 0;
-+}
-+
-+/*
-+ * copy the extended stats to userspace and return the amount of data written
-+ * into the buffer
-+ */
-+static long xstat_set_result(struct kstat *stat,
-+			     struct xstat __user *buffer, size_t bufsize)
-+{
-+	struct xstat tmp;
-+	size_t copy;
-+
-+	/* transfer the fixed results */
-+	memset(&tmp, 0, sizeof(tmp));
-+	tmp.st_result_mask	= stat->result_mask;
-+	tmp.st_mode		= stat->mode;
-+	tmp.st_nlink		= stat->nlink;
-+	tmp.st_uid		= stat->uid;
-+	tmp.st_gid		= stat->gid;
-+	tmp.st_blksize		= stat->blksize;
-+	tmp.st_rdev.major	= MAJOR(stat->rdev);
-+	tmp.st_rdev.minor	= MINOR(stat->rdev);
-+	tmp.st_dev.major	= MAJOR(stat->dev);
-+	tmp.st_dev.minor	= MINOR(stat->dev);
-+	tmp.st_atime.tv_sec	= stat->atime.tv_sec;
-+	tmp.st_atime.tv_nsec	= stat->atime.tv_nsec;
-+	tmp.st_mtime.tv_sec	= stat->mtime.tv_sec;
-+	tmp.st_mtime.tv_nsec	= stat->mtime.tv_nsec;
-+	tmp.st_ctime.tv_sec	= stat->ctime.tv_sec;
-+	tmp.st_ctime.tv_nsec	= stat->ctime.tv_nsec;
-+	tmp.st_ino		= stat->ino;
-+	tmp.st_size		= stat->size;
-+	tmp.st_blocks		= stat->blocks;
-+
-+	if (tmp.st_result_mask & XSTAT_REQUEST_BTIME) {
-+		tmp.st_btime.tv_sec	= stat->btime.tv_sec;
-+		tmp.st_btime.tv_nsec	= stat->btime.tv_nsec;
-+	}
-+	if (tmp.st_result_mask & XSTAT_REQUEST_GEN)
-+		tmp.st_gen		= stat->gen;
-+	if (tmp.st_result_mask & XSTAT_REQUEST_DATA_VERSION)
-+		tmp.st_data_version	= stat->data_version;
-+
-+	copy = sizeof(tmp);
-+	if (copy > bufsize)
-+		copy = bufsize;
-+	if (copy_to_user(buffer, &tmp, copy) != 0)
-+		return -EFAULT;
-+	return sizeof(tmp);
-+}
-+
-+/*
-+ * System call to get extended stats by path
-+ */
-+SYSCALL_DEFINE6(xstat,
-+		int, dfd, const char __user *, filename, unsigned, atflag,
-+		struct xstat_parameters __user *, params,
-+		struct xstat __user *, buffer, size_t, bufsize)
-+{
-+	struct kstat stat;
-+	int error;
-+
-+	error = xstat_get_params(params, &stat);
-+	if (error != 0)
-+		return error;
-+	error = vfs_xstat(dfd, filename, atflag, &stat);
-+	if (error)
-+		return error;
-+	return xstat_set_result(&stat, buffer, bufsize);
-+}
-+
-+/*
-+ * System call to get extended stats by file descriptor
-+ */
-+SYSCALL_DEFINE5(fxstat, unsigned int, fd, unsigned int, flags,
-+		struct xstat_parameters __user *, params,
-+		struct xstat __user *, buffer, size_t, bufsize)
-+{
-+	struct kstat stat;
-+	int error;
-+
-+	error = xstat_get_params(params, &stat);
-+	if (error < 0)
-+		return error;
-+	error = vfs_fxstat(fd, flags, &stat);
-+	if (error)
-+		return error;
-+
-+	return xstat_set_result(&stat, buffer, bufsize);
-+}
-+
- /* Caller is here responsible for sufficient locking (ie. inode->i_lock) */
- void __inode_add_bytes(struct inode *inode, loff_t bytes)
- {
-diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
-index afc00af..bcf8083 100644
---- a/include/linux/fcntl.h
-+++ b/include/linux/fcntl.h
-@@ -45,6 +45,7 @@
- #define AT_REMOVEDIR		0x200   /* Remove directory instead of
-                                            unlinking file.  */
- #define AT_SYMLINK_FOLLOW	0x400   /* Follow symbolic links.  */
-+#define AT_FORCE_ATTR_SYNC	0x800	/* Force the attributes to be sync'd with the server */
- 
- #ifdef __KERNEL__
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index a18bcea..9ce2119 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2343,6 +2343,8 @@ extern int vfs_stat(const char __user *, struct kstat *);
- extern int vfs_lstat(const char __user *, struct kstat *);
- extern int vfs_fstat(unsigned int, struct kstat *);
- extern int vfs_fstatat(int , const char __user *, struct kstat *, int);
-+extern int vfs_xstat(int, const char __user *, int, struct kstat *);
-+extern int vfs_xfstat(unsigned int, struct kstat *);
- 
- extern int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
- 		    unsigned long arg);
-diff --git a/include/linux/stat.h b/include/linux/stat.h
-index 611c398..e0b89e4 100644
---- a/include/linux/stat.h
-+++ b/include/linux/stat.h
-@@ -46,6 +46,99 @@
- 
- #endif
- 
-+/*
-+ * Extended stat structures
-+ */
-+struct xstat_parameters {
-+	/* Query request/result mask
-+	 *
-+	 * Bits should be set in request_mask to request particular items
-+	 * before calling xstat() or fxstat().
-+	 *
-+	 * For each item in the set XSTAT_REQUEST__EXTENDED_STATS:
-+	 *
-+	 * - if not available at all, the bit will be cleared before returning
-+	 *   and the field will be cleared; otherwise,
-+	 *
-+	 * - if AT_FORCE_ATTR_SYNC is set, then the datum will be synchronised
-+	 *   to the server and the bit will be set on return; otherwise,
-+	 *
-+	 * - if requested, the datum will be synchronised to a server or other
-+	 *   hardware if out of date before being returned, and the bit will be
-+	 *   set on return; otherwise,
-+	 *
-+	 * - if not requested, but available in approximate form without any
-+	 *   effort, it will be filled in anyway, and the bit will be set upon
-+	 *   return (it might not be up to date, however, and no attempt will
-+	 *   be made to synchronise the internal state first); otherwise,
-+	 *
-+	 * - the bit will be cleared before returning, and the field will be
-+         *   cleared.
-+	 *
-+	 * For each item not in the set XSTAT_REQUEST__EXTENDED_STATS
-+	 * 
-+	 * - if not available at all, the bit will be cleared, and no result
-+         *   data will be returned; otherwise,
-+	 *
-+	 * - if requested, the datum will be synchronised to a server or other
-+	 *   hardware before being appended if necessary, and the bit will be
-+	 *   set on return; otherwise,
-+	 * 
-+	 * - the bit will be cleared, and no result data will be returned.
-+	 *
-+	 * Items in XSTAT_REQUEST__BASIC_STATS may be marked unavailable on
-+	 * return, but they will have a value installed for compatibility
-+	 * purposes.
-+	 */
-+	unsigned long long	request_mask;
-+#define XSTAT_REQUEST_MODE		0x00000001ULL	/* want/got st_mode */
-+#define XSTAT_REQUEST_NLINK		0x00000002ULL	/* want/got st_nlink */
-+#define XSTAT_REQUEST_UID		0x00000004ULL	/* want/got st_uid */
-+#define XSTAT_REQUEST_GID		0x00000008ULL	/* want/got st_gid */
-+#define XSTAT_REQUEST_RDEV		0x00000010ULL	/* want/got st_rdev */
-+#define XSTAT_REQUEST_ATIME		0x00000020ULL	/* want/got st_atime */
-+#define XSTAT_REQUEST_MTIME		0x00000040ULL	/* want/got st_mtime */
-+#define XSTAT_REQUEST_CTIME		0x00000080ULL	/* want/got st_ctime */
-+#define XSTAT_REQUEST_INO		0x00000100ULL	/* want/got st_ino */
-+#define XSTAT_REQUEST_SIZE		0x00000200ULL	/* want/got st_size */
-+#define XSTAT_REQUEST_BLOCKS		0x00000400ULL	/* want/got st_blocks */
-+#define XSTAT_REQUEST__BASIC_STATS	0x000007ffULL	/* the stuff in the normal stat struct */
-+#define XSTAT_REQUEST_BTIME		0x00000800ULL	/* want/got st_btime */
-+#define XSTAT_REQUEST_GEN		0x00001000ULL	/* want/got st_gen */
-+#define XSTAT_REQUEST_DATA_VERSION	0x00002000ULL	/* want/got st_data_version */
-+#define XSTAT_REQUEST__EXTENDED_STATS	0x00003fffULL	/* the stuff in the xstat struct */
-+#define XSTAT_REQUEST__ALL_STATS	0x00003fffULL	/* the defined set of requestables */
-+};
-+
-+struct xstat_dev {
-+	unsigned int		major, minor;
-+};
-+
-+struct xstat_time {
-+	unsigned long long	tv_sec, tv_nsec;
-+};
-+
-+struct xstat {
-+	unsigned int		st_mode;	/* file mode */
-+	unsigned int		st_nlink;	/* number of hard links */
-+	unsigned int		st_uid;		/* user ID of owner */
-+	unsigned int		st_gid;		/* group ID of owner */
-+	struct xstat_dev	st_rdev;	/* device ID of special file */
-+	struct xstat_dev	st_dev;		/* ID of device containing file */
-+	struct xstat_time	st_atime;	/* last access time */
-+	struct xstat_time	st_mtime;	/* last data modification time */
-+	struct xstat_time	st_ctime;	/* last attribute change time */
-+	struct xstat_time	st_btime;	/* file creation time */
-+	unsigned long long	st_ino;		/* inode number */
-+	unsigned long long	st_size;	/* file size */
-+	unsigned long long	st_blksize;	/* block size for filesystem I/O */
-+	unsigned long long	st_blocks;	/* number of 512-byte blocks allocated */
-+	unsigned long long	st_gen;		/* inode generation number */
-+	unsigned long long	st_data_version; /* data version number */
-+	unsigned long long	st_result_mask;	/* what requests were written */
-+	unsigned long long	st_extra_results[0]; /* extra requested results */
-+};
-+
- #ifdef __KERNEL__
- #define S_IRWXUGO	(S_IRWXU|S_IRWXG|S_IRWXO)
- #define S_IALLUGO	(S_ISUID|S_ISGID|S_ISVTX|S_IRWXUGO)
-@@ -67,14 +160,20 @@ struct kstat {
- 	uid_t		uid;
- 	gid_t		gid;
- 	dev_t		rdev;
-+	unsigned int	query_flags;		/* operational flags */
-+#define KSTAT_QUERY_FLAGS (AT_FORCE_ATTR_SYNC)
- 	loff_t		size;
--	struct timespec  atime;
-+	struct timespec	atime;
- 	struct timespec	mtime;
- 	struct timespec	ctime;
-+	struct timespec	btime;			/* file creation time */
- 	unsigned long	blksize;
- 	unsigned long long	blocks;
-+	u64		request_mask;		/* what fields the user asked for */
-+	u64		result_mask;		/* what fields the user got */
-+	u64		gen;			/* inode generation */
-+	u64		data_version;
- };
- 
- #endif
--
- #endif
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 8812a63..5d68b4c 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -44,6 +44,8 @@ struct shmid_ds;
- struct sockaddr;
- struct stat;
- struct stat64;
-+struct xstat_parameters;
-+struct xstat;
- struct statfs;
- struct statfs64;
- struct __sysctl_args;
-@@ -824,4 +826,11 @@ asmlinkage long sys_mmap_pgoff(unsigned long addr, unsigned long len,
- 			unsigned long fd, unsigned long pgoff);
- asmlinkage long sys_old_mmap(struct mmap_arg_struct __user *arg);
- 
-+asmlinkage long sys_xstat(int, const char __user *, unsigned,
-+			  struct xstat_parameters __user *,
-+			  struct xstat __user *, size_t);
-+asmlinkage long sys_fxstat(unsigned, unsigned,
-+			   struct xstat_parameters __user *,
-+			   struct xstat __user *, size_t);
-+
- #endif
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
