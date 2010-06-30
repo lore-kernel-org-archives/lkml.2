@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab0F3OTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 10:19:54 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34778 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756113Ab0F3OTw (ORCPT
+	id S1756224Ab0F3OUr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 10:20:47 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42018 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab0F3OUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 10:19:52 -0400
+	Wed, 30 Jun 2010 10:20:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=Ck2AIVoZI1fTgPxOJREG/izSV/KO9bK5iMr3wN/Aouc7o803qKZFALc6hBtHW4v2db
-         nyh5Sc+AwFH+qJVqgTZkGX7U/NZMSXbOWMFLnjB/yiW07pah8yXy6cCmZVgBqKDWUOGi
-         pYN5NFtUirnEqBw78517SAEJcfNxFlRlfOO7Q=
-Date: Wed, 30 Jun 2010 23:19:44 +0900
+        b=Ndq9gQaeSGVXaNXrCBgaw97Dp9pGa36I71z77CqurqFe4RDIQcoIryzDkCK66EVMKs
+         uk8tvH321oB1nzRZwN8KHqX1XWoFf9ouoP8y5L2EznddRRiWI/4INjXnGZXeSR8MZkna
+         sObq53p9jcOr3HzDeCxzo+9UBwgNmi1slcLVQ=
+Date: Wed, 30 Jun 2010 23:20:34 +0900
 From: Minchan Kim <minchan.kim@gmail.com>
 To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        David Rientjes <rientjes@google.com>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 03/11] oom: make oom_unkillable_task() helper function
-Message-ID: <20100630141944.GE15644@barrios-desktop>
+Subject: Re: [PATCH 07/11] oom: move OOM_DISABLE check from oom_kill_task
+ to out_of_memory()
+Message-ID: <20100630142034.GF15644@barrios-desktop>
 References: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
- <20100630182752.AA4E.A69D9226@jp.fujitsu.com>
+ <20100630183059.AA5C.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100630182752.AA4E.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100630183059.AA5C.A69D9226@jp.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 06:28:37PM +0900, KOSAKI Motohiro wrote:
-> Now, we have the same task check in two places. Unify it.
+On Wed, Jun 30, 2010 at 06:31:36PM +0900, KOSAKI Motohiro wrote:
+> Now, if oom_kill_allocating_task is enabled and current have
+> OOM_DISABLED, following printk in oom_kill_process is called twice.
 > 
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/oom_kill.c |   33 ++++++++++++++++++++++-----------
->  1 files changed, 22 insertions(+), 11 deletions(-)
+>     pr_err("%s: Kill process %d (%s) score %lu or sacrifice child\n",
+>             message, task_pid_nr(p), p->comm, points);
 > 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index dc8589e..a4a5439 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -101,6 +101,26 @@ static struct task_struct *find_lock_task_mm(struct task_struct *p)
->  	return NULL;
->  }
->  
-> +/* return true if the task is not adequate as candidate victim task. */
-> +static bool oom_unkillable_task(struct task_struct *p, struct mem_cgroup *mem,
-> +			   const nodemask_t *nodemask)
-> +{
-> +	if (is_global_init(p))
-> +		return true;
-> +	if (p->flags & PF_KTHREAD)
-> +		return true;
-> +
-> +	/* When mem_cgroup_out_of_memory() and p is not member of the group */
-> +	if (mem && !task_in_mem_cgroup(p, mem))
-> +		return true;
-> +
-> +	/* p may not have freeable memory in nodemask */
-> +	if (!has_intersects_mems_allowed(p, nodemask))
-> +		return true;
-> +
-> +	return false;
-> +}
-> +
+> So, OOM_DISABLE check should be more early.
 
-I returend this patch as review 7/11. 
-Why didn't you check p->signal->oom_adj == OOM_DISABLE in here?
-I don't figure out code after your patches are applied totally.
-But I think it would be check it in this function as function's name says.
-
+If we check it in oom_unkillable_task, we don't need this patch. 
 
 -- 
 Kind regards,
