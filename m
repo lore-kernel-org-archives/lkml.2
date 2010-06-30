@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab0F3I5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 04:57:37 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:39402 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754333Ab0F3I5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 04:57:36 -0400
-Date: Wed, 30 Jun 2010 18:57:11 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: npiggin@suse.de
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 38/52] fs: icache RCU free inodes
-Message-ID: <20100630085711.GH24712@dastard>
-References: <20100624030212.676457061@suse.de>
- <20100624030731.710413510@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100624030731.710413510@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754372Ab0F3I74 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 04:59:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17133 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753939Ab0F3I7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 04:59:54 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <201006301020.53978.arnd@arndb.de>
+References: <201006301020.53978.arnd@arndb.de> <20100629200259.23196.81509.stgit@warthog.procyon.org.uk> <20100629200315.23196.68742.stgit@warthog.procyon.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, smfrench@gmail.com,
+       jlayton@redhat.com, mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       sjayaraman@suse.de, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file stats available
+Date: Wed, 30 Jun 2010 09:59:41 +0100
+Message-ID: <25553.1277888381@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 24, 2010 at 01:02:50PM +1000, npiggin@suse.de wrote:
-> RCU free the struct inode. This will allow:
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-Rather than what it will allow, what are the constraints this
-imposes on allocating and freeing a struct inode?  e.g. XFS embeds
-the struct inode in a larger inode structure and does it's own
-allocation, caching and freeing of the larger structure outside of
-the VFS functionality.
+> Do we actually need the fxstat variant? IIRC, some *at syscalls just
+> operate on dfd when filename==NULL, which would be trivial to do here.
 
-Does this need to be converted to RCU? Do we need to do more
-initialisation of the struct inode than we currently do? What
-functions/call chains now implicitly require RCU freeing semantics
-on the struct inode for safe operation? What else do we need to be
-aware of?
+user_path_at() doesn't seem to work like that, so fstatat() doesn't.  It's a
+possibility though.
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+David
