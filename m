@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab0F3WDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 18:03:32 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39273 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602Ab0F3WDb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 18:03:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=hTgX3Ebrgb+Vb9eMBDuofYXTFEVZuC/5LPPpaoSAF55u2f0CMXTM7Thi7oFtWC07Iz
-         Ccfp5GW7sPuJvlJgIy2Wx1ox+ooELbRfHyVhm9bDF1IB4VvTUMeDURghdLLVrmn+AHY/
-         p15AiclckdSzugT2WTrJ3y5UC7B2Xi+K/kbOQ=
+	id S1757349Ab0F3WEq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 18:04:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6052 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754602Ab0F3WEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 18:04:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,515,1272870000"; 
+   d="scan'208";a="581597149"
+Message-ID: <4C2BBF7C.20004@intel.com>
+Date: Wed, 30 Jun 2010 15:04:44 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <41be9a8afe8951b4ad23d43fcb57aca9a662cf43.1277911346.git.siccegge@cs.fau.de>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
-	<41be9a8afe8951b4ad23d43fcb57aca9a662cf43.1277911346.git.siccegge@cs.fau.de>
-Date: Thu, 1 Jul 2010 00:03:29 +0200
-Message-ID: <AANLkTinHA5PsD_5i-YgRNSNzddsqc1JojDN5AvC9ot8C@mail.gmail.com>
-Subject: Re: [PATCH 33/33] Removing dead MACH_U300_USE_I2S_AS_MASTER
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Russell King <linux@arm.linux.org.uk>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Eric Miao <eric.y.miao@gmail.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chris Li <lkml@chrisli.org>
+CC: "Woodhouse, David" <david.woodhouse@intel.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	<4C29420D.2010406@intel.com>	<AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	<4C2A8879.8010000@intel.com>	<AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	<4C2AC55E.3040303@intel.com>	<AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	<1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>	<1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com> <AANLkTil5fCb9maq5qE-2txxaybGqVQSWEy8q0ppBsype@mail.gmail.com>
+In-Reply-To: <AANLkTil5fCb9maq5qE-2txxaybGqVQSWEy8q0ppBsype@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/30 Christoph Egger <siccegge@cs.fau.de>:
-
-> MACH_U300_USE_I2S_AS_MASTER doesn't exist in Kconfig, therefore
-> removing all references for it from the source code.
+On 6/30/2010 2:59 PM, Chris Li wrote:
+> On Wed, Jun 30, 2010 at 2:44 PM, Dan Williams<dan.j.williams@intel.com>  wrote:
+>>
+>> Chris, is there a BIOS update available for your platform?
 >
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> You mean the EFI firmware update? Nope.
+>
+> Do you think loading linux via EFI instead of boot camp (BIOS) will help?
+>
 
-I remember the pain of writing that code, but until I get around to merge that
-ancient driver I see no point in keeping it around, so:
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+...only if the EFI boot process hands Linux a correct (i.e. complete) 
+DMAR table.  I suspect native EFI and legacy BIOS boot would still end 
+up passing the same table, but I don't know for sure.
 
-Yours,
-Linus Walleij
+--
+Dan
