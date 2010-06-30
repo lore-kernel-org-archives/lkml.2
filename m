@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab0F3S2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 14:28:31 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:40939 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511Ab0F3S23 (ORCPT
+	id S1757027Ab0F3Sbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 14:31:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45930 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755575Ab0F3Sbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 14:28:29 -0400
-Date: Wed, 30 Jun 2010 11:28:29 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-       Wang Qi <qi.wang@intel.com>, Intel OTC <joel.clark@intel.com>,
-       Andrew <andrew.chih.howe.khor@intel.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
-Message-ID: <20100630182829.GJ29166@hexapodia.org>
-References: <4C204B0D.2030201@dsn.okisemi.com> <20100629233111.GA6357@hexapodia.org> <000301cb1819$439924b0$66f8800a@maildom.okisemi.com>
+	Wed, 30 Jun 2010 14:31:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000301cb1819$439924b0$66f8800a@maildom.okisemi.com>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTimmEi-3WF3pMcXmKiyElG9O7QLHNImPN0eJ05D3@mail.gmail.com>
+References: <AANLkTik3ax1SlAKRo6laMfACdzh6IUKLGSvMK4Gp9GY9@mail.gmail.com>
+	<alpine.LFD.2.00.1006071654290.4506@i5.linux-foundation.org>
+	<20100608004102.GQ31073@ZenIV.linux.org.uk>
+	<87pqzrexon.fsf@linux.vnet.ibm.com>
+	<871vbwe6lp.fsf@linux.vnet.ibm.com>
+	<AANLkTiksmwITS6aCuXXZGR916OTEBm9VQ1MSzzEt8F7S@mail.gmail.com>
+	<AANLkTikyqHtazndL_zBux7Zk0qZSJuNEvitHj8wkuSWW@mail.gmail.com>
+	<87mxuc91r2.fsf@linux.vnet.ibm.com>
+	<AANLkTimmEi-3WF3pMcXmKiyElG9O7QLHNImPN0eJ05D3@mail.gmail.com>
+Date: Wed, 30 Jun 2010 11:31:38 -0700
+Message-ID: <AANLkTinVdrY7AHFCjDIWAD0yLGhLYZwwHH3kKXBlkD5v@mail.gmail.com>
+Subject: Re: [V9fs-developer] [GIT PULL] 9p file system bug fixes for 
+	2.6.35-rc2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Latchesar Ionkov <lucho@ionkov.net>
+Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Eric Van Hensbergen <ericvh@gmail.com>,
+       V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+       Al Viro <viro@zeniv.linux.org.uk>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 02:58:25PM +0900, Masayuki Ohtake wrote:
-> > > + unsigned int i;
-> > > + void __iomem *p = pch_phub_reg.pch_phub_base_address;
-> > > +
-> > > + dev_dbg(&pdev->dev, "pch_phub_restore_reg_conf ENTRY\n");
-> > > + /* to store contents of PHUB_ID register */
-> > > + iowrite32(pch_phub_reg.phub_id_reg, p + PCH_PHUB_PHUB_ID_REG);
-> >
-> > Don't include comments that just duplicate the code.  Also, rename your
-> > constants from PCH_PHUB_PHUB_ to, I dunno, PHUB_ or something.
-> 
-> Sorry, I can't understand your intention.
-> Please give us more information.
-
-My mistake, I merged two comments into one paragraph, let me clarify.
-
-1. When writing comments, do not write comments that duplicate the code.
-Instead of writing
-	/* store PHUB_ID */
-	iowrite32(..._PHUB_ID_REG);
-	/* store PHUB_FOO */
-	iowrite32(..._PHUB_FOO_REG);
-you should delete the line-by-line comments and just write
-	iowrite32(..._PHUB_ID_REG);
-	iowrite32(..._PHUB_FOO_REG);
-
-2. your register names are very long.  Since the #define names are
-private to this driver, there's no need to make them extremely
-descriptive.  Instead of naming your registers 
-PCH_PHUB_PHUB_ID_REG, you should change the names to be shorter, like
-PHUB_ID_REG or PCH_ID_REG.  This will make your source code much more
-readable by reducing linewrapping.
-
-> > I seriously doubt that your device is special enough to warrant a custom
-> > /dev node with proprietary semantics.  If this is just part of an
-> > Ethernet driver, please implement it in drivers/net/; if this is a
-> > generic PROM accessor, there must be some semi-standardized EPROM access
-> > interface but I don't know what it is offhand.
+On Wed, Jun 30, 2010 at 11:16 AM, Latchesar Ionkov <lucho@ionkov.net> wrote:
 >
-> Since SROM is not in GbE HW but Phub HW, Phub is not part of Ethernet driver.
-> Packet hub is not generic driver but special device.
+> I think that you need to use the s_vfs_rename_mutex in the super_block
+> struct instead of introducing a new rename_lock in the v9fs session.
 
-It sounds like PHUB is a system-level device which provides access to a
-SROM which contains GbE configuration data.  If that is correct, then I
-have two comments:
+I actually think it's better to avoid having filesystems muck around
+with VFS locking details. Also, I think we get the VFS rename mutex
+only for cross-directory renames, and as mentioned, 9p needs locking
+even for regular directory renames.
 
-1.  There are many other systems with similar configurations -- MIPS
-SiByte, Alpha SRM, SPARC OpenFirmware, and some ARM systems, just to
-name a few.  None of them expose the SROM as a custom /dev node AFAIK.
-Is there a shared infrastructure that you can implement?
+(Also, this way you can have parallel readers - although we could
+obviously change the vfs rename mutex into a rw-sem too).
 
-2. How does your GbE driver get the MAC address from the SPROM?  If
-there is an in-kernel user of the PHUB interface, it might be much
-easier to understand the design.
+So I do think that keeping the logic private to a 9p-specific lock is
+the right solution here.
 
-Thanks for responding to my review so quickly!
--andy
+                 Linus
