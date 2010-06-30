@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757102Ab0F3S7E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 14:59:04 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42355 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab0F3S7A (ORCPT
+	id S1757138Ab0F3S7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 14:59:14 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:54980 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757124Ab0F3S7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 14:59:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Y0Dh6l6B13hxHHzHyuzRoo/Z30I9CSeNIB3S86jvYGcsyR4SfSG9Cl/dlAMzoxVgWG
-         yFpDOkX1NXYLHeaY5zMGm5Y0mayXn/1eTMaTsD7nIFg9Yp4DoMCZktwRv0MKA7e6i06F
-         04MKyftQzKMDWCj0eD5Pj7EY8bWHTd6PqbxXM=
-Date: Wed, 30 Jun 2010 22:58:54 +0400
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Nicolas Palix <npalix@diku.dk>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
-       Joe Perches <joe@perches.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
-       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
-       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
-       linux-kbuild@vger.kernel.org, cocci@diku.dk,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-       Andy Isaacson <adi@hexapodia.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, walter harms <wharms@bfs.de>,
-       Joerg Roedel <joro@8bytes.org>, Jan Engelhardt <jengelh@medozas.de>
-Subject: Re: [PATCH 1/7] Add a target to use the Coccinelle checker
-Message-ID: <20100630185851.GA17502@shinshilla>
-References: <1275837307-4283-1-git-send-email-npalix@diku.dk>
- <1275837307-4283-2-git-send-email-npalix@diku.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275837307-4283-2-git-send-email-npalix@diku.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 30 Jun 2010 14:59:12 -0400
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_fSTFMPupBfpCklOGM/nQiw)"
+Date: Wed, 30 Jun 2010 14:59:05 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, Christoph Egger <siccegge@cs.fau.de>,
+       vamos@i4.informatik.uni-erlangen.de,
+       Russell King <linux@arm.linux.org.uk>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/33] Removing dead SA1101
+In-reply-to: <201006302020.52270.marek.vasut@gmail.com>
+Message-id: <alpine.LFD.2.00.1006301453450.24097@xanadu.home>
+References: <cover.1277911345.git.siccegge@cs.fau.de>
+ <7488ec29cdb90212e965f6cd1173141c576c0955.1277911346.git.siccegge@cs.fau.de>
+ <alpine.LFD.2.00.1006301255260.24097@xanadu.home>
+ <201006302020.52270.marek.vasut@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Sun, Jun 06, 2010 at 17:15 +0200, Nicolas Palix wrote:
-> +    echo ' The semantic patch that makes this change is available'
-> +    echo " in $FILE."
-> +    echo ''
-> +    echo ' More information about semantic patching is available at'
-> +    echo ' http://coccinelle.lip6.fr/'
-> +    echo ''
-> +
-> +    $SPATCH -D $MODE -very_quiet -sp_file $COCCI $OPT -dir $DIR
+--Boundary_(ID_fSTFMPupBfpCklOGM/nQiw)
+Content-type: TEXT/PLAIN; charset=utf-8
+Content-transfer-encoding: 8BIT
 
-Here I've got output:
+On Wed, 30 Jun 2010, Marek Vasut wrote:
 
-/usr/lib/coccinelle/spatch: unknown option `-very_quiet'.
-Usage: spatch -sp_file <SP> <infile> [-o <outfile>] [-iso_file <iso>] [options]
-Options are:
-[...]
+> Dne St 30. června 2010 18:57:43 Nicolas Pitre napsal(a):
+> > On Wed, 30 Jun 2010, Christoph Egger wrote:
+> > > SA1101 doesn't exist in Kconfig, therefore removing all
+> > > references for it from the source code.
+> > > 
+> > > Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> > 
+> > Acked-by: Nicolas Pitre <nico@fluxnic.net>
+> 
+> You're dropping support for a whole CPU here ... is the code redundant or 
+> something ?
 
+The SA1101 is not a CPU.  It is a companion chipset for the SA1100.  And 
+so far we have no target using it in the tree, and that isn't likely to 
+change more than 10 years after the chip availability.  Needless to say 
+that the SA1101 has long been unavailable either.
 
-I use ubuntu Lucid 10.04 as said in Documentation/coccinelle.txt.
-
-$ LANG=C apt-cache policy coccinelle
-[...]
-  Installed: 0.2.0.deb-1ubuntu2
-[...]
-
-
-If I delete -very_quiet then It runs OK, but output is not ommited:
-
-init_defs_builtins: /usr/share/coccinelle/standard.h
-HANDLING: /home/vasya/dev/linux-next/security/min_addr.c
-HANDLING: /home/vasya/dev/linux-next/security/keys/proc.c
-HANDLING: /home/vasya/dev/linux-next/security/keys/keyring.c
-HANDLING: /home/vasya/dev/linux-next/security/keys/gc.c
-HANDLING: /home/vasya/dev/linux-next/security/keys/process_keys.c
-HANDLING: /home/vasya/dev/linux-next/security/keys/request_key_auth.c
-[...]
+We also have support for the SA1111 which is a similar companion chipset 
+for the SA1110.  This is not going away as at least the Neponset 
+expansion board for the Assabet development board is using a SA1111.
 
 
-> +if [ "$COCCI" = "" ] ; then
-> +    for f in `find $srctree/scripts/coccinelle/ -name '*.cocci' -type f | sort`; do
-> +	coccinelle $f $srctree;
-> +    done
-> +else
-> +    coccinelle $COCCI $srctree
-> +fi
+Nicolas
 
-I think it is more usefull to use $M instead of $srctree to run simple
-'make coccicheck'.
+--Boundary_(ID_fSTFMPupBfpCklOGM/nQiw)--
