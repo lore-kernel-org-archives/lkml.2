@@ -1,133 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab0F3NkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 09:40:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41301 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab0F3NkM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 09:40:12 -0400
-X-Authority-Analysis: v=1.1 cv=jfMbZ+4tkgrYlaJBi3iJCtg6TDszHDHJJpQ3TdTfnr0= c=1 sm=0 a=u8eIACkqEOAA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=AONxhUtn9rnsukDYc5MA:9 a=U9uWd7ZmrxxynDPTGjwA:7 a=tBDf3qHoBecfeF8tdgUZm0ynncoA:4 a=PUjeQqilurYA:10 a=0kPLrQdw3YYA:10 a=P8ES0JSHQkb-jz7X:21 a=Yc4W0-ETLj4URaow:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [BUG] kacpi_notify goes into an infinite loop (luckly it calls
- cond_resched)
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Renninger <trenn@suse.de>,
-       "clarkt@cnsp.com" <clarkt@cnsp.com>, "Brown, Len" <len.brown@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1275274670.9119.4419.camel@rzhang1-desktop>
-References: <1275094882.22648.607.camel@gandalf.stny.rr.com>
-	 <1275274670.9119.4419.camel@rzhang1-desktop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Wed, 30 Jun 2010 09:40:08 -0400
-Message-ID: <1277905208.24800.21.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753252Ab0F3Nmd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 09:42:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39491 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752315Ab0F3Nmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 09:42:32 -0400
+Date: Wed, 30 Jun 2010 16:36:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Tom Lyon <pugs@cisco.com>, randy.dunlap@oracle.com,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       joro@8bytes.org, hjk@linutronix.de, avi@redhat.com, gregkh@suse.de,
+       aafabbri@cisco.com, scofeldm@cisco.com
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100630133639.GB4226@redhat.com>
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
+ <1277878452.3164.26.camel@x201>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277878452.3164.26.camel@x201>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 10:57 +0800, Zhang Rui wrote:
-> Hi, Steve,
+On Wed, Jun 30, 2010 at 12:14:12AM -0600, Alex Williamson wrote:
+> On Tue, 2010-06-08 at 14:21 -0700, Tom Lyon wrote:
+> > The VFIO "driver" is used to allow privileged AND non-privileged processes to 
+> > implement user-level device drivers for any well-behaved PCI, PCI-X, and PCIe
+> > devices.
 > 
-> On Sat, 2010-05-29 at 09:01 +0800, Steven Rostedt wrote:
-> > I just replaced Windows with F12 on my wife's computer, to have nothing
-> > but issues. But anyway, one of the issues I had on this box was in
-> > vanilla linux kernel 2.6.34 (all the fedora kernels had other issues),
-> > the kacpi_notify would go into an infinite loop.
-> > 
-> > I debugged it a bit with ftrace and saw that the kacpi_notify workqueue
-> > was constantly requeuing itself (thanks to the workqueue trace events).
-> > 
-> > I bisected this, and it came down to this change:
-> > 
-> > commit fa80945269f312bc609e8384302f58b03c916e12
-> > Author: Thomas Renninger <trenn@suse.de>
-> > Date:   Sat Feb 20 11:44:27 2010 +0100
-> > 
-> >     ACPI thermal: Don't invalidate thermal zone if critical trip point is bad
-> > 
-> > 
-> This patch enables the ACPI thermal control which is used to be disabled
-> on some laptops.
+> Hi Tom,
 > 
-> Maybe this triggers an interrupt storm on this box.
+> I found a few bugs.  Patch below.  The first chunk clears the
+> pci_config_map on close, otherwise we end up passing virtualized state
+> from one user to the next.  The second is an off by one in the basic
+> perms.  Finally, vfio_bar_fixup() needs an overhaul.  It wasn't setting
+> the lower bits right and is allowing virtual writes of bits that aren't
+> aligned to the size.  This section probably needs another pass or two of
+> refinement.  Thanks,
 > 
-> please attach the output of "grep . /sys/firmware/acpi/interrupts/*".
-> please attach the acpidump output of your laptop as well.
+> Alex
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 
-Sorry for the very late reply, I've been on the Cc of two kacpi_notify
-bugs and one was not the problem, and I was deleting both emails as they
-came in thinking they were the one I was ignoring. I just noticed that
-the bug I had was closed due to my unresponsiveness. Sorry about that,
-this was my wife's desktop and once I got it working, it became very low
-priority (and I basically forgot about it).
-
-
-Anyway here's the info on the box if your are still interested:
-
-# grep . /sys/firmware/acpi/interrupts/*
-/sys/firmware/acpi/interrupts/error:       0
-/sys/firmware/acpi/interrupts/ff_gbl_lock:       0	disabled
-/sys/firmware/acpi/interrupts/ff_pmtimer:       0	invalid
-/sys/firmware/acpi/interrupts/ff_pwr_btn:       0	enabled
-/sys/firmware/acpi/interrupts/ff_rt_clk:       0	disabled
-/sys/firmware/acpi/interrupts/ff_slp_btn:       0	invalid
-/sys/firmware/acpi/interrupts/gpe00:       0	invalid
-/sys/firmware/acpi/interrupts/gpe01:       0	invalid
-/sys/firmware/acpi/interrupts/gpe02:       0	invalid
-/sys/firmware/acpi/interrupts/gpe03:       0	disabled
-/sys/firmware/acpi/interrupts/gpe04:       0	disabled
-/sys/firmware/acpi/interrupts/gpe05:       0	invalid
-/sys/firmware/acpi/interrupts/gpe06:       0	invalid
-/sys/firmware/acpi/interrupts/gpe07:       0	invalid
-/sys/firmware/acpi/interrupts/gpe08:       0	invalid
-/sys/firmware/acpi/interrupts/gpe09:       0	invalid
-/sys/firmware/acpi/interrupts/gpe0A:       0	invalid
-/sys/firmware/acpi/interrupts/gpe0B:       0	disabled
-/sys/firmware/acpi/interrupts/gpe0C:       0	disabled
-/sys/firmware/acpi/interrupts/gpe0D:       0	disabled
-/sys/firmware/acpi/interrupts/gpe0E:       0	invalid
-/sys/firmware/acpi/interrupts/gpe0F:       0	invalid
-/sys/firmware/acpi/interrupts/gpe10:       0	invalid
-/sys/firmware/acpi/interrupts/gpe11:       0	invalid
-/sys/firmware/acpi/interrupts/gpe12:       0	invalid
-/sys/firmware/acpi/interrupts/gpe13:       0	invalid
-/sys/firmware/acpi/interrupts/gpe14:       0	invalid
-/sys/firmware/acpi/interrupts/gpe15:       0	invalid
-/sys/firmware/acpi/interrupts/gpe16:       0	invalid
-/sys/firmware/acpi/interrupts/gpe17:       0	invalid
-/sys/firmware/acpi/interrupts/gpe18:       0	enabled
-/sys/firmware/acpi/interrupts/gpe19:       0	invalid
-/sys/firmware/acpi/interrupts/gpe1A:       0	invalid
-/sys/firmware/acpi/interrupts/gpe1B:       0	invalid
-/sys/firmware/acpi/interrupts/gpe1C:       0	invalid
-/sys/firmware/acpi/interrupts/gpe1D:       0	invalid
-/sys/firmware/acpi/interrupts/gpe1E:       0	invalid
-/sys/firmware/acpi/interrupts/gpe1F:       0	invalid
-/sys/firmware/acpi/interrupts/gpe_all:       0
-/sys/firmware/acpi/interrupts/sci:       0
-/sys/firmware/acpi/interrupts/sci_not:       1
-
-Note, this is a desktop not a laptop.
-
-I don't see a acpidump utility installed, nor do I see anywhere in
-fedora 12 that would install it.
-
-After reverting the one patch, everything seemed to work (although it
-still crashes here and there, but I think that's a video driver bug).
-
-I'll help investigate this if you want. But it may take time. The box
-does belong to my wife and I need to wait for her to finish with it
-before I can take a look ;-) Well, I can ssh in, but to try patches or
-anything else requiring reboots, will have to wait till she's off of it.
+I still don't see why are we sticking all this emulation in kernel.  It
+is far from performance hotpath and can easily be emulated in userspace.
+qemu does this, you can lift code from there if you like.
+Maybe we need to protect the BARs from being manipulated by userspace,
+but that should be all. No need for tables.
 
 
--- Steve
-
-
+> ---
+> 
+> diff --git a/drivers/vfio/vfio_main.c b/drivers/vfio/vfio_main.c
+> index 96639e5..a0e8227 100644
+> --- a/drivers/vfio/vfio_main.c
+> +++ b/drivers/vfio/vfio_main.c
+> @@ -129,6 +129,10 @@ static int vfio_release(struct inode *inode, struct file *filep)
+>  			eventfd_ctx_put(vdev->ev_msi);
+>  			vdev->ev_irq = NULL;
+>  		}
+> +		if (vdev->pci_config_map) {
+> +			kfree(vdev->pci_config_map);
+> +			vdev->pci_config_map = NULL;
+> +		}
+>  		vfio_domain_unset(vdev);
+>  		/* reset to known state if we can */
+>  		(void) pci_reset_function(vdev->pdev);
+> diff --git a/drivers/vfio/vfio_pci_config.c b/drivers/vfio/vfio_pci_config.c
+> index c821b5d..f6e26b1 100644
+> --- a/drivers/vfio/vfio_pci_config.c
+> +++ b/drivers/vfio/vfio_pci_config.c
+> @@ -79,18 +79,18 @@ struct perm_bits {
+>  static struct perm_bits pci_cap_basic_perm[] = {
+>  	{ 0xFFFFFFFF,	0, },		/* 0x00 vendor & device id - RO */
+>  	{ 0,		0xFFFFFFFC, },	/* 0x04 cmd & status except mem/io */
+> -	{ 0,		0xFF00FFFF, },	/* 0x08 bist, htype, lat, cache */
+> -	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x0c bar */
+> +	{ 0,		0, },		/* 0x08 class code & revision id */
+> +	{ 0,		0xFF00FFFF, },	/* 0x0c bist, htype, lat, cache */
+>  	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x10 bar */
+>  	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x14 bar */
+>  	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x18 bar */
+>  	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x1c bar */
+>  	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x20 bar */
+> -	{ 0,		0, },		/* 0x24 cardbus - not yet */
+> -	{ 0,		0, },		/* 0x28 subsys vendor & dev */
+> -	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x2c rom bar */
+> -	{ 0,		0, },		/* 0x30 capability ptr & resv */
+> -	{ 0,		0, },		/* 0x34 resv */
+> +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x24 bar */
+> +	{ 0,		0, },		/* 0x28 cardbus - not yet */
+> +	{ 0,		0, },		/* 0x2c subsys vendor & dev */
+> +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x30 rom bar */
+> +	{ 0,		0, },		/* 0x34 capability ptr & resv */
+>  	{ 0,		0, },		/* 0x38 resv */
+>  	{ 0x000000FF,	0x000000FF, },	/* 0x3c max_lat ... irq */
+>  };
+> @@ -318,30 +318,55 @@ static void vfio_virt_init(struct vfio_dev *vdev)
+>  static void vfio_bar_fixup(struct vfio_dev *vdev)
+>  {
+>  	struct pci_dev *pdev = vdev->pdev;
+> -	int bar;
+> -	u32 *lp;
+> -	u32 len;
+> +	int bar, mem64 = 0;
+> +	u32 *lp = NULL;
+> +	u64 len = 0;
+>  
+>  	for (bar = 0; bar <= 5; bar++) {
+> -		len = pci_resource_len(pdev, bar);
+> -		lp = (u32 *)&vdev->vinfo.bar[bar * 4];
+> -		if (len == 0) {
+> -			*lp = 0;
+> -		} else if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM) {
+> -			*lp &= ~0x1;
+> -			*lp = (*lp & ~(len-1)) |
+> -				(*lp & ~PCI_BASE_ADDRESS_MEM_MASK);
+> -			if (*lp & PCI_BASE_ADDRESS_MEM_TYPE_64)
+> -				bar++;
+> -		} else if (pci_resource_flags(pdev, bar) & IORESOURCE_IO) {
+> +		if (!mem64) {
+> +			len = pci_resource_len(pdev, bar);
+> +			lp = (u32 *)&vdev->vinfo.bar[bar * 4];
+> +			if (len == 0) {
+> +				*lp = 0;
+> +				continue;
+> +			}
+> +
+> +			len = ~(len - 1);
+> +		} else
+> +			len >>= 32;
+> +
+> +		if (*lp == ~0U)
+> +			*lp = (u32)len;
+> +		else
+> +			*lp &= (u32)len;
+> +		
+> +		if (mem64) {
+> +			mem64 = 0;
+> +			continue;
+> +		}
+> +
+> +		if (pci_resource_flags(pdev, bar) & IORESOURCE_IO)
+>  			*lp |= PCI_BASE_ADDRESS_SPACE_IO;
+> -			*lp = (*lp & ~(len-1)) |
+> -				(*lp & ~PCI_BASE_ADDRESS_IO_MASK);
+> +		else {
+> +			*lp |= PCI_BASE_ADDRESS_SPACE_MEMORY;
+> +			if (pci_resource_flags(pdev, bar) & IORESOURCE_PREFETCH)
+> +				*lp |= PCI_BASE_ADDRESS_MEM_PREFETCH;
+> +			if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM_64) {
+> +				*lp |= PCI_BASE_ADDRESS_MEM_TYPE_64;
+> +				mem64 = 1;
+> +			}
+>  		}
+>  	}
+> +
+>  	lp = (u32 *)vdev->vinfo.rombar;
+>  	len = pci_resource_len(pdev, PCI_ROM_RESOURCE);
+> -	*lp = *lp & PCI_ROM_ADDRESS_MASK & ~(len-1);
+> +	len = ~(len - 1);
+> +
+> +	if (*lp == ~PCI_ROM_ADDRESS_ENABLE)
+> +	    *lp = (u32)len;
+> +	else
+> +	    *lp = *lp & ((u32)len | PCI_ROM_ADDRESS_ENABLE);
+> +
+>  	vdev->vinfo.bardirty = 0;
+>  }
+>  
+> 
