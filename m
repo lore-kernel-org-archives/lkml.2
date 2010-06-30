@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab0F3Q0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 12:26:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55486 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab0F3Q0E (ORCPT
+	id S1756923Ab0F3Q0p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 12:26:45 -0400
+Received: from lechat.rtp-net.org ([88.191.19.38]:53387 "EHLO
+	lechat.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab0F3Q0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 12:26:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=YQtExYcGewQz+vGGgCXQoyL+jqhzYycCcUW3O1S+9/whUcVclr/Slzhza3yPMrtY46
-         WRTr1WPrSVrBJ0tT1qCJFMThT/TZV3jFuTAtniWzDXiQ0X3MrGGzJ6RX7WEMf/9soUsu
-         uWQ6Nv/maMy8PzXmnSivwdwgLcXBPoMJ/EpDU=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
+	Wed, 30 Jun 2010 12:26:44 -0400
+X-Greylist: delayed 503 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Jun 2010 12:26:44 EDT
+From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
 To: Christoph Egger <siccegge@cs.fau.de>
-Subject: Re: [PATCH 28/33] Removing dead CPU_S3C24XX
-Date: Wed, 30 Jun 2010 19:19:45 +0300
-User-Agent: KMail/1.13.3 (Linux/2.6.34-gentoo-anarsoul; KDE/4.4.4; i686; ; )
-Cc: Vincent Sanders <support@simtec.co.uk>, Ben Dooks <ben-linux@fluff.org>,
-       Russell King <linux@arm.linux.org.uk>,
+Cc: Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+       Kukjin Kim <kgene.kim@samsung.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       Thomas Abraham <thomas.ab@samsung.com>,
        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
        vamos@i4.informatik.uni-erlangen.de
-References: <cover.1277911345.git.siccegge@cs.fau.de> <787416813d524b042dc933fbcfbbae22fd5ca2ca.1277911346.git.siccegge@cs.fau.de>
-In-Reply-To: <787416813d524b042dc933fbcfbbae22fd5ca2ca.1277911346.git.siccegge@cs.fau.de>
+Subject: Re: [PATCH 30/33] Removing dead S3C_DEV_ADC
+References: <cover.1277911345.git.siccegge@cs.fau.de>
+	<7baaebb4983ce9482e3f83ca42240b864157cb79.1277911346.git.siccegge@cs.fau.de>
+Organization: RtpNet
+Date: Wed, 30 Jun 2010 18:24:20 +0200
+In-Reply-To: <7baaebb4983ce9482e3f83ca42240b864157cb79.1277911346.git.siccegge@cs.fau.de> (Christoph Egger's message of "Wed\, 30 Jun 2010 18\:03\:26 +0200")
+Message-ID: <876310pjyj.fsf@lechat.rtp-net.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart6491874.X05KAL5gmn";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006301919.51697.anarsoul@gmail.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart6491874.X05KAL5gmn
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Christoph Egger <siccegge@cs.fau.de> writes:
 
-=D0=92 =D1=81=D0=BE=D0=BE=D0=B1=D1=89=D0=B5=D0=BD=D0=B8=D0=B8 =D0=BE=D1=82 =
-30 =D0=B8=D1=8E=D0=BD=D1=8F 2010 19:02:51 =D0=B0=D0=B2=D1=82=D0=BE=D1=80 Ch=
-ristoph Egger =D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB:
-> CPU_S3C24XX doesn't exist in Kconfig, therefore removing all
+> S3C_DEV_ADC doesn't exist in Kconfig, therefore removing all
 > references for it from the source code.
->=20
+>
 > Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 > ---
->  arch/arm/mach-s3c2410/include/mach/gpio.h |    4 ----
+>  arch/arm/mach-s5pv210/cpu.c |    4 ----
 >  1 files changed, 0 insertions(+), 4 deletions(-)
->=20
-> diff --git a/arch/arm/mach-s3c2410/include/mach/gpio.h
-> b/arch/arm/mach-s3c2410/include/mach/gpio.h index b649bf2..a37d274 100644
-> --- a/arch/arm/mach-s3c2410/include/mach/gpio.h
-> +++ b/arch/arm/mach-s3c2410/include/mach/gpio.h
-> @@ -30,8 +30,4 @@
->  #include <mach/gpio-nrs.h>
->  #include <mach/gpio-fns.h>
->=20
-> -#ifdef CONFIG_CPU_S3C24XX
-> -#define S3C_GPIO_END	(S3C2410_GPIO_BANKJ + 32)
-> -#else
->  #define S3C_GPIO_END	(S3C2410_GPIO_BANKH + 32)
+>
+> diff --git a/arch/arm/mach-s5pv210/cpu.c b/arch/arm/mach-s5pv210/cpu.c
+> index 411a4a9..c5d53ab 100644
+> --- a/arch/arm/mach-s5pv210/cpu.c
+> +++ b/arch/arm/mach-s5pv210/cpu.c
+> @@ -76,10 +76,6 @@ static void s5pv210_idle(void)
+>  
+>  void __init s5pv210_map_io(void)
+>  {
+> -#ifdef CONFIG_S3C_DEV_ADC
+> -	s3c_device_adc.name	= "s3c64xx-adc";
 > -#endif
+> -
 
-This patch conflicts with Yaugen Kharuzhy patch (ARM: S3C24XX: Fix gpiolib=
-=20
-support for ports K..M), S3C24XX is just a typo, it should be S3C244X and t=
-hat=20
-was fixed by mentioned patch
+too bad, should have been SAMSUNG_DEV_ADC :(
+Anyway, a patch called "[PATCH] ARM: SAMSUNG: Implement set_name
+function for ADC devices" has been sent for review today and is
+addressing this same issue.
 
-Regards
-Vasily
-
---nextPart6491874.X05KAL5gmn
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-
-iEYEABECAAYFAkwrbqcACgkQRM6pQpltKE5D+wCfewbwYKOYtBvfqRbYaNW6LDqO
-XzMAoNF5kVwcEv5PjRsFq/ewBsnQr6Du
-=ex7n
------END PGP SIGNATURE-----
-
---nextPart6491874.X05KAL5gmn--
+Thanks,
+Arnaud
