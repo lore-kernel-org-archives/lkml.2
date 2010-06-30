@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab0F3SoA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 14:44:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52058 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755267Ab0F3Sn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 14:43:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,514,1272870000"; 
-   d="scan'208";a="294888579"
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-From: David Woodhouse <David.Woodhouse@intel.com>
-To: Chris Li <lkml@chrisli.org>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
-	 <4C29420D.2010406@intel.com>
-	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>
-	 <4C2A8879.8010000@intel.com>
-	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>
-	 <4C2AC55E.3040303@intel.com>
-	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation
-Date: Wed, 30 Jun 2010 19:43:42 +0100
-Message-ID: <1277923422.16256.8.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.4 
-Content-Transfer-Encoding: 7bit
+	id S1757057Ab0F3Sog (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 14:44:36 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47726 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab0F3Soe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 14:44:34 -0400
+From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
+To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+       "siccegge@cs.fau.de" <siccegge@cs.fau.de>
+CC: "tony@atomide.com" <tony@atomide.com>,
+       "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "vamos@i4.informatik.uni-erlangen.de" 
+	<vamos@i4.informatik.uni-erlangen.de>
+Date: Wed, 30 Jun 2010 13:44:14 -0500
+Subject: RE: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
+Thread-Topic: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
+Thread-Index: AcsYgWoI3iWF+krYSEyLfcx8ervh7gAAlHVA
+Message-ID: <8F7AF80515AF0D4D93307E594F3CB40E4CA55915@dlee03.ent.ti.com>
+References: <cover.1277911345.git.siccegge@cs.fau.de>
+	<fcfa44a43c21c70f89ced96b96d7c1489d28cc51.1277911346.git.siccegge@cs.fau.de>
+ <20100630.212346.226780589.Hiroshi.DOYU@nokia.com>
+In-Reply-To: <20100630.212346.226780589.Hiroshi.DOYU@nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-30 at 19:26 +0100, Chris Li wrote:
+
+> -----Original Message-----
+> From: Hiroshi DOYU [mailto:Hiroshi.DOYU@nokia.com]
+> Sent: Wednesday, June 30, 2010 1:24 PM
+> To: siccegge@cs.fau.de; Kanigeri, Hari
+> Cc: tony@atomide.com; linux@arm.linux.org.uk; linux-omap@vger.kernel.org;
+> linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
+> vamos@i4.informatik.uni-erlangen.de
+> Subject: Re: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
 > 
-> The delta seems to be this line:
-> ioatdma 0000:00:0f.0: ioat2_set_chainaddr: chainaddr: ffffe000 
+> From: ext Christoph Egger <siccegge@cs.fau.de>
+> Subject: [PATCH 22/33] Removing dead MPU_{BRIDGE,TESLA}_IOMMU
+> Date: Wed, 30 Jun 2010 18:01:01 +0200
+> 
+> > MPU_{BRIDGE,TESLA}_IOMMU doesn't exist in Kconfig, therefore removing
+> > all references for it from the source code.
+> 
+> Coming soon, I guess. Hari?
 
-That's a reasonable address if the IOMMU is enabled. We start at 4GiB
-and work down, so that's the second page given out (or the first 8KiB
-chunk).
+Coming soon for both Bridge and Tesla. As I am writing this email, Fernando is preparing the Bridge patches to migrate to iommu.
 
-It looks like the DMA is going AWOL causing the initialisation to
-fail... but it's interesting that there are no DMA faults reported by
-the IOMMU.
-
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
+Thank you,
+Best regards,
+Hari
