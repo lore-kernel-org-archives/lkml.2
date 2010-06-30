@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab0F3MvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 08:51:14 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46577 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab0F3MvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 08:51:13 -0400
-Date: Wed, 30 Jun 2010 13:51:00 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nick Piggin <npiggin@suse.de>, Chris Clayton <chris2553@googlemail.com>,
-       Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-       Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 02/52] fs: fix superblock iteration race
-Message-ID: <20100630125100.GG31073@ZenIV.linux.org.uk>
-References: <20100624030212.676457061@suse.de>
- <20100624030725.885831564@suse.de>
- <20100629130214.GA21410@infradead.org>
- <20100629145617.GG28364@laptop>
- <AANLkTinCVQdekiLlU4_tRkkcSGYWV6NG7nlvTirl5xZF@mail.gmail.com>
- <20100629174122.GN28364@laptop>
- <AANLkTinr_Ljn48o3YecbuYt15xbP02sbg9D6qqobt1wE@mail.gmail.com>
- <AANLkTilWhDhzdANZeskV__btrvZuAr-Fhmj7j5iKec-U@mail.gmail.com>
+	id S1753517Ab0F3Mx2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 08:53:28 -0400
+Received: from claw.goop.org ([74.207.240.146]:58638 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751774Ab0F3Mx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 08:53:27 -0400
+Message-ID: <4C2B3E42.1070808@goop.org>
+Date: Wed, 30 Jun 2010 14:53:22 +0200
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilWhDhzdANZeskV__btrvZuAr-Fhmj7j5iKec-U@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Jan Beulich <JBeulich@novell.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       Ky Srinivasan <KSrinivasan@novell.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH 1/4, v2] x86: enlightenment for ticket spin locks -	 base
+ implementation
+References: <4C2A1FE902000078000089E1@vpn.id2.novell.com> <1277885133.1868.71.camel@laptop> <4C2B23CD0200007800008BFA@vpn.id2.novell.com> <1277889116.1868.95.camel@laptop> <4C2B2180.6040401@goop.org> <4C2B4C050200007800008CDB@vpn.id2.novell.com>
+In-Reply-To: <4C2B4C050200007800008CDB@vpn.id2.novell.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 10:58:14AM -0700, Linus Torvalds wrote:
-> On Tue, Jun 29, 2010 at 10:52 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Look for "2.6.35-rc3 oops trying to suspend" on lkml, for example. No
-> > guarantee that it's the same thing, but it's "iterate_supers()"
-> > getting an oops [..]
-> 
-> Also, "Oops during closedown with 2.6.35-rc3-git3" is an
-> iterate_supers oops (in the jpg) and Chris says it's repeatable for
-> him.
-> 
-> Chris - you could try testing current -git now that I've merged Nick's
-> patch. It's commit 57439f878af ("fs: fix superblock iteration race"),
-> and I just pushed it out (so it might take a few minutes to mirror out
-> to the public git trees, but it should be there shortly).
+On 06/30/2010 01:52 PM, Jan Beulich wrote:
+> I fail to see that: Depending on the hypervisor's capabilities, the
+> two main functions could be much smaller (potentially there wouldn't
+> even be a need for the unlock hook in some cases),
 
-ACK.  I've several cleanups on top of that, but that's not a .35 fodder.
-I'll put them into for-next tonight.  But yes, the hole caught by
-Nick is definitely real and very likely to be responsible for all that
-pile of reports.  Mea culpa.
+What mechanism are you envisaging in that case?
+
+>> That appears to be a mechanism to allow it to take interrupts while
+>> spinning on the lock, which is something that stock ticket locks don't
+>> allow.  If that's a useful thing to do, it should happen in the generic
+>> ticketlock code rather than in the per-hypervisor backend (otherwise we
+>> end up with all kinds of subtle differences in lock behaviour depending
+>> on the exact environment, which is just going to be messy).  Even if
+>> interrupts-while-spinning isn't useful on native hardware, it is going
+>> to be equally applicable to all virtual environments.
+>>     
+> While we do interrupt re-enabling in our pv kernels, I intentionally
+> didn't do this here - it complicates the code quite a bit further, and
+> that did seem right for an initial submission.
+>   
+
+Ah, I was confused by this:
+> +	/*
+> +	 * If we interrupted another spinlock while it was blocking, make
+> +	 * sure it doesn't block (again) without re-checking the lock.
+> +	 */
+> +	if (spinning.prev)
+> +		sync_set_bit(percpu_read(poll_evtchn),
+> +			     xen_shared_info->evtchn_pending);
+> +
+> +
+
+> The list really juts is needed to not pointlessly tickle CPUs that
+> won't own the just released lock next anyway (or would own
+> it, but meanwhile went for another one where they also decided
+> to go into polling mode).
+
+Did you measure that it was a particularly common case which was worth
+optimising for?
+
+    J
