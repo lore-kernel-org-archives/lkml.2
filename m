@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab0F3ODK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 10:03:10 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:51705 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817Ab0F3ODH convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	id S1756042Ab0F3ODJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 10:03:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38335 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754023Ab0F3ODH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jun 2010 10:03:07 -0400
-Message-Id: <4C2B6AD60200007800008D90@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 30 Jun 2010 15:03:34 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>
-Cc: "mingo@elte.hu" <mingo@elte.hu>,
-       "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       "Ky Srinivasan" <KSrinivasan@novell.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH 2/4, v2] x86: enlightenment for ticket spin locks -
-	 Xen implementation
-References: <4C2A200F02000078000089E4@vpn.id2.novell.com>
- <4C2B1769.5090107@goop.org> <4C2B47190200007800008CB7@vpn.id2.novell.com>
- <4C2B4564.7030203@goop.org>
-In-Reply-To: <4C2B4564.7030203@goop.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=QHxKgxfBTaMQDxQ9N5gejgYNRQtXhHhVppKaweQjq2BH1T4tVnVhjCX3BZQ3ronsLh
+         C1CCZGskumhB9n/dDnXWRdFR5SEr9OTxCuB/h3Wr3tJMHERgcpWOhxNcHsxc3Kj9REzy
+         MC1bgRNI5gp/NoqJxaIHEqzwpCtHwA9wietRE=
+Date: Wed, 30 Jun 2010 22:57:31 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 04/11] oom: oom_kill_process() need to check p is
+ unkillable
+Message-ID: <20100630135731.GB15644@barrios-desktop>
+References: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
+ <20100630182838.AA53.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100630182838.AA53.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.06.10 at 15:23, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> For spinlocks, the pvop calls should only be in the slow case: when a
-> spinlock has been spinning for long enough, and on unlock when there's
-> someone waiting for the lock.  The fastpath (no contention lock and
-> unlock) should have no extra calls.
-
-Then what was all that performance regression noise concerning
-pvops spinlocks about, leading to CONFIG_PARAVIRT_SPINLOCKS
-being separated from the base CONFIG_PARAVIRT?
-
-Afaics the unlock still involves a function call *in all cases* with
-pvops spinlocks, whereas it's a single inline instruction without.
-
-Jan
-
+On Wed, Jun 30, 2010 at 06:29:22PM +0900, KOSAKI Motohiro wrote:
+> When oom_kill_allocating_task is enabled, an argument task of
+> oom_kill_process is not selected by select_bad_process(), It's
+> just out_of_memory() caller task. It mean the task can be
+> unkillable. check it first.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+-- 
+Kind regards,
+Minchan Kim
