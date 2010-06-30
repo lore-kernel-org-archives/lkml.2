@@ -1,62 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab0F3VJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 17:09:14 -0400
-Received: from mandjes.xs4all.nl ([82.95.177.154]:52068 "EHLO
-	mandjes.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab0F3VJN convert rfc822-to-8bit (ORCPT
+	id S1757033Ab0F3VNq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 17:13:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28108 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944Ab0F3VNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 17:09:13 -0400
-X-Greylist: delayed 649 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Jun 2010 17:09:13 EDT
-From: Kees Bakker <kees.bakker@xs4all.nl>
+	Wed, 30 Jun 2010 17:13:43 -0400
+Date: Wed, 30 Jun 2010 17:12:33 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Edward Shishkin <edward@redhat.com>
+Cc: Jamie Lokier <jamie@shareable.org>,
+       Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+       Ric Wheeler <rwheeler@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       The development of BTRFS <linux-btrfs@vger.kernel.org>,
+       ReiserFS Development List <reiserfs-devel@vger.kernel.org>,
+       Andi Kleen <andi@firstfloor.org>
+Subject: Re: Balancing leaves when walking from top to down (was Btrfs:...)
+Message-ID: <20100630211233.GL25967@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Edward Shishkin <edward@redhat.com>,
+	Jamie Lokier <jamie@shareable.org>,
+	Edward Shishkin <edward.shishkin@gmail.com>,
+	Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+	linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	The development of BTRFS <linux-btrfs@vger.kernel.org>,
+	ReiserFS Development List <reiserfs-devel@vger.kernel.org>,
+	Andi Kleen <andi@firstfloor.org>
+References: <20100618193555.GV27466@think>
+ <4C1BED56.9010300@redhat.com>
+ <20100621131528.GA17979@think>
+ <20100621180013.GD17979@think>
+ <4C20C4E9.60203@redhat.com>
+ <20100622142006.GT23009@think>
+ <4C221049.501@gmail.com>
+ <20100623233759.GE7058@shareable.org>
+ <20100624130601.GW23009@think>
+ <4C2BA381.7040808@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: Filename case conflict Documentation/io-mapping.txt and Documentation/IO-mapping.txt
-Date: Wed, 30 Jun 2010 22:58:21 +0200
-Message-Id: <97A9C0E5-DA16-4C78-89A3-BBC08EF16518@xs4all.nl>
-Cc: Keith Packard <keithp@keithp.com>
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1081)
-X-Mailer: Apple Mail (2.1081)
+Content-Disposition: inline
+In-Reply-To: <4C2BA381.7040808@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C2BB34A.00AD:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jun 30, 2010 at 10:05:21PM +0200, Edward Shishkin wrote:
+> Chris Mason wrote:
+> [...]
+> >>>1. the balancing condition n <= number_of_keys <= 2n+1
+> >>>  is not satisfied (indeed, when number_of_keys is 1
+> >>>  we have 1 <= 2n+1 -- false);
+> >>That doesn't matter.  It is not necessary (or desirable) to follow the
+> >>classical B-tree algorithms to the letter to get sufficiently good
+> >>properties.
+> 
+> sure, but we need something instead of classic balancing condition.
+> We can not just refuse it: this is your lifejacket during performing
+> tree operations. How will you proof utilization bounds without any
+> balancing conditions?
 
-Do we really want these two filenames as they are right now?
-We have:
-   Documentation/IO-mapping.txt
-   Documentation/io-mapping.txt
+Again, the leaves and nodes both have balancing conditions.  I'm not
+sure I follow.
 
-kees@plankie:~/src/linux-2.6$ git blame Documentation/IO-mapping.txt|head
-^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   1) [ NOTE: The virt_to_bus() and bus_to_virt() functions have been
-5872fb94 (Randy Dunlap      2009-01-29 16:28:02 -0800   2) 	superseded by the functionality provided by the PCI DMA interface
-5872fb94 (Randy Dunlap      2009-01-29 16:28:02 -0800   3) 	(see Documentation/PCI/PCI-DMA-mapping.txt).  They continue
-^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   4) 	to be documented below for historical purposes, but new code
-^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   5) 	must not use them. --davidm 00/12/12 ]
-^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   6) 
-^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   7) [ This is a mail message in response to a query on IO mapping, thus the
-^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   8)   strange format for a "document" ]
-^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700   9) 
-^1da177e (Linus Torvalds    2005-04-16 15:20:36 -0700  10) The AHA-1542 is a bus-master device, and your patch makes the driver give the
+> 
+> 
+> >> B-trees are quite robust to changing the details, as long
+> >>as you follow the generalised principles which make them work.
+> >
+> >There are lots of different perspectives here,
+> 
+> I wouldn't be so optimistic here (see below)
+> 
+> > but it is important to
+> >step back and look at what we're using the btree for.  We're making an
+> >index to filesystem metadata.  The index is there so that we can find
+> >that metadata with a reasonable number of IOs and in a reasonable amount
+> >of time.
+> >
+> >Because btrfs is COW, and because of the reference counted COW used to
+> >maintain snapshots, the cost of updating the btree is different from
+> >traditional btrees.  We do try to avoid balancing more and
+> >intentionally allow the btree leaves to be less compact simply because
+> >it allows us to avoid the higher cost of those operations.
+> 
+> I can understand reducing low bound, say, from 1/2 to 1/3 for performance
+> reasons, but again, bound 0.00 is unacceptable.. So, please, make sure you
+> have a sane proved bound for every such "compromise".
+> 
+> >The btree nodes are fairly strict.  They contain fixed records and are
+> >balanced in a simple fashion.  When we are inserting a new key into a
+> >node, if the node is completely full we split it.  When we are deleting
+> >a key, if the node is less than half full we balance it.
+> 
+> This works only if insertion/deletion on the leaf level won't result in
+> insertion/deletion more then one key on upper levels.
 
-kees@plankie:~/src/linux-2.6$ git blame Documentation/io-mapping.txt|head
-9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  1) The io_mapping functions in linux/io-mapping.h provide an abstraction for
-9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  2) efficiently mapping small regions of an I/O device to the CPU. The initial
-9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  3) usage is to support the large graphics aperture on 32-bit processors where
-9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  4) ioremap_wc cannot be used to statically map the entire aperture to the CPU
-9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  5) as it would consume too much of the kernel address space.
-9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  6) 
-9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  7) A mapping object is created during driver initialization using
-9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  8) 
-9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700  9) 	struct io_mapping *io_mapping_create_wc(unsigned long base,
-9663f2e6 (Keith Packard 2008-10-30 19:38:18 -0700 10) 						unsigned long size)
+The top-down balancing requires that we control the number of upper
+level inserts.  This is already done today.
 
-So the IO-mapping.txt was there first. Keith, can't we rename your
-file? For example,
+> 
+> >  Calculating
+> >full on the btree nodes is a factor of the number of keys in them.
+> >
+> >The leaves have fixed length keys that describe items of variable size.
+> >On deletion merging is done when we're less than 1/3rd full and on
+> >insertion we split when the item we're trying to shove in doesn't fit.
+> >Calculating full on the btree leaves is a factor of the total size of
+> >the items stored.
+> >
+> >So, with all of that said, the nodes point to leaves and the leaves
+> >contain inodes, directory entries and sometimes file data.
+> >
+> >The most important part of the index is the higher levels of the tree.
+> >The index of most filesystems points to but does not contain
+> >inodes and file data, and so the higher levels of the btrfs btree are
+> >more like a traditional FS index.
+> >
+> >There's a knob here for the max inline item size and if someone wants to
+> >fill their whole FS with 2K files, the default settings are not at all
+> >suitable.  Filling with 3K files actually works better because we end
+> >up with inode and file data in the same block much of the time.
+> 
+> Chris, thanks for the description.
+> 
+> I think that such balancing is totally incorrect. In accordance with
+> your strategy insertions can spawn shallow leaves, and deletions will
+> result in shallow leaves (because of merging with shallow leaves).
+> This will lead to unbound utilization slump.
 
-   Documentation/io-mapping.txt => Documentation/io-mapping.h.txt
--- 
-Kees
+Ok, insertions can spawn shallow leaves containing file data and
+deletions can result in shallow leaves containing file data, just trying
+to make sure I'm reading this correctly.
+
+Shallow leaves with file data happen in every filesystem, but the other
+filesystems call them data extents.  I think we're talking past each other a
+little here ;)
+
+> 
+> In particular, your patch is just a workaround, which doesn't fix the
+> core problem. Knobs for cases is a nonsense. Are you kidding? Ext4,
+> xfs, reiserfs don't use any knobs, so why should we accept this
+> regress on the background of common progress? Everything should be
+> packed fine without any knobs...
+
+Ext4 and xfs don't pack file data into the btree.  reiserfs does but
+splits the data items.  I'm still trying to nail down if you're worried
+about something other than packed file data.
+
+I'm saying there's no difference between a btrfs leaf with a single item
+and a block pointer in xfs pointing to a single block.  The btrfs leaf
+is full and the single block in xfs is full.
+
+Both are backed by higher levels in the btree that are properly compact.
+
+Btrfs metadata mirroring makes the cost of that leaf much higher, which
+is something we might want to address by lowering the size of file data
+that we choose to inline.
+
+
+> 
+> Your strategy slightly resembles balancing in Reiserfs file system,
+> so I have two comments here.
+> 
+> 1. Algorithms used in Reiserfs are "precise" (or "minimal"). That
+> means there is no "superfluous" balancing there. It is impossible to
+> save on balancing operations and slightly decrease utilization bound:
+> you will lose everything (this is unacceptable). Only classic Bayer's
+> B-trees allow to reduce bound 1/2 via replacing usual balancing
+> condition q <= N <= 2q with more liberal one (say, q <= N <= 3q).
+> 
+> 2. If you want to base on COW-friendly Reiserfs, then it's algorithms
+> should be properly modified for the case of top-down balancing and
+> reviewed (better by the authors of the original algorithms).
+> I recommend to consider the following approach:
+> 
+> 
+> Balancing the leaf level
+> 
+> 
+> A. Inserting a key of length I(*)
+> 
+> 
+> 01    Suppose we traversed the tree and have arrived to the position
+> 02    pos in the leaf A.
+> 03
+> 04    At first we try to make space by shifting all possible items at the
+> 05    left and right from the pos to the neighbors B and C respectively:
+
+Ok, maybe it is just before dinner and I'm reading this too quickly, but
+this is very similar to how the btrfs balancing does already work.  A
+few comments below.
+
+> 06
+> 07            B   A   C
+> 08       09    Let's denote via L and R total length of items on
+> leaf A at left
+> 10    and right from the pos respectively.
+
+push_leaf_left(), push_leaf_right() in the btrfs code
+> 11
+> 12    If after shifting there is enough space in A, then we perform
+> 13        insertion to A. After the insertion pairs (BA) and (AC) are
+> 14        incompressible for obvious reasons.
+
+
+> 15
+> 16    Else if there is no enough space in A, we make space via inserting
+> 17        a new empty leaf D and shift all items at the right side of pos
+> 18        to D:
+> 19
+> 20            B   A   D   C
+
+split_leaf()
+
+> 21
+> 22        If there is enough space in A, then we perform insertion to A.
+> 23            After insertion (AD) is incompressible, because there wasn't
+> 24            enough space at (16), i.e. I+L+R > N, hence I+L > N-R,
+> 25            i.e there is no enough space in D for all items of A
+> 26            (N is capacity of empty leaf).
+> 27
+> 28        Else if there is enough space in D, then we perform insertion
+> 29            to D. Pair (DC) is incompressible, because at the point (4)
+> 30            we have shifted right all possible items at the right side
+> 31            of pos. Pair (AD) is incompressible, because we didn't jump
+> 32            to (22), i.e. I is larger then free space in A.
+> 33
+> 34        Else (there is no space in A and D for insertion), we make
+> 35            space via insertion of a new empty leaf E, shift all items
+> 36            from A to E, and perform insertion to the empty node A:
+> 37
+> 38            B   E   A   D   C
+
+This is the double split condition in split_leaf()
+
+> 39
+> 40            In this case (BE) is incompressible, because at the point (4)
+> 41            we have shifted left all possible items. Pair (EA) is
+> 42            incompressible, because there wasn't enough space in A at
+> 43            (34).
+> 
+> (*) Variable length key is an abstraction. In real life this usually
+> means a record which includes a key of fixed length and some payload
+> of variable length.
+> 
+> 
+> 
+> B. Deleting a key
+> 
+> 
+> 01    Suppose we traversed the tree and have arrived to the position
+> 02    pos in the leaf A:
+> 03
+> 04            B   A   C
+> 05
+> 06    At first we perform deletion from A.
+> 07    If A is empty, then
+> 08        remove leaf A:
+> 09
+> 10            B   C
+> 11
+> 12        If the pair (BC) compressible, then shift everything from B
+> 13        to C and remove leaf B:
+> 14
+> 15            C
+> 16
+> 17        At this point leaf C is pairwise incompressible with its left
+> 18        and right neighbors for obvious reasons.
+> 19
+> 20    Else
+> 21        if the pair (BA) compressible, then shift everything from B
+> 22        to A and remove leaf B:
+> 23
+> 24            A   C
+> 25
+> 26        If the pair (AC) compressible, then shift everything from A to
+> 27        C and remove leaf A:
+> 28
+> 29            C
+> 30
+> 31        Here leaf C is pairwise incompressible with its left and right
+> 32        neighbors for obvious reasons.
+
+The above is what we do in btrfs, except it is triggered based on how
+empty the leaf is.
+
+> 
+> 
+> Balancing the upper levels
+> 
+> 
+> Thus, insertion/deletion on the leaf level can lead to insertion/deletion
+> of not more then 2 leaves, and hence 2 keys on the upper levels. So, we
+> modify the classic balancing condition and top-down balancing strategy
+> by the following way:
+> 
+> Every non-root node of upper (non-leaf) levels may contain between
+> q and 2(q+1) entries (q>=2).
+> 
+> A. Inserting a key
+> 
+> If a node with 2q+2 (2q+1) entries is encountered while traversing the
+> tree, it is split into two nodes with q and q+2 (q and q+1) entries.
+> 
+> 
+> B. Deleting a key
+> 
+> If a node with q (q+1) entries in encountered while traversing the
+> tree, it is fixed. Fixing means either moving keys into it, or merging
+> it with a neighbor, so it will contain not less then q+2 keys.
+
+This is balance_level()
+
+-chris
 
