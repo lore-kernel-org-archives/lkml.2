@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab0F3Rx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 13:53:26 -0400
-Received: from shutemov.name ([188.40.19.243]:44644 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754796Ab0F3RxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 13:53:25 -0400
-Date: Wed, 30 Jun 2010 20:53:24 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
-       "Antonio R. Costa" <costa.antonior@gmail.com>,
-       Nicolas Ferre <nicolas.ferre@atmel.com>, Dmitry Torokhov <dtor@mail.ru>,
-       Andrea Gelmini <andrea.gelmini@gelma.net>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 01/33] Removing dead MTD_NAND_AT91_BUSWIDTH_16
-Message-ID: <20100630175324.GA3969@shutemov.name>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
- <4c6fe9a4c298214223ff89d06401ac7b66f81c98.1277911346.git.siccegge@cs.fau.de>
+	id S1756403Ab0F3Rze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 13:55:34 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51899 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab0F3Rzd (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 30 Jun 2010 13:55:33 -0400
+Date: Wed, 30 Jun 2010 13:53:43 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: stefano@stabellini.net, johnstul@us.ibm.com
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+       Stefano.Stabellini@eu.citrix.com, sheng@linux.intel.com,
+       ddutile@redhat.com, jeremy@goop.org
+Subject: Re: [PATCH 10/13] Do not try to disable hpet if it hasn't been
+ initialized before
+Message-ID: <20100630175343.GA16488@phenom.dumpdata.com>
+References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
+ <1277136847-13266-10-git-send-email-stefano@stabellini.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4c6fe9a4c298214223ff89d06401ac7b66f81c98.1277911346.git.siccegge@cs.fau.de>
+In-Reply-To: <1277136847-13266-10-git-send-email-stefano@stabellini.net>
 User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4C2B8503.0042:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 05:53:52PM +0200, Christoph Egger wrote:
-> MTD_NAND_AT91_BUSWIDTH_16 doesn't exist in Kconfig, therefore removing
-> all references for it from the source code.
-
-It was renamed to MTD_NAND_ATMEL_BUSWIDTH_16 (see f6ed6f7).
-
-I think better to rename it here too.
-
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> ---
->  arch/arm/mach-at91/board-at572d940hf_ek.c |    4 ----
->  arch/arm/mach-at91/board-sam9m10g45ek.c   |    4 ----
->  2 files changed, 0 insertions(+), 8 deletions(-)
+On Mon, Jun 21, 2010 at 05:14:04PM +0100, stefano@stabellini.net wrote:
+> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > 
-> diff --git a/arch/arm/mach-at91/board-at572d940hf_ek.c b/arch/arm/mach-at91/board-at572d940hf_ek.c
-> index 5daff27..889a442 100644
-> --- a/arch/arm/mach-at91/board-at572d940hf_ek.c
-> +++ b/arch/arm/mach-at91/board-at572d940hf_ek.c
-> @@ -216,11 +216,7 @@ static struct atmel_nand_data __initdata eb_nand_data = {
->  /*	.rdy_pin	= AT91_PIN_PC16, */
->  	.enable_pin	= AT91_PIN_PA15,
->  	.partition_info	= nand_partitions,
-> -#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
-> -	.bus_width_16	= 1,
-> -#else
->  	.bus_width_16	= 0,
-> -#endif
->  };
+> hpet_disable is called unconditionally on machine reboot if hpet support
+> is compiled in the kernel.
+> hpet_disable only checks if the machine is hpet capable but doesn't make
+> sure that hpet has been initialized.
+
+CC-ing John Stultz who has had his head wrapped around this time-thingy.
+
+Hi John!
+
+What are your thoughts about this patch?
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/kernel/hpet.c |   18 ++++++++++--------
+>  1 files changed, 10 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+> index 23b4ecd..2b299da 100644
+> --- a/arch/x86/kernel/hpet.c
+> +++ b/arch/x86/kernel/hpet.c
+> @@ -959,16 +959,18 @@ fs_initcall(hpet_late_init);
 >  
->  static struct sam9_smc_config __initdata eb_nand_smc_config = {
-> diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
-> index ee80059..49ef850 100644
-> --- a/arch/arm/mach-at91/board-sam9m10g45ek.c
-> +++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
-> @@ -135,11 +135,7 @@ static struct atmel_nand_data __initdata ek_nand_data = {
->  	.rdy_pin	= AT91_PIN_PC8,
->  	.enable_pin	= AT91_PIN_PC14,
->  	.partition_info	= nand_partitions,
-> -#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
-> -	.bus_width_16	= 1,
-> -#else
->  	.bus_width_16	= 0,
-> -#endif
->  };
+>  void hpet_disable(void)
+>  {
+> -	if (is_hpet_capable()) {
+> -		unsigned int cfg = hpet_readl(HPET_CFG);
+> +	unsigned int cfg;
 >  
->  static struct sam9_smc_config __initdata ek_nand_smc_config = {
+> -		if (hpet_legacy_int_enabled) {
+> -			cfg &= ~HPET_CFG_LEGACY;
+> -			hpet_legacy_int_enabled = 0;
+> -		}
+> -		cfg &= ~HPET_CFG_ENABLE;
+> -		hpet_writel(cfg, HPET_CFG);
+> +	if (!is_hpet_capable() || !hpet_address || !hpet_virt_address)
+> +		return;
+> +
+> +	cfg = hpet_readl(HPET_CFG);
+> +	if (hpet_legacy_int_enabled) {
+> +		cfg &= ~HPET_CFG_LEGACY;
+> +		hpet_legacy_int_enabled = 0;
+>  	}
+> +	cfg &= ~HPET_CFG_ENABLE;
+> +	hpet_writel(cfg, HPET_CFG);
+>  }
+>  
+>  #ifdef CONFIG_HPET_EMULATE_RTC
 > -- 
 > 1.7.0.4
 > 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
--- 
- Kirill A. Shutemov
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
