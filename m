@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab0F3Q5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 12:57:45 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:40114 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755997Ab0F3Q5o (ORCPT
+	id S1756939Ab0F3RCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 13:02:06 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47313 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab0F3RCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 12:57:44 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Wed, 30 Jun 2010 12:57:43 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Russell King <linux@arm.linux.org.uk>,
-       linux-arm-kernel@lists.infradead.org,
-       lkml <linux-kernel@vger.kernel.org>,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 08/33] Removing dead SA1101
-In-reply-to: <7488ec29cdb90212e965f6cd1173141c576c0955.1277911346.git.siccegge@cs.fau.de>
-Message-id: <alpine.LFD.2.00.1006301255260.24097@xanadu.home>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
- <7488ec29cdb90212e965f6cd1173141c576c0955.1277911346.git.siccegge@cs.fau.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 30 Jun 2010 13:02:03 -0400
+Date: Wed, 30 Jun 2010 10:01:42 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: werner@guyane.yi.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Fwd: 2.6.35-rc1   classmate-laptop.c  poroblem
+Message-Id: <20100630100142.25f8d365.randy.dunlap@oracle.com>
+In-Reply-To: <1277527970.7800@guyane.yi.org>
+References: <1277527970.7800@guyane.yi.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4C2B7885.0176:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010, Christoph Egger wrote:
+On Sat, 26 Jun 2010 01:52:50 -0300 (GFT) werner@guyane.yi.org wrote:
 
-> SA1101 doesn't exist in Kconfig, therefore removing all
-> references for it from the source code.
-> 
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> On 31/Mai/2010 12:48 werner@sys-linux.yi.org wrote ..
+> > 
+> > 
+> > drivers/built-in.o: In function `cmpc_ipml_remove':
+> > classmate-laptop.c:(.text+0x671548): undefined reference to `rfkill_unregister'
+> > classmate-laptop.c:(.text+0x671550): undefined reference to `rfkill_destroy'
+> > drivers/built-in.o: In function `cmpc_ipml_add':
+> > classmate-laptop.c:(.text+0x67163f): undefined reference to `rfkill_alloc'
+> > classmate-laptop.c:(.text+0x671650): undefined reference to `rfkill_register'
+> > classmate-laptop.c:(.text+0x67165c): undefined reference to `rfkill_destroy'
+> > drivers/built-in.o: In function `cmpc_rfkill_query':
+> > classmate-laptop.c:(.text+0x6716db): undefined reference to `rfkill_set_sw_state'
+> > make: [.tmp_vmlinux1] Error 1 (ignored)
 
-Acked-by: Nicolas Pitre <nico@fluxnic.net>
 
-> ---
->  arch/arm/mach-sa1100/include/mach/SA-1101.h  |  925 --------------------------
->  arch/arm/mach-sa1100/include/mach/hardware.h |    4 -
->  2 files changed, 0 insertions(+), 929 deletions(-)
->  delete mode 100644 arch/arm/mach-sa1100/include/mach/SA-1101.h
-> 
-[...]
+Yep, patch sent and queued.
 
-
-Nicolas
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
