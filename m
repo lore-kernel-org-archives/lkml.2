@@ -1,70 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab0F3Jsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:48:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35251 "EHLO mx2.suse.de"
+	id S1754891Ab0F3Jzc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 05:55:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54617 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273Ab0F3Jsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:48:32 -0400
-Date: Wed, 30 Jun 2010 11:48:30 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]kernel.h Fix #warning message web address.
-In-Reply-To: <1277840244-3436-1-git-send-email-justinmattock@gmail.com>
-Message-ID: <alpine.LNX.2.00.1006301147490.13809@pobox.suse.cz>
-References: <1277840244-3436-1-git-send-email-justinmattock@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752948Ab0F3Jz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 05:55:29 -0400
+Date: Wed, 30 Jun 2010 11:55:25 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Darren Hart <dvhltc@us.ibm.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] futex: futex_find_get_task remove credentails check
+Message-ID: <20100630095525.GA5840@tiehlicka.suse.cz>
+References: <4C24ED34.9040808@us.ibm.com>
+ <4C253D32.6040304@us.ibm.com>
+ <20100628144246.GA14201@tiehlicka.suse.cz>
+ <20100628153214.GA24127@tiehlicka.suse.cz>
+ <20100628155845.GC24127@tiehlicka.suse.cz>
+ <20100628163952.GD24127@tiehlicka.suse.cz>
+ <1277743748.3561.139.camel@laptop>
+ <20100629084230.GE6215@tiehlicka.suse.cz>
+ <AANLkTinyoyZVg8iYOuUx6aA4XlUlLywl4q6GLXmeYP-x@mail.gmail.com>
+ <20100630070115.GB3890@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100630070115.GB3890@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010, Justin P. Mattock wrote:
+On Wed 30-06-10 09:01:15, Michal Hocko wrote:
+> On Tue 29-06-10 09:41:02, Linus Torvalds wrote:
+> > On Tue, Jun 29, 2010 at 1:42 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > >
+> > > futex_find_get_task is currently used (through lookup_pi_state) from two
+> > > contexts, futex_requeue and futex_lock_pi_atomic. While credentials check
+> > > makes sense in the first code path, the second one is more problematic
+> > > because this check requires that the PI lock holder (pid parameter) has
+> > > the same uid and euid as the process's euid which is trying to lock the
+> > > same futex (current).
+> > 
+> > So exactly why does it make sense to check the credentials in the
+> > first code path then? 
+> 
+> I though that requeue needs this for security reasons (don't let requeue
+> process for other user), but when I thought about that again you are
+> right and the only what matters should be accessibility of the shared
+> memory.
 
-> Playing around with a printk program I noticed that the #warning
-> message is incomplete(when using kernel headers for userspace):
-> 
->  gcc printk.c -o printk
-> In file included from printk.c:3:
-> include/linux/kernel.h:733:2: warning: #warning Attempt to use kernel headers from user space, see http:
-> 
-> My guess for the web address not being displayed is "//" is treated as a comment.
-> So after changing "http://" to "www." I get the web address.(using firefox with this
-> address takes me right to the location). The warning looks like this:
-> 
-> In file included from printk.c:3:
-> warning: #warning Attempt to use kernel headers from user space, see www.kernelnewbies.org/KernelHeaders 
->  
->  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  include/linux/kernel.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 8317ec4..768196a 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -730,7 +730,7 @@ extern int do_sysinfo(struct sysinfo *info);
->  
->  #ifndef __EXPORTED_HEADERS__
->  #ifndef __KERNEL__
-> -#warning Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders
-> +#warning Attempt to use kernel headers from user space, see www.kernelnewbies.org/KernelHeaders
->  #endif /* __KERNEL__ */
->  #endif /* __EXPORTED_HEADERS__ */
+And here is the patch which does the thing.
 
-Hehe, ugly. How about making it a single string? GCC preprocessor 
-documentation suggests the same anyway ...
+--
 
-	Neither `#error' nor `#warning' macro-expands its argument.
-	Internal whitespace sequences are each replaced with a single space.
-	The line must consist of complete tokens.  It is wisest to make the
-	argument of these directives be a single string constant; this avoids
-	problems with apostrophes and the like.
+>From 082c5ad2c482a8e78b61b17e213e750b006176aa Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 30 Jun 2010 09:51:19 +0200
+Subject: [PATCH] futex: futex_find_get_task remove credentails check
+
+futex_find_get_task is currently used (through lookup_pi_state) from two
+contexts, futex_requeue and futex_lock_pi_atomic. None of the paths
+looks it needs the credentials check, though. Different (e)uids
+shouldn't matter at all because the only thing that is important for
+shared futex is the accessibility of the shared memory.
+
+The credentail check results in glibc assert failure or process hang (if
+glibc is compiled without assert support) for shared robust pthread
+mutex with priority inheritance if a process tries to lock already held
+lock owned by a process with a different euid:
+
+pthread_mutex_lock.c:312: __pthread_mutex_lock_full: Assertion `(-(e)) != 3 || !robust' failed.
+
+The problem is that futex_lock_pi_atomic which is called when we try to
+lock already held lock checks the current holder (tid is stored in the
+futex value) to get the PI state. It uses lookup_pi_state which in turn
+gets task struct from futex_find_get_task. ESRCH is returned either when
+the task is not found or if credentials check fails.
+futex_lock_pi_atomic simply returns if it gets ESRCH. glibc code,
+however,  doesn't expect that robust lock returns with ESRCH because it
+should get either success or owner died.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ kernel/futex.c |   17 ++++-------------
+ 1 files changed, 4 insertions(+), 13 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index e7a35f1..6a3a5fa 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -429,20 +429,11 @@ static void free_pi_state(struct futex_pi_state *pi_state)
+ static struct task_struct * futex_find_get_task(pid_t pid)
+ {
+ 	struct task_struct *p;
+-	const struct cred *cred = current_cred(), *pcred;
+ 
+ 	rcu_read_lock();
+ 	p = find_task_by_vpid(pid);
+-	if (!p) {
+-		p = ERR_PTR(-ESRCH);
+-	} else {
+-		pcred = __task_cred(p);
+-		if (cred->euid != pcred->euid &&
+-		    cred->euid != pcred->uid)
+-			p = ERR_PTR(-ESRCH);
+-		else
+-			get_task_struct(p);
+-	}
++	if (p)
++		get_task_struct(p);
+ 
+ 	rcu_read_unlock();
+ 
+@@ -564,8 +555,8 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 	if (!pid)
+ 		return -ESRCH;
+ 	p = futex_find_get_task(pid);
+-	if (IS_ERR(p))
+-		return PTR_ERR(p);
++	if (!p)
++		return -ESRCH;
+ 
+ 	/*
+ 	 * We need to look at the task state flags to figure out,
+-- 
+1.7.1
+
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
