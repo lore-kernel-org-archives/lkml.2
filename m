@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab0F3J15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:27:57 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59778 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab0F3J1z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:27:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 02/11] oom: oom_kill_process() doesn't select kthread child
-Cc: kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
-References: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
-Message-Id: <20100630182715.AA4B.A69D9226@jp.fujitsu.com>
+	id S1752368Ab0F3J22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 05:28:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34514 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752687Ab0F3J20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 05:28:26 -0400
+Date: Wed, 30 Jun 2010 11:28:24 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Jaya Kumar <jayakumar.lkml@gmail.com>, linux-fbdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [Patch 0/4] HID: Fix PicoLCD to allow it to run fbcon and handle
+ unplug while FB in use
+In-Reply-To: <20100628222641.489c955a@neptune.home>
+Message-ID: <alpine.LNX.2.00.1006301127540.13809@pobox.suse.cz>
+References: <20100509184911.3f136b77@neptune.home> <AANLkTik0EkPYKdnhrpF7yK6eXIrHMsNYrzSC6tyeBR0P@mail.gmail.com> <20100510080047.5adade6f@pluto.restena.lu> <20100526215829.28a4aa47@neptune.home> <20100530130945.5c03797f@neptune.home> <20100623123225.4c16e653@neptune.home>
+ <alpine.LNX.2.00.1006241053360.13809@pobox.suse.cz> <20100628222641.489c955a@neptune.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 30 Jun 2010 18:27:52 +0900 (JST)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, select_bad_process() have PF_KTHREAD check, but oom_kill_process
-doesn't. It mean oom_kill_process() may choose wrong task, especially,
-when the child are using use_mm().
+On Mon, 28 Jun 2010, Bruno Prémont wrote:
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> > splitting would definitely improve readability and reviewability (even 
+> > more so for someone like me, who is not really familiar with the 
+> > framebuffer stuff).
+> > 
+> > Still it'd be nice if you could collect Ack from someone more familiar 
+> > with the framebuffer code.
+> 
+> Here it comes, split into 4 patches.
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 0aeacb2..dc8589e 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -467,6 +467,8 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 
- 			if (child->mm == p->mm)
- 				continue;
-+			if (child->flags & PF_KTHREAD)
-+				continue;
- 			if (mem && !task_in_mem_cgroup(child, mem))
- 				continue;
- 			if (!has_intersects_mems_allowed(child, nodemask))
+As the only objection from framebuffer people has been for changelog 
+wording of 1/4, could you please fix that up, and I'll apply the series?
+
+Thanks,
+
 -- 
-1.6.5.2
-
-
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
