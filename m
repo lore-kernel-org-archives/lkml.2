@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab0F3FJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 01:09:57 -0400
-Received: from [211.233.36.121] ([211.233.36.121]:33455 "EHLO mail.nstek.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851Ab0F3FJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 01:09:55 -0400
-X-Greylist: delayed 63051 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Jun 2010 01:09:53 EDT
-Message-Id: <201006291132.o5TBWDGY010515@mail.nstek.com>
-Reply-To: <liu_qin_qinggui@info.al>
-From: "Liu Qin Qinggui" <liu_qin_qinggui1@info.al>
-Subject: ATTENTION: GET BACK TO ME ASAP !!!                                             VLJNMKCSRM
-Date: Wed, 30 Jun 2010 12:28:05 +0100
+	id S1751790Ab0F3F14 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 01:27:56 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:47436 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751569Ab0F3F1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 01:27:55 -0400
+Date: Tue, 29 Jun 2010 22:27:52 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Yama: add PTRACE exception tracking
+Message-ID: <20100630052752.GL4837@outflux.net>
+References: <20100630003844.GE4837@outflux.net>
+ <20100630004027.GG4837@outflux.net>
+ <20100630035609.GA16307@hallyn.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: <lintarajadurai@yahoo.in>
-To: <ling173613@yahoo.com.tw>
-To: <ling01031107@yahoo.com.tw>
-To: <lins114@yahoo.com>
-To: <linrock2001@yahoo.com>
-To: <linners88@yahoo.com>
-To: <linlin_scooby@yahoo.com>
-To: <linkot@yahoo.com>
-To: <link32042000@yahoo.com>
-To: <linhnavy@yahoo.com>
-To: <linh_p_2000@yahoo.com>
-To: <lindy83@yahoo.com>
-To: <lindskay7@yahoo.com>
-To: <lindsjosephs@yahoo.com>
-To: <linkinlover2000@yahoo.co.uk>
-To: <linhayes5@yahhoo.com>
-To: <linux-kernel@vger.kernel.org>
-To: <lindylou@suddenlink.net>
-To: <lindz-petleyjones@shaw.ca>
-To: <linhthanh@sbcglobal.net>
-To: <linsanchez@satx.rr.com>
-To: <links7662@pontiacwagontrain.com>
-To: <lindy@pcs-online.com>
-To: <ling@nolo.com>
-To: <lingerieplace@netzero.net>
-To: <lionelbrwn@msn.com>
-To: <lionelbrown@msn.com>
-To: <lionelboy@msn.com>
-To: <lionelbordesp@msn.com>
-To: <lionelbordes@msn.com>
-To: <lionelboch300zx@msn.com>
-To: <lionelbill@msn.com>
-To: <lionelbensimon@msn.com>
-To: <lionelbeck@msn.com>
-To: <lionelbear@msn.com>
-To: <lionelb@msn.com>
-To: <lionelamtr@msn.com>
-To: <lionela@msn.com>
-To: <lionel_wood@msn.com>
-To: <liondrums@msn.com>
-To: <lingvall@msn.com>
-To: <linn@kricket.net>
-To: <lindsey@kricket.net>
-To: <linn13@gmail.com>
-To: <linkyox@gmail.com>
-To: <lineskee22@gmail.com>
-To: <lindswad@gmail.com>
-To: <linnv@comcast.net>
-To: <lindydehaa@comcast.net>
-To: <linzo@cogeco.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100630035609.GA16307@hallyn.com>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My Name Is Liu Qin Qinggui, 
+Hi Serge,
 
-I have a serious big business to propose to you, my late client Mr Henry Ting, left an unclaimed sum with my bank 
-This business to gross 17 million, 600 hundred Thousand American Money. 
+On Tue, Jun 29, 2010 at 10:56:09PM -0500, Serge E. Hallyn wrote:
+> Quoting Kees Cook (kees.cook@canonical.com):
+> > Some application suites have external crash handlers that depend on
+> > being able to use PTRACE to generate crash reports (KDE, Chromium, etc).
+> > Since the inferior process generally knows the PID of the debugger,
+> > it can use PR_SET_PTRACER to allow a specific PID and its descendants
+> > to perform the PTRACE instead of only a direct ancestor.
+> > 
+> > Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> > ---
+> 
+> Hi Kees - very nice, overall.  One little note though:
 
-I want you to help me process and receive this fund, Rest assured I can make this transaction work perfectly and safely for us you understand, and with your co-operation for the success of this business I offer to you a good percentage of the fund as your share. 
+Thanks for looking it over!
 
-If interested pls contact to me as soonest your convenience at my e-mail: liu_qin_qinggui@info.al 
+> >  	rc = cap_ptrace_access_check(child, mode);
+> 
+> This means that if capable(CAP_SYS_PTRACE) we'll always shortcut
+> here, so
+> 
+> > +	if (mode == PTRACE_MODE_ATTACH &&
+> > +	    ptrace_scope &&
+> > +	    !capable(CAP_SYS_PTRACE) &&
+> > +	    !task_is_descendant(current, child) &&
+> > +	    !ptracer_exception_found(current, child))
+> > +		rc = -EPERM;
+> 
+> You don't need the CAP_SYS_PTRACE check here AFAICS.
 
-I give you all necessary information on this business and how we make it work . 
+I don't think that's true -- the capable(CAP_SYS_PTRACE) tests
+are always done in the negative since we only ever abort with error
+instead of forcing an early "okay" (see also __ptrace_may_access() in
+kernel/ptrace.c, where capable(CAP_SYS_PTRACE) is called repeatedly while
+evaluating various negative conditions).
 
-I expect your reply and my response be swift. Thanking you much now. 
+For cap_ptrace_access_check, capable(CAP_SYS_PTRACE) is only tested if
+the tracee's process permitted caps are not a subset of the tracer's.
+i.e. cap_ptrace_access_check will return 0 when either cap_issubset
+or capable.  In the case of normal user processes or a tracer
+with greater caps, capable(CAP_SYS_PTRACE) will never be tested in
+cap_ptrace_access_check.
 
-Reply soon. 
+As a result, I have to include it in the test here too.  I guess it's
+arguable that I should move it to the end of the series of &&s, but it
+logically doesn't really matter.
 
-Liu Qin Qinggui
- 
-UCRKUWTSSYVKSZHXVEYKTDZUJXJLXFKVXDPEZV
+-Kees
+
+(Interestingly, this means that having CAP_SYS_PTRACE means a process
+effectively has all capabilities...)
+
+-- 
+Kees Cook
+Ubuntu Security Team
