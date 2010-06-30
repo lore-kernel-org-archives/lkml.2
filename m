@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab0F3WzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 18:55:24 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:35762 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab0F3WzT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 18:55:19 -0400
-X-Auth-Info: XE0+hH3jMVAyrOIWREdOZcLsAq2btm4sMLrgByw9Q98=
-To: Josh Boyer <jwboyer@linux.vnet.ibm.com>
-cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org, sr@denx.de,
-       Rupjyoti Sarmah <rsarmah@apm.com>, linux-kernel@vger.kernel.org,
-       linuxppc-dev@ozlabs.org
-From: Wolfgang Denk <wd@denx.de>
-Subject: Re: [PATCH v1]460EX on-chip SATA driver<resubmisison>
-MIME-Version: 1.0
+	id S1757424Ab0F3W6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 18:58:18 -0400
+Received: from xenotime.net ([72.52.115.56]:46643 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752545Ab0F3W6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 18:58:17 -0400
+Date: Wed, 30 Jun 2010 15:58:12 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] docbook: use ID as filename
+Message-Id: <20100630155812.ff25e97a.rdunlap@xenotime.net>
+In-Reply-To: <1277920855.7823.12.camel@jlt3.sipsolutions.net>
+References: <1277920855.7823.12.camel@jlt3.sipsolutions.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-In-reply-to: <20100630200325.GD7756@zod.rchland.ibm.com>
-References: <201006241327.o5ODRY6m032299@amcc.com> <20100630115808.2D9241524EC@gemini.denx.de> <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com> <20100630184728.C02D014EBF9@gemini.denx.de> <4C2B9831.9020801@pobox.com> <20100630200325.GD7756@zod.rchland.ibm.com>
-Comments: In-reply-to Josh Boyer <jwboyer@linux.vnet.ibm.com>
-   message dated "Wed, 30 Jun 2010 16:03:25 -0400."
-Date: Thu, 01 Jul 2010 00:55:16 +0200
-Message-Id: <20100630225516.8F9D3152442@gemini.denx.de>
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Josh Boyer,
+On Wed, 30 Jun 2010 20:00:55 +0200 Johannes Berg wrote:
 
-In message <20100630200325.GD7756@zod.rchland.ibm.com> you wrote:
->
-> The driver doesn't depend on CONFIG_ATA_SFF in it's Kconfig file, but seems to
-> require it at build time.  Isn't that something that needs fixing in the
-> driver?
+> From: Johannes Berg <johannes.berg@intel.com>
+> 
+> I'm trying to generate a <set> of <book>s in
+> docbook for wireless to link together all the
+> cfg80211 and mac80211 documentation.
+> 
+> However, docbook will generate "re01.html"
+> anew for each book for the first <refentry>,
+> presumably due to a bug in the stylesheets.
+> 
+> An effective workaround is to use IDs for the
+> filenames, which makes them more descriptive
+> as well, e.g. API-enum-ieee80211-band.html.
+> 
+> Cc: Randy Dunlap <rdunlap@xenotime.com>
+> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+> ---
+>  Documentation/DocBook/stylesheet.xsl |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- wireless-testing.orig/Documentation/DocBook/stylesheet.xsl	2010-06-30 19:57:19.000000000 +0200
+> +++ wireless-testing/Documentation/DocBook/stylesheet.xsl	2010-06-30 19:57:23.000000000 +0200
+> @@ -6,4 +6,5 @@
+>  <param name="callout.graphics">0</param>
+>  <!-- <param name="paper.type">A4</param> -->
+>  <param name="generate.section.toc.level">2</param>
+> +<param name="use.id.as.filename">1</param>
+>  </stylesheet>
+> 
+> 
+> --
 
-Right.  Next question is if this is really needed for this driver. 
+Applied to my patch queue.  We'll see if it trips up anything.
 
-Best regards,
-
-Wolfgang Denk
-
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
-Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
-Copy from one, it's plagiarism; copy from two, it's research.
+Thanks.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
