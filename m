@@ -1,72 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab0F3Mog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 08:44:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62864 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab0F3Moe (ORCPT
+	id S1753070Ab0F3Moy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 08:44:54 -0400
+Received: from exprod5og111.obsmtp.com ([64.18.0.22]:34351 "HELO
+	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752848Ab0F3Mow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 08:44:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file stats available [ver #2]
-Date: Wed, 30 Jun 2010 14:44:10 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: viro@zeniv.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
-       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-       sjayaraman@suse.de, linux-ext4@vger.kernel.org
-References: <201006301346.41902.arnd@arndb.de> <29346.1277892068@redhat.com> <26650.1277900050@redhat.com>
-In-Reply-To: <26650.1277900050@redhat.com>
+	Wed, 30 Jun 2010 08:44:52 -0400
+From: Rupjyoti Sarmah <rsarmah@apm.com>
+References: <201006241327.o5ODRY6m032299@amcc.com> <20100630115808.2D9241524EC@gemini.denx.de>
+In-Reply-To: <20100630115808.2D9241524EC@gemini.denx.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006301444.11194.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19NlZNiiN1s/Q/2w06bGUmn0oAJ7uu/8g7ZkXe
- StbMQUQRD5+Xi89eXMw4sOG+99GzO0mYxO0mVMSq7NI7NxONPF
- Ufr6ln2HvFsrSETFzsLPg==
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: AcsYS4VoPCq8HoKmQ+q4NaKH1BlSAwABa9Rw
+Date: Wed, 30 Jun 2010 18:14:47 +0530
+Message-ID: <3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com>
+Subject: RE: [PATCH v1]460EX on-chip SATA driver<resubmisison>
+To: Wolfgang Denk <wd@denx.de>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, jgarzik@pobox.com,
+       sr@denx.de, linuxppc-dev@ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 June 2010, David Howells wrote:
-> Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > Given a 64 bit flag word, you can start using bits for the version from
-> > the top and bits from the bottom for fields:
-> 
-> I suppose.  It's cleaner, though, to keep them separate.
+Hi Wolfgang,
 
-Yes, but it's a tradeoff. If separating them means you have to add
-another structure, I'd prefer having just a flags word with different
-kinds of bits. In particular since I don't think we actually need
-to worry about wildly different layouts. If struct oldstat had
-come with an extensibility concept like what you propose here, we
-would not have needed newstat, stat64 and xstat.
+I took the mainline kernel v2.6.35-rc3 and downloaded using the git
+download link.
+I created the patch on 6/24/2010 after doing a git pull.
 
-> > Alternatively, you can also make it a 64 bit argument everywhere, which has
-> > some other small disadvantages.
-> 
-> No, you can't.  32-bit systems can only pass 32-bit arguments.  If you're
-> suggesting passing a pointer to a 64-bit argument instead, how's that any
-> different from my suggestion of a separate parameter block?
+With the kernel tree on 6/24/2010 the driver compiled. I also tested the
+functionality on the SATA drive & it worked.
 
-I was thinking of splitting the 64 bit argument into two registers on
-32 bit systems, like we do with other 64 bit input arguments (e.g. loff_t).
-While there is not much of a difference, I'd always prefer passing
-input arguments by register to a memory location when possible.
+Regards,
+Rup
 
-> > The idea of a syscall API with multiple fixed-length and variable-length
-> > fields in the same structure scares me. If you want to go this far,
-> > it may be better to base the interface on netlink and allow querying
-> > multiple files at once.
-> 
-> Urgh.  Netlink is way too much overhead and even scarier.  That's pretty much
-> a guarantee that people won't use it.  It also has to work if CONFIG_NET=n.
 
-Exactly. Just resist the urge to add complexity bordering what we already
-have in netlink.
 
-	Arnd
+-----Original Message-----
+From: Wolfgang Denk [mailto:wd@denx.de]
+Sent: Wednesday, June 30, 2010 5:28 PM
+To: Rupjyoti Sarmah
+Cc: linux-ide@vger.kernel.org; linux-kernel@vger.kernel.org;
+jgarzik@pobox.com; sr@denx.de; rsarmah@apm.com; linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH v1]460EX on-chip SATA driver<resubmisison>
+
+Dear Rupjyoti Sarmah,
+
+In message <201006241327.o5ODRY6m032299@amcc.com> you wrote:
+> This patch enables the on-chip DWC SATA controller of the AppliedMicro
+processor 460EX.
+>
+> Signed-off-by: Rupjyoti Sarmah <rsarmah@appliedmicro.com>
+> Signed-off-by: Mark Miesfeld <mmiesfeld@appliedmicro.com>
+> Signed-off-by: Prodyut Hazarika <phazarika@appliedmicro.com>
+>
+> ---
+> This patch incorporates the changes advised in the mailing list. The
+device
+> tree changes were submitted as a seperate patch.
+
+Which kernel is this patch supposed to be applied to?
+
+Using current mainline (v2.6.35-rc3-262-g984bc96) the patch applies
+without problems, but when I enable it in the kernel configuration I
+get this:
+
+drivers/ata/sata_dwc_460ex.c:43:1: warning: "DRV_NAME" redefined
+In file included from drivers/ata/sata_dwc_460ex.c:38:
+drivers/ata/libata.h:31:1: warning: this is the location of the previous
+definition
+drivers/ata/sata_dwc_460ex.c:44:1: warning: "DRV_VERSION" redefined
+drivers/ata/libata.h:32:1: warning: this is the location of the previous
+definition
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_scr_read':
+drivers/ata/sata_dwc_460ex.c:777: error: 'struct ata_port' has no member
+named 'ioaddr'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_scr_write':
+drivers/ata/sata_dwc_460ex.c:793: error: 'struct ata_port' has no member
+named 'ioaddr'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_error_intr':
+drivers/ata/sata_dwc_460ex.c:844: error: 'struct ata_port_operations' has
+no member named 'sff_check_status'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_isr':
+drivers/ata/sata_dwc_460ex.c:953: error: 'struct ata_port_operations' has
+no member named 'sff_check_status'
+drivers/ata/sata_dwc_460ex.c:957: error: 'struct ata_port_operations' has
+no member named 'sff_check_status'
+drivers/ata/sata_dwc_460ex.c:991: error: implicit declaration of function
+'ata_sff_hsm_move'
+drivers/ata/sata_dwc_460ex.c:1030: error: 'struct ata_port_operations' has
+no member named 'sff_check_status'
+drivers/ata/sata_dwc_460ex.c: At top level:
+drivers/ata/sata_dwc_460ex.c:1213: warning: 'struct ata_ioports' declared
+inside parameter list
+drivers/ata/sata_dwc_460ex.c:1213: warning: its scope is only this
+definition or declaration, which is probably not what you want
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_setup_port':
+drivers/ata/sata_dwc_460ex.c:1215: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1216: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1218: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1219: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1221: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1223: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1224: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1225: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1227: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1228: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1229: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1231: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c:1232: error: dereferencing pointer to
+incomplete type
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_port_start':
+drivers/ata/sata_dwc_460ex.c:1273: error: 'struct ata_port' has no member
+named 'bmdma_prd'
+drivers/ata/sata_dwc_460ex.c:1274: error: 'struct ata_port' has no member
+named 'bmdma_prd_dma'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_exec_command_by_tag':
+drivers/ata/sata_dwc_460ex.c:1356: warning: passing argument 1 of
+'ata_get_cmd_descript' makes integer from pointer without a cast
+drivers/ata/sata_dwc_460ex.c:1369: error: implicit declaration of function
+'ata_sff_exec_command'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_qc_issue':
+drivers/ata/sata_dwc_460ex.c:1512: error: 'struct ata_port_operations' has
+no member named 'sff_tf_load'
+drivers/ata/sata_dwc_460ex.c:1516: error: implicit declaration of function
+'ata_sff_qc_issue'
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_error_handler':
+drivers/ata/sata_dwc_460ex.c:1545: error: implicit declaration of function
+'ata_sff_error_handler'
+drivers/ata/sata_dwc_460ex.c: At top level:
+drivers/ata/sata_dwc_460ex.c:1564: error: 'ata_sff_port_ops' undeclared
+here (not in a function)
+drivers/ata/sata_dwc_460ex.c:1577: error: unknown field 'bmdma_setup'
+specified in initializer
+drivers/ata/sata_dwc_460ex.c:1577: warning: initialization from
+incompatible pointer type
+drivers/ata/sata_dwc_460ex.c:1578: error: unknown field 'bmdma_start'
+specified in initializer
+drivers/ata/sata_dwc_460ex.c:1578: warning: initialization from
+incompatible pointer type
+drivers/ata/sata_dwc_460ex.c: In function 'sata_dwc_probe':
+drivers/ata/sata_dwc_460ex.c:1638: error: 'struct ata_port' has no member
+named 'ioaddr'
+drivers/ata/sata_dwc_460ex.c:1639: error: 'struct ata_port' has no member
+named 'ioaddr'
+drivers/ata/sata_dwc_460ex.c:1641: error: 'struct ata_port' has no member
+named 'ioaddr'
+make[2]: *** [drivers/ata/sata_dwc_460ex.o] Error 1
+make[1]: *** [drivers/ata] Error 2
+make: *** [drivers] Error 2
+
+
+Does this require any specific kernel version?
+
+Best regards,
+
+Wolfgang Denk
+
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+A direct quote from the Boss: "We passed over a lot of good people to
+get the ones we hired."
