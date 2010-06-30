@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab0F3QLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 12:11:17 -0400
-Received: from smtp-out-161.synserver.de ([212.40.180.161]:1064 "HELO
-	smtp-out-161.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754118Ab0F3QLQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 12:11:16 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 28118
-Date: Wed, 30 Jun 2010 18:11:06 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
-Subject: Re: [git pull] drm fixes + agp + one fb patch (bisected)
-Message-ID: <20100630161106.GA1743@arch.tripp.de>
-References: <alpine.DEB.2.00.1006300202190.30052@skynet.skynet.ie>
- <20100630065440.GA1736@arch.tripp.de>
- <20100630073145.GA1722@arch.tripp.de>
- <AANLkTimr33Bar73xO9IjDWhPWidZr0HB663oRU8fDCyt@mail.gmail.com>
- <20100630145859.GC1722@arch.tripp.de>
- <AANLkTil58kym4SgjMDv8RCXWkoUHKVYfTpT775uufoDJ@mail.gmail.com>
- <20100630151449.GA1748@arch.tripp.de>
- <AANLkTikHDUSpYrx4yCLFPNuTw4FFyLcf2kvJ2gVWicZA@mail.gmail.com>
- <20100630155007.GA1696@arch.tripp.de>
- <AANLkTilHe-eWT02LnFqr4C83d123aEtnRA18S1jxwIJC@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilHe-eWT02LnFqr4C83d123aEtnRA18S1jxwIJC@mail.gmail.com>
+	id S1756899Ab0F3QLl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 12:11:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6813 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754118Ab0F3QLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 12:11:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,513,1272870000"; 
+   d="scan'208";a="581480535"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Alan Cox <alan@linux.intel.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH] x86/mrst: assign a guessed cpu_khz value before calibration
+Date: Wed, 30 Jun 2010 09:11:01 -0700
+Message-Id: <1277914261-6918-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 12:04:35PM -0400, Alex Deucher wrote:
-> On Wed, Jun 30, 2010 at 11:50 AM, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
-> > On Wed, Jun 30, 2010 at 11:34:53AM -0400, Alex Deucher wrote:
-> >>
-> >> The attached patch should fix the issue.
-> >
-> > Sorry, but it does not. I've still the same issue with your patch
-> > applied.
-> 
-> New patch attached.  The rs690_pm_info function wasn't getting called
-> at all on rs780/rs880 and it needs to be.
+The new setup_local_APIC() code introduced by commit 8c3ba8d0 requires a valid
+cpu_khz value used as max loop count for clearing pending interrupts. However,
+Moorestown does a early APIC setup for the system timer interrupts which is
+before a valid cpu_khz is assigned in tsc calibration code.
 
-Looks good. Thanks Alex.
+This patch assigns a guessed value for cpu_khz to avoid a warning in local APIC
+setup code. The acuracy of cpu_khz is not important at the point of local APIC
+setup.
 
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ arch/x86/kernel/mrst.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/mrst.c b/arch/x86/kernel/mrst.c
+index 5fd5f9c..4901554 100644
+--- a/arch/x86/kernel/mrst.c
++++ b/arch/x86/kernel/mrst.c
+@@ -387,7 +387,12 @@ void __init x86_mrst_early_setup(void)
+ 	/* Avoid searching for BIOS MP tables */
+ 	x86_init.mpparse.find_smp_config = x86_init_noop;
+ 	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+-
++	/*
++	 * Give an estimated CPU frequency which will be used by early local
++	 * APIC setup code prior to calibration. The true value will be set
++	 * in tsc calibration later.
++	 */
++	cpu_khz = 1500000;
+ }
+ 
+ /*
 -- 
-Markus
+1.7.0.4
+
