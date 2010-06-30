@@ -1,326 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab0F3VNq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 17:13:46 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28108 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab0F3VNn (ORCPT
+	id S1757241Ab0F3VNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 17:13:52 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64468 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944Ab0F3VNr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 17:13:43 -0400
-Date: Wed, 30 Jun 2010 17:12:33 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Edward Shishkin <edward@redhat.com>
-Cc: Jamie Lokier <jamie@shareable.org>,
-       Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Ric Wheeler <rwheeler@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>,
-       ReiserFS Development List <reiserfs-devel@vger.kernel.org>,
-       Andi Kleen <andi@firstfloor.org>
-Subject: Re: Balancing leaves when walking from top to down (was Btrfs:...)
-Message-ID: <20100630211233.GL25967@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Edward Shishkin <edward@redhat.com>,
-	Jamie Lokier <jamie@shareable.org>,
-	Edward Shishkin <edward.shishkin@gmail.com>,
-	Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-	linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	The development of BTRFS <linux-btrfs@vger.kernel.org>,
-	ReiserFS Development List <reiserfs-devel@vger.kernel.org>,
-	Andi Kleen <andi@firstfloor.org>
-References: <20100618193555.GV27466@think>
- <4C1BED56.9010300@redhat.com>
- <20100621131528.GA17979@think>
- <20100621180013.GD17979@think>
- <4C20C4E9.60203@redhat.com>
- <20100622142006.GT23009@think>
- <4C221049.501@gmail.com>
- <20100623233759.GE7058@shareable.org>
- <20100624130601.GW23009@think>
- <4C2BA381.7040808@redhat.com>
+	Wed, 30 Jun 2010 17:13:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C2BA381.7040808@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C2BB34A.00AD:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <20100629102339.5e8a30b6@dev.queued.net>
+References: <20100628215407.2017bf2f@debian> <20100628220058.19e8f143@debian> 
+	<AANLkTinUy_FGuN9DiF5KtMCsqYUbByfS6g2Mdw0ATvtQ@mail.gmail.com> 
+	<20100629102339.5e8a30b6@dev.queued.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 30 Jun 2010 15:13:26 -0600
+X-Google-Sender-Auth: tzE5EWQ3B5wr-hW3p6CzN7AqAHg
+Message-ID: <AANLkTik7rqaGz7RtsOlhoSZw_-6bhv43YlWETsB17__4@mail.gmail.com>
+Subject: Re: [PATCH 4/4] x86: OLPC: add OLPC device-tree support
+To: Andres Salomon <dilinger@queued.net>
+Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
+       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
+       linux-kernel@vger.kernel.org, davem@davemloft.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 10:05:21PM +0200, Edward Shishkin wrote:
-> Chris Mason wrote:
-> [...]
-> >>>1. the balancing condition n <= number_of_keys <= 2n+1
-> >>>  is not satisfied (indeed, when number_of_keys is 1
-> >>>  we have 1 <= 2n+1 -- false);
-> >>That doesn't matter.  It is not necessary (or desirable) to follow the
-> >>classical B-tree algorithms to the letter to get sufficiently good
-> >>properties.
-> 
-> sure, but we need something instead of classic balancing condition.
-> We can not just refuse it: this is your lifejacket during performing
-> tree operations. How will you proof utilization bounds without any
-> balancing conditions?
+On Tue, Jun 29, 2010 at 8:23 AM, Andres Salomon <dilinger@queued.net> wrote:
+> On Tue, 29 Jun 2010 01:12:36 -0700
+> Grant Likely <grant.likely@secretlab.ca> wrote:
+>
+>> Hi Andres, comments below....
+>
+> Thanks!
+>
+>
+>>
+>> On Mon, Jun 28, 2010 at 7:00 PM, Andres Salomon <dilinger@queued.net>
+>> wrote:
+>> >
+>> > Make use of PROC_DEVICETREE to export the tree, and sparc's
+>> > PROMTREE code to call into OLPC's Open Firmware to build the tree.
+>> >
+>> > (Yes, I know this leaks memory by simply using kmalloc)
+>> >
+>> > Signed-off-by: Andres Salomon <dilinger@queued.net>
+>> > ---
+>> >  arch/x86/Kconfig                 |    5 ++
+>> >  arch/x86/include/asm/olpc_prom.h |   42 +++++++++++
+>> >  arch/x86/include/asm/prom.h      |    5 ++
+>> >  arch/x86/kernel/Makefile         |    1 +
+>> >  arch/x86/kernel/olpc_ofw.c       |   13 ++++
+>> >  arch/x86/kernel/olpc_prom.c      |  148
+>> > ++++++++++++++++++++++++++++++++++++++ fs/proc/Kconfig
+>> >      |    2 +- 7 files changed, 215 insertions(+), 1 deletions(-)
+>> >  create mode 100644 arch/x86/include/asm/olpc_prom.h
+>> >  create mode 100644 arch/x86/include/asm/prom.h
+>> >  create mode 100644 arch/x86/kernel/olpc_prom.c
+>> >
+>> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>> > index 71c194d..7aea004 100644
+>> > --- a/arch/x86/Kconfig
+>> > +++ b/arch/x86/Kconfig
+>> > @@ -2071,6 +2071,11 @@ config OLPC_OPENFIRMWARE
+>> >          that is used on the OLPC XO-1 Children's Machine.
+>> >          If unsure, say N here.
+>> >
+>> > +config OF
+>> > +       def_bool y
+>> > +       depends on OLPC_OPENFIRMWARE
+>> > +       select OF_PROMTREE
+>> > +
+>>
+>> This hunk will need to be respun on top of Stephen's CONFIG_OF change.
+>>  It's currently in my test-devicetree branch on
+>> git://git.secretlab.ca/git/linux-2.6
+>
+> Yep, I've changed it locally.
+>
+>>
+>> >  endif # X86_32
+>> >
+>> >  config K8_NB
+>> > diff --git a/arch/x86/include/asm/olpc_prom.h
+>> > b/arch/x86/include/asm/olpc_prom.h new file mode 100644
+>> > index 0000000..96cdcee
+>> > --- /dev/null
+>> > +++ b/arch/x86/include/asm/olpc_prom.h
+>> > @@ -0,0 +1,42 @@
+>> > +#include <linux/of.h>  /* linux/of.h gets to determine #include
+>> > ordering */ +/*
+>> > + * Definitions for talking to the Open Firmware PROM on
+>> > + * Power Macintosh computers.
+>> > + *
+>> > + * Copyright (C) 1996-2005 Paul Mackerras.
+>> > + *
+>> > + * Updates for PPC64 by Peter Bergner & David Engebretsen, IBM
+>> > Corp.
+>> > + * Updates for SPARC by David S. Miller
+>> > + * Updates for x86/OLPC by Andres Salomon
+>> > + *
+>> > + * This program is free software; you can redistribute it and/or
+>> > + * modify it under the terms of the GNU General Public License
+>> > + * as published by the Free Software Foundation; either version
+>> > + * 2 of the License, or (at your option) any later version.
+>> > + */
+>> > +
+>> > +#ifndef _X86_PROM_OLPC_H
+>> > +#define _X86_PROM_OLPC_H
+>> > +#ifdef __KERNEL__
+>> > +
+>> > +#define OF_ROOT_NODE_ADDR_CELLS_DEFAULT 2
+>> > +#define OF_ROOT_NODE_SIZE_CELLS_DEFAULT 1
+>>
+>> Do you really need to override these from the default?
+>>
+>> > +#define of_compat_cmp(s1, s2, l)       strncmp((s1), (s2), (l))
+>> > +#define of_prop_cmp(s1, s2)            strcasecmp((s1), (s2))
+>> > +#define of_node_cmp(s1, s2)            strcmp((s1), (s2))
+>>
+>> Ditto here?
+>
+> They're based upon what the old promfs patch used.  I need to test and
+> verify that strings are being mangled in the same way before I start
+> making changes here.
 
-Again, the leaves and nodes both have balancing conditions.  I'm not
-sure I follow.
+The defaults should do the right thing.  I would be very surprised if
+stfncmp() was what you wanted to use because truncates compatible
+values on compare.  I believe Sparc has historical reasons for using
+it, but new platforms shouldn't need it.
 
-> 
-> 
-> >> B-trees are quite robust to changing the details, as long
-> >>as you follow the generalised principles which make them work.
-> >
-> >There are lots of different perspectives here,
-> 
-> I wouldn't be so optimistic here (see below)
-> 
-> > but it is important to
-> >step back and look at what we're using the btree for.  We're making an
-> >index to filesystem metadata.  The index is there so that we can find
-> >that metadata with a reasonable number of IOs and in a reasonable amount
-> >of time.
-> >
-> >Because btrfs is COW, and because of the reference counted COW used to
-> >maintain snapshots, the cost of updating the btree is different from
-> >traditional btrees.  We do try to avoid balancing more and
-> >intentionally allow the btree leaves to be less compact simply because
-> >it allows us to avoid the higher cost of those operations.
-> 
-> I can understand reducing low bound, say, from 1/2 to 1/3 for performance
-> reasons, but again, bound 0.00 is unacceptable.. So, please, make sure you
-> have a sane proved bound for every such "compromise".
-> 
-> >The btree nodes are fairly strict.  They contain fixed records and are
-> >balanced in a simple fashion.  When we are inserting a new key into a
-> >node, if the node is completely full we split it.  When we are deleting
-> >a key, if the node is less than half full we balance it.
-> 
-> This works only if insertion/deletion on the leaf level won't result in
-> insertion/deletion more then one key on upper levels.
+On that point, I think I'm going to change the default override to
+specifically test for CONFIG_SPARC instead of doing the weird
+defined(OF_ROOT_NODE_ADDR_CELLS_DEFAULT)/defined(of_compat_cmp) I
+currently have it doing.  That would probably make this separate
+header completely unnecessary (see below).
 
-The top-down balancing requires that we control the number of upper
-level inserts.  This is already done today.
+>> > +extern void prom_build_devicetree(void);
+>> > +
+>> > +extern void *prom_early_alloc(unsigned long size);
+>> > +
+>> > +extern char *prom_firstprop(phandle node, char *buf);
+>> > +extern char *prom_nextprop(phandle node, const char *prev, char
+>> > *buf); +extern int prom_getproplen(phandle node, const char *prop);
+>> > +extern int prom_getproperty(phandle node, const char *prop,
+>> > +                            char *buffer, int bufsize);
+>> > +extern phandle prom_getchild(phandle node);
+>> > +extern phandle prom_getsibling(phandle node);
+>> > +
+>> > +#endif /* __KERNEL__ */
+>> > +#endif /* _X86_PROM_OLPC_H */
+>> > diff --git a/arch/x86/include/asm/prom.h
+>> > b/arch/x86/include/asm/prom.h new file mode 100644
+>> > index 0000000..7b561b2
+>> > --- /dev/null
+>> > +++ b/arch/x86/include/asm/prom.h
+>> > @@ -0,0 +1,5 @@
+>> > +#ifdef CONFIG_OLPC_OPENFIRMWARE
+>> > +# include <asm/olpc_prom.h>
+>> > +#else
+>> > +# error "No OFW prom defined for x86!"
+>> > +#endif
+>>
+>> Personally, I wouldn't bother with the header file redirection.
+>
+> The reason for the header file redirection is because this is
+> OLPC-only; the x86 folks don't want me claiming this to be the One
+> True x86 OFW.
 
-> 
-> >  Calculating
-> >full on the btree nodes is a factor of the number of keys in them.
-> >
-> >The leaves have fixed length keys that describe items of variable size.
-> >On deletion merging is done when we're less than 1/3rd full and on
-> >insertion we split when the item we're trying to shove in doesn't fit.
-> >Calculating full on the btree leaves is a factor of the total size of
-> >the items stored.
-> >
-> >So, with all of that said, the nodes point to leaves and the leaves
-> >contain inodes, directory entries and sometimes file data.
-> >
-> >The most important part of the index is the higher levels of the tree.
-> >The index of most filesystems points to but does not contain
-> >inodes and file data, and so the higher levels of the btrfs btree are
-> >more like a traditional FS index.
-> >
-> >There's a knob here for the max inline item size and if someone wants to
-> >fill their whole FS with 2K files, the default settings are not at all
-> >suitable.  Filling with 3K files actually works better because we end
-> >up with inode and file data in the same block much of the time.
-> 
-> Chris, thanks for the description.
-> 
-> I think that such balancing is totally incorrect. In accordance with
-> your strategy insertions can spawn shallow leaves, and deletions will
-> result in shallow leaves (because of merging with shallow leaves).
-> This will lead to unbound utilization slump.
+However, the #ifdef/#elseif/#else/#endif approach also makes the
+assumption that only one kind of OFW will be supported by any given
+kernel.  Or for that matter, both OFW and the flattened tree also
+become mutually exclusive due to the default behaviour override.
 
-Ok, insertions can spawn shallow leaves containing file data and
-deletions can result in shallow leaves containing file data, just trying
-to make sure I'm reading this correctly.
+Besides, aren't the function declarations just the interface defined
+by the prom extraction code?  Is there any need to #ifdef that API?  I
+would think those function prototypes should be defined by the header
+for the prom extraction code.
 
-Shallow leaves with file data happen in every filesystem, but the other
-filesystems call them data extents.  I think we're talking past each other a
-little here ;)
+g.
 
-> 
-> In particular, your patch is just a workaround, which doesn't fix the
-> core problem. Knobs for cases is a nonsense. Are you kidding? Ext4,
-> xfs, reiserfs don't use any knobs, so why should we accept this
-> regress on the background of common progress? Everything should be
-> packed fine without any knobs...
-
-Ext4 and xfs don't pack file data into the btree.  reiserfs does but
-splits the data items.  I'm still trying to nail down if you're worried
-about something other than packed file data.
-
-I'm saying there's no difference between a btrfs leaf with a single item
-and a block pointer in xfs pointing to a single block.  The btrfs leaf
-is full and the single block in xfs is full.
-
-Both are backed by higher levels in the btree that are properly compact.
-
-Btrfs metadata mirroring makes the cost of that leaf much higher, which
-is something we might want to address by lowering the size of file data
-that we choose to inline.
-
-
-> 
-> Your strategy slightly resembles balancing in Reiserfs file system,
-> so I have two comments here.
-> 
-> 1. Algorithms used in Reiserfs are "precise" (or "minimal"). That
-> means there is no "superfluous" balancing there. It is impossible to
-> save on balancing operations and slightly decrease utilization bound:
-> you will lose everything (this is unacceptable). Only classic Bayer's
-> B-trees allow to reduce bound 1/2 via replacing usual balancing
-> condition q <= N <= 2q with more liberal one (say, q <= N <= 3q).
-> 
-> 2. If you want to base on COW-friendly Reiserfs, then it's algorithms
-> should be properly modified for the case of top-down balancing and
-> reviewed (better by the authors of the original algorithms).
-> I recommend to consider the following approach:
-> 
-> 
-> Balancing the leaf level
-> 
-> 
-> A. Inserting a key of length I(*)
-> 
-> 
-> 01    Suppose we traversed the tree and have arrived to the position
-> 02    pos in the leaf A.
-> 03
-> 04    At first we try to make space by shifting all possible items at the
-> 05    left and right from the pos to the neighbors B and C respectively:
-
-Ok, maybe it is just before dinner and I'm reading this too quickly, but
-this is very similar to how the btrfs balancing does already work.  A
-few comments below.
-
-> 06
-> 07            B   A   C
-> 08       09    Let's denote via L and R total length of items on
-> leaf A at left
-> 10    and right from the pos respectively.
-
-push_leaf_left(), push_leaf_right() in the btrfs code
-> 11
-> 12    If after shifting there is enough space in A, then we perform
-> 13        insertion to A. After the insertion pairs (BA) and (AC) are
-> 14        incompressible for obvious reasons.
-
-
-> 15
-> 16    Else if there is no enough space in A, we make space via inserting
-> 17        a new empty leaf D and shift all items at the right side of pos
-> 18        to D:
-> 19
-> 20            B   A   D   C
-
-split_leaf()
-
-> 21
-> 22        If there is enough space in A, then we perform insertion to A.
-> 23            After insertion (AD) is incompressible, because there wasn't
-> 24            enough space at (16), i.e. I+L+R > N, hence I+L > N-R,
-> 25            i.e there is no enough space in D for all items of A
-> 26            (N is capacity of empty leaf).
-> 27
-> 28        Else if there is enough space in D, then we perform insertion
-> 29            to D. Pair (DC) is incompressible, because at the point (4)
-> 30            we have shifted right all possible items at the right side
-> 31            of pos. Pair (AD) is incompressible, because we didn't jump
-> 32            to (22), i.e. I is larger then free space in A.
-> 33
-> 34        Else (there is no space in A and D for insertion), we make
-> 35            space via insertion of a new empty leaf E, shift all items
-> 36            from A to E, and perform insertion to the empty node A:
-> 37
-> 38            B   E   A   D   C
-
-This is the double split condition in split_leaf()
-
-> 39
-> 40            In this case (BE) is incompressible, because at the point (4)
-> 41            we have shifted left all possible items. Pair (EA) is
-> 42            incompressible, because there wasn't enough space in A at
-> 43            (34).
-> 
-> (*) Variable length key is an abstraction. In real life this usually
-> means a record which includes a key of fixed length and some payload
-> of variable length.
-> 
-> 
-> 
-> B. Deleting a key
-> 
-> 
-> 01    Suppose we traversed the tree and have arrived to the position
-> 02    pos in the leaf A:
-> 03
-> 04            B   A   C
-> 05
-> 06    At first we perform deletion from A.
-> 07    If A is empty, then
-> 08        remove leaf A:
-> 09
-> 10            B   C
-> 11
-> 12        If the pair (BC) compressible, then shift everything from B
-> 13        to C and remove leaf B:
-> 14
-> 15            C
-> 16
-> 17        At this point leaf C is pairwise incompressible with its left
-> 18        and right neighbors for obvious reasons.
-> 19
-> 20    Else
-> 21        if the pair (BA) compressible, then shift everything from B
-> 22        to A and remove leaf B:
-> 23
-> 24            A   C
-> 25
-> 26        If the pair (AC) compressible, then shift everything from A to
-> 27        C and remove leaf A:
-> 28
-> 29            C
-> 30
-> 31        Here leaf C is pairwise incompressible with its left and right
-> 32        neighbors for obvious reasons.
-
-The above is what we do in btrfs, except it is triggered based on how
-empty the leaf is.
-
-> 
-> 
-> Balancing the upper levels
-> 
-> 
-> Thus, insertion/deletion on the leaf level can lead to insertion/deletion
-> of not more then 2 leaves, and hence 2 keys on the upper levels. So, we
-> modify the classic balancing condition and top-down balancing strategy
-> by the following way:
-> 
-> Every non-root node of upper (non-leaf) levels may contain between
-> q and 2(q+1) entries (q>=2).
-> 
-> A. Inserting a key
-> 
-> If a node with 2q+2 (2q+1) entries is encountered while traversing the
-> tree, it is split into two nodes with q and q+2 (q and q+1) entries.
-> 
-> 
-> B. Deleting a key
-> 
-> If a node with q (q+1) entries in encountered while traversing the
-> tree, it is fixed. Fixing means either moving keys into it, or merging
-> it with a neighbor, so it will contain not less then q+2 keys.
-
-This is balance_level()
-
--chris
-
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
