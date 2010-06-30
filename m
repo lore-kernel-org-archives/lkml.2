@@ -1,129 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab0F3AQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 20:16:23 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:42553 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760Ab0F3AQT (ORCPT
+	id S1754411Ab0F3AQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 20:16:17 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36115 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab0F3AQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 20:16:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:cc:date:message-id:mime-version:content-type;
-        b=PsGb9W2Tb+Qy9/Ar3fxQWUzllWt0KWGzJJw7aDBdEnMaNZzt3adEo9V/AsMVG9vttt
-         zZ6jiN3lPLPg0x4qUiouUOVXjljXr0bMAReG5g//+/H2//O2mGX3NEEiktWY2z7tVh/1
-         lc1pGzKlyh6nflO3z0gFYrSQFyGsGf5nKIwZ4=
-From: "Patrick J. LoPresti" <lopresti@gmail.com>
-To: ocfs2-devel@oss.oracle.com
-Subject: [PATCH] OCFS2: Allow huge (> 16 TiB) volumes to mount
-CC: linux-kernel@vger.kernel.org
-Date: Tue, 29 Jun 2010 17:16:11 -0700
-Message-ID: <87mxud74tw.fsf@gmail.com>
+	Tue, 29 Jun 2010 20:16:15 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Subject: Re: [PATCH v2] sanitize task->comm to avoid leaking escape codes
+Cc: kosaki.motohiro@jp.fujitsu.com, Stefani Seibold <stefani@seibold.net>,
+       Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+       "Greg Kroah-Hartman" <gregkh@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+       Veaceslav Falico <vfalico@redhat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Roland McGrath <roland@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Eric Paris <eparis@redhat.com>,
+       James Morris <jmorris@namei.org>,
+       "Andrew G. Morgan" <morgan@kernel.org>,
+       Dhaval Giani <dhaval.giani@gmail.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>, Christoph Hellwig <hch@lst.de>,
+       linux-fsdevel@vger.kernel.org
+In-Reply-To: <201006290858.50387.sgrubb@redhat.com>
+References: <20100629115957.38BF.A69D9226@jp.fujitsu.com> <201006290858.50387.sgrubb@redhat.com>
+Message-Id: <20100630084217.38F2.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 30 Jun 2010 09:16:08 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The OCFS2 developers have already done all of the hard work to allow
-volumes larger than 16 TiB.  But there is still a "sanity check" in
-fs/ocfs2/super.c that prevents the mounting of such volumes, even when
-the cluster size and journal options would allow it.
+> On Monday, June 28, 2010 11:05:56 pm KOSAKI Motohiro wrote:
+> > > Am Freitag, den 25.06.2010, 08:56 +0900 schrieb KOSAKI Motohiro:
+> > > > > Through get_task_comm() and many direct uses of task->comm in the
+> > > > > kernel, it is possible for escape codes and other non-printables to
+> > > > > leak into dmesg, syslog, etc.  In the worst case, these strings
+> > > > > could be used to attack administrators using vulnerable terminal
+> > > > > emulators, and at least cause confusion through the injection of \r
+> > > > > characters.
+> > > > > 
+> > > > > This patch sanitizes task->comm to only contain printable characters
+> > > > > when it is set.  Additionally, it redefines get_task_comm so that it
+> > > > > is more obvious when misused by callers (presently nothing was
+> > > > > incorrectly calling get_task_comm's unsafe use of strncpy).
+> 
+> For the audit system, we want the real, unsanitized task->comm. We record it 
+> in a special format to the audit logs such that unprintable characters are 
+> included. We want it exactly this way for certification purposes as well as 
+> forensic evidence if someone was playing games. If you do sanitize it for 
+> other areas of the kernel, please give us a way to get the unsanitized text.
 
-This patch replaces that sanity check with a more sophisticated one to
-mount a huge volume provided that (a) it is addressable by the raw
-word/address size of the system (borrowing a test from ext4); (b) the
-volume is using JBD2; and (c) the JBD2_FEATURE_INCOMPAT_64BIT flag is
-set on the journal.
+Probably this mail is offtopic. I think audit is unrelated with this discusstion. because when 
+forensic, admins shouldn't believe task->comm at all. because 1) no path information, 
+perhaps "ls" might mean "/home/attackers-dir/evil-script/ls" 2) easily obscured by 
+prctl(PR_SET_NAME).
 
-I factored out the sanity check into its own function.  I also moved it
-from ocfs2_initialize_super() down to ocfs2_check_volume(); any earlier,
-and the journal's flags have not been read from disk yet.
+That said, audit have to logged following two point if task name is necessary.
+1) exec
+2) prctl(PRT_SET_NAME)
 
-I have tested this patch on small volumes, huge volumes, and huge
-volumes without 64-bit block support in the journal.  All of them appear
-to work or to fail gracefully, as appropriate.
-
-Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
+Thought ?
 
 
-diff --git a/fs/ocfs2/super.c b/fs/ocfs2/super.c
-index 0eaa929..3db233d 100644
---- a/fs/ocfs2/super.c
-+++ b/fs/ocfs2/super.c
-@@ -1991,6 +1991,47 @@ static int ocfs2_setup_osb_uuid(struct ocfs2_super *osb, const unsigned char *uu
- 	return 0;
- }
- 
-+/* Check to make sure entire volume is addressable on this system.
-+   Requires osb_clusters_at_boot to be valid and for the journal to
-+   have been read by jbd2_journal_load(). */
-+static int ocfs2_check_addressable(struct ocfs2_super *osb)
-+{
-+	int status = 0;
-+	u64 max_block =
-+		ocfs2_clusters_to_blocks(osb->sb,
-+					 osb->osb_clusters_at_boot) - 1;
-+
-+	/* Absolute addressability check (borrowed from ext4/super.c) */
-+	if ((max_block >
-+	     (sector_t)(~0LL) >> (osb->sb->s_blocksize_bits - 9)) ||
-+	    (max_block > (pgoff_t)(~0LL) >> (PAGE_CACHE_SHIFT -
-+					     osb->sb->s_blocksize_bits))) {
-+		mlog(ML_ERROR, "Volume too large "
-+		     "to mount safely on this system");
-+		status = -EFBIG;
-+		goto out;
-+	}
-+
-+	/* 32-bit block number is always OK. */
-+	if (max_block <= (u32)~0UL)
-+		goto out;
-+
-+	/* Volume is "huge", so see if our journal is new enough to
-+	   support it. */
-+	if (!(OCFS2_HAS_COMPAT_FEATURE(osb->sb,
-+				       OCFS2_FEATURE_COMPAT_JBD2_SB) &&
-+	      jbd2_journal_check_used_features(osb->journal->j_journal, 0, 0,
-+					       JBD2_FEATURE_INCOMPAT_64BIT))) {
-+		mlog(ML_ERROR, "The journal cannot address the entire volume. "
-+		     "Enable the 'block64' journal option with tunefs.ocfs2");
-+		status = -EFBIG;
-+		goto out;
-+	}
-+
-+ out:
-+	return status;
-+}
-+
- static int ocfs2_initialize_super(struct super_block *sb,
- 				  struct buffer_head *bh,
- 				  int sector_size,
-@@ -2215,14 +2256,6 @@ static int ocfs2_initialize_super(struct super_block *sb,
- 		goto bail;
- 	}
- 
--	if (ocfs2_clusters_to_blocks(osb->sb, le32_to_cpu(di->i_clusters) - 1)
--	    > (u32)~0UL) {
--		mlog(ML_ERROR, "Volume might try to write to blocks beyond "
--		     "what jbd can address in 32 bits.\n");
--		status = -EINVAL;
--		goto bail;
--	}
--
- 	if (ocfs2_setup_osb_uuid(osb, di->id2.i_super.s_uuid,
- 				 sizeof(di->id2.i_super.s_uuid))) {
- 		mlog(ML_ERROR, "Out of memory trying to setup our uuid.\n");
-@@ -2404,6 +2437,12 @@ static int ocfs2_check_volume(struct ocfs2_super *osb)
- 		goto finally;
- 	}
- 
-+	/* Now that journal has been loaded, check to make sure entire
-+	   volume is addressable. */
-+	status = ocfs2_check_addressable(osb);
-+	if (status)
-+		goto finally;
-+
- 	if (dirty) {
- 		/* recover my local alloc if we didn't unmount cleanly. */
- 		status = ocfs2_begin_local_alloc_recovery(osb,
+
