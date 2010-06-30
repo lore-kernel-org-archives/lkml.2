@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab0F3MOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 08:14:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34112 "EHLO mx1.redhat.com"
+	id S1754419Ab0F3MS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 08:18:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15566 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181Ab0F3MOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 08:14:23 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <201006301346.41902.arnd@arndb.de>
-References: <201006301346.41902.arnd@arndb.de> <201006301131.37241.arnd@arndb.de> <25470.1277888151@redhat.com> <29346.1277892068@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk, smfrench@gmail.com,
-       jlayton@redhat.com, mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-       sjayaraman@suse.de, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file stats available [ver #2]
-Date: Wed, 30 Jun 2010 13:14:10 +0100
-Message-ID: <26650.1277900050@redhat.com>
+	id S1751760Ab0F3MS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 08:18:57 -0400
+Date: Wed, 30 Jun 2010 08:18:20 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Christoph Hellwig <hch@lst.de>, James Bottomley <James.Bottomley@suse.de>,
+       axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+       martin.petersen@oracle.com, akpm@linux-foundation.org,
+       linux-scsi@vger.kernel.org,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
+ payload
+Message-ID: <20100630121820.GB22798@redhat.com>
+References: <20100622180029.GA15950@redhat.com>
+ <1277582211-10725-1-git-send-email-snitzer@redhat.com>
+ <1277652576.4366.19.camel@mulgrave.site>
+ <4C2B012B.2000407@panasas.com>
+ <20100630084204.GA27609@lst.de>
+ <4C2B1B7D.2090607@panasas.com>
+ <20100630104155.GA1370@lst.de>
+ <4C2B2318.1030107@panasas.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C2B2318.1030107@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> wrote:
+On Wed, Jun 30 2010 at  6:57am -0400,
+Boaz Harrosh <bharrosh@panasas.com> wrote:
 
-> Given a 64 bit flag word, you can start using bits for the version from
-> the top and bits from the bottom for fields:
+> On 06/30/2010 01:41 PM, Christoph Hellwig wrote:
+> > On Wed, Jun 30, 2010 at 01:25:01PM +0300, Boaz Harrosh wrote:
+> >> OK, Thanks, I see. Is it one of these operations, (like we have in OSD) where
+> >> the CDB information spills into the payload? like the scatter-gather and extent
+> >> lists and such.
+> > 
+> > For UNMAP the payload is a list of block number / length pairs, while
+> > the CDB itself doesn't contain any information like that.  It's a rather
+> > awkward command.
+> > 
+> 
+> How big can that be? could we, maybe, use the sense_buffer, properly allocated
+> already?
+> 
+> >> Do we actually use a WRITE_SAME which is not zero? for what use?
+> > 
+> > The kernel doesn't issue any WRITE SAME without the unmap bit set.
+> 
+> So if the unmap bit is set then the page can just be zero, right?
+> 
+> I still think a static zero-page is a worth while optimization. And
+> block-drivers can take care with special needs with a private mem_pool
+> or something. For the discard-type user and generic block layer the
+> page is just an implementation specific residue, No?
 
-I suppose.  It's cleaner, though, to keep them separate.
+Why should the block layer have any role in managing this page?  Block
+layer doesn't care about it, SCSI does.
 
-> Alternatively, you can also make it a 64 bit argument everywhere, which has
-> some other small disadvantages.
-
-No, you can't.  32-bit systems can only pass 32-bit arguments.  If you're
-suggesting passing a pointer to a 64-bit argument instead, how's that any
-different from my suggestion of a separate parameter block?
-
-> The idea of a syscall API with multiple fixed-length and variable-length
-> fields in the same structure scares me. If you want to go this far,
-> it may be better to base the interface on netlink and allow querying
-> multiple files at once.
-
-Urgh.  Netlink is way too much overhead and even scarier.  That's pretty much
-a guarantee that people won't use it.  It also has to work if CONFIG_NET=n.
-
-David
+Mike
