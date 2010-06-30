@@ -1,35 +1,64 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760704Ab0FQUjZ (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 17 Jun 2010 16:39:25 -0400
-Received: from [163.20.84.66] ([163.20.84.66]:53623 "EHLO
-	dns.tpcses.tpc.edu.tw" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757352Ab0FQUjX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 16:39:23 -0400
-To: linux-kernel@vger.kernel.org
-Subject: ATTENTION!
-X-PHP-Script: dns.tpcses.tpc.edu.tw/html/uploads/schoolplant/index.php for 82.128.84.23
-From: GLADLORD THMS <GLADLORDTHMS17@AOL.COM>
-Reply-To: GLADLORDTHMS17@AOL.COM
+	id S1751328Ab0F3E1m (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 30 Jun 2010 00:27:42 -0400
+Received: from mail.qau.edu.pk ([111.68.96.55]:55809 "EHLO qau.edu.pk"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750866Ab0F3E1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 00:27:41 -0400
+X-Greylist: delayed 5855 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Jun 2010 00:27:39 EDT
+Message-ID: <54078.41.138.189.115.1277864700.squirrel@mail.qau.edu.pk>
+Date: Wed, 30 Jun 2010 07:25:00 +0500 (PKT)
+Subject: Apply For Loan With 3% Interest Rate
+From: "Loan Investment" <info@qau.edu.pk>
+Reply-To: ajalaloaninvestments@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <20100617201154.F3165266C540@dns.tpcses.tpc.edu.tw>
-Date: Fri, 18 Jun 2010 04:11:54 +0800 (CST)
-X-NetStation-Status: PASS
-X-NetStation-SPAM: 0.00/5.00-6.00
+Content-Type: text/plain;
+  charset="utf-8"
+X-Priority: 3 (Normal)
+Importance: Normal
+X-NAIMIME-Disclaimer: 1
+X-NAIMIME-Modified: 1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-
-YOU WILL RECEIVE THIS EMAIL JUST THIS ONE TIME, YOU ARE ADVISED TO READ CAREFULLY AND ACT ACCORDINGLY.
-
-I AM A PROFESSIONAL MARKSMAN, AND HAVE BEEN CONTRACTED TO "HAVE YOU TAKEN OUT" BY A CLIENT I WILL NOT BE DISCLOSING AT THIS TIME. I AM SUPPOSED TO CARRY OUT THE OPERATION A WEEK FROM TODAY BUT AFTER MY SURVEY WORK ON YOU I FOUND OUT THAT YOU DO NOT DESERVE SUCH A TERRIBLE FATE.
-
-WHEN YOU REPLY WE CAN TAKE IT FROM THERE.
-
-THMS GLADLORD
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by spinics.net id o5U4Rr1Q026342
 
 
 
+
+Hello,
+
+I am Mr  Henry Ajala , a certified and legitimate loan lender, i
+give out loans to serious individuals who are interested in securing a
+loan, the minimum we give out as loan is $5,000 while the maximum is
+$5,000,000. 00 at a rate of 3% interest, with a duration of 2 to 20 years.
+if interested do fill out the short form below and have it sent to us as
+soon as possible.
+
+NAME:
+AGE:
+ADDRESS:
+COUNTRY:
+CONTACTPHONE NUMBER:
+OCCUPATION:
+LOAN AMOUNT:
+
+Upon receipt of the above we would contact you with a well
+calculated terms and condition's of the amount needed. Thanks as i
+expect your swift response asap. Please direct all response to this
+email: ajalaloaninvestments@yahoo.com.hk
+
+Regards
+Mr  Henry Ajala
+
+
+
+This is Virus Free Email Scanned by QAU's McAfee Virus Scanner
+""THIS COMMUNICATION MAY CONTAIN CONFIDENTIAL AND/OR OTHERWISE PROPRIETARY MATERIAL
+and is thus for use only by the intended recipient. If you received this in error, please contact the sender and delete the e-mail
+and its attachments from all computers."
+www.qau.edu.pk
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
