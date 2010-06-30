@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab0F3TPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 15:15:12 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:41484 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab0F3TPK (ORCPT
+	id S1756794Ab0F3TPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 15:15:42 -0400
+Received: from sprinkles.athenacr.com ([64.95.46.210]:52925 "EHLO
+	sprinkles.inp.in.athenacr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756529Ab0F3TPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 15:15:10 -0400
-Subject: Re: pull request: wireless-2.6 2010-06-30
-From: Johannes Berg <johannes@sipsolutions.net>
-To: David Miller <davem@davemloft.net>
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100630.120551.170116973.davem@davemloft.net>
-References: <20100630185319.GA2618@tuxdriver.com>
-	 <20100630.120551.170116973.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Jun 2010 21:15:04 +0200
-Message-ID: <1277925304.7823.16.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	Wed, 30 Jun 2010 15:15:40 -0400
+Message-ID: <4C2B97D7.60303@athenacr.com>
+Date: Wed, 30 Jun 2010 15:15:35 -0400
+From: Brian Bloniarz <bmb@athenacr.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: Larry Woodman <lwoodman@redhat.com>, linux-kernel@vger.kernel.org,
+       riel@redhat.com, Mark Lord <kernel@teksavvy.com>,
+       stefan.bader@canonical.com, kees@ubuntu.com
+Subject: Re: Race in wb_do_writeback() ???
+References: <1277843296.3223.98.camel@dhcp-100-19-198.bos.redhat.com> <20100629202650.GA28992@infradead.org>
+In-Reply-To: <20100629202650.GA28992@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-30 at 12:05 -0700, David Miller wrote:
-
-> > +	/*
-> > +	 * Receiving all multicast frames is always enabled by the
-> > +	 * default flags setup in iwl_connection_init_rx_config()
-> > +	 * since we currently do not support programming multicast
-> > +	 * filters into the device.
-> > +	 */
-> >  	*total_flags &= FIF_OTHER_BSS | FIF_ALLMULTI | FIF_PROMISC_IN_BSS |
-> >  			FIF_BCN_PRBRESP_PROMISC | FIF_CONTROL;
+On 06/29/2010 04:26 PM, Christoph Hellwig wrote:
+> On Tue, Jun 29, 2010 at 04:28:16PM -0400, Larry Woodman wrote:
+>> Chistoph, I am seeing slabcache corruption.  wb_do_writeback() calls
+>> wb_clear_pending() which can queue up the freeing of the bdi_work. Then
+>> it calls wb_writeback() which can block, resulting in using the bdi_work
+>> after its freed.
+>> 
+>> ------------------------------------------------------------------
+>>   /*
+>>    * If this isn't a data integrity operation, just notify
+>>    * that we have seen this work and we are now starting it.
+>>    */
+>>   if (!test_bit(WS_ONSTACK, &work->state))
+>>          wb_clear_pending(wb, work);
+>> 
+>>   wrote += wb_writeback(wb, &args);
+>> 
+>>  /*
+>>   * This is a data integrity writeback, so only do the
+>>   * notification when we have completed the work.
+>>   */
+>>   if (test_bit(WS_ONSTACK, &work->state))
+>>          wb_clear_pending(wb, work);
+>> ------------------------------------------------------------------
+>> 
+>> Can you have one unconditional call to wb_clear_pending() after the
+>> calling wb_writeback()???
 > 
-> Note that this is an amazingly serious limitation.
+> In fact we should only have a conditional call after wb_writeback.
+> I've done that already and it's in Jens' tree for 2.6.36:
 > 
-> This basically makes iwl chips unsuitable for use on networks where
-> real multicast use is common.
+>   http://git.kernel.dk/?p=linux-2.6-block.git;a=commitdiff;h=79338d2a78ab78efdc1698f1309766a039addf9d
 
-Lots of wireless devices have this limitation unfortunately. I think we
--might- be able to have proper filters for iwl, but haven't found out
-quite how yet unfortunately, if it's actually implemented properly on
-the device and there's not just some fake API.
+Hi Christoph, 
 
-johannes
+Is this a problem that was introduced by your writeback patch
+series which just got merged for 2.6.35?
+Are you going to try to get a fix for this into 2.6.35?
 
+(CCing some people who were interested in your writeback series).
