@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab0F3IFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 04:05:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:32803 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab0F3IFr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 04:05:47 -0400
-Subject: Re: [PATCH 1/4, v2] x86: enlightenment for ticket spin locks -
- base implementation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-       jeremy.fitzhardinge@citrix.com, Ky Srinivasan <KSrinivasan@novell.com>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <4C2A1FE902000078000089E1@vpn.id2.novell.com>
-References: <4C2A1FE902000078000089E1@vpn.id2.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 30 Jun 2010 10:05:33 +0200
-Message-ID: <1277885133.1868.71.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753444Ab0F3IFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 04:05:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59175 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752475Ab0F3IFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 04:05:51 -0400
+Message-ID: <4C2AF9FA.9020601@cn.fujitsu.com>
+Date: Wed, 30 Jun 2010 16:02:02 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: [PATCH v3 1/11] KVM: MMU: fix writable sync sp mapping
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-29 at 15:31 +0100, Jan Beulich wrote:
-> Add optional (alternative instructions based) callout hooks to the
-> contended ticket lock and the ticket unlock paths, to allow hypervisor
-> specific code to be used for reducing/eliminating the bad effects
-> ticket locks have on performance when running virtualized.
+While we sync many unsync sp at one time(in mmu_sync_children()),
+we may mapping the spte writable, it's dangerous, if one unsync
+sp's mapping gfn is another unsync page's gfn.
 
-Uhm, I'd much rather see a single alternative implementation, not a
-per-hypervisor lock implementation.
+For example:
 
-> For the moment, this isn't intended to be used together with pv-ops,
-> but this is just to simplify initial integration. The ultimate goal
-> for this should still be to replace pv-ops spinlocks.
+SP1.pte[0] = P
+SP2.gfn's pfn = P
+[SP1.pte[0] = SP2.gfn's pfn]
 
-So why not start by removing that?
+First, we write protected SP1 and SP2, but SP1 and SP2 are still the
+unsync sp.
 
-> +config ENLIGHTEN_SPINLOCKS
+Then, sync SP1 first, it will detect SP1.pte[0].gfn only has one unsync-sp,
+that is SP2, so it will mapping it writable, but we plan to sync SP2 soon,
+at this point, the SP2->unsync is not reliable since later we sync SP2 but
+SP2->gfn is already writable.
 
-Why exactly are these enlightened? I'd say CONFIG_UNFAIR_SPINLOCKS would
-be much better.
+So the final result is: SP2 is the sync page but SP2.gfn is writable.
 
-> +#define X86_FEATURE_SPINLOCK_YIELD (3*32+31) /* hypervisor yield interface */
+This bug will corrupt guest's page table, fixed by mark read-only mapping
+if the mapped gfn has shadow pages.
 
-That name also sucks chunks, yield isn't a lock related term.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-> +#define ALTERNATIVE_TICKET_LOCK \
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 045a0f9..24290f8 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1810,11 +1810,14 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
+ 	bool need_unsync = false;
+ 
+ 	for_each_gfn_indirect_valid_sp(vcpu->kvm, s, gfn, node) {
++		if (!can_unsync)
++			return 1;
++
+ 		if (s->role.level != PT_PAGE_TABLE_LEVEL)
+ 			return 1;
+ 
+ 		if (!need_unsync && !s->unsync) {
+-			if (!can_unsync || !oos_shadow)
++			if (!oos_shadow)
+ 				return 1;
+ 			need_unsync = true;
+ 		}
+-- 
+1.6.1.2
 
-But but but, the alternative isn't a ticket lock..!?
