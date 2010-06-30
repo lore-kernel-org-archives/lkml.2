@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab0F3Lai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 07:30:38 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:52557 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab0F3Lah convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Wed, 30 Jun 2010 07:30:37 -0400
-Message-Id: <4C2B47190200007800008CB7@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 30 Jun 2010 12:31:05 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>
-Cc: "mingo@elte.hu" <mingo@elte.hu>,
-       "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       "Ky Srinivasan" <KSrinivasan@novell.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH 2/4, v2] x86: enlightenment for ticket spin locks -
-	 Xen  implementation
-References: <4C2A200F02000078000089E4@vpn.id2.novell.com>
- <4C2B1769.5090107@goop.org>
-In-Reply-To: <4C2B1769.5090107@goop.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754755Ab0F3LbY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 07:31:24 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:33615 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751115Ab0F3LbX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 07:31:23 -0400
+Date: Wed, 30 Jun 2010 21:30:54 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: npiggin@suse.de
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 00/52] vfs scalability patches updated
+Message-ID: <20100630113054.GL24712@dastard>
+References: <20100624030212.676457061@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100624030212.676457061@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.06.10 at 12:07, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> On 06/29/2010 04:32 PM, Jan Beulich wrote:
->> Use the (alternative instructions based) callout hooks to the ticket
->> spinlock code to enlighten ticket locks when running fully virtualized
->> on Xen. Ultimately, this code might also be a candidate to be used
->> when running para-virtualized.
->>   
-> 
-> I'm not sure what the gain is by making this independent of all the rest
-> of the Xen support in the kernel.  Stefano is working on a series
-> (posted a few times now) to add more paravirtual features for Xen HVM
-> guests, and this work is conceptually very similar.
+On Thu, Jun 24, 2010 at 01:02:12PM +1000, npiggin@suse.de wrote:
+> http://www.kernel.org/pub/linux/kernel/people/npiggin/patches/fs-scale/
 
-The intention really is for PARAVIRT_SPINLOCKS to go away as soon
-as pv-ops Xen can be switched over to this mechanism.
+Can you put a git tree up somewhere?
 
-> Also, I'm not very keen on adding yet another kind of patching mechanism
-> to the kernel.  While they're easy enough to get working in the first
-> place, they do tend to be fragile when other changes get introduced
-> (like changes to how the kernel is mapped RO/NX, etc), and this one will
-> be exercised relatively rarely.  I don't see why the pvops mechanism
-> couldn't be reused, especially now that each set of ops can be
-> individually configured on/off.
+> Update to vfs scalability patches:
 
-Wasn't the main complaint with using pvops patching that it
-introduced extra calls into the native execution path? The point
-of this "new" (it's not really new, it's using existing infrastructure)
-mechanism is just to avoid such overhead for native.
+....
 
-> This is especially acute in the case where you are using a full
-> pvops-using PV kernel, where it ends up using two mechanisms to put
-> paravirtualizations in place.
+Now that I've had a look at the whole series, I'll make an overall
+comment: I suspect that the locking is sufficiently complex that we
+can count the number of people that will be able to debug it on one
+hand.  This patch set didn't just fall off the locking cliff, it
+fell into a bottomless pit...
 
-And I see nothing wrong with this - if the individual pieces are
-separate anyway, why shouldn't each of them use the most
-efficient technique? Or if a single mechanism is desirable, shouldn't
-one rather ask to convert the newer pvops patching mechanism
-to the alternative instruction patching one, as that had been in
-place long before?
+> Performance:
+> Last time I was testing on a 32-node Altix which could be considered as not a
+> sweet-spot for Linux performance target (ie. improvements there may not justify
+> complexity). So recently I've been testing with a tightly interconnected
+> 4-socket Nehalem (4s/32c/64t). Linux needs to perform well on this size of
+> system.
 
-Jan
+Sure, but I have to question how much of this is actually necessary?
+A lot of it looks like scalability for scalabilities sake, not
+because there is a demonstrated need...
 
+> *** Single-thread microbenchmark (simple syscall loops, lower is better):
+> Test                    Difference at 95.0% confidence (50 runs)
+> open/close              -6.07% +/- 1.075%
+> creat/unlink            27.83% +/- 0.522%
+> Open/close is a little faster, which should be due to one less atomic in the
+> dput common case. Creat/unlink is significantly slower, which is due to RCU
+> freeing inodes.
+
+That's a pretty big ouch. Why does RCU freeing of inodes cause that
+much regression? The RCU freeing is out of line, so where does the big
+impact come from?
+
+> *** 64 parallel git diff on 64 kernel trees fully cached (avg of 5 runs):
+>                 vanilla         vfs
+> real            0m4.911s        0m0.183s
+> user            0m1.920s        0m1.610s
+> sys             4m58.670s       0m5.770s
+> After vfs patches, 26x increase in throughput, however parallelism is limited
+> by test spawning and exit phases. sys time improvement shows closer to 50x
+> improvement. vanilla is bottlenecked on dcache_lock.
+
+So if we cherry pick patches out of the series, what is the bare
+minimum set needed to obtain a result in this ballpark? Same for the
+other tests?
+
+> *** Reclaim
+> I have not done much reclaim testing yet. It should be more scalable and lower
+> latency due to significant reduction in lru locks interfering with other
+> critical sections in inode/dentry code, and because we have per-zone locks.
+> Per-zone LRUs mean that reclaim is targetted to the correct zone, and that
+> kswapd will operate on lists of node-local memory objects.
+
+This means we no longer have any global LRUness to inode or dentry
+reclaim, which is going to significantly change caching behaviour.
+It's also got interesting corner cases like a workload running on a
+single node with a dentry/icache working set larger than the VM
+wants to hold on a single node.
+
+We went through these sorts of problems with cpusets a few years
+back, and the workaround for it was not to limit the slab cache to
+the cpuset's nodes. Handling this sort of problem correctly seems
+distinctly non-trivial, so I'm really very reluctant to move in this
+direction without clear evidence that we have no other
+alternative....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
