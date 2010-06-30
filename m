@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab0F3UHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 16:07:41 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:21674 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756210Ab0F3UHU (ORCPT
+	id S1754895Ab0F3UKN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 16:10:13 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36728
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751688Ab0F3UKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 16:07:20 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=TXimUIh+JhilarsOI0Kz1O1X5VmZk0Dwhnziuosf5dDEq8owW6Vgigv89JteDvjy9
-	oimTMxQ2iXVuACkYUdFgg==
-Date: Wed, 30 Jun 2010 13:07:12 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Xiaotian Feng <dfeng@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-       Vegard Nossum <vegard.nossum@gmail.com>,
-       Dmitry Monakhov <dmonakhov@openvz.org>,
-       Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH V2] slab: fix caller tracking on !CONFIG_DEBUG_SLAB &&
- CONFIG_TRACING
-In-Reply-To: <1277891842-18898-1-git-send-email-dfeng@redhat.com>
-Message-ID: <alpine.DEB.2.00.1006301307001.27676@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1004090947030.10992@chino.kir.corp.google.com> <1277891842-18898-1-git-send-email-dfeng@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 30 Jun 2010 16:10:11 -0400
+Date: Wed, 30 Jun 2010 13:10:24 -0700 (PDT)
+Message-Id: <20100630.131024.190380261.davem@davemloft.net>
+To: gustavo@padovan.org
+Cc: dhowells@redhat.com, linux-bluetooth@vger.kernel.org,
+       justinmattock@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Bluetooth: Fix abuse of the preincrement operator
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100628131058.GA25275@vigoh>
+References: <1277621246-10960-6-git-send-email-justinmattock@gmail.com>
+	<20100628125752.8945.50572.stgit@warthog.procyon.org.uk>
+	<20100628131058.GA25275@vigoh>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010, Xiaotian Feng wrote:
+From: "Gustavo F. Padovan" <gustavo@padovan.org>
+Date: Mon, 28 Jun 2010 10:12:30 -0300
 
-> In slab, all __xxx_track_caller is defined on CONFIG_DEBUG_SLAB || CONFIG_TRACING,
-> thus caller tracking function should be worked for CONFIG_TRACING. But if
-> CONFIG_DEBUG_SLAB is not set, include/linux/slab.h will define xxx_track_caller to
-> __xxx() without consideration of CONFIG_TRACING. This will break the caller tracking
-> behaviour then.
+> Hi David,
 > 
-> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Cc: Vegard Nossum <vegard.nossum@gmail.com>
-> Cc: Dmitry Monakhov <dmonakhov@openvz.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: David Rientjes <rientjes@google.com>
+> * David Howells <dhowells@redhat.com> [2010-06-28 13:57:52 +0100]:
+> 
+>> Fix abuse of the preincrement operator as detected when building with gcc
+>> 4.6.0:
+>> 
+>> 	 CC [M]  drivers/bluetooth/hci_bcsp.o
+>> 	drivers/bluetooth/hci_bcsp.c: In function 'bcsp_prepare_pkt':
+>> 	drivers/bluetooth/hci_bcsp.c:247:20: warning: operation on 'bcsp->msgq_txseq' may be undefined
+>> 
+>> Reported-by: Justin P. Mattock <justinmattock@gmail.com>
+>> Signed-off-by: David Howells <dhowells@redhat.com>
+...
+> Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
 
-Acked-by: David Rientjes <rientjes@google.com>
+Applied, thanks everyone.
