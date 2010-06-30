@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab0F3WJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 18:09:31 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54863 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab0F3WJa (ORCPT
+	id S1757376Ab0F3WKq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 18:10:46 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59550 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753562Ab0F3WKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 18:09:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=EpE9iWzEfIo8b1swTrMlqEvV05Qg7rt5Ug+zfq6TvqwU1w1SOjjcqO75JRnYjTb2pD
-         kUyR2yBZLkOmdr8huCLJwg072A0igT59kqHMjGWG0XzIkXd+CKukNOlVlNc4AL09HqlX
-         MV9NR7ICoiVXbOhq48gMl4DZchtDQlE1bM0dk=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, arnd@arndb.de, jkosina@suse.cz,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]kernel.h Move warning message about using kernel headers for userspace to types.h
-Date: Wed, 30 Jun 2010 15:09:45 -0700
-Message-Id: <1277935785-6023-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
+	Wed, 30 Jun 2010 18:10:44 -0400
+Date: Wed, 30 Jun 2010 15:09:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Kyungmin Park <kmpark@infradead.org>,
+       Madhusudhan Chikkature <madhu.cr@ti.com>,
+       linux-mmc Mailing List <linux-mmc@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>,
+       linux-kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 4/5] block: Add secure discard
+Message-Id: <20100630150947.d53200ac.akpm@linux-foundation.org>
+In-Reply-To: <20100624084423.25444.1011.sendpatchset@ahunter-work.research.nokia.com>
+References: <20100624084351.25444.30143.sendpatchset@ahunter-work.research.nokia.com>
+	<20100624084423.25444.1011.sendpatchset@ahunter-work.research.nokia.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hopefully correct, as request move the function that checks
-if userspace is using kernel headers, from kernel.h to types.h.
-(Please check.)
+On Thu, 24 Jun 2010 11:44:23 +0300
+Adrian Hunter <adrian.hunter@nokia.com> wrote:
 
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> >From b25b9a499f255ee5999c219525d82ef40382318c Mon Sep 17 00:00:00 2001
+> From: Adrian Hunter <adrian.hunter@nokia.com>
+> Date: Wed, 23 Jun 2010 15:41:38 +0300
+> Subject: [PATCH 4/5] block: Add secure discard
+> 
+> Secure discard is the same as discard except that all copies
+> of the discarded sectors (perhaps created by garbage collection)
+> must also be erased.
 
----
- include/linux/kernel.h |    6 ------
- include/linux/types.h  |    6 ++++++
- 2 files changed, 6 insertions(+), 6 deletions(-)
+That's not an awfully informative changelog.
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 8317ec4..bd8501a 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -728,12 +728,6 @@ extern int do_sysinfo(struct sysinfo *info);
- 
- #endif /* __KERNEL__ */
- 
--#ifndef __EXPORTED_HEADERS__
--#ifndef __KERNEL__
--#warning Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders
--#endif /* __KERNEL__ */
--#endif /* __EXPORTED_HEADERS__ */
--
- #define SI_LOAD_SHIFT	16
- struct sysinfo {
- 	long uptime;			/* Seconds since boot */
-diff --git a/include/linux/types.h b/include/linux/types.h
-index 23d237a..41fe43d 100644
---- a/include/linux/types.h
-+++ b/include/linux/types.h
-@@ -179,6 +179,12 @@ typedef __u32 __bitwise __wsum;
- typedef unsigned __bitwise__ gfp_t;
- typedef unsigned __bitwise__ fmode_t;
- 
-+#ifndef __EXPORTED_HEADERS__
-+#ifndef __KERNEL__
-+#warning "Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders"
-+#endif /* __KERNEL__ */
-+#endif /* __EXPORTED_HEADERS__ */
-+
- #ifdef CONFIG_PHYS_ADDR_T_64BIT
- typedef u64 phys_addr_t;
- #else
--- 
-1.6.5.2.180.gc5b3e
+>From a quick peek at the code it seems that you took your earlier
+design sketch:
 
+On Mon, Jun 14, 2010 at 02:10:06PM +0300, Adrian Hunter wrote:
+> Needs a bio flag, a request flag, setup the request flag based on the
+> bio flag, prevent merging secure and non-secure discards, prevent drivers
+> doing non-secure discards for secure discards.
+> 
+> Seems like a lot of little changes for something that no one wants.
+> Shouldn't it wait for someone to need it first?
+
+and changed your mind and implemented it.
+
+Is that a correct interpretation?
