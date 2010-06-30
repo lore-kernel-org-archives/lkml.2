@@ -1,162 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab0F3VZO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 17:25:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33929 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757273Ab0F3VZM (ORCPT
+	id S1757311Ab0F3V0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 17:26:43 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49647 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757274Ab0F3V0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 17:25:12 -0400
-Date: Wed, 30 Jun 2010 14:24:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michael Rubin <mrubin@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
-       axboe@kernel.dk
-Subject: Re: [PATCH] Adding four read-only files to /proc/sys/vm
-Message-Id: <20100630142443.d9a9c49e.akpm@linux-foundation.org>
-In-Reply-To: <1277747099-12770-1-git-send-email-mrubin@google.com>
-References: <1277747099-12770-1-git-send-email-mrubin@google.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Jun 2010 17:26:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Jc7wGBXiQbxr6EWEShqFmHxpJNy8HY6NZdjHDULQals1X5ggLGzzPEfNO9l1USed0v
+         5gOrjbcA6XJW1Ar2NLTjI89Evbsgf1xspbjuSyjcILweNba9z8i0/oJbhLLA3n9xNBwv
+         +649YDs6E/WF9nXbzwrAei6Evfc8x7SUFb1+c=
+MIME-Version: 1.0
+In-Reply-To: <201006301227.08709.dtor@vmware.com>
+References: <AANLkTimmIG6GF-hKBk7JsZpvZNEAj1Tlt4GrPXexN0_0@mail.gmail.com>
+	<201006301227.08709.dtor@vmware.com>
+Date: Wed, 30 Jun 2010 17:26:40 -0400
+Message-ID: <AANLkTil6KfEHhQFwhPHRtb-dZHpDyttY09Kor_FQVFPK@mail.gmail.com>
+Subject: Re: [PATCH] VMware balloon: force compiling as a module
+From: Chetan Loke <chetanloke@gmail.com>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jun 2010 10:44:59 -0700
-Michael Rubin <mrubin@google.com> wrote:
+Hello Dmitry,
 
-> Adding four read-only files to /proc/sys/vm
-> 
-> To help developers and applications gain visibility into writeback
-> behaviour adding four read only sysctl files into /proc/sys/vm.
-> These files allow user apps to understand writeback behaviour over time
-> and learn how it is impacting their performance.
-> 
->     # cat /proc/sys/vm/pages_dirtied
->     3747
->     # cat /proc/sys/vm/pages_entered_writeback
->     3618
->     # cat /proc/sys/vm/dirty_threshold
->     816673
->     # cat /proc/sys/vm/dirty_background_threshold
->     408336
-> 
-> Documentation/vm.txt has been updated.
-> 
-> In order to track the "cleaned" and "dirtied" counts we added two
-> vm_stat_items.  Per memory node stats have been added also. So we can
-> see per node granularity:
-> 
->     # cat /sys/devices/system/node/node20/writebackstat
->     Node 20 pages_writeback: 0 times
->     Node 20 pages_dirtied: 0 times
-> 
-> A helper function, account_page_writeback, was added to encapsulate
-> incrementing vm stats from nilfs. ceph code was also changed to use a
-> mm helper routine.
-> 
-
-Well...  why are these useful?  In what operational scenario would
-someone use these and get goodness from the experience?  Where is the
-value?  Sell it to us!
-
-
-
-I'm generally reluctant to add /proc knobs which expose internals or
-which tie us into particular implementations.
-
-It's hard to see how any future implementation could have a problem
-implementing pages_dirtied and pages_entered_writeback, however
-dirty_threshold and dirty_background_threshold are, I think, somewhat
-specific to the current implementation and may be hard to maintain next
-time we rip up and rewrite everything.
-
+On Wed, Jun 30, 2010 at 3:27 PM, Dmitry Torokhov <dtor@vmware.com> wrote:
+> Hi Chetan,
 >
-> ...
+> On Wednesday, June 30, 2010 11:42:53 am Chetan Loke wrote:
+>> Q1)Does vmtools handle pvscsi correctly?
+>>
 >
-> +dirty_background_threshold
-> +
-> +Contains the exact amount of dirty memory memory the kernel uses to trigger the
-> +background writeout daemon will start writing out dirty data. This value
-> +depends on memory state, dirty_background_ratio and/or
-> +dirty_background_bytes. This value is read-only.
-
-Documentation doesn't describe the units.  Pages?  kbytes?  bytes?
-
-I think it's best to encode the units in the procfs filename
-(eg: dirty_expire_centisecs, min_free_kbytes).
-
-> +==============================================================
-> +
->  dirty_bytes
->  
->  Contains the amount of dirty memory at which a process generating disk writes
-> @@ -123,6 +136,15 @@ data.
->  
->  ==============================================================
->  
-> +dirty_threshold
-> +
-> +Contains the exact amount of dirty memory the kernel uses to decide when
-> +a process which is generating disk writes will itself start writing
-> +out data. This value depends on memory state, dirty_ratio and/or
-> +dirty_bytes. This value is read-only.
-
-units?
-
-> +=============================================================
-> +
-> +pages_dirtied
-> +
-> +Number of pages that have ever been dirtied since boot.
-> +This value is read-only.
-> +
->  =============================================================
->  
-> +pages_entered_writeback
-> +
-> +Number of pages that have been moved from dirty to writeback since boot.
-> +This is only a count of file pages. This value is read-only.
-> +
-
-Am interested in hearing (in the changelog!) why these are considered
-useful.  
-
-We're very very interested in knowing how many pages entered writeback
-via mm/vmscan.c however this procfs file lumps those together with the
-pages which entered writeback via the regular writeback paths, I assume.
-
+> Yes, as long as it compiled as a module or installer will not overwrite
+> distribution-supplied version unless user explicitly requests installer
+> to clobber it.
 >
-> ...
+perfect.
+
+> So far distributions have not tried building their kernels with pvscsi
+> or vmxnet3 built-in, but did so with our ballon driver, which prompted
+> this particular change.
 >
-> --- a/fs/ceph/addr.c
-> +++ b/fs/ceph/addr.c
-> @@ -105,13 +105,7 @@ static int ceph_set_page_dirty(struct page *page)
->  	spin_lock_irq(&mapping->tree_lock);
->  	if (page->mapping) {	/* Race with truncate? */
->  		WARN_ON_ONCE(!PageUptodate(page));
-> -
-> -		if (mapping_cap_account_dirty(mapping)) {
-> -			__inc_zone_page_state(page, NR_FILE_DIRTY);
-> -			__inc_bdi_stat(mapping->backing_dev_info,
-> -					BDI_RECLAIMABLE);
-> -			task_io_account_write(PAGE_CACHE_SIZE);
-> -		}
-> +		account_page_dirtied(page, mapping);
->  		radix_tree_tag_set(&mapping->page_tree,
->  				page_index(page), PAGECACHE_TAG_DIRTY);
+We are building iso's which will then be used to build/create an ESX
+appliance. So we would need the pvscsi driver from the start. vNICs
+will be populated post-install. At which point vmxnet[2/3] will
+kick-in via vmtools.
 
-Nice cleanup.  And a bugfix, perhaps?  The missing
-task_dirty_inc(current)?
-
-But we need EXPORT_SYMBOL(account_page_dirtied), methinks.
-
-This should be a separate patch IMO.
-
+>> Q2)In case if a VM wants to be a good citizen, is there a way for a
+>> guest to know about the balloon-event?
 >
-> ...
+> I am not sure I follow. Ballooning supposed to be as transparent as
+> possible...
 >
+This is too product specific. I will send you an email separately.
 
+
+>> Q3)What if an app mlock's its memory resources and driver's have
+>> pinned down their pages then how does inflation work?
+>
+> We will inflate as much as we can. Obviously if there are no more
+> memory balloon may not grow to its full target size.
+>
+> Balloon driver communicates to the hypervisor the total amount of
+> memory in the guest, we may want to adjust that number by subtracting
+> memory allocated by the kernel, mlocked memory and so on, but it is
+> not done currently.
+Ok.
+
+I'm stuck with one question -
+
+A) Ballooning will trigger guest's native memory management policy.
+   A.1) So this could mean guest might swap it's pages on it's vdisk, correct?
+
+Consider this setup -
+B) VM1..VMn have backing store(data and OS partitions) on LUNs(SAN).
+Further, data LUNs are mounted as RDMs. I chose RDMs just to keep it
+simple.
+C) Say there's memory pressure. How? Well, few VM's are blasting I/O
+to the LUNs. Plus, a backup triggered. Plus, whatever else happened.
+   C.1) VM's now seem to need more and more memory.
+   C.2) hypervisors block-layer/other-layers also need more memory.
+   C.3) Hypervisor's memory-management algorithm kicks-in.
+        ......
+        C.3.x) Ballooning triggers - now some VM's (excluding the ones
+from C.1) are giving up memory and if A.1) above is true then the
+guest's pages will be swapped out on the LUNs via
+                  hypervisor's SCSI-LLDD. But look at C.2) above. Is
+this a soft-deadlock?
+
+Oh, it's a linux-guest and if C.1) timesout then the guest will send
+aborts and eventually a LUN reset ;).
+
+In this particular case, if my suspicion is valid and if all the
+signatures match(swap is out on the SAN, block-congestion etc) then
+the balloon driver could just bail out.
+
+> Thanks.
+> --
+> Dmitry
+
+Thanks
+Chetan Loke
