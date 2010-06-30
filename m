@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab0F3TyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 15:54:12 -0400
-Received: from shutemov.name ([188.40.19.243]:46343 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752484Ab0F3TyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 15:54:10 -0400
-Date: Wed, 30 Jun 2010 22:54:09 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-       Cory Maccarrone <darkstar6262@gmail.com>,
-       "Zebediah C. McClure" <zmc@lurian.net>,
-       Alistair Buxton <a.j.buxton@gmail.com>, linux-omap@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 03/33] Removing dead OMAP_MUX_ERRORS
-Message-ID: <20100630195409.GC3969@shutemov.name>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
- <b6ca168f9459162f2c96aa8ef999047a3c4f6f9c.1277911346.git.siccegge@cs.fau.de>
+	id S1757200Ab0F3T6k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 15:58:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42296 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755582Ab0F3T6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 15:58:39 -0400
+Date: Wed, 30 Jun 2010 15:58:36 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: linux-pm@lists.linux-foundation.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       mark gross <640e9920@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Mickler <florian@mickler.org>, <linux-pci@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [update] Re: [PATCH] PM: Make it possible to avoid wakeup events
+ from being lost
+In-Reply-To: <201006302127.37432.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1006301535450.1707-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b6ca168f9459162f2c96aa8ef999047a3c4f6f9c.1277911346.git.siccegge@cs.fau.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 05:54:42PM +0200, Christoph Egger wrote:
-> OMAP_MUX_ERRORS doesn't exist in Kconfig, therefore removing all
-> references for it from the source code.
+On Wed, 30 Jun 2010, Rafael J. Wysocki wrote:
 
-IIUC, CONFIG_OMAP_MUX_WARNINGS should be used here instead of it.
+> > Since there's no longer any way to cancel a call to pm_wakeup_event()  
+> > or close the "no suspend" period early, there is no need to use
+> > dynamically-allocated delayed_work structures.  You can make do with a
+> > single static timer; always keep it set to expire at the latest time
+> > passed to pm_wakeup_event().
+> 
+> The decremenations of events_in_progress wouldn't be balanced with
+> incrementations this way.  Or do you have any clever way of dealing with
+> that in mind?
 
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> ---
->  arch/arm/mach-omap1/mux.c |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap1/mux.c b/arch/arm/mach-omap1/mux.c
-> index 8434137..1ddb02c 100644
-> --- a/arch/arm/mach-omap1/mux.c
-> +++ b/arch/arm/mach-omap1/mux.c
-> @@ -439,12 +439,7 @@ int __init_or_module omap1_cfg_reg(const struct pin_config *cfg)
->  			       cfg->pull_name, cfg->pull_reg, pull_orig, pull);
->  	}
->  #endif
-> -
-> -#ifdef CONFIG_OMAP_MUX_ERRORS
-> -	return warn ? -ETXTBSY : 0;
-> -#else
->  	return 0;
-> -#endif
->  }
->  
->  int __init omap1_mux_init(void)
-> -- 
-> 1.7.0.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Keep track of the current expiration time in a static variable called
+wakeup_timeout, and use 0 to indicate there is no timeout.
 
--- 
- Kirill A. Shutemov
+In pm_wakeup_event() (everything protected by the spinlock):
+
+	unsigned long new_timeout = jiffies + msecs_to_jiffies(msecs);
+	if (new_timeout == 0)
+		new_timeout = 1;
+
+	++event_count;
+	if (!wakeup_timeout || time_after(new_timeout, wakeup_timeout)) {
+		if (!wakeup_timeout)
+			++events_in_progress;
+		wakeup_timeout = new_timeout;
+		mod_timer(&wakeup_timer, wakeup_timeout);
+	}
+
+In the timer routine:
+
+	if (wakeup_timeout && time_before_eq(wakeup_timeout, jiffies)) {
+		--events_in_progres;
+		wakeup_timeout = 0;
+	}
+
+Alan Stern
+
