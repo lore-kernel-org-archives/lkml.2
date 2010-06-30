@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab0F3IIs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 04:08:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52025 "EHLO song.cn.fujitsu.com"
+	id S1753867Ab0F3IJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 04:09:33 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54515 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab0F3IIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 04:08:47 -0400
-Message-ID: <4C2AFAAC.8040308@cn.fujitsu.com>
-Date: Wed, 30 Jun 2010 16:05:00 +0800
+	id S1752629Ab0F3IJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 04:09:31 -0400
+Message-ID: <4C2AFAD7.3050901@cn.fujitsu.com>
+Date: Wed, 30 Jun 2010 16:05:43 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
        KVM list <kvm@vger.kernel.org>
-Subject: [PATCH v3 5/11] KVM: MMU: cleanup FNAME(fetch)() functions
+Subject: [PATCH v3 6/11] KVM: MMU: introduce gfn_to_pfn_atomic() function
 References: <4C2AF9FA.9020601@cn.fujitsu.com>
 In-Reply-To: <4C2AF9FA.9020601@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -23,77 +23,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup this function that we are already get the direct sp's access
+Introduce gfn_to_pfn_atomic(), it's the fast path and can used in atomic
+context, the later patch will use it
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/paging_tmpl.h |   19 ++++++++-----------
- 1 files changed, 8 insertions(+), 11 deletions(-)
+ arch/x86/mm/gup.c        |    2 ++
+ include/linux/kvm_host.h |    1 +
+ virt/kvm/kvm_main.c      |   32 +++++++++++++++++++++++++-------
+ 3 files changed, 28 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index f28f09d..3350c02 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -306,12 +306,18 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 	gfn_t table_gfn;
- 	int r;
- 	int level;
-+	bool dirty = is_dirty_gpte(gw->ptes[gw->level - 1]);
-+	unsigned direct_access;
- 	pt_element_t curr_pte;
- 	struct kvm_shadow_walk_iterator iterator;
+diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+index 738e659..0c9034b 100644
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -6,6 +6,7 @@
+  */
+ #include <linux/sched.h>
+ #include <linux/mm.h>
++#include <linux/module.h>
+ #include <linux/vmstat.h>
+ #include <linux/highmem.h>
  
- 	if (!is_present_gpte(gw->ptes[gw->level - 1]))
- 		return NULL;
+@@ -274,6 +275,7 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
  
-+	direct_access = gw->pt_access & gw->pte_access;
-+	if (!dirty)
-+		direct_access &= ~ACC_WRITE_MASK;
-+
- 	for_each_shadow_entry(vcpu, addr, iterator) {
- 		level = iterator.level;
- 		sptep = iterator.sptep;
-@@ -319,15 +325,13 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 			mmu_set_spte(vcpu, sptep, access,
- 				     gw->pte_access & access,
- 				     user_fault, write_fault,
--				     is_dirty_gpte(gw->ptes[gw->level-1]),
--				     ptwrite, level,
-+				     dirty, ptwrite, level,
- 				     gw->gfn, pfn, false, true);
- 			break;
- 		}
+ 	return nr;
+ }
++EXPORT_SYMBOL_GPL(__get_user_pages_fast);
  
- 		if (is_shadow_present_pte(*sptep) && !is_large_pte(*sptep)) {
- 			struct kvm_mmu_page *child;
--			unsigned direct_access;
+ /**
+  * get_user_pages_fast() - pin user pages in memory
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 9289d1a..515fefd 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -295,6 +295,7 @@ void kvm_release_page_dirty(struct page *page);
+ void kvm_set_page_dirty(struct page *page);
+ void kvm_set_page_accessed(struct page *page);
  
- 			if (level != gw->level)
- 				continue;
-@@ -339,10 +343,6 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 			 * so we should update the spte at this point to get
- 			 * a new sp with the correct access.
- 			 */
--			direct_access = gw->pt_access & gw->pte_access;
--			if (!is_dirty_gpte(gw->ptes[gw->level - 1]))
--				direct_access &= ~ACC_WRITE_MASK;
++pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 885d3f5..60bb3d5 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -924,19 +924,25 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
+ 
+-static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
++static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
+ {
+ 	struct page *page[1];
+ 	int npages;
+ 	pfn_t pfn;
+ 
+-	might_sleep();
 -
- 			child = page_header(*sptep & PT64_BASE_ADDR_MASK);
- 			if (child->role.access == direct_access)
- 				continue;
-@@ -359,11 +359,8 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+-	npages = get_user_pages_fast(addr, 1, 1, page);
++	if (atomic)
++		npages = __get_user_pages_fast(addr, 1, 1, page);
++	else {
++		might_sleep();
++		npages = get_user_pages_fast(addr, 1, 1, page);
++	}
+ 
+ 	if (unlikely(npages != 1)) {
+ 		struct vm_area_struct *vma;
+ 
++		if (atomic)
++			goto return_bad_page;
++
+ 		down_read(&current->mm->mmap_sem);
+ 		if (is_hwpoison_address(addr)) {
+ 			up_read(&current->mm->mmap_sem);
+@@ -949,6 +955,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 		if (vma == NULL || addr < vma->vm_start ||
+ 		    !(vma->vm_flags & VM_PFNMAP)) {
+ 			up_read(&current->mm->mmap_sem);
++return_bad_page:
+ 			get_page(bad_page);
+ 			return page_to_pfn(bad_page);
  		}
+@@ -962,7 +969,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 	return pfn;
+ }
  
- 		if (level <= gw->level) {
--			int delta = level - gw->level + 1;
- 			direct = 1;
--			if (!is_dirty_gpte(gw->ptes[level - delta]))
--				access &= ~ACC_WRITE_MASK;
--			access &= gw->pte_access;
-+			access = direct_access;
+-pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
++pfn_t __gfn_to_pfn(struct kvm *kvm, gfn_t gfn, bool atomic)
+ {
+ 	unsigned long addr;
  
- 			/*
- 			 * It is a large guest pages backed by small host pages,
+@@ -972,7 +979,18 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
+ 		return page_to_pfn(bad_page);
+ 	}
+ 
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, atomic);
++}
++
++pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn)
++{
++	return __gfn_to_pfn(kvm, gfn, true);
++}
++EXPORT_SYMBOL_GPL(gfn_to_pfn_atomic);
++
++pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
++{
++	return __gfn_to_pfn(kvm, gfn, false);
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_pfn);
+ 
+@@ -980,7 +998,7 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn)
+ {
+ 	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, false);
+ }
+ 
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
 -- 
 1.6.1.2
 
