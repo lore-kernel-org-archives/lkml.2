@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab0F3Lvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 07:51:40 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:55627 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab0F3Lvi convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Wed, 30 Jun 2010 07:51:38 -0400
-Message-Id: <4C2B4C050200007800008CDB@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 30 Jun 2010 12:52:05 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>,
-       "Peter Zijlstra" <peterz@infradead.org>
-Cc: "mingo@elte.hu" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
-       "Ky Srinivasan" <KSrinivasan@novell.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH 1/4, v2] x86: enlightenment for ticket spin locks -
-	 base implementation
-References: <4C2A1FE902000078000089E1@vpn.id2.novell.com>
- <1277885133.1868.71.camel@laptop>
- <4C2B23CD0200007800008BFA@vpn.id2.novell.com>
- <1277889116.1868.95.camel@laptop> <4C2B2180.6040401@goop.org>
-In-Reply-To: <4C2B2180.6040401@goop.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755385Ab0F3Lvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 07:51:46 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:55828 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753979Ab0F3Lvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 07:51:42 -0400
+Date: Wed, 30 Jun 2010 13:52:59 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Dan Kruchinin <kruchinin@altell.ru>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH 1/2] padata: Separate cpumasks for cb_cpus and parallel
+ workers
+Message-ID: <20100630115259.GC10072@secunet.com>
+References: <20100629203415.01c953e4@leibniz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100629203415.01c953e4@leibniz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 30 Jun 2010 11:51:29.0770 (UTC) FILETIME=[93DEF4A0:01CB184A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.06.10 at 12:50, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> On 06/30/2010 11:11 AM, Peter Zijlstra wrote:
->>>> Uhm, I'd much rather see a single alternative implementation, not a
->>>> per-hypervisor lock implementation.
->>>>       
->>> How would you imaging this to work? I can't see how the mechanism
->>> could be hypervisor agnostic. Just look at the Xen implementation
->>> (patch 2) - do you really see room for meaningful abstraction there?
->>>     
->> I tried not to, it made my eyes bleed.. 
->>
->> But from what I hear all virt people are suffering from spinlocks (and
->> fair spinlocks in particular), so I was thinking it'd be a good idea to
->> get all interested parties to collaborate on one. Fragmentation like
->> this hardly ever works out well.
->>   
-> 
-> Yes.  Now that I've looked at it a bit more closely I think these
-> patches put way too much logic into the per-hypervisor part of the code.
+Hi,
 
-I fail to see that: Depending on the hypervisor's capabilities, the
-two main functions could be much smaller (potentially there wouldn't
-even be a need for the unlock hook in some cases), and hence I
-continue to think that all code that is in xen.c indeed is non-generic
-(while I won't say that there may not be a second hypervisor where
-the code might look almost identical).
+I like the idea to have separate cpumasks for parallel and
+serial workers. I had not yet time to test your patches, but
+I'll do so as soon as possible. I've added some comments to
+your patch below.
 
->> Ah, right, after looking a bit more at patch 2 I see you indeed
->> implement a ticket like lock. Although why you need both a ticket and a
->> FIFO list is beyond me.
->>   
-> 
-> That appears to be a mechanism to allow it to take interrupts while
-> spinning on the lock, which is something that stock ticket locks don't
-> allow.  If that's a useful thing to do, it should happen in the generic
-> ticketlock code rather than in the per-hypervisor backend (otherwise we
-> end up with all kinds of subtle differences in lock behaviour depending
-> on the exact environment, which is just going to be messy).  Even if
-> interrupts-while-spinning isn't useful on native hardware, it is going
-> to be equally applicable to all virtual environments.
 
-While we do interrupt re-enabling in our pv kernels, I intentionally
-didn't do this here - it complicates the code quite a bit further, and
-that did seem right for an initial submission.
+On Tue, Jun 29, 2010 at 08:34:15PM +0400, Dan Kruchinin wrote:
+> 1) Two separate cpumasks for parallel and serial workers
+> 2) padata_alloc does not takes cpumask as its argument, instead
+> it uses a default one. __padata_alloc takes two cpumasks as its
+> arguments: one for parallel workers and another one for serial.
+> 3) I made padata_cpu_hash a public function to reduce code size(in
+> several places in pcrypt.c there is near the same code(for getting cpu
+> hash) as in padata_cpu_hash)
 
-The list really juts is needed to not pointlessly tickle CPUs that
-won't own the just released lock next anyway (or would own
-it, but meanwhile went for another one where they also decided
-to go into polling mode).
+Please add a Signed-off-by line to your patches.
 
-Jan
+[snip]
 
+>  static int pcrypt_aead_init_tfm(struct crypto_tfm *tfm)
+>  {
+> -	int cpu, cpu_index;
+>  	struct crypto_instance *inst = crypto_tfm_alg_instance(tfm);
+> -	struct pcrypt_instance_ctx *ictx = crypto_instance_ctx(inst);
+>  	struct pcrypt_aead_ctx *ctx = crypto_tfm_ctx(tfm);
+>  	struct crypto_aead *cipher;
+>  
+> -	ictx->tfm_count++;
+> -
+> -	cpu_index = ictx->tfm_count % cpumask_weight(cpu_active_mask);
+> -
+> -	ctx->cb_cpu = cpumask_first(cpu_active_mask);
+> -	for (cpu = 0; cpu < cpu_index; cpu++)
+> -		ctx->cb_cpu = cpumask_next(ctx->cb_cpu, cpu_active_mask);
+> -
+> +	ctx->tfm_count++;
+
+Having a transformation count on the transformation context itself
+does not make too much sense. pcrypt_aead_init_tfm() is called once
+for each transformation, so all transformations have a count of one.
+The transformation count has to stay at the instance context.
+
+[snip]
+
+>  
+>  	/*
+> -	 * The next object that needs serialization might have arrived to
+> -	 * the reorder queues in the meantime, we will be called again
+> -	 * from the timer function if noone else cares for it.
+> -	 */
+> +     * The next object that needs serialization might have arrived to
+> +     * the reorder queues in the meantime, we will be called again
+> +     * from the timer function if noone else cares for it.
+> +     */
+
+You replaced the tabs by some whitespaces in the lines above,
+this changed the code indent of some lines of this comment.
+
+[snip]
+
+>  static int __padata_add_cpu(struct padata_instance *pinst, int cpu)
+>  {
+> -	struct parallel_data *pd;
+> +	struct parallel_data *pd = NULL;
+>  
+>  	if (cpumask_test_cpu(cpu, cpu_active_mask)) {
+> -		pd = padata_alloc_pd(pinst, pinst->cpumask);
+> +		pd = padata_alloc_pd(pinst,
+> +				pinst->cpumask.pcpu, pinst->cpumask.cbcpu);
+>  		if (!pd)
+>  			return -ENOMEM;
+> -
+> -		padata_replace(pinst, pd);
+>  	}
+>  
+> +	padata_replace(pinst, pd);
+
+This crashes if the cpu you add is not in the active cpumask,
+as you pass a NULL pointer to padata_replace() then.
+
+Some minor general things. It is quite helpfull to run checkpatch
+on your patches, this helps to spot some codingstyle issues.
+Also reading Documentation/CodingStyle is helpfull to get an
+idea of the recommended codingstyle.
+
+The rest of the patch looks quite good.
+
+Thanks a lot,
+
+Steffen
