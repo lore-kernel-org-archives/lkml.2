@@ -1,93 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab0F3VY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 17:24:26 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:48009 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757226Ab0F3VYZ convert rfc822-to-8bit (ORCPT
+	id S1757303Ab0F3VZO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 17:25:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33929 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757273Ab0F3VZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 17:24:25 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=RnvZzCt/lzDt6o8GBJSWGzxDg7k6IhzetEEW+DW7g56x0RSaWm3R82U2eNkcPj+Te
-	i6ONqYPQdMX6KEw9/G1Nw==
-MIME-Version: 1.0
-In-Reply-To: <1277136847-13266-10-git-send-email-stefano@stabellini.net>
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
-	<1277136847-13266-10-git-send-email-stefano@stabellini.net>
-Date: Wed, 30 Jun 2010 14:24:21 -0700
-Message-ID: <AANLkTilecD4_542ftaoCIuAzlHgCI63i7rio9C-zuwZH@mail.gmail.com>
-Subject: Re: [PATCH 10/13] Do not try to disable hpet if it hasn't been 
-	initialized before
-From: Venkatesh Pallipadi <venki@google.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-       Stefano.Stabellini@eu.citrix.com, sheng@linux.intel.com,
-       ddutile@redhat.com, jeremy@goop.org, stefano@stabellini.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 30 Jun 2010 17:25:12 -0400
+Date: Wed, 30 Jun 2010 14:24:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michael Rubin <mrubin@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
+       axboe@kernel.dk
+Subject: Re: [PATCH] Adding four read-only files to /proc/sys/vm
+Message-Id: <20100630142443.d9a9c49e.akpm@linux-foundation.org>
+In-Reply-To: <1277747099-12770-1-git-send-email-mrubin@google.com>
+References: <1277747099-12770-1-git-send-email-mrubin@google.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks Good.
-Acked-by: Venkatesh Pallipadi <venki@google.com>
+On Mon, 28 Jun 2010 10:44:59 -0700
+Michael Rubin <mrubin@google.com> wrote:
 
-Copying Thomas/Ingo/Peter.
+> Adding four read-only files to /proc/sys/vm
+> 
+> To help developers and applications gain visibility into writeback
+> behaviour adding four read only sysctl files into /proc/sys/vm.
+> These files allow user apps to understand writeback behaviour over time
+> and learn how it is impacting their performance.
+> 
+>     # cat /proc/sys/vm/pages_dirtied
+>     3747
+>     # cat /proc/sys/vm/pages_entered_writeback
+>     3618
+>     # cat /proc/sys/vm/dirty_threshold
+>     816673
+>     # cat /proc/sys/vm/dirty_background_threshold
+>     408336
+> 
+> Documentation/vm.txt has been updated.
+> 
+> In order to track the "cleaned" and "dirtied" counts we added two
+> vm_stat_items.  Per memory node stats have been added also. So we can
+> see per node granularity:
+> 
+>     # cat /sys/devices/system/node/node20/writebackstat
+>     Node 20 pages_writeback: 0 times
+>     Node 20 pages_dirtied: 0 times
+> 
+> A helper function, account_page_writeback, was added to encapsulate
+> incrementing vm stats from nilfs. ceph code was also changed to use a
+> mm helper routine.
+> 
 
-On Mon, Jun 21, 2010 at 9:14 AM,  <stefano@stabellini.net> wrote:
-> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Well...  why are these useful?  In what operational scenario would
+someone use these and get goodness from the experience?  Where is the
+value?  Sell it to us!
+
+
+
+I'm generally reluctant to add /proc knobs which expose internals or
+which tie us into particular implementations.
+
+It's hard to see how any future implementation could have a problem
+implementing pages_dirtied and pages_entered_writeback, however
+dirty_threshold and dirty_background_threshold are, I think, somewhat
+specific to the current implementation and may be hard to maintain next
+time we rip up and rewrite everything.
+
 >
-> hpet_disable is called unconditionally on machine reboot if hpet support
-> is compiled in the kernel.
-> hpet_disable only checks if the machine is hpet capable but doesn't make
-> sure that hpet has been initialized.
+> ...
 >
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/x86/kernel/hpet.c |   18 ++++++++++--------
->  1 files changed, 10 insertions(+), 8 deletions(-)
->
-> diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-> index 23b4ecd..2b299da 100644
-> --- a/arch/x86/kernel/hpet.c
-> +++ b/arch/x86/kernel/hpet.c
-> @@ -959,16 +959,18 @@ fs_initcall(hpet_late_init);
->
->  void hpet_disable(void)
->  {
-> -       if (is_hpet_capable()) {
-> -               unsigned int cfg = hpet_readl(HPET_CFG);
-> +       unsigned int cfg;
->
-> -               if (hpet_legacy_int_enabled) {
-> -                       cfg &= ~HPET_CFG_LEGACY;
-> -                       hpet_legacy_int_enabled = 0;
-> -               }
-> -               cfg &= ~HPET_CFG_ENABLE;
-> -               hpet_writel(cfg, HPET_CFG);
-> +       if (!is_hpet_capable() || !hpet_address || !hpet_virt_address)
-> +               return;
+> +dirty_background_threshold
 > +
-> +       cfg = hpet_readl(HPET_CFG);
-> +       if (hpet_legacy_int_enabled) {
-> +               cfg &= ~HPET_CFG_LEGACY;
-> +               hpet_legacy_int_enabled = 0;
->        }
-> +       cfg &= ~HPET_CFG_ENABLE;
-> +       hpet_writel(cfg, HPET_CFG);
->  }
+> +Contains the exact amount of dirty memory memory the kernel uses to trigger the
+> +background writeout daemon will start writing out dirty data. This value
+> +depends on memory state, dirty_background_ratio and/or
+> +dirty_background_bytes. This value is read-only.
+
+Documentation doesn't describe the units.  Pages?  kbytes?  bytes?
+
+I think it's best to encode the units in the procfs filename
+(eg: dirty_expire_centisecs, min_free_kbytes).
+
+> +==============================================================
+> +
+>  dirty_bytes
+>  
+>  Contains the amount of dirty memory at which a process generating disk writes
+> @@ -123,6 +136,15 @@ data.
+>  
+>  ==============================================================
+>  
+> +dirty_threshold
+> +
+> +Contains the exact amount of dirty memory the kernel uses to decide when
+> +a process which is generating disk writes will itself start writing
+> +out data. This value depends on memory state, dirty_ratio and/or
+> +dirty_bytes. This value is read-only.
+
+units?
+
+> +=============================================================
+> +
+> +pages_dirtied
+> +
+> +Number of pages that have ever been dirtied since boot.
+> +This value is read-only.
+> +
+>  =============================================================
+>  
+> +pages_entered_writeback
+> +
+> +Number of pages that have been moved from dirty to writeback since boot.
+> +This is only a count of file pages. This value is read-only.
+> +
+
+Am interested in hearing (in the changelog!) why these are considered
+useful.  
+
+We're very very interested in knowing how many pages entered writeback
+via mm/vmscan.c however this procfs file lumps those together with the
+pages which entered writeback via the regular writeback paths, I assume.
+
 >
->  #ifdef CONFIG_HPET_EMULATE_RTC
-> --
-> 1.7.0.4
+> ...
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> --- a/fs/ceph/addr.c
+> +++ b/fs/ceph/addr.c
+> @@ -105,13 +105,7 @@ static int ceph_set_page_dirty(struct page *page)
+>  	spin_lock_irq(&mapping->tree_lock);
+>  	if (page->mapping) {	/* Race with truncate? */
+>  		WARN_ON_ONCE(!PageUptodate(page));
+> -
+> -		if (mapping_cap_account_dirty(mapping)) {
+> -			__inc_zone_page_state(page, NR_FILE_DIRTY);
+> -			__inc_bdi_stat(mapping->backing_dev_info,
+> -					BDI_RECLAIMABLE);
+> -			task_io_account_write(PAGE_CACHE_SIZE);
+> -		}
+> +		account_page_dirtied(page, mapping);
+>  		radix_tree_tag_set(&mapping->page_tree,
+>  				page_index(page), PAGECACHE_TAG_DIRTY);
+
+Nice cleanup.  And a bugfix, perhaps?  The missing
+task_dirty_inc(current)?
+
+But we need EXPORT_SYMBOL(account_page_dirtied), methinks.
+
+This should be a separate patch IMO.
+
 >
+> ...
+>
+
