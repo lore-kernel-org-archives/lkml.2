@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab0F3Jry (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:47:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50981 "EHLO mx1.redhat.com"
+	id S1755354Ab0F3Jsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 05:48:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35251 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273Ab0F3Jrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:47:52 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CE3451EE-F8B2-47EF-AC1C-4EEEBE68B30F@dilger.ca>
-References: <CE3451EE-F8B2-47EF-AC1C-4EEEBE68B30F@dilger.ca> <20100630011656.18960.4255.stgit@warthog.procyon.org.uk> <20100630011712.18960.3723.stgit@warthog.procyon.org.uk> <1277862536.9326.3.camel@heimdal.trondhjem.org>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: dhowells@redhat.com, Trond Myklebust <trond.myklebust@fys.uio.no>,
-       viro@ZenIV.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
-       mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-       linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-       sjayaraman@suse.de, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file stats available [ver #2]
-Date: Wed, 30 Jun 2010 10:47:26 +0100
-Message-ID: <29130.1277891246@redhat.com>
+	id S1752273Ab0F3Jsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 05:48:32 -0400
+Date: Wed, 30 Jun 2010 11:48:30 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]kernel.h Fix #warning message web address.
+In-Reply-To: <1277840244-3436-1-git-send-email-justinmattock@gmail.com>
+Message-ID: <alpine.LNX.2.00.1006301147490.13809@pobox.suse.cz>
+References: <1277840244-3436-1-git-send-email-justinmattock@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Dilger <adilger@dilger.ca> wrote:
+On Tue, 29 Jun 2010, Justin P. Mattock wrote:
 
-> > Yes, but could we please also add a flag that allows you to specify that
-> > the kernel _must_ provide up to date attributes.
+> Playing around with a printk program I noticed that the #warning
+> message is incomplete(when using kernel headers for userspace):
 > 
-> To my reading, if the query_flags are set in the input buffer, then the
-> attributes MUST be fetched.  If they are unset, then they MAY be fetched,
-> and the corresponding query_flags will be set in the return buffer.  If the
-> query_flags are not set in the return buffer then I assume the output values
-> are undefined.
+>  gcc printk.c -o printk
+> In file included from printk.c:3:
+> include/linux/kernel.h:733:2: warning: #warning Attempt to use kernel headers from user space, see http:
+> 
+> My guess for the web address not being displayed is "//" is treated as a comment.
+> So after changing "http://" to "www." I get the web address.(using firefox with this
+> address takes me right to the location). The warning looks like this:
+> 
+> In file included from printk.c:3:
+> warning: #warning Attempt to use kernel headers from user space, see www.kernelnewbies.org/KernelHeaders 
+>  
+>  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  include/linux/kernel.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 8317ec4..768196a 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -730,7 +730,7 @@ extern int do_sysinfo(struct sysinfo *info);
+>  
+>  #ifndef __EXPORTED_HEADERS__
+>  #ifndef __KERNEL__
+> -#warning Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders
+> +#warning Attempt to use kernel headers from user space, see www.kernelnewbies.org/KernelHeaders
+>  #endif /* __KERNEL__ */
+>  #endif /* __EXPORTED_HEADERS__ */
 
-I think Trond may have a point, looking at nfs_getattr().
+Hehe, ugly. How about making it a single string? GCC preprocessor 
+documentation suggests the same anyway ...
 
-There can be three levels:
+	Neither `#error' nor `#warning' macro-expands its argument.
+	Internal whitespace sequences are each replaced with a single space.
+	The line must consist of complete tokens.  It is wisest to make the
+	argument of these directives be a single string constant; this avoids
+	problems with apostrophes and the like.
 
- (1) Don't check with the server, just go with what we've got in the cache if
-     it's available.  Results returned may be approximate.
-
- (2) Check with the server if the cached attributes are out of date or if
-     something is requested that we don't keep in RAM.
-
- (3) Check with the server anyway.
-
-David
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
