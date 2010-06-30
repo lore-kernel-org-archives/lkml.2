@@ -1,33 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab0F3HcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 03:32:04 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34397 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907Ab0F3Hb7 (ORCPT
+	id S1752920Ab0F3HeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 03:34:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56216 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab0F3HeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 03:31:59 -0400
-Date: Wed, 30 Jun 2010 03:31:58 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Yama: add PTRACE exception tracking
-Message-ID: <20100630073158.GA4453@infradead.org>
-References: <20100630003844.GE4837@outflux.net>
+	Wed, 30 Jun 2010 03:34:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100630003844.GE4837@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Originating-IP: [134.134.137.73]
+In-Reply-To: <AANLkTik2IbCti-nlCkNwYQShnMXXsXhxuQJUV4eSColf@mail.gmail.com>
+References: <AANLkTinrDVKmA4Jcr-JimhMKogjVzdLsbsB5beWJSVla@mail.gmail.com>
+	<AANLkTik2IbCti-nlCkNwYQShnMXXsXhxuQJUV4eSColf@mail.gmail.com>
+Date: Wed, 30 Jun 2010 15:34:01 +0800
+Message-ID: <AANLkTilZPgvICbrolTRnG_w-w7EXr1BRxENznqTGaWWh@mail.gmail.com>
+Subject: Re: How to find a lost git commit?
+From: Lin Ming <lin@ming.vg>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 30, 2010 at 3:31 PM, Po-Yu Chuang <ratbert.chuang@gmail.com> wrote:
+> Hi Lin,
+>
+> 2010/6/30 Lin Ming <lin@ming.vg>:
+>> I wrote some patch and checked it in my local branch.
+>> But by accident, I run "git reset --hard" to reset the git head to
+>> some other commit.
+>>
+>> So now I can't find my patch because I don't know it's commit number.
+> I guess git reflog is what you need.
 
-Err, no.  This is just a very clear sign that your ptrace restrictions
-were completely wrong to start with and break applications left, right
-and center.  Just get rid of it instead of letting workarounds for your
-bad design creep into the core kernel and applications.
+Wow! That's it!
 
+Many thanks.
