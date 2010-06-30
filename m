@@ -1,51 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab0F3V72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 17:59:28 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48685 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754962Ab0F3V71 (ORCPT
+	id S1757390Ab0F3WUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 18:20:46 -0400
+Received: from 69-100-st.zelcom.ru ([80.92.100.69]:58691 "HELO
+	feelingofgreen.ru" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with SMTP id S1752754Ab0F3WUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 17:59:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=L0WEzWNl4bj+f5I/0UubZpVkRn+QqhZvmjxeMOY/S3iPerVhDOWzoiFQ+c5jmjQOyh
-         m22ytXcoY1fQzZbCMKexAbv3GbqGv968EHkQo3BT8e77+Vs/lG/A/FMA+flY9bafwFbM
-         MBW78bB+CK7oIFjKibU7UQ+Ud6COu3kG1//yM=
+	Wed, 30 Jun 2010 18:20:44 -0400
+From: Samium Gromoff <_deepfire@feelingofgreen.ru>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] serial: MMIO32 support for 8250_early.c
+In-Reply-To: <20100630131321.07d0f921.akpm@linux-foundation.org>
+References: <87r5jxva3n.fsf@auriga.deep>
+	<20100628134426.0558ac67.akpm@linux-foundation.org>
+	<87mxucuyfo.fsf@auriga.deep>
+	<20100630131321.07d0f921.akpm@linux-foundation.org>
+Date: Thu, 01 Jul 2010 01:26:13 +0400
+Message-ID: <87lj9wus96.fsf@auriga.deep>
 MIME-Version: 1.0
-In-Reply-To: <4C2BBACF.3080405@intel.com>
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
-	<4C29420D.2010406@intel.com>
-	<AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>
-	<4C2A8879.8010000@intel.com>
-	<AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>
-	<4C2AC55E.3040303@intel.com>
-	<AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
-	<1277923422.16256.8.camel@localhost>
-	<4C2B9DAC.1030806@intel.com>
-	<1277928125.18854.0.camel@localhost>
-	<4C2BBACF.3080405@intel.com>
-Date: Wed, 30 Jun 2010 14:59:25 -0700
-X-Google-Sender-Auth: DnCRkoy5z1m7HJA2PTPC2TKRlFs
-Message-ID: <AANLkTil5fCb9maq5qE-2txxaybGqVQSWEy8q0ppBsype@mail.gmail.com>
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-From: Chris Li <lkml@chrisli.org>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 2:44 PM, Dan Williams <dan.j.williams@intel.com> wrote:
->
-> Chris, is there a BIOS update available for your platform?
+On Wed, 30 Jun 2010 13:13:21 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Wed, 30 Jun 2010 23:12:43 +0400
+> Samium Gromoff <_deepfire@feelingofgreen.ru> wrote:
+> 
+> > So, the branch is again updated, and the delta is:
+> 
+> This gives checkpatch a complete heart attack.  Please, use it?
 
-You mean the EFI firmware update? Nope.
+Done.  There's a warning, but it belongs to the original code, so not
+touching it..
 
-Do you think loading linux via EFI instead of boot camp (BIOS) will help?
+= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+commit ae1a741d1aab1a67dfe1c0ef2b874fcf838b858e
+Author: Samium Gromoff <_deepfire@feelingofgreen.ru>
+Date:   Thu Jul 1 01:23:45 2010 +0400
 
-Chris
+    Provide MMIO32 support in 8250_early (aka earlycon)
+    
+    Signed-off-by: Samium Gromoff <_deepfire@feelingofgreen.ru>
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 1808f11..0bb9939 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -686,8 +686,11 @@ and is between 256 and 4096 characters. It is defined in the file
+ 	earlycon=	[KNL] Output early console device and options.
+ 		uart[8250],io,<addr>[,options]
+ 		uart[8250],mmio,<addr>[,options]
++		uart[8250],mmio32,<addr>[,options]
+ 			Start an early, polled-mode console on the 8250/16550
+ 			UART at the specified I/O port or MMIO address.
++			MMIO inter-register address stride is either 8bit (mmio)
++                        or 32bit (mmio32).
+ 			The options are the same as for ttyS, above.
+ 
+ 	earlyprintk=	[X86,SH,BLACKFIN]
+diff --git a/drivers/serial/8250_early.c b/drivers/serial/8250_early.c
+index f279745..0724c6f 100644
+--- a/drivers/serial/8250_early.c
++++ b/drivers/serial/8250_early.c
+@@ -19,9 +19,11 @@
+  * The user can specify the device directly, e.g.,
+  *	earlycon=uart8250,io,0x3f8,9600n8
+  *	earlycon=uart8250,mmio,0xff5e0000,115200n8
++ *	earlycon=uart8250,mmio32,0xff5e0000,115200n8
+  * or
+  *	console=uart8250,io,0x3f8,9600n8
+  *	console=uart8250,mmio,0xff5e0000,115200n8
++ *	console=uart8250,mmio32,0xff5e0000,115200n8
+  */
+ 
+ #include <linux/tty.h>
+@@ -48,18 +50,31 @@ static struct early_serial8250_device early_device;
+ 
+ static unsigned int __init serial_in(struct uart_port *port, int offset)
+ {
+-	if (port->iotype == UPIO_MEM)
++	switch (port->iotype) {
++	case UPIO_MEM:
+ 		return readb(port->membase + offset);
+-	else
++	case UPIO_MEM32:
++		return readl(port->membase + (offset << 2));
++	case UPIO_PORT:
+ 		return inb(port->iobase + offset);
++	default:
++		return 0;
++	}
+ }
+ 
+ static void __init serial_out(struct uart_port *port, int offset, int value)
+ {
+-	if (port->iotype == UPIO_MEM)
++	switch (port->iotype) {
++	case UPIO_MEM:
+ 		writeb(value, port->membase + offset);
+-	else
++		break;
++	case UPIO_MEM32:
++		writel(value, port->membase + (offset << 2));
++		break;
++	case UPIO_PORT:
+ 		outb(value, port->iobase + offset);
++		break;
++	}
+ }
+ 
+ #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
+@@ -137,15 +152,21 @@ static int __init parse_options(struct early_serial8250_device *device,
+ 								char *options)
+ {
+ 	struct uart_port *port = &device->port;
+-	int mmio, length;
++	int mmio, mmio32, length;
+ 
+ 	if (!options)
+ 		return -ENODEV;
+ 
+ 	port->uartclk = BASE_BAUD * 16;
+-	if (!strncmp(options, "mmio,", 5)) {
+-		port->iotype = UPIO_MEM;
+-		port->mapbase = simple_strtoul(options + 5, &options, 0);
++
++	mmio = !strncmp(options, "mmio,", 5);
++	mmio32 = !strncmp(options, "mmio32,", 7);
++	if (mmio || mmio32) {
++		port->iotype = (mmio ? UPIO_MEM : UPIO_MEM32);
++		port->mapbase = simple_strtoul(options + (mmio ? 5 : 7),
++					       &options, 0);
++		if (mmio32)
++			port->regshift = 2;
+ #ifdef CONFIG_FIX_EARLYCON_MEM
+ 		set_fixmap_nocache(FIX_EARLYCON_MEM_BASE,
+ 					port->mapbase & PAGE_MASK);
+@@ -157,11 +178,10 @@ static int __init parse_options(struct early_serial8250_device *device,
+ 		if (!port->membase) {
+ 			printk(KERN_ERR "%s: Couldn't ioremap 0x%llx\n",
+ 				__func__,
+-			       (unsigned long long)port->mapbase);
++			       (unsigned long long) port->mapbase);
+ 			return -ENOMEM;
+ 		}
+ #endif
+-		mmio = 1;
+ 	} else if (!strncmp(options, "io,", 3)) {
+ 		port->iotype = UPIO_PORT;
+ 		port->iobase = simple_strtoul(options + 3, &options, 0);
+@@ -181,11 +201,14 @@ static int __init parse_options(struct early_serial8250_device *device,
+ 			device->baud);
+ 	}
+ 
+-	printk(KERN_INFO "Early serial console at %s 0x%llx (options '%s')\n",
+-		mmio ? "MMIO" : "I/O port",
+-		mmio ? (unsigned long long) port->mapbase
+-		     : (unsigned long long) port->iobase,
+-		device->options);
++	if (mmio || mmio32)
++		printk(KERN_INFO "Early serial console at MMIO%s 0x%p (options '%s')\n",
++		       mmio32 ? "32" : "", (unsigned long long) port->mapbase,
++		       device->options);
++	else
++		printk(KERN_INFO "Early serial console at I/O port 0x%pr (options '%s')\n",
++		       (unsigned long long) port->iobase, device->options);
++
+ 	return 0;
+ }
+ 
+
+
+-- 
+regards,
+  Samium Gromoff
+--
+"Actually I made up the term 'object-oriented', and I can tell you I
+did not have C++ in mind." - Alan Kay (OOPSLA 1997 Keynote)
