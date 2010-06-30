@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab0F3Acm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 20:32:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:35978 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393Ab0F3Ack (ORCPT
+	id S1755889Ab0F3Aha (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 20:37:30 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37907 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753548Ab0F3Ah2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 20:32:40 -0400
-Message-ID: <4C2A9054.20500@oracle.com>
-Date: Wed, 30 Jun 2010 08:31:16 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, Joel Becker <joel.becker@oracle.com>,
-       Sunil Mushran <sunil.mushran@oracle.com>,
-       "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
-Subject: Re: [PATCH 0/3 v5][RFC] ext3/4: enhance fsync performance when using
- CFQ
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>	<4C21D442.8080703@oracle.com> <4C22F316.3080009@oracle.com>	<x49k4pk60ye.fsf@segfault.boston.devel.redhat.com>	<4C284419.3000905@oracle.com> <x49wrthlwfk.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49wrthlwfk.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 29 Jun 2010 20:37:28 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 30 Jun 2010 09:32:51 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Nathan Fontenot <nfont@austin.ibm.com>,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] memory hotplug disable boot option
+Message-Id: <20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100629180415.GB1240@suse.de>
+References: <20100628154455.GA13918@suse.de>
+	<1277769867.8354.531.camel@nimitz>
+	<20100629115232.38BC.A69D9226@jp.fujitsu.com>
+	<1277827384.8354.3413.camel@nimitz>
+	<20100629180415.GB1240@suse.de>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C2A909A.0147:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
+On Tue, 29 Jun 2010 11:04:15 -0700
+Greg KH <gregkh@suse.de> wrote:
 
-On 06/29/2010 10:56 PM, Jeff Moyer wrote:
-> Tao Ma<tao.ma@oracle.com>  writes:
->
->> Hi Jeff,
->>
->> On 06/27/2010 09:48 PM, Jeff Moyer wrote:
->>> Tao Ma<tao.ma@oracle.com>   writes:
->>>> I am sorry to say that the patch make jbd2 locked up when I tested
->>>> fs_mark using ocfs2.
->>>> I have attached the log from my netconsole server. After I reverted
->>>> the patch [3/3], the box works again.
->>>
->>> I can't reproduce this, unfortunately.  Also, when building with the
->>> .config you sent me, the disassembly doesn't line up with the stack
->>> trace you posted.
->>>
->>> I'm not sure why yielding the queue would cause a deadlock.  The only
->>> explanation I can come up with is that I/O is not being issued.  I'm
->>> assuming that no other I/O will be completed to the file system in
->>> question.  Is that right?  Could you send along the output from sysrq-t?
->> yes, I just mounted it and begin the test, so there should be no
->> outstanding I/O. So do you need me to setup another disk for test?
->> I have attached the sysrq output in sysrq.log. please check.
->
-> Well, if it doesn't take long to reproduce, then it might be helpful to
-> see a blktrace of the run.  However, it might also just be worth waiting
-> for the next version of the patch to see if that fixes your issue.
->
->> btw, I also met with a NULL pointer deference in cfq_yield. I have
->> attached the null.log also. This seems to be related to the previous
->> deadlock and happens when I try to remount the same volume after
->> reboot and ocfs2 try to do some recovery.
->
->   Pid: 4130, comm: ocfs2_wq Not tainted 2.6.35-rc3+ #5 0MM599/OptiPlex 745
->   RIP: 0010:[<ffffffff82161537>]
->    [<ffffffff82161537>] cfq_yield+0x5f/0x135
->   RSP: 0018:ffff880123061c60  EFLAGS: 00010246
->   RAX: 0000000000000000 RBX: ffff88012c2b5ea8 RCX: ffff88012c3a30d0
->
-> ffffffff82161528:	e8 69 eb ff ff       	callq  ffffffff82160096<cfq_cic_lookup>
-> ffffffff8216152d:	49 89 c6             	mov    %rax,%r14
-> ffffffff82161530:	48 8b 85 00 06 00 00 	mov    0x600(%rbp),%rax
-> ffffffff82161537:	f0 48 ff 00          	lock incq (%rax)
->
-> I'm pretty sure that's a NULL pointer deref of the tsk->iocontext that
-> was passed into the yield function.  I've since fixed that, so your
-> recovery code should be safe in the newest version (which I've not yet
-> posted).
-ok, so could you please cc me when the new patches are out? It would be 
-easier for me to track it. Thanks.
+> On Tue, Jun 29, 2010 at 09:03:04AM -0700, Dave Hansen wrote:
+> > On Tue, 2010-06-29 at 11:56 +0900, KOSAKI Motohiro wrote:
+> > > > On Mon, 2010-06-28 at 08:44 -0700, Greg KH wrote:
+> > > > > > The directories being created are the standard directories, one for each of the memory
+> > > > > > sections present at boot.  I think the most used files in each of these directories
+> > > > > > is the state and removable file used to do memory hotplug.
+> > > > > 
+> > > > > And perhaps we shouldn't really be creating so many directories?  Why
+> > > > > not work with the memory hotplug developers to change their interface to
+> > > > > not abuse sysfs in such a manner? 
+> > > > 
+> > > > Heh, it wasn't abuse until we got this much memory.  But, I think this
+> > > > one is pretty much 100% my fault.
+> > > > 
+> > > > Nathan, I think the right fix here is probably to untie sysfs from the
+> > > > sections a bit.  We should be able to have sysfs dirs that represent
+> > > > more than one contiguous SECTION_SIZE area of memory.
+> > > 
+> > > Why do we need abi breakage? Yourself talked about we guess ppc don't
+> > > actually need 16MB section. I think IBM folks have to confirm it.
+> > > If our guessing is correct, the firmware fixing is only necessary.
+> > 
+> > >From the mouth of the kernel dumbass who coded this up: it's not the
+> > firmware's fault.  We shouldn't punt this to them, and the proper fix
+> > _isn't_ in the firmware, plus they may have other more fundamental
+> > reasons to keep the LMB sizes what they are.
+> 
+> I agree, this should be fixed in the api to userspace, having this many
+> sysfs directories and/or files is just looney.
+> 
+> thanks,
+> 
 
-Regards,
-Tao
+Hmm, adding 
+ CONFIG_NEW_MEMORY_SYSFS_LAYOUT or
+ memory_sysfs_layout=small boot option
+and adding a scalable interface for large scale machines ?
+I'd like to consider something..
+
+Thanks,
+-Kame
+
+
+
