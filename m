@@ -1,271 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab0F3NCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 09:02:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54424 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab0F3NCv (ORCPT
+	id S1754625Ab0F3NHn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 09:07:43 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34748 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754328Ab0F3NHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 09:02:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=sPRo1pfXbOBBLRqWKrPuCzAde70BOHGyzfUjMG/++Fdsm1B/WBi0p3O11jQFKsymJl
-         I8SOfBeGzwysCGwtlV7OsXDbiClEJP9KG5GZ5aDtgussBQH+iPlp0QU9qQOf9BT/PBnV
-         yONqd0lqiPs89ceEx8y3a87xR/pXVjXzoYSWk=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Denis Kirjanov <kirjanov@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jpirko@redhat.com>,
-       Ben Hutchings <ben@decadent.org.uk>, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] staging: slicoss: Change return codes to -EYYY.
-Date: Wed, 30 Jun 2010 17:02:45 +0400
-Message-Id: <1277902967-28849-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <4C28ADC9.1050706@kernel.org>
-References: <4C28ADC9.1050706@kernel.org>
+	Wed, 30 Jun 2010 09:07:41 -0400
+Date: Wed, 30 Jun 2010 09:05:04 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 13/14] fs,btrfs: Allow kswapd to writeback pages
+Message-ID: <20100630130504.GT1993@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+	Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@suse.de>,
+	Rik van Riel <riel@redhat.com>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	Christoph Hellwig <hch@infradead.org>,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andrea Arcangeli <aarcange@redhat.com>
+References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
+ <1277811288-5195-14-git-send-email-mel@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277811288-5195-14-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4C2B4159.00F9:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change defined STATUS_XXX return codes to standard -EYYY.
+On Tue, Jun 29, 2010 at 12:34:47PM +0100, Mel Gorman wrote:
+> As only kswapd and memcg are writing back pages, there should be no
+> danger of overflowing the stack. Allow the writing back of dirty pages
+> in btrfs from the VM.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- drivers/staging/slicoss/slicoss.c |   52 ++++++++++++++++++------------------
- 1 files changed, 26 insertions(+), 26 deletions(-)
+Signed-off-by: Chris Mason <chris.mason@oracle.com>
 
-diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-index bebf0fd..16cd2cb 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -452,7 +452,7 @@ static int __devinit slic_entry_probe(struct pci_dev *pcidev,
- 
- 	status = slic_card_init(card, adapter);
- 
--	if (status != STATUS_SUCCESS) {
-+	if (status != 0) {
- 		card->state = CARD_FAIL;
- 		adapter->state = ADAPT_FAIL;
- 		adapter->linkstate = LINK_DOWN;
-@@ -513,7 +513,7 @@ static int slic_entry_open(struct net_device *dev)
- 	}
- 	status = slic_if_init(adapter);
- 
--	if (status != STATUS_SUCCESS) {
-+	if (status != 0) {
- 		if (adapter->activated) {
- 			card->adapters_activated--;
- 			slic_global.num_slic_ports_active--;
-@@ -535,7 +535,7 @@ static int slic_entry_open(struct net_device *dev)
- 		locked = 0;
- 	}
- 
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- static void __devexit slic_entry_remove(struct pci_dev *pcidev)
-@@ -628,7 +628,7 @@ static int slic_entry_halt(struct net_device *dev)
- 
- 	spin_unlock_irqrestore(&slic_global.driver_lock.lock,
- 				slic_global.driver_lock.flags);
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- static int slic_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
-@@ -1206,7 +1206,7 @@ static void slic_link_event_handler(struct adapter *adapter)
- #else
- 	Stop compilation;
- #endif
--	ASSERT((status == STATUS_SUCCESS) || (status == STATUS_PENDING));
-+	ASSERT(status == 0);
- }
- 
- static void slic_init_cleanup(struct adapter *adapter)
-@@ -1265,7 +1265,7 @@ static int slic_mcast_add_list(struct adapter *adapter, char *address)
- 	mlist = adapter->mcastaddrs;
- 	while (mlist) {
- 		if (!compare_ether_addr(mlist->address, address))
--			return STATUS_SUCCESS;
-+			return 0;
- 		mlist = mlist->next;
- 	}
- 
-@@ -1279,7 +1279,7 @@ static int slic_mcast_add_list(struct adapter *adapter, char *address)
- 	mcaddr->next = adapter->mcastaddrs;
- 	adapter->mcastaddrs = mcaddr;
- 
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- /*
-@@ -1365,7 +1365,7 @@ static void slic_mcast_set_bit(struct adapter *adapter, char *address)
- static void slic_mcast_set_list(struct net_device *dev)
- {
- 	struct adapter *adapter = netdev_priv(dev);
--	int status = STATUS_SUCCESS;
-+	int status = 0;
- 	char *addresses;
- 	struct netdev_hw_addr *ha;
- 
-@@ -1374,7 +1374,7 @@ static void slic_mcast_set_list(struct net_device *dev)
- 	netdev_for_each_mc_addr(ha, dev) {
- 		addresses = (char *) &ha->addr;
- 		status = slic_mcast_add_list(adapter, addresses);
--		if (status != STATUS_SUCCESS)
-+		if (status != 0)
- 			break;
- 		slic_mcast_set_bit(adapter, addresses);
- 	}
-@@ -1394,7 +1394,7 @@ static void slic_mcast_set_list(struct net_device *dev)
- 		adapter->devflags_prev = dev->flags;
- 		slic_config_set(adapter, true);
- 	} else {
--		if (status == STATUS_SUCCESS)
-+		if (status == 0)
- 			slic_mcast_set_mask(adapter);
- 	}
- 	return;
-@@ -1476,7 +1476,7 @@ static int slic_if_init(struct adapter *adapter)
- 			adapter->macopts |= MAC_MCAST;
- 	}
- 	status = slic_adapter_allocresources(adapter);
--	if (status != STATUS_SUCCESS) {
-+	if (status != 0) {
- 		dev_err(&dev->dev,
- 			"%s: slic_adapter_allocresources FAILED %x\n",
- 			__func__, status);
-@@ -1553,7 +1553,7 @@ static int slic_if_init(struct adapter *adapter)
- 	slic_link_config(adapter, LINK_AUTOSPEED, LINK_AUTOD);
- 	slic_link_event_handler(adapter);
- 
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- static void slic_unmap_mmio_space(struct adapter *adapter)
-@@ -1587,7 +1587,7 @@ static int slic_adapter_allocresources(struct adapter *adapter)
- 		}
- 		adapter->intrregistered = 1;
- 	}
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- static void slic_config_pci(struct pci_dev *pcidev)
-@@ -1967,7 +1967,7 @@ static int slic_card_download(struct adapter *adapter)
- 	   and reach mainloop */
- 	mdelay(20);
- 
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- MODULE_FIRMWARE("slicoss/oasisdownload.sys");
-@@ -2027,7 +2027,7 @@ static int slic_card_init(struct sliccard *card, struct adapter *adapter)
- 	/* Download the microcode */
- 	status = slic_card_download(adapter);
- 
--	if (status != STATUS_SUCCESS) {
-+	if (status != 0) {
- 		dev_err(&adapter->pcidev->dev,
- 			"download failed bus %d slot %d\n",
- 			adapter->busnumber, adapter->slotnumber);
-@@ -2203,7 +2203,7 @@ static int slic_card_init(struct sliccard *card, struct adapter *adapter)
- 	card->state = CARD_UP;
- 	card->reset_in_progress = 0;
- 
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- static u32 slic_card_locate(struct adapter *adapter)
-@@ -2267,7 +2267,7 @@ static u32 slic_card_locate(struct adapter *adapter)
- 
- 	ASSERT(card);
- 	if (!card)
--		return STATUS_FAILURE;
-+		return -ENXIO;
- 	/* Put the adapter in the card's adapter list */
- 	ASSERT(card->adapter[adapter->port] == NULL);
- 	if (!card->adapter[adapter->port]) {
-@@ -2637,7 +2637,7 @@ static int slic_upr_queue_request(struct adapter *adapter,
- 	} else {
- 		adapter->upr_list = upr;
- 	}
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- static int slic_upr_request(struct adapter *adapter,
-@@ -2653,7 +2653,7 @@ static int slic_upr_request(struct adapter *adapter,
- 					upr_request,
- 					upr_data,
- 					upr_data_h, upr_buffer, upr_buffer_h);
--	if (status != STATUS_SUCCESS) {
-+	if (status != 0) {
- 		spin_unlock_irqrestore(&adapter->upr_lock.lock,
- 					adapter->upr_lock.flags);
- 		return status;
-@@ -2661,7 +2661,7 @@ static int slic_upr_request(struct adapter *adapter,
- 	slic_upr_start(adapter);
- 	spin_unlock_irqrestore(&adapter->upr_lock.lock,
- 				adapter->upr_lock.flags);
--	return STATUS_PENDING;
-+	return 0;
- }
- 
- static void slic_upr_request_complete(struct adapter *adapter, u32 isr)
-@@ -3032,7 +3032,7 @@ static int slic_rspqueue_init(struct adapter *adapter)
- 			dev_err(&adapter->pcidev->dev,
- 				"pci_alloc_consistent failed\n");
- 			slic_rspqueue_free(adapter);
--			return STATUS_FAILURE;
-+			return -ENOMEM;
- 		}
- #ifndef CONFIG_X86_64
- 		ASSERT(((u32) rspq->vaddr[i] & 0xFFFFF000) ==
-@@ -3056,7 +3056,7 @@ static int slic_rspqueue_init(struct adapter *adapter)
- 	rspq->offset = 0;
- 	rspq->pageindex = 0;
- 	rspq->rspbuf = (struct slic_rspbuf *)rspq->vaddr[0];
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- static void slic_rspqueue_free(struct adapter *adapter)
-@@ -3180,13 +3180,13 @@ static int slic_cmdq_init(struct adapter *adapter)
- #endif
- 		if (!pageaddr) {
- 			slic_cmdq_free(adapter);
--			return STATUS_FAILURE;
-+			return -ENOMEM;
- 		}
- 		slic_cmdq_addcmdpage(adapter, pageaddr);
- 	}
- 	adapter->slic_handle_ix = 1;
- 
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- static void slic_cmdq_free(struct adapter *adapter)
-@@ -3407,9 +3407,9 @@ static int slic_rcvqueue_init(struct adapter *adapter)
- 	}
- 	if (rcvq->count < SLIC_RCVQ_MINENTRIES) {
- 		slic_rcvqueue_free(adapter);
--		return STATUS_FAILURE;
-+		return -ENOMEM;
- 	}
--	return STATUS_SUCCESS;
-+	return 0;
- }
- 
- static void slic_rcvqueue_free(struct adapter *adapter)
--- 
-1.7.0.4
+But, this is only the metadata writepage.  fs/btrfs/inode.c has another
+one for data pages.  (just look for PF_MEMALLOC).
 
+-chris
