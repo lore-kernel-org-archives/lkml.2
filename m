@@ -1,44 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab0F3WEq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 18:04:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6052 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754602Ab0F3WEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 18:04:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,515,1272870000"; 
-   d="scan'208";a="581597149"
-Message-ID: <4C2BBF7C.20004@intel.com>
-Date: Wed, 30 Jun 2010 15:04:44 -0700
-From: Dan Williams <dan.j.williams@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1757362Ab0F3WH7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 18:07:59 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37901 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755332Ab0F3WH5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 18:07:57 -0400
+Message-ID: <4C2BC04B.3000100@codemonkey.ws>
+Date: Wed, 30 Jun 2010 17:08:11 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Chris Li <lkml@chrisli.org>
-CC: "Woodhouse, David" <david.woodhouse@intel.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	<4C29420D.2010406@intel.com>	<AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	<4C2A8879.8010000@intel.com>	<AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	<4C2AC55E.3040303@intel.com>	<AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	<1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>	<1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com> <AANLkTil5fCb9maq5qE-2txxaybGqVQSWEy8q0ppBsype@mail.gmail.com>
-In-Reply-To: <AANLkTil5fCb9maq5qE-2txxaybGqVQSWEy8q0ppBsype@mail.gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: David Miller <davem@davemloft.net>, arozansk@redhat.com,
+       herbert.xu@redhat.com, quintela@redhat.com, kvm@vger.kernel.org,
+       virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, ykaul@redhat.com, markmc@redhat.com
+Subject: Re: [PATCHv2] vhost-net: add dhclient work-around from userspace
+References: <20100628100807.GA30685@redhat.com> <20100629.003647.214219303.davem@davemloft.net> <20100629130439.GD3603@redhat.com>
+In-Reply-To: <20100629130439.GD3603@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/30/2010 2:59 PM, Chris Li wrote:
-> On Wed, Jun 30, 2010 at 2:44 PM, Dan Williams<dan.j.williams@intel.com>  wrote:
+On 06/29/2010 08:04 AM, Michael S. Tsirkin wrote:
+> On Tue, Jun 29, 2010 at 12:36:47AM -0700, David Miller wrote:
+>    
+>> From: "Michael S. Tsirkin"<mst@redhat.com>
+>> Date: Mon, 28 Jun 2010 13:08:07 +0300
 >>
->> Chris, is there a BIOS update available for your platform?
->
-> You mean the EFI firmware update? Nope.
->
-> Do you think loading linux via EFI instead of boot camp (BIOS) will help?
->
+>>      
+>>> Userspace virtio server has the following hack
+>>> so guests rely on it, and we have to replicate it, too:
+>>>
+>>> Use port number to detect incoming IPv4 DHCP response packets,
+>>> and fill in the checksum for these.
+>>>
+>>> The issue we are solving is that on linux guests, some apps
+>>> that use recvmsg with AF_PACKET sockets, don't know how to
+>>> handle CHECKSUM_PARTIAL;
+>>> The interface to return the relevant information was added
+>>> in 8dc4194474159660d7f37c495e3fc3f10d0db8cc,
+>>> and older userspace does not use it.
+>>> One important user of recvmsg with AF_PACKET is dhclient,
+>>> so we add a work-around just for DHCP.
+>>>
+>>> Don't bother applying the hack to IPv6 as userspace virtio does not
+>>> have a work-around for that - let's hope guests will do the right
+>>> thing wrt IPv6.
+>>>
+>>> Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
+>>>        
+>> Yikes, this is awful too.
+>>
+>> Nothing in the kernel should be mucking around with procotol packets
+>> like this by default.  In particular, what the heck does port 67 mean?
+>> Locally I can use it for whatever I want for my own purposes, I don't
+>> have to follow the conventions for service ports as specified by the
+>> IETF.
+>>
+>> But I can't have the packet checksum state be left alone for port 67
+>> traffic on a box using virtio because you have this hack there.
+>>
+>> And yes it's broken on machines using the qemu thing, but at least the
+>> hack there is restricted to userspace.
+>>      
+> Yes, and I think it was a mistake to add the hack there. This is what
+> prevented applications from using the new interface in the 3 years
+> since it was first introduced.
+>    
 
-...only if the EFI boot process hands Linux a correct (i.e. complete) 
-DMAR table.  I suspect native EFI and legacy BIOS boot would still end 
-up passing the same table, but I don't know for sure.
+It's far more complicated than that.  dhclient is part of ISC's DHCP 
+package.  They do not have a public SCM and instead require you to join 
+their Software Guild to get access to it.
 
---
-Dan
+This problem was identified in one distribution and the patch was pushed 
+upstream but because they did not have a public SCM, most other 
+distributions did not see the fix until it appeared in a release.  ISC 
+has a pretty long release cycle historically.
+
+ISC's had the fix for a long time but there was a 3-year gap in their 
+releases and since their SCM isn't public, users are stuck with the last 
+release.
+
+This hack makes sense in QEMU as we have a few hacks like this to fix 
+broken guests.  A primary use of virtualization is to run old 
+applications so it makes sense for us to do that.
+
+I don't think it makes sense for vhost to do this.  These guests are so 
+old that they don't have the requisite features to achieve really high 
+performance anyway.
+
+I've always thought making vhost totally transparent was a bad idea and 
+this is one of the reasons.  We can do a lot of ugly things in userspace 
+that we shouldn't be doing in the kernel.
+
+Regards,
+
+Anthony Liguori
