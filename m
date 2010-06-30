@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab0F3JXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 05:23:25 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60837 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab0F3JXY (ORCPT
+	id S1754596Ab0F3JYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 05:24:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40649 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab0F3JYX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 05:23:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=a/TUc6ArsVCYXGjrEtgDM3zqJodPBVRBFLPKK2UCUjCHjBf8EVn00DT4oao0ANp4zQ
-         UPMb/z6AcbTDf6FZOpoqo/ZWFPsGYT8i0F7d5EeTOnMJ62CK3BkFNAolSoy3Z5tY37MC
-         kO63vQWfpeMlA2sVq957lu+AUlecSTd6IPOn0=
-Subject: [PATCH] dell-wmi: fix a memory leak
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-       Dmitry Torokhov <dtor@mail.ru>,
-       =?ISO-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
-       platform-driver-x86@vger.kernel.org
-Content-Type: text/plain
-Date: Wed, 30 Jun 2010 17:25:46 +0800
-Message-Id: <1277889946.30827.2.camel@mola>
+	Wed, 30 Jun 2010 05:24:23 -0400
+Subject: Re: [PATCH 4/4, v2] x86: enlightenment for ticket spin locks -
+ improve yield behavior on Xen
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: jeremy.fitzhardinge@citrix.com, mingo@elte.hu, tglx@linutronix.de,
+       Ky Srinivasan <KSrinivasan@novell.com>, linux-kernel@vger.kernel.org,
+       hpa@zytor.com
+In-Reply-To: <4C2B21300200007800008BDC@vpn.id2.novell.com>
+References: <4C2A20E30200007800008A17@vpn.id2.novell.com>
+	 <1277885485.1868.74.camel@laptop>
+	 <4C2B21300200007800008BDC@vpn.id2.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 30 Jun 2010 11:24:14 +0200
+Message-ID: <1277889854.1868.104.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If dell_new_hk_type is true, dell_legacy_wmi_keymap will point to a memory
-allocated in setup_new_hk_map().
-In this case, the memory is not freed in current implementation.
-This patch fixes the leak by kfree(dell_wmi_keymap) if dell_new_hk_type is true.
+On Wed, 2010-06-30 at 09:49 +0100, Jan Beulich wrote:
+> >>> On 30.06.10 at 10:11, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, 2010-06-29 at 15:35 +0100, Jan Beulich wrote:
+> >> 
+> >> The (only) additional overhead this introduces for native execution is
+> >> the writing of the owning CPU in the lock acquire paths. 
+> > 
+> > Uhm, and growing the size of spinlock_t to 6 (or 8 bytes when aligned)
+> > bytes when NR_CPUS>256.
+> 
+> Indeed, I should have mentioned that. Will do so in an eventual
+> next version.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/dell-wmi.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+It would be good to also get a measure of data structure bloat caused by
+this, not sure .data section size is representable there, but its
+something easy to provide.
 
-diff --git a/drivers/platform/x86/dell-wmi.c b/drivers/platform/x86/dell-wmi.c
-index 66f53c3..ee6452e 100644
---- a/drivers/platform/x86/dell-wmi.c
-+++ b/drivers/platform/x86/dell-wmi.c
-@@ -339,13 +339,18 @@ static int __init dell_wmi_init(void)
- 	acpi_video = acpi_video_backlight_support();
- 
- 	err = dell_wmi_input_setup();
--	if (err)
-+	if (err) {
-+		if (dell_new_hk_type)
-+			kfree(dell_wmi_keymap);
- 		return err;
-+	}
- 
- 	status = wmi_install_notify_handler(DELL_EVENT_GUID,
- 					 dell_wmi_notify, NULL);
- 	if (ACPI_FAILURE(status)) {
- 		input_unregister_device(dell_wmi_input_dev);
-+		if (dell_new_hk_type)
-+			kfree(dell_wmi_keymap);
- 		printk(KERN_ERR
- 			"dell-wmi: Unable to register notify handler - %d\n",
- 			status);
-@@ -359,6 +364,8 @@ static void __exit dell_wmi_exit(void)
- {
- 	wmi_remove_notify_handler(DELL_EVENT_GUID);
- 	input_unregister_device(dell_wmi_input_dev);
-+	if (dell_new_hk_type)
-+		kfree(dell_wmi_keymap);
- }
- 
- module_init(dell_wmi_init);
--- 
-1.5.4.3
-
-
-
+Something like: pahole -s build/vmlinux | awk '{t+=$2} END {print t}'
+from before and after might also be interesting.
