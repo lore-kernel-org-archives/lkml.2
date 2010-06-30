@@ -1,72 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab0F3Vt2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 17:49:28 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:47726 "EHLO e1.ny.us.ibm.com"
+	id S1756900Ab0F3VvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 17:51:23 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:51121 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753027Ab0F3Vt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 17:49:27 -0400
-Date: Wed, 30 Jun 2010 14:49:23 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, mingo@redhat.com,
-       linux-kernel@vger.kernel.org, muli@il.ibm.com,
-       cschultz@linux.vnet.ibm.com, stable@kernel.org, tglx@linutronix.de,
-       mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: [PATCH] x86, Calgary: Increase max PHB number
-Message-ID: <20100630214923.GP15515@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20100624212647.GI15515@tux1.beaverton.ibm.com> <tip-499a00e92dd9a75395081f595e681629eb1eebad@git.kernel.org> <20100629155151.7caaff4b.akpm@linux-foundation.org> <4C2BB7C0.9040000@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C2BB7C0.9040000@zytor.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753245Ab0F3VvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 17:51:21 -0400
+From: Nicolas Palix <npalix@diku.dk>
+To: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
+       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org, cocci@diku.dk,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       =?UTF-8?q?Am=C3=A9rico=20Wang?= <xiyou.wangcong@gmail.com>,
+       Andy Isaacson <adi@hexapodia.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, walter harms <wharms@bfs.de>,
+       Joerg Roedel <joro@8bytes.org>, Jan Engelhardt <jengelh@medozas.de>
+Cc: Nicolas Palix <npalix@diku.dk>
+Subject: [PATCH] Add support for the C variable in the coccicheck script
+Date: Wed, 30 Jun 2010 23:50:32 +0200
+Message-Id: <1277934632-6802-1-git-send-email-npalix@diku.dk>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newer systems (x3950M2) can have 48 PHBs per chassis and 4 chassis, so bump the
-limits up and provide an explanation of the requirements for each class.  Since
-we can't have more than 256 PCI buses in these systems, we don't need the array
-check.
+This patch makes it possible to use the Coccinelle checker with the C
+variable of the build system. To check only newly edited code, the
+following command may be used:
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+'make C={1,2} CHECK="scripts/coccicheck"'
+
+This runs every semantic patch in scripts/coccinelle by default. The
+COCCI variable may additionally be used to only apply a single
+semantic patch.
+
+Signed-off-by: Nicolas Palix <npalix@diku.dk>
+Signed-off-by: Julia Lawall <julia@diku.dk>
 ---
+ scripts/coccicheck |   76 +++++++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 51 insertions(+), 25 deletions(-)
 
- arch/x86/kernel/pci-calgary_64.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
-
-
-diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
-index fb99f7e..fd4e27b 100644
---- a/arch/x86/kernel/pci-calgary_64.c
-+++ b/arch/x86/kernel/pci-calgary_64.c
-@@ -103,10 +103,14 @@ int use_calgary __read_mostly = 0;
- #define PMR_SOFTSTOPFAULT	0x40000000
- #define PMR_HARDSTOP		0x20000000
+diff --git a/scripts/coccicheck b/scripts/coccicheck
+index 037424b..b8bcf1f 100755
+--- a/scripts/coccicheck
++++ b/scripts/coccicheck
+@@ -2,53 +2,79 @@
  
--#define MAX_NUM_OF_PHBS		8 /* how many PHBs in total? */
--#define MAX_NUM_CHASSIS		8 /* max number of chassis */
--/* MAX_PHB_BUS_NUM is the maximal possible dev->bus->number */
--#define MAX_PHB_BUS_NUM		(MAX_NUM_OF_PHBS * MAX_NUM_CHASSIS * 2)
-+/*
-+ * The maximum PHB bus number.
-+ * x3950M2: 4 chassis, 48 PHBs per chassis        = 192
-+ * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
-+ * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
-+ */
-+#define MAX_PHB_BUS_NUM		256
+ SPATCH="`which ${SPATCH:=spatch}`"
+ 
++if [ "$C" = "1" -o "$C" = "2" ]; then
++    ONLINE=1
 +
- #define PHBS_PER_CALGARY	4
++# This requires Coccinelle >= 0.2.3
++#    FLAGS="-ignore_unknown_options -very_quiet"
++#    OPTIONS=$*
++
++# Workaround for Coccinelle < 0.2.3
++    FLAGS="-I $srctree/include -very_quiet"
++    shift $(( $# - 1 ))
++    OPTIONS=$1
++else
++    ONLINE=0
++    FLAGS="-very_quiet"
++fi
++
+ if [ ! -x "$SPATCH" ]; then
+     echo 'spatch is part of the Coccinelle project and is available at http://coccinelle.lip6.fr/'
+     exit 1
+ fi
  
- /* register offsets in Calgary's internal register space */
-@@ -1051,8 +1055,6 @@ static int __init calgary_init_one(struct pci_dev *dev)
- 	struct iommu_table *tbl;
- 	int ret;
+ if [ "$MODE" = "" ] ; then
+-    echo 'You have not explicitly specify the mode to use. Fallback to "report".'
+-    echo 'You can specify the mode with "make coccicheck MODE=<mode>"'
+-    echo 'Available modes are: report, patch, context, org'
++    if [ "$ONLINE" = "0" ] ; then
++	echo 'You have not explicitly specify the mode to use. Fallback to "report".'
++	echo 'You can specify the mode with "make coccicheck MODE=<mode>"'
++	echo 'Available modes are: report, patch, context, org'
++    fi
+     MODE="report"
+ fi
  
--	BUG_ON(dev->bus->number >= MAX_PHB_BUS_NUM);
--
- 	bbar = busno_to_bbar(dev->bus->number);
- 	ret = calgary_setup_tar(dev, bbar);
- 	if (ret)
+-echo ''
+-echo 'Please check for false positives in the output before submitting a patch.'
+-echo 'When using "patch" mode, carefully review the patch before submitting it.'
+-echo ''
++if [ "$ONLINE" = "0" ] ; then
++    echo ''
++    echo 'Please check for false positives in the output before submitting a patch.'
++    echo 'When using "patch" mode, carefully review the patch before submitting it.'
++    echo ''
++fi
+ 
+-function coccinelle {
++coccinelle () {
+     COCCI="$1"
+-    DIR="$2"
+ 
+     OPT=`grep "Option" $COCCI | cut -d':' -f2`
+-    FILE=`echo $COCCI | sed "s|$DIR/||"`
+ 
+-    echo "Processing `basename $COCCI` with option(s) \"$OPT\""
+-    echo 'Message example to submit a patch:'
++#   The option '-parse_cocci' can be used to syntaxically check the SmPL files.
++#
++#    $SPATCH -D $MODE $FLAGS -parse_cocci $COCCI $OPT > /dev/null
+ 
+-    sed -e '/\/\/\//!d' -e 's|^///||' $COCCI
++    if [ "$ONLINE" = "0" ] ; then
+ 
+-    echo ' The semantic patch that makes this change is available'
+-    echo " in $FILE."
+-    echo ''
+-    echo ' More information about semantic patching is available at'
+-    echo ' http://coccinelle.lip6.fr/'
+-    echo ''
++	FILE=`echo $COCCI | sed "s|$srctree/||"`
+ 
+-#   The option '-parse_cocci' can be used to syntaxically check the SmPL files.
+-#
+-#    $SPATCH -D $MODE -very_quiet -parse_cocci $COCCI $OPT > /dev/null
++	echo "Processing `basename $COCCI` with option(s) \"$OPT\""
++	echo 'Message example to submit a patch:'
++
++	sed -e '/\/\/\//!d' -e 's|^///||' $COCCI
++
++	echo ' The semantic patch that makes this change is available'
++	echo " in $FILE."
++	echo ''
++	echo ' More information about semantic patching is available at'
++	echo ' http://coccinelle.lip6.fr/'
++	echo ''
++
++	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT -dir $srctree || exit 1
++    else
++	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
++    fi
+ 
+-    $SPATCH -D $MODE -very_quiet -sp_file $COCCI $OPT -dir $DIR
+ }
+ 
+ if [ "$COCCI" = "" ] ; then
+     for f in `find $srctree/scripts/coccinelle/ -name '*.cocci' -type f | sort`; do
+-	coccinelle $f $srctree;
++	coccinelle $f
+     done
+ else
+-    coccinelle $COCCI $srctree
++    coccinelle $COCCI
+ fi
+-- 
+1.7.0.4
+
