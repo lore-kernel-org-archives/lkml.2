@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab0F3F14 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 01:27:56 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:47436 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569Ab0F3F1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 01:27:55 -0400
-Date: Tue, 29 Jun 2010 22:27:52 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Yama: add PTRACE exception tracking
-Message-ID: <20100630052752.GL4837@outflux.net>
-References: <20100630003844.GE4837@outflux.net>
- <20100630004027.GG4837@outflux.net>
- <20100630035609.GA16307@hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100630035609.GA16307@hallyn.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1751863Ab0F3F34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 01:29:56 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65039 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab0F3F3y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 01:29:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=T/fqo0X0I/3Jv0wDRS30NL9+ekIu7GM5jXX86dCPDtQqTBiAFKRoN6aQlZ5B+UTbRd
+         6qGcvKrWdmRiFSFzMrXz0m9Kf0cF00v6ro+aPtSXRrSouPUJ03QRNI2hmbV1jLhAFn1J
+         EZnxbwW5uzNbNevG37HxyxGS7teIa/8j1wsC4=
+Subject: [PATCH] acer-wmi: make dmi_matched to return 1 instead of 0
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>,
+       Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+       Thomas Renninger <trenn@suse.de>, platform-driver-x86@vger.kernel.org
+Content-Type: text/plain
+Date: Wed, 30 Jun 2010 13:32:16 +0800
+Message-Id: <1277875936.22265.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Serge,
+dmi_check_system() walks the table running matching functions until someone
+returns non zero or we hit the end.
 
-On Tue, Jun 29, 2010 at 10:56:09PM -0500, Serge E. Hallyn wrote:
-> Quoting Kees Cook (kees.cook@canonical.com):
-> > Some application suites have external crash handlers that depend on
-> > being able to use PTRACE to generate crash reports (KDE, Chromium, etc).
-> > Since the inferior process generally knows the PID of the debugger,
-> > it can use PR_SET_PTRACER to allow a specific PID and its descendants
-> > to perform the PTRACE instead of only a direct ancestor.
-> > 
-> > Signed-off-by: Kees Cook <kees.cook@canonical.com>
-> > ---
-> 
-> Hi Kees - very nice, overall.  One little note though:
+This patch makes dmi_matched to return 1 so dmi_check_system() return
+immediately when a match is found.
 
-Thanks for looking it over!
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/acer-wmi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> >  	rc = cap_ptrace_access_check(child, mode);
-> 
-> This means that if capable(CAP_SYS_PTRACE) we'll always shortcut
-> here, so
-> 
-> > +	if (mode == PTRACE_MODE_ATTACH &&
-> > +	    ptrace_scope &&
-> > +	    !capable(CAP_SYS_PTRACE) &&
-> > +	    !task_is_descendant(current, child) &&
-> > +	    !ptracer_exception_found(current, child))
-> > +		rc = -EPERM;
-> 
-> You don't need the CAP_SYS_PTRACE check here AFAICS.
-
-I don't think that's true -- the capable(CAP_SYS_PTRACE) tests
-are always done in the negative since we only ever abort with error
-instead of forcing an early "okay" (see also __ptrace_may_access() in
-kernel/ptrace.c, where capable(CAP_SYS_PTRACE) is called repeatedly while
-evaluating various negative conditions).
-
-For cap_ptrace_access_check, capable(CAP_SYS_PTRACE) is only tested if
-the tracee's process permitted caps are not a subset of the tracer's.
-i.e. cap_ptrace_access_check will return 0 when either cap_issubset
-or capable.  In the case of normal user processes or a tracer
-with greater caps, capable(CAP_SYS_PTRACE) will never be tested in
-cap_ptrace_access_check.
-
-As a result, I have to include it in the test here too.  I guess it's
-arguable that I should move it to the end of the series of &&s, but it
-logically doesn't really matter.
-
--Kees
-
-(Interestingly, this means that having CAP_SYS_PTRACE means a process
-effectively has all capabilities...)
-
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index fe7c9e4..6a1a27e 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -200,7 +200,7 @@ static void set_quirks(void)
+ static int dmi_matched(const struct dmi_system_id *dmi)
+ {
+ 	quirks = dmi->driver_data;
+-	return 0;
++	return 1;
+ }
+ 
+ static struct quirk_entry quirk_unknown = {
 -- 
-Kees Cook
-Ubuntu Security Team
+1.5.4.3
+
+
+
