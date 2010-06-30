@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab0F3Tvj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 15:51:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44640 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752484Ab0F3Tvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 15:51:38 -0400
-Date: Wed, 30 Jun 2010 12:51:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
-       Nick Piggin <npiggin@suse.de>, Matt Mackall <mpm@selenic.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [S+Q 01/16] [PATCH] ipc/sem.c: Bugfix for semop() not reporting
- successful operation
-Message-Id: <20100630125121.6b076f1b.akpm@linux-foundation.org>
-In-Reply-To: <4C2B9D43.4070504@colorfullife.com>
-References: <20100625212026.810557229@quilx.com>
-	<20100625212101.622422748@quilx.com>
-	<AANLkTinmvRtH24uflD9e7MknaW6tgMSnN75vVgaj0IM6@mail.gmail.com>
-	<alpine.DEB.2.00.1006291042100.16135@router.home>
-	<20100629120857.00f4b42d.akpm@linux-foundation.org>
-	<4C2B9D43.4070504@colorfullife.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757197Ab0F3TyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 15:54:12 -0400
+Received: from shutemov.name ([188.40.19.243]:46343 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752484Ab0F3TyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 15:54:10 -0400
+Date: Wed, 30 Jun 2010 22:54:09 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Christoph Egger <siccegge@cs.fau.de>
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+       Cory Maccarrone <darkstar6262@gmail.com>,
+       "Zebediah C. McClure" <zmc@lurian.net>,
+       Alistair Buxton <a.j.buxton@gmail.com>, linux-omap@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 03/33] Removing dead OMAP_MUX_ERRORS
+Message-ID: <20100630195409.GC3969@shutemov.name>
+References: <cover.1277911345.git.siccegge@cs.fau.de>
+ <b6ca168f9459162f2c96aa8ef999047a3c4f6f9c.1277911346.git.siccegge@cs.fau.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b6ca168f9459162f2c96aa8ef999047a3c4f6f9c.1277911346.git.siccegge@cs.fau.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010 21:38:43 +0200
-Manfred Spraul <manfred@colorfullife.com> wrote:
+On Wed, Jun 30, 2010 at 05:54:42PM +0200, Christoph Egger wrote:
+> OMAP_MUX_ERRORS doesn't exist in Kconfig, therefore removing all
+> references for it from the source code.
 
-> Hi Andrew,
+IIUC, CONFIG_OMAP_MUX_WARNINGS should be used here instead of it.
+
+> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> ---
+>  arch/arm/mach-omap1/mux.c |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
 > 
-> On 06/29/2010 09:08 PM, Andrew Morton wrote:
-> > On Tue, 29 Jun 2010 10:42:42 -0500 (CDT)
-> > Christoph Lameter<cl@linux-foundation.org>  wrote:
-> >
-> >    
-> >> This is a patch from Manfred. Required to make 2.6.35-rc3 work.
-> >>
-> >>      
-> > My current version of the patch is below.
-> >
-> > I believe that Luca has still seen problems with this patch applied so
-> > its current status is "stuck, awaiting developments".
-> >
-> > Is that a correct determination?
-> >    
+> diff --git a/arch/arm/mach-omap1/mux.c b/arch/arm/mach-omap1/mux.c
+> index 8434137..1ddb02c 100644
+> --- a/arch/arm/mach-omap1/mux.c
+> +++ b/arch/arm/mach-omap1/mux.c
+> @@ -439,12 +439,7 @@ int __init_or_module omap1_cfg_reg(const struct pin_config *cfg)
+>  			       cfg->pull_name, cfg->pull_reg, pull_orig, pull);
+>  	}
+>  #endif
+> -
+> -#ifdef CONFIG_OMAP_MUX_ERRORS
+> -	return warn ? -ETXTBSY : 0;
+> -#else
+>  	return 0;
+> -#endif
+>  }
+>  
+>  int __init omap1_mux_init(void)
+> -- 
+> 1.7.0.4
 > 
-> I would propose that you forward a patch to Linus - either the one you 
-> have in your tree or the v2 that I've just posted.
-
-OK, I added the incremental change:
-
---- a/ipc/sem.c~ipc-semc-bugfix-for-semop-not-reporting-successful-operation-update
-+++ a/ipc/sem.c
-@@ -1440,7 +1440,14 @@ SYSCALL_DEFINE4(semtimedop, int, semid, 
- 
- 	if (error != -EINTR) {
- 		/* fast path: update_queue already obtained all requested
--		 * resources */
-+		 * resources.
-+		 * Perform a smp_mb(): User space could assume that semop()
-+		 * is a memory barrier: Without the mb(), the cpu could
-+		 * speculatively read in user space stale data that was
-+		 * overwritten by the previous owner of the semaphore.
-+		 */
-+		smp_mb();
-+
- 		goto out_free;
- 	}
- 
-_
-
-> With stock 2.6.35-rc3, my semtimedop() stress tests produces an oops or 
-> an invalid return value (i.e.:semtimedop() returns with "1") within a 
-> fraction of a second.
 > 
-> With either of the patches applied, my test apps show the expected behavior.
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-OK, I'll queue it up.
+-- 
+ Kirill A. Shutemov
