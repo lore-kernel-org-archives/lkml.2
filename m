@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab0F3KzL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 06:55:11 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:46369 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189Ab0F3KzJ (ORCPT
+	id S1755541Ab0F3K5e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 06:57:34 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:1054 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752345Ab0F3K5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 06:55:09 -0400
-Date: Wed, 30 Jun 2010 16:19:34 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <srostedt@redhat.com>
-Subject: Re: [Bugfix] unregister_trace_probe needs to be called under mutex
-Message-ID: <20100630104934.GF23231@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100630084548.GA10325@linux.vnet.ibm.com>
- <1277891066.1868.107.camel@laptop>
+	Wed, 30 Jun 2010 06:57:33 -0400
+Message-ID: <4C2B2318.1030107@panasas.com>
+Date: Wed, 30 Jun 2010 13:57:28 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1277891066.1868.107.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Hellwig <hch@lst.de>
+CC: James Bottomley <James.Bottomley@suse.de>,
+       Mike Snitzer <snitzer@redhat.com>, axboe@kernel.dk, dm-devel@redhat.com,
+       linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
+       akpm@linux-foundation.org, linux-scsi@vger.kernel.org,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
+ payload
+References: <20100622180029.GA15950@redhat.com> <1277582211-10725-1-git-send-email-snitzer@redhat.com> <1277652576.4366.19.camel@mulgrave.site> <4C2B012B.2000407@panasas.com> <20100630084204.GA27609@lst.de> <4C2B1B7D.2090607@panasas.com> <20100630104155.GA1370@lst.de>
+In-Reply-To: <20100630104155.GA1370@lst.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Jun 2010 10:57:31.0991 (UTC) FILETIME=[0A011670:01CB1843]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> > index 4f11a56..67670cd 100644
-> > --- a/kernel/trace/trace_kprobe.c
-> > +++ b/kernel/trace/trace_kprobe.c
-> > @@ -269,14 +269,17 @@ static int create_trace_probe(int argc, char **argv)
-> >  			pr_info("Delete command needs an event name.\n");
-> >  			return -EINVAL;
-> >  		}
-> > +		mutex_lock(&probe_lock);
-> >  		tp = find_probe_event(event, group);
-> >  		if (!tp) {
-> > +			mutex_unlock(&probe_lock);
-> >  			pr_info("Event %s/%s doesn't exist.\n", group, event);
-> >  			return -ENOENT;
-> >  		}
-> >  		/* delete an event */
-> >  		unregister_trace_probe(tp);
-> >  		free_trace_probe(tp);
-> > +		mutex_unlock(&probe_lock);
-> >  		return 0;
-> >  	}
+On 06/30/2010 01:41 PM, Christoph Hellwig wrote:
+> On Wed, Jun 30, 2010 at 01:25:01PM +0300, Boaz Harrosh wrote:
+>> OK, Thanks, I see. Is it one of these operations, (like we have in OSD) where
+>> the CDB information spills into the payload? like the scatter-gather and extent
+>> lists and such.
 > 
-> Shouldn't all that go through steven's ->reg() interface?
+> For UNMAP the payload is a list of block number / length pairs, while
+> the CDB itself doesn't contain any information like that.  It's a rather
+> awkward command.
+> 
 
-Currently the ->reg() interface does a enable/disable of the
-probe_events. Infact the reg callback gets set in
-register_trace_probe() function which inturn gets called from the
-create_trace_probe().
+How big can that be? could we, maybe, use the sense_buffer, properly allocated
+already?
 
-Do we have plans to move probe_events creation to ->reg()
-interface?
+>> Do we actually use a WRITE_SAME which is not zero? for what use?
+> 
+> The kernel doesn't issue any WRITE SAME without the unmap bit set.
 
---
-Regards
-Srikar
+So if the unmap bit is set then the page can just be zero, right?
 
+I still think a static zero-page is a worth while optimization. And
+block-drivers can take care with special needs with a private mem_pool
+or something. For the discard-type user and generic block layer the
+page is just an implementation specific residue, No?
+
+But don't mind me, I'm just babbling. Not that I'll do anything about it.
+Boaz
