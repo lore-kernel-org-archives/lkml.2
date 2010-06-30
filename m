@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab0F3Kur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 06:50:47 -0400
-Received: from claw.goop.org ([74.207.240.146]:47814 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472Ab0F3Kuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 06:50:46 -0400
-Message-ID: <4C2B2180.6040401@goop.org>
-Date: Wed, 30 Jun 2010 12:50:40 +0200
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
+	id S1755414Ab0F3KzL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 06:55:11 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:46369 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189Ab0F3KzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 06:55:09 -0400
+Date: Wed, 30 Jun 2010 16:19:34 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>
-CC: Jan Beulich <JBeulich@novell.com>, "mingo@elte.hu" <mingo@elte.hu>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       ksrinivasan <ksrinivasan@novell.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH 1/4, v2] x86: enlightenment for ticket spin locks - base
- implementation
-References: <4C2A1FE902000078000089E1@vpn.id2.novell.com>	 <1277885133.1868.71.camel@laptop>	 <4C2B23CD0200007800008BFA@vpn.id2.novell.com> <1277889116.1868.95.camel@laptop>
-In-Reply-To: <1277889116.1868.95.camel@laptop>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Cc: Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Steven Rostedt <srostedt@redhat.com>
+Subject: Re: [Bugfix] unregister_trace_probe needs to be called under mutex
+Message-ID: <20100630104934.GF23231@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100630084548.GA10325@linux.vnet.ibm.com>
+ <1277891066.1868.107.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1277891066.1868.107.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2010 11:11 AM, Peter Zijlstra wrote:
->>> Uhm, I'd much rather see a single alternative implementation, not a
->>> per-hypervisor lock implementation.
->>>       
->> How would you imaging this to work? I can't see how the mechanism
->> could be hypervisor agnostic. Just look at the Xen implementation
->> (patch 2) - do you really see room for meaningful abstraction there?
->>     
-> I tried not to, it made my eyes bleed.. 
->
-> But from what I hear all virt people are suffering from spinlocks (and
-> fair spinlocks in particular), so I was thinking it'd be a good idea to
-> get all interested parties to collaborate on one. Fragmentation like
-> this hardly ever works out well.
->   
+> > diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> > index 4f11a56..67670cd 100644
+> > --- a/kernel/trace/trace_kprobe.c
+> > +++ b/kernel/trace/trace_kprobe.c
+> > @@ -269,14 +269,17 @@ static int create_trace_probe(int argc, char **argv)
+> >  			pr_info("Delete command needs an event name.\n");
+> >  			return -EINVAL;
+> >  		}
+> > +		mutex_lock(&probe_lock);
+> >  		tp = find_probe_event(event, group);
+> >  		if (!tp) {
+> > +			mutex_unlock(&probe_lock);
+> >  			pr_info("Event %s/%s doesn't exist.\n", group, event);
+> >  			return -ENOENT;
+> >  		}
+> >  		/* delete an event */
+> >  		unregister_trace_probe(tp);
+> >  		free_trace_probe(tp);
+> > +		mutex_unlock(&probe_lock);
+> >  		return 0;
+> >  	}
+> 
+> Shouldn't all that go through steven's ->reg() interface?
 
-Yes.  Now that I've looked at it a bit more closely I think these
-patches put way too much logic into the per-hypervisor part of the code.
+Currently the ->reg() interface does a enable/disable of the
+probe_events. Infact the reg callback gets set in
+register_trace_probe() function which inturn gets called from the
+create_trace_probe().
 
-> Ah, right, after looking a bit more at patch 2 I see you indeed
-> implement a ticket like lock. Although why you need both a ticket and a
-> FIFO list is beyond me.
->   
+Do we have plans to move probe_events creation to ->reg()
+interface?
 
-That appears to be a mechanism to allow it to take interrupts while
-spinning on the lock, which is something that stock ticket locks don't
-allow.  If that's a useful thing to do, it should happen in the generic
-ticketlock code rather than in the per-hypervisor backend (otherwise we
-end up with all kinds of subtle differences in lock behaviour depending
-on the exact environment, which is just going to be messy).  Even if
-interrupts-while-spinning isn't useful on native hardware, it is going
-to be equally applicable to all virtual environments.
+--
+Regards
+Srikar
 
-    J
