@@ -1,111 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab0F3Pxt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 11:53:49 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:42872 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751758Ab0F3Pxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 11:53:47 -0400
-Date: Wed, 30 Jun 2010 08:53:45 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Yama: add PTRACE exception tracking
-Message-ID: <20100630155345.GN4837@outflux.net>
-References: <20100630003844.GE4837@outflux.net>
- <20100630004027.GG4837@outflux.net>
- <AANLkTim_RShqD7CKwjyeeGf3-1NZaVE4K2XUlrsoS1xx@mail.gmail.com>
+	id S1756260Ab0F3Px4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 11:53:56 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:39469 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754015Ab0F3Pxz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 11:53:55 -0400
+Date: Wed, 30 Jun 2010 17:53:52 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
+       "Antonio R. Costa" <costa.antonior@gmail.com>,
+       Nicolas Ferre <nicolas.ferre@atmel.com>, Dmitry Torokhov <dtor@mail.ru>,
+       Andrea Gelmini <andrea.gelmini@gelma.net>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: vamos@i4.informatik.uni-erlangen.de
+Subject: [PATCH 01/33] Removing dead MTD_NAND_AT91_BUSWIDTH_16
+Message-ID: <4c6fe9a4c298214223ff89d06401ac7b66f81c98.1277911346.git.siccegge@cs.fau.de>
+References: <cover.1277911345.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTim_RShqD7CKwjyeeGf3-1NZaVE4K2XUlrsoS1xx@mail.gmail.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <cover.1277911345.git.siccegge@cs.fau.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+MTD_NAND_AT91_BUSWIDTH_16 doesn't exist in Kconfig, therefore removing
+all references for it from the source code.
 
-On Wed, Jun 30, 2010 at 11:41:26AM -0400, Eric Paris wrote:
-> On Tue, Jun 29, 2010 at 8:40 PM, Kees Cook <kees.cook@canonical.com> wrote:
-> > Some application suites have external crash handlers that depend on
-> > being able to use PTRACE to generate crash reports (KDE, Chromium, etc).
-> > Since the inferior process generally knows the PID of the debugger,
-> > it can use PR_SET_PTRACER to allow a specific PID and its descendants
-> > to perform the PTRACE instead of only a direct ancestor.
-> >
-> > Signed-off-by: Kees Cook <kees.cook@canonical.com>
-> 
-> any normal unpriv application:
-> 
-> while(1) {
->         prctl(PR_SET_PTRACER, 1, 0, 0, 0);
-> }
-> 
-> watch kernel run out of memory and bring down the box.  Seems like
-> quite the DoS.....
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ arch/arm/mach-at91/board-at572d940hf_ek.c |    4 ----
+ arch/arm/mach-at91/board-sam9m10g45ek.c   |    4 ----
+ 2 files changed, 0 insertions(+), 8 deletions(-)
 
-Yes, thanks for noticing this; it seems the version I sent did not
-include the fixes I made at some point to correctly replace exceptions:
-
-
-diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-index f24b6b3..4f160db 100644
---- a/security/yama/yama_lsm.c
-+++ b/security/yama/yama_lsm.c
-@@ -32,7 +32,7 @@ static LIST_HEAD(ptracer_relations);
- static DEFINE_SPINLOCK(ptracer_relations_lock);
+diff --git a/arch/arm/mach-at91/board-at572d940hf_ek.c b/arch/arm/mach-at91/board-at572d940hf_ek.c
+index 5daff27..889a442 100644
+--- a/arch/arm/mach-at91/board-at572d940hf_ek.c
++++ b/arch/arm/mach-at91/board-at572d940hf_ek.c
+@@ -216,11 +216,7 @@ static struct atmel_nand_data __initdata eb_nand_data = {
+ /*	.rdy_pin	= AT91_PIN_PC16, */
+ 	.enable_pin	= AT91_PIN_PA15,
+ 	.partition_info	= nand_partitions,
+-#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
+-	.bus_width_16	= 1,
+-#else
+ 	.bus_width_16	= 0,
+-#endif
+ };
  
- /**
-- * yama_ptracer_add - add an exception for this tracer/tracee pair
-+ * yama_ptracer_add - add/replace an exception for this tracer/tracee pair
-  * @tracer: the task_struct of the process doing the PTRACE
-  * @tracee: the task_struct of the process to be PTRACEd
-  *
-@@ -41,18 +41,30 @@ static DEFINE_SPINLOCK(ptracer_relations_lock);
- static int yama_ptracer_add(struct task_struct *tracer,
- 			    struct task_struct *tracee)
- {
--	struct ptrace_relation *relation;
-+	int rc = 0;
-+	struct ptrace_relation *entry, *relation = NULL;
+ static struct sam9_smc_config __initdata eb_nand_smc_config = {
+diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
+index ee80059..49ef850 100644
+--- a/arch/arm/mach-at91/board-sam9m10g45ek.c
++++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
+@@ -135,11 +135,7 @@ static struct atmel_nand_data __initdata ek_nand_data = {
+ 	.rdy_pin	= AT91_PIN_PC8,
+ 	.enable_pin	= AT91_PIN_PC14,
+ 	.partition_info	= nand_partitions,
+-#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
+-	.bus_width_16	= 1,
+-#else
+ 	.bus_width_16	= 0,
+-#endif
+ };
  
--	relation = kmalloc(sizeof(*relation), GFP_KERNEL);
--	if (!relation)
--		return -ENOMEM;
--	relation->tracer = tracer;
--	relation->tracee = tracee;
- 	spin_lock(&ptracer_relations_lock);
--	list_add(&relation->node, &ptracer_relations);
-+	list_for_each_entry(entry, &ptracer_relations, node)
-+		if (entry->tracee == tracee) {
-+			relation = entry;
-+			break;
-+		}
-+	if (!relation) {
-+		relation = kmalloc(sizeof(*relation), GFP_KERNEL);
-+		if (!relation) {
-+			rc = -ENOMEM;
-+			goto unlock_out;
-+		}
-+		relation->tracee = tracee;
-+		list_add(&relation->node, &ptracer_relations);
-+	}
-+	relation->tracer = tracer;
-+
-+unlock_out:
- 	spin_unlock(&ptracer_relations_lock);
- 
--	return 0;
-+	return rc;
- }
- 
- /**
-
-
--Kees
-
+ static struct sam9_smc_config __initdata ek_nand_smc_config = {
 -- 
-Kees Cook
-Ubuntu Security Team
+1.7.0.4
+
