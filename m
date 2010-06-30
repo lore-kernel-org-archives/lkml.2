@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab0F3PgY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 11:36:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56911 "EHLO mx1.redhat.com"
+	id S1752860Ab0F3Phi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 11:37:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9766 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751695Ab0F3PgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 11:36:22 -0400
-Date: Wed, 30 Jun 2010 11:36:03 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-       device-mapper development <dm-devel@redhat.com>, axboe@kernel.dk,
-       linux-scsi@vger.kernel.org, martin.petersen@oracle.com,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
- payload
-Message-ID: <20100630153602.GA6036@redhat.com>
-References: <20100622180029.GA15950@redhat.com>
- <1277582211-10725-1-git-send-email-snitzer@redhat.com>
- <1277652576.4366.19.camel@mulgrave.site>
- <Pine.LNX.4.64.1006291811300.27462@hs20-bc2-1.build.redhat.com>
- <1277852600.4379.211.camel@mulgrave.site>
- <Pine.LNX.4.64.1006291925480.11847@hs20-bc2-1.build.redhat.com>
- <1277907738.2839.9.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277907738.2839.9.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1751582Ab0F3Phh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 11:37:37 -0400
+Date: Wed, 30 Jun 2010 11:37:10 -0400
+From: Rik van Riel <riel@redhat.com>
+To: akpm@linux-foundation.org
+Cc: aarcange@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       kosaki.motohiro@jp.fujitsu.com
+Subject: [PATCH -mm] rmap: add exclusive page to private anon_vma on swapin
+Message-ID: <20100630113710.3b376e6a@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30 2010 at 10:22am -0400,
-James Bottomley <James.Bottomley@suse.de> wrote:
+On swapin it is fairly common for a page to be owned exclusively
+by one process.  In that case we want to add the page to the
+anon_vma of that process's VMA, instead of to the root anon_vma.
 
-> On Tue, 2010-06-29 at 20:11 -0400, Mikulas Patocka wrote:
-> > > > If the layering violation spans only scsi code, it can be eventually 
-> > > > fixed, but this, much worse "layering violation" that will be spanning all 
-> > > > block device midlayers, won't ever be fixed.
-> > > > 
-> > > > Imagine for example --- a discard request arrivers at a dm-snapshot 
-> > > > device. The driver splits it into chunks, remaps each chunk to the 
-> > > > physical chunk, submits the requests, the elevator merges adjacent 
-> > > > requests and submits fewer bigger requests to the device. Now, if you had 
-> > > > to allocate a zeroed page each time you are splitting the request, that 
-> > > > would exhaust memory and burn cpu needlessly. You delete a 100MB file? --- 
-> > > > fine, allocate a 100MB of zeroed pages.
-> > > 
-> > > This is a straw man:  You've tried to portray a position I've never
-> > > taken as mine then attack it ... with what is effectively another bogus
-> > > argument.
-> > >
-> > > It's not an either/or choice.
-> > 
-> > It is either/or choice. If the interface isn't fixed NOW, the existing 
-> > flawed zeroed-page-allocation interface gets into RHEL
-> 
-> That's a false dichotomy.  You might see an either apply this hack now
-> or support the interface choice with RHEL, but upstream has the option
-> to fix stuff correctly.  RHEL has never needed my blessing to apply
-> random crap to their kernel before ... why is this patch any different?
-> 
-> > and I and others will have to support it for 7 years.
-> 
-> It's called a business model ... I believe it's what they pay you for.
-> 
-> > > I've asked the relevant parties to
-> > > combine the approaches and see if a REQ_TYPE_FS path that does the
-> > > allocations in the appropriate place, likely the ULD, produces a good
-> > > design.
-> > 
-> > OK, but before you do this research, fix the interface.
-> 
-> So even in the RHEL world, I think you'd find that analysing the problem
-> *before* comping up with a fix is a good way of doing things.
-> 
-> > > > So I say --- let there be a layering violation in the scsi code, but don't 
-> > > > put this problem with a page allocation to all the other bio midlayer 
-> > > > developers.
-> > > 
-> > > Thanks for explaining that you have nothing to contribute, I'll make
-> > > sure you're not on my list of relevant parties.
-> > 
-> > You misunderstand what I meant. You admit that there are design problems 
-> > in SCSI.
-> 
-> No I didn't.
-> 
-> And the rest of this rubbish is based on that false premise.  It might
-> help you to take off your SCSI antipathy and see this as a system
-> problem: it actually originates in block and spills out from there.
-> Thus it requires a system solution.
+This will reduce the amount of rmap searching that the swapout
+code needs to do.
 
-As fun as it is for the others monitoring these lists to see redhat.com
-vs suse.de banter I think framing this discussion like you (and Mikulas)
-continue to do is a complete distraction.
+Signed-off-by: Rik van Riel <riel@redhat.com>
 
-I tried to elevate (and defuse) the discussion yesterday.  But simply
-put: patches speak volumes.  I look forward to working with Tomo, hch
-and anyone else who has something to contribute that moves us toward a
-real fix for discards.
-
-Mike
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 369bdb4..31b2fd7 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -162,6 +162,8 @@ static inline void anon_vma_merge(struct vm_area_struct *vma,
+  */
+ void page_move_anon_rmap(struct page *, struct vm_area_struct *, unsigned long);
+ void page_add_anon_rmap(struct page *, struct vm_area_struct *, unsigned long);
++void do_page_add_anon_rmap(struct page *, struct vm_area_struct *,
++			   unsigned long, int);
+ void page_add_new_anon_rmap(struct page *, struct vm_area_struct *, unsigned long);
+ void page_add_file_rmap(struct page *);
+ void page_remove_rmap(struct page *);
+diff --git a/mm/memory.c b/mm/memory.c
+index 119b7cc..c0d984c 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2620,6 +2620,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	swp_entry_t entry;
+ 	pte_t pte;
+ 	struct mem_cgroup *ptr = NULL;
++	int exclusive = 0;
+ 	int ret = 0;
+ 
+ 	if (!pte_unmap_same(mm, pmd, page_table, orig_pte))
+@@ -2714,10 +2715,11 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if ((flags & FAULT_FLAG_WRITE) && reuse_swap_page(page)) {
+ 		pte = maybe_mkwrite(pte_mkdirty(pte), vma);
+ 		flags &= ~FAULT_FLAG_WRITE;
++		exclusive = 1;
+ 	}
+ 	flush_icache_page(vma, page);
+ 	set_pte_at(mm, address, page_table, pte);
+-	page_add_anon_rmap(page, vma, address);
++	do_page_add_anon_rmap(page, vma, address, exclusive);
+ 	/* It's better to call commit-charge after rmap is established */
+ 	mem_cgroup_commit_charge_swapin(page, ptr);
+ 
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 73d497e..a129679 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -831,6 +831,17 @@ static void __page_check_anon_rmap(struct page *page,
+ void page_add_anon_rmap(struct page *page,
+ 	struct vm_area_struct *vma, unsigned long address)
+ {
++	do_page_add_anon_rmap(page, vma, address, 0);
++}
++
++/*
++ * Special version of the above for do_swap_page, which often runs
++ * into pages that are exclusively owned by the current process.
++ * Everybody else should continue to use page_add_anon_rmap above.
++ */
++void do_page_add_anon_rmap(struct page *page,
++	struct vm_area_struct *vma, unsigned long address, int exclusive)
++{
+ 	int first = atomic_inc_and_test(&page->_mapcount);
+ 	if (first)
+ 		__inc_zone_page_state(page, NR_ANON_PAGES);
+@@ -840,7 +851,7 @@ void page_add_anon_rmap(struct page *page,
+ 	VM_BUG_ON(!PageLocked(page));
+ 	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
+ 	if (first)
+-		__page_set_anon_rmap(page, vma, address, 0);
++		__page_set_anon_rmap(page, vma, address, exclusive);
+ 	else
+ 		__page_check_anon_rmap(page, vma, address);
+ }
