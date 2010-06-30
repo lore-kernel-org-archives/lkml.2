@@ -1,140 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab0F3Vjr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 17:39:47 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:50856 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752944Ab0F3Vjq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 17:39:46 -0400
-From: Dmitry Torokhov <dtor@vmware.com>
-Organization: VMware, Inc.
-To: Chetan Loke <chetanloke@gmail.com>
-Subject: Re: [PATCH] VMware balloon: force compiling as a module
-Date: Wed, 30 Jun 2010 14:39:44 -0700
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3+; KDE/4.4.4; x86_64; ; )
-Cc: "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-References: <AANLkTimmIG6GF-hKBk7JsZpvZNEAj1Tlt4GrPXexN0_0@mail.gmail.com> <201006301227.08709.dtor@vmware.com> <AANLkTil6KfEHhQFwhPHRtb-dZHpDyttY09Kor_FQVFPK@mail.gmail.com>
-In-Reply-To: <AANLkTil6KfEHhQFwhPHRtb-dZHpDyttY09Kor_FQVFPK@mail.gmail.com>
+	id S1756634Ab0F3Vou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 17:44:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:43586 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753245Ab0F3Vot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 17:44:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,515,1272870000"; 
+   d="scan'208";a="294954171"
+Message-ID: <4C2BBACF.3080405@intel.com>
+Date: Wed, 30 Jun 2010 14:44:47 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+CC: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	 <4C29420D.2010406@intel.com>	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	 <4C2A8879.8010000@intel.com>	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	 <4C2AC55E.3040303@intel.com>	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	 <1277923422.16256.8.camel@localhost>  <4C2B9DAC.1030806@intel.com> <1277928125.18854.0.camel@localhost>
+In-Reply-To: <1277928125.18854.0.camel@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006301439.44456.dtor@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 30, 2010 02:26:40 pm Chetan Loke wrote:
-> Hello Dmitry,
-> 
-> On Wed, Jun 30, 2010 at 3:27 PM, Dmitry Torokhov <dtor@vmware.com> wrote:
-> > Hi Chetan,
-> > 
-> > On Wednesday, June 30, 2010 11:42:53 am Chetan Loke wrote:
-> >> Q1)Does vmtools handle pvscsi correctly?
-> > 
-> > Yes, as long as it compiled as a module or installer will not overwrite
-> > distribution-supplied version unless user explicitly requests installer
-> > to clobber it.
-> 
-> perfect.
-> 
-> > So far distributions have not tried building their kernels with pvscsi
-> > or vmxnet3 built-in, but did so with our ballon driver, which prompted
-> > this particular change.
-> 
-> We are building iso's which will then be used to build/create an ESX
-> appliance. So we would need the pvscsi driver from the start.
-
-Well, with typical setup, even though pvscsi is a module, as long as it
-is in initramfs it will still be loaded automatically. If you are building
-truly custom appliance and require pvscsi built-in you'll have to modify
-the tools installer script.
-
-> vNICs
-> will be populated post-install. At which point vmxnet[2/3] will
-> kick-in via vmtools.
-
-Depending on what you base your appliance vmxnet3 might be already in
-the kernel along with pvscsi.
-
-> 
-> >> Q2)In case if a VM wants to be a good citizen, is there a way for a
-> >> guest to know about the balloon-event?
-> > 
-> > I am not sure I follow. Ballooning supposed to be as transparent as
-> > possible...
-> 
-> This is too product specific. I will send you an email separately.
-> 
-
-OK.
-
-> >> Q3)What if an app mlock's its memory resources and driver's have
-> >> pinned down their pages then how does inflation work?
-> > 
-> > We will inflate as much as we can. Obviously if there are no more
-> > memory balloon may not grow to its full target size.
-> > 
-> > Balloon driver communicates to the hypervisor the total amount of
-> > memory in the guest, we may want to adjust that number by subtracting
-> > memory allocated by the kernel, mlocked memory and so on, but it is
-> > not done currently.
-> 
-> Ok.
-> 
-> I'm stuck with one question -
-> 
-> A) Ballooning will trigger guest's native memory management policy.
->    A.1) So this could mean guest might swap it's pages on it's vdisk,
-> correct?
+On 6/30/2010 1:02 PM, Woodhouse, David wrote:
+> On Wed, 2010-06-30 at 20:40 +0100, Williams, Dan J wrote:
+>>    From the dmesg:
+>>> IOMMU 0: reg_base_addr fe710000 ver 1:0 cap 900000c2f0462 ecap e01
+>>> DMAR: DRHD base: 0x000000fe714000 flags: 0x0
+>>> IOMMU 1: reg_base_addr fe714000 ver 1:0 cap 900000c2f0462 ecap e01
+>>> DMAR: DRHD base: 0x000000fe719000 flags: 0x0
+>>> IOMMU 2: reg_base_addr fe719000 ver 1:0 cap 900000c2f0462 ecap e01
+>>> DMAR: DRHD base: 0x000000fe718000 flags: 0x1
+>>> IOMMU 3: reg_base_addr fe718000 ver 1:0 cap 900000c2f0462 ecap e01
+>>
+>> Where we expect bit 54 to be set for the DMA iommu, and it does not
+>> appear to show up.
+>
+> So the BIOS is lying to us about which PCI devices are attached to which
+> IOMMU?
 >
 
-Yes.
- 
-> Consider this setup -
-> B) VM1..VMn have backing store(data and OS partitions) on LUNs(SAN).
-> Further, data LUNs are mounted as RDMs. I chose RDMs just to keep it
-> simple.
-> C) Say there's memory pressure. How? Well, few VM's are blasting I/O
-> to the LUNs. Plus, a backup triggered. Plus, whatever else happened.
->    C.1) VM's now seem to need more and more memory.
->    C.2) hypervisors block-layer/other-layers also need more memory.
->    C.3) Hypervisor's memory-management algorithm kicks-in.
->         ......
->         C.3.x) Ballooning triggers - now some VM's (excluding the ones
-> from C.1) are giving up memory and if A.1) above is true then the
-> guest's pages will be swapped out on the LUNs via
->                   hypervisor's SCSI-LLDD. But look at C.2) above. Is
-> this a soft-deadlock?
->
+It certainly looks that way, or it is at least ignoring any iommu that 
+is not associated with a root port.  I have a supermicro x7dwn+ board 
+here with the same 5400 series chipset that "does the right thing (TM)":
 
-If there is no memory something will have to give up. If you look at
-the ballon driver you will see that when it switches from non-sleeping
-to sleeping allocations or otherwise starts getting allocation errors
-it will throttle the inflation rates to give the box a "breather" and
-not choke it completely right then and there.
- 
-> Oh, it's a linux-guest and if C.1) timesout then the guest will send
-> aborts and eventually a LUN reset ;).
-> 
-> In this particular case, if my suspicion is valid and if all the
-> signatures match(swap is out on the SAN, block-congestion etc) then
-> the balloon driver could just bail out.
-> 
+> [    0.052101] DMAR: Host address width 38
+> [    0.053004] DMAR: DRHD base: 0x000000fe710000 flags: 0x0
+> [    0.054008] IOMMU fe710000: ver 1:0 cap 900800c2f0462 ecap e01
+> [    0.055003] DMAR: DRHD base: 0x000000fe712000 flags: 0x0
+> [    0.056012] IOMMU fe712000: ver 1:0 cap 900800c2f0462 ecap e01
+> [    0.057003] DMAR: DRHD base: 0x000000fe714000 flags: 0x0
+> [    0.058007] IOMMU fe714000: ver 1:0 cap 900800c2f0462 ecap e01
+> [    0.059003] DMAR: DRHD base: 0x000000fe716000 flags: 0x0
+> [    0.060006] IOMMU fe716000: ver 1:0 cap 900800c2f0462 ecap e01
+> [    0.061003] DMAR: DRHD base: 0x000000fe719000 flags: 0x0
+> [    0.062007] IOMMU fe719000: ver 1:0 cap 900800c2f0462 ecap e01
+> [    0.063003] DMAR: DRHD base: 0x000000fe71a000 flags: 0x0
+> [    0.064011] IOMMU fe71a000: ver 1:0 cap 4900800c2f0462 ecap e01
 
-Yes, it is not guaranteed that ballon will reach this target, and in
-this case host itself might start swapping causing severe performance
-issues.
+Here is our DMA iommu.
 
-Realistically it all boils down to this: even though you may overcommit
-you still have to adequately provision your hosts so they could handle
-the load.
+> [    0.065003] DMAR: DRHD base: 0x000000fe718000 flags: 0x1
+> [    0.066007] IOMMU fe718000: ver 1:0 cap 900800c2f0462 ecap e01
+> [    0.067003] DMAR: RMRR base: 0x000000bff6b000 end: 0x000000bff72fff
+> [    0.068003] DMAR: No ATSR found
+[..]
+> # modprobe ioatdma
+> [   36.311819] dca service started, version 1.12.1
+> [   36.334934] ioatdma: Intel(R) QuickData Technology Driver 4.00
+> [   36.341245]   alloc irq_desc for 57 on node -1
+> [   36.342154]   alloc kstat_irqs on node -1
+> [   36.350418] ioatdma 0000:00:0f.0: PCI INT A -> GSI 57 (level, low) -> IRQ 57
+> [   36.357916] ioatdma 0000:00:0f.0: setting latency timer to 64
+> [   36.364091]   alloc irq_desc for 104 on node -1
+> [   36.365056]   alloc kstat_irqs on node -1
+> [   36.373334] ioatdma 0000:00:0f.0: irq 104 for MSI/MSI-X
+> [   36.378957]   alloc irq_desc for 105 on node -1
+> [   36.379954]   alloc kstat_irqs on node -1
+> [   36.388203] ioatdma 0000:00:0f.0: irq 105 for MSI/MSI-X
+> [   36.400150]   alloc irq_desc for 106 on node -1
+> [   36.401147]   alloc kstat_irqs on node -1
+> [   36.409417] ioatdma 0000:00:0f.0: irq 106 for MSI/MSI-X
+> [   36.415036]   alloc irq_desc for 107 on node -1
+> [   36.416032]   alloc kstat_irqs on node -1
+> [   36.424304] ioatdma 0000:00:0f.0: irq 107 for MSI/MSI-X
+> [   36.430263] ioatdma 0000:00:0f.0: APICID_TAG_MAP set incorrectly by BIOS, disabling DCA
 
-Thanks.
+...and here is the ioatdma driver coming up correctly (albeit with a dca 
+misconfiguration)
 
--- 
-Dmitry
+I don't see a way around this beyond blacklisting this (platform, vt-d 
+setting, driver) combination.  Is there a quirk infrastructure for this 
+sort of problem?
+
+Chris, is there a BIOS update available for your platform?
+
+--
+Dan
