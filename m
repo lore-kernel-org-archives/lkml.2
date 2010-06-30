@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab0F3TrA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 15:47:00 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50508 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755509Ab0F3Tq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 15:46:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=sLlyeKxJx4L4ky2mYpc57t0jFDIT0jP4abihZI/U1gqGd6Z4vAbv4ktsJt3d4D5StK
-         MsvDYWT0Hs/Ki6t17AJZWvi2hZAErgEE02nznxzDGjsO9rW1ICcSop083Hin5GPnFk6d
-         9ZLK4CgtRELjkvENbWerhNsWVlIquBJQ6pOYc=
-Message-ID: <4C2B9F49.8090304@gmail.com>
-Date: Wed, 30 Jun 2010 12:47:21 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1755795Ab0F3Ttp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 15:49:45 -0400
+Received: from shutemov.name ([188.40.19.243]:46337 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752867Ab0F3Tto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 15:49:44 -0400
+Date: Wed, 30 Jun 2010 22:49:42 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: Christoph Egger <siccegge@cs.fau.de>,
+       Kevin Hilman <davinci-linux-open-source@linux.davincidsp.com>,
+       Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
+       Russell King <linux@arm.linux.org.uk>,
+       vamos@i4.informatik.uni-erlangen.de, Steve Chen <schen@mvista.com>,
+       linux-kernel@vger.kernel.org, Sandeep Paulraj <s-paulraj@ti.com>,
+       Cyril Chemparathy <cyril@ti.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 02/33] Removing dead ARCH_DAVINCI_TNETV107X
+Message-ID: <20100630194942.GB3969@shutemov.name>
+References: <cover.1277911345.git.siccegge@cs.fau.de>
+ <88ee583babc6f0aecb2238a57644f64159d5c395.1277911346.git.siccegge@cs.fau.de>
+ <20100630170730.GE23534@tarshish>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org
-Subject: Re: [PATCH 3/5]acpi:glue.c Fix warning: variable 'ret' set but not
- used
-References: <4C2A6B6C.1000306@gmail.com> <4C29674C.9070503@gmail.com> <4C28E14D.5050701@gmail.com> <1277621246-10960-4-git-send-email-justinmattock@gmail.com> <1277621246-10960-1-git-send-email-justinmattock@gmail.com> <7214.1277729293@redhat.com> <8066.1277750854@redhat.com> <22319.1277826461@redhat.com> <25800.1277889215@redhat.com>
-In-Reply-To: <25800.1277889215@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100630170730.GE23534@tarshish>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o.k. hopefully this is getting close to being right.. I ended up 
-spending the later half of the morning looking for 
-dev_driver_string(dev) until I read device.h and realized you actually 
-use that it's self to gather the debug info etc..(I admit it, I'm a newbie!)
+On Wed, Jun 30, 2010 at 08:07:31PM +0300, Baruch Siach wrote:
+> Hi Christoph,
+> 
+> On Wed, Jun 30, 2010 at 06:05:38PM +0200, Christoph Egger wrote:
+> > ARCH_DAVINCI_TNETV107X doesn't exist in Kconfig, therefore removing
+> > all references for it from the source code.
+> > 
+> > Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> > ---
+> >  arch/arm/mach-davinci/include/mach/cputype.h |    6 ------
+> >  1 files changed, 0 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-davinci/include/mach/cputype.h b/arch/arm/mach-davinci/include/mach/cputype.h
+> > index cea6b89..6143022 100644
+> > --- a/arch/arm/mach-davinci/include/mach/cputype.h
+> > +++ b/arch/arm/mach-davinci/include/mach/cputype.h
+> > @@ -85,10 +85,4 @@ IS_DAVINCI_CPU(tnetv107x, DAVINCI_CPU_ID_TNETV107X)
+> >  #define cpu_is_davinci_da850() 0
+> >  #endif
+> >  
+> > -#ifdef CONFIG_ARCH_DAVINCI_TNETV107X
+> > -#define cpu_is_davinci_tnetv107x() is_davinci_tnetv107x()
+> > -#else
+> > -#define cpu_is_davinci_tnetv107x() 0
+> 
+> Why remove the #else part?
 
-anyways here is the updated patch, let me know if something need a 
-changing..
+Nobody uses cpu_is_davinci_tnetv107x as well.
 
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
 
- From 16df81551d1899e650ae28ea8d41931f7c391c7a Mon Sep 17 00:00:00 2001
-From: Justin P. Mattock <justinmattock@gmail.com>
-Date: Wed, 30 Jun 2010 12:34:32 -0700
-Subject: [PATCH]acpi:glue.c Fix Fix warning: variable 'ret' set but not used
-
-Fix a warning message generated by gcc:
-Im getting a warning message when building with gcc 4.6.0
-   CC      drivers/acpi/glue.o
-drivers/acpi/glue.c: In function 'acpi_bind_one':
-drivers/acpi/glue.c:163:7: warning: variable 'ret' set but not used
-
-  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-  Signed-off-by: David Howells <dhowells@redhat.com>
----
-  drivers/acpi/glue.c |   16 +++++++++++++---
-  1 files changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
-index 4af6301..11ad510 100644
---- a/drivers/acpi/glue.c
-+++ b/drivers/acpi/glue.c
-@@ -145,6 +145,7 @@ static int acpi_bind_one(struct device *dev, 
-acpi_handle handle)
-  {
-  	struct acpi_device *acpi_dev;
-  	acpi_status status;
-+	int fn, pn;
-
-  	if (dev->archdata.acpi_handle) {
-  		dev_warn(dev, "Drivers changed 'acpi_handle'\n");
-@@ -160,12 +161,21 @@ static int acpi_bind_one(struct device *dev, 
-acpi_handle handle)
-
-  	status = acpi_bus_get_device(handle, &acpi_dev);
-  	if (!ACPI_FAILURE(status)) {
--		int ret;
-
--		ret = sysfs_create_link(&dev->kobj, &acpi_dev->dev.kobj,
-+		fn = sysfs_create_link(&dev->kobj, &acpi_dev->dev.kobj,
-  				"firmware_node");
--		ret = sysfs_create_link(&acpi_dev->dev.kobj, &dev->kobj,
-+		pn = sysfs_create_link(&acpi_dev->dev.kobj, &dev->kobj,
-  				"physical_node");
-+		if (fn) {
-+			dev_warn(&acpi_dev->dev,
-+				"Failed to create firmware_node link to %s %s: %d\n",
-+				dev_driver_string(dev), dev_name(dev), fn);
-+		} else if (pn) {
-+			dev_warn(&acpi_dev->dev,
-+				"Failed to create physical_node link to %s %s: %d\n",
-+				dev_driver_string(dev), dev_name(dev), pn);
-+				return AE_ERROR;
-+		}			
-  		if (acpi_dev->wakeup.flags.valid) {
-  			device_set_wakeup_capable(dev, true);
-  			device_set_wakeup_enable(dev,
 -- 
-1.7.1.rc1.21.gf3bd6
-
-
-cheers,
-
-Justin P. Mattock
+ Kirill A. Shutemov
