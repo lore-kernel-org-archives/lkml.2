@@ -1,94 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab0F3Nog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 09:44:36 -0400
-Received: from thunk.org ([69.25.196.29]:58023 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754606Ab0F3Nod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 09:44:33 -0400
-Date: Wed, 30 Jun 2010 09:44:29 -0400
-From: tytso@mit.edu
-To: Ric Wheeler <rwheeler@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Mingming Cao <cmm@us.ibm.com>,
-       djwong@us.ibm.com, linux-ext4 <linux-ext4@vger.kernel.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC] ext4: Don't send extra barrier during fsync if there are
- no dirty pages.
-Message-ID: <20100630134429.GE1333@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Ric Wheeler <rwheeler@redhat.com>,
-	Christoph Hellwig <hch@infradead.org>,
-	Mingming Cao <cmm@us.ibm.com>, djwong@us.ibm.com,
-	linux-ext4 <linux-ext4@vger.kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-References: <20100429235102.GC15607@tux1.beaverton.ibm.com>
- <1272934667.2544.3.camel@mingming-laptop>
- <4BE02C45.6010608@redhat.com>
- <20100504154553.GA22777@infradead.org>
- <20100630124832.GA1333@thunk.org>
- <4C2B44C0.3090002@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754410Ab0F3NpY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 09:45:24 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:52987 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986Ab0F3NpW convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Wed, 30 Jun 2010 09:45:22 -0400
+Message-Id: <4C2B66AD0200007800008D77@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 30 Jun 2010 14:45:49 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: use symbolics instead of raw numbers in
+	 entry_64.S
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <4C2B44C0.3090002@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 09:21:04AM -0400, Ric Wheeler wrote:
-> 
-> The problem with not issuing a cache flush when you have dirty meta
-> data or data is that it does not have any tie to the state of the
-> volatile write cache of the target storage device.
+... making the code a little less fragile.
 
-We track whether or not there is any metadata updates associated with
-the inode already; if it does, we force a journal commit, and this
-implies a barrier operation.
+Also use pushq_cfi instead of raw CFI annotations in two more places,
+and add two missing annotations after stack pointer adjustments which
+got modified here anyway.
 
-The case we're talking about here is one where either (a) there is no
-journal, or (b) there have been no metadata updates (I'm simplifying a
-little here; in fact we track whether there have been fdatasync()- vs
-fsync()- worthy metadata updates), and so there hasn't been a journal
-commit to do the cache flush.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-In this case, we want to track when is the last time an fsync() has
-been issued, versus when was the last time data blocks for a
-particular inode have been pushed out to disk.
+--- linux-2.6.35-rc3/arch/x86/kernel/entry_64.S
++++ 2.6.35-rc3-x86_64-unwind-annotations/arch/x86/kernel/entry_64.S
+@@ -796,8 +795,8 @@ END(interrupt)
+ 
+ /* 0(%rsp): ~(interrupt number) */
+ 	.macro interrupt func
+-	subq $10*8, %rsp
+-	CFI_ADJUST_CFA_OFFSET 10*8
++	subq $ORIG_RAX-ARGOFFSET+8, %rsp
++	CFI_ADJUST_CFA_OFFSET ORIG_RAX-ARGOFFSET+8
+ 	call save_args
+ 	PARTIAL_FRAME 0
+ 	call \func
+@@ -1036,8 +1035,8 @@ ENTRY(\sym)
+ 	INTR_FRAME
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+ 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
+-	subq $15*8,%rsp
+-	CFI_ADJUST_CFA_OFFSET 15*8
++	subq $ORIG_RAX-R15, %rsp
++	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+ 	call error_entry
+ 	DEFAULT_FRAME 0
+ 	movq %rsp,%rdi		/* pt_regs pointer */
+@@ -1052,9 +1051,9 @@ END(\sym)
+ ENTRY(\sym)
+ 	INTR_FRAME
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+-	pushq $-1		/* ORIG_RAX: no syscall to restart */
+-	CFI_ADJUST_CFA_OFFSET 8
+-	subq $15*8, %rsp
++	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
++	subq $ORIG_RAX-R15, %rsp
++	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+ 	call save_paranoid
+ 	TRACE_IRQS_OFF
+ 	movq %rsp,%rdi		/* pt_regs pointer */
+@@ -1069,9 +1068,9 @@ END(\sym)
+ ENTRY(\sym)
+ 	INTR_FRAME
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+-	pushq $-1		/* ORIG_RAX: no syscall to restart */
+-	CFI_ADJUST_CFA_OFFSET 8
+-	subq $15*8, %rsp
++	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
++	subq $ORIG_RAX-R15, %rsp
++	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+ 	call save_paranoid
+ 	TRACE_IRQS_OFF
+ 	movq %rsp,%rdi		/* pt_regs pointer */
+@@ -1089,8 +1088,8 @@ END(\sym)
+ ENTRY(\sym)
+ 	XCPT_FRAME
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+-	subq $15*8,%rsp
+-	CFI_ADJUST_CFA_OFFSET 15*8
++	subq $ORIG_RAX-R15, %rsp
++	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+ 	call error_entry
+ 	DEFAULT_FRAME 0
+ 	movq %rsp,%rdi			/* pt_regs pointer */
+@@ -1107,8 +1106,8 @@ END(\sym)
+ ENTRY(\sym)
+ 	XCPT_FRAME
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+-	subq $15*8,%rsp
+-	CFI_ADJUST_CFA_OFFSET 15*8
++	subq $ORIG_RAX-R15, %rsp
++	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+ 	call save_paranoid
+ 	DEFAULT_FRAME 0
+ 	TRACE_IRQS_OFF
+@@ -1495,8 +1494,8 @@ ENTRY(nmi)
+ 	INTR_FRAME
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
+ 	pushq_cfi $-1
+-	subq $15*8, %rsp
+-	CFI_ADJUST_CFA_OFFSET 15*8
++	subq $ORIG_RAX-R15, %rsp
++	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+ 	call save_paranoid
+ 	DEFAULT_FRAME 0
+ 	/* paranoidentry do_nmi, 0; without TRACE_IRQS_OFF */
 
-To use an example I used as motivation for why we might want an
-fsync2(int fd[], int flags[], int num) syscall, consider the situation
-of:
 
-	fsync(control_fd);
-	fdatasync(data_fd);
 
-The first fsync() will have executed a cache flush operation.  So when
-we do the fdatasync() (assuming that no metadata needs to be flushed
-out to disk), there is no need for the cache flush operation.
-
-If we had an enhanced fsync command, we would also be able to
-eliminate a second journal commit in the case where data_fd also had
-some metadata that needed to be flushed out to disk.
-
-> It would definitely be *very* useful to have an array of fd's that
-> all need fsync()'ed at home time....
-
-Yes, but it would require applications to change their code.
-
-One thing that I would like about a new fsync2() system call is with a
-flags field, we could add some new, more expressive flags:
-
-#define FSYNC_DATA    0x0001 /* Only flush metadata if needed to access data */
-#define FSYNC_NOWAIT  0x0002 /* Initiate the flush operations but don't wait
-		      	        for them to complete */
-#define FSYNC_NOBARRER 0x004 /* FS may skip the barrier if not needed for fs
-		       	     	consistency */
-
-etc.
-
-					- Ted
