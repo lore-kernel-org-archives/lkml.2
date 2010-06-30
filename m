@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab0F3T6k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 15:58:40 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42296 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755582Ab0F3T6j (ORCPT
+	id S1757203Ab0F3T7V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 15:59:21 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60940 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754494Ab0F3T7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 15:58:39 -0400
-Date: Wed, 30 Jun 2010 15:58:36 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: linux-pm@lists.linux-foundation.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Florian Mickler <florian@mickler.org>, <linux-pci@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [update] Re: [PATCH] PM: Make it possible to avoid wakeup events
- from being lost
-In-Reply-To: <201006302127.37432.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1006301535450.1707-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 30 Jun 2010 15:59:20 -0400
+Date: Wed, 30 Jun 2010 12:58:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Jiri Slaby <jslaby@suse.cz>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] cpuidle: avoid using smp_processor_id() in preemptible
+ code (nr_iowait_cpu) v4
+Message-Id: <20100630125853.245e6b99.akpm@linux-foundation.org>
+In-Reply-To: <1277476773.32034.639.camel@twins>
+References: <20100614140941.GA3581@swordfish.minsk.epam.com>
+	<20100614073853.6fa2f91f@infradead.org>
+	<20100614145439.GA3448@swordfish.minsk.epam.com>
+	<20100614080154.7d6a71fc@infradead.org>
+	<20100614151735.GB3448@swordfish.minsk.epam.com>
+	<20100614204021.52c50cdc@infradead.org>
+	<20100615061927.GA3312@swordfish>
+	<20100615072435.5a47d850@infradead.org>
+	<20100615145029.GB3967@swordfish.minsk.epam.com>
+	<20100615080808.6286448b@infradead.org>
+	<20100617062950.GA3979@swordfish>
+	<1277476773.32034.639.camel@twins>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010, Rafael J. Wysocki wrote:
+On Fri, 25 Jun 2010 16:39:33 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-> > Since there's no longer any way to cancel a call to pm_wakeup_event()  
-> > or close the "no suspend" period early, there is no need to use
-> > dynamically-allocated delayed_work structures.  You can make do with a
-> > single static timer; always keep it set to expire at the latest time
-> > passed to pm_wakeup_event().
+> On Thu, 2010-06-17 at 09:29 +0300, Sergey Senozhatsky wrote:
+> > Fix
+> >    
+> >  BUG: using smp_processor_id() in preemptible [00000000] code: s2disk/3392
 > 
-> The decremenations of events_in_progress wouldn't be balanced with
-> incrementations this way.  Or do you have any clever way of dealing with
-> that in mind?
+> > The initial fix was to use get_cpu/put_cpu in nr_iowait_cpu.  However,
+> > Arjan stated that "the bug is that it needs to be nr_iowait_cpu(int cpu)".
+> > 
+> > This patch introduces nr_iowait_cpu(int cpu) and changes to its callers.
+> > 
+> > Arjan also pointed out that we can't use get_cpu/put_cpu in update_ts_time_stats
+> > since we "pick the current cpu, rather than the one denoted by ts" in that case.
+> > To match given *ts and cpu denoted by *ts we use new field in the struct tick_sched: int cpu.
+> 
+> 
+> > diff --git a/include/linux/tick.h b/include/linux/tick.h
+> > index b232ccc..db14691 100644
+> > --- a/include/linux/tick.h
+> > +++ b/include/linux/tick.h
+> > @@ -51,6 +51,7 @@ struct tick_sched {
+> >  	unsigned long			check_clocks;
+> >  	enum tick_nohz_mode		nohz_mode;
+> >  	ktime_t				idle_tick;
+> > +	int				cpu;
+> >  	int				inidle;
+> >  	int				tick_stopped;
+> >  	unsigned long			idle_jiffies;
+> 
+> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> > index 1d7b9bc..1907037 100644
+> > --- a/kernel/time/tick-sched.c
+> > +++ b/kernel/time/tick-sched.c
+> > @@ -38,6 +38,9 @@ static ktime_t last_jiffies_update;
+> >  
+> >  struct tick_sched *tick_get_tick_sched(int cpu)
+> >  {
+> > +	/*FIXME: Arjan van de Ven:
+> > +	 can we do this bit once, when the ts structure gets initialized?*/
+> > +	per_cpu(tick_cpu_sched, cpu).cpu = cpu;
+> >  	return &per_cpu(tick_cpu_sched, cpu);
+> >  }
+> 
+> > @@ -161,7 +164,7 @@ update_ts_time_stats(struct tick_sched *ts, ktime_t now, u64 *last_update_time)
+> >  	if (ts->idle_active) {
+> >  		delta = ktime_sub(now, ts->idle_entrytime);
+> >  		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+> > -		if (nr_iowait_cpu() > 0)
+> > +		if (nr_iowait_cpu(ts->cpu) > 0)
+> >  			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
+> >  		ts->idle_entrytime = now;
+> >  	}
+> 
+> 
+> This all seems extremely silly, why not something like:
 
-Keep track of the current expiration time in a static variable called
-wakeup_timeout, and use 0 to indicate there is no timeout.
+Does it work?
 
-In pm_wakeup_event() (everything protected by the spinlock):
-
-	unsigned long new_timeout = jiffies + msecs_to_jiffies(msecs);
-	if (new_timeout == 0)
-		new_timeout = 1;
-
-	++event_count;
-	if (!wakeup_timeout || time_after(new_timeout, wakeup_timeout)) {
-		if (!wakeup_timeout)
-			++events_in_progress;
-		wakeup_timeout = new_timeout;
-		mod_timer(&wakeup_timer, wakeup_timeout);
-	}
-
-In the timer routine:
-
-	if (wakeup_timeout && time_before_eq(wakeup_timeout, jiffies)) {
-		--events_in_progres;
-		wakeup_timeout = 0;
-	}
-
-Alan Stern
+c'mon guys, it's taking us weeks and weeks to fix one simple bug.  It's
+a regression!  We should be in panic mode.
 
