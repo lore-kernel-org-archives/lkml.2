@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab0F3Ajf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jun 2010 20:39:35 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:45883 "EHLO smtp.outflux.net"
+	id S1756041Ab0F3Akc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jun 2010 20:40:32 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:45352 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754328Ab0F3Aje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jun 2010 20:39:34 -0400
-Date: Tue, 29 Jun 2010 17:39:33 -0700
+	id S1755236Ab0F3Ak2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jun 2010 20:40:28 -0400
+Date: Tue, 29 Jun 2010 17:40:27 -0700
 From: Kees Cook <kees.cook@canonical.com>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] security: create task_free security callback
-Message-ID: <20100630003933.GF4837@outflux.net>
+Subject: [PATCH 2/2] Yama: add PTRACE exception tracking
+Message-ID: <20100630004027.GG4837@outflux.net>
 References: <20100630003844.GE4837@outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,108 +23,282 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current LSM interface to cred_free is not sufficient for allowing
-an LSM to track the life and death of a task.  This patch adds the
-task_free hook so that an LSM can clean up resources on task death.
+Some application suites have external crash handlers that depend on
+being able to use PTRACE to generate crash reports (KDE, Chromium, etc).
+Since the inferior process generally knows the PID of the debugger,
+it can use PR_SET_PTRACER to allow a specific PID and its descendants
+to perform the PTRACE instead of only a direct ancestor.
 
 Signed-off-by: Kees Cook <kees.cook@canonical.com>
 ---
- include/linux/security.h |    8 ++++++++
- kernel/fork.c            |    1 +
- security/capability.c    |    4 ++++
- security/security.c      |    5 +++++
- 4 files changed, 18 insertions(+), 0 deletions(-)
+ include/linux/prctl.h    |    6 ++
+ security/yama/yama_lsm.c |  205 ++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 193 insertions(+), 18 deletions(-)
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 723a93d..8007495 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -637,6 +637,9 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	manual page for definitions of the @clone_flags.
-  *	@clone_flags contains the flags indicating what should be shared.
-  *	Return 0 if permission is granted.
-+ * @task_free:
-+ *	@task task being freed
-+ *	Handle release of task-related resources.
-  * @cred_alloc_blank:
-  *	@cred points to the credentials.
-  *	@gfp indicates the atomicity of any memory allocations.
-@@ -1481,6 +1484,7 @@ struct security_operations {
- 	int (*dentry_open) (struct file *file, const struct cred *cred);
+diff --git a/include/linux/prctl.h b/include/linux/prctl.h
+index a3baeb2..e435624 100644
+--- a/include/linux/prctl.h
++++ b/include/linux/prctl.h
+@@ -102,4 +102,10 @@
  
- 	int (*task_create) (unsigned long clone_flags);
-+	void (*task_free) (struct task_struct *task);
- 	int (*cred_alloc_blank) (struct cred *cred, gfp_t gfp);
- 	void (*cred_free) (struct cred *cred);
- 	int (*cred_prepare)(struct cred *new, const struct cred *old,
-@@ -1732,6 +1736,7 @@ int security_file_send_sigiotask(struct task_struct *tsk,
- int security_file_receive(struct file *file);
- int security_dentry_open(struct file *file, const struct cred *cred);
- int security_task_create(unsigned long clone_flags);
-+void security_task_free(struct task_struct *task);
- int security_cred_alloc_blank(struct cred *cred, gfp_t gfp);
- void security_cred_free(struct cred *cred);
- int security_prepare_creds(struct cred *new, const struct cred *old, gfp_t gfp);
-@@ -2232,6 +2237,9 @@ static inline int security_task_create(unsigned long clone_flags)
- 	return 0;
- }
+ #define PR_MCE_KILL_GET 34
  
-+static inline int security_task_free(struct task_struct *task)
-+{ }
++/*
++ * Set specific pid that is allowed to PTRACE the current task.
++ * A value of 0 mean "no process".
++ */
++#define PR_SET_PTRACER 35
 +
- static inline int security_cred_alloc_blank(struct cred *cred, gfp_t gfp)
- {
- 	return 0;
-diff --git a/kernel/fork.c b/kernel/fork.c
-index b6cce14..7fbc5e3 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -183,6 +183,7 @@ void __put_task_struct(struct task_struct *tsk)
- 	WARN_ON(atomic_read(&tsk->usage));
- 	WARN_ON(tsk == current);
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+index 72929d2..0e989c4 100644
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -14,15 +14,187 @@
+ #include <linux/security.h>
+ #include <linux/sysctl.h>
+ #include <linux/ptrace.h>
++#include <linux/prctl.h>
+ #include <linux/ratelimit.h>
  
-+	security_task_free(tsk);
- 	exit_creds(tsk);
- 	delayacct_tsk_free(tsk);
- 	put_signal_struct(tsk->signal);
-diff --git a/security/capability.c b/security/capability.c
-index 4aeb699..3649d4b 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -353,6 +353,9 @@ static int cap_task_create(unsigned long clone_flags)
- 	return 0;
- }
+ static int ptrace_scope = 1;
+ static int protected_sticky_symlinks = 1;
+ static int protected_nonaccess_hardlinks = 1;
  
-+static void cap_task_free(struct task_struct *task)
-+{ }
++/* describe a PTRACE relationship for potential exception */
++struct ptrace_relation {
++	struct task_struct *tracer;
++	struct task_struct *tracee;
++	struct list_head node;
++};
 +
- static int cap_cred_alloc_blank(struct cred *cred, gfp_t gfp)
- {
- 	return 0;
-@@ -936,6 +939,7 @@ void __init security_fixup_ops(struct security_operations *ops)
- 	set_to_cap_if_null(ops, file_receive);
- 	set_to_cap_if_null(ops, dentry_open);
- 	set_to_cap_if_null(ops, task_create);
-+	set_to_cap_if_null(ops, task_free);
- 	set_to_cap_if_null(ops, cred_alloc_blank);
- 	set_to_cap_if_null(ops, cred_free);
- 	set_to_cap_if_null(ops, cred_prepare);
-diff --git a/security/security.c b/security/security.c
-index e8c87b8..103c35f 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -691,6 +691,11 @@ int security_task_create(unsigned long clone_flags)
- 	return security_ops->task_create(clone_flags);
- }
- 
-+void security_task_free(struct task_struct *task)
++static LIST_HEAD(ptracer_relations);
++static spinlock_t ptracer_relations_lock;
++
++/**
++ * yama_ptracer_add - add an exception for this tracer/tracee pair
++ * @tracer: the task_struct of the process doing the PTRACE
++ * @tracee: the task_struct of the process to be PTRACEd
++ *
++ * Returns 0 if relationship was added, -ve on error.
++ */
++static int yama_ptracer_add(struct task_struct *tracer,
++			    struct task_struct *tracee)
 +{
-+	security_ops->task_free(task);
++	struct ptrace_relation *relation;
++
++	relation = kzalloc(sizeof(*relation), GFP_KERNEL);
++	if (!relation)
++		return -ENOMEM;
++	relation->tracer = tracer;
++	relation->tracee = tracee;
++	spin_lock(&ptracer_relations_lock);
++	list_add(&relation->node, &ptracer_relations);
++	spin_unlock(&ptracer_relations_lock);
++
++	return 0;
 +}
 +
- int security_cred_alloc_blank(struct cred *cred, gfp_t gfp)
++/**
++ * yama_ptracer_del - remove exceptions related to the given tasks
++ * @tracer: remove any relation where tracer task matches
++ * @tracee: remove any relation where tracee task matches
++ */
++static void yama_ptracer_del(struct task_struct *tracer,
++			     struct task_struct *tracee)
++{
++	struct ptrace_relation *relation;
++	struct list_head *list, *safe;
++
++	spin_lock(&ptracer_relations_lock);
++	list_for_each_safe(list, safe, &ptracer_relations) {
++		relation = list_entry(list, struct ptrace_relation, node);
++		if (relation->tracee == tracee ||
++		    relation->tracer == tracer) {
++			list_del(&relation->node);
++			kfree(relation);
++		}
++	}
++	spin_unlock(&ptracer_relations_lock);
++}
++
++/**
++ * yama_task_free - check for task_pid to remove from exception list
++ * @task: task being removed
++ */
++static void yama_task_free(struct task_struct *task)
++{
++	yama_ptracer_del(task, task);
++}
++
++/**
++ * yama_task_prctl - check for Yama-specific prctl operations
++ * @option: operation
++ * @arg2: argument
++ * @arg3: argument
++ * @arg4: argument
++ * @arg5: argument
++ *
++ * Return 0 on success, -ve on error.  -ENOSYS is returned when Yama
++ * does not handle the given option.
++ */
++static int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
++			   unsigned long arg4, unsigned long arg5)
++{
++	int rc;
++
++	rc = cap_task_prctl(option, arg2, arg3, arg4, arg5);
++	if (rc != -ENOSYS)
++		return rc;
++
++	switch (option) {
++	case PR_SET_PTRACER:
++		if (arg2 == 0) {
++			yama_ptracer_del(NULL, current);
++			rc = 0;
++		} else {
++			struct task_struct *tracer;
++
++			rcu_read_lock();
++			tracer = find_task_by_vpid(arg2);
++			if (tracer)
++				get_task_struct(tracer);
++			else
++				rc = -EINVAL;
++			rcu_read_unlock();
++
++			if (tracer) {
++				rc = yama_ptracer_add(tracer, current);
++				put_task_struct(tracer);
++			}
++		}
++		break;
++	}
++
++	return rc;
++}
++
++/**
++ * task_is_descendant - walk up a process family tree looking for a match
++ * @parent: the process to compare against while walking up from child
++ * @child: the process to start from while looking upwards for parent
++ *
++ * Returns 1 if child is a descendant of parent, 0 if not.
++ */
++static int task_is_descendant(struct task_struct *parent,
++			      struct task_struct *child)
++{
++	int rc = 0;
++	struct task_struct *walker = child;
++
++	if (!parent || !child)
++		return 0;
++
++	rcu_read_lock();
++	read_lock(&tasklist_lock);
++	while (walker->pid > 0) {
++		if (walker == parent) {
++			rc = 1;
++			break;
++		}
++		walker = walker->real_parent;
++	}
++	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
++
++	return rc;
++}
++
++/**
++ * ptracer_exception_found - tracer registered as exception for this tracee
++ * @tracer: the task_struct of the process attempting PTRACE
++ * @tracee: the task_struct of the process to be PTRACEd
++ *
++ * Returns 1 if tracer has is ptracer exception ancestor for tracee.
++ */
++static int ptracer_exception_found(struct task_struct *tracer,
++				   struct task_struct *tracee)
++{
++	int rc = 0;
++	struct ptrace_relation *relation;
++	struct task_struct *parent = NULL;
++
++	spin_lock(&ptracer_relations_lock);
++	list_for_each_entry(relation, &ptracer_relations, node)
++		if (relation->tracee == tracee) {
++			parent = relation->tracer;
++			break;
++		}
++	if (task_is_descendant(parent, tracer))
++		rc = 1;
++	spin_unlock(&ptracer_relations_lock);
++
++	return rc;
++}
++
+ /**
+  * yama_ptrace_access_check - validate PTRACE_ATTACH calls
+- * @child: child task pointer
++ * @child: task that current task is attempting to PTRACE
+  * @mode: ptrace attach mode
+  *
+  * Returns 0 if following the ptrace is allowed, -ve on error.
+@@ -32,27 +204,20 @@ static int yama_ptrace_access_check(struct task_struct *child,
  {
- 	return security_ops->cred_alloc_blank(cred, gfp);
+ 	int rc;
+ 
++	/* If standard caps disallows it, so does Yama.  We should
++	 * should only tighten restrictions further.
++	 */
+ 	rc = cap_ptrace_access_check(child, mode);
+-	if (rc != 0)
++	if (rc)
+ 		return rc;
+ 
+ 	/* require ptrace target be a child of ptracer on attach */
+-	if (mode == PTRACE_MODE_ATTACH && ptrace_scope &&
+-	    !capable(CAP_SYS_PTRACE)) {
+-		struct task_struct *walker = child;
+-
+-		rcu_read_lock();
+-		read_lock(&tasklist_lock);
+-		while (walker->pid > 0) {
+-			if (walker == current)
+-				break;
+-			walker = walker->real_parent;
+-		}
+-		if (walker->pid == 0)
+-			rc = -EPERM;
+-		read_unlock(&tasklist_lock);
+-		rcu_read_unlock();
+-	}
++	if (mode == PTRACE_MODE_ATTACH &&
++	    ptrace_scope &&
++	    !capable(CAP_SYS_PTRACE) &&
++	    !task_is_descendant(current, child) &&
++	    !ptracer_exception_found(current, child))
++		rc = -EPERM;
+ 
+ 	if (rc) {
+ 		char name[sizeof(current->comm)];
+@@ -170,6 +335,8 @@ static struct security_operations yama_ops = {
+ 	.ptrace_access_check =	yama_ptrace_access_check,
+ 	.inode_follow_link =	yama_inode_follow_link,
+ 	.path_link =		yama_path_link,
++	.task_prctl =		yama_task_prctl,
++	.task_free =		yama_task_free,
+ };
+ 
+ #ifdef CONFIG_SYSCTL
+@@ -221,6 +388,8 @@ static __init int yama_init(void)
+ 
+ 	printk(KERN_INFO "Yama: becoming mindful.\n");
+ 
++	spin_lock_init(&ptracer_relations_lock);
++
+ 	if (register_security(&yama_ops))
+ 		panic("Yama: kernel registration failed.\n");
+ 
 -- 
 1.7.1
 
