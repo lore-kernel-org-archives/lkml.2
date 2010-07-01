@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab0GAHQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 03:16:24 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:32027 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996Ab0GAHQW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 03:16:22 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6029"; a="45995234"
-Message-ID: <4C2C40C2.50106@codeaurora.org>
-Date: Thu, 01 Jul 2010 00:16:18 -0700
-From: Zach Pfeffer <zpfeffer@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1754222Ab0GAH0S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 03:26:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50716 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754044Ab0GAH0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 03:26:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,518,1272870000"; 
+   d="scan'208";a="635315131"
+Message-ID: <4C2C4319.6090906@intel.com>
+Date: Thu, 01 Jul 2010 00:26:17 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@Oracle.COM>
-CC: mel@csn.ul.ie, andi@firstfloor.org, dwalker@codeaurora.org,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3] mm: iommu: An API to unify IOMMU, CPU and device memory
- management
-References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <20100630164058.aa6aa3a2.randy.dunlap@oracle.com>
-In-Reply-To: <20100630164058.aa6aa3a2.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+CC: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	 <4C29420D.2010406@intel.com>	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	 <4C2A8879.8010000@intel.com>	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	 <4C2AC55E.3040303@intel.com>	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	 <1277923422.16256.8.camel@localhost>  <4C2B9DAC.1030806@intel.com>	 <1277928125.18854.0.camel@localhost>  <4C2BBACF.3080405@intel.com>	 <1277965264.18854.16.camel@localhost>  <4C2C3B07.7050200@intel.com> <1277968336.4945.3.camel@localhost>
+In-Reply-To: <1277968336.4945.3.camel@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for the corrections. I'm correcting them now. Some responses:
+On 7/1/2010 12:12 AM, Woodhouse, David wrote:
+> On Thu, 2010-07-01 at 07:51 +0100, Williams, Dan J wrote:
+>> This version of the device only exists on the 5400 chipset and always
+>> has its own iommu, but since other platforms get the DMAR entry right I
+>> think this hammer is too big?  Wouldn't this break VT-d operation on
+>> non-busted platforms?
+>
+> That just means we have to get the quirk right. Does 'this version' of
+> the device have its own PCI ID? We can always fall back to checking the
+> ID of the device at 0000:00:00.0 to check which chipset we're on.
+>
 
-Randy Dunlap wrote:
->> +    struct vcm *vcm_create(size_t start_addr, size_t len);
-> 
-> Seems odd to use size_t for start_addr.
+PCI_DEVICE_ID_INTEL_IOAT_SNB only exists on this chipset and to date 
+only "MacPro3,1" platforms have this problem.
 
-I used size_t because I wanted to allow the start_addr the same range
-as len. Is there a better type to use? I see 'unsigned long' used
-throughout the mm code. Perhaps that's better for both the start_addr
-and len.
+>> Alternatively I can just catch this failure earlier in the init process
+>> and fail the driver load with a grumble printk about broken bios...
+>> instead of the current BUG_ON() that is meant to catch runtime catastrophes.
+>
+> Please use WARN_TAINT(TAINT_FIRMWARE_WORKAROUND). That way the
+> statistics end up in kerneloops.org and we have found that extremely
+> useful when LARTing the offending vendors.
+>
 
+Good to know, thanks.
 
->> +A Reservation is created and destroyed with:
->> +
->> +    struct res *vcm_reserve(struct vcm *vcm, size_t len, uint32_t attr);
-> 
-> s/uint32_t/u32/ ?
-
-Sure.
-
-
->> +    Associate and activate all three to their respective devices:
->> +
->> +        avcm_iommu = vcm_assoc(vcm_iommu, dev_iommu, attr0);
->> +        avcm_onetoone = vcm_assoc(vcm_onetoone, dev_onetoone, attr1);
->> +        avcm_vmm = vcm_assoc(vcm_vmm, dev_cpu, attr2);
-> 
-> error handling on vcm_assoc() failures?
-
-I'll add the deassociate call to the example.
-
-
->> +        res_iommu = vcm_reserve(vcm_iommu, SZ_2MB + SZ_4K, attr);
->> +        res_onetoone = vcm_reserve(vcm_onetoone, SZ_2MB + SZ_4K, attr);
->> +        res_vmm = vcm_reserve(vcm_vmm, SZ_2MB + SZ_4K, attr);
-> 
-> error handling?
-
-I'll add it here too.
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+--
+Dan
