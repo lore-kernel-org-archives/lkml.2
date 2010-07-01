@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757015Ab0GASNk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:13:40 -0400
-Received: from kroah.org ([198.145.64.141]:60053 "EHLO coco.kroah.org"
+	id S1757099Ab0GASNm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:13:42 -0400
+Received: from kroah.org ([198.145.64.141]:60036 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755034Ab0GASKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:10:51 -0400
+	id S1754914Ab0GASKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:10:48 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:57 2010
-Message-Id: <20100701172857.381949596@clark.site>
+Message-Id: <20100701172857.134213426@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:27:00 -0700
+Date: Thu, 01 Jul 2010 10:26:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jiri Kosina <jkosina@suse.cz>, Corey Minyard <minyard@acm.org>
-Subject: [11/23] ipmi: handle run_to_completion properly in deliver_recv_msg()
+       NeilBrown <neilb@suse.de>
+Subject: [08/23] md: Fix read balancing in RAID1 and RAID10 on drives > 2TB
 In-Reply-To: <20100701175134.GA2098@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: NeilBrown <neilb@suse.de>
 
-commit a747c5abc329611220f16df0bb4cf0ca4a7fdf0c upstream.
+commit af3a2cd6b8a479345786e7fe5e199ad2f6240e56 upstream.
 
-If run_to_completion flag is set, it means that we are running in a
-single-threaded mode, and thus no locks are held.
+read_balance uses a "unsigned long" for a sector number which
+will get truncated beyond 2TB.
+This will cause read-balancing to be non-optimal, and can cause
+data to be read from the 'wrong' branch during a resync.  This has a
+very small chance of returning wrong data.
 
-This fixes a deadlock when IPMI notifier is being called during panic.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Corey Minyard <minyard@acm.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Jordan Russell <jr-list-2010@quo.to>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/ipmi/ipmi_si_intf.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/md/raid1.c  |    4 ++--
+ drivers/md/raid10.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -313,9 +313,14 @@ static void deliver_recv_msg(struct smi_
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -413,7 +413,7 @@ static void raid1_end_write_request(stru
+  */
+ static int read_balance(conf_t *conf, r1bio_t *r1_bio)
  {
- 	/* Deliver the message to the upper layer with the lock
- 	   released. */
--	spin_unlock(&(smi_info->si_lock));
--	ipmi_smi_msg_received(smi_info->intf, msg);
--	spin_lock(&(smi_info->si_lock));
-+
-+	if (smi_info->run_to_completion) {
-+		ipmi_smi_msg_received(smi_info->intf, msg);
-+	} else {
-+		spin_unlock(&(smi_info->si_lock));
-+		ipmi_smi_msg_received(smi_info->intf, msg);
-+		spin_lock(&(smi_info->si_lock));
-+	}
- }
+-	const unsigned long this_sector = r1_bio->sector;
++	const sector_t this_sector = r1_bio->sector;
+ 	int new_disk = conf->last_used, disk = new_disk;
+ 	int wonly_disk = -1;
+ 	const int sectors = r1_bio->sectors;
+@@ -429,7 +429,7 @@ static int read_balance(conf_t *conf, r1
+  retry:
+ 	if (conf->mddev->recovery_cp < MaxSector &&
+ 	    (this_sector + sectors >= conf->next_resync)) {
+-		/* Choose the first operation device, for consistancy */
++		/* Choose the first operational device, for consistancy */
+ 		new_disk = 0;
  
- static void return_hosed_msg(struct smi_info *smi_info, int cCode)
+ 		for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -490,7 +490,7 @@ static int raid10_mergeable_bvec(struct
+  */
+ static int read_balance(conf_t *conf, r10bio_t *r10_bio)
+ {
+-	const unsigned long this_sector = r10_bio->sector;
++	const sector_t this_sector = r10_bio->sector;
+ 	int disk, slot, nslot;
+ 	const int sectors = r10_bio->sectors;
+ 	sector_t new_distance, current_distance;
 
 
