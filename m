@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab0GAVdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:33:08 -0400
-Received: from kroah.org ([198.145.64.141]:33171 "EHLO coco.kroah.org"
+	id S933391Ab0GAVlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:41:45 -0400
+Received: from kroah.org ([198.145.64.141]:32923 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759010Ab0GAVPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:00 2010
-Message-Id: <20100701174300.821159901@clark.site>
+	id S1759144Ab0GAVO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:28 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:56 2010
+Message-Id: <20100701174256.806539642@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:19 -0700
+Date: Thu, 01 Jul 2010 10:43:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [169/200] perf_events: Fix races and clean up perf_event and perf_mmap_data interaction
+       Jeff Moyer <jmoyer@redhat.com>, Zach Brown <zach.brown@oracle.com>
+Subject: [123/200] compat: factor out compat_rw_copy_check_uvector from compat_do_readv_writev
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,453 +25,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit ac9721f3f54b27a16c7e1afb2481e7ee95a70318 upstream.
+commit b83733639a494d5f42fa00a2506563fbd2d3015d upstream.
 
-In order to move toward separate buffer objects, rework the whole
-perf_mmap_data construct to be a more self-sufficient entity, one
-with its own lifetime rules.
+It was reported in http://lkml.org/lkml/2010/3/8/309 that 32 bit readv and
+writev AIO operations were not functioning properly.  It turns out that
+the code to convert the 32bit io vectors to 64 bits was never written.
+The results of that can be pretty bad, but in my testing, it mostly ended
+up in generating EFAULT as we walked off the list of I/O vectors provided.
 
-This greatly sanitizes the whole output redirection code, which
-was riddled with bugs and races.
+This patch set fixes the problem in my environment.  are greatly
+appreciated.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+This patch:
+
+Factor out code that will be used by both compat_do_readv_writev and the
+compat aio submission code paths.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Reported-by: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Zach Brown <zach.brown@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- include/linux/perf_event.h |    5 -
- kernel/perf_event.c        |  217 ++++++++++++++++++++++++++-------------------
- 2 files changed, 129 insertions(+), 93 deletions(-)
+ fs/compat.c            |  130 +++++++++++++++++++++++++++++--------------------
+ include/linux/compat.h |    4 +
+ 2 files changed, 81 insertions(+), 53 deletions(-)
 
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -531,6 +531,7 @@ enum perf_event_active_state {
- struct file;
- 
- struct perf_mmap_data {
-+	atomic_t			refcount;
- 	struct rcu_head			rcu_head;
- #ifdef CONFIG_PERF_USE_VMALLOC
- 	struct work_struct		work;
-@@ -538,7 +539,6 @@ struct perf_mmap_data {
- 	int				data_order;
- 	int				nr_pages;	/* nr of data pages  */
- 	int				writable;	/* are we writable   */
--	int				nr_locked;	/* nr pages mlocked  */
- 
- 	atomic_t			poll;		/* POLL_ for wakeups */
- 	atomic_t			events;		/* event_id limit       */
-@@ -582,7 +582,6 @@ struct perf_event {
- 	int				nr_siblings;
- 	int				group_flags;
- 	struct perf_event		*group_leader;
--	struct perf_event		*output;
- 	const struct pmu		*pmu;
- 
- 	enum perf_event_active_state	state;
-@@ -643,6 +642,8 @@ struct perf_event {
- 	/* mmap bits */
- 	struct mutex			mmap_mutex;
- 	atomic_t			mmap_count;
-+	int				mmap_locked;
-+	struct user_struct		*mmap_user;
- 	struct perf_mmap_data		*data;
- 
- 	/* poll related */
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -1832,6 +1832,7 @@ static void free_event_rcu(struct rcu_he
- }
- 
- static void perf_pending_sync(struct perf_event *event);
-+static void perf_mmap_data_put(struct perf_mmap_data *data);
- 
- static void free_event(struct perf_event *event)
- {
-@@ -1847,9 +1848,9 @@ static void free_event(struct perf_event
- 			atomic_dec(&nr_task_events);
- 	}
- 
--	if (event->output) {
--		fput(event->output->filp);
--		event->output = NULL;
-+	if (event->data) {
-+		perf_mmap_data_put(event->data);
-+		event->data = NULL;
- 	}
- 
- 	if (event->destroy)
-@@ -2154,7 +2155,27 @@ unlock:
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -568,6 +568,79 @@ out:
  	return ret;
  }
  
--static int perf_event_set_output(struct perf_event *event, int output_fd);
-+static const struct file_operations perf_fops;
++/* A write operation does a read from user space and vice versa */
++#define vrfy_dir(type) ((type) == READ ? VERIFY_WRITE : VERIFY_READ)
 +
-+static struct perf_event *perf_fget_light(int fd, int *fput_needed)
++ssize_t compat_rw_copy_check_uvector(int type,
++		const struct compat_iovec __user *uvector, unsigned long nr_segs,
++		unsigned long fast_segs, struct iovec *fast_pointer,
++		struct iovec **ret_pointer)
 +{
-+	struct file *file;
++	compat_ssize_t tot_len;
++	struct iovec *iov = *ret_pointer = fast_pointer;
++	ssize_t ret = 0;
++	int seg;
 +
-+	file = fget_light(fd, fput_needed);
-+	if (!file)
-+		return ERR_PTR(-EBADF);
++	/*
++	 * SuS says "The readv() function *may* fail if the iovcnt argument
++	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
++	 * traditionally returned zero for zero segments, so...
++	 */
++	if (nr_segs == 0)
++		goto out;
 +
-+	if (file->f_op != &perf_fops) {
-+		fput_light(file, *fput_needed);
-+		*fput_needed = 0;
-+		return ERR_PTR(-EBADF);
-+	}
-+
-+	return file->private_data;
-+}
-+
-+static int perf_event_set_output(struct perf_event *event,
-+				 struct perf_event *output_event);
- static int perf_event_set_filter(struct perf_event *event, void __user *arg);
- 
- static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-@@ -2181,7 +2202,23 @@ static long perf_ioctl(struct file *file
- 		return perf_event_period(event, (u64 __user *)arg);
- 
- 	case PERF_EVENT_IOC_SET_OUTPUT:
--		return perf_event_set_output(event, arg);
-+	{
-+		struct perf_event *output_event = NULL;
-+		int fput_needed = 0;
-+		int ret;
-+
-+		if (arg != -1) {
-+			output_event = perf_fget_light(arg, &fput_needed);
-+			if (IS_ERR(output_event))
-+				return PTR_ERR(output_event);
-+		}
-+
-+		ret = perf_event_set_output(event, output_event);
-+		if (output_event)
-+			fput_light(output_event->filp, fput_needed);
-+
-+		return ret;
-+	}
- 
- 	case PERF_EVENT_IOC_SET_FILTER:
- 		return perf_event_set_filter(event, (void __user *)arg);
-@@ -2306,8 +2343,6 @@ perf_mmap_data_alloc(struct perf_event *
- 	unsigned long size;
- 	int i;
- 
--	WARN_ON(atomic_read(&event->mmap_count));
--
- 	size = sizeof(struct perf_mmap_data);
- 	size += nr_pages * sizeof(void *);
- 
-@@ -2414,8 +2449,6 @@ perf_mmap_data_alloc(struct perf_event *
- 	unsigned long size;
- 	void *all_buf;
- 
--	WARN_ON(atomic_read(&event->mmap_count));
--
- 	size = sizeof(struct perf_mmap_data);
- 	size += sizeof(void *);
- 
-@@ -2495,7 +2528,7 @@ perf_mmap_data_init(struct perf_event *e
- 	if (!data->watermark)
- 		data->watermark = max_size / 2;
- 
--
-+	atomic_set(&data->refcount, 1);
- 	rcu_assign_pointer(event->data, data);
- }
- 
-@@ -2507,13 +2540,26 @@ static void perf_mmap_data_free_rcu(stru
- 	perf_mmap_data_free(data);
- }
- 
--static void perf_mmap_data_release(struct perf_event *event)
-+static struct perf_mmap_data *perf_mmap_data_get(struct perf_event *event)
- {
--	struct perf_mmap_data *data = event->data;
-+	struct perf_mmap_data *data;
-+
-+	rcu_read_lock();
-+	data = rcu_dereference(event->data);
-+	if (data) {
-+		if (!atomic_inc_not_zero(&data->refcount))
-+			data = NULL;
-+	}
-+	rcu_read_unlock();
- 
--	WARN_ON(atomic_read(&event->mmap_count));
-+	return data;
-+}
-+
-+static void perf_mmap_data_put(struct perf_mmap_data *data)
-+{
-+	if (!atomic_dec_and_test(&data->refcount))
-+		return;
- 
--	rcu_assign_pointer(event->data, NULL);
- 	call_rcu(&data->rcu_head, perf_mmap_data_free_rcu);
- }
- 
-@@ -2528,15 +2574,18 @@ static void perf_mmap_close(struct vm_ar
- {
- 	struct perf_event *event = vma->vm_file->private_data;
- 
--	WARN_ON_ONCE(event->ctx->parent_ctx);
- 	if (atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex)) {
- 		unsigned long size = perf_data_size(event->data);
--		struct user_struct *user = current_user();
-+		struct user_struct *user = event->mmap_user;
-+		struct perf_mmap_data *data = event->data;
- 
- 		atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
--		vma->vm_mm->locked_vm -= event->data->nr_locked;
--		perf_mmap_data_release(event);
-+		vma->vm_mm->locked_vm -= event->mmap_locked;
-+		rcu_assign_pointer(event->data, NULL);
- 		mutex_unlock(&event->mmap_mutex);
-+
-+		perf_mmap_data_put(data);
-+		free_uid(user);
- 	}
- }
- 
-@@ -2580,13 +2629,10 @@ static int perf_mmap(struct file *file,
- 
- 	WARN_ON_ONCE(event->ctx->parent_ctx);
- 	mutex_lock(&event->mmap_mutex);
--	if (event->output) {
--		ret = -EINVAL;
--		goto unlock;
--	}
--
--	if (atomic_inc_not_zero(&event->mmap_count)) {
--		if (nr_pages != event->data->nr_pages)
-+	if (event->data) {
-+		if (event->data->nr_pages == nr_pages)
-+			atomic_inc(&event->data->refcount);
-+		else
- 			ret = -EINVAL;
- 		goto unlock;
- 	}
-@@ -2618,21 +2664,23 @@ static int perf_mmap(struct file *file,
- 	WARN_ON(event->data);
- 
- 	data = perf_mmap_data_alloc(event, nr_pages);
--	ret = -ENOMEM;
--	if (!data)
-+	if (!data) {
++	ret = -EINVAL;
++	if (nr_segs > UIO_MAXIOV || nr_segs < 0)
++		goto out;
++	if (nr_segs > fast_segs) {
 +		ret = -ENOMEM;
- 		goto unlock;
-+	}
- 
--	ret = 0;
- 	perf_mmap_data_init(event, data);
--
--	atomic_set(&event->mmap_count, 1);
--	atomic_long_add(user_extra, &user->locked_vm);
--	vma->vm_mm->locked_vm += extra;
--	event->data->nr_locked = extra;
- 	if (vma->vm_flags & VM_WRITE)
- 		event->data->writable = 1;
- 
-+	atomic_long_add(user_extra, &user->locked_vm);
-+	event->mmap_locked = extra;
-+	event->mmap_user = get_current_user();
-+	vma->vm_mm->locked_vm += event->mmap_locked;
-+
- unlock:
-+	if (!ret)
-+		atomic_inc(&event->mmap_count);
- 	mutex_unlock(&event->mmap_mutex);
- 
- 	vma->vm_flags |= VM_RESERVED;
-@@ -2962,7 +3010,6 @@ int perf_output_begin(struct perf_output
- 		      struct perf_event *event, unsigned int size,
- 		      int nmi, int sample)
- {
--	struct perf_event *output_event;
- 	struct perf_mmap_data *data;
- 	unsigned long tail, offset, head;
- 	int have_lost;
-@@ -2979,10 +3026,6 @@ int perf_output_begin(struct perf_output
- 	if (event->parent)
- 		event = event->parent;
- 
--	output_event = rcu_dereference(event->output);
--	if (output_event)
--		event = output_event;
--
- 	data = rcu_dereference(event->data);
- 	if (!data)
- 		goto out;
-@@ -4746,54 +4789,41 @@ err_size:
- 	goto out;
- }
- 
--static int perf_event_set_output(struct perf_event *event, int output_fd)
-+static int
-+perf_event_set_output(struct perf_event *event, struct perf_event *output_event)
- {
--	struct perf_event *output_event = NULL;
--	struct file *output_file = NULL;
--	struct perf_event *old_output;
--	int fput_needed = 0;
-+	struct perf_mmap_data *data = NULL, *old_data = NULL;
- 	int ret = -EINVAL;
- 
--	if (!output_fd)
-+	if (!output_event)
- 		goto set;
- 
--	output_file = fget_light(output_fd, &fput_needed);
--	if (!output_file)
--		return -EBADF;
--
--	if (output_file->f_op != &perf_fops)
--		goto out;
--
--	output_event = output_file->private_data;
--
--	/* Don't chain output fds */
--	if (output_event->output)
--		goto out;
--
--	/* Don't set an output fd when we already have an output channel */
--	if (event->data)
-+	/* don't allow circular references */
-+	if (event == output_event)
- 		goto out;
- 
--	atomic_long_inc(&output_file->f_count);
--
- set:
- 	mutex_lock(&event->mmap_mutex);
--	old_output = event->output;
--	rcu_assign_pointer(event->output, output_event);
--	mutex_unlock(&event->mmap_mutex);
-+	/* Can't redirect output if we've got an active mmap() */
-+	if (atomic_read(&event->mmap_count))
-+		goto unlock;
- 
--	if (old_output) {
--		/*
--		 * we need to make sure no existing perf_output_*()
--		 * is still referencing this event.
--		 */
--		synchronize_rcu();
--		fput(old_output->filp);
-+	if (output_event) {
-+		/* get the buffer we want to redirect to */
-+		data = perf_mmap_data_get(output_event);
-+		if (!data)
-+			goto unlock;
- 	}
- 
-+	old_data = event->data;
-+	rcu_assign_pointer(event->data, data);
- 	ret = 0;
-+unlock:
-+	mutex_unlock(&event->mmap_mutex);
-+
-+	if (old_data)
-+		perf_mmap_data_put(old_data);
- out:
--	fput_light(output_file, fput_needed);
- 	return ret;
- }
- 
-@@ -4809,7 +4839,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		struct perf_event_attr __user *, attr_uptr,
- 		pid_t, pid, int, cpu, int, group_fd, unsigned long, flags)
- {
--	struct perf_event *event, *group_leader;
-+	struct perf_event *event, *group_leader = NULL, *output_event = NULL;
- 	struct perf_event_attr attr;
- 	struct perf_event_context *ctx;
- 	struct file *event_file = NULL;
-@@ -4840,6 +4870,19 @@ SYSCALL_DEFINE5(perf_event_open,
- 	if (event_fd < 0)
- 		return event_fd;
- 
-+	if (group_fd != -1) {
-+		group_leader = perf_fget_light(group_fd, &fput_needed);
-+		if (IS_ERR(group_leader)) {
-+			err = PTR_ERR(group_leader);
-+			goto err_put_context;
++		iov = kmalloc(nr_segs*sizeof(struct iovec), GFP_KERNEL);
++		if (iov == NULL) {
++			*ret_pointer = fast_pointer;
++			goto out;
 +		}
-+		group_file = group_leader->filp;
-+		if (flags & PERF_FLAG_FD_OUTPUT)
-+			output_event = group_leader;
-+		if (flags & PERF_FLAG_FD_NO_GROUP)
-+			group_leader = NULL;
 +	}
++	*ret_pointer = iov;
 +
- 	/*
- 	 * Get the target context (task or percpu):
- 	 */
-@@ -4852,16 +4895,9 @@ SYSCALL_DEFINE5(perf_event_open,
- 	/*
- 	 * Look up the group leader (we will attach this event to it):
- 	 */
--	group_leader = NULL;
--	if (group_fd != -1 && !(flags & PERF_FLAG_FD_NO_GROUP)) {
-+	if (group_leader) {
- 		err = -EINVAL;
--		group_file = fget_light(group_fd, &fput_needed);
--		if (!group_file)
--			goto err_put_context;
--		if (group_file->f_op != &perf_fops)
--			goto err_put_context;
- 
--		group_leader = group_file->private_data;
- 		/*
- 		 * Do not allow a recursive hierarchy (this new sibling
- 		 * becoming part of another group-sibling):
-@@ -4883,9 +4919,16 @@ SYSCALL_DEFINE5(perf_event_open,
- 
- 	event = perf_event_alloc(&attr, cpu, ctx, group_leader,
- 				     NULL, NULL, GFP_KERNEL);
--	err = PTR_ERR(event);
--	if (IS_ERR(event))
-+	if (IS_ERR(event)) {
-+		err = PTR_ERR(event);
- 		goto err_put_context;
-+	}
++	/*
++	 * Single unix specification:
++	 * We should -EINVAL if an element length is not >= 0 and fitting an
++	 * ssize_t.  The total length is fitting an ssize_t
++	 *
++	 * Be careful here because iov_len is a size_t not an ssize_t
++	 */
++	tot_len = 0;
++	ret = -EINVAL;
++	for (seg = 0; seg < nr_segs; seg++) {
++		compat_ssize_t tmp = tot_len;
++		compat_uptr_t buf;
++		compat_ssize_t len;
 +
-+	if (output_event) {
-+		err = perf_event_set_output(event, output_event);
-+		if (err)
-+			goto err_free_put_context;
++		if (__get_user(len, &uvector->iov_len) ||
++		   __get_user(buf, &uvector->iov_base)) {
++			ret = -EFAULT;
++			goto out;
++		}
++		if (len < 0)	/* size_t not fitting in compat_ssize_t .. */
++			goto out;
++		tot_len += len;
++		if (tot_len < tmp) /* maths overflow on the compat_ssize_t */
++			goto out;
++		if (!access_ok(vrfy_dir(type), buf, len)) {
++			ret = -EFAULT;
++			goto out;
++		}
++		iov->iov_base = compat_ptr(buf);
++		iov->iov_len = (compat_size_t) len;
++		uvector++;
++		iov++;
 +	}
++	ret = tot_len;
++
++out:
++	return ret;
++}
++
+ static inline long
+ copy_iocb(long nr, u32 __user *ptr32, struct iocb __user * __user *ptr64)
+ {
+@@ -1077,70 +1150,21 @@ static ssize_t compat_do_readv_writev(in
+ {
+ 	compat_ssize_t tot_len;
+ 	struct iovec iovstack[UIO_FASTIOV];
+-	struct iovec *iov=iovstack, *vector;
++	struct iovec *iov;
+ 	ssize_t ret;
+-	int seg;
+ 	io_fn_t fn;
+ 	iov_fn_t fnv;
  
- 	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event, O_RDWR);
- 	if (IS_ERR(event_file)) {
-@@ -4893,12 +4936,6 @@ SYSCALL_DEFINE5(perf_event_open,
- 		goto err_free_put_context;
- 	}
- 
--	if (flags & PERF_FLAG_FD_OUTPUT) {
--		err = perf_event_set_output(event, group_fd);
--		if (err)
--			goto err_fput_free_put_context;
--	}
+-	/*
+-	 * SuS says "The readv() function *may* fail if the iovcnt argument
+-	 * was less than or equal to 0, or greater than {IOV_MAX}.  Linux has
+-	 * traditionally returned zero for zero segments, so...
+-	 */
+-	ret = 0;
+-	if (nr_segs == 0)
+-		goto out;
 -
- 	event->filp = event_file;
- 	WARN_ON_ONCE(ctx->parent_ctx);
- 	mutex_lock(&ctx->mutex);
-@@ -4916,8 +4953,6 @@ SYSCALL_DEFINE5(perf_event_open,
- 	fd_install(event_fd, event_file);
- 	return event_fd;
+-	/*
+-	 * First get the "struct iovec" from user memory and
+-	 * verify all the pointers
+-	 */
+ 	ret = -EINVAL;
+-	if ((nr_segs > UIO_MAXIOV) || (nr_segs <= 0))
+-		goto out;
+ 	if (!file->f_op)
+ 		goto out;
+-	if (nr_segs > UIO_FASTIOV) {
+-		ret = -ENOMEM;
+-		iov = kmalloc(nr_segs*sizeof(struct iovec), GFP_KERNEL);
+-		if (!iov)
+-			goto out;
+-	}
++
+ 	ret = -EFAULT;
+ 	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
+ 		goto out;
  
--err_fput_free_put_context:
--	fput(event_file);
- err_free_put_context:
- 	free_event(event);
- err_put_context:
+-	/*
+-	 * Single unix specification:
+-	 * We should -EINVAL if an element length is not >= 0 and fitting an
+-	 * ssize_t.  The total length is fitting an ssize_t
+-	 *
+-	 * Be careful here because iov_len is a size_t not an ssize_t
+-	 */
+-	tot_len = 0;
+-	vector = iov;
+-	ret = -EINVAL;
+-	for (seg = 0 ; seg < nr_segs; seg++) {
+-		compat_ssize_t tmp = tot_len;
+-		compat_ssize_t len;
+-		compat_uptr_t buf;
+-
+-		if (__get_user(len, &uvector->iov_len) ||
+-		    __get_user(buf, &uvector->iov_base)) {
+-			ret = -EFAULT;
+-			goto out;
+-		}
+-		if (len < 0)	/* size_t not fitting an compat_ssize_t .. */
+-			goto out;
+-		tot_len += len;
+-		if (tot_len < tmp) /* maths overflow on the compat_ssize_t */
+-			goto out;
+-		vector->iov_base = compat_ptr(buf);
+-		vector->iov_len = (compat_size_t) len;
+-		uvector++;
+-		vector++;
+-	}
++	tot_len = compat_rw_copy_check_uvector(type, uvector, nr_segs,
++					       UIO_FASTIOV, iovstack, &iov);
+ 	if (tot_len == 0) {
+ 		ret = 0;
+ 		goto out;
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -356,5 +356,9 @@ asmlinkage long compat_sys_newfstatat(un
+ asmlinkage long compat_sys_openat(unsigned int dfd, const char __user *filename,
+ 				  int flags, int mode);
+ 
++extern ssize_t compat_rw_copy_check_uvector(int type,
++		const struct compat_iovec __user *uvector, unsigned long nr_segs,
++		unsigned long fast_segs, struct iovec *fast_pointer,
++		struct iovec **ret_pointer);
+ #endif /* CONFIG_COMPAT */
+ #endif /* _LINUX_COMPAT_H */
 
 
