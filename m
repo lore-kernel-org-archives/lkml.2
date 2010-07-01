@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab0GAV6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:58:41 -0400
-Received: from kroah.org ([198.145.64.141]:33894 "EHLO coco.kroah.org"
+	id S1758755Ab0GAV7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:59:52 -0400
+Received: from kroah.org ([198.145.64.141]:33852 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758736Ab0GAVNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:14 -0400
+	id S1758887Ab0GAVNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:10 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:49 2010
-Message-Id: <20100701174249.630795573@clark.site>
+Message-Id: <20100701174249.217572108@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:08 -0700
+Date: Thu, 01 Jul 2010 10:42:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Johan Hovold <jhovold@gmail.com>
-Subject: [038/200] USB: kobil: fix memory leak
+       Christian Lamparter <chunkeey@googlemail.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [033/200] ar9170usb: add a couple more USB IDs
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit c0f631d1948658b27349545b2cbcb4b32f010c7a upstream.
+commit 94d0bbe849190255b93fede8eb46809a38f9b8bf upstream.
 
-An urb transfer buffer is allocated at every open but was never freed.
+This patch adds the following 5 entries to the usbid device table:
 
-This driver is a bit of a mess...
+ * Netgear WNA1000
+ * Proxim ORiNOCO Dual Band 802.11n USB Adapter
+ * 3Com Dual Band 802.11n USB Adapter
+ * H3C Dual Band 802.11n USB Adapter
+ * WNC Generic 11n USB dongle
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/kobil_sct.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ar9170/usb.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/usb/serial/kobil_sct.c
-+++ b/drivers/usb/serial/kobil_sct.c
-@@ -345,7 +345,8 @@ static void kobil_close(struct usb_seria
- 
- 	/* FIXME: Add rts/dtr methods */
- 	if (port->write_urb) {
--		usb_kill_urb(port->write_urb);
-+		usb_poison_urb(port->write_urb);
-+		kfree(port->write_urb->transfer_buffer);
- 		usb_free_urb(port->write_urb);
- 		port->write_urb = NULL;
- 	}
+--- a/drivers/net/wireless/ath/ar9170/usb.c
++++ b/drivers/net/wireless/ath/ar9170/usb.c
+@@ -67,18 +67,28 @@ static struct usb_device_id ar9170_usb_i
+ 	{ USB_DEVICE(0x0cf3, 0x1001) },
+ 	/* TP-Link TL-WN821N v2 */
+ 	{ USB_DEVICE(0x0cf3, 0x1002) },
++	/* 3Com Dual Band 802.11n USB Adapter */
++	{ USB_DEVICE(0x0cf3, 0x1010) },
++	/* H3C Dual Band 802.11n USB Adapter */
++	{ USB_DEVICE(0x0cf3, 0x1011) },
+ 	/* Cace Airpcap NX */
+ 	{ USB_DEVICE(0xcace, 0x0300) },
+ 	/* D-Link DWA 160 A1 */
+ 	{ USB_DEVICE(0x07d1, 0x3c10) },
+ 	/* D-Link DWA 160 A2 */
+ 	{ USB_DEVICE(0x07d1, 0x3a09) },
++	/* Netgear WNA1000 */
++	{ USB_DEVICE(0x0846, 0x9040) },
+ 	/* Netgear WNDA3100 */
+ 	{ USB_DEVICE(0x0846, 0x9010) },
+ 	/* Netgear WN111 v2 */
+ 	{ USB_DEVICE(0x0846, 0x9001) },
+ 	/* Zydas ZD1221 */
+ 	{ USB_DEVICE(0x0ace, 0x1221) },
++	/* Proxim ORiNOCO 802.11n USB */
++	{ USB_DEVICE(0x1435, 0x0804) },
++	/* WNC Generic 11n USB Dongle */
++	{ USB_DEVICE(0x1435, 0x0326) },
+ 	/* ZyXEL NWD271N */
+ 	{ USB_DEVICE(0x0586, 0x3417) },
+ 	/* Z-Com UB81 BG */
 
 
