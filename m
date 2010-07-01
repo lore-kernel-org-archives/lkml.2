@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab0GAO3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 10:29:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35710 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753811Ab0GAO3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 10:29:08 -0400
-Message-ID: <4C2CA5C5.4040402@kernel.org>
-Date: Thu, 01 Jul 2010 16:27:17 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	id S1756393Ab0GAOfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 10:35:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46716 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754103Ab0GAOfm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 10:35:42 -0400
+Date: Thu, 1 Jul 2010 15:35:40 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Raffaele Recalcati <lamiaposta71@gmail.com>
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+       Raffaele Recalcati <raffaele.recalcati@bticino.it>,
+       Davide Bonfanti <davide.bonfanti@bticino.it>,
+       Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+       Takashi Iwai <tiwai@suse.de>,
+       Troy Kisky <troy.kisky@boundarydevices.com>,
+       alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] ASoC: DaVinci: Added two clocking possibilities to
+ McBSP (I2S)
+Message-ID: <20100701143540.GC8742@rakim.wolfsonmicro.main>
+References: <1277905678-4695-1-git-send-email-lamiaposta71@gmail.com>
+ <1277905678-4695-2-git-send-email-lamiaposta71@gmail.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Sridhar Samudrala <sri@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-References: <20100625101022.GA16321@redhat.com> <20100701110708.GA27368@redhat.com> <1277983179.1917.10.camel@laptop> <1277984603.1917.15.camel@laptop> <20100701115507.GA31333@redhat.com> <20100701122340.GB31333@redhat.com> <1277987657.1917.32.camel@laptop> <1277988395.1917.47.camel@laptop> <20100701130816.GB32223@redhat.com> <1277991024.1917.108.camel@laptop> <20100701133956.GD32223@redhat.com>
-In-Reply-To: <20100701133956.GD32223@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 01 Jul 2010 14:27:30 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277905678-4695-2-git-send-email-lamiaposta71@gmail.com>
+X-Cookie: Sign my PETITION.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Jun 30, 2010 at 03:47:56PM +0200, Raffaele Recalcati wrote:
 
-On 07/01/2010 03:39 PM, Michael S. Tsirkin wrote:
->> I think that's called kernel_thread() see
->> kernel/kthread.c:create_kthread().
->>
->> Doing the whole kthreadd dance and then copying bits and pieces back
->> sounds very fragile, so yeah, something like that should work.
-> 
-> Thanks!
-> Sridhar, Tejun, have the time to look into this approach?
+> +static int davinci_i2s_dai_set_clkdiv(struct snd_soc_dai *cpu_dai,
+> +				int div_id, int div)
+> +{
+> +	struct davinci_mcbsp_dev *dev = cpu_dai->private_data;
+> +	int srgr;
+> +
+> +	dev->clk_div = div;
+> +	return 0;
+> +}
 
-All that's necessary is shortcutting indirection through kthreadd.
-ie. An exported function which looks like the following,
+As previously mentioned this should check the div_id argument.
 
- struct kthread_clone_or_whatever(int (*threadfn).....)
- {
-	struct kthread_create_info create;
-	int pid;
+> +	switch (master) {
+> +	case SND_SOC_DAIFMT_CBS_CFS:
 
-	INIT create;
+...
 
-	pid = kernel_thread(kthread, &create, CLONE_FS...);
-	if (pid < 0)
-		return ERROR;
-	wait_for_completion(&create.done);
+> +	case SND_SOC_DAIFMT_CBM_CFS:
 
-	if (!IS_ERR(create.result))
-		SET NAME;
-	return create.result;
- }
+...
 
-It might be a good idea to make the function take extra clone flags
-but anyways once created cloned task can be treated the same way as
-other kthreads, so nothing else needs to be changed.
+> +	default:
+> +		/* Clock and frame sync given from external sources */
 
-Thanks.
+The two remaining options (_CBM_CFM and _CBS_CFM) are different, your
+description matches _CBM_CFM.
 
--- 
-tejun
+> +		if (master == SND_SOC_DAIFMT_CBS_CFS ||
+> +				master == SND_SOC_DAIFMT_CBS_CFM) {
+
+Switch statement again.
+
+> +	if (master == SND_SOC_DAIFMT_CBS_CFS ||
+> +			master == SND_SOC_DAIFMT_CBS_CFM) {
+> +		rcr |= DAVINCI_MCBSP_RCR_RFRLEN1(0);
+> +		xcr |= DAVINCI_MCBSP_XCR_XFRLEN1(0);
+> +	} else {
+
+...and another.  Please fix all these.
