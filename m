@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759348Ab0GAVa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:30:27 -0400
-Received: from kroah.org ([198.145.64.141]:33236 "EHLO coco.kroah.org"
+	id S933173Ab0GAV1s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:27:48 -0400
+Received: from kroah.org ([198.145.64.141]:33277 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759124Ab0GAVPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:23 -0400
+	id S933185Ab0GAVPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:15:37 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:02 2010
-Message-Id: <20100701174302.073506620@clark.site>
+Message-Id: <20100701174302.895625064@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:34 -0700
+Date: Thu, 01 Jul 2010 10:44:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Wei Yongjun <yjwei@cn.fujitsu.com>, Carsten Otte <cotte@de.ibm.com>,
-       Avi Kivity <avi@redhat.com>
-Subject: [184/200] KVM: s390: Fix possible memory leak of in kvm_arch_vcpu_create()
+       Glauber Costa <glommer@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: [194/200] KVM: Fix wallclock version writing race
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yjwei@cn.fujitsu.com>
+From: Avi Kivity <avi@redhat.com>
 
-This patch fixed possible memory leak in kvm_arch_vcpu_create()
-under s390, which would happen when kvm_arch_vcpu_create() fails.
+Wallclock writing uses an unprotected global variable to hold the version;
+this can cause one guest to interfere with another if both write their
+wallclock at the same time.
 
-Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
-Acked-by: Carsten Otte <cotte@de.ibm.com>
-Cc: stable@kernel.org
+Acked-by: Glauber Costa <glommer@redhat.com>
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-(Cherry-picked from commit 7b06bf2ffa15e119c7439ed0b024d44f66d7b605)
+(Cherry-picked from commit 9ed3c444ab8987c7b219173a2f7807e3f71e234e)
 ---
- arch/s390/kvm/kvm-s390.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/kvm/x86.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -341,11 +341,13 @@ struct kvm_vcpu *kvm_arch_vcpu_create(st
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -695,14 +695,22 @@ static int do_set_msr(struct kvm_vcpu *v
  
- 	rc = kvm_vcpu_init(vcpu, kvm, id);
- 	if (rc)
--		goto out_free_cpu;
-+		goto out_free_sie_block;
- 	VM_EVENT(kvm, 3, "create cpu %d at %p, sie block at %p", id, vcpu,
- 		 vcpu->arch.sie_block);
+ static void kvm_write_wall_clock(struct kvm *kvm, gpa_t wall_clock)
+ {
+-	static int version;
++	int version;
++	int r;
+ 	struct pvclock_wall_clock wc;
+ 	struct timespec boot;
  
- 	return vcpu;
-+out_free_sie_block:
-+	free_page((unsigned long)(vcpu->arch.sie_block));
- out_free_cpu:
- 	kfree(vcpu);
- out_nomem:
+ 	if (!wall_clock)
+ 		return;
+ 
+-	version++;
++	r = kvm_read_guest(kvm, wall_clock, &version, sizeof(version));
++	if (r)
++		return;
++
++	if (version & 1)
++		++version;  /* first time write, random junk */
++
++	++version;
+ 
+ 	kvm_write_guest(kvm, wall_clock, &version, sizeof(version));
+ 
 
 
