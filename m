@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757206Ab0GAPyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:54:15 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47045 "EHLO
+	id S1757240Ab0GAPyR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:54:17 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47044 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756762Ab0GAPyF (ORCPT
+	with ESMTP id S1756851Ab0GAPyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Jul 2010 11:54:05 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/21] perf_events: Handle persistent events accordingly
-Date: Thu,  1 Jul 2010 17:55:46 +0200
-Message-Id: <1277999763-20357-5-git-send-email-bp@amd64.org>
+Subject: [PATCH 02/21] mce: Add persistent events
+Date: Thu,  1 Jul 2010 17:55:44 +0200
+Message-Id: <1277999763-20357-3-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1277999763-20357-1-git-send-email-bp@amd64.org>
 References: <1277999763-20357-1-git-send-email-bp@amd64.org>
@@ -21,92 +21,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Add a persistent events flag which is passed to sys_perf_event_open().
-Also, teach the perf syscall to differentiate between previously
-allocated persistent events and new ones which are about to be created.
+Add the required glue to enable the mce_record tracepoint on boot thus
+simulating a persistent event with allocated buffers. Userspace daemon
+will hook into it later when booting is done.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- include/linux/perf_event.h |    5 +++--
- kernel/perf_event.c        |   28 +++++++++++++++++++++++++---
- 2 files changed, 28 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   89 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 89 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index cb242bd..1d7907a 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -452,8 +452,9 @@ enum perf_callchain_context {
- 	PERF_CONTEXT_MAX		= (__u64)-4095,
- };
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 18cc425..42d2808 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -95,6 +95,7 @@ static char			*mce_helper_argv[2] = { mce_helper, NULL };
  
--#define PERF_FLAG_FD_NO_GROUP	(1U << 0)
--#define PERF_FLAG_FD_OUTPUT	(1U << 1)
-+#define PERF_FLAG_FD_NO_GROUP		(1U << 0)
-+#define PERF_FLAG_FD_OUTPUT		(1U << 1)
-+#define PERF_FLAG_EVENT_PERSISTENT	(1U << 2)
+ static DECLARE_WAIT_QUEUE_HEAD(mce_wait);
+ static DEFINE_PER_CPU(struct mce, mces_seen);
++static DEFINE_PER_CPU(struct perf_event *, mce_event);
+ static int			cpu_missing;
  
- #ifdef __KERNEL__
  /*
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 168764b..8b41a4e 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -5107,7 +5107,9 @@ SYSCALL_DEFINE5(perf_event_open,
- 	int err;
- 
- 	/* for future expandability... */
--	if (flags & ~(PERF_FLAG_FD_NO_GROUP | PERF_FLAG_FD_OUTPUT))
-+	if (flags & ~(PERF_FLAG_FD_NO_GROUP |
-+		      PERF_FLAG_FD_OUTPUT |
-+		      PERF_FLAG_EVENT_PERSISTENT))
- 		return -EINVAL;
- 
- 	err = perf_copy_attr(attr_uptr, &attr);
-@@ -5175,8 +5177,23 @@ SYSCALL_DEFINE5(perf_event_open,
- 			goto err_put_context;
+@@ -2063,6 +2064,91 @@ static void __cpuinit mce_reenable_cpu(void *h)
  	}
+ }
  
--	event = perf_event_alloc(&attr, cpu, ctx, group_leader,
--				     NULL, NULL, GFP_KERNEL);
-+	if (flags & PERF_FLAG_EVENT_PERSISTENT) {
-+		mutex_lock(&ctx->mutex);
-+		raw_spin_lock(&ctx->lock);
++struct perf_event_attr pattr = {
++	.type	     = PERF_TYPE_TRACEPOINT,
++	.size	     = sizeof(pattr),
++	.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_CPU | PERF_SAMPLE_TIME,
++};
 +
-+		event = find_event_in_context(&attr, ctx);
++static int mcheck_enable_perf_event_on_cpu(int cpu)
++{
++	struct perf_event *event;
++	struct perf_buffer *buffer;
 +
-+		raw_spin_unlock(&ctx->lock);
-+		mutex_unlock(&ctx->mutex);
++	if (!event_mce_record.event.type) {
++		printk(KERN_ERR "mce: Tracepoint not enumerated yet!\n");
++		return -EINVAL;
++	}
++	pattr.config = event_mce_record.event.type;
++	pattr.sample_period = ULLONG_MAX;
 +
-+		if (!event) {
-+			printk(KERN_WARNING "Hmm, uninitialized persistent event?!");
-+			return -EINVAL;
++	event = perf_event_create_kernel_counter(&pattr, cpu, -1, NULL);
++	if (IS_ERR(event))
++		return -EINVAL;
++
++	buffer = perf_buffer_alloc(128, 0, cpu, 0);
++	if (IS_ERR(buffer))
++		goto err;
++
++	rcu_assign_pointer(event->buffer, buffer);
++	per_cpu(mce_event, cpu) = event;
++
++	perf_event_enable(event);
++
++	return 0;
++
++err:
++	perf_event_release_kernel(event);
++	return -EINVAL;
++}
++
++static void mcheck_disable_perf_event_on_cpu(int cpu)
++{
++	struct perf_event *event = per_cpu(mce_event, cpu);
++
++	if (!event)
++		return;
++
++	perf_event_disable(event);
++
++	if (event->buffer) {
++		perf_buffer_put(event->buffer);
++		rcu_assign_pointer(event->buffer, NULL);
++	}
++
++	per_cpu(mce_event, cpu) = NULL;
++
++	perf_event_release_kernel(event);
++}
++
++static int mcheck_init_perf_event(void)
++{
++	int cpu, i, err = 0;
++
++	get_online_cpus();
++
++	for_each_online_cpu(cpu) {
++		err = mcheck_enable_perf_event_on_cpu(cpu);
++		if (err) {
++			printk(KERN_ERR "mce: error initializing mce tracepoint"
++					" on cpu %d\n", cpu);
++
++			for (i = cpu - 1; i >= 0; i--)
++				mcheck_disable_perf_event_on_cpu(i);
 +		}
-+	} else
-+		event = perf_event_alloc(&attr, cpu, ctx, group_leader,
-+					 NULL, NULL, GFP_KERNEL);
++	}
 +
- 	if (IS_ERR(event)) {
- 		err = PTR_ERR(event);
- 		goto err_put_context;
-@@ -5195,6 +5212,10 @@ SYSCALL_DEFINE5(perf_event_open,
- 	}
- 
- 	event->filp = event_file;
++	put_online_cpus();
 +
-+	if (flags & PERF_FLAG_EVENT_PERSISTENT)
-+		goto out_drop_ref;
++	return err;
++}
 +
- 	WARN_ON_ONCE(ctx->parent_ctx);
- 	mutex_lock(&ctx->mutex);
- 	perf_install_in_context(ctx, event, cpu);
-@@ -5207,6 +5228,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 	list_add_tail(&event->owner_entry, &current->perf_event_list);
- 	mutex_unlock(&current->perf_event_mutex);
- 
-+out_drop_ref:
- 	/*
- 	 * Drop the reference on the group_event after placing the
- 	 * new event on the sibling_list. This ensures destruction
++/*
++ * This has to run after after event_trace_init() which is an fs_initcall()
++ * currently
++ */
++device_initcall(mcheck_init_perf_event);
++
+ /* Get notified when a cpu comes on/off. Be hotplug friendly. */
+ static int __cpuinit
+ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+@@ -2076,6 +2162,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		mce_create_device(cpu);
+ 		if (threshold_cpu_callback)
+ 			threshold_cpu_callback(action, cpu);
++		mcheck_enable_perf_event_on_cpu(cpu);
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+@@ -2087,6 +2174,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 	case CPU_DOWN_PREPARE_FROZEN:
+ 		del_timer_sync(t);
+ 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
++		mcheck_disable_perf_event_on_cpu(cpu);
+ 		break;
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_DOWN_FAILED_FROZEN:
+@@ -2096,6 +2184,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 			add_timer_on(t, cpu);
+ 		}
+ 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
++		mcheck_enable_perf_event_on_cpu(cpu);
+ 		break;
+ 	case CPU_POST_DEAD:
+ 		/* intentionally ignoring frozen here */
 -- 
 1.7.1
 
