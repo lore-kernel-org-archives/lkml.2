@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab0GAOgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 10:36:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44871 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756472Ab0GAOge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 10:36:34 -0400
-Date: Thu, 1 Jul 2010 16:33:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Sridhar Samudrala <sri@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-Message-ID: <20100701143325.GA10090@redhat.com>
-References: <20100625101022.GA16321@redhat.com> <20100701110708.GA27368@redhat.com> <1277983179.1917.10.camel@laptop> <1277984603.1917.15.camel@laptop> <20100701115507.GA31333@redhat.com> <20100701122340.GB31333@redhat.com> <1277987657.1917.32.camel@laptop> <1277988395.1917.47.camel@laptop> <20100701130816.GB32223@redhat.com> <1277991024.1917.108.camel@laptop>
+	id S1756560Ab0GAOgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 10:36:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46739 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756533Ab0GAOgk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 10:36:40 -0400
+Date: Thu, 1 Jul 2010 15:36:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Raffaele Recalcati <lamiaposta71@gmail.com>
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+       Raffaele Recalcati <raffaele.recalcati@bticino.it>,
+       Davide Bonfanti <davide.bonfanti@bticino.it>,
+       Russell King <linux@arm.linux.org.uk>,
+       Chaithrika U S <chaithrika@ti.com>,
+       Troy Kisky <troy.kisky@boundarydevices.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+       Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 2/3] ASoC: DaVinci: Added selection of clk input pin
+ for McBSP
+Message-ID: <20100701143638.GD8742@rakim.wolfsonmicro.main>
+References: <1277905678-4695-1-git-send-email-lamiaposta71@gmail.com>
+ <1277905678-4695-3-git-send-email-lamiaposta71@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1277991024.1917.108.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1277905678-4695-3-git-send-email-lamiaposta71@gmail.com>
+X-Cookie: Sign my PETITION.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01, Peter Zijlstra wrote:
->
-> On Thu, 2010-07-01 at 16:08 +0300, Michael S. Tsirkin wrote:
-> > Maybe it makes sense to add kthread_clone (in addition to
-> > kthread_create) that would do what you suggest?
-> > If yes, any hints on an implementation?
->
-> I think that's called kernel_thread() see
-> kernel/kthread.c:create_kthread().
+On Wed, Jun 30, 2010 at 03:47:57PM +0200, Raffaele Recalcati wrote:
 
-Well, strictly speaking kernel_thread() doesn't create the kernel thread.
-Unless the caller is the kernel thread. And daemonize() is deprecated.
-kernel_thread() just forks the CLONE_VM + flags child.
+> +	/* To be used when cpu gets clock from external pin */
+> +	int clk_input_pin;
+> +
 
-Oleg.
+As previously indicated please say how to use this.
 
+> +		default:
+> +			printk(KERN_ERR "%s:bad clk_input_pin\n", __func__);
+
+Use dev_err().
