@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab0GAUvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:51:40 -0400
-Received: from kroah.org ([198.145.64.141]:47662 "EHLO coco.kroah.org"
+	id S933012Ab0GAUwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:52:35 -0400
+Received: from kroah.org ([198.145.64.141]:47763 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932748Ab0GAUum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:42 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:34 2010
-Message-Id: <20100701173434.629734278@clark.site>
+	id S932786Ab0GAUu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:56 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:36 2010
+Message-Id: <20100701173436.072188984@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:39 -0700
+Date: Thu, 01 Jul 2010 10:34:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Moyer <jmoyer@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Larry Woodman <lwoodman@redhat.com>
-Subject: [patch 093/164] do_generic_file_read: clear page errors when issuing a fresh read of the page
+       Stephane Eranian <eranian@google.com>, peterz@infradead.org,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       robert.richter@amd.com, perfmon2-devel@lists.sf.net,
+       Ingo Molnar <mingo@elte.hu>
+Subject: [patch 110/164] perf_events: Fix resource leak in x86 __hw_perf_event_init()
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Stephane Eranian <eranian@google.com>
 
-commit 91803b499cca2fe558abad709ce83dc896b80950 upstream.
+commit 4b24a88b35e15e04bd8f2c5dda65b5dc8ebca05f upstream.
 
-I/O errors can happen due to temporary failures, like multipath
-errors or losing network contact with the iSCSI server. Because
-of that, the VM will retry readpage on the page.
+If reserve_pmc_hardware() succeeds but reserve_ds_buffers()
+fails, then we need to release_pmc_hardware. It won't be done
+by the destroy() callback because we return before setting it
+in case of error.
 
-However, do_generic_file_read does not clear PG_error.  This
-causes the system to be unable to actually use the data in the
-page cache page, even if the subsequent readpage completes
-successfully!
-
-The function filemap_fault has had a ClearPageError before
-readpage forever.  This patch simply adds the same to
-do_generic_file_read.
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Acked-by: Larry Woodman <lwoodman@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: paulus@samba.org
+Cc: davem@davemloft.net
+Cc: fweisbec@gmail.com
+Cc: robert.richter@amd.com
+Cc: perfmon2-devel@lists.sf.net
+LKML-Reference: <4ba1568b.15185e0a.182a.7802@mx.google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/filemap.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/kernel/cpu/perf_event.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1099,6 +1099,12 @@ page_not_up_to_date_locked:
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1060,8 +1060,11 @@ static int __hw_perf_event_init(struct p
+ 		if (atomic_read(&active_events) == 0) {
+ 			if (!reserve_pmc_hardware())
+ 				err = -EBUSY;
+-			else
++			else {
+ 				err = reserve_bts_hardware();
++				if (err)
++					release_pmc_hardware();
++			}
  		}
- 
- readpage:
-+		/*
-+		 * A previous I/O error may have been due to temporary
-+		 * failures, eg. multipath errors.
-+		 * PG_error will be set again if readpage fails.
-+		 */
-+		ClearPageError(page);
- 		/* Start the actual read. The read will unlock the page. */
- 		error = mapping->a_ops->readpage(filp, page);
- 
+ 		if (!err)
+ 			atomic_inc(&active_events);
 
 
