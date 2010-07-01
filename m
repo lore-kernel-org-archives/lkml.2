@@ -1,18 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab0GAJRQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 05:17:16 -0400
+	id S1754752Ab0GAJRc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 05:17:32 -0400
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:51113 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab0GAJRK (ORCPT
+	with ESMTP id S1754670Ab0GAJRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 05:17:10 -0400
-Date: Thu, 01 Jul 2010 11:17:47 +0200
+	Thu, 1 Jul 2010 05:17:12 -0400
+Date: Thu, 01 Jul 2010 11:17:46 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH] USB: gadget: storage_common: comments updated
+Subject: [PATCH 1/2] USB: gadget: mass/file storage: set serial number
 To: linux-usb@vger.kernel.org
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Message-id: <35e07b59ee0738c2019d2b81958890a472941a0e.1277902597.git.m.nazarewicz@samsung.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Greg KH <greg@kroah.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org,
+       Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+       stable <stable@kernel.org>
+Message-id: <c73431dbedd41f94c5f471fb5e466943cee870c1.1277974263.git.m.nazarewicz@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.1
 Content-type: TEXT/PLAIN
@@ -21,137 +26,243 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated comment to describe why printing macros are needed even
-thought they are copied form the composite.h.  Also, made multiline
-comments follow the coding standard.
+This commit adds iSerialNumber to all gadgets that use the Mass
+Storage Function.  It appears that Windows has problems when
+it is not set.
+
+Not to copy the same code all over again, a fsg_string_serial_fill()
+macro has been added to the storage_common.c file which is now also
+used in the File Storage Gadget.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Reported-by: Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
+Tested-by: Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
+Cc: stable <stable@kernel.org>
 ---
-The macros made me, the creator of the storage_common.c, wonder if they
-are required and if so what for so if I had doubts clarifying them may
-be especially valuable for others.
+Dries Van Puymbroeck reported problems with Windows when serial was
+not set.  This patch fikes this.  As a bug fix, it should get into
+the stable.
 
-At the same time, it's purely a comment and formatting update so I
-dunno if it's worth including in the kernel.
+This particular patch does not apply to the .33.5 nor .34 kernels so
+I've also prepered another patch for those versions.
 
- drivers/usb/gadget/storage_common.c |   60 ++++++++++++++++++++++++-----------
- 1 files changed, 41 insertions(+), 19 deletions(-)
+ drivers/usb/gadget/file_storage.c   |   10 +------
+ drivers/usb/gadget/mass_storage.c   |   47 +++++++++++++++-------------------
+ drivers/usb/gadget/multi.c          |    9 ++++++
+ drivers/usb/gadget/storage_common.c |   12 +++++++++
+ 4 files changed, 43 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index 04c462f..557b119 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -84,14 +84,23 @@
- #define LWARN(lun, fmt, args...)  dev_warn(&(lun)->dev, fmt, ## args)
- #define LINFO(lun, fmt, args...)  dev_info(&(lun)->dev, fmt, ## args)
+diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
+index 7993267..16decb8 100644
+--- a/drivers/usb/gadget/file_storage.c
++++ b/drivers/usb/gadget/file_storage.c
+@@ -3447,15 +3447,7 @@ static int __ref fsg_bind(struct usb_gadget *gadget)
+ 			init_utsname()->sysname, init_utsname()->release,
+ 			gadget->name);
  
--/* Keep those macros in sync with thos in
-- * include/linux/ubs/composite.h or else GCC will complain.  If they
-+/*
-+ * Keep those macros in sync with thos in
-+ * include/linux/usb/composite.h or else GCC will complain.  If they
-  * are identical (the same names of arguments, white spaces in the
-  * same places) GCC will allow redefinition otherwise (even if some
-- * white space is removed or added) warning will be issued.  No
-- * checking if those symbols is defined is performed because warning
-- * is desired when those macros were defined by someone else to mean
-- * something else. */
-+ * white space is removed or added) warning will be issued.
-+ *
-+ * Those macros are needed here because File Storage Gadget does not
-+ * include the composite.h header.  For composite gadgets those macros
-+ * are redundant since composite.h is included any way.
-+ *
-+ * No checking if those symbols is defined is performed because
-+ * warning is desired when those macros were defined to mean something
-+ * else.  In particular, we want those macros do the same thing in
-+ * File Storage Gadget and Mass Storage Function (and composite
-+ * gadgets using MSF).
-+ */
- #define DBG(d, fmt, args...)     dev_dbg(&(d)->gadget->dev , fmt , ## args)
- #define VDBG(d, fmt, args...)    dev_vdbg(&(d)->gadget->dev , fmt , ## args)
- #define ERROR(d, fmt, args...)   dev_err(&(d)->gadget->dev , fmt , ## args)
-@@ -313,9 +322,12 @@ struct fsg_buffhd {
- 	enum fsg_buffer_state		state;
- 	struct fsg_buffhd		*next;
+-	/* On a real device, serial[] would be loaded from permanent
+-	 * storage.  We just encode it from the driver version string. */
+-	for (i = 0; i < sizeof fsg_string_serial - 2; i += 2) {
+-		unsigned char		c = DRIVER_VERSION[i / 2];
+-
+-		if (!c)
+-			break;
+-		sprintf(&fsg_string_serial[i], "%02X", c);
+-	}
++	fsg_string_serial_fill(fsg_string_serial, DRIVER_VERSION);
  
--	/* The NetChip 2280 is faster, and handles some protocol faults
--	 * better, if we don't submit any short bulk-out read requests.
--	 * So we will record the intended request length here. */
-+	/*
-+	 * The NetChip 2280 is faster, and handles some protocol
-+	 * faults better, if we don't submit any short bulk-out read
-+	 * requests.  So we will record the intended request length
-+	 * here.
-+	 */
- 	unsigned int			bulk_out_intended_length;
+ 	fsg->thread_task = kthread_create(fsg_main_thread, fsg,
+ 			"file-storage-gadget");
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index 585f255..584d2ed 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -45,7 +45,7 @@
+ /*-------------------------------------------------------------------------*/
  
- 	struct usb_request		*inreq;
-@@ -395,8 +407,10 @@ fsg_intf_desc = {
- 	.iInterface =		FSG_STRING_INTERFACE,
- };
- 
--/* Three full-speed endpoint descriptors: bulk-in, bulk-out,
-- * and interrupt-in. */
-+/*
-+ * Three full-speed endpoint descriptors: bulk-in, bulk-out, and
-+ * interrupt-in.
-+ */
- 
- static struct usb_endpoint_descriptor
- fsg_fs_bulk_in_desc = {
-@@ -547,8 +561,10 @@ static struct usb_gadget_strings	fsg_stringtab = {
- 
-  /*-------------------------------------------------------------------------*/
- 
--/* If the next two routines are called while the gadget is registered,
-- * the caller must own fsg->filesem for writing. */
-+/*
-+ * If the next two routines are called while the gadget is registered,
-+ * the caller must own fsg->filesem for writing.
-+ */
- 
- static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
- {
-@@ -587,8 +603,10 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
- 		goto out;
- 	}
- 
--	/* If we can't read the file, it's no good.
--	 * If we can't write the file, use it read-only. */
-+	/*
-+	 * If we can't read the file, it's no good.
-+	 * If we can't write the file, use it read-only.
-+	 */
- 	if (!filp->f_op || !(filp->f_op->read || filp->f_op->aio_read)) {
- 		LINFO(curlun, "file not readable: %s\n", filename);
- 		goto out;
-@@ -646,8 +664,10 @@ static void fsg_lun_close(struct fsg_lun *curlun)
+ #define DRIVER_DESC		"Mass Storage Gadget"
+-#define DRIVER_VERSION		"2009/09/11"
++#define DRIVER_VERSION		"2010/07/01"
  
  /*-------------------------------------------------------------------------*/
  
--/* Sync the file data, don't bother with the metadata.
-- * This code was copied from fs/buffer.c:sys_fdatasync(). */
-+/*
-+ * Sync the file data, don't bother with the metadata.
-+ * This code was copied from fs/buffer.c:sys_fdatasync().
-+ */
- static int fsg_lun_fsync_sub(struct fsg_lun *curlun)
- {
- 	struct file	*filp = curlun->filp;
-@@ -728,8 +748,10 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
- 	if (sscanf(buf, "%d", &i) != 1)
- 		return -EINVAL;
+@@ -72,21 +72,16 @@ static struct usb_device_descriptor msg_device_desc = {
+ 	.bcdUSB =		cpu_to_le16(0x0200),
+ 	.bDeviceClass =		USB_CLASS_PER_INTERFACE,
  
--	/* Allow the write-enable status to change only while the backing file
--	 * is closed. */
+-	/* Vendor and product id can be overridden by module parameters.  */
+ 	.idVendor =		cpu_to_le16(FSG_VENDOR_ID),
+ 	.idProduct =		cpu_to_le16(FSG_PRODUCT_ID),
+-	/* .bcdDevice = f(hardware) */
+-	/* .iManufacturer = DYNAMIC */
+-	/* .iProduct = DYNAMIC */
+-	/* NO SERIAL NUMBER */
+-	.bNumConfigurations =	1,
+ };
+ 
+ static struct usb_otg_descriptor otg_descriptor = {
+ 	.bLength =		sizeof otg_descriptor,
+ 	.bDescriptorType =	USB_DT_OTG,
+ 
+-	/* REVISIT SRP-only hardware is possible, although
 +	/*
-+	 * Allow the write-enable status to change only while the
-+	 * backing file is closed.
-+	 */
- 	down_read(filesem);
- 	if (fsg_lun_is_open(curlun)) {
- 		LDBG(curlun, "read-only status change prevented\n");
++	 * REVISIT SRP-only hardware is possible, although
+ 	 * it would not be called "OTG" ...
+ 	 */
+ 	.bmAttributes =		USB_OTG_SRP | USB_OTG_HNP,
+@@ -100,16 +95,21 @@ static const struct usb_descriptor_header *otg_desc[] = {
+ 
+ /* string IDs are assigned dynamically */
+ 
+-#define STRING_MANUFACTURER_IDX		0
+-#define STRING_PRODUCT_IDX		1
+-#define STRING_CONFIGURATION_IDX	2
++enum {
++	STRING_MANUFACTURER_IDX,
++	STRING_PRODUCT_IDX,
++	STRING_CONFIGURATION_IDX,
++	STRING_SERIAL_IDX
++};
+ 
+ static char manufacturer[50];
++static char serial[13];
+ 
+ static struct usb_string strings_dev[] = {
+ 	[STRING_MANUFACTURER_IDX].s = manufacturer,
+ 	[STRING_PRODUCT_IDX].s = DRIVER_DESC,
+ 	[STRING_CONFIGURATION_IDX].s = "Self Powered",
++	[STRING_SERIAL_IDX].s = serial,
+ 	{  } /* end of list */
+ };
+ 
+@@ -173,7 +173,6 @@ static struct usb_configuration msg_config_driver = {
+ 	.label			= "Linux File-Backed Storage",
+ 	.bind			= msg_do_config,
+ 	.bConfigurationValue	= 1,
+-	/* .iConfiguration = DYNAMIC */
+ 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
+ };
+ 
+@@ -187,25 +186,21 @@ static int __ref msg_bind(struct usb_composite_dev *cdev)
+ 	struct usb_gadget *gadget = cdev->gadget;
+ 	int status;
+ 
+-	/* Allocate string descriptor numbers ... note that string
+-	 * contents can be overridden by the composite_dev glue.
+-	 */
+-
+-	/* device descriptor strings: manufacturer, product */
++	/* Take care of strings */
+ 	snprintf(manufacturer, sizeof manufacturer, "%s %s with %s",
+ 	         init_utsname()->sysname, init_utsname()->release,
+ 	         gadget->name);
+-	status = usb_string_id(cdev);
+-	if (status < 0)
+-		return status;
+-	strings_dev[STRING_MANUFACTURER_IDX].id = status;
+-	msg_device_desc.iManufacturer = status;
+ 
+-	status = usb_string_id(cdev);
++	fsg_string_serial_fill(serial, DRIVER_VERSION);
++
++	status = usb_string_ids_tab(cdev, strings_dev);
+ 	if (status < 0)
+ 		return status;
+-	strings_dev[STRING_PRODUCT_IDX].id = status;
+-	msg_device_desc.iProduct = status;
++
++	msg_device_desc.iManufacturer =
++		strings_dev[STRING_MANUFACTURER_IDX].id;
++	msg_device_desc.iProduct = strings_dev[STRING_PRODUCT_IDX].id;
++	msg_device_desc.iSerialNumber = strings_dev[STRING_SERIAL_IDX].id;
+ 
+ 	status = usb_string_id(cdev);
+ 	if (status < 0)
+@@ -213,7 +208,7 @@ static int __ref msg_bind(struct usb_composite_dev *cdev)
+ 	strings_dev[STRING_CONFIGURATION_IDX].id = status;
+ 	msg_config_driver.iConfiguration = status;
+ 
+-	/* register our second configuration */
++	/* Register our second configuration */
+ 	status = usb_add_config(cdev, &msg_config_driver);
+ 	if (status < 0)
+ 		return status;
+diff --git a/drivers/usb/gadget/multi.c b/drivers/usb/gadget/multi.c
+index 795d762..c8e83ff 100644
+--- a/drivers/usb/gadget/multi.c
++++ b/drivers/usb/gadget/multi.c
+@@ -36,6 +36,7 @@
+ 
+ 
+ #define DRIVER_DESC		"Multifunction Composite Gadget"
++#define DRIVER_VERSION		"2010/07/01"
+ 
+ MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_AUTHOR("Michal Nazarewicz");
+@@ -123,6 +124,7 @@ static const struct usb_descriptor_header *otg_desc[] = {
+ enum {
+ 	MULTI_STRING_MANUFACTURER_IDX,
+ 	MULTI_STRING_PRODUCT_IDX,
++	MULTI_STRING_SERIAL_IDX,
+ #ifdef CONFIG_USB_G_MULTI_RNDIS
+ 	MULTI_STRING_RNDIS_CONFIG_IDX,
+ #endif
+@@ -132,10 +134,13 @@ enum {
+ };
+ 
+ static char manufacturer[50];
++static char serial[13];
++
+ 
+ static struct usb_string strings_dev[] = {
+ 	[MULTI_STRING_MANUFACTURER_IDX].s = manufacturer,
+ 	[MULTI_STRING_PRODUCT_IDX].s      = DRIVER_DESC,
++	[MULTI_STRING_SERIAL_IDX].s       = serial,
+ #ifdef CONFIG_USB_G_MULTI_RNDIS
+ 	[MULTI_STRING_RNDIS_CONFIG_IDX].s = "Multifunction with RNDIS",
+ #endif
+@@ -319,6 +324,8 @@ static int __ref multi_bind(struct usb_composite_dev *cdev)
+ 	         init_utsname()->sysname, init_utsname()->release,
+ 	         gadget->name);
+ 
++	fsg_string_serial_fill(serial, DRIVER_VERSION);
++
+ 	status = usb_string_ids_tab(cdev, strings_dev);
+ 	if (unlikely(status < 0))
+ 		goto fail2;
+@@ -327,6 +334,8 @@ static int __ref multi_bind(struct usb_composite_dev *cdev)
+ 		strings_dev[MULTI_STRING_MANUFACTURER_IDX].id;
+ 	device_desc.iProduct      =
+ 		strings_dev[MULTI_STRING_PRODUCT_IDX].id;
++	device_desc.iSerialNumber =
++		strings_dev[MULTI_STRING_SERIAL_IDX].id;
+ 
+ 	/* register configurations */
+ 	status = rndis_config_register(cdev);
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index 557b119..a808879 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -559,6 +559,18 @@ static struct usb_gadget_strings	fsg_stringtab = {
+ };
+ 
+ 
++#define fsg_string_serial_fill_n(serial, n, version) do {	\
++		unsigned char *c = version;			\
++		unsigned i = ((n) + 1) / 2;			\
++		char *s = serial;				\
++		for (; *c && --i; s += 2, ++c)			\
++			sprintf(s, "%02X", *c);			\
++	} while (0)
++
++#define fsg_string_serial_fill(serial, version)				\
++	fsg_string_serial_fill_n(serial, ARRAY_SIZE(serial), version)
++
++
+  /*-------------------------------------------------------------------------*/
+ 
+ /*
 -- 
 1.7.1
 
