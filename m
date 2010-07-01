@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933473Ab0GAVtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:49:14 -0400
-Received: from kroah.org ([198.145.64.141]:60974 "EHLO coco.kroah.org"
+	id S1759018Ab0GAVN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:13:58 -0400
+Received: from kroah.org ([198.145.64.141]:33767 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759031Ab0GAVOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:01 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
-Message-Id: <20100701174254.100650266@clark.site>
+	id S1754340Ab0GAVM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:12:59 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:48 2010
+Message-Id: <20100701174248.129039912@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:01 -0700
+Date: Thu, 01 Jul 2010 10:41:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Joerg Roedel <joerg.roedel@amd.com>
-Subject: [091/200] x86/amd-iommu: Fall back to GART if initialization fails
+       Andrew Lunn <andrew@lunn.ch>, Marek Lindner <lindner_marek@yahoo.de>,
+       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Subject: [020/200] Staging: batman-adv: dont have interrupts disabled while sending.
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +26,456 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Andrew Lunn <andrew@lunn.ch>
 
-commit d7f0776975334070a93370ae048fda0c31a91c38 upstream.
+commit 107c32fe68f0b64acb7edd31d44d79b87c7fa8b4 upstream.
 
-This patch implements a fallback to the GART IOMMU if this
-is possible and the AMD IOMMU initialization failed.
-Otherwise the fallback would be nommu which is very
-problematic on machines with more than 4GB of memory or
-swiotlb which hurts io-performance.
+send_vis_packets() would disable interrupts before calling
+dev_queue_xmit() which resulting in a backtrace in local_bh_enable().
+Fix this by using kref on the vis_info object so that we can call
+send_vis_packets() without holding vis_hash_lock. vis_hash_lock also
+used to protect recv_list, so we now need a new lock to protect that
+instead of vis_hash_lock.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Also a few checkpatch cleanups.
+
+Reported-by: Linus Lüssing <linus.luessing@web.de>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
+Signed-off-by: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/amd_iommu.c      |    4 ----
- arch/x86/kernel/amd_iommu_init.c |    9 +++++++++
- 2 files changed, 9 insertions(+), 4 deletions(-)
+ drivers/staging/batman-adv/vis.c |  198 +++++++++++++++++++++++++++------------
+ drivers/staging/batman-adv/vis.h |    1 
+ 2 files changed, 139 insertions(+), 60 deletions(-)
 
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -2257,10 +2257,6 @@ int __init amd_iommu_init_dma_ops(void)
+--- a/drivers/staging/batman-adv/vis.c
++++ b/drivers/staging/batman-adv/vis.c
+@@ -29,22 +29,26 @@
  
- 	iommu_detected = 1;
- 	swiotlb = 0;
--#ifdef CONFIG_GART_IOMMU
--	gart_iommu_aperture_disabled = 1;
--	gart_iommu_aperture = 0;
--#endif
+ struct hashtable_t *vis_hash;
+ DEFINE_SPINLOCK(vis_hash_lock);
++static DEFINE_SPINLOCK(recv_list_lock);
+ static struct vis_info *my_vis_info;
+ static struct list_head send_list;	/* always locked with vis_hash_lock */
  
- 	/* Make the driver finally visible to the drivers */
- 	dma_ops = &amd_iommu_dma_ops;
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -1357,6 +1357,15 @@ free:
+ static void start_vis_timer(void);
  
- 	free_unity_maps();
+ /* free the info */
+-static void free_info(void *data)
++static void free_info(struct kref *ref)
+ {
+-	struct vis_info *info = data;
++	struct vis_info *info = container_of(ref, struct vis_info, refcount);
+ 	struct recvlist_node *entry, *tmp;
++	unsigned long flags;
  
-+#ifdef CONFIG_GART_IOMMU
-+	/*
-+	 * We failed to initialize the AMD IOMMU - try fallback to GART
-+	 * if possible.
-+	 */
-+	gart_iommu_init();
-+
-+#endif
-+
- 	goto out;
+ 	list_del_init(&info->send_list);
++	spin_lock_irqsave(&recv_list_lock, flags);
+ 	list_for_each_entry_safe(entry, tmp, &info->recv_list, list) {
+ 		list_del(&entry->list);
+ 		kfree(entry);
+ 	}
++	spin_unlock_irqrestore(&recv_list_lock, flags);
+ 	kfree(info);
  }
  
+@@ -142,36 +146,65 @@ void proc_vis_read_entry(struct seq_file
+ 	}
+ }
+ 
++/* add the info packet to the send list, if it was not
++ * already linked in. */
++static void send_list_add(struct vis_info *info)
++{
++	if (list_empty(&info->send_list)) {
++		kref_get(&info->refcount);
++		list_add_tail(&info->send_list, &send_list);
++	}
++}
++
++/* delete the info packet from the send list, if it was
++ * linked in. */
++static void send_list_del(struct vis_info *info)
++{
++	if (!list_empty(&info->send_list)) {
++		list_del_init(&info->send_list);
++		kref_put(&info->refcount, free_info);
++	}
++}
++
+ /* tries to add one entry to the receive list. */
+ static void recv_list_add(struct list_head *recv_list, char *mac)
+ {
+ 	struct recvlist_node *entry;
++	unsigned long flags;
++
+ 	entry = kmalloc(sizeof(struct recvlist_node), GFP_ATOMIC);
+ 	if (!entry)
+ 		return;
+ 
+ 	memcpy(entry->mac, mac, ETH_ALEN);
++	spin_lock_irqsave(&recv_list_lock, flags);
+ 	list_add_tail(&entry->list, recv_list);
++	spin_unlock_irqrestore(&recv_list_lock, flags);
+ }
+ 
+ /* returns 1 if this mac is in the recv_list */
+ static int recv_list_is_in(struct list_head *recv_list, char *mac)
+ {
+ 	struct recvlist_node *entry;
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&recv_list_lock, flags);
+ 	list_for_each_entry(entry, recv_list, list) {
+-		if (memcmp(entry->mac, mac, ETH_ALEN) == 0)
++		if (memcmp(entry->mac, mac, ETH_ALEN) == 0) {
++			spin_unlock_irqrestore(&recv_list_lock, flags);
+ 			return 1;
++		}
+ 	}
+-
++	spin_unlock_irqrestore(&recv_list_lock, flags);
+ 	return 0;
+ }
+ 
+ /* try to add the packet to the vis_hash. return NULL if invalid (e.g. too old,
+- * broken.. ).  vis hash must be locked outside.  is_new is set when the packet
++ * broken.. ).	vis hash must be locked outside.  is_new is set when the packet
+  * is newer than old entries in the hash. */
+ static struct vis_info *add_packet(struct vis_packet *vis_packet,
+-				   int vis_info_len, int *is_new)
++				   int vis_info_len, int *is_new,
++				   int make_broadcast)
+ {
+ 	struct vis_info *info, *old_info;
+ 	struct vis_info search_elem;
+@@ -198,13 +231,15 @@ static struct vis_info *add_packet(struc
+ 		}
+ 		/* remove old entry */
+ 		hash_remove(vis_hash, old_info);
+-		free_info(old_info);
++		send_list_del(old_info);
++		kref_put(&old_info->refcount, free_info);
+ 	}
+ 
+ 	info = kmalloc(sizeof(struct vis_info) + vis_info_len, GFP_ATOMIC);
+ 	if (info == NULL)
+ 		return NULL;
+ 
++	kref_init(&info->refcount);
+ 	INIT_LIST_HEAD(&info->send_list);
+ 	INIT_LIST_HEAD(&info->recv_list);
+ 	info->first_seen = jiffies;
+@@ -214,16 +249,21 @@ static struct vis_info *add_packet(struc
+ 	/* initialize and add new packet. */
+ 	*is_new = 1;
+ 
++	/* Make it a broadcast packet, if required */
++	if (make_broadcast)
++		memcpy(info->packet.target_orig, broadcastAddr, ETH_ALEN);
++
+ 	/* repair if entries is longer than packet. */
+ 	if (info->packet.entries * sizeof(struct vis_info_entry) > vis_info_len)
+-		info->packet.entries = vis_info_len / sizeof(struct vis_info_entry);
++		info->packet.entries = vis_info_len /
++			sizeof(struct vis_info_entry);
+ 
+ 	recv_list_add(&info->recv_list, info->packet.sender_orig);
+ 
+ 	/* try to add it */
+ 	if (hash_add(vis_hash, info) < 0) {
+ 		/* did not work (for some reason) */
+-		free_info(info);
++		kref_put(&old_info->refcount, free_info);
+ 		info = NULL;
+ 	}
+ 
+@@ -234,22 +274,21 @@ static struct vis_info *add_packet(struc
+ void receive_server_sync_packet(struct vis_packet *vis_packet, int vis_info_len)
+ {
+ 	struct vis_info *info;
+-	int is_new;
++	int is_new, make_broadcast;
+ 	unsigned long flags;
+ 	int vis_server = atomic_read(&vis_mode);
+ 
++	make_broadcast = (vis_server == VIS_TYPE_SERVER_SYNC);
++
+ 	spin_lock_irqsave(&vis_hash_lock, flags);
+-	info = add_packet(vis_packet, vis_info_len, &is_new);
++	info = add_packet(vis_packet, vis_info_len, &is_new, make_broadcast);
+ 	if (info == NULL)
+ 		goto end;
+ 
+ 	/* only if we are server ourselves and packet is newer than the one in
+ 	 * hash.*/
+-	if (vis_server == VIS_TYPE_SERVER_SYNC && is_new) {
+-		memcpy(info->packet.target_orig, broadcastAddr, ETH_ALEN);
+-		if (list_empty(&info->send_list))
+-			list_add_tail(&info->send_list, &send_list);
+-	}
++	if (vis_server == VIS_TYPE_SERVER_SYNC && is_new)
++		send_list_add(info);
+ end:
+ 	spin_unlock_irqrestore(&vis_hash_lock, flags);
+ }
+@@ -262,31 +301,32 @@ void receive_client_update_packet(struct
+ 	int is_new;
+ 	unsigned long flags;
+ 	int vis_server = atomic_read(&vis_mode);
++	int are_target = 0;
+ 
+ 	/* clients shall not broadcast. */
+ 	if (is_bcast(vis_packet->target_orig))
+ 		return;
+ 
++	/* Are we the target for this VIS packet? */
++	if (vis_server == VIS_TYPE_SERVER_SYNC	&&
++	    is_my_mac(vis_packet->target_orig))
++		are_target = 1;
++
+ 	spin_lock_irqsave(&vis_hash_lock, flags);
+-	info = add_packet(vis_packet, vis_info_len, &is_new);
++	info = add_packet(vis_packet, vis_info_len, &is_new, are_target);
+ 	if (info == NULL)
+ 		goto end;
+ 	/* note that outdated packets will be dropped at this point. */
+ 
+ 
+ 	/* send only if we're the target server or ... */
+-	if (vis_server == VIS_TYPE_SERVER_SYNC  &&
+-	    is_my_mac(info->packet.target_orig) &&
+-	    is_new) {
++	if (are_target && is_new) {
+ 		info->packet.vis_type = VIS_TYPE_SERVER_SYNC;	/* upgrade! */
+-		memcpy(info->packet.target_orig, broadcastAddr, ETH_ALEN);
+-		if (list_empty(&info->send_list))
+-			list_add_tail(&info->send_list, &send_list);
++		send_list_add(info);
+ 
+ 		/* ... we're not the recipient (and thus need to forward). */
+ 	} else if (!is_my_mac(info->packet.target_orig)) {
+-		if (list_empty(&info->send_list))
+-			list_add_tail(&info->send_list, &send_list);
++		send_list_add(info);
+ 	}
+ end:
+ 	spin_unlock_irqrestore(&vis_hash_lock, flags);
+@@ -361,14 +401,17 @@ static int generate_vis_packet(void)
+ 	while (hash_iterate(orig_hash, &hashit_global)) {
+ 		orig_node = hashit_global.bucket->data;
+ 		if (orig_node->router != NULL
+-			&& compare_orig(orig_node->router->addr, orig_node->orig)
++			&& compare_orig(orig_node->router->addr,
++					orig_node->orig)
+ 			&& orig_node->batman_if
+ 			&& (orig_node->batman_if->if_active == IF_ACTIVE)
+ 		    && orig_node->router->tq_avg > 0) {
+ 
+ 			/* fill one entry into buffer. */
+ 			entry = &entry_array[info->packet.entries];
+-			memcpy(entry->src, orig_node->batman_if->net_dev->dev_addr, ETH_ALEN);
++			memcpy(entry->src,
++			       orig_node->batman_if->net_dev->dev_addr,
++			       ETH_ALEN);
+ 			memcpy(entry->dest, orig_node->orig, ETH_ALEN);
+ 			entry->quality = orig_node->router->tq_avg;
+ 			info->packet.entries++;
+@@ -400,6 +443,8 @@ static int generate_vis_packet(void)
+ 	return 0;
+ }
+ 
++/* free old vis packets. Must be called with this vis_hash_lock
++ * held */
+ static void purge_vis_packets(void)
+ {
+ 	HASHIT(hashit);
+@@ -412,7 +457,8 @@ static void purge_vis_packets(void)
+ 		if (time_after(jiffies,
+ 			       info->first_seen + (VIS_TIMEOUT*HZ)/1000)) {
+ 			hash_remove_bucket(vis_hash, &hashit);
+-			free_info(info);
++			send_list_del(info);
++			kref_put(&info->refcount, free_info);
+ 		}
+ 	}
+ }
+@@ -422,6 +468,8 @@ static void broadcast_vis_packet(struct
+ 	HASHIT(hashit);
+ 	struct orig_node *orig_node;
+ 	unsigned long flags;
++	struct batman_if *batman_if;
++	uint8_t dstaddr[ETH_ALEN];
+ 
+ 	spin_lock_irqsave(&orig_hash_lock, flags);
+ 
+@@ -430,45 +478,56 @@ static void broadcast_vis_packet(struct
+ 		orig_node = hashit.bucket->data;
+ 
+ 		/* if it's a vis server and reachable, send it. */
+-		if (orig_node &&
+-		    (orig_node->flags & VIS_SERVER) &&
+-		    orig_node->batman_if &&
+-		    orig_node->router) {
++		if ((!orig_node) || (!orig_node->batman_if) ||
++		    (!orig_node->router))
++			continue;
++		if (!(orig_node->flags & VIS_SERVER))
++			continue;
++		/* don't send it if we already received the packet from
++		 * this node. */
++		if (recv_list_is_in(&info->recv_list, orig_node->orig))
++			continue;
++
++		memcpy(info->packet.target_orig, orig_node->orig, ETH_ALEN);
++		batman_if = orig_node->batman_if;
++		memcpy(dstaddr, orig_node->router->addr, ETH_ALEN);
++		spin_unlock_irqrestore(&orig_hash_lock, flags);
++
++		send_raw_packet((unsigned char *)&info->packet,
++				packet_length, batman_if, dstaddr);
++
++		spin_lock_irqsave(&orig_hash_lock, flags);
+ 
+-			/* don't send it if we already received the packet from
+-			 * this node. */
+-			if (recv_list_is_in(&info->recv_list, orig_node->orig))
+-				continue;
+-
+-			memcpy(info->packet.target_orig,
+-			       orig_node->orig, ETH_ALEN);
+-
+-			send_raw_packet((unsigned char *) &info->packet,
+-					packet_length,
+-					orig_node->batman_if,
+-					orig_node->router->addr);
+-		}
+ 	}
+-	memcpy(info->packet.target_orig, broadcastAddr, ETH_ALEN);
+ 	spin_unlock_irqrestore(&orig_hash_lock, flags);
++	memcpy(info->packet.target_orig, broadcastAddr, ETH_ALEN);
+ }
+ 
+ static void unicast_vis_packet(struct vis_info *info, int packet_length)
+ {
+ 	struct orig_node *orig_node;
+ 	unsigned long flags;
++	struct batman_if *batman_if;
++	uint8_t dstaddr[ETH_ALEN];
+ 
+ 	spin_lock_irqsave(&orig_hash_lock, flags);
+ 	orig_node = ((struct orig_node *)
+ 		     hash_find(orig_hash, info->packet.target_orig));
+ 
+-	if ((orig_node != NULL) &&
+-	    (orig_node->batman_if != NULL) &&
+-	    (orig_node->router != NULL)) {
+-		send_raw_packet((unsigned char *) &info->packet, packet_length,
+-				orig_node->batman_if,
+-				orig_node->router->addr);
+-	}
++	if ((!orig_node) || (!orig_node->batman_if) || (!orig_node->router))
++		goto out;
++
++	/* don't lock while sending the packets ... we therefore
++	 * copy the required data before sending */
++	batman_if = orig_node->batman_if;
++	memcpy(dstaddr, orig_node->router->addr, ETH_ALEN);
++	spin_unlock_irqrestore(&orig_hash_lock, flags);
++
++	send_raw_packet((unsigned char *)&info->packet,
++			packet_length, batman_if, dstaddr);
++	return;
++
++out:
+ 	spin_unlock_irqrestore(&orig_hash_lock, flags);
+ }
+ 
+@@ -502,15 +561,24 @@ static void send_vis_packets(struct work
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&vis_hash_lock, flags);
++
+ 	purge_vis_packets();
+ 
+-	if (generate_vis_packet() == 0)
++	if (generate_vis_packet() == 0) {
+ 		/* schedule if generation was successful */
+-		list_add_tail(&my_vis_info->send_list, &send_list);
++		send_list_add(my_vis_info);
++	}
+ 
+ 	list_for_each_entry_safe(info, temp, &send_list, send_list) {
+-		list_del_init(&info->send_list);
++
++		kref_get(&info->refcount);
++		spin_unlock_irqrestore(&vis_hash_lock, flags);
++
+ 		send_vis_packet(info);
++
++		spin_lock_irqsave(&vis_hash_lock, flags);
++		send_list_del(info);
++		kref_put(&info->refcount, free_info);
+ 	}
+ 	spin_unlock_irqrestore(&vis_hash_lock, flags);
+ 	start_vis_timer();
+@@ -543,6 +611,7 @@ int vis_init(void)
+ 	my_vis_info->first_seen = jiffies - atomic_read(&vis_interval);
+ 	INIT_LIST_HEAD(&my_vis_info->recv_list);
+ 	INIT_LIST_HEAD(&my_vis_info->send_list);
++	kref_init(&my_vis_info->refcount);
+ 	my_vis_info->packet.version = COMPAT_VERSION;
+ 	my_vis_info->packet.packet_type = BAT_VIS;
+ 	my_vis_info->packet.ttl = TTL;
+@@ -556,9 +625,9 @@ int vis_init(void)
+ 
+ 	if (hash_add(vis_hash, my_vis_info) < 0) {
+ 		printk(KERN_ERR
+-			  "batman-adv:Can't add own vis packet into hash\n");
+-		free_info(my_vis_info);	/* not in hash, need to remove it
+-					 * manually. */
++		       "batman-adv:Can't add own vis packet into hash\n");
++		/* not in hash, need to remove it manually. */
++		kref_put(&my_vis_info->refcount, free_info);
+ 		goto err;
+ 	}
+ 
+@@ -572,6 +641,15 @@ err:
+ 	return 0;
+ }
+ 
++/* Decrease the reference count on a hash item info */
++static void free_info_ref(void *data)
++{
++	struct vis_info *info = data;
++
++	send_list_del(info);
++	kref_put(&info->refcount, free_info);
++}
++
+ /* shutdown vis-server */
+ void vis_quit(void)
+ {
+@@ -583,7 +661,7 @@ void vis_quit(void)
+ 
+ 	spin_lock_irqsave(&vis_hash_lock, flags);
+ 	/* properly remove, kill timers ... */
+-	hash_delete(vis_hash, free_info);
++	hash_delete(vis_hash, free_info_ref);
+ 	vis_hash = NULL;
+ 	my_vis_info = NULL;
+ 	spin_unlock_irqrestore(&vis_hash_lock, flags);
+--- a/drivers/staging/batman-adv/vis.h
++++ b/drivers/staging/batman-adv/vis.h
+@@ -29,6 +29,7 @@ struct vis_info {
+ 			    /* list of server-neighbors we received a vis-packet
+ 			     * from.  we should not reply to them. */
+ 	struct list_head send_list;
++	struct kref refcount;
+ 	/* this packet might be part of the vis send queue. */
+ 	struct vis_packet packet;
+ 	/* vis_info may follow here*/
 
 
