@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab0GAVpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:45:25 -0400
-Received: from kroah.org ([198.145.64.141]:32830 "EHLO coco.kroah.org"
+	id S933434Ab0GAVsv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:48:51 -0400
+Received: from kroah.org ([198.145.64.141]:60982 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759084Ab0GAVOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:55 2010
-Message-Id: <20100701174255.462179336@clark.site>
+	id S1759037Ab0GAVOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:04 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
+Message-Id: <20100701174254.267009471@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:17 -0700
+Date: Thu, 01 Jul 2010 10:43:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Anfei Zhou <anfei.zhou@gmail.com>,
-       Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [107/200] ARM: 6166/1: Proper prefetch abort handling on pre-ARMv6
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: [093/200] clean DCACHE_CANT_MOUNT in d_delete()
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anfei <anfei.zhou@gmail.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 5e27fb78df95e027723af2c90ecc9b4527ae59e9 upstream.
+commit 13e3c5e5b9c67e59074d24e29f3ff794bb4dfef0 upstream.
 
-Instruction faults on pre-ARMv6 CPUs are interpreted as
-a 'translation fault', but do_translation_fault doesn't
-handle well if user mode trying to run instruction above
-TASK_SIZE, and result in the infinite retry of that
-instruction.
+We set the "it's dead, don't mount on it" flag _and_ do not remove it if
+we turn the damn thing negative and leave it around.  And if it goes
+positive afterwards, well...
 
-Signed-off-by: Anfei Zhou <anfei.zhou@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Fortunately, there's only one place where that needs to be caught:
+only d_delete() can turn the sucker negative without immediately freeing
+it; all other places that can lead to ->d_iput() call are followed by
+unconditionally freeing struct dentry in question.  So the fix is obvious:
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16014
+Reported-by: Adam Tkac <vonsch@gmail.com>
+Tested-by: Adam Tkac <vonsch@gmail.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mm/fault.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/dcache.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -393,6 +393,9 @@ do_translation_fault(unsigned long addr,
- 	if (addr < TASK_SIZE)
- 		return do_page_fault(addr, fsr, regs);
- 
-+	if (user_mode(regs))
-+		goto bad_area;
-+
- 	index = pgd_index(addr);
- 
- 	/*
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1529,6 +1529,7 @@ void d_delete(struct dentry * dentry)
+ 	spin_lock(&dentry->d_lock);
+ 	isdir = S_ISDIR(dentry->d_inode->i_mode);
+ 	if (atomic_read(&dentry->d_count) == 1) {
++		dentry->d_flags &= ~DCACHE_CANT_MOUNT;
+ 		dentry_iput(dentry);
+ 		fsnotify_nameremove(dentry, isdir);
+ 		return;
 
 
