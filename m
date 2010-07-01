@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932688Ab0GAWJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:09:12 -0400
-Received: from kroah.org ([198.145.64.141]:47511 "EHLO coco.kroah.org"
+	id S1758564Ab0GAUuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:50:19 -0400
+Received: from kroah.org ([198.145.64.141]:47325 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756689Ab0GAUuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:22 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:32 2010
-Message-Id: <20100701173432.796490967@clark.site>
+	id S932603Ab0GAUt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:58 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:30 2010
+Message-Id: <20100701173430.639716853@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:17 -0700
+Date: Thu, 01 Jul 2010 10:33:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       David Howells <dhowells@redhat.com>,
-       Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [patch 071/164] mn10300: set ARCH_KMALLOC_MINALIGN
+       Jouni Malinen <j@w1.fi>, "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 045/164] mac80211: Fix robust management frame handling (MFP)
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,36 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+From: Jouni Malinen <j@w1.fi>
 
-commit 6cdafaae41d52e6ef9a5c5be23602ef083e4d0f9 upstream.
+commit d211e90e28a074447584729018a39910d691d1a8 upstream.
 
-Architectures that handle DMA-non-coherent memory need to set
-ARCH_KMALLOC_MINALIGN to make sure that kmalloc'ed buffer is DMA-safe: the
-buffer doesn't share a cache with the others.
+Commit e34e09401ee9888dd662b2fca5d607794a56daf2 incorrectly removed
+use of ieee80211_has_protected() from the management frame case and in
+practice, made this validation drop all Action frames when MFP is
+enabled. This should have only been done for frames with Protected
+field set to zero.
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Acked-by: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/mn10300/include/asm/cache.h |    2 ++
- 1 file changed, 2 insertions(+)
+ net/mac80211/rx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/mn10300/include/asm/cache.h
-+++ b/arch/mn10300/include/asm/cache.h
-@@ -21,6 +21,8 @@
- #define L1_CACHE_DISPARITY	L1_CACHE_NENTRIES * L1_CACHE_BYTES
- #endif
- 
-+#define ARCH_KMALLOC_MINALIGN	L1_CACHE_BYTES
-+
- /* data cache purge registers
-  * - read from the register to unconditionally purge that cache line
-  * - write address & 0xffffff00 to conditionally purge that cache line
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1399,7 +1399,8 @@ ieee80211_drop_unencrypted(struct ieee80
+ 		     (rx->key || rx->sdata->drop_unencrypted)))
+ 		return -EACCES;
+ 	if (rx->sta && test_sta_flags(rx->sta, WLAN_STA_MFP)) {
+-		if (unlikely(ieee80211_is_unicast_robust_mgmt_frame(rx->skb) &&
++		if (unlikely(!ieee80211_has_protected(fc) &&
++			     ieee80211_is_unicast_robust_mgmt_frame(rx->skb) &&
+ 			     rx->key))
+ 			return -EACCES;
+ 		/* BIP does not use Protected field, so need to check MMIE */
 
 
