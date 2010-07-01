@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758232Ab0GASbc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:31:32 -0400
-Received: from kroah.org ([198.145.64.141]:40793 "EHLO coco.kroah.org"
+	id S1758362Ab0GASc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:32:58 -0400
+Received: from kroah.org ([198.145.64.141]:40740 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758127Ab0GASYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:19 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:17 2010
-Message-Id: <20100701173217.365342047@clark.site>
+	id S1758098Ab0GASYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:16 2010
+Message-Id: <20100701173216.508802713@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:31 -0700
+Date: Thu, 01 Jul 2010 10:32:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       James Chapman <jchapman@katalix.com>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [patch 125/149] l2tp: Fix oops in pppol2tp_xmit
+       Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+       Reinette Chatre <reinette.chatre@intel.com>
+Subject: [patch 115/149] iwlwifi: check for aggregation frame and queue
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,81 +26,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Chapman <jchapman@katalix.com>
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
-commit 3feec9095d12e311b7d4eb7fe7e5dfa75d4a72a5 upstream.
+commit 45d427001b5eec03cecaacddb53c73af46bb263e upstream.
 
-When transmitting L2TP frames, we derive the outgoing interface's UDP
-checksum hardware assist capabilities from the tunnel dst dev. This
-can sometimes be NULL, especially when routing protocols are used and
-routing changes occur. This patch just checks for NULL dst or dev
-pointers when checking for netdev hardware assist features.
+Error checking for aggregation frames should go into aggregation queue,
+if aggregation queue not available, use legacy queue instead.
+Also make sure the aggregation queue is available to activate,
+if driver and mac80211 is out-of-sync, try to disable the queue and
+sync-up with mac80211.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000c
-IP: [<f89d074c>] pppol2tp_xmit+0x341/0x4da [pppol2tp]
-*pde = 00000000
-Oops: 0000 [#1] SMP
-last sysfs file: /sys/class/net/lo/operstate
-Modules linked in: pppol2tp pppox ppp_generic slhc ipv6 dummy loop snd_hda_codec_atihdmi snd_hda_intel snd_hda_codec snd_pcm snd_timer snd soundcore snd_page_alloc evdev psmouse serio_raw processor button i2c_piix4 i2c_core ati_agp agpgart pcspkr ext3 jbd mbcache sd_mod ide_pci_generic atiixp ide_core ahci ata_generic floppy ehci_hcd ohci_hcd libata e1000e scsi_mod usbcore nls_base thermal fan thermal_sys [last unloaded: scsi_wait_scan]
-
-Pid: 0, comm: swapper Not tainted (2.6.32.8 #1)
-EIP: 0060:[<f89d074c>] EFLAGS: 00010297 CPU: 3
-EIP is at pppol2tp_xmit+0x341/0x4da [pppol2tp]
-EAX: 00000000 EBX: f64d1680 ECX: 000005b9 EDX: 00000000
-ESI: f6b91850 EDI: f64d16ac EBP: f6a0c4c0 ESP: f70a9cac
- DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-Process swapper (pid: 0, ti=f70a8000 task=f70a31c0 task.ti=f70a8000)
-Stack:
- 000005a9 000005b9 f734c400 f66652c0 f7352e00 f67dc800 00000000 f6b91800
-<0> 000005a3 f70ef6c4 f67dcda9 000005a3 f89b192e 00000246 000005a3 f64d1680
-<0> f63633e0 f6363320 f64d1680 f65a7320 f65a7364 f65856c0 f64d1680 f679f02f
-Call Trace:
- [<f89b192e>] ? ppp_push+0x459/0x50e [ppp_generic]
- [<f89b217f>] ? ppp_xmit_process+0x3b6/0x430 [ppp_generic]
- [<f89b2306>] ? ppp_start_xmit+0x10d/0x120 [ppp_generic]
- [<c11c15cb>] ? dev_hard_start_xmit+0x21f/0x2b2
- [<c11d0947>] ? sch_direct_xmit+0x48/0x10e
- [<c11c19a0>] ? dev_queue_xmit+0x263/0x3a6
- [<c11e2a9f>] ? ip_finish_output+0x1f7/0x221
- [<c11df682>] ? ip_forward_finish+0x2e/0x30
- [<c11de645>] ? ip_rcv_finish+0x295/0x2a9
- [<c11c0b19>] ? netif_receive_skb+0x3e9/0x404
- [<f814b791>] ? e1000_clean_rx_irq+0x253/0x2fc [e1000e]
- [<f814cb7a>] ? e1000_clean+0x63/0x1fc [e1000e]
- [<c1047eff>] ? sched_clock_local+0x15/0x11b
- [<c11c1095>] ? net_rx_action+0x96/0x195
- [<c1035750>] ? __do_softirq+0xaa/0x151
- [<c1035828>] ? do_softirq+0x31/0x3c
- [<c10358fe>] ? irq_exit+0x26/0x58
- [<c1004b21>] ? do_IRQ+0x78/0x89
- [<c1003729>] ? common_interrupt+0x29/0x30
- [<c101ac28>] ? native_safe_halt+0x2/0x3
- [<c1008c54>] ? default_idle+0x55/0x75
- [<c1009045>] ? c1e_idle+0xd2/0xd5
- [<c100233c>] ? cpu_idle+0x46/0x62
-Code: 8d 45 08 f0 ff 45 08 89 6b 08 c7 43 68 7e fb 9c f8 8a 45 24 83 e0 0c 3c 04 75 09 80 63 64 f3 e9 b4 00 00 00 8b 43 18 8b 4c 24 04 <8b> 40 0c 8d 79 11 f6 40 44 0e 8a 43 64 75 51 6a 00 8b 4c 24 08
-EIP: [<f89d074c>] pppol2tp_xmit+0x341/0x4da [pppol2tp] SS:ESP 0068:f70a9cac
-CR2: 000000000000000c
-
-Signed-off-by: James Chapman <jchapman@katalix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/pppol2tp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/iwl-agn-rs.c |   15 ++++++++++++++-
+ drivers/net/wireless/iwlwifi/iwl-tx.c     |   18 ++++++++++++------
+ 2 files changed, 26 insertions(+), 7 deletions(-)
 
---- a/drivers/net/pppol2tp.c
-+++ b/drivers/net/pppol2tp.c
-@@ -1178,7 +1178,8 @@ static int pppol2tp_xmit(struct ppp_chan
- 	/* Calculate UDP checksum if configured to do so */
- 	if (sk_tun->sk_no_check == UDP_CSUM_NOXMIT)
- 		skb->ip_summed = CHECKSUM_NONE;
--	else if (!(skb_dst(skb)->dev->features & NETIF_F_V4_CSUM)) {
-+	else if ((skb_dst(skb) && skb_dst(skb)->dev) &&
-+		 (!(skb_dst(skb)->dev->features & NETIF_F_V4_CSUM))) {
- 		skb->ip_summed = CHECKSUM_COMPLETE;
- 		csum = skb_checksum(skb, 0, udp_len, 0);
- 		uh->check = csum_tcpudp_magic(inet->saddr, inet->daddr,
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
+@@ -402,10 +402,23 @@ static void rs_tl_turn_on_agg_for_tid(st
+ 				      struct iwl_lq_sta *lq_data, u8 tid,
+ 				      struct ieee80211_sta *sta)
+ {
++	int ret;
++
+ 	if (rs_tl_get_load(lq_data, tid) > IWL_AGG_LOAD_THRESHOLD) {
+ 		IWL_DEBUG_HT(priv, "Starting Tx agg: STA: %pM tid: %d\n",
+ 				sta->addr, tid);
+-		ieee80211_start_tx_ba_session(priv->hw, sta->addr, tid);
++		ret = ieee80211_start_tx_ba_session(priv->hw, sta->addr, tid);
++		if (ret == -EAGAIN) {
++			/*
++			 * driver and mac80211 is out of sync
++			 * this might be cause by reloading firmware
++			 * stop the tx ba session here
++			 */
++			IWL_DEBUG_HT(priv, "Fail start Tx agg on tid: %d\n",
++				tid);
++			ret = ieee80211_stop_tx_ba_session(priv->hw, sta->addr, tid,
++						WLAN_BACK_INITIATOR);
++		}
+ 	}
+ }
+ 
+--- a/drivers/net/wireless/iwlwifi/iwl-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
+@@ -791,8 +791,10 @@ int iwl_tx_skb(struct iwl_priv *priv, st
+ 		hdr->seq_ctrl |= cpu_to_le16(seq_number);
+ 		seq_number += 0x10;
+ 		/* aggregation is on for this <sta,tid> */
+-		if (info->flags & IEEE80211_TX_CTL_AMPDU)
++		if (info->flags & IEEE80211_TX_CTL_AMPDU &&
++		    priv->stations[sta_id].tid[tid].agg.state == IWL_AGG_ON) {
+ 			txq_id = priv->stations[sta_id].tid[tid].agg.txq_id;
++		}
+ 	}
+ 
+ 	txq = &priv->txq[txq_id];
+@@ -1273,7 +1275,7 @@ int iwl_tx_agg_stop(struct iwl_priv *pri
+ {
+ 	int tx_fifo_id, txq_id, sta_id, ssn = -1;
+ 	struct iwl_tid_data *tid_data;
+-	int ret, write_ptr, read_ptr;
++	int write_ptr, read_ptr;
+ 	unsigned long flags;
+ 
+ 	if (!ra) {
+@@ -1325,13 +1327,17 @@ int iwl_tx_agg_stop(struct iwl_priv *pri
+ 	priv->stations[sta_id].tid[tid].agg.state = IWL_AGG_OFF;
+ 
+ 	spin_lock_irqsave(&priv->lock, flags);
+-	ret = priv->cfg->ops->lib->txq_agg_disable(priv, txq_id, ssn,
++	/*
++	 * the only reason this call can fail is queue number out of range,
++	 * which can happen if uCode is reloaded and all the station
++	 * information are lost. if it is outside the range, there is no need
++	 * to deactivate the uCode queue, just return "success" to allow
++	 *  mac80211 to clean up it own data.
++	 */
++	priv->cfg->ops->lib->txq_agg_disable(priv, txq_id, ssn,
+ 						   tx_fifo_id);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+-	if (ret)
+-		return ret;
+-
+ 	ieee80211_stop_tx_ba_cb_irqsafe(priv->hw, ra, tid);
+ 
+ 	return 0;
 
 
