@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932859Ab0GAVC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:02:56 -0400
-Received: from kroah.org ([198.145.64.141]:47894 "EHLO coco.kroah.org"
+	id S933083Ab0GAVCq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:02:46 -0400
+Received: from kroah.org ([198.145.64.141]:47902 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932850Ab0GAUvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:19 -0400
+	id S932856Ab0GAUvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:21 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:38 2010
-Message-Id: <20100701173438.375093333@clark.site>
+Message-Id: <20100701173438.538699148@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:23 -0700
+Date: Thu, 01 Jul 2010 10:35:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: [patch 137/164] tracing: Consolidate protection of reader access to the ring buffer
+       Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
+Subject: [patch 139/164] KVM: SVM: Dont use kmap_atomic in nested_svm_map
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,324 +25,202 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 7e53bd42d14c75192b99674c40fcc359392da59d upstream.
+Use of kmap_atomic disables preemption but if we run in
+shadow-shadow mode the vmrun emulation executes kvm_set_cr3
+which might sleep or fault. So use kmap instead for
+nested_svm_map.
 
-At the beginning, access to the ring buffer was fully serialized
-by trace_types_lock. Patch d7350c3f4569 gives more freedom to readers,
-and patch b04cc6b1f6 adds code to protect trace_pipe and cpu#/trace_pipe.
-
-But actually it is not enough, ring buffer readers are not always
-read-only, they may consume data.
-
-This patch makes accesses to trace, trace_pipe, trace_pipe_raw
-cpu#/trace, cpu#/trace_pipe and cpu#/trace_pipe_raw serialized.
-And removes tracing_reader_cpumask which is used to protect trace_pipe.
-
-Details:
-
-Ring buffer serializes readers, but it is low level protection.
-The validity of the events (which returns by ring_buffer_peek() ..etc)
-are not protected by ring buffer.
-
-The content of events may become garbage if we allow another process to consume
-these events concurrently:
-  A) the page of the consumed events may become a normal page
-     (not reader page) in ring buffer, and this page will be rewritten
-     by the events producer.
-  B) The page of the consumed events may become a page for splice_read,
-     and this page will be returned to system.
-
-This patch adds trace_access_lock() and trace_access_unlock() primitives.
-
-These primitives allow multi process access to different cpu ring buffers
-concurrently.
-
-These primitives don't distinguish read-only and read-consume access.
-Multi read-only access is also serialized.
-
-And we don't use these primitives when we open files,
-we only use them when we read files.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-LKML-Reference: <4B447D52.1050602@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: stable@kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
+(cherry picked from commit 7597f129d8b6799da7a264e6d6f7401668d3a36d)
 ---
- kernel/trace/trace.c |  136 ++++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 97 insertions(+), 39 deletions(-)
+ arch/x86/kvm/svm.c |   47 ++++++++++++++++++++++++-----------------------
+ 1 file changed, 24 insertions(+), 23 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -32,6 +32,7 @@
- #include <linux/splice.h>
- #include <linux/kdebug.h>
- #include <linux/string.h>
-+#include <linux/rwsem.h>
- #include <linux/ctype.h>
- #include <linux/init.h>
- #include <linux/poll.h>
-@@ -102,9 +103,6 @@ static inline void ftrace_enable_cpu(voi
- 
- static cpumask_var_t __read_mostly	tracing_buffer_mask;
- 
--/* Define which cpu buffers are currently read in trace_pipe */
--static cpumask_var_t			tracing_reader_cpumask;
--
- #define for_each_tracing_cpu(cpu)	\
- 	for_each_cpu(cpu, tracing_buffer_mask)
- 
-@@ -243,12 +241,91 @@ static struct tracer		*current_trace __r
- 
- /*
-  * trace_types_lock is used to protect the trace_types list.
-- * This lock is also used to keep user access serialized.
-- * Accesses from userspace will grab this lock while userspace
-- * activities happen inside the kernel.
-  */
- static DEFINE_MUTEX(trace_types_lock);
- 
-+/*
-+ * serialize the access of the ring buffer
-+ *
-+ * ring buffer serializes readers, but it is low level protection.
-+ * The validity of the events (which returns by ring_buffer_peek() ..etc)
-+ * are not protected by ring buffer.
-+ *
-+ * The content of events may become garbage if we allow other process consumes
-+ * these events concurrently:
-+ *   A) the page of the consumed events may become a normal page
-+ *      (not reader page) in ring buffer, and this page will be rewrited
-+ *      by events producer.
-+ *   B) The page of the consumed events may become a page for splice_read,
-+ *      and this page will be returned to system.
-+ *
-+ * These primitives allow multi process access to different cpu ring buffer
-+ * concurrently.
-+ *
-+ * These primitives don't distinguish read-only and read-consume access.
-+ * Multi read-only access are also serialized.
-+ */
-+
-+#ifdef CONFIG_SMP
-+static DECLARE_RWSEM(all_cpu_access_lock);
-+static DEFINE_PER_CPU(struct mutex, cpu_access_lock);
-+
-+static inline void trace_access_lock(int cpu)
-+{
-+	if (cpu == TRACE_PIPE_ALL_CPU) {
-+		/* gain it for accessing the whole ring buffer. */
-+		down_write(&all_cpu_access_lock);
-+	} else {
-+		/* gain it for accessing a cpu ring buffer. */
-+
-+		/* Firstly block other trace_access_lock(TRACE_PIPE_ALL_CPU). */
-+		down_read(&all_cpu_access_lock);
-+
-+		/* Secondly block other access to this @cpu ring buffer. */
-+		mutex_lock(&per_cpu(cpu_access_lock, cpu));
-+	}
-+}
-+
-+static inline void trace_access_unlock(int cpu)
-+{
-+	if (cpu == TRACE_PIPE_ALL_CPU) {
-+		up_write(&all_cpu_access_lock);
-+	} else {
-+		mutex_unlock(&per_cpu(cpu_access_lock, cpu));
-+		up_read(&all_cpu_access_lock);
-+	}
-+}
-+
-+static inline void trace_access_lock_init(void)
-+{
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu)
-+		mutex_init(&per_cpu(cpu_access_lock, cpu));
-+}
-+
-+#else
-+
-+static DEFINE_MUTEX(access_lock);
-+
-+static inline void trace_access_lock(int cpu)
-+{
-+	(void)cpu;
-+	mutex_lock(&access_lock);
-+}
-+
-+static inline void trace_access_unlock(int cpu)
-+{
-+	(void)cpu;
-+	mutex_unlock(&access_lock);
-+}
-+
-+static inline void trace_access_lock_init(void)
-+{
-+}
-+
-+#endif
-+
- /* trace_wait is a waitqueue for tasks blocked on trace_poll */
- static DECLARE_WAIT_QUEUE_HEAD(trace_wait);
- 
-@@ -1601,12 +1678,6 @@ static void tracing_iter_reset(struct tr
- }
- 
- /*
-- * No necessary locking here. The worst thing which can
-- * happen is loosing events consumed at the same time
-- * by a trace_pipe reader.
-- * Other than that, we don't risk to crash the ring buffer
-- * because it serializes the readers.
-- *
-  * The current tracer is copied to avoid a global locking
-  * all around.
-  */
-@@ -1662,12 +1733,16 @@ static void *s_start(struct seq_file *m,
- 	}
- 
- 	trace_event_read_lock();
-+	trace_access_lock(cpu_file);
- 	return p;
- }
- 
- static void s_stop(struct seq_file *m, void *p)
- {
-+	struct trace_iterator *iter = m->private;
-+
- 	atomic_dec(&trace_record_cmdline_disabled);
-+	trace_access_unlock(iter->cpu_file);
- 	trace_event_read_unlock();
- }
- 
-@@ -2858,22 +2933,6 @@ static int tracing_open_pipe(struct inod
- 
- 	mutex_lock(&trace_types_lock);
- 
--	/* We only allow one reader per cpu */
--	if (cpu_file == TRACE_PIPE_ALL_CPU) {
--		if (!cpumask_empty(tracing_reader_cpumask)) {
--			ret = -EBUSY;
--			goto out;
--		}
--		cpumask_setall(tracing_reader_cpumask);
--	} else {
--		if (!cpumask_test_cpu(cpu_file, tracing_reader_cpumask))
--			cpumask_set_cpu(cpu_file, tracing_reader_cpumask);
--		else {
--			ret = -EBUSY;
--			goto out;
--		}
--	}
--
- 	/* create a buffer to store the information to pass to userspace */
- 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
- 	if (!iter) {
-@@ -2929,12 +2988,6 @@ static int tracing_release_pipe(struct i
- 
- 	mutex_lock(&trace_types_lock);
- 
--	if (iter->cpu_file == TRACE_PIPE_ALL_CPU)
--		cpumask_clear(tracing_reader_cpumask);
--	else
--		cpumask_clear_cpu(iter->cpu_file, tracing_reader_cpumask);
--
--
- 	if (iter->trace->pipe_close)
- 		iter->trace->pipe_close(iter);
- 
-@@ -3096,6 +3149,7 @@ waitagain:
- 	iter->pos = -1;
- 
- 	trace_event_read_lock();
-+	trace_access_lock(iter->cpu_file);
- 	while (find_next_entry_inc(iter) != NULL) {
- 		enum print_line_t ret;
- 		int len = iter->seq.len;
-@@ -3112,6 +3166,7 @@ waitagain:
- 		if (iter->seq.len >= cnt)
- 			break;
- 	}
-+	trace_access_unlock(iter->cpu_file);
- 	trace_event_read_unlock();
- 
- 	/* Now copy what we have to the user */
-@@ -3237,6 +3292,7 @@ static ssize_t tracing_splice_read_pipe(
- 	}
- 
- 	trace_event_read_lock();
-+	trace_access_lock(iter->cpu_file);
- 
- 	/* Fill as many pages as possible. */
- 	for (i = 0, rem = len; i < PIPE_BUFFERS && rem; i++) {
-@@ -3260,6 +3316,7 @@ static ssize_t tracing_splice_read_pipe(
- 		trace_seq_init(&iter->seq);
- 	}
- 
-+	trace_access_unlock(iter->cpu_file);
- 	trace_event_read_unlock();
- 	mutex_unlock(&iter->mutex);
- 
-@@ -3561,10 +3618,12 @@ tracing_buffers_read(struct file *filp,
- 
- 	info->read = 0;
- 
-+	trace_access_lock(info->cpu);
- 	ret = ring_buffer_read_page(info->tr->buffer,
- 				    &info->spare,
- 				    count,
- 				    info->cpu, 0);
-+	trace_access_unlock(info->cpu);
- 	if (ret < 0)
- 		return 0;
- 
-@@ -3692,6 +3751,7 @@ tracing_buffers_splice_read(struct file
- 		len &= PAGE_MASK;
- 	}
- 
-+	trace_access_lock(info->cpu);
- 	entries = ring_buffer_entries_cpu(info->tr->buffer, info->cpu);
- 
- 	for (i = 0; i < PIPE_BUFFERS && len && entries; i++, len -= PAGE_SIZE) {
-@@ -3739,6 +3799,7 @@ tracing_buffers_splice_read(struct file
- 		entries = ring_buffer_entries_cpu(info->tr->buffer, info->cpu);
- 	}
- 
-+	trace_access_unlock(info->cpu);
- 	spd.nr_pages = i;
- 
- 	/* did we read anything? */
-@@ -4175,6 +4236,8 @@ static __init int tracer_init_debugfs(vo
- 	struct dentry *d_tracer;
- 	int cpu;
- 
-+	trace_access_lock_init();
-+
- 	d_tracer = tracing_init_dentry();
- 
- 	trace_create_file("tracing_enabled", 0644, d_tracer,
-@@ -4409,9 +4472,6 @@ __init static int tracer_alloc_buffers(v
- 	if (!alloc_cpumask_var(&tracing_cpumask, GFP_KERNEL))
- 		goto out_free_buffer_mask;
- 
--	if (!zalloc_cpumask_var(&tracing_reader_cpumask, GFP_KERNEL))
--		goto out_free_tracing_cpumask;
--
- 	/* To save memory, keep the ring buffer size to its minimum */
- 	if (ring_buffer_expanded)
- 		ring_buf_size = trace_buf_size;
-@@ -4469,8 +4529,6 @@ __init static int tracer_alloc_buffers(v
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -1398,7 +1398,7 @@ static inline int nested_svm_intr(struct
  	return 0;
+ }
  
- out_free_cpumask:
--	free_cpumask_var(tracing_reader_cpumask);
--out_free_tracing_cpumask:
- 	free_cpumask_var(tracing_cpumask);
- out_free_buffer_mask:
- 	free_cpumask_var(tracing_buffer_mask);
+-static void *nested_svm_map(struct vcpu_svm *svm, u64 gpa, enum km_type idx)
++static void *nested_svm_map(struct vcpu_svm *svm, u64 gpa, struct page **_page)
+ {
+ 	struct page *page;
+ 
+@@ -1406,7 +1406,9 @@ static void *nested_svm_map(struct vcpu_
+ 	if (is_error_page(page))
+ 		goto error;
+ 
+-	return kmap_atomic(page, idx);
++	*_page = page;
++
++	return kmap(page);
+ 
+ error:
+ 	kvm_release_page_clean(page);
+@@ -1415,16 +1417,9 @@ error:
+ 	return NULL;
+ }
+ 
+-static void nested_svm_unmap(void *addr, enum km_type idx)
++static void nested_svm_unmap(struct page *page)
+ {
+-	struct page *page;
+-
+-	if (!addr)
+-		return;
+-
+-	page = kmap_atomic_to_page(addr);
+-
+-	kunmap_atomic(addr, idx);
++	kunmap(page);
+ 	kvm_release_page_dirty(page);
+ }
+ 
+@@ -1432,6 +1427,7 @@ static bool nested_svm_exit_handled_msr(
+ {
+ 	u32 param = svm->vmcb->control.exit_info_1 & 1;
+ 	u32 msr = svm->vcpu.arch.regs[VCPU_REGS_RCX];
++	struct page *page;
+ 	bool ret = false;
+ 	u32 t0, t1;
+ 	u8 *msrpm;
+@@ -1439,7 +1435,7 @@ static bool nested_svm_exit_handled_msr(
+ 	if (!(svm->nested.intercept & (1ULL << INTERCEPT_MSR_PROT)))
+ 		return false;
+ 
+-	msrpm = nested_svm_map(svm, svm->nested.vmcb_msrpm, KM_USER0);
++	msrpm = nested_svm_map(svm, svm->nested.vmcb_msrpm, &page);
+ 
+ 	if (!msrpm)
+ 		goto out;
+@@ -1467,7 +1463,7 @@ static bool nested_svm_exit_handled_msr(
+ 	ret = msrpm[t1] & ((1 << param) << t0);
+ 
+ out:
+-	nested_svm_unmap(msrpm, KM_USER0);
++	nested_svm_unmap(page);
+ 
+ 	return ret;
+ }
+@@ -1590,6 +1586,7 @@ static int nested_svm_vmexit(struct vcpu
+ 	struct vmcb *nested_vmcb;
+ 	struct vmcb *hsave = svm->nested.hsave;
+ 	struct vmcb *vmcb = svm->vmcb;
++	struct page *page;
+ 
+ 	trace_kvm_nested_vmexit_inject(vmcb->control.exit_code,
+ 				       vmcb->control.exit_info_1,
+@@ -1597,7 +1594,7 @@ static int nested_svm_vmexit(struct vcpu
+ 				       vmcb->control.exit_int_info,
+ 				       vmcb->control.exit_int_info_err);
+ 
+-	nested_vmcb = nested_svm_map(svm, svm->nested.vmcb, KM_USER0);
++	nested_vmcb = nested_svm_map(svm, svm->nested.vmcb, &page);
+ 	if (!nested_vmcb)
+ 		return 1;
+ 
+@@ -1687,7 +1684,7 @@ static int nested_svm_vmexit(struct vcpu
+ 	/* Exit nested SVM mode */
+ 	svm->nested.vmcb = 0;
+ 
+-	nested_svm_unmap(nested_vmcb, KM_USER0);
++	nested_svm_unmap(page);
+ 
+ 	kvm_mmu_reset_context(&svm->vcpu);
+ 	kvm_mmu_load(&svm->vcpu);
+@@ -1698,9 +1695,10 @@ static int nested_svm_vmexit(struct vcpu
+ static bool nested_svm_vmrun_msrpm(struct vcpu_svm *svm)
+ {
+ 	u32 *nested_msrpm;
++	struct page *page;
+ 	int i;
+ 
+-	nested_msrpm = nested_svm_map(svm, svm->nested.vmcb_msrpm, KM_USER0);
++	nested_msrpm = nested_svm_map(svm, svm->nested.vmcb_msrpm, &page);
+ 	if (!nested_msrpm)
+ 		return false;
+ 
+@@ -1709,7 +1707,7 @@ static bool nested_svm_vmrun_msrpm(struc
+ 
+ 	svm->vmcb->control.msrpm_base_pa = __pa(svm->nested.msrpm);
+ 
+-	nested_svm_unmap(nested_msrpm, KM_USER0);
++	nested_svm_unmap(page);
+ 
+ 	return true;
+ }
+@@ -1719,8 +1717,9 @@ static bool nested_svm_vmrun(struct vcpu
+ 	struct vmcb *nested_vmcb;
+ 	struct vmcb *hsave = svm->nested.hsave;
+ 	struct vmcb *vmcb = svm->vmcb;
++	struct page *page;
+ 
+-	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, KM_USER0);
++	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, &page);
+ 	if (!nested_vmcb)
+ 		return false;
+ 
+@@ -1832,7 +1831,7 @@ static bool nested_svm_vmrun(struct vcpu
+ 	svm->vmcb->control.event_inj = nested_vmcb->control.event_inj;
+ 	svm->vmcb->control.event_inj_err = nested_vmcb->control.event_inj_err;
+ 
+-	nested_svm_unmap(nested_vmcb, KM_USER0);
++	nested_svm_unmap(page);
+ 
+ 	enable_gif(svm);
+ 
+@@ -1858,6 +1857,7 @@ static void nested_svm_vmloadsave(struct
+ static int vmload_interception(struct vcpu_svm *svm)
+ {
+ 	struct vmcb *nested_vmcb;
++	struct page *page;
+ 
+ 	if (nested_svm_check_permissions(svm))
+ 		return 1;
+@@ -1865,12 +1865,12 @@ static int vmload_interception(struct vc
+ 	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
+ 	skip_emulated_instruction(&svm->vcpu);
+ 
+-	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, KM_USER0);
++	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, &page);
+ 	if (!nested_vmcb)
+ 		return 1;
+ 
+ 	nested_svm_vmloadsave(nested_vmcb, svm->vmcb);
+-	nested_svm_unmap(nested_vmcb, KM_USER0);
++	nested_svm_unmap(page);
+ 
+ 	return 1;
+ }
+@@ -1878,6 +1878,7 @@ static int vmload_interception(struct vc
+ static int vmsave_interception(struct vcpu_svm *svm)
+ {
+ 	struct vmcb *nested_vmcb;
++	struct page *page;
+ 
+ 	if (nested_svm_check_permissions(svm))
+ 		return 1;
+@@ -1885,12 +1886,12 @@ static int vmsave_interception(struct vc
+ 	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
+ 	skip_emulated_instruction(&svm->vcpu);
+ 
+-	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, KM_USER0);
++	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, &page);
+ 	if (!nested_vmcb)
+ 		return 1;
+ 
+ 	nested_svm_vmloadsave(svm->vmcb, nested_vmcb);
+-	nested_svm_unmap(nested_vmcb, KM_USER0);
++	nested_svm_unmap(page);
+ 
+ 	return 1;
+ }
 
 
