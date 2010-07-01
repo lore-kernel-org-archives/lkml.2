@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759315Ab0GAVQv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:16:51 -0400
-Received: from kroah.org ([198.145.64.141]:32872 "EHLO coco.kroah.org"
+	id S1756063Ab0GAVRY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:17:24 -0400
+Received: from kroah.org ([198.145.64.141]:32936 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759099Ab0GAVOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:20 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:56 2010
-Message-Id: <20100701174255.972932019@clark.site>
+	id S1759160Ab0GAVOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:31 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:57 2010
+Message-Id: <20100701174257.062362905@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:23 -0700
+Date: Thu, 01 Jul 2010 10:43:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Imre Deak <imre.deak@nokia.com>, Eric Paris <eparis@redhat.com>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [113/200] idr: fix backtrack logic in idr_remove_all
+       Jiri Kosina <jkosina@suse.cz>, Corey Minyard <minyard@acm.org>
+Subject: [126/200] ipmi: handle run_to_completion properly in deliver_recv_msg()
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,87 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@nokia.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 2dcb22b346be7b7b7e630a8970d69cf3f1111ec1 upstream.
+commit a747c5abc329611220f16df0bb4cf0ca4a7fdf0c upstream.
 
-Currently idr_remove_all will fail with a use after free error if
-idr::layers is bigger than 2, which on 32 bit systems corresponds to items
-more than 1024.  This is due to stepping back too many levels during
-backtracking.  For simplicity let's assume that IDR_BITS=1 -> we have 2
-nodes at each level below the root node and each leaf node stores two IDs.
- (In reality for 32 bit systems IDR_BITS=5, with 32 nodes at each sub-root
-level and 32 IDs in each leaf node).  The sequence of freeing the nodes at
-the moment is as follows:
+If run_to_completion flag is set, it means that we are running in a
+single-threaded mode, and thus no locks are held.
 
-layer
-1 ->                       a(7)
-2 ->            b(3)                  c(5)
-3 ->        d(1)   e(2)           f(4)    g(6)
+This fixes a deadlock when IPMI notifier is being called during panic.
 
-Until step 4 things go fine, but then node c is freed, whereas node g
-should be freed first.  Since node c contains the pointer to node g we'll
-have a use after free error at step 6.
-
-How many levels we step back after visiting the leaf nodes is currently
-determined by the msb of the id we are currently visiting:
-
-Step
-1.          node d with IDs 0,1 is freed, current ID is advanced to 2.
-            msb of the current ID bit 1. This means we need to step back
-            1 level to node b and take the next sibling, node e.
-2-3.        node e with IDs 2,3 is freed, current ID is 4, msb is bit 2.
-            This means we need to step back 2 levels to node a, freeing
-            node b on the way.
-4-5.        node f with IDs 4,5 is freed, current ID is 6, msb is still
-            bit 2. This means we again need to step back 2 levels to node
-            a and free c on the way.
-6.          We should visit node g, but its pointer is not available as
-            node c was freed.
-
-The fix changes how we determine the number of levels to step back.
-Instead of deducting this merely from the msb of the current ID, we should
-really check if advancing the ID causes an overflow to a bit position
-corresponding to a given layer.  In the above example overflow from bit 0
-to bit 1 should mean stepping back 1 level.  Overflow from bit 1 to bit 2
-should mean stepping back 2 levels and so on.
-
-The fix was tested with IDs up to 1 << 20, which corresponds to 4 layers
-on 32 bit systems.
-
-Signed-off-by: Imre Deak <imre.deak@nokia.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Acked-by: Corey Minyard <minyard@acm.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- lib/idr.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/char/ipmi/ipmi_si_intf.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -445,6 +445,7 @@ EXPORT_SYMBOL(idr_remove);
- void idr_remove_all(struct idr *idp)
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -314,9 +314,14 @@ static void deliver_recv_msg(struct smi_
  {
- 	int n, id, max;
-+	int bt_mask;
- 	struct idr_layer *p;
- 	struct idr_layer *pa[MAX_LEVEL];
- 	struct idr_layer **paa = &pa[0];
-@@ -462,8 +463,10 @@ void idr_remove_all(struct idr *idp)
- 			p = p->ary[(id >> n) & IDR_MASK];
- 		}
+ 	/* Deliver the message to the upper layer with the lock
+ 	   released. */
+-	spin_unlock(&(smi_info->si_lock));
+-	ipmi_smi_msg_received(smi_info->intf, msg);
+-	spin_lock(&(smi_info->si_lock));
++
++	if (smi_info->run_to_completion) {
++		ipmi_smi_msg_received(smi_info->intf, msg);
++	} else {
++		spin_unlock(&(smi_info->si_lock));
++		ipmi_smi_msg_received(smi_info->intf, msg);
++		spin_lock(&(smi_info->si_lock));
++	}
+ }
  
-+		bt_mask = id;
- 		id += 1 << n;
--		while (n < fls(id)) {
-+		/* Get the highest bit that the above add changed from 0->1. */
-+		while (n < fls(id ^ bt_mask)) {
- 			if (p)
- 				free_layer(p);
- 			n += IDR_BITS;
+ static void return_hosed_msg(struct smi_info *smi_info, int cCode)
 
 
