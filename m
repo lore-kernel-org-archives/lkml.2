@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757897Ab0GASrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:47:41 -0400
-Received: from kroah.org ([198.145.64.141]:35480 "EHLO coco.kroah.org"
+	id S1757735Ab0GASXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:23:05 -0400
+Received: from kroah.org ([198.145.64.141]:35444 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757740Ab0GASXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:07 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:10 2010
-Message-Id: <20100701173210.347052890@clark.site>
+	id S1757711Ab0GASXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:00 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:09 2010
+Message-Id: <20100701173209.681364795@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:08 -0700
+Date: Thu, 01 Jul 2010 10:31:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Shanyu Zhao <shanyu.zhao@intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 042/149] mac80211: fix rts threshold check
+       Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [patch 034/149] USB: mxc: gadget: Fix bitfield for calculating maximum packet size
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shanyu Zhao <shanyu.zhao@intel.com>
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-commit a2c40249a36d0b4d76d1caf6bf806e4ae5b06e8a upstream.
+commit 88e3b59b5adce5b12e205af0e34d518ba0dcdc0c upstream.
 
-Currently whenever rts thresold is set, every packet will use RTS
-protection no matter its size exceeds the threshold or not. This is
-due to a bug in the rts threshold check.
-	if (len > tx->local->hw.wiphy->rts_threshold) {
-		txrc.rts = rts = true;
-	}
-Basically it is comparing an int (len) and a u32 (rts_threshold),
-and the variable len is assigned as:
-	len = min_t(int, tx->skb->len + FCS_LEN,
-			 tx->local->hw.wiphy->frag_threshold);
-However, when frag_threshold is "-1", len is always "-1", which is
-0xffffffff therefore rts is always set to true.
+The max packet length bit mask used for isochronous endpoints
+should be 0x7FF instead of 0x8FF. 0x8FF will actually clear
+higher-order bits in the max packet length field.
 
-Signed-off-by: Shanyu Zhao <shanyu.zhao@intel.com>
-Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch applies to 2.6.34-rc6.
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/tx.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/fsl_udc_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -496,7 +496,8 @@ ieee80211_tx_h_rate_ctrl(struct ieee8021
- 	struct ieee80211_hdr *hdr = (void *)tx->skb->data;
- 	struct ieee80211_supported_band *sband;
- 	struct ieee80211_rate *rate;
--	int i, len;
-+	int i;
-+	u32 len;
- 	bool inval = false, rts = false, short_preamble = false;
- 	struct ieee80211_tx_rate_control txrc;
- 	u32 sta_flags;
-@@ -505,7 +506,7 @@ ieee80211_tx_h_rate_ctrl(struct ieee8021
- 
- 	sband = tx->local->hw.wiphy->bands[tx->channel->band];
- 
--	len = min_t(int, tx->skb->len + FCS_LEN,
-+	len = min_t(u32, tx->skb->len + FCS_LEN,
- 			 tx->local->hw.wiphy->frag_threshold);
- 
- 	/* set up the tx rate control struct we give the RC algo */
+--- a/drivers/usb/gadget/fsl_udc_core.c
++++ b/drivers/usb/gadget/fsl_udc_core.c
+@@ -489,7 +489,7 @@ static int fsl_ep_enable(struct usb_ep *
+ 	case USB_ENDPOINT_XFER_ISOC:
+ 		/* Calculate transactions needed for high bandwidth iso */
+ 		mult = (unsigned char)(1 + ((max >> 11) & 0x03));
+-		max = max & 0x8ff;	/* bit 0~10 */
++		max = max & 0x7ff;	/* bit 0~10 */
+ 		/* 3 transactions at most */
+ 		if (mult > 3)
+ 			goto en_done;
 
 
