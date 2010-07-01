@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468Ab0GATta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 15:49:30 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:65132 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533Ab0GATt3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 15:49:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=It6zJIzfx7XyjH5OC7NTVCM2dCcTpdkjd3Xnhi+7pqjAE0BLQY5uZmWDzS5+I1G5uD
-         i95Vf82yZfsdti0zmTtqWLFgaC4Qii/rI2VxLPcaKSOuG38BYUpJoJpsEys0ruMOuqCv
-         SUZLrxotw3oDv/Ig+5qnUsz/cfrRtjizJxHAA=
+	id S1757537Ab0GATzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 15:55:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19712 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754553Ab0GATzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 15:55:06 -0400
+Date: Thu, 1 Jul 2010 16:54:40 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH] perf wrong branches event on AMD
+Message-ID: <20100701195439.GJ4078@ghostprotocols.net>
+References: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>
 MIME-Version: 1.0
-Date: Thu, 1 Jul 2010 13:49:28 -0600
-Message-ID: <AANLkTikKlTWd2bxLhxbjnfXEuJGneqBxVCa607alXd87@mail.gmail.com>
-Subject: [ANNOUNCE] MDB Merkey's Kernel Debugger x86_64 2.6.34 07-01-2010 
-	Release 4
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://merkeydebugger.googlecode.com/files/mdb-2.6.34-x86_64-07-01-2010.patch
+Em Thu, Jul 01, 2010 at 03:30:16PM -0400, Vince Weaver escreveu:
+> Hello
+> 
+> while doing some performance counter validation tests on some assembly 
+> language programs I noticed that the "branches:u" count was very wrong on 
+> AMD machines.
+> 
+> It looks like the wrong event was selected.
+> 
+> This is why event selection needs to be in user-space... it could be fixed 
+> instantly there, but the way things are done now it will take months to 
+> years for this fix to filter down to those trying to use perf counters...
 
+Well, you can use:
 
-Porting to ARM9 on Montevista Linux.  Adding serial console support for
-ARM9 embedded support.  After working on Montevista all last summer I
-realize a small compact debugger is really needed there for the range
-of ARM processors.
+  rNNN (see 'perf list --help' on how to encode it) [Raw hardware event descriptor]
 
-FIXES:
-- fixed LR (cpu #) register dump for suspended processors on X86_64
-- added sleeping thread register frame display in .P and PS commands
+In the meantime.
 
-TODO
-- continue to investigate rex64 sysret instruction issue
-- add and test serial driver for remote MDB support
-- integrate GDB ARM9 disassembler into MDB for ARM9 Montevista
-- integrate IA64 disassembler and write mdb-ia64.c module for IA64
-
-
-Jeffrey Vernon Merkey
+- Arnaldo
