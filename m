@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab0GAAd1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 20:33:27 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61529 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab0GAAdO (ORCPT
+	id S1752544Ab0GAAgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 20:36:38 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49302 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab0GAAgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 20:33:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=mF/SlLX+SNwIyAlxj+d9Y+ztz4/5PJkQ7sn6ieTa82UICNPf6GZrqiNX4qhlIHEvSH
-         LFQi42cqPw71capKhVJkO2IjbQEFrNuL04OtuJoan5IPFlOzmn1bNZtpVQ3pgXxVdj+g
-         bWrgdw/9YNu7ARAIG0aLXfwzLICt9Rz6cS7Yw=
-Message-ID: <4C2BE243.5040308@garzik.org>
-Date: Wed, 30 Jun 2010 20:33:07 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: amruth pattanada <amruth.vamadev@gmail.com>
-CC: Robert Hancock <hancockrwd@gmail.com>, linux-ide@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Setting up Silicon image 3114 in DMA mode
-References: <AANLkTinYuxwsLQKGRd6joRSCcbnns930DDienlhfEB8i@mail.gmail.com> <4C257E67.9090101@gmail.com> <AANLkTikeQO1v-ag_DDbkgxoZRTk1_fomn1kbHKqH9vkD@mail.gmail.com> <AANLkTimOu5GfUN848EOiMIZONHrRjgYyexmwBL3OCAMs@mail.gmail.com>
-In-Reply-To: <AANLkTimOu5GfUN848EOiMIZONHrRjgYyexmwBL3OCAMs@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 30 Jun 2010 20:36:36 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 1 Jul 2010 09:31:30 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Nathan Fontenot <nfont@austin.ibm.com>,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] memory hotplug disable boot option
+Message-Id: <20100701093130.c5e2b564.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100630154755.GB12158@suse.de>
+References: <20100628154455.GA13918@suse.de>
+	<1277769867.8354.531.camel@nimitz>
+	<20100629115232.38BC.A69D9226@jp.fujitsu.com>
+	<1277827384.8354.3413.camel@nimitz>
+	<20100629180415.GB1240@suse.de>
+	<20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100630154755.GB12158@suse.de>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2010 08:30 AM, amruth pattanada wrote:
-> Hi
-> I need some clarification regarding read DMA data from silicon image
-> controller. How do know that DMA transfer happened and where to look
-> for the data after the transfer. Should we look at BAR2 channel X Task
-> file register data word or look into allocated DMA buffer which is
-> specified in the PRD table. I am reading 0x00 in the PRD table scatter
-> gather list and it hangs in the when I tried to read data word of
-> channel task file register. Please let me know how to read data buffer
-> after the DMA is complete.
+On Wed, 30 Jun 2010 08:47:55 -0700
+Greg KH <gregkh@suse.de> wrote:
+> > and adding a scalable interface for large scale machines ?
+> > I'd like to consider something..
+> 
+> Dynamically changing the layout on big memory boxes makes sense to me,
+> how about you?
+> 
 
-Teaching you how to write a non-Linux driver is outside the scope of 
-linux-ide and linux-kernel.  This information is covered by the freely 
-available Silicon Image documentation, and SiI support should be able to 
-assist you further beyond that.
+like this ?
+==
+boot option:
+memory_sysfs_layout=compact
+memory_sysfs_layout=auto (default)
+memory_sysfs_layout=full
 
-	Jeff
+Considering briefly, how about this compact layout ?
+
+/sys/devices/system/memory/:
+                            list, hide, show, memoryX...
+
+list: // show available memory index list.
+  #cat list
+   0 1 2 ....10000...
+
+show: //an interface to enable the interface.
+  #echo INDEX > memory_index
+  will create memoryINDEX diretory.
+
+hide: //an interface to hide the interface.
+  #echo INDEX > memory_hide
+  will remove memoryINDEX sysfs directory.
+
+
+In compact mode, all memoryX interface are hidden at boot.
+In full mode, all memoryX interaface are shown.
+The Boot option just affects status at boot. If users want, he can make
+all memory sysfs in shown state.
+
+At hot-add event (via acpi) or probe-event, newly created memory section
+should be start from "shown" mode. hotplug scirpt can hide it after online.
+
+At hot-remove, the users has to offline memory before hotplug. He'll has
+to do check list and show interface.
+
+I think this change is not very difficult technically but can this kind of
+interface be allowed ?
+
+Thanks,
+-Kame
+
 
 
 
