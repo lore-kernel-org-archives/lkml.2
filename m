@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab0GAW5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:57:07 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50184 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab0GAW5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 18:57:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=eiL/e8narJ0kRxzwPa+fsTdG/lhkiMKE0ZKb8JOT5N9uvvgaBvp1xsnlVikUXT4/Wk
-         UmHBkZaYhiuhi+/hqJ9NK/8KB3cW6EsIGDz66D6ARmciI2Ga/Hnmb0N7GXSKU5Ef5jrz
-         ZBFuLwDu9zGt13jnujSicADXg19N/GbFT7Tns=
+	id S1754771Ab0GAW7N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:59:13 -0400
+Received: from shutemov.name ([188.40.19.243]:58737 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab0GAW7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 18:59:12 -0400
+Date: Fri, 2 Jul 2010 01:59:11 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Russell King <rmk@arm.linux.org.uk>, g@shutemov.name
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+       stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Anfei Zhou <anfei.zhou@gmail.com>
+Subject: Re: [patch 071/149] ARM: 6166/1: Proper prefetch abort handling on
+ pre-ARMv6
+Message-ID: <20100701225911.GC10481@shutemov.name>
+References: <20100701175144.GA2116@kroah.com>
+ <20100701173212.785441106@clark.site>
+ <20100701221420.GA10481@shutemov.name>
+ <20100701221728.GA12187@suse.de>
+ <20100701222541.GB10481@shutemov.name>
+ <20100701224837.GA27389@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1278024678.7738.54.camel@c-dwalke-linux.qualcomm.com>
-References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
-	<AANLkTimgH-DiQyg0f-an5FS3Wyb2b6He3fxxB1L8Ziol@mail.gmail.com>
-	<1278024678.7738.54.camel@c-dwalke-linux.qualcomm.com>
-Date: Fri, 2 Jul 2010 08:57:02 +1000
-Message-ID: <AANLkTinNrpcBg0TXTS78qaI5kPQKD-IbnLpDStu4_BIg@mail.gmail.com>
-Subject: Re: Closed source userspace graphics drivers with an open source 
-	kernel component
-From: Dave Airlie <airlied@gmail.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100701224837.GA27389@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 2, 2010 at 8:51 AM, Daniel Walker <dwalker@codeaurora.org> wrote:
-> On Fri, 2010-07-02 at 08:36 +1000, Dave Airlie wrote:
->> On Fri, Jul 2, 2010 at 8:10 AM, Dave Airlie <airlied@gmail.com> wrote:
->> > Now this is just my opinion as maintainer of the drm, and doesn't
->> > reflect anyone or any official policy, I've also no idea if Linus
->> > agrees or not.
->> >
->> > We are going to start to see a number of companies in the embedded
->> > space submitting 3D drivers for mobile devices to the kernel. I'd like
->> > to clarify my position once so they don't all come asking the same
->> > questions.
->> >
->> > If you aren't going to create an open userspace driver (either MIT or
->> > LGPL) then don't waste time submitting a kernel driver to me.
->
-> If , for whatever reason, you changed you mind on this what sort of
-> connection between kernel and userspace would these components use?
->
-> I ask only because I think UIO hold most (if not all) the driver in
-> userspace .. So you would have to use some other interface if you wanted
-> a more half and half solution ..
->
+On Thu, Jul 01, 2010 at 11:48:37PM +0100, Russell King wrote:
+> On Fri, Jul 02, 2010 at 01:25:41AM +0300, Kirill A. Shutemov wrote:
+> > On Thu, Jul 01, 2010 at 03:17:28PM -0700, Greg KH wrote:
+> > > We (well, I) like to keep the commit log identical to what is upstream
+> > > just to make things easier all around.  Otherwise people start asking
+> > > for spelling fixes, clarifications, and all sorts of other stuff (like
+> > > this.)
+> > 
+> > Ok, fair enough.
+> > 
+> > I asked for it because I was confused by this commit message while
+> > investigate (the same) problem on ARMv7 CPU.
+> 
+> You shouldn't get anywhere near this on ARMv7, because we know the cause
+> of the prefetch abort on those CPUs.
+> 
+> On pre-ARMv6 CPUs, we always treat all prefetch aborts as a translation
+> faults.  The problem which this commit addresses occurs when userspace
+> tries to execute code above TASK_SIZE - we're sent into a loop of prefetch
+> aborts (because we are unable to determine that it is a permission fault.)
+> 
+> ARMv6 and ARMv7 CPUs have an instruction fault status register, which
+> tells us why the abort happened.  On these CPUs, permission faults go
+> nowhere near the translation fault handler.
 
-The thing is UIO doesn't solve the problem 3D graphics drivers need to
-solve. Which is we need to let unprivileged users access the graphics
-device in an efficient manner, hence why DRI/DRM exists. Now I think
-the tegra guys have done some evil hacks with a userspace daemon to
-replace the kernel functionality, so all they have in-kernel is a
-framebuffer device, since they can't really get away with shipping the
-binary nvidia driver linked to the kernel in a real device. So all
-their userspace closed bits talk to the daemon running as root with
-direct access to the lowlevel hw.
+I know it. I was involved in writing this code.
+ 
+> One possibility is that for some reason you're using the legacy prefetch
+> abort code or pre-IFSR code, which will always tell the kernel that its
+> a translation fault - and in this case, this patch would improve the
+> situation.  What kernel version are you using?
 
-Dave.
+2.6.32
+
+> The commit message is accurate for the kernel version to which it was
+> originally applied.
+
+Simple testcase:
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+int main(int argc, char **argv)
+{
+	int fd;
+	void (*p)(void);
+
+	fd = open("/dev/urandom", O_RDONLY);
+	read(0, &p, sizeof(p));
+	printf("p: %p\n", p);
+	p();
+	return 0;
+}
+
+If you run this test in loop on kernel without the patch you'll finally
+get hung instead SIGSEGV.
+
+It seems the patch fixes more than it was written for. :)
+
+-- 
+ Kirill A. Shutemov
