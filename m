@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab0GAT2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 15:28:53 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37484 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab0GAT2v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 15:28:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=XUXC1Xf3w6rtIDUBMdZDyRlh36cZpmsXwYT5V1MEvy9Ps3x7zsHf8ikp4poxCS2it3
-         ZZtACE3otND9W4406TNdoHVit2CFJOUGZHLiU++sBe3O2rOg4bNR8N/12SzlTlsUy+6P
-         Y/YjKDrn7fot2X52oSVfN2zmEVpcVWCA1woAI=
+	id S1754395Ab0GATba (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 15:31:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40619 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751979Ab0GATb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 15:31:28 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH 5/6] X86 platform drivers: Remove EC dump from thinkpad_acpi
+Date: Thu, 1 Jul 2010 21:31:18 +0200
+User-Agent: KMail/1.9.10
+Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org, astarikovskiy@suse.de,
+       ibm-acpi-devel@lists.sourceforge.net
+References: <1277996570-2686-1-git-send-email-trenn@suse.de> <1277996570-2686-6-git-send-email-trenn@suse.de> <20100701162741.GC4789@khazad-dum.debian.net>
+In-Reply-To: <20100701162741.GC4789@khazad-dum.debian.net>
 MIME-Version: 1.0
-Date: Thu, 1 Jul 2010 13:28:40 -0600
-Message-ID: <AANLkTimxEWtrUPyzK1jfYpQbowwXiBGNmQUpMBOj513o@mail.gmail.com>
-Subject: 2.6.34 "make distclean" does not "make distclean"
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201007012131.20031.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"make distclean" leaves the following files, including a binary file
-in the build tree without deleting them which results in this
-stuff ending up in patches that has to be removed manually each time I
-scrub a tree and cut patches against.
+On Thursday 01 July 2010 06:27:41 pm Henrique de Moraes Holschuh wrote:
+> On Thu, 01 Jul 2010, Thomas Renninger wrote:
+...
+> I'd prefer if the above text gets replaced by something that adds a pointer
+> to the new facility, instead of being just outright removed.  Also, the
+> text about how to use the facility to detect tachometers and thermometers
+> should be retained, if at all possible.
+I agree. I'll repost this one in some days.
 
-diff -Naur linux-2.6.34/arch/x86/tools/test_get_len
-linux-2.6.34-work/arch/x86/tools/test_get_len
---- linux-2.6.34/arch/x86/tools/test_get_len	1969-12-31 17:00:00.000000000 -0700
-+++ linux-2.6.34-work/arch/x86/tools/test_get_len	2010-06-30
-22:36:40.000000000 -0600
-diff -Naur linux-2.6.34/drivers/gpu/drm/radeon/r100_reg_safe.h
-linux-2.6.34-work/drivers/gpu/drm/radeon/r100_reg_safe.h
---- linux-2.6.34/drivers/gpu/drm/radeon/r100_reg_safe.h	1969-12-31
-17:00:00.000000000 -0700
-+++ linux-2.6.34-work/drivers/gpu/drm/radeon/r100_reg_safe.h	2010-06-30
-22:33:19.000000000 -0600
-diff -Naur linux-2.6.34/drivers/gpu/drm/radeon/r200_reg_safe.h
-linux-2.6.34-work/drivers/gpu/drm/radeon/r200_reg_safe.h
---- linux-2.6.34/drivers/gpu/drm/radeon/r200_reg_safe.h	1969-12-31
-17:00:00.000000000 -0700
-+++ linux-2.6.34-work/drivers/gpu/drm/radeon/r200_reg_safe.h	2010-06-30
-22:33:19.000000000 -0600
-diff -Naur linux-2.6.34/drivers/gpu/drm/radeon/r300_reg_safe.h
-linux-2.6.34-work/drivers/gpu/drm/radeon/r300_reg_safe.h
---- linux-2.6.34/drivers/gpu/drm/radeon/r300_reg_safe.h	1969-12-31
-17:00:00.000000000 -0700
-+++ linux-2.6.34-work/drivers/gpu/drm/radeon/r300_reg_safe.h	2010-06-30
-22:33:23.000000000 -0600
-diff -Naur linux-2.6.34/drivers/gpu/drm/radeon/r420_reg_safe.h
-linux-2.6.34-work/drivers/gpu/drm/radeon/r420_reg_safe.h
---- linux-2.6.34/drivers/gpu/drm/radeon/r420_reg_safe.h	1969-12-31
-17:00:00.000000000 -0700
-+++ linux-2.6.34-work/drivers/gpu/drm/radeon/r420_reg_safe.h	2010-06-30
-22:33:19.000000000 -0600
-diff -Naur linux-2.6.34/drivers/gpu/drm/radeon/r600_reg_safe.h
-linux-2.6.34-work/drivers/gpu/drm/radeon/r600_reg_safe.h
---- linux-2.6.34/drivers/gpu/drm/radeon/r600_reg_safe.h	1969-12-31
-17:00:00.000000000 -0700
-+++ linux-2.6.34-work/drivers/gpu/drm/radeon/r600_reg_safe.h	2010-06-30
-22:33:20.000000000 -0600
-diff -Naur linux-2.6.34/drivers/gpu/drm/radeon/rn50_reg_safe.h
-linux-2.6.34-work/drivers/gpu/drm/radeon/rn50_reg_safe.h
---- linux-2.6.34/drivers/gpu/drm/radeon/rn50_reg_safe.h	1969-12-31
-17:00:00.000000000 -0700
-+++ linux-2.6.34-work/drivers/gpu/drm/radeon/rn50_reg_safe.h	2010-06-30
-22:33:20.000000000 -0600
-diff -Naur linux-2.6.34/drivers/gpu/drm/radeon/rs600_reg_safe.h
-linux-2.6.34-work/drivers/gpu/drm/radeon/rs600_reg_safe.h
---- linux-2.6.34/drivers/gpu/drm/radeon/rs600_reg_safe.h	1969-12-31
-17:00:00.000000000 -0700
-+++ linux-2.6.34-work/drivers/gpu/drm/radeon/rs600_reg_safe.h	2010-06-30
-22:33:23.000000000 -0600
-diff -Naur linux-2.6.34/drivers/gpu/drm/radeon/rv515_reg_safe.h
-linux-2.6.34-work/drivers/gpu/drm/radeon/rv515_reg_safe.h
---- linux-2.6.34/drivers/gpu/drm/radeon/rv515_reg_safe.h	1969-12-31
-17:00:00.000000000 -0700
-+++ linux-2.6.34-work/drivers/gpu/drm/radeon/rv515_reg_safe.h	2010-06-30
-22:33:23.000000000 -0600
-diff -Naur linux-2.6.34/security/selinux/av_permissions.h
-linux-2.6.34-work/security/selinux/av_permissions.h
---- linux-2.6.34/security/selinux/av_permissions.h	1969-12-31
-17:00:00.000000000 -0700
-+++ linux-2.6.34-work/security/selinux/av_permissions.h	2010-06-30
-22:35:28.000000000 -0600
+> Soes your helper userspace util do the "differential" analysis that
+> thinkpad-acpi used to (the "*" after values that changed since last read)?
+No.
+But this should not be important enough to not get this removed.
+It's hard to re-implement the exact behaviour (which can be handy for
+specific problems, I agree).
+With:
+watch -n1 ec_access -r
+you can have a close look at specific registers and see them changing.
+Whatabout:
+ec_access -r -s time(s)
+Reads the table once and again after "time" seconds with stars
+where modifications happened. Then someone can plug AC or hit a button
+and look at the diff in EC registers afterwards.
+This should be sufficient?
+Better ideas?
+
+Thanks,
+
+       Thomas
