@@ -1,62 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758291Ab0GAUrT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:47:19 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36737 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754911Ab0GAUrR (ORCPT
+	id S1758364Ab0GAUtB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:49:01 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57302 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755647Ab0GAUs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:47:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=BpiK2mLURKr1HLRy7SaZgN8m6gA5K03ThSQ8huaBSSOMehLoE5XnEGvpJfQ8Kq9if6
-         d32u7xnms5AtD2tggj/gM06CO+MdP9MAVT0hsJFio0QJ/PTDgzI1znMUGbs/OAL005Gs
-         x68hJcWxibWYtiveXMEA0W6XY5sJAjUIaCVaI=
-Subject: Re: Provide /sys/../ec with read/write access and some cleanups
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-       platform-driver-x86@vger.kernel.org, astarikovskiy@suse.de
-In-Reply-To: <1277996570-2686-1-git-send-email-trenn@suse.de>
-References: <1277996570-2686-1-git-send-email-trenn@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Jul 2010 23:47:13 +0300
-Message-ID: <1278017233.7029.7.camel@localhost.localdomain>
+	Thu, 1 Jul 2010 16:48:59 -0400
+Date: Thu, 1 Jul 2010 13:48:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anton Vorontsov <avorontsov@mvista.com>
+Cc: Ben Dooks <ben@simtec.co.uk>,
+       Richard =?ISO-8859-1?Q?R=F6jfors?= 
+	<richard.rojfors@pelagicore.com>,
+       linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] sdhci-pltfm: Add support for CNS3xxx SoC devices
+Message-Id: <20100701134839.d7cb4841.akpm@linux-foundation.org>
+In-Reply-To: <20100625180644.GC18241@oksana.dev.rtsoft.ru>
+References: <20100625180527.GA11280@oksana.dev.rtsoft.ru>
+	<20100625180644.GC18241@oksana.dev.rtsoft.ru>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-01 at 17:02 +0200, Thomas Renninger wrote:
-> These patches are diffed against the test branch of the ACPI tree, but also
-> patch fine with 2.6.35-rc3.
-> 
-> I thought about tainting the kernel if someone writes to the EC, but as
-> userspace can also write to graphics IO, PCI config or MSRs, it shouldn't
-> matter that much.
-> Eventually this should still be added (by a separate patch), one can easily
-> confuse the EC to not switch on the fans anymore.
-> 
-> A small tool to read out and write to /sys/devices/system/ec/*/io can be
-> found here:
-> ftp://ftp.suse.com/pub/people/trenn/sources/ec/ec_access.c
-> 
-> Len: Can you apply these into your test branch and schedule them for linux-next
-> and 2.6.36 if there are no objections, please.
-> 
-> Thanks,
-> 
->      Thomas
+On Fri, 25 Jun 2010 22:06:44 +0400
+Anton Vorontsov <avorontsov@mvista.com> wrote:
 
-This is great patchset, I was even thinking doing that myself.
+> There's nothing special, just SoC-specific ops and quirks.
+> 
+> ...
+>
+> +static void sdhci_cns3xxx_set_clock(struct sdhci_host *host, unsigned int clock)
+> +{
+> +	struct device *dev = mmc_dev(host->mmc);
+> +	int div = 1;
+> +	u16 clk;
+> +	unsigned long timeout;
+> +
+> +	if (clock == host->clock)
+> +		return;
 
-While at it, could you also provide a broken down table of EC GPEs like
-the one in /sys/firmware/acpi/interrupts/ ?
+I assume that mmc core prevents this function from being exectued twice
+at the same time?
 
-Best regards,
-	Maxim Levitsky
+> +	sdhci_writew(host, 0, SDHCI_CLOCK_CONTROL);
+> +
+> +	if (clock == 0)
+> +		goto out;
+> +
+> +	while (host->max_clk / div > clock) {
+> +		/*
+> +		 * On CNS3xxx divider grows linearly up to 4, and then
+> +		 * exponentially up to 256.
+> +		 */
+> +		if (div < 4)
+> +			div += 1;
+> +		else if (div < 256)
+> +			div *= 2;
+> +		else
+> +			break;
+> +	}
+> +
+> +	dev_dbg(dev, "desired SD clock: %d, actual: %d\n",
+> +		clock, host->max_clk / div);
+> +
+> +	/* Divide by 3 is special. */
+> +	if (div != 3)
+> +		div >>= 1;
+> +
+> +	clk = div << SDHCI_DIVIDER_SHIFT;
+> +	clk |= SDHCI_CLOCK_INT_EN;
+> +	sdhci_writew(host, clk, SDHCI_CLOCK_CONTROL);
+> +
+> +	timeout = 20;
+> +	while (!((clk = sdhci_readw(host, SDHCI_CLOCK_CONTROL))
+> +			& SDHCI_CLOCK_INT_STABLE)) {
+> +		if (timeout == 0) {
+> +			dev_warn(dev, "clock is unstable");
+> +			break;
+> +		}
+> +		timeout--;
+> +		mdelay(1);
 
+Could we have used the more polite msleep() here?
+
+> +	}
+> +
+> +	clk |= SDHCI_CLOCK_CARD_EN;
+> +	sdhci_writew(host, clk, SDHCI_CLOCK_CONTROL);
+> +out:
+> +	host->clock = clock;
+> +}
+> +
+>
+> ...
+>
+> --- a/drivers/mmc/host/sdhci-pltfm.c
+> +++ b/drivers/mmc/host/sdhci-pltfm.c
+> @@ -158,6 +158,9 @@ static int __devexit sdhci_pltfm_remove(struct platform_device *pdev)
+>  
+>  static const struct platform_device_id sdhci_pltfm_ids[] = {
+>  	{ "sdhci", },
+> +#ifdef CONFIG_MMC_SDHCI_CNS3XXX
+> +	{ "sdhci-cns3xxx", (kernel_ulong_t)&sdhci_cns3xxx_pdata },
+> +#endif
+
+What the heck is this kernel_ulong_t thing and why did `struct
+platform_device_id' see a need to invent it??
+
+
+>  	{ },
+>  };
+>  MODULE_DEVICE_TABLE(platform, sdhci_pltfm_ids);
+>
+> ...
+>
