@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326Ab0GAOZb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 10:25:31 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:18208 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520Ab0GAOZa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 10:25:30 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Thu, 01 Jul 2010 16:26:37 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH] USB: gadget: mass storage: use proper device class in
- device desc
-In-reply-to: <Pine.LNX.4.44L0.1007011004370.1596-100000@iolanthe.rowland.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <op.ve542ns17p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <Pine.LNX.4.44L0.1007011004370.1596-100000@iolanthe.rowland.org>
+	id S1756349Ab0GAO3K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 10:29:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35710 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753811Ab0GAO3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 10:29:08 -0400
+Message-ID: <4C2CA5C5.4040402@kernel.org>
+Date: Thu, 01 Jul 2010 16:27:17 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Sridhar Samudrala <sri@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+References: <20100625101022.GA16321@redhat.com> <20100701110708.GA27368@redhat.com> <1277983179.1917.10.camel@laptop> <1277984603.1917.15.camel@laptop> <20100701115507.GA31333@redhat.com> <20100701122340.GB31333@redhat.com> <1277987657.1917.32.camel@laptop> <1277988395.1917.47.camel@laptop> <20100701130816.GB32223@redhat.com> <1277991024.1917.108.camel@laptop> <20100701133956.GD32223@redhat.com>
+In-Reply-To: <20100701133956.GD32223@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 01 Jul 2010 14:27:30 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 1 Jul 2010, Michal Nazarewicz wrote:
->> Each time I see the device descriptor of the File Storage Gadget
->> I wonder if it shouldn't be set to the real value rather then leaving
->> it as per interface.
+Hello,
 
-On Thu, 01 Jul 2010 16:09:39 +0200, Alan Stern <stern@rowland.harvard.edu> wrote:
-> It should not be changed.
+On 07/01/2010 03:39 PM, Michael S. Tsirkin wrote:
+>> I think that's called kernel_thread() see
+>> kernel/kthread.c:create_kthread().
+>>
+>> Doing the whole kthreadd dance and then copying bits and pieces back
+>> sounds very fragile, so yeah, something like that should work.
+> 
+> Thanks!
+> Sridhar, Tejun, have the time to look into this approach?
 
->> Is there a reason to leave it as per interface?
+All that's necessary is shortcutting indirection through kthreadd.
+ie. An exported function which looks like the following,
 
-> See Table 4.1 in the USB Mass Storage Bulk-Only Transport
-> specification and Table 3.1 in the CBI Transport specification.
+ struct kthread_clone_or_whatever(int (*threadfn).....)
+ {
+	struct kthread_create_info create;
+	int pid;
 
-Ha! Thanks for clarification.  Will have to look more careful through
-the specs next time.
+	INIT create;
+
+	pid = kernel_thread(kthread, &create, CLONE_FS...);
+	if (pid < 0)
+		return ERROR;
+	wait_for_completion(&create.done);
+
+	if (!IS_ERR(create.result))
+		SET NAME;
+	return create.result;
+ }
+
+It might be a good idea to make the function take extra clone flags
+but anyways once created cloned task can be treated the same way as
+other kthreads, so nothing else needs to be changed.
+
+Thanks.
 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+tejun
