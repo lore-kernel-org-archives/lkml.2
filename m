@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab0GASZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:25:46 -0400
-Received: from kroah.org ([198.145.64.141]:40890 "EHLO coco.kroah.org"
+	id S1758365Ab0GAScA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:32:00 -0400
+Received: from kroah.org ([198.145.64.141]:40761 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932087Ab0GASYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:37 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:19 2010
-Message-Id: <20100701173219.166867714@clark.site>
+	id S1758067Ab0GASYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:14 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:16 2010
+Message-Id: <20100701173216.846632087@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:52 -0700
+Date: Thu, 01 Jul 2010 10:32:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>, David Howells <dhowells@redhat.com>,
-       James Morris <jmorris@namei.org>
-Subject: [patch 146/149] KEYS: Return more accurate error codes
+       Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [patch 119/149] ext4: check s_log_groups_per_flex in online resize code
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit 4d09ec0f705cf88a12add029c058b53f288cfaa2 upstream.
+commit 42007efd569f1cf3bfb9a61da60ef6c2179508ca upstream.
 
-We were using the wrong variable here so the error codes weren't being returned
-properly.  The original code returns -ENOKEY.
+If groups_per_flex < 2, sbi->s_flex_groups[] doesn't get filled out,
+and every other access to this first tests s_log_groups_per_flex;
+same thing needs to happen in resize or we'll wander off into
+a null pointer when doing an online resize of the file system.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Thanks to Christoph Biedl, who came up with the trivial testcase:
+
+# truncate --size 128M fsfile
+# mkfs.ext3 -F fsfile
+# tune2fs -O extents,uninit_bg,dir_index,flex_bg,huge_file,dir_nlink,extra_isize fsfile
+# e2fsck -yDf -C0 fsfile
+# truncate --size 132M fsfile
+# losetup /dev/loop0 fsfile
+# mount /dev/loop0 mnt
+# resize2fs -p /dev/loop0
+
+	https://bugzilla.kernel.org/show_bug.cgi?id=13549
+
+Reported-by: Alessandro Polverini <alex@nibbles.it>
+Test-case-by: Christoph Biedl  <bugzilla.kernel.bpeb@manchmal.in-ulm.de>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/keys/process_keys.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/ext4/resize.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -509,7 +509,7 @@ try_again:
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -930,7 +930,8 @@ int ext4_group_add(struct super_block *s
+ 	percpu_counter_add(&sbi->s_freeinodes_counter,
+ 			   EXT4_INODES_PER_GROUP(sb));
  
- 			ret = install_thread_keyring();
- 			if (ret < 0) {
--				key = ERR_PTR(ret);
-+				key_ref = ERR_PTR(ret);
- 				goto error;
- 			}
- 			goto reget_creds;
-@@ -527,7 +527,7 @@ try_again:
- 
- 			ret = install_process_keyring();
- 			if (ret < 0) {
--				key = ERR_PTR(ret);
-+				key_ref = ERR_PTR(ret);
- 				goto error;
- 			}
- 			goto reget_creds;
-@@ -586,7 +586,7 @@ try_again:
- 
- 	case KEY_SPEC_GROUP_KEYRING:
- 		/* group keyrings are not yet supported */
--		key = ERR_PTR(-EINVAL);
-+		key_ref = ERR_PTR(-EINVAL);
- 		goto error;
- 
- 	case KEY_SPEC_REQKEY_AUTH_KEY:
+-	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG)) {
++	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG) &&
++	    sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group;
+ 		flex_group = ext4_flex_group(sbi, input->group);
+ 		atomic_add(input->free_blocks_count,
 
 
