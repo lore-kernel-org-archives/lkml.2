@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759044Ab0GAVOH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:14:07 -0400
-Received: from kroah.org ([198.145.64.141]:33775 "EHLO coco.kroah.org"
+	id S933473Ab0GAVtO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:49:14 -0400
+Received: from kroah.org ([198.145.64.141]:60974 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758805Ab0GAVNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:00 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:48 2010
-Message-Id: <20100701174248.299881798@clark.site>
+	id S1759031Ab0GAVOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:01 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
+Message-Id: <20100701174254.100650266@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:41:52 -0700
+Date: Thu, 01 Jul 2010 10:43:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       =?ISO-8859-15?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
-       Sven Eckelmann <sven.eckelmann@gmx.de>, Andrew Lunn <andrew@lunn.ch>
-Subject: [022/200] Staging: batman-adv: Fixing wrap-around bug in vis
+       Joerg Roedel <joerg.roedel@amd.com>
+Subject: [091/200] x86/amd-iommu: Fall back to GART if initialization fails
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit ea4ceb18b525fd7016c10995c0f1313a729c7e2b upstream.
+commit d7f0776975334070a93370ae048fda0c31a91c38 upstream.
 
-When the seqno for a vis packet had a wrap around from i.e. 255 to 0,
-add_packet() would falsely claim the older packet with the seqno 255 as
-newer as the one with the seqno of 0 and would therefore ignore the new
-packet. This happens with all following vis packets until the old vis
-packet expires after 180 seconds timeout. This patch fixes this issue
-and gets rid of these highly undesired 3min. breaks for the vis-server.
+This patch implements a fallback to the GART IOMMU if this
+is possible and the AMD IOMMU initialization failed.
+Otherwise the fallback would be nommu which is very
+problematic on machines with more than 4GB of memory or
+swiotlb which hurts io-performance.
 
-Signed-off-by: Linus Lüssing <linus.luessing@web.de>
-Signed-off-by: Sven Eckelmann <sven.eckelmann@gmx.de>
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/batman-adv/vis.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ arch/x86/kernel/amd_iommu.c      |    4 ----
+ arch/x86/kernel/amd_iommu_init.c |    9 +++++++++
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/batman-adv/vis.c
-+++ b/drivers/staging/batman-adv/vis.c
-@@ -27,6 +27,22 @@
- #include "hard-interface.h"
- #include "hash.h"
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -2257,10 +2257,6 @@ int __init amd_iommu_init_dma_ops(void)
  
-+/* Returns the smallest signed integer in two's complement with the sizeof x */
-+#define smallest_signed_int(x) (1u << (7u + 8u * (sizeof(x) - 1u)))
-+
-+/* Checks if a sequence number x is a predecessor/successor of y.
-+   they handle overflows/underflows and can correctly check for a
-+   predecessor/successor unless the variable sequence number has grown by
-+   more then 2**(bitwidth(x)-1)-1.
-+   This means that for a uint8_t with the maximum value 255, it would think:
-+    * when adding nothing - it is neither a predecessor nor a successor
-+    * before adding more than 127 to the starting value - it is a predecessor,
-+    * when adding 128 - it is neither a predecessor nor a successor,
-+    * after adding more than 127 to the starting value - it is a successor */
-+#define seq_before(x, y) ({typeof(x) _dummy = (x - y); \
-+			  _dummy > smallest_signed_int(_dummy); })
-+#define seq_after(x, y) seq_before(y, x)
-+
- struct hashtable_t *vis_hash;
- DEFINE_SPINLOCK(vis_hash_lock);
- static DEFINE_SPINLOCK(recv_list_lock);
-@@ -212,7 +228,7 @@ static struct vis_info *add_packet(struc
- 	old_info = hash_find(vis_hash, &search_elem);
+ 	iommu_detected = 1;
+ 	swiotlb = 0;
+-#ifdef CONFIG_GART_IOMMU
+-	gart_iommu_aperture_disabled = 1;
+-	gart_iommu_aperture = 0;
+-#endif
  
- 	if (old_info != NULL) {
--		if (vis_packet->seqno - old_info->packet.seqno <= 0) {
-+		if (!seq_after(vis_packet->seqno, old_info->packet.seqno)) {
- 			if (old_info->packet.seqno == vis_packet->seqno) {
- 				recv_list_add(&old_info->recv_list,
- 					      vis_packet->sender_orig);
+ 	/* Make the driver finally visible to the drivers */
+ 	dma_ops = &amd_iommu_dma_ops;
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -1357,6 +1357,15 @@ free:
+ 
+ 	free_unity_maps();
+ 
++#ifdef CONFIG_GART_IOMMU
++	/*
++	 * We failed to initialize the AMD IOMMU - try fallback to GART
++	 * if possible.
++	 */
++	gart_iommu_init();
++
++#endif
++
+ 	goto out;
+ }
+ 
 
 
