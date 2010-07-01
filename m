@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003Ab0GASMP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:12:15 -0400
-Received: from kroah.org ([198.145.64.141]:60099 "EHLO coco.kroah.org"
+	id S1756941Ab0GASMv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:12:51 -0400
+Received: from kroah.org ([198.145.64.141]:60075 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755326Ab0GASK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:10:56 -0400
+	id S1755255Ab0GASKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:10:53 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:57 2010
-Message-Id: <20100701172857.880436803@clark.site>
+Message-Id: <20100701172857.627264388@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:27:06 -0700
+Date: Thu, 01 Jul 2010 10:27:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Neil Horman <nhorman@tuxdriver.com>,
-       Vlad Yasevich <vladislav.yasevich@hp.com>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [17/23] sctp: Fix skb_over_panic resulting from multiple invalid parameter errors (CVE-2010-1173) (v4)
+       "Theodore Tso" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+       "Jayson R. King" <dev@jaysonking.com>,
+       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [14/23] ext4: Use our own write_cache_pages()
 In-Reply-To: <20100701175134.GA2098@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,223 +29,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 5fa782c2f5ef6c2e4f04d3e228412c9b4a4c8809 upstream.
+From: Theodore Ts'o <tytso@mit.edu>
 
-Ok, version 4
+commit 8e48dcfbd7c0892b4cfd064d682cc4c95a29df32 upstream.
 
-Change Notes:
-1) Minor cleanups, from Vlads notes
+Make a copy of write_cache_pages() for the benefit of
+ext4_da_writepages().  This allows us to simplify the code some, and
+will allow us to further customize the code in future patches.
 
-Summary:
+There are some nasty hacks in write_cache_pages(), which Linus has
+(correctly) characterized as vile.  I've just copied it into
+write_cache_pages_da(), without trying to clean those bits up lest I
+break something in the ext4's delalloc implementation, which is a bit
+fragile right now.  This will allow Dave Chinner to clean up
+write_cache_pages() in mm/page-writeback.c, without worrying about
+breaking ext4.  Eventually write_cache_pages_da() will go away when I
+rewrite ext4's delayed allocation and create a general
+ext4_writepages() which is used for all of ext4's writeback.  Until
+now this is the lowest risk way to clean up the core
+write_cache_pages() function.
 
-Hey-
-	Recently, it was reported to me that the kernel could oops in the
-following way:
-
-<5> kernel BUG at net/core/skbuff.c:91!
-<5> invalid operand: 0000 [#1]
-<5> Modules linked in: sctp netconsole nls_utf8 autofs4 sunrpc iptable_filter
-ip_tables cpufreq_powersave parport_pc lp parport vmblock(U) vsock(U) vmci(U)
-vmxnet(U) vmmemctl(U) vmhgfs(U) acpiphp dm_mirror dm_mod button battery ac md5
-ipv6 uhci_hcd ehci_hcd snd_ens1371 snd_rawmidi snd_seq_device snd_pcm_oss
-snd_mixer_oss snd_pcm snd_timer snd_page_alloc snd_ac97_codec snd soundcore
-pcnet32 mii floppy ext3 jbd ata_piix libata mptscsih mptsas mptspi mptscsi
-mptbase sd_mod scsi_mod
-<5> CPU:    0
-<5> EIP:    0060:[<c02bff27>]    Not tainted VLI
-<5> EFLAGS: 00010216   (2.6.9-89.0.25.EL)
-<5> EIP is at skb_over_panic+0x1f/0x2d
-<5> eax: 0000002c   ebx: c033f461   ecx: c0357d96   edx: c040fd44
-<5> esi: c033f461   edi: df653280   ebp: 00000000   esp: c040fd40
-<5> ds: 007b   es: 007b   ss: 0068
-<5> Process swapper (pid: 0, threadinfo=c040f000 task=c0370be0)
-<5> Stack: c0357d96 e0c29478 00000084 00000004 c033f461 df653280 d7883180
-e0c2947d
-<5>        00000000 00000080 df653490 00000004 de4f1ac0 de4f1ac0 00000004
-df653490
-<5>        00000001 e0c2877a 08000800 de4f1ac0 df653490 00000000 e0c29d2e
-00000004
-<5> Call Trace:
-<5>  [<e0c29478>] sctp_addto_chunk+0xb0/0x128 [sctp]
-<5>  [<e0c2947d>] sctp_addto_chunk+0xb5/0x128 [sctp]
-<5>  [<e0c2877a>] sctp_init_cause+0x3f/0x47 [sctp]
-<5>  [<e0c29d2e>] sctp_process_unk_param+0xac/0xb8 [sctp]
-<5>  [<e0c29e90>] sctp_verify_init+0xcc/0x134 [sctp]
-<5>  [<e0c20322>] sctp_sf_do_5_1B_init+0x83/0x28e [sctp]
-<5>  [<e0c25333>] sctp_do_sm+0x41/0x77 [sctp]
-<5>  [<c01555a4>] cache_grow+0x140/0x233
-<5>  [<e0c26ba1>] sctp_endpoint_bh_rcv+0xc5/0x108 [sctp]
-<5>  [<e0c2b863>] sctp_inq_push+0xe/0x10 [sctp]
-<5>  [<e0c34600>] sctp_rcv+0x454/0x509 [sctp]
-<5>  [<e084e017>] ipt_hook+0x17/0x1c [iptable_filter]
-<5>  [<c02d005e>] nf_iterate+0x40/0x81
-<5>  [<c02e0bb9>] ip_local_deliver_finish+0x0/0x151
-<5>  [<c02e0c7f>] ip_local_deliver_finish+0xc6/0x151
-<5>  [<c02d0362>] nf_hook_slow+0x83/0xb5
-<5>  [<c02e0bb2>] ip_local_deliver+0x1a2/0x1a9
-<5>  [<c02e0bb9>] ip_local_deliver_finish+0x0/0x151
-<5>  [<c02e103e>] ip_rcv+0x334/0x3b4
-<5>  [<c02c66fd>] netif_receive_skb+0x320/0x35b
-<5>  [<e0a0928b>] init_stall_timer+0x67/0x6a [uhci_hcd]
-<5>  [<c02c67a4>] process_backlog+0x6c/0xd9
-<5>  [<c02c690f>] net_rx_action+0xfe/0x1f8
-<5>  [<c012a7b1>] __do_softirq+0x35/0x79
-<5>  [<c0107efb>] handle_IRQ_event+0x0/0x4f
-<5>  [<c01094de>] do_softirq+0x46/0x4d
-
-Its an skb_over_panic BUG halt that results from processing an init chunk in
-which too many of its variable length parameters are in some way malformed.
-
-The problem is in sctp_process_unk_param:
-if (NULL == *errp)
-	*errp = sctp_make_op_error_space(asoc, chunk,
-					 ntohs(chunk->chunk_hdr->length));
-
-	if (*errp) {
-		sctp_init_cause(*errp, SCTP_ERROR_UNKNOWN_PARAM,
-				 WORD_ROUND(ntohs(param.p->length)));
-		sctp_addto_chunk(*errp,
-			WORD_ROUND(ntohs(param.p->length)),
-				  param.v);
-
-When we allocate an error chunk, we assume that the worst case scenario requires
-that we have chunk_hdr->length data allocated, which would be correct nominally,
-given that we call sctp_addto_chunk for the violating parameter.  Unfortunately,
-we also, in sctp_init_cause insert a sctp_errhdr_t structure into the error
-chunk, so the worst case situation in which all parameters are in violation
-requires chunk_hdr->length+(sizeof(sctp_errhdr_t)*param_count) bytes of data.
-
-The result of this error is that a deliberately malformed packet sent to a
-listening host can cause a remote DOS, described in CVE-2010-1173:
-http://cve.mitre.org/cgi-bin/cvename.cgi?name=2010-1173
-
-I've tested the below fix and confirmed that it fixes the issue.  We move to a
-strategy whereby we allocate a fixed size error chunk and ignore errors we don't
-have space to report.  Tested by me successfully
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Dave Chinner <david@fromorbit.com>
+[dev@jaysonking.com: Dropped the hunks which reverted the use of no_nrwrite_index_update, since those lines weren't ever created on 2.6.27.y]
+[dev@jaysonking.com: Copied from 2.6.27.y's version of write_cache_pages(), plus the changes to it from patch "vfs: Add no_nrwrite_index_update writeback control flag"]
+Signed-off-by: Jayson R. King <dev@jaysonking.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/net/sctp/structs.h |    1 
- net/sctp/sm_make_chunk.c   |   62 +++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 58 insertions(+), 5 deletions(-)
+ fs/ext4/inode.c |  144 +++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 132 insertions(+), 12 deletions(-)
 
---- a/include/net/sctp/structs.h
-+++ b/include/net/sctp/structs.h
-@@ -753,6 +753,7 @@ int sctp_user_addto_chunk(struct sctp_ch
- 			  struct iovec *data);
- void sctp_chunk_free(struct sctp_chunk *);
- void  *sctp_addto_chunk(struct sctp_chunk *, int len, const void *data);
-+void  *sctp_addto_chunk_fixed(struct sctp_chunk *, int len, const void *data);
- struct sctp_chunk *sctp_chunkify(struct sk_buff *,
- 				 const struct sctp_association *,
- 				 struct sock *);
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -107,7 +107,7 @@ static const struct sctp_paramhdr prsctp
- 	__constant_htons(sizeof(struct sctp_paramhdr)),
- };
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2059,17 +2059,6 @@ static int __mpage_da_writepage(struct p
+ 	struct buffer_head *bh, *head, fake;
+ 	sector_t logical;
  
--/* A helper to initialize to initialize an op error inside a
-+/* A helper to initialize an op error inside a
-  * provided chunk, as most cause codes will be embedded inside an
-  * abort chunk.
-  */
-@@ -124,6 +124,29 @@ void  sctp_init_cause(struct sctp_chunk
- 	chunk->subh.err_hdr = sctp_addto_chunk(chunk, sizeof(sctp_errhdr_t), &err);
+-	if (mpd->io_done) {
+-		/*
+-		 * Rest of the page in the page_vec
+-		 * redirty then and skip then. We will
+-		 * try to to write them again after
+-		 * starting a new transaction
+-		 */
+-		redirty_page_for_writepage(wbc, page);
+-		unlock_page(page);
+-		return MPAGE_DA_EXTENT_TAIL;
+-	}
+ 	/*
+ 	 * Can we merge this page to current extent?
+ 	 */
+@@ -2160,6 +2149,137 @@ static int __mpage_da_writepage(struct p
  }
  
-+/* A helper to initialize an op error inside a
-+ * provided chunk, as most cause codes will be embedded inside an
-+ * abort chunk.  Differs from sctp_init_cause in that it won't oops
-+ * if there isn't enough space in the op error chunk
+ /*
++ * write_cache_pages_da - walk the list of dirty pages of the given
++ * address space and call the callback function (which usually writes
++ * the pages).
++ *
++ * This is a forked version of write_cache_pages().  Differences:
++ *	Range cyclic is ignored.
++ *	no_nrwrite_index_update is always presumed true
 + */
-+int sctp_init_cause_fixed(struct sctp_chunk *chunk, __be16 cause_code,
-+		      size_t paylen)
++static int write_cache_pages_da(struct address_space *mapping,
++				struct writeback_control *wbc,
++				struct mpage_da_data *mpd)
 +{
-+	sctp_errhdr_t err;
-+	__u16 len;
++	struct backing_dev_info *bdi = mapping->backing_dev_info;
++	int ret = 0;
++	int done = 0;
++	struct pagevec pvec;
++	int nr_pages;
++	pgoff_t index;
++	pgoff_t end;		/* Inclusive */
++	long nr_to_write = wbc->nr_to_write;
 +
-+	/* Cause code constants are now defined in network order.  */
-+	err.cause = cause_code;
-+	len = sizeof(sctp_errhdr_t) + paylen;
-+	err.length  = htons(len);
++	if (wbc->nonblocking && bdi_write_congested(bdi)) {
++		wbc->encountered_congestion = 1;
++		return 0;
++	}
 +
-+	if (skb_tailroom(chunk->skb) >  len)
-+		return -ENOSPC;
-+	chunk->subh.err_hdr = sctp_addto_chunk_fixed(chunk,
-+						     sizeof(sctp_errhdr_t),
-+						     &err);
-+	return 0;
++	pagevec_init(&pvec, 0);
++	index = wbc->range_start >> PAGE_CACHE_SHIFT;
++	end = wbc->range_end >> PAGE_CACHE_SHIFT;
++
++	while (!done && (index <= end)) {
++		int i;
++
++		nr_pages = pagevec_lookup_tag(&pvec, mapping, &index,
++			      PAGECACHE_TAG_DIRTY,
++			      min(end - index, (pgoff_t)PAGEVEC_SIZE-1) + 1);
++		if (nr_pages == 0)
++			break;
++
++		for (i = 0; i < nr_pages; i++) {
++			struct page *page = pvec.pages[i];
++
++			/*
++			 * At this point, the page may be truncated or
++			 * invalidated (changing page->mapping to NULL), or
++			 * even swizzled back from swapper_space to tmpfs file
++			 * mapping. However, page->index will not change
++			 * because we have a reference on the page.
++			 */
++			if (page->index > end) {
++				done = 1;
++				break;
++			}
++
++			lock_page(page);
++
++			/*
++			 * Page truncated or invalidated. We can freely skip it
++			 * then, even for data integrity operations: the page
++			 * has disappeared concurrently, so there could be no
++			 * real expectation of this data interity operation
++			 * even if there is now a new, dirty page at the same
++			 * pagecache address.
++			 */
++			if (unlikely(page->mapping != mapping)) {
++continue_unlock:
++				unlock_page(page);
++				continue;
++			}
++
++			if (!PageDirty(page)) {
++				/* someone wrote it for us */
++				goto continue_unlock;
++			}
++
++			if (PageWriteback(page)) {
++				if (wbc->sync_mode != WB_SYNC_NONE)
++					wait_on_page_writeback(page);
++				else
++					goto continue_unlock;
++			}
++
++			BUG_ON(PageWriteback(page));
++			if (!clear_page_dirty_for_io(page))
++				goto continue_unlock;
++
++			ret = __mpage_da_writepage(page, wbc, mpd);
++
++			if (unlikely(ret)) {
++				if (ret == AOP_WRITEPAGE_ACTIVATE) {
++					unlock_page(page);
++					ret = 0;
++				} else {
++					done = 1;
++					break;
++				}
++ 			}
++
++			if (nr_to_write > 0) {
++				nr_to_write--;
++				if (nr_to_write == 0 &&
++				    wbc->sync_mode == WB_SYNC_NONE) {
++					/*
++					 * We stop writing back only if we are
++					 * not doing integrity sync. In case of
++					 * integrity sync we have to keep going
++					 * because someone may be concurrently
++					 * dirtying pages, and we might have
++					 * synced a lot of newly appeared dirty
++					 * pages, but have not synced all of the
++					 * old dirty pages.
++					 */
++					done = 1;
++					break;
++				}
++			}
++
++			if (wbc->nonblocking && bdi_write_congested(bdi)) {
++				wbc->encountered_congestion = 1;
++				done = 1;
++				break;
++			}
++		}
++		pagevec_release(&pvec);
++		cond_resched();
++	}
++	return ret;
 +}
- /* 3.3.2 Initiation (INIT) (1)
-  *
-  * This chunk is used to initiate a SCTP association between two
-@@ -1114,6 +1137,24 @@ nodata:
- 	return retval;
- }
++
++
++/*
+  * mpage_da_writepages - walk the list of dirty pages of the given
+  * address space, allocates non-allocated blocks, maps newly-allocated
+  * blocks to existing bhs and issue IO them
+@@ -2192,7 +2312,7 @@ static int mpage_da_writepages(struct ad
  
-+/* Create an Operation Error chunk of a fixed size,
-+ * specifically, max(asoc->pathmtu, SCTP_DEFAULT_MAXSEGMENT)
-+ * This is a helper function to allocate an error chunk for
-+ * for those invalid parameter codes in which we may not want
-+ * to report all the errors, if the incomming chunk is large
-+ */
-+static inline struct sctp_chunk *sctp_make_op_error_fixed(
-+	const struct sctp_association *asoc,
-+	const struct sctp_chunk *chunk)
-+{
-+	size_t size = asoc ? asoc->pathmtu : 0;
-+
-+	if (!size)
-+		size = SCTP_DEFAULT_MAXSEGMENT;
-+
-+	return sctp_make_op_error_space(asoc, chunk, size);
-+}
-+
- /* Create an Operation Error chunk.  */
- struct sctp_chunk *sctp_make_op_error(const struct sctp_association *asoc,
- 				 const struct sctp_chunk *chunk,
-@@ -1354,6 +1395,18 @@ void *sctp_addto_chunk(struct sctp_chunk
- 	return target;
- }
+ 	to_write = wbc->nr_to_write;
  
-+/* Append bytes to the end of a chunk. Returns NULL if there isn't sufficient
-+ * space in the chunk
-+ */
-+void *sctp_addto_chunk_fixed(struct sctp_chunk *chunk,
-+			     int len, const void *data)
-+{
-+	if (skb_tailroom(chunk->skb) > len)
-+		return sctp_addto_chunk(chunk, len, data);
-+	else
-+		return NULL;
-+}
-+
- /* Append bytes from user space to the end of a chunk.  Will panic if
-  * chunk is not big enough.
-  * Returns a kernel err value.
-@@ -1957,13 +2010,12 @@ static sctp_ierror_t sctp_process_unk_pa
- 		 * returning multiple unknown parameters.
- 		 */
- 		if (NULL == *errp)
--			*errp = sctp_make_op_error_space(asoc, chunk,
--					ntohs(chunk->chunk_hdr->length));
-+			*errp = sctp_make_op_error_fixed(asoc, chunk);
+-	ret = write_cache_pages(mapping, wbc, __mpage_da_writepage, mpd);
++	ret = write_cache_pages_da(mapping, wbc, mpd);
  
- 		if (*errp) {
--			sctp_init_cause(*errp, SCTP_ERROR_UNKNOWN_PARAM,
-+			sctp_init_cause_fixed(*errp, SCTP_ERROR_UNKNOWN_PARAM,
- 					WORD_ROUND(ntohs(param.p->length)));
--			sctp_addto_chunk(*errp,
-+			sctp_addto_chunk_fixed(*errp,
- 					WORD_ROUND(ntohs(param.p->length)),
- 					param.v);
- 		} else {
+ 	/*
+ 	 * Handle last extent of pages
 
 
