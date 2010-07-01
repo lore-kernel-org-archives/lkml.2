@@ -1,135 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab0GANDr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:03:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755524Ab0GANDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:03:46 -0400
-Date: Thu, 1 Jul 2010 09:03:28 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: axboe@kernel.dk, hch@lst.de, James.Bottomley@suse.de,
-       linux-scsi@vger.kernel.org, dm-devel@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: address leak in the error path of discard page
- allocation
-Message-ID: <20100701130328.GB19605@redhat.com>
-References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
- <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+	id S1754165Ab0GANHh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:07:37 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41558 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab0GANHg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 09:07:36 -0400
+Date: Thu, 1 Jul 2010 14:07:25 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Christoph Egger <siccegge@cs.fau.de>, Ben Dooks <ben-linux@fluff.org>,
+       Russell King <linux@arm.linux.org.uk>,
+       Jassi Brar <jassi.brar@samsung.com>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
+Message-ID: <20100701130724.GC17698@sirena.org.uk>
+References: <cover.1277911345.git.siccegge@cs.fau.de> <e5391de6858597bbfd43874aed124a73f74850b5.1277911346.git.siccegge@cs.fau.de> <AANLkTinZa7_TEjYFTu9V6obndpVvMmHppaOArM1AJg_t@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <AANLkTinZa7_TEjYFTu9V6obndpVvMmHppaOArM1AJg_t@mail.gmail.com>
+X-Cookie: Uncompensated overtime?  Just Say No.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01 2010 at  6:49am -0400,
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+On Thu, Jul 01, 2010 at 09:55:47PM +0900, Jassi Brar wrote:
+> On Thu, Jul 1, 2010 at 1:03 AM, Christoph Egger <siccegge@cs.fau.de> wrote:
+> > SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
+> > all references for it from the source code.
 
-> This fixes discard page leak by using q->unprep_rq_fn facility.
-> 
-> q->unprep_rq_fn is called when all the data buffer (req->bio and
-> scsi_data_buffer) in the request is freed.
-> 
-> sd_unprep() uses rq->buffer to free discard page allocated in
-> sd_prepare_discard().
-> 
-> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> I'd rather have the code compiled unconditionally.
 
-Thanks for sorting this out Tomo, all 3 patches work great!
-
-BTW, there is one remaining (rare) leak in the allocation path.
-
-The following patch serves to fix it but I'm not sure if there is a more
-elegant way to address this.
-
-An alternative would be to check if the page is already allocated
-(before allocating the page in scsi_setup_discard_cmnd)?
-
-Please advise, thanks.
-Mike
-
-
-
-From: Mike Snitzer <snitzer@redhat.com>
-Subject: scsi: address leak in the error path of discard page allocation
-
-Be sure to free the discard page if scsi_setup_blk_pc_cmnd fails.
-E.g. Returning BLKPREP_DEFER from scsi_setup_blk_pc_cmnd will not cause
-the request to be processed by sd_unprep_fn before the request is
-retried (preparation included).
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-
----
- block/blk-core.c       |   23 +++++++++++++++++++++++
- drivers/scsi/sd.c      |    6 +++++-
- include/linux/blkdev.h |    1 +
- 3 files changed, 29 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/scsi/sd.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/sd.c
-+++ linux-2.6/drivers/scsi/sd.c
-@@ -466,7 +466,11 @@ static int scsi_setup_discard_cmnd(struc
- 
- 	blk_add_request_payload(rq, page, len);
- 	ret = scsi_setup_blk_pc_cmnd(sdp, rq);
--	rq->buffer = page_address(page);
-+	if (ret != BLKPREP_OK) {
-+		blk_clear_request_payload(rq);
-+		__free_page(page);
-+	} else
-+		rq->buffer = page_address(page);
- 	return ret;
- }
- 
-Index: linux-2.6/block/blk-core.c
-===================================================================
---- linux-2.6.orig/block/blk-core.c
-+++ linux-2.6/block/blk-core.c
-@@ -1164,6 +1164,29 @@ void blk_add_request_payload(struct requ
- }
- EXPORT_SYMBOL_GPL(blk_add_request_payload);
- 
-+/**
-+ * blk_clear_request_payload - clear a request's payload
-+ * @rq: request to update
-+ *
-+ * The driver needs to take care of freeing the payload itself.
-+ */
-+void blk_clear_request_payload(struct request *rq)
-+{
-+	struct bio *bio = rq->bio;
-+
-+	rq->__data_len = rq->resid_len = 0;
-+	rq->nr_phys_segments = 0;
-+	rq->buffer = NULL;
-+
-+	bio->bi_size = 0;
-+	bio->bi_vcnt = 0;
-+	bio->bi_phys_segments = 0;
-+
-+	bio->bi_io_vec->bv_page = NULL;
-+	bio->bi_io_vec->bv_len = 0;
-+}
-+EXPORT_SYMBOL_GPL(blk_clear_request_payload);
-+
- void init_request_from_bio(struct request *req, struct bio *bio)
- {
- 	req->cpu = bio->bi_comp_cpu;
-Index: linux-2.6/include/linux/blkdev.h
-===================================================================
---- linux-2.6.orig/include/linux/blkdev.h
-+++ linux-2.6/include/linux/blkdev.h
-@@ -781,6 +781,7 @@ extern void blk_insert_request(struct re
- extern void blk_requeue_request(struct request_queue *, struct request *);
- extern void blk_add_request_payload(struct request *rq, struct page *page,
- 		unsigned int len);
-+extern void blk_clear_request_payload(struct request *rq);
- extern int blk_rq_check_limits(struct request_queue *q, struct request *rq);
- extern int blk_lld_busy(struct request_queue *q);
- extern int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
+Hrm, if this is part of the default hardware build we should get the
+driver merged.
