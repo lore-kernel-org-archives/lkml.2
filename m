@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933288Ab0GAVnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:43:37 -0400
-Received: from kroah.org ([198.145.64.141]:32889 "EHLO coco.kroah.org"
+	id S933277Ab0GAVSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:18:10 -0400
+Received: from kroah.org ([198.145.64.141]:33091 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759110Ab0GAVOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:22 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:56 2010
-Message-Id: <20100701174256.228552829@clark.site>
+	id S932741Ab0GAVO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:58 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:59 2010
+Message-Id: <20100701174259.867041442@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:26 -0700
+Date: Thu, 01 Jul 2010 10:44:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [116/200] ASoC: Fix dB scales for WM8400
+       Alan Stern <stern@rowland.harvard.edu>
+Subject: [158/200] USB: unbind all interfaces before rebinding them
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 3351e9fbb0fda6498ee149ee88c67f5849813c57 upstream.
+commit c043f1245654a726925529007210e9f786426448 upstream.
 
-These scales should be regular, not linear.
+This patch (as1387) fixes a bug introduced during the changeover to
+the runtime PM framework.  When a driver doesn't support resume or
+reset-resume, and consequently its interfaces need to be unbound and
+rebound, we have to unbind all the interfaces before trying to rebind
+any of them.  Otherwise the driver's probe method for one interface
+could try to claim a different interface and fail, because that other
+interface hasn't been unbound yet.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+This fixes Bugzilla #15788.  The symptom is that some USB sound cards
+don't work after hibernation.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: François Valenduc <francois.valenduc@tvcablenet.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8400.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/usb/core/driver.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/soc/codecs/wm8400.c
-+++ b/sound/soc/codecs/wm8400.c
-@@ -107,21 +107,21 @@ static void wm8400_codec_reset(struct sn
- 	wm8400_reset_codec_reg_cache(wm8400->wm8400);
- }
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -1322,6 +1322,7 @@ int usb_resume(struct device *dev, pm_me
  
--static const DECLARE_TLV_DB_LINEAR(rec_mix_tlv, -1500, 600);
-+static const DECLARE_TLV_DB_SCALE(rec_mix_tlv, -1500, 600, 0);
+ 	/* For all other calls, take the device back to full power and
+ 	 * tell the PM core in case it was autosuspended previously.
++	 * Unbind the interfaces that will need rebinding later.
+ 	 */
+ 	} else {
+ 		status = usb_resume_both(udev, msg);
+@@ -1330,6 +1331,7 @@ int usb_resume(struct device *dev, pm_me
+ 			pm_runtime_set_active(dev);
+ 			pm_runtime_enable(dev);
+ 			udev->last_busy = jiffies;
++			do_unbind_rebind(udev, DO_REBIND);
+ 		}
+ 	}
  
--static const DECLARE_TLV_DB_LINEAR(in_pga_tlv, -1650, 3000);
-+static const DECLARE_TLV_DB_SCALE(in_pga_tlv, -1650, 3000, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_mix_tlv, -2100, 0);
-+static const DECLARE_TLV_DB_SCALE(out_mix_tlv, -2100, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_pga_tlv, -7300, 600);
-+static const DECLARE_TLV_DB_SCALE(out_pga_tlv, -7300, 600, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_omix_tlv, -600, 0);
-+static const DECLARE_TLV_DB_SCALE(out_omix_tlv, -600, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_dac_tlv, -7163, 0);
-+static const DECLARE_TLV_DB_SCALE(out_dac_tlv, -7163, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(in_adc_tlv, -7163, 1763);
-+static const DECLARE_TLV_DB_SCALE(in_adc_tlv, -7163, 1763, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_sidetone_tlv, -3600, 0);
-+static const DECLARE_TLV_DB_SCALE(out_sidetone_tlv, -3600, 0, 0);
- 
- static int wm8400_outpga_put_volsw_vu(struct snd_kcontrol *kcontrol,
-         struct snd_ctl_elem_value *ucontrol)
-@@ -440,7 +440,7 @@ static int outmixer_event (struct snd_so
- /* INMIX dB values */
- static const unsigned int in_mix_tlv[] = {
- 	TLV_DB_RANGE_HEAD(1),
--	0,7, TLV_DB_LINEAR_ITEM(-1200, 600),
-+	0,7, TLV_DB_SCALE_ITEM(-1200, 600, 0),
- };
- 
- /* Left In PGA Connections */
 
 
