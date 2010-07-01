@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759610Ab0GAWDN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:03:13 -0400
-Received: from kroah.org ([198.145.64.141]:33762 "EHLO coco.kroah.org"
+	id S1759637Ab0GAWEW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:04:22 -0400
+Received: from kroah.org ([198.145.64.141]:33727 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758796Ab0GAVMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:12:55 -0400
+	id S1758661Ab0GAVMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:12:51 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:47 2010
-Message-Id: <20100701174247.793766757@clark.site>
+Message-Id: <20100701174247.455748689@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:41:46 -0700
+Date: Thu, 01 Jul 2010 10:41:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andreas Bombe <aeb@debian.org>, "David S. Miller" <davem@davemloft.net>
-Subject: [016/200] ARCNET: Limit com20020 PCI ID matches for SOHARD cards
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
+       Andi Kleen <andi@firstfloor.org>
+Subject: [012/200] cpumask: fix compat getaffinity
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Bombe <aeb@debian.org>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit e7971c80a8e0299f91272ad8e8ac4167623e1862 upstream.
+commit fa9dc265ace9774e62f0e31108e5f47911124bda upstream.
 
-The SH SOHARD ARCNET cards are implemented using generic PLX Technology
-PCI<->IOBus bridges. Subvendor and subdevice IDs were not specified,
-causing the driver to attach to any such bridge and likely crash the
-system by attempting to initialize an unrelated device.
+Commit a45185d2d "cpumask: convert kernel/compat.c" broke libnuma, which
+abuses sched_getaffinity to find out NR_CPUS in order to parse
+/sys/devices/system/node/node*/cpumap.
 
-Fix by specifying subvendor and subdevice according to the values found
-in the PCI-ID Repository at http://pci-ids.ucw.cz/ .
+On NUMA systems with less than 32 possibly CPUs, the current
+compat_sys_sched_getaffinity now returns '4' instead of the actual
+NR_CPUS/8, which makes libnuma bail out when parsing the cpumap.
 
-Signed-off-by: Andreas Bombe <aeb@debian.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The libnuma call sched_getaffinity(0, bitmap, 4096) at first.  It mean
+the libnuma expect the return value of sched_getaffinity() is either len
+argument or NR_CPUS.  But it doesn't expect to return nr_cpu_ids.
+
+Strictly speaking, userland requirement are
+
+1) Glibc assume the return value mean the lengh of initialized
+   of mask argument. E.g. if sched_getaffinity(1024) return 128,
+   glibc make zero fill rest 896 byte.
+2) Libnuma assume the return value can be used to guess NR_CPUS
+   in kernel. It assume len-arg<NR_CPUS makes -EINVAL. But
+   it try len=4096 at first and 4096 is always bigger than
+   NR_CPUS. Then, if we remove strange min_length normalization,
+   we never hit -EINVAL case.
+
+sched_getaffinity() already solved this issue.  This patch adapts
+compat_sys_sched_getaffinity() to match the non-compat case.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Reported-by: Ken Werner <ken.werner@web.de>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/arcnet/com20020-pci.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/compat.c |   25 +++++++++++--------------
+ 1 file changed, 11 insertions(+), 14 deletions(-)
 
---- a/drivers/net/arcnet/com20020-pci.c
-+++ b/drivers/net/arcnet/com20020-pci.c
-@@ -164,8 +164,8 @@ static DEFINE_PCI_DEVICE_TABLE(com20020p
- 	{ 0x1571, 0xa204, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{ 0x1571, 0xa205, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{ 0x1571, 0xa206, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x10B5, 0x9030, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x10B5, 0x9050, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
-+	{ 0x10B5, 0x9030, 0x10B5,     0x2978,     0, 0, ARC_CAN_10MBIT },
-+	{ 0x10B5, 0x9050, 0x10B5,     0x2273,     0, 0, ARC_CAN_10MBIT },
- 	{ 0x14BA, 0x6000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{ 0x10B5, 0x2200, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{0,}
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -495,29 +495,26 @@ asmlinkage long compat_sys_sched_getaffi
+ {
+ 	int ret;
+ 	cpumask_var_t mask;
+-	unsigned long *k;
+-	unsigned int min_length = cpumask_size();
+ 
+-	if (nr_cpu_ids <= BITS_PER_COMPAT_LONG)
+-		min_length = sizeof(compat_ulong_t);
+-
+-	if (len < min_length)
++	if ((len * BITS_PER_BYTE) < nr_cpu_ids)
++		return -EINVAL;
++	if (len & (sizeof(compat_ulong_t)-1))
+ 		return -EINVAL;
+ 
+ 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+ 		return -ENOMEM;
+ 
+ 	ret = sched_getaffinity(pid, mask);
+-	if (ret < 0)
+-		goto out;
++	if (ret == 0) {
++		size_t retlen = min_t(size_t, len, cpumask_size());
+ 
+-	k = cpumask_bits(mask);
+-	ret = compat_put_bitmap(user_mask_ptr, k, min_length * 8);
+-	if (ret == 0)
+-		ret = min_length;
+-
+-out:
++		if (compat_put_bitmap(user_mask_ptr, cpumask_bits(mask), retlen * 8))
++			ret = -EFAULT;
++		else
++			ret = retlen;
++	}
+ 	free_cpumask_var(mask);
++
+ 	return ret;
+ }
+ 
 
 
