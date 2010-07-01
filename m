@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab0GASWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:22:42 -0400
-Received: from kroah.org ([198.145.64.141]:35293 "EHLO coco.kroah.org"
+	id S1758528Ab0GASom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:44:42 -0400
+Received: from kroah.org ([198.145.64.141]:35534 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755435Ab0GASWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:22:39 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:07 2010
-Message-Id: <20100701173207.586967135@clark.site>
+	id S1757802Ab0GASXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:16 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:11 2010
+Message-Id: <20100701173211.186404319@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:35 -0700
+Date: Thu, 01 Jul 2010 10:31:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [patch 009/149] staging: vt6655: Fix kernel BUG on driver wpa initialization
+       Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [patch 052/149] drm/radeon/kms/atom: fix typo in LVDS panel info parsing
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit f65515275ea3e45fdcd0fb78455f542d6fdca086 upstream.
+commit 1ff26a3604d0292988d4cade0e49ba9918dbfd46 upstream.
 
-In http://bugzilla.novell.com/show_bug.cgi?id=597299, the vt6655 driver
-generates a kernel BUG on a NULL pointer dereference at NULL. This problem
-has been traced to a failure in the wpa_set_wpadev() routine. As the vt6656
-driver does not call this routine, the vt6655 code is similarly set to skip
-the call.
+Fixes LVDS issues on some laptops; notably laptops with
+2048x1536 panels.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Tested-by: Richard Meek <osl2008@googlemail.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/vt6655/device_main.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -1089,11 +1089,13 @@ device_found1(struct pci_dev *pcid, cons
-     }
- //2008-07-21-01<Add>by MikeLiu
- //register wpadev
-+#if 0
-    if(wpa_set_wpadev(pDevice, 1)!=0) {
-      printk("Fail to Register WPADEV?\n");
-         unregister_netdev(pDevice->dev);
-         free_netdev(dev);
-    }
-+#endif
-     device_print_info(pDevice);
-     pci_set_drvdata(pcid, pDevice);
-     return 0;
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -942,7 +942,7 @@ struct radeon_encoder_atom_dig *radeon_a
+ 		lvds->native_mode.vtotal = lvds->native_mode.vdisplay +
+ 			le16_to_cpu(lvds_info->info.sLCDTiming.usVBlanking_Time);
+ 		lvds->native_mode.vsync_start = lvds->native_mode.vdisplay +
+-			le16_to_cpu(lvds_info->info.sLCDTiming.usVSyncWidth);
++			le16_to_cpu(lvds_info->info.sLCDTiming.usVSyncOffset);
+ 		lvds->native_mode.vsync_end = lvds->native_mode.vsync_start +
+ 			le16_to_cpu(lvds_info->info.sLCDTiming.usVSyncWidth);
+ 		lvds->panel_pwr_delay =
 
 
