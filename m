@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758470Ab0GASit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:38:49 -0400
-Received: from kroah.org ([198.145.64.141]:40600 "EHLO coco.kroah.org"
+	id S1758041Ab0GASX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:23:57 -0400
+Received: from kroah.org ([198.145.64.141]:40636 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757976Ab0GASXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:45 -0400
+	id S1757721Ab0GASXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:51 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
-Message-Id: <20100701173214.067182700@clark.site>
+Message-Id: <20100701173214.662821051@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:52 -0700
+Date: Thu, 01 Jul 2010 10:31:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ian Campbell <ian.campbell@citrix.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [patch 086/149] xen: ensure timer tick is resumed even on CPU driving the resume
+       Paul Mundt <lethal@linux-sh.org>
+Subject: [patch 093/149] clocksource: sh_cmt: compute mult and shift before registration
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <ian.campbell@citrix.com>
+From: Paul Mundt <lethal@linux-sh.org>
 
-commit cd52e17ea8278f8449b6174a8e5ed439a2e44ffb upstream.
+commit f4d7c3565c1692c54d9152b52090fe73f0029e37 upstream.
 
-The core suspend/resume code is run from stop_machine on CPU0 but
-parts of the suspend/resume machinery (including xen_arch_resume) are
-run on whichever CPU happened to schedule the xenwatch kernel thread.
+Based on the sh_tmu change in 66f49121ffa41a19c59965b31b046d8368fec3c7
+("clocksource: sh_tmu: compute mult and shift before registration").
+The same issues impact the sh_cmt driver, so we take the same approach
+here.
 
-As part of the non-core resume code xen_arch_resume is called in order
-to restart the timer tick on non-boot processors. The boot processor
-itself is taken care of by core timekeeping code.
-
-xen_arch_resume uses smp_call_function which does not call the given
-function on the current processor. This means that we can end up with
-one CPU not receiving timer ticks if the xenwatch thread happened to
-be scheduled on CPU > 0.
-
-Use on_each_cpu instead of smp_call_function to ensure the timer tick
-is resumed everywhere.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/suspend.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/clocksource/sh_cmt.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
---- a/arch/x86/xen/suspend.c
-+++ b/arch/x86/xen/suspend.c
-@@ -60,6 +60,6 @@ static void xen_vcpu_notify_restore(void
- 
- void xen_arch_resume(void)
+--- a/drivers/clocksource/sh_cmt.c
++++ b/drivers/clocksource/sh_cmt.c
+@@ -413,18 +413,10 @@ static cycle_t sh_cmt_clocksource_read(s
+ static int sh_cmt_clocksource_enable(struct clocksource *cs)
  {
--	smp_call_function(xen_vcpu_notify_restore,
--			       (void *)CLOCK_EVT_NOTIFY_RESUME, 1);
-+	on_each_cpu(xen_vcpu_notify_restore,
-+		    (void *)CLOCK_EVT_NOTIFY_RESUME, 1);
+ 	struct sh_cmt_priv *p = cs_to_sh_cmt(cs);
+-	int ret;
+ 
+ 	p->total_cycles = 0;
+ 
+-	ret = sh_cmt_start(p, FLAG_CLOCKSOURCE);
+-	if (ret)
+-		return ret;
+-
+-	/* TODO: calculate good shift from rate and counter bit width */
+-	cs->shift = 0;
+-	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
+-	return 0;
++	return sh_cmt_start(p, FLAG_CLOCKSOURCE);
+ }
+ 
+ static void sh_cmt_clocksource_disable(struct clocksource *cs)
+@@ -444,7 +436,18 @@ static int sh_cmt_register_clocksource(s
+ 	cs->disable = sh_cmt_clocksource_disable;
+ 	cs->mask = CLOCKSOURCE_MASK(sizeof(unsigned long) * 8);
+ 	cs->flags = CLOCK_SOURCE_IS_CONTINUOUS;
++
++	/* clk_get_rate() needs an enabled clock */
++	clk_enable(p->clk);
++	p->rate = clk_get_rate(p->clk) / (p->width == 16) ? 512 : 8;
++	clk_disable(p->clk);
++
++	/* TODO: calculate good shift from rate and counter bit width */
++	cs->shift = 10;
++	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
++
+ 	pr_info("sh_cmt: %s used as clock source\n", cs->name);
++
+ 	clocksource_register(cs);
+ 	return 0;
  }
 
 
