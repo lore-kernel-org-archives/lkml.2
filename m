@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab0GASXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:23:34 -0400
-Received: from kroah.org ([198.145.64.141]:40475 "EHLO coco.kroah.org"
+	id S1758162Ab0GAS1Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:27:25 -0400
+Received: from kroah.org ([198.145.64.141]:40850 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757845Ab0GASXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:24 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:12 2010
-Message-Id: <20100701173211.955520299@clark.site>
+	id S1758159Ab0GASYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:31 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:18 2010
+Message-Id: <20100701173218.549108925@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:27 -0700
+Date: Thu, 01 Jul 2010 10:32:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: [patch 061/149] exofs: confusion between kmap() and kmap_atomic() api
+       Avi Kivity <avi@redhat.com>
+Subject: [patch 139/149] KVM: MMU: Dont read pdptrs with mmu spinlock held in mmu_alloc_roots
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Avi Kivity <avi@redhat.com>
 
-commit ddf08f4b90a413892bbb9bb2e8a57aed991cd47d upstream.
+On svm, kvm_read_pdptr() may require reading guest memory, which can sleep.
 
-For kmap_atomic() we call kunmap_atomic() on the returned pointer.
-That's different from kmap() and kunmap() and so it's easy to get them
-backwards.
+Push the spinlock into mmu_alloc_roots(), and only take it after we've read
+the pdptr.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Tested-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+(cherry picked from commit 8facbbff071ff2b19268d3732e31badc60471e21)
 ---
- fs/exofs/dir.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/mmu.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/fs/exofs/dir.c
-+++ b/fs/exofs/dir.c
-@@ -608,7 +608,7 @@ int exofs_make_empty(struct inode *inode
- 	de->inode_no = cpu_to_le64(parent->i_ino);
- 	memcpy(de->name, PARENT_DIR, sizeof(PARENT_DIR));
- 	exofs_set_de_type(de, inode);
--	kunmap_atomic(page, KM_USER0);
-+	kunmap_atomic(kaddr, KM_USER0);
- 	err = exofs_commit_chunk(page, 0, chunk_size);
- fail:
- 	page_cache_release(page);
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2091,11 +2091,13 @@ static int mmu_alloc_roots(struct kvm_vc
+ 			direct = 1;
+ 		if (mmu_check_root(vcpu, root_gfn))
+ 			return 1;
++		spin_lock(&vcpu->kvm->mmu_lock);
+ 		sp = kvm_mmu_get_page(vcpu, root_gfn, 0,
+ 				      PT64_ROOT_LEVEL, direct,
+ 				      ACC_ALL, NULL);
+ 		root = __pa(sp->spt);
+ 		++sp->root_count;
++		spin_unlock(&vcpu->kvm->mmu_lock);
+ 		vcpu->arch.mmu.root_hpa = root;
+ 		return 0;
+ 	}
+@@ -2117,11 +2119,14 @@ static int mmu_alloc_roots(struct kvm_vc
+ 			root_gfn = 0;
+ 		if (mmu_check_root(vcpu, root_gfn))
+ 			return 1;
++		spin_lock(&vcpu->kvm->mmu_lock);
+ 		sp = kvm_mmu_get_page(vcpu, root_gfn, i << 30,
+ 				      PT32_ROOT_LEVEL, direct,
+ 				      ACC_ALL, NULL);
+ 		root = __pa(sp->spt);
+ 		++sp->root_count;
++		spin_unlock(&vcpu->kvm->mmu_lock);
++
+ 		vcpu->arch.mmu.pae_root[i] = root | PT_PRESENT_MASK;
+ 	}
+ 	vcpu->arch.mmu.root_hpa = __pa(vcpu->arch.mmu.pae_root);
+@@ -2485,7 +2490,9 @@ int kvm_mmu_load(struct kvm_vcpu *vcpu)
+ 		goto out;
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 	kvm_mmu_free_some_pages(vcpu);
++	spin_unlock(&vcpu->kvm->mmu_lock);
+ 	r = mmu_alloc_roots(vcpu);
++	spin_lock(&vcpu->kvm->mmu_lock);
+ 	mmu_sync_roots(vcpu);
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+ 	if (r)
 
 
