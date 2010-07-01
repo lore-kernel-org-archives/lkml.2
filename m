@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933409Ab0GAVmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:42:39 -0400
-Received: from kroah.org ([198.145.64.141]:32906 "EHLO coco.kroah.org"
+	id S1759200Ab0GAVlG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:41:06 -0400
+Received: from kroah.org ([198.145.64.141]:32952 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759126Ab0GAVO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:26 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:56 2010
-Message-Id: <20100701174256.555019192@clark.site>
+	id S1759179Ab0GAVOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:33 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:57 2010
+Message-Id: <20100701174257.316320697@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:30 -0700
+Date: Thu, 01 Jul 2010 10:43:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Alexander Duyck <alexander.h.duyck@intel.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [120/200] slub: move kmem_cache_node into its own cacheline
+       Ian Campbell <ian.campbell@citrix.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: [129/200] xen: avoid allocation causing potential swap activity on the resume path
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,112 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+From: Ian Campbell <ian.campbell@citrix.com>
 
-commit 73367bd8eef4f4eb311005886aaa916013073265 upstream.
+commit b3831cb55d383e8eb55d3b56c715fb48459b87c9 upstream.
 
-This patch is meant to improve the performance of SLUB by moving the local
-kmem_cache_node lock into it's own cacheline separate from kmem_cache.
-This is accomplished by simply removing the local_node when NUMA is enabled.
+Since the device we are resuming could be the device containing the
+swap device we should ensure that the allocation cannot cause
+IO.
 
-On my system with 2 nodes I saw around a 5% performance increase w/
-hackbench times dropping from 6.2 seconds to 5.9 seconds on average.  I
-suspect the performance gain would increase as the number of nodes
-increases, but I do not have the data to currently back that up.
+On resume, this path is triggered when the running system tries to
+continue using its devices.  If it cannot then the resume will fail;
+to try to avoid this we let it dip into the emergency pools.
 
-Bugzilla-Reference: http://bugzilla.kernel.org/show_bug.cgi?id=15713
-Reported-by: Alex Shi <alex.shi@intel.com>
-Tested-by: Alex Shi <alex.shi@intel.com>
-Acked-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Acked-by: Christoph Lameter <cl@linux-foundation.org>
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
+The majority of these changes were made when linux-2.6.18-xen.hg
+changeset e8b49cfbdac0 was ported upstream in
+a144ff09bc52ef3f3684ed23eadc9c7c0e57b3aa but somehow this hunk was
+dropped.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/slub_def.h |    9 +++------
- mm/slub.c                |   33 +++++++++++----------------------
- 2 files changed, 14 insertions(+), 28 deletions(-)
+ drivers/xen/xenbus/xenbus_xs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -75,12 +75,6 @@ struct kmem_cache {
- 	int offset;		/* Free pointer offset. */
- 	struct kmem_cache_order_objects oo;
+--- a/drivers/xen/xenbus/xenbus_xs.c
++++ b/drivers/xen/xenbus/xenbus_xs.c
+@@ -499,7 +499,7 @@ int xenbus_printf(struct xenbus_transact
+ #define PRINTF_BUFFER_SIZE 4096
+ 	char *printf_buffer;
  
--	/*
--	 * Avoid an extra cache line for UP, SMP and for the node local to
--	 * struct kmem_cache.
--	 */
--	struct kmem_cache_node local_node;
--
- 	/* Allocation and freeing of slabs */
- 	struct kmem_cache_order_objects max;
- 	struct kmem_cache_order_objects min;
-@@ -102,6 +96,9 @@ struct kmem_cache {
- 	 */
- 	int remote_node_defrag_ratio;
- 	struct kmem_cache_node *node[MAX_NUMNODES];
-+#else
-+	/* Avoid an extra cache line for UP */
-+	struct kmem_cache_node local_node;
- #endif
- };
+-	printf_buffer = kmalloc(PRINTF_BUFFER_SIZE, GFP_KERNEL);
++	printf_buffer = kmalloc(PRINTF_BUFFER_SIZE, GFP_NOIO | __GFP_HIGH);
+ 	if (printf_buffer == NULL)
+ 		return -ENOMEM;
  
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2141,7 +2141,7 @@ static void free_kmem_cache_nodes(struct
- 
- 	for_each_node_state(node, N_NORMAL_MEMORY) {
- 		struct kmem_cache_node *n = s->node[node];
--		if (n && n != &s->local_node)
-+		if (n)
- 			kmem_cache_free(kmalloc_caches, n);
- 		s->node[node] = NULL;
- 	}
-@@ -2150,33 +2150,22 @@ static void free_kmem_cache_nodes(struct
- static int init_kmem_cache_nodes(struct kmem_cache *s, gfp_t gfpflags)
- {
- 	int node;
--	int local_node;
--
--	if (slab_state >= UP && (s < kmalloc_caches ||
--			s >= kmalloc_caches + KMALLOC_CACHES))
--		local_node = page_to_nid(virt_to_page(s));
--	else
--		local_node = 0;
- 
- 	for_each_node_state(node, N_NORMAL_MEMORY) {
- 		struct kmem_cache_node *n;
- 
--		if (local_node == node)
--			n = &s->local_node;
--		else {
--			if (slab_state == DOWN) {
--				early_kmem_cache_node_alloc(gfpflags, node);
--				continue;
--			}
--			n = kmem_cache_alloc_node(kmalloc_caches,
--							gfpflags, node);
--
--			if (!n) {
--				free_kmem_cache_nodes(s);
--				return 0;
--			}
-+		if (slab_state == DOWN) {
-+			early_kmem_cache_node_alloc(gfpflags, node);
-+			continue;
-+		}
-+		n = kmem_cache_alloc_node(kmalloc_caches,
-+						gfpflags, node);
- 
-+		if (!n) {
-+			free_kmem_cache_nodes(s);
-+			return 0;
- 		}
-+
- 		s->node[node] = n;
- 		init_kmem_cache_node(n, s);
- 	}
 
 
