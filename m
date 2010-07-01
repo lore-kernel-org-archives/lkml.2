@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab0GAVRY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:17:24 -0400
-Received: from kroah.org ([198.145.64.141]:32936 "EHLO coco.kroah.org"
+	id S1759366Ab0GAVRk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:17:40 -0400
+Received: from kroah.org ([198.145.64.141]:32983 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759160Ab0GAVOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:31 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:57 2010
-Message-Id: <20100701174257.062362905@clark.site>
+	id S1758947Ab0GAVOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
+Message-Id: <20100701174258.066321597@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:36 -0700
+Date: Thu, 01 Jul 2010 10:43:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jiri Kosina <jkosina@suse.cz>, Corey Minyard <minyard@acm.org>
-Subject: [126/200] ipmi: handle run_to_completion properly in deliver_recv_msg()
+       Richard Kennedy <richard@rsk.demon.co.uk>,
+       Michal Marek <mmarek@suse.cz>
+Subject: [138/200] gconfig: fix build failure on fedora 13
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Richard Kennedy <richard@rsk.demon.co.uk>
 
-commit a747c5abc329611220f16df0bb4cf0ca4a7fdf0c upstream.
+commit cbab05f041a4cff6ca15856bdd35238b282b64eb upstream.
 
-If run_to_completion flag is set, it means that we are running in a
-single-threaded mode, and thus no locks are held.
+Making gconfig fails on fedora 13 as the linker cannot resolve dlsym.
 
-This fixes a deadlock when IPMI notifier is being called during panic.
+Adding libdl to the link command fixes this.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Corey Minyard <minyard@acm.org>
+make shows this error :-
+    /usr/bin/ld: scripts/kconfig/kconfig_load.o: undefined reference to symbol 'dlsym@@GLIBC_2.2.5'
+    /usr/bin/ld: note: 'dlsym@@GLIBC_2.2.5' is defined in DSO /lib64/libdl.so.2 so try adding it to the linker command line
+    /lib64/libdl.so.2: could not read symbols: Invalid operation
+
+tested on x86_64 fedora 13.
+
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/ipmi/ipmi_si_intf.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ scripts/kconfig/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -314,9 +314,14 @@ static void deliver_recv_msg(struct smi_
- {
- 	/* Deliver the message to the upper layer with the lock
- 	   released. */
--	spin_unlock(&(smi_info->si_lock));
--	ipmi_smi_msg_received(smi_info->intf, msg);
--	spin_lock(&(smi_info->si_lock));
-+
-+	if (smi_info->run_to_completion) {
-+		ipmi_smi_msg_received(smi_info->intf, msg);
-+	} else {
-+		spin_unlock(&(smi_info->si_lock));
-+		ipmi_smi_msg_received(smi_info->intf, msg);
-+		spin_lock(&(smi_info->si_lock));
-+	}
- }
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -208,7 +208,7 @@ HOSTCFLAGS_zconf.tab.o	:= -I$(src)
+ HOSTLOADLIBES_qconf	= $(KC_QT_LIBS) -ldl
+ HOSTCXXFLAGS_qconf.o	= $(KC_QT_CFLAGS) -D LKC_DIRECT_LINK
  
- static void return_hosed_msg(struct smi_info *smi_info, int cCode)
+-HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0`
++HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0` -ldl
+ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+                           -D LKC_DIRECT_LINK
+ 
 
 
