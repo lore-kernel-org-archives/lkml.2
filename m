@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab0GASkN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:40:13 -0400
-Received: from kroah.org ([198.145.64.141]:40556 "EHLO coco.kroah.org"
+	id S1757991Ab0GASji (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:39:38 -0400
+Received: from kroah.org ([198.145.64.141]:40579 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757911Ab0GASXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:37 -0400
+	id S1757951Ab0GASXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:41 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:13 2010
-Message-Id: <20100701173213.299182956@clark.site>
+Message-Id: <20100701173213.730761749@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:43 -0700
+Date: Thu, 01 Jul 2010 10:31:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [patch 077/149] ASoC: Fix dB scales for WM8400
+       Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+       David Howells <dhowells@redhat.com>, Eric Paris <eparis@parisplace.org>,
+       Jakub Jelinek <jakub@redhat.com>, James Morris <jmorris@namei.org>,
+       Stephen Smalley <sds@tycho.nsa.gov>
+Subject: [patch 082/149] signals: check_kill_permission(): dont check creds if same_thread_group()
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 3351e9fbb0fda6498ee149ee88c67f5849813c57 upstream.
+commit 065add3941bdca54fe04ed3471a96bce9af88793 upstream.
 
-These scales should be regular, not linear.
+Andrew Tridgell reports that aio_read(SIGEV_SIGNAL) can fail if the
+notification from the helper thread races with setresuid(), see
+http://samba.org/~tridge/junkcode/aio_uid.c
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+This happens because check_kill_permission() doesn't permit sending a
+signal to the task with the different cred->xids.  But there is not any
+security reason to check ->cred's when the task sends a signal (private or
+group-wide) to its sub-thread.  Whatever we do, any thread can bypass all
+security checks and send SIGKILL to all threads, or it can block a signal
+SIG and do kill(gettid(), SIG) to deliver this signal to another
+sub-thread.  Not to mention that CLONE_THREAD implies CLONE_VM.
+
+Change check_kill_permission() to avoid the credentials check when the
+sender and the target are from the same thread group.
+
+Also, move "cred = current_cred()" down to avoid calling get_current()
+twice.
+
+Note: David Howells pointed out we could relax this even more, the
+CLONE_SIGHAND (without CLONE_THREAD) case probably does not need
+these checks too.
+
+Roland said:
+: The glibc (libpthread) that does set*id across threads has
+: been in use for a while (2.3.4?), probably in distro's using kernels as old
+: or older than any active -stable streams.  In the race in question, this
+: kernel bug is breaking valid POSIX application expectations.
+
+Reported-by: Andrew Tridgell <tridge@samba.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Roland McGrath <roland@redhat.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Cc: Eric Paris <eparis@parisplace.org>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Roland McGrath <roland@redhat.com>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8400.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ kernel/signal.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/wm8400.c
-+++ b/sound/soc/codecs/wm8400.c
-@@ -106,21 +106,21 @@ static void wm8400_codec_reset(struct sn
- 	wm8400_reset_codec_reg_cache(wm8400->wm8400);
- }
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -591,7 +591,7 @@ static int rm_from_queue(unsigned long m
+ static int check_kill_permission(int sig, struct siginfo *info,
+ 				 struct task_struct *t)
+ {
+-	const struct cred *cred = current_cred(), *tcred;
++	const struct cred *cred, *tcred;
+ 	struct pid *sid;
+ 	int error;
  
--static const DECLARE_TLV_DB_LINEAR(rec_mix_tlv, -1500, 600);
-+static const DECLARE_TLV_DB_SCALE(rec_mix_tlv, -1500, 600, 0);
+@@ -605,8 +605,10 @@ static int check_kill_permission(int sig
+ 	if (error)
+ 		return error;
  
--static const DECLARE_TLV_DB_LINEAR(in_pga_tlv, -1650, 3000);
-+static const DECLARE_TLV_DB_SCALE(in_pga_tlv, -1650, 3000, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_mix_tlv, -2100, 0);
-+static const DECLARE_TLV_DB_SCALE(out_mix_tlv, -2100, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_pga_tlv, -7300, 600);
-+static const DECLARE_TLV_DB_SCALE(out_pga_tlv, -7300, 600, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_omix_tlv, -600, 0);
-+static const DECLARE_TLV_DB_SCALE(out_omix_tlv, -600, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_dac_tlv, -7163, 0);
-+static const DECLARE_TLV_DB_SCALE(out_dac_tlv, -7163, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(in_adc_tlv, -7163, 1763);
-+static const DECLARE_TLV_DB_SCALE(in_adc_tlv, -7163, 1763, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_sidetone_tlv, -3600, 0);
-+static const DECLARE_TLV_DB_SCALE(out_sidetone_tlv, -3600, 0, 0);
- 
- static int wm8400_outpga_put_volsw_vu(struct snd_kcontrol *kcontrol,
-         struct snd_ctl_elem_value *ucontrol)
-@@ -439,7 +439,7 @@ static int outmixer_event (struct snd_so
- /* INMIX dB values */
- static const unsigned int in_mix_tlv[] = {
- 	TLV_DB_RANGE_HEAD(1),
--	0,7, TLV_DB_LINEAR_ITEM(-1200, 600),
-+	0,7, TLV_DB_SCALE_ITEM(-1200, 600, 0),
- };
- 
- /* Left In PGA Connections */
++	cred = current_cred();
+ 	tcred = __task_cred(t);
+-	if ((cred->euid ^ tcred->suid) &&
++	if (!same_thread_group(current, t) &&
++	    (cred->euid ^ tcred->suid) &&
+ 	    (cred->euid ^ tcred->uid) &&
+ 	    (cred->uid  ^ tcred->suid) &&
+ 	    (cred->uid  ^ tcred->uid) &&
 
 
