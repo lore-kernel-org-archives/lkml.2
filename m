@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933034Ab0GAUwq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:52:46 -0400
-Received: from kroah.org ([198.145.64.141]:47790 "EHLO coco.kroah.org"
+	id S933038Ab0GAUxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:53:40 -0400
+Received: from kroah.org ([198.145.64.141]:47899 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932802Ab0GAUvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:03 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:36 2010
-Message-Id: <20100701173436.572142632@clark.site>
+	id S932854Ab0GAUvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:20 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:38 2010
+Message-Id: <20100701173438.457605950@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:02 -0700
+Date: Thu, 01 Jul 2010 10:35:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [patch 116/164] USB: xhci: Wait for controller to be ready after reset.
+       Dmitry Torokhov <dtor@mail.ru>, Tim Gardner <tim.gardner@canonical.com>
+Subject: [patch 138/164] Input: psmouse - reset all types of mice before reconnecting
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit 2d62f3eea98354d61f90d6b115eecf9be5f4bdfe upstream.
+commit ef110b24e28f36620f63dab94708a17c7e267358 upstream.
 
-After software resets an xHCI host controller, it must wait for the
-"Controller Not Ready" (CNR) bit in the status register to be cleared.
-Software is not supposed to ring any doorbells or write to any registers
-except the status register until this bit is cleared.
+Synaptics hardware requires resetting device after suspend to ram
+in order for the device to be operational. The reset lives in
+synaptics-specific reconnect handler, but it is not being invoked
+if synaptics support is disabled and the device is handled as a
+standard PS/2 device (bare or IntelliMouse protocol).
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Let's add reset into generic reconnect handler as well.
+
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Cc: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-hcd.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/input/mouse/psmouse-base.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/host/xhci-hcd.c
-+++ b/drivers/usb/host/xhci-hcd.c
-@@ -141,6 +141,7 @@ int xhci_reset(struct xhci_hcd *xhci)
- {
- 	u32 command;
- 	u32 state;
-+	int ret;
+--- a/drivers/input/mouse/psmouse-base.c
++++ b/drivers/input/mouse/psmouse-base.c
+@@ -1382,6 +1382,7 @@ static int psmouse_reconnect(struct seri
+ 	struct psmouse *psmouse = serio_get_drvdata(serio);
+ 	struct psmouse *parent = NULL;
+ 	struct serio_driver *drv = serio->drv;
++	unsigned char type;
+ 	int rc = -1;
  
- 	state = xhci_readl(xhci, &xhci->op_regs->status);
- 	if ((state & STS_HALT) == 0) {
-@@ -155,7 +156,17 @@ int xhci_reset(struct xhci_hcd *xhci)
- 	/* XXX: Why does EHCI set this here?  Shouldn't other code do this? */
- 	xhci_to_hcd(xhci)->state = HC_STATE_HALT;
- 
--	return handshake(xhci, &xhci->op_regs->command, CMD_RESET, 0, 250 * 1000);
-+	ret = handshake(xhci, &xhci->op_regs->command,
-+			CMD_RESET, 0, 250 * 1000);
-+	if (ret)
-+		return ret;
+ 	if (!drv || !psmouse) {
+@@ -1401,10 +1402,15 @@ static int psmouse_reconnect(struct seri
+ 	if (psmouse->reconnect) {
+ 		if (psmouse->reconnect(psmouse))
+ 			goto out;
+-	} else if (psmouse_probe(psmouse) < 0 ||
+-		   psmouse->type != psmouse_extensions(psmouse,
+-						psmouse_max_proto, false)) {
+-		goto out;
++	} else {
++		psmouse_reset(psmouse);
 +
-+	xhci_dbg(xhci, "Wait for controller to be ready for doorbell rings\n");
-+	/*
-+	 * xHCI cannot write to any doorbells or operational registers other
-+	 * than status until the "Controller Not Ready" flag is cleared.
-+	 */
-+	return handshake(xhci, &xhci->op_regs->status, STS_CNR, 0, 250 * 1000);
- }
++		if (psmouse_probe(psmouse) < 0)
++			goto out;
++
++		type = psmouse_extensions(psmouse, psmouse_max_proto, false);
++		if (psmouse->type != type)
++			goto out;
+ 	}
  
- 
+ 	/* ok, the device type (and capabilities) match the old one,
 
 
