@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab0GAXAF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 19:00:05 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:52182 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751031Ab0GAXAC (ORCPT
+	id S1756108Ab0GAXBF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 19:01:05 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:38459 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656Ab0GAXBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 19:00:02 -0400
-From: Dmitry Torokhov <dtor@vmware.com>
-Organization: VMware, Inc.
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] VMware balloon: force compiling as a module
-Date: Thu, 1 Jul 2010 15:59:59 -0700
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3+; KDE/4.4.4; x86_64; ; )
-Cc: Bruno =?iso-8859-1?q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-       Alexander Clouter <alex@digriz.org.uk>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20100628230035.GA18971@dtor-ws.eng.vmware.com> <201007011531.52291.dtor@vmware.com> <20100701154347.e3c1094b.akpm@linux-foundation.org>
-In-Reply-To: <20100701154347.e3c1094b.akpm@linux-foundation.org>
+	Thu, 1 Jul 2010 19:01:01 -0400
+Date: Fri, 2 Jul 2010 01:00:56 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Daniel Walker <dwalker@codeaurora.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+Message-ID: <20100701230056.GD3594@basil.fritz.box>
+References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org>
+ <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org>
+ <20100701101746.3810cc3b.randy.dunlap@oracle.com>
+ <20100701180241.GA3594@basil.fritz.box>
+ <1278012503.7738.17.camel@c-dwalke-linux.qualcomm.com>
+ <20100701193850.GB3594@basil.fritz.box>
+ <4C2D0FF1.6010206@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007011600.00462.dtor@vmware.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C2D0FF1.6010206@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 01, 2010 03:43:47 pm Andrew Morton wrote:
-> On Thu, 1 Jul 2010 15:31:50 -0700
-> 
-> Dmitry Torokhov <dtor@vmware.com> wrote:
-> > On Thursday, July 01, 2010 03:18:35 pm Andrew Morton wrote:
-> > > On Tue, 29 Jun 2010 09:40:38 -0700
-> > > 
-> > > Dmitry Torokhov <dtor@vmware.com> wrote:
-> > > > On Tuesday, June 29, 2010 09:28:59 am Bruno Pr__mont wrote:
-> > > > > On Tue, 29 June 2010 Alexander Clouter <alex@digriz.org.uk> wrote:
-> > > > > > Dmitry Torokhov <dtor@vmware.com> wrote:
-> > > > > > > VMware Tools installer requires the upstream driver to be
-> > > > > > > compiled as a module in order to detect its presence and avoid
-> > > > > > > installing our own version on top of it. To avoid surprises
-> > > > > > > with 2 versions of the driver being installed and fighting
-> > > > > > > with each other, let's force the driver to be compiled as a
-> > > > > > > module unless user selects CONFIG_EMBEDDED.
-> > > > > > 
-> > > > > > *barf*
-> > > > > > 
-> > > > > > This surely is a problem in the installer and not the kernel? 
-> > > > > > Can you not nosey around in /sys/class/misc or where-ever your
-> > > > > > driver appears? If it does not, then I would probably suggest a
-> > > > > > patch to your balloon driver that dumps some details in there,
-> > > > > > including module version information.
-> > > > > > 
-> > > > > > Eugh.
-> > > > > 
-> > > > > In addition, the installer may check under /sys/module/ for it (as
-> > > > > for any/most code that can be built as a module), even for
-> > > > > built-in code. (if balloon driver does not show up there when
-> > > > > built-in it would be better to get it to show up there)
-> > > > 
-> > > > When driver is built-in the only thing exported in /sys/module/XXX
-> > > > are module parameters.
-> > > > 
-> > > > We also need to handle scenario when module is not loaded into the
-> > > > kernel.
-> > > 
-> > > - check for the /sys/module directory.
-> > 
-> > Empty.
-> 
-> But the presence of the empty /sys/module/vmware_balloon tells you that
-> the driver is loaded?
-> 
-> Confused.
+> The VCMM provides a more abstract, global view with finer-grained
+> control of each mapping a user wants to create. For instance, the
+> symantics of iommu_map preclude its use in setting up just the IOMMU
+> side of a mapping. With a one-sided map, two IOMMU devices can be
 
-No, unfortunately a kernel module that does not use module parameters
-is invisible when it is built in. If you check your box you will most
-likely not see /sys/module/evdev, /sys/module/input, and so forth.
+Hmm? dma_map_* does not change any CPU mappings. It only sets up
+DMA mapping(s).
 
-> 
-> > > - if that failed, modprobe the driver
-> > 
-> > Succeeds since the driver name changed (we renamed it to vmware_balloon
-> > before submitting into mainline to avoid confusion based on our
-> > experience with pvscsi; the existing one in the wild is called
-> > vmmemctl).
-> > 
-> > Now we have 2 drivers fighting. There is no backing device and so driver
-> > core will not save us by refusing to bind to already claimed device.
-> 
-> If vmware_balloon is present in /sys/modules or is loaded, don't load
-> vmmemctl.  And vice versa.
-> 
-> I dunno - it's silly for me to sit here proposing solutions.  it's
-> better that you do it!
+> Additionally, the current IOMMU interface does not allow users to
+> associate one page table with multiple IOMMUs unless the user explicitly
 
-Unfortunately I do not have a good solution at the moment. I guess we'll
-have to work with distributions to make sure they keep it as a module
-(it also makes most sense for them since not everyone runs on our
-platform).
+That assumes that all the IOMMUs on the system support the same page table
+format, right?
 
-Thanks.
+As I understand your approach would help if you have different
+IOMMus with an different low level interface, which just 
+happen to have the same pte format. Is that very likely?
 
+I would assume if you have lots of copies of the same IOMMU
+in the system then you could just use a single driver with multiple
+instances that share some state for all of them.  That model
+would fit in the current interfaces. There's no reason multiple
+instances couldn't share the same allocation data structure.
+
+And if you have lots of truly different IOMMUs then they likely
+won't be able to share PTEs at the hardware level anyways, because
+the formats are too different.
+
+> The VCMM takes the long view. Its designed for a future in which the
+> number of IOMMUs will go up and the ways in which these IOMMUs are
+> composed will vary from system to system, and may vary at
+> runtime. Already, there are ~20 different IOMMU map implementations in
+> the kernel. Had the Linux kernel had the VCMM, many of those
+> implementations could have leveraged the mapping and topology management
+> of a VCMM, while focusing on a few key hardware specific functions (map
+> this physical address, program the page table base register).
+
+The standard Linux approach to such a problem is to write
+a library that drivers can use for common functionality, not put a middle 
+layer inbetween. Libraries are much more flexible than layers.
+
+That said I'm not sure there's all that much duplicated code anyways.
+A lot of the code is always IOMMU specific. The only piece
+which might be shareable is the mapping allocation, but I don't
+think that's very much of a typical driver
+
+In my old pci-gart driver the allocation was all only a few lines of code, 
+although given it was somewhat dumb in this regard because it only managed a 
+small remapping window.
+
+-Andi 
 -- 
-Dmitry
-
+ak@linux.intel.com -- Speaking for myself only.
