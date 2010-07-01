@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab0GASzu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:55:50 -0400
-Received: from kroah.org ([198.145.64.141]:35275 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755840Ab0GASWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756056Ab0GASWf (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 1 Jul 2010 14:22:35 -0400
+Received: from kroah.org ([198.145.64.141]:35265 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755435Ab0GASWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:34 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:07 2010
-Message-Id: <20100701173207.164795446@clark.site>
+Message-Id: <20100701173207.083755471@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:30 -0700
+Date: Thu, 01 Jul 2010 10:30:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Pavel Emelyanov <xemul@openvz.org>, NeilBrown <neilb@suse.de>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>
-Subject: [patch 004/149] NFSD: dont report compiled-out versions as present
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
+       Andi Kleen <andi@firstfloor.org>
+Subject: [patch 003/149] cpumask: fix compat getaffinity
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Emelyanov <xemul@openvz.org>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 15ddb4aec54422ead137b03ea4e9b3f5db3f7cc2 upstream.
+commit fa9dc265ace9774e62f0e31108e5f47911124bda upstream.
 
-The /proc/fs/nfsd/versions file calls nfsd_vers() to check whether
-the particular nfsd version is present/available. The problem is
-that once I turn off e.g. NFSD-V4 this call returns -1 which is
-true from the callers POV which is wrong.
+Commit a45185d2d "cpumask: convert kernel/compat.c" broke libnuma, which
+abuses sched_getaffinity to find out NR_CPUS in order to parse
+/sys/devices/system/node/node*/cpumap.
 
-The proposal is to report false in that case.
+On NUMA systems with less than 32 possibly CPUs, the current
+compat_sys_sched_getaffinity now returns '4' instead of the actual
+NR_CPUS/8, which makes libnuma bail out when parsing the cpumap.
 
-The bug has existed since 6658d3a7bbfd1768 "[PATCH] knfsd: remove
-nfsd_versbits as intermediate storage for desired versions".
+The libnuma call sched_getaffinity(0, bitmap, 4096) at first.  It mean
+the libnuma expect the return value of sched_getaffinity() is either len
+argument or NR_CPUS.  But it doesn't expect to return nr_cpu_ids.
 
-Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
-Acked-by: NeilBrown <neilb@suse.de>
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Strictly speaking, userland requirement are
+
+1) Glibc assume the return value mean the lengh of initialized
+   of mask argument. E.g. if sched_getaffinity(1024) return 128,
+   glibc make zero fill rest 896 byte.
+2) Libnuma assume the return value can be used to guess NR_CPUS
+   in kernel. It assume len-arg<NR_CPUS makes -EINVAL. But
+   it try len=4096 at first and 4096 is always bigger than
+   NR_CPUS. Then, if we remove strange min_length normalization,
+   we never hit -EINVAL case.
+
+sched_getaffinity() already solved this issue.  This patch adapts
+compat_sys_sched_getaffinity() to match the non-compat case.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Reported-by: Ken Werner <ken.werner@web.de>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfssvc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/compat.c |   25 +++++++++++--------------
+ 1 file changed, 11 insertions(+), 14 deletions(-)
 
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -136,7 +136,7 @@ u32 nfsd_supported_minorversion;
- int nfsd_vers(int vers, enum vers_op change)
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -494,29 +494,26 @@ asmlinkage long compat_sys_sched_getaffi
  {
- 	if (vers < NFSD_MINVERS || vers >= NFSD_NRVERS)
--		return -1;
-+		return 0;
- 	switch(change) {
- 	case NFSD_SET:
- 		nfsd_versions[vers] = nfsd_version[vers];
+ 	int ret;
+ 	cpumask_var_t mask;
+-	unsigned long *k;
+-	unsigned int min_length = cpumask_size();
+ 
+-	if (nr_cpu_ids <= BITS_PER_COMPAT_LONG)
+-		min_length = sizeof(compat_ulong_t);
+-
+-	if (len < min_length)
++	if ((len * BITS_PER_BYTE) < nr_cpu_ids)
++		return -EINVAL;
++	if (len & (sizeof(compat_ulong_t)-1))
+ 		return -EINVAL;
+ 
+ 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+ 		return -ENOMEM;
+ 
+ 	ret = sched_getaffinity(pid, mask);
+-	if (ret < 0)
+-		goto out;
++	if (ret == 0) {
++		size_t retlen = min_t(size_t, len, cpumask_size());
+ 
+-	k = cpumask_bits(mask);
+-	ret = compat_put_bitmap(user_mask_ptr, k, min_length * 8);
+-	if (ret == 0)
+-		ret = min_length;
+-
+-out:
++		if (compat_put_bitmap(user_mask_ptr, cpumask_bits(mask), retlen * 8))
++			ret = -EFAULT;
++		else
++			ret = retlen;
++	}
+ 	free_cpumask_var(mask);
++
+ 	return ret;
+ }
+ 
 
 
