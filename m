@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758162Ab0GAS1Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:27:25 -0400
-Received: from kroah.org ([198.145.64.141]:40850 "EHLO coco.kroah.org"
+	id S1758235Ab0GAS0t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:26:49 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38773 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758159Ab0GASYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:31 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:18 2010
-Message-Id: <20100701173218.549108925@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:45 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>
-Subject: [patch 139/149] KVM: MMU: Dont read pdptrs with mmu spinlock held in mmu_alloc_roots
-In-Reply-To: <20100701175144.GA2116@kroah.com>
+	id S1758123Ab0GAS0m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:26:42 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "ohad@wizery.com" <ohad@wizery.com>, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+       "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+       "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
+Date: Thu, 1 Jul 2010 13:26:35 -0500
+Subject: RE: [PATCHv3 5/9] dspbridge: add mmufault support
+Thread-Topic: [PATCHv3 5/9] dspbridge: add mmufault support
+Thread-Index: AcsYr29geLDqkvcsTwW6nxBnghiRywAkS5RwAAFMioAAAGkFgAAAvf7A
+Message-ID: <496565EC904933469F292DDA3F1663E602CBDD3777@dlee06.ent.ti.com>
+References: <1277942401-3566-1-git-send-email-x0095840@ti.com>
+ <1277942401-3566-2-git-send-email-x0095840@ti.com>
+ <1277942401-3566-3-git-send-email-x0095840@ti.com>
+ <1277942401-3566-4-git-send-email-x0095840@ti.com>
+ <1277942401-3566-5-git-send-email-x0095840@ti.com>
+ <1277942401-3566-6-git-send-email-x0095840@ti.com>
+ <8F7AF80515AF0D4D93307E594F3CB40E4CA563BC@dlee03.ent.ti.com>
+ <496565EC904933469F292DDA3F1663E602CBDD373C@dlee06.ent.ti.com>
+ <8F7AF80515AF0D4D93307E594F3CB40E4CA5645D@dlee03.ent.ti.com>
+In-Reply-To: <8F7AF80515AF0D4D93307E594F3CB40E4CA5645D@dlee03.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
-
-------------------
-
-From: Avi Kivity <avi@redhat.com>
-
-On svm, kvm_read_pdptr() may require reading guest memory, which can sleep.
-
-Push the spinlock into mmu_alloc_roots(), and only take it after we've read
-the pdptr.
-
-Tested-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-(cherry picked from commit 8facbbff071ff2b19268d3732e31badc60471e21)
----
- arch/x86/kvm/mmu.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2091,11 +2091,13 @@ static int mmu_alloc_roots(struct kvm_vc
- 			direct = 1;
- 		if (mmu_check_root(vcpu, root_gfn))
- 			return 1;
-+		spin_lock(&vcpu->kvm->mmu_lock);
- 		sp = kvm_mmu_get_page(vcpu, root_gfn, 0,
- 				      PT64_ROOT_LEVEL, direct,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
- 		++sp->root_count;
-+		spin_unlock(&vcpu->kvm->mmu_lock);
- 		vcpu->arch.mmu.root_hpa = root;
- 		return 0;
- 	}
-@@ -2117,11 +2119,14 @@ static int mmu_alloc_roots(struct kvm_vc
- 			root_gfn = 0;
- 		if (mmu_check_root(vcpu, root_gfn))
- 			return 1;
-+		spin_lock(&vcpu->kvm->mmu_lock);
- 		sp = kvm_mmu_get_page(vcpu, root_gfn, i << 30,
- 				      PT32_ROOT_LEVEL, direct,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
- 		++sp->root_count;
-+		spin_unlock(&vcpu->kvm->mmu_lock);
-+
- 		vcpu->arch.mmu.pae_root[i] = root | PT_PRESENT_MASK;
- 	}
- 	vcpu->arch.mmu.root_hpa = __pa(vcpu->arch.mmu.pae_root);
-@@ -2485,7 +2490,9 @@ int kvm_mmu_load(struct kvm_vcpu *vcpu)
- 		goto out;
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	kvm_mmu_free_some_pages(vcpu);
-+	spin_unlock(&vcpu->kvm->mmu_lock);
- 	r = mmu_alloc_roots(vcpu);
-+	spin_lock(&vcpu->kvm->mmu_lock);
- 	mmu_sync_roots(vcpu);
- 	spin_unlock(&vcpu->kvm->mmu_lock);
- 	if (r)
 
 
+> -----Original Message-----
+> From: Kanigeri, Hari
+> Sent: Thursday, July 01, 2010 1:04 PM
+> To: Guzman Lugo, Fernando; linux-omap@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Cc: ohad@wizery.com; Hiroshi DOYU; ameya.palande@nokia.com;
+> felipe.contreras@nokia.com
+> Subject: RE: [PATCHv3 5/9] dspbridge: add mmufault support
+> 
+> > > > +	da = iommu_read_reg(mmu, MMU_FAULT_AD);
+> > > > +	iommu_write_reg(mmu, 0, MMU_IRQENABLE);
+> > >
+> > > -- Isn't the MMU already enabled at this point when the function
+> > callback
+> > > is called by iommu ?
+> >
+> > This line is actually disabling the interrupts. I am writing "0x0" in
+> the
+> > MMU_IRQENABLE.
+> 
+> -- oops ! sorry about that. Didn't pay attention to 0x0. Yes, this should
+> work.
+
+Not problem :). Could you please comment in the second set of patches I sent? The previous ones have version 3 which is not correct, that was a version I was using internally, but the patches shouldn't have sent to mailing list with that version. Because it is the first version posted.
+
+Thanks and regards,
+Fernando.
+
+> 
+> Best regards,
+> Hari
