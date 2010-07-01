@@ -1,176 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758887Ab0GAWDr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:03:47 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:38787 "EHLO imr3.ericy.com"
+	id S1759577Ab0GAWEN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:04:13 -0400
+Received: from kroah.org ([198.145.64.141]:33748 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756026Ab0GAWDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 18:03:41 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jim Cromie <jim.cromie@gmail.com>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Guenter Roeck <guenter.roeck@ericsson.com>,
-       Jean Delvare <khali@linux-fr.org>, Ethan Lawrence <e.law87@yahoo.com>
-CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-       lars4910@hotmail.com, birdie@permonline.ru, jadcock@cox.net,
-       binximeng@gmail.com, Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH/RFC] hwmon: Add support for W83667HG-B
-Date: Thu, 1 Jul 2010 15:02:15 -0700
-Message-ID: <1278021735-21188-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.0.87.g0901d
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1758689Ab0GAVMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:12:53 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:47 2010
+Message-Id: <20100701174247.632225121@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:41:44 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Jeff Layton <jlayton@redhat.com>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>
+Subject: [014/200] nfsd: dont break lease while servicing a COMMIT
+In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for W83667HG-B to the w83627ehf driver.
+2.6.34-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+------------------
+
+From: Jeff Layton <jlayton@redhat.com>
+
+commit 91885258e8343bb65c08f668d7e6c16563eb4284 upstream.
+
+This is the second attempt to fix the problem whereby a COMMIT call
+causes a lease break and triggers a possible deadlock.
+
+The problem is that nfsd attempts to break a lease on a COMMIT call.
+This triggers a delegation recall if the lease is held for a delegation.
+If the client is the one holding the delegation and it's the same one on
+which it's issuing the COMMIT, then it can't return that delegation
+until the COMMIT is complete. But, nfsd won't complete the COMMIT until
+the delegation is returned. The client and server are essentially
+deadlocked until the state is marked bad (due to the client not
+responding on the callback channel).
+
+The first patch attempted to deal with this by eliminating the open of
+the file altogether and simply had nfsd_commit pass a NULL file pointer
+to the vfs_fsync_range. That would conflict with some work in progress
+by Christoph Hellwig to clean up the fsync interface, so this patch
+takes a different approach.
+
+This declares a new NFSD_MAY_NOT_BREAK_LEASE access flag that indicates
+to nfsd_open that it should not break any leases when opening the file,
+and has nfsd_commit set that flag on the nfsd_open call.
+
+For now, this patch leaves nfsd_commit opening the file with write
+access since I'm not clear on what sort of access would be more
+appropriate.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
+ fs/nfsd/vfs.c |    8 +++++---
+ fs/nfsd/vfs.h |    1 +
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-Key relevant difference between W83667HG and W83667HG-B are the Chip ID as well
-as the fan output and step output register addresses. Those differences are
-addressed with this patch.
-
-There are other relevant changes in the mapping of input sensors to fan
-control (W83667HG datasheet chapter 8.7, W83667HG-B datasheet chapter 8.5).
-However, control of those mappings is not implemented in the driver, thus the
-respective changes should not have an impact on driver operation.
-
-Changes made in this patch are based on information from datasheets only. The
-patch has not yet been tested with real hardware. The patch must be tested with
-real hardware before it is integrated, and is thus submitted as RFC.
-
----
- drivers/hwmon/w83627ehf.c |   44 +++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 37 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-index 0dcaba9..074e15b 100644
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -39,6 +39,7 @@
-     w83627dhg    9      5       4       3      0xa020 0xc1    0x5ca3
-     w83627dhg-p  9      5       4       3      0xb070 0xc1    0x5ca3
-     w83667hg     9      5       3       3      0xa510 0xc1    0x5ca3
-+    w83667hg-b   9      5       3       3      0xb350 0xc1    0x5ca3
- */
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -724,7 +724,7 @@ nfsd_open(struct svc_rqst *rqstp, struct
+ 	struct inode	*inode;
+ 	int		flags = O_RDONLY|O_LARGEFILE;
+ 	__be32		err;
+-	int		host_err;
++	int		host_err = 0;
  
- #include <linux/module.h>
-@@ -55,7 +56,7 @@
- #include <linux/io.h>
- #include "lm75.h"
+ 	validate_process_creds();
  
--enum kinds { w83627ehf, w83627dhg, w83627dhg_p, w83667hg };
-+enum kinds { w83627ehf, w83627dhg, w83627dhg_p, w83667hg, w83667hg_b };
- 
- /* used to set data->name = w83627ehf_device_names[data->sio_kind] */
- static const char * w83627ehf_device_names[] = {
-@@ -63,6 +64,7 @@ static const char * w83627ehf_device_names[] = {
- 	"w83627dhg",
- 	"w83627dhg",
- 	"w83667hg",
-+	"w83667hg-b",
- };
- 
- static unsigned short force_id;
-@@ -91,6 +93,7 @@ MODULE_PARM_DESC(force_id, "Override the detected device ID");
- #define SIO_W83627DHG_ID	0xa020
- #define SIO_W83627DHG_P_ID	0xb070
- #define SIO_W83667HG_ID 	0xa510
-+#define SIO_W83667HG_B_ID	0xb350
- #define SIO_ID_MASK		0xFFF0
- 
- static inline void
-@@ -201,8 +204,17 @@ static const u8 W83627EHF_REG_TOLERANCE[] = { 0x07, 0x07, 0x14, 0x62 };
- static const u8 W83627EHF_REG_FAN_START_OUTPUT[] = { 0x0a, 0x0b, 0x16, 0x65 };
- static const u8 W83627EHF_REG_FAN_STOP_OUTPUT[] = { 0x08, 0x09, 0x15, 0x64 };
- static const u8 W83627EHF_REG_FAN_STOP_TIME[] = { 0x0c, 0x0d, 0x17, 0x66 };
--static const u8 W83627EHF_REG_FAN_MAX_OUTPUT[] = { 0xff, 0x67, 0xff, 0x69 };
--static const u8 W83627EHF_REG_FAN_STEP_OUTPUT[] = { 0xff, 0x68, 0xff, 0x6a };
-+
-+static const u8 *W83627EHF_REG_FAN_MAX_OUTPUT;
-+static const u8 *W83627EHF_REG_FAN_STEP_OUTPUT;
-+
-+static const u8 W83627EHF_REG_FAN_MAX_OUTPUT_COMMON[]
-+						= { 0xff, 0x67, 0xff, 0x69 };
-+static const u8 W83627EHF_REG_FAN_STEP_OUTPUT_COMMON[]
-+						= { 0xff, 0x68, 0xff, 0x6a };
-+
-+static const u8 W83627EHF_REG_FAN_MAX_OUTPUT_W83667_B[] = { 0x67, 0x69, 0x6b };
-+static const u8 W83627EHF_REG_FAN_STEP_OUTPUT_W83667_B[] = { 0x68, 0x6a, 0x6c };
- 
- /*
-  * Conversions
-@@ -1343,22 +1355,35 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
- 	/* 627EHG and 627EHF have 10 voltage inputs; 627DHG and 667HG have 9 */
- 	data->in_num = (sio_data->kind == w83627ehf) ? 10 : 9;
- 	/* 667HG has 3 pwms */
--	data->pwm_num = (sio_data->kind == w83667hg) ? 3 : 4;
-+	data->pwm_num = (sio_data->kind == w83667hg
-+			 || sio_data->kind == w83667hg_b) ? 3 : 4;
- 
- 	/* Check temp3 configuration bit for 667HG */
--	if (sio_data->kind == w83667hg) {
-+	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
- 		data->temp3_disable = w83627ehf_read_value(data,
- 					W83627EHF_REG_TEMP_CONFIG[1]) & 0x01;
- 		data->in6_skip = !data->temp3_disable;
+@@ -761,7 +761,8 @@ nfsd_open(struct svc_rqst *rqstp, struct
+ 	 * Check to see if there are any leases on this file.
+ 	 * This may block while leases are broken.
+ 	 */
+-	host_err = break_lease(inode, O_NONBLOCK | ((access & NFSD_MAY_WRITE) ? O_WRONLY : 0));
++	if (!(access & NFSD_MAY_NOT_BREAK_LEASE))
++		host_err = break_lease(inode, O_NONBLOCK | ((access & NFSD_MAY_WRITE) ? O_WRONLY : 0));
+ 	if (host_err == -EWOULDBLOCK)
+ 		host_err = -ETIMEDOUT;
+ 	if (host_err) /* NOMEM or WOULDBLOCK */
+@@ -1169,7 +1170,8 @@ nfsd_commit(struct svc_rqst *rqstp, stru
+ 			goto out;
  	}
  
-+	if (sio_data->kind == w83667hg_b) {
-+		W83627EHF_REG_FAN_MAX_OUTPUT
-+		  = W83627EHF_REG_FAN_MAX_OUTPUT_W83667_B;
-+		W83627EHF_REG_FAN_STEP_OUTPUT
-+		  = W83627EHF_REG_FAN_STEP_OUTPUT_W83667_B;
-+	} else {
-+		W83627EHF_REG_FAN_MAX_OUTPUT
-+		  = W83627EHF_REG_FAN_MAX_OUTPUT_COMMON;
-+		W83627EHF_REG_FAN_STEP_OUTPUT
-+		  = W83627EHF_REG_FAN_STEP_OUTPUT_COMMON;
-+	}
-+
- 	/* Initialize the chip */
- 	w83627ehf_init_device(data);
+-	err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_WRITE, &file);
++	err = nfsd_open(rqstp, fhp, S_IFREG,
++			NFSD_MAY_WRITE|NFSD_MAY_NOT_BREAK_LEASE, &file);
+ 	if (err)
+ 		goto out;
+ 	if (EX_ISSYNC(fhp->fh_export)) {
+--- a/fs/nfsd/vfs.h
++++ b/fs/nfsd/vfs.h
+@@ -20,6 +20,7 @@
+ #define NFSD_MAY_OWNER_OVERRIDE	64
+ #define NFSD_MAY_LOCAL_ACCESS	128 /* IRIX doing local access check on device special file*/
+ #define NFSD_MAY_BYPASS_GSS_ON_ROOT 256
++#define NFSD_MAY_NOT_BREAK_LEASE 512
  
- 	data->vrm = vid_which_vrm();
- 	superio_enter(sio_data->sioreg);
- 	/* Read VID value */
--	if (sio_data->kind == w83667hg) {
-+	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
- 		/* W83667HG has different pins for VID input and output, so
- 		we can get the VID input values directly at logical device D
- 		0xe3. */
-@@ -1409,7 +1434,7 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
- 	}
- 
- 	/* fan4 and fan5 share some pins with the GPIO and serial flash */
--	if (sio_data->kind == w83667hg) {
-+	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
- 		fan5pin = superio_inb(sio_data->sioreg, 0x27) & 0x20;
- 		fan4pin = superio_inb(sio_data->sioreg, 0x27) & 0x40;
- 	} else {
-@@ -1556,6 +1581,7 @@ static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
- 	static const char __initdata sio_name_W83627DHG[] = "W83627DHG";
- 	static const char __initdata sio_name_W83627DHG_P[] = "W83627DHG-P";
- 	static const char __initdata sio_name_W83667HG[] = "W83667HG";
-+	static const char __initdata sio_name_W83667HG_B[] = "W83667HG-B";
- 
- 	u16 val;
- 	const char *sio_name;
-@@ -1588,6 +1614,10 @@ static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
- 		sio_data->kind = w83667hg;
- 		sio_name = sio_name_W83667HG;
- 		break;
-+	case SIO_W83667HG_B_ID:
-+		sio_data->kind = w83667hg_b;
-+		sio_name = sio_name_W83667HG_B;
-+		break;
- 	default:
- 		if (val != 0xffff)
- 			pr_debug(DRVNAME ": unsupported chip ID: 0x%04x\n",
--- 
-1.7.0.87.g0901d
+ #define NFSD_MAY_CREATE		(NFSD_MAY_EXEC|NFSD_MAY_WRITE)
+ #define NFSD_MAY_REMOVE		(NFSD_MAY_EXEC|NFSD_MAY_WRITE|NFSD_MAY_TRUNC)
+
 
