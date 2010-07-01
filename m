@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933432Ab0GAVrI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:47:08 -0400
-Received: from kroah.org ([198.145.64.141]:32782 "EHLO coco.kroah.org"
+	id S1759425Ab0GAVq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:46:26 -0400
+Received: from kroah.org ([198.145.64.141]:32805 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759049Ab0GAVOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
-Message-Id: <20100701174254.785483296@clark.site>
+	id S1759061Ab0GAVOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:11 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:55 2010
+Message-Id: <20100701174255.117149471@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:09 -0700
+Date: Thu, 01 Jul 2010 10:43:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Maurus Cuelenaere <mcuelenaere@gmail.com>,
-       Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Alessandro Zummo <a.zummo@towertech.it>
-Subject: [099/200] rtc: s3c: initialize driver data before using it
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Hugh Dickins <hughd@google.com>,
+       Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: [103/200] tmpfs: insert tmpfs cache pages to inactive list at first
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,45 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maurus Cuelenaere <mcuelenaere@gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit e893de59a4982791368b3ce412bc67dd601a88a0 upstream.
+commit e9d6c157385e4efa61cb8293e425c9d8beba70d3 upstream.
 
-s3c_rtc_setfreq() uses the platform driver data to derive struct rtc_device,
-so make sure drvdata is set _before_ s3c_rtc_setfreq() is called.
+Shaohua Li reported parallel file copy on tmpfs can lead to OOM killer.
+This is regression of caused by commit 9ff473b9a7 ("vmscan: evict
+streaming IO first").  Wow, It is 2 years old patch!
 
-Signed-off-by: Maurus Cuelenaere <mcuelenaere@gmail.com>
-Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Maurus Cuelenaere <mcuelenaere@gmail.com>
+Currently, tmpfs file cache is inserted active list at first.  This means
+that the insertion doesn't only increase numbers of pages in anon LRU, but
+it also reduces anon scanning ratio.  Therefore, vmscan will get totally
+confused.  It scans almost only file LRU even though the system has plenty
+unused tmpfs pages.
+
+Historically, lru_cache_add_active_anon() was used for two reasons.
+1) Intend to priotize shmem page rather than regular file cache.
+2) Intend to avoid reclaim priority inversion of used once pages.
+
+But we've lost both motivation because (1) Now we have separate anon and
+file LRU list.  then, to insert active list doesn't help such priotize.
+(2) In past, one pte access bit will cause page activation.  then to
+insert inactive list with pte access bit mean higher priority than to
+insert active list.  Its priority inversion may lead to uninteded lru
+chun.  but it was already solved by commit 645747462 (vmscan: detect
+mapped file pages used only once).  (Thanks Hannes, you are great!)
+
+Thus, now we can use lru_cache_add_anon() instead.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reported-by: Shaohua Li <shaohua.li@intel.com>
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-s3c.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/linux/swap.h |   10 ----------
+ mm/filemap.c         |    4 ++--
+ 2 files changed, 2 insertions(+), 12 deletions(-)
 
---- a/drivers/rtc/rtc-s3c.c
-+++ b/drivers/rtc/rtc-s3c.c
-@@ -457,8 +457,6 @@ static int __devinit s3c_rtc_probe(struc
-  	pr_debug("s3c2410_rtc: RTCCON=%02x\n",
- 		 readb(s3c_rtc_base + S3C2410_RTCCON));
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -223,21 +223,11 @@ static inline void lru_cache_add_anon(st
+ 	__lru_cache_add(page, LRU_INACTIVE_ANON);
+ }
  
--	s3c_rtc_setfreq(&pdev->dev, 1);
+-static inline void lru_cache_add_active_anon(struct page *page)
+-{
+-	__lru_cache_add(page, LRU_ACTIVE_ANON);
+-}
 -
- 	device_init_wakeup(&pdev->dev, 1);
+ static inline void lru_cache_add_file(struct page *page)
+ {
+ 	__lru_cache_add(page, LRU_INACTIVE_FILE);
+ }
  
- 	/* register RTC and exit */
-@@ -475,6 +473,9 @@ static int __devinit s3c_rtc_probe(struc
- 	rtc->max_user_freq = 128;
- 
- 	platform_set_drvdata(pdev, rtc);
-+
-+	s3c_rtc_setfreq(&pdev->dev, 1);
-+
- 	return 0;
- 
-  err_nortc:
+-static inline void lru_cache_add_active_file(struct page *page)
+-{
+-	__lru_cache_add(page, LRU_ACTIVE_FILE);
+-}
+-
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -441,7 +441,7 @@ int add_to_page_cache_lru(struct page *p
+ 	/*
+ 	 * Splice_read and readahead add shmem/tmpfs pages into the page cache
+ 	 * before shmem_readpage has a chance to mark them as SwapBacked: they
+-	 * need to go on the active_anon lru below, and mem_cgroup_cache_charge
++	 * need to go on the anon lru below, and mem_cgroup_cache_charge
+ 	 * (called in add_to_page_cache) needs to know where they're going too.
+ 	 */
+ 	if (mapping_cap_swap_backed(mapping))
+@@ -452,7 +452,7 @@ int add_to_page_cache_lru(struct page *p
+ 		if (page_is_file_cache(page))
+ 			lru_cache_add_file(page);
+ 		else
+-			lru_cache_add_active_anon(page);
++			lru_cache_add_anon(page);
+ 	}
+ 	return ret;
+ }
 
 
