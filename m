@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117Ab0GAVGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:06:21 -0400
-Received: from kroah.org ([198.145.64.141]:47794 "EHLO coco.kroah.org"
+	id S1759337Ab0GAVSj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:18:39 -0400
+Received: from kroah.org ([198.145.64.141]:33143 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932807Ab0GAUvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:04 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:36 2010
-Message-Id: <20100701173436.654965684@clark.site>
+	id S1759236Ab0GAVPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:15:04 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:00 2010
+Message-Id: <20100701174300.409169512@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:03 -0700
+Date: Thu, 01 Jul 2010 10:44:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel Mack <daniel@caiaq.de>, Johan Hovold <jhovold@gmail.com>,
-       Alan Cox <alan@linux.intel.com>
-Subject: [patch 117/164] USB: ftdi_sio: fix DTR/RTS line modes
-In-Reply-To: <20100701175152.GA2135@kroah.com>
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [164/200] perf: Fix signed comparison in perf_adjust_period()
+In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let me know.
+2.6.34-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Mack <daniel@caiaq.de>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 6a1a82df91fa0eb1cc76069a9efe5714d087eccd upstream.
+commit f6ab91add6355e231e1c47897027b2a6ee4fa268 upstream.
 
-Call set_mctrl() and clear_mctrl() according to the flow control mode
-selected. This makes serial communication for FT232 connected devices
-work when CRTSCTS is not set.
+Frederic reported that frequency driven swevents didn't work properly
+and even caused a division-by-zero error.
 
-This fixes a regression introduced by 4175f3e31 ("tty_port: If we are
-opened non blocking we still need to raise the carrier"). This patch
-calls the low-level driver's dtr_rts() function which consequently sets
-TIOCM_DTR | TIOCM_RTS. A later call to set_termios() without CRTSCTS in
-cflags, however, does not reset these bits, and so data is not actually
-sent out on the serial wire.
+It turns out there are two bugs, the division-by-zero comes from a
+failure to deal with that in perf_calculate_period().
 
-Signed-off-by: Daniel Mack <daniel@caiaq.de>
-Cc: Johan Hovold <jhovold@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>
+The other was more interesting and turned out to be a wrong comparison
+in perf_adjust_period(). The comparison was between an s64 and u64 and
+got implicitly converted to an unsigned comparison. The problem is
+that period_left is typically < 0, so it ended up being always true.
+
+Cure this by making the local period variables s64.
+
+Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/perf_event.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2312,6 +2312,8 @@ static void ftdi_set_termios(struct tty_
- 				"urb failed to set to rts/cts flow control\n");
- 		}
- 
-+		/* raise DTR/RTS */
-+		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
- 	} else {
- 		/*
- 		 * Xon/Xoff code
-@@ -2359,6 +2361,8 @@ static void ftdi_set_termios(struct tty_
- 			}
- 		}
- 
-+		/* lower DTR/RTS */
-+		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1456,6 +1456,9 @@ do {					\
+ 		divisor = nsec * frequency;
  	}
- 	return;
+ 
++	if (!divisor)
++		return dividend;
++
+ 	return div64_u64(dividend, divisor);
  }
+ 
+@@ -1478,7 +1481,7 @@ static int perf_event_start(struct perf_
+ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+-	u64 period, sample_period;
++	s64 period, sample_period;
+ 	s64 delta;
+ 
+ 	period = perf_calculate_period(event, nsec, count);
 
 
