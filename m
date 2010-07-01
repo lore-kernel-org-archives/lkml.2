@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759549Ab0GAVyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:54:31 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12483 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758981Ab0GAVy0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:54:26 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=u9gA5vwOeeGqgEYy5tUzJjV8EEQ/9dFbSP70FcBiVvnVY25M63mnaaS1/cuM3gvbm
-	2GIH4YyMHxPlHNx9nrQSA==
-MIME-Version: 1.0
-In-Reply-To: <20100630142443.d9a9c49e.akpm@linux-foundation.org>
-References: <1277747099-12770-1-git-send-email-mrubin@google.com> 
-	<20100630142443.d9a9c49e.akpm@linux-foundation.org>
-From: Michael Rubin <mrubin@google.com>
-Date: Thu, 1 Jul 2010 14:53:57 -0700
-Message-ID: <AANLkTikMRjLS7lGFRF8DI7ThAi9VtedYJ4C8BaVwKOsG@mail.gmail.com>
-Subject: Re: [PATCH] Adding four read-only files to /proc/sys/vm
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
-       axboe@kernel.dk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1758985Ab0GAWAG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:00:06 -0400
+Received: from kroah.org ([198.145.64.141]:33852 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758883Ab0GAVNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:08 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:49 2010
+Message-Id: <20100701174249.039970545@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:42:01 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Kamal Mostafa <kamal@canonical.com>, Zhang Rui <rui.zhang@intel.com>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>, Jiri Kosina <jkosina@suse.cz>,
+       Thomas Renninger <trenn@suse.de>, Len Brown <len.brown@intel.com>
+Subject: [031/200] ACPI: video: fix acpi_backlight=video
+In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 2:24 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> Well...  why are these useful?  In what operational scenario would
-> someone use these and get goodness from the experience?  Where is the
-> value?  Sell it to us!
+2.6.34-stable review patch.  If anyone has any objections, please let me know.
 
-OK here it is in email before I add it to the commit description.
+------------------
 
-Before when users are trying to track their IO activity there has always
-been a gap in the flow from user app to disk for buffered IO. With
-page_dirtied and
-page_entered_writeback the user can now track IO from buffered writes
-as they are indicated to the block layer.
+From: Kamal Mostafa <kamal@canonical.com>
 
-pages_dirtied helps storage workloads generating buffered writes
-that need to see over time how much memory the app is able to dirty.
-It can help trace app issues where iostat won't. In mixed workloads
-where an appserver is writing via DIRECT_IO it can help root cause
-issues where other apps are giving bursts of io behavior.
+commit eeb4bcb4771679d7b3446c0293334faee11b090a upstream.
 
-pages_entered_writeback is useful to help grant visibility into the
-writeback subsystem. By tracking pages_entered_writeback with
-pages_dirtied app developers can learn about the performance and/or
-stability of the writeback subsystem. Comparing the rates of change
-between the two allow developers to see when writeback is not able to
-keep up with incoming traffic and the rate of dirty memory being sent
-to the IO back end.
+Make "acpi_backlight=video" param enable ACPI_VIDEO_BACKLIGHT_FORCE_VIDEO
+as intended, instead of incorrectly enabling video output switching.
 
-> It's hard to see how any future implementation could have a problem
-> implementing pages_dirtied and pages_entered_writeback, however
-> dirty_threshold and dirty_background_threshold are, I think, somewhat
-> specific to the current implementation and may be hard to maintain next
-> time we rip up and rewrite everything.
+BugLink: http://bugs.launchpad.net/bugs/573120
 
-We already expose these thresholds in /proc/sys/vm with
-dirty_background_ratio and background_ratio. What's frustrating about
-the ratio variables and the need for these are that they are not honored
-by the kernel. Instead the kernel may alter the number requested without
-giving the user any indication that is the case.  An app developer can
-set the ratio to 2% but end up with 5% as get_dirty_limits makes sure
-it is never lower than 5% when set from the ratio. Arguably that can
-be fixed too but the limits which decide whether writeback is invoked
-to aggressively clean dirty pages is dependent on changing page state
-retrieved in determine_dirtyable_memory. It makes understanding when
-the kernel decides to writeback data a moving target that no app can
-ever determine. With these thresholds visible and collected over time it
-gives apps a chance to know why writeback happened, or why it did not.
-As systems get larger and larger RAM developers use the ratios to predict
-when their workloads will see writeback invoked. Today there is no way
-to accurately predict this.
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Acked-by: Zhang Rui <rui.zhang@intel.com>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Acked-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-> Documentation doesn't describe the units.  Pages?  kbytes?  bytes?
+---
+ drivers/acpi/video_detect.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ouch. Thanks. That will be fixed.
-
-> I think it's best to encode the units in the procfs filename
-> (eg: dirty_expire_centisecs, min_free_kbytes).
-
-I agree that will be fixed.
-
-> units?
-They will all get units
-
-> We're very very interested in knowing how many pages entered writeback
-> via mm/vmscan.c however this procfs file lumps those together with the
-> pages which entered writeback via the regular writeback paths, I assume.
-
-Yes and I think that's ok. It describes how the whole system is moving
-dirty memory to writeback state and sending it to the I/O path.
-TO me trying to distinguish between fs/fs-writeback.c code doing this
-or vmscan.c code doing this is exposing implementation that we may
-change in the future.
+--- a/drivers/acpi/video_detect.c
++++ b/drivers/acpi/video_detect.c
+@@ -250,7 +250,7 @@ static int __init acpi_backlight(char *s
+ 				ACPI_VIDEO_BACKLIGHT_FORCE_VENDOR;
+ 		if (!strcmp("video", str))
+ 			acpi_video_support |=
+-				ACPI_VIDEO_OUTPUT_SWITCHING_FORCE_VIDEO;
++				ACPI_VIDEO_BACKLIGHT_FORCE_VIDEO;
+ 	}
+ 	return 1;
+ }
 
 
-> But we need EXPORT_SYMBOL(account_page_dirtied), methinks.
-
-Ouch thanks. Will be fixed.
-
-> This should be a separate patch IMO.
-
-I will split these into two patches. One with the fix and then the
-other with the counters.
-
-mrubin
