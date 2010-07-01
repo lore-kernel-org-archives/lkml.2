@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546Ab0GAWWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:22:17 -0400
-Received: from kroah.org ([198.145.64.141]:47140 "EHLO coco.kroah.org"
+	id S932524Ab0GAWWb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:22:31 -0400
+Received: from kroah.org ([198.145.64.141]:47133 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932502Ab0GAUtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:31 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:28 2010
-Message-Id: <20100701173427.976916106@clark.site>
+	id S932496Ab0GAUta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:30 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:27 2010
+Message-Id: <20100701173427.894926859@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:19 -0700
+Date: Thu, 01 Jul 2010 10:33:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [patch 013/164] staging: vt6655: Fix kernel BUG on driver wpa initialization
+       Rodrigo Linfati <rodrigo@linfati.cl>
+Subject: [patch 012/164] Staging: add Add Sitecom WL-349 to rtl8192su
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Rodrigo Linfati <rodrigo@linfati.cl>
 
-commit f65515275ea3e45fdcd0fb78455f542d6fdca086 upstream.
+commit 64a5a09218626464be35e0229d85b2ab0fcf03fd upstream.
 
-In http://bugzilla.novell.com/show_bug.cgi?id=597299, the vt6655 driver
-generates a kernel BUG on a NULL pointer dereference at NULL. This problem
-has been traced to a failure in the wpa_set_wpadev() routine. As the vt6656
-driver does not call this routine, the vt6655 code is similarly set to skip
-the call.
+Add usb id of Sitecom WL-349 to rtl8192su
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Tested-by: Richard Meek <osl2008@googlemail.com>
+Signed-off-by: Rodrigo Linfati <rodrigo@linfati.cl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/vt6655/device_main.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/rtl8192su/r8192U_core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -1089,11 +1089,13 @@ device_found1(struct pci_dev *pcid, cons
-     }
- //2008-07-21-01<Add>by MikeLiu
- //register wpadev
-+#if 0
-    if(wpa_set_wpadev(pDevice, 1)!=0) {
-      printk("Fail to Register WPADEV?\n");
-         unregister_netdev(pDevice->dev);
-         free_netdev(dev);
-    }
-+#endif
-     device_print_info(pDevice);
-     pci_set_drvdata(pcid, pDevice);
-     return 0;
+--- a/drivers/staging/rtl8192su/r8192U_core.c
++++ b/drivers/staging/rtl8192su/r8192U_core.c
+@@ -120,6 +120,7 @@ static struct usb_device_id rtl8192_usb_
+ 	{USB_DEVICE(0x050d, 0x805E)},
+ 	/* Sitecom */
+ 	{USB_DEVICE(0x0df6, 0x0031)},
++	{USB_DEVICE(0x0df6, 0x004b)},	/* WL-349 */
+ 	/* EnGenius */
+ 	{USB_DEVICE(0x1740, 0x9201)},
+ 	/* Dlink */
 
 
