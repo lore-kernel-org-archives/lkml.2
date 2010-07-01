@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab0GAS1D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:27:03 -0400
-Received: from kroah.org ([198.145.64.141]:40862 "EHLO coco.kroah.org"
+	id S1758021Ab0GASYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:24:54 -0400
+Received: from kroah.org ([198.145.64.141]:40905 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758167Ab0GASYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:32 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:18 2010
-Message-Id: <20100701173218.715543525@clark.site>
+	id S932114Ab0GASYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:38 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:19 2010
+Message-Id: <20100701173219.354992128@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:47 -0700
+Date: Thu, 01 Jul 2010 10:32:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>
-Subject: [patch 141/149] KVM: x86: Add missing locking to arch specific vcpu ioctls
+       Giridhar Malavali <giridhar.malavali@qlogic.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Ben Hutchings <ben@decadent.org.uk>
+Subject: [patch 148/149] [SCSI] qla2xxx: Disable MSI on qla24xx chips other than QLA2432.
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-Signed-off-by: Avi Kivity <avi@redhat.com>
+commit 6377a7ae1ab82859edccdbc8eaea63782efb134d upstream.
+
+On specific platforms, MSI is unreliable on some of the QLA24xx chips, resulting
+in fatal I/O errors under load, as reported in <http://bugs.debian.org/572322>
+and by some RHEL customers.
+
+Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-(cherry picked from commit 8fbf065d625617bbbf6b72d5f78f84ad13c8b547)
----
- arch/x86/kvm/x86.c |    6 ++++++
- 1 file changed, 6 insertions(+)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1420,6 +1420,7 @@ static int kvm_vcpu_ioctl_get_cpuid2(str
- {
- 	int r;
+---
+ drivers/scsi/qla2xxx/qla_isr.c |   28 +++++++++++++---------------
+ 1 file changed, 13 insertions(+), 15 deletions(-)
+
+--- a/drivers/scsi/qla2xxx/qla_isr.c
++++ b/drivers/scsi/qla2xxx/qla_isr.c
+@@ -2240,30 +2240,28 @@ qla2x00_request_irqs(struct qla_hw_data
  
-+	vcpu_load(vcpu);
- 	r = -E2BIG;
- 	if (cpuid->nent < vcpu->arch.cpuid_nent)
- 		goto out;
-@@ -1431,6 +1432,7 @@ static int kvm_vcpu_ioctl_get_cpuid2(str
+ 	/* If possible, enable MSI-X. */
+ 	if (!IS_QLA2432(ha) && !IS_QLA2532(ha) &&
+-	    !IS_QLA8432(ha) && !IS_QLA8001(ha))
+-		goto skip_msix;
++		!IS_QLA8432(ha) && !IS_QLA8001(ha))
++		goto skip_msi;
++
++	if (ha->pdev->subsystem_vendor == PCI_VENDOR_ID_HP &&
++		(ha->pdev->subsystem_device == 0x7040 ||
++		ha->pdev->subsystem_device == 0x7041 ||
++		ha->pdev->subsystem_device == 0x1705)) {
++		DEBUG2(qla_printk(KERN_WARNING, ha,
++			"MSI-X: Unsupported ISP2432 SSVID/SSDID (0x%X,0x%X).\n",
++			ha->pdev->subsystem_vendor,
++			ha->pdev->subsystem_device));
++		goto skip_msi;
++	}
  
- out:
- 	cpuid->nent = vcpu->arch.cpuid_nent;
-+	vcpu_put(vcpu);
- 	return r;
- }
- 
-@@ -1680,6 +1682,7 @@ static int kvm_vcpu_ioctl_x86_setup_mce(
- 	int r;
- 	unsigned bank_num = mcg_cap & 0xff, bank;
- 
-+	vcpu_load(vcpu);
- 	r = -EINVAL;
- 	if (!bank_num || bank_num >= KVM_MAX_MCE_BANKS)
- 		goto out;
-@@ -1694,6 +1697,7 @@ static int kvm_vcpu_ioctl_x86_setup_mce(
- 	for (bank = 0; bank < bank_num; bank++)
- 		vcpu->arch.mce_banks[bank*4] = ~(u64)0;
- out:
-+	vcpu_put(vcpu);
- 	return r;
- }
- 
-@@ -1896,7 +1900,9 @@ long kvm_arch_vcpu_ioctl(struct file *fi
- 		r = -EFAULT;
- 		if (copy_from_user(&mce, argp, sizeof mce))
- 			goto out;
-+		vcpu_load(vcpu);
- 		r = kvm_vcpu_ioctl_x86_set_mce(vcpu, &mce);
-+		vcpu_put(vcpu);
- 		break;
+ 	if (IS_QLA2432(ha) && (ha->pdev->revision < QLA_MSIX_CHIP_REV_24XX ||
+ 		!QLA_MSIX_FW_MODE_1(ha->fw_attributes))) {
+ 		DEBUG2(qla_printk(KERN_WARNING, ha,
+ 		"MSI-X: Unsupported ISP2432 (0x%X, 0x%X).\n",
+ 			ha->pdev->revision, ha->fw_attributes));
+-
+ 		goto skip_msix;
  	}
- 	default:
+ 
+-	if (ha->pdev->subsystem_vendor == PCI_VENDOR_ID_HP &&
+-	    (ha->pdev->subsystem_device == 0x7040 ||
+-		ha->pdev->subsystem_device == 0x7041 ||
+-		ha->pdev->subsystem_device == 0x1705)) {
+-		DEBUG2(qla_printk(KERN_WARNING, ha,
+-		    "MSI-X: Unsupported ISP2432 SSVID/SSDID (0x%X, 0x%X).\n",
+-		    ha->pdev->subsystem_vendor,
+-		    ha->pdev->subsystem_device));
+-
+-		goto skip_msi;
+-	}
+-
+ 	ret = qla24xx_enable_msix(ha, rsp);
+ 	if (!ret) {
+ 		DEBUG2(qla_printk(KERN_INFO, ha,
 
 
