@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759479Ab0GAVvN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:51:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54256 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758975Ab0GAVNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:47 -0400
-Date: Thu, 1 Jul 2010 18:13:31 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/21] perf: rewire generic library stuff, p1
-Message-ID: <20100701211331.GA28165@ghostprotocols.net>
-References: <1277992175-19821-1-git-send-email-bp@amd64.org>
- <1277992175-19821-6-git-send-email-bp@amd64.org>
- <20100701154737.GE8902@ghostprotocols.net>
- <20100701161054.GF8902@ghostprotocols.net>
- <20100701161738.GH17823@aftab>
- <20100701171449.GG8902@ghostprotocols.net>
- <20100701201418.GA21223@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701201418.GA21223@aftab>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1759438Ab0GAVtx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:49:53 -0400
+Received: from kroah.org ([198.145.64.141]:60951 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758846Ab0GAVN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:56 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:53 2010
+Message-Id: <20100701174253.691749866@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:42:56 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       NeilBrown <neilb@suse.de>
+Subject: [086/200] md: Fix read balancing in RAID1 and RAID10 on drives > 2TB
+In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 01, 2010 at 10:14:18PM +0200, Borislav Petkov escreveu:
-> From: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Date: Thu, Jul 01, 2010 at 01:14:49PM -0400
-> > But we have one other problem:
+2.6.34-stable review patch.  If anyone has any objections, please let me know.
 
-> > [acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -C tools/
-> > make: Entering directory `/home/acme/git/linux-2.6-tip/tools'
-> > make[1]: Entering directory `/home/acme/git/linux-2.6-tip/tools/lib'
-> > make[1]: `lklib.a' is up to date.
-> > make[1]: Leaving directory `/home/acme/git/linux-2.6-tip/tools/lib'
-> > make[1]: Entering directory `/home/acme/git/linux-2.6-tip/tools/perf'
-> >     GEN perf-archive
-> > make[1]: Leaving directory `/home/acme/git/linux-2.6-tip/tools/perf'
-> > make: Leaving directory `/home/acme/git/linux-2.6-tip/tools'
-> > [acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -C tools/perf/
-> > make: Entering directory `/home/acme/git/linux-2.6-tip/tools/perf'
-> >     * new build flags or prefix
-> >     CC /home/acme/git/build/perf/perf.o
-> >     CC /home/acme/git/build/perf/builtin-annotate.o
-> > 
-> > The logic that detects "new build flags or prefix" gets confused when we
-> > alternate between tools/ and tools/perf/, checking that.
-> 
-> This might need an up-to-date check for the lklib.a archive first and
-> not do "new build flags or prefix" if it is. Yeah, this is a different
-> library and the logic doesn't know about it.
+------------------
 
-I got sidetracked, but this is what is in $(O)/PERF-CFLAGS for
-make -C tools/
+From: NeilBrown <neilb@suse.de>
 
-[acme@emilia linux-2.6-tip]$ cat ../build/perf/PERF-CFLAGS 
--ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstack-protector -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wvolatile-register-var -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement  -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -I/home/acme/git/linux-2.6-tip/tools/lib -I/home/acme/git/linux-2.6-tip/tools/perf -I/home/acme/git/linux-2.6-tip/tools/perf/util/include -Iutil/include -Iarch/x86/include -I../lib/ -I/home/acme/git/build/perf/ -DLIBELF_NO_MMAP -I/usr/include/elfutils -DDWARF_SUPPORT -I/usr/include/slang -DSHA1_HEADER='<openssl/sha.h>' : /home/acme/bin:libexec/perf-core:share/perf-core/templates:/home/acme
-[acme@emilia linux-2.6-tip]$
+commit af3a2cd6b8a479345786e7fe5e199ad2f6240e56 upstream.
 
-And this is its contents if we use "make -C tools/perf/"
+read_balance uses a "unsigned long" for a sector number which
+will get truncated beyond 2TB.
+This will cause read-balancing to be non-optimal, and can cause
+data to be read from the 'wrong' branch during a resync.  This has a
+very small chance of returning wrong data.
 
--ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2   -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -Iarch/x86/include -I../lib/ -I/home/acme/git/build/perf/ -DLIBELF_NO_MMAP -I/usr/include/elfutils -DDWARF_SUPPORT -I/usr/include/slang -DSHA1_HEADER='<openssl/sha.h>' : /home/acme/bin:libexec/perf-core:share/perf-core/templates:/home/acme
+Reported-by: Jordan Russell <jr-list-2010@quo.to>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Its just a matter of making both match :-)
+---
+ drivers/md/raid1.c  |    4 ++--
+ drivers/md/raid10.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-- Arnaldo
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -418,7 +418,7 @@ static void raid1_end_write_request(stru
+  */
+ static int read_balance(conf_t *conf, r1bio_t *r1_bio)
+ {
+-	const unsigned long this_sector = r1_bio->sector;
++	const sector_t this_sector = r1_bio->sector;
+ 	int new_disk = conf->last_used, disk = new_disk;
+ 	int wonly_disk = -1;
+ 	const int sectors = r1_bio->sectors;
+@@ -434,7 +434,7 @@ static int read_balance(conf_t *conf, r1
+  retry:
+ 	if (conf->mddev->recovery_cp < MaxSector &&
+ 	    (this_sector + sectors >= conf->next_resync)) {
+-		/* Choose the first operation device, for consistancy */
++		/* Choose the first operational device, for consistancy */
+ 		new_disk = 0;
+ 
+ 		for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -494,7 +494,7 @@ static int raid10_mergeable_bvec(struct
+  */
+ static int read_balance(conf_t *conf, r10bio_t *r10_bio)
+ {
+-	const unsigned long this_sector = r10_bio->sector;
++	const sector_t this_sector = r10_bio->sector;
+ 	int disk, slot, nslot;
+ 	const int sectors = r10_bio->sectors;
+ 	sector_t new_distance, current_distance;
+
+
