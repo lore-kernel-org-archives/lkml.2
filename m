@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab0GAPxX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:53:23 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:48566 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab0GAPxV (ORCPT
+	id S1757067Ab0GAPyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:54:07 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47039 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab0GAPyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 11:53:21 -0400
-X-Greylist: delayed 70912 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Jul 2010 11:53:21 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GfaEFPNth8ZfP5fzBX9O8zEkazIVkMes/RyWO2wKG3qjd2q1xr7yQ43DlJYbxJq7KU
-         2YFKyc5GCdYlSsNOX1rMigtbO8U+SktZ5Qux8YHc3apm9IfyYO95p8XxywOhoji3GHwV
-         FIKl7Z46cYrz+5KVKR1lvPEnjojXjTA1RpD+s=
-Date: Thu, 1 Jul 2010 17:53:33 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Stephane Eranian <eranian@google.com>,
-       David Miller <davem@davemloft.net>, Paul Mundt <lethal@linux-sh.org>,
-       Will Deacon <will.deacon@arm.com>, Borislav Petkov <bp@amd64.org>
-Subject: Re: [RFC PATCH 3/6] perf: Generalize some arch callchain code
-Message-ID: <20100701155330.GD10616@nowhere>
-References: <1277998562-21366-1-git-send-regression-fweisbec@gmail.com> <1277998562-21366-4-git-send-regression-fweisbec@gmail.com> <1277999161.1917.216.camel@laptop> <20100701154922.GC10616@nowhere> <1277999482.1917.219.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277999482.1917.219.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 1 Jul 2010 11:54:04 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 03/21] perf_events: Add a helper to search for an event in a context
+Date: Thu,  1 Jul 2010 17:55:45 +0200
+Message-Id: <1277999763-20357-4-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1277999763-20357-1-git-send-email-bp@amd64.org>
+References: <1277999763-20357-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 05:51:22PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-07-01 at 17:49 +0200, Frederic Weisbecker wrote:
-> > On Thu, Jul 01, 2010 at 05:46:01PM +0200, Peter Zijlstra wrote:
-> > > On Thu, 2010-07-01 at 17:35 +0200, Frederic Weisbecker wrote:
-> > > > - Most archs use one callchain buffer per cpu, except x86 that needs
-> > > >   to deal with NMIs. Provide a default perf_callchain_buffer()
-> > > >   implementation that x86 overrides. 
-> > > 
-> > > sparc and power also have NMI like contexts.
-> > 
-> > 
-> > Ah and the comments suggest it's because pmu interrupts can't nest or so.
-> > Anyway, that's notwithstanding the race that 5th patch fixes.
-> 
-> Right, but they could interrupt a software event or the like.
+From: Borislav Petkov <borislav.petkov@amd.com>
 
+This is a straignt-forward helper to look for, e.g. already allocated
+and enabled events (think persistent events here).
 
-Yeah indeed.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ kernel/perf_event.c |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 40478af..168764b 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -307,6 +307,27 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ 		ctx->nr_stat++;
+ }
+ 
++/*
++ * Find an event in a context.
++ * Must be called with ctx->mutex and ctx->lock held.
++ */
++static struct perf_event *find_event_in_context(struct perf_event_attr *attr,
++						struct perf_event_context *ctx)
++{
++	struct perf_event *event;
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
++		if (event->attr.config == attr->config) {
++			rcu_read_unlock();
++			return event;
++		}
++	}
++	rcu_read_unlock();
++
++	return NULL;
++}
++
+ static void perf_group_attach(struct perf_event *event)
+ {
+ 	struct perf_event *group_leader = event->group_leader;
+-- 
+1.7.1
 
