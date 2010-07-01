@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab0GAVOo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:14:44 -0400
-Received: from kroah.org ([198.145.64.141]:60781 "EHLO coco.kroah.org"
+	id S1759262Ab0GAVQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:16:25 -0400
+Received: from kroah.org ([198.145.64.141]:60946 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758913Ab0GAVN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:26 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:50 2010
-Message-Id: <20100701174250.824593396@clark.site>
+	id S1758724Ab0GAVNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:55 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:53 2010
+Message-Id: <20100701174253.601949372@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:22 -0700
+Date: Thu, 01 Jul 2010 10:42:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [052/200] USB: xhci: Limit bus sg_tablesize to 62 TRBs.
+       NeilBrown <neilb@suse.de>
+Subject: [085/200] md/raid1: fix counting of write targets.
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: NeilBrown <neilb@suse.de>
 
-commit bc88d2eba5e19d10dd546e428314909d889b3b6a upstream.
+commit 964147d5c86d63be79b442c30f3783d49860c078 upstream.
 
-When a scatter-gather list is enqueued to the xHCI driver, it translates
-each entry into a transfer request block (TRB).  Only 63 TRBs can be
-used per ring segment, and there must be one additional TRB reserved to
-make sure the hardware does not think the ring is empty (so the enqueue
-pointer doesn't equal the dequeue pointer).  Limit the bus sg_tablesize
-to 62 TRBs.
+There is a very small race window when writing to a
+RAID1 such that if a device is marked faulty at exactly the wrong
+time, the write-in-progress will not be sent to the device,
+but the bitmap (if present) will be updated to say that
+the write was sent.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Then if the device turned out to still be usable as was re-added
+to the array, the bitmap-based-resync would skip resyncing that
+block, possibly leading to corruption.  This would only be a problem
+if no further writes were issued to that area of the device (i.e.
+that bitmap chunk).
+
+Suitable for any pending -stable kernel.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid1.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -54,7 +54,7 @@ static int xhci_pci_setup(struct usb_hcd
- 	struct pci_dev		*pdev = to_pci_dev(hcd->self.controller);
- 	int			retval;
- 
--	hcd->self.sg_tablesize = TRBS_PER_SEGMENT - 1;
-+	hcd->self.sg_tablesize = TRBS_PER_SEGMENT - 2;
- 
- 	xhci->cap_regs = hcd->regs;
- 	xhci->op_regs = hcd->regs +
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -912,9 +912,10 @@ static int make_request(struct request_q
+ 			if (test_bit(Faulty, &rdev->flags)) {
+ 				rdev_dec_pending(rdev, mddev);
+ 				r1_bio->bios[i] = NULL;
+-			} else
++			} else {
+ 				r1_bio->bios[i] = bio;
+-			targets++;
++				targets++;
++			}
+ 		} else
+ 			r1_bio->bios[i] = NULL;
+ 	}
 
 
