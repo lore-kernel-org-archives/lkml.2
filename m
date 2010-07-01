@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab0GASXZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:23:25 -0400
-Received: from kroah.org ([198.145.64.141]:40444 "EHLO coco.kroah.org"
+	id S1758128Ab0GASnT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:43:19 -0400
+Received: from kroah.org ([198.145.64.141]:40464 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757785Ab0GASXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:11 2010
-Message-Id: <20100701173211.356448329@clark.site>
+	id S1757648Ab0GASXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:25 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:12 2010
+Message-Id: <20100701173212.041589897@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:20 -0700
+Date: Thu, 01 Jul 2010 10:31:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Michael Neuling <mikey@neuling.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [patch 054/149] powerpc/pseries: Only call start-cpu when a CPU is stopped
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       David Howells <dhowells@redhat.com>,
+       Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [patch 062/149] mn10300: set ARCH_KMALLOC_MINALIGN
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-commit aef40e87d866355ffd279ab21021de733242d0d5 upstream.
+commit 6cdafaae41d52e6ef9a5c5be23602ef083e4d0f9 upstream.
 
-Currently we always call start-cpu irrespective of if the CPU is
-stopped or not. Unfortunatley on POWER7, firmware seems to not like
-start-cpu being called when a cpu already been started.  This was not
-the case on POWER6 and earlier.
+Architectures that handle DMA-non-coherent memory need to set
+ARCH_KMALLOC_MINALIGN to make sure that kmalloc'ed buffer is DMA-safe: the
+buffer doesn't share a cache with the others.
 
-This patch checks to see if the CPU is stopped or not via an
-query-cpu-stopped-state call, and only calls start-cpu on CPUs which
-are stopped.
-
-This fixes a bug with kexec on POWER7 on PHYP where only the primary
-thread would make it to the second kernel.
-
-Reported-by: Ankita Garg <ankita@linux.vnet.ibm.com>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Acked-by: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/platforms/pseries/smp.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/mn10300/include/asm/cache.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/powerpc/platforms/pseries/smp.c
-+++ b/arch/powerpc/platforms/pseries/smp.c
-@@ -81,6 +81,12 @@ static inline int __devinit smp_startup_
+--- a/arch/mn10300/include/asm/cache.h
++++ b/arch/mn10300/include/asm/cache.h
+@@ -21,6 +21,8 @@
+ #define L1_CACHE_DISPARITY	L1_CACHE_NENTRIES * L1_CACHE_BYTES
+ #endif
  
- 	pcpu = get_hard_smp_processor_id(lcpu);
- 
-+	/* Check to see if the CPU out of FW already for kexec */
-+	if (smp_query_cpu_stopped(pcpu) == QCSS_NOT_STOPPED){
-+		cpu_set(lcpu, of_spin_map);
-+		return 1;
-+	}
++#define ARCH_KMALLOC_MINALIGN	L1_CACHE_BYTES
 +
- 	/* Fixup atomic count: it exited inside IRQ handler. */
- 	task_thread_info(paca[lcpu].__current)->preempt_count	= 0;
- 
+ /* data cache purge registers
+  * - read from the register to unconditionally purge that cache line
+  * - write address & 0xffffff00 to conditionally purge that cache line
 
 
