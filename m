@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933175Ab0GAVcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:32:45 -0400
-Received: from kroah.org ([198.145.64.141]:33177 "EHLO coco.kroah.org"
+	id S1759152Ab0GAVeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:34:17 -0400
+Received: from kroah.org ([198.145.64.141]:33091 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932753Ab0GAVPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:09 -0400
+	id S932781Ab0GAVPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:15:00 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:00 2010
-Message-Id: <20100701174300.905987826@clark.site>
+Message-Id: <20100701174300.056279997@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:20 -0700
+Date: Thu, 01 Jul 2010 10:44:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [170/200] ext4: check s_log_groups_per_flex in online resize code
+       Roberto Sassu <roberto.sassu@polito.it>, Eric Paris <eparis@redhat.com>,
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: [160/200] wrong type for magic argument in simple_fill_super()
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Roberto Sassu <roberto.sassu@polito.it>
 
-commit 42007efd569f1cf3bfb9a61da60ef6c2179508ca upstream.
+commit 7d683a09990ff095a91b6e724ecee0ff8733274a upstream.
 
-If groups_per_flex < 2, sbi->s_flex_groups[] doesn't get filled out,
-and every other access to this first tests s_log_groups_per_flex;
-same thing needs to happen in resize or we'll wander off into
-a null pointer when doing an online resize of the file system.
+It's used to superblock ->s_magic, which is unsigned long.
 
-Thanks to Christoph Biedl, who came up with the trivial testcase:
-
-# truncate --size 128M fsfile
-# mkfs.ext3 -F fsfile
-# tune2fs -O extents,uninit_bg,dir_index,flex_bg,huge_file,dir_nlink,extra_isize fsfile
-# e2fsck -yDf -C0 fsfile
-# truncate --size 132M fsfile
-# losetup /dev/loop0 fsfile
-# mount /dev/loop0 mnt
-# resize2fs -p /dev/loop0
-
-	https://bugzilla.kernel.org/show_bug.cgi?id=13549
-
-Reported-by: Alessandro Polverini <alex@nibbles.it>
-Test-case-by: Christoph Biedl  <bugzilla.kernel.bpeb@manchmal.in-ulm.de>
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Reviewed-by: Mimi Zohar <zohar@us.ibm.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/resize.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/libfs.c         |    3 ++-
+ include/linux/fs.h |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -911,7 +911,8 @@ int ext4_group_add(struct super_block *s
- 	percpu_counter_add(&sbi->s_freeinodes_counter,
- 			   EXT4_INODES_PER_GROUP(sb));
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -418,7 +418,8 @@ int simple_write_end(struct file *file,
+  * unique inode values later for this filesystem, then you must take care
+  * to pass it an appropriate max_reserved value to avoid collisions.
+  */
+-int simple_fill_super(struct super_block *s, int magic, struct tree_descr *files)
++int simple_fill_super(struct super_block *s, unsigned long magic,
++		      struct tree_descr *files)
+ {
+ 	struct inode *inode;
+ 	struct dentry *root;
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2356,7 +2356,7 @@ extern const struct file_operations simp
+ extern const struct inode_operations simple_dir_inode_operations;
+ struct tree_descr { char *name; const struct file_operations *ops; int mode; };
+ struct dentry *d_alloc_name(struct dentry *, const char *);
+-extern int simple_fill_super(struct super_block *, int, struct tree_descr *);
++extern int simple_fill_super(struct super_block *, unsigned long, struct tree_descr *);
+ extern int simple_pin_fs(struct file_system_type *, struct vfsmount **mount, int *count);
+ extern void simple_release_fs(struct vfsmount **mount, int *count);
  
--	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG)) {
-+	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG) &&
-+	    sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group;
- 		flex_group = ext4_flex_group(sbi, input->group);
- 		atomic_add(input->free_blocks_count,
 
 
