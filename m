@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab0GAVR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:17:58 -0400
-Received: from kroah.org ([198.145.64.141]:33091 "EHLO coco.kroah.org"
+	id S1759009Ab0GAVQl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:16:41 -0400
+Received: from kroah.org ([198.145.64.141]:60968 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932725Ab0GAVO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:57 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:59 2010
-Message-Id: <20100701174259.685189943@clark.site>
+	id S1759026Ab0GAVOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:00 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
+Message-Id: <20100701174254.021670541@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:06 -0700
+Date: Thu, 01 Jul 2010 10:43:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel Mack <daniel@caiaq.de>, Johan Hovold <jhovold@gmail.com>,
-       Alan Cox <alan@linux.intel.com>
-Subject: [156/200] USB: ftdi_sio: fix DTR/RTS line modes
+       Joerg Roedel <joerg.roedel@amd.com>
+Subject: [090/200] x86/amd-iommu: Fix crash when request_mem_region fails
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <daniel@caiaq.de>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 6a1a82df91fa0eb1cc76069a9efe5714d087eccd upstream.
+commit e82752d8b5a7e0a5e4d607fd8713549e2a4e2741 upstream.
 
-Call set_mctrl() and clear_mctrl() according to the flow control mode
-selected. This makes serial communication for FT232 connected devices
-work when CRTSCTS is not set.
+When request_mem_region fails the error path tries to
+disable the IOMMUs. This accesses the mmio-region which was
+not allocated leading to a kernel crash. This patch fixes
+the issue.
 
-This fixes a regression introduced by 4175f3e31 ("tty_port: If we are
-opened non blocking we still need to raise the carrier"). This patch
-calls the low-level driver's dtr_rts() function which consequently sets
-TIOCM_DTR | TIOCM_RTS. A later call to set_termios() without CRTSCTS in
-cflags, however, does not reset these bits, and so data is not actually
-sent out on the serial wire.
-
-Signed-off-by: Daniel Mack <daniel@caiaq.de>
-Cc: Johan Hovold <jhovold@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/amd_iommu_init.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2289,6 +2289,8 @@ static void ftdi_set_termios(struct tty_
- 				"urb failed to set to rts/cts flow control\n");
- 		}
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -286,8 +286,12 @@ static u8 * __init iommu_map_mmio_space(
+ {
+ 	u8 *ret;
  
-+		/* raise DTR/RTS */
-+		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
- 	} else {
- 		/*
- 		 * Xon/Xoff code
-@@ -2336,6 +2338,8 @@ static void ftdi_set_termios(struct tty_
- 			}
- 		}
+-	if (!request_mem_region(address, MMIO_REGION_LENGTH, "amd_iommu"))
++	if (!request_mem_region(address, MMIO_REGION_LENGTH, "amd_iommu")) {
++		pr_err("AMD-Vi: Can not reserve memory region %llx for mmio\n",
++			address);
++		pr_err("AMD-Vi: This is a BIOS bug. Please contact your hardware vendor\n");
+ 		return NULL;
++	}
  
-+		/* lower DTR/RTS */
-+		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
- 	}
- 	return;
- }
+ 	ret = ioremap_nocache(address, MMIO_REGION_LENGTH);
+ 	if (ret != NULL)
+@@ -1313,7 +1317,7 @@ static int __init amd_iommu_init(void)
+ 		ret = amd_iommu_init_dma_ops();
+ 
+ 	if (ret)
+-		goto free;
++		goto free_disable;
+ 
+ 	amd_iommu_init_api();
+ 
+@@ -1331,9 +1335,10 @@ static int __init amd_iommu_init(void)
+ out:
+ 	return ret;
+ 
+-free:
++free_disable:
+ 	disable_iommus();
+ 
++free:
+ 	amd_iommu_uninit_devices();
+ 
+ 	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
 
 
