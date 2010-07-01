@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601Ab0GAPC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:02:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50884 "EHLO mx1.suse.de"
+	id S1756642Ab0GAPDB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:03:01 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50879 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756544Ab0GAPCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756548Ab0GAPCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Jul 2010 11:02:54 -0400
 From: Thomas Renninger <trenn@suse.de>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
        platform-driver-x86@vger.kernel.org, astarikovskiy@suse.de,
-       Thomas Renninger <trenn@suse.de>, Bjorn Helgaas <bjorn.helgaas@hp.com>
-Subject: [PATCH 1/6] ACPI: Provide /sys/devices/system/ec/
-Date: Thu,  1 Jul 2010 17:02:45 +0200
-Message-Id: <1277996570-2686-2-git-send-email-trenn@suse.de>
+       Thomas Renninger <trenn@suse.de>
+Subject: [PATCH 2/6] ACPI: Provide /sys/devices/system/ec/*/io for binary access to the EC
+Date: Thu,  1 Jul 2010 17:02:46 +0200
+Message-Id: <1277996570-2686-3-git-send-email-trenn@suse.de>
 X-Mailer: git-send-email 1.6.3
 In-Reply-To: <1277996570-2686-1-git-send-email-trenn@suse.de>
 References: <1277996570-2686-1-git-send-email-trenn@suse.de>
@@ -21,249 +21,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides the same information through sysfs, which previously was
-provided through /proc/acpi/embedded_controller/*/info
+Binary sysfs skeleton taken over from drivers/pci/pci-sysfs.c
+
+/sys/devices/system/ec/*/io
+A userspace app to easily read/write the EC can be found here:
+ftp://ftp.suse.com/pub/people/trenn/sources/ec/ec_access.c
 
 Signed-off-by: Thomas Renninger <trenn@suse.de>
 
-CC: Alexey Starikovskiy <astarikovskiy@suse.de>
-CC: Len Brown <lenb@kernel.org>
-CC: linux-kernel@vger.kernel.org
-CC: linux-acpi@vger.kernel.org
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: platform-driver-x86@vger.kernel.org
-
-Index: linux-2.6.34-master/drivers/acpi/Kconfig
+Index: linux-2.6.34-master/drivers/acpi/ec_sys.c
 ===================================================================
 ---
- drivers/acpi/Kconfig    |   13 +++++++
- drivers/acpi/Makefile   |    1 +
- drivers/acpi/ec.c       |   18 +++-------
- drivers/acpi/ec_sys.c   |   92 +++++++++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/internal.h |   24 ++++++++++++
- 5 files changed, 135 insertions(+), 13 deletions(-)
- create mode 100644 drivers/acpi/ec_sys.c
+ Documentation/acpi/ec_sysfs |   33 +++++++++++++++
+ drivers/acpi/ec_sys.c       |   95 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 128 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/acpi/ec_sysfs
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 7464115..f13708a 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -104,6 +104,19 @@ config ACPI_SYSFS_POWER
- 	help
- 	  Say N to disable power /sys interface
- 
-+config ACPI_EC_SYSFS
-+	tristate "EC read/write access through sysfs"
-+	default y
-+	help
-+	  Say N to disable Embedded Controller /sys interface
-+
-+	  An Embedded Controller typically is available on laptops and reads
-+	  sensor values like battery state and temperature.
-+	  The kernel access the EC through ACPI parsed code provided by BIOS
-+	  tables.
-+	  Thus this option is a debug option that helps to write ACPI drivers
-+	  and which can be used to identify ACPI code or EC firmware bugs.
-+
- config ACPI_PROC_EVENT
- 	bool "Deprecated /proc/acpi/event support"
- 	depends on PROC_FS
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index 6ee3316..a33a2ef 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -60,6 +60,7 @@ obj-$(CONFIG_ACPI_SBS)		+= sbshc.o
- obj-$(CONFIG_ACPI_SBS)		+= sbs.o
- obj-$(CONFIG_ACPI_POWER_METER)	+= power_meter.o
- obj-$(CONFIG_ACPI_HED)		+= hed.o
-+obj-$(CONFIG_ACPI_EC_SYSFS)     += ec_sys.o
- 
- # processor has its own "processor." module_param namespace
- processor-y			:= processor_driver.o processor_throttling.o
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 1e6d418..4b6759f 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -45,10 +45,13 @@
- #include <acpi/acpi_drivers.h>
- #include <linux/dmi.h>
- 
-+#include "internal.h"
-+
- #define ACPI_EC_CLASS			"embedded_controller"
- #define ACPI_EC_DEVICE_NAME		"Embedded Controller"
- #define ACPI_EC_FILE_INFO		"info"
- 
-+#undef PREFIX
- #define PREFIX				"ACPI: EC: "
- 
- /* EC status register */
-@@ -106,19 +109,8 @@ struct transaction {
- 	bool done;
- };
- 
--static struct acpi_ec {
--	acpi_handle handle;
--	unsigned long gpe;
--	unsigned long command_addr;
--	unsigned long data_addr;
--	unsigned long global_lock;
--	unsigned long flags;
--	struct mutex lock;
--	wait_queue_head_t wait;
--	struct list_head list;
--	struct transaction *curr;
--	spinlock_t curr_lock;
--} *boot_ec, *first_ec;
-+struct acpi_ec *boot_ec, *first_ec;
-+EXPORT_SYMBOL(first_ec);
- 
- static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
- static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
-diff --git a/drivers/acpi/ec_sys.c b/drivers/acpi/ec_sys.c
+diff --git a/Documentation/acpi/ec_sysfs b/Documentation/acpi/ec_sysfs
 new file mode 100644
-index 0000000..c64236f
+index 0000000..479225b
 --- /dev/null
++++ b/Documentation/acpi/ec_sysfs
+@@ -0,0 +1,33 @@
++		EC Sysfs File Description
++
++This file descibes sysfs files under:
++/sys/devices/system/ec
++
++Currently only one Embedded Controller is supported.
++This could get extended easily if such an ACPI supporting
++system exist, but until know there has no need be seen.
++
++/sys/devices/system/ec/ec0/gpe
++An integer value showing the General Purpose Event the EC
++serves and has its handler installed on.
++A GPE is an ACPI interrupt (compare with /proc/interrupts)
++with a specific value retrieved from a HW register associated
++to it. If the value equals the EC GPE, this event is processed
++by the EC.
++The activity of the EC GPE can be monitored like that:
++GPE=`cat /sys/devices/system/ec/ec0/gpe`
++watch -n1 cat /sys/firmware/acpi/interrupts/gpe${GPE}
++
++/sys/devices/system/ec/ec0/use_global_lock
++Shows whether BIOS requested the OS to use the global ACPI
++lock on EC transitions (compare with ACPI specification for
++details).
++
++/sys/devices/system/ec/ec0/io
++Provides access to the 255 EC registers.
++Its input and output is binary.
++A userspace tool to easily read/write the EC can be found here:
++ftp://ftp.suse.com/pub/people/trenn/sources/ec/ec_access.c
++This file is for debugging purposes only.
++!!! THE EC MUST ONLY GET ACCESSED THROUGH THE KERNEL, INTERPRETING
++ACPI CODE ON PRODUCTIVE SYSTEMS !!!
+diff --git a/drivers/acpi/ec_sys.c b/drivers/acpi/ec_sys.c
+index c64236f..9793c57 100644
+--- a/drivers/acpi/ec_sys.c
 +++ b/drivers/acpi/ec_sys.c
-@@ -0,0 +1,92 @@
-+#include <linux/kernel.h>
-+#include <linux/sysdev.h>
-+#include <linux/acpi.h>
+@@ -1,3 +1,13 @@
++/*
++ * ec_sys.c
++ *
++ * Copyright (C) 2010 SUSE Products GmbH/Novell
++ * Author:
++ *      Thomas Renninger <trenn@suse.de>
++ *
++ * This work is licensed under the terms of the GNU GPL, version 2.
++ */
 +
-+#include "internal.h"
+ #include <linux/kernel.h>
+ #include <linux/sysdev.h>
+ #include <linux/acpi.h>
+@@ -8,6 +18,8 @@ MODULE_AUTHOR("Thomas Renninger <trenn@suse.de>");
+ MODULE_DESCRIPTION("ACPI EC sysfs access driver");
+ MODULE_LICENSE("GPL");
+ 
++#define EC_SPACE_SIZE 256
 +
-+MODULE_AUTHOR("Thomas Renninger <trenn@suse.de>");
-+MODULE_DESCRIPTION("ACPI EC sysfs access driver");
-+MODULE_LICENSE("GPL");
+ struct sysdev_class acpi_ec_sysdev_class = {
+ 	.name = "ec",
+ };
+@@ -32,6 +44,84 @@ static ssize_t show_ec_global_lock(struct sys_device *dev,
+ SYSDEV_ATTR(gpe, 0444, show_ec_gpe, NULL);
+ SYSDEV_ATTR(use_global_lock, 0444, show_ec_global_lock, NULL);
+ 
 +
-+struct sysdev_class acpi_ec_sysdev_class = {
-+	.name = "ec",
-+};
-+
-+/* sys_dev -> per EC device stuff */
-+static ssize_t show_ec_gpe(struct sys_device *dev,
-+			   struct sysdev_attribute *attr,
-+			   char *buf)
++/* TBD: ec_read/ec_write is only supported for one EC in a system
++	This needs adjustion in ec.c first
++*/
++static ssize_t
++acpi_ec_read_io(struct file *filp, struct kobject *kobj,
++		struct bin_attribute *bin_attr,
++		char *buf, loff_t off, size_t count)
 +{
-+	struct acpi_ec *ec = container_of(dev, struct acpi_ec, sysdev);
-+	return sprintf(buf, "%lu\n", ec->gpe);
-+}
-+
-+static ssize_t show_ec_global_lock(struct sys_device *dev,
-+				   struct sysdev_attribute *attr,
-+				   char *buf)
-+{
-+	struct acpi_ec *ec = container_of(dev, struct acpi_ec, sysdev);
-+	return sprintf(buf, "%s\n", ec->global_lock ? "yes" : "no");
-+}
-+
-+SYSDEV_ATTR(gpe, 0444, show_ec_gpe, NULL);
-+SYSDEV_ATTR(use_global_lock, 0444, show_ec_global_lock, NULL);
-+
-+int acpi_ec_add_sysfs(struct acpi_ec *ec, int ec_device_count)
-+{
++	/* Use this if support reading/writing multiple ECs exists in ec.c:
++	   struct sys_device *sysdev = container_of(kobj, struct sys_device, kobj);
++	   struct acpi_ec *ec = container_of(sysdev, struct acpi_ec, sysdev);
++	*/
++	unsigned int size = EC_SPACE_SIZE;
++	u8 *data = (u8 *) buf;
++	loff_t init_off = off;
 +	int err = 0;
 +
-+	if (ec_device_count == 0) {
-+		err = sysdev_class_register(&acpi_ec_sysdev_class);
++	if (off >= size)
++		return 0;
++	if (off + count >= size) {
++		size -= off;
++		count = size;
++	} else
++		size = count;
++
++	while (size) {
++		err = ec_read(off, &data[off - init_off]);
 +		if (err)
 +			return err;
++		off++;
++		size--;
++	}
++	return count;
++}
++
++static ssize_t
++acpi_ec_write_io(struct file *filp, struct kobject *kobj,
++		 struct bin_attribute *bin_attr,
++		 char *buf, loff_t off, size_t count)
++{
++	/* Use this if support reading/writing multiple ECs exists in ec.c:
++	   struct sys_device *sysdev = container_of(kobj, struct sys_device, kobj);
++	   struct acpi_ec *ec = container_of(sysdev, struct acpi_ec, sysdev);
++	*/
++	unsigned int size = count;
++	loff_t init_off = off;
++	u8 *data = (u8 *) buf;
++	int err = 0;
++
++	if (off >= EC_SPACE_SIZE)
++		return 0;
++	if (off + count >= EC_SPACE_SIZE) {
++		size = EC_SPACE_SIZE - off;
++		count = size;
 +	}
 +
-+	ec->sysdev.id = ec_device_count;
-+	ec->sysdev.cls = &acpi_ec_sysdev_class;
-+	err = sysdev_register(&ec->sysdev);
-+	if (err)
-+		goto sysdev_err;
-+	err = sysdev_create_file(&ec->sysdev, &attr_use_global_lock);
-+	if (err)
-+		goto file_err_1;
-+	err = sysdev_create_file(&ec->sysdev, &attr_gpe);
-+	if (err)
-+		goto file_err_2;
-+	return err;
-+
-+ file_err_2:
-+	sysdev_remove_file(&ec->sysdev, &attr_use_global_lock);
-+ file_err_1:
-+	sysdev_class_unregister(&acpi_ec_sysdev_class);
-+ sysdev_err:
-+	sysdev_class_register(&acpi_ec_sysdev_class);
-+	return err;
++	while (size) {
++		u8 byte_write = data[off - init_off];
++		err = ec_write(off, byte_write);
++		if (err)
++			return err;
++		off++;
++		size--;
++	}
++	return count;
 +}
 +
-+void acpi_ec_remove_sysfs(struct acpi_ec *ec)
-+{
-+	sysdev_remove_file(&ec->sysdev, &attr_use_global_lock);
-+	sysdev_remove_file(&ec->sysdev, &attr_gpe);
-+
-+	sysdev_unregister(&ec->sysdev);
-+	sysdev_class_unregister(&acpi_ec_sysdev_class);
-+}
-+
-+static int __init acpi_ec_sys_init(void)
-+{
-+	int err = 0;
-+	if (first_ec)
-+		err = acpi_ec_add_sysfs(first_ec, 0);
-+	else
-+		err = -ENODEV;
-+	return err;
-+}
-+
-+static void __exit acpi_ec_sys_exit(void)
-+{
-+	acpi_ec_remove_sysfs(first_ec);
-+}
-+
-+module_init(acpi_ec_sys_init);
-+module_exit(acpi_ec_sys_exit);
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index f8f190e..8ae2726 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -18,6 +18,11 @@
-  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-  */
- 
-+#ifndef _ACPI_INTERNAL_H_
-+#define _ACPI_INTERNAL_H_
-+
-+#include <linux/sysdev.h>
-+
- #define PREFIX "ACPI: "
- 
- int init_acpi_device_notify(void);
-@@ -46,6 +51,23 @@ void acpi_early_processor_set_pdc(void);
- /* --------------------------------------------------------------------------
-                                   Embedded Controller
-    -------------------------------------------------------------------------- */
-+struct acpi_ec {
-+	acpi_handle handle;
-+	unsigned long gpe;
-+	unsigned long command_addr;
-+	unsigned long data_addr;
-+	unsigned long global_lock;
-+	unsigned long flags;
-+	struct mutex lock;
-+	wait_queue_head_t wait;
-+	struct list_head list;
-+	struct transaction *curr;
-+	spinlock_t curr_lock;
-+	struct sys_device sysdev;
++static struct bin_attribute acpi_ec_io_attr = {
++	.attr =	{
++		.name = "io",
++		.mode = S_IRUGO | S_IWUSR,
++	},
++	.size = EC_SPACE_SIZE,
++	.read = acpi_ec_read_io,
++	.write = acpi_ec_write_io,
 +};
 +
-+extern struct acpi_ec *first_ec;
-+
- int acpi_ec_init(void);
- int acpi_ec_ecdt_probe(void);
- int acpi_boot_ec_enable(void);
-@@ -63,3 +85,5 @@ int acpi_sleep_proc_init(void);
- #else
- static inline int acpi_sleep_proc_init(void) { return 0; }
- #endif
-+
-+#endif /* _ACPI_INTERNAL_H_ */
+ int acpi_ec_add_sysfs(struct acpi_ec *ec, int ec_device_count)
+ {
+ 	int err = 0;
+@@ -53,8 +143,13 @@ int acpi_ec_add_sysfs(struct acpi_ec *ec, int ec_device_count)
+ 	err = sysdev_create_file(&ec->sysdev, &attr_gpe);
+ 	if (err)
+ 		goto file_err_2;
++	err = sysfs_create_bin_file(&ec->sysdev.kobj, &acpi_ec_io_attr);
++	if (err)
++		goto file_err_3;
+ 	return err;
+ 
++ file_err_3:
++	sysdev_remove_file(&ec->sysdev, &attr_gpe);
+  file_err_2:
+ 	sysdev_remove_file(&ec->sysdev, &attr_use_global_lock);
+  file_err_1:
 -- 
 1.6.3
 
