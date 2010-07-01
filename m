@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300Ab0GAVey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:34:54 -0400
-Received: from kroah.org ([198.145.64.141]:33077 "EHLO coco.kroah.org"
+	id S933336Ab0GAVfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:35:47 -0400
+Received: from kroah.org ([198.145.64.141]:33057 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759231Ab0GAVOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:53 -0400
+	id S1759225Ab0GAVOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:49 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:59 2010
-Message-Id: <20100701174259.305466396@clark.site>
+Message-Id: <20100701174258.947392173@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:02 -0700
+Date: Thu, 01 Jul 2010 10:43:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Chris Wilson <chris@chris-wilson.co.uk>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Eric Anholt <eric@anholt.net>
-Subject: [152/200] drm/i915: Kill dangerous pending-flip debugging
+       Stephane Eranian <eranian@google.com>, peterz@infradead.org,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       robert.richter@amd.com, perfmon2-devel@lists.sf.net,
+       Ingo Molnar <mingo@elte.hu>
+Subject: [148/200] perf_events: Fix resource leak in x86 __hw_perf_event_init()
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Stephane Eranian <eranian@google.com>
 
-commit 9908ff736adf261e749b4887486a32ffa209304c upstream.
+commit 4b24a88b35e15e04bd8f2c5dda65b5dc8ebca05f upstream.
 
-We can, by virtue of a vblank interrupt firing in the middle of setting
-up the unpin work (i.e. after we set the unpin_work field and before we
-write to the ringbuffer) enter intel_finish_page_flip() prior to
-receiving the pending flip notification. Therefore we can expect to hit
-intel_finish_page_flip() under normal circumstances without a pending flip
-and even without installing the pending_flip_obj. This is exacerbated by
-aperture thrashing whilst binding the framebuffer
+If reserve_pmc_hardware() succeeds but reserve_ds_buffers()
+fails, then we need to release_pmc_hardware. It won't be done
+by the destroy() callback because we return before setting it
+in case of error.
 
-
-  Bug 28079 - "glresize" causes kernel panic in intel_finish_page_flip.
-  https://bugs.freedesktop.org/show_bug.cgi?id=28079
-
-Reported-by: Nick Bowler <nbowler@draconx.ca>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: paulus@samba.org
+Cc: davem@davemloft.net
+Cc: fweisbec@gmail.com
+Cc: robert.richter@amd.com
+Cc: perfmon2-devel@lists.sf.net
+LKML-Reference: <4ba1568b.15185e0a.182a.7802@mx.google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    6 ------
- 1 file changed, 6 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4155,12 +4155,6 @@ void intel_finish_page_flip(struct drm_d
- 	spin_lock_irqsave(&dev->event_lock, flags);
- 	work = intel_crtc->unpin_work;
- 	if (work == NULL || !work->pending) {
--		if (work && !work->pending) {
--			obj_priv = to_intel_bo(work->pending_flip_obj);
--			DRM_DEBUG_DRIVER("flip finish: %p (%d) not pending?\n",
--					 obj_priv,
--					 atomic_read(&obj_priv->pending_flip));
--		}
- 		spin_unlock_irqrestore(&dev->event_lock, flags);
- 		return;
- 	}
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -460,8 +460,11 @@ static int __hw_perf_event_init(struct p
+ 		if (atomic_read(&active_events) == 0) {
+ 			if (!reserve_pmc_hardware())
+ 				err = -EBUSY;
+-			else
++			else {
+ 				err = reserve_bts_hardware();
++				if (err)
++					release_pmc_hardware();
++			}
+ 		}
+ 		if (!err)
+ 			atomic_inc(&active_events);
 
 
