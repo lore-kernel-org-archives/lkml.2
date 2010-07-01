@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757975Ab0GASko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:40:44 -0400
-Received: from kroah.org ([198.145.64.141]:40547 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757845Ab0GASXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:35 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:13 2010
-Message-Id: <20100701173213.123829187@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:41 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [patch 075/149] ARM: VFP: Fix vfp_put_double() for d16-d31
-In-Reply-To: <20100701175144.GA2116@kroah.com>
+	id S932448Ab0GASsx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:48:53 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59397 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932419Ab0GASst (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:48:49 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 2/2] trivial/staging: fix typos concerning "sequential"
+Date: Thu,  1 Jul 2010 20:48:45 +0200
+Message-Id: <1278010125-20191-2-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1278010125-20191-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1278010125-20191-1-git-send-email-u.kleine-koenig@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
-
-------------------
-
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-
-commit 138de1c44a8e0606501cd8593407e9248e84f1b7 upstream.
-
-vfp_put_double() takes the double value in r0,r1 not r1,r2.
-
-Reported-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- arch/arm/vfp/vfphw.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/usbip/usbip_common.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
---- a/arch/arm/vfp/vfphw.S
-+++ b/arch/arm/vfp/vfphw.S
-@@ -277,7 +277,7 @@ ENTRY(vfp_put_double)
- #ifdef CONFIG_VFPv3
- 	@ d16 - d31 registers
- 	.irp	dr,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
--1:	mcrr	p11, 3, r1, r2, c\dr	@ fmdrr	r1, r2, d\dr
-+1:	mcrr	p11, 3, r0, r1, c\dr	@ fmdrr	r0, r1, d\dr
- 	mov	pc, lr
- 	.org	1b + 8
- 	.endr
-
+diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
+index e1bbd12..d280e23 100644
+--- a/drivers/staging/usbip/usbip_common.h
++++ b/drivers/staging/usbip/usbip_common.h
+@@ -172,7 +172,7 @@ struct usbip_header_basic {
+ #define USBIP_RET_UNLINK	0x0004
+ 	__u32 command;
+ 
+-	 /* sequencial number which identifies requests.
++	 /* sequential number which identifies requests.
+ 	  * incremented per connections */
+ 	__u32 seqnum;
+ 
+-- 
+1.7.1
 
