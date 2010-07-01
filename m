@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759745Ab0GAWgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:36:06 -0400
-Received: from xenotime.net ([72.52.115.56]:53841 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758387Ab0GAWgE convert rfc822-to-8bit (ORCPT
+	id S1759873Ab0GAWgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:36:47 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57219 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758387Ab0GAWgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 18:36:04 -0400
-Date: Thu, 1 Jul 2010 15:36:00 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Greg KH <greg@kroah.com>
-Cc: Florian Fainelli <florian@openwrt.org>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk
-Subject: Re: 4 -stable kernel review cycles starting
-Message-Id: <20100701153600.a0fc684e.rdunlap@xenotime.net>
-In-Reply-To: <20100701221059.GA11663@kroah.com>
-References: <20100701175100.GA2078@kroah.com>
-	<201007012355.05531.florian@openwrt.org>
-	<20100701221059.GA11663@kroah.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
+	Thu, 1 Jul 2010 18:36:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=h/SSW76uAg+plprVlCrv2VF8fj3FhHNByveD0zo7we2BvpKLB2lq+/XuMu5lWIVSvq
+         s5PKwo2rZsgQhde+wTApL3px8dzk8cjRhTBSB0PNw4iq8IGz1QMfUAcLdh2bTByKCVFg
+         kCE1Cn/PqnSfj6234lJPlz8XM2J90s79xO46c=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
+Date: Fri, 2 Jul 2010 08:36:44 +1000
+Message-ID: <AANLkTimgH-DiQyg0f-an5FS3Wyb2b6He3fxxB1L8Ziol@mail.gmail.com>
+Subject: Re: Closed source userspace graphics drivers with an open source 
+	kernel component
+From: Dave Airlie <airlied@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Jul 2010 15:10:59 -0700 Greg KH wrote:
+On Fri, Jul 2, 2010 at 8:10 AM, Dave Airlie <airlied@gmail.com> wrote:
+> Now this is just my opinion as maintainer of the drm, and doesn't
+> reflect anyone or any official policy, I've also no idea if Linus
+> agrees or not.
+>
+> We are going to start to see a number of companies in the embedded
+> space submitting 3D drivers for mobile devices to the kernel. I'd like
+> to clarify my position once so they don't all come asking the same
+> questions.
+>
+> If you aren't going to create an open userspace driver (either MIT or
+> LGPL) then don't waste time submitting a kernel driver to me.
+>
+> My reasons are as follows, the thing is you can probably excuse some
+> of these on a point by point basis, but you need to justify why closed
+> userspace on all points.
+>
+> a) licensing, Alan Cox pointed this out before, if you wrote a GPL
+> kernel driver, then wrote a closed userspace on top, you open up a
+> while world of derived work issues. Can the userspace operate on a
+> non-GPL kernel without major modifications etc. This is a can of worms
+> I'd rather not enter into, and there are a few workarounds.
+>
+> b) verifying the sanity of the userspace API.
+> 1. Security: GPUs can do a lot of damage if left at home alone, since
+> mostly you are submitting command streams unverified into the GPU and
+> won't tell us what they mean, there is little way we can work out if
+> the GPU is going to over-write my passwd file to get 5 fps more in
+> quake. Now newer GPUs have at least started having MMUs, but again
+> we've no idea if that is the only way they work without docs or a lot
+> of trust.
+>
+> 2. General API suitability and versioning. How do we check that API is
+> sane wrt to userspace, if we can't verify the userspace. What happens
+> if the API has lots of 32/64 compat issues or things like that, and
+> when we fix them the binary userspace breaks? How do we know, how do
+> we test etc. What happens if a security issue forces us to break the
+> userspace API? how do we fix the userspace driver and test to confirm?
+>
+> c) supplying docs in lieu of an open userspace
+> If you were to fully document the GPU so we could verify the
+> security/api aspects it leaves us in the position of writing our own
+> driver. Now writing that driver on top of the current kernel driver
+> would probably limit any innovation, and most people would want to
+> write a new kernel driver from scratch. Now we end up with two drivers
+> fighting, how do we pick which one to load at boot? can we ever do a
+> generic distro kernel for that device (assuming ARM ever solves that
+> issue).
+>
+> I've also noticed a trend to just reinvent the whole wheel instead of
+> writing a drm/kms driver and having that as the API, again maintainer
+> nightmares are made of this.
+>
+> Dave.
 
-> On Thu, Jul 01, 2010 at 11:55:02PM +0200, Florian Fainelli wrote:
-> > Hi,
-> > 
-> > Le Thursday 1 July 2010 19:51:00, Greg KH a écrit :
-> > > First off, sorry for the long delay in the -stable kernel releases, they
-> > > got pushed to the back-burner for other things recently ("Hey look, is
-> > > that the sun finally here in the Pacific Northwest?")
-> > > 
-> > > Please note that there are still a large number of patches that have
-> > > been submitted to the -stable trees for inclusion, that I have not
-> > > included yet.  Do not worry, they are still in my queue, but due to the
-> > > large number of patches that I already have queued up, I figured it was
-> > > better to get what I have applied already out for a release and then
-> > > work on catching up after this.
-> > > 
-> > > If anyone has any questions about this, please let me know.
-> > 
-> > Looks like this cpmac patch was not included in this -stable series: 
-> > http://www.spinics.net/lists/netdev/msg133317.html
-> > 
-> > Can you queue it for future -stable releases or this one?
-> 
-> {sigh}
-> 
-> Did you see the second paragraph above as to why it isn't in this
-> release?
+Oh and (one other thought)
 
-I did. :)
-and I saw the third paragraph above.
-["If anyone has any questions about this, please let me know."]
+d) you are placing the maintenance burden in the wrong place
 
-> And yes, it will be in future ones.
+So you've upstreamed the kernel bits, kept the good userspace bits to
+yourselfs, are stroking them on your lap like some sort of Dr Evil,
+now why should the upstream kernel maintainers take the burden when
+you won't actually give them the stuff to really make their hardware
+work? This goes for nvidia type situations as well, the whole point is
+to place the maintainer burden at the feet of the people causing the
+problems in an effort to make them change. Allowing even an hour of
+that burden to be transferred upstream, means more profit for them,
+but nothing in return for us.
 
-Unfortunately, I don't find it feasible to review several hundred patches
-in the next 3 days.  I think that I understand how your stable & staging
-cycles (workloads) work, but I also think that it would help if you
-wouldn't batch all stable reviews together like this.
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Dave.
