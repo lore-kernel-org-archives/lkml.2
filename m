@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab0GATrg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 15:47:36 -0400
-Received: from puma.mail.utk.edu ([160.36.178.106]:33043 "EHLO
-	puma.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab0GATrf (ORCPT
+	id S1757468Ab0GATta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 15:49:30 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:65132 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab0GATt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 15:47:35 -0400
-X-Greylist: delayed 990 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Jul 2010 15:47:35 EDT
-Date: Thu, 1 Jul 2010 15:30:16 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Ingo Molnar <mingo@elte.hu>
-cc: LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf wrong branches event on AMD
-Message-ID: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 1 Jul 2010 15:49:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=It6zJIzfx7XyjH5OC7NTVCM2dCcTpdkjd3Xnhi+7pqjAE0BLQY5uZmWDzS5+I1G5uD
+         i95Vf82yZfsdti0zmTtqWLFgaC4Qii/rI2VxLPcaKSOuG38BYUpJoJpsEys0ruMOuqCv
+         SUZLrxotw3oDv/Ig+5qnUsz/cfrRtjizJxHAA=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 1 Jul 2010 13:49:28 -0600
+Message-ID: <AANLkTikKlTWd2bxLhxbjnfXEuJGneqBxVCa607alXd87@mail.gmail.com>
+Subject: [ANNOUNCE] MDB Merkey's Kernel Debugger x86_64 2.6.34 07-01-2010 
+	Release 4
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+http://merkeydebugger.googlecode.com/files/mdb-2.6.34-x86_64-07-01-2010.patch
 
-while doing some performance counter validation tests on some assembly 
-language programs I noticed that the "branches:u" count was very wrong on 
-AMD machines.
 
-It looks like the wrong event was selected.
+Porting to ARM9 on Montevista Linux.  Adding serial console support for
+ARM9 embedded support.  After working on Montevista all last summer I
+realize a small compact debugger is really needed there for the range
+of ARM processors.
 
-This is why event selection needs to be in user-space... it could be fixed 
-instantly there, but the way things are done now it will take months to 
-years for this fix to filter down to those trying to use perf counters...
+FIXES:
+- fixed LR (cpu #) register dump for suspended processors on X86_64
+- added sleeping thread register frame display in .P and PS commands
 
-Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
+TODO
+- continue to investigate rex64 sysret instruction issue
+- add and test serial driver for remote MDB support
+- integrate GDB ARM9 disassembler into MDB for ARM9 Montevista
+- integrate IA64 disassembler and write mdb-ia64.c module for IA64
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 611df11..c2897b7 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -102,8 +102,8 @@ static const u64 amd_perfmon_event_map[] =
-   [PERF_COUNT_HW_INSTRUCTIONS]		= 0x00c0,
-   [PERF_COUNT_HW_CACHE_REFERENCES]	= 0x0080,
-   [PERF_COUNT_HW_CACHE_MISSES]		= 0x0081,
--  [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x00c4,
--  [PERF_COUNT_HW_BRANCH_MISSES]		= 0x00c5,
-+  [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x00c2,
-+  [PERF_COUNT_HW_BRANCH_MISSES]		= 0x00c3,
- };
- 
- static u64 amd_pmu_event_map(int hw_event)
+
+Jeffrey Vernon Merkey
