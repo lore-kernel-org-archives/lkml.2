@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110Ab0GAUxu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:53:50 -0400
-Received: from kroah.org ([198.145.64.141]:48007 "EHLO coco.kroah.org"
+	id S932957Ab0GAUv7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:51:59 -0400
+Received: from kroah.org ([198.145.64.141]:47680 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932920Ab0GAUvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:40 2010
-Message-Id: <20100701173440.378327055@clark.site>
+	id S932755Ab0GAUup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:45 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:34 2010
+Message-Id: <20100701173434.887017144@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:47 -0700
+Date: Thu, 01 Jul 2010 10:34:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>, David Howells <dhowells@redhat.com>,
-       James Morris <jmorris@namei.org>
-Subject: [patch 161/164] KEYS: Return more accurate error codes
+       Ian Campbell <ian.campbell@citrix.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: [patch 096/164] xen: ensure timer tick is resumed even on CPU driving the resume
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Ian Campbell <ian.campbell@citrix.com>
 
-commit 4d09ec0f705cf88a12add029c058b53f288cfaa2 upstream.
+commit cd52e17ea8278f8449b6174a8e5ed439a2e44ffb upstream.
 
-We were using the wrong variable here so the error codes weren't being returned
-properly.  The original code returns -ENOKEY.
+The core suspend/resume code is run from stop_machine on CPU0 but
+parts of the suspend/resume machinery (including xen_arch_resume) are
+run on whichever CPU happened to schedule the xenwatch kernel thread.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+As part of the non-core resume code xen_arch_resume is called in order
+to restart the timer tick on non-boot processors. The boot processor
+itself is taken care of by core timekeeping code.
+
+xen_arch_resume uses smp_call_function which does not call the given
+function on the current processor. This means that we can end up with
+one CPU not receiving timer ticks if the xenwatch thread happened to
+be scheduled on CPU > 0.
+
+Use on_each_cpu instead of smp_call_function to ensure the timer tick
+is resumed everywhere.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/keys/process_keys.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/xen/suspend.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -509,7 +509,7 @@ try_again:
+--- a/arch/x86/xen/suspend.c
++++ b/arch/x86/xen/suspend.c
+@@ -60,6 +60,6 @@ static void xen_vcpu_notify_restore(void
  
- 			ret = install_thread_keyring();
- 			if (ret < 0) {
--				key = ERR_PTR(ret);
-+				key_ref = ERR_PTR(ret);
- 				goto error;
- 			}
- 			goto reget_creds;
-@@ -527,7 +527,7 @@ try_again:
- 
- 			ret = install_process_keyring();
- 			if (ret < 0) {
--				key = ERR_PTR(ret);
-+				key_ref = ERR_PTR(ret);
- 				goto error;
- 			}
- 			goto reget_creds;
-@@ -586,7 +586,7 @@ try_again:
- 
- 	case KEY_SPEC_GROUP_KEYRING:
- 		/* group keyrings are not yet supported */
--		key = ERR_PTR(-EINVAL);
-+		key_ref = ERR_PTR(-EINVAL);
- 		goto error;
- 
- 	case KEY_SPEC_REQKEY_AUTH_KEY:
+ void xen_arch_resume(void)
+ {
+-	smp_call_function(xen_vcpu_notify_restore,
+-			       (void *)CLOCK_EVT_NOTIFY_RESUME, 1);
++	on_each_cpu(xen_vcpu_notify_restore,
++		    (void *)CLOCK_EVT_NOTIFY_RESUME, 1);
+ }
 
 
