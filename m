@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625Ab0GAH46 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 03:56:58 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:37467 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab0GAH44 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Thu, 1 Jul 2010 03:56:56 -0400
-Message-Id: <4C2C6680020000780000901E@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 01 Jul 2010 08:57:20 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-       "Jeremy Fitzhardinge" <jeremy@goop.org>
-Cc: "mingo@elte.hu" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
-       "Ky Srinivasan" <KSrinivasan@novell.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH 2/4, v2] x86: enlightenment for ticket spin locks -
-	 Xen  implementation
-References: <4C2A200F02000078000089E4@vpn.id2.novell.com>
- <4C2B1769.5090107@goop.org>
- <alpine.DEB.2.00.1006301647220.30135@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1006301647220.30135@kaball-desktop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1752079Ab0GAH5f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 03:57:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33782 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307Ab0GAH5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 03:57:34 -0400
+Date: Thu, 1 Jul 2010 17:57:30 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 37/52] fs: icache lazy lru
+Message-ID: <20100701075730.GD22976@laptop>
+References: <20100624030212.676457061@suse.de>
+ <20100624030731.563540438@suse.de>
+ <20100630083814.GG24712@dastard>
+ <20100630120631.GC21358@laptop>
+ <20100701024633.GR24712@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100701024633.GR24712@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.06.10 at 17:57, Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-wrote:
-> On Wed, 30 Jun 2010, Jeremy Fitzhardinge wrote:
->> On 06/29/2010 04:32 PM, Jan Beulich wrote:
->> > Use the (alternative instructions based) callout hooks to the ticket
->> > spinlock code to enlighten ticket locks when running fully virtualized
->> > on Xen. Ultimately, this code might also be a candidate to be used
->> > when running para-virtualized.
->> >
->> 
->> I'm not sure what the gain is by making this independent of all the rest
->> of the Xen support in the kernel.  Stefano is working on a series
->> (posted a few times now) to add more paravirtual features for Xen HVM
->> guests, and this work is conceptually very similar.
+On Thu, Jul 01, 2010 at 12:46:33PM +1000, Dave Chinner wrote:
+> On Wed, Jun 30, 2010 at 10:06:31PM +1000, Nick Piggin wrote:
+> > On Wed, Jun 30, 2010 at 06:38:14PM +1000, Dave Chinner wrote:
+> > > On Thu, Jun 24, 2010 at 01:02:49PM +1000, npiggin@suse.de wrote:
+> > > > Impelemnt lazy inode lru similarly to dcache. This will reduce lock
+> > > > acquisition and will help to improve lock ordering subsequently.
+> > > 
+> > > I'm not sure we want the I_REFERENCED reclaim free pass for a clean
+> > > inode that has been put on the LRU directly. I can see exactly how
+> > > it is benficial to delay reclaim of dirty inodes (XFS uses that
+> > > trick), but in terms of aging the cache we've already done this
+> > > free pass trick at the dentry level. Hence I think the frequent
+> > > separate access patterns tend to be filtered out at the dcache level
+> > > and hence we don't need to handle that in the inode cache.
+> > > 
+> > > Perhaps we only need the I_REFERENCED flag to give dirty inodes a
+> > > chance to be flushed by other means before forcing reclaim to do
+> > > inode writeback?
+> > 
+> > It doesn't force flush, but it force invalidates pagecache.
 > 
-> My series has been stable since a while now and contains all the basic
-> PV on HVM mechanisms you need, including parsing the cpuid and mapping
-> the shared info page.
-> 
-> Could you please rebase on my series (or at least the first two
-> patches), so that we don't conflict with each other?
+> Sorry, bad choice of words - I should have said "forcing reclaim to
+> wait on inode writeback". That is what will happen in the case of
+> delayed allocation - the page cache will be clean, but the inode
+> can be dirty, so reclaiming such an inode would cause the shrinker
+> to block in clear_inode() waiting for inode writeback to
+> complete.
 
-I really don't want to make those patches depend on no upstream
-stuff (as I want it accepted upstream), and I'm not sure when your
-patch series is expected to be upstream. If that's going to be soon,
-I'd just re-base after it happened.
+OK.
 
-Jan
+ 
+> However, that is mostly irrelevant - you haven't comented at all on
+> whether the I_REFERENCED flag is too broad or even needed which is
+> what really needs to be discussed about this patch....
+
+Well when moving from non-lazy to lazy, I think I_REFERENCED makes
+sense, and matched what dcache did when it went to lazy LRU.
+Otherwise inodes on the LRU list stay basically in the order that
+they were added to the list, and have no relation to when they
+were last used, I don't think that's a good idea.
 
