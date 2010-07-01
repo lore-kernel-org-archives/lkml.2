@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759389Ab0GAVhj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:37:39 -0400
-Received: from kroah.org ([198.145.64.141]:33018 "EHLO coco.kroah.org"
+	id S933412Ab0GAVtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:49:08 -0400
+Received: from kroah.org ([198.145.64.141]:60977 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759220Ab0GAVOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:44 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
-Message-Id: <20100701174258.314043063@clark.site>
+	id S1759032Ab0GAVOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:01 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
+Message-Id: <20100701174254.182256084@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:51 -0700
+Date: Thu, 01 Jul 2010 10:43:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: [141/200] pcmcia: avoid validate_cis failure on CIS override
+       Randy Dunlap <randy.dunlap@oracle.com>
+Subject: [092/200] eeepc-wmi: depends on BACKLIGHT_CLASS_DEVICE
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dominik Brodowski <linux@dominikbrodowski.net>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-commit b83156b52dd77979cc93bafc2283929532f6f7d0 upstream.
+commit 89a7644be2c59eea443b0db2514fd42d5de909f8 upstream.
 
-Commit a8408c17 introduced a new check to pccard_validate_cis(),
-which avoids any "late" calls to this function. This broke the
-insertion of cards which require a CIS override which changes
-the number of card functions. Fix this by asserting that this
-is _not_ a late call, but a proper call early during the card
-insertion process.
+eeepc-wmi uses backlight*() interfaces so it should depend on
+BACKLIGHT_CLASS_DEVICE.
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=16138
+eeepc-wmi.c:(.text+0x2d7f54): undefined reference to `backlight_force_update'
+eeepc-wmi.c:(.text+0x2d8012): undefined reference to `backlight_device_register'
+eeepc-wmi.c:(.devinit.text+0x1c31c): undefined reference to `backlight_device_unregister'
+eeepc-wmi.c:(.devexit.text+0x2f8b): undefined reference to `backlight_device_unregister'
 
-Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pcmcia/ds.c |    1 +
+ drivers/platform/x86/Kconfig |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/pcmcia/ds.c
-+++ b/drivers/pcmcia/ds.c
-@@ -682,6 +682,7 @@ static void pcmcia_requery(struct pcmcia
- 		if (old_funcs != new_funcs) {
- 			/* we need to re-start */
- 			pcmcia_card_remove(s, NULL);
-+			s->functions = 0;
- 			pcmcia_card_add(s);
- 		}
- 	}
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -390,6 +390,7 @@ config EEEPC_WMI
+ 	depends on ACPI_WMI
+ 	depends on INPUT
+ 	depends on EXPERIMENTAL
++	depends on BACKLIGHT_CLASS_DEVICE
+ 	select INPUT_SPARSEKMAP
+ 	---help---
+ 	  Say Y here if you want to support WMI-based hotkeys on Eee PC laptops.
 
 
