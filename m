@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab0GAIAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 04:00:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42414 "EHLO mx2.suse.de"
+	id S1752069Ab0GAIGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 04:06:08 -0400
+Received: from ns2.tasking.nl ([195.193.207.10]:20240 "EHLO ns2.tasking.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab0GAIAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 04:00:51 -0400
-Date: Thu, 1 Jul 2010 18:00:43 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 44/52] fs: icache per-CPU sb inode lists and locks
-Message-ID: <20100701080043.GE22976@laptop>
-References: <20100624030212.676457061@suse.de>
- <20100624030732.702284052@suse.de>
- <20100630092641.GI24712@dastard>
- <20100630120850.GE21358@laptop>
- <20100701031200.GS24712@dastard>
+	id S1751211Ab0GAIGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 04:06:06 -0400
+X-Greylist: delayed 460 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Jul 2010 04:06:06 EDT
+From: Kees Bakker <kees.bakker@xs4all.nl>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: Filename case conflict Documentation/io-mapping.txt and Documentation/IO-mapping.txt
+Date: Thu, 1 Jul 2010 09:58:15 +0200
+User-Agent: KMail/1.9.9
+Cc: linux-kernel@vger.kernel.org, Keith Packard <keithp@keithp.com>
+References: <97A9C0E5-DA16-4C78-89A3-BBC08EF16518@xs4all.nl> <20100630151806.08a1823c.rdunlap@xenotime.net>
+In-Reply-To: <20100630151806.08a1823c.rdunlap@xenotime.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100701031200.GS24712@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201007010958.15986.kees.bakker@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 01:12:00PM +1000, Dave Chinner wrote:
-> On Wed, Jun 30, 2010 at 10:08:50PM +1000, Nick Piggin wrote:
-> > > I can't say that I'm a great fan of hiding loop context in defines
-> > > like this. It reminds far too much of how parts of Irix slowly
-> > > ossified because they ended up mess of complex, fragile macros that
-> > > nobody fully understood...
+On Thursday 01 July 2010, Randy Dunlap wrote:
+> On Wed, 30 Jun 2010 22:58:21 +0200 Kees Bakker wrote:
+> 
+> > Hi,
 > > 
-> > It's not perfect. I think it is a lot better than open coding
-> > (which I tried before) because that really muddies up the intention
-> > of the loop body.
+> > Do we really want these two filenames as they are right now?
+> > We have:
+> >    Documentation/IO-mapping.txt
+> >    Documentation/io-mapping.txt
+> > 
+[...]
+> > 
+> > So the IO-mapping.txt was there first. Keith, can't we rename your
+> > file? For example,
+> > 
+> >    Documentation/io-mapping.txt => Documentation/io-mapping.h.txt
+> > -- 
 > 
-> Something like this doesn't seem particularly bad:
+> Alternatively:
 > 
-> static inline struct list_head *
-> inode_get_sb_list(struct super_block *sb, int *i)
-> {
-> 	int cpu;
-> 
-> 	cpu = cpumask_next(i, cpu_possible_mask);
-> 	if (cpu >= nr_cpu_ids)
-> 		return NULL;
-> 	*i = cpu;
-> #ifdef CONFIG_SMP
-> 	return per_cpu_ptr(sb->s_inodes, cpu);
-> #else
-> 	return &sb->s_inodes;
-> #endif
-> }
-> 
-> and:
-> 
-> 	struct list_head *list;
-> 	int i;
-> ....
-> 	i = -1;
-> 	while ((list = inode_get_sb_list(sb, &i))) {
-> 		list_for_each_entry_rcu(inode, tmp, list, i_sb_list) {
-> 			.....
-> 		}
-> 	}
-> 
-> I'd much prefer this to hiding the outer loop in macros...
+> $ git mv Documentation/IO-mapping.txt Documentation/bus-virt-phys-mapping.txt
 
-I don't see it as an improvement. A macro called
-inode_sb_list_for_each_entry is rather obvious and idiomatic as to what
-it does. You don't need to look at the implementation if you just need
-to walk the inode sb list.
-
+Sounds good to me.
+-- 
+Kees
