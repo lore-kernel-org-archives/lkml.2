@@ -1,51 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758515Ab0GAW1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:27:15 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49366 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405Ab0GAW1N (ORCPT
+	id S932517Ab0GAW2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:28:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49008 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753981Ab0GAW2U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 18:27:13 -0400
+	Thu, 1 Jul 2010 18:28:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=II6tWZBWl/WHrxdsRf4S/TKi7wLadJn4i5JHcmvOL7HsYbGMX/TuZKsUQR1m2/cDZi
-         g4jrtJLTXbCym0Bv1qCC49pZh9vD+tiJS6BnUkJ2eF3hX+D+myUPQQf9zOBuR7k9ycOC
-         q2/I8G6YXSAF+JH06q5LUAUXE/HSE84k/+8oM=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xrezg8tw5MKnFwpKNgSx+AKTCTv5oNbYEirbD91L/562deKcFGXGN7sER2hATKow8j
+         iejtHdNTi8md8yyW4uDhfRhabOPzrFTw9MUs7o4tTURmDL5pB4iqCV0DN+8q0ysl9AEX
+         Zjn6XLdJQCrHZsqDGRx22hEOsKnDMlTxmSCWg=
 MIME-Version: 1.0
-Date: Thu, 1 Jul 2010 23:27:11 +0100
-Message-ID: <AANLkTik0ApmWdPB_m2iejwa2zr7KnEyv8Eh8Z4-CPwd5@mail.gmail.com>
-Subject: [2.6.35-rc3] correct console log level when ERST ACPI table is not 
-	found
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTikx8AxRdPoSbsym9rUiA11BbufqImcD2sg4f8Ds@mail.gmail.com>
+References: <AANLkTilvxV18Qc2-34GtNmfAIvNL2dtEAPC3iPFNU2Pv@mail.gmail.com>
+	<20100701162454.GD4152@core.coreip.homeip.net>
+	<AANLkTikx8AxRdPoSbsym9rUiA11BbufqImcD2sg4f8Ds@mail.gmail.com>
+Date: Fri, 2 Jul 2010 00:28:17 +0200
+Message-ID: <AANLkTikmcaQSNNy6ZHMvEwBJVkWdyQ5KALR6832hUkjz@mail.gmail.com>
+Subject: Re: i8042 no mouse on resume. (i8042: failed to resume active 
+	multiplexor, mouse won't work.)
+From: Jerome Lacoste <jerome.lacoste@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When booting 2.6.35-rc3 on a x86 system without an ERST ACPI table
-with the 'quiet' option, we still observe an "ERST: Table is not
-found!" warning.
+On Thu, Jul 1, 2010 at 11:19 PM, Jerome Lacoste
+<jerome.lacoste@gmail.com> wrote:
+> On Thu, Jul 1, 2010 at 6:24 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+>> Hi Jerome,
+>>
+> [...]
+>>> * the hardware is a Lenovo 3000 N100
+>>
+>> We already trying to disable MUX mode on Lenovo 3000 N100, see
+>> drivers/input/serio/i8042-x86ia64io.h:
+>>
+>>        {
+>>                /* Lenovo 3000 n100 */
+>>                .matches = {
+>>                        DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+>>                        DMI_MATCH(DMI_PRODUCT_NAME, "076804U"),
+>>                },
+>>        },
+>>
+>> What's in your dmi?
+>
+> System Information
+>        Manufacturer: LENOVO
+>        Product Name: 0768BKG
+>        Version: 3000 N100
+>
+> according to dmidecode
 
-Quiesce it to the same info log level as the other 'table not found' warnings.
+Note: I will try the i8042.nomux option, but can't reboot until tomorrow.
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Some information that maybe relevant:
 
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index 2ebc391..864dd46 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -781,7 +781,7 @@ static int __init erst_init(void)
- 	status = acpi_get_table(ACPI_SIG_ERST, 0,
- 				(struct acpi_table_header **)&erst_tab);
- 	if (status == AE_NOT_FOUND) {
--		pr_err(ERST_PFX "Table is not found!\n");
-+		pr_info(ERST_PFX "Table is not found!\n");
- 		goto err;
- 	} else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
--- 
-Daniel J Blueman
+The blacklist used to be broader but was restricted by
+https://kerneltrap.org/mailarchive/git-commits-head/2008/9/7/3217784
+
+The discussion is in particular here:
+http://lkml.indiana.edu/hypermail/linux/kernel/0809.0/0316.html
+
+which states that the problem for which one didn't want to blacklist was a:
+
+System Information
+Manufacturer: LENOVO
+Product Name: 076836U
+Version: 3000 N100
+
+There seems to be many various versions of that Product Name
+
+http://smolts.org/reports/view_profiles?profile=+3000+N100&search=Submit
+
+I wonder if there are other versions affected by this "regression".
+
+For example
+
+https://bugs.launchpad.net/ubuntu/+source/linux-source-2.6.20/+bug/86820
+points to
+http://launchpadlibrarian.net/6494256/dmidecode
+
+	Manufacturer: LENOVO
+	Product Name: 0768B9G
+	Version: 3000 N100
+
+which is probably also affected
+
+It would be nice if the message that displays "failed to resume active
+multiplexor, mouse won't work." could also print out the relevant dmi
+information.
+
+That way one could use google to find potentially affected systems :)
+
+Cheers,
+
+Jerome
