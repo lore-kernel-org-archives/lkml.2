@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932885Ab0GAUva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:51:30 -0400
-Received: from kroah.org ([198.145.64.141]:47596 "EHLO coco.kroah.org"
+	id S933091Ab0GAVDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:03:24 -0400
+Received: from kroah.org ([198.145.64.141]:47889 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932618Ab0GAUud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:33 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:33 2010
-Message-Id: <20100701173433.716574112@clark.site>
+	id S932848Ab0GAUvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:38 2010
+Message-Id: <20100701173438.293755080@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:28 -0700
+Date: Thu, 01 Jul 2010 10:35:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Khem Raj <raj.khem@gmail.com>,
-       Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [patch 082/164] ARM: 6164/1: Add kto and kfrom to input operands list.
+       Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+       Corentin Chary <corentincj@iksaif.net>
+Subject: [patch 136/164] eeepc-laptop: check wireless hotplug events
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,111 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Khem Raj <raj.khem@gmail.com>
+From: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
 
-commit 9a40ac86152c9cffd3dca482a15ddf9a8c5716b3 upstream.
+commit bc9d24a3aeb1532fc3e234907a8b6d671f7ed68f upstream.
 
-When functions incoming parameters are not in input operands list gcc
-4.5 does not load the parameters into registers before calling this
-function but the inline assembly assumes valid addresses inside this
-function. This breaks the code because r0 and r1 are invalid when
-execution enters v4wb_copy_user_page ()
+Before we mark the wireless device as unplugged, check PCI config space
+to see whether the wireless device is really disabled (and vice versa).
+This works around newer models which don't want the hotplug code, where
+we end up disabling the wired network device.
 
-Also the constant needs to be used as third input operand so account
-for that as well.
+My old 701 still works correctly with this.  I can also simulate an
+afflicted model by changing the hardcoded PCI bus/slot number in the
+driver, and it seems to work nicely (although it is a bit noisy).
 
-Tested on qemu arm.
+In future this type of hotplug support will be implemented by the PCI
+core.  The existing blacklist and the new warning message will be
+removed at that point.
 
-Signed-off-by: Khem Raj <raj.khem@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
+Signed-off-by: Corentin Chary <corentincj@iksaif.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mm/copypage-feroceon.c |    4 ++--
- arch/arm/mm/copypage-v4wb.c     |    4 ++--
- arch/arm/mm/copypage-v4wt.c     |    4 ++--
- arch/arm/mm/copypage-xsc3.c     |    4 ++--
- 4 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/platform/x86/eeepc-laptop.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/arch/arm/mm/copypage-feroceon.c
-+++ b/arch/arm/mm/copypage-feroceon.c
-@@ -18,7 +18,7 @@ feroceon_copy_user_page(void *kto, const
- {
- 	asm("\
- 	stmfd	sp!, {r4-r9, lr}		\n\
--	mov	ip, %0				\n\
-+	mov	ip, %2				\n\
- 1:	mov	lr, r1				\n\
- 	ldmia	r1!, {r2 - r9}			\n\
- 	pld	[lr, #32]			\n\
-@@ -64,7 +64,7 @@ feroceon_copy_user_page(void *kto, const
- 	mcr	p15, 0, ip, c7, c10, 4		@ drain WB\n\
- 	ldmfd	sp!, {r4-r9, pc}"
- 	:
--	: "I" (PAGE_SIZE));
-+	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE));
- }
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -578,6 +578,8 @@ static void eeepc_rfkill_hotplug(struct
+ 	struct pci_dev *dev;
+ 	struct pci_bus *bus;
+ 	bool blocked = eeepc_wlan_rfkill_blocked(eeepc);
++	bool absent;
++	u32 l;
  
- void feroceon_copy_user_highpage(struct page *to, struct page *from,
---- a/arch/arm/mm/copypage-v4wb.c
-+++ b/arch/arm/mm/copypage-v4wb.c
-@@ -27,7 +27,7 @@ v4wb_copy_user_page(void *kto, const voi
- {
- 	asm("\
- 	stmfd	sp!, {r4, lr}			@ 2\n\
--	mov	r2, %0				@ 1\n\
-+	mov	r2, %2				@ 1\n\
- 	ldmia	r1!, {r3, r4, ip, lr}		@ 4\n\
- 1:	mcr	p15, 0, r0, c7, c6, 1		@ 1   invalidate D line\n\
- 	stmia	r0!, {r3, r4, ip, lr}		@ 4\n\
-@@ -44,7 +44,7 @@ v4wb_copy_user_page(void *kto, const voi
- 	mcr	p15, 0, r1, c7, c10, 4		@ 1   drain WB\n\
- 	ldmfd	 sp!, {r4, pc}			@ 3"
- 	:
--	: "I" (PAGE_SIZE / 64));
-+	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64));
- }
+ 	if (eeepc->wlan_rfkill)
+ 		rfkill_set_sw_state(eeepc->wlan_rfkill, blocked);
+@@ -591,6 +593,22 @@ static void eeepc_rfkill_hotplug(struct
+ 			goto out_unlock;
+ 		}
  
- void v4wb_copy_user_highpage(struct page *to, struct page *from,
---- a/arch/arm/mm/copypage-v4wt.c
-+++ b/arch/arm/mm/copypage-v4wt.c
-@@ -25,7 +25,7 @@ v4wt_copy_user_page(void *kto, const voi
- {
- 	asm("\
- 	stmfd	sp!, {r4, lr}			@ 2\n\
--	mov	r2, %0				@ 1\n\
-+	mov	r2, %2				@ 1\n\
- 	ldmia	r1!, {r3, r4, ip, lr}		@ 4\n\
- 1:	stmia	r0!, {r3, r4, ip, lr}		@ 4\n\
- 	ldmia	r1!, {r3, r4, ip, lr}		@ 4+1\n\
-@@ -40,7 +40,7 @@ v4wt_copy_user_page(void *kto, const voi
- 	mcr	p15, 0, r2, c7, c7, 0		@ flush ID cache\n\
- 	ldmfd	sp!, {r4, pc}			@ 3"
- 	:
--	: "I" (PAGE_SIZE / 64));
-+	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64));
- }
- 
- void v4wt_copy_user_highpage(struct page *to, struct page *from,
---- a/arch/arm/mm/copypage-xsc3.c
-+++ b/arch/arm/mm/copypage-xsc3.c
-@@ -34,7 +34,7 @@ xsc3_mc_copy_user_page(void *kto, const
- {
- 	asm("\
- 	stmfd	sp!, {r4, r5, lr}		\n\
--	mov	lr, %0				\n\
-+	mov	lr, %2				\n\
- 						\n\
- 	pld	[r1, #0]			\n\
- 	pld	[r1, #32]			\n\
-@@ -67,7 +67,7 @@ xsc3_mc_copy_user_page(void *kto, const
- 						\n\
- 	ldmfd	sp!, {r4, r5, pc}"
- 	:
--	: "I" (PAGE_SIZE / 64 - 1));
-+	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64 - 1));
- }
- 
- void xsc3_mc_copy_user_highpage(struct page *to, struct page *from,
++		if (pci_bus_read_config_dword(bus, 0, PCI_VENDOR_ID, &l)) {
++			pr_err("Unable to read PCI config space?\n");
++			goto out_unlock;
++		}
++		absent = (l == 0xffffffff);
++
++		if (blocked != absent) {
++			pr_warning("BIOS says wireless lan is %s, "
++					"but the pci device is %s\n",
++				blocked ? "blocked" : "unblocked",
++				absent ? "absent" : "present");
++			pr_warning("skipped wireless hotplug as probably "
++					"inappropriate for this model\n");
++			goto out_unlock;
++		}
++
+ 		if (!blocked) {
+ 			dev = pci_get_slot(bus, 0);
+ 			if (dev) {
 
 
