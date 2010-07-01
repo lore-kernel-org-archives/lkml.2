@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933495Ab0GAWLS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:11:18 -0400
-Received: from kroah.org ([198.145.64.141]:47463 "EHLO coco.kroah.org"
+	id S933520Ab0GAWLg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:11:36 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36465 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932657Ab0GAUuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:32 2010
-Message-Id: <20100701173432.217568551@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:10 -0700
+	id S932674Ab0GAWLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 18:11:25 -0400
+Date: Thu, 1 Jul 2010 15:09:46 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       NeilBrown <neilb@suse.de>
-Subject: [patch 064/164] md: Fix read balancing in RAID1 and RAID10 on drives > 2TB
-In-Reply-To: <20100701175152.GA2135@kroah.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk
+Subject: Re: [000/200] 2.6.34.1 stable review
+Message-ID: <20100701220946.GA11108@suse.de>
+References: <20100701175201.GA2149@kroah.com>
+ <201007012340.10491.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007012340.10491.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jul 01, 2010 at 11:40:10PM +0200, Rafael J. Wysocki wrote:
+> On Thursday, July 01, 2010, Greg KH wrote:
+> > This is the start of the stable review cycle for the 2.6.34.1 release.
+> > There are 200 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.  If anyone is a maintainer of the proper subsystem, and
+> > wants to add a Signed-off-by: line to the patch, please respond with it.
+> > 
+> > Responses should be made by Sat, July 3, 17:00:00 UTC UTC.
+> > Anything received after that time might be too late.
+> 
+> It looks like the requests I sent earlier this week have not been taken into
+> account.  Was it too late already or didn't you get them?
 
-------------------
+You missed the email above this where I explained why not everything
+people have sent in is in this release:
+	http://thread.gmane.org/gmane.linux.kernel/1005055
 
-From: NeilBrown <neilb@suse.de>
+Don't worry, it's in my to-apply queue and is not lost.
 
-commit af3a2cd6b8a479345786e7fe5e199ad2f6240e56 upstream.
+thanks,
 
-read_balance uses a "unsigned long" for a sector number which
-will get truncated beyond 2TB.
-This will cause read-balancing to be non-optimal, and can cause
-data to be read from the 'wrong' branch during a resync.  This has a
-very small chance of returning wrong data.
-
-Reported-by: Jordan Russell <jr-list-2010@quo.to>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/md/raid1.c  |    4 ++--
- drivers/md/raid10.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -417,7 +417,7 @@ static void raid1_end_write_request(stru
-  */
- static int read_balance(conf_t *conf, r1bio_t *r1_bio)
- {
--	const unsigned long this_sector = r1_bio->sector;
-+	const sector_t this_sector = r1_bio->sector;
- 	int new_disk = conf->last_used, disk = new_disk;
- 	int wonly_disk = -1;
- 	const int sectors = r1_bio->sectors;
-@@ -433,7 +433,7 @@ static int read_balance(conf_t *conf, r1
-  retry:
- 	if (conf->mddev->recovery_cp < MaxSector &&
- 	    (this_sector + sectors >= conf->next_resync)) {
--		/* Choose the first operation device, for consistancy */
-+		/* Choose the first operational device, for consistancy */
- 		new_disk = 0;
- 
- 		for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -493,7 +493,7 @@ static int raid10_mergeable_bvec(struct
-  */
- static int read_balance(conf_t *conf, r10bio_t *r10_bio)
- {
--	const unsigned long this_sector = r10_bio->sector;
-+	const sector_t this_sector = r10_bio->sector;
- 	int disk, slot, nslot;
- 	const int sectors = r10_bio->sectors;
- 	sector_t new_distance, current_distance;
-
-
+greg k-h
