@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab0GASLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:11:40 -0400
-Received: from kroah.org ([198.145.64.141]:60138 "EHLO coco.kroah.org"
+	id S1755417Ab0GASK5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:10:57 -0400
+Received: from kroah.org ([198.145.64.141]:60039 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755479Ab0GASLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:11:01 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:58 2010
-Message-Id: <20100701172858.380695161@clark.site>
+	id S1754982Ab0GASKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:10:49 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:57 2010
+Message-Id: <20100701172857.221681024@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:27:12 -0700
+Date: Thu, 01 Jul 2010 10:26:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Wei Yongjun <yjwei@cn.fujitsu.com>,
-       Vlad Yasevich <vladislav.yasevich@hp.com>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [23/23] sctp: fix append error cause to ERROR chunk correctly
+       Dan Williams <dan.j.williams@intel.com>, NeilBrown <neilb@suse.de>
+Subject: [09/23] md: set mddev readonly flag on blkdev BLKROSET ioctl
 In-Reply-To: <20100701175134.GA2098@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yjwei@cn.fujitsu.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 2e3219b5c8a2e44e0b83ae6e04f52f20a82ac0f2 upstream.
+commit e2218350465e7e0931676b4849b594c978437bce upstream.
 
-commit 5fa782c2f5ef6c2e4f04d3e228412c9b4a4c8809
-  sctp: Fix skb_over_panic resulting from multiple invalid \
-    parameter errors (CVE-2010-1173) (v4)
+When the user sets the block device to readwrite then the mddev should
+follow suit.  Otherwise, the BUG_ON in md_write_start() will be set to
+trigger.
 
-cause 'error cause' never be add the the ERROR chunk due to
-some typo when check valid length in sctp_init_cause_fixed().
+The reverse direction, setting mddev->ro to match a set readonly
+request, can be ignored because the blkdev level readonly flag precludes
+the need to have mddev->ro set correctly.  Nevermind the fact that
+setting mddev->ro to 1 may fail if the array is in use.
 
-Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
-Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sctp/sm_make_chunk.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/md.c |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -140,7 +140,7 @@ int sctp_init_cause_fixed(struct sctp_ch
- 	len = sizeof(sctp_errhdr_t) + paylen;
- 	err.length  = htons(len);
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -4816,6 +4816,7 @@ static int md_ioctl(struct inode *inode,
+ 	int err = 0;
+ 	void __user *argp = (void __user *)arg;
+ 	mddev_t *mddev = NULL;
++	int ro;
  
--	if (skb_tailroom(chunk->skb) >  len)
-+	if (skb_tailroom(chunk->skb) < len)
- 		return -ENOSPC;
- 	chunk->subh.err_hdr = sctp_addto_chunk_fixed(chunk,
- 						     sizeof(sctp_errhdr_t),
-@@ -1401,7 +1401,7 @@ void *sctp_addto_chunk(struct sctp_chunk
- void *sctp_addto_chunk_fixed(struct sctp_chunk *chunk,
- 			     int len, const void *data)
- {
--	if (skb_tailroom(chunk->skb) > len)
-+	if (skb_tailroom(chunk->skb) >= len)
- 		return sctp_addto_chunk(chunk, len, data);
- 	else
- 		return NULL;
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+@@ -4951,6 +4952,34 @@ static int md_ioctl(struct inode *inode,
+ 			err = do_md_stop (mddev, 1, 1);
+ 			goto done_unlock;
+ 
++		case BLKROSET:
++			if (get_user(ro, (int __user *)(arg))) {
++				err = -EFAULT;
++				goto done_unlock;
++			}
++			err = -EINVAL;
++
++			/* if the bdev is going readonly the value of mddev->ro
++			 * does not matter, no writes are coming
++			 */
++			if (ro)
++				goto done_unlock;
++
++			/* are we are already prepared for writes? */
++			if (mddev->ro != 1)
++				goto done_unlock;
++
++			/* transitioning to readauto need only happen for
++			 * arrays that call md_write_start
++			 */
++			if (mddev->pers) {
++				err = restart_array(mddev);
++				if (err == 0) {
++					mddev->ro = 2;
++					set_disk_ro(mddev->gendisk, 0);
++				}
++			}
++			goto done_unlock;
+ 	}
+ 
+ 	/*
 
 
