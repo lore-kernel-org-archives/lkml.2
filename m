@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab0GABkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 21:40:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:34072 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab0GABkj (ORCPT
+	id S1752076Ab0GABzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 21:55:33 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41700 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab0GABzc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 21:40:39 -0400
-X-Authority-Analysis: v=1.1 cv=jfMbZ+4tkgrYlaJBi3iJCtg6TDszHDHJJpQ3TdTfnr0= c=1 sm=0 a=rrc4SAMfR1kA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=1EZYRgFDiBohhUdhB6cA:9 a=PKKLIv8FU-eRQRaiFlUA:7 a=-34yZdvF7seyVTLOgE2ye1xJMocA:4 a=PUjeQqilurYA:10 a=WDtyTDSDkcMvSxWU:21 a=FYuSqRkW09uSbEh2:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] tracing: shrink max latency ringbuffer if unnecessary
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20100630120419.391D.A69D9226@jp.fujitsu.com>
-References: <20100630120419.391D.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Wed, 30 Jun 2010 21:40:36 -0400
-Message-ID: <1277948436.25782.5.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Jun 2010 21:55:32 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
+Cc: kosaki.motohiro@jp.fujitsu.com, Chris Wilson <chris@chris-wilson.co.uk>,
+       Dave Airlie <airlied@gmail.com>, earny@net4u.de,
+       Roman Jarosz <kedgedev@gmail.com>, intel-gfx@lists.freedesktop.org,
+       linux-kernel@vger.kernel.org, jcnengel@googlemail.com,
+       "A. Boulan" <arnaud.boulan@libertysurf.fr>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
+       rientjes@google.com, michael@reinelt.co.at, stable@kernel.org,
+       Vefa Bicakci <bicave@superonline.com>
+In-Reply-To: <AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
+References: <AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com> <AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
+Message-Id: <20100701104934.DA30.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  1 Jul 2010 10:55:29 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kosaki,
-
-FYI, could you send emails to my goodmis account. I can easily miss
-emails sent to my RH account since it is usually flooded with RH
-Bugzilla reports.
-
-(more below)
-
-On Wed, 2010-06-30 at 12:06 +0900, KOSAKI Motohiro wrote:
-> Documentation/trace/ftrace.txt says
+> On Wed, Jun 30, 2010 at 4:07 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > That commit changes the page cache allocation to use
+> >
+> > +                                          mapping_gfp_mask (mapping) |
+> > +                                          __GFP_COLD |
+> > +                                          gfpmask);
+> >
+> > if I read it right. And the default mapping_gfp_mask() is
+> > GFP_HIGHUSER_MOVABLE, so I think you get all of
+> > (__GFP_WAIT | __GFP_IO | __GFP_FS | __GFP_HARDWALL | __GFP_HIGHMEM)
+> > set by default.
 > 
->   buffer_size_kb:
+> .. and then I left out the one flag I _meant_ to have there, namely
+> __GFP_MOVABLE.
 > 
->         This sets or displays the number of kilobytes each CPU
->         buffer can hold. The tracer buffers are the same size
->         for each CPU. The displayed number is the size of the
->         CPU buffer and not total size of all buffers. The
->         trace buffers are allocated in pages (blocks of memory
->         that the kernel uses for allocation, usually 4 KB in size).
->         If the last page allocated has room for more bytes
->         than requested, the rest of the page will be used,
->         making the actual allocation bigger than requested.
->         ( Note, the size may not be a multiple of the page size
->           due to buffer management overhead. )
+> > The old code didn't just play games with ~__GFP_NORETRY and change
+> > that at runtime (which was buggy - no locking, no protection, no
+> > nothing), it also initialized the gfp mask. And that code also got
+> > removed:
 > 
->         This can only be updated when the current_tracer
->         is set to "nop".
+> In fact, I don't really see why we should use that mapping_gfp_mask()
+> at all, since all allocations should be going through that
+> i915_gem_object_get_pages() function anyway. So why not just change
+> that function to ignore the default gfp mask for the mapping, and just
+> use the mask that the o915 driver wants?
 > 
-> But it's incorrect. currently total memory consumption is
-> 'buffer_size_kb x CPUs x 2'.
-> 
-> Why two times difference is there? because ftrace implicitly allocate
-> the buffer for max latency too.
-> 
-> That makes sad result when admin want to use large buffer. (If admin
-> want full logging and makes detail analysis). example, If admin
-> have 24 CPUs machine and write 200MB to buffer_size_kb, the system
-> consume ~10GB memory (200MB x 24 x 2). umm.. 5GB memory waste is
-> usually unacceptable.
-> 
-> Fortunatelly, almost all users don't use max latency feature.
-> The max latency buffer can be disabled easily.
-> 
-> This patch shrink buffer size of the max latency buffer if
-> unnecessary.
+> Btw, why did it want to mark the pages reclaimable?
 
-Actually, what would be better is to add a "use_max_tr" field to the
-struct tracer in trace.h.  Then the latency tracers (irqsoff,
-preemptoff, preemptirqsoff, wakeup, and wakeup_rt) can have this field
-set.
+I'm not GEM expert at all. but as far as I read following documentation,
 
-Then, we can resize or even remove the max ring buffer when the
-"use_max_tr" is not set (and on bootup). On enabling a latency tracer,
-we can allocate the buffer. When we enable another tracer (or nop) if
-the use_max_tr is not set, then we can remove the buffer.
+http://lwn.net/Articles/283798/
 
-Would you be able to do something like that?
+GEM memory have pin and unpin state and unpined memory can be reclaimed.
+but it's just guess. So, I wonder if your patch solve the issue. I don't imazine a memory 
+state which "swap-out is safe, but compaction is unsafe".
 
-Thanks,
+Dave, if you have good documentation which we understand GEM memory management,
+could you send us?
 
--- Steve
+   - kosaki
+
+> 
+> Anyway, what I'm suggesting somebody who sees this test is just
+> something like the patch below (whitespace-damage - I'm cutting and
+> pasting, it's a trivial one-liner).  Does this change any behavior?
+> Vefa?
+> 
+>                     Linus
+> 
+> ---
+> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> index 9ded3da..ec8ed6b 100644
+> --- a/drivers/gpu/drm/i915/i915_gem.c
+> +++ b/drivers/gpu/drm/i915/i915_gem.c
+> @@ -2239,7 +2239,7 @@ i915_gem_object_get_pages(struct drm_gem_object *obj,
+>         mapping = inode->i_mapping;
+>         for (i = 0; i < page_count; i++) {
+>                 page = read_cache_page_gfp(mapping, i,
+> -                                          mapping_gfp_mask (mapping) |
+> +                                          GFP_HIGHMEM |
+>                                            __GFP_COLD |
+>                                            gfpmask);
+>                 if (IS_ERR(page))
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 
 
