@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab0GAXBF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 19:01:05 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:38459 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab0GAXBB (ORCPT
+	id S1755257Ab0GAXJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 19:09:14 -0400
+Received: from xenotime.net ([72.52.115.56]:53470 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751858Ab0GAXJM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 19:01:01 -0400
-Date: Fri, 2 Jul 2010 01:00:56 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Zach Pfeffer <zpfeffer@codeaurora.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Daniel Walker <dwalker@codeaurora.org>,
-       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
-Message-ID: <20100701230056.GD3594@basil.fritz.box>
-References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org>
- <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org>
- <20100701101746.3810cc3b.randy.dunlap@oracle.com>
- <20100701180241.GA3594@basil.fritz.box>
- <1278012503.7738.17.camel@c-dwalke-linux.qualcomm.com>
- <20100701193850.GB3594@basil.fritz.box>
- <4C2D0FF1.6010206@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C2D0FF1.6010206@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 1 Jul 2010 19:09:12 -0400
+Date: Thu, 1 Jul 2010 16:09:01 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Greg KH <greg@kroah.com>
+Cc: Florian Fainelli <florian@openwrt.org>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk
+Subject: Re: 4 -stable kernel review cycles starting
+Message-Id: <20100701160901.887709e8.rdunlap@xenotime.net>
+In-Reply-To: <20100701225129.GA12760@kroah.com>
+References: <20100701175100.GA2078@kroah.com>
+	<201007012355.05531.florian@openwrt.org>
+	<20100701221059.GA11663@kroah.com>
+	<20100701153600.a0fc684e.rdunlap@xenotime.net>
+	<20100701225129.GA12760@kroah.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The VCMM provides a more abstract, global view with finer-grained
-> control of each mapping a user wants to create. For instance, the
-> symantics of iommu_map preclude its use in setting up just the IOMMU
-> side of a mapping. With a one-sided map, two IOMMU devices can be
+On Thu, 1 Jul 2010 15:51:29 -0700 Greg KH wrote:
 
-Hmm? dma_map_* does not change any CPU mappings. It only sets up
-DMA mapping(s).
+> On Thu, Jul 01, 2010 at 03:36:00PM -0700, Randy Dunlap wrote:
+> > On Thu, 1 Jul 2010 15:10:59 -0700 Greg KH wrote:
+> > 
+> > > On Thu, Jul 01, 2010 at 11:55:02PM +0200, Florian Fainelli wrote:
+> > > > Hi,
+> > > > 
+> > > > Le Thursday 1 July 2010 19:51:00, Greg KH a écrit :
+> > > > > First off, sorry for the long delay in the -stable kernel releases, they
+> > > > > got pushed to the back-burner for other things recently ("Hey look, is
+> > > > > that the sun finally here in the Pacific Northwest?")
+> > > > > 
+> > > > > Please note that there are still a large number of patches that have
+> > > > > been submitted to the -stable trees for inclusion, that I have not
+> > > > > included yet.  Do not worry, they are still in my queue, but due to the
+> > > > > large number of patches that I already have queued up, I figured it was
+> > > > > better to get what I have applied already out for a release and then
+> > > > > work on catching up after this.
+> > > > > 
+> > > > > If anyone has any questions about this, please let me know.
+> > > > 
+> > > > Looks like this cpmac patch was not included in this -stable series: 
+> > > > http://www.spinics.net/lists/netdev/msg133317.html
+> > > > 
+> > > > Can you queue it for future -stable releases or this one?
+> > > 
+> > > {sigh}
+> > > 
+> > > Did you see the second paragraph above as to why it isn't in this
+> > > release?
+> > 
+> > I did. :)
+> > and I saw the third paragraph above.
+> > ["If anyone has any questions about this, please let me know."]
+> 
+> Well, if the question could be answered by reading the second
+> paragraph... :)
+> 
+> > > And yes, it will be in future ones.
+> > 
+> > Unfortunately, I don't find it feasible to review several hundred patches
+> > in the next 3 days.  I think that I understand how your stable & staging
+> > cycles (workloads) work, but I also think that it would help if you
+> > wouldn't batch all stable reviews together like this.
+> 
+> If you look closely, almost all of the patches in all of the trees are
+> in other trees, so the number of unique patches is much less than the
+> whole total of all of the different patches in 4 trees.
 
-> Additionally, the current IOMMU interface does not allow users to
-> associate one page table with multiple IOMMUs unless the user explicitly
+Yes, that's a good point.
 
-That assumes that all the IOMMUs on the system support the same page table
-format, right?
+> If you don't like this type of review cycle, what would you prefer?
 
-As I understand your approach would help if you have different
-IOMMus with an different low level interface, which just 
-happen to have the same pte format. Is that very likely?
+I don't see a magic bullet answer here.  I think that it would help
+somewhat for the stable maintainer(s) to have only one -stable review
+cycle (new posting) per day, but someone may not like that either,
+since it would have the effect of delaying some stable kernel releases
+(not to mention muck up your workload).
 
-I would assume if you have lots of copies of the same IOMMU
-in the system then you could just use a single driver with multiple
-instances that share some state for all of them.  That model
-would fit in the current interfaces. There's no reason multiple
-instances couldn't share the same allocation data structure.
-
-And if you have lots of truly different IOMMUs then they likely
-won't be able to share PTEs at the hardware level anyways, because
-the formats are too different.
-
-> The VCMM takes the long view. Its designed for a future in which the
-> number of IOMMUs will go up and the ways in which these IOMMUs are
-> composed will vary from system to system, and may vary at
-> runtime. Already, there are ~20 different IOMMU map implementations in
-> the kernel. Had the Linux kernel had the VCMM, many of those
-> implementations could have leveraged the mapping and topology management
-> of a VCMM, while focusing on a few key hardware specific functions (map
-> this physical address, program the page table base register).
-
-The standard Linux approach to such a problem is to write
-a library that drivers can use for common functionality, not put a middle 
-layer inbetween. Libraries are much more flexible than layers.
-
-That said I'm not sure there's all that much duplicated code anyways.
-A lot of the code is always IOMMU specific. The only piece
-which might be shareable is the mapping allocation, but I don't
-think that's very much of a typical driver
-
-In my old pci-gart driver the allocation was all only a few lines of code, 
-although given it was somewhat dumb in this regard because it only managed a 
-small remapping window.
-
--Andi 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
