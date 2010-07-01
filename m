@@ -1,50 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab0GAB6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 21:58:08 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59697 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab0GAB6H (ORCPT
+	id S1752357Ab0GACBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 22:01:38 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:38985 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab0GACBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 21:58:07 -0400
+	Wed, 30 Jun 2010 22:01:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=R8Itxft2XQLy9PATnZzQGf/QHMNBYJ5Cw9HWI7/YZ4C1WC7pLACg7tuT3P73N2iE4V
-         NEVmA0fbwe8j+frtffKRBipIfH1QU65NxArXMN3ToLo5OHI2Y+QElPZ6TGObLv0jkCoY
-         f7IP4uCmKjdbNhW19e2aqfW5iOgk1KusqQN0s=
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=BD3guGVtihC3YszO7qMmskmYlCdiuKzhVMlORqdxyTc7YagvDn5llrmJR8k8YROhbS
+         Cq/GkvBFkvWsX30gOVekq9xcnxQhBi+xDHG8iaXtNUJ450ws2aiWUUud8hhTzsJzipok
+         CPRjWqvSLWfeVhDpWSNWK1K+t72htlCGE86/s=
+Message-ID: <4C2BF5D9.8040100@gmail.com>
+Date: Thu, 01 Jul 2010 09:56:41 +0800
+From: Peter Pan <panweiping3@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100324 RedFlag/3.0.1-1rf2.dt8 Thunderbird/3.0.1
 MIME-Version: 1.0
-Date: Wed, 30 Jun 2010 19:58:04 -0600
-Message-ID: <AANLkTilcNyApWZxp_E-ZJj1XWT9di9RCYRFIYdxXqpmt@mail.gmail.com>
-Subject: [ANNOUNCE] MDB Merkey's Kernel Debugger x86_64 2.6.34 06-30-2010 
-	Release 3
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dan Carpenter <error27@gmail.com>, Peter Pan <wppan@redflag-linux.com>,
+       jack@suse.cz, hch@lst.de, viro@zeniv.linux.org.uk, npiggin@suse.de,
+       jblunck@suse.de, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] ext2:delete misused ext2_free_blocks
+References: <1277893287-25916-1-git-send-email-wppan@redflag-linux.com> <20100630225754.GT19184@bicker>
+In-Reply-To: <20100630225754.GT19184@bicker>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://merkeydebugger.googlecode.com/files/mdb-2.6.34-x86_64-06-30-2010.patch
-http://sourceforge.net/projects/merkeydebugger/
+On 07/01/2010 06:57 AM, Dan Carpenter wrote:
+> On Wed, Jun 30, 2010 at 06:21:27PM +0800, Peter Pan wrote:
+>    
+>> if ext2_new_blocks returns error, no blocks need to be freed.
+>>
+>>      
+> Hi Peter,
+>
+> Your patch isn't right.  The original code is OK as is.
+>
+> Are you seeing a kernel panic?  Perhaps we can help you fix it.
+>    
+Oh, I know that the original code is good now.
+I didn't see a kernel panic, thank you for your guide.
+> regards,
+> dan carpenter
+>
+>    
+>> Signed-off-by: Peter Pan<wppan@redflag-linux.com>
+>> ---
+>>   fs/ext2/inode.c |    4 ++--
+>>   1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+>> index 3675088..f858847 100644
+>> --- a/fs/ext2/inode.c
+>> +++ b/fs/ext2/inode.c
+>> @@ -385,6 +385,8 @@ static int ext2_alloc_blocks(struct inode *inode,
+>>   	ext2_fsblk_t current_block = 0;
+>>   	int ret = 0;
+>>
+>> +	*err = -ENOSPC;
+>> +
+>>   	/*
+>>   	 * Here we try to allocate the requested multiple blocks at once,
+>>   	 * on a best-effort basis.
+>> @@ -421,8 +423,6 @@ static int ext2_alloc_blocks(struct inode *inode,
+>>   	*err = 0;
+>>   	return ret;
+>>   failed_out:
+>> -	for (i = 0; i<index; i++)
+>> -		ext2_free_blocks(inode, new_blocks[i], 1);
+>>   	return ret;
+>>   }
+>>
+>> -- 
+>> 1.6.6
+>>      
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>    
 
+Regards
 
-A few fixes for default numeric parsiing with decimal register offsets
-to conform to Linux standards and to match displayed register offsets
-in both decimal and hex numbers.  Also fixed the default pointer
-reference size on expression evaluation to match the machine arch.
+-- 
+Peter Pan
+Red Flag Software Co.,Ltd
 
-FIXES:
-- make numeric parsing decimal mode by default unless 0x, x, or A-F
-appear in the number, then parse as hex.  This is backwards to how the
-NetWare debugger worked, but conforms to Linux standards
-- create ARCH_PTR default derefence pointer size based on arch for
-default parser disassembly and expression evaluation
-
-TODO
-- continue to investigate rex64 sysret instruction issue
-- enable segment:address lookups in the disassembler for fs: and gs:,
-handle ptr_regs() and OP_E segment:address dereferencing
-
-
-Jeffrey Vernon Merkey
