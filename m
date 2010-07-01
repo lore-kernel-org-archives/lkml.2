@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab0GAVCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:02:46 -0400
-Received: from kroah.org ([198.145.64.141]:47902 "EHLO coco.kroah.org"
+	id S932833Ab0GAUvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:51:14 -0400
+Received: from kroah.org ([198.145.64.141]:47460 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932856Ab0GAUvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:21 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:38 2010
-Message-Id: <20100701173438.538699148@clark.site>
+	id S932653Ab0GAUuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:13 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:32 2010
+Message-Id: <20100701173432.133446880@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:25 -0700
+Date: Thu, 01 Jul 2010 10:34:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
-Subject: [patch 139/164] KVM: SVM: Dont use kmap_atomic in nested_svm_map
+       NeilBrown <neilb@suse.de>
+Subject: [patch 063/164] md/raid1: fix counting of write targets.
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,202 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: NeilBrown <neilb@suse.de>
 
-Use of kmap_atomic disables preemption but if we run in
-shadow-shadow mode the vmrun emulation executes kvm_set_cr3
-which might sleep or fault. So use kmap instead for
-nested_svm_map.
+commit 964147d5c86d63be79b442c30f3783d49860c078 upstream.
 
-Cc: stable@kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+There is a very small race window when writing to a
+RAID1 such that if a device is marked faulty at exactly the wrong
+time, the write-in-progress will not be sent to the device,
+but the bitmap (if present) will be updated to say that
+the write was sent.
+
+Then if the device turned out to still be usable as was re-added
+to the array, the bitmap-based-resync would skip resyncing that
+block, possibly leading to corruption.  This would only be a problem
+if no further writes were issued to that area of the device (i.e.
+that bitmap chunk).
+
+Suitable for any pending -stable kernel.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-(cherry picked from commit 7597f129d8b6799da7a264e6d6f7401668d3a36d)
 ---
- arch/x86/kvm/svm.c |   47 ++++++++++++++++++++++++-----------------------
- 1 file changed, 24 insertions(+), 23 deletions(-)
+ drivers/md/raid1.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -1398,7 +1398,7 @@ static inline int nested_svm_intr(struct
- 	return 0;
- }
- 
--static void *nested_svm_map(struct vcpu_svm *svm, u64 gpa, enum km_type idx)
-+static void *nested_svm_map(struct vcpu_svm *svm, u64 gpa, struct page **_page)
- {
- 	struct page *page;
- 
-@@ -1406,7 +1406,9 @@ static void *nested_svm_map(struct vcpu_
- 	if (is_error_page(page))
- 		goto error;
- 
--	return kmap_atomic(page, idx);
-+	*_page = page;
-+
-+	return kmap(page);
- 
- error:
- 	kvm_release_page_clean(page);
-@@ -1415,16 +1417,9 @@ error:
- 	return NULL;
- }
- 
--static void nested_svm_unmap(void *addr, enum km_type idx)
-+static void nested_svm_unmap(struct page *page)
- {
--	struct page *page;
--
--	if (!addr)
--		return;
--
--	page = kmap_atomic_to_page(addr);
--
--	kunmap_atomic(addr, idx);
-+	kunmap(page);
- 	kvm_release_page_dirty(page);
- }
- 
-@@ -1432,6 +1427,7 @@ static bool nested_svm_exit_handled_msr(
- {
- 	u32 param = svm->vmcb->control.exit_info_1 & 1;
- 	u32 msr = svm->vcpu.arch.regs[VCPU_REGS_RCX];
-+	struct page *page;
- 	bool ret = false;
- 	u32 t0, t1;
- 	u8 *msrpm;
-@@ -1439,7 +1435,7 @@ static bool nested_svm_exit_handled_msr(
- 	if (!(svm->nested.intercept & (1ULL << INTERCEPT_MSR_PROT)))
- 		return false;
- 
--	msrpm = nested_svm_map(svm, svm->nested.vmcb_msrpm, KM_USER0);
-+	msrpm = nested_svm_map(svm, svm->nested.vmcb_msrpm, &page);
- 
- 	if (!msrpm)
- 		goto out;
-@@ -1467,7 +1463,7 @@ static bool nested_svm_exit_handled_msr(
- 	ret = msrpm[t1] & ((1 << param) << t0);
- 
- out:
--	nested_svm_unmap(msrpm, KM_USER0);
-+	nested_svm_unmap(page);
- 
- 	return ret;
- }
-@@ -1590,6 +1586,7 @@ static int nested_svm_vmexit(struct vcpu
- 	struct vmcb *nested_vmcb;
- 	struct vmcb *hsave = svm->nested.hsave;
- 	struct vmcb *vmcb = svm->vmcb;
-+	struct page *page;
- 
- 	trace_kvm_nested_vmexit_inject(vmcb->control.exit_code,
- 				       vmcb->control.exit_info_1,
-@@ -1597,7 +1594,7 @@ static int nested_svm_vmexit(struct vcpu
- 				       vmcb->control.exit_int_info,
- 				       vmcb->control.exit_int_info_err);
- 
--	nested_vmcb = nested_svm_map(svm, svm->nested.vmcb, KM_USER0);
-+	nested_vmcb = nested_svm_map(svm, svm->nested.vmcb, &page);
- 	if (!nested_vmcb)
- 		return 1;
- 
-@@ -1687,7 +1684,7 @@ static int nested_svm_vmexit(struct vcpu
- 	/* Exit nested SVM mode */
- 	svm->nested.vmcb = 0;
- 
--	nested_svm_unmap(nested_vmcb, KM_USER0);
-+	nested_svm_unmap(page);
- 
- 	kvm_mmu_reset_context(&svm->vcpu);
- 	kvm_mmu_load(&svm->vcpu);
-@@ -1698,9 +1695,10 @@ static int nested_svm_vmexit(struct vcpu
- static bool nested_svm_vmrun_msrpm(struct vcpu_svm *svm)
- {
- 	u32 *nested_msrpm;
-+	struct page *page;
- 	int i;
- 
--	nested_msrpm = nested_svm_map(svm, svm->nested.vmcb_msrpm, KM_USER0);
-+	nested_msrpm = nested_svm_map(svm, svm->nested.vmcb_msrpm, &page);
- 	if (!nested_msrpm)
- 		return false;
- 
-@@ -1709,7 +1707,7 @@ static bool nested_svm_vmrun_msrpm(struc
- 
- 	svm->vmcb->control.msrpm_base_pa = __pa(svm->nested.msrpm);
- 
--	nested_svm_unmap(nested_msrpm, KM_USER0);
-+	nested_svm_unmap(page);
- 
- 	return true;
- }
-@@ -1719,8 +1717,9 @@ static bool nested_svm_vmrun(struct vcpu
- 	struct vmcb *nested_vmcb;
- 	struct vmcb *hsave = svm->nested.hsave;
- 	struct vmcb *vmcb = svm->vmcb;
-+	struct page *page;
- 
--	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, KM_USER0);
-+	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, &page);
- 	if (!nested_vmcb)
- 		return false;
- 
-@@ -1832,7 +1831,7 @@ static bool nested_svm_vmrun(struct vcpu
- 	svm->vmcb->control.event_inj = nested_vmcb->control.event_inj;
- 	svm->vmcb->control.event_inj_err = nested_vmcb->control.event_inj_err;
- 
--	nested_svm_unmap(nested_vmcb, KM_USER0);
-+	nested_svm_unmap(page);
- 
- 	enable_gif(svm);
- 
-@@ -1858,6 +1857,7 @@ static void nested_svm_vmloadsave(struct
- static int vmload_interception(struct vcpu_svm *svm)
- {
- 	struct vmcb *nested_vmcb;
-+	struct page *page;
- 
- 	if (nested_svm_check_permissions(svm))
- 		return 1;
-@@ -1865,12 +1865,12 @@ static int vmload_interception(struct vc
- 	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
- 	skip_emulated_instruction(&svm->vcpu);
- 
--	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, KM_USER0);
-+	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, &page);
- 	if (!nested_vmcb)
- 		return 1;
- 
- 	nested_svm_vmloadsave(nested_vmcb, svm->vmcb);
--	nested_svm_unmap(nested_vmcb, KM_USER0);
-+	nested_svm_unmap(page);
- 
- 	return 1;
- }
-@@ -1878,6 +1878,7 @@ static int vmload_interception(struct vc
- static int vmsave_interception(struct vcpu_svm *svm)
- {
- 	struct vmcb *nested_vmcb;
-+	struct page *page;
- 
- 	if (nested_svm_check_permissions(svm))
- 		return 1;
-@@ -1885,12 +1886,12 @@ static int vmsave_interception(struct vc
- 	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
- 	skip_emulated_instruction(&svm->vcpu);
- 
--	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, KM_USER0);
-+	nested_vmcb = nested_svm_map(svm, svm->vmcb->save.rax, &page);
- 	if (!nested_vmcb)
- 		return 1;
- 
- 	nested_svm_vmloadsave(svm->vmcb, nested_vmcb);
--	nested_svm_unmap(nested_vmcb, KM_USER0);
-+	nested_svm_unmap(page);
- 
- 	return 1;
- }
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -911,9 +911,10 @@ static int make_request(struct request_q
+ 			if (test_bit(Faulty, &rdev->flags)) {
+ 				rdev_dec_pending(rdev, mddev);
+ 				r1_bio->bios[i] = NULL;
+-			} else
++			} else {
+ 				r1_bio->bios[i] = bio;
+-			targets++;
++				targets++;
++			}
+ 		} else
+ 			r1_bio->bios[i] = NULL;
+ 	}
 
 
