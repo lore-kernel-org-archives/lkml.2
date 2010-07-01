@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab0GAROp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 13:14:45 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:57008 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab0GAROo (ORCPT
+	id S1751712Ab0GARPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 13:15:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39965 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab0GARPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 13:14:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=B81ulxM4LS/97pojxOocVmcT4LAcJVR0esKdkfoSk0dDpif5WDQ7AvgUpoSPa6Qh4V
-         AwAvBnG120ucihVPBRqp6nsyHS3DJ9FdEIH75odBPuIjHfkeoPbqwKWjiYU8Di7W6r2Z
-         1xmbLlH3EU+wqoOvaq4QHfY3HFO3hxHBF5y6E=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, arnd@arndb.de, jkosina@suse.cz,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH v2]kernel.h Move preprocessor #warning about using kernel headers in userpsace to types.h
-Date: Thu,  1 Jul 2010 10:14:59 -0700
-Message-Id: <1278004499-30182-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
+	Thu, 1 Jul 2010 13:15:08 -0400
+Date: Thu, 1 Jul 2010 14:14:49 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/21] perf: rewire generic library stuff, p1
+Message-ID: <20100701171449.GG8902@ghostprotocols.net>
+References: <1277992175-19821-1-git-send-email-bp@amd64.org>
+ <1277992175-19821-6-git-send-email-bp@amd64.org>
+ <20100701154737.GE8902@ghostprotocols.net>
+ <20100701161054.GF8902@ghostprotocols.net>
+ <20100701161738.GH17823@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100701161738.GH17823@aftab>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the preprocessor #warning message:
-warning: #warning Attempt to use kernel headers from user space, 
-see http://kernelnewbies.org/KernelHeaders
-from kernel.h to types.h.
-And also fixe the #warning message due to the preprocessor not being
-able to read the web address due to it thinking it was the start of a comment.
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Em Thu, Jul 01, 2010 at 06:17:38PM +0200, Borislav Petkov escreveu:
+> From: Arnaldo Carvalho de Melo <acme@infradead.org>
+> Date: Thu, Jul 01, 2010 at 12:10:54PM -0400
+> 
+> Hi Arnaldo,
+> 
+> > Em Thu, Jul 01, 2010 at 12:47:37PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > Em Thu, Jul 01, 2010 at 03:49:19PM +0200, Borislav Petkov escreveu:
+> > > > From: Borislav Petkov <borislav.petkov@amd.com>
+> > > > 
+> > > > Carve out generic library stuff into tools/lib/lk/ and rewire it with
+> > > > perf. Add a top-level Makefile which selects between targets depending
+> > > > on the tool we want to build. Also, add a Makefile.lib for common
+> > > > facilities used by all the Makefiles.
+> > > 
+> > > Testing this now, thanks,
+> > 
+> > Needs the patch below for "make O=~/build/perf tools" to continue
+> > working. Needs some more polishing so as not to break the non O= case.
+> > 
+> > After lunch will investigate why my usual way to build the tools isn't working
+> > anymore, some missing -I probably:
+> > 
+> > [acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -C tools/perf install
+> > make: Entering directory `/home/acme/git/linux-2.6-tip/tools/perf'
+> >     CC /home/acme/git/build/perf/builtin-record.o
+> > builtin-record.c:24:23: error: lk/cpumap.h: No such file or directory
+> > cc1: warnings being treated as errors
 
----
- include/linux/kernel.h |    6 ------
- include/linux/types.h  |    7 ++++++-
- 2 files changed, 6 insertions(+), 7 deletions(-)
+The patch below fixes it.
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 8317ec4..bd8501a 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -728,12 +728,6 @@ extern int do_sysinfo(struct sysinfo *info);
- 
- #endif /* __KERNEL__ */
- 
--#ifndef __EXPORTED_HEADERS__
--#ifndef __KERNEL__
--#warning Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders
--#endif /* __KERNEL__ */
--#endif /* __EXPORTED_HEADERS__ */
--
- #define SI_LOAD_SHIFT	16
- struct sysinfo {
- 	long uptime;			/* Seconds since boot */
-diff --git a/include/linux/types.h b/include/linux/types.h
-index 23d237a..1be69b8 100644
---- a/include/linux/types.h
-+++ b/include/linux/types.h
-@@ -8,7 +8,12 @@
- 
- #define DECLARE_BITMAP(name,bits) \
- 	unsigned long name[BITS_TO_LONGS(bits)]
--
-+#else
-+#ifndef __EXPORTED_HEADERS__
-+#ifndef __KERNEL__
-+#warning "Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders"
-+#endif /* __KERNEL__ */
-+#endif /* __EXPORTED_HEADERS__ */
- #endif
- 
- #include <linux/posix_types.h>
--- 
-1.6.5.2.180.gc5b3e
+But we have one other problem:
 
+[acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -C tools/
+make: Entering directory `/home/acme/git/linux-2.6-tip/tools'
+make[1]: Entering directory `/home/acme/git/linux-2.6-tip/tools/lib'
+make[1]: `lklib.a' is up to date.
+make[1]: Leaving directory `/home/acme/git/linux-2.6-tip/tools/lib'
+make[1]: Entering directory `/home/acme/git/linux-2.6-tip/tools/perf'
+    GEN perf-archive
+make[1]: Leaving directory `/home/acme/git/linux-2.6-tip/tools/perf'
+make: Leaving directory `/home/acme/git/linux-2.6-tip/tools'
+[acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -C tools/perf/
+make: Entering directory `/home/acme/git/linux-2.6-tip/tools/perf'
+    * new build flags or prefix
+    CC /home/acme/git/build/perf/perf.o
+    CC /home/acme/git/build/perf/builtin-annotate.o
+    CC /home/acme/git/build/perf/builtin-bench.o
+
+The logic that detects "new build flags or prefix" gets confused when we
+alternate between tools/ and tools/perf/, checking that.
+
+- Arnaldo
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 200fc13..72ccd17 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -268,7 +268,7 @@ endif
+ # Those must not be GNU-specific; they are shared with perl/ which may
+ # be built by a different compiler. (Note that this is an artifact now
+ # but it still might be nice to keep that distinction.)
+-BASIC_CFLAGS += -Iutil/include -Iarch/$(ARCH)/include
++BASIC_CFLAGS += -Iutil/include -Iarch/$(ARCH)/include -I../lib/
+ BASIC_LDFLAGS =
+ 
+ # Guard against environment variables
