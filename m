@@ -1,131 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab0GAOgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 10:36:24 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:32925 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756466Ab0GAOgV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 10:36:21 -0400
-Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <1277477401.32034.670.camel@twins>
-References: <20100624142804.431553874@chello.nl>
-	 <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com>
-	 <1277464589.32034.276.camel@twins>
-	 <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com>
-	 <1277477401.32034.670.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 01 Jul 2010 16:36:10 +0200
-Message-ID: <1277994970.1917.184.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756529Ab0GAOgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 10:36:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44871 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756472Ab0GAOge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 10:36:34 -0400
+Date: Thu, 1 Jul 2010 16:33:26 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Sridhar Samudrala <sri@us.ibm.com>, Tejun Heo <tj@kernel.org>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+Message-ID: <20100701143325.GA10090@redhat.com>
+References: <20100625101022.GA16321@redhat.com> <20100701110708.GA27368@redhat.com> <1277983179.1917.10.camel@laptop> <1277984603.1917.15.camel@laptop> <20100701115507.GA31333@redhat.com> <20100701122340.GB31333@redhat.com> <1277987657.1917.32.camel@laptop> <1277988395.1917.47.camel@laptop> <20100701130816.GB32223@redhat.com> <1277991024.1917.108.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277991024.1917.108.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-25 at 16:50 +0200, Peter Zijlstra wrote:
+On 07/01, Peter Zijlstra wrote:
+>
+> On Thu, 2010-07-01 at 16:08 +0300, Michael S. Tsirkin wrote:
+> > Maybe it makes sense to add kthread_clone (in addition to
+> > kthread_create) that would do what you suggest?
+> > If yes, any hints on an implementation?
+>
+> I think that's called kernel_thread() see
+> kernel/kthread.c:create_kthread().
 
-> Not exactly sure how I could have messed up the ARM architecture code to
-> make this happen though... will have a peek. 
+Well, strictly speaking kernel_thread() doesn't create the kernel thread.
+Unless the caller is the kernel thread. And daemonize() is deprecated.
+kernel_thread() just forks the CLONE_VM + flags child.
 
-I did find a bug in there, not sure it could have been responsible for
-this but who knows...
-
-Pushed out a new git tree with the below delta folded in.
-
----
-Index: linux-2.6/arch/arm/kernel/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/arm/kernel/perf_event.c
-+++ linux-2.6/arch/arm/kernel/perf_event.c
-@@ -221,27 +221,6 @@ again:
- }
- 
- static void
--armpmu_del(struct perf_event *event, int flags)
--{
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
--	struct hw_perf_event *hwc = &event->hw;
--	int idx = hwc->idx;
--
--	WARN_ON(idx < 0);
--
--	clear_bit(idx, cpuc->active_mask);
--	armpmu->disable(hwc, idx);
--
--	barrier();
--
--	armpmu_event_update(event, hwc, idx);
--	cpuc->events[idx] = NULL;
--	clear_bit(idx, cpuc->used_mask);
--
--	perf_event_update_userpage(event);
--}
--
--static void
- armpmu_read(struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
-@@ -267,6 +246,8 @@ armpmu_stop(struct perf_event *event, in
- 	 */
- 	if (!(hwc->state & PERF_HES_STOPPED)) {
- 		armpmu->disable(hwc, hwc->idx);
-+		barrier(); /* why? */
-+		armpmu_event_update(event, hwc, hwc->idx);
- 		hwc->state |= PERF_HES_STOPPED | PERF_HES_UPTODATE;
- 	}
- }
-@@ -289,7 +270,7 @@ armpmu_start(struct perf_event *event, i
- 	hwc->state = 0;
- 	/*
- 	 * Set the period again. Some counters can't be stopped, so when we
--	 * were throttled we simply disabled the IRQ source and the counter
-+	 * were stopped we simply disabled the IRQ source and the counter
- 	 * may have been left counting. If we don't do this step then we may
- 	 * get an interrupt too soon or *way* too late if the overflow has
- 	 * happened since disabling.
-@@ -298,6 +279,23 @@ armpmu_start(struct perf_event *event, i
- 	armpmu->enable(hwc, hwc->idx);
- }
- 
-+static void
-+armpmu_del(struct perf_event *event, int flags)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct hw_perf_event *hwc = &event->hw;
-+	int idx = hwc->idx;
-+
-+	WARN_ON(idx < 0);
-+
-+	clear_bit(idx, cpuc->active_mask);
-+	armpmu_stop(event, PERF_EF_UPDATE);
-+	cpuc->events[idx] = NULL;
-+	clear_bit(idx, cpuc->used_mask);
-+
-+	perf_event_update_userpage(event);
-+}
-+
- static int
- armpmu_add(struct perf_event *event, int flags)
- {
-@@ -1075,7 +1073,7 @@ armv6pmu_handle_irq(int irq_num,
- 			continue;
- 
- 		if (perf_event_overflow(event, 0, &data, regs))
--			armpmu_stop(event, 0);
-+			armpmu->disable(hwc, idx);
- 	}
- 
- 	/*
+Oleg.
 
