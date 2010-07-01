@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab0GAH5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 03:57:35 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33782 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307Ab0GAH5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 03:57:34 -0400
-Date: Thu, 1 Jul 2010 17:57:30 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 37/52] fs: icache lazy lru
-Message-ID: <20100701075730.GD22976@laptop>
-References: <20100624030212.676457061@suse.de>
- <20100624030731.563540438@suse.de>
- <20100630083814.GG24712@dastard>
- <20100630120631.GC21358@laptop>
- <20100701024633.GR24712@dastard>
+	id S1751907Ab0GAH7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 03:59:09 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58652 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab0GAH7G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 03:59:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: Re: [PATCH]kernel.h Move warning message about using kernel headers for userspace to types.h
+Date: Thu, 1 Jul 2010 09:58:46 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3+; KDE/4.4.90; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, jkosina@suse.cz
+References: <1277935785-6023-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1277935785-6023-1-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701024633.GR24712@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007010958.46720.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX189Xoh7FKYKdPFAAjAQkbgn3r1vcspSBnK81sK
+ njZY362fVFtOv4AANVfjx/4x0mOGyy2wwb+3O8I/0N5fchXFd6
+ uzj+5WbNP8HzqClmW2OCA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 12:46:33PM +1000, Dave Chinner wrote:
-> On Wed, Jun 30, 2010 at 10:06:31PM +1000, Nick Piggin wrote:
-> > On Wed, Jun 30, 2010 at 06:38:14PM +1000, Dave Chinner wrote:
-> > > On Thu, Jun 24, 2010 at 01:02:49PM +1000, npiggin@suse.de wrote:
-> > > > Impelemnt lazy inode lru similarly to dcache. This will reduce lock
-> > > > acquisition and will help to improve lock ordering subsequently.
-> > > 
-> > > I'm not sure we want the I_REFERENCED reclaim free pass for a clean
-> > > inode that has been put on the LRU directly. I can see exactly how
-> > > it is benficial to delay reclaim of dirty inodes (XFS uses that
-> > > trick), but in terms of aging the cache we've already done this
-> > > free pass trick at the dentry level. Hence I think the frequent
-> > > separate access patterns tend to be filtered out at the dcache level
-> > > and hence we don't need to handle that in the inode cache.
-> > > 
-> > > Perhaps we only need the I_REFERENCED flag to give dirty inodes a
-> > > chance to be flushed by other means before forcing reclaim to do
-> > > inode writeback?
-> > 
-> > It doesn't force flush, but it force invalidates pagecache.
+On Thursday 01 July 2010 00:09:45 Justin P. Mattock wrote:
+> Hopefully correct, as request move the function that checks
+> if userspace is using kernel headers, from kernel.h to types.h.
+> (Please check.)
 > 
-> Sorry, bad choice of words - I should have said "forcing reclaim to
-> wait on inode writeback". That is what will happen in the case of
-> delayed allocation - the page cache will be clean, but the inode
-> can be dirty, so reclaiming such an inode would cause the shrinker
-> to block in clear_inode() waiting for inode writeback to
-> complete.
+>  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-OK.
+Trivial change: The 'Signed-off-by'-line should start at the beginning
+of the line, no space in front of it, to make all tools parse
+it correctly.
 
- 
-> However, that is mostly irrelevant - you haven't comented at all on
-> whether the I_REFERENCED flag is too broad or even needed which is
-> what really needs to be discussed about this patch....
+Also, the text above should really be the changelog in the way
+that you want it to appear in the git history. The explanatory
+text about what has changed can go below the '---' line, together
+with the diffstat information. Git only uses text above the line
+as a changeset comment.
 
-Well when moving from non-lazy to lazy, I think I_REFERENCED makes
-sense, and matched what dcache did when it went to lazy LRU.
-Otherwise inodes on the LRU list stay basically in the order that
-they were added to the list, and have no relation to when they
-were last used, I don't think that's a good idea.
+> --- a/include/linux/types.h
+> +++ b/include/linux/types.h
+> @@ -179,6 +179,12 @@ typedef __u32 __bitwise __wsum;
+>  typedef unsigned __bitwise__ gfp_t;
+>  typedef unsigned __bitwise__ fmode_t;
+>  
+> +#ifndef __EXPORTED_HEADERS__
+> +#ifndef __KERNEL__
+> +#warning "Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders"
+> +#endif /* __KERNEL__ */
+> +#endif /* __EXPORTED_HEADERS__ */
+> +
+>  #ifdef CONFIG_PHYS_ADDR_T_64BIT
+>  typedef u64 phys_addr_t;
 
+Good: No more linewrap, correct use of quotation marks.
+Bad: This is now inside of #ifdef __KERNEL__, so it can never be caught by
+the compiler. Even if it looks like a trivial patch, it's a good idea
+to test it.
+
+I'd suggest putting the #ifndef __EXPORTED_HEADERS__ into a new #else
+path of the last #ifdef __KERNEL__ of this file.
+
+Anyway, thanks for the persistence, I know it's frustrating when a one-line
+change goes through half a dozen revisions.
+
+	Arnd
