@@ -1,91 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab0GAN6W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:58:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64436 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755912Ab0GAN6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:58:20 -0400
-Message-ID: <4C2C9E14.4070501@cn.fujitsu.com>
-Date: Thu, 01 Jul 2010 21:54:28 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: [PATCH v4 3/6] KVM: MMU: introduce pte_prefetch_topup_memory_cache()
-References: <4C2C9DC0.8050607@cn.fujitsu.com>
-In-Reply-To: <4C2C9DC0.8050607@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756159Ab0GAN7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:59:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34660 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755911Ab0GAN66 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 09:58:58 -0400
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <20100701133956.GD32223@redhat.com>
+References: <20100625101022.GA16321@redhat.com>
+	 <20100701110708.GA27368@redhat.com> <1277983179.1917.10.camel@laptop>
+	 <1277984603.1917.15.camel@laptop> <20100701115507.GA31333@redhat.com>
+	 <20100701122340.GB31333@redhat.com> <1277987657.1917.32.camel@laptop>
+	 <1277988395.1917.47.camel@laptop> <20100701130816.GB32223@redhat.com>
+	 <1277991024.1917.108.camel@laptop>  <20100701133956.GD32223@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 01 Jul 2010 15:57:45 +0200
+Message-ID: <1277992665.1917.138.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce this function to topup prefetch cache
-
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c |   25 +++++++++++++++++++++----
- 1 files changed, 21 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a0c5c31..6673484 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -89,6 +89,8 @@ module_param(oos_shadow, bool, 0644);
- 	}
- #endif
- 
-+#define PTE_PREFETCH_NUM	16
-+
- #define PT_FIRST_AVAIL_BITS_SHIFT 9
- #define PT64_SECOND_AVAIL_BITS_SHIFT 52
- 
-@@ -290,15 +292,16 @@ static void __set_spte(u64 *sptep, u64 spte)
- #endif
- }
- 
--static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
--				  struct kmem_cache *base_cache, int min)
-+static int __mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
-+				    struct kmem_cache *base_cache, int min,
-+				    int max, gfp_t flags)
- {
- 	void *obj;
- 
- 	if (cache->nobjs >= min)
- 		return 0;
--	while (cache->nobjs < ARRAY_SIZE(cache->objects)) {
--		obj = kmem_cache_zalloc(base_cache, GFP_KERNEL);
-+	while (cache->nobjs < max) {
-+		obj = kmem_cache_zalloc(base_cache, flags);
- 		if (!obj)
- 			return -ENOMEM;
- 		cache->objects[cache->nobjs++] = obj;
-@@ -306,6 +309,20 @@ static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
- 	return 0;
- }
- 
-+static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
-+				  struct kmem_cache *base_cache, int min)
-+{
-+	return __mmu_topup_memory_cache(cache, base_cache, min,
-+				ARRAY_SIZE(cache->objects), GFP_KERNEL);
-+}
-+
-+static int pte_prefetch_topup_memory_cache(struct kvm_vcpu *vcpu)
-+{
-+	return __mmu_topup_memory_cache(&vcpu->arch.mmu_rmap_desc_cache,
-+					rmap_desc_cache, PTE_PREFETCH_NUM,
-+					PTE_PREFETCH_NUM, GFP_ATOMIC);
-+}
-+
- static void mmu_free_memory_cache(struct kvm_mmu_memory_cache *mc,
- 				  struct kmem_cache *cache)
- {
--- 
-1.6.1.2
-
-
+On Thu, 2010-07-01 at 16:39 +0300, Michael S. Tsirkin wrote:
+> 
+> The proposed patch kills the thread when the fd is closed,
+> so I think this already works without making it part of the process.
+> 
+OK, fd bound resources are fine.
