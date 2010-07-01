@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759794Ab0GAWO6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:14:58 -0400
-Received: from kroah.org ([198.145.64.141]:47313 "EHLO coco.kroah.org"
+	id S1759779Ab0GAWPT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:15:19 -0400
+Received: from kroah.org ([198.145.64.141]:47304 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932599Ab0GAUt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:56 -0400
+	id S932594Ab0GAUtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:55 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:30 2010
-Message-Id: <20100701173430.475436551@clark.site>
+Message-Id: <20100701173430.388574857@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:49 -0700
+Date: Thu, 01 Jul 2010 10:33:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Bruno Randolf <br1@einfach.org>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 043/164] ath5k: consistently use rx_bufsize for RX DMA
+       Andiry Xu <andiry.xu@amd.com>,
+       Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [patch 042/164] USB: xHCI: Fix wrong usage of macro TRB_TYPE
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruno Randolf <br1@einfach.org>
+From: Andiry Xu <andiry.xu@amd.com>
 
-commit b5eae9ff5ba6d76de19286dd6429acd7cde3f79d upstream.
+commit 54b5acf3acb7a1f83ec281d111d3e2812cd7ad9d upstream.
 
-We should use the same buffer size we set up for DMA also in the hardware
-descriptor. Previously we used common->rx_bufsize for setting up the DMA
-mapping, but used skb_tailroom(skb) for the size we tell to the hardware in the
-descriptor itself. The problem is that skb_tailroom(skb) can give us a larger
-value than the size we set up for DMA before. This allows the hardware to write
-into memory locations not set up for DMA. In practice this should rarely happen
-because all packets should be smaller than the maximum 802.11 packet size.
+Macro TRB_TYPE is misused in some places. Fix the wrong usage.
 
-On the tested platform rx_bufsize is 2528, and we allocated an skb of 2559
-bytes length (including padding for cache alignment) but sbk_tailroom() was
-2592. Just consistently use rx_bufsize for all RX DMA memory sizes.
 
-Also use the return value of the descriptor setup function.
-
-Signed-off-by: Bruno Randolf <br1@einfach.org>
-Reviewed-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Andiry Xu <andiry.xu@amd.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/base.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/usb/host/xhci-ring.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -1210,6 +1210,7 @@ ath5k_rxbuf_setup(struct ath5k_softc *sc
- 	struct ath5k_hw *ah = sc->ah;
- 	struct sk_buff *skb = bf->skb;
- 	struct ath5k_desc *ds;
-+	int ret;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -350,7 +350,8 @@ static struct xhci_segment *find_trb_seg
+ 	while (cur_seg->trbs > trb ||
+ 			&cur_seg->trbs[TRBS_PER_SEGMENT - 1] < trb) {
+ 		generic_trb = &cur_seg->trbs[TRBS_PER_SEGMENT - 1].generic;
+-		if (TRB_TYPE(generic_trb->field[3]) == TRB_LINK &&
++		if ((generic_trb->field[3] & TRB_TYPE_BITMASK) ==
++				TRB_TYPE(TRB_LINK) &&
+ 				(generic_trb->field[3] & LINK_TOGGLE))
+ 			*cycle_state = ~(*cycle_state) & 0x1;
+ 		cur_seg = cur_seg->next;
+@@ -406,7 +407,7 @@ void xhci_find_new_dequeue_state(struct
+ 		BUG();
  
- 	if (!skb) {
- 		skb = ath5k_rx_skb_alloc(sc, &bf->skbaddr);
-@@ -1236,9 +1237,9 @@ ath5k_rxbuf_setup(struct ath5k_softc *sc
- 	ds = bf->desc;
- 	ds->ds_link = bf->daddr;	/* link to self */
- 	ds->ds_data = bf->skbaddr;
--	ah->ah_setup_rx_desc(ah, ds,
--		skb_tailroom(skb),	/* buffer size */
--		0);
-+	ret = ah->ah_setup_rx_desc(ah, ds, ah->common.rx_bufsize, 0);
-+	if (ret)
-+		return ret;
- 
- 	if (sc->rxlink != NULL)
- 		*sc->rxlink = bf->daddr;
+ 	trb = &state->new_deq_ptr->generic;
+-	if (TRB_TYPE(trb->field[3]) == TRB_LINK &&
++	if ((trb->field[3] & TRB_TYPE_BITMASK) == TRB_TYPE(TRB_LINK) &&
+ 				(trb->field[3] & LINK_TOGGLE))
+ 		state->new_cycle_state = ~(state->new_cycle_state) & 0x1;
+ 	next_trb(xhci, ep_ring, &state->new_deq_seg, &state->new_deq_ptr);
+@@ -1394,8 +1395,10 @@ static int handle_tx_event(struct xhci_h
+ 			for (cur_trb = ep_ring->dequeue, cur_seg = ep_ring->deq_seg;
+ 					cur_trb != event_trb;
+ 					next_trb(xhci, ep_ring, &cur_seg, &cur_trb)) {
+-				if (TRB_TYPE(cur_trb->generic.field[3]) != TRB_TR_NOOP &&
+-						TRB_TYPE(cur_trb->generic.field[3]) != TRB_LINK)
++				if ((cur_trb->generic.field[3] &
++				 TRB_TYPE_BITMASK) != TRB_TYPE(TRB_TR_NOOP) &&
++				    (cur_trb->generic.field[3] &
++				 TRB_TYPE_BITMASK) != TRB_TYPE(TRB_LINK))
+ 					td->urb->actual_length +=
+ 						TRB_LEN(cur_trb->generic.field[2]);
+ 			}
 
 
