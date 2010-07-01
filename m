@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab0GAUjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:39:14 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60391 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab0GAUjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:39:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: Re: [PATCH]kernel.h Move warning message about using kernel headers for userspace to types.h
-Date: Thu, 1 Jul 2010 22:38:58 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, jkosina@suse.cz
-References: <1277935785-6023-1-git-send-email-justinmattock@gmail.com> <201007011707.31783.arnd@arndb.de> <4C2CCE57.40208@gmail.com>
-In-Reply-To: <4C2CCE57.40208@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	id S1757892Ab0GAUl2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:41:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33921 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755647Ab0GAUl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:41:27 -0400
+Date: Fri, 2 Jul 2010 06:41:08 +1000
+From: Neil Brown <neilb@suse.de>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, hooanon05@yahoo.co.jp,
+       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
+ syscalls
+Message-ID: <20100702064108.64034561@notabene.brown>
+In-Reply-To: <871vbn2mk9.fsf@linux.vnet.ibm.com>
+References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<871vbn2mk9.fsf@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007012238.58335.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/+kbP/UJxWLcb4kvDuMwXrbtKHOhlRV9cngTb
- sIOXm+BRGziOy60Twgsykntu57CSIolCy61I/iwlEoGrawudsc
- IeF2K8mnCdWCtg+qKILPQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 July 2010, Justin P. Mattock wrote:
-> o.k. I resent an updated version. keep in mind this is a bit confusing 
-> with the __KERNEL__ being in there multiple times, but with the v2 I'm 
-> able to see the #warning message with my little program.
+On Thu, 01 Jul 2010 21:58:54 +0530
+"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-Well, it's technically correct, but the #ifndef __KERNEL__ in there
-would better get dropped, since you are already in the #else path.
+> On Tue, 15 Jun 2010 22:42:50 +0530, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> 
+> Hi Al,
+> 
+> Any chance of getting this reviewed/merged in the next merge window ?
 
-> As for the patch itself hopefully I corrected it's changelog etc..
-> lately I've been a bit confused with the whole sighned off thing i.g.
-> you suggested the #else so naturally I should add your name with a 
-> sighned off, but with other patches I was told not to do so due to the 
-> sighned off procedure/process. I'll re-read the submitting patches again 
-> to make sure.
+ My own opinion of the patchset is that the code itself is fine,
+ however there is one part of the interface that bothers me.
 
-You got that part right. The S-o-b only ever gets added by a person
-sending a patch for the sending address, so you would not add my
-address as S-o-B, though you could add it as Cc:.
-When someone picks up your patch and forwards it, that person 
-will add his/her own S-o-b line below yours and keep you listed
-as From.
+ I think that it is a little ugly that filesystem uuid extraction is so
+ closely tied to filehandle manipulation.  They are certainly related, and we
+ certainly need to be able to get the filesystem uuid directly from the
+ filesystem, but given that filehandle -> fd mapping doesn't (and shouldn't)
+ use the uuid, the fact that fd/name -> filehandle mapping does return the
+ uuid looks like it is simply piggy backing some functionality on the side,
+ rather than creating a properly designed and general interface.
 
-	Arnd
+ I would feel happier about the patches if you removed all reference to uuids
+ and then found some other way to ask a filesystem what its uuid was.
+
+ This is not an issue that would make be want to stop the patches going
+ upstream, but it does hold me back from offering a reviewed-by or
+ acked-by (for whatever they might be worth).
+
+NeilBrown
+
