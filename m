@@ -1,133 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180Ab0GAN74 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:59:56 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52845 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015Ab0GAN7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:59:54 -0400
-Message-ID: <4C2C9E6C.2040803@cn.fujitsu.com>
-Date: Thu, 01 Jul 2010 21:55:56 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1756212Ab0GAOA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 10:00:26 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:25355
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756083Ab0GAOAX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 10:00:23 -0400
+X-SpamScore: -7
+X-BigFish: VPS-7(zz1dbaL4015Lzz1202hzzz32i2a8h87h62h)
+X-Spam-TCS-SCL: 1:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L4VTKB-01-9QE-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] Use u64 for gfn_t in KVM
+Date: Thu, 1 Jul 2010 16:00:10 +0200
+Message-ID: <1277992812-31945-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: [PATCH v4 5/6] KVM: MMU: combine guest pte read between walk and
- pte prefetch
-References: <4C2C9DC0.8050607@cn.fujitsu.com>
-In-Reply-To: <4C2C9DC0.8050607@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Combine guest pte read between guest pte walk and pte prefetch
+Hi, Avi, Marcelo,
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/paging_tmpl.h |   48 ++++++++++++++++++++++++++++++-------------
- 1 files changed, 33 insertions(+), 15 deletions(-)
+these two patches currently lie on the bottom of my npt-npt patch set. They
+came out of a discussion on the mailing list about the last version of the
+npt-npt patchset. These patches are independent of the rest of the patchset, so
+I post and discuss them seperatly. The changes to make gfn_t an u64 were
+larger than I expected which is another reason for the seperate post. Please
+let me know what you think about this change.
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 364c65f..509af1a 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -67,6 +67,7 @@ struct guest_walker {
- 	int level;
- 	gfn_t table_gfn[PT_MAX_FULL_LEVELS];
- 	pt_element_t ptes[PT_MAX_FULL_LEVELS];
-+	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
- 	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
- 	unsigned pt_access;
- 	unsigned pte_access;
-@@ -110,6 +111,31 @@ static unsigned FNAME(gpte_access)(struct kvm_vcpu *vcpu, pt_element_t gpte)
- 	return access;
- }
- 
-+static int FNAME(read_guest_pte)(struct kvm_vcpu *vcpu,
-+				 struct guest_walker *walker,
-+				 gpa_t pte_gpa, pt_element_t *pte)
-+{
-+	int index, ret;
-+	u64 mask;
-+	gpa_t base_gpa;
-+
-+	if (walker->level > PT_PAGE_TABLE_LEVEL)
-+		return kvm_read_guest(vcpu->kvm, pte_gpa, pte,
-+					sizeof(*pte));
-+
-+	mask = PTE_PREFETCH_NUM * sizeof(*pte) - 1;
-+	base_gpa = pte_gpa & ~mask;
-+	index = (pte_gpa - base_gpa) / sizeof(*pte);
-+
-+	ret = kvm_read_guest(vcpu->kvm, base_gpa, walker->prefetch_ptes,
-+				sizeof(walker->prefetch_ptes));
-+	if (ret)
-+		return ret;
-+
-+	*pte = walker->prefetch_ptes[index];
-+	return 0;
-+}
-+
- /*
-  * Fetch a guest pte for a guest virtual address
-  */
-@@ -151,7 +177,7 @@ walk:
- 		walker->table_gfn[walker->level - 1] = table_gfn;
- 		walker->pte_gpa[walker->level - 1] = pte_gpa;
- 
--		if (kvm_read_guest(vcpu->kvm, pte_gpa, &pte, sizeof(pte)))
-+		if (FNAME(read_guest_pte)(vcpu, walker, pte_gpa, &pte))
- 			goto not_present;
- 
- 		trace_kvm_mmu_paging_element(pte, walker->level);
-@@ -291,12 +317,12 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 		     gpte_to_gfn(gpte), pfn, true, true);
- }
- 
--static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, u64 *sptep)
-+static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu,
-+				struct guest_walker *gw, u64 *sptep)
- {
- 	struct kvm_mmu_page *sp;
--	pt_element_t gptep[PTE_PREFETCH_NUM];
--	gpa_t first_pte_gpa;
--	int offset = 0, index, i, j, max;
-+	pt_element_t *gptep;
-+	int index, i, j, max;
- 
- 	sp = page_header(__pa(sptep));
- 	index = sptep - sp->spt;
-@@ -311,15 +337,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, u64 *sptep)
- 	i = index & ~(PTE_PREFETCH_NUM - 1);
- 	max = index | (PTE_PREFETCH_NUM - 1);
- 
--	if (PTTYPE == 32)
--		offset = sp->role.quadrant << PT64_LEVEL_BITS;
--
--	first_pte_gpa = gfn_to_gpa(sp->gfn) +
--				(offset + i) * sizeof(pt_element_t);
--
--	if (kvm_read_guest_atomic(vcpu->kvm, first_pte_gpa, gptep,
--					sizeof(gptep)) < 0)
--		return;
-+	gptep = gw->prefetch_ptes;
- 
- 	if (pte_prefetch_topup_memory_cache(vcpu))
- 		return;
-@@ -402,7 +420,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 				     user_fault, write_fault,
- 				     dirty, ptwrite, level,
- 				     gw->gfn, pfn, false, true);
--			FNAME(pte_prefetch)(vcpu, sptep);
-+			FNAME(pte_prefetch)(vcpu, gw, sptep);
- 			break;
- 		}
- 
--- 
-1.6.1.2
+Thanks,
+
+	Joerg
+
+Diffstat:
+
+ arch/ia64/include/asm/kvm_host.h    |    1 +
+ arch/powerpc/include/asm/kvm_host.h |    1 +
+ arch/s390/include/asm/kvm_host.h    |    3 ++-
+ arch/x86/include/asm/kvm_host.h     |    3 ++-
+ arch/x86/kvm/mmu.c                  |    8 ++++----
+ include/linux/kvm_types.h           |    4 ++--
+ virt/kvm/iommu.c                    |    2 +-
+ virt/kvm/kvm_main.c                 |   10 +++++-----
+ 8 files changed, 18 insertions(+), 14 deletions(-)
+
+Shortlog:
+
+Joerg Roedel (2):
+      KVM: Remove unnecessary divide operations
+      KVM: Use u64 for frame data types
 
 
