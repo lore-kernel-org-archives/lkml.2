@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932833Ab0GAUvO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:51:14 -0400
-Received: from kroah.org ([198.145.64.141]:47460 "EHLO coco.kroah.org"
+	id S932885Ab0GAUva (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:51:30 -0400
+Received: from kroah.org ([198.145.64.141]:47596 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932653Ab0GAUuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:13 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:32 2010
-Message-Id: <20100701173432.133446880@clark.site>
+	id S932618Ab0GAUud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:33 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:33 2010
+Message-Id: <20100701173433.716574112@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:09 -0700
+Date: Thu, 01 Jul 2010 10:34:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       NeilBrown <neilb@suse.de>
-Subject: [patch 063/164] md/raid1: fix counting of write targets.
+       Khem Raj <raj.khem@gmail.com>,
+       Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [patch 082/164] ARM: 6164/1: Add kto and kfrom to input operands list.
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +26,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Khem Raj <raj.khem@gmail.com>
 
-commit 964147d5c86d63be79b442c30f3783d49860c078 upstream.
+commit 9a40ac86152c9cffd3dca482a15ddf9a8c5716b3 upstream.
 
-There is a very small race window when writing to a
-RAID1 such that if a device is marked faulty at exactly the wrong
-time, the write-in-progress will not be sent to the device,
-but the bitmap (if present) will be updated to say that
-the write was sent.
+When functions incoming parameters are not in input operands list gcc
+4.5 does not load the parameters into registers before calling this
+function but the inline assembly assumes valid addresses inside this
+function. This breaks the code because r0 and r1 are invalid when
+execution enters v4wb_copy_user_page ()
 
-Then if the device turned out to still be usable as was re-added
-to the array, the bitmap-based-resync would skip resyncing that
-block, possibly leading to corruption.  This would only be a problem
-if no further writes were issued to that area of the device (i.e.
-that bitmap chunk).
+Also the constant needs to be used as third input operand so account
+for that as well.
 
-Suitable for any pending -stable kernel.
+Tested on qemu arm.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/raid1.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/mm/copypage-feroceon.c |    4 ++--
+ arch/arm/mm/copypage-v4wb.c     |    4 ++--
+ arch/arm/mm/copypage-v4wt.c     |    4 ++--
+ arch/arm/mm/copypage-xsc3.c     |    4 ++--
+ 4 files changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -911,9 +911,10 @@ static int make_request(struct request_q
- 			if (test_bit(Faulty, &rdev->flags)) {
- 				rdev_dec_pending(rdev, mddev);
- 				r1_bio->bios[i] = NULL;
--			} else
-+			} else {
- 				r1_bio->bios[i] = bio;
--			targets++;
-+				targets++;
-+			}
- 		} else
- 			r1_bio->bios[i] = NULL;
- 	}
+--- a/arch/arm/mm/copypage-feroceon.c
++++ b/arch/arm/mm/copypage-feroceon.c
+@@ -18,7 +18,7 @@ feroceon_copy_user_page(void *kto, const
+ {
+ 	asm("\
+ 	stmfd	sp!, {r4-r9, lr}		\n\
+-	mov	ip, %0				\n\
++	mov	ip, %2				\n\
+ 1:	mov	lr, r1				\n\
+ 	ldmia	r1!, {r2 - r9}			\n\
+ 	pld	[lr, #32]			\n\
+@@ -64,7 +64,7 @@ feroceon_copy_user_page(void *kto, const
+ 	mcr	p15, 0, ip, c7, c10, 4		@ drain WB\n\
+ 	ldmfd	sp!, {r4-r9, pc}"
+ 	:
+-	: "I" (PAGE_SIZE));
++	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE));
+ }
+ 
+ void feroceon_copy_user_highpage(struct page *to, struct page *from,
+--- a/arch/arm/mm/copypage-v4wb.c
++++ b/arch/arm/mm/copypage-v4wb.c
+@@ -27,7 +27,7 @@ v4wb_copy_user_page(void *kto, const voi
+ {
+ 	asm("\
+ 	stmfd	sp!, {r4, lr}			@ 2\n\
+-	mov	r2, %0				@ 1\n\
++	mov	r2, %2				@ 1\n\
+ 	ldmia	r1!, {r3, r4, ip, lr}		@ 4\n\
+ 1:	mcr	p15, 0, r0, c7, c6, 1		@ 1   invalidate D line\n\
+ 	stmia	r0!, {r3, r4, ip, lr}		@ 4\n\
+@@ -44,7 +44,7 @@ v4wb_copy_user_page(void *kto, const voi
+ 	mcr	p15, 0, r1, c7, c10, 4		@ 1   drain WB\n\
+ 	ldmfd	 sp!, {r4, pc}			@ 3"
+ 	:
+-	: "I" (PAGE_SIZE / 64));
++	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64));
+ }
+ 
+ void v4wb_copy_user_highpage(struct page *to, struct page *from,
+--- a/arch/arm/mm/copypage-v4wt.c
++++ b/arch/arm/mm/copypage-v4wt.c
+@@ -25,7 +25,7 @@ v4wt_copy_user_page(void *kto, const voi
+ {
+ 	asm("\
+ 	stmfd	sp!, {r4, lr}			@ 2\n\
+-	mov	r2, %0				@ 1\n\
++	mov	r2, %2				@ 1\n\
+ 	ldmia	r1!, {r3, r4, ip, lr}		@ 4\n\
+ 1:	stmia	r0!, {r3, r4, ip, lr}		@ 4\n\
+ 	ldmia	r1!, {r3, r4, ip, lr}		@ 4+1\n\
+@@ -40,7 +40,7 @@ v4wt_copy_user_page(void *kto, const voi
+ 	mcr	p15, 0, r2, c7, c7, 0		@ flush ID cache\n\
+ 	ldmfd	sp!, {r4, pc}			@ 3"
+ 	:
+-	: "I" (PAGE_SIZE / 64));
++	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64));
+ }
+ 
+ void v4wt_copy_user_highpage(struct page *to, struct page *from,
+--- a/arch/arm/mm/copypage-xsc3.c
++++ b/arch/arm/mm/copypage-xsc3.c
+@@ -34,7 +34,7 @@ xsc3_mc_copy_user_page(void *kto, const
+ {
+ 	asm("\
+ 	stmfd	sp!, {r4, r5, lr}		\n\
+-	mov	lr, %0				\n\
++	mov	lr, %2				\n\
+ 						\n\
+ 	pld	[r1, #0]			\n\
+ 	pld	[r1, #32]			\n\
+@@ -67,7 +67,7 @@ xsc3_mc_copy_user_page(void *kto, const
+ 						\n\
+ 	ldmfd	sp!, {r4, r5, pc}"
+ 	:
+-	: "I" (PAGE_SIZE / 64 - 1));
++	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64 - 1));
+ }
+ 
+ void xsc3_mc_copy_user_highpage(struct page *to, struct page *from,
 
 
