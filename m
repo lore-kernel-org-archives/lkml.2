@@ -1,97 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123Ab0GAVf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:35:26 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50448 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759010Ab0GAVfS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:35:18 -0400
-Date: Thu, 1 Jul 2010 23:37:06 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/21] perf: rewire generic library stuff, p1
-Message-ID: <20100701213706.GA21607@aftab>
-References: <1277992175-19821-1-git-send-email-bp@amd64.org>
- <1277992175-19821-6-git-send-email-bp@amd64.org>
- <20100701154737.GE8902@ghostprotocols.net>
- <20100701161054.GF8902@ghostprotocols.net>
- <20100701161738.GH17823@aftab>
- <20100701171449.GG8902@ghostprotocols.net>
- <20100701201418.GA21223@aftab>
- <20100701211331.GA28165@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701211331.GA28165@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933353Ab0GAVf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:35:56 -0400
+Received: from kroah.org ([198.145.64.141]:33045 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758781Ab0GAVOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:49 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
+Message-Id: <20100701174258.852925976@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:43:57 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Greg Thelen <gthelen@google.com>, Paul Menage <menage@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>
+Subject: [147/200] cgroups: alloc_css_id() increments hierarchy depth
+In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Thu, Jul 01, 2010 at 05:13:31PM -0400
+2.6.34-stable review patch.  If anyone has any objections, please let me know.
 
-> Em Thu, Jul 01, 2010 at 10:14:18PM +0200, Borislav Petkov escreveu:
-> > From: Arnaldo Carvalho de Melo <acme@infradead.org>
-> > Date: Thu, Jul 01, 2010 at 01:14:49PM -0400
-> > > But we have one other problem:
-> 
-> > > [acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -C tools/
-> > > make: Entering directory `/home/acme/git/linux-2.6-tip/tools'
-> > > make[1]: Entering directory `/home/acme/git/linux-2.6-tip/tools/lib'
-> > > make[1]: `lklib.a' is up to date.
-> > > make[1]: Leaving directory `/home/acme/git/linux-2.6-tip/tools/lib'
-> > > make[1]: Entering directory `/home/acme/git/linux-2.6-tip/tools/perf'
-> > >     GEN perf-archive
-> > > make[1]: Leaving directory `/home/acme/git/linux-2.6-tip/tools/perf'
-> > > make: Leaving directory `/home/acme/git/linux-2.6-tip/tools'
-> > > [acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -C tools/perf/
-> > > make: Entering directory `/home/acme/git/linux-2.6-tip/tools/perf'
-> > >     * new build flags or prefix
-> > >     CC /home/acme/git/build/perf/perf.o
-> > >     CC /home/acme/git/build/perf/builtin-annotate.o
-> > > 
-> > > The logic that detects "new build flags or prefix" gets confused when we
-> > > alternate between tools/ and tools/perf/, checking that.
-> > 
-> > This might need an up-to-date check for the lklib.a archive first and
-> > not do "new build flags or prefix" if it is. Yeah, this is a different
-> > library and the logic doesn't know about it.
-> 
-> I got sidetracked, but this is what is in $(O)/PERF-CFLAGS for
-> make -C tools/
-> 
-> [acme@emilia linux-2.6-tip]$ cat ../build/perf/PERF-CFLAGS 
-> -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow -Winit-self -Wpacked -Wredundant-decls -Wstack-protector -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers -Wundef -Wvolatile-register-var -Wwrite-strings -Wbad-function-cast -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes -Wdeclaration-after-statement  -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -I/home/acme/git/linux-2.6-tip/tools/lib -I/home/acme/git/linux-2.6-tip/tools/perf -I/home/acme/git/linux-2.6-tip/tools/perf/util/include -Iutil/include -Iarch/x86/include -I../lib/ -I/home/acme/git/build/perf/ -DLIBELF_NO_MMAP -I/usr/include/elfutils -DDWARF_SUPPORT -I/usr/include/slang -DSHA1_HEADER='<openssl/sha.h>' : /home/acme/bin:libexec/perf-core:share/perf-core/templates:/home/acme
-> [acme@emilia linux-2.6-tip]$
-> 
-> And this is its contents if we use "make -C tools/perf/"
-> 
-> -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2   -fstack-protector-all -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include -Iarch/x86/include -I../lib/ -I/home/acme/git/build/perf/ -DLIBELF_NO_MMAP -I/usr/include/elfutils -DDWARF_SUPPORT -I/usr/include/slang -DSHA1_HEADER='<openssl/sha.h>' : /home/acme/bin:libexec/perf-core:share/perf-core/templates:/home/acme
-> 
-> Its just a matter of making both match :-)
+------------------
 
-Oh yeah, I see the difference. The second one is missing all the -Wxxx
-settings and the BASIS_CFLAGS with all the include paths which get
-computed in the top Makefile and exported to the Makefiles in the
-subdirectories. Hmm, maybe we should reroute the "make -C tools/perf/"
-invocation to go up one dir and execute the top-Makefile after all...
+From: Greg Thelen <gthelen@google.com>
 
-I'll look into it soon, I'm almost falling asleep now :)
+commit 94b3dd0f7bb393d93e84a173b1df9b8b64c83ac4 upstream.
 
-Good night.
+Child groups should have a greater depth than their parents.  Prior to
+this change, the parent would incorrectly report zero memory usage for
+child cgroups when use_hierarchy is enabled.
 
--- 
-Regards/Gruss,
-Boris.
+test script:
+  mount -t cgroup none /cgroups -o memory
+  cd /cgroups
+  mkdir cg1
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+  echo 1 > cg1/memory.use_hierarchy
+  mkdir cg1/cg11
+
+  echo $$ > cg1/cg11/tasks
+  dd if=/dev/zero of=/tmp/foo bs=1M count=1
+
+  echo
+  echo CHILD
+  grep cache cg1/cg11/memory.stat
+
+  echo
+  echo PARENT
+  grep cache cg1/memory.stat
+
+  echo $$ > tasks
+  rmdir cg1/cg11 cg1
+  cd /
+  umount /cgroups
+
+Using fae9c79, a recent patch that changed alloc_css_id() depth computation,
+the parent incorrectly reports zero usage:
+  root@ubuntu:~# ./test
+  1+0 records in
+  1+0 records out
+  1048576 bytes (1.0 MB) copied, 0.0151844 s, 69.1 MB/s
+
+  CHILD
+  cache 1048576
+  total_cache 1048576
+
+  PARENT
+  cache 0
+  total_cache 0
+
+With this patch, the parent correctly includes child usage:
+  root@ubuntu:~# ./test
+  1+0 records in
+  1+0 records out
+  1048576 bytes (1.0 MB) copied, 0.0136827 s, 76.6 MB/s
+
+  CHILD
+  cache 1052672
+  total_cache 1052672
+
+  PARENT
+  cache 0
+  total_cache 1052672
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Paul Menage <menage@google.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/cgroup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4599,7 +4599,7 @@ static int alloc_css_id(struct cgroup_su
+ 	parent_css = parent->subsys[subsys_id];
+ 	child_css = child->subsys[subsys_id];
+ 	parent_id = parent_css->id;
+-	depth = parent_id->depth;
++	depth = parent_id->depth + 1;
+ 
+ 	child_id = get_new_cssid(ss, depth);
+ 	if (IS_ERR(child_id))
+
+
