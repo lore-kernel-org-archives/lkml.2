@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758909Ab0GAVNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:13:25 -0400
-Received: from kroah.org ([198.145.64.141]:33713 "EHLO coco.kroah.org"
+	id S1754235Ab0GAVwn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:52:43 -0400
+Received: from kroah.org ([198.145.64.141]:60863 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758820Ab0GAVMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:12:49 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:47 2010
-Message-Id: <20100701174247.281384439@clark.site>
+	id S1758950Ab0GAVNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:40 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:52 2010
+Message-Id: <20100701174252.084362804@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:41:40 -0700
+Date: Thu, 01 Jul 2010 10:42:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tejun Heo <tj@kernel.org>, Kay Sievers <kay.sievers@vrfy.org>,
-       Nick Bowler <nbowler@elliptictech.com>, David Zeuthen <david@fubar.dk>,
-       Jeff Garzik <jgarzik@redhat.com>
-Subject: [010/200] libata: disable ATAPI AN by default
+       Tejun Heo <tj@kernel.org>, James Bottomley <James.Bottomley@suse.de>
+Subject: [067/200] [SCSI] libsas: fix deref before check in commit 70b25f890ce
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,59 +25,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: James Bottomley <James.Bottomley@suse.de>
 
-commit e7ecd435692ca9bde9d124be30b3a26e672ea6c2 upstream.
+commit 1b4d0d8ea7b3cbd107f345ab766416f9b38ce66a upstream.
 
-There are ATAPI devices which raise AN when hit by commands issued by
-open().  This leads to infinite loop of AN -> MEDIA_CHANGE uevent ->
-udev open() to check media -> AN.
+commit 70b25f890ce9f0520c64075ce9225a5b020a513e
+Author: Tejun Heo <tj@kernel.org>
+Date:   Thu Apr 15 09:00:08 2010 +0900
 
-Both ACS and SerialATA standards don't define in which case ATAPI
-devices are supposed to raise or not raise AN.  They both list media
-insertion event as a possible use case for ATAPI ANs but there is no
-clear description of what constitutes such events.  As such, it seems
-a bit too naive to export ANs directly to userland as MEDIA_CHANGE
-events without further verification (which should behave similarly to
-windows as it apparently is the only thing that some hardware vendors
-are testing against).
+    [SCSI] fix locking around blk_abort_request()
 
-This patch adds libata.atapi_an module parameter and disables ATAPI AN
-by default for now.
+Introduced a reference before check problem, fix this by moving the
+lock shorthand code to be right at the point of actual use.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Nick Bowler <nbowler@elliptictech.com>
-Cc: David Zeuthen <david@fubar.dk>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Reported-by: Dan Carpenter <error27@gmail.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-core.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/scsi/libsas/sas_ata.c       |    5 +++--
+ drivers/scsi/libsas/sas_scsi_host.c |   16 ++++++++--------
+ 2 files changed, 11 insertions(+), 10 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -160,6 +160,10 @@ int libata_allow_tpm = 0;
- module_param_named(allow_tpm, libata_allow_tpm, int, 0444);
- MODULE_PARM_DESC(allow_tpm, "Permit the use of TPM commands (0=off [default], 1=on)");
+--- a/drivers/scsi/libsas/sas_ata.c
++++ b/drivers/scsi/libsas/sas_ata.c
+@@ -395,12 +395,13 @@ int sas_ata_init_host_and_port(struct do
+ void sas_ata_task_abort(struct sas_task *task)
+ {
+ 	struct ata_queued_cmd *qc = task->uldd_task;
+-	struct request_queue *q = qc->scsicmd->device->request_queue;
+ 	struct completion *waiting;
+-	unsigned long flags;
  
-+static int atapi_an;
-+module_param(atapi_an, int, 0444);
-+MODULE_PARM_DESC(atapi_an, "Enable ATAPI AN media presence notification (0=0ff [default], 1=on)");
+ 	/* Bounce SCSI-initiated commands to the SCSI EH */
+ 	if (qc->scsicmd) {
++		struct request_queue *q = qc->scsicmd->device->request_queue;
++		unsigned long flags;
 +
- MODULE_AUTHOR("Jeff Garzik");
- MODULE_DESCRIPTION("Library module for ATA devices");
- MODULE_LICENSE("GPL");
-@@ -2572,7 +2576,8 @@ int ata_dev_configure(struct ata_device
- 		 * to enable ATAPI AN to discern between PHY status
- 		 * changed notifications and ATAPI ANs.
- 		 */
--		if ((ap->flags & ATA_FLAG_AN) && ata_id_has_atapi_AN(id) &&
-+		if (atapi_an &&
-+		    (ap->flags & ATA_FLAG_AN) && ata_id_has_atapi_AN(id) &&
- 		    (!sata_pmp_attached(ap) ||
- 		     sata_scr_read(&ap->link, SCR_NOTIFICATION, &sntf) == 0)) {
- 			unsigned int err_mask;
+ 		spin_lock_irqsave(q->queue_lock, flags);
+ 		blk_abort_request(qc->scsicmd->request);
+ 		spin_unlock_irqrestore(q->queue_lock, flags);
+--- a/drivers/scsi/libsas/sas_scsi_host.c
++++ b/drivers/scsi/libsas/sas_scsi_host.c
+@@ -1030,8 +1030,6 @@ int __sas_task_abort(struct sas_task *ta
+ void sas_task_abort(struct sas_task *task)
+ {
+ 	struct scsi_cmnd *sc = task->uldd_task;
+-	struct request_queue *q = sc->device->request_queue;
+-	unsigned long flags;
+ 
+ 	/* Escape for libsas internal commands */
+ 	if (!sc) {
+@@ -1043,13 +1041,15 @@ void sas_task_abort(struct sas_task *tas
+ 
+ 	if (dev_is_sata(task->dev)) {
+ 		sas_ata_task_abort(task);
+-		return;
+-	}
++	} else {
++		struct request_queue *q = sc->device->request_queue;
++		unsigned long flags;
+ 
+-	spin_lock_irqsave(q->queue_lock, flags);
+-	blk_abort_request(sc->request);
+-	spin_unlock_irqrestore(q->queue_lock, flags);
+-	scsi_schedule_eh(sc->device->host);
++		spin_lock_irqsave(q->queue_lock, flags);
++		blk_abort_request(sc->request);
++		spin_unlock_irqrestore(q->queue_lock, flags);
++		scsi_schedule_eh(sc->device->host);
++	}
+ }
+ 
+ int sas_slave_alloc(struct scsi_device *scsi_dev)
 
 
