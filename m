@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab0GACqu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 22:46:50 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:45827 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751634Ab0GACqt (ORCPT
+	id S1752794Ab0GAC4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 22:56:53 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35361 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab0GAC4w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 22:46:49 -0400
-Date: Thu, 1 Jul 2010 12:46:33 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 37/52] fs: icache lazy lru
-Message-ID: <20100701024633.GR24712@dastard>
-References: <20100624030212.676457061@suse.de>
- <20100624030731.563540438@suse.de>
- <20100630083814.GG24712@dastard>
- <20100630120631.GC21358@laptop>
+	Wed, 30 Jun 2010 22:56:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=H35fyxg+5k+wd9mE9KV7J18M7z1DF/9J/o3pUNHJeVaJH8yTkRLxjsa5YJ2tH4hEt1
+         0Nptdb7n+TD21dvTcx437HbC1eRRpoRMxaDmSAcbX8IGRN8SYIC3ExgGZ69cxufEp1Tv
+         75IcrQ6Og9Sjo2tHnBolVLYZ7mvoFwjN6KoCc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100630120631.GC21358@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <a332e637ee15cb15f7099f5dfc19a384b2bf772b.1277911346.git.siccegge@cs.fau.de>
+References: <cover.1277911345.git.siccegge@cs.fau.de> <a332e637ee15cb15f7099f5dfc19a384b2bf772b.1277911346.git.siccegge@cs.fau.de>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Thu, 1 Jul 2010 10:56:31 +0800
+Message-ID: <AANLkTikXk-NPcDlf0lCSbf8HYHfoZoWh-7bnQar80UMC@mail.gmail.com>
+Subject: Re: [PATCH 27/33] Removing dead IDE_PXA_CF
+To: Christoph Egger <siccegge@cs.fau.de>
+Cc: Russell King <linux@arm.linux.org.uk>, Mike Rapoport <mike@compulab.co.il>,
+       Robert Jarzmik <robert.jarzmik@free.fr>,
+       Marek Vasut <marek.vasut@gmail.com>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       vamos@i4.informatik.uni-erlangen.de,
+       Jurgen Schindele <linux@schindele.name>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 10:06:31PM +1000, Nick Piggin wrote:
-> On Wed, Jun 30, 2010 at 06:38:14PM +1000, Dave Chinner wrote:
-> > On Thu, Jun 24, 2010 at 01:02:49PM +1000, npiggin@suse.de wrote:
-> > > Impelemnt lazy inode lru similarly to dcache. This will reduce lock
-> > > acquisition and will help to improve lock ordering subsequently.
-> > 
-> > I'm not sure we want the I_REFERENCED reclaim free pass for a clean
-> > inode that has been put on the LRU directly. I can see exactly how
-> > it is benficial to delay reclaim of dirty inodes (XFS uses that
-> > trick), but in terms of aging the cache we've already done this
-> > free pass trick at the dentry level. Hence I think the frequent
-> > separate access patterns tend to be filtered out at the dcache level
-> > and hence we don't need to handle that in the inode cache.
-> > 
-> > Perhaps we only need the I_REFERENCED flag to give dirty inodes a
-> > chance to be flushed by other means before forcing reclaim to do
-> > inode writeback?
-> 
-> It doesn't force flush, but it force invalidates pagecache.
+On Thu, Jul 1, 2010 at 12:02 AM, Christoph Egger <siccegge@cs.fau.de> wrote:
+> IDE_PXA_CF doesn't exist in Kconfig, therefore removing all references
+> for it from the source code.
+>
+> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 
-Sorry, bad choice of words - I should have said "forcing reclaim to
-wait on inode writeback". That is what will happen in the case of
-delayed allocation - the page cache will be clean, but the inode
-can be dirty, so reclaiming such an inode would cause the shrinker
-to block in clear_inode() waiting for inode writeback to
-complete.
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
 
-However, that is mostly irrelevant - you haven't comented at all on
-whether the I_REFERENCED flag is too broad or even needed which is
-what really needs to be discussed about this patch....
+Include Jurgen though, in case he has any idea.
 
-Cheers,
-
-Dave.
-
--- 
-Dave Chinner
-david@fromorbit.com
+> ---
+>  arch/arm/mach-pxa/trizeps4.c |    6 +-----
+>  1 files changed, 1 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/arm/mach-pxa/trizeps4.c b/arch/arm/mach-pxa/trizeps4.c
+> index 6968911..0acff17 100644
+> --- a/arch/arm/mach-pxa/trizeps4.c
+> +++ b/arch/arm/mach-pxa/trizeps4.c
+> @@ -530,13 +530,9 @@ static void __init trizeps4_init(void)
+>        i2c_register_board_info(0, trizeps4_i2c_devices,
+>                                        ARRAY_SIZE(trizeps4_i2c_devices));
+>
+> -#ifdef CONFIG_IDE_PXA_CF
+> -       /* if boot direct from compact flash dont disable power */
+> -       trizeps_conxs_bcr = 0x0009;
+> -#else
+>        /* this is the reset value */
+>        trizeps_conxs_bcr = 0x00A0;
+> -#endif
+> +
+>        BCR_writew(trizeps_conxs_bcr);
+>        board_backlight_power(1);
+>  }
+> --
+> 1.7.0.4
+>
+>
