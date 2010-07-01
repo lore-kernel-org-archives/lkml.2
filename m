@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759653Ab0GAWGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:06:41 -0400
-Received: from kroah.org ([198.145.64.141]:47585 "EHLO coco.kroah.org"
+	id S1759673Ab0GAWHJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:07:09 -0400
+Received: from kroah.org ([198.145.64.141]:47576 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932705Ab0GAUub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:31 -0400
+	id S932699Ab0GAUua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:30 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:33 2010
-Message-Id: <20100701173433.549553484@clark.site>
+Message-Id: <20100701173433.374464917@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:26 -0700
+Date: Thu, 01 Jul 2010 10:34:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sebastien Dugue <sebastien.dugue@bull.net>,
-       Roland Dreier <rolandd@cisco.com>
-Subject: [patch 080/164] mlx4_core: Fix possible chunk sg list overflow in mlx4_alloc_icm()
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Hugh Dickins <hughd@google.com>,
+       Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: [patch 078/164] tmpfs: insert tmpfs cache pages to inactive list at first
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastien Dugue <sebastien.dugue@bull.net>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit c0dc72bad9cf21071f5e4005de46f7c8b67a138a upstream.
+commit e9d6c157385e4efa61cb8293e425c9d8beba70d3 upstream.
 
-If the number of sg entries in the ICM chunk reaches MLX4_ICM_CHUNK_LEN,
-we must set chunk to NULL even for coherent mappings so that the next
-time through the loop will allocate another chunk.  Otherwise we'll
-overflow the sg list the next time through the loop.  This will lead to
-memory corruption if this case is hit.
+Shaohua Li reported parallel file copy on tmpfs can lead to OOM killer.
+This is regression of caused by commit 9ff473b9a7 ("vmscan: evict
+streaming IO first").  Wow, It is 2 years old patch!
 
-mthca does not have this bug.
+Currently, tmpfs file cache is inserted active list at first.  This means
+that the insertion doesn't only increase numbers of pages in anon LRU, but
+it also reduces anon scanning ratio.  Therefore, vmscan will get totally
+confused.  It scans almost only file LRU even though the system has plenty
+unused tmpfs pages.
 
-Signed-off-by: Sebastien Dugue <sebastien.dugue@bull.net>
-Signed-off-by: Roland Dreier <rolandd@cisco.com>
+Historically, lru_cache_add_active_anon() was used for two reasons.
+1) Intend to priotize shmem page rather than regular file cache.
+2) Intend to avoid reclaim priority inversion of used once pages.
+
+But we've lost both motivation because (1) Now we have separate anon and
+file LRU list.  then, to insert active list doesn't help such priotize.
+(2) In past, one pte access bit will cause page activation.  then to
+insert inactive list with pte access bit mean higher priority than to
+insert active list.  Its priority inversion may lead to uninteded lru
+chun.  but it was already solved by commit 645747462 (vmscan: detect
+mapped file pages used only once).  (Thanks Hannes, you are great!)
+
+Thus, now we can use lru_cache_add_anon() instead.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reported-by: Shaohua Li <shaohua.li@intel.com>
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/mlx4/icm.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/swap.h |   10 ----------
+ mm/filemap.c         |    4 ++--
+ 2 files changed, 2 insertions(+), 12 deletions(-)
 
---- a/drivers/net/mlx4/icm.c
-+++ b/drivers/net/mlx4/icm.c
-@@ -174,9 +174,10 @@ struct mlx4_icm *mlx4_alloc_icm(struct m
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -223,21 +223,11 @@ static inline void lru_cache_add_anon(st
+ 	__lru_cache_add(page, LRU_INACTIVE_ANON);
+ }
  
- 				if (chunk->nsg <= 0)
- 					goto fail;
-+			}
+-static inline void lru_cache_add_active_anon(struct page *page)
+-{
+-	__lru_cache_add(page, LRU_ACTIVE_ANON);
+-}
+-
+ static inline void lru_cache_add_file(struct page *page)
+ {
+ 	__lru_cache_add(page, LRU_INACTIVE_FILE);
+ }
  
-+			if (chunk->npages == MLX4_ICM_CHUNK_LEN)
- 				chunk = NULL;
--			}
- 
- 			npages -= 1 << cur_order;
- 		} else {
+-static inline void lru_cache_add_active_file(struct page *page)
+-{
+-	__lru_cache_add(page, LRU_ACTIVE_FILE);
+-}
+-
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -441,7 +441,7 @@ int add_to_page_cache_lru(struct page *p
+ 	/*
+ 	 * Splice_read and readahead add shmem/tmpfs pages into the page cache
+ 	 * before shmem_readpage has a chance to mark them as SwapBacked: they
+-	 * need to go on the active_anon lru below, and mem_cgroup_cache_charge
++	 * need to go on the anon lru below, and mem_cgroup_cache_charge
+ 	 * (called in add_to_page_cache) needs to know where they're going too.
+ 	 */
+ 	if (mapping_cap_swap_backed(mapping))
+@@ -452,7 +452,7 @@ int add_to_page_cache_lru(struct page *p
+ 		if (page_is_file_cache(page))
+ 			lru_cache_add_file(page);
+ 		else
+-			lru_cache_add_active_anon(page);
++			lru_cache_add_anon(page);
+ 	}
+ 	return ret;
+ }
 
 
