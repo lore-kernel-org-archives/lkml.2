@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759430Ab0GAVT6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:19:58 -0400
-Received: from kroah.org ([198.145.64.141]:33281 "EHLO coco.kroah.org"
+	id S933151Ab0GAVcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:32:41 -0400
+Received: from kroah.org ([198.145.64.141]:33180 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933194Ab0GAVPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:03 2010
-Message-Id: <20100701174303.058796070@clark.site>
+	id S932784Ab0GAVPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:15:09 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:01 2010
+Message-Id: <20100701174300.987522230@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:46 -0700
+Date: Thu, 01 Jul 2010 10:44:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>
-Subject: [196/200] KVM: x86: Add missing locking to arch specific vcpu ioctls
+       "Theodore Tso" <tytso@mit.edu>,
+       Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Subject: [171/200] ext4: Make sure the MOVE_EXT ioctl cant overwrite append-only files
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,59 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-Signed-off-by: Avi Kivity <avi@redhat.com>
+commit 1f5a81e41f8b1a782c68d3843e9ec1bfaadf7d72 upstream.
+
+Dan Roseberg has reported a problem with the MOVE_EXT ioctl.  If the
+donor file is an append-only file, we should not allow the operation
+to proceed, lest we end up overwriting the contents of an append-only
+file.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-(Cherry-picked from commit 8fbf065d625617bbbf6b72d5f78f84ad13c8b547)
 ---
- arch/x86/kvm/x86.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ext4/move_extent.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1776,6 +1776,7 @@ static int kvm_vcpu_ioctl_get_cpuid2(str
- {
- 	int r;
- 
-+	vcpu_load(vcpu);
- 	r = -E2BIG;
- 	if (cpuid->nent < vcpu->arch.cpuid_nent)
- 		goto out;
-@@ -1787,6 +1788,7 @@ static int kvm_vcpu_ioctl_get_cpuid2(str
- 
- out:
- 	cpuid->nent = vcpu->arch.cpuid_nent;
-+	vcpu_put(vcpu);
- 	return r;
- }
- 
-@@ -2042,6 +2044,7 @@ static int kvm_vcpu_ioctl_x86_setup_mce(
- 	int r;
- 	unsigned bank_num = mcg_cap & 0xff, bank;
- 
-+	vcpu_load(vcpu);
- 	r = -EINVAL;
- 	if (!bank_num || bank_num >= KVM_MAX_MCE_BANKS)
- 		goto out;
-@@ -2056,6 +2059,7 @@ static int kvm_vcpu_ioctl_x86_setup_mce(
- 	for (bank = 0; bank < bank_num; bank++)
- 		vcpu->arch.mce_banks[bank*4] = ~(u64)0;
- out:
-+	vcpu_put(vcpu);
- 	return r;
- }
- 
-@@ -2323,7 +2327,9 @@ long kvm_arch_vcpu_ioctl(struct file *fi
- 		r = -EFAULT;
- 		if (copy_from_user(&mce, argp, sizeof mce))
- 			goto out;
-+		vcpu_load(vcpu);
- 		r = kvm_vcpu_ioctl_x86_set_mce(vcpu, &mce);
-+		vcpu_put(vcpu);
- 		break;
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -959,6 +959,9 @@ mext_check_arguments(struct inode *orig_
+ 		return -EINVAL;
  	}
- 	case KVM_GET_VCPU_EVENTS: {
+ 
++	if (IS_IMMUTABLE(donor_inode) || IS_APPEND(donor_inode))
++		return -EPERM;
++
+ 	/* Ext4 move extent does not support swapfile */
+ 	if (IS_SWAPFILE(orig_inode) || IS_SWAPFILE(donor_inode)) {
+ 		ext4_debug("ext4 move extent: The argument files should "
 
 
