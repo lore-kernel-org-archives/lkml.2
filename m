@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab0GASom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:44:42 -0400
-Received: from kroah.org ([198.145.64.141]:35534 "EHLO coco.kroah.org"
+	id S932445Ab0GASvX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:51:23 -0400
+Received: from kroah.org ([198.145.64.141]:35407 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757802Ab0GASXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:16 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:11 2010
-Message-Id: <20100701173211.186404319@clark.site>
+	id S1757650Ab0GASWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:54 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:09 2010
+Message-Id: <20100701173209.003806897@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:18 -0700
+Date: Thu, 01 Jul 2010 10:30:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [patch 052/149] drm/radeon/kms/atom: fix typo in LVDS panel info parsing
+       Craig Shelley <craig@microtron.org.uk>
+Subject: [patch 026/149] USB: CP210x New Device IDs 11 New device IDs
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Craig Shelley <craig@microtron.org.uk>
 
-commit 1ff26a3604d0292988d4cade0e49ba9918dbfd46 upstream.
+commit eefd9029fde4d90d59804eeb54880ab8db5c1866 upstream.
 
-Fixes LVDS issues on some laptops; notably laptops with
-2048x1536 panels.
-
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Craig Shelley <craig@microtron.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/cp210x.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -942,7 +942,7 @@ struct radeon_encoder_atom_dig *radeon_a
- 		lvds->native_mode.vtotal = lvds->native_mode.vdisplay +
- 			le16_to_cpu(lvds_info->info.sLCDTiming.usVBlanking_Time);
- 		lvds->native_mode.vsync_start = lvds->native_mode.vdisplay +
--			le16_to_cpu(lvds_info->info.sLCDTiming.usVSyncWidth);
-+			le16_to_cpu(lvds_info->info.sLCDTiming.usVSyncOffset);
- 		lvds->native_mode.vsync_end = lvds->native_mode.vsync_start +
- 			le16_to_cpu(lvds_info->info.sLCDTiming.usVSyncWidth);
- 		lvds->panel_pwr_delay =
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -61,6 +61,8 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x0745, 0x1000) }, /* CipherLab USB CCD Barcode Scanner 1000 */
+ 	{ USB_DEVICE(0x08e6, 0x5501) }, /* Gemalto Prox-PU/CU contactless smartcard reader */
+ 	{ USB_DEVICE(0x08FD, 0x000A) }, /* Digianswer A/S , ZigBee/802.15.4 MAC Device */
++	{ USB_DEVICE(0x0BED, 0x1100) }, /* MEI (TM) Cashflow-SC Bill/Voucher Acceptor */
++	{ USB_DEVICE(0x0BED, 0x1101) }, /* MEI series 2000 Combo Acceptor */
+ 	{ USB_DEVICE(0x0FCF, 0x1003) }, /* Dynastream ANT development board */
+ 	{ USB_DEVICE(0x0FCF, 0x1004) }, /* Dynastream ANT2USB */
+ 	{ USB_DEVICE(0x0FCF, 0x1006) }, /* Dynastream ANT development board */
+@@ -72,9 +74,12 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x10C4, 0x1601) }, /* Arkham Technology DS101 Adapter */
+ 	{ USB_DEVICE(0x10C4, 0x800A) }, /* SPORTident BSM7-D-USB main station */
+ 	{ USB_DEVICE(0x10C4, 0x803B) }, /* Pololu USB-serial converter */
++	{ USB_DEVICE(0x10C4, 0x8044) }, /* Cygnal Debug Adapter */
++	{ USB_DEVICE(0x10C4, 0x804E) }, /* Software Bisque Paramount ME build-in converter */
+ 	{ USB_DEVICE(0x10C4, 0x8053) }, /* Enfora EDG1228 */
+ 	{ USB_DEVICE(0x10C4, 0x8054) }, /* Enfora GSM2228 */
+ 	{ USB_DEVICE(0x10C4, 0x8066) }, /* Argussoft In-System Programmer */
++	{ USB_DEVICE(0x10C4, 0x806F) }, /* IMS USB to RS422 Converter Cable */
+ 	{ USB_DEVICE(0x10C4, 0x807A) }, /* Crumb128 board */
+ 	{ USB_DEVICE(0x10C4, 0x80CA) }, /* Degree Controls Inc */
+ 	{ USB_DEVICE(0x10C4, 0x80DD) }, /* Tracient RFID */
+@@ -82,12 +87,15 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x10C4, 0x8115) }, /* Arygon NFC/Mifare Reader */
+ 	{ USB_DEVICE(0x10C4, 0x813D) }, /* Burnside Telecom Deskmobile */
+ 	{ USB_DEVICE(0x10C4, 0x813F) }, /* Tams Master Easy Control */
++	{ USB_DEVICE(0x10C4, 0x8149) }, /* West Mountain Radio Computerized Battery Analyzer */
+ 	{ USB_DEVICE(0x10C4, 0x814A) }, /* West Mountain Radio RIGblaster P&P */
+ 	{ USB_DEVICE(0x10C4, 0x814B) }, /* West Mountain Radio RIGtalk */
+ 	{ USB_DEVICE(0x10C4, 0x815E) }, /* Helicomm IP-Link 1220-DVM */
++	{ USB_DEVICE(0x10C4, 0x818B) }, /* AVIT Research USB to TTL */
+ 	{ USB_DEVICE(0x10C4, 0x819F) }, /* MJS USB Toslink Switcher */
+ 	{ USB_DEVICE(0x10C4, 0x81A6) }, /* ThinkOptics WavIt */
+ 	{ USB_DEVICE(0x10C4, 0x81AC) }, /* MSD Dash Hawk */
++	{ USB_DEVICE(0x10C4, 0x81AD) }, /* INSYS USB Modem */
+ 	{ USB_DEVICE(0x10C4, 0x81C8) }, /* Lipowsky Industrie Elektronik GmbH, Baby-JTAG */
+ 	{ USB_DEVICE(0x10C4, 0x81E2) }, /* Lipowsky Industrie Elektronik GmbH, Baby-LIN */
+ 	{ USB_DEVICE(0x10C4, 0x81E7) }, /* Aerocomm Radio */
+@@ -105,6 +113,7 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x10C4, 0x846E) }, /* BEI USB Sensor Interface (VCP) */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
++	{ USB_DEVICE(0x10C4, 0xEA71) }, /* Infinity GPS-MIC-1 Radio Monophone */
+ 	{ USB_DEVICE(0x10C4, 0xF001) }, /* Elan Digital Systems USBscope50 */
+ 	{ USB_DEVICE(0x10C4, 0xF002) }, /* Elan Digital Systems USBwave12 */
+ 	{ USB_DEVICE(0x10C4, 0xF003) }, /* Elan Digital Systems USBpulse100 */
+@@ -115,6 +124,8 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x1555, 0x0004) }, /* Owen AC4 USB-RS485 Converter */
+ 	{ USB_DEVICE(0x166A, 0x0303) }, /* Clipsal 5500PCU C-Bus USB interface */
+ 	{ USB_DEVICE(0x16D6, 0x0001) }, /* Jablotron serial interface */
++	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
++	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
+ 	{ } /* Terminating Entry */
 
 
