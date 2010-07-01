@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758419Ab0GASie (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:38:34 -0400
-Received: from kroah.org ([198.145.64.141]:40604 "EHLO coco.kroah.org"
+	id S932120Ab0GASbp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:31:45 -0400
+Received: from kroah.org ([198.145.64.141]:40764 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757947Ab0GASXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:45 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
-Message-Id: <20100701173214.151803924@clark.site>
+	id S1758116Ab0GASYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:14 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:17 2010
+Message-Id: <20100701173216.935298693@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:53 -0700
+Date: Thu, 01 Jul 2010 10:32:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ian Campbell <ian.campbell@citrix.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [patch 087/149] xen: avoid allocation causing potential swap activity on the resume path
+       "Theodore Tso" <tytso@mit.edu>,
+       Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Subject: [patch 120/149] ext4: Make sure the MOVE_EXT ioctl cant overwrite append-only files
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <ian.campbell@citrix.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit b3831cb55d383e8eb55d3b56c715fb48459b87c9 upstream.
+commit 1f5a81e41f8b1a782c68d3843e9ec1bfaadf7d72 upstream.
 
-Since the device we are resuming could be the device containing the
-swap device we should ensure that the allocation cannot cause
-IO.
+Dan Roseberg has reported a problem with the MOVE_EXT ioctl.  If the
+donor file is an append-only file, we should not allow the operation
+to proceed, lest we end up overwriting the contents of an append-only
+file.
 
-On resume, this path is triggered when the running system tries to
-continue using its devices.  If it cannot then the resume will fail;
-to try to avoid this we let it dip into the emergency pools.
-
-The majority of these changes were made when linux-2.6.18-xen.hg
-changeset e8b49cfbdac0 was ported upstream in
-a144ff09bc52ef3f3684ed23eadc9c7c0e57b3aa but somehow this hunk was
-dropped.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/xen/xenbus/xenbus_xs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/move_extent.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/xen/xenbus/xenbus_xs.c
-+++ b/drivers/xen/xenbus/xenbus_xs.c
-@@ -499,7 +499,7 @@ int xenbus_printf(struct xenbus_transact
- #define PRINTF_BUFFER_SIZE 4096
- 	char *printf_buffer;
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -964,6 +964,9 @@ mext_check_arguments(struct inode *orig_
+ 		return -EINVAL;
+ 	}
  
--	printf_buffer = kmalloc(PRINTF_BUFFER_SIZE, GFP_KERNEL);
-+	printf_buffer = kmalloc(PRINTF_BUFFER_SIZE, GFP_NOIO | __GFP_HIGH);
- 	if (printf_buffer == NULL)
- 		return -ENOMEM;
- 
++	if (IS_IMMUTABLE(donor_inode) || IS_APPEND(donor_inode))
++		return -EPERM;
++
+ 	/* Ext4 move extent does not support swapfile */
+ 	if (IS_SWAPFILE(orig_inode) || IS_SWAPFILE(donor_inode)) {
+ 		ext4_debug("ext4 move extent: The argument files should "
 
 
