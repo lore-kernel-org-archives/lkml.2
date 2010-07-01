@@ -1,116 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759637Ab0GAWEW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:04:22 -0400
-Received: from kroah.org ([198.145.64.141]:33727 "EHLO coco.kroah.org"
+	id S1758887Ab0GAWDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:03:47 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:38787 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758661Ab0GAVMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:12:51 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:47 2010
-Message-Id: <20100701174247.455748689@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:41:42 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
-       Andi Kleen <andi@firstfloor.org>
-Subject: [012/200] cpumask: fix compat getaffinity
-In-Reply-To: <20100701175201.GA2149@kroah.com>
+	id S1756026Ab0GAWDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 18:03:41 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jim Cromie <jim.cromie@gmail.com>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Guenter Roeck <guenter.roeck@ericsson.com>,
+       Jean Delvare <khali@linux-fr.org>, Ethan Lawrence <e.law87@yahoo.com>
+CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       lars4910@hotmail.com, birdie@permonline.ru, jadcock@cox.net,
+       binximeng@gmail.com, Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH/RFC] hwmon: Add support for W83667HG-B
+Date: Thu, 1 Jul 2010 15:02:15 -0700
+Message-ID: <1278021735-21188-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.0.87.g0901d
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let me know.
+This patch adds support for W83667HG-B to the w83627ehf driver.
 
-------------------
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Key relevant difference between W83667HG and W83667HG-B are the Chip ID as well
+as the fan output and step output register addresses. Those differences are
+addressed with this patch.
 
-commit fa9dc265ace9774e62f0e31108e5f47911124bda upstream.
+There are other relevant changes in the mapping of input sensors to fan
+control (W83667HG datasheet chapter 8.7, W83667HG-B datasheet chapter 8.5).
+However, control of those mappings is not implemented in the driver, thus the
+respective changes should not have an impact on driver operation.
 
-Commit a45185d2d "cpumask: convert kernel/compat.c" broke libnuma, which
-abuses sched_getaffinity to find out NR_CPUS in order to parse
-/sys/devices/system/node/node*/cpumap.
-
-On NUMA systems with less than 32 possibly CPUs, the current
-compat_sys_sched_getaffinity now returns '4' instead of the actual
-NR_CPUS/8, which makes libnuma bail out when parsing the cpumap.
-
-The libnuma call sched_getaffinity(0, bitmap, 4096) at first.  It mean
-the libnuma expect the return value of sched_getaffinity() is either len
-argument or NR_CPUS.  But it doesn't expect to return nr_cpu_ids.
-
-Strictly speaking, userland requirement are
-
-1) Glibc assume the return value mean the lengh of initialized
-   of mask argument. E.g. if sched_getaffinity(1024) return 128,
-   glibc make zero fill rest 896 byte.
-2) Libnuma assume the return value can be used to guess NR_CPUS
-   in kernel. It assume len-arg<NR_CPUS makes -EINVAL. But
-   it try len=4096 at first and 4096 is always bigger than
-   NR_CPUS. Then, if we remove strange min_length normalization,
-   we never hit -EINVAL case.
-
-sched_getaffinity() already solved this issue.  This patch adapts
-compat_sys_sched_getaffinity() to match the non-compat case.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Reported-by: Ken Werner <ken.werner@web.de>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Changes made in this patch are based on information from datasheets only. The
+patch has not yet been tested with real hardware. The patch must be tested with
+real hardware before it is integrated, and is thus submitted as RFC.
 
 ---
- kernel/compat.c |   25 +++++++++++--------------
- 1 file changed, 11 insertions(+), 14 deletions(-)
+ drivers/hwmon/w83627ehf.c |   44 +++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 37 insertions(+), 7 deletions(-)
 
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -495,29 +495,26 @@ asmlinkage long compat_sys_sched_getaffi
- {
- 	int ret;
- 	cpumask_var_t mask;
--	unsigned long *k;
--	unsigned int min_length = cpumask_size();
+diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
+index 0dcaba9..074e15b 100644
+--- a/drivers/hwmon/w83627ehf.c
++++ b/drivers/hwmon/w83627ehf.c
+@@ -39,6 +39,7 @@
+     w83627dhg    9      5       4       3      0xa020 0xc1    0x5ca3
+     w83627dhg-p  9      5       4       3      0xb070 0xc1    0x5ca3
+     w83667hg     9      5       3       3      0xa510 0xc1    0x5ca3
++    w83667hg-b   9      5       3       3      0xb350 0xc1    0x5ca3
+ */
  
--	if (nr_cpu_ids <= BITS_PER_COMPAT_LONG)
--		min_length = sizeof(compat_ulong_t);
--
--	if (len < min_length)
-+	if ((len * BITS_PER_BYTE) < nr_cpu_ids)
-+		return -EINVAL;
-+	if (len & (sizeof(compat_ulong_t)-1))
- 		return -EINVAL;
+ #include <linux/module.h>
+@@ -55,7 +56,7 @@
+ #include <linux/io.h>
+ #include "lm75.h"
  
- 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
- 		return -ENOMEM;
+-enum kinds { w83627ehf, w83627dhg, w83627dhg_p, w83667hg };
++enum kinds { w83627ehf, w83627dhg, w83627dhg_p, w83667hg, w83667hg_b };
  
- 	ret = sched_getaffinity(pid, mask);
--	if (ret < 0)
--		goto out;
-+	if (ret == 0) {
-+		size_t retlen = min_t(size_t, len, cpumask_size());
+ /* used to set data->name = w83627ehf_device_names[data->sio_kind] */
+ static const char * w83627ehf_device_names[] = {
+@@ -63,6 +64,7 @@ static const char * w83627ehf_device_names[] = {
+ 	"w83627dhg",
+ 	"w83627dhg",
+ 	"w83667hg",
++	"w83667hg-b",
+ };
  
--	k = cpumask_bits(mask);
--	ret = compat_put_bitmap(user_mask_ptr, k, min_length * 8);
--	if (ret == 0)
--		ret = min_length;
--
--out:
-+		if (compat_put_bitmap(user_mask_ptr, cpumask_bits(mask), retlen * 8))
-+			ret = -EFAULT;
-+		else
-+			ret = retlen;
-+	}
- 	free_cpumask_var(mask);
+ static unsigned short force_id;
+@@ -91,6 +93,7 @@ MODULE_PARM_DESC(force_id, "Override the detected device ID");
+ #define SIO_W83627DHG_ID	0xa020
+ #define SIO_W83627DHG_P_ID	0xb070
+ #define SIO_W83667HG_ID 	0xa510
++#define SIO_W83667HG_B_ID	0xb350
+ #define SIO_ID_MASK		0xFFF0
+ 
+ static inline void
+@@ -201,8 +204,17 @@ static const u8 W83627EHF_REG_TOLERANCE[] = { 0x07, 0x07, 0x14, 0x62 };
+ static const u8 W83627EHF_REG_FAN_START_OUTPUT[] = { 0x0a, 0x0b, 0x16, 0x65 };
+ static const u8 W83627EHF_REG_FAN_STOP_OUTPUT[] = { 0x08, 0x09, 0x15, 0x64 };
+ static const u8 W83627EHF_REG_FAN_STOP_TIME[] = { 0x0c, 0x0d, 0x17, 0x66 };
+-static const u8 W83627EHF_REG_FAN_MAX_OUTPUT[] = { 0xff, 0x67, 0xff, 0x69 };
+-static const u8 W83627EHF_REG_FAN_STEP_OUTPUT[] = { 0xff, 0x68, 0xff, 0x6a };
 +
- 	return ret;
- }
++static const u8 *W83627EHF_REG_FAN_MAX_OUTPUT;
++static const u8 *W83627EHF_REG_FAN_STEP_OUTPUT;
++
++static const u8 W83627EHF_REG_FAN_MAX_OUTPUT_COMMON[]
++						= { 0xff, 0x67, 0xff, 0x69 };
++static const u8 W83627EHF_REG_FAN_STEP_OUTPUT_COMMON[]
++						= { 0xff, 0x68, 0xff, 0x6a };
++
++static const u8 W83627EHF_REG_FAN_MAX_OUTPUT_W83667_B[] = { 0x67, 0x69, 0x6b };
++static const u8 W83627EHF_REG_FAN_STEP_OUTPUT_W83667_B[] = { 0x68, 0x6a, 0x6c };
  
-
+ /*
+  * Conversions
+@@ -1343,22 +1355,35 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+ 	/* 627EHG and 627EHF have 10 voltage inputs; 627DHG and 667HG have 9 */
+ 	data->in_num = (sio_data->kind == w83627ehf) ? 10 : 9;
+ 	/* 667HG has 3 pwms */
+-	data->pwm_num = (sio_data->kind == w83667hg) ? 3 : 4;
++	data->pwm_num = (sio_data->kind == w83667hg
++			 || sio_data->kind == w83667hg_b) ? 3 : 4;
+ 
+ 	/* Check temp3 configuration bit for 667HG */
+-	if (sio_data->kind == w83667hg) {
++	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
+ 		data->temp3_disable = w83627ehf_read_value(data,
+ 					W83627EHF_REG_TEMP_CONFIG[1]) & 0x01;
+ 		data->in6_skip = !data->temp3_disable;
+ 	}
+ 
++	if (sio_data->kind == w83667hg_b) {
++		W83627EHF_REG_FAN_MAX_OUTPUT
++		  = W83627EHF_REG_FAN_MAX_OUTPUT_W83667_B;
++		W83627EHF_REG_FAN_STEP_OUTPUT
++		  = W83627EHF_REG_FAN_STEP_OUTPUT_W83667_B;
++	} else {
++		W83627EHF_REG_FAN_MAX_OUTPUT
++		  = W83627EHF_REG_FAN_MAX_OUTPUT_COMMON;
++		W83627EHF_REG_FAN_STEP_OUTPUT
++		  = W83627EHF_REG_FAN_STEP_OUTPUT_COMMON;
++	}
++
+ 	/* Initialize the chip */
+ 	w83627ehf_init_device(data);
+ 
+ 	data->vrm = vid_which_vrm();
+ 	superio_enter(sio_data->sioreg);
+ 	/* Read VID value */
+-	if (sio_data->kind == w83667hg) {
++	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
+ 		/* W83667HG has different pins for VID input and output, so
+ 		we can get the VID input values directly at logical device D
+ 		0xe3. */
+@@ -1409,7 +1434,7 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* fan4 and fan5 share some pins with the GPIO and serial flash */
+-	if (sio_data->kind == w83667hg) {
++	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
+ 		fan5pin = superio_inb(sio_data->sioreg, 0x27) & 0x20;
+ 		fan4pin = superio_inb(sio_data->sioreg, 0x27) & 0x40;
+ 	} else {
+@@ -1556,6 +1581,7 @@ static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
+ 	static const char __initdata sio_name_W83627DHG[] = "W83627DHG";
+ 	static const char __initdata sio_name_W83627DHG_P[] = "W83627DHG-P";
+ 	static const char __initdata sio_name_W83667HG[] = "W83667HG";
++	static const char __initdata sio_name_W83667HG_B[] = "W83667HG-B";
+ 
+ 	u16 val;
+ 	const char *sio_name;
+@@ -1588,6 +1614,10 @@ static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
+ 		sio_data->kind = w83667hg;
+ 		sio_name = sio_name_W83667HG;
+ 		break;
++	case SIO_W83667HG_B_ID:
++		sio_data->kind = w83667hg_b;
++		sio_name = sio_name_W83667HG_B;
++		break;
+ 	default:
+ 		if (val != 0xffff)
+ 			pr_debug(DRVNAME ": unsupported chip ID: 0x%04x\n",
+-- 
+1.7.0.87.g0901d
 
