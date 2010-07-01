@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758365Ab0GAScA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:32:00 -0400
-Received: from kroah.org ([198.145.64.141]:40761 "EHLO coco.kroah.org"
+	id S1758338Ab0GASay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:30:54 -0400
+Received: from kroah.org ([198.145.64.141]:40804 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758067Ab0GASYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:16 2010
-Message-Id: <20100701173216.846632087@clark.site>
+	id S1758136Ab0GASYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:20 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:17 2010
+Message-Id: <20100701173217.527844817@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:25 -0700
+Date: Thu, 01 Jul 2010 10:32:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [patch 119/149] ext4: check s_log_groups_per_flex in online resize code
+       Anton Vorontsov <avorontsov@ru.mvista.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [patch 127/149] ucc_geth: Fix empty TX queue processing
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Anton Vorontsov <avorontsov@ru.mvista.com>
 
-commit 42007efd569f1cf3bfb9a61da60ef6c2179508ca upstream.
+commit 7583605b6d29f1f7f6fc505b883328089f3485ad upstream.
 
-If groups_per_flex < 2, sbi->s_flex_groups[] doesn't get filled out,
-and every other access to this first tests s_log_groups_per_flex;
-same thing needs to happen in resize or we'll wander off into
-a null pointer when doing an online resize of the file system.
+Following oops was seen with the ucc_geth driver:
 
-Thanks to Christoph Biedl, who came up with the trivial testcase:
+ Unable to handle kernel paging request for data at address 0x00000058
+ Faulting instruction address: 0xc024f2fc
+ Oops: Kernel access of bad area, sig: 11 [#1]
+ [...]
+ NIP [c024f2fc] skb_recycle_check+0x14/0x100
+ LR [e30aa0a4] ucc_geth_poll+0xd8/0x4e0 [ucc_geth_driver]
+ Call Trace:
+ [df857d50] [c000b03c] __ipipe_grab_irq+0x3c/0xa4 (unreliable)
+ [df857d60] [e30aa0a4] ucc_geth_poll+0xd8/0x4e0 [ucc_geth_driver]
+ [df857dd0] [c0258cf8] net_rx_action+0xf8/0x1b8
+ [df857e10] [c0032a38] __do_softirq+0xb8/0x13c
+ [df857e60] [c00065cc] do_softirq+0xa0/0xac
+ [...]
 
-# truncate --size 128M fsfile
-# mkfs.ext3 -F fsfile
-# tune2fs -O extents,uninit_bg,dir_index,flex_bg,huge_file,dir_nlink,extra_isize fsfile
-# e2fsck -yDf -C0 fsfile
-# truncate --size 132M fsfile
-# losetup /dev/loop0 fsfile
-# mount /dev/loop0 mnt
-# resize2fs -p /dev/loop0
+This is because ucc_geth_tx() tries to process an empty queue when
+queues are logically stopped. Stopping the queues doesn't disable
+polling, and since nowadays ucc_geth_tx() is actually called from
+the polling routine, the oops above might pop up.
 
-	https://bugzilla.kernel.org/show_bug.cgi?id=13549
+Fix this by removing 'netif_queue_stopped() == 0' check.
 
-Reported-by: Alessandro Polverini <alex@nibbles.it>
-Test-case-by: Christoph Biedl  <bugzilla.kernel.bpeb@manchmal.in-ulm.de>
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+Signed-off-by: Anton Vorontsov <avorontsov@ru.mvista.com>
+Tested-by: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/resize.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ucc_geth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -930,7 +930,8 @@ int ext4_group_add(struct super_block *s
- 	percpu_counter_add(&sbi->s_freeinodes_counter,
- 			   EXT4_INODES_PER_GROUP(sb));
+--- a/drivers/net/ucc_geth.c
++++ b/drivers/net/ucc_geth.c
+@@ -3273,7 +3273,7 @@ static int ucc_geth_tx(struct net_device
+ 		/* Handle the transmitted buffer and release */
+ 		/* the BD to be used with the current frame  */
  
--	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG)) {
-+	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG) &&
-+	    sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group;
- 		flex_group = ext4_flex_group(sbi, input->group);
- 		atomic_add(input->free_blocks_count,
+-		if ((bd == ugeth->txBd[txQ]) && (netif_queue_stopped(dev) == 0))
++		if (bd == ugeth->txBd[txQ]) /* queue empty? */
+ 			break;
+ 
+ 		dev->stats.tx_packets++;
 
 
