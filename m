@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759725Ab0GAWO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:14:26 -0400
-Received: from kroah.org ([198.145.64.141]:47350 "EHLO coco.kroah.org"
+	id S1759781Ab0GAWOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:14:42 -0400
+Received: from shutemov.name ([188.40.19.243]:39480 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932610Ab0GAUt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:59 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:30 2010
-Message-Id: <20100701173430.801671902@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:53 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Felix Fietkau <nbd@openwrt.org>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 047/164] mac80211: fix handling of 4-address-mode in ieee80211_change_iface
-In-Reply-To: <20100701175152.GA2135@kroah.com>
+	id S932651Ab0GAWOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 18:14:21 -0400
+Date: Fri, 2 Jul 2010 01:14:20 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, Anfei Zhou <anfei.zhou@gmail.com>,
+       Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [patch 071/149] ARM: 6166/1: Proper prefetch abort handling on
+ pre-ARMv6
+Message-ID: <20100701221420.GA10481@shutemov.name>
+References: <20100701175144.GA2116@kroah.com>
+ <20100701173212.785441106@clark.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100701173212.785441106@clark.site>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Felix Fietkau <nbd@openwrt.org>
-
-commit f7917af92024d43bc20bc1afc92de27b0bd0f50b upstream.
-
-A misplaced interface type check bails out too early if the interface
-is not in monitor mode. This patch moves it to the right place, so that
-it only covers changes to the monitor flags.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- net/mac80211/cfg.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -98,9 +98,6 @@ static int ieee80211_change_iface(struct
- 					    params->mesh_id_len,
- 					    params->mesh_id);
+On Thu, Jul 01, 2010 at 10:31:37AM -0700, Greg KH wrote:
+> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+> 
+> ------------------
+> 
+> From: Anfei <anfei.zhou@gmail.com>
+> 
+> commit 5e27fb78df95e027723af2c90ecc9b4527ae59e9 upstream.
+> 
+> Instruction faults on pre-ARMv6 CPUs are interpreted as
+> a 'translation fault', but do_translation_fault doesn't
+> handle well if user mode trying to run instruction above
+> TASK_SIZE, and result in the infinite retry of that
+> instruction.
  
--	if (sdata->vif.type != NL80211_IFTYPE_MONITOR || !flags)
--		return 0;
--
- 	if (type == NL80211_IFTYPE_AP_VLAN &&
- 	    params && params->use_4addr == 0)
- 		rcu_assign_pointer(sdata->u.vlan.sta, NULL);
-@@ -108,7 +105,9 @@ static int ieee80211_change_iface(struct
- 		 params && params->use_4addr >= 0)
- 		sdata->u.mgd.use_4addr = params->use_4addr;
- 
--	sdata->u.mntr_flags = *flags;
-+	if (sdata->vif.type == NL80211_IFTYPE_MONITOR && flags)
-+		sdata->u.mntr_flags = *flags;
-+
- 	return 0;
- }
- 
+Actually, this patch helps also on ARMv6+. Probably, better to correct
+commit message for stable.
 
+> Signed-off-by: Anfei Zhou <anfei.zhou@gmail.com>
+> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  arch/arm/mm/fault.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> --- a/arch/arm/mm/fault.c
+> +++ b/arch/arm/mm/fault.c
+> @@ -386,6 +386,9 @@ do_translation_fault(unsigned long addr,
+>  	if (addr < TASK_SIZE)
+>  		return do_page_fault(addr, fsr, regs);
+>  
+> +	if (user_mode(regs))
+> +		goto bad_area;
+> +
+>  	index = pgd_index(addr);
+>  
+>  	/*
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+-- 
+ Kirill A. Shutemov
