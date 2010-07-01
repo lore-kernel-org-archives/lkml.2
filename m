@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758940Ab0GAVNh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:13:37 -0400
-Received: from kroah.org ([198.145.64.141]:33696 "EHLO coco.kroah.org"
+	id S1759242Ab0GAVQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:16:11 -0400
+Received: from kroah.org ([198.145.64.141]:60935 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758798Ab0GAVMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:12:46 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:47 2010
-Message-Id: <20100701174247.027417116@clark.site>
+	id S1759002Ab0GAVNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:52 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:53 2010
+Message-Id: <20100701174253.267026451@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:41:37 -0700
+Date: Thu, 01 Jul 2010 10:42:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: [007/200] Fix racy use of anon_inode_getfd() in perf_event.c
+       Li Yang <leoli@freescale.com>, Jin Qing <b24347@freescale.com>,
+       Kumar Gala <galak@kernel.crashing.org>
+Subject: [081/200] powerpc/fsl-booke: Fix InstructionTLBError execute permission check
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,100 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Li Yang <leoli@freescale.com>
 
-commit ea635c64e007061f6468ece5cc9cc62d41d4ecf2 upstream.
+commit 78e2e68a2b79f394b7cd61e07987a8a89af907f7 upstream.
 
-once anon_inode_getfd() is called, you can't expect *anything* about
-struct file that descriptor points to - another thread might be doing
-whatever it likes with descriptor table at that point.
+In CONFIG_PTE_64BIT the PTE format has unique permission bits for user
+and supervisor execute.  However on !CONFIG_PTE_64BIT we overload the
+supervisor bit to imply user execute with _PAGE_USER set.  This allows
+us to use the same permission check mask for user or supervisor code on
+!CONFIG_PTE_64BIT.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+However, on CONFIG_PTE_64BIT we map _PAGE_EXEC to _PAGE_BAP_UX so we
+need a different permission mask based on the fault coming from a kernel
+address or user space.
+
+Without unique permission masks we see issues like the following with
+modules:
+
+Unable to handle kernel paging request for instruction fetch
+Faulting instruction address: 0xf938d040
+Oops: Kernel access of bad area, sig: 11 [#1]
+
+Signed-off-by: Li Yang <leoli@freescale.com>
+Signed-off-by: Jin Qing <b24347@freescale.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/perf_event.c |   40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
+ arch/powerpc/kernel/head_fsl_booke.S |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4811,8 +4811,8 @@ SYSCALL_DEFINE5(perf_event_open,
- 	struct perf_event_context *ctx;
- 	struct file *event_file = NULL;
- 	struct file *group_file = NULL;
-+	int event_fd;
- 	int fput_needed = 0;
--	int fput_needed2 = 0;
- 	int err;
+--- a/arch/powerpc/kernel/head_fsl_booke.S
++++ b/arch/powerpc/kernel/head_fsl_booke.S
+@@ -639,6 +639,13 @@ interrupt_base:
+ 	rlwinm	r12,r12,0,16,1
+ 	mtspr	SPRN_MAS1,r12
  
- 	/* for future expandability... */
-@@ -4833,12 +4833,18 @@ SYSCALL_DEFINE5(perf_event_open,
- 			return -EINVAL;
- 	}
++	/* Make up the required permissions for kernel code */
++#ifdef CONFIG_PTE_64BIT
++	li	r13,_PAGE_PRESENT | _PAGE_BAP_SX
++	oris	r13,r13,_PAGE_ACCESSED@h
++#else
++	li	r13,_PAGE_PRESENT | _PAGE_ACCESSED | _PAGE_EXEC
++#endif
+ 	b	4f
  
-+	event_fd = get_unused_fd_flags(O_RDWR);
-+	if (event_fd < 0)
-+		return event_fd;
-+
- 	/*
- 	 * Get the target context (task or percpu):
- 	 */
- 	ctx = find_get_context(pid, cpu);
--	if (IS_ERR(ctx))
--		return PTR_ERR(ctx);
-+	if (IS_ERR(ctx)) {
-+		err = PTR_ERR(ctx);
-+		goto err_fd;
-+	}
+ 	/* Get the PGD for the current thread */
+@@ -646,15 +653,15 @@ interrupt_base:
+ 	mfspr	r11,SPRN_SPRG_THREAD
+ 	lwz	r11,PGDIR(r11)
  
- 	/*
- 	 * Look up the group leader (we will attach this event to it):
-@@ -4878,13 +4884,11 @@ SYSCALL_DEFINE5(perf_event_open,
- 	if (IS_ERR(event))
- 		goto err_put_context;
+-4:
+-	/* Make up the required permissions */
++	/* Make up the required permissions for user code */
+ #ifdef CONFIG_PTE_64BIT
+-	li	r13,_PAGE_PRESENT | _PAGE_EXEC
++	li	r13,_PAGE_PRESENT | _PAGE_BAP_UX
+ 	oris	r13,r13,_PAGE_ACCESSED@h
+ #else
+ 	li	r13,_PAGE_PRESENT | _PAGE_ACCESSED | _PAGE_EXEC
+ #endif
  
--	err = anon_inode_getfd("[perf_event]", &perf_fops, event, O_RDWR);
--	if (err < 0)
--		goto err_free_put_context;
--
--	event_file = fget_light(err, &fput_needed2);
--	if (!event_file)
-+	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event, O_RDWR);
-+	if (IS_ERR(event_file)) {
-+		err = PTR_ERR(event_file);
- 		goto err_free_put_context;
-+	}
- 
- 	if (flags & PERF_FLAG_FD_OUTPUT) {
- 		err = perf_event_set_output(event, group_fd);
-@@ -4905,19 +4909,19 @@ SYSCALL_DEFINE5(perf_event_open,
- 	list_add_tail(&event->owner_entry, &current->perf_event_list);
- 	mutex_unlock(&current->perf_event_mutex);
- 
--err_fput_free_put_context:
--	fput_light(event_file, fput_needed2);
-+	fput_light(group_file, fput_needed);
-+	fd_install(event_fd, event_file);
-+	return event_fd;
- 
-+err_fput_free_put_context:
-+	fput(event_file);
- err_free_put_context:
--	if (err < 0)
--		free_event(event);
--
-+	free_event(event);
- err_put_context:
--	if (err < 0)
--		put_ctx(ctx);
--
- 	fput_light(group_file, fput_needed);
--
-+	put_ctx(ctx);
-+err_fd:
-+	put_unused_fd(event_fd);
- 	return err;
- }
++4:
+ 	FIND_PTE
+ 	andc.	r13,r13,r11		/* Check permission */
  
 
 
