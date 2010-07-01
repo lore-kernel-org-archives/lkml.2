@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab0GAVLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:11:55 -0400
-Received: from kroah.org ([198.145.64.141]:47614 "EHLO coco.kroah.org"
+	id S1758765Ab0GAVMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:12:05 -0400
+Received: from kroah.org ([198.145.64.141]:47611 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932619Ab0GAUui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:38 -0400
+	id S932727Ab0GAUug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:34 2010
-Message-Id: <20100701173434.140613396@clark.site>
+Message-Id: <20100701173434.059069164@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:33 -0700
+Date: Thu, 01 Jul 2010 10:34:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
        Mark Brown <broonie@opensource.wolfsonmicro.com>,
        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [patch 087/164] ASoC: Fix dB scales for WM8400
+Subject: [patch 086/164] ASoC: Fix dB scales for WM835x
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,58 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 3351e9fbb0fda6498ee149ee88c67f5849813c57 upstream.
+commit e6a08c5a8990102bcd1f4bae84b668da6c23caa9 upstream.
 
-These scales should be regular, not linear.
+These should be regular rather than linear scales.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8400.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ sound/soc/codecs/wm8350.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/wm8400.c
-+++ b/sound/soc/codecs/wm8400.c
-@@ -106,21 +106,21 @@ static void wm8400_codec_reset(struct sn
- 	wm8400_reset_codec_reg_cache(wm8400->wm8400);
- }
- 
--static const DECLARE_TLV_DB_LINEAR(rec_mix_tlv, -1500, 600);
-+static const DECLARE_TLV_DB_SCALE(rec_mix_tlv, -1500, 600, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(in_pga_tlv, -1650, 3000);
-+static const DECLARE_TLV_DB_SCALE(in_pga_tlv, -1650, 3000, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_mix_tlv, -2100, 0);
-+static const DECLARE_TLV_DB_SCALE(out_mix_tlv, -2100, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_pga_tlv, -7300, 600);
-+static const DECLARE_TLV_DB_SCALE(out_pga_tlv, -7300, 600, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_omix_tlv, -600, 0);
-+static const DECLARE_TLV_DB_SCALE(out_omix_tlv, -600, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_dac_tlv, -7163, 0);
-+static const DECLARE_TLV_DB_SCALE(out_dac_tlv, -7163, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(in_adc_tlv, -7163, 1763);
-+static const DECLARE_TLV_DB_SCALE(in_adc_tlv, -7163, 1763, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_sidetone_tlv, -3600, 0);
-+static const DECLARE_TLV_DB_SCALE(out_sidetone_tlv, -3600, 0, 0);
- 
- static int wm8400_outpga_put_volsw_vu(struct snd_kcontrol *kcontrol,
-         struct snd_ctl_elem_value *ucontrol)
-@@ -439,7 +439,7 @@ static int outmixer_event (struct snd_so
- /* INMIX dB values */
- static const unsigned int in_mix_tlv[] = {
- 	TLV_DB_RANGE_HEAD(1),
--	0,7, TLV_DB_LINEAR_ITEM(-1200, 600),
-+	0,7, TLV_DB_SCALE_ITEM(-1200, 600, 0),
+--- a/sound/soc/codecs/wm8350.c
++++ b/sound/soc/codecs/wm8350.c
+@@ -423,8 +423,8 @@ static const struct soc_enum wm8350_enum
+ 	SOC_ENUM_SINGLE(WM8350_INPUT_MIXER_VOLUME, 15, 2, wm8350_lr),
  };
  
- /* Left In PGA Connections */
+-static DECLARE_TLV_DB_LINEAR(pre_amp_tlv, -1200, 3525);
+-static DECLARE_TLV_DB_LINEAR(out_pga_tlv, -5700, 600);
++static DECLARE_TLV_DB_SCALE(pre_amp_tlv, -1200, 3525, 0);
++static DECLARE_TLV_DB_SCALE(out_pga_tlv, -5700, 600, 0);
+ static DECLARE_TLV_DB_SCALE(dac_pcm_tlv, -7163, 36, 1);
+ static DECLARE_TLV_DB_SCALE(adc_pcm_tlv, -12700, 50, 1);
+ static DECLARE_TLV_DB_SCALE(out_mix_tlv, -1500, 300, 1);
 
 
