@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757783Ab0GASXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:23:13 -0400
-Received: from kroah.org ([198.145.64.141]:35475 "EHLO coco.kroah.org"
+	id S1757899Ab0GASY1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:24:27 -0400
+Received: from kroah.org ([198.145.64.141]:40785 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757711Ab0GASXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:06 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:10 2010
-Message-Id: <20100701173210.258796794@clark.site>
+	id S1757841Ab0GASYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:17 2010
+Message-Id: <20100701173217.275728620@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:07 -0700
+Date: Thu, 01 Jul 2010 10:32:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jouni Malinen <j@w1.fi>, "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 041/149] mac80211: Fix robust management frame handling (MFP)
+       Eugene Teo <eugene@redhat.com>,
+       Michael Kerrisk <mtk.manpages@gmail.com>,
+       Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [patch 124/149] vfs: add NOFOLLOW flag to umount(2)
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jouni Malinen <j@w1.fi>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit d211e90e28a074447584729018a39910d691d1a8 upstream.
+commit db1f05bb85d7966b9176e293f3ceead1cb8b5d79 upstream.
 
-Commit e34e09401ee9888dd662b2fca5d607794a56daf2 incorrectly removed
-use of ieee80211_has_protected() from the management frame case and in
-practice, made this validation drop all Action frames when MFP is
-enabled. This should have only been done for frames with Protected
-field set to zero.
+Add a new UMOUNT_NOFOLLOW flag to umount(2).  This is needed to prevent
+symlink attacks in unprivileged unmounts (fuse, samba, ncpfs).
 
-Signed-off-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Additionally, return -EINVAL if an unknown flag is used (and specify
+an explicitly unused flag: UMOUNT_UNUSED).  This makes it possible for
+the caller to determine if a flag is supported or not.
+
+CC: Eugene Teo <eugene@redhat.com>
+CC: Michael Kerrisk <mtk.manpages@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/rx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/namespace.c     |    9 ++++++++-
+ include/linux/fs.h |    2 ++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1220,7 +1220,8 @@ ieee80211_drop_unencrypted(struct ieee80
- 		     (rx->key || rx->sdata->drop_unencrypted)))
- 		return -EACCES;
- 	if (rx->sta && test_sta_flags(rx->sta, WLAN_STA_MFP)) {
--		if (unlikely(ieee80211_is_unicast_robust_mgmt_frame(rx->skb) &&
-+		if (unlikely(!ieee80211_has_protected(fc) &&
-+			     ieee80211_is_unicast_robust_mgmt_frame(rx->skb) &&
- 			     rx->key))
- 			return -EACCES;
- 		/* BIP does not use Protected field, so need to check MMIE */
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1119,8 +1119,15 @@ SYSCALL_DEFINE2(umount, char __user *, n
+ {
+ 	struct path path;
+ 	int retval;
++	int lookup_flags = 0;
+ 
+-	retval = user_path(name, &path);
++	if (flags & ~(MNT_FORCE | MNT_DETACH | MNT_EXPIRE | UMOUNT_NOFOLLOW))
++		return -EINVAL;
++
++	if (!(flags & UMOUNT_NOFOLLOW))
++		lookup_flags |= LOOKUP_FOLLOW;
++
++	retval = user_path_at(AT_FDCWD, name, lookup_flags, &path);
+ 	if (retval)
+ 		goto out;
+ 	retval = -EINVAL;
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1310,6 +1310,8 @@ extern int send_sigurg(struct fown_struc
+ #define MNT_FORCE	0x00000001	/* Attempt to forcibily umount */
+ #define MNT_DETACH	0x00000002	/* Just detach from the tree */
+ #define MNT_EXPIRE	0x00000004	/* Mark for expiry */
++#define UMOUNT_NOFOLLOW	0x00000008	/* Don't follow symlink on umount */
++#define UMOUNT_UNUSED	0x80000000	/* Flag guaranteed to be unused */
+ 
+ extern struct list_head super_blocks;
+ extern spinlock_t sb_lock;
 
 
