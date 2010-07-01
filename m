@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab0GASk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:40:58 -0400
-Received: from kroah.org ([198.145.64.141]:40533 "EHLO coco.kroah.org"
+	id S1757925Ab0GASXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:23:36 -0400
+Received: from kroah.org ([198.145.64.141]:40539 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757905Ab0GASXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:33 -0400
+	id S1757911Ab0GASXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:34 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:13 2010
-Message-Id: <20100701173212.951098396@clark.site>
+Message-Id: <20100701173213.037129124@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:39 -0700
+Date: Thu, 01 Jul 2010 10:31:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Marek Vasut <marek.vasut@gmail.com>,
+       Linus Walleij <linus.walleij@stericsson.com>,
        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [patch 073/149] ARM: 6146/1: sa1111: Prevent deadlock in resume path
+Subject: [patch 074/149] ARM: 6144/1: TCM memory bug freeing bug
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Marek=20Va=C5=A1ut?= <marek.vasut@gmail.com>
+From: Linus Walleij <linus.walleij@stericsson.com>
 
-commit 3defb2476166445982a90c12d33f8947e75476c4 upstream.
+commit ea208f646c8fb91c39c852e952fc911e1ad045ab upstream.
 
-This patch reorganises the sa1111_resume() function in a manner the spinlock
-happens after calling the sa1111_wake(). This fixes two bugs:
+This fixes a bug in mm/init.c when freeing the TCM compile memory,
+this was being referred to as a char * which is incorrect: this
+will dereference the pointer and feed in the value at the location
+instead of the address to it. Change it to a plain char and use
+&(char) to reference it.
 
-1) This function called sa1111_wake() which tried to claim the same spinlock
-   the sa1111_resume() already claimed. This would result in certain deadlock.
-
-   Original idea for this part: Russell King <rmk+kernel@arm.linux.org.uk>
-
-2) The function didn't unlock the spinlock in case the chip didn't report
-   correct ID.
-
-   Original idea for this part: Julia Lawall <julia@diku.dk>
-
-Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/common/sa1111.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ arch/arm/mm/init.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm/common/sa1111.c
-+++ b/arch/arm/common/sa1111.c
-@@ -887,8 +887,6 @@ static int sa1111_resume(struct platform
- 	if (!save)
- 		return 0;
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -632,10 +632,10 @@ void __init mem_init(void)
+ void free_initmem(void)
+ {
+ #ifdef CONFIG_HAVE_TCM
+-	extern char *__tcm_start, *__tcm_end;
++	extern char __tcm_start, __tcm_end;
  
--	spin_lock_irqsave(&sachip->lock, flags);
--
- 	/*
- 	 * Ensure that the SA1111 is still here.
- 	 * FIXME: shouldn't do this here.
-@@ -905,6 +903,13 @@ static int sa1111_resume(struct platform
- 	 * First of all, wake up the chip.
- 	 */
- 	sa1111_wake(sachip);
-+
-+	/*
-+	 * Only lock for write ops. Also, sa1111_wake must be called with
-+	 * released spinlock!
-+	 */
-+	spin_lock_irqsave(&sachip->lock, flags);
-+
- 	sa1111_writel(0, sachip->base + SA1111_INTC + SA1111_INTEN0);
- 	sa1111_writel(0, sachip->base + SA1111_INTC + SA1111_INTEN1);
+-	totalram_pages += free_area(__phys_to_pfn(__pa(__tcm_start)),
+-				    __phys_to_pfn(__pa(__tcm_end)),
++	totalram_pages += free_area(__phys_to_pfn(__pa(&__tcm_start)),
++				    __phys_to_pfn(__pa(&__tcm_end)),
+ 				    "TCM link");
+ #endif
  
 
 
