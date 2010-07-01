@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759888Ab0GAWmn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:42:43 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39909 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483Ab0GAWml (ORCPT
+	id S1759899Ab0GAWoi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:44:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33819 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755483Ab0GAWof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 18:42:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=eIdz1xmFrP07yQNqzu9eHERttwqEmvy1bx3MQJ6ylrerfO/8c55bhQC5THEvjr6ZlL
-         +iwOrs7nn9bYFIGRH7c/4bXoiC80NR5WzpIT6JYnjAb0leRqLe5EXEQ9Q66n2aE57f+2
-         lpoC5uxrqd5kzX+EhAUhEp8E4+Y7mDLhvHe/I=
-Date: Thu, 1 Jul 2010 15:42:36 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jerome Lacoste <jerome.lacoste@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: i8042 no mouse on resume. (i8042: failed to resume active
- multiplexor, mouse won't work.)
-Message-ID: <20100701224235.GA29504@core.coreip.homeip.net>
-References: <AANLkTilvxV18Qc2-34GtNmfAIvNL2dtEAPC3iPFNU2Pv@mail.gmail.com>
- <20100701162454.GD4152@core.coreip.homeip.net>
- <AANLkTikx8AxRdPoSbsym9rUiA11BbufqImcD2sg4f8Ds@mail.gmail.com>
- <AANLkTikmcaQSNNy6ZHMvEwBJVkWdyQ5KALR6832hUkjz@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikmcaQSNNy6ZHMvEwBJVkWdyQ5KALR6832hUkjz@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Thu, 1 Jul 2010 18:44:35 -0400
+Date: Thu, 1 Jul 2010 15:43:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+       Alexander Clouter <alex@digriz.org.uk>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] VMware balloon: force compiling as a module
+Message-Id: <20100701154347.e3c1094b.akpm@linux-foundation.org>
+In-Reply-To: <201007011531.52291.dtor@vmware.com>
+References: <20100628230035.GA18971@dtor-ws.eng.vmware.com>
+	<201006290940.38821.dtor@vmware.com>
+	<20100701151835.33874101.akpm@linux-foundation.org>
+	<201007011531.52291.dtor@vmware.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 12:28:17AM +0200, Jerome Lacoste wrote:
-> On Thu, Jul 1, 2010 at 11:19 PM, Jerome Lacoste
-> <jerome.lacoste@gmail.com> wrote:
-> > On Thu, Jul 1, 2010 at 6:24 PM, Dmitry Torokhov
-> > <dmitry.torokhov@gmail.com> wrote:
-> >> Hi Jerome,
-> >>
-> > [...]
-> >>> * the hardware is a Lenovo 3000 N100
-> >>
-> >> We already trying to disable MUX mode on Lenovo 3000 N100, see
-> >> drivers/input/serio/i8042-x86ia64io.h:
-> >>
-> >>        {
-> >>                /* Lenovo 3000 n100 */
-> >>                .matches = {
-> >>                        DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> >>                        DMI_MATCH(DMI_PRODUCT_NAME, "076804U"),
-> >>                },
-> >>        },
-> >>
-> >> What's in your dmi?
-> >
-> > System Information
-> >        Manufacturer: LENOVO
-> >        Product Name: 0768BKG
-> >        Version: 3000 N100
-> >
-> > according to dmidecode
+On Thu, 1 Jul 2010 15:31:50 -0700
+Dmitry Torokhov <dtor@vmware.com> wrote:
+
+> On Thursday, July 01, 2010 03:18:35 pm Andrew Morton wrote:
+> > On Tue, 29 Jun 2010 09:40:38 -0700
+> > 
+> > Dmitry Torokhov <dtor@vmware.com> wrote:
+> > > On Tuesday, June 29, 2010 09:28:59 am Bruno Pr__mont wrote:
+> > > > On Tue, 29 June 2010 Alexander Clouter <alex@digriz.org.uk> wrote:
+> > > > > Dmitry Torokhov <dtor@vmware.com> wrote:
+> > > > > > VMware Tools installer requires the upstream driver to be compiled
+> > > > > > as a module in order to detect its presence and avoid installing
+> > > > > > our own version on top of it. To avoid surprises with 2 versions
+> > > > > > of the driver being installed and fighting with each other, let's
+> > > > > > force the driver to be compiled as a module unless user selects
+> > > > > > CONFIG_EMBEDDED.
+> > > > > 
+> > > > > *barf*
+> > > > > 
+> > > > > This surely is a problem in the installer and not the kernel?  Can
+> > > > > you not nosey around in /sys/class/misc or where-ever your driver
+> > > > > appears? If it does not, then I would probably suggest a patch to
+> > > > > your balloon driver that dumps some details in there, including
+> > > > > module version information.
+> > > > > 
+> > > > > Eugh.
+> > > > 
+> > > > In addition, the installer may check under /sys/module/ for it (as for
+> > > > any/most code that can be built as a module), even for built-in code.
+> > > > (if balloon driver does not show up there when built-in it would be
+> > > > better to get it to show up there)
+> > > 
+> > > When driver is built-in the only thing exported in /sys/module/XXX are
+> > > module parameters.
+> > > 
+> > > We also need to handle scenario when module is not loaded into the
+> > > kernel.
+> > 
+> > - check for the /sys/module directory.
 > 
-> Note: I will try the i8042.nomux option, but can't reboot until tomorrow.
+> Empty.
 
-Could you please also try i8042.reset instead of i8042.nomux?
+But the presence of the empty /sys/module/vmware_balloon tells you that
+the driver is loaded?
 
--- 
-Dmitry
+Confused.
+
+> > 
+> > - if that failed, modprobe the driver
+> > 
+> 
+> Succeeds since the driver name changed (we renamed it to vmware_balloon
+> before submitting into mainline to avoid confusion based on our experience
+> with pvscsi; the existing one in the wild is called vmmemctl).
+> 
+> Now we have 2 drivers fighting. There is no backing device and so driver
+> core will not save us by refusing to bind to already claimed device.
+
+If vmware_balloon is present in /sys/modules or is loaded, don't load
+vmmemctl.  And vice versa.
+
+I dunno - it's silly for me to sit here proposing solutions.  it's
+better that you do it!
+
+
