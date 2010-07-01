@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab0GAH0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 03:26:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50716 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044Ab0GAH0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 03:26:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,518,1272870000"; 
-   d="scan'208";a="635315131"
-Message-ID: <4C2C4319.6090906@intel.com>
-Date: Thu, 01 Jul 2010 00:26:17 -0700
-From: Dan Williams <dan.j.williams@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: "Woodhouse, David" <david.woodhouse@intel.com>
-CC: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	 <4C29420D.2010406@intel.com>	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	 <4C2A8879.8010000@intel.com>	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	 <4C2AC55E.3040303@intel.com>	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	 <1277923422.16256.8.camel@localhost>  <4C2B9DAC.1030806@intel.com>	 <1277928125.18854.0.camel@localhost>  <4C2BBACF.3080405@intel.com>	 <1277965264.18854.16.camel@localhost>  <4C2C3B07.7050200@intel.com> <1277968336.4945.3.camel@localhost>
-In-Reply-To: <1277968336.4945.3.camel@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754241Ab0GAHgS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 03:36:18 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35270 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754141Ab0GAHgR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 03:36:17 -0400
+Subject: Re: What's the relationship between Linux driver running priority
+ and FIFO policy?
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Zhang, Yongchao (GE Healthcare)" <Yongchao.Zhang@ge.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <9BC2BBFFF6E8F04094DB58B805758CE406C039A7@SHAMLVEM01.e2k.ad.ge.com>
+References: <9BC2BBFFF6E8F04094DB58B805758CE406C039A7@SHAMLVEM01.e2k.ad.ge.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 01 Jul 2010 09:36:14 +0200
+Message-ID: <1277969774.1917.9.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/1/2010 12:12 AM, Woodhouse, David wrote:
-> On Thu, 2010-07-01 at 07:51 +0100, Williams, Dan J wrote:
->> This version of the device only exists on the 5400 chipset and always
->> has its own iommu, but since other platforms get the DMAR entry right I
->> think this hammer is too big?  Wouldn't this break VT-d operation on
->> non-busted platforms?
->
-> That just means we have to get the quirk right. Does 'this version' of
-> the device have its own PCI ID? We can always fall back to checking the
-> ID of the device at 0000:00:00.0 to check which chipset we're on.
->
+On Thu, 2010-07-01 at 13:21 +0800, Zhang, Yongchao (GE Healthcare)
+wrote:
+> Hi
+>   I have a question disturb me very much.
+>   You know linux FIFO policy is common,and also there are many drivers
+> running in system,so
+>   which level are these drivers running on? If I have a progrom which
+> priority is FIFO99, does it disturb the driver running?
+>   I want know which level does drivers running on? For example, driver
+> running on FIFOXX? and how does linux schedule on this 
+>   case?
+>  
 
-PCI_DEVICE_ID_INTEL_IOAT_SNB only exists on this chipset and to date 
-only "MacPro3,1" platforms have this problem.
+Fully depends on what a driver is and what you expect it to. If part of
+the driver consists of a (or multiple) kernel thread, and that thread
+has lower priority than FIFO99 (very typical) then of course.
 
->> Alternatively I can just catch this failure earlier in the init process
->> and fail the driver load with a grumble printk about broken bios...
->> instead of the current BUG_ON() that is meant to catch runtime catastrophes.
->
-> Please use WARN_TAINT(TAINT_FIRMWARE_WORKAROUND). That way the
-> statistics end up in kerneloops.org and we have found that extremely
-> useful when LARTing the offending vendors.
->
+If the driver is a pure IRQ driven thingy, then no, since hardirq
+context will still preempt any task context.
 
-Good to know, thanks.
+Of course, if whatever proglet is talking to the driver is running at a
+lower priority, that will get starved and your driver might again not
+make any progress because all its queues are filled (incomming) or empty
+(outgoing).
 
---
-Dan
+In general having a FIFO99 task around that consumes unbounded amounts
+of cpu time is not something that is healthy for the system and it not
+something I can recommend.
+
+The Real-Time classes (FIFO/RR) are designed for deterministic programs
+with bounded runtime. Things like spinning in userspace are very bad for
+a number of reasons (which nevertheless doesn't seem to stop people from
+doing just that).
+
+The only answer that I can give you is: don't do that.
+
+As to how Linux schedules, the scheduler is concerned only with tasks;
+it will run the highest priority FIFO/RR task available, if there are no
+FIFO/RR tasks present it will run SCHED_OTHER tasks, for those it will
+divide the remaining time fairly based on their nice value (which is
+mapped to a weight).
+
+Interrupts -- at a hardware level -- interrupt task context and are thus
+always ran whenever they happen.
+
+That's all, there's really nothing more to it.
