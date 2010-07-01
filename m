@@ -1,65 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160Ab0GAVao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:30:44 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33666 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758992Ab0GAVah (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:30:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=JbadtZim5dr9Ru3o0ZOHfi3yeNqJk0heHkvfe5AbE6a14XHkIPRSArKB8cOSIm8BeX
-         X0Kni5ZGP6vUB/8yWpy1qjzHHMYMCSxAsTJtetx377GWhtA0M67Me4FSDQeMYHm15srn
-         esO3+gwJitw652WZH1JoPaVvj6ImR+ZxmeqTI=
-Message-ID: <4C2D0916.8030002@gmail.com>
-Date: Thu, 01 Jul 2010 14:31:02 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, jkosina@suse.cz
-Subject: Re: [PATCH]kernel.h Move warning message about using kernel headers
- for userspace to types.h
-References: <1277935785-6023-1-git-send-email-justinmattock@gmail.com> <201007011707.31783.arnd@arndb.de> <4C2CCE57.40208@gmail.com> <201007012238.58335.arnd@arndb.de>
-In-Reply-To: <201007012238.58335.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933211Ab0GAVbE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:31:04 -0400
+Received: from kroah.org ([198.145.64.141]:33225 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933145Ab0GAVPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:15:21 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:01 2010
+Message-Id: <20100701174301.906745909@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:44:32 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
+Subject: [182/200] KVM: SVM: Dont sync nested cr8 to lapic and back
+In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2010 01:38 PM, Arnd Bergmann wrote:
-> On Thursday 01 July 2010, Justin P. Mattock wrote:
->> o.k. I resent an updated version. keep in mind this is a bit confusing
->> with the __KERNEL__ being in there multiple times, but with the v2 I'm
->> able to see the #warning message with my little program.
->
-> Well, it's technically correct, but the #ifndef __KERNEL__ in there
-> would better get dropped, since you are already in the #else path.
->
+2.6.34-stable review patch.  If anyone has any objections, please let me know.
 
-ahh.. I see now(makes sense). I resent this with the above change.
+------------------
 
->> As for the patch itself hopefully I corrected it's changelog etc..
->> lately I've been a bit confused with the whole sighned off thing i.g.
->> you suggested the #else so naturally I should add your name with a
->> sighned off, but with other patches I was told not to do so due to the
->> sighned off procedure/process. I'll re-read the submitting patches again
->> to make sure.
->
-> You got that part right. The S-o-b only ever gets added by a person
-> sending a patch for the sending address, so you would not add my
-> address as S-o-B, though you could add it as Cc:.
-> When someone picks up your patch and forwards it, that person
-> will add his/her own S-o-b line below yours and keep you listed
-> as From.
->
-> 	Arnd
->
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-o.k. I added a Cc, then down the line the sob's are added etc.
+This patch makes syncing of the guest tpr to the lapic
+conditional on !nested. Otherwise a nested guest using the
+TPR could freeze the guest.
+Another important change this patch introduces is that the
+cr8 intercept bits are no longer ORed at vmrun emulation if
+the guest sets VINTR_MASKING in its VMCB. The reason is that
+nested cr8 accesses need alway be handled by the nested
+hypervisor because they change the shadow version of the
+tpr.
 
-Justin P. Mattock
+Cc: stable@kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+(Cherry-picked from commit 88ab24adc7142506c8583ac36a34fa388300b750)
+---
+ arch/x86/kvm/svm.c |   46 +++++++++++++++++++++++++++++++---------------
+ 1 file changed, 31 insertions(+), 15 deletions(-)
+
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -1830,21 +1830,6 @@ static bool nested_svm_vmrun(struct vcpu
+ 	svm->vmcb->save.dr6 = nested_vmcb->save.dr6;
+ 	svm->vmcb->save.cpl = nested_vmcb->save.cpl;
+ 
+-	/* We don't want a nested guest to be more powerful than the guest,
+-	   so all intercepts are ORed */
+-	svm->vmcb->control.intercept_cr_read |=
+-		nested_vmcb->control.intercept_cr_read;
+-	svm->vmcb->control.intercept_cr_write |=
+-		nested_vmcb->control.intercept_cr_write;
+-	svm->vmcb->control.intercept_dr_read |=
+-		nested_vmcb->control.intercept_dr_read;
+-	svm->vmcb->control.intercept_dr_write |=
+-		nested_vmcb->control.intercept_dr_write;
+-	svm->vmcb->control.intercept_exceptions |=
+-		nested_vmcb->control.intercept_exceptions;
+-
+-	svm->vmcb->control.intercept |= nested_vmcb->control.intercept;
+-
+ 	svm->nested.vmcb_msrpm = nested_vmcb->control.msrpm_base_pa;
+ 
+ 	/* cache intercepts */
+@@ -1862,6 +1847,28 @@ static bool nested_svm_vmrun(struct vcpu
+ 	else
+ 		svm->vcpu.arch.hflags &= ~HF_VINTR_MASK;
+ 
++	if (svm->vcpu.arch.hflags & HF_VINTR_MASK) {
++		/* We only want the cr8 intercept bits of the guest */
++		svm->vmcb->control.intercept_cr_read &= ~INTERCEPT_CR8_MASK;
++		svm->vmcb->control.intercept_cr_write &= ~INTERCEPT_CR8_MASK;
++	}
++
++	/* We don't want a nested guest to be more powerful than the guest,
++	   so all intercepts are ORed */
++	svm->vmcb->control.intercept_cr_read |=
++		nested_vmcb->control.intercept_cr_read;
++	svm->vmcb->control.intercept_cr_write |=
++		nested_vmcb->control.intercept_cr_write;
++	svm->vmcb->control.intercept_dr_read |=
++		nested_vmcb->control.intercept_dr_read;
++	svm->vmcb->control.intercept_dr_write |=
++		nested_vmcb->control.intercept_dr_write;
++	svm->vmcb->control.intercept_exceptions |=
++		nested_vmcb->control.intercept_exceptions;
++
++	svm->vmcb->control.intercept |= nested_vmcb->control.intercept;
++
++	svm->vmcb->control.lbr_ctl = nested_vmcb->control.lbr_ctl;
+ 	svm->vmcb->control.int_vector = nested_vmcb->control.int_vector;
+ 	svm->vmcb->control.int_state = nested_vmcb->control.int_state;
+ 	svm->vmcb->control.tsc_offset += nested_vmcb->control.tsc_offset;
+@@ -2524,6 +2531,9 @@ static void update_cr8_intercept(struct
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 
++	if (is_nested(svm) && (vcpu->arch.hflags & HF_VINTR_MASK))
++		return;
++
+ 	if (irr == -1)
+ 		return;
+ 
+@@ -2627,6 +2637,9 @@ static inline void sync_cr8_to_lapic(str
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 
++	if (is_nested(svm) && (vcpu->arch.hflags & HF_VINTR_MASK))
++		return;
++
+ 	if (!(svm->vmcb->control.intercept_cr_write & INTERCEPT_CR8_MASK)) {
+ 		int cr8 = svm->vmcb->control.int_ctl & V_TPR_MASK;
+ 		kvm_set_cr8(vcpu, cr8);
+@@ -2638,6 +2651,9 @@ static inline void sync_lapic_to_cr8(str
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 	u64 cr8;
+ 
++	if (is_nested(svm) && (vcpu->arch.hflags & HF_VINTR_MASK))
++		return;
++
+ 	cr8 = kvm_get_cr8(vcpu);
+ 	svm->vmcb->control.int_ctl &= ~V_TPR_MASK;
+ 	svm->vmcb->control.int_ctl |= cr8 & V_TPR_MASK;
+
+
