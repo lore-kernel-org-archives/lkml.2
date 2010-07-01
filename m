@@ -1,58 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933412Ab0GAVtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:49:08 -0400
-Received: from kroah.org ([198.145.64.141]:60977 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759032Ab0GAVOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:01 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
-Message-Id: <20100701174254.182256084@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:02 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: [092/200] eeepc-wmi: depends on BACKLIGHT_CLASS_DEVICE
-In-Reply-To: <20100701175201.GA2149@kroah.com>
+	id S1759549Ab0GAVyb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:54:31 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:12483 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758981Ab0GAVy0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:54:26 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=u9gA5vwOeeGqgEYy5tUzJjV8EEQ/9dFbSP70FcBiVvnVY25M63mnaaS1/cuM3gvbm
+	2GIH4YyMHxPlHNx9nrQSA==
+MIME-Version: 1.0
+In-Reply-To: <20100630142443.d9a9c49e.akpm@linux-foundation.org>
+References: <1277747099-12770-1-git-send-email-mrubin@google.com> 
+	<20100630142443.d9a9c49e.akpm@linux-foundation.org>
+From: Michael Rubin <mrubin@google.com>
+Date: Thu, 1 Jul 2010 14:53:57 -0700
+Message-ID: <AANLkTikMRjLS7lGFRF8DI7ThAi9VtedYJ4C8BaVwKOsG@mail.gmail.com>
+Subject: Re: [PATCH] Adding four read-only files to /proc/sys/vm
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
+       axboe@kernel.dk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jun 30, 2010 at 2:24 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> Well...  why are these useful?  In what operational scenario would
+> someone use these and get goodness from the experience?  Where is the
+> value?  Sell it to us!
 
-------------------
+OK here it is in email before I add it to the commit description.
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Before when users are trying to track their IO activity there has always
+been a gap in the flow from user app to disk for buffered IO. With
+page_dirtied and
+page_entered_writeback the user can now track IO from buffered writes
+as they are indicated to the block layer.
 
-commit 89a7644be2c59eea443b0db2514fd42d5de909f8 upstream.
+pages_dirtied helps storage workloads generating buffered writes
+that need to see over time how much memory the app is able to dirty.
+It can help trace app issues where iostat won't. In mixed workloads
+where an appserver is writing via DIRECT_IO it can help root cause
+issues where other apps are giving bursts of io behavior.
 
-eeepc-wmi uses backlight*() interfaces so it should depend on
-BACKLIGHT_CLASS_DEVICE.
+pages_entered_writeback is useful to help grant visibility into the
+writeback subsystem. By tracking pages_entered_writeback with
+pages_dirtied app developers can learn about the performance and/or
+stability of the writeback subsystem. Comparing the rates of change
+between the two allow developers to see when writeback is not able to
+keep up with incoming traffic and the rate of dirty memory being sent
+to the IO back end.
 
-eeepc-wmi.c:(.text+0x2d7f54): undefined reference to `backlight_force_update'
-eeepc-wmi.c:(.text+0x2d8012): undefined reference to `backlight_device_register'
-eeepc-wmi.c:(.devinit.text+0x1c31c): undefined reference to `backlight_device_unregister'
-eeepc-wmi.c:(.devexit.text+0x2f8b): undefined reference to `backlight_device_unregister'
+> It's hard to see how any future implementation could have a problem
+> implementing pages_dirtied and pages_entered_writeback, however
+> dirty_threshold and dirty_background_threshold are, I think, somewhat
+> specific to the current implementation and may be hard to maintain next
+> time we rip up and rewrite everything.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+We already expose these thresholds in /proc/sys/vm with
+dirty_background_ratio and background_ratio. What's frustrating about
+the ratio variables and the need for these are that they are not honored
+by the kernel. Instead the kernel may alter the number requested without
+giving the user any indication that is the case.  An app developer can
+set the ratio to 2% but end up with 5% as get_dirty_limits makes sure
+it is never lower than 5% when set from the ratio. Arguably that can
+be fixed too but the limits which decide whether writeback is invoked
+to aggressively clean dirty pages is dependent on changing page state
+retrieved in determine_dirtyable_memory. It makes understanding when
+the kernel decides to writeback data a moving target that no app can
+ever determine. With these thresholds visible and collected over time it
+gives apps a chance to know why writeback happened, or why it did not.
+As systems get larger and larger RAM developers use the ratios to predict
+when their workloads will see writeback invoked. Today there is no way
+to accurately predict this.
 
----
- drivers/platform/x86/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+> Documentation doesn't describe the units.  Pages?  kbytes?  bytes?
 
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -390,6 +390,7 @@ config EEEPC_WMI
- 	depends on ACPI_WMI
- 	depends on INPUT
- 	depends on EXPERIMENTAL
-+	depends on BACKLIGHT_CLASS_DEVICE
- 	select INPUT_SPARSEKMAP
- 	---help---
- 	  Say Y here if you want to support WMI-based hotkeys on Eee PC laptops.
+Ouch. Thanks. That will be fixed.
+
+> I think it's best to encode the units in the procfs filename
+> (eg: dirty_expire_centisecs, min_free_kbytes).
+
+I agree that will be fixed.
+
+> units?
+They will all get units
+
+> We're very very interested in knowing how many pages entered writeback
+> via mm/vmscan.c however this procfs file lumps those together with the
+> pages which entered writeback via the regular writeback paths, I assume.
+
+Yes and I think that's ok. It describes how the whole system is moving
+dirty memory to writeback state and sending it to the I/O path.
+TO me trying to distinguish between fs/fs-writeback.c code doing this
+or vmscan.c code doing this is exposing implementation that we may
+change in the future.
 
 
+> But we need EXPORT_SYMBOL(account_page_dirtied), methinks.
+
+Ouch thanks. Will be fixed.
+
+> This should be a separate patch IMO.
+
+I will split these into two patches. One with the fix and then the
+other with the counters.
+
+mrubin
