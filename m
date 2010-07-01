@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab0GAScZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:32:25 -0400
-Received: from kroah.org ([198.145.64.141]:40749 "EHLO coco.kroah.org"
+	id S1757978Ab0GASXp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:23:45 -0400
+Received: from kroah.org ([198.145.64.141]:40576 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758108Ab0GASYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:12 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:16 2010
-Message-Id: <20100701173216.676735701@clark.site>
+	id S1757947Ab0GASXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:40 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:13 2010
+Message-Id: <20100701173213.648034612@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:23 -0700
+Date: Thu, 01 Jul 2010 10:31:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 117/149] iwlwifi: update supported PCI_ID list for 5xx0 series
+       "Ira W. Snyder" <iws@ovro.caltech.edu>,
+       Jean Delvare <khali@linux-fr.org>
+Subject: [patch 081/149] hwmon: (ltc4245) Read only one GPIO pin
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,173 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+From: Ira W. Snyder <iws@ovro.caltech.edu>
 
-commit ac592574a577162183b5c1dd040a188caa068a29 upstream.
+commit df16dd53c575d0cb9dbee20a3149927c862a9ff6 upstream.
 
-Update the PCI_ID list for 5xx0 series.
-Remove all the PCI_IDs which never made into production or not longer in
-production.
+Read only one of the GPIO pins as an analog voltage. The ADC can be
+switched to a different GPIO pin at runtime, but this is not supported.
 
-Also make sure the supported bands(a/b/g/n) match specified PCI_IDs
+Previously, this driver would report the analog voltage of the currently
+selected GPIO pin as all three GPIO voltages: in9_input, in10_input and
+in11_input.
 
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/net/wireless/iwlwifi/iwl-5000.c |   23 ++++++++-
- drivers/net/wireless/iwlwifi/iwl-agn.c  |   74 ++++++++++++++++++++++++--------
- drivers/net/wireless/iwlwifi/iwl-dev.h  |    3 -
- 3 files changed, 78 insertions(+), 22 deletions(-)
+ Documentation/hwmon/ltc4245 |    4 +---
+ drivers/hwmon/ltc4245.c     |   18 +++++-------------
+ 2 files changed, 6 insertions(+), 16 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-5000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
-@@ -1674,12 +1674,12 @@ struct iwl_cfg iwl5300_agn_cfg = {
- 	.use_rts_for_ht = true, /* use rts/cts protection */
+--- a/Documentation/hwmon/ltc4245
++++ b/Documentation/hwmon/ltc4245
+@@ -72,9 +72,7 @@ in6_min_alarm		5v  output undervoltage a
+ in7_min_alarm		3v  output undervoltage alarm
+ in8_min_alarm		Vee (-12v) output undervoltage alarm
+ 
+-in9_input		GPIO #1 voltage data
+-in10_input		GPIO #2 voltage data
+-in11_input		GPIO #3 voltage data
++in9_input		GPIO voltage data
+ 
+ power1_input		12v power usage (mW)
+ power2_input		5v  power usage (mW)
+--- a/drivers/hwmon/ltc4245.c
++++ b/drivers/hwmon/ltc4245.c
+@@ -45,9 +45,7 @@ enum ltc4245_cmd {
+ 	LTC4245_VEEIN			= 0x19,
+ 	LTC4245_VEESENSE		= 0x1a,
+ 	LTC4245_VEEOUT			= 0x1b,
+-	LTC4245_GPIOADC1		= 0x1c,
+-	LTC4245_GPIOADC2		= 0x1d,
+-	LTC4245_GPIOADC3		= 0x1e,
++	LTC4245_GPIOADC			= 0x1c,
  };
  
--struct iwl_cfg iwl5100_bg_cfg = {
--	.name = "5100BG",
-+struct iwl_cfg iwl5100_bgn_cfg = {
-+	.name = "5100BGN",
- 	.fw_name_pre = IWL5000_FW_PRE,
- 	.ucode_api_max = IWL5000_UCODE_API_MAX,
- 	.ucode_api_min = IWL5000_UCODE_API_MIN,
--	.sku = IWL_SKU_G,
-+	.sku = IWL_SKU_G|IWL_SKU_N,
- 	.ops = &iwl5000_ops,
- 	.eeprom_size = IWL_5000_EEPROM_IMG_SIZE,
- 	.eeprom_ver = EEPROM_5000_EEPROM_VERSION,
-@@ -1705,7 +1705,6 @@ struct iwl_cfg iwl5100_abg_cfg = {
- 	.valid_tx_ant = ANT_B,
- 	.valid_rx_ant = ANT_AB,
- 	.need_pll_cfg = true,
--	.ht_greenfield_support = true,
+ struct ltc4245_data {
+@@ -61,7 +59,7 @@ struct ltc4245_data {
+ 	u8 cregs[0x08];
+ 
+ 	/* Voltage registers */
+-	u8 vregs[0x0f];
++	u8 vregs[0x0d];
  };
  
- struct iwl_cfg iwl5100_agn_cfg = {
-@@ -1762,6 +1761,22 @@ struct iwl_cfg iwl5150_agn_cfg = {
- 	.use_rts_for_ht = true, /* use rts/cts protection */
- };
+ static struct ltc4245_data *ltc4245_update_device(struct device *dev)
+@@ -86,7 +84,7 @@ static struct ltc4245_data *ltc4245_upda
+ 				data->cregs[i] = val;
+ 		}
  
-+struct iwl_cfg iwl5150_abg_cfg = {
-+	.name = "5150ABG",
-+	.fw_name_pre = IWL5150_FW_PRE,
-+	.ucode_api_max = IWL5150_UCODE_API_MAX,
-+	.ucode_api_min = IWL5150_UCODE_API_MIN,
-+	.sku = IWL_SKU_A|IWL_SKU_G,
-+	.ops = &iwl5150_ops,
-+	.eeprom_size = IWL_5000_EEPROM_IMG_SIZE,
-+	.eeprom_ver = EEPROM_5050_EEPROM_VERSION,
-+	.eeprom_calib_ver = EEPROM_5050_TX_POWER_VERSION,
-+	.mod_params = &iwl50_mod_params,
-+	.valid_tx_ant = ANT_A,
-+	.valid_rx_ant = ANT_AB,
-+	.need_pll_cfg = true,
-+};
-+
- MODULE_FIRMWARE(IWL5000_MODULE_FIRMWARE(IWL5000_UCODE_API_MAX));
- MODULE_FIRMWARE(IWL5150_MODULE_FIRMWARE(IWL5150_UCODE_API_MAX));
+-		/* Read voltage registers -- 0x10 to 0x1f */
++		/* Read voltage registers -- 0x10 to 0x1c */
+ 		for (i = 0; i < ARRAY_SIZE(data->vregs); i++) {
+ 			val = i2c_smbus_read_byte_data(client, i+0x10);
+ 			if (unlikely(val < 0))
+@@ -128,9 +126,7 @@ static int ltc4245_get_voltage(struct de
+ 	case LTC4245_VEEOUT:
+ 		voltage = regval * -55;
+ 		break;
+-	case LTC4245_GPIOADC1:
+-	case LTC4245_GPIOADC2:
+-	case LTC4245_GPIOADC3:
++	case LTC4245_GPIOADC:
+ 		voltage = regval * 10;
+ 		break;
+ 	default:
+@@ -297,9 +293,7 @@ LTC4245_ALARM(in7_min_alarm,	(1 << 2),	L
+ LTC4245_ALARM(in8_min_alarm,	(1 << 3),	LTC4245_FAULT2);
  
---- a/drivers/net/wireless/iwlwifi/iwl-agn.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
-@@ -3203,23 +3203,63 @@ static struct pci_device_id iwl_hw_card_
- 	{IWL_PCI_DEVICE(0x4230, PCI_ANY_ID, iwl4965_agn_cfg)},
- #endif /* CONFIG_IWL4965 */
- #ifdef CONFIG_IWL5000
--	{IWL_PCI_DEVICE(0x4232, 0x1205, iwl5100_bg_cfg)},
--	{IWL_PCI_DEVICE(0x4232, 0x1305, iwl5100_bg_cfg)},
--	{IWL_PCI_DEVICE(0x4232, 0x1206, iwl5100_abg_cfg)},
--	{IWL_PCI_DEVICE(0x4232, 0x1306, iwl5100_abg_cfg)},
--	{IWL_PCI_DEVICE(0x4232, 0x1326, iwl5100_abg_cfg)},
--	{IWL_PCI_DEVICE(0x4237, 0x1216, iwl5100_abg_cfg)},
--	{IWL_PCI_DEVICE(0x4232, PCI_ANY_ID, iwl5100_agn_cfg)},
--	{IWL_PCI_DEVICE(0x4235, PCI_ANY_ID, iwl5300_agn_cfg)},
--	{IWL_PCI_DEVICE(0x4236, PCI_ANY_ID, iwl5300_agn_cfg)},
--	{IWL_PCI_DEVICE(0x4237, PCI_ANY_ID, iwl5100_agn_cfg)},
--/* 5350 WiFi/WiMax */
--	{IWL_PCI_DEVICE(0x423A, 0x1001, iwl5350_agn_cfg)},
--	{IWL_PCI_DEVICE(0x423A, 0x1021, iwl5350_agn_cfg)},
--	{IWL_PCI_DEVICE(0x423B, 0x1011, iwl5350_agn_cfg)},
--/* 5150 Wifi/WiMax */
--	{IWL_PCI_DEVICE(0x423C, PCI_ANY_ID, iwl5150_agn_cfg)},
--	{IWL_PCI_DEVICE(0x423D, PCI_ANY_ID, iwl5150_agn_cfg)},
-+/* 5100 Series WiFi */
-+	{IWL_PCI_DEVICE(0x4232, 0x1201, iwl5100_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1301, iwl5100_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1204, iwl5100_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1304, iwl5100_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1205, iwl5100_bgn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1305, iwl5100_bgn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1206, iwl5100_abg_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1306, iwl5100_abg_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1221, iwl5100_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1321, iwl5100_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1224, iwl5100_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1324, iwl5100_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1225, iwl5100_bgn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1325, iwl5100_bgn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1226, iwl5100_abg_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4232, 0x1326, iwl5100_abg_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4237, 0x1211, iwl5100_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4237, 0x1311, iwl5100_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4237, 0x1214, iwl5100_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4237, 0x1314, iwl5100_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4237, 0x1215, iwl5100_bgn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4237, 0x1315, iwl5100_bgn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4237, 0x1216, iwl5100_abg_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4237, 0x1316, iwl5100_abg_cfg)}, /* Half Mini Card */
-+
-+/* 5300 Series WiFi */
-+	{IWL_PCI_DEVICE(0x4235, 0x1021, iwl5300_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4235, 0x1121, iwl5300_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4235, 0x1024, iwl5300_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4235, 0x1124, iwl5300_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4235, 0x1001, iwl5300_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4235, 0x1101, iwl5300_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4235, 0x1004, iwl5300_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4235, 0x1104, iwl5300_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4236, 0x1011, iwl5300_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4236, 0x1111, iwl5300_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x4236, 0x1014, iwl5300_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x4236, 0x1114, iwl5300_agn_cfg)}, /* Half Mini Card */
-+
-+/* 5350 Series WiFi/WiMax */
-+	{IWL_PCI_DEVICE(0x423A, 0x1001, iwl5350_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x423A, 0x1021, iwl5350_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x423B, 0x1011, iwl5350_agn_cfg)}, /* Mini Card */
-+
-+/* 5150 Series Wifi/WiMax */
-+	{IWL_PCI_DEVICE(0x423C, 0x1201, iwl5150_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x423C, 0x1301, iwl5150_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x423C, 0x1206, iwl5150_abg_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x423C, 0x1306, iwl5150_abg_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x423C, 0x1221, iwl5150_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x423C, 0x1321, iwl5150_agn_cfg)}, /* Half Mini Card */
-+
-+	{IWL_PCI_DEVICE(0x423D, 0x1211, iwl5150_agn_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x423D, 0x1311, iwl5150_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x423D, 0x1216, iwl5150_abg_cfg)}, /* Mini Card */
-+	{IWL_PCI_DEVICE(0x423D, 0x1316, iwl5150_abg_cfg)}, /* Half Mini Card */
- /* 6000/6050 Series */
- 	{IWL_PCI_DEVICE(0x008D, PCI_ANY_ID, iwl6000h_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x008E, PCI_ANY_ID, iwl6000h_2agn_cfg)},
---- a/drivers/net/wireless/iwlwifi/iwl-dev.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-dev.h
-@@ -53,9 +53,10 @@ extern struct iwl_cfg iwl4965_agn_cfg;
- extern struct iwl_cfg iwl5300_agn_cfg;
- extern struct iwl_cfg iwl5100_agn_cfg;
- extern struct iwl_cfg iwl5350_agn_cfg;
--extern struct iwl_cfg iwl5100_bg_cfg;
-+extern struct iwl_cfg iwl5100_bgn_cfg;
- extern struct iwl_cfg iwl5100_abg_cfg;
- extern struct iwl_cfg iwl5150_agn_cfg;
-+extern struct iwl_cfg iwl5150_abg_cfg;
- extern struct iwl_cfg iwl6000h_2agn_cfg;
- extern struct iwl_cfg iwl6000i_2agn_cfg;
- extern struct iwl_cfg iwl6000_3agn_cfg;
+ /* GPIO voltages */
+-LTC4245_VOLTAGE(in9_input,			LTC4245_GPIOADC1);
+-LTC4245_VOLTAGE(in10_input,			LTC4245_GPIOADC2);
+-LTC4245_VOLTAGE(in11_input,			LTC4245_GPIOADC3);
++LTC4245_VOLTAGE(in9_input,			LTC4245_GPIOADC);
+ 
+ /* Power Consumption (virtual) */
+ LTC4245_POWER(power1_input,			LTC4245_12VSENSE);
+@@ -342,8 +336,6 @@ static struct attribute *ltc4245_attribu
+ 	&sensor_dev_attr_in8_min_alarm.dev_attr.attr,
+ 
+ 	&sensor_dev_attr_in9_input.dev_attr.attr,
+-	&sensor_dev_attr_in10_input.dev_attr.attr,
+-	&sensor_dev_attr_in11_input.dev_attr.attr,
+ 
+ 	&sensor_dev_attr_power1_input.dev_attr.attr,
+ 	&sensor_dev_attr_power2_input.dev_attr.attr,
 
 
