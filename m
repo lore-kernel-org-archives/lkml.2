@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab0GAVIr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:08:47 -0400
-Received: from kroah.org ([198.145.64.141]:47749 "EHLO coco.kroah.org"
+	id S1759284Ab0GAVQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:16:34 -0400
+Received: from kroah.org ([198.145.64.141]:60965 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932780Ab0GAUuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:35 2010
-Message-Id: <20100701173435.816485678@clark.site>
+	id S1759023Ab0GAVN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:59 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
+Message-Id: <20100701174253.935534899@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:53 -0700
+Date: Thu, 01 Jul 2010 10:42:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Bob Copeland <me@bobcopeland.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 107/164] ath5k: retain promiscuous setting
-In-Reply-To: <20100701175152.GA2135@kroah.com>
+       Dan Williams <dan.j.williams@intel.com>, NeilBrown <neilb@suse.de>
+Subject: [089/200] md: set mddev readonly flag on blkdev BLKROSET ioctl
+In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let me know.
+2.6.34-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bob Copeland <me@bobcopeland.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 6b5dcccb495b66b3b0b9581cdccfed038e5d68a2 upstream.
+commit e2218350465e7e0931676b4849b594c978437bce upstream.
 
-Commit 56d1de0a21db28e41741cfa0a66e18bc8d920554, "ath5k: clean up
-filter flags setting" introduced a regression in monitor mode such
-that the promisc filter flag would get lost.
+When the user sets the block device to readwrite then the mddev should
+follow suit.  Otherwise, the BUG_ON in md_write_start() will be set to
+trigger.
 
-Although we set the promisc flag when it changed, we did not
-preserve it across subsequent calls to configure_filter.  This patch
-restores the original functionality.
+The reverse direction, setting mddev->ro to match a set readonly
+request, can be ignored because the blkdev level readonly flag precludes
+the need to have mddev->ro set correctly.  Nevermind the fact that
+setting mddev->ro to 1 may fail if the array is in use.
 
-Bisected-by: weedy2887@gmail.com
-Tested-by: weedy2887@gmail.com
-Tested-by: Rick Farina <sidhayn@gmail.com>
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/base.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/md.c |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -2997,13 +2997,15 @@ static void ath5k_configure_filter(struc
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -5517,6 +5517,7 @@ static int md_ioctl(struct block_device
+ 	int err = 0;
+ 	void __user *argp = (void __user *)arg;
+ 	mddev_t *mddev = NULL;
++	int ro;
  
- 	if (changed_flags & (FIF_PROMISC_IN_BSS | FIF_OTHER_BSS)) {
- 		if (*new_flags & FIF_PROMISC_IN_BSS) {
--			rfilt |= AR5K_RX_FILTER_PROM;
- 			__set_bit(ATH_STAT_PROMISC, sc->status);
- 		} else {
- 			__clear_bit(ATH_STAT_PROMISC, sc->status);
- 		}
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+@@ -5652,6 +5653,34 @@ static int md_ioctl(struct block_device
+ 			err = do_md_stop(mddev, 1, 1);
+ 			goto done_unlock;
+ 
++		case BLKROSET:
++			if (get_user(ro, (int __user *)(arg))) {
++				err = -EFAULT;
++				goto done_unlock;
++			}
++			err = -EINVAL;
++
++			/* if the bdev is going readonly the value of mddev->ro
++			 * does not matter, no writes are coming
++			 */
++			if (ro)
++				goto done_unlock;
++
++			/* are we are already prepared for writes? */
++			if (mddev->ro != 1)
++				goto done_unlock;
++
++			/* transitioning to readauto need only happen for
++			 * arrays that call md_write_start
++			 */
++			if (mddev->pers) {
++				err = restart_array(mddev);
++				if (err == 0) {
++					mddev->ro = 2;
++					set_disk_ro(mddev->gendisk, 0);
++				}
++			}
++			goto done_unlock;
  	}
  
-+	if (test_bit(ATH_STAT_PROMISC, sc->status))
-+		rfilt |= AR5K_RX_FILTER_PROM;
-+
- 	/* Note, AR5K_RX_FILTER_MCAST is already enabled */
- 	if (*new_flags & FIF_ALLMULTI) {
- 		mfilt[0] =  ~0;
+ 	/*
 
 
