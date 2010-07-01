@@ -1,122 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab0GAK7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 06:59:17 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41530 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753274Ab0GAK7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 06:59:16 -0400
-Date: Thu, 1 Jul 2010 20:59:07 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Michael Neuling <mikey@neuling.org>
-Cc: divya <dipraksh@linux.vnet.ibm.com>, linuxppc-dev@ozlabs.org,
-       Latchesar Ionkov <lucho@ionkov.net>, Ron Minnich <rminnich@sandia.gov>,
-       LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-       Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: Oops while running fs_racer test on a POWER6 box against
- latest git
-Message-ID: <20100701105907.GK22976@laptop>
-References: <4C2B28F3.7000006@linux.vnet.ibm.com>
- <7381.1277960694@neuling.org>
+	id S1755379Ab0GALEx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 07:04:53 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:44096 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755144Ab0GALEw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 07:04:52 -0400
+Date: Thu, 1 Jul 2010 09:40:52 +0200
+From: Nico Schottelius <nico-linux-2010-07-01@schottelius.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Nico Schottelius <nico-linux-2010-07-01@schottelius.org>
+Subject: Report for 2.6.35-rc3-00262-g984bc96
+Message-ID: <20100701074052.GA3501@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-2010-07-01@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VS++wcV0S1rZb1Fb"
 Content-Disposition: inline
-In-Reply-To: <7381.1277960694@neuling.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.35-rc3-00262-g984bc96 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 03:04:54PM +1000, Michael Neuling wrote:
-> > While running fs_racer test from LTP on a POWER6 box against latest git(2.6.3
-> 5-rc3-git4 - commitid 984bc9601f64fd)
-> > came across the following warning followed by multiple oops.
-> > 
-> > ------------[ cut here ]------------
-> > 
-> > Badness at kernel/mutex-debug.c:64
-> > NIP: c0000000000be9e8 LR: c0000000000be9cc CTR: 0000000000000000
-> > REGS: c00000010be8f6f0 TRAP: 0700   Not tainted  (2.6.35-rc3-git4-autotest)
-> > MSR: 8000000000029032<EE,ME,CE,IR,DR>    CR: 24224422  XER: 00000012
-> > TASK = c00000010727cf00[8211] 'fs_racer_file_c' THREAD: c00000010be8bb50 CPU:
->  2
-> > GPR00: 0000000000000000 c00000010be8f970 c000000000d3d798 0000000000000001
-> > GPR04: c00000010be8fa70 c00000010be8c000 c00000010727d9f8 0000000000000000
-> > GPR08: c0000000043042f0 c0000000016534e8 000000000000017a c000000000c29a1c
-> > GPR12: 0000000028228424 c00000000f600500 c00000010be8fc40 0000000020000000
-> > GPR16: fffffffffffff000 c000000109c73000 c00000010be8fc30 0000000000010442
-> > GPR20: 0000000000000000 0000000000000000 00000000000001b6 c00000010dd12250
-> > GPR24: c00000000017c08c c00000010727cf00 c00000010dd12278 c00000010dd12210
-> > GPR28: 0000000000000001 c00000010be8c000 c000000000ca2008 c00000010be8fa70
-> > NIP [c0000000000be9e8] .mutex_remove_waiter+0xa4/0x130
-> > LR [c0000000000be9cc] .mutex_remove_waiter+0x88/0x130
-> > Call Trace:
-> > [c00000010be8f970] [c00000010be8fa00] 0xc00000010be8fa00 (unreliable)
-> > [c00000010be8fa00] [c00000000064a9f0] .mutex_lock_nested+0x384/0x430
-> > Instruction dump:
-> > e81f0010 e93d0000 7fa04800 41fe0028 482e96e5 60000000 2fa30000 419e0018
-> > e93e8008 80090000 2f800000 409e0008<0fe00000>   e93e8000 80090000 2f800000
-> > Unable to handle kernel paging request for unknown fault
-> > Faulting instruction address: 0xc00000000008d0f4
-> > Oops: Kernel access of bad area, sig: 7 [#1]
-> > SMP NR_CPUS=1024 NUMA
-> > Unrecoverable FP Unavailable Exception 800 at c000000000648ed4
-> > pSeries
-> > last sysfs file: /sys/devices/system/cpu/cpu19/cache/index1/shared_cpu_map
-> > Modules linked in: ipv6 fuse loop dm_mod sr_mod cdrom ibmveth sg
-> > sd_mod crc_t10dif ibmvscsic scsi_transport_srp scsi_tgt scsi_mod
-> > NIP: c00000000008d0f4 LR: c00000000008d0d0 CTR: 0000000000000000
-> > REGS: c00000010978f900 TRAP: 0600   Tainted: G        W    (2.6.35-rc3-git4-a
-> utotest)
-> > MSR: 8000000000009032
-> > Unrecoverable FP Unavailable Exception 800 at c000000000648ed4
-> > Unrecoverable FP Unavailable Exception 800 at c000000000648ed4
-> > Unrecoverable FP Unavailable Exception 800 at c000000000648ed4
-> > Unrecoverable FP Unavailable Exception 800 at c000000000648ed4
-> > Unrecoverable FP Unavailable Exception 800 at c000000000648ed4
-> > EE,ME,IR,DR>    CR: 24022442  XER: 00000012
-> > DAR: c000000000648f54, DSISR: 0000000040010000
-> > TASK = c0000001096e4900[7353] 'fs_racer_file_s' THREAD: c00000010978c000 CPU:
->  10
-> > GPR00: 0000000000004000 c00000010978fb80 c000000000d3d798 0000000000000001
-> > GPR04: c00000000083539e c000000001610228 0000000000000000 c0000000054c6880
-> > GPR08: 00000000000006a5 c000000000648f54 0000000000000007 00000000049b0000
-> > GPR12: 0000000000000000 c00000000f601900 00000000ffffffff ffffffffffffffff
-> > GPR16: 000000004b7dc520 0000000000000000 0000000000000000 c00000010978fea0
-> > GPR20: 00000fffcca7e7a0 00000fffcca7e7a0 00000fffabf7dfd0 00000fffabf7dfd0
-> > GPR24: 0000000000000000 0000000001200011 c000000000e1c0a8 c000000000648ed4
-> > GPR28: 0000000000000000 c0000001096e4900 c000000000ca0458 c00000010725d400
-> > NIP [c00000000008d0f4] .copy_process+0x310/0xf40
-> > LR [c00000000008d0d0] .copy_process+0x2ec/0xf40
-> > Call Trace:
-> > [c00000010978fb80] [c00000000008d0d0] .copy_process+0x2ec/0xf40 (unreliable)
-> > [c00000010978fc80] [c00000000008deb4] .do_fork+0x190/0x3cc
-> > [c00000010978fdc0] [c000000000011ef4] .sys_clone+0x58/0x70
-> > [c00000010978fe30] [c0000000000087f0] .ppc_clone+0x8/0xc
-> > Instruction dump:
-> > 419e0010 7fe3fb78 480774cd 60000000 801f0014 e93f0008 7800b842 39290080
-> > 78004800 60000042 901f0014 38004000<7d6048a8>   7d6b0078 7d6049ad 40c2fff4
-> > 
-> > Kernel version 2.6.34-rc3-git3 works fine.
-> 
-> Should this read 2.6.35-rc3-git3?
-> 
-> If so, there's only about 20 commits in:
-> 5904b3b81d2516..984bc9601f64fd
-> 
-> The likely fs related candidates are from Christoph and Nick Piggin
-> (added to CC)
-> 
-> No commits relating to POWER6 or PPC.
 
-Not sure what's happening here. The first warning looks like some mutex
-corruption, but it doesn't have a stack trace (these are 2 seperate
-dumps, right? ie. the copy_process stack doesn't relate to the mutex
-warning?) So I don't have much idea.
+--VS++wcV0S1rZb1Fb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If it is reproducable, can you try getting a better stack trace, or
-better yet, even bisecting if there is just a small window?
+Good morning!
 
-Thanks,
-Nick
+A short report on what's broken in 2.6.35-rc3-00262-g984bc96 with
+the Lenovo X201:
 
+=3D=3D xrandr =3D=3D
+
+After using xrandr several times in xorg, the screen gets
+"fancy": blue/white/black changing patterns.
+Getting even more weired when changing to a conosle.
+
+The only thing that keeps on working is the mouse cursor
+in xorg. This did not happen with 2.6.34-rcsomething, neither
+with 2.6.33 iirc.
+
+This is a Intel Corporation Core Processor Integrated Graphics Controller (=
+rev 02),
+attached xorg.log.
+
+=3D=3D netlink/carrier messag =3D=3D
+
+dhcpcd does not get updated when the link is established,
+need to restart it.=20
+
+=3D=3D suspend/resume (to ram) =3D=3D
+
+So far no real crash! Only xorg is sometimes not coming up
+again, but this may be related to the first issue.
+
+=3D=3D wifi / intel 6000 =3D=3D
+
+Works! Works! (Besides the netlink issue, which is annoying,
+but for all devices).
+
+Cheers,
+
+Nico
+
+--=20
+New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Please resign, if you signed 9885188C or 8D0E27A4.
+
+Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
+
+--VS++wcV0S1rZb1Fb
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwsRoQACgkQ19zI5DGHffBPKACffY5a0PTNwt+ldstHcOKPYdv8
+w6QAn12MJHsNn4rEgo+LnvUpHOvP/aHf
+=1HHt
+-----END PGP SIGNATURE-----
+
+--VS++wcV0S1rZb1Fb--
