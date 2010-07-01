@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab0GAJOc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 05:14:32 -0400
-Received: from shutemov.name ([188.40.19.243]:44474 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754465Ab0GAJOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 05:14:31 -0400
-Date: Thu, 1 Jul 2010 12:14:29 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>, g@shutemov.name
-Cc: linux-arm-kernel@lists.infradead.org, avictor.za@gmail.com,
-       siccegge@cs.fau.de, costa.antonior@gmail.com,
-       vamos@i4.informatik.uni-erlangen.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] AT91: Correct configuration define value
-Message-ID: <20100701091429.GA7022@shutemov.name>
-References: <4c6fe9a4c298214223ff89d06401ac7b66f81c98.1277911346.git.siccegge@cs.fau.de>
- <1277974545-30331-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277974545-30331-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754595Ab0GAJQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 05:16:54 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:51113 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539Ab0GAJQw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 05:16:52 -0400
+Date: Thu, 01 Jul 2010 11:17:41 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCH/RFC 0/2] The Experimental Composite Gadget
+To: linux-usb@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <cover.1277972135.git.mina86@mina86.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.1
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 10:55:45AM +0200, Nicolas Ferre wrote:
-> The MTD nand driver for Atmel chips is atmel_nand and not at91_nand anymore.
-> Change wrong configuration variables that were remaining.
+Hello,
 
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
- 
-> Reported-by: Christoph Egger <siccegge@cs.fau.de>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> Christoph,
-> 
-> Thank you for highlighting this. But please consider this
-> patch instead of yours.
-> 
->  arch/arm/mach-at91/board-at572d940hf_ek.c |    2 +-
->  arch/arm/mach-at91/board-sam9m10g45ek.c   |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/board-at572d940hf_ek.c b/arch/arm/mach-at91/board-at572d940hf_ek.c
-> index 5daff27..4665162 100644
-> --- a/arch/arm/mach-at91/board-at572d940hf_ek.c
-> +++ b/arch/arm/mach-at91/board-at572d940hf_ek.c
-> @@ -216,7 +216,7 @@ static struct atmel_nand_data __initdata eb_nand_data = {
->  /*	.rdy_pin	= AT91_PIN_PC16, */
->  	.enable_pin	= AT91_PIN_PA15,
->  	.partition_info	= nand_partitions,
-> -#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
-> +#if defined(CONFIG_MTD_NAND_ATMEL_BUSWIDTH_16)
->  	.bus_width_16	= 1,
->  #else
->  	.bus_width_16	= 0,
-> diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
-> index ee80059..37af9b1 100644
-> --- a/arch/arm/mach-at91/board-sam9m10g45ek.c
-> +++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
-> @@ -135,7 +135,7 @@ static struct atmel_nand_data __initdata ek_nand_data = {
->  	.rdy_pin	= AT91_PIN_PC8,
->  	.enable_pin	= AT91_PIN_PC14,
->  	.partition_info	= nand_partitions,
-> -#if defined(CONFIG_MTD_NAND_AT91_BUSWIDTH_16)
-> +#if defined(CONFIG_MTD_NAND_ATMEL_BUSWIDTH_16)
->  	.bus_width_16	= 1,
->  #else
->  	.bus_width_16	= 0,
-> -- 
-> 1.5.6.5
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+The following two patches add an “Experimental Composite Gadget”
+which is “Multifunction Composite Gadget” with FunctionFS and an
+“Install Mode”.
+
+
+An “Install Mode” is a mode where just after the device is connected
+it reports as a mass storage device (single configuration, single
+interface) with first logical unit being an removable CD-ROM.
+
+The idea is that the logical unit provides a disk image with drivers
+for the main device.  This way no additional data storage is needed
+to make the device operational with hosts (i.e. no CD-ROM with
+drivers needed).
+
+When an eject is issued on the first logical unit the device switches
+to a normal mode with all the other functionalities.  When device is
+disconnected and connected again it switches back to the install
+mode.
+
+
+The switching is done by calling usb_composite_unregister() followed
+by usb_composite_register().  The same approach is used in the
+FunctionFS Gadget included in the kernel.
+
+This is the main point I'd like to discuss.  What would be the best
+way of switching device's configuration?
+
+The best would be if it were possible to “reregister” the usb
+composite device which would once again call the bind function.
+
+Does that make sense?  Should I go and implement such a call to the
+composite device?
 
 -- 
- Kirill A. Shutemov
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
