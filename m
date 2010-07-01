@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab0GAX3x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 19:29:53 -0400
-Received: from kroah.org ([198.145.64.141]:37434 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753859Ab0GAX3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 19:29:51 -0400
-Date: Thu, 1 Jul 2010 16:17:29 -0700
-From: Greg KH <greg@kroah.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-kernel@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-       stable-review@kernel.org, akpm@linux-foundation.org,
-       torvalds@linux-foundation.org, stable@kernel.org,
-       alan@lxorguk.ukuu.org.uk
-Subject: Re: [stable] 4 -stable kernel review cycles starting
-Message-ID: <20100701231729.GA13598@kroah.com>
-References: <20100701175100.GA2078@kroah.com>
- <201007012355.05531.florian@openwrt.org>
- <20100701221059.GA11663@kroah.com>
- <20100701153600.a0fc684e.rdunlap@xenotime.net>
- <20100701225129.GA12760@kroah.com>
- <20100701160901.887709e8.rdunlap@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701160901.887709e8.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754850Ab0GAX35 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 19:29:57 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28776 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab0GAX3y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 19:29:54 -0400
+Date: Thu, 1 Jul 2010 16:28:42 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: akpm@linux-foundation.org, Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-07-01-12-19 uploaded (mmc)
+Message-Id: <20100701162842.2ecafbbb.randy.dunlap@oracle.com>
+In-Reply-To: <201007011948.o61JmnT2022795@imap1.linux-foundation.org>
+References: <201007011948.o61JmnT2022795@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4C2D24E7.028B:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 04:09:01PM -0700, Randy Dunlap wrote:
-> On Thu, 1 Jul 2010 15:51:29 -0700 Greg KH wrote:
-> > If you don't like this type of review cycle, what would you prefer?
+On Thu, 01 Jul 2010 12:19:51 -0700 akpm@linux-foundation.org wrote:
+
+> The mm-of-the-moment snapshot 2010-07-01-12-19 has been uploaded to
 > 
-> I don't see a magic bullet answer here.  I think that it would help
-> somewhat for the stable maintainer(s) to have only one -stable review
-> cycle (new posting) per day, but someone may not like that either,
-> since it would have the effect of delaying some stable kernel releases
-> (not to mention muck up your workload).
+>    http://userweb.kernel.org/~akpm/mmotm/
+> 
+> and will soon be available at
+> 
+>    git://zen-kernel.org/kernel/mmotm.git
+> 
+> It contains the following patches against 2.6.35-rc3:
 
-Yeah, that would mess with the workload management a lot.  And I don't
-see the benifit of doing a different release on different days.  Just
-because they are different kernels, the same patches are usually being
-applied to all of them, so they are very much alike usually.
 
-thanks,
+mmc-fix-all-hangs-related-to-mmc-sd-card-insert-removal-during-suspend-resume.patch:
 
-greg k-h
+if CONFIG_PM is not enabled:
+
+(.text+0xc380c4): undefined reference to `mmc_pm_notify'
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
