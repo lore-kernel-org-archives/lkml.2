@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759023Ab0GBQPY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 12:15:24 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41434 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755303Ab0GBQPX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 12:15:23 -0400
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle syscalls
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <andreas.dilger@oracle.com>
-In-Reply-To: <20100702070548.GA6959@infradead.org>
-Date: Fri, 2 Jul 2010 10:12:47 -0600
-Cc: Neil Brown <neilb@suse.de>,
-       "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-       "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-       "adilger@sun.com" <adilger@sun.com>, "corbet@lwn.net" <corbet@lwn.net>,
-       "serue@us.ibm.com" <serue@us.ibm.com>,
-       "hooanon05@yahoo.co.jp" <hooanon05@yahoo.co.jp>,
-       "bfields@fieldses.org" <bfields@fieldses.org>,
-       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-       "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
-       "philippe.deniel@CEA.FR" <philippe.deniel@CEA.FR>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <BEEA47B4-4C9E-4086-96D2-FA6B8F68DA68@oracle.com>
-References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <871vbn2mk9.fsf@linux.vnet.ibm.com> <20100702064108.64034561@notabene.brown> <A44260DA-245D-47DD-820E-2F4F1F50BB9D@oracle.com> <20100702070548.GA6959@infradead.org>
-To: hch@infradead.org
-X-Mailer: Apple Mail (2.1078)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C2E1084.00C7:SCFMA4539814,ss=1,fgs=0
+	id S1759106Ab0GBQPf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 12:15:35 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:50162 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759072Ab0GBQPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 12:15:33 -0400
+Subject: Re: [PATCH] memory hotplug disable boot option
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Greg KH <gregkh@suse.de>, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Nathan Fontenot <nfont@austin.ibm.com>,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+In-Reply-To: <20100701093130.c5e2b564.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100628154455.GA13918@suse.de>
+	 <1277769867.8354.531.camel@nimitz>
+	 <20100629115232.38BC.A69D9226@jp.fujitsu.com>
+	 <1277827384.8354.3413.camel@nimitz>	<20100629180415.GB1240@suse.de>
+	 <20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100630154755.GB12158@suse.de>
+	 <20100701093130.c5e2b564.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Thu, 01 Jul 2010 06:23:15 -0700
+Message-ID: <1277990595.8354.10356.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-07-02, at 01:05, hch@infradead.org wrote:
-> On Thu, Jul 01, 2010 at 10:02:29PM -0600, Andreas Dilger wrote:
->> I'd like to be able to use this interface to implement the distributed open call proposed by the POSIX HECWG. This allows one client to do the path traversal, broadcast the file handle to the (maybe) 1M processes in the job via MPI, and then the other clients can open the file by handle without doing 1M times the full path traversal (which might be 10's of RPCs per process). 
+On Thu, 2010-07-01 at 09:31 +0900, KAMEZAWA Hiroyuki wrote:
 > 
-> The proposal is doomed anyway.  If we allow any sort of open by handle
-> system call for unprivilegued users we need to do reconnect the dentry
-> to the dcache path anyway (reconnect_path), which is more expensive than
-> a normal path lookup.
+> Considering briefly, how about this compact layout ?
+> 
+> /sys/devices/system/memory/:
+>                             list, hide, show, memoryX...
+> 
+> list: // show available memory index list.
+>   #cat list
+>    0 1 2 ....10000...
+> 
+> show: //an interface to enable the interface.
+>   #echo INDEX > memory_index
+>   will create memoryINDEX diretory.
+> 
+> hide: //an interface to hide the interface.
+>   #echo INDEX > memory_hide
+>   will remove memoryINDEX sysfs directory.
 
-I haven't looked at this part of the VFS in a while, but it looks like an implementation issue specific to knfsd, and shouldn't be needed for regular files.  i.e. if exportfs_encode_fh() is never used on a disconnected file, then this overhead is not incurred.
+I was thinking more along the lines of just taking adjacent sections and
+merging them.  We'll need a new "end address" or size file.  Maybe
+"end_phys_index" or something similar.
 
-The above use of open_by_handle() is not for userspace NFS/Samba re-export, but to allow applications to open regular files for IO.  
+Such a beast would not fix all of the pathological cases, like where
+only every other 16MB section is populated with RAM, but I don't think
+those are very common at all, especially in cases where there's a lot of
+RAM.  But, it also has a chance of being relatively backward-compatible.
+In most cases, we may even be able to calculate a new phys_block_size
+where everything fits evenly and be fully backward-compatible with the
+old ABI.
 
-Cheers, Andreas
---
-Andreas Dilger
-Lustre Technical Lead
-Oracle Corporation Canada Inc.
+-- Dave
 
