@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab0GABgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 21:36:55 -0400
-Received: from sh.osrg.net ([192.16.179.4]:59635 "EHLO sh.osrg.net"
+	id S1752484Ab0GABjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 21:39:09 -0400
+Received: from tundra.namei.org ([65.99.196.166]:54982 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914Ab0GABgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 21:36:54 -0400
-Date: Thu, 1 Jul 2010 10:35:58 +0900
-To: u.kleine-koenig@pengutronix.de
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       James.Bottomley@HansenPartnership.com, akpm@linux-foundation.org,
-       julia@diku.dk
-Subject: Re: should struct device.dma_mask still be a pointer?
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100622105233.GA4755@pengutronix.de>
-References: <20100622105233.GA4755@pengutronix.de>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100701103544A.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 01 Jul 2010 10:35:59 +0900 (JST)
+	id S1751914Ab0GABjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 21:39:07 -0400
+Date: Thu, 1 Jul 2010 11:39:01 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Christoph Hellwig <hch@infradead.org>
+cc: Kees Cook <kees.cook@canonical.com>, linux-security-module@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Yama: add PTRACE exception tracking
+In-Reply-To: <20100630073158.GA4453@infradead.org>
+Message-ID: <alpine.LRH.2.00.1007011057520.24202@tundra.namei.org>
+References: <20100630003844.GE4837@outflux.net> <20100630073158.GA4453@infradead.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> IMHO it's strange that struct device.dma_mask is a pointer instead of a
-> plain u64.  The reason this was done back then is described in
-> 8ab1bc19e974fdebe76c065fe444979c84ba2f74[1]:
-> 
-> 	Attached is a patch which moves dma_mask into struct device and cleans up the
-> 	scsi mid-layer to use it (instead of using struct pci_dev).  The advantage to
-> 	doing this is probably most apparent on non-pci bus architectures where
-> 	currently you have to construct a fake pci_dev just so you can get the bounce
-> 	buffers to work correctly.
-> 
-> 	The patch tries to perturb the minimum amount of code, so dma_mask in struct
-> 	device is simply a pointer to the one in pci_dev.  However, it will make it
-> 	easy for me now to add generic device to MCA without having to go the fake pci
-> 	route.
+On Wed, 30 Jun 2010, Christoph Hellwig wrote:
 
-Yeah, that's a strange design. As the commit log said, it's due to the
-historical reason. We invented the pci dma model first then moved to
-the generic dma model.
+> Err, no.  This is just a very clear sign that your ptrace restrictions
+> were completely wrong to start with and break applications left, right
+> and center.  Just get rid of it instead of letting workarounds for your
+> bad design creep into the core kernel and applications.
 
+Indeed, I wasn't aware that there were further aspects to this -- I 
+thought it was a relatively simple case of restricting a problematic OS 
+feature for heavily locked down systems.
 
-> As I work on such a non-pci bus architecture it's still ugly that this
-> is a pointer because I have to allocate extra memory for that.
+This is getting more complicated, with fine-grained security policy now 
+being introduced, also with the need to modify applications.
 
-The popular trick to avoid allocating the extra memory for that is:
+There are several existing LSMs with the ability to control ptrace, but as 
+part of a system-wide, coherent, analyzable policy -- often in support of 
+specific security models for which there is concrete user demand and 
+benefit.
 
-device.dma_mask = &device.coherent_dma_mask;
+If people won't use any of SELinux, Smack, Tomoyo or AppArmor, then I 
+don't think providing an ad-hoc assortment of workarounds with no overall 
+design is going to help them either.
 
-
-> Is there a reason not to get rid of struct pci_dev.dma_mask and use
-> struct pci_dev.dev.dma_mask instead?  (Well apart from the needed
-> effort of course.)
-> 
-> If not, the following would be needed:
-> 
-> 	- remove struct pci.dma_mask
-> 	- make struct device.dma_mask an u64 (instead of u64*)
-> 	- substitue var.dma_mask by var.dev.dma_mask for all
-> 	  struct pci_dev var
-> 	- substitue var.dma_mask by &(var.dma_mask) for all
-> 	  struct device var
-> 
-> and note that there are statically initialized struct device (and maybe
-> struct pci_dev?) that need fixing, too.  (e.g.
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=arch/arm/mach-mx2/devices.c;h=a0aeb8a4adc19ef419a0a045ad3b882131597106;hb=HEAD#l265
-> )
-
-That's exactly the perturbation that the commit log refers to.
-
-We need to modify all the struct device at a time. We could, however,
-I don't think that it's worth doing. Little gain.
+If LSMs need to call into common code in Yama, or even do lightweight 
+chaining, that's one thing, but for Yama to evolve into yet another 
+standalone security scheme, is something entirely different.
 
 
-> Additionally this could be done for struct device.dma_parms.
 
-Yeah, we should have all the dma parameters in dma_parms.
+- James
+-- 
+James Morris
+<jmorris@namei.org>
