@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab0GARVx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 13:21:53 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:43184 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556Ab0GARVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 13:21:52 -0400
-X-Auth-Info: /kP1rwwUC76nK+p/QuZAwYJ0xWuiOEbQyspQAth8d9E=
-From: Anatolij Gustschin <agust@denx.de>
-To: linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Hans Verkuil <hverkuil@xs4all.nl>, Detlev Zundel <dzu@denx.de>,
-       Anatolij Gustschin <agust@denx.de>
-Subject: [PATCH] V4L/DVB: v4l2-dev: fix memory leak
-Date: Thu,  1 Jul 2010 19:21:39 +0200
-Message-Id: <1278004899-16940-1-git-send-email-agust@denx.de>
-X-Mailer: git-send-email 1.7.0.4
+	id S1752554Ab0GARXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 13:23:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36514 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069Ab0GARXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 13:23:33 -0400
+Date: Fri, 2 Jul 2010 03:23:17 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch 00/52] vfs scalability patches updated
+Message-ID: <20100701172317.GB1830@laptop>
+References: <20100624030212.676457061@suse.de>
+ <20100630113054.GL24712@dastard>
+ <20100630124049.GH21358@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100630124049.GH21358@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit b4028437876866aba4747a655ede00f892089e14
-the 'driver_data' field resides in device's struct device_private
-which may be allocated by dev_set_drvdata() if device_private
-struct was not allocated previously.
+On Wed, Jun 30, 2010 at 10:40:49PM +1000, Nick Piggin wrote:
+> But actually it's not all for scalability. I have some follow on patches
+> (that require RCU inodes, among other things) that actually improve
+> single threaded performance significnatly. git diff workload IIRC was
+> several % improved from speeding up stat(2).
 
-dev_set_drvdata() is used in video_set_drvdata() to set
-the driver's private data pointer in v4l2 drivers. Setting
-the private data _before_ registering the v4l2 device results
-in a memory leak since __video_register_device() also calls
-video_set_drvdata(), but after zeroing the device structure.
-Thus, the reference to the previously allocated device_private
-struct goes lost and a new device_private will be allocated.
+I rewrote the store-free path walk patch that goes on top of this
+patchset (it's now much cleaner and more optimised, I'll post a patch
+soonish). It is quicker than I remembered.
 
-All v4l drivers which call video_set_drvdata() _before_
-calling video_register_device() are affected. The patch fixes
-__video_register_device() to preserve previously allocated
-device_private reference.
+A single thread running stat(2) in a loop on a file "./file" has the
+following cost (on an 2s8c Barcelona):
 
-Caught by kmemleak.
+2.6.35-rc3	595 ns/op
+patched		336 ns/op
 
-Signed-off-by: Anatolij Gustschin <agust@denx.de>
----
- drivers/media/video/v4l2-dev.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+stat(2) takes 56% the time with patches. It's something like 13 fewer
+atomic operations per syscall.
 
-diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c
-index 0ca7ec9..9e89bf6 100644
---- a/drivers/media/video/v4l2-dev.c
-+++ b/drivers/media/video/v4l2-dev.c
-@@ -410,7 +410,7 @@ static int __video_register_device(struct video_device *vdev, int type, int nr,
- 	int minor_offset = 0;
- 	int minor_cnt = VIDEO_NUM_DEVICES;
- 	const char *name_base;
--	void *priv = video_get_drvdata(vdev);
-+	void *priv = vdev->dev.p;
- 
- 	/* A minor value of -1 marks this video device as never
- 	   having been registered */
-@@ -536,9 +536,9 @@ static int __video_register_device(struct video_device *vdev, int type, int nr,
- 
- 	/* Part 4: register the device with sysfs */
- 	memset(&vdev->dev, 0, sizeof(vdev->dev));
--	/* The memset above cleared the device's drvdata, so
-+	/* The memset above cleared the device's device_private, so
- 	   put back the copy we made earlier. */
--	video_set_drvdata(vdev, priv);
-+	vdev->dev.p = priv;
- 	vdev->dev.class = &video_class;
- 	vdev->dev.devt = MKDEV(VIDEO_MAJOR, vdev->minor);
- 	if (vdev->parent)
--- 
-1.7.0.4
+What's that good for? A single threaded, cached `git diff` on the linux
+kernel tree takes just 81% of the time after the vfs patches (0.27s vs
+0.33s).
 
