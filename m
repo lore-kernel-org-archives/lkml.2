@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758440Ab0GASd6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:33:58 -0400
-Received: from kroah.org ([198.145.64.141]:40715 "EHLO coco.kroah.org"
+	id S1758427Ab0GASdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:33:55 -0400
+Received: from kroah.org ([198.145.64.141]:40720 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758081Ab0GASYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:05 -0400
+	id S1758082Ab0GASYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:06 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:16 2010
-Message-Id: <20100701173216.005256773@clark.site>
+Message-Id: <20100701173216.089063380@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:15 -0700
+Date: Thu, 01 Jul 2010 10:32:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
        Ben Hutchings <ben@decadent.org.uk>,
-       Grant Grundler <grundler@parisc-linux.org>,
        "David S. Miller" <davem@davemloft.net>
-Subject: [patch 109/149] dmfe/tulip: Let dmfe handle DM910x except for SPARC on-board chips
+Subject: [patch 110/149] Documentation/3c509: document ethtool support
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,141 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 4d907069bc1b745f4abd4745c332d33098e733b8 upstream.
+commit aa4e2e171385bb77b4da8b760d26dea2aa291587 upstream.
 
-The Davicom DM9100 and DM9102 chips are used on the motherboards of
-some SPARC systems (supported by the tulip driver) and also in PCI
-expansion cards (supported by the dmfe driver).  There is no
-difference in the PCI device ids for the two different configurations,
-so these drivers both claim the device ids.  However, it is possible
-to distinguish the two configurations by the presence of Open Firmware
-properties for them, so we do that.
+3c509 was changed to support ethtool in 2002, making the 'xcvr' module
+parameter obsolete in most cases.  More recently 3c509 was converted
+to the modern driver model and this parameter was removed.  Fix the
+documentation to refer to ethtool rather than the module parameter.
 
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Grant Grundler <grundler@parisc-linux.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/tulip/Kconfig      |    4 ++++
- drivers/net/tulip/dmfe.c       |   21 +++++++++++++++++++++
- drivers/net/tulip/tulip_core.c |   32 +++++++++++++++++++++++++-------
- 3 files changed, 50 insertions(+), 7 deletions(-)
+ Documentation/networking/3c509.txt |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/net/tulip/Kconfig
-+++ b/drivers/net/tulip/Kconfig
-@@ -101,6 +101,10 @@ config TULIP_NAPI_HW_MITIGATION
+--- a/Documentation/networking/3c509.txt
++++ b/Documentation/networking/3c509.txt
+@@ -48,11 +48,11 @@ for LILO parameters for doing this:
+ This configures the first found 3c509 card for IRQ 10, base I/O 0x310, and
+ transceiver type 3 (10base2). The flag "0x3c509" must be set to avoid conflicts
+ with other card types when overriding the I/O address. When the driver is
+-loaded as a module, only the IRQ and transceiver setting may be overridden.
+-For example, setting two cards to 10base2/IRQ10 and AUI/IRQ11 is done by using
+-the xcvr and irq module options:
++loaded as a module, only the IRQ may be overridden. For example,
++setting two cards to IRQ10 and IRQ11 is done by using the irq module
++option:
  
- 	  If in doubt, say Y.
+-   options 3c509 xcvr=3,1 irq=10,11
++   options 3c509 irq=10,11
  
-+config TULIP_DM910X
-+	def_bool y
-+	depends on TULIP && SPARC
+ 
+ (2) Full-duplex mode
+@@ -77,6 +77,8 @@ operation.
+ itself full-duplex capable. This is almost certainly one of two things: a full-
+ duplex-capable  Ethernet switch (*not* a hub), or a full-duplex-capable NIC on
+ another system that's connected directly to the 3c509B via a crossover cable.
 +
- config DE4X5
- 	tristate "Generic DECchip & DIGITAL EtherWORKS PCI/EISA"
- 	depends on PCI || EISA
---- a/drivers/net/tulip/dmfe.c
-+++ b/drivers/net/tulip/dmfe.c
-@@ -92,6 +92,10 @@
- #include <asm/uaccess.h>
- #include <asm/irq.h>
- 
-+#ifdef CONFIG_TULIP_DM910X
-+#include <linux/of.h>
-+#endif
++Full-duplex mode can be enabled using 'ethtool'.
+  
+ /////Extremely important caution concerning full-duplex mode/////
+ Understand that the 3c509B's hardware's full-duplex support is much more
+@@ -113,6 +115,8 @@ This insured that merely upgrading the d
+ never automatically enable full-duplex mode in an existing installation;
+ it must always be explicitly enabled via one of these code in order to be
+ activated.
 +
++The transceiver type can be changed using 'ethtool'.
+   
  
- /* Board/System/Debug information/definition ---------------- */
- #define PCI_DM9132_ID   0x91321282      /* Davicom DM9132 ID */
-@@ -377,6 +381,23 @@ static int __devinit dmfe_init_one (stru
- 	if (!printed_version++)
- 		printk(version);
- 
-+	/*
-+	 *	SPARC on-board DM910x chips should be handled by the main
-+	 *	tulip driver, except for early DM9100s.
-+	 */
-+#ifdef CONFIG_TULIP_DM910X
-+	if ((ent->driver_data == PCI_DM9100_ID && pdev->revision >= 0x30) ||
-+	    ent->driver_data == PCI_DM9102_ID) {
-+		struct device_node *dp = pci_device_to_OF_node(pdev);
-+
-+		if (dp && of_get_property(dp, "local-mac-address", NULL)) {
-+			printk(KERN_INFO DRV_NAME
-+			       ": skipping on-board DM910x (use tulip)\n");
-+			return -ENODEV;
-+		}
-+	}
-+#endif
-+
- 	/* Init network device */
- 	dev = alloc_etherdev(sizeof(*db));
- 	if (dev == NULL)
---- a/drivers/net/tulip/tulip_core.c
-+++ b/drivers/net/tulip/tulip_core.c
-@@ -196,9 +196,13 @@ struct tulip_chip_table tulip_tbl[] = {
- 	| HAS_NWAY | HAS_PCI_MWI, tulip_timer, tulip_media_task },
- 
-   /* DM910X */
-+#ifdef CONFIG_TULIP_DM910X
-   { "Davicom DM9102/DM9102A", 128, 0x0001ebef,
- 	HAS_MII | HAS_MEDIA_TABLE | CSR12_IN_SROM | HAS_ACPI,
- 	tulip_timer, tulip_media_task },
-+#else
-+  { NULL },
-+#endif
- 
-   /* RS7112 */
-   { "Conexant LANfinity", 256, 0x0001ebef,
-@@ -228,8 +232,10 @@ static struct pci_device_id tulip_pci_tb
- 	{ 0x1259, 0xa120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
- 	{ 0x11F6, 0x9881, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMPEX9881 },
- 	{ 0x8086, 0x0039, PCI_ANY_ID, PCI_ANY_ID, 0, 0, I21145 },
-+#ifdef CONFIG_TULIP_DM910X
- 	{ 0x1282, 0x9100, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DM910X },
- 	{ 0x1282, 0x9102, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DM910X },
-+#endif
- 	{ 0x1113, 0x1216, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
- 	{ 0x1113, 0x1217, PCI_ANY_ID, PCI_ANY_ID, 0, 0, MX98715 },
- 	{ 0x1113, 0x9511, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
-@@ -1299,18 +1305,30 @@ static int __devinit tulip_init_one (str
- 	}
- 
- 	/*
--	 *	Early DM9100's need software CRC and the DMFE driver
-+	 *	DM910x chips should be handled by the dmfe driver, except
-+	 *	on-board chips on SPARC systems.  Also, early DM9100s need
-+	 *	software CRC which only the dmfe driver supports.
- 	 */
- 
--	if (pdev->vendor == 0x1282 && pdev->device == 0x9100)
--	{
--		/* Read Chip revision */
--		if (pdev->revision < 0x30)
--		{
--			printk(KERN_ERR PFX "skipping early DM9100 with Crc bug (use dmfe)\n");
-+#ifdef CONFIG_TULIP_DM910X
-+	if (chip_idx == DM910X) {
-+		struct device_node *dp;
-+
-+		if (pdev->vendor == 0x1282 && pdev->device == 0x9100 &&
-+		    pdev->revision < 0x30) {
-+			printk(KERN_INFO PFX
-+			       "skipping early DM9100 with Crc bug (use dmfe)\n");
-+			return -ENODEV;
-+		}
-+
-+		dp = pci_device_to_OF_node(pdev);
-+		if (!(dp && of_get_property(dp, "local-mac-address", NULL))) {
-+			printk(KERN_INFO PFX
-+			       "skipping DM910x expansion card (use dmfe)\n");
- 			return -ENODEV;
- 		}
- 	}
-+#endif
- 
- 	/*
- 	 *	Looks for early PCI chipsets where people report hangs
+ (4a) Interpretation of error messages and common problems
 
 
