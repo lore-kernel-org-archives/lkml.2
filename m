@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab0GAPJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:09:00 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:35586 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752159Ab0GAPI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 11:08:58 -0400
-Date: Thu, 1 Jul 2010 17:08:04 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>, Arve Hj??nnev??g <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-pci@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being
- lost
-Message-ID: <20100701170804.687d9604@schatten.dmk.lab>
-In-Reply-To: <20100701133208.GA1285@ucw.cz>
-References: <201006261514.13491.rjw@sisk.pl>
-	<20100701133208.GA1285@ucw.cz>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756027Ab0GAPJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:09:47 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:56369 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab0GAPJp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 11:09:45 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] sunrpc: make the cache cleaner workqueue deferrable
+Date: Thu,  1 Jul 2010 18:05:56 +0300
+Message-Id: <1277996756-8415-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.0.1
+X-OriginalArrivalTime: 01 Jul 2010 15:09:33.0958 (UTC) FILETIME=[69CFE260:01CB192F]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Jul 2010 15:32:08 +0200
-Pavel Machek <pavel@ucw.cz> wrote:
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-> Hi!
-> 
-> > @@ -114,3 +114,17 @@ Description:
-> >  		if this file contains "1", which is the default.  It may be
-> >  		disabled by writing "0" to this file, in which case all devices
-> >  		will be suspended and resumed synchronously.
-> > +
-> > +What:		/sys/power/wakeup_count
-> > +Date:		July 2010
-> > +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-> > +Description:
-> > +		The /sys/power/wakeup_count file allows user space to avoid
-> > +		losing wakeup events when transitioning the system into a sleep
-> > +		state.  Reading from it returns the current number of registered
-> > +		wakeup events and it blocks if some wakeup events are being
-> > +		processed at the time the file is read from.  Writing to it
-> > +		will only succeed if the current number of wakeup events is
-> > +		equal to the written value and, if successful, will make the
-> > +		kernel abort a subsequent transition to a sleep state if any
-> > +		wakeup events are reported after the write has returned.
+This patch makes the cache_cleaner workqueue deferrable, to prevent
+unnecessary system wake-ups, which is very important for embedded
+battery-powered devices.
 
+do_cache_clean() is called every 30 seconds at the moment, and often
+makes the system wake up from its power-save sleep state. With this
+change, when the workqueue uses a deferrable timer, the
+do_cache_clean() invocation will be delayed and combined with the
+closest "real" wake-up. This improves the power consumption situation.
 
-> I can't say I quite like the way two sysfs files interact with each
-> other, but it is certainly better then wakelocks...
+Note, I tried to create a DECLARE_DELAYED_WORK_DEFERRABLE() helper
+macro, similar to DECLARE_DELAYED_WORK(), but failed because of the
+way the timer wheel core stores the deferrable flag (it is the
+LSBit in the time->base pointer). My attempt to define a static
+variable with this bit set ended up with the "initializer element is
+not constant" error.
 
-What two files? 
+Thus, I have to use run-time initialization, so I created a new
+cache_initialize() function which is called once when sunrpc is
+being initialized.
 
-Cheers,
-Flo 
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+---
+ include/linux/sunrpc/cache.h |    1 +
+ net/sunrpc/cache.c           |    7 ++++++-
+ net/sunrpc/sunrpc_syms.c     |    1 +
+ 3 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
+index 6f52b4d..7bf3e84 100644
+--- a/include/linux/sunrpc/cache.h
++++ b/include/linux/sunrpc/cache.h
+@@ -192,6 +192,7 @@ extern int cache_check(struct cache_detail *detail,
+ extern void cache_flush(void);
+ extern void cache_purge(struct cache_detail *detail);
+ #define NEVER (0x7FFFFFFF)
++extern void __init cache_initialize(void);
+ extern int cache_register(struct cache_detail *cd);
+ extern void cache_unregister(struct cache_detail *cd);
+ 
+diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+index 58de76c..939d048 100644
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -320,7 +320,7 @@ static struct cache_detail *current_detail;
+ static int current_index;
+ 
+ static void do_cache_clean(struct work_struct *work);
+-static DECLARE_DELAYED_WORK(cache_cleaner, do_cache_clean);
++static struct delayed_work cache_cleaner;
+ 
+ static void sunrpc_init_cache_detail(struct cache_detail *cd)
+ {
+@@ -1504,6 +1504,11 @@ static int create_cache_proc_entries(struct cache_detail *cd)
+ }
+ #endif
+ 
++void __init cache_initialize(void)
++{
++	INIT_DELAYED_WORK_DEFERRABLE(&cache_cleaner, do_cache_clean);
++}
++
+ int cache_register(struct cache_detail *cd)
+ {
+ 	int ret;
+diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
+index f438347..c52b184 100644
+--- a/net/sunrpc/sunrpc_syms.c
++++ b/net/sunrpc/sunrpc_syms.c
+@@ -43,6 +43,7 @@ init_sunrpc(void)
+ #ifdef CONFIG_PROC_FS
+ 	rpc_proc_init();
+ #endif
++	cache_initialize();
+ 	cache_register(&ip_map_cache);
+ 	cache_register(&unix_gid_cache);
+ 	svc_init_xprt_sock();	/* svc sock transport */
+-- 
+1.7.0.1
+
