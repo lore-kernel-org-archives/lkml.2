@@ -1,171 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759060Ab0GAVuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:50:12 -0400
-Received: from kroah.org ([198.145.64.141]:60923 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759004Ab0GAVNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:53 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:53 2010
-Message-Id: <20100701174253.353141975@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:52 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Kumar Gala <galak@kernel.crashing.org>
-Subject: [082/200] powerpc/fsl-booke: Move loadcam_entry back to asm code to fix SMP ftrace
-In-Reply-To: <20100701175201.GA2149@kroah.com>
+	id S1758932Ab0GAVzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:55:05 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52499 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756392Ab0GAVyz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:54:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:reply-to:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:message-id:content-type
+         :content-transfer-encoding;
+        b=mZpfBnOIlXu/1glvl/LjZZ+O+Nn5Qn2ty1LYEUQ6TVrHGhfhmu6oXrO2OSQsA7MmKH
+         eIY1kZbeDonUB8xk+XDvHlLxlYIuruitcGYAbSK+xMbOgXjWKhePrTFN7WX9/v2jAe6L
+         +aouGX1RClcpMYAx9D0ruzdOZkm7QRInbOO2s=
+From: Florian Fainelli <florian@openwrt.org>
+Reply-To: Florian Fainelli <florian@openwrt.org>
+To: Greg KH <greg@kroah.com>
+Subject: Re: 4 -stable kernel review cycles starting
+Date: Thu, 1 Jul 2010 23:55:02 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk
+References: <20100701175100.GA2078@kroah.com>
+In-Reply-To: <20100701175100.GA2078@kroah.com>
+MIME-Version: 1.0
+Message-Id: <201007012355.05531.florian@openwrt.org>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+Le Thursday 1 July 2010 19:51:00, Greg KH a écrit :
+> First off, sorry for the long delay in the -stable kernel releases, they
+> got pushed to the back-burner for other things recently ("Hey look, is
+> that the sun finally here in the Pacific Northwest?")
+> 
+> Please note that there are still a large number of patches that have
+> been submitted to the -stable trees for inclusion, that I have not
+> included yet.  Do not worry, they are still in my queue, but due to the
+> large number of patches that I already have queued up, I figured it was
+> better to get what I have applied already out for a release and then
+> work on catching up after this.
+> 
+> If anyone has any questions about this, please let me know.
 
-From: Kumar Gala <galak@kernel.crashing.org>
+Looks like this cpmac patch was not included in this -stable series: 
+http://www.spinics.net/lists/netdev/msg133317.html
 
-commit 78f622377f7d31d988db350a43c5689dd5f31876 upstream.
+Can you queue it for future -stable releases or this one?
 
-When we build with ftrace enabled its possible that loadcam_entry would
-have used the stack pointer (even though the code doesn't need it).  We
-call loadcam_entry in __secondary_start before the stack is setup.  To
-ensure that loadcam_entry doesn't use the stack pointer the easiest
-solution is to just have it in asm code.
-
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/powerpc/kernel/asm-offsets.c |    8 ++++++++
- arch/powerpc/mm/fsl_booke_mmu.c   |   25 +++----------------------
- arch/powerpc/mm/mmu_decl.h        |    8 ++++++++
- arch/powerpc/mm/tlb_nohash_low.S  |   28 ++++++++++++++++++++++++++++
- 4 files changed, 47 insertions(+), 22 deletions(-)
-
---- a/arch/powerpc/kernel/asm-offsets.c
-+++ b/arch/powerpc/kernel/asm-offsets.c
-@@ -447,6 +447,14 @@ int main(void)
- 	DEFINE(PGD_T_LOG2, PGD_T_LOG2);
- 	DEFINE(PTE_T_LOG2, PTE_T_LOG2);
- #endif
-+#ifdef CONFIG_FSL_BOOKE
-+	DEFINE(TLBCAM_SIZE, sizeof(struct tlbcam));
-+	DEFINE(TLBCAM_MAS0, offsetof(struct tlbcam, MAS0));
-+	DEFINE(TLBCAM_MAS1, offsetof(struct tlbcam, MAS1));
-+	DEFINE(TLBCAM_MAS2, offsetof(struct tlbcam, MAS2));
-+	DEFINE(TLBCAM_MAS3, offsetof(struct tlbcam, MAS3));
-+	DEFINE(TLBCAM_MAS7, offsetof(struct tlbcam, MAS7));
-+#endif
- 
- #ifdef CONFIG_KVM_EXIT_TIMING
- 	DEFINE(VCPU_TIMING_EXIT_TBU, offsetof(struct kvm_vcpu,
---- a/arch/powerpc/mm/fsl_booke_mmu.c
-+++ b/arch/powerpc/mm/fsl_booke_mmu.c
-@@ -2,7 +2,7 @@
-  * Modifications by Kumar Gala (galak@kernel.crashing.org) to support
-  * E500 Book E processors.
-  *
-- * Copyright 2004 Freescale Semiconductor, Inc
-+ * Copyright 2004,2010 Freescale Semiconductor, Inc.
-  *
-  * This file contains the routines for initializing the MMU
-  * on the 4xx series of chips.
-@@ -56,19 +56,13 @@
- 
- unsigned int tlbcam_index;
- 
--#define NUM_TLBCAMS	(64)
- 
- #if defined(CONFIG_LOWMEM_CAM_NUM_BOOL) && (CONFIG_LOWMEM_CAM_NUM >= NUM_TLBCAMS)
- #error "LOWMEM_CAM_NUM must be less than NUM_TLBCAMS"
- #endif
- 
--struct tlbcam {
--	u32	MAS0;
--	u32	MAS1;
--	unsigned long	MAS2;
--	u32	MAS3;
--	u32	MAS7;
--} TLBCAM[NUM_TLBCAMS];
-+#define NUM_TLBCAMS	(64)
-+struct tlbcam TLBCAM[NUM_TLBCAMS];
- 
- struct tlbcamrange {
- 	unsigned long start;
-@@ -109,19 +103,6 @@ unsigned long p_mapped_by_tlbcam(phys_ad
- 	return 0;
- }
- 
--void loadcam_entry(int idx)
--{
--	mtspr(SPRN_MAS0, TLBCAM[idx].MAS0);
--	mtspr(SPRN_MAS1, TLBCAM[idx].MAS1);
--	mtspr(SPRN_MAS2, TLBCAM[idx].MAS2);
--	mtspr(SPRN_MAS3, TLBCAM[idx].MAS3);
--
--	if (mmu_has_feature(MMU_FTR_BIG_PHYS))
--		mtspr(SPRN_MAS7, TLBCAM[idx].MAS7);
--
--	asm volatile("isync;tlbwe;isync" : : : "memory");
--}
--
- /*
-  * Set up one of the I/D BAT (block address translation) register pairs.
-  * The parameters are not checked; in particular size must be a power
---- a/arch/powerpc/mm/mmu_decl.h
-+++ b/arch/powerpc/mm/mmu_decl.h
-@@ -149,7 +149,15 @@ extern unsigned long mmu_mapin_ram(unsig
- extern void MMU_init_hw(void);
- extern unsigned long mmu_mapin_ram(unsigned long top);
- extern void adjust_total_lowmem(void);
-+extern void loadcam_entry(unsigned int index);
- 
-+struct tlbcam {
-+	u32	MAS0;
-+	u32	MAS1;
-+	unsigned long	MAS2;
-+	u32	MAS3;
-+	u32	MAS7;
-+};
- #elif defined(CONFIG_PPC32)
- /* anything 32-bit except 4xx or 8xx */
- extern void MMU_init_hw(void);
---- a/arch/powerpc/mm/tlb_nohash_low.S
-+++ b/arch/powerpc/mm/tlb_nohash_low.S
-@@ -271,3 +271,31 @@ _GLOBAL(set_context)
- #else
- #error Unsupported processor type !
- #endif
-+
-+#if defined(CONFIG_FSL_BOOKE)
-+/*
-+ * extern void loadcam_entry(unsigned int index)
-+ *
-+ * Load TLBCAM[index] entry in to the L2 CAM MMU
-+ */
-+_GLOBAL(loadcam_entry)
-+	LOAD_REG_ADDR(r4, TLBCAM)
-+	mulli	r5,r3,TLBCAM_SIZE
-+	add	r3,r5,r4
-+	lwz	r4,TLBCAM_MAS0(r3)
-+	mtspr	SPRN_MAS0,r4
-+	lwz	r4,TLBCAM_MAS1(r3)
-+	mtspr	SPRN_MAS1,r4
-+	PPC_LL	r4,TLBCAM_MAS2(r3)
-+	mtspr	SPRN_MAS2,r4
-+	lwz	r4,TLBCAM_MAS3(r3)
-+	mtspr	SPRN_MAS3,r4
-+BEGIN_MMU_FTR_SECTION
-+	lwz	r4,TLBCAM_MAS7(r3)
-+	mtspr	SPRN_MAS7,r4
-+END_MMU_FTR_SECTION_IFSET(MMU_FTR_BIG_PHYS)
-+	isync
-+	tlbwe
-+	isync
-+	blr
-+#endif
-
-
+Thank you.
+--
+Florian
