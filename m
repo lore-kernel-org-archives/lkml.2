@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664Ab0GATo5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 15:44:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61832 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab0GATo4 convert rfc822-to-8bit (ORCPT
+	id S1756094Ab0GATrg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 15:47:36 -0400
+Received: from puma.mail.utk.edu ([160.36.178.106]:33043 "EHLO
+	puma.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222Ab0GATrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 15:44:56 -0400
+	Thu, 1 Jul 2010 15:47:35 -0400
+X-Greylist: delayed 990 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Jul 2010 15:47:35 EDT
+Date: Thu, 1 Jul 2010 15:30:16 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Ingo Molnar <mingo@elte.hu>
+cc: LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH] perf wrong branches event on AMD
+Message-ID: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Message-ID: <1411749d-666c-447d-bf05-954e2b4adf93@default>
-Date: Thu, 1 Jul 2010 12:43:42 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-       Konrad Wilk <konrad.wilk@oracle.com>
-Cc: Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-       Jeremy@acsinet12.oracle.com, linux-kernel@vger.kernel.org,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
-Subject: RE: [Xen-devel] Re: [PATCH 0/12] PV on HVM Xen
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
- <20100630175637.GC16488@phenom.dumpdata.com
- alpine.DEB.2.00.1007011111510.30135@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1007011111510.30135@kaball-desktop>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C2CF026.00B8:SCFMA4539814,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefano --
+Hello
 
-What versions of Xen are compatible with this series?
-I.e. is 4.0 required?  Are all Xen-side changes in
-official 4.0.0?  Or only in 4.0-testing (and therefore
-will be in 4.0.1)?  Or only in xen-unstable?
+while doing some performance counter validation tests on some assembly 
+language programs I noticed that the "branches:u" count was very wrong on 
+AMD machines.
 
-If post-4.0.0 xen changes are necessary, could you point
-out the changesets?
+It looks like the wrong event was selected.
 
-Thanks,
-Dan
+This is why event selection needs to be in user-space... it could be fixed 
+instantly there, but the way things are done now it will take months to 
+years for this fix to filter down to those trying to use perf counters...
 
-P.S. Sorry if I missed earlier discussion or documentation
-on this... but if not otherwise documented, maybe the
-info should be in the patch comment?
+Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
 
-> -----Original Message-----
-> From: Stefano Stabellini [mailto:stefano.stabellini@eu.citrix.com]
-> Sent: Thursday, July 01, 2010 5:39 AM
-> To: Konrad Rzeszutek Wilk
-> Cc: Fitzhardinge; xen-devel@lists.xensource.com;
-> Jeremy@acsinet12.oracle.com; Stefano Stabellini; linux-
-> kernel@vger.kernel.org; Don Dutile; Sheng Yang
-> Subject: [Xen-devel] Re: [PATCH 0/12] PV on HVM Xen
-> 
-> On Wed, 30 Jun 2010, Konrad Rzeszutek Wilk wrote:
-> > On Mon, Jun 21, 2010 at 05:12:20PM +0100, Stefano Stabellini wrote:
-> > > Hi all,
-> > > this is another update on the PV on HVM Xen series; a list of
-> changes
-> > > compared to the previous version follows:
-> >
-> > Can you use the [v4] in the main patch (this is the fourth version of
-> > these patches, right?)? I am getting confused as to which version I
-> am
-> > reviewing and if I've missed one or what not.
-> >
-> > And in this first intro email state:
-> >
-> > Since v7 the following things have changed:
-> >  - Konrad made some comments.
-> >  - etc.
-> >
-> 
-> Good point, I'll do that from now on.
-> I am pretty sure that you are reviewing the latest version I sent.
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 611df11..c2897b7 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -102,8 +102,8 @@ static const u64 amd_perfmon_event_map[] =
+   [PERF_COUNT_HW_INSTRUCTIONS]		= 0x00c0,
+   [PERF_COUNT_HW_CACHE_REFERENCES]	= 0x0080,
+   [PERF_COUNT_HW_CACHE_MISSES]		= 0x0081,
+-  [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x00c4,
+-  [PERF_COUNT_HW_BRANCH_MISSES]		= 0x00c5,
++  [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x00c2,
++  [PERF_COUNT_HW_BRANCH_MISSES]		= 0x00c3,
+ };
+ 
+ static u64 amd_pmu_event_map(int hw_event)
