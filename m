@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759456Ab0GAVvI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:51:08 -0400
-Received: from kroah.org ([198.145.64.141]:60912 "EHLO coco.kroah.org"
+	id S1759360Ab0GAVhf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:37:35 -0400
+Received: from kroah.org ([198.145.64.141]:33024 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758985Ab0GAVNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:49 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:52 2010
-Message-Id: <20100701174252.825748331@clark.site>
+	id S932576Ab0GAVOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:44 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
+Message-Id: <20100701174258.400595778@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:46 -0700
+Date: Thu, 01 Jul 2010 10:43:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [076/200] drm/radeon/kms: release AGP bridge at suspend
+       Johannes Berg <johannes.berg@intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [142/200] mac80211: fix deauth before assoc
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,55 +26,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 10b06122afcc78468bd1d009633cb71e528acdc5 upstream.
+commit b054b747a694927879c94dd11af54d04346aed7d upstream.
 
-I think it's good to release the AGP bridge at suspend
-and reacquire it at resume. Also fix :
-https://bugzilla.kernel.org/show_bug.cgi?id=15969
+When we receive a deauthentication frame before
+having successfully associated, we neither print
+a message nor abort assocation. The former makes
+it hard to debug, while the latter later causes
+a warning in cfg80211 when, as will typically be
+the case, association timed out.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This warning was reported by many, e.g. in
+https://bugzilla.kernel.org/show_bug.cgi?id=15981,
+but I couldn't initially pinpoint it. I verified
+the fix by hacking hostapd to send a deauth frame
+instead of an association response.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Tested-by: Miles Lane <miles.lane@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon.h        |    1 +
- drivers/gpu/drm/radeon/radeon_agp.c    |    5 +++++
- drivers/gpu/drm/radeon/radeon_device.c |    2 ++
- 3 files changed, 8 insertions(+)
+ net/mac80211/mlme.c |   40 ++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 38 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -566,6 +566,7 @@ typedef int (*radeon_packet3_check_t)(st
-  */
- int radeon_agp_init(struct radeon_device *rdev);
- void radeon_agp_resume(struct radeon_device *rdev);
-+void radeon_agp_suspend(struct radeon_device *rdev);
- void radeon_agp_fini(struct radeon_device *rdev);
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -1530,9 +1530,45 @@ static void ieee80211_sta_rx_queued_mgmt
+ 	mutex_unlock(&ifmgd->mtx);
  
+ 	if (skb->len >= 24 + 2 /* mgmt + deauth reason */ &&
+-	    (fc & IEEE80211_FCTL_STYPE) == IEEE80211_STYPE_DEAUTH)
+-		cfg80211_send_deauth(sdata->dev, (u8 *)mgmt, skb->len);
++	    (fc & IEEE80211_FCTL_STYPE) == IEEE80211_STYPE_DEAUTH) {
++		struct ieee80211_local *local = sdata->local;
++		struct ieee80211_work *wk;
++
++		mutex_lock(&local->work_mtx);
++		list_for_each_entry(wk, &local->work_list, list) {
++			if (wk->sdata != sdata)
++				continue;
++
++			if (wk->type != IEEE80211_WORK_ASSOC)
++				continue;
++
++			if (memcmp(mgmt->bssid, wk->filter_ta, ETH_ALEN))
++				continue;
++			if (memcmp(mgmt->sa, wk->filter_ta, ETH_ALEN))
++				continue;
  
---- a/drivers/gpu/drm/radeon/radeon_agp.c
-+++ b/drivers/gpu/drm/radeon/radeon_agp.c
-@@ -270,3 +270,8 @@ void radeon_agp_fini(struct radeon_devic
- 	}
- #endif
++			/*
++			 * Printing the message only here means we can't
++			 * spuriously print it, but it also means that it
++			 * won't be printed when the frame comes in before
++			 * we even tried to associate or in similar cases.
++			 *
++			 * Ultimately, I suspect cfg80211 should print the
++			 * messages instead.
++			 */
++			printk(KERN_DEBUG
++			       "%s: deauthenticated from %pM (Reason: %u)\n",
++			       sdata->name, mgmt->bssid,
++			       le16_to_cpu(mgmt->u.deauth.reason_code));
++
++			list_del_rcu(&wk->list);
++			free_work(wk);
++			break;
++		}
++		mutex_unlock(&local->work_mtx);
++
++		cfg80211_send_deauth(sdata->dev, (u8 *)mgmt, skb->len);
++	}
+  out:
+ 	kfree_skb(skb);
  }
-+
-+void radeon_agp_suspend(struct radeon_device *rdev)
-+{
-+	radeon_agp_fini(rdev);
-+}
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -748,6 +748,8 @@ int radeon_suspend_kms(struct drm_device
- 	/* evict remaining vram memory */
- 	radeon_bo_evict_vram(rdev);
- 
-+	radeon_agp_suspend(rdev);
-+
- 	pci_save_state(dev->pdev);
- 	if (state.event == PM_EVENT_SUSPEND) {
- 		/* Shut down the device */
 
 
