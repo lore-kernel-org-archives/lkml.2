@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab0GAXOK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 19:14:10 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:37572 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab0GAXOI (ORCPT
+	id S1753020Ab0GAX0L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 19:26:11 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:35726 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752493Ab0GAX0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 19:14:08 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:x-system-of-record;
-	b=IYUHWLuJv6Y3e2qvIzHhWcXR+lWCK4VPRpmIUK0UVW3dLiPgySZOWxWDBpprYLHyf
-	I+vhG+zoJqjhkLSJGwHsA==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Gautham R Shenoy <ego@in.ibm.com>,
-       Joel Schopp <jschopp@austin.ibm.com>,
-       Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH] sched: Call update_group_power only for local_group
-Date: Thu,  1 Jul 2010 16:12:22 -0700
-Message-Id: <1278025942-6750-1-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.1
-X-System-Of-Record: true
+	Thu, 1 Jul 2010 19:26:08 -0400
+X-Sasl-enc: x94K2QwWYEC16Ye7s/6k5XxLe3Vrv5WzccMbnJ5DWB31 1278026767
+Date: Thu, 1 Jul 2010 20:26:03 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Thomas Renninger <trenn@suse.de>
+Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org, astarikovskiy@suse.de,
+       ibm-acpi-devel@lists.sourceforge.net
+Subject: Re: [PATCH 5/6] X86 platform drivers: Remove EC dump from
+ thinkpad_acpi
+Message-ID: <20100701232603.GA15824@khazad-dum.debian.net>
+References: <1277996570-2686-1-git-send-email-trenn@suse.de>
+ <1277996570-2686-6-git-send-email-trenn@suse.de>
+ <20100701162741.GC4789@khazad-dum.debian.net>
+ <201007012131.20031.trenn@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007012131.20031.trenn@suse.de>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 871e35b moved update_group_power() call in update_sg_lb_stats(),
-resulting in it being called for each group, even though it only updates
-the power of local group. As a result we have frequent redundant
-update_group_power() calls.
+On Thu, 01 Jul 2010, Thomas Renninger wrote:
+> > Soes your helper userspace util do the "differential" analysis that
+> > thinkpad-acpi used to (the "*" after values that changed since last read)?
+> No.
+> But this should not be important enough to not get this removed.
 
-Move it back under "if (local_group)" condition.
+Consider it a feature request ;-)
 
-This reduces the number of calls to update_group_power by a factor of 4
-on my 4 core in 4 NUMA nodes test system.
+> It's hard to re-implement the exact behaviour (which can be handy for
+> specific problems, I agree).
+> With:
+> watch -n1 ec_access -r
+> you can have a close look at specific registers and see them changing.
+> Whatabout:
+> ec_access -r -s time(s)
+> Reads the table once and again after "time" seconds with stars
+> where modifications happened. Then someone can plug AC or hit a button
+> and look at the diff in EC registers afterwards.
+> This should be sufficient?
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- kernel/sched_fair.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Yes.
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index a878b53..369d53d 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2359,8 +2359,11 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
- 	unsigned long avg_load_per_task = 0;
- 
--	if (local_group)
-+	if (local_group) {
- 		balance_cpu = group_first_cpu(group);
-+		update_group_power(sd, this_cpu);
-+	}
-+
- 
- 	/* Tally up the load of all CPUs in the group */
- 	max_cpu_load = 0;
-@@ -2406,8 +2409,6 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 		return;
- 	}
- 
--	update_group_power(sd, this_cpu);
--
- 	/* Adjust by relative CPU power of the group */
- 	sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
- 
 -- 
-1.7.1
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
