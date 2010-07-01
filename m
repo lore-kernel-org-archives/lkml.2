@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab0GAVli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:41:38 -0400
-Received: from kroah.org ([198.145.64.141]:32931 "EHLO coco.kroah.org"
+	id S933409Ab0GAVmj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:42:39 -0400
+Received: from kroah.org ([198.145.64.141]:32906 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759155Ab0GAVOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:30 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:57 2010
-Message-Id: <20100701174256.979480084@clark.site>
+	id S1759126Ab0GAVO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:56 2010
+Message-Id: <20100701174256.555019192@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:35 -0700
+Date: Thu, 01 Jul 2010 10:43:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Moyer <jmoyer@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Larry Woodman <lwoodman@redhat.com>
-Subject: [125/200] do_generic_file_read: clear page errors when issuing a fresh read of the page
+       Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Alexander Duyck <alexander.h.duyck@intel.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [120/200] slub: move kmem_cache_node into its own cacheline
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +28,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Alexander Duyck <alexander.h.duyck@intel.com>
 
-commit 91803b499cca2fe558abad709ce83dc896b80950 upstream.
+commit 73367bd8eef4f4eb311005886aaa916013073265 upstream.
 
-I/O errors can happen due to temporary failures, like multipath
-errors or losing network contact with the iSCSI server. Because
-of that, the VM will retry readpage on the page.
+This patch is meant to improve the performance of SLUB by moving the local
+kmem_cache_node lock into it's own cacheline separate from kmem_cache.
+This is accomplished by simply removing the local_node when NUMA is enabled.
 
-However, do_generic_file_read does not clear PG_error.  This
-causes the system to be unable to actually use the data in the
-page cache page, even if the subsequent readpage completes
-successfully!
+On my system with 2 nodes I saw around a 5% performance increase w/
+hackbench times dropping from 6.2 seconds to 5.9 seconds on average.  I
+suspect the performance gain would increase as the number of nodes
+increases, but I do not have the data to currently back that up.
 
-The function filemap_fault has had a ClearPageError before
-readpage forever.  This patch simply adds the same to
-do_generic_file_read.
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Acked-by: Larry Woodman <lwoodman@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Bugzilla-Reference: http://bugzilla.kernel.org/show_bug.cgi?id=15713
+Reported-by: Alex Shi <alex.shi@intel.com>
+Tested-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Acked-by: Christoph Lameter <cl@linux-foundation.org>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/filemap.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ include/linux/slub_def.h |    9 +++------
+ mm/slub.c                |   33 +++++++++++----------------------
+ 2 files changed, 14 insertions(+), 28 deletions(-)
 
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1099,6 +1099,12 @@ page_not_up_to_date_locked:
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -75,12 +75,6 @@ struct kmem_cache {
+ 	int offset;		/* Free pointer offset. */
+ 	struct kmem_cache_order_objects oo;
+ 
+-	/*
+-	 * Avoid an extra cache line for UP, SMP and for the node local to
+-	 * struct kmem_cache.
+-	 */
+-	struct kmem_cache_node local_node;
+-
+ 	/* Allocation and freeing of slabs */
+ 	struct kmem_cache_order_objects max;
+ 	struct kmem_cache_order_objects min;
+@@ -102,6 +96,9 @@ struct kmem_cache {
+ 	 */
+ 	int remote_node_defrag_ratio;
+ 	struct kmem_cache_node *node[MAX_NUMNODES];
++#else
++	/* Avoid an extra cache line for UP */
++	struct kmem_cache_node local_node;
+ #endif
+ };
+ 
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2141,7 +2141,7 @@ static void free_kmem_cache_nodes(struct
+ 
+ 	for_each_node_state(node, N_NORMAL_MEMORY) {
+ 		struct kmem_cache_node *n = s->node[node];
+-		if (n && n != &s->local_node)
++		if (n)
+ 			kmem_cache_free(kmalloc_caches, n);
+ 		s->node[node] = NULL;
+ 	}
+@@ -2150,33 +2150,22 @@ static void free_kmem_cache_nodes(struct
+ static int init_kmem_cache_nodes(struct kmem_cache *s, gfp_t gfpflags)
+ {
+ 	int node;
+-	int local_node;
+-
+-	if (slab_state >= UP && (s < kmalloc_caches ||
+-			s >= kmalloc_caches + KMALLOC_CACHES))
+-		local_node = page_to_nid(virt_to_page(s));
+-	else
+-		local_node = 0;
+ 
+ 	for_each_node_state(node, N_NORMAL_MEMORY) {
+ 		struct kmem_cache_node *n;
+ 
+-		if (local_node == node)
+-			n = &s->local_node;
+-		else {
+-			if (slab_state == DOWN) {
+-				early_kmem_cache_node_alloc(gfpflags, node);
+-				continue;
+-			}
+-			n = kmem_cache_alloc_node(kmalloc_caches,
+-							gfpflags, node);
+-
+-			if (!n) {
+-				free_kmem_cache_nodes(s);
+-				return 0;
+-			}
++		if (slab_state == DOWN) {
++			early_kmem_cache_node_alloc(gfpflags, node);
++			continue;
++		}
++		n = kmem_cache_alloc_node(kmalloc_caches,
++						gfpflags, node);
+ 
++		if (!n) {
++			free_kmem_cache_nodes(s);
++			return 0;
  		}
- 
- readpage:
-+		/*
-+		 * A previous I/O error may have been due to temporary
-+		 * failures, eg. multipath errors.
-+		 * PG_error will be set again if readpage fails.
-+		 */
-+		ClearPageError(page);
- 		/* Start the actual read. The read will unlock the page. */
- 		error = mapping->a_ops->readpage(filp, page);
- 
++
+ 		s->node[node] = n;
+ 		init_kmem_cache_node(n, s);
+ 	}
 
 
