@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648Ab0GAUuL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:50:11 -0400
-Received: from kroah.org ([198.145.64.141]:47287 "EHLO coco.kroah.org"
+	id S933504Ab0GAWLd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:11:33 -0400
+Received: from kroah.org ([198.145.64.141]:46738 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932586Ab0GAUty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:30 2010
-Message-Id: <20100701173430.227528641@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:46 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [patch 040/164] USB: xhci: Limit bus sg_tablesize to 62 TRBs.
-In-Reply-To: <20100701175152.GA2135@kroah.com>
+	id S932676Ab0GAWL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 18:11:26 -0400
+Date: Thu, 1 Jul 2010 15:10:59 -0700
+From: Greg KH <greg@kroah.com>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk
+Subject: Re: 4 -stable kernel review cycles starting
+Message-ID: <20100701221059.GA11663@kroah.com>
+References: <20100701175100.GA2078@kroah.com>
+ <201007012355.05531.florian@openwrt.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201007012355.05531.florian@openwrt.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jul 01, 2010 at 11:55:02PM +0200, Florian Fainelli wrote:
+> Hi,
+> 
+> Le Thursday 1 July 2010 19:51:00, Greg KH a écrit :
+> > First off, sorry for the long delay in the -stable kernel releases, they
+> > got pushed to the back-burner for other things recently ("Hey look, is
+> > that the sun finally here in the Pacific Northwest?")
+> > 
+> > Please note that there are still a large number of patches that have
+> > been submitted to the -stable trees for inclusion, that I have not
+> > included yet.  Do not worry, they are still in my queue, but due to the
+> > large number of patches that I already have queued up, I figured it was
+> > better to get what I have applied already out for a release and then
+> > work on catching up after this.
+> > 
+> > If anyone has any questions about this, please let me know.
+> 
+> Looks like this cpmac patch was not included in this -stable series: 
+> http://www.spinics.net/lists/netdev/msg133317.html
+> 
+> Can you queue it for future -stable releases or this one?
 
-------------------
+{sigh}
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Did you see the second paragraph above as to why it isn't in this
+release?
 
-commit bc88d2eba5e19d10dd546e428314909d889b3b6a upstream.
+And yes, it will be in future ones.
 
-When a scatter-gather list is enqueued to the xHCI driver, it translates
-each entry into a transfer request block (TRB).  Only 63 TRBs can be
-used per ring segment, and there must be one additional TRB reserved to
-make sure the hardware does not think the ring is empty (so the enqueue
-pointer doesn't equal the dequeue pointer).  Limit the bus sg_tablesize
-to 62 TRBs.
+thanks,
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/host/xhci-pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -54,7 +54,7 @@ static int xhci_pci_setup(struct usb_hcd
- 	struct pci_dev		*pdev = to_pci_dev(hcd->self.controller);
- 	int			retval;
- 
--	hcd->self.sg_tablesize = TRBS_PER_SEGMENT - 1;
-+	hcd->self.sg_tablesize = TRBS_PER_SEGMENT - 2;
- 
- 	xhci->cap_regs = hcd->regs;
- 	xhci->op_regs = hcd->regs +
-
-
+greg k-h
