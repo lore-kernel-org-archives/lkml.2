@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab0GAPgh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:36:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7904 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756701Ab0GAPge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 11:36:34 -0400
-Date: Thu, 1 Jul 2010 18:31:15 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Tom Lyon <pugs@cisco.com>, randy.dunlap@oracle.com,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
-       joro@8bytes.org, hjk@linutronix.de, avi@redhat.com, gregkh@suse.de,
-       aafabbri@cisco.com, scofeldm@cisco.com,
-       Donald Dutile <ddutile@redhat.com>
-Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100701153115.GA2008@redhat.com>
-References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
- <1277998144.10112.58.camel@x201>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277998144.10112.58.camel@x201>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1756862Ab0GAPhE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:37:04 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37585 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756699Ab0GAPgF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 11:36:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references;
+        b=V46rBOk7zOXbBRoGZsjvOroRzIRpFyfp5HZASVc70ZrGGGO1IgaU/B8jI2pMHfSqEp
+         Uxe6l6yqJBVDjKisXbM+kYbZU1uGVIDov9ioVFxPwe/diMLf8qZcm2grg7owQpqW6FJL
+         cx9Ls0MiWEZp4fQ78RDLeSdiGrzBHnrTZ650s=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>,
+       Will Deacon <will.deacon@arm.com>, David Miller <davem@davemloft.net>,
+       Paul Mundt <lethal@linux-sh.org>, Borislav Petkov <bp@amd64.org>
+Subject: [RFC PATCH 6/6] perf: Fix double put_ctx
+Date: Thu,  1 Jul 2010 17:36:02 +0200
+Message-Id: <1277998562-21366-7-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <1277998562-21366-1-git-send-regression-fweisbec@gmail.com>
+References: <1277998562-21366-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 09:29:04AM -0600, Alex Williamson wrote:
-> On Tue, 2010-06-08 at 14:21 -0700, Tom Lyon wrote:
-> > +The VFIO_DMA_MASK ioctl is used to set the maximum permissible DMA address
-> > +(device dependent). It takes a single unsigned 64 bit integer as an argument.
-> > +This call also has the side effect of enabling PCI bus mastership.
-> 
-> Hi Tom,
-> 
-> This interface doesn't make sense for the MAP_IOVA user.  Especially in
-> qemu, we have no idea what the DMA mask is for the device we're
-> assigning.  It doesn't really matter though because the guest will use
-> bounce buffers internally once it loads the device specific drivers and
-> discovers the DMA mask.  This only seems relevant if we're using a
-> DMA_MAP call that gets to pick the dmaaddr, so I'd propose we only make
-> this a required call for that interface, and create a separate ioctl for
-> actually enabling bus master.  Thanks,
-> 
-> Alex
+If we call free_event on fail case of event creation, it
+already put the context. The falldown goto, though, also
+does a put_ctx, which might dereference a freed context.
 
-I expect there's no need for a separate ioctl to do this:
-you can do this by write to the control register.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Borislav Petkov <bp@amd64.org>
+---
+ kernel/perf_event.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index b6e854f..925b53e 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -5364,6 +5364,8 @@ SYSCALL_DEFINE5(perf_event_open,
+ 
+ err_free_put_context:
+ 	free_event(event);
++	fput_light(group_file, fput_needed);
++	goto err_fd;
+ err_put_context:
+ 	fput_light(group_file, fput_needed);
+ 	put_ctx(ctx);
 -- 
-MST
+1.6.2.3
+
