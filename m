@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab0GANx6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:53:58 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:54682 "EHLO
+	id S1756106Ab0GANyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:54:12 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54713 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327Ab0GANx4 (ORCPT
+	with ESMTP id S1755910Ab0GANyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:53:56 -0400
-Date: Thu, 1 Jul 2010 14:53:48 +0100
+	Thu, 1 Jul 2010 09:54:10 -0400
+Date: Thu, 1 Jul 2010 14:54:01 +0100
 From: Matthew Garrett <mjg@redhat.com>
 To: Axel Lin <axel.lin@gmail.com>
 Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-       =?iso-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
+       Mattia Dongili <malattia@linux.it>, Len Brown <len.brown@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Stefani Seibold <stefani@seibold.net>, Andi Kleen <ak@linux.intel.com>,
        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] dell-wmi: fix a memory leak
-Message-ID: <20100701135348.GF31804@srcf.ucam.org>
-References: <1277889946.30827.2.camel@mola>
+Subject: Re: [PATCH] sony-laptop: use platform_device_unregister in
+	sony_pf_remove
+Message-ID: <20100701135401.GG31804@srcf.ucam.org>
+References: <1277950681.30073.1.camel@mola>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1277889946.30827.2.camel@mola>
+In-Reply-To: <1277950681.30073.1.camel@mola>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
@@ -29,11 +31,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 05:25:46PM +0800, Axel Lin wrote:
-> If dell_new_hk_type is true, dell_legacy_wmi_keymap will point to a memory
-> allocated in setup_new_hk_map().
-> In this case, the memory is not freed in current implementation.
-> This patch fixes the leak by kfree(dell_wmi_keymap) if dell_new_hk_type is true.
+On Thu, Jul 01, 2010 at 10:18:01AM +0800, Axel Lin wrote:
+> platform_device_unregister calls platform_device_del and platform_device_put,
+> thus this change is logically equivalent to original code.
+> 
+> I made this change because the documents in platform.c shows that:
+> platform_device_del and platform_device_put must _only_ be externally called
+> in error cases.  All other usage is a bug.
 > 
 > Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
