@@ -1,125 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933462Ab0GAWJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:09:59 -0400
-Received: from kroah.org ([198.145.64.141]:47472 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932667Ab0GAUuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:16 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:32 2010
-Message-Id: <20100701173432.376204454@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:12 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       NeilBrown <neilb@suse.de>
-Subject: [patch 066/164] md: remove unneeded sysfs files more promptly
-In-Reply-To: <20100701175152.GA2135@kroah.com>
+	id S933503Ab0GAWKr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:10:47 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52348 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932700Ab0GAWKm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 18:10:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=JIS2aG2FfmIKwC1Uqcjg9cCq+PXaq0f4f2gJPavuHnqEP7o9RuRPVURCw3Sw7do9iV
+         4YpuWG07JzBMQoYzDskZE3Cn67CYy2kDJpKIMWIbxYWnPe7mCOuBt3nD9+Gl8qfnjFT7
+         mZzKzxndrFjZFkh8oRZKfu1GCe4irzn3BtVEY=
+MIME-Version: 1.0
+Date: Fri, 2 Jul 2010 08:10:40 +1000
+Message-ID: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
+Subject: Closed source userspace graphics drivers with an open source kernel 
+	component
+From: Dave Airlie <airlied@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let me know.
+Now this is just my opinion as maintainer of the drm, and doesn't
+reflect anyone or any official policy, I've also no idea if Linus
+agrees or not.
 
-------------------
+We are going to start to see a number of companies in the embedded
+space submitting 3D drivers for mobile devices to the kernel. I'd like
+to clarify my position once so they don't all come asking the same
+questions.
 
-From: NeilBrown <neilb@suse.de>
+If you aren't going to create an open userspace driver (either MIT or
+LGPL) then don't waste time submitting a kernel driver to me.
 
-commit b6eb127d274385d81ce8dd45c98190f097bce1b4 upstream.
+My reasons are as follows, the thing is you can probably excuse some
+of these on a point by point basis, but you need to justify why closed
+userspace on all points.
 
-When an array is stopped we need to remove some
-sysfs files which are dependent on the type of array.
+a) licensing, Alan Cox pointed this out before, if you wrote a GPL
+kernel driver, then wrote a closed userspace on top, you open up a
+while world of derived work issues. Can the userspace operate on a
+non-GPL kernel without major modifications etc. This is a can of worms
+I'd rather not enter into, and there are a few workarounds.
 
-We need to delay that deletion as deleting them while holding
-reconfig_mutex can lead to deadlocks.
+b) verifying the sanity of the userspace API.
+1. Security: GPUs can do a lot of damage if left at home alone, since
+mostly you are submitting command streams unverified into the GPU and
+won't tell us what they mean, there is little way we can work out if
+the GPU is going to over-write my passwd file to get 5 fps more in
+quake. Now newer GPUs have at least started having MMUs, but again
+we've no idea if that is the only way they work without docs or a lot
+of trust.
 
-We currently delay them until the array is completely destroyed.
-However it is possible to deactivate and then reactivate the array.
-It is also possible to need to remove sysfs files when changing level,
-which can potentially happen several times before an array is
-destroyed.
+2. General API suitability and versioning. How do we check that API is
+sane wrt to userspace, if we can't verify the userspace. What happens
+if the API has lots of 32/64 compat issues or things like that, and
+when we fix them the binary userspace breaks? How do we know, how do
+we test etc. What happens if a security issue forces us to break the
+userspace API? how do we fix the userspace driver and test to confirm?
 
-So we need to delete these files more promptly: as soon as
-reconfig_mutex is dropped.
+c) supplying docs in lieu of an open userspace
+If you were to fully document the GPU so we could verify the
+security/api aspects it leaves us in the position of writing our own
+driver. Now writing that driver on top of the current kernel driver
+would probably limit any innovation, and most people would want to
+write a new kernel driver from scratch. Now we end up with two drivers
+fighting, how do we pick which one to load at boot? can we ever do a
+generic distro kernel for that device (assuming ARM ever solves that
+issue).
 
-We need to ensure this happens before do_md_run can restart the array,
-so we use open_mutex for some extra locking.  This is not deadlock
-prone.
+I've also noticed a trend to just reinvent the whole wheel instead of
+writing a drm/kms driver and having that as the API, again maintainer
+nightmares are made of this.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/md/md.c |   41 +++++++++++++++++++++++++++++++----------
- 1 file changed, 31 insertions(+), 10 deletions(-)
-
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -507,9 +507,32 @@ static inline int mddev_trylock(mddev_t
- 	return mutex_trylock(&mddev->reconfig_mutex);
- }
- 
-+static struct attribute_group md_redundancy_group;
-+
- static inline void mddev_unlock(mddev_t * mddev)
- {
--	mutex_unlock(&mddev->reconfig_mutex);
-+	if (mddev->pers == NULL && mddev->private) {
-+		/* These cannot be removed under reconfig_mutex as
-+		 * an access to the files will try to take reconfig_mutex
-+		 * while holding the file unremovable, which leads to
-+		 * a deadlock.
-+		 * So hold open_mutex instead - we are allowed to take
-+		 * it while holding reconfig_mutex, and md_run can
-+		 * use it to wait for the remove to complete.
-+		 */
-+		mutex_lock(&mddev->open_mutex);
-+		mutex_unlock(&mddev->reconfig_mutex);
-+
-+		sysfs_remove_group(&mddev->kobj, &md_redundancy_group);
-+		if (mddev->private != (void*)1)
-+			sysfs_remove_group(&mddev->kobj, mddev->private);
-+		if (mddev->sysfs_action)
-+			sysfs_put(mddev->sysfs_action);
-+		mddev->sysfs_action = NULL;
-+		mddev->private = NULL;
-+		mutex_unlock(&mddev->open_mutex);
-+	} else
-+		mutex_unlock(&mddev->reconfig_mutex);
- 
- 	md_wakeup_thread(mddev->thread);
- }
-@@ -4081,15 +4104,6 @@ static void mddev_delayed_delete(struct
- {
- 	mddev_t *mddev = container_of(ws, mddev_t, del_work);
- 
--	if (mddev->private) {
--		sysfs_remove_group(&mddev->kobj, &md_redundancy_group);
--		if (mddev->private != (void*)1)
--			sysfs_remove_group(&mddev->kobj, mddev->private);
--		if (mddev->sysfs_action)
--			sysfs_put(mddev->sysfs_action);
--		mddev->sysfs_action = NULL;
--		mddev->private = NULL;
--	}
- 	sysfs_remove_group(&mddev->kobj, &md_bitmap_group);
- 	kobject_del(&mddev->kobj);
- 	kobject_put(&mddev->kobj);
-@@ -4247,6 +4261,13 @@ static int do_md_run(mddev_t * mddev)
- 	if (mddev->pers)
- 		return -EBUSY;
- 
-+	/* These two calls synchronise us with the
-+	 * sysfs_remove_group calls in mddev_unlock,
-+	 * so they must have completed.
-+	 */
-+	mutex_lock(&mddev->open_mutex);
-+	mutex_unlock(&mddev->open_mutex);
-+
- 	/*
- 	 * Analyze all RAID superblock(s)
- 	 */
-
-
+Dave.
