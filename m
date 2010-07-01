@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab0GAMaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 08:30:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18251 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755438Ab0GAMaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 08:30:09 -0400
-Date: Thu, 1 Jul 2010 15:23:40 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
+	id S1755751Ab0GAMdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 08:33:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37571 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755467Ab0GAMde convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 08:33:34 -0400
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
@@ -17,65 +18,40 @@ Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-Message-ID: <20100701122340.GB31333@redhat.com>
-References: <4BFFE742.2060205@kernel.org>
- <20100530112925.GB27611@redhat.com>
- <4C02C99D.9070204@kernel.org>
- <20100624081135.GA937@redhat.com>
- <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
- <20100625101022.GA16321@redhat.com>
- <20100701110708.GA27368@redhat.com>
- <1277983179.1917.10.camel@laptop>
- <1277984603.1917.15.camel@laptop>
- <20100701115507.GA31333@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <20100701115507.GA31333@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+References: <20100528150830.GB21880@redhat.com>
+	 <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com>
+	 <4C02C99D.9070204@kernel.org> <20100624081135.GA937@redhat.com>
+	 <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
+	 <20100625101022.GA16321@redhat.com> <20100701110708.GA27368@redhat.com>
+	 <1277983179.1917.10.camel@laptop> <1277984603.1917.15.camel@laptop>
+	 <20100701115507.GA31333@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 01 Jul 2010 14:32:43 +0200
+Message-ID: <1277987563.1917.28.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 02:55:07PM +0300, Michael S. Tsirkin wrote:
-> On Thu, Jul 01, 2010 at 01:43:23PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2010-07-01 at 13:19 +0200, Peter Zijlstra wrote:
-> > > On Thu, 2010-07-01 at 14:07 +0300, Michael S. Tsirkin wrote:
-> > > > Author: Sridhar Samudrala <sri@us.ibm.com>
-> > > > 
-> > > > sched: export sched_set/getaffinity to modules
-> > > > 
-> > > > vhost-net driver wants to copy the affinity from the
-> > > > owner thread to thread it creates. Export
-> > > > sched_set/get affinity to modules to make this possible
-> > > > when vhost is built as a module.
-> > 
-> > > Urgh,.. so why again is that a good idea?
-> > 
-> > In particular:
-> >  - who sets the affinity of the task? 
-> 
-> management tools do this when they start qemu.
-> 
+On Thu, 2010-07-01 at 14:55 +0300, Michael S. Tsirkin wrote:
+
 > >  - why can't it set the kernel thread's affinity too?
 > 
 > It can. However: the threads are started internally by the driver
 > when qemu does an ioctl.  What we want to do is give it a sensible
 > default affinity. management tool can later tweak it if it wants to.
-> 
+
+So have that ioctl return the tid of that new fancy thread and then set
+its affinity, stuff it in cgroup, whatever you fancy.
+
 > >  - what happens if someone changes the tasks' affinity?
 > 
 > We would normally create a cgroup including all internal
 > tasks, making it easy to find and change affinity for
-> them all if necessary.
-> 
-> > So no, I don't think this is a sensible thing to do at all.
+> them all if necessary. 
 
-The patch using this is here:
-http://www.mail-archive.com/kvm@vger.kernel.org/msg35411.html
-
-It simply copies the affinity from the parent when thread is created.
-
--- 
-MST
+And to stuff them in a cgroup you also need the tid, at which point it
+might as well set the affinity from userspace, right?
