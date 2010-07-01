@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568Ab0GAP1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:27:46 -0400
-Received: from shutemov.name ([188.40.19.243]:45526 "EHLO shutemov.name"
+	id S1756625Ab0GAP3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:29:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20361 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751508Ab0GAP1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 11:27:45 -0400
-Date: Thu, 1 Jul 2010 18:27:43 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-       Cory Maccarrone <darkstar6262@gmail.com>,
-       "Zebediah C. McClure" <zmc@lurian.net>,
-       Alistair Buxton <a.j.buxton@gmail.com>, linux-omap@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 03/33] Removing dead OMAP_MUX_ERRORS
-Message-ID: <20100701152743.GA8588@shutemov.name>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
- <b6ca168f9459162f2c96aa8ef999047a3c4f6f9c.1277911346.git.siccegge@cs.fau.de>
- <20100630195409.GC3969@shutemov.name>
- <20100701132255.GA32541@faui48a.informatik.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701132255.GA32541@faui48a.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753916Ab0GAP3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 11:29:21 -0400
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Tom Lyon <pugs@cisco.com>
+Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de, mst@redhat.com,
+       avi@redhat.com, gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com,
+       Donald Dutile <ddutile@redhat.com>
+In-Reply-To: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Jul 2010 09:29:04 -0600
+Message-ID: <1277998144.10112.58.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 03:22:55PM +0200, Christoph Egger wrote:
-> On Wed, Jun 30, 2010 at 10:54:09PM +0300, Kirill A. Shutemov wrote:
-> > On Wed, Jun 30, 2010 at 05:54:42PM +0200, Christoph Egger wrote:
-> > > OMAP_MUX_ERRORS doesn't exist in Kconfig, therefore removing all
-> > > references for it from the source code.
-> > 
-> > IIUC, CONFIG_OMAP_MUX_WARNINGS should be used here instead of it.
-> 
-> Something like the patch below?
+On Tue, 2010-06-08 at 14:21 -0700, Tom Lyon wrote:
+> +The VFIO_DMA_MASK ioctl is used to set the maximum permissible DMA address
+> +(device dependent). It takes a single unsigned 64 bit integer as an argument.
+> +This call also has the side effect of enabling PCI bus mastership.
 
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+Hi Tom,
 
-> 
-> ----
-> From: Christoph Egger <siccegge@cs.fau.de>
-> Date: Wed, 30 Jun 2010 12:30:36 +0200
-> Subject: [PATCH 03/33] Replace dead OMAP_MUX_ERRORS with OMAP_MUX_WARNINGS
-> 
-> OMAP_MUX_ERRORS doesn't exist in Kconfig, therefore replacing all
-> references for it with OMAP_MUX_WARNINGS in the source code.
-> 
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> ---
->  arch/arm/mach-omap1/mux.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap1/mux.c b/arch/arm/mach-omap1/mux.c
-> index 8434137..3e98835 100644
-> --- a/arch/arm/mach-omap1/mux.c
-> +++ b/arch/arm/mach-omap1/mux.c
-> @@ -440,7 +440,7 @@ int __init_or_module omap1_cfg_reg(const struct pin_config *cfg)
->  	}
->  #endif
->  
-> -#ifdef CONFIG_OMAP_MUX_ERRORS
-> +#ifdef CONFIG_OMAP_MUX_WARNINGS
->  	return warn ? -ETXTBSY : 0;
->  #else
->  	return 0;
-> -- 
-> 1.7.0.4
-> 
-> 
+This interface doesn't make sense for the MAP_IOVA user.  Especially in
+qemu, we have no idea what the DMA mask is for the device we're
+assigning.  It doesn't really matter though because the guest will use
+bounce buffers internally once it loads the device specific drivers and
+discovers the DMA mask.  This only seems relevant if we're using a
+DMA_MAP call that gets to pick the dmaaddr, so I'd propose we only make
+this a required call for that interface, and create a separate ioctl for
+actually enabling bus master.  Thanks,
 
--- 
- Kirill A. Shutemov
+Alex
+
