@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933547Ab0GAWYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:24:05 -0400
-Received: from kroah.org ([198.145.64.141]:47097 "EHLO coco.kroah.org"
+	id S933555Ab0GAWYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:24:14 -0400
+Received: from kroah.org ([198.145.64.141]:47093 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758567Ab0GAUtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:25 -0400
+	id S1758554Ab0GAUtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:24 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:27 2010
-Message-Id: <20100701173427.383403653@clark.site>
+Message-Id: <20100701173427.298957625@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:12 -0700
+Date: Thu, 01 Jul 2010 10:33:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andi Kleen <ak@linux.intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Andi Kleen <andi@firstfloor.org>,
        Robert Richter <robert.richter@amd.com>
-Subject: [patch 006/164] oprofile: remove double ring buffering
+Subject: [patch 005/164] oprofile/x86: fix uninitialized counter usage during cpu hotplug
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,145 +26,185 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <andi@firstfloor.org>
+From: Robert Richter <robert.richter@amd.com>
 
-commit cb6e943ccf19ab6d3189147e9d625a992e016084 upstream.
+commit 2623a1d55a6260c855e1f6d1895900b50b40a896 upstream.
 
-oprofile used a double buffer scheme for its cpu event buffer
-to avoid races on reading with the old locked ring buffer.
+This fixes a NULL pointer dereference that is triggered when taking a
+cpu offline after oprofile was initialized, e.g.:
 
-But that is obsolete now with the new ring buffer, so simply
-use a single buffer. This greatly simplifies the code and avoids
-a lot of sample drops on large runs, especially with call graph.
+ $ opcontrol --init
+ $ opcontrol --start-daemon
+ $ opcontrol --shutdown
+ $ opcontrol --deinit
+ $ echo 0 > /sys/devices/system/cpu/cpu1/online
 
-Based on suggestions from Steven Rostedt
+See the crash dump below. Though the counter has been disabled the cpu
+notifier is still active and trying to use already freed counter data.
 
-For stable kernels from v2.6.32, but not earlier.
+This fix is for linux-stable. To proper fix this, the hotplug code
+must be rewritten. Thus I will leave a WARN_ON_ONCE() message with
+this patch.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<ffffffff8132ad57>] op_amd_stop+0x2d/0x8e
+PGD 0
+Oops: 0000 [#1] SMP
+last sysfs file: /sys/devices/system/cpu/cpu1/online
+CPU 1
+Modules linked in:
+
+Pid: 0, comm: swapper Not tainted 2.6.34-rc5-oprofile-x86_64-standard-00210-g8c00f06 #16 Anaheim/Anaheim
+RIP: 0010:[<ffffffff8132ad57>]  [<ffffffff8132ad57>] op_amd_stop+0x2d/0x8e
+RSP: 0018:ffff880001843f28  EFLAGS: 00010006
+RAX: 0000000000000000 RBX: 0000000000000000 RCX: dead000000200200
+RDX: ffff880001843f68 RSI: dead000000100100 RDI: 0000000000000000
+RBP: ffff880001843f48 R08: 0000000000000000 R09: ffff880001843f08
+R10: ffffffff8102c9a5 R11: ffff88000184ea80 R12: 0000000000000000
+R13: ffff88000184f6c0 R14: 0000000000000000 R15: 0000000000000000
+FS:  00007fec6a92e6f0(0000) GS:ffff880001840000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000000 CR3: 000000000163b000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper (pid: 0, threadinfo ffff88042fcd8000, task ffff88042fcd51d0)
+Stack:
+ ffff880001843f48 0000000000000001 ffff88042e9f7d38 ffff880001843f68
+<0> ffff880001843f58 ffffffff8132a602 ffff880001843f98 ffffffff810521b3
+<0> ffff880001843f68 ffff880001843f68 ffff880001843f88 ffff88042fcd9fd8
+Call Trace:
+ <IRQ>
+ [<ffffffff8132a602>] nmi_cpu_stop+0x21/0x23
+ [<ffffffff810521b3>] generic_smp_call_function_single_interrupt+0xdf/0x11b
+ [<ffffffff8101804f>] smp_call_function_single_interrupt+0x22/0x31
+ [<ffffffff810029f3>] call_function_single_interrupt+0x13/0x20
+ <EOI>
+ [<ffffffff8102c9a5>] ? wake_up_process+0x10/0x12
+ [<ffffffff81008701>] ? default_idle+0x22/0x37
+ [<ffffffff8100896d>] c1e_idle+0xdf/0xe6
+ [<ffffffff813f1170>] ? atomic_notifier_call_chain+0x13/0x15
+ [<ffffffff810012fb>] cpu_idle+0x4b/0x7e
+ [<ffffffff813e8a4e>] start_secondary+0x1ae/0x1b2
+Code: 89 e5 41 55 49 89 fd 41 54 45 31 e4 53 31 db 48 83 ec 08 89 df e8 be f8 ff ff 48 98 48 83 3c c5 10 67 7a 81 00 74 1f 49 8b 45 08 <42> 8b 0c 20 0f 32 48 c1 e2 20 25 ff ff bf ff 48 09 d0 48 89 c2
+RIP  [<ffffffff8132ad57>] op_amd_stop+0x2d/0x8e
+ RSP <ffff880001843f28>
+CR2: 0000000000000000
+---[ end trace 679ac372d674b757 ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+Pid: 0, comm: swapper Tainted: G      D    2.6.34-rc5-oprofile-x86_64-standard-00210-g8c00f06 #16
+Call Trace:
+ <IRQ>  [<ffffffff813ebd6a>] panic+0x9e/0x10c
+ [<ffffffff810474b0>] ? up+0x34/0x39
+ [<ffffffff81031ccc>] ? kmsg_dump+0x112/0x12c
+ [<ffffffff813eeff1>] oops_end+0x81/0x8e
+ [<ffffffff8101efee>] no_context+0x1f3/0x202
+ [<ffffffff8101f1b7>] __bad_area_nosemaphore+0x1ba/0x1e0
+ [<ffffffff81028d24>] ? enqueue_task_fair+0x16d/0x17a
+ [<ffffffff810264dc>] ? activate_task+0x42/0x53
+ [<ffffffff8102c967>] ? try_to_wake_up+0x272/0x284
+ [<ffffffff8101f1eb>] bad_area_nosemaphore+0xe/0x10
+ [<ffffffff813f0f3f>] do_page_fault+0x1c8/0x37c
+ [<ffffffff81028d24>] ? enqueue_task_fair+0x16d/0x17a
+ [<ffffffff813ee55f>] page_fault+0x1f/0x30
+ [<ffffffff8102c9a5>] ? wake_up_process+0x10/0x12
+ [<ffffffff8132ad57>] ? op_amd_stop+0x2d/0x8e
+ [<ffffffff8132ad46>] ? op_amd_stop+0x1c/0x8e
+ [<ffffffff8132a602>] nmi_cpu_stop+0x21/0x23
+ [<ffffffff810521b3>] generic_smp_call_function_single_interrupt+0xdf/0x11b
+ [<ffffffff8101804f>] smp_call_function_single_interrupt+0x22/0x31
+ [<ffffffff810029f3>] call_function_single_interrupt+0x13/0x20
+ <EOI>  [<ffffffff8102c9a5>] ? wake_up_process+0x10/0x12
+ [<ffffffff81008701>] ? default_idle+0x22/0x37
+ [<ffffffff8100896d>] c1e_idle+0xdf/0xe6
+ [<ffffffff813f1170>] ? atomic_notifier_call_chain+0x13/0x15
+ [<ffffffff810012fb>] cpu_idle+0x4b/0x7e
+ [<ffffffff813e8a4e>] start_secondary+0x1ae/0x1b2
+------------[ cut here ]------------
+WARNING: at /local/rrichter/.source/linux/arch/x86/kernel/smp.c:118 native_smp_send_reschedule+0x27/0x53()
+Hardware name: Anaheim
+Modules linked in:
+Pid: 0, comm: swapper Tainted: G      D    2.6.34-rc5-oprofile-x86_64-standard-00210-g8c00f06 #16
+Call Trace:
+ <IRQ>  [<ffffffff81017f32>] ? native_smp_send_reschedule+0x27/0x53
+ [<ffffffff81030ee2>] warn_slowpath_common+0x77/0xa4
+ [<ffffffff81030f1e>] warn_slowpath_null+0xf/0x11
+ [<ffffffff81017f32>] native_smp_send_reschedule+0x27/0x53
+ [<ffffffff8102634b>] resched_task+0x60/0x62
+ [<ffffffff8102653a>] check_preempt_curr_idle+0x10/0x12
+ [<ffffffff8102c8ea>] try_to_wake_up+0x1f5/0x284
+ [<ffffffff8102c986>] default_wake_function+0xd/0xf
+ [<ffffffff810a110d>] pollwake+0x57/0x5a
+ [<ffffffff8102c979>] ? default_wake_function+0x0/0xf
+ [<ffffffff81026be5>] __wake_up_common+0x46/0x75
+ [<ffffffff81026ed0>] __wake_up+0x38/0x50
+ [<ffffffff81031694>] printk_tick+0x39/0x3b
+ [<ffffffff8103ac37>] update_process_times+0x3f/0x5c
+ [<ffffffff8104dc63>] tick_periodic+0x5d/0x69
+ [<ffffffff8104dc90>] tick_handle_periodic+0x21/0x71
+ [<ffffffff81018fd0>] smp_apic_timer_interrupt+0x82/0x95
+ [<ffffffff81002853>] apic_timer_interrupt+0x13/0x20
+ [<ffffffff81030cb5>] ? panic_blink_one_second+0x0/0x7b
+ [<ffffffff813ebdd6>] ? panic+0x10a/0x10c
+ [<ffffffff810474b0>] ? up+0x34/0x39
+ [<ffffffff81031ccc>] ? kmsg_dump+0x112/0x12c
+ [<ffffffff813eeff1>] ? oops_end+0x81/0x8e
+ [<ffffffff8101efee>] ? no_context+0x1f3/0x202
+ [<ffffffff8101f1b7>] ? __bad_area_nosemaphore+0x1ba/0x1e0
+ [<ffffffff81028d24>] ? enqueue_task_fair+0x16d/0x17a
+ [<ffffffff810264dc>] ? activate_task+0x42/0x53
+ [<ffffffff8102c967>] ? try_to_wake_up+0x272/0x284
+ [<ffffffff8101f1eb>] ? bad_area_nosemaphore+0xe/0x10
+ [<ffffffff813f0f3f>] ? do_page_fault+0x1c8/0x37c
+ [<ffffffff81028d24>] ? enqueue_task_fair+0x16d/0x17a
+ [<ffffffff813ee55f>] ? page_fault+0x1f/0x30
+ [<ffffffff8102c9a5>] ? wake_up_process+0x10/0x12
+ [<ffffffff8132ad57>] ? op_amd_stop+0x2d/0x8e
+ [<ffffffff8132ad46>] ? op_amd_stop+0x1c/0x8e
+ [<ffffffff8132a602>] ? nmi_cpu_stop+0x21/0x23
+ [<ffffffff810521b3>] ? generic_smp_call_function_single_interrupt+0xdf/0x11b
+ [<ffffffff8101804f>] ? smp_call_function_single_interrupt+0x22/0x31
+ [<ffffffff810029f3>] ? call_function_single_interrupt+0x13/0x20
+ <EOI>  [<ffffffff8102c9a5>] ? wake_up_process+0x10/0x12
+ [<ffffffff81008701>] ? default_idle+0x22/0x37
+ [<ffffffff8100896d>] ? c1e_idle+0xdf/0xe6
+ [<ffffffff813f1170>] ? atomic_notifier_call_chain+0x13/0x15
+ [<ffffffff810012fb>] ? cpu_idle+0x4b/0x7e
+ [<ffffffff813e8a4e>] ? start_secondary+0x1ae/0x1b2
+---[ end trace 679ac372d674b758 ]---
+
+Cc: Andi Kleen <andi@firstfloor.org>
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/oprofile/cpu_buffer.c |   63 ++++++++----------------------------------
- 1 file changed, 13 insertions(+), 50 deletions(-)
+ arch/x86/oprofile/nmi_int.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/oprofile/cpu_buffer.c
-+++ b/drivers/oprofile/cpu_buffer.c
-@@ -30,23 +30,7 @@
- 
- #define OP_BUFFER_FLAGS	0
- 
--/*
-- * Read and write access is using spin locking. Thus, writing to the
-- * buffer by NMI handler (x86) could occur also during critical
-- * sections when reading the buffer. To avoid this, there are 2
-- * buffers for independent read and write access. Read access is in
-- * process context only, write access only in the NMI handler. If the
-- * read buffer runs empty, both buffers are swapped atomically. There
-- * is potentially a small window during swapping where the buffers are
-- * disabled and samples could be lost.
-- *
-- * Using 2 buffers is a little bit overhead, but the solution is clear
-- * and does not require changes in the ring buffer implementation. It
-- * can be changed to a single buffer solution when the ring buffer
-- * access is implemented as non-locking atomic code.
-- */
--static struct ring_buffer *op_ring_buffer_read;
--static struct ring_buffer *op_ring_buffer_write;
-+static struct ring_buffer *op_ring_buffer;
- DEFINE_PER_CPU(struct oprofile_cpu_buffer, op_cpu_buffer);
- 
- static void wq_sync_buffer(struct work_struct *work);
-@@ -68,12 +52,9 @@ void oprofile_cpu_buffer_inc_smpl_lost(v
- 
- void free_cpu_buffers(void)
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -95,7 +95,10 @@ static void nmi_cpu_save_registers(struc
+ static void nmi_cpu_start(void *dummy)
  {
--	if (op_ring_buffer_read)
--		ring_buffer_free(op_ring_buffer_read);
--	op_ring_buffer_read = NULL;
--	if (op_ring_buffer_write)
--		ring_buffer_free(op_ring_buffer_write);
--	op_ring_buffer_write = NULL;
-+	if (op_ring_buffer)
-+		ring_buffer_free(op_ring_buffer);
-+	op_ring_buffer = NULL;
+ 	struct op_msrs const *msrs = &__get_cpu_var(cpu_msrs);
+-	model->start(msrs);
++	if (!msrs->controls)
++		WARN_ON_ONCE(1);
++	else
++		model->start(msrs);
  }
  
- #define RB_EVENT_HDR_SIZE 4
-@@ -86,11 +67,8 @@ int alloc_cpu_buffers(void)
- 	unsigned long byte_size = buffer_size * (sizeof(struct op_sample) +
- 						 RB_EVENT_HDR_SIZE);
- 
--	op_ring_buffer_read = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
--	if (!op_ring_buffer_read)
--		goto fail;
--	op_ring_buffer_write = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
--	if (!op_ring_buffer_write)
-+	op_ring_buffer = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
-+	if (!op_ring_buffer)
- 		goto fail;
- 
- 	for_each_possible_cpu(i) {
-@@ -162,16 +140,11 @@ struct op_sample
- *op_cpu_buffer_write_reserve(struct op_entry *entry, unsigned long size)
+ static int nmi_start(void)
+@@ -107,7 +110,10 @@ static int nmi_start(void)
+ static void nmi_cpu_stop(void *dummy)
  {
- 	entry->event = ring_buffer_lock_reserve
--		(op_ring_buffer_write, sizeof(struct op_sample) +
-+		(op_ring_buffer, sizeof(struct op_sample) +
- 		 size * sizeof(entry->sample->data[0]));
--	if (entry->event)
--		entry->sample = ring_buffer_event_data(entry->event);
--	else
--		entry->sample = NULL;
--
--	if (!entry->sample)
-+	if (!entry->event)
- 		return NULL;
--
-+	entry->sample = ring_buffer_event_data(entry->event);
- 	entry->size = size;
- 	entry->data = entry->sample->data;
- 
-@@ -180,25 +153,16 @@ struct op_sample
- 
- int op_cpu_buffer_write_commit(struct op_entry *entry)
- {
--	return ring_buffer_unlock_commit(op_ring_buffer_write, entry->event);
-+	return ring_buffer_unlock_commit(op_ring_buffer, entry->event);
+ 	struct op_msrs const *msrs = &__get_cpu_var(cpu_msrs);
+-	model->stop(msrs);
++	if (!msrs->controls)
++		WARN_ON_ONCE(1);
++	else
++		model->stop(msrs);
  }
  
- struct op_sample *op_cpu_buffer_read_entry(struct op_entry *entry, int cpu)
- {
- 	struct ring_buffer_event *e;
--	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
--	if (e)
--		goto event;
--	if (ring_buffer_swap_cpu(op_ring_buffer_read,
--				 op_ring_buffer_write,
--				 cpu))
-+	e = ring_buffer_consume(op_ring_buffer, cpu, NULL);
-+	if (!e)
- 		return NULL;
--	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
--	if (e)
--		goto event;
--	return NULL;
- 
--event:
- 	entry->event = e;
- 	entry->sample = ring_buffer_event_data(e);
- 	entry->size = (ring_buffer_event_length(e) - sizeof(struct op_sample))
-@@ -209,8 +173,7 @@ event:
- 
- unsigned long op_cpu_buffer_entries(int cpu)
- {
--	return ring_buffer_entries_cpu(op_ring_buffer_read, cpu)
--		+ ring_buffer_entries_cpu(op_ring_buffer_write, cpu);
-+	return ring_buffer_entries_cpu(op_ring_buffer, cpu);
- }
- 
- static int
+ static void nmi_stop(void)
 
 
