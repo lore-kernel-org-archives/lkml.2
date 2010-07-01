@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759005Ab0GAVQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:16:56 -0400
-Received: from kroah.org ([198.145.64.141]:32894 "EHLO coco.kroah.org"
+	id S1758782Ab0GAVn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:43:56 -0400
+Received: from kroah.org ([198.145.64.141]:32878 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759112Ab0GAVOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:23 -0400
+	id S1759102Ab0GAVOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:20 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:56 2010
-Message-Id: <20100701174256.308190890@clark.site>
+Message-Id: <20100701174256.059190155@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:27 -0700
+Date: Thu, 01 Jul 2010 10:43:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [117/200] ASoC: Fix dB scales for WM8990
+       Stuart Longland <redhatter@gentoo.org>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [114/200] ASoC: Update Freescale i.MX SSI driver DMA parameter handling
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Stuart Longland <redhatter@gentoo.org>
 
-commit f68596c6d8711650722b2a54328a088a2c21bc5b upstream.
+commit e2b3e622b259e62aa2450a25f1c20cca1bfdc81e upstream.
 
-These should be regular, not linear.
+This updates the i.MX SSI driver to make it compatible with the ASoC tree
+following the move of DMA parameters from the DAI to the audio substream
+object.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Stuart Longland <redhatter@gentoo.org>
 Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8990.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ sound/soc/imx/imx-pcm-dma-mx2.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/sound/soc/codecs/wm8990.c
-+++ b/sound/soc/codecs/wm8990.c
-@@ -111,21 +111,21 @@ static const u16 wm8990_reg[] = {
+--- a/sound/soc/imx/imx-pcm-dma-mx2.c
++++ b/sound/soc/imx/imx-pcm-dma-mx2.c
+@@ -73,7 +73,8 @@ static void snd_imx_dma_err_callback(int
+ {
+ 	struct snd_pcm_substream *substream = data;
+ 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+-	struct imx_pcm_dma_params *dma_params = rtd->dai->cpu_dai->dma_data;
++	struct imx_pcm_dma_params *dma_params =
++		snd_soc_dai_get_dma_data(rtd->dai->cpu_dai, substream);
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	struct imx_pcm_runtime_data *iprtd = runtime->private_data;
+ 	int ret;
+@@ -102,7 +103,7 @@ static int imx_ssi_dma_alloc(struct snd_
+ 	struct imx_pcm_runtime_data *iprtd = runtime->private_data;
+ 	int ret;
  
- #define wm8990_reset(c) snd_soc_write(c, WM8990_RESET, 0)
+-	dma_params = snd_soc_get_dma_data(rtd->dai->cpu_dai, substream);
++	dma_params = snd_soc_dai_get_dma_data(rtd->dai->cpu_dai, substream);
  
--static const DECLARE_TLV_DB_LINEAR(rec_mix_tlv, -1500, 600);
-+static const DECLARE_TLV_DB_SCALE(rec_mix_tlv, -1500, 600, 0);
+ 	iprtd->dma = imx_dma_request_by_prio(DRV_NAME, DMA_PRIO_HIGH);
+ 	if (iprtd->dma < 0) {
+@@ -212,7 +213,7 @@ static int snd_imx_pcm_prepare(struct sn
+ 	struct imx_pcm_runtime_data *iprtd = runtime->private_data;
+ 	int err;
  
--static const DECLARE_TLV_DB_LINEAR(in_pga_tlv, -1650, 3000);
-+static const DECLARE_TLV_DB_SCALE(in_pga_tlv, -1650, 3000, 0);
+-	dma_params = snd_soc_get_dma_data(rtd->dai->cpu_dai, substream);
++	dma_params = snd_soc_dai_get_dma_data(rtd->dai->cpu_dai, substream);
  
--static const DECLARE_TLV_DB_LINEAR(out_mix_tlv, 0, -2100);
-+static const DECLARE_TLV_DB_SCALE(out_mix_tlv, 0, -2100, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_pga_tlv, -7300, 600);
-+static const DECLARE_TLV_DB_SCALE(out_pga_tlv, -7300, 600, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_omix_tlv, -600, 0);
-+static const DECLARE_TLV_DB_SCALE(out_omix_tlv, -600, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_dac_tlv, -7163, 0);
-+static const DECLARE_TLV_DB_SCALE(out_dac_tlv, -7163, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(in_adc_tlv, -7163, 1763);
-+static const DECLARE_TLV_DB_SCALE(in_adc_tlv, -7163, 1763, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_sidetone_tlv, -3600, 0);
-+static const DECLARE_TLV_DB_SCALE(out_sidetone_tlv, -3600, 0, 0);
- 
- static int wm899x_outpga_put_volsw_vu(struct snd_kcontrol *kcontrol,
- 	struct snd_ctl_elem_value *ucontrol)
-@@ -451,7 +451,7 @@ static int outmixer_event(struct snd_soc
- /* INMIX dB values */
- static const unsigned int in_mix_tlv[] = {
- 	TLV_DB_RANGE_HEAD(1),
--	0, 7, TLV_DB_LINEAR_ITEM(-1200, 600),
-+	0, 7, TLV_DB_SCALE_ITEM(-1200, 600, 0),
- };
- 
- /* Left In PGA Connections */
+ 	iprtd->substream = substream;
+ 	iprtd->buf = (unsigned int *)substream->dma_buffer.area;
 
 
