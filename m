@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab0GASXc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:23:32 -0400
-Received: from kroah.org ([198.145.64.141]:40464 "EHLO coco.kroah.org"
+	id S1754011Ab0GASmA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:42:00 -0400
+Received: from kroah.org ([198.145.64.141]:40517 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757840Ab0GASXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:23 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:11 2010
-Message-Id: <20100701173211.873212832@clark.site>
+	id S1757884Ab0GASXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:31 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:12 2010
+Message-Id: <20100701173212.619617960@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:26 -0700
+Date: Thu, 01 Jul 2010 10:31:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       iommu@lists.linux-foundation.org, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [patch 060/149] x86/amd-iommu: Fix suspend/resume with IOMMU
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Hugh Dickins <hughd@google.com>,
+       Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: [patch 069/149] tmpfs: insert tmpfs cache pages to inactive list at first
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-This is a suspend resume fix for 2.6.32-stable inclusion. The
-problem with this patch is that it is not upstream because the code
-changed with 2.6.33 and the function where this bug is in was
-removed. So this fix does not make sense anymore for anything later than
-2.6.32. The patch was tested by multiple partys and is confirmed to fix
-the broken suspend/resume issue with the 2.6.32 kernel.
+commit e9d6c157385e4efa61cb8293e425c9d8beba70d3 upstream.
 
-This patch fixes suspend/resume with AMD IOMMU enabled.
+Shaohua Li reported parallel file copy on tmpfs can lead to OOM killer.
+This is regression of caused by commit 9ff473b9a7 ("vmscan: evict
+streaming IO first").  Wow, It is 2 years old patch!
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Currently, tmpfs file cache is inserted active list at first.  This means
+that the insertion doesn't only increase numbers of pages in anon LRU, but
+it also reduces anon scanning ratio.  Therefore, vmscan will get totally
+confused.  It scans almost only file LRU even though the system has plenty
+unused tmpfs pages.
+
+Historically, lru_cache_add_active_anon() was used for two reasons.
+1) Intend to priotize shmem page rather than regular file cache.
+2) Intend to avoid reclaim priority inversion of used once pages.
+
+But we've lost both motivation because (1) Now we have separate anon and
+file LRU list.  then, to insert active list doesn't help such priotize.
+(2) In past, one pte access bit will cause page activation.  then to
+insert inactive list with pte access bit mean higher priority than to
+insert active list.  Its priority inversion may lead to uninteded lru
+chun.  but it was already solved by commit 645747462 (vmscan: detect
+mapped file pages used only once).  (Thanks Hannes, you are great!)
+
+Thus, now we can use lru_cache_add_anon() instead.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reported-by: Shaohua Li <shaohua.li@intel.com>
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/x86/kernel/amd_iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -544,7 +544,7 @@ static void flush_devices_by_domain(stru
+---
+ include/linux/swap.h |   10 ----------
+ mm/filemap.c         |    4 ++--
+ 2 files changed, 2 insertions(+), 12 deletions(-)
+
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -218,21 +218,11 @@ static inline void lru_cache_add_anon(st
+ 	__lru_cache_add(page, LRU_INACTIVE_ANON);
+ }
  
- 	for (i = 0; i <= amd_iommu_last_bdf; ++i) {
- 		if ((domain == NULL && amd_iommu_pd_table[i] == NULL) ||
--		    (amd_iommu_pd_table[i] != domain))
-+		    (domain != NULL && amd_iommu_pd_table[i] != domain))
- 			continue;
+-static inline void lru_cache_add_active_anon(struct page *page)
+-{
+-	__lru_cache_add(page, LRU_ACTIVE_ANON);
+-}
+-
+ static inline void lru_cache_add_file(struct page *page)
+ {
+ 	__lru_cache_add(page, LRU_INACTIVE_FILE);
+ }
  
- 		iommu = amd_iommu_rlookup_table[i];
+-static inline void lru_cache_add_active_file(struct page *page)
+-{
+-	__lru_cache_add(page, LRU_ACTIVE_FILE);
+-}
+-
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -462,7 +462,7 @@ int add_to_page_cache_lru(struct page *p
+ 	/*
+ 	 * Splice_read and readahead add shmem/tmpfs pages into the page cache
+ 	 * before shmem_readpage has a chance to mark them as SwapBacked: they
+-	 * need to go on the active_anon lru below, and mem_cgroup_cache_charge
++	 * need to go on the anon lru below, and mem_cgroup_cache_charge
+ 	 * (called in add_to_page_cache) needs to know where they're going too.
+ 	 */
+ 	if (mapping_cap_swap_backed(mapping))
+@@ -473,7 +473,7 @@ int add_to_page_cache_lru(struct page *p
+ 		if (page_is_file_cache(page))
+ 			lru_cache_add_file(page);
+ 		else
+-			lru_cache_add_active_anon(page);
++			lru_cache_add_anon(page);
+ 	}
+ 	return ret;
+ }
 
 
