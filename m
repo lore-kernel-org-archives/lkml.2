@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685Ab0GAVFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:05:06 -0400
-Received: from kroah.org ([198.145.64.141]:47827 "EHLO coco.kroah.org"
+	id S932938Ab0GAU5f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:57:35 -0400
+Received: from kroah.org ([198.145.64.141]:48003 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932650Ab0GAUvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:37 2010
-Message-Id: <20100701173437.255489421@clark.site>
+	id S932916Ab0GAUvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:39 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:40 2010
+Message-Id: <20100701173440.295531802@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:10 -0700
+Date: Thu, 01 Jul 2010 10:35:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Reinette Chatre <reinette.chatre@intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 124/164] iwlwifi: recalculate average tpt if not current
+       Helge Deller <deller@gmx.de>, Kyle McMartin <kyle@mcmartin.ca>
+Subject: [patch 160/164] parisc: clear floating point exception flag on SIGFPE signal
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Reinette Chatre <reinette.chatre@intel.com>
+From: Helge Deller <deller@gmx.de>
 
-commit 3d79b2a9eeaa066b35c49fbb17e3156a3c482c3e upstream.
+commit 550f0d922286556c7ea43974bb7921effb5a5278 upstream.
 
-We currently have this check as a BUG_ON, which is being hit by people.
-Previously it was an error with a recalculation if not current, return that
-code.
+Clear the floating point exception flag before returning to
+user space. This is needed, else the libc trampoline handler
+may hit the same SIGFPE again while building up a trampoline
+to a signal handler.
 
-The BUG_ON was introduced by:
-commit 3110bef78cb4282c58245bc8fd6d95d9ccb19749
-Author: Guy Cohen <guy.cohen@intel.com>
-Date:   Tue Sep 9 10:54:54 2008 +0800
+Fixes debian bug #559406.
 
-    iwlwifi: Added support for 3 antennas
-
-... the portion adding the BUG_ON is reverted since we are encountering the error
-and BUG_ON was created with assumption that error is not encountered.
-
-Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Kyle McMartin <kyle@mcmartin.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-rs.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ arch/parisc/math-emu/decode_exc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-@@ -2083,10 +2083,12 @@ static void rs_rate_scale_perform(struct
- 	}
- 	/* Else we have enough samples; calculate estimate of
- 	 * actual average throughput */
--
--	/* Sanity-check TPT calculations */
--	BUG_ON(window->average_tpt != ((window->success_ratio *
--			tbl->expected_tpt[index] + 64) / 128));
-+	if (window->average_tpt != ((window->success_ratio *
-+			tbl->expected_tpt[index] + 64) / 128)) {
-+		IWL_ERR(priv, "expected_tpt should have been calculated by now\n");
-+		window->average_tpt = ((window->success_ratio *
-+					tbl->expected_tpt[index] + 64) / 128);
-+	}
- 
- 	/* If we are searching for better modulation mode, check success. */
- 	if (lq_sta->search_better_tbl &&
+--- a/arch/parisc/math-emu/decode_exc.c
++++ b/arch/parisc/math-emu/decode_exc.c
+@@ -342,6 +342,7 @@ decode_fpu(unsigned int Fpu_register[],
+ 		return SIGNALCODE(SIGFPE, FPE_FLTINV);
+ 	  case DIVISIONBYZEROEXCEPTION:
+ 		update_trap_counts(Fpu_register, aflags, bflags, trap_counts);
++		Clear_excp_register(exception_index);
+ 	  	return SIGNALCODE(SIGFPE, FPE_FLTDIV);
+ 	  case INEXACTEXCEPTION:
+ 		update_trap_counts(Fpu_register, aflags, bflags, trap_counts);
 
 
