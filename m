@@ -1,577 +1,979 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab0GAKax (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 06:30:53 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:51459 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab0GAKav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 06:30:51 -0400
-Date: Thu, 1 Jul 2010 11:30:32 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 14/14] fs,xfs: Allow kswapd to writeback pages
-Message-ID: <20100701103032.GG31741@csn.ul.ie>
-References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie> <1277811288-5195-15-git-send-email-mel@csn.ul.ie> <20100629123722.GA725@infradead.org> <20100629125143.GB31561@csn.ul.ie> <20100630091411.49f92cff.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755247Ab0GAKj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 06:39:27 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:24048 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754348Ab0GAKjZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 06:39:25 -0400
+Message-ID: <4C2C703A.9030705@dsn.okisemi.com>
+Date: Thu, 01 Jul 2010 19:38:50 +0900
+From: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100630091411.49f92cff.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Andy Isaacson <adi@hexapodia.org>
+CC: Randy Dunlap <randy.dunlap@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>, qi.wang@intel.com,
+       joel.clark@intel.com, andrew.chih.howe.khor@intel.com,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Packet hub driver of Topcliff PCH
+References: <4C204B0D.2030201@dsn.okisemi.com>
+In-Reply-To: <4C204B0D.2030201@dsn.okisemi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 09:14:11AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Tue, 29 Jun 2010 13:51:43 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > On Tue, Jun 29, 2010 at 08:37:22AM -0400, Christoph Hellwig wrote:
-> > > I don't see a patch in this set which refuses writeback from the memcg
-> > > context, which we identified as having large stack footprint in hte
-> > > discussion of the last patch set.
-> > > 
-> > 
-> > It wasn't clear to me what the right approach was there and should
-> > have noted that in the intro. The last note I have on it is this message
-> > http://kerneltrap.org/mailarchive/linux-kernel/2010/6/17/4584087 which might
-> > avoid the deep stack usage but I wasn't 100% sure. As kswapd doesn't clean
-> > pages for memcg, I left memcg being able to direct writeback to see what
-> > the memcg people preferred.
-> > 
-> 
-> Hmm. If some filesystems don't support direct ->writeback,
+Hi Andy
 
-This is not strictly true. All of them support ->writeback, but some of
-them are ignoring it from reclaim context - right now, xfs, btrfs and extN
-so it's a sizable cross-section of filesystems we care about.
+I have modified for your comments.
+Please confirm below.
 
-> memcg shouldn't
-> depends on it. If so, memcg should depends on some writeback-thread (as kswapd).
-> ok.
-> 
-> Then, my concern here is that which kswapd we should wake up and how it can stop.
+Thanks, Ohtake.
 
-And also what the consequences are of kswapd being occupied with containers
-instead of the global lists for a time.
+---
+Packet hub driver of Topcliff PCH
 
-> IOW, how kswapd can know a memcg has some remaining writeback and struck on it.
-> 
+Topcliff PCH is the platform controller hub that is going to be used in
+Intel's upcoming general embedded platform. All IO peripherals in
+Topcliff PCH are actually devices sitting on AMBA bus. Packet hub is
+a special converter device in Topcliff PCH that translate AMBA transactions
+to PCI Express transactions and vice versa. Thus packet hub helps present
+all IO peripherals in Topcliff PCH as PCIE devices to IA system.
+Topcliff PCH have MAC address and Option ROM data.
+These data are in SROM which is connected to PCIE bus.
+Packet hub driver of Topcliff PCH can access MAC address and Option ROM data in
+SROM.
 
-Another possibility for memcg would be to visit Andrea's suggestion on
-switching stack in more detail. I still haven't gotten around to this as
-phd stuff is sucking up piles of my time.
+Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-> One idea is here. (this patch will not work...not tested at all.)
-> If we can have "victim page list" and kswapd can depend on it to know
-> "which pages should be written", kswapd can know when it should work.
-> 
-> cpu usage by memcg will be a new problem...but...
-> 
-> ==
-> Add a new LRU "CLEANING" and make kswapd launder it.
-> This patch also changes PG_reclaim behavior. New PG_reclaim works
-> as
->  - If PG_reclaim is set, a page is on CLEAINING LIST.
-> 
-> And when kswapd launder a page
->  - issue an writeback. (I'm thinking whehter I should put this
->    cleaned page back to CLEANING lru and free it later.) 
->  - if it can free directly, free it.
-> This just use current shrink_list().
-> 
-> Maybe this patch itself inlcludes many bad point...
-> 
-> ---
->  fs/proc/meminfo.c         |    2 
->  include/linux/mm_inline.h |    9 ++
->  include/linux/mmzone.h    |    7 ++
->  mm/filemap.c              |    3 
->  mm/internal.h             |    1 
->  mm/page-writeback.c       |    1 
->  mm/page_io.c              |    1 
->  mm/swap.c                 |   31 ++-------
->  mm/vmscan.c               |  153 +++++++++++++++++++++++++++++++++++++++++++++-
->  9 files changed, 176 insertions(+), 32 deletions(-)
-> 
-> Index: mmotm-0611/include/linux/mmzone.h
-> ===================================================================
-> --- mmotm-0611.orig/include/linux/mmzone.h
-> +++ mmotm-0611/include/linux/mmzone.h
-> @@ -85,6 +85,7 @@ enum zone_stat_item {
->  	NR_INACTIVE_FILE,	/*  "     "     "   "       "         */
->  	NR_ACTIVE_FILE,		/*  "     "     "   "       "         */
->  	NR_UNEVICTABLE,		/*  "     "     "   "       "         */
-> +	NR_CLEANING,		/*  "     "     "   "       "         */
->  	NR_MLOCK,		/* mlock()ed pages found and moved off LRU */
->  	NR_ANON_PAGES,	/* Mapped anonymous pages */
->  	NR_FILE_MAPPED,	/* pagecache pages mapped into pagetables.
-> @@ -133,6 +134,7 @@ enum lru_list {
->  	LRU_INACTIVE_FILE = LRU_BASE + LRU_FILE,
->  	LRU_ACTIVE_FILE = LRU_BASE + LRU_FILE + LRU_ACTIVE,
->  	LRU_UNEVICTABLE,
-> +	LRU_CLEANING,
->  	NR_LRU_LISTS
->  };
->  
-> @@ -155,6 +157,11 @@ static inline int is_unevictable_lru(enu
->  	return (l == LRU_UNEVICTABLE);
->  }
->  
-> +static inline int is_cleaning_lru(enum lru_list l)
-> +{
-> +	return (l == LRU_CLEANING);
-> +}
-> +
+---
+ drivers/char/Kconfig             |    9 +
+ drivers/char/Makefile            |    2 +
+ drivers/char/pch_phub/Makefile   |    3 +
+ drivers/char/pch_phub/pch_phub.c |  811 ++++++++++++++++++++++++++++++++++++++
+ drivers/char/pch_phub/pch_phub.h |   48 +++
+ 5 files changed, 873 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/pch_phub/Makefile
+ create mode 100755 drivers/char/pch_phub/pch_phub.c
+ create mode 100755 drivers/char/pch_phub/pch_phub.h
 
-Nit - LRU_CLEAN_PENDING might be clearer as CLEANING implies it is currently
-being cleaned (implying it's the same as NR_WRITEBACK) or is definely dirty
-implying it's the same as NR_DIRTY.
-
->  enum zone_watermarks {
->  	WMARK_MIN,
->  	WMARK_LOW,
-> Index: mmotm-0611/include/linux/mm_inline.h
-> ===================================================================
-> --- mmotm-0611.orig/include/linux/mm_inline.h
-> +++ mmotm-0611/include/linux/mm_inline.h
-> @@ -56,7 +56,10 @@ del_page_from_lru(struct zone *zone, str
->  	enum lru_list l;
->  
->  	list_del(&page->lru);
-> -	if (PageUnevictable(page)) {
-> +	if (PageReclaim(page)) {
-> +		ClearPageReclaim(page);
-> +		l = LRU_CLEANING;
-> +	} else if (PageUnevictable(page)) {
->  		__ClearPageUnevictable(page);
->  		l = LRU_UNEVICTABLE;
->  	} else {
-
-One point of note is that having a LRU cleaning list will alter the aging
-of pages quite a bit.
-
-A slightly greater concern is that clean pages can be temporarily "lost"
-on the cleaning list. If a direct reclaimer moves pages to the LRU_CLEANING
-list, it's no longer considering those pages even if a flusher thread
-happened to clean those pages before kswapd had a chance. Lets say under
-heavy memory pressure a lot of pages are being dirties and encountered on
-the LRU list. They move to LRU_CLEANING where dirty balancing starts making
-sure they get cleaned but are no longer being reclaimed.
-
-Of course, I might be wrong but it's not a trivial direction to take.
-
-> @@ -81,7 +84,9 @@ static inline enum lru_list page_lru(str
->  {
->  	enum lru_list lru;
->  
-> -	if (PageUnevictable(page))
-> +	if (PageReclaim(page)) {
-> +		lru = LRU_CLEANING;
-> +	} else if (PageUnevictable(page))
->  		lru = LRU_UNEVICTABLE;
->  	else {
->  		lru = page_lru_base_type(page);
-> Index: mmotm-0611/fs/proc/meminfo.c
-> ===================================================================
-> --- mmotm-0611.orig/fs/proc/meminfo.c
-> +++ mmotm-0611/fs/proc/meminfo.c
-> @@ -65,6 +65,7 @@ static int meminfo_proc_show(struct seq_
->  		"Active(file):   %8lu kB\n"
->  		"Inactive(file): %8lu kB\n"
->  		"Unevictable:    %8lu kB\n"
-> +		"Cleaning:       %8lu kB\n"
->  		"Mlocked:        %8lu kB\n"
->  #ifdef CONFIG_HIGHMEM
->  		"HighTotal:      %8lu kB\n"
-> @@ -114,6 +115,7 @@ static int meminfo_proc_show(struct seq_
->  		K(pages[LRU_ACTIVE_FILE]),
->  		K(pages[LRU_INACTIVE_FILE]),
->  		K(pages[LRU_UNEVICTABLE]),
-> +		K(pages[LRU_CLEANING]),
->  		K(global_page_state(NR_MLOCK)),
->  #ifdef CONFIG_HIGHMEM
->  		K(i.totalhigh),
-> Index: mmotm-0611/mm/swap.c
-> ===================================================================
-> --- mmotm-0611.orig/mm/swap.c
-> +++ mmotm-0611/mm/swap.c
-> @@ -118,8 +118,8 @@ static void pagevec_move_tail(struct pag
->  			zone = pagezone;
->  			spin_lock(&zone->lru_lock);
->  		}
-> -		if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
-> -			int lru = page_lru_base_type(page);
-> +		if (PageLRU(page)) {
-> +			int lru = page_lru(page);
->  			list_move_tail(&page->lru, &zone->lru[lru].list);
->  			pgmoved++;
->  		}
-> @@ -131,27 +131,6 @@ static void pagevec_move_tail(struct pag
->  	pagevec_reinit(pvec);
->  }
->  
-> -/*
-> - * Writeback is about to end against a page which has been marked for immediate
-> - * reclaim.  If it still appears to be reclaimable, move it to the tail of the
-> - * inactive list.
-> - */
-> -void  rotate_reclaimable_page(struct page *page)
-> -{
-> -	if (!PageLocked(page) && !PageDirty(page) && !PageActive(page) &&
-> -	    !PageUnevictable(page) && PageLRU(page)) {
-> -		struct pagevec *pvec;
-> -		unsigned long flags;
-> -
-> -		page_cache_get(page);
-> -		local_irq_save(flags);
-> -		pvec = &__get_cpu_var(lru_rotate_pvecs);
-> -		if (!pagevec_add(pvec, page))
-> -			pagevec_move_tail(pvec);
-> -		local_irq_restore(flags);
-> -	}
-> -}
-> -
->  static void update_page_reclaim_stat(struct zone *zone, struct page *page,
->  				     int file, int rotated)
->  {
-> @@ -235,10 +214,16 @@ void lru_cache_add_lru(struct page *page
->  {
->  	if (PageActive(page)) {
->  		VM_BUG_ON(PageUnevictable(page));
-> +		VM_BUG_ON(PageReclaim(page));
->  		ClearPageActive(page);
->  	} else if (PageUnevictable(page)) {
->  		VM_BUG_ON(PageActive(page));
-> +		VM_BUG_ON(PageReclaim(page));
->  		ClearPageUnevictable(page);
-> +	} else if (PageReclaim(page)) {
-> +		VM_BUG_ON(PageReclaim(page));
-> +		VM_BUG_ON(PageUnevictable(page));
-> +		ClearPageReclaim(page);
->  	}
->  
->  	VM_BUG_ON(PageLRU(page) || PageActive(page) || PageUnevictable(page));
-> Index: mmotm-0611/mm/filemap.c
-> ===================================================================
-> --- mmotm-0611.orig/mm/filemap.c
-> +++ mmotm-0611/mm/filemap.c
-> @@ -560,9 +560,6 @@ EXPORT_SYMBOL(unlock_page);
->   */
->  void end_page_writeback(struct page *page)
->  {
-> -	if (TestClearPageReclaim(page))
-> -		rotate_reclaimable_page(page);
-> -
->  	if (!test_clear_page_writeback(page))
->  		BUG();
->  
-> Index: mmotm-0611/mm/internal.h
-> ===================================================================
-> --- mmotm-0611.orig/mm/internal.h
-> +++ mmotm-0611/mm/internal.h
-> @@ -259,3 +259,4 @@ extern u64 hwpoison_filter_flags_mask;
->  extern u64 hwpoison_filter_flags_value;
->  extern u64 hwpoison_filter_memcg;
->  extern u32 hwpoison_filter_enable;
-> +
-> Index: mmotm-0611/mm/page-writeback.c
-> ===================================================================
-> --- mmotm-0611.orig/mm/page-writeback.c
-> +++ mmotm-0611/mm/page-writeback.c
-> @@ -1252,7 +1252,6 @@ int clear_page_dirty_for_io(struct page 
->  
->  	BUG_ON(!PageLocked(page));
->  
-> -	ClearPageReclaim(page);
->  	if (mapping && mapping_cap_account_dirty(mapping)) {
->  		/*
->  		 * Yes, Virginia, this is indeed insane.
-> Index: mmotm-0611/mm/page_io.c
-> ===================================================================
-> --- mmotm-0611.orig/mm/page_io.c
-> +++ mmotm-0611/mm/page_io.c
-> @@ -60,7 +60,6 @@ static void end_swap_bio_write(struct bi
->  				imajor(bio->bi_bdev->bd_inode),
->  				iminor(bio->bi_bdev->bd_inode),
->  				(unsigned long long)bio->bi_sector);
-> -		ClearPageReclaim(page);
->  	}
->  	end_page_writeback(page);
->  	bio_put(bio);
-> Index: mmotm-0611/mm/vmscan.c
-> ===================================================================
-> --- mmotm-0611.orig/mm/vmscan.c
-> +++ mmotm-0611/mm/vmscan.c
-> @@ -364,6 +364,12 @@ static pageout_t pageout(struct page *pa
->  	if (!may_write_to_queue(mapping->backing_dev_info))
->  		return PAGE_KEEP;
->  
-> +	if (!current_is_kswapd()) {
-> +		/* pass this page to kswapd. */
-> +		SetPageReclaim(page);
-> +		return PAGE_KEEP;
-> +	}
-> +
->  	if (clear_page_dirty_for_io(page)) {
->  		int res;
->  		struct writeback_control wbc = {
-> @@ -503,6 +509,8 @@ void putback_lru_page(struct page *page)
->  
->  redo:
->  	ClearPageUnevictable(page);
-> +	/* This function never puts pages to CLEANING queue */
-> +	ClearPageReclaim(page);
->  
->  	if (page_evictable(page, NULL)) {
->  		/*
-> @@ -883,6 +891,8 @@ int __isolate_lru_page(struct page *page
->  		 * page release code relies on it.
->  		 */
->  		ClearPageLRU(page);
-> +		/* when someone isolate this page, clear reclaim status */
-> +		ClearPageReclaim(page);
->  		ret = 0;
->  	}
->  
-> @@ -1020,7 +1030,7 @@ static unsigned long isolate_pages_globa
->   * # of pages of each types and clearing any active bits.
->   */
->  static unsigned long count_page_types(struct list_head *page_list,
-> -				unsigned int *count, int clear_active)
-> +				unsigned int *count, int clear_actives)
->  {
->  	int nr_active = 0;
->  	int lru;
-> @@ -1076,6 +1086,7 @@ int isolate_lru_page(struct page *page)
->  			int lru = page_lru(page);
->  			ret = 0;
->  			ClearPageLRU(page);
-> +			ClearPageReclaim(page);
->  
->  			del_page_from_lru_list(zone, page, lru);
->  		}
-> @@ -1109,6 +1120,103 @@ static int too_many_isolated(struct zone
->  	return isolated > inactive;
->  }
->  
-> +/* only called by kswapd to do I/O and put back clean paes to its LRU */
-> +static void shrink_cleaning_list(struct zone *zone)
-> +{
-> +	LIST_HEAD(page_list);
-> +	struct list_head *src;
-> +	struct pagevec pvec;
-> +	unsigned long nr_pageout;
-> +	unsigned long nr_cleaned;
-> +	struct scan_control sc = {
-> +		.gfp_mask = GFP_KERNEL,
-> +		.may_unmap = 1,
-> +		.may_swap = 1,
-> +		.nr_to_reclaim = ULONG_MAX,
-> +		.swappiness = vm_swappiness,
-> +		.order = 1,
-> +		.mem_cgroup = NULL,
-> +	};
-> +
-> +	pagevec_init(&pvec, 1);
-> +	lru_add_drain();
-> +
-> +	src = &zone->lru[LRU_CLEANING].list;
-> +	nr_pageout = 0;
-> +	nr_cleaned = 0;
-> +	spin_lock_irq(&zone->lru_lock);
-> +	do {
-> +		unsigned int count[NR_LRU_LISTS] = {0,};
-> +		unsigned int nr_anon, nr_file, nr_taken, check_clean, nr_freed;
-> +		unsigned long nr_scan;
-> +
-> +		if (list_empty(src))
-> +			goto done;
-> +
-> +		check_clean = max((unsigned long)SWAP_CLUSTER_MAX,
-> +				zone_page_state(zone, NR_CLEANING)/8);
-> +		/* we do global-only */
-> +		nr_taken = isolate_lru_pages(check_clean,
-> +					src, &page_list, &nr_scan,
-> +					0, ISOLATE_BOTH, 0);
-> +		zone->pages_scanned += nr_scan;
-> +		__count_zone_vm_events(PGSCAN_KSWAPD, zone, nr_scan);
-> +		if (nr_taken == 0)
-> +			goto done;
-> +		__mod_zone_page_state(zone, NR_CLEANING, -nr_taken);
-> +		spin_unlock_irq(&zone->lru_lock);
-> +		/*
-> +		 * Because PG_reclaim flag is deleted by isolate_lru_page(),
-> +		 * we can count correct value
-> +		 */
-> +		count_page_types(&page_list, count, 0);
-> +		nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-> +		nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-> +		__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
-> +		__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
-> +
-> +		nr_freed = shrink_page_list(&page_list, &sc, PAGEOUT_IO_ASYNC);
-
-So, at this point the isolated pages are cleaned and put back which is
-fine. If they were already clean, they get freed which is also fine. But
-direct reclaimers do not call this function so they could be missing
-clean and freeable pages which worries me.
-
-> +		/*
-> +		 * Put back any unfreeable pages.
-> +		 */
-> +		while (!list_empty(&page_list)) {
-> +			int lru;
-> +			struct page *page;
-> +
-> +			page = lru_to_page(&page_list);
-> +			VM_BUG_ON(PageLRU(page));
-> +			list_del(&page->lru);
-> +			if (!unlikely(!page_evictable(page, NULL))) {
-> +				spin_unlock_irq(&zone->lru_lock);
-> +				putback_lru_page(page);
-> +				spin_lock_irq(&zone->lru_lock);
-> +				continue;
-> +			}
-> +			SetPageLRU(page);
-> +			lru = page_lru(page);
-> +			add_page_to_lru_list(zone, page, lru);
-> +			if (!pagevec_add(&pvec, page)) {
-> +				spin_unlock_irq(&zone->lru_lock);
-> +				__pagevec_release(&pvec);
-> +				spin_lock_irq(&zone->lru_lock);
-> +			}
-> +		}
-> +		__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
-> +		__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
-> +		nr_pageout += nr_taken - nr_freed;
-> +		nr_cleaned += nr_freed;
-> +		if (nr_pageout > SWAP_CLUSTER_MAX) {
-> +			/* there are remaining I/Os */
-> +			congestion_wait(BLK_RW_ASYNC, HZ/10);
-> +			nr_pageout /= 2;
-> +		}
-> +	} while(nr_cleaned < SWAP_CLUSTER_MAX);
-> +done:
-> +	spin_unlock_irq(&zone->lru_lock);
-> +	pagevec_release(&pvec);
-> +	return;
-> +}
-> +
->  /*
->   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
->   * of reclaimed pages
-> @@ -1736,6 +1844,9 @@ static bool shrink_zones(int priority, s
->  					sc->nodemask) {
->  		if (!populated_zone(zone))
->  			continue;
-> +
-> +		if (current_is_kswapd())
-> +			shrink_cleaning_list(zone);
->  		/*
->  		 * Take care memory controller reclaiming has small influence
->  		 * to global LRU.
-> @@ -2222,6 +2333,42 @@ out:
->  	return sc.nr_reclaimed;
->  }
->  
-> +static void launder_pgdat(pg_data_t *pgdat)
-> +{
-> +	struct zone *zone;
-> +	int i;
-> +
-> +	for (i = 0; i < MAX_NR_ZONES; i++) {
-> +
-> +		zone = &pgdat->node_zones[i];
-> +		if (!populated_zone(zone))
-> +			continue;
-> +		if (zone_page_state(zone, NR_CLEANING))
-> +			break;
-> +		shrink_cleaning_list(zone);
-> +	}
-> +}
-> +
-> +/*
-> + * Find a zone which has cleaning list.
-> + */
-> +static int need_to_cleaning_node(pg_data_t *pgdat)
-> +{
-> +	int i;
-> +	struct zone *zone;
-> +
-> +	for (i = 0; i < MAX_NR_ZONES; i++) {
-> +
-> +		zone = &pgdat->node_zones[i];
-> +		if (!populated_zone(zone))
-> +			continue;
-> +		if (zone_page_state(zone, NR_CLEANING))
-> +			break;
-> +	}
-> +	return (i != MAX_NR_ZONES);
-> +}
-> +
-> +
->  /*
->   * The background pageout daemon, started as a kernel thread
->   * from the init process.
-> @@ -2275,7 +2422,9 @@ static int kswapd(void *p)
->  		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
->  		new_order = pgdat->kswapd_max_order;
->  		pgdat->kswapd_max_order = 0;
-> -		if (order < new_order) {
-> +		if (need_to_cleaning_node(pgdat)) {
-> +			launder_pgdat(pgdat);
-> +		} else if (order < new_order) {
->  			/*
->  			 * Don't sleep if someone wants a larger 'order'
->  			 * allocation
-
-I see the direction you are thinking of but I have big concerns about clean
-pages getting delayed for too long on the LRU_CLEANING pages before kswapd
-puts them back in the right place. I think a safer direction would be for
-memcg people to investigate Andrea's "switch stack" suggestion.
-
-In the meantime for my own series, memcg now treats dirty pages similar to
-lumpy reclaim. It asks flusher threads to clean pages but stalls waiting
-for those pages to be cleaned for a time. This is an untested patch on top
-of the current series.
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 5c4f08b..81c6fbe 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -367,10 +367,10 @@ int write_reclaim_page(struct page *page, struct address_space *mapping,
- 	return PAGE_SUCCESS;
- }
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index e023682..9ef3c85 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -4,6 +4,15 @@
  
--/* kswapd and memcg can writeback as they are unlikely to overflow stack */
-+/* For now, only kswapd can writeback as it will not overflow stack */
- static inline bool reclaim_can_writeback(struct scan_control *sc)
- {
--	return current_is_kswapd() || sc->mem_cgroup != NULL;
-+	return current_is_kswapd();
- }
+ menu "Character devices"
  
- /*
-@@ -900,10 +900,11 @@ keep_dirty:
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
++config PCH_PHUB
++	tristate "PCH PHUB"
++	depends on PCI
++	help
++	  This driver is for PCH PHUB of Topcliff which is an IOH for x86
++	  embedded processor. The Topcliff has MAC address and Option ROM data
++	  in SROM. This dirver can access MAC address and Option ROM data in
++	  SROM.
++
+ config VT
+ 	bool "Virtual terminal" if EMBEDDED
+ 	depends on !S390
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index f957edf..1e3eb6c 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -111,6 +111,8 @@ obj-$(CONFIG_PS3_FLASH)		+= ps3flash.o
+ obj-$(CONFIG_JS_RTC)		+= js-rtc.o
+ js-rtc-y = rtc.o
  
- 		/*
--		 * As lumpy reclaim targets specific pages, wait on them
--		 * to be cleaned and try reclaim again for a time.
-+		 * As lumpy reclaim and memcg targets specific pages, wait on
-+		 * them to be cleaned and try reclaim again.
- 		 */
--		if (sync_writeback == PAGEOUT_IO_SYNC) {
-+		if (sync_writeback == PAGEOUT_IO_SYNC ||
-+							sc->mem_cgroup != NULL) {
- 			dirty_isolated++;
- 			list_splice(&dirty_pages, page_list);
- 			INIT_LIST_HEAD(&dirty_pages);
++obj-$(CONFIG_PCH_PHUB)	+= pch_phub/
++
+ # Files generated that shall be removed upon make clean
+ clean-files := consolemap_deftbl.c defkeymap.c
+ 
+diff --git a/drivers/char/pch_phub/Makefile b/drivers/char/pch_phub/Makefile
+new file mode 100644
+index 0000000..93aaffe
+--- /dev/null
++++ b/drivers/char/pch_phub/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_PCH_PHUB) += pch_phub_drv.o
++
++pch_phub_drv-objs := pch_phub.o
+diff --git a/drivers/char/pch_phub/pch_phub.c b/drivers/char/pch_phub/pch_phub.c
+new file mode 100755
+index 0000000..9a0f8a9
+--- /dev/null
++++ b/drivers/char/pch_phub/pch_phub.c
+@@ -0,0 +1,811 @@
++/*!
++ * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/fs.h>
++#include <linux/uaccess.h>
++#include <linux/string.h>
++#include <linux/pci.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/cdev.h>
++#include <linux/device.h>
++#include <linux/mutex.h>
++#include "pch_phub.h"
++
++#define PHUB_STATUS 0x00		/* Status Register offset */
++#define PHUB_CONTROL 0x04		/* Control Register offset */
++#define PHUB_TIMEOUT 0x05		/* Time out value for Status Register */
++#define PCH_PHUB_ROM_WRITE_ENABLE 0x01	/* Enabling for writing ROM */
++#define PCH_PHUB_ROM_WRITE_DISABLE 0x00	/* Disabling for writing ROM */
++#define PCH_PHUB_ROM_START_ADDR 0x14	/* ROM data area start address offset */
++
++/* MAX number of INT_REDUCE_CONTROL registers */
++#define MAX_NUM_INT_REDUCE_CONTROL_REG 128
++#define PCI_DEVICE_ID_PCH1_PHUB 0x8801
++#define PCH_MINOR_NOS 1
++#define CLKCFG_CAN_50MHZ 0x12000000
++#define CLKCFG_CANCLK_MASK 0xFF000000
++#define MODULE_NAME "pch_phub"
++
++/**
++ * struct pch_phub_reg - PHUB register structure
++ * @phub_id_reg:			PHUB_ID register val
++ * @q_pri_val_reg:			QUEUE_PRI_VAL register val
++ * @rc_q_maxsize_reg:			RC_QUEUE_MAXSIZE register val
++ * @bri_q_maxsize_reg:			BRI_QUEUE_MAXSIZE register val
++ * @comp_resp_timeout_reg:		COMP_RESP_TIMEOUT register val
++ * @bus_slave_control_reg:		BUS_SLAVE_CONTROL_REG register val
++ * @deadlock_avoid_type_reg:		DEADLOCK_AVOID_TYPE register val
++ * @intpin_reg_wpermit_reg0:		INTPIN_REG_WPERMIT register 0 val
++ * @intpin_reg_wpermit_reg1:		INTPIN_REG_WPERMIT register 1 val
++ * @intpin_reg_wpermit_reg2:		INTPIN_REG_WPERMIT register 2 val
++ * @intpin_reg_wpermit_reg3:		INTPIN_REG_WPERMIT register 3 val
++ * @int_reduce_control_reg:		INT_REDUCE_CONTROL registers val
++ * @clkcfg_reg:				CLK CFG register val
++ * @pch_phub_base_address:		Register base address
++ * @pch_phub_extrom_base_address:	external rom base address
++ * @pch_phub_suspended:			PHUB status val
++ */
++struct pch_phub_reg {
++	u32 phub_id_reg;
++	u32 q_pri_val_reg;
++	u32 rc_q_maxsize_reg;
++	u32 bri_q_maxsize_reg;
++	u32 comp_resp_timeout_reg;
++	u32 bus_slave_control_reg;
++	u32 deadlock_avoid_type_reg;
++	u32 intpin_reg_wpermit_reg0;
++	u32 intpin_reg_wpermit_reg1;
++	u32 intpin_reg_wpermit_reg2;
++	u32 intpin_reg_wpermit_reg3;
++	u32 int_reduce_control_reg[MAX_NUM_INT_REDUCE_CONTROL_REG];
++	u32 clkcfg_reg;
++	void __iomem *pch_phub_base_address;
++	void __iomem *pch_phub_extrom_base_address;
++	int pch_phub_suspended;
++} pch_phub_reg;
++
++/* SROM SPEC for MAC address assignment offset */
++static const int pch_phub_mac_offset[6] = {0x3, 0x2, 0x1, 0x0, 0xb, 0xa};
++
++static DEFINE_MUTEX(pch_phub_ioctl_mutex);
++static DEFINE_MUTEX(pch_phub_read_mutex);
++static DEFINE_MUTEX(pch_phub_write_mutex);
++static dev_t pch_phub_dev_no;
++static struct cdev pch_phub_dev;
++
++/**
++ * pch_phub_read_modify_write_reg() - Reading modifying and writing register
++ * @reg_addr_offset:	Register offset address value.
++ * @data:		Writing value.
++ * @mask:		Mask value.
++ */
++static void pch_phub_read_modify_write_reg(unsigned int reg_addr_offset,
++					   unsigned int data, unsigned int mask)
++{
++	void __iomem *reg_addr = pch_phub_reg.pch_phub_base_address +
++					 reg_addr_offset;
++	iowrite32(((ioread32(reg_addr) & ~mask)) | data, reg_addr);
++}
++
++
++/* pch_phub_save_reg_conf - saves register configuration */
++static void pch_phub_save_reg_conf(struct pci_dev *pdev)
++{
++	unsigned int i;
++	void __iomem *p = pch_phub_reg.pch_phub_base_address;
++
++	dev_dbg(&pdev->dev, "pch_phub_save_reg_conf ENTRY\n");
++	pch_phub_reg.phub_id_reg = ioread32(p + PCH_PHUB_ID_REG);
++	pch_phub_reg.q_pri_val_reg = ioread32(p + PCH_PHUB_QUEUE_PRI_VAL_REG);
++	pch_phub_reg.rc_q_maxsize_reg =
++	    ioread32(p + PCH_PHUB_RC_QUEUE_MAXSIZE_REG);
++	pch_phub_reg.bri_q_maxsize_reg =
++	    ioread32(p + PCH_PHUB_BRI_QUEUE_MAXSIZE_REG);
++	pch_phub_reg.comp_resp_timeout_reg =
++	    ioread32(p + PCH_PHUB_COMP_RESP_TIMEOUT_REG);
++	pch_phub_reg.bus_slave_control_reg =
++	    ioread32(p + PCH_PHUB_BUS_SLAVE_CONTROL_REG);
++	pch_phub_reg.deadlock_avoid_type_reg =
++	    ioread32(p + PCH_PHUB_DEADLOCK_AVOID_TYPE_REG);
++	pch_phub_reg.intpin_reg_wpermit_reg0 =
++	    ioread32(p + PCH_PHUB_INTPIN_REG_WPERMIT_REG0);
++	pch_phub_reg.intpin_reg_wpermit_reg1 =
++	    ioread32(p + PCH_PHUB_INTPIN_REG_WPERMIT_REG1);
++	pch_phub_reg.intpin_reg_wpermit_reg2 =
++	    ioread32(p + PCH_PHUB_INTPIN_REG_WPERMIT_REG2);
++	pch_phub_reg.intpin_reg_wpermit_reg3 =
++	    ioread32(p + PCH_PHUB_INTPIN_REG_WPERMIT_REG3);
++	dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
++		"pch_phub_reg.phub_id_reg=%x, "
++		"pch_phub_reg.q_pri_val_reg=%x, "
++		"pch_phub_reg.rc_q_maxsize_reg=%x, "
++		"pch_phub_reg.bri_q_maxsize_reg=%x, "
++		"pch_phub_reg.comp_resp_timeout_reg=%x, "
++		"pch_phub_reg.bus_slave_control_reg=%x, "
++		"pch_phub_reg.deadlock_avoid_type_reg=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg0=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg1=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg2=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg3=%x\n",
++		pch_phub_reg.phub_id_reg,
++		pch_phub_reg.q_pri_val_reg,
++		pch_phub_reg.rc_q_maxsize_reg,
++		pch_phub_reg.bri_q_maxsize_reg,
++		pch_phub_reg.comp_resp_timeout_reg,
++		pch_phub_reg.bus_slave_control_reg,
++		pch_phub_reg.deadlock_avoid_type_reg,
++		pch_phub_reg.intpin_reg_wpermit_reg0,
++		pch_phub_reg.intpin_reg_wpermit_reg1,
++		pch_phub_reg.intpin_reg_wpermit_reg2,
++		pch_phub_reg.intpin_reg_wpermit_reg3);
++	for (i = 0; i < MAX_NUM_INT_REDUCE_CONTROL_REG; i++) {
++		pch_phub_reg.int_reduce_control_reg[i] =
++		    ioread32(p + PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE + 4 * i);
++		dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
++			"pch_phub_reg.int_reduce_control_reg[%d]=%x\n",
++			i, pch_phub_reg.int_reduce_control_reg[i]);
++	}
++	pch_phub_reg.clkcfg_reg = ioread32(p + CLKCFG_REG_OFFSET);
++
++}
++
++/* pch_phub_restore_reg_conf - restore register configuration */
++static void pch_phub_restore_reg_conf(struct pci_dev *pdev)
++{
++	unsigned int i;
++	void __iomem *p = pch_phub_reg.pch_phub_base_address;
++
++	dev_dbg(&pdev->dev, "pch_phub_restore_reg_conf ENTRY\n");
++	iowrite32(pch_phub_reg.phub_id_reg, p + PCH_PHUB_ID_REG);
++	iowrite32(pch_phub_reg.q_pri_val_reg, p + PCH_PHUB_QUEUE_PRI_VAL_REG);
++	iowrite32(pch_phub_reg.rc_q_maxsize_reg,
++					p + PCH_PHUB_RC_QUEUE_MAXSIZE_REG);
++	iowrite32(pch_phub_reg.bri_q_maxsize_reg,
++					p + PCH_PHUB_BRI_QUEUE_MAXSIZE_REG);
++	iowrite32(pch_phub_reg.comp_resp_timeout_reg,
++					p + PCH_PHUB_COMP_RESP_TIMEOUT_REG);
++	iowrite32(pch_phub_reg.bus_slave_control_reg,
++					p + PCH_PHUB_BUS_SLAVE_CONTROL_REG);
++	iowrite32(pch_phub_reg.deadlock_avoid_type_reg,
++					p + PCH_PHUB_DEADLOCK_AVOID_TYPE_REG);
++	iowrite32(pch_phub_reg.intpin_reg_wpermit_reg0,
++					p + PCH_PHUB_INTPIN_REG_WPERMIT_REG0);
++	iowrite32(pch_phub_reg.intpin_reg_wpermit_reg1,
++					p + PCH_PHUB_INTPIN_REG_WPERMIT_REG1);
++	iowrite32(pch_phub_reg.intpin_reg_wpermit_reg2,
++					p + PCH_PHUB_INTPIN_REG_WPERMIT_REG2);
++	iowrite32(pch_phub_reg.intpin_reg_wpermit_reg3,
++					p + PCH_PHUB_INTPIN_REG_WPERMIT_REG3);
++	dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
++		"pch_phub_reg.phub_id_reg=%x, "
++		"pch_phub_reg.q_pri_val_reg=%x, "
++		"pch_phub_reg.rc_q_maxsize_reg=%x, "
++		"pch_phub_reg.bri_q_maxsize_reg=%x, "
++		"pch_phub_reg.comp_resp_timeout_reg=%x, "
++		"pch_phub_reg.bus_slave_control_reg=%x, "
++		"pch_phub_reg.deadlock_avoid_type_reg=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg0=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg1=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg2=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg3=%x\n",
++		pch_phub_reg.phub_id_reg,
++		pch_phub_reg.q_pri_val_reg,
++		pch_phub_reg.rc_q_maxsize_reg,
++		pch_phub_reg.bri_q_maxsize_reg,
++		pch_phub_reg.comp_resp_timeout_reg,
++		pch_phub_reg.bus_slave_control_reg,
++		pch_phub_reg.deadlock_avoid_type_reg,
++		pch_phub_reg.intpin_reg_wpermit_reg0,
++		pch_phub_reg.intpin_reg_wpermit_reg1,
++		pch_phub_reg.intpin_reg_wpermit_reg2,
++		pch_phub_reg.intpin_reg_wpermit_reg3);
++	for (i = 0; i < MAX_NUM_INT_REDUCE_CONTROL_REG; i++) {
++		iowrite32(pch_phub_reg.int_reduce_control_reg[i],
++			p + PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE + 4 * i);
++		dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
++			"pch_phub_reg.int_reduce_control_reg[%d]=%x\n",
++			i, pch_phub_reg.int_reduce_control_reg[i]);
++	}
++
++	iowrite32(pch_phub_reg.clkcfg_reg, p + CLKCFG_REG_OFFSET);
++}
++
++/**
++ * pch_phub_read_serial_rom() - Reading Serial ROM
++ * @offset_address:	Serial ROM offset address to read.
++ * @data:		Read buffer for specified Serial ROM value.
++ */
++static void pch_phub_read_serial_rom(unsigned int offset_address, u8 *data)
++{
++	void __iomem *mem_addr = pch_phub_reg.pch_phub_extrom_base_address +
++					 offset_address;
++
++	*data = ioread8(mem_addr);
++}
++
++/**
++ * pch_phub_write_serial_rom() - Writing Serial ROM
++ * @offset_address:	Serial ROM offset address.
++ * @data:		Serial ROM value to write.
++ */
++static int pch_phub_write_serial_rom(unsigned int offset_address, u8 data)
++{
++	void __iomem *mem_addr = pch_phub_reg.pch_phub_extrom_base_address +
++					(offset_address & PCH_WORD_ADDR_MASK);
++	int i;
++	unsigned int word_data;
++	unsigned int pos;
++	unsigned int mask;
++	pos = (offset_address % 4) * 8;
++	mask = ~(0xFF << pos);
++
++	iowrite32(PCH_PHUB_ROM_WRITE_ENABLE,
++			pch_phub_reg.pch_phub_extrom_base_address +
++			PHUB_CONTROL);
++
++	word_data = ioread32(mem_addr);
++	iowrite32((word_data & mask) | (u32)data << pos, mem_addr);
++
++	i = 0;
++	while (0x00 != ioread8(pch_phub_reg.pch_phub_extrom_base_address +
++			PHUB_STATUS)) {
++		msleep(1);
++		if (PHUB_TIMEOUT == i)
++			return -EPERM;
++		i++;
++	}
++
++	iowrite32(PCH_PHUB_ROM_WRITE_DISABLE,
++			pch_phub_reg.pch_phub_extrom_base_address +
++			PHUB_CONTROL);
++
++	return 0;
++}
++
++/**
++ * pch_phub_read_serial_rom_val() - Read Serial ROM value
++ * @offset_address:	Serial ROM address offset value.
++ * @data:		Serial ROM value to read.
++ */
++static void pch_phub_read_serial_rom_val(unsigned int offset_address, u8 *data)
++{
++	unsigned int mem_addr;
++
++	mem_addr = PCH_PHUB_ROM_START_ADDR +
++			pch_phub_mac_offset[offset_address];
++
++	pch_phub_read_serial_rom(mem_addr, data);
++
++}
++
++
++/**
++ * pch_phub_write_serial_rom_val() - writing Serial ROM value
++ * @offset_address:	Serial ROM address offset value.
++ * @data:		Serial ROM value.
++ */
++static int pch_phub_write_serial_rom_val(unsigned int offset_address, u8 data)
++{
++	int retval;
++	unsigned int mem_addr;
++
++	mem_addr = PCH_PHUB_ROM_START_ADDR +
++			pch_phub_mac_offset[offset_address];
++
++	retval = pch_phub_write_serial_rom(mem_addr, data);
++
++	return retval;
++}
++
++/* pch_phub_gbe_serial_rom_conf - makes Serial ROM header format configuration
++ * for Gigabit Ethernet MAC address
++ */
++static int pch_phub_gbe_serial_rom_conf(void)
++{
++	int retval;
++
++	retval = pch_phub_write_serial_rom(0x0b, 0xbc);
++	retval |= pch_phub_write_serial_rom(0x0a, 0x10);
++	retval |= pch_phub_write_serial_rom(0x09, 0x01);
++	retval |= pch_phub_write_serial_rom(0x08, 0x02);
++
++	retval |= pch_phub_write_serial_rom(0x0f, 0x00);
++	retval |= pch_phub_write_serial_rom(0x0e, 0x00);
++	retval |= pch_phub_write_serial_rom(0x0d, 0x00);
++	retval |= pch_phub_write_serial_rom(0x0c, 0x80);
++
++	retval |= pch_phub_write_serial_rom(0x13, 0xbc);
++	retval |= pch_phub_write_serial_rom(0x12, 0x10);
++	retval |= pch_phub_write_serial_rom(0x11, 0x01);
++	retval |= pch_phub_write_serial_rom(0x10, 0x18);
++
++	retval |= pch_phub_write_serial_rom(0x1b, 0xbc);
++	retval |= pch_phub_write_serial_rom(0x1a, 0x10);
++	retval |= pch_phub_write_serial_rom(0x19, 0x01);
++	retval |= pch_phub_write_serial_rom(0x18, 0x19);
++
++	retval |= pch_phub_write_serial_rom(0x23, 0xbc);
++	retval |= pch_phub_write_serial_rom(0x22, 0x10);
++	retval |= pch_phub_write_serial_rom(0x21, 0x01);
++	retval |= pch_phub_write_serial_rom(0x20, 0x3a);
++
++	retval |= pch_phub_write_serial_rom(0x27, 0x01);
++	retval |= pch_phub_write_serial_rom(0x26, 0x00);
++	retval |= pch_phub_write_serial_rom(0x25, 0x00);
++	retval |= pch_phub_write_serial_rom(0x24, 0x00);
++
++	return retval;
++}
++
++/**
++ * pch_phub_read_gbe_mac_addr() - Read Gigabit Ethernet MAC address
++ * @offset_address:	Gigabit Ethernet MAC address offset value.
++ * @data:		Buffer of the Gigabit Ethernet MAC address value.
++ */
++static void pch_phub_read_gbe_mac_addr(u8 *data)
++{
++	int i;
++	for (i = 0; i < 6; i++)
++		pch_phub_read_serial_rom_val(i, &data[i]);
++}
++
++/**
++ * pch_phub_write_gbe_mac_addr() - Write MAC address
++ * @offset_address:	Gigabit Ethernet MAC address offset value.
++ * @data:		Gigabit Ethernet MAC address value.
++ */
++static int pch_phub_write_gbe_mac_addr(u8 *data)
++{
++	int retval;
++	int i;
++
++	retval = pch_phub_gbe_serial_rom_conf();
++	if (retval)
++		return retval;
++
++	for (i = 0; i < 6; i++) {
++		retval = pch_phub_write_serial_rom_val(i, data[i]);
++		if (retval)
++			return retval;
++	}
++
++	return retval;
++}
++
++static ssize_t pch_phub_read(struct file *file, char __user *buf, size_t size,
++			     loff_t *ppos)
++{
++	unsigned int rom_signature;
++	unsigned char rom_length;
++	int ret_value;
++	unsigned int tmp;
++	unsigned char data;
++	unsigned int addr_offset;
++	unsigned int orom_size;
++	int ret;
++	int err;
++	loff_t pos = *ppos;
++
++	ret = mutex_lock_interruptible(&pch_phub_read_mutex);
++	if (ret) {
++		err = -ERESTARTSYS;
++		goto return_err_nomutex;
++	}
++
++	/* Get Rom signature */
++	pch_phub_read_serial_rom(0x80, (unsigned char *)&rom_signature);
++	rom_signature &= 0xff;
++	pch_phub_read_serial_rom(0x81, (unsigned char *)&tmp);
++	rom_signature |= (tmp & 0xff) << 8;
++	if (rom_signature == 0xAA55) {
++		pch_phub_read_serial_rom(0x82, &rom_length);
++		orom_size = rom_length * 512;
++		if (orom_size < pos) {
++			addr_offset = 0;
++			goto return_ok;
++		}
++
++		for (addr_offset = 0; addr_offset < size; addr_offset++) {
++			pch_phub_read_serial_rom(0x80 + addr_offset + pos,
++									 &data);
++			ret_value = copy_to_user(&buf[addr_offset], &data, 1);
++			if (ret_value) {
++				err = -EFAULT;
++				goto return_err;
++			}
++
++			if (orom_size < pos + addr_offset) {
++				*ppos += addr_offset;
++				goto return_ok;
++			}
++
++		}
++	} else {
++		return -ENODATA;
++	}
++	*ppos += addr_offset;
++return_ok:
++	mutex_unlock(&pch_phub_read_mutex);
++	return addr_offset;
++
++return_err:
++	mutex_unlock(&pch_phub_read_mutex);
++return_err_nomutex:
++	return err;
++}
++
++
++static ssize_t pch_phub_write(struct file *file, const char __user *buf,
++			      size_t size, loff_t *ppos)
++{
++	unsigned int data;
++	int ret_value1;
++	int ret_value2;
++	int err;
++	unsigned int addr_offset;
++	loff_t pos = *ppos;
++	int ret;
++
++	ret = mutex_lock_interruptible(&pch_phub_write_mutex);
++	if (ret) {
++		err = -ERESTARTSYS;
++		goto return_err_nomutex;
++	}
++
++	for (addr_offset = 0; addr_offset < size; addr_offset++) {
++		ret_value1 = get_user(data, &buf[addr_offset]);
++		if (ret_value1) {
++			err = -EFAULT;
++			goto return_err;
++		}
++
++		ret_value2 = pch_phub_write_serial_rom(0x80 + addr_offset + pos,
++							data);
++		if (ret_value2) {
++			err = ret_value2;
++			goto return_err;
++		}
++
++		if (PCH_PHUB_OROM_SIZE < pos + addr_offset) {
++			*ppos += addr_offset;
++			goto return_ok;
++		}
++
++	}
++
++	*ppos += addr_offset;
++
++return_ok:
++	mutex_unlock(&pch_phub_write_mutex);
++	return addr_offset;
++
++return_err:
++	mutex_unlock(&pch_phub_write_mutex);
++return_err_nomutex:
++	return err;
++}
++
++
++static long pch_phub_ioctl(struct file *file, unsigned int cmd,
++			   unsigned long arg)
++{
++	int ret_value;
++	int ret;
++	int rtn;
++	__u8 mac_addr[6];
++	void __user *varg = (void __user *)arg;
++
++	ret = mutex_lock_interruptible(&pch_phub_ioctl_mutex);
++	if (ret) {
++		ret_value = -ERESTARTSYS;
++		goto return_nomutex;
++	}
++
++	if (pch_phub_reg.pch_phub_suspended == true) {
++		ret_value = -EBUSY;
++		goto return_ioctrl;
++	}
++
++	switch (cmd) {
++	case IOCTL_PHUB_READ_MAC_ADDR:
++		pch_phub_read_gbe_mac_addr(mac_addr);
++
++		ret_value = copy_to_user(varg, mac_addr, sizeof(mac_addr));
++		break;
++
++	case IOCTL_PHUB_WRITE_MAC_ADDR:
++		rtn = copy_from_user(mac_addr, varg, sizeof(mac_addr));
++
++		if (rtn) {
++			ret_value = -EFAULT;
++			break;
++		}
++
++		ret_value = pch_phub_write_gbe_mac_addr(mac_addr);
++		break;
++
++	default:
++		ret_value = -EINVAL;
++		break;
++	}
++return_ioctrl:
++	mutex_unlock(&pch_phub_ioctl_mutex);
++return_nomutex:
++	return ret_value;
++}
++
++
++/* file_operations structure initialization */
++static const struct file_operations pch_phub_fops = {
++	.owner = THIS_MODULE,
++	.read = pch_phub_read,
++	.write = pch_phub_write,
++	.unlocked_ioctl = pch_phub_ioctl,
++	.llseek = default_llseek
++};
++
++
++static int __devinit pch_phub_probe(struct pci_dev *pdev,
++				    const struct pci_device_id *id)
++{
++	int ret;
++	unsigned int rom_size;
++
++	ret = pci_enable_device(pdev);
++	if (ret) {
++		dev_dbg(&pdev->dev,
++		"pch_phub_probe : pci_enable_device FAILED(ret=%d)", ret);
++		goto err_pci_enable_dev;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe : pci_enable_device returns %d\n",
++		ret);
++
++	ret = pci_request_regions(pdev, MODULE_NAME);
++	if (ret) {
++		dev_dbg(&pdev->dev,
++		"pch_phub_probe : pci_request_regions FAILED(ret=%d)", ret);
++		goto err_req_regions;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe : "
++		"pci_request_regions returns %d\n", ret);
++
++	pch_phub_reg.pch_phub_base_address = pci_iomap(pdev, 1, 0);
++
++	if (pch_phub_reg.pch_phub_base_address == 0) {
++		dev_dbg(&pdev->dev, "pch_phub_probe : pci_iomap FAILED");
++		ret = -ENOMEM;
++		goto err_pci_iomap;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe : pci_iomap SUCCESS and value "
++		"in pch_phub_base_address variable is 0x%08x\n",
++		(unsigned int)pch_phub_reg.pch_phub_base_address);
++
++	pch_phub_reg.pch_phub_extrom_base_address =
++						pci_map_rom(pdev, &rom_size);
++	if (pch_phub_reg.pch_phub_extrom_base_address == 0) {
++		dev_dbg(&pdev->dev, "pch_phub_probe : pci_map_rom FAILED");
++		ret = -ENOMEM;
++		goto err_pci_map;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe : "
++		"pci_map_rom SUCCESS and value in "
++		"pch_phub_extrom_base_address variable is 0x%08x\n",
++		(unsigned int)pch_phub_reg.pch_phub_extrom_base_address);
++
++	ret = alloc_chrdev_region(&pch_phub_dev_no, 0,
++					PCH_MINOR_NOS, MODULE_NAME);
++	if (ret) {
++		dev_dbg(&pdev->dev, "pch_phub_probe : "
++				"alloc_chrdev_region FAILED(ret=%d)", ret);
++
++		goto err_alloc_cdev;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe : "
++		"alloc_chrdev_region returns %d\n", ret);
++
++	cdev_init(&pch_phub_dev, &pch_phub_fops);
++	dev_dbg(&pdev->dev,
++			"pch_phub_probe :  cdev_init invoked successfully\n");
++
++	pch_phub_dev.owner = THIS_MODULE;
++	pch_phub_dev.ops = &pch_phub_fops;
++
++	ret = cdev_add(&pch_phub_dev, pch_phub_dev_no, PCH_MINOR_NOS);
++	if (ret) {
++		dev_dbg(&pdev->dev, "pch_phub_probe :  cdev_add FAILED(ret=%d)",
++			ret);
++		goto err_cdev_add;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe :  cdev_add returns %d\n", ret);
++
++	/* set the clock config reg if CAN clock is 50Mhz */
++	dev_dbg(&pdev->dev, "pch_phub_probe : invoking "
++		"pch_phub_read_modify_write_reg "
++		"to set CLKCFG reg for CAN clk 50Mhz\n");
++	pch_phub_read_modify_write_reg((unsigned int)CLKCFG_REG_OFFSET,
++					  CLKCFG_CAN_50MHZ, CLKCFG_CANCLK_MASK);
++
++	/* set the prefech value */
++	iowrite32(0x000ffffa, pch_phub_reg.pch_phub_base_address + 0x14);
++	/* set the interrupt delay value */
++	iowrite32(0x25, pch_phub_reg.pch_phub_base_address + 0x44);
++	return 0;
++
++err_cdev_add:
++	unregister_chrdev_region(pch_phub_dev_no, PCH_MINOR_NOS);
++err_alloc_cdev:
++	pci_unmap_rom(pdev, pch_phub_reg.pch_phub_extrom_base_address);
++err_pci_map:
++	pci_iounmap(pdev, pch_phub_reg.pch_phub_base_address);
++err_pci_iomap:
++	pci_release_regions(pdev);
++err_req_regions:
++	pci_disable_device(pdev);
++err_pci_enable_dev:
++	dev_dbg(&pdev->dev, "pch_phub_probe returns %d\n", ret);
++	return ret;
++}
++
++static void __devexit pch_phub_remove(struct pci_dev *pdev)
++{
++
++	cdev_del(&pch_phub_dev);
++	dev_dbg(&pdev->dev,
++			"pch_phub_remove - cdev_del Invoked successfully\n");
++
++	unregister_chrdev_region(pch_phub_dev_no, PCH_MINOR_NOS);
++	dev_dbg(&pdev->dev, "pch_phub_remove - "
++		"unregister_chrdev_region Invoked successfully\n");
++
++	pci_unmap_rom(pdev, pch_phub_reg.pch_phub_extrom_base_address);
++
++	pci_iounmap(pdev, pch_phub_reg.pch_phub_base_address);
++
++	dev_dbg(&pdev->dev, "pch_phub_remove - "
++			"pci_iounmap Invoked successfully\n");
++
++	pci_release_regions(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_remove - "
++		"pci_release_regions Invoked successfully\n");
++
++	pci_disable_device(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_remove - "
++		"pci_disable_device Invoked successfully\n");
++
++}
++
++#ifdef CONFIG_PM
++
++static int pch_phub_suspend(struct pci_dev *pdev, pm_message_t state)
++{
++	int ret;
++
++	pch_phub_reg.pch_phub_suspended = true;/* For blocking further IOCTLs */
++
++	pch_phub_save_reg_conf(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_suspend - "
++		"pch_phub_save_reg_conf Invoked successfully\n");
++
++	ret = pci_save_state(pdev);
++	if (ret) {
++		dev_dbg(&pdev->dev,
++			" pch_phub_suspend -pci_save_state returns-%d\n", ret);
++		return ret;
++	}
++	dev_dbg(&pdev->dev,
++			"pch_phub_suspend - pci_save_state returns %d\n", ret);
++	pci_enable_wake(pdev, PCI_D3hot, 0);
++	dev_dbg(&pdev->dev, "pch_phub_suspend - "
++			"pci_enable_wake Invoked successfully\n");
++
++	pci_disable_device(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_suspend - "
++			"pci_disable_device Invoked successfully\n");
++
++	pci_set_power_state(pdev, pci_choose_state(pdev, state));
++	dev_dbg(&pdev->dev, "pch_phub_suspend - "
++			"pci_set_power_state Invoked successfully   "
++			"return = %d\n", 0);
++
++	return 0;
++}
++
++static int pch_phub_resume(struct pci_dev *pdev)
++{
++
++	int ret;
++
++	pci_set_power_state(pdev, PCI_D0);
++	dev_dbg(&pdev->dev, "pch_phub_resume - "
++		"pci_set_power_state Invoked successfully\n");
++
++	pci_restore_state(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_resume - "
++		"pci_restore_state Invoked successfully\n");
++
++	ret = pci_enable_device(pdev);
++	if (ret) {
++		dev_dbg(&pdev->dev,
++		"pch_phub_resume-pci_enable_device failed(ret=%d) ", ret);
++		return ret;
++	}
++
++	dev_dbg(&pdev->dev, "pch_phub_resume - "
++			"pci_enable_device returns -%d\n", ret);
++
++	pci_enable_wake(pdev, PCI_D3hot, 0);
++	dev_dbg(&pdev->dev, "pch_phub_resume - "
++			"pci_enable_wake Invoked successfully\n");
++
++	pch_phub_restore_reg_conf(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_resume - "
++		"pch_phub_restore_reg_conf Invoked successfully\n");
++
++	pch_phub_reg.pch_phub_suspended = false;
++
++	dev_dbg(&pdev->dev, "pch_phub_resume  returns- %d\n", 0);
++	return 0;
++}
++#else
++#define pch_phub_suspend NULL
++#define pch_phub_resume NULL
++#endif /* CONFIG_PM */
++
++static struct pci_device_id pch_phub_pcidev_id[] = {
++
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCH1_PHUB)},
++	{0,}
++};
++
++
++static struct pci_driver pch_phub_driver = {
++	.name = "pch_phub",
++	.id_table = pch_phub_pcidev_id,
++	.probe = pch_phub_probe,
++	.remove = __devexit_p(pch_phub_remove),
++	.suspend = pch_phub_suspend,
++	.resume = pch_phub_resume
++};
++
++/* pch_phub_pci_init - Implements the initialization functionality of
++ * the module.
++ */
++static int __init pch_phub_pci_init(void)
++{
++	int ret;
++	ret = pci_register_driver(&pch_phub_driver);
++
++	return ret;
++}
++
++/* pch_phub_pci_exit - Implements the exit functionality of the module. */
++static void __exit pch_phub_pci_exit(void)
++{
++	pci_unregister_driver(&pch_phub_driver);
++
++}
++
++module_init(pch_phub_pci_init);
++module_exit(pch_phub_pci_exit);
++
++MODULE_DESCRIPTION("PCH PACKET HUB PCI Driver");
++MODULE_LICENSE("GPL");
++
+diff --git a/drivers/char/pch_phub/pch_phub.h b/drivers/char/pch_phub/pch_phub.h
+new file mode 100755
+index 0000000..7baa272
+--- /dev/null
++++ b/drivers/char/pch_phub/pch_phub.h
+@@ -0,0 +1,48 @@
++#ifndef __PCH_PHUB_H__
++#define __PCH_PHUB_H__
++/*!
++ * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
++ */
++
++#define PHUB_IOCTL_MAGIC		(0xf7)
++
++/* Read GbE MAC address */
++#define IOCTL_PHUB_READ_MAC_ADDR (_IOR(PHUB_IOCTL_MAGIC, 6, __u8[6]))
++
++/* Write GbE MAC address */
++#define IOCTL_PHUB_WRITE_MAC_ADDR (_IOW(PHUB_IOCTL_MAGIC, 7, __u8[6]))
++
++/* SROM ACCESS Macro */
++#define PCH_WORD_ADDR_MASK (~((1 << 2) - 1))
++
++/* Registers address offset */
++#define PCH_PHUB_ID_REG				0x0000
++#define PCH_PHUB_QUEUE_PRI_VAL_REG		0x0004
++#define PCH_PHUB_RC_QUEUE_MAXSIZE_REG		0x0008
++#define PCH_PHUB_BRI_QUEUE_MAXSIZE_REG		0x000C
++#define PCH_PHUB_COMP_RESP_TIMEOUT_REG		0x0010
++#define PCH_PHUB_BUS_SLAVE_CONTROL_REG		0x0014
++#define PCH_PHUB_DEADLOCK_AVOID_TYPE_REG	0x0018
++#define PCH_PHUB_INTPIN_REG_WPERMIT_REG0	0x0020
++#define PCH_PHUB_INTPIN_REG_WPERMIT_REG1	0x0024
++#define PCH_PHUB_INTPIN_REG_WPERMIT_REG2	0x0028
++#define PCH_PHUB_INTPIN_REG_WPERMIT_REG3	0x002C
++#define PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE	0x0040
++#define CLKCFG_REG_OFFSET			0x500
++
++#define PCH_PHUB_OROM_SIZE 15360
++
++#endif
+-- 
+1.6.0.6
