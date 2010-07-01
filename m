@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933291Ab0GAVgB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:36:01 -0400
-Received: from kroah.org ([198.145.64.141]:33040 "EHLO coco.kroah.org"
+	id S933230Ab0GAVjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:39:18 -0400
+Received: from kroah.org ([198.145.64.141]:32992 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759221Ab0GAVOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:48 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
-Message-Id: <20100701174258.769447197@clark.site>
+	id S1759207Ab0GAVOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:40 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:57 2010
+Message-Id: <20100701174257.900362441@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:56 -0700
+Date: Thu, 01 Jul 2010 10:43:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alan Cox <device@lanana.org>
-Subject: [146/200] misc: Fix allocation borrowed by vhost_net
+       Aurelien Jarno <aurelien@aurel32.net>, Paul Mundt <lethal@linux-sh.org>
+Subject: [136/200] clocksource: sh_tmu: compute mult and shift before registration
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +25,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Aurelien Jarno <aurelien@aurel32.net>
 
-commit 79907d89c397b8bc2e05b347ec94e928ea919d33 upstream.
+commit 66f49121ffa41a19c59965b31b046d8368fec3c7 upstream.
 
-10, 233 is allocated officially to /dev/kmview which is shipping in
-Ubuntu and Debian distributions.  vhost_net seem to have borrowed it
-without making a proper request and this causes regressions in the other
-distributions.
+Since commit 98962465ed9e6ea99c38e0af63fe1dcb5a79dc25 ("nohz: Prevent
+clocksource wrapping during idle"), the CPU of an R2D board never goes
+to idle. This commit assumes that mult and shift are assigned before
+the clocksource is registered. As a consequence the safe maximum sleep
+time is negative and the CPU never goes into idle.
 
-vhost_net can use a dynamic minor so use that instead.  Also update the
-file with a comment to try and avoid future misunderstandings.
+This patch fixes the problem by moving mult and shift initialization
+from sh_tmu_clocksource_enable() to sh_tmu_register_clocksource().
 
-Signed-off-by: Alan Cox <device@lanana.org>
-[ We should have caught this before 2.6.34 got released.  - Linus ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/vhost/net.c        |    2 +-
- include/linux/miscdevice.h |    7 ++++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/clocksource/sh_tmu.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -637,7 +637,7 @@ const static struct file_operations vhos
- };
+--- a/drivers/clocksource/sh_tmu.c
++++ b/drivers/clocksource/sh_tmu.c
+@@ -200,16 +200,8 @@ static cycle_t sh_tmu_clocksource_read(s
+ static int sh_tmu_clocksource_enable(struct clocksource *cs)
+ {
+ 	struct sh_tmu_priv *p = cs_to_sh_tmu(cs);
+-	int ret;
  
- static struct miscdevice vhost_net_misc = {
--	VHOST_NET_MINOR,
-+	MISC_DYNAMIC_MINOR,
- 	"vhost-net",
- 	&vhost_net_fops,
- };
---- a/include/linux/miscdevice.h
-+++ b/include/linux/miscdevice.h
-@@ -3,6 +3,12 @@
- #include <linux/module.h>
- #include <linux/major.h>
+-	ret = sh_tmu_enable(p);
+-	if (ret)
+-		return ret;
+-
+-	/* TODO: calculate good shift from rate and counter bit width */
+-	cs->shift = 10;
+-	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
+-	return 0;
++	return sh_tmu_enable(p);
+ }
  
-+/*
-+ *	These allocations are managed by device@lanana.org. If you use an
-+ *	entry that is not in assigned your entry may well be moved and
-+ *	reassigned, or set dynamic if a fixed value is not justified.
-+ */
+ static void sh_tmu_clocksource_disable(struct clocksource *cs)
+@@ -229,6 +221,16 @@ static int sh_tmu_register_clocksource(s
+ 	cs->disable = sh_tmu_clocksource_disable;
+ 	cs->mask = CLOCKSOURCE_MASK(32);
+ 	cs->flags = CLOCK_SOURCE_IS_CONTINUOUS;
 +
- #define PSMOUSE_MINOR		1
- #define MS_BUSMOUSE_MINOR	2
- #define ATIXL_BUSMOUSE_MINOR	3
-@@ -30,7 +36,6 @@
- #define HPET_MINOR		228
- #define FUSE_MINOR		229
- #define KVM_MINOR		232
--#define VHOST_NET_MINOR		233
- #define MISC_DYNAMIC_MINOR	255
- 
- struct device;
++	/* clk_get_rate() needs an enabled clock */
++	clk_enable(p->clk);
++	/* channel will be configured at parent clock / 4 */
++	p->rate = clk_get_rate(p->clk) / 4;
++	clk_disable(p->clk);
++	/* TODO: calculate good shift from rate and counter bit width */
++	cs->shift = 10;
++	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
++
+ 	pr_info("sh_tmu: %s used as clock source\n", cs->name);
+ 	clocksource_register(cs);
+ 	return 0;
 
 
