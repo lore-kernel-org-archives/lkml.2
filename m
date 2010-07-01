@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759837Ab0GAWPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:15:54 -0400
-Received: from kroah.org ([198.145.64.141]:47296 "EHLO coco.kroah.org"
+	id S932582Ab0GAUtw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:49:52 -0400
+Received: from kroah.org ([198.145.64.141]:47229 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932589Ab0GAUty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:30 2010
-Message-Id: <20100701173430.309000244@clark.site>
+	id S932552Ab0GAUtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:43 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:29 2010
+Message-Id: <20100701173429.225401472@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:47 -0700
+Date: Thu, 01 Jul 2010 10:33:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [patch 041/164] USB: xhci: Fix check for room on the ring.
+       Johan Hovold <jhovold@gmail.com>
+Subject: [patch 028/164] USB: kobil: fix memory leak
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 44ebd037c54f80db3121ac9f5fe6e677b76e11d5 upstream.
+commit c0f631d1948658b27349545b2cbcb4b32f010c7a upstream.
 
-The length of the scatter gather list a driver can enqueue is limited by
-the bus' sg_tablesize to 62 entries.  Each entry will be described by at
-least one transfer request block (TRB).  If the entry's buffer crosses a
-64KB boundary, then that entry will have to be described by two or more
-TRBs.  So even if the USB device driver respects sg_tablesize, the whole
-scatter list may take more than 62 TRBs to describe, and won't fit on
-the ring.
+An urb transfer buffer is allocated at every open but was never freed.
 
-Don't assume that an empty ring means there is enough room on the
-transfer ring.  The old code would unconditionally queue this too-large
-transfer, and over write the beginning of the transfer.  This would mean
-the cycle bit was unchanged in those overwritten transfers, causing the
-hardware to think it didn't own the TRBs, and the host would seem to
-hang.
+This driver is a bit of a mess...
 
-Now drivers may see submit_urb() fail with -ENOMEM if the transfers are
-too big to fit on the ring.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |   19 ++++++++++++++++++-
- 1 file changed, 18 insertions(+), 1 deletion(-)
+ drivers/usb/serial/kobil_sct.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -241,10 +241,27 @@ static int room_on_ring(struct xhci_hcd
- 	int i;
- 	union xhci_trb *enq = ring->enqueue;
- 	struct xhci_segment *enq_seg = ring->enq_seg;
-+	struct xhci_segment *cur_seg;
-+	unsigned int left_on_ring;
+--- a/drivers/usb/serial/kobil_sct.c
++++ b/drivers/usb/serial/kobil_sct.c
+@@ -345,7 +345,8 @@ static void kobil_close(struct usb_seria
  
- 	/* Check if ring is empty */
--	if (enq == ring->dequeue)
-+	if (enq == ring->dequeue) {
-+		/* Can't use link trbs */
-+		left_on_ring = TRBS_PER_SEGMENT - 1;
-+		for (cur_seg = enq_seg->next; cur_seg != enq_seg;
-+				cur_seg = cur_seg->next)
-+			left_on_ring += TRBS_PER_SEGMENT - 1;
-+
-+		/* Always need one TRB free in the ring. */
-+		left_on_ring -= 1;
-+		if (num_trbs > left_on_ring) {
-+			xhci_warn(xhci, "Not enough room on ring; "
-+					"need %u TRBs, %u TRBs left\n",
-+					num_trbs, left_on_ring);
-+			return 0;
-+		}
- 		return 1;
-+	}
- 	/* Make sure there's an extra empty TRB available */
- 	for (i = 0; i <= num_trbs; ++i) {
- 		if (enq == ring->dequeue)
+ 	/* FIXME: Add rts/dtr methods */
+ 	if (port->write_urb) {
+-		usb_kill_urb(port->write_urb);
++		usb_poison_urb(port->write_urb);
++		kfree(port->write_urb->transfer_buffer);
+ 		usb_free_urb(port->write_urb);
+ 		port->write_urb = NULL;
+ 	}
 
 
