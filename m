@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab0GAP6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:58:11 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47057 "EHLO
+	id S1757416Ab0GAP66 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:58:58 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47058 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757014Ab0GAPyG (ORCPT
+	with ESMTP id S1756985Ab0GAPyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Jul 2010 11:54:06 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 06/21] perf: rewire generic library stuff, p2
-Date: Thu,  1 Jul 2010 17:55:48 +0200
-Message-Id: <1277999763-20357-7-git-send-email-bp@amd64.org>
+Subject: [PATCH 05/21] perf: rewire generic library stuff, p1
+Date: Thu,  1 Jul 2010 17:55:47 +0200
+Message-Id: <1277999763-20357-6-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1277999763-20357-1-git-send-email-bp@amd64.org>
 References: <1277999763-20357-1-git-send-email-bp@amd64.org>
@@ -22,2338 +22,733 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Borislav Petkov <borislav.petkov@amd.com>
 
 Carve out generic library stuff into tools/lib/lk/ and rewire it with
-perf. Relocate bits from perf includes into generic include files to
-satisfy build dependencies.
+perf. Add a top-level Makefile which selects between targets depending
+on the tool we want to build. Also, add a Makefile.lib for common
+facilities used by all the Makefiles.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- tools/lib/Makefile                                 |    6 +
- tools/lib/lk/cpumap.c                              |    2 +-
- tools/lib/lk/ctype.c                               |   39 +++
- tools/lib/lk/debugfs.c                             |  239 ++++++++++++++++
- tools/lib/lk/debugfs.h                             |   27 ++
- tools/lib/lk/types.h                               |   17 ++
- tools/lib/lk/util.c                                |  116 ++++++++
- tools/lib/lk/util.h                                |  285 ++++++++++++++++++++
- tools/perf/Makefile                                |    6 -
- tools/perf/bench/mem-memcpy.c                      |    2 +-
- tools/perf/bench/sched-messaging.c                 |    2 +-
- tools/perf/bench/sched-pipe.c                      |    2 +-
- tools/perf/builtin-annotate.c                      |    2 +-
- tools/perf/builtin-bench.c                         |    2 +-
- tools/perf/builtin-diff.c                          |    2 +-
- tools/perf/builtin-kmem.c                          |    2 +-
- tools/perf/builtin-kvm.c                           |    2 +-
- tools/perf/builtin-lock.c                          |    2 +-
- tools/perf/builtin-probe.c                         |    4 +-
- tools/perf/builtin-record.c                        |    2 +-
- tools/perf/builtin-report.c                        |    2 +-
- tools/perf/builtin-sched.c                         |    2 +-
- tools/perf/builtin-stat.c                          |    2 +-
- tools/perf/builtin-timechart.c                     |    2 +-
- tools/perf/builtin-top.c                           |    2 +-
- tools/perf/builtin-trace.c                         |    2 +-
- tools/perf/builtin.h                               |    2 +-
- tools/perf/perf.c                                  |    2 +-
- tools/perf/perf.h                                  |    2 +-
- tools/perf/util/build-id.c                         |    2 +-
- tools/perf/util/cache.h                            |    3 +-
- tools/perf/util/callchain.c                        |    2 +-
- tools/perf/util/config.c                           |    2 +-
- tools/perf/util/ctype.c                            |   39 ---
- tools/perf/util/debug.c                            |    2 +-
- tools/perf/util/debugfs.c                          |  240 ----------------
- tools/perf/util/debugfs.h                          |   25 --
- tools/perf/util/header.c                           |    2 +-
- tools/perf/util/header.h                           |    2 +-
- tools/perf/util/hist.c                             |    2 +-
- tools/perf/util/include/linux/ctype.h              |    2 +-
- tools/perf/util/map.h                              |    2 +-
- tools/perf/util/parse-events.c                     |    4 +-
- tools/perf/util/parse-options.c                    |    2 +-
- tools/perf/util/probe-event.c                      |    4 +-
- tools/perf/util/probe-finder.c                     |    2 +-
- tools/perf/util/probe-finder.h                     |    2 +-
- tools/perf/util/pstack.c                           |    2 +-
- .../perf/util/scripting-engines/trace-event-perl.c |    2 +-
- .../util/scripting-engines/trace-event-python.c    |    2 +-
- tools/perf/util/session.c                          |    2 +-
- tools/perf/util/sort.h                             |    2 +-
- tools/perf/util/string.c                           |    2 +-
- tools/perf/util/svghelper.h                        |    2 +-
- tools/perf/util/thread.c                           |    2 +-
- tools/perf/util/trace-event-info.c                 |    2 +-
- tools/perf/util/trace-event-parse.c                |    2 +-
- tools/perf/util/trace-event-read.c                 |    2 +-
- tools/perf/util/trace-event-scripting.c            |    2 +-
- tools/perf/util/types.h                            |   17 --
- tools/perf/util/usage.c                            |    2 +-
- tools/perf/util/util.c                             |  116 --------
- tools/perf/util/util.h                             |  285 --------------------
- tools/perf/util/values.c                           |    2 +-
- tools/perf/util/values.h                           |    2 +-
- 65 files changed, 783 insertions(+), 783 deletions(-)
- create mode 100644 tools/lib/lk/ctype.c
- create mode 100644 tools/lib/lk/debugfs.c
- create mode 100644 tools/lib/lk/debugfs.h
- create mode 100644 tools/lib/lk/types.h
- create mode 100644 tools/lib/lk/util.c
- create mode 100644 tools/lib/lk/util.h
- delete mode 100644 tools/perf/util/ctype.c
- delete mode 100644 tools/perf/util/debugfs.c
- delete mode 100644 tools/perf/util/debugfs.h
- delete mode 100644 tools/perf/util/types.h
- delete mode 100644 tools/perf/util/util.c
- delete mode 100644 tools/perf/util/util.h
+ tools/Makefile              |   58 ++++++++++++++++++++++
+ tools/Makefile.lib          |   28 +++++++++++
+ tools/lib/Makefile          |   38 ++++++++++++++
+ tools/lib/lk/bitmap.c       |   21 ++++++++
+ tools/lib/lk/cpumap.c       |  114 +++++++++++++++++++++++++++++++++++++++++++
+ tools/lib/lk/cpumap.h       |    7 +++
+ tools/lib/lk/hweight.c      |   31 ++++++++++++
+ tools/perf/Makefile         |   41 ++--------------
+ tools/perf/bench/bench.h    |    2 +
+ tools/perf/builtin-record.c |    2 +-
+ tools/perf/builtin-stat.c   |    2 +-
+ tools/perf/builtin-top.c    |    2 +-
+ tools/perf/util/bitmap.c    |   21 --------
+ tools/perf/util/cache.h     |    1 +
+ tools/perf/util/cpumap.c    |  114 -------------------------------------------
+ tools/perf/util/cpumap.h    |    7 ---
+ tools/perf/util/hweight.c   |   31 ------------
+ 17 files changed, 308 insertions(+), 212 deletions(-)
+ create mode 100644 tools/Makefile
+ create mode 100644 tools/Makefile.lib
+ create mode 100644 tools/lib/Makefile
+ create mode 100644 tools/lib/lk/bitmap.c
+ create mode 100644 tools/lib/lk/cpumap.c
+ create mode 100644 tools/lib/lk/cpumap.h
+ create mode 100644 tools/lib/lk/hweight.c
+ delete mode 100644 tools/perf/util/bitmap.c
+ delete mode 100644 tools/perf/util/cpumap.c
+ delete mode 100644 tools/perf/util/cpumap.h
+ delete mode 100644 tools/perf/util/hweight.c
 
+diff --git a/tools/Makefile b/tools/Makefile
+new file mode 100644
+index 0000000..e645761
+--- /dev/null
++++ b/tools/Makefile
+@@ -0,0 +1,58 @@
++# CFLAGS and LDFLAGS are for the users to override from the command line.
++#
++
++include Makefile.lib
++
++#
++# Include saner warnings here, which can catch bugs:
++#
++EXTRA_WARNINGS := -Wformat
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-security
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-y2k
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstack-protector
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-aliasing=3
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-default
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-enum
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wno-system-headers
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wundef
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wvolatile-register-var
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wwrite-strings
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wbad-function-cast
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-declarations
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-prototypes
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wnested-externs
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wold-style-definition
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-prototypes
++EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wdeclaration-after-statement
++
++export EXTRA_WARNINGS
++
++ifeq ("$(origin DEBUG)", "command line")
++  PERF_DEBUG = $(DEBUG)
++endif
++ifndef PERF_DEBUG
++  CFLAGS_OPTIMIZE = -O6
++  export CFLAGS_OPTIMIZE
++endif
++
++#
++# lib includes for submake
++BASIC_CFLAGS = -I$(CURDIR)/lib -I$(CURDIR)/perf -I$(CURDIR)/perf/util/include
++
++export BASIC_CFLAGS
++
++perf: lib .FORCE
++	$(QUIET_SUBDIR0)perf/ $(QUIET_SUBDIR1)
++
++lib: .FORCE
++	$(QUIET_SUBDIR0)lib/ $(QUIET_SUBDIR1)
++
++clean:
++	$(QUIET_SUBDIR0)lib/ $(QUIET_SUBDIR1) clean
++	$(QUIET_SUBDIR0)perf/ $(QUIET_SUBDIR1) clean
++
++.PHONY: clean .FORCE
+diff --git a/tools/Makefile.lib b/tools/Makefile.lib
+new file mode 100644
+index 0000000..aac6be9
+--- /dev/null
++++ b/tools/Makefile.lib
+@@ -0,0 +1,28 @@
++QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
++QUIET_SUBDIR1  =
++
++ifneq ($(findstring $(MAKEFLAGS),w),w)
++PRINT_DIR = --no-print-directory
++else # "make -w"
++NO_SUBDIR = :
++endif
++
++ifneq ($(findstring $(MAKEFLAGS),s),s)
++ifndef V
++	QUIET_CC       = @echo '   ' CC $@;
++	QUIET_AR       = @echo '   ' AR $@;
++	QUIET_LINK     = @echo '   ' LINK $@;
++	QUIET_BUILT_IN = @echo '   ' BUILTIN $@;
++	QUIET_GEN      = @echo '   ' GEN $@;
++	QUIET_SUBDIR0  = +@subdir=
++	QUIET_SUBDIR1  = ;$(NO_SUBDIR) echo '   ' SUBDIR $$subdir; \
++			 $(MAKE) $(PRINT_DIR) -C $$subdir
++	export V
++	export QUIET_GEN
++	export QUIET_BUILT_IN
++endif
++endif
++
++ifeq ("$(origin O)", "command line")
++	OUTPUT := $(O)/
++endif
 diff --git a/tools/lib/Makefile b/tools/lib/Makefile
-index 48f8e21..7ebcf8c 100644
---- a/tools/lib/Makefile
+new file mode 100644
+index 0000000..48f8e21
+--- /dev/null
 +++ b/tools/lib/Makefile
-@@ -5,10 +5,16 @@ LIB_H =
- LIB_OBJS =
- 
- LIB_H += lk/cpumap.h
-+LIB_H += lk/debugfs.h
-+LIB_H += lk/util.h
-+LIB_H += lk/types.h
- 
- LIB_OBJS += $(OUTPUT)lk/bitmap.o
- LIB_OBJS += $(OUTPUT)lk/cpumap.o
-+LIB_OBJS += $(OUTPUT)lk/ctype.o
-+LIB_OBJS += $(OUTPUT)lk/debugfs.o
- LIB_OBJS += $(OUTPUT)lk/hweight.o
-+LIB_OBJS += $(OUTPUT)lk/util.o
- 
- LIBFILE = lklib.a
- 
-diff --git a/tools/lib/lk/cpumap.c b/tools/lib/lk/cpumap.c
-index 71e376b..22626eb 100644
---- a/tools/lib/lk/cpumap.c
-+++ b/tools/lib/lk/cpumap.c
-@@ -1,4 +1,4 @@
--#include <util/util.h>
-+#include "util.h"
- #include <perf.h>
- #include "cpumap.h"
- #include <assert.h>
-diff --git a/tools/lib/lk/ctype.c b/tools/lib/lk/ctype.c
+@@ -0,0 +1,38 @@
++include ../Makefile.lib
++
++# Guard against environment variables
++LIB_H =
++LIB_OBJS =
++
++LIB_H += lk/cpumap.h
++
++LIB_OBJS += $(OUTPUT)lk/bitmap.o
++LIB_OBJS += $(OUTPUT)lk/cpumap.o
++LIB_OBJS += $(OUTPUT)lk/hweight.o
++
++LIBFILE = lklib.a
++
++RM = rm -f
++
++CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
++EXTLIBS = -lpthread -lrt -lelf -lm
++ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
++ALL_LDFLAGS = $(LDFLAGS)
++STRIP ?= strip
++
++$(LIBFILE): $(LIB_OBJS)
++	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIB_OBJS)
++
++$(LIB_OBJS): $(LIB_H)
++
++$(OUTPUT)%.o: %.c
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
++$(OUTPUT)%.s: %.c
++	$(QUIET_CC)$(CC) -S $(ALL_CFLAGS) $<
++$(OUTPUT)%.o: %.S
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
++
++clean:
++	$(RM) $(LIB_OBJS)
++
++.PHONY: clean
+diff --git a/tools/lib/lk/bitmap.c b/tools/lib/lk/bitmap.c
 new file mode 100644
-index 0000000..aada3ac
+index 0000000..5e230ac
 --- /dev/null
-+++ b/tools/lib/lk/ctype.c
-@@ -0,0 +1,39 @@
++++ b/tools/lib/lk/bitmap.c
+@@ -0,0 +1,21 @@
 +/*
-+ * Sane locale-independent, ASCII ctype.
++ * From lib/bitmap.c
++ * Helper functions for bitmap.h.
 + *
-+ * No surprises, and works with signed and unsigned chars.
++ * This source code is licensed under the GNU General Public License,
++ * Version 2.  See the file COPYING for more details.
 + */
-+#include "util.h"
++#include <linux/bitmap.h>
 +
-+enum {
-+	S = GIT_SPACE,
-+	A = GIT_ALPHA,
-+	D = GIT_DIGIT,
-+	G = GIT_GLOB_SPECIAL,	/* *, ?, [, \\ */
-+	R = GIT_REGEX_SPECIAL,	/* $, (, ), +, ., ^, {, | * */
-+	P = GIT_PRINT_EXTRA,	/* printable - alpha - digit - glob - regex */
++int __bitmap_weight(const unsigned long *bitmap, int bits)
++{
++	int k, w = 0, lim = bits/BITS_PER_LONG;
 +
-+	PS = GIT_SPACE | GIT_PRINT_EXTRA,
-+};
++	for (k = 0; k < lim; k++)
++		w += hweight_long(bitmap[k]);
 +
-+unsigned char sane_ctype[256] = {
-+/*	0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F			    */
++	if (bits % BITS_PER_LONG)
++		w += hweight_long(bitmap[k] & BITMAP_LAST_WORD_MASK(bits));
 +
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, S, S, 0, 0, S, 0, 0,		/*   0.. 15 */
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/*  16.. 31 */
-+	PS,P, P, P, R, P, P, P, R, R, G, R, P, P, R, P,		/*  32.. 47 */
-+	D, D, D, D, D, D, D, D, D, D, P, P, P, P, P, G,		/*  48.. 63 */
-+	P, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,		/*  64.. 79 */
-+	A, A, A, A, A, A, A, A, A, A, A, G, G, P, R, P,		/*  80.. 95 */
-+	P, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,		/*  96..111 */
-+	A, A, A, A, A, A, A, A, A, A, A, R, R, P, P, 0,		/* 112..127 */
-+	/* Nothing in the 128.. range */
-+};
-+
-+const char *graph_line =
-+	"_____________________________________________________________________"
-+	"_____________________________________________________________________";
-+const char *graph_dotted_line =
-+	"---------------------------------------------------------------------"
-+	"---------------------------------------------------------------------"
-+	"---------------------------------------------------------------------";
-diff --git a/tools/lib/lk/debugfs.c b/tools/lib/lk/debugfs.c
++	return w;
++}
+diff --git a/tools/lib/lk/cpumap.c b/tools/lib/lk/cpumap.c
 new file mode 100644
-index 0000000..bbe3a83
+index 0000000..71e376b
 --- /dev/null
-+++ b/tools/lib/lk/debugfs.c
-@@ -0,0 +1,239 @@
-+#include "util.h"
-+#include "debugfs.h"
++++ b/tools/lib/lk/cpumap.c
+@@ -0,0 +1,114 @@
++#include <util/util.h>
++#include <perf.h>
++#include "cpumap.h"
++#include <assert.h>
++#include <stdio.h>
 +
-+static int debugfs_premounted;
-+static char debugfs_mountpoint[MAX_PATH+1];
++int cpumap[MAX_NR_CPUS];
 +
-+static const char *debugfs_known_mountpoints[] = {
-+	"/sys/kernel/debug/",
-+	"/debug/",
-+	0,
-+};
-+
-+/* use this to force a umount */
-+void debugfs_force_cleanup(void)
++static int default_cpu_map(void)
 +{
-+	debugfs_find_mountpoint();
-+	debugfs_premounted = 0;
-+	debugfs_umount();
++	int nr_cpus, i;
++
++	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
++	assert(nr_cpus <= MAX_NR_CPUS);
++	assert((int)nr_cpus >= 0);
++
++	for (i = 0; i < nr_cpus; ++i)
++		cpumap[i] = i;
++
++	return nr_cpus;
 +}
 +
-+/* construct a full path to a debugfs element */
-+int debugfs_make_path(const char *element, char *buffer, int size)
++static int read_all_cpu_map(void)
 +{
-+	int len;
++	FILE *onlnf;
++	int nr_cpus = 0;
++	int n, cpu, prev;
++	char sep;
 +
-+	if (strlen(debugfs_mountpoint) == 0) {
-+		buffer[0] = '\0';
-+		return -1;
-+	}
++	onlnf = fopen("/sys/devices/system/cpu/online", "r");
++	if (!onlnf)
++		return default_cpu_map();
 +
-+	len = strlen(debugfs_mountpoint) + strlen(element) + 1;
-+	if (len >= size)
-+		return len+1;
-+
-+	snprintf(buffer, size-1, "%s/%s", debugfs_mountpoint, element);
-+	return 0;
-+}
-+
-+static int debugfs_found;
-+
-+/* find the path to the mounted debugfs */
-+const char *debugfs_find_mountpoint(void)
-+{
-+	const char **ptr;
-+	char type[100];
-+	FILE *fp;
-+
-+	if (debugfs_found)
-+		return (const char *) debugfs_mountpoint;
-+
-+	ptr = debugfs_known_mountpoints;
-+	while (*ptr) {
-+		if (debugfs_valid_mountpoint(*ptr) == 0) {
-+			debugfs_found = 1;
-+			strcpy(debugfs_mountpoint, *ptr);
-+			return debugfs_mountpoint;
++	sep = 0;
++	prev = -1;
++	for (;;) {
++		n = fscanf(onlnf, "%u%c", &cpu, &sep);
++		if (n <= 0)
++			break;
++		if (prev >= 0) {
++			assert(nr_cpus + cpu - prev - 1 < MAX_NR_CPUS);
++			while (++prev < cpu)
++				cpumap[nr_cpus++] = prev;
 +		}
-+		ptr++;
-+	}
-+
-+	/* give up and parse /proc/mounts */
-+	fp = fopen("/proc/mounts", "r");
-+	if (fp == NULL)
-+		die("Can't open /proc/mounts for read");
-+
-+	while (fscanf(fp, "%*s %"
-+		      STR(MAX_PATH)
-+		      "s %99s %*s %*d %*d\n",
-+		      debugfs_mountpoint, type) == 2) {
-+		if (strcmp(type, "debugfs") == 0)
++		assert (nr_cpus < MAX_NR_CPUS);
++		cpumap[nr_cpus++] = cpu;
++		if (n == 2 && sep == '-')
++			prev = cpu;
++		else
++			prev = -1;
++		if (n == 1 || sep == '\n')
 +			break;
 +	}
-+	fclose(fp);
++	fclose(onlnf);
++	if (nr_cpus > 0)
++		return nr_cpus;
 +
-+	if (strcmp(type, "debugfs") != 0)
-+		return NULL;
-+
-+	debugfs_found = 1;
-+
-+	return debugfs_mountpoint;
++	return default_cpu_map();
 +}
 +
-+/* verify that a mountpoint is actually a debugfs instance */
-+
-+int debugfs_valid_mountpoint(const char *debugfs)
++int read_cpu_map(const char *cpu_list)
 +{
-+	struct statfs st_fs;
++	unsigned long start_cpu, end_cpu = 0;
++	char *p = NULL;
++	int i, nr_cpus = 0;
 +
-+	if (statfs(debugfs, &st_fs) < 0)
-+		return -ENOENT;
-+	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
-+		return -ENOENT;
++	if (!cpu_list)
++		return read_all_cpu_map();
 +
-+	return 0;
-+}
++	if (!isdigit(*cpu_list))
++		goto invalid;
 +
++	while (isdigit(*cpu_list)) {
++		p = NULL;
++		start_cpu = strtoul(cpu_list, &p, 0);
++		if (start_cpu >= INT_MAX
++		    || (*p != '\0' && *p != ',' && *p != '-'))
++			goto invalid;
 +
-+int debugfs_valid_entry(const char *path)
-+{
-+	struct stat st;
++		if (*p == '-') {
++			cpu_list = ++p;
++			p = NULL;
++			end_cpu = strtoul(cpu_list, &p, 0);
 +
-+	if (stat(path, &st))
-+		return -errno;
++			if (end_cpu >= INT_MAX || (*p != '\0' && *p != ','))
++				goto invalid;
 +
-+	return 0;
-+}
-+
-+/* mount the debugfs somewhere if it's not mounted */
-+
-+char *debugfs_mount(const char *mountpoint)
-+{
-+	/* see if it's already mounted */
-+	if (debugfs_find_mountpoint()) {
-+		debugfs_premounted = 1;
-+		return debugfs_mountpoint;
-+	}
-+
-+	/* if not mounted and no argument */
-+	if (mountpoint == NULL) {
-+		/* see if environment variable set */
-+		mountpoint = getenv(PERF_DEBUGFS_ENVIRONMENT);
-+		/* if no environment variable, use default */
-+		if (mountpoint == NULL)
-+			mountpoint = "/sys/kernel/debug";
-+	}
-+
-+	if (mount(NULL, mountpoint, "debugfs", 0, NULL) < 0)
-+		return NULL;
-+
-+	/* save the mountpoint */
-+	strncpy(debugfs_mountpoint, mountpoint, sizeof(debugfs_mountpoint));
-+	debugfs_found = 1;
-+
-+	return debugfs_mountpoint;
-+}
-+
-+/* umount the debugfs */
-+
-+int debugfs_umount(void)
-+{
-+	char umountcmd[128];
-+	int ret;
-+
-+	/* if it was already mounted, leave it */
-+	if (debugfs_premounted)
-+		return 0;
-+
-+	/* make sure it's a valid mount point */
-+	ret = debugfs_valid_mountpoint(debugfs_mountpoint);
-+	if (ret)
-+		return ret;
-+
-+	snprintf(umountcmd, sizeof(umountcmd),
-+		 "/bin/umount %s", debugfs_mountpoint);
-+	return system(umountcmd);
-+}
-+
-+int debugfs_write(const char *entry, const char *value)
-+{
-+	char path[MAX_PATH+1];
-+	int ret, count;
-+	int fd;
-+
-+	/* construct the path */
-+	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
-+
-+	/* verify that it exists */
-+	ret = debugfs_valid_entry(path);
-+	if (ret)
-+		return ret;
-+
-+	/* get how many chars we're going to write */
-+	count = strlen(value);
-+
-+	/* open the debugfs entry */
-+	fd = open(path, O_RDWR);
-+	if (fd < 0)
-+		return -errno;
-+
-+	while (count > 0) {
-+		/* write it */
-+		ret = write(fd, value, count);
-+		if (ret <= 0) {
-+			if (ret == EAGAIN)
-+				continue;
-+			close(fd);
-+			return -errno;
++			if (end_cpu < start_cpu)
++				goto invalid;
++		} else {
++			end_cpu = start_cpu;
 +		}
-+		count -= ret;
-+	}
 +
-+	/* close it */
-+	close(fd);
++		for (; start_cpu <= end_cpu; start_cpu++) {
++			/* check for duplicates */
++			for (i = 0; i < nr_cpus; i++)
++				if (cpumap[i] == (int)start_cpu)
++					goto invalid;
 +
-+	/* return success */
-+	return 0;
-+}
-+
-+/*
-+ * read a debugfs entry
-+ * returns the number of chars read or a negative errno
-+ */
-+int debugfs_read(const char *entry, char *buffer, size_t size)
-+{
-+	char path[MAX_PATH+1];
-+	int ret;
-+	int fd;
-+
-+	/* construct the path */
-+	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
-+
-+	/* verify that it exists */
-+	ret = debugfs_valid_entry(path);
-+	if (ret)
-+		return ret;
-+
-+	/* open the debugfs entry */
-+	fd = open(path, O_RDONLY);
-+	if (fd < 0)
-+		return -errno;
-+
-+	do {
-+		/* read it */
-+		ret = read(fd, buffer, size);
-+		if (ret == 0) {
-+			close(fd);
-+			return EOF;
++			assert(nr_cpus < MAX_NR_CPUS);
++			cpumap[nr_cpus++] = (int)start_cpu;
 +		}
-+	} while (ret < 0 && errno == EAGAIN);
++		if (*p)
++			++p;
 +
-+	/* close it */
-+	close(fd);
-+
-+	/* make *sure* there's a null character at the end */
-+	buffer[ret] = '\0';
-+
-+	/* return the number of chars read */
-+	return ret;
-+}
-diff --git a/tools/lib/lk/debugfs.h b/tools/lib/lk/debugfs.h
-new file mode 100644
-index 0000000..8c02e72
---- /dev/null
-+++ b/tools/lib/lk/debugfs.h
-@@ -0,0 +1,27 @@
-+#ifndef __DEBUGFS_H__
-+#define __DEBUGFS_H__
-+
-+#include <sys/mount.h>
-+
-+#ifndef MAX_PATH
-+# define MAX_PATH 256
-+#endif
-+
-+#ifndef STR
-+# define _STR(x) #x
-+# define STR(x) _STR(x)
-+#endif
-+
-+#define PERF_DEBUGFS_ENVIRONMENT "PERF_DEBUGFS_DIR"
-+
-+extern const char *debugfs_find_mountpoint(void);
-+extern int debugfs_valid_mountpoint(const char *debugfs);
-+extern int debugfs_valid_entry(const char *path);
-+extern char *debugfs_mount(const char *mountpoint);
-+extern int debugfs_umount(void);
-+extern int debugfs_write(const char *entry, const char *value);
-+extern int debugfs_read(const char *entry, char *buffer, size_t size);
-+extern void debugfs_force_cleanup(void);
-+extern int debugfs_make_path(const char *element, char *buffer, int size);
-+
-+#endif /* __DEBUGFS_H__ */
-diff --git a/tools/lib/lk/types.h b/tools/lib/lk/types.h
-new file mode 100644
-index 0000000..eda6c0c
---- /dev/null
-+++ b/tools/lib/lk/types.h
-@@ -0,0 +1,17 @@
-+#ifndef __LK_TYPES_H
-+#define __LK_TYPES_H
-+
-+/*
-+ * We define u64 as unsigned long long for every architecture
-+ * so that we can print it with %Lx without getting warnings.
-+ */
-+typedef unsigned long long u64;
-+typedef signed long long   s64;
-+typedef unsigned int	   u32;
-+typedef signed int	   s32;
-+typedef unsigned short	   u16;
-+typedef signed short	   s16;
-+typedef unsigned char	   u8;
-+typedef signed char	   s8;
-+
-+#endif /* __LK_TYPES_H */
-diff --git a/tools/lib/lk/util.c b/tools/lib/lk/util.c
-new file mode 100644
-index 0000000..2142656
---- /dev/null
-+++ b/tools/lib/lk/util.c
-@@ -0,0 +1,116 @@
-+#include "util.h"
-+#include <sys/mman.h>
-+
-+int mkdir_p(char *path, mode_t mode)
-+{
-+	struct stat st;
-+	int err;
-+	char *d = path;
-+
-+	if (*d != '/')
-+		return -1;
-+
-+	if (stat(path, &st) == 0)
-+		return 0;
-+
-+	while (*++d == '/');
-+
-+	while ((d = strchr(d, '/'))) {
-+		*d = '\0';
-+		err = stat(path, &st) && mkdir(path, mode);
-+		*d++ = '/';
-+		if (err)
-+			return -1;
-+		while (*d == '/')
-+			++d;
++		cpu_list = p;
 +	}
-+	return (stat(path, &st) && mkdir(path, mode)) ? -1 : 0;
++	if (nr_cpus > 0)
++		return nr_cpus;
++
++	return default_cpu_map();
++invalid:
++	return -1;
 +}
-+
-+static int slow_copyfile(const char *from, const char *to)
-+{
-+	int err = 0;
-+	char *line = NULL;
-+	size_t n;
-+	FILE *from_fp = fopen(from, "r"), *to_fp;
-+
-+	if (from_fp == NULL)
-+		goto out;
-+
-+	to_fp = fopen(to, "w");
-+	if (to_fp == NULL)
-+		goto out_fclose_from;
-+
-+	while (getline(&line, &n, from_fp) > 0)
-+		if (fputs(line, to_fp) == EOF)
-+			goto out_fclose_to;
-+	err = 0;
-+out_fclose_to:
-+	fclose(to_fp);
-+	free(line);
-+out_fclose_from:
-+	fclose(from_fp);
-+out:
-+	return err;
-+}
-+
-+int copyfile(const char *from, const char *to)
-+{
-+	int fromfd, tofd;
-+	struct stat st;
-+	void *addr;
-+	int err = -1;
-+
-+	if (stat(from, &st))
-+		goto out;
-+
-+	if (st.st_size == 0) /* /proc? do it slowly... */
-+		return slow_copyfile(from, to);
-+
-+	fromfd = open(from, O_RDONLY);
-+	if (fromfd < 0)
-+		goto out;
-+
-+	tofd = creat(to, 0755);
-+	if (tofd < 0)
-+		goto out_close_from;
-+
-+	addr = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fromfd, 0);
-+	if (addr == MAP_FAILED)
-+		goto out_close_to;
-+
-+	if (write(tofd, addr, st.st_size) == st.st_size)
-+		err = 0;
-+
-+	munmap(addr, st.st_size);
-+out_close_to:
-+	close(tofd);
-+	if (err)
-+		unlink(to);
-+out_close_from:
-+	close(fromfd);
-+out:
-+	return err;
-+}
-+
-+unsigned long convert_unit(unsigned long value, char *unit)
-+{
-+	*unit = ' ';
-+
-+	if (value > 1000) {
-+		value /= 1000;
-+		*unit = 'K';
-+	}
-+
-+	if (value > 1000) {
-+		value /= 1000;
-+		*unit = 'M';
-+	}
-+
-+	if (value > 1000) {
-+		value /= 1000;
-+		*unit = 'G';
-+	}
-+
-+	return value;
-+}
-diff --git a/tools/lib/lk/util.h b/tools/lib/lk/util.h
+diff --git a/tools/lib/lk/cpumap.h b/tools/lib/lk/cpumap.h
 new file mode 100644
-index 0000000..f380fed
+index 0000000..1d7bd56
 --- /dev/null
-+++ b/tools/lib/lk/util.h
-@@ -0,0 +1,285 @@
-+#ifndef GIT_COMPAT_UTIL_H
-+#define GIT_COMPAT_UTIL_H
++++ b/tools/lib/lk/cpumap.h
+@@ -0,0 +1,7 @@
++#ifndef __LK_CPUMAP_H
++#define __LK_CPUMAP_H
 +
-+#define _FILE_OFFSET_BITS 64
++extern int read_cpu_map(const char *cpu_list);
++extern int cpumap[];
 +
-+#ifndef FLEX_ARRAY
-+/*
-+ * See if our compiler is known to support flexible array members.
++#endif /* __LK_CPUMAP_H */
+diff --git a/tools/lib/lk/hweight.c b/tools/lib/lk/hweight.c
+new file mode 100644
+index 0000000..5c1d0d0
+--- /dev/null
++++ b/tools/lib/lk/hweight.c
+@@ -0,0 +1,31 @@
++#include <linux/bitops.h>
++
++/**
++ * hweightN - returns the hamming weight of a N-bit word
++ * @x: the word to weigh
++ *
++ * The Hamming Weight of a number is the total number of bits set in it.
 + */
-+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-+# define FLEX_ARRAY /* empty */
-+#elif defined(__GNUC__)
-+# if (__GNUC__ >= 3)
-+#  define FLEX_ARRAY /* empty */
-+# else
-+#  define FLEX_ARRAY 0 /* older GNU extension */
-+# endif
-+#endif
 +
-+/*
-+ * Otherwise, default to safer but a bit wasteful traditional style
-+ */
-+#ifndef FLEX_ARRAY
-+# define FLEX_ARRAY 1
-+#endif
-+#endif
-+
-+#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
-+
-+#ifdef __GNUC__
-+#define TYPEOF(x) (__typeof__(x))
-+#else
-+#define TYPEOF(x)
-+#endif
-+
-+#define MSB(x, bits) ((x) & TYPEOF(x)(~0ULL << (sizeof(x) * 8 - (bits))))
-+#define HAS_MULTI_BITS(i)  ((i) & ((i) - 1))  /* checks if an integer has more than 1 bit set */
-+
-+/* Approximation of the length of the decimal representation of this type. */
-+#define decimal_length(x)	((int)(sizeof(x) * 2.56 + 0.5) + 1)
-+
-+#define _ALL_SOURCE 1
-+#define _GNU_SOURCE 1
-+#define _BSD_SOURCE 1
-+#define HAS_BOOL
-+
-+#include <unistd.h>
-+#include <stdio.h>
-+#include <sys/stat.h>
-+#include <sys/statfs.h>
-+#include <fcntl.h>
-+#include <stdbool.h>
-+#include <stddef.h>
-+#include <stdlib.h>
-+#include <stdarg.h>
-+#include <string.h>
-+#include <errno.h>
-+#include <limits.h>
-+#include <sys/param.h>
-+#include <sys/types.h>
-+#include <dirent.h>
-+#include <sys/time.h>
-+#include <time.h>
-+#include <signal.h>
-+#include <fnmatch.h>
-+#include <assert.h>
-+#include <regex.h>
-+#include <utime.h>
-+#include <sys/wait.h>
-+#include <sys/poll.h>
-+#include <sys/socket.h>
-+#include <sys/ioctl.h>
-+#ifndef NO_SYS_SELECT_H
-+#include <sys/select.h>
-+#endif
-+#include <netinet/in.h>
-+#include <netinet/tcp.h>
-+#include <arpa/inet.h>
-+#include <netdb.h>
-+#include <pwd.h>
-+#include <inttypes.h>
-+#include "../../../include/linux/magic.h"
-+#include "types.h"
-+#include <sys/ttydefaults.h>
-+
-+#ifndef NO_ICONV
-+#include <iconv.h>
-+#endif
-+
-+extern const char *graph_line;
-+extern const char *graph_dotted_line;
-+extern char buildid_dir[];
-+
-+/* On most systems <limits.h> would have given us this, but
-+ * not on some systems (e.g. GNU/Hurd).
-+ */
-+#ifndef PATH_MAX
-+#define PATH_MAX 4096
-+#endif
-+
-+#ifndef PRIuMAX
-+#define PRIuMAX "llu"
-+#endif
-+
-+#ifndef PRIu32
-+#define PRIu32 "u"
-+#endif
-+
-+#ifndef PRIx32
-+#define PRIx32 "x"
-+#endif
-+
-+#ifndef PATH_SEP
-+#define PATH_SEP ':'
-+#endif
-+
-+#ifndef STRIP_EXTENSION
-+#define STRIP_EXTENSION ""
-+#endif
-+
-+#ifndef has_dos_drive_prefix
-+#define has_dos_drive_prefix(path) 0
-+#endif
-+
-+#ifndef is_dir_sep
-+#define is_dir_sep(c) ((c) == '/')
-+#endif
-+
-+#ifdef __GNUC__
-+#define NORETURN __attribute__((__noreturn__))
-+#else
-+#define NORETURN
-+#ifndef __attribute__
-+#define __attribute__(x)
-+#endif
-+#endif
-+
-+/* General helper functions */
-+extern void usage(const char *err) NORETURN;
-+extern void die(const char *err, ...) NORETURN __attribute__((format (printf, 1, 2)));
-+extern int error(const char *err, ...) __attribute__((format (printf, 1, 2)));
-+extern void warning(const char *err, ...) __attribute__((format (printf, 1, 2)));
-+
-+#include "../../../include/linux/stringify.h"
-+
-+#define DIE_IF(cnd)	\
-+	do { if (cnd)	\
-+		die(" at (" __FILE__ ":" __stringify(__LINE__) "): "	\
-+		    __stringify(cnd) "\n");				\
-+	} while (0)
-+
-+
-+extern void set_die_routine(void (*routine)(const char *err, va_list params) NORETURN);
-+
-+extern int prefixcmp(const char *str, const char *prefix);
-+extern void set_buildid_dir(void);
-+extern void disable_buildid_cache(void);
-+
-+static inline const char *skip_prefix(const char *str, const char *prefix)
++unsigned int hweight32(unsigned int w)
 +{
-+	size_t len = strlen(prefix);
-+	return strncmp(str, prefix, len) ? NULL : str + len;
++	unsigned int res = w - ((w >> 1) & 0x55555555);
++	res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
++	res = (res + (res >> 4)) & 0x0F0F0F0F;
++	res = res + (res >> 8);
++	return (res + (res >> 16)) & 0x000000FF;
 +}
 +
-+#ifdef __GLIBC_PREREQ
-+#if __GLIBC_PREREQ(2, 1)
-+#define HAVE_STRCHRNUL
-+#endif
-+#endif
-+
-+#ifndef HAVE_STRCHRNUL
-+#define strchrnul gitstrchrnul
-+static inline char *gitstrchrnul(const char *s, int c)
++unsigned long hweight64(__u64 w)
 +{
-+	while (*s && *s != c)
-+		s++;
-+	return (char *)s;
++#if BITS_PER_LONG == 32
++	return hweight32((unsigned int)(w >> 32)) + hweight32((unsigned int)w);
++#elif BITS_PER_LONG == 64
++	__u64 res = w - ((w >> 1) & 0x5555555555555555ul);
++	res = (res & 0x3333333333333333ul) + ((res >> 2) & 0x3333333333333333ul);
++	res = (res + (res >> 4)) & 0x0F0F0F0F0F0F0F0Ful;
++	res = res + (res >> 8);
++	res = res + (res >> 16);
++	return (res + (res >> 32)) & 0x00000000000000FFul;
++#endif
 +}
-+#endif
-+
-+/*
-+ * Wrappers:
-+ */
-+extern char *xstrdup(const char *str);
-+extern void *xrealloc(void *ptr, size_t size) __attribute__((weak));
-+
-+
-+static inline void *zalloc(size_t size)
-+{
-+	return calloc(1, size);
-+}
-+
-+static inline int has_extension(const char *filename, const char *ext)
-+{
-+	size_t len = strlen(filename);
-+	size_t extlen = strlen(ext);
-+
-+	return len > extlen && !memcmp(filename + len - extlen, ext, extlen);
-+}
-+
-+/* Sane ctype - no locale, and works with signed chars */
-+#undef isascii
-+#undef isspace
-+#undef isdigit
-+#undef isxdigit
-+#undef isalpha
-+#undef isprint
-+#undef isalnum
-+#undef tolower
-+#undef toupper
-+
-+extern unsigned char sane_ctype[256];
-+#define GIT_SPACE		0x01
-+#define GIT_DIGIT		0x02
-+#define GIT_ALPHA		0x04
-+#define GIT_GLOB_SPECIAL	0x08
-+#define GIT_REGEX_SPECIAL	0x10
-+#define GIT_PRINT_EXTRA		0x20
-+#define GIT_PRINT		0x3E
-+#define sane_istest(x,mask) ((sane_ctype[(unsigned char)(x)] & (mask)) != 0)
-+#define isascii(x) (((x) & ~0x7f) == 0)
-+#define isspace(x) sane_istest(x,GIT_SPACE)
-+#define isdigit(x) sane_istest(x,GIT_DIGIT)
-+#define isxdigit(x)	\
-+	(sane_istest(toupper(x), GIT_ALPHA | GIT_DIGIT) && toupper(x) < 'G')
-+#define isalpha(x) sane_istest(x,GIT_ALPHA)
-+#define isalnum(x) sane_istest(x,GIT_ALPHA | GIT_DIGIT)
-+#define isprint(x) sane_istest(x,GIT_PRINT)
-+#define tolower(x) sane_case((unsigned char)(x), 0x20)
-+#define toupper(x) sane_case((unsigned char)(x), 0)
-+
-+static inline int sane_case(int x, int high)
-+{
-+	if (sane_istest(x, GIT_ALPHA))
-+		x = (x & ~0x20) | high;
-+	return x;
-+}
-+
-+#ifndef DIR_HAS_BSD_GROUP_SEMANTICS
-+# define FORCE_DIR_SET_GID S_ISGID
-+#else
-+# define FORCE_DIR_SET_GID 0
-+#endif
-+
-+#ifdef NO_NSEC
-+#undef USE_NSEC
-+#define ST_CTIME_NSEC(st) 0
-+#define ST_MTIME_NSEC(st) 0
-+#else
-+#ifdef USE_ST_TIMESPEC
-+#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctimespec.tv_nsec))
-+#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtimespec.tv_nsec))
-+#else
-+#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctim.tv_nsec))
-+#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtim.tv_nsec))
-+#endif
-+#endif
-+
-+int mkdir_p(char *path, mode_t mode);
-+int copyfile(const char *from, const char *to);
-+
-+s64 perf_atoll(const char *str);
-+char **argv_split(const char *str, int *argcp);
-+void argv_free(char **argv);
-+bool strglobmatch(const char *str, const char *pat);
-+bool strlazymatch(const char *str, const char *pat);
-+unsigned long convert_unit(unsigned long value, char *unit);
-+
-+#ifndef ESC
-+#define ESC 27
-+#endif
-+
-+static inline bool is_exit_key(int key)
-+{
-+	char up;
-+	if (key == CTRL('c') || key == ESC)
-+		return true;
-+	up = toupper(key);
-+	return up == 'Q';
-+}
-+
-+#define _STR(x) #x
-+#define STR(x) _STR(x)
-+
-+#endif
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index df815d6..e224788 100644
+index 6aa2fe3..df815d6 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -356,16 +356,13 @@ LIB_H += util/cache.h
- LIB_H += util/callchain.h
- LIB_H += util/build-id.h
- LIB_H += util/debug.h
--LIB_H += util/debugfs.h
- LIB_H += util/event.h
- LIB_H += util/exec_cmd.h
--LIB_H += util/types.h
- LIB_H += util/levenshtein.h
- LIB_H += util/map.h
- LIB_H += util/parse-options.h
- LIB_H += util/parse-events.h
- LIB_H += util/quote.h
--LIB_H += util/util.h
- LIB_H += util/header.h
- LIB_H += util/help.h
- LIB_H += util/session.h
-@@ -389,8 +386,6 @@ LIB_OBJS += $(OUTPUT)util/abspath.o
+@@ -1,6 +1,4 @@
+-ifeq ("$(origin O)", "command line")
+-	OUTPUT := $(O)/
+-endif
++include ../Makefile.lib
+ 
+ # The default target of this Makefile is...
+ all::
+@@ -191,33 +189,6 @@ $(shell sh -c 'mkdir -p $(OUTPUT)arch/$(ARCH)/util/' 2> /dev/null)
+ 
+ # CFLAGS and LDFLAGS are for the users to override from the command line.
+ 
+-#
+-# Include saner warnings here, which can catch bugs:
+-#
+-
+-EXTRA_WARNINGS := -Wformat
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-security
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wformat-y2k
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstack-protector
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-aliasing=3
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-default
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-enum
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wno-system-headers
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wundef
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wvolatile-register-var
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wwrite-strings
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wbad-function-cast
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-declarations
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-prototypes
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wnested-externs
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wold-style-definition
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-prototypes
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wdeclaration-after-statement
+-
+ ifeq ("$(origin DEBUG)", "command line")
+   PERF_DEBUG = $(DEBUG)
+ endif
+@@ -297,7 +268,7 @@ endif
+ # Those must not be GNU-specific; they are shared with perl/ which may
+ # be built by a different compiler. (Note that this is an artifact now
+ # but it still might be nice to keep that distinction.)
+-BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include
++BASIC_CFLAGS += -Iutil/include -Iarch/$(ARCH)/include
+ BASIC_LDFLAGS =
+ 
+ # Guard against environment variables
+@@ -413,7 +384,6 @@ LIB_H += util/trace-event.h
+ LIB_H += util/probe-finder.h
+ LIB_H += util/probe-event.h
+ LIB_H += util/pstack.h
+-LIB_H += util/cpumap.h
+ 
+ LIB_OBJS += $(OUTPUT)util/abspath.o
  LIB_OBJS += $(OUTPUT)util/alias.o
- LIB_OBJS += $(OUTPUT)util/build-id.o
- LIB_OBJS += $(OUTPUT)util/config.o
--LIB_OBJS += $(OUTPUT)util/ctype.o
--LIB_OBJS += $(OUTPUT)util/debugfs.o
- LIB_OBJS += $(OUTPUT)util/environment.o
- LIB_OBJS += $(OUTPUT)util/event.o
- LIB_OBJS += $(OUTPUT)util/exec_cmd.o
-@@ -427,7 +422,6 @@ LIB_OBJS += $(OUTPUT)util/svghelper.o
- LIB_OBJS += $(OUTPUT)util/sort.o
+@@ -430,8 +400,6 @@ LIB_OBJS += $(OUTPUT)util/parse-options.o
+ LIB_OBJS += $(OUTPUT)util/parse-events.o
+ LIB_OBJS += $(OUTPUT)util/path.o
+ LIB_OBJS += $(OUTPUT)util/rbtree.o
+-LIB_OBJS += $(OUTPUT)util/bitmap.o
+-LIB_OBJS += $(OUTPUT)util/hweight.o
+ LIB_OBJS += $(OUTPUT)util/run-command.o
+ LIB_OBJS += $(OUTPUT)util/quote.o
+ LIB_OBJS += $(OUTPUT)util/strbuf.o
+@@ -460,7 +428,6 @@ LIB_OBJS += $(OUTPUT)util/sort.o
  LIB_OBJS += $(OUTPUT)util/hist.o
  LIB_OBJS += $(OUTPUT)util/probe-event.o
--LIB_OBJS += $(OUTPUT)util/util.o
+ LIB_OBJS += $(OUTPUT)util/util.o
+-LIB_OBJS += $(OUTPUT)util/cpumap.o
  
  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
  
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 38dae74..1b2f508 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -8,7 +8,7 @@
- #include <ctype.h>
+@@ -490,7 +457,9 @@ BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-test.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
  
- #include "../perf.h"
--#include "../util/util.h"
-+#include <lk/util.h>
- #include "../util/parse-options.h"
- #include "../util/header.h"
- #include "bench.h"
-diff --git a/tools/perf/bench/sched-messaging.c b/tools/perf/bench/sched-messaging.c
-index d1d1b30..37f12ad 100644
---- a/tools/perf/bench/sched-messaging.c
-+++ b/tools/perf/bench/sched-messaging.c
-@@ -10,7 +10,7 @@
-  */
+-PERFLIBS = $(LIB_FILE)
++LKLIB = ../lib/lklib.a
++
++PERFLIBS = $(LIB_FILE) $(LKLIB)
  
- #include "../perf.h"
--#include "../util/util.h"
-+#include <lk/util.h>
- #include "../util/parse-options.h"
- #include "../builtin.h"
- #include "bench.h"
-diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
-index d9ab3ce..9b05c92 100644
---- a/tools/perf/bench/sched-pipe.c
-+++ b/tools/perf/bench/sched-pipe.c
-@@ -11,7 +11,7 @@
-  */
+ #
+ # Platform specific tweaks
+diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
+index f7781c6..0c7ee07 100644
+--- a/tools/perf/bench/bench.h
++++ b/tools/perf/bench/bench.h
+@@ -1,6 +1,8 @@
+ #ifndef BENCH_H
+ #define BENCH_H
  
- #include "../perf.h"
--#include "../util/util.h"
-+#include <lk/util.h>
- #include "../util/parse-options.h"
- #include "../builtin.h"
- #include "bench.h"
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index fd20670..03f80e9 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -7,7 +7,7 @@
-  */
- #include "builtin.h"
- 
--#include "util/util.h"
-+#include <lk/util.h>
- 
- #include "util/color.h"
- #include <linux/list.h>
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index fcb9626..4ae8ea2 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -17,7 +17,7 @@
-  */
- 
- #include "perf.h"
--#include "util/util.h"
-+#include <lk/util.h>
- #include "util/parse-options.h"
- #include "builtin.h"
- #include "bench/bench.h"
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 39e6627..2f5a711 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -12,7 +12,7 @@
- #include "util/session.h"
- #include "util/sort.h"
- #include "util/symbol.h"
--#include "util/util.h"
-+#include <lk/util.h>
- 
- #include <stdlib.h>
- 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index 31f60a2..68a6ec0 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -1,7 +1,7 @@
- #include "builtin.h"
- #include "perf.h"
- 
--#include "util/util.h"
-+#include <lk/util.h>
- #include "util/cache.h"
- #include "util/symbol.h"
- #include "util/thread.h"
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 34d1e85..3e5d0fc 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1,7 +1,7 @@
- #include "builtin.h"
- #include "perf.h"
- 
--#include "util/util.h"
-+#include <lk/util.h>
- #include "util/cache.h"
- #include "util/symbol.h"
- #include "util/thread.h"
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 821c158..bafb8c5 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -1,7 +1,7 @@
- #include "builtin.h"
- #include "perf.h"
- 
--#include "util/util.h"
-+#include <lk/util.h>
- #include "util/cache.h"
- #include "util/symbol.h"
- #include "util/thread.h"
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 5455186..be24b54 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -34,11 +34,11 @@
- #undef _GNU_SOURCE
- #include "perf.h"
- #include "builtin.h"
--#include "util/util.h"
-+#include <lk/util.h>
- #include "util/strlist.h"
- #include "util/symbol.h"
- #include "util/debug.h"
--#include "util/debugfs.h"
-+#include <lk/debugfs.h>
- #include "util/parse-options.h"
- #include "util/probe-finder.h"
- #include "util/probe-event.h"
++#include <linux/compiler.h>
++
+ extern int bench_sched_messaging(int argc, const char **argv, const char *prefix);
+ extern int bench_sched_pipe(int argc, const char **argv, const char *prefix);
+ extern int bench_mem_memcpy(int argc, const char **argv, const char *prefix __used);
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 499dc75..b92e009 100644
+index 86b1c3b..499dc75 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -12,7 +12,7 @@
- #include "perf.h"
- 
- #include "util/build-id.h"
--#include "util/util.h"
-+#include <lk/util.h>
- #include "util/parse-options.h"
- #include "util/parse-events.h"
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 371a3c9..4be3c67 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -7,7 +7,7 @@
-  */
- #include "builtin.h"
- 
--#include "util/util.h"
-+#include <lk/util.h>
- 
- #include "util/color.h"
- #include <linux/list.h>
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 55f3b5d..c47cf08 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1,7 +1,7 @@
- #include "builtin.h"
- #include "perf.h"
- 
--#include "util/util.h"
-+#include <lk/util.h>
- #include "util/cache.h"
- #include "util/symbol.h"
- #include "util/thread.h"
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 4430d51..1f60239 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -39,7 +39,7 @@
- 
- #include "perf.h"
- #include "builtin.h"
--#include "util/util.h"
-+#include <lk/util.h>
- #include "util/parse-options.h"
- #include "util/parse-events.h"
- #include "util/event.h"
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 5a52ed9..92f7230 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -14,7 +14,7 @@
- 
- #include "builtin.h"
- 
--#include "util/util.h"
-+#include <lk/util.h>
- 
- #include "util/color.h"
- #include <linux/list.h>
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index def254a..9813351 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -24,7 +24,7 @@
+@@ -21,7 +21,7 @@
+ #include "util/debug.h"
  #include "util/session.h"
  #include "util/symbol.h"
+-#include "util/cpumap.h"
++#include <lk/cpumap.h>
+ 
+ #include <unistd.h>
+ #include <sched.h>
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index a6b4d44..4430d51 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -45,7 +45,7 @@
+ #include "util/event.h"
+ #include "util/debug.h"
+ #include "util/header.h"
+-#include "util/cpumap.h"
++#include <lk/cpumap.h>
  #include "util/thread.h"
--#include "util/util.h"
-+#include <lk/util.h>
+ 
+ #include <sys/prctl.h>
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 1e8e92e..def254a 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -28,7 +28,7 @@
  #include <linux/rbtree.h>
  #include "util/parse-options.h"
  #include "util/parse-events.h"
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index dddf3f0..3f9308a 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1,6 +1,6 @@
- #include "builtin.h"
+-#include "util/cpumap.h"
++#include <lk/cpumap.h>
  
--#include "util/util.h"
-+#include <lk/util.h>
- #include "util/cache.h"
- #include "util/symbol.h"
- #include "util/thread.h"
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index 921245b..08e69d2 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -1,7 +1,7 @@
- #ifndef BUILTIN_H
- #define BUILTIN_H
+ #include "util/debug.h"
  
--#include "util/util.h"
-+#include <lk/util.h>
- #include "util/strbuf.h"
- 
- extern const char perf_version_string[];
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index cdd6c03..2fda133 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -13,7 +13,7 @@
- #include "util/quote.h"
- #include "util/run-command.h"
- #include "util/parse-events.h"
--#include "util/debugfs.h"
-+#include <lk/debugfs.h>
- 
- const char perf_usage_string[] =
- 	"perf [--version] [--help] COMMAND [ARGS]";
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index ef7aa0a..2344078 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -79,7 +79,7 @@ void get_term_dimensions(struct winsize *ws);
- #include <sys/syscall.h>
- 
- #include "../../include/linux/perf_event.h"
--#include "util/types.h"
-+#include <lk/types.h>
- #include <stdbool.h>
- 
- /*
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index 5c26e2d..5de09e2 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -6,7 +6,7 @@
-  * Copyright (C) 2009, 2010 Red Hat Inc.
-  * Copyright (C) 2009, 2010 Arnaldo Carvalho de Melo <acme@redhat.com>
-  */
--#include "util.h"
-+#include <lk/util.h>
- #include <stdio.h>
- #include "build-id.h"
- #include "event.h"
+diff --git a/tools/perf/util/bitmap.c b/tools/perf/util/bitmap.c
+deleted file mode 100644
+index 5e230ac..0000000
+--- a/tools/perf/util/bitmap.c
++++ /dev/null
+@@ -1,21 +0,0 @@
+-/*
+- * From lib/bitmap.c
+- * Helper functions for bitmap.h.
+- *
+- * This source code is licensed under the GNU General Public License,
+- * Version 2.  See the file COPYING for more details.
+- */
+-#include <linux/bitmap.h>
+-
+-int __bitmap_weight(const unsigned long *bitmap, int bits)
+-{
+-	int k, w = 0, lim = bits/BITS_PER_LONG;
+-
+-	for (k = 0; k < lim; k++)
+-		w += hweight_long(bitmap[k]);
+-
+-	if (bits % BITS_PER_LONG)
+-		w += hweight_long(bitmap[k] & BITMAP_LAST_WORD_MASK(bits));
+-
+-	return w;
+-}
 diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 0444fc2..ce83e82 100644
+index 27e9ebe..0444fc2 100644
 --- a/tools/perf/util/cache.h
 +++ b/tools/perf/util/cache.h
-@@ -2,7 +2,7 @@
- #define __PERF_CACHE_H
- 
- #include <stdbool.h>
--#include "util.h"
-+#include <lk/util.h>
+@@ -5,6 +5,7 @@
+ #include "util.h"
  #include "strbuf.h"
  #include "../perf.h"
- #include <linux/compiler.h>
-@@ -16,7 +16,6 @@
- #define PERF_WORK_TREE_ENVIRONMENT "PERF_WORK_TREE"
- #define EXEC_PATH_ENVIRONMENT "PERF_EXEC_PATH"
- #define DEFAULT_PERF_DIR_ENVIRONMENT ".perf"
--#define PERF_DEBUGFS_ENVIRONMENT "PERF_DEBUGFS_DIR"
++#include <linux/compiler.h>
  
- typedef int (*config_fn_t)(const char *, const char *, void *);
- extern int perf_default_config(const char *, const char *, void *);
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index e63c997..a6c99a3 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -15,7 +15,7 @@
- #include <errno.h>
- #include <math.h>
- 
--#include "util.h"
-+#include <lk/util.h>
- #include "callchain.h"
- 
- bool ip_callchain__valid(struct ip_callchain *chain, const event_t *event)
-diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
-index e02d78c..bb2f5a0 100644
---- a/tools/perf/util/config.c
-+++ b/tools/perf/util/config.c
-@@ -5,7 +5,7 @@
-  * Copyright (C) Johannes Schindelin, 2005
-  *
-  */
--#include "util.h"
-+#include <lk/util.h>
- #include "cache.h"
- #include "exec_cmd.h"
- 
-diff --git a/tools/perf/util/ctype.c b/tools/perf/util/ctype.c
+ #define CMD_EXEC_PATH "--exec-path"
+ #define CMD_PERF_DIR "--perf-dir="
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
 deleted file mode 100644
-index 3507362..0000000
---- a/tools/perf/util/ctype.c
+index 0f9b8d7..0000000
+--- a/tools/perf/util/cpumap.c
 +++ /dev/null
-@@ -1,39 +0,0 @@
--/*
-- * Sane locale-independent, ASCII ctype.
-- *
-- * No surprises, and works with signed and unsigned chars.
-- */
--#include "cache.h"
--
--enum {
--	S = GIT_SPACE,
--	A = GIT_ALPHA,
--	D = GIT_DIGIT,
--	G = GIT_GLOB_SPECIAL,	/* *, ?, [, \\ */
--	R = GIT_REGEX_SPECIAL,	/* $, (, ), +, ., ^, {, | * */
--	P = GIT_PRINT_EXTRA,	/* printable - alpha - digit - glob - regex */
--
--	PS = GIT_SPACE | GIT_PRINT_EXTRA,
--};
--
--unsigned char sane_ctype[256] = {
--/*	0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F			    */
--
--	0, 0, 0, 0, 0, 0, 0, 0, 0, S, S, 0, 0, S, 0, 0,		/*   0.. 15 */
--	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/*  16.. 31 */
--	PS,P, P, P, R, P, P, P, R, R, G, R, P, P, R, P,		/*  32.. 47 */
--	D, D, D, D, D, D, D, D, D, D, P, P, P, P, P, G,		/*  48.. 63 */
--	P, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,		/*  64.. 79 */
--	A, A, A, A, A, A, A, A, A, A, A, G, G, P, R, P,		/*  80.. 95 */
--	P, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,		/*  96..111 */
--	A, A, A, A, A, A, A, A, A, A, A, R, R, P, P, 0,		/* 112..127 */
--	/* Nothing in the 128.. range */
--};
--
--const char *graph_line =
--	"_____________________________________________________________________"
--	"_____________________________________________________________________";
--const char *graph_dotted_line =
--	"---------------------------------------------------------------------"
--	"---------------------------------------------------------------------"
--	"---------------------------------------------------------------------";
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index 318dab1..96cb72a 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -10,7 +10,7 @@
- #include "color.h"
- #include "event.h"
- #include "debug.h"
+@@ -1,114 +0,0 @@
 -#include "util.h"
-+#include <lk/util.h>
- 
- int verbose = 0;
- bool dump_trace = false;
-diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
-deleted file mode 100644
-index a88fefc..0000000
---- a/tools/perf/util/debugfs.c
-+++ /dev/null
-@@ -1,240 +0,0 @@
--#include "util.h"
--#include "debugfs.h"
--#include "cache.h"
+-#include "../perf.h"
+-#include "cpumap.h"
+-#include <assert.h>
+-#include <stdio.h>
 -
--static int debugfs_premounted;
--static char debugfs_mountpoint[MAX_PATH+1];
+-int cpumap[MAX_NR_CPUS];
 -
--static const char *debugfs_known_mountpoints[] = {
--	"/sys/kernel/debug/",
--	"/debug/",
--	0,
--};
--
--/* use this to force a umount */
--void debugfs_force_cleanup(void)
+-static int default_cpu_map(void)
 -{
--	debugfs_find_mountpoint();
--	debugfs_premounted = 0;
--	debugfs_umount();
+-	int nr_cpus, i;
+-
+-	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+-	assert(nr_cpus <= MAX_NR_CPUS);
+-	assert((int)nr_cpus >= 0);
+-
+-	for (i = 0; i < nr_cpus; ++i)
+-		cpumap[i] = i;
+-
+-	return nr_cpus;
 -}
 -
--/* construct a full path to a debugfs element */
--int debugfs_make_path(const char *element, char *buffer, int size)
+-static int read_all_cpu_map(void)
 -{
--	int len;
+-	FILE *onlnf;
+-	int nr_cpus = 0;
+-	int n, cpu, prev;
+-	char sep;
 -
--	if (strlen(debugfs_mountpoint) == 0) {
--		buffer[0] = '\0';
--		return -1;
--	}
+-	onlnf = fopen("/sys/devices/system/cpu/online", "r");
+-	if (!onlnf)
+-		return default_cpu_map();
 -
--	len = strlen(debugfs_mountpoint) + strlen(element) + 1;
--	if (len >= size)
--		return len+1;
--
--	snprintf(buffer, size-1, "%s/%s", debugfs_mountpoint, element);
--	return 0;
--}
--
--static int debugfs_found;
--
--/* find the path to the mounted debugfs */
--const char *debugfs_find_mountpoint(void)
--{
--	const char **ptr;
--	char type[100];
--	FILE *fp;
--
--	if (debugfs_found)
--		return (const char *) debugfs_mountpoint;
--
--	ptr = debugfs_known_mountpoints;
--	while (*ptr) {
--		if (debugfs_valid_mountpoint(*ptr) == 0) {
--			debugfs_found = 1;
--			strcpy(debugfs_mountpoint, *ptr);
--			return debugfs_mountpoint;
+-	sep = 0;
+-	prev = -1;
+-	for (;;) {
+-		n = fscanf(onlnf, "%u%c", &cpu, &sep);
+-		if (n <= 0)
+-			break;
+-		if (prev >= 0) {
+-			assert(nr_cpus + cpu - prev - 1 < MAX_NR_CPUS);
+-			while (++prev < cpu)
+-				cpumap[nr_cpus++] = prev;
 -		}
--		ptr++;
--	}
--
--	/* give up and parse /proc/mounts */
--	fp = fopen("/proc/mounts", "r");
--	if (fp == NULL)
--		die("Can't open /proc/mounts for read");
--
--	while (fscanf(fp, "%*s %"
--		      STR(MAX_PATH)
--		      "s %99s %*s %*d %*d\n",
--		      debugfs_mountpoint, type) == 2) {
--		if (strcmp(type, "debugfs") == 0)
+-		assert (nr_cpus < MAX_NR_CPUS);
+-		cpumap[nr_cpus++] = cpu;
+-		if (n == 2 && sep == '-')
+-			prev = cpu;
+-		else
+-			prev = -1;
+-		if (n == 1 || sep == '\n')
 -			break;
 -	}
--	fclose(fp);
+-	fclose(onlnf);
+-	if (nr_cpus > 0)
+-		return nr_cpus;
 -
--	if (strcmp(type, "debugfs") != 0)
--		return NULL;
--
--	debugfs_found = 1;
--
--	return debugfs_mountpoint;
+-	return default_cpu_map();
 -}
 -
--/* verify that a mountpoint is actually a debugfs instance */
--
--int debugfs_valid_mountpoint(const char *debugfs)
+-int read_cpu_map(const char *cpu_list)
 -{
--	struct statfs st_fs;
+-	unsigned long start_cpu, end_cpu = 0;
+-	char *p = NULL;
+-	int i, nr_cpus = 0;
 -
--	if (statfs(debugfs, &st_fs) < 0)
--		return -ENOENT;
--	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
--		return -ENOENT;
+-	if (!cpu_list)
+-		return read_all_cpu_map();
 -
--	return 0;
--}
+-	if (!isdigit(*cpu_list))
+-		goto invalid;
 -
+-	while (isdigit(*cpu_list)) {
+-		p = NULL;
+-		start_cpu = strtoul(cpu_list, &p, 0);
+-		if (start_cpu >= INT_MAX
+-		    || (*p != '\0' && *p != ',' && *p != '-'))
+-			goto invalid;
 -
--int debugfs_valid_entry(const char *path)
--{
--	struct stat st;
+-		if (*p == '-') {
+-			cpu_list = ++p;
+-			p = NULL;
+-			end_cpu = strtoul(cpu_list, &p, 0);
 -
--	if (stat(path, &st))
--		return -errno;
+-			if (end_cpu >= INT_MAX || (*p != '\0' && *p != ','))
+-				goto invalid;
 -
--	return 0;
--}
--
--/* mount the debugfs somewhere if it's not mounted */
--
--char *debugfs_mount(const char *mountpoint)
--{
--	/* see if it's already mounted */
--	if (debugfs_find_mountpoint()) {
--		debugfs_premounted = 1;
--		return debugfs_mountpoint;
--	}
--
--	/* if not mounted and no argument */
--	if (mountpoint == NULL) {
--		/* see if environment variable set */
--		mountpoint = getenv(PERF_DEBUGFS_ENVIRONMENT);
--		/* if no environment variable, use default */
--		if (mountpoint == NULL)
--			mountpoint = "/sys/kernel/debug";
--	}
--
--	if (mount(NULL, mountpoint, "debugfs", 0, NULL) < 0)
--		return NULL;
--
--	/* save the mountpoint */
--	strncpy(debugfs_mountpoint, mountpoint, sizeof(debugfs_mountpoint));
--	debugfs_found = 1;
--
--	return debugfs_mountpoint;
--}
--
--/* umount the debugfs */
--
--int debugfs_umount(void)
--{
--	char umountcmd[128];
--	int ret;
--
--	/* if it was already mounted, leave it */
--	if (debugfs_premounted)
--		return 0;
--
--	/* make sure it's a valid mount point */
--	ret = debugfs_valid_mountpoint(debugfs_mountpoint);
--	if (ret)
--		return ret;
--
--	snprintf(umountcmd, sizeof(umountcmd),
--		 "/bin/umount %s", debugfs_mountpoint);
--	return system(umountcmd);
--}
--
--int debugfs_write(const char *entry, const char *value)
--{
--	char path[MAX_PATH+1];
--	int ret, count;
--	int fd;
--
--	/* construct the path */
--	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
--
--	/* verify that it exists */
--	ret = debugfs_valid_entry(path);
--	if (ret)
--		return ret;
--
--	/* get how many chars we're going to write */
--	count = strlen(value);
--
--	/* open the debugfs entry */
--	fd = open(path, O_RDWR);
--	if (fd < 0)
--		return -errno;
--
--	while (count > 0) {
--		/* write it */
--		ret = write(fd, value, count);
--		if (ret <= 0) {
--			if (ret == EAGAIN)
--				continue;
--			close(fd);
--			return -errno;
+-			if (end_cpu < start_cpu)
+-				goto invalid;
+-		} else {
+-			end_cpu = start_cpu;
 -		}
--		count -= ret;
--	}
 -
--	/* close it */
--	close(fd);
+-		for (; start_cpu <= end_cpu; start_cpu++) {
+-			/* check for duplicates */
+-			for (i = 0; i < nr_cpus; i++)
+-				if (cpumap[i] == (int)start_cpu)
+-					goto invalid;
 -
--	/* return success */
--	return 0;
--}
--
--/*
-- * read a debugfs entry
-- * returns the number of chars read or a negative errno
-- */
--int debugfs_read(const char *entry, char *buffer, size_t size)
--{
--	char path[MAX_PATH+1];
--	int ret;
--	int fd;
--
--	/* construct the path */
--	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
--
--	/* verify that it exists */
--	ret = debugfs_valid_entry(path);
--	if (ret)
--		return ret;
--
--	/* open the debugfs entry */
--	fd = open(path, O_RDONLY);
--	if (fd < 0)
--		return -errno;
--
--	do {
--		/* read it */
--		ret = read(fd, buffer, size);
--		if (ret == 0) {
--			close(fd);
--			return EOF;
+-			assert(nr_cpus < MAX_NR_CPUS);
+-			cpumap[nr_cpus++] = (int)start_cpu;
 -		}
--	} while (ret < 0 && errno == EAGAIN);
+-		if (*p)
+-			++p;
 -
--	/* close it */
--	close(fd);
--
--	/* make *sure* there's a null character at the end */
--	buffer[ret] = '\0';
--
--	/* return the number of chars read */
--	return ret;
--}
-diff --git a/tools/perf/util/debugfs.h b/tools/perf/util/debugfs.h
-deleted file mode 100644
-index 83a0287..0000000
---- a/tools/perf/util/debugfs.h
-+++ /dev/null
-@@ -1,25 +0,0 @@
--#ifndef __DEBUGFS_H__
--#define __DEBUGFS_H__
--
--#include <sys/mount.h>
--
--#ifndef MAX_PATH
--# define MAX_PATH 256
--#endif
--
--#ifndef STR
--# define _STR(x) #x
--# define STR(x) _STR(x)
--#endif
--
--extern const char *debugfs_find_mountpoint(void);
--extern int debugfs_valid_mountpoint(const char *debugfs);
--extern int debugfs_valid_entry(const char *path);
--extern char *debugfs_mount(const char *mountpoint);
--extern int debugfs_umount(void);
--extern int debugfs_write(const char *entry, const char *value);
--extern int debugfs_read(const char *entry, char *buffer, size_t size);
--extern void debugfs_force_cleanup(void);
--extern int debugfs_make_path(const char *element, char *buffer, int size);
--
--#endif /* __DEBUGFS_H__ */
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index d7e67b1..0ebd301 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -8,7 +8,7 @@
- #include <linux/list.h>
- #include <linux/kernel.h>
- 
--#include "util.h"
-+#include <lk/util.h>
- #include "header.h"
- #include "../perf.h"
- #include "trace-event.h"
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 402ac24..fb6f0eb 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -4,7 +4,7 @@
- #include "../../../include/linux/perf_event.h"
- #include <sys/types.h>
- #include <stdbool.h>
--#include "types.h"
-+#include <lk/types.h>
- #include "event.h"
- 
- #include <linux/bitmap.h>
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 68d288c..a409e27 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1,4 +1,4 @@
--#include "util.h"
-+#include <lk/util.h>
- #include "build-id.h"
- #include "hist.h"
- #include "session.h"
-diff --git a/tools/perf/util/include/linux/ctype.h b/tools/perf/util/include/linux/ctype.h
-index a53d4ee..0698f26 100644
---- a/tools/perf/util/include/linux/ctype.h
-+++ b/tools/perf/util/include/linux/ctype.h
-@@ -1 +1 @@
--#include "../util.h"
-+#include <lk/util.h>
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index f391345..c7ed844 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -6,7 +6,7 @@
- #include <linux/rbtree.h>
- #include <stdio.h>
- #include <stdbool.h>
--#include "types.h"
-+#include <lk/types.h>
- 
- enum map_type {
- 	MAP__FUNCTION = 0,
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 9bf0f40..3a76c8e 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1,5 +1,5 @@
- #include "../../../include/linux/hw_breakpoint.h"
--#include "util.h"
-+#include <lk/util.h>
- #include "../perf.h"
- #include "parse-options.h"
- #include "parse-events.h"
-@@ -8,7 +8,7 @@
- #include "symbol.h"
- #include "cache.h"
- #include "header.h"
--#include "debugfs.h"
-+#include <lk/debugfs.h>
- 
- int				nr_counters;
- 
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index 99d02aa..25b57fc 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -1,4 +1,4 @@
--#include "util.h"
-+#include <lk/util.h>
- #include "parse-options.h"
- #include "cache.h"
- 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 914c670..723b10d 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -33,7 +33,7 @@
- #include <limits.h>
- 
- #undef _GNU_SOURCE
--#include "util.h"
-+#include <lk/util.h>
- #include "event.h"
- #include "string.h"
- #include "strlist.h"
-@@ -42,7 +42,7 @@
- #include "color.h"
- #include "symbol.h"
- #include "thread.h"
--#include "debugfs.h"
-+#include <lk/debugfs.h>
- #include "trace-event.h"	/* For __unused */
- #include "probe-event.h"
- #include "probe-finder.h"
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index baf6653..eb4eb26 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -36,7 +36,7 @@
- #include "string.h"
- #include "event.h"
- #include "debug.h"
--#include "util.h"
-+#include <lk/util.h>
- #include "symbol.h"
- #include "probe-finder.h"
- 
-diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
-index e1f61dc..470611b 100644
---- a/tools/perf/util/probe-finder.h
-+++ b/tools/perf/util/probe-finder.h
-@@ -2,7 +2,7 @@
- #define _PROBE_FINDER_H
- 
- #include <stdbool.h>
--#include "util.h"
-+#include <lk/util.h>
- #include "probe-event.h"
- 
- #define MAX_PATH_LEN		 256
-diff --git a/tools/perf/util/pstack.c b/tools/perf/util/pstack.c
-index 13d36fa..aacedb8 100644
---- a/tools/perf/util/pstack.c
-+++ b/tools/perf/util/pstack.c
-@@ -4,7 +4,7 @@
-  * (c) 2010 Arnaldo Carvalho de Melo <acme@redhat.com>
-  */
- 
--#include "util.h"
-+#include <lk/util.h>
- #include "pstack.h"
- #include <linux/kernel.h>
- #include <stdlib.h>
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index b059dc5..78af7d1 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -26,7 +26,7 @@
- #include <errno.h>
- 
- #include "../../perf.h"
--#include "../util.h"
-+#include <lk/util.h>
- #include "../trace-event.h"
- 
- #include <EXTERN.h>
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 33a6325..9ddc198 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -28,7 +28,7 @@
- #include <errno.h>
- 
- #include "../../perf.h"
--#include "../util.h"
-+#include <lk/util.h>
- #include "../trace-event.h"
- 
- PyMODINIT_FUNC initperf_trace_context(void);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 0564a5c..638ecd0 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -9,7 +9,7 @@
- 
- #include "session.h"
- #include "sort.h"
--#include "util.h"
-+#include <lk/util.h>
- 
- static int perf_session__open(struct perf_session *self, bool force)
- {
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 560c855..8ead949 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -2,7 +2,7 @@
- #define __PERF_SORT_H
- #include "../builtin.h"
- 
--#include "util.h"
-+#include <lk/util.h>
- 
- #include "color.h"
- #include <linux/list.h>
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index 0409fc7..881ef63 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -1,4 +1,4 @@
--#include "util.h"
-+#include <lk/util.h>
- #include "string.h"
- 
- #define K 1024LL
-diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
-index e078198..ac74b40 100644
---- a/tools/perf/util/svghelper.h
-+++ b/tools/perf/util/svghelper.h
-@@ -1,7 +1,7 @@
- #ifndef __PERF_SVGHELPER_H
- #define __PERF_SVGHELPER_H
- 
--#include "types.h"
-+#include <lk/types.h>
- 
- extern void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end);
- extern void svg_box(int Yslot, u64 start, u64 end, const char *type);
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 1f7ecd4..deb30a8 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -4,7 +4,7 @@
- #include <string.h>
- #include "session.h"
- #include "thread.h"
--#include "util.h"
-+#include <lk/util.h>
- #include "debug.h"
- 
- int find_all_tid(int pid, pid_t ** all_tid)
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index b157260..0918a63 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -38,7 +38,7 @@
- 
- #include "../perf.h"
- #include "trace-event.h"
--#include "debugfs.h"
-+#include <lk/debugfs.h>
- 
- #define VERSION "0.5"
- 
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 73a0222..9a46fa1 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -30,7 +30,7 @@
- 
- #undef _GNU_SOURCE
- #include "../perf.h"
--#include "util.h"
-+#include <lk/util.h>
- #include "trace-event.h"
- 
- int header_page_ts_offset;
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index f55cc3a..2583227 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -37,7 +37,7 @@
- #include <errno.h>
- 
- #include "../perf.h"
--#include "util.h"
-+#include <lk/util.h>
- #include "trace-event.h"
- 
- static int input_fd;
-diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index 7ea983a..dae67df 100644
---- a/tools/perf/util/trace-event-scripting.c
-+++ b/tools/perf/util/trace-event-scripting.c
-@@ -26,7 +26,7 @@
- #include <errno.h>
- 
- #include "../perf.h"
--#include "util.h"
-+#include <lk/util.h>
- #include "trace-event.h"
- 
- struct scripting_context *scripting_context;
-diff --git a/tools/perf/util/types.h b/tools/perf/util/types.h
-deleted file mode 100644
-index 7d6b833..0000000
---- a/tools/perf/util/types.h
-+++ /dev/null
-@@ -1,17 +0,0 @@
--#ifndef __PERF_TYPES_H
--#define __PERF_TYPES_H
--
--/*
-- * We define u64 as unsigned long long for every architecture
-- * so that we can print it with %Lx without getting warnings.
-- */
--typedef unsigned long long u64;
--typedef signed long long   s64;
--typedef unsigned int	   u32;
--typedef signed int	   s32;
--typedef unsigned short	   u16;
--typedef signed short	   s16;
--typedef unsigned char	   u8;
--typedef signed char	   s8;
--
--#endif /* __PERF_TYPES_H */
-diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
-index e16bf9a..d438743 100644
---- a/tools/perf/util/usage.c
-+++ b/tools/perf/util/usage.c
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (C) Linus Torvalds, 2005
-  */
--#include "util.h"
-+#include <lk/util.h>
- 
- static void report(const char *prefix, const char *err, va_list params)
- {
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-deleted file mode 100644
-index 2142656..0000000
---- a/tools/perf/util/util.c
-+++ /dev/null
-@@ -1,116 +0,0 @@
--#include "util.h"
--#include <sys/mman.h>
--
--int mkdir_p(char *path, mode_t mode)
--{
--	struct stat st;
--	int err;
--	char *d = path;
--
--	if (*d != '/')
--		return -1;
--
--	if (stat(path, &st) == 0)
--		return 0;
--
--	while (*++d == '/');
--
--	while ((d = strchr(d, '/'))) {
--		*d = '\0';
--		err = stat(path, &st) && mkdir(path, mode);
--		*d++ = '/';
--		if (err)
--			return -1;
--		while (*d == '/')
--			++d;
+-		cpu_list = p;
 -	}
--	return (stat(path, &st) && mkdir(path, mode)) ? -1 : 0;
+-	if (nr_cpus > 0)
+-		return nr_cpus;
+-
+-	return default_cpu_map();
+-invalid:
+-	return -1;
 -}
--
--static int slow_copyfile(const char *from, const char *to)
--{
--	int err = 0;
--	char *line = NULL;
--	size_t n;
--	FILE *from_fp = fopen(from, "r"), *to_fp;
--
--	if (from_fp == NULL)
--		goto out;
--
--	to_fp = fopen(to, "w");
--	if (to_fp == NULL)
--		goto out_fclose_from;
--
--	while (getline(&line, &n, from_fp) > 0)
--		if (fputs(line, to_fp) == EOF)
--			goto out_fclose_to;
--	err = 0;
--out_fclose_to:
--	fclose(to_fp);
--	free(line);
--out_fclose_from:
--	fclose(from_fp);
--out:
--	return err;
--}
--
--int copyfile(const char *from, const char *to)
--{
--	int fromfd, tofd;
--	struct stat st;
--	void *addr;
--	int err = -1;
--
--	if (stat(from, &st))
--		goto out;
--
--	if (st.st_size == 0) /* /proc? do it slowly... */
--		return slow_copyfile(from, to);
--
--	fromfd = open(from, O_RDONLY);
--	if (fromfd < 0)
--		goto out;
--
--	tofd = creat(to, 0755);
--	if (tofd < 0)
--		goto out_close_from;
--
--	addr = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fromfd, 0);
--	if (addr == MAP_FAILED)
--		goto out_close_to;
--
--	if (write(tofd, addr, st.st_size) == st.st_size)
--		err = 0;
--
--	munmap(addr, st.st_size);
--out_close_to:
--	close(tofd);
--	if (err)
--		unlink(to);
--out_close_from:
--	close(fromfd);
--out:
--	return err;
--}
--
--unsigned long convert_unit(unsigned long value, char *unit)
--{
--	*unit = ' ';
--
--	if (value > 1000) {
--		value /= 1000;
--		*unit = 'K';
--	}
--
--	if (value > 1000) {
--		value /= 1000;
--		*unit = 'M';
--	}
--
--	if (value > 1000) {
--		value /= 1000;
--		*unit = 'G';
--	}
--
--	return value;
--}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
 deleted file mode 100644
-index f380fed..0000000
---- a/tools/perf/util/util.h
+index 3e60f56..0000000
+--- a/tools/perf/util/cpumap.h
 +++ /dev/null
-@@ -1,285 +0,0 @@
--#ifndef GIT_COMPAT_UTIL_H
--#define GIT_COMPAT_UTIL_H
+@@ -1,7 +0,0 @@
+-#ifndef __PERF_CPUMAP_H
+-#define __PERF_CPUMAP_H
 -
--#define _FILE_OFFSET_BITS 64
+-extern int read_cpu_map(const char *cpu_list);
+-extern int cpumap[];
 -
--#ifndef FLEX_ARRAY
--/*
-- * See if our compiler is known to support flexible array members.
+-#endif /* __PERF_CPUMAP_H */
+diff --git a/tools/perf/util/hweight.c b/tools/perf/util/hweight.c
+deleted file mode 100644
+index 5c1d0d0..0000000
+--- a/tools/perf/util/hweight.c
++++ /dev/null
+@@ -1,31 +0,0 @@
+-#include <linux/bitops.h>
+-
+-/**
+- * hweightN - returns the hamming weight of a N-bit word
+- * @x: the word to weigh
+- *
+- * The Hamming Weight of a number is the total number of bits set in it.
 - */
--#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
--# define FLEX_ARRAY /* empty */
--#elif defined(__GNUC__)
--# if (__GNUC__ >= 3)
--#  define FLEX_ARRAY /* empty */
--# else
--#  define FLEX_ARRAY 0 /* older GNU extension */
--# endif
--#endif
 -
--/*
-- * Otherwise, default to safer but a bit wasteful traditional style
-- */
--#ifndef FLEX_ARRAY
--# define FLEX_ARRAY 1
--#endif
--#endif
--
--#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
--
--#ifdef __GNUC__
--#define TYPEOF(x) (__typeof__(x))
--#else
--#define TYPEOF(x)
--#endif
--
--#define MSB(x, bits) ((x) & TYPEOF(x)(~0ULL << (sizeof(x) * 8 - (bits))))
--#define HAS_MULTI_BITS(i)  ((i) & ((i) - 1))  /* checks if an integer has more than 1 bit set */
--
--/* Approximation of the length of the decimal representation of this type. */
--#define decimal_length(x)	((int)(sizeof(x) * 2.56 + 0.5) + 1)
--
--#define _ALL_SOURCE 1
--#define _GNU_SOURCE 1
--#define _BSD_SOURCE 1
--#define HAS_BOOL
--
--#include <unistd.h>
--#include <stdio.h>
--#include <sys/stat.h>
--#include <sys/statfs.h>
--#include <fcntl.h>
--#include <stdbool.h>
--#include <stddef.h>
--#include <stdlib.h>
--#include <stdarg.h>
--#include <string.h>
--#include <errno.h>
--#include <limits.h>
--#include <sys/param.h>
--#include <sys/types.h>
--#include <dirent.h>
--#include <sys/time.h>
--#include <time.h>
--#include <signal.h>
--#include <fnmatch.h>
--#include <assert.h>
--#include <regex.h>
--#include <utime.h>
--#include <sys/wait.h>
--#include <sys/poll.h>
--#include <sys/socket.h>
--#include <sys/ioctl.h>
--#ifndef NO_SYS_SELECT_H
--#include <sys/select.h>
--#endif
--#include <netinet/in.h>
--#include <netinet/tcp.h>
--#include <arpa/inet.h>
--#include <netdb.h>
--#include <pwd.h>
--#include <inttypes.h>
--#include "../../../include/linux/magic.h"
--#include "types.h"
--#include <sys/ttydefaults.h>
--
--#ifndef NO_ICONV
--#include <iconv.h>
--#endif
--
--extern const char *graph_line;
--extern const char *graph_dotted_line;
--extern char buildid_dir[];
--
--/* On most systems <limits.h> would have given us this, but
-- * not on some systems (e.g. GNU/Hurd).
-- */
--#ifndef PATH_MAX
--#define PATH_MAX 4096
--#endif
--
--#ifndef PRIuMAX
--#define PRIuMAX "llu"
--#endif
--
--#ifndef PRIu32
--#define PRIu32 "u"
--#endif
--
--#ifndef PRIx32
--#define PRIx32 "x"
--#endif
--
--#ifndef PATH_SEP
--#define PATH_SEP ':'
--#endif
--
--#ifndef STRIP_EXTENSION
--#define STRIP_EXTENSION ""
--#endif
--
--#ifndef has_dos_drive_prefix
--#define has_dos_drive_prefix(path) 0
--#endif
--
--#ifndef is_dir_sep
--#define is_dir_sep(c) ((c) == '/')
--#endif
--
--#ifdef __GNUC__
--#define NORETURN __attribute__((__noreturn__))
--#else
--#define NORETURN
--#ifndef __attribute__
--#define __attribute__(x)
--#endif
--#endif
--
--/* General helper functions */
--extern void usage(const char *err) NORETURN;
--extern void die(const char *err, ...) NORETURN __attribute__((format (printf, 1, 2)));
--extern int error(const char *err, ...) __attribute__((format (printf, 1, 2)));
--extern void warning(const char *err, ...) __attribute__((format (printf, 1, 2)));
--
--#include "../../../include/linux/stringify.h"
--
--#define DIE_IF(cnd)	\
--	do { if (cnd)	\
--		die(" at (" __FILE__ ":" __stringify(__LINE__) "): "	\
--		    __stringify(cnd) "\n");				\
--	} while (0)
--
--
--extern void set_die_routine(void (*routine)(const char *err, va_list params) NORETURN);
--
--extern int prefixcmp(const char *str, const char *prefix);
--extern void set_buildid_dir(void);
--extern void disable_buildid_cache(void);
--
--static inline const char *skip_prefix(const char *str, const char *prefix)
+-unsigned int hweight32(unsigned int w)
 -{
--	size_t len = strlen(prefix);
--	return strncmp(str, prefix, len) ? NULL : str + len;
+-	unsigned int res = w - ((w >> 1) & 0x55555555);
+-	res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
+-	res = (res + (res >> 4)) & 0x0F0F0F0F;
+-	res = res + (res >> 8);
+-	return (res + (res >> 16)) & 0x000000FF;
 -}
 -
--#ifdef __GLIBC_PREREQ
--#if __GLIBC_PREREQ(2, 1)
--#define HAVE_STRCHRNUL
--#endif
--#endif
--
--#ifndef HAVE_STRCHRNUL
--#define strchrnul gitstrchrnul
--static inline char *gitstrchrnul(const char *s, int c)
+-unsigned long hweight64(__u64 w)
 -{
--	while (*s && *s != c)
--		s++;
--	return (char *)s;
+-#if BITS_PER_LONG == 32
+-	return hweight32((unsigned int)(w >> 32)) + hweight32((unsigned int)w);
+-#elif BITS_PER_LONG == 64
+-	__u64 res = w - ((w >> 1) & 0x5555555555555555ul);
+-	res = (res & 0x3333333333333333ul) + ((res >> 2) & 0x3333333333333333ul);
+-	res = (res + (res >> 4)) & 0x0F0F0F0F0F0F0F0Ful;
+-	res = res + (res >> 8);
+-	res = res + (res >> 16);
+-	return (res + (res >> 32)) & 0x00000000000000FFul;
+-#endif
 -}
--#endif
--
--/*
-- * Wrappers:
-- */
--extern char *xstrdup(const char *str);
--extern void *xrealloc(void *ptr, size_t size) __attribute__((weak));
--
--
--static inline void *zalloc(size_t size)
--{
--	return calloc(1, size);
--}
--
--static inline int has_extension(const char *filename, const char *ext)
--{
--	size_t len = strlen(filename);
--	size_t extlen = strlen(ext);
--
--	return len > extlen && !memcmp(filename + len - extlen, ext, extlen);
--}
--
--/* Sane ctype - no locale, and works with signed chars */
--#undef isascii
--#undef isspace
--#undef isdigit
--#undef isxdigit
--#undef isalpha
--#undef isprint
--#undef isalnum
--#undef tolower
--#undef toupper
--
--extern unsigned char sane_ctype[256];
--#define GIT_SPACE		0x01
--#define GIT_DIGIT		0x02
--#define GIT_ALPHA		0x04
--#define GIT_GLOB_SPECIAL	0x08
--#define GIT_REGEX_SPECIAL	0x10
--#define GIT_PRINT_EXTRA		0x20
--#define GIT_PRINT		0x3E
--#define sane_istest(x,mask) ((sane_ctype[(unsigned char)(x)] & (mask)) != 0)
--#define isascii(x) (((x) & ~0x7f) == 0)
--#define isspace(x) sane_istest(x,GIT_SPACE)
--#define isdigit(x) sane_istest(x,GIT_DIGIT)
--#define isxdigit(x)	\
--	(sane_istest(toupper(x), GIT_ALPHA | GIT_DIGIT) && toupper(x) < 'G')
--#define isalpha(x) sane_istest(x,GIT_ALPHA)
--#define isalnum(x) sane_istest(x,GIT_ALPHA | GIT_DIGIT)
--#define isprint(x) sane_istest(x,GIT_PRINT)
--#define tolower(x) sane_case((unsigned char)(x), 0x20)
--#define toupper(x) sane_case((unsigned char)(x), 0)
--
--static inline int sane_case(int x, int high)
--{
--	if (sane_istest(x, GIT_ALPHA))
--		x = (x & ~0x20) | high;
--	return x;
--}
--
--#ifndef DIR_HAS_BSD_GROUP_SEMANTICS
--# define FORCE_DIR_SET_GID S_ISGID
--#else
--# define FORCE_DIR_SET_GID 0
--#endif
--
--#ifdef NO_NSEC
--#undef USE_NSEC
--#define ST_CTIME_NSEC(st) 0
--#define ST_MTIME_NSEC(st) 0
--#else
--#ifdef USE_ST_TIMESPEC
--#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctimespec.tv_nsec))
--#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtimespec.tv_nsec))
--#else
--#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctim.tv_nsec))
--#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtim.tv_nsec))
--#endif
--#endif
--
--int mkdir_p(char *path, mode_t mode);
--int copyfile(const char *from, const char *to);
--
--s64 perf_atoll(const char *str);
--char **argv_split(const char *str, int *argcp);
--void argv_free(char **argv);
--bool strglobmatch(const char *str, const char *pat);
--bool strlazymatch(const char *str, const char *pat);
--unsigned long convert_unit(unsigned long value, char *unit);
--
--#ifndef ESC
--#define ESC 27
--#endif
--
--static inline bool is_exit_key(int key)
--{
--	char up;
--	if (key == CTRL('c') || key == ESC)
--		return true;
--	up = toupper(key);
--	return up == 'Q';
--}
--
--#define _STR(x) #x
--#define STR(x) _STR(x)
--
--#endif
-diff --git a/tools/perf/util/values.c b/tools/perf/util/values.c
-index cfa55d6..648fc48 100644
---- a/tools/perf/util/values.c
-+++ b/tools/perf/util/values.c
-@@ -1,6 +1,6 @@
- #include <stdlib.h>
- 
--#include "util.h"
-+#include <lk/util.h>
- #include "values.h"
- 
- void perf_read_values_init(struct perf_read_values *values)
-diff --git a/tools/perf/util/values.h b/tools/perf/util/values.h
-index 2fa967e..f762cb7 100644
---- a/tools/perf/util/values.h
-+++ b/tools/perf/util/values.h
-@@ -1,7 +1,7 @@
- #ifndef __PERF_VALUES_H
- #define __PERF_VALUES_H
- 
--#include "types.h"
-+#include <lk/types.h>
- 
- struct perf_read_values {
- 	int threads;
 -- 
 1.7.1
 
