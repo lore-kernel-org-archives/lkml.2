@@ -1,68 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab0GAKJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 06:09:51 -0400
-Received: from n2-vm1.bullet.mail.gq1.yahoo.com ([67.195.23.155]:36563 "HELO
-	n2-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752548Ab0GAKJt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 06:09:49 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 750527.55818.bm@omp127.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=a7gfcc9gIgwmfItGnniX8wb4IrO3XtETq20WzkqQfdPuStNrOH6oNwRn9sacneSg7KLwVEzwZnEfTKoIlFXPGSrhNZHwdAkcItFpKuYcNclnVwTtd1vEKRbos13pk5DQtHcAWkmxkiiYjtkh19MTuQAe4XFiBLzZ9uI9Ju1v+Hk=;
-Message-ID: <644607.54176.qm@web180308.mail.gq1.yahoo.com>
-X-YMail-OSG: wUYqgo0VM1loPeAzYC7mun_XC9bXKLp55DKvY4rFxEXz_b8
- XNtTVM181v6nsZKh_7hnS2VTt9LiJNjbYlECMYL6ODDsdo6sNKov0VsJIa5r
- RMsJdfp8Y1jMjNn3sCQcElra6BcVWCkEi0W_ki1HqvraUNs5wnqzbY0mf68.
- M9MgNKlQCL69T2pFqjuxZlUUq6AucCxsc94uzAk6cWhp835UDGMZltQ1zLGL
- 2vzdimB8tEyLjhP8zgPATNw663HfeqsC8Kk.TGIGn_hIWwA7YRbn.2vE2rZU
- 6SKj2e9l.cQVWMgtUBzfrbkE670QP2eqX825dxu5Emz.dNbn2mxOLEE8ZglK
- v3ep17sb1vw1o_Md1KprQmeHxcMbl6w--
-X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.104.274457
-Date: Thu, 1 Jul 2010 03:09:48 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH] USB: gadget: mass storage: use proper device class in device desc
-To: linux-usb@vger.kernel.org, Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <59b191a020300966e20eef4e942bc75982d792fb.1277735580.git.m.nazarewicz@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754919Ab0GAKN2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 06:13:28 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:43407 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754719Ab0GAKN1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 06:13:27 -0400
+Message-ID: <001001cb1906$0b0fbcb0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Andy Isaacson" <adi@hexapodia.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+       "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
+       <andrew.chih.howe.khor@intel.com>, <joel.clark@intel.com>,
+       <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+       "Arnd Bergmann" <arnd@arndb.de>,
+       "Randy Dunlap" <randy.dunlap@oracle.com>
+References: <4C204B0D.2030201@dsn.okisemi.com> <4C2C2423.4060705@dsn.okisemi.com> <20100701065811.GM29166@hexapodia.org>
+Subject: Re: [PATCH] Packet hub driver of Topcliff PCH
+Date: Thu, 1 Jul 2010 19:13:20 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andy,
+
+> I still have concerns about the userland interface design.  It still
+> seems to me that the MAC interface should be used by something in
+> drivers/net and there's no reason to expose the SROM in /dev unless it
+> contains more than just the MAC address.
+SROM has not only MAC address but also Option ROM data.
+Thus, we think SROM should be exposed.
+
+> A few more style issues I saw on a quick scan through -- this was not a
+> comprehensive review:
+We are now modifying.
+
+Thanks, Ohtake
+
+----- Original Message ----- 
+From: "Andy Isaacson" <adi@hexapodia.org>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: "Randy Dunlap" <randy.dunlap@oracle.com>; "Arnd Bergmann" <arnd@arndb.de>; "Wang, Yong Y" <yong.y.wang@intel.com>;
+<qi.wang@intel.com>; <joel.clark@intel.com>; <andrew.chih.howe.khor@intel.com>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>;
+"LKML" <linux-kernel@vger.kernel.org>
+Sent: Thursday, July 01, 2010 3:58 PM
+Subject: Re: [PATCH] Packet hub driver of Topcliff PCH
 
 
---- On Thu, 7/1/10, Michal Nazarewicz <m.nazarewicz@samsung.com> wrote:
-
-> to match the real class and protocol instead of leaving it
-> as per
-> interface.
-
-It works now though ... why change it,
-and risk causing breakage??
- 
+> On Thu, Jul 01, 2010 at 02:14:11PM +0900, Masayuki Ohtak wrote:
+> > Hi Andy and Randy
+> >
+> > I have modified for your comments.
+> > Please confirm below.
 >
-> 
-> Each time I see the device descriptor of the File Storage
-> Gadget
-> I wonder if it shouldn't be set to the real value rather
-> then leaving
-> it as per interface.
-> 
-> Is there a reason to leave it as per interface?  Will
-> chenging it to
-> the real value change anything?
-> 
-> I checked my pendrive and an IDE<->USB adapter they
-> as well use a per
-> interface class ...
+> Your style is looking better, and the additional documentation is much
+> appreciated.
+>
+> I still have concerns about the userland interface design.  It still
+> seems to me that the MAC interface should be used by something in
+> drivers/net and there's no reason to expose the SROM in /dev unless it
+> contains more than just the MAC address.
+>
+>
+> A few more style issues I saw on a quick scan through -- this was not a
+> comprehensive review:
+>
+>
+> > +static long pch_phub_ioctl(struct file *file, unsigned int cmd,
+> > +    unsigned long arg)
+> [snip]
+> > + ret_value = copy_to_user(varg,
+> > + mac_addr, sizeof(mac_addr));
+>
+> Reformat this to fit on one line:
+> + ret_value = copy_to_user(varg, mac_addr, sizeof(mac_addr));
+>
+>
+> [snip]
+> > + case IOCTL_PHUB_WRITE_MAC_ADDR:
+> > + ret_value = copy_from_user(mac_addr, varg, sizeof(mac_addr));
+> > +
+> > + if (ret_value)
+>
+> Here we need to break:
+>
+> +               {
+> > + ret_value = -EFAULT;
+> +                       break;
+> +               }
+>
+> because if copy_from_user failed ...
+>
+> > + for (i = 0; i < 6; i++)
+> > + pch_phub_write_gbe_mac_addr(i, mac_addr[i]);
+>
+> ... we would pass garbage to pch_phub_write_gbe_mac_addr.
+>
+> [snip]
+> > + dev_dbg(&pdev->dev,
+> > + "\npch_phub_probe : pci_enable_device FAILED");
+>
+> Prefix \n is not correct.  This should be
+>
+> + dev_dbg(&pdev->dev, "pch_phub_probe: pci_enable_device FAILED");
+>
+> In general dev_dbg format strings should fit on one 80-char line.  If
+> your format strings are longer than that, it's a clue you're doing
+> something wrong.  For example:
+>
+> > + dev_dbg(&pdev->dev, "pch_phub_probe : "
+> > + "pci_enable_device returns %d\n", ret);
+>
+> + dev_dbg(&pdev->dev, "pch_phub_probe: pci_enable_device returns %d\n",
+> + ret);
+>
+> > + ret = pci_request_regions(pdev, MODULE_NAME);
+> > + if (ret) {
+> > + dev_dbg(&pdev->dev,
+> > + "pch_phub_probe : pci_request_regions FAILED");
+>
+> If you have a dev_dbg, please print ret.  It may give an important clue.
+>
+> [snip a bunch more I don't have time to review right now]
+>
+> Thanks,
+> -andy
+>
 
 
