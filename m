@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759408Ab0GAVkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:40:22 -0400
-Received: from kroah.org ([198.145.64.141]:32966 "EHLO coco.kroah.org"
+	id S933376Ab0GAVl0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:41:26 -0400
+Received: from kroah.org ([198.145.64.141]:32947 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759187Ab0GAVOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:35 -0400
+	id S1759174Ab0GAVOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:32 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:57 2010
-Message-Id: <20100701174257.477155726@clark.site>
+Message-Id: <20100701174257.232458393@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:41 -0700
+Date: Thu, 01 Jul 2010 10:43:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [131/200] ALSA: hda: Use mb31 quirk for an iMac model
+       Ian Campbell <ian.campbell@citrix.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: [128/200] xen: ensure timer tick is resumed even on CPU driving the resume
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Ian Campbell <ian.campbell@citrix.com>
 
-commit 26fd74fc01991a18f0e3bd54f8b1b75945ee3dbb upstream.
+commit cd52e17ea8278f8449b6174a8e5ed439a2e44ffb upstream.
 
-BugLink: https://launchpad.net/bugs/542550
+The core suspend/resume code is run from stop_machine on CPU0 but
+parts of the suspend/resume machinery (including xen_arch_resume) are
+run on whichever CPU happened to schedule the xenwatch kernel thread.
 
-Symptom: On the reporter's iMac, in Ubuntu 10.04 LTS neither playback
-nor capture appear audible out-of-the-box.
+As part of the non-core resume code xen_arch_resume is called in order
+to restart the timer tick on non-boot processors. The boot processor
+itself is taken care of by core timekeeping code.
 
-Test case: Boot from an Ubuntu 10.04 LTS live cd or from an installed
-configuration and attempt to play or capture audio.
+xen_arch_resume uses smp_call_function which does not call the given
+function on the current processor. This means that we can end up with
+one CPU not receiving timer ticks if the xenwatch thread happened to
+be scheduled on CPU > 0.
 
-Resolution: Specify the mb31 quirk for this machine in the codec SSID
-table.
+Use on_each_cpu instead of smp_call_function to ensure the timer tick
+is resumed everywhere.
 
-Reported-and-Tested-By: f3a97
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/xen/suspend.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -9392,6 +9392,7 @@ static struct snd_pci_quirk alc882_ssid_
- 	SND_PCI_QUIRK(0x106b, 0x1000, "iMac 24", ALC885_IMAC24),
- 	SND_PCI_QUIRK(0x106b, 0x2800, "AppleTV", ALC885_IMAC24),
- 	SND_PCI_QUIRK(0x106b, 0x2c00, "MacbookPro rev3", ALC885_MBP3),
-+	SND_PCI_QUIRK(0x106b, 0x3000, "iMac", ALC889A_MB31),
- 	SND_PCI_QUIRK(0x106b, 0x3600, "Macbook 3,1", ALC889A_MB31),
- 	SND_PCI_QUIRK(0x106b, 0x3800, "MacbookPro 4,1", ALC885_MBP3),
- 	SND_PCI_QUIRK(0x106b, 0x3e00, "iMac 24 Aluminum", ALC885_IMAC24),
+--- a/arch/x86/xen/suspend.c
++++ b/arch/x86/xen/suspend.c
+@@ -60,6 +60,6 @@ static void xen_vcpu_notify_restore(void
+ 
+ void xen_arch_resume(void)
+ {
+-	smp_call_function(xen_vcpu_notify_restore,
+-			       (void *)CLOCK_EVT_NOTIFY_RESUME, 1);
++	on_each_cpu(xen_vcpu_notify_restore,
++		    (void *)CLOCK_EVT_NOTIFY_RESUME, 1);
+ }
 
 
