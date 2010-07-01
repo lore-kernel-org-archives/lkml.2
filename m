@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933549Ab0GAWZo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:25:44 -0400
-Received: from shutemov.name ([188.40.19.243]:53832 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756350Ab0GAWZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 18:25:42 -0400
-Date: Fri, 2 Jul 2010 01:25:41 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Anfei Zhou <anfei.zhou@gmail.com>,
-       Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [patch 071/149] ARM: 6166/1: Proper prefetch abort handling on
- pre-ARMv6
-Message-ID: <20100701222541.GB10481@shutemov.name>
-References: <20100701175144.GA2116@kroah.com>
- <20100701173212.785441106@clark.site>
- <20100701221420.GA10481@shutemov.name>
- <20100701221728.GA12187@suse.de>
+	id S1758515Ab0GAW1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:27:15 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49366 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755405Ab0GAW1N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 18:27:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=II6tWZBWl/WHrxdsRf4S/TKi7wLadJn4i5JHcmvOL7HsYbGMX/TuZKsUQR1m2/cDZi
+         g4jrtJLTXbCym0Bv1qCC49pZh9vD+tiJS6BnUkJ2eF3hX+D+myUPQQf9zOBuR7k9ycOC
+         q2/I8G6YXSAF+JH06q5LUAUXE/HSE84k/+8oM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701221728.GA12187@suse.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Date: Thu, 1 Jul 2010 23:27:11 +0100
+Message-ID: <AANLkTik0ApmWdPB_m2iejwa2zr7KnEyv8Eh8Z4-CPwd5@mail.gmail.com>
+Subject: [2.6.35-rc3] correct console log level when ERST ACPI table is not 
+	found
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 03:17:28PM -0700, Greg KH wrote:
-> On Fri, Jul 02, 2010 at 01:14:20AM +0300, Kirill A. Shutemov wrote:
-> > On Thu, Jul 01, 2010 at 10:31:37AM -0700, Greg KH wrote:
-> > > 2.6.32-stable review patch.  If anyone has any objections, please let us know.
-> > > 
-> > > ------------------
-> > > 
-> > > From: Anfei <anfei.zhou@gmail.com>
-> > > 
-> > > commit 5e27fb78df95e027723af2c90ecc9b4527ae59e9 upstream.
-> > > 
-> > > Instruction faults on pre-ARMv6 CPUs are interpreted as
-> > > a 'translation fault', but do_translation_fault doesn't
-> > > handle well if user mode trying to run instruction above
-> > > TASK_SIZE, and result in the infinite retry of that
-> > > instruction.
-> >  
-> > Actually, this patch helps also on ARMv6+. Probably, better to correct
-> > commit message for stable.
-> 
-> We (well, I) like to keep the commit log identical to what is upstream
-> just to make things easier all around.  Otherwise people start asking
-> for spelling fixes, clarifications, and all sorts of other stuff (like
-> this.)
+When booting 2.6.35-rc3 on a x86 system without an ERST ACPI table
+with the 'quiet' option, we still observe an "ERST: Table is not
+found!" warning.
 
-Ok, fair enough.
+Quiesce it to the same info log level as the other 'table not found' warnings.
 
-I asked for it because I was confused by this commit message while
-investigate (the same) problem on ARMv7 CPU.
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
 
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index 2ebc391..864dd46 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -781,7 +781,7 @@ static int __init erst_init(void)
+ 	status = acpi_get_table(ACPI_SIG_ERST, 0,
+ 				(struct acpi_table_header **)&erst_tab);
+ 	if (status == AE_NOT_FOUND) {
+-		pr_err(ERST_PFX "Table is not found!\n");
++		pr_info(ERST_PFX "Table is not found!\n");
+ 		goto err;
+ 	} else if (ACPI_FAILURE(status)) {
+ 		const char *msg = acpi_format_exception(status);
 -- 
- Kirill A. Shutemov
+Daniel J Blueman
