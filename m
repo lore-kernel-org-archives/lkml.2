@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933174Ab0GAV3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:29:20 -0400
-Received: from kroah.org ([198.145.64.141]:33266 "EHLO coco.kroah.org"
+	id S1759107Ab0GAVOW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:14:22 -0400
+Received: from kroah.org ([198.145.64.141]:33833 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933170Ab0GAVPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:33 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:02 2010
-Message-Id: <20100701174302.568114781@clark.site>
+	id S1758878Ab0GAVNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:06 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:48 2010
+Message-Id: <20100701174248.788053553@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:40 -0700
+Date: Thu, 01 Jul 2010 10:41:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [190/200] KVM: x86: Check LMA bit before set_efer
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [028/200] ALSA: hda: Use LPIB for Acer Aspire 5110
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sheng Yang <sheng@linux.intel.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-kvm_x86_ops->set_efer() would execute vcpu->arch.efer = efer, so the
-checking of LMA bit didn't work.
+commit 7a68be94e22e7643038726ebc14360752a91800b upstream.
 
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+BugLink: https://launchpad.net/bugs/583983
+
+Symptom: on a significant number of hardware, booting from a live cd
+results in capture working correctly, but once the distribution is
+installed, booting from the install results in capture not working.
+
+Test case: boot from Ubuntu 10.04 LTS live cd; capture works correctly.
+Install to HD and reboot; capture does not work. Reproduced with 2.6.32
+mainline build (vanilla kernel.org compile).
+
+Resolution: add SSID for Acer Aspire 5110 to the position_fix quirk
+table, explicitly specifying the LPIB method.
+
+I'll be sending additional patches for these SSIDs as bug reports are
+confirmed.
+
+Reported-and-Tested-By: Leo
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-(Cherry-picked from commit a3d204e28579427609c3d15d2310127ebaa47d94)
 ---
- arch/x86/kvm/x86.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -657,11 +657,11 @@ static void set_efer(struct kvm_vcpu *vc
- 		}
- 	}
- 
--	kvm_x86_ops->set_efer(vcpu, efer);
--
- 	efer &= ~EFER_LMA;
- 	efer |= vcpu->arch.efer & EFER_LMA;
- 
-+	kvm_x86_ops->set_efer(vcpu, efer);
-+
- 	vcpu->arch.efer = efer;
- 
- 	vcpu->arch.mmu.base_role.nxe = (efer & EFER_NX) && !tdp_enabled;
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2263,6 +2263,7 @@ static int azx_dev_free(struct snd_devic
+  * white/black-listing for position_fix
+  */
+ static struct snd_pci_quirk position_fix_list[] __devinitdata = {
++	SND_PCI_QUIRK(0x1025, 0x009f, "Acer Aspire 5110", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1028, 0x01cc, "Dell D820", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1028, 0x01de, "Dell Precision 390", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
 
 
