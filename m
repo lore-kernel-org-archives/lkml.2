@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab0GAWTI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:19:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36057 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933516Ab0GAWS5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 18:18:57 -0400
-Date: Thu, 1 Jul 2010 15:18:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-       Alexander Clouter <alex@digriz.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] VMware balloon: force compiling as a module
-Message-Id: <20100701151835.33874101.akpm@linux-foundation.org>
-In-Reply-To: <201006290940.38821.dtor@vmware.com>
-References: <20100628230035.GA18971@dtor-ws.eng.vmware.com>
-	<vcnof7-b9p.ln1@chipmunk.wormnet.eu>
-	<20100629182859.5acd5be7@neptune.home>
-	<201006290940.38821.dtor@vmware.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932700Ab0GAWTa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:19:30 -0400
+Received: from kroah.org ([198.145.64.141]:47214 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758339Ab0GAUtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:29 2010
+Message-Id: <20100701173428.976971810@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:33:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Christian Lamparter <chunkeey@googlemail.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 025/164] ar9170usb: fix panic triggered by undersized rxstream buffer
+In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010 09:40:38 -0700
-Dmitry Torokhov <dtor@vmware.com> wrote:
+2.6.33-stable review patch.  If anyone has any objections, please let me know.
 
-> On Tuesday, June 29, 2010 09:28:59 am Bruno Pr__mont wrote:
-> > On Tue, 29 June 2010 Alexander Clouter <alex@digriz.org.uk> wrote:
-> > > Dmitry Torokhov <dtor@vmware.com> wrote:
-> > > > VMware Tools installer requires the upstream driver to be compiled
-> > > > as a module in order to detect its presence and avoid installing
-> > > > our own version on top of it. To avoid surprises with 2 versions
-> > > > of the driver being installed and fighting with each other, let's
-> > > > force the driver to be compiled as a module unless user selects
-> > > > CONFIG_EMBEDDED.
-> > > 
-> > > *barf*
-> > > 
-> > > This surely is a problem in the installer and not the kernel?  Can you
-> > > not nosey around in /sys/class/misc or where-ever your driver appears?
-> > > If it does not, then I would probably suggest a patch to your balloon
-> > > driver that dumps some details in there, including module version
-> > > information.
-> > > 
-> > > Eugh.
-> > 
-> > In addition, the installer may check under /sys/module/ for it (as for
-> > any/most code that can be built as a module), even for built-in code.
-> > (if balloon driver does not show up there when built-in it would be
-> > better to get it to show up there)
-> > 
-> 
-> When driver is built-in the only thing exported in /sys/module/XXX are
-> module parameters.
-> 
-> We also need to handle scenario when module is not loaded into the
-> kernel.
-> 
+------------------
 
-- check for the /sys/module directory.
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-- if that failed, modprobe the driver
+commit 879999cec9489f8942ebce3ec1b5f23ef948dda7 upstream.
 
-- if that failed, error out
+While ar9170's USB transport packet size is currently set to 8KiB,
+the PHY is capable of receiving AMPDUs with up to 64KiB.
+Such a large frame will be split over several rx URBs and
+exceed the previously allocated space for rx stream reconstruction.
 
-The patch really is pretty icky.  Adding restrictions to kernel
-configuration to work around problems in some installer program?
+This patch increases the buffer size to 64KiB which is
+in fact the phy & rx stream designed size limit.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=15591
+Reported-by: Christian Mehlis <mehlis@inf.fu-berlin.de>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/net/wireless/ath/ar9170/hw.h   |    1 +
+ drivers/net/wireless/ath/ar9170/main.c |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/ath/ar9170/hw.h
++++ b/drivers/net/wireless/ath/ar9170/hw.h
+@@ -424,5 +424,6 @@ enum ar9170_txq {
+ 
+ #define AR9170_TXQ_DEPTH	32
+ #define AR9170_TX_MAX_PENDING	128
++#define AR9170_RX_STREAM_MAX_SIZE 65535
+ 
+ #endif /* __AR9170_HW_H */
+--- a/drivers/net/wireless/ath/ar9170/main.c
++++ b/drivers/net/wireless/ath/ar9170/main.c
+@@ -2538,7 +2538,7 @@ void *ar9170_alloc(size_t priv_size)
+ 	 * tends to split the streams into seperate rx descriptors.
+ 	 */
+ 
+-	skb = __dev_alloc_skb(AR9170_MAX_RX_BUFFER_SIZE, GFP_KERNEL);
++	skb = __dev_alloc_skb(AR9170_RX_STREAM_MAX_SIZE, GFP_KERNEL);
+ 	if (!skb)
+ 		goto err_nomem;
+ 
+
 
