@@ -1,116 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab0GAArf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 20:47:35 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38510 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab0GAArd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 20:47:33 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Salman Qazi <sqazi@google.com>
-Subject: Re: A possible sys_wait* bug
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Oleg Nesterov <oleg@redhat.com>,
-       Roland McGrath <roland@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <AANLkTinUy8Uk8pAom03DKzYTqthdXQ5ADfjGmjbI7jxN@mail.gmail.com>
-References: <AANLkTinUy8Uk8pAom03DKzYTqthdXQ5ADfjGmjbI7jxN@mail.gmail.com>
-Message-Id: <20100701093621.DA24.A69D9226@jp.fujitsu.com>
+	id S1751446Ab0GAAys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 20:54:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65335 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085Ab0GAAyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 20:54:47 -0400
+Message-ID: <4C2BE672.7030703@cn.fujitsu.com>
+Date: Thu, 01 Jul 2010 08:50:58 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 3/11] KVM: MMU: fix direct sp's access corruptted
+References: <4C2AF9FA.9020601@cn.fujitsu.com> <4C2AFA50.1070502@cn.fujitsu.com> <20100630193929.GA4817@amt.cnet>
+In-Reply-To: <20100630193929.GA4817@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  1 Jul 2010 09:47:30 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,  (cc to some core developers)
-
-Are anyone tracking this issue? This seems security issue.
 
 
-> One of our internal workloads ran into a problem with waitpid.  A
-> simple repro case is as follows:
+Marcelo Tosatti wrote:
+
+>> -		if (is_shadow_present_pte(*sptep) && !is_large_pte(*sptep))
+>> -			continue;
+>> +		if (is_shadow_present_pte(*sptep) && !is_large_pte(*sptep)) {
+>> +			struct kvm_mmu_page *child;
+>> +			unsigned direct_access;
+>> +
+>> +			if (level != gw->level)
+>> +				continue;
 > 
+> This will skip the check for the sp at level 1 when emulating 1GB pages
+> with 4k host pages (where there are direct sp's at level 2 and 1).
+> Should be > instead of !=.
 > 
-> #include <sys/types.h>
-> #include <sys/wait.h>
-> #include <sys/time.h>
-> #include <signal.h>
-> #include <stdlib.h>
-> #include <stdio.h>
-> #include <errno.h>
-> #include <assert.h>
-> #include <sched.h>
-> 
-> #define NUM_CPUS 4
-> 
-> void *thread_code(void *args)
-> {
->         int j;
->         int pid2;
->         for (j = 0; j < 1000; j++) {
->                 pid2 = fork();
->                 if (pid2 == 0)
->                         while(1) { sleep(1000); }
->         }
-> 
->         while (1) {
->                 int status;
->                 if (waitpid(-1, &status, WNOHANG)) {
->                         printf("! %d\n", errno);
->                 }
-> 
->         }
->         exit(0);
-> 
-> }
-> 
-> /*
->  * non-blocking waitpids in tight loop, with many children to go through,
->  * done on multiple thread, so that they can "pass the torch" to eachother
->  * and eliminate the window that a writer has to get in.
->  *
->  * This maximizes the holding of the tasklist_lock in read mode, starving
->  * any attempts to take the lock in the write mode.
->  */
-> int main(int argc, char **argv)
-> {
->         int i;
->         pthread_attr_t attr;
->         pthread_t threads[NUM_CPUS];
->         for (i = 0; i < NUM_CPUS; i++) {
->                 assert(!pthread_attr_init(&attr));
->                 assert(!pthread_create(&threads[i], &attr, thread_code));
->         }
->         while(1) { sleep(1000);}
->         return 0;
-> }
-> 
-> 
-> Basically, it is possibly for readers to continuously hold
-> tasklist_lock (theoretically forever, as they pass from one to other),
-> preventing the writer from taking that lock.  This typically causes a
-> lockup on a CPU where a task is attempting to do a fork() or exit(),
-> resulting in the NMI watchdog firing.
-> 
-> Yes, WNOHANG is being used.  And I agree that this is an inefficient
-> use of wait().  However, I think it should be possible to produce the
-> same effect without WNOHANG on sufficiently large number of threads:
-> by having it so that at least one thread always has the reader lock.
-> 
-> I think the most direct approach to the problem is to have the
-> readers-writer locks be writer biased (i.e. as soon as a writer
-> contends, we do not permit any new readers).  However all suggestions
-> are welcome.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+Marcelo,
+
+I think the patch is right.
+
+Every level's direct sp has the same access in the mapping since while we setup the
+mapping we find the direct sp with the same access.
+(Note: we have encode the D bit to the sp->role.access)
+
+Consider guest 1G writable clean pages and host 4K pages, the shadow pages mapping
+is like this:
+
+indirect L4 --> indirect L3 --> direct ReadOnly L2 --> direct ReadOnly L1
+
+When change guest pte to dirty, we update L3' spte and find the direct writable L2 sp,
+assume it's A, then we can sure that A's children sps should also writable, the final
+mapping is like this:
+
+indirect L4 --> indirect L3 --> direct Writable L2 --> direct Writable L1.
+
+So, i think we not broken anything in this patch :-)
 
 
 
+
+
+
+ 
