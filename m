@@ -1,407 +1,987 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795Ab0GAPoX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:44:23 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52715 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142Ab0GAPoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 11:44:22 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Dynamic Debug broken on 2.6.35-rc3?
-Date: Thu, 1 Jul 2010 17:44:19 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
-Cc: jbaron@redhat.com, gnb@melbourne.sgi.com
+	id S1756821Ab0GAPqJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:46:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48349 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab0GAPqG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 11:46:06 -0400
+Message-ID: <4C2CB7F4.9010508@oracle.com>
+Date: Thu, 01 Jul 2010 08:44:52 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_TfLLMLgdlsM+UsW"
-Message-Id: <201007011744.19564.trenn@suse.de>
+To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+CC: Andy Isaacson <adi@hexapodia.org>, Arnd Bergmann <arnd@arndb.de>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>, qi.wang@intel.com,
+       joel.clark@intel.com, andrew.chih.howe.khor@intel.com,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Packet hub driver of Topcliff PCH
+References: <4C204B0D.2030201@dsn.okisemi.com> <4C2C703A.9030705@dsn.okisemi.com>
+In-Reply-To: <4C2C703A.9030705@dsn.okisemi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C2CB828.00D1:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_TfLLMLgdlsM+UsW
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+On 07/01/10 03:38, Masayuki Ohtak wrote:
+> Packet hub driver of Topcliff PCH
+> 
+> Topcliff PCH is the platform controller hub that is going to be used in
+> Intel's upcoming general embedded platform. All IO peripherals in
+> Topcliff PCH are actually devices sitting on AMBA bus. Packet hub is
+> a special converter device in Topcliff PCH that translate AMBA transactions
+> to PCI Express transactions and vice versa. Thus packet hub helps present
+> all IO peripherals in Topcliff PCH as PCIE devices to IA system.
+> Topcliff PCH have MAC address and Option ROM data.
+> These data are in SROM which is connected to PCIE bus.
+> Packet hub driver of Topcliff PCH can access MAC address and Option ROM data in
+> SROM.
+> 
+> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> ---
+>  drivers/char/Kconfig             |    9 +
+>  drivers/char/Makefile            |    2 +
+>  drivers/char/pch_phub/Makefile   |    3 +
+>  drivers/char/pch_phub/pch_phub.c |  811 ++++++++++++++++++++++++++++++++++++++
+>  drivers/char/pch_phub/pch_phub.h |   48 +++
+>  5 files changed, 873 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/char/pch_phub/Makefile
+>  create mode 100755 drivers/char/pch_phub/pch_phub.c
+>  create mode 100755 drivers/char/pch_phub/pch_phub.h
+> 
+> diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+> index e023682..9ef3c85 100644
+> --- a/drivers/char/Kconfig
+> +++ b/drivers/char/Kconfig
+> @@ -4,6 +4,15 @@
+>  
+>  menu "Character devices"
+>  
+> +config PCH_PHUB
+> +	tristate "PCH PHUB"
+> +	depends on PCI
+> +	help
+> +	  This driver is for PCH PHUB of Topcliff which is an IOH for x86
+> +	  embedded processor. The Topcliff has MAC address and Option ROM data
+> +	  in SROM. This dirver can access MAC address and Option ROM data in
 
-Hi,
+	                driver
 
-Doing:
-echo "file ec.c +p" >/sys/kernel/debug/dynamic_debug/control
+> +	  SROM.
+> +
+>  config VT
+>  	bool "Virtual terminal" if EMBEDDED
+>  	depends on !S390
 
-I got x
-RIP: 0010:[<ffffffff81251267>]  [<ffffffff81251267>] 
-ddebug_change+0x87/0x240
+> diff --git a/drivers/char/pch_phub/pch_phub.c b/drivers/char/pch_phub/pch_phub.c
+> new file mode 100755
+> index 0000000..9a0f8a9
+> --- /dev/null
+> +++ b/drivers/char/pch_phub/pch_phub.c
+> @@ -0,0 +1,811 @@
+> +/*!
 
-More output is in the attachment.
+What is the ! for?
 
-Thanks for any hints,
+> + * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/types.h>
+> +#include <linux/fs.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/string.h>
+> +#include <linux/pci.h>
+> +#include <linux/io.h>
+> +#include <linux/delay.h>
+> +#include <linux/cdev.h>
+> +#include <linux/device.h>
+> +#include <linux/mutex.h>
+> +#include "pch_phub.h"
+> +
+> +#define PHUB_STATUS 0x00		/* Status Register offset */
+> +#define PHUB_CONTROL 0x04		/* Control Register offset */
+> +#define PHUB_TIMEOUT 0x05		/* Time out value for Status Register */
+> +#define PCH_PHUB_ROM_WRITE_ENABLE 0x01	/* Enabling for writing ROM */
+> +#define PCH_PHUB_ROM_WRITE_DISABLE 0x00	/* Disabling for writing ROM */
+> +#define PCH_PHUB_ROM_START_ADDR 0x14	/* ROM data area start address offset */
+> +
+> +/* MAX number of INT_REDUCE_CONTROL registers */
+> +#define MAX_NUM_INT_REDUCE_CONTROL_REG 128
+> +#define PCI_DEVICE_ID_PCH1_PHUB 0x8801
+> +#define PCH_MINOR_NOS 1
+> +#define CLKCFG_CAN_50MHZ 0x12000000
+> +#define CLKCFG_CANCLK_MASK 0xFF000000
+> +#define MODULE_NAME "pch_phub"
+> +
+> +/**
+> + * struct pch_phub_reg - PHUB register structure
+> + * @phub_id_reg:			PHUB_ID register val
+> + * @q_pri_val_reg:			QUEUE_PRI_VAL register val
+> + * @rc_q_maxsize_reg:			RC_QUEUE_MAXSIZE register val
+> + * @bri_q_maxsize_reg:			BRI_QUEUE_MAXSIZE register val
+> + * @comp_resp_timeout_reg:		COMP_RESP_TIMEOUT register val
+> + * @bus_slave_control_reg:		BUS_SLAVE_CONTROL_REG register val
+> + * @deadlock_avoid_type_reg:		DEADLOCK_AVOID_TYPE register val
+> + * @intpin_reg_wpermit_reg0:		INTPIN_REG_WPERMIT register 0 val
+> + * @intpin_reg_wpermit_reg1:		INTPIN_REG_WPERMIT register 1 val
+> + * @intpin_reg_wpermit_reg2:		INTPIN_REG_WPERMIT register 2 val
+> + * @intpin_reg_wpermit_reg3:		INTPIN_REG_WPERMIT register 3 val
+> + * @int_reduce_control_reg:		INT_REDUCE_CONTROL registers val
+> + * @clkcfg_reg:				CLK CFG register val
+> + * @pch_phub_base_address:		Register base address
+> + * @pch_phub_extrom_base_address:	external rom base address
+> + * @pch_phub_suspended:			PHUB status val
+> + */
+> +struct pch_phub_reg {
+> +	u32 phub_id_reg;
+> +	u32 q_pri_val_reg;
+> +	u32 rc_q_maxsize_reg;
+> +	u32 bri_q_maxsize_reg;
+> +	u32 comp_resp_timeout_reg;
+> +	u32 bus_slave_control_reg;
+> +	u32 deadlock_avoid_type_reg;
+> +	u32 intpin_reg_wpermit_reg0;
+> +	u32 intpin_reg_wpermit_reg1;
+> +	u32 intpin_reg_wpermit_reg2;
+> +	u32 intpin_reg_wpermit_reg3;
+> +	u32 int_reduce_control_reg[MAX_NUM_INT_REDUCE_CONTROL_REG];
+> +	u32 clkcfg_reg;
+> +	void __iomem *pch_phub_base_address;
+> +	void __iomem *pch_phub_extrom_base_address;
+> +	int pch_phub_suspended;
+> +} pch_phub_reg;
+> +
+> +/* SROM SPEC for MAC address assignment offset */
+> +static const int pch_phub_mac_offset[6] = {0x3, 0x2, 0x1, 0x0, 0xb, 0xa};
+> +
+> +static DEFINE_MUTEX(pch_phub_ioctl_mutex);
+> +static DEFINE_MUTEX(pch_phub_read_mutex);
+> +static DEFINE_MUTEX(pch_phub_write_mutex);
+> +static dev_t pch_phub_dev_no;
+> +static struct cdev pch_phub_dev;
+> +
+> +/**
+> + * pch_phub_read_modify_write_reg() - Reading modifying and writing register
+> + * @reg_addr_offset:	Register offset address value.
+> + * @data:		Writing value.
+> + * @mask:		Mask value.
+> + */
+> +static void pch_phub_read_modify_write_reg(unsigned int reg_addr_offset,
+> +					   unsigned int data, unsigned int mask)
+> +{
+> +	void __iomem *reg_addr = pch_phub_reg.pch_phub_base_address +
+> +					 reg_addr_offset;
+> +	iowrite32(((ioread32(reg_addr) & ~mask)) | data, reg_addr);
+> +}
+> +
+> +
+> +/* pch_phub_save_reg_conf - saves register configuration */
+> +static void pch_phub_save_reg_conf(struct pci_dev *pdev)
+> +{
+> +	unsigned int i;
+> +	void __iomem *p = pch_phub_reg.pch_phub_base_address;
+> +
+> +	dev_dbg(&pdev->dev, "pch_phub_save_reg_conf ENTRY\n");
+> +	pch_phub_reg.phub_id_reg = ioread32(p + PCH_PHUB_ID_REG);
+> +	pch_phub_reg.q_pri_val_reg = ioread32(p + PCH_PHUB_QUEUE_PRI_VAL_REG);
+> +	pch_phub_reg.rc_q_maxsize_reg =
+> +	    ioread32(p + PCH_PHUB_RC_QUEUE_MAXSIZE_REG);
+> +	pch_phub_reg.bri_q_maxsize_reg =
+> +	    ioread32(p + PCH_PHUB_BRI_QUEUE_MAXSIZE_REG);
+> +	pch_phub_reg.comp_resp_timeout_reg =
+> +	    ioread32(p + PCH_PHUB_COMP_RESP_TIMEOUT_REG);
+> +	pch_phub_reg.bus_slave_control_reg =
+> +	    ioread32(p + PCH_PHUB_BUS_SLAVE_CONTROL_REG);
+> +	pch_phub_reg.deadlock_avoid_type_reg =
+> +	    ioread32(p + PCH_PHUB_DEADLOCK_AVOID_TYPE_REG);
+> +	pch_phub_reg.intpin_reg_wpermit_reg0 =
+> +	    ioread32(p + PCH_PHUB_INTPIN_REG_WPERMIT_REG0);
+> +	pch_phub_reg.intpin_reg_wpermit_reg1 =
+> +	    ioread32(p + PCH_PHUB_INTPIN_REG_WPERMIT_REG1);
+> +	pch_phub_reg.intpin_reg_wpermit_reg2 =
+> +	    ioread32(p + PCH_PHUB_INTPIN_REG_WPERMIT_REG2);
+> +	pch_phub_reg.intpin_reg_wpermit_reg3 =
+> +	    ioread32(p + PCH_PHUB_INTPIN_REG_WPERMIT_REG3);
+> +	dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
+> +		"pch_phub_reg.phub_id_reg=%x, "
+> +		"pch_phub_reg.q_pri_val_reg=%x, "
+> +		"pch_phub_reg.rc_q_maxsize_reg=%x, "
+> +		"pch_phub_reg.bri_q_maxsize_reg=%x, "
+> +		"pch_phub_reg.comp_resp_timeout_reg=%x, "
+> +		"pch_phub_reg.bus_slave_control_reg=%x, "
+> +		"pch_phub_reg.deadlock_avoid_type_reg=%x, "
+> +		"pch_phub_reg.intpin_reg_wpermit_reg0=%x, "
+> +		"pch_phub_reg.intpin_reg_wpermit_reg1=%x, "
+> +		"pch_phub_reg.intpin_reg_wpermit_reg2=%x, "
+> +		"pch_phub_reg.intpin_reg_wpermit_reg3=%x\n",
+> +		pch_phub_reg.phub_id_reg,
+> +		pch_phub_reg.q_pri_val_reg,
+> +		pch_phub_reg.rc_q_maxsize_reg,
+> +		pch_phub_reg.bri_q_maxsize_reg,
+> +		pch_phub_reg.comp_resp_timeout_reg,
+> +		pch_phub_reg.bus_slave_control_reg,
+> +		pch_phub_reg.deadlock_avoid_type_reg,
+> +		pch_phub_reg.intpin_reg_wpermit_reg0,
+> +		pch_phub_reg.intpin_reg_wpermit_reg1,
+> +		pch_phub_reg.intpin_reg_wpermit_reg2,
+> +		pch_phub_reg.intpin_reg_wpermit_reg3);
+> +	for (i = 0; i < MAX_NUM_INT_REDUCE_CONTROL_REG; i++) {
+> +		pch_phub_reg.int_reduce_control_reg[i] =
+> +		    ioread32(p + PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE + 4 * i);
+> +		dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
+> +			"pch_phub_reg.int_reduce_control_reg[%d]=%x\n",
+> +			i, pch_phub_reg.int_reduce_control_reg[i]);
+> +	}
+> +	pch_phub_reg.clkcfg_reg = ioread32(p + CLKCFG_REG_OFFSET);
+> +
 
-      Thomas
+drop blank line above.
 
---Boundary-00=_TfLLMLgdlsM+UsW
-Content-Type: text/plain;
-  charset="UTF-8";
-  name="screen-exchange"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="screen-exchange"
+> +}
+> +
+> +/* pch_phub_restore_reg_conf - restore register configuration */
+> +static void pch_phub_restore_reg_conf(struct pci_dev *pdev)
+> +{
+> +	unsigned int i;
+> +	void __iomem *p = pch_phub_reg.pch_phub_base_address;
+> +
+> +	dev_dbg(&pdev->dev, "pch_phub_restore_reg_conf ENTRY\n");
+> +	iowrite32(pch_phub_reg.phub_id_reg, p + PCH_PHUB_ID_REG);
+> +	iowrite32(pch_phub_reg.q_pri_val_reg, p + PCH_PHUB_QUEUE_PRI_VAL_REG);
+> +	iowrite32(pch_phub_reg.rc_q_maxsize_reg,
+> +					p + PCH_PHUB_RC_QUEUE_MAXSIZE_REG);
+> +	iowrite32(pch_phub_reg.bri_q_maxsize_reg,
+> +					p + PCH_PHUB_BRI_QUEUE_MAXSIZE_REG);
+> +	iowrite32(pch_phub_reg.comp_resp_timeout_reg,
+> +					p + PCH_PHUB_COMP_RESP_TIMEOUT_REG);
+> +	iowrite32(pch_phub_reg.bus_slave_control_reg,
+> +					p + PCH_PHUB_BUS_SLAVE_CONTROL_REG);
+> +	iowrite32(pch_phub_reg.deadlock_avoid_type_reg,
+> +					p + PCH_PHUB_DEADLOCK_AVOID_TYPE_REG);
+> +	iowrite32(pch_phub_reg.intpin_reg_wpermit_reg0,
+> +					p + PCH_PHUB_INTPIN_REG_WPERMIT_REG0);
+> +	iowrite32(pch_phub_reg.intpin_reg_wpermit_reg1,
+> +					p + PCH_PHUB_INTPIN_REG_WPERMIT_REG1);
+> +	iowrite32(pch_phub_reg.intpin_reg_wpermit_reg2,
+> +					p + PCH_PHUB_INTPIN_REG_WPERMIT_REG2);
+> +	iowrite32(pch_phub_reg.intpin_reg_wpermit_reg3,
+> +					p + PCH_PHUB_INTPIN_REG_WPERMIT_REG3);
+> +	dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
+> +		"pch_phub_reg.phub_id_reg=%x, "
+> +		"pch_phub_reg.q_pri_val_reg=%x, "
+> +		"pch_phub_reg.rc_q_maxsize_reg=%x, "
+> +		"pch_phub_reg.bri_q_maxsize_reg=%x, "
+> +		"pch_phub_reg.comp_resp_timeout_reg=%x, "
+> +		"pch_phub_reg.bus_slave_control_reg=%x, "
+> +		"pch_phub_reg.deadlock_avoid_type_reg=%x, "
+> +		"pch_phub_reg.intpin_reg_wpermit_reg0=%x, "
+> +		"pch_phub_reg.intpin_reg_wpermit_reg1=%x, "
+> +		"pch_phub_reg.intpin_reg_wpermit_reg2=%x, "
+> +		"pch_phub_reg.intpin_reg_wpermit_reg3=%x\n",
+> +		pch_phub_reg.phub_id_reg,
+> +		pch_phub_reg.q_pri_val_reg,
+> +		pch_phub_reg.rc_q_maxsize_reg,
+> +		pch_phub_reg.bri_q_maxsize_reg,
+> +		pch_phub_reg.comp_resp_timeout_reg,
+> +		pch_phub_reg.bus_slave_control_reg,
+> +		pch_phub_reg.deadlock_avoid_type_reg,
+> +		pch_phub_reg.intpin_reg_wpermit_reg0,
+> +		pch_phub_reg.intpin_reg_wpermit_reg1,
+> +		pch_phub_reg.intpin_reg_wpermit_reg2,
+> +		pch_phub_reg.intpin_reg_wpermit_reg3);
+> +	for (i = 0; i < MAX_NUM_INT_REDUCE_CONTROL_REG; i++) {
+> +		iowrite32(pch_phub_reg.int_reduce_control_reg[i],
+> +			p + PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE + 4 * i);
+> +		dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
+> +			"pch_phub_reg.int_reduce_control_reg[%d]=%x\n",
+> +			i, pch_phub_reg.int_reduce_control_reg[i]);
+> +	}
+> +
+> +	iowrite32(pch_phub_reg.clkcfg_reg, p + CLKCFG_REG_OFFSET);
+> +}
+> +
+> +/**
+> + * pch_phub_read_serial_rom() - Reading Serial ROM
+> + * @offset_address:	Serial ROM offset address to read.
+> + * @data:		Read buffer for specified Serial ROM value.
+> + */
+> +static void pch_phub_read_serial_rom(unsigned int offset_address, u8 *data)
+> +{
+> +	void __iomem *mem_addr = pch_phub_reg.pch_phub_extrom_base_address +
+> +					 offset_address;
+> +
+> +	*data = ioread8(mem_addr);
+> +}
+> +
+> +/**
+> + * pch_phub_write_serial_rom() - Writing Serial ROM
+> + * @offset_address:	Serial ROM offset address.
+> + * @data:		Serial ROM value to write.
+> + */
+> +static int pch_phub_write_serial_rom(unsigned int offset_address, u8 data)
+> +{
+> +	void __iomem *mem_addr = pch_phub_reg.pch_phub_extrom_base_address +
+> +					(offset_address & PCH_WORD_ADDR_MASK);
+> +	int i;
+> +	unsigned int word_data;
+> +	unsigned int pos;
+> +	unsigned int mask;
+> +	pos = (offset_address % 4) * 8;
+> +	mask = ~(0xFF << pos);
+> +
+> +	iowrite32(PCH_PHUB_ROM_WRITE_ENABLE,
+> +			pch_phub_reg.pch_phub_extrom_base_address +
+> +			PHUB_CONTROL);
+> +
+> +	word_data = ioread32(mem_addr);
+> +	iowrite32((word_data & mask) | (u32)data << pos, mem_addr);
+> +
+> +	i = 0;
+> +	while (0x00 != ioread8(pch_phub_reg.pch_phub_extrom_base_address +
+> +			PHUB_STATUS)) {
 
-airey login: airey login: [  180.084952] BUG: unable to handle kernel paging request at ffffffffa01b6c38
-[  180.151314] IP: [<ffffffff81251267>] ddebug_change+0x87/0x240
-[  180.210203] PGD 1a06067 PUD 1a0a063 PMD 31d57f067 PTE 0
-[  180.263859] Oops: 0000 [#1] SMP
-[  180.297059] last sysfs file: /sys/devices/system/cpu/cpu15/cache/index2/shared_cpu_map
-[  180.376304] CPU 3
-[  180.394951] Modules linked in: iptable_filter ip_tables x_tables autofs4 nfs lockd fscache nfs_acl auth_rpcgss sunrpc af_packet cpufreq_conservative cpufreq_userspace cpufreq_powersave pcc_cpufreq mperf microcode fuse reiserfs loop dm_mod iTCO_wdt power_meter hpilo bnx2 tpm_tis hpwdt tpm i7core_edac iTCO_vendor_support edac_core serio_raw pcspkr tpm_bios joydev button container usbhid uhci_hcd ehci_hcd usbcore edd fan thermal processor thermal_sys hpsa cciss scsi_mod
-[  180.820993]
-[  180.835142] Pid: 4731, comm: bash Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1 /ProLiant DL380 G7
-[  180.929285] RIP: 0010:[<ffffffff81251267>]  [<ffffffff81251267>] ddebug_change+0x87/0x240
-[  181.019416] RSP: 0018:ffff88019e87fd08  EFLAGS: 00010282
-[  181.081030] RAX: 0000000000000000 RBX: ffff88019e87feb8 RCX: 000000000000007b
-[  181.155620] RDX: ffff88019e87fd6d RSI: ffffffffa00996f2 RDI: 0000000000000000
-[  181.228453] RBP: 0000000000000001 R08: ffff88019e87fd74 R09: 00007f1e27b40e10
-[  181.301645] R10: 00007f1e27b40e10 R11: 0000000000000246 R12: ffffffffa01b6c28
-[  181.375301] R13: 0000000000000000 R14: ffff88031a29fb40 R15: 00000000ffffffff
-[  181.462542] FS:  00007f1e28179700(0000) GS:ffff8801a5620000(0000) knlGS:0000000000000000
-[  181.544493] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  181.603704] CR2: ffffffffa01b6c38 CR3: 000000019d580000 CR4: 00000000000006e0
-[  181.692283] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  181.764272] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  181.837717] Process bash (pid: 4731, threadinfo ffff88019e87e000, task ffff88019d7be800)
-[  181.914729] Stack:
-[  181.933843]  ffff88019e87fd6d ffffffffa00996a9 ffff88031e89b6d8 000000000000000d
-[  182.005775] <0> 000000000000000d ffff88019e87feb8 0000000000000002 ffff88019e87fe68
-[  182.097157] <0> 0000000000000000 ffffffff81251892 0000000002aad70a ffff88019e87ff58
-[  182.184155] Call Trace:
-[  182.209545]  [<ffffffff81251892>] ddebug_proc_write+0x142/0x150
-[  182.269894]  [<ffffffff8113aa86>] vfs_write+0xb6/0x190
-[  182.320898]  [<ffffffff8113adce>] sys_write+0x4e/0x90
-[  182.371449]  [<ffffffff81002ebb>] system_call_fastpath+0x16/0x1b
-[  182.433219] DWARF2 unwinder stuck at system_call_fastpath+0x16/0x1b
-[  182.498920]
-[  182.514114] Leftover inexact backtrace:
-[  182.514115]
-[  182.570444] Code: 01 00 00 41 8b 4e 18 85 c9 0f 84 66 01 00 00 45 31 ed 66 90 49 63 c5 48 8b 13 4c 8d 24 80 49 c1 e4 03 4d 03 66 20 48 85 d2 74 50 <49> 8b 4c 24 10 48 89 d7 48 89 14 24 48 89 ce 48 89 4c 24 08 e8
-[  182.756238] RIP  [<ffffffff81251267>] ddebug_change+0x87/0x240
-[  182.812812]  RSP <ffff88019e87fd08>
-[  182.845880] CR2: ffffffffa01b6c38
-[  182.967417] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967423]
-[  182.967427] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967430]
-[  182.967433] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967436]
-[  182.967440] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967443]
-[  182.967446] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967449]
-[  182.967453] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967456]
-[  182.967459] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967462]
-[  182.967465] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967468]
-[  182.967471] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967473]
-[  182.967476] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967479]
-[  182.967482] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967484]
-[  182.967487] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967490]
-[  182.967493] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967495]
-[  182.967498] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967501]
-[  182.967504] Kernel panic - not syncing: An NMI occurred, please see the Integrated Management Log for details.
-[  182.967507]
-[  182.967511] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967516] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967520] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967525] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967530] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967535] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967539] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967544] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967548] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967553] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967557] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967561] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967566] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967570] Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  182.967574] Call Trace:
-[  182.967576] Call Trace:
-[  182.967578] Call Trace:
-[  182.967580] Call Trace:
-[  182.967582] Call Trace:
-[  182.967584] Call Trace:
-[  182.967587] Call Trace:
-[  182.967589] Call Trace:
-[  182.967591] Call Trace:
-[  182.967594] Call Trace:
-[  182.967596] Call Trace:
-[  182.967598] Call Trace:
-[  182.967600] Call Trace:
-[  182.967602] Call Trace:
-[  182.967616]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967624]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967631]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967637]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967643]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967649]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967654]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967659]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967664]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967669]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967674]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967678]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967684]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967693]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  182.967702]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967708]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967712]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967717]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967722]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967726]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967730]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967734]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967738]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967742]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967747]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967751]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967757]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967765]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  182.967770]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967774]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967778]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967782]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967787]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967791]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967796]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967800]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967803]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967807]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967811]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967816]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967822]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967830]  [<ffffffff8144d681>] panic+0x94/0x118
-[  182.967837]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967847]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967855]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967862]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967869]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967877]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967884]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967890]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967897]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967904]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967911]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967918]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967927]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967936]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
-[  182.967944]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.967952]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.967957]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.967963]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.967968]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.967975]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.967980]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.967985]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.967990]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.967996]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.968001]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.968009]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.968016]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.968022]  [<ffffffff81453a15>] notifier_call_chain+0x45/0x60
-[  182.968027]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968032]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968036]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968041]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968046]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968050]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968054]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968059]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968064]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968069]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968076]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968083]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968089]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968094]  [<ffffffff81453a8d>] notify_die+0x2d/0x40
-[  182.968099]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968104]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968109]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968114]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968120]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968124]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968129]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968134]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968139]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968145]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968151]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968158]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968163]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968168]  [<ffffffff81450c4c>] default_do_nmi+0xcc/0x260
-[  182.968173]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968177]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968182]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968187]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968191]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968196]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968201]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968205]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968211]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968217]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968224]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968229]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968233]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968238]  [<ffffffff81450fb8>] do_nmi+0x68/0x70
-[  182.968242]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968246]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968251]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968255]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968259]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968264]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968268]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968274]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968279]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968284]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968288]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968292]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968296]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.968301]  [<ffffffff8145097a>] nmi+0x1a/0x20
-[  182.970855] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.970857]
-[  182.970858] Leftover inexact backtrace:
-[  182.970859]
-[  182.970861]  <NMI>  [<ffffffff81078490>] ? sched_clock_idle_sleep_event+0x10/0x20
-[  182.970867]  <<EOE>>  [<ffffffffa007bed4>] ? acpi_idle_enter_bm+0x129/0x22f [processor]
-[  182.970882]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.970887]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.971646] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.971648]
-[  182.971649] Leftover inexact backtrace:
-[  182.971650]
-[  182.971652]  <NMI>  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.971660]  <<EOE>>  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.971675]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.971679]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972327] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972329]
-[  182.972331] Leftover inexact backtrace:
-[  182.972333]
-[  182.972337]  <NMI> DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972341] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972346]
-[  182.972349]
-[  182.972354]  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972357] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972361] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972363] Leftover inexact backtrace:
-[  182.972365]
-[  182.972367] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972370] Leftover inexact backtrace:
-[  182.972371]
-[  182.972375]  <<EOE>>
-[  182.972378]
-[  182.972380]  <NMI>
-[  182.972384]  <NMI> DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972389] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972392] Leftover inexact backtrace:
-[  182.972393]
-[  182.972396] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972399] Leftover inexact backtrace:
-[  182.972400]
-[  182.972402] Leftover inexact backtrace:
-[  182.972404]
-[  182.972406] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972409] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972412]
-[  182.972414]
-[  182.972416] DWARF2 unwinder stuck at nmi+0x1a/0x20
-[  182.972418]  <NMI>
-[  182.972426]  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972429]  <NMI>  <NMI>  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972438]
-[  182.972443]  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972446]
-[  182.972448] Leftover inexact backtrace:
-[  182.972449]
-[  182.972451] Leftover inexact backtrace:
-[  182.972452]
-[  182.972454]
-[  182.972456] Leftover inexact backtrace:
-[  182.972458]
-[  182.972462]  <<EOE>> Leftover inexact backtrace:
-[  182.972465]
-[  182.972467]  <<EOE>> Leftover inexact backtrace:
-[  182.972470]
-[  182.972472]  <NMI>  <NMI> Leftover inexact backtrace:
-[  182.972476]
-[  182.972478]  <NMI>  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972488]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972493]  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972499]  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972503]  <NMI>  <NMI>  <NMI>  <<EOE>>  <<EOE>>  <<EOE>>  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972526]  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972531]  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972537]  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972543]  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972548]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972555]  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972559]  <<EOE>>  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972565]  <<EOE>>  [<ffffffff8100bc6e>] ? mwait_idle_with_hints+0x9e/0x110
-[  182.972571]  <<EOE>>  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972585]  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972593]  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972598]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972601]  <<EOE>>  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972608]  <<EOE>>  <<EOE>>  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972627]  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972635]  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972641]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972646]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972651]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972656]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972662]  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972668]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972676]  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972683]  [<ffffffffa007bf52>] ? acpi_idle_enter_bm+0x1a7/0x22f [processor]
-[  182.972692]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972696]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972701]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972707]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972712]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972717]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972721]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972727]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972733]  [<ffffffff8134c6bf>] ? cpuidle_idle_call+0x9f/0x130
-[  182.972739]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972744]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972748]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972753]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972758]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  182.972763]  [<ffffffff8100125c>] ? cpu_idle+0x4c/0xa0
-[  184.039785] Rebooting in 100 seconds..
-[  184.039877] Rebooting in 100 seconds..
-[  184.039884] Rebooting in 100 seconds..
-[  184.039922] Rebooting in 100 seconds..
-[  184.039941] Rebooting in 100 seconds..
-[  184.039949] Rebooting in 100 seconds..
-[  184.039952] Rebooting in 100 seconds..
-[  184.039954] Rebooting in 100 seconds..
-[  184.039958] Rebooting in 100 seconds..
-[  184.039970] Rebooting in 100 seconds..
-[  184.040115] Rebooting in 100 seconds..
-[  184.040143] Rebooting in 100 seconds..
-[  184.057651] Rebooting in 100 seconds..
-[  184.070156] Rebooting in 100 seconds..Pid: 0, comm: swapper Not tainted 2.6.35-rc3-0.0.10.4cae135-default #1
-[  199.102545] Call Trace:
-[  199.126562]  [<ffffffff81005919>] dump_trace+0x69/0x2e0
-[  199.179537]  [<ffffffff8144d5e7>] dump_stack+0x69/0x6f
-[  199.230702]  [<ffffffff8144d681>] panic+0x94/0x118
-[  199.280446]  [<ffffffffa02183f6>] hpwdt_pretimeout+0xb6/0xc0 [hpwdt]
+We prefer to have constant on right side of comparison...
 
---Boundary-00=_TfLLMLgdlsM+UsW--
+> +		msleep(1);
+> +		if (PHUB_TIMEOUT == i)
+> +			return -EPERM;
+> +		i++;
+> +	}
+> +
+> +	iowrite32(PCH_PHUB_ROM_WRITE_DISABLE,
+> +			pch_phub_reg.pch_phub_extrom_base_address +
+> +			PHUB_CONTROL);
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * pch_phub_read_serial_rom_val() - Read Serial ROM value
+> + * @offset_address:	Serial ROM address offset value.
+> + * @data:		Serial ROM value to read.
+> + */
+> +static void pch_phub_read_serial_rom_val(unsigned int offset_address, u8 *data)
+> +{
+> +	unsigned int mem_addr;
+> +
+> +	mem_addr = PCH_PHUB_ROM_START_ADDR +
+> +			pch_phub_mac_offset[offset_address];
+> +
+> +	pch_phub_read_serial_rom(mem_addr, data);
+> +
+
+drop blank line above.
+
+> +}
+> +
+> +
+> +/**
+> + * pch_phub_write_serial_rom_val() - writing Serial ROM value
+> + * @offset_address:	Serial ROM address offset value.
+> + * @data:		Serial ROM value.
+> + */
+> +static int pch_phub_write_serial_rom_val(unsigned int offset_address, u8 data)
+> +{
+> +	int retval;
+> +	unsigned int mem_addr;
+> +
+> +	mem_addr = PCH_PHUB_ROM_START_ADDR +
+> +			pch_phub_mac_offset[offset_address];
+> +
+> +	retval = pch_phub_write_serial_rom(mem_addr, data);
+> +
+> +	return retval;
+> +}
+> +
+> +/* pch_phub_gbe_serial_rom_conf - makes Serial ROM header format configuration
+> + * for Gigabit Ethernet MAC address
+> + */
+> +static int pch_phub_gbe_serial_rom_conf(void)
+> +{
+> +	int retval;
+> +
+> +	retval = pch_phub_write_serial_rom(0x0b, 0xbc);
+> +	retval |= pch_phub_write_serial_rom(0x0a, 0x10);
+> +	retval |= pch_phub_write_serial_rom(0x09, 0x01);
+> +	retval |= pch_phub_write_serial_rom(0x08, 0x02);
+> +
+> +	retval |= pch_phub_write_serial_rom(0x0f, 0x00);
+> +	retval |= pch_phub_write_serial_rom(0x0e, 0x00);
+> +	retval |= pch_phub_write_serial_rom(0x0d, 0x00);
+> +	retval |= pch_phub_write_serial_rom(0x0c, 0x80);
+> +
+> +	retval |= pch_phub_write_serial_rom(0x13, 0xbc);
+> +	retval |= pch_phub_write_serial_rom(0x12, 0x10);
+> +	retval |= pch_phub_write_serial_rom(0x11, 0x01);
+> +	retval |= pch_phub_write_serial_rom(0x10, 0x18);
+> +
+> +	retval |= pch_phub_write_serial_rom(0x1b, 0xbc);
+> +	retval |= pch_phub_write_serial_rom(0x1a, 0x10);
+> +	retval |= pch_phub_write_serial_rom(0x19, 0x01);
+> +	retval |= pch_phub_write_serial_rom(0x18, 0x19);
+> +
+> +	retval |= pch_phub_write_serial_rom(0x23, 0xbc);
+> +	retval |= pch_phub_write_serial_rom(0x22, 0x10);
+> +	retval |= pch_phub_write_serial_rom(0x21, 0x01);
+> +	retval |= pch_phub_write_serial_rom(0x20, 0x3a);
+> +
+> +	retval |= pch_phub_write_serial_rom(0x27, 0x01);
+> +	retval |= pch_phub_write_serial_rom(0x26, 0x00);
+> +	retval |= pch_phub_write_serial_rom(0x25, 0x00);
+> +	retval |= pch_phub_write_serial_rom(0x24, 0x00);
+> +
+> +	return retval;
+> +}
+> +
+> +/**
+> + * pch_phub_read_gbe_mac_addr() - Read Gigabit Ethernet MAC address
+> + * @offset_address:	Gigabit Ethernet MAC address offset value.
+> + * @data:		Buffer of the Gigabit Ethernet MAC address value.
+> + */
+> +static void pch_phub_read_gbe_mac_addr(u8 *data)
+> +{
+> +	int i;
+> +	for (i = 0; i < 6; i++)
+
+s/6/ETH_ALEN/
+(see below)
+
+> +		pch_phub_read_serial_rom_val(i, &data[i]);
+> +}
+> +
+> +/**
+> + * pch_phub_write_gbe_mac_addr() - Write MAC address
+> + * @offset_address:	Gigabit Ethernet MAC address offset value.
+> + * @data:		Gigabit Ethernet MAC address value.
+> + */
+> +static int pch_phub_write_gbe_mac_addr(u8 *data)
+> +{
+> +	int retval;
+> +	int i;
+> +
+> +	retval = pch_phub_gbe_serial_rom_conf();
+> +	if (retval)
+> +		return retval;
+> +
+> +	for (i = 0; i < 6; i++) {
+
+s/6/ETH_ALEN/
+(see below)
+
+> +		retval = pch_phub_write_serial_rom_val(i, data[i]);
+> +		if (retval)
+> +			return retval;
+> +	}
+> +
+> +	return retval;
+> +}
+> +
+> +static ssize_t pch_phub_read(struct file *file, char __user *buf, size_t size,
+> +			     loff_t *ppos)
+> +{
+> +	unsigned int rom_signature;
+> +	unsigned char rom_length;
+> +	int ret_value;
+> +	unsigned int tmp;
+> +	unsigned char data;
+> +	unsigned int addr_offset;
+> +	unsigned int orom_size;
+> +	int ret;
+> +	int err;
+> +	loff_t pos = *ppos;
+> +
+> +	ret = mutex_lock_interruptible(&pch_phub_read_mutex);
+> +	if (ret) {
+> +		err = -ERESTARTSYS;
+> +		goto return_err_nomutex;
+> +	}
+> +
+> +	/* Get Rom signature */
+> +	pch_phub_read_serial_rom(0x80, (unsigned char *)&rom_signature);
+> +	rom_signature &= 0xff;
+> +	pch_phub_read_serial_rom(0x81, (unsigned char *)&tmp);
+> +	rom_signature |= (tmp & 0xff) << 8;
+> +	if (rom_signature == 0xAA55) {
+> +		pch_phub_read_serial_rom(0x82, &rom_length);
+> +		orom_size = rom_length * 512;
+> +		if (orom_size < pos) {
+> +			addr_offset = 0;
+> +			goto return_ok;
+> +		}
+> +
+> +		for (addr_offset = 0; addr_offset < size; addr_offset++) {
+> +			pch_phub_read_serial_rom(0x80 + addr_offset + pos,
+> +									 &data);
+> +			ret_value = copy_to_user(&buf[addr_offset], &data, 1);
+> +			if (ret_value) {
+> +				err = -EFAULT;
+> +				goto return_err;
+> +			}
+> +
+> +			if (orom_size < pos + addr_offset) {
+> +				*ppos += addr_offset;
+> +				goto return_ok;
+> +			}
+> +
+> +		}
+> +	} else {
+> +		return -ENODATA;
+
+Need to unlock mutex here also??
+
+> +	}
+> +	*ppos += addr_offset;
+> +return_ok:
+> +	mutex_unlock(&pch_phub_read_mutex);
+> +	return addr_offset;
+> +
+> +return_err:
+> +	mutex_unlock(&pch_phub_read_mutex);
+> +return_err_nomutex:
+> +	return err;
+> +}
+> +
+> +
+> +static ssize_t pch_phub_write(struct file *file, const char __user *buf,
+> +			      size_t size, loff_t *ppos)
+> +{
+> +	unsigned int data;
+> +	int ret_value1;
+> +	int ret_value2;
+> +	int err;
+> +	unsigned int addr_offset;
+> +	loff_t pos = *ppos;
+> +	int ret;
+> +
+> +	ret = mutex_lock_interruptible(&pch_phub_write_mutex);
+> +	if (ret) {
+> +		err = -ERESTARTSYS;
+> +		goto return_err_nomutex;
+> +	}
+> +
+> +	for (addr_offset = 0; addr_offset < size; addr_offset++) {
+> +		ret_value1 = get_user(data, &buf[addr_offset]);
+> +		if (ret_value1) {
+> +			err = -EFAULT;
+> +			goto return_err;
+> +		}
+> +
+> +		ret_value2 = pch_phub_write_serial_rom(0x80 + addr_offset + pos,
+> +							data);
+> +		if (ret_value2) {
+> +			err = ret_value2;
+> +			goto return_err;
+> +		}
+> +
+> +		if (PCH_PHUB_OROM_SIZE < pos + addr_offset) {
+> +			*ppos += addr_offset;
+> +			goto return_ok;
+> +		}
+> +
+> +	}
+> +
+> +	*ppos += addr_offset;
+> +
+> +return_ok:
+> +	mutex_unlock(&pch_phub_write_mutex);
+> +	return addr_offset;
+> +
+> +return_err:
+> +	mutex_unlock(&pch_phub_write_mutex);
+> +return_err_nomutex:
+> +	return err;
+> +}
+> +
+> +
+> +static long pch_phub_ioctl(struct file *file, unsigned int cmd,
+> +			   unsigned long arg)
+> +{
+> +	int ret_value;
+> +	int ret;
+> +	int rtn;
+> +	__u8 mac_addr[6];
+
+#include <linux/if_ether.h>
+
+	__u8 mac_addr[ETH_ALEN];
+
+
+> +	void __user *varg = (void __user *)arg;
+> +
+> +	ret = mutex_lock_interruptible(&pch_phub_ioctl_mutex);
+> +	if (ret) {
+> +		ret_value = -ERESTARTSYS;
+> +		goto return_nomutex;
+> +	}
+> +
+> +	if (pch_phub_reg.pch_phub_suspended == true) {
+> +		ret_value = -EBUSY;
+> +		goto return_ioctrl;
+> +	}
+> +
+> +	switch (cmd) {
+> +	case IOCTL_PHUB_READ_MAC_ADDR:
+> +		pch_phub_read_gbe_mac_addr(mac_addr);
+> +
+> +		ret_value = copy_to_user(varg, mac_addr, sizeof(mac_addr));
+
+s/sizeof(mac_addr)/ETH_ALEN/
+
+> +		break;
+> +
+> +	case IOCTL_PHUB_WRITE_MAC_ADDR:
+> +		rtn = copy_from_user(mac_addr, varg, sizeof(mac_addr));
+
+ditto.
+
+> +
+> +		if (rtn) {
+> +			ret_value = -EFAULT;
+> +			break;
+> +		}
+> +
+> +		ret_value = pch_phub_write_gbe_mac_addr(mac_addr);
+> +		break;
+> +
+> +	default:
+> +		ret_value = -EINVAL;
+> +		break;
+> +	}
+> +return_ioctrl:
+> +	mutex_unlock(&pch_phub_ioctl_mutex);
+> +return_nomutex:
+> +	return ret_value;
+> +}
+
+
+> +static int __devinit pch_phub_probe(struct pci_dev *pdev,
+> +				    const struct pci_device_id *id)
+> +{
+> +	int ret;
+> +	unsigned int rom_size;
+> +
+> +	ret = pci_enable_device(pdev);
+> +	if (ret) {
+> +		dev_dbg(&pdev->dev,
+> +		"pch_phub_probe : pci_enable_device FAILED(ret=%d)", ret);
+> +		goto err_pci_enable_dev;
+> +	}
+> +	dev_dbg(&pdev->dev, "pch_phub_probe : pci_enable_device returns %d\n",
+> +		ret);
+> +
+> +	ret = pci_request_regions(pdev, MODULE_NAME);
+> +	if (ret) {
+> +		dev_dbg(&pdev->dev,
+> +		"pch_phub_probe : pci_request_regions FAILED(ret=%d)", ret);
+> +		goto err_req_regions;
+> +	}
+> +	dev_dbg(&pdev->dev, "pch_phub_probe : "
+> +		"pci_request_regions returns %d\n", ret);
+> +
+> +	pch_phub_reg.pch_phub_base_address = pci_iomap(pdev, 1, 0);
+> +
+> +	if (pch_phub_reg.pch_phub_base_address == 0) {
+> +		dev_dbg(&pdev->dev, "pch_phub_probe : pci_iomap FAILED");
+> +		ret = -ENOMEM;
+> +		goto err_pci_iomap;
+> +	}
+> +	dev_dbg(&pdev->dev, "pch_phub_probe : pci_iomap SUCCESS and value "
+> +		"in pch_phub_base_address variable is 0x%08x\n",
+> +		(unsigned int)pch_phub_reg.pch_phub_base_address);
+> +
+> +	pch_phub_reg.pch_phub_extrom_base_address =
+> +						pci_map_rom(pdev, &rom_size);
+> +	if (pch_phub_reg.pch_phub_extrom_base_address == 0) {
+> +		dev_dbg(&pdev->dev, "pch_phub_probe : pci_map_rom FAILED");
+> +		ret = -ENOMEM;
+> +		goto err_pci_map;
+> +	}
+> +	dev_dbg(&pdev->dev, "pch_phub_probe : "
+> +		"pci_map_rom SUCCESS and value in "
+> +		"pch_phub_extrom_base_address variable is 0x%08x\n",
+> +		(unsigned int)pch_phub_reg.pch_phub_extrom_base_address);
+> +
+> +	ret = alloc_chrdev_region(&pch_phub_dev_no, 0,
+> +					PCH_MINOR_NOS, MODULE_NAME);
+> +	if (ret) {
+> +		dev_dbg(&pdev->dev, "pch_phub_probe : "
+> +				"alloc_chrdev_region FAILED(ret=%d)", ret);
+> +
+> +		goto err_alloc_cdev;
+> +	}
+> +	dev_dbg(&pdev->dev, "pch_phub_probe : "
+> +		"alloc_chrdev_region returns %d\n", ret);
+> +
+> +	cdev_init(&pch_phub_dev, &pch_phub_fops);
+> +	dev_dbg(&pdev->dev,
+> +			"pch_phub_probe :  cdev_init invoked successfully\n");
+> +
+> +	pch_phub_dev.owner = THIS_MODULE;
+> +	pch_phub_dev.ops = &pch_phub_fops;
+> +
+> +	ret = cdev_add(&pch_phub_dev, pch_phub_dev_no, PCH_MINOR_NOS);
+> +	if (ret) {
+> +		dev_dbg(&pdev->dev, "pch_phub_probe :  cdev_add FAILED(ret=%d)",
+> +			ret);
+> +		goto err_cdev_add;
+> +	}
+> +	dev_dbg(&pdev->dev, "pch_phub_probe :  cdev_add returns %d\n", ret);
+> +
+> +	/* set the clock config reg if CAN clock is 50Mhz */
+> +	dev_dbg(&pdev->dev, "pch_phub_probe : invoking "
+> +		"pch_phub_read_modify_write_reg "
+> +		"to set CLKCFG reg for CAN clk 50Mhz\n");
+> +	pch_phub_read_modify_write_reg((unsigned int)CLKCFG_REG_OFFSET,
+> +					  CLKCFG_CAN_50MHZ, CLKCFG_CANCLK_MASK);
+> +
+> +	/* set the prefech value */
+> +	iowrite32(0x000ffffa, pch_phub_reg.pch_phub_base_address + 0x14);
+> +	/* set the interrupt delay value */
+> +	iowrite32(0x25, pch_phub_reg.pch_phub_base_address + 0x44);
+> +	return 0;
+> +
+> +err_cdev_add:
+> +	unregister_chrdev_region(pch_phub_dev_no, PCH_MINOR_NOS);
+> +err_alloc_cdev:
+> +	pci_unmap_rom(pdev, pch_phub_reg.pch_phub_extrom_base_address);
+> +err_pci_map:
+> +	pci_iounmap(pdev, pch_phub_reg.pch_phub_base_address);
+> +err_pci_iomap:
+> +	pci_release_regions(pdev);
+> +err_req_regions:
+> +	pci_disable_device(pdev);
+> +err_pci_enable_dev:
+> +	dev_dbg(&pdev->dev, "pch_phub_probe returns %d\n", ret);
+> +	return ret;
+> +}
+> +
+> +static void __devexit pch_phub_remove(struct pci_dev *pdev)
+> +{
+> +
+
+drop blank line.
+
+> +	cdev_del(&pch_phub_dev);
+> +	dev_dbg(&pdev->dev,
+> +			"pch_phub_remove - cdev_del Invoked successfully\n");
+> +
+> +	unregister_chrdev_region(pch_phub_dev_no, PCH_MINOR_NOS);
+> +	dev_dbg(&pdev->dev, "pch_phub_remove - "
+> +		"unregister_chrdev_region Invoked successfully\n");
+> +
+> +	pci_unmap_rom(pdev, pch_phub_reg.pch_phub_extrom_base_address);
+> +
+> +	pci_iounmap(pdev, pch_phub_reg.pch_phub_base_address);
+> +
+> +	dev_dbg(&pdev->dev, "pch_phub_remove - "
+> +			"pci_iounmap Invoked successfully\n");
+> +
+> +	pci_release_regions(pdev);
+> +	dev_dbg(&pdev->dev, "pch_phub_remove - "
+> +		"pci_release_regions Invoked successfully\n");
+> +
+> +	pci_disable_device(pdev);
+> +	dev_dbg(&pdev->dev, "pch_phub_remove - "
+> +		"pci_disable_device Invoked successfully\n");
+> +
+> +}
+> +
+> +#ifdef CONFIG_PM
+
+> +
+> +static int pch_phub_resume(struct pci_dev *pdev)
+> +{
+> +
+
+drop that blank line before the local data, but leave the one after local data.
+
+> +	int ret;
+> +
+> +	pci_set_power_state(pdev, PCI_D0);
+> +	dev_dbg(&pdev->dev, "pch_phub_resume - "
+> +		"pci_set_power_state Invoked successfully\n");
+> +
+> +	pci_restore_state(pdev);
+> +	dev_dbg(&pdev->dev, "pch_phub_resume - "
+> +		"pci_restore_state Invoked successfully\n");
+> +
+> +	ret = pci_enable_device(pdev);
+> +	if (ret) {
+> +		dev_dbg(&pdev->dev,
+> +		"pch_phub_resume-pci_enable_device failed(ret=%d) ", ret);
+> +		return ret;
+> +	}
+> +
+> +	dev_dbg(&pdev->dev, "pch_phub_resume - "
+> +			"pci_enable_device returns -%d\n", ret);
+
+The '-' before %d could be confusing.
+
+> +
+> +	pci_enable_wake(pdev, PCI_D3hot, 0);
+> +	dev_dbg(&pdev->dev, "pch_phub_resume - "
+> +			"pci_enable_wake Invoked successfully\n");
+> +
+> +	pch_phub_restore_reg_conf(pdev);
+> +	dev_dbg(&pdev->dev, "pch_phub_resume - "
+> +		"pch_phub_restore_reg_conf Invoked successfully\n");
+> +
+> +	pch_phub_reg.pch_phub_suspended = false;
+> +
+> +	dev_dbg(&pdev->dev, "pch_phub_resume  returns- %d\n", 0);
+
+All of these dev_dbg() calls should use __func__ to get the function name:
+
+	dev_dbg(&pdev->dev, "%s returns: %d\n", __func__, 0);
+
+(same for other functions)
+
+(I dropped the '-' so that it won't look like a negative number.)
+
+> +	return 0;
+> +}
+> +#else
+> +#define pch_phub_suspend NULL
+> +#define pch_phub_resume NULL
+> +#endif /* CONFIG_PM */
+> +
+> +static struct pci_device_id pch_phub_pcidev_id[] = {
+> +
+> +	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCH1_PHUB)},
+> +	{0,}
+> +};
+> +
+> +
+> +static struct pci_driver pch_phub_driver = {
+> +	.name = "pch_phub",
+> +	.id_table = pch_phub_pcidev_id,
+> +	.probe = pch_phub_probe,
+> +	.remove = __devexit_p(pch_phub_remove),
+> +	.suspend = pch_phub_suspend,
+> +	.resume = pch_phub_resume
+> +};
+> +
+> +/* pch_phub_pci_init - Implements the initialization functionality of
+> + * the module.
+> + */
+
+drop obvious comments.
+
+> +static int __init pch_phub_pci_init(void)
+> +{
+> +	int ret;
+> +	ret = pci_register_driver(&pch_phub_driver);
+> +
+> +	return ret;
+> +}
+> +
+> +/* pch_phub_pci_exit - Implements the exit functionality of the module. */
+
+drop obvious comment.
+
+> +static void __exit pch_phub_pci_exit(void)
+> +{
+> +	pci_unregister_driver(&pch_phub_driver);
+> +
+
+drop blank line.
+
+> +}
+> +
+> +module_init(pch_phub_pci_init);
+> +module_exit(pch_phub_pci_exit);
+> +
+> +MODULE_DESCRIPTION("PCH PACKET HUB PCI Driver");
+> +MODULE_LICENSE("GPL");
+> +
+
+> diff --git a/drivers/char/pch_phub/pch_phub.h b/drivers/char/pch_phub/pch_phub.h
+> new file mode 100755
+> index 0000000..7baa272
+> --- /dev/null
+> +++ b/drivers/char/pch_phub/pch_phub.h
+> @@ -0,0 +1,48 @@
+> +#ifndef __PCH_PHUB_H__
+> +#define __PCH_PHUB_H__
+> +/*!
+
+??
+
+> + * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
+> + */
+> +
+> +#define PHUB_IOCTL_MAGIC		(0xf7)
+
+ioctl numbers need to be added to Documentation/ioctl/ioctl-number.txt, please.
+
+> +
+> +/* Read GbE MAC address */
+> +#define IOCTL_PHUB_READ_MAC_ADDR (_IOR(PHUB_IOCTL_MAGIC, 6, __u8[6]))
+> +
+> +/* Write GbE MAC address */
+> +#define IOCTL_PHUB_WRITE_MAC_ADDR (_IOW(PHUB_IOCTL_MAGIC, 7, __u8[6]))
+> +
+> +/* SROM ACCESS Macro */
+> +#define PCH_WORD_ADDR_MASK (~((1 << 2) - 1))
+> +
+> +/* Registers address offset */
+> +#define PCH_PHUB_ID_REG				0x0000
+> +#define PCH_PHUB_QUEUE_PRI_VAL_REG		0x0004
+> +#define PCH_PHUB_RC_QUEUE_MAXSIZE_REG		0x0008
+> +#define PCH_PHUB_BRI_QUEUE_MAXSIZE_REG		0x000C
+> +#define PCH_PHUB_COMP_RESP_TIMEOUT_REG		0x0010
+> +#define PCH_PHUB_BUS_SLAVE_CONTROL_REG		0x0014
+> +#define PCH_PHUB_DEADLOCK_AVOID_TYPE_REG	0x0018
+> +#define PCH_PHUB_INTPIN_REG_WPERMIT_REG0	0x0020
+> +#define PCH_PHUB_INTPIN_REG_WPERMIT_REG1	0x0024
+> +#define PCH_PHUB_INTPIN_REG_WPERMIT_REG2	0x0028
+> +#define PCH_PHUB_INTPIN_REG_WPERMIT_REG3	0x002C
+> +#define PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE	0x0040
+> +#define CLKCFG_REG_OFFSET			0x500
+> +
+> +#define PCH_PHUB_OROM_SIZE 15360
+> +
+> +#endif
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
