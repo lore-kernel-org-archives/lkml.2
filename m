@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab0GASgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:36:38 -0400
-Received: from kroah.org ([198.145.64.141]:40648 "EHLO coco.kroah.org"
+	id S1758517Ab0GASgI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:36:08 -0400
+Received: from kroah.org ([198.145.64.141]:40664 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758018Ab0GASXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
-Message-Id: <20100701173214.903195546@clark.site>
+	id S1758028Ab0GASXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:55 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:15 2010
+Message-Id: <20100701173215.073634832@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:02 -0700
+Date: Thu, 01 Jul 2010 10:32:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [patch 096/149] firewire: core: check for 1394a compliant IRM, fix inaccessibility of Sony camcorder
+       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [patch 098/149] sata_nv: dont diddle with nIEN on mcp55
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,111 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit 10389536742cefbedecb67a5b2906f155cf3a1c3 upstream.
+commit f3faf8fc3fab45c3526efe8c9e99bb23f8723350 upstream.
 
-Per IEEE 1394 clause 8.4.2.3, a contender for the IRM role shall check
-whether the current IRM complies to 1394a-2000 or later.  If not force a
-compliant node (e.g. itself) to become IRM.  This was implemented in the
-older ieee1394 driver but not yet in firewire-core.
+On mcp55, nIEN gets stuck once set and liteon blueray rom iHOS104-08
+violates ATA specification and fails to set I on D2H Reg FIS if nIEN
+is set when the command was issued.  When the other party is following
+the spec, both devices can work fine but when the two flaws are put
+together, they can't talk to each other.
 
-An older Sony camcorder (Sony DCR-TRV25) which implements 1394-1995 IRM
-but neither 1394a-2000 IRM nor BM was now found to cause an
-interoperability bug:
-  - Camcorder becomes root node when plugged in, hence gets IRM role.
-  - firewire-core successfully contends for BM role, proceeds to perform
-    gap count optimization and resets the bus.
-  - Sony camcorder ignores presence of a BM (against the spec, this is
-    a firmware bug), performs its idea of gap count optimization and
-    resets the bus.
-  - Preceding two steps are repeated endlessly, bus never settles,
-    regular I/O is practically impossible.
-http://thread.gmane.org/gmane.linux.kernel.firewire.user/3913
+mcp55 has its own IRQ masking mechanism and there's no reason to mess
+with nIEN in the first place.  Fix it by dropping nIEN diddling from
+nv_mcp55_freeze/thaw().
 
-This is an interoperability regression from the old to the new drivers.
-Fix it indirectly by adding the 1394a IRM check.  The spec suggests
-three and a half methods to determine 1394a compliance of a remote IRM;
-we choose the method of testing the Config_ROM.Bus_Info.generation
-field.  This is data that firewire-core should have readily available at
-this point, i.e. does not require extra I/O.
+This was originally reported by Cengiz.  Although Cengiz hasn't
+verified the fix yet, I could reproduce this problem and verfiy the
+fix.  Even if Cengiz is experiencing different or additional problems,
+this patch is needed.
 
-Reported-by: Clemens Ladisch <clemens@ladisch.de> (missing 1394a check)
-Reported-by: H. S. <hs.samix@gmail.com> (issue with Sony DCR-TRV25)
-Tested-by: H. S. <hs.samix@gmail.com>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Cengiz Günay <cgunay@emory.edu>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firewire/core-card.c |   24 +++++++++++++++++++-----
- 1 file changed, 19 insertions(+), 5 deletions(-)
+ drivers/ata/sata_nv.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/firewire/core-card.c
-+++ b/drivers/firewire/core-card.c
-@@ -239,7 +239,7 @@ void fw_schedule_bm_work(struct fw_card
- static void fw_card_bm_work(struct work_struct *work)
- {
- 	struct fw_card *card = container_of(work, struct fw_card, work.work);
--	struct fw_device *root_device;
-+	struct fw_device *root_device, *irm_device;
- 	struct fw_node *root_node;
- 	unsigned long flags;
- 	int root_id, new_root_id, irm_id, local_id;
-@@ -247,6 +247,7 @@ static void fw_card_bm_work(struct work_
- 	bool do_reset = false;
- 	bool root_device_is_running;
- 	bool root_device_is_cmc;
-+	bool irm_is_1394_1995_only;
+--- a/drivers/ata/sata_nv.c
++++ b/drivers/ata/sata_nv.c
+@@ -1673,7 +1673,6 @@ static void nv_mcp55_freeze(struct ata_p
+ 	mask = readl(mmio_base + NV_INT_ENABLE_MCP55);
+ 	mask &= ~(NV_INT_ALL_MCP55 << shift);
+ 	writel(mask, mmio_base + NV_INT_ENABLE_MCP55);
+-	ata_sff_freeze(ap);
+ }
  
- 	spin_lock_irqsave(&card->lock, flags);
+ static void nv_mcp55_thaw(struct ata_port *ap)
+@@ -1687,7 +1686,6 @@ static void nv_mcp55_thaw(struct ata_por
+ 	mask = readl(mmio_base + NV_INT_ENABLE_MCP55);
+ 	mask |= (NV_INT_MASK_MCP55 << shift);
+ 	writel(mask, mmio_base + NV_INT_ENABLE_MCP55);
+-	ata_sff_thaw(ap);
+ }
  
-@@ -256,12 +257,18 @@ static void fw_card_bm_work(struct work_
- 	}
- 
- 	generation = card->generation;
-+
- 	root_node = card->root_node;
- 	fw_node_get(root_node);
- 	root_device = root_node->data;
- 	root_device_is_running = root_device &&
- 			atomic_read(&root_device->state) == FW_DEVICE_RUNNING;
- 	root_device_is_cmc = root_device && root_device->cmc;
-+
-+	irm_device = card->irm_node->data;
-+	irm_is_1394_1995_only = irm_device && irm_device->config_rom &&
-+			(irm_device->config_rom[2] & 0x000000f0) == 0;
-+
- 	root_id  = root_node->node_id;
- 	irm_id   = card->irm_node->node_id;
- 	local_id = card->local_node->node_id;
-@@ -284,8 +291,15 @@ static void fw_card_bm_work(struct work_
- 
- 		if (!card->irm_node->link_on) {
- 			new_root_id = local_id;
--			fw_notify("IRM has link off, making local node (%02x) root.\n",
--				  new_root_id);
-+			fw_notify("%s, making local node (%02x) root.\n",
-+				  "IRM has link off", new_root_id);
-+			goto pick_me;
-+		}
-+
-+		if (irm_is_1394_1995_only) {
-+			new_root_id = local_id;
-+			fw_notify("%s, making local node (%02x) root.\n",
-+				  "IRM is not 1394a compliant", new_root_id);
- 			goto pick_me;
- 		}
- 
-@@ -324,8 +338,8 @@ static void fw_card_bm_work(struct work_
- 			 * root, and thus, IRM.
- 			 */
- 			new_root_id = local_id;
--			fw_notify("BM lock failed, making local node (%02x) root.\n",
--				  new_root_id);
-+			fw_notify("%s, making local node (%02x) root.\n",
-+				  "BM lock failed", new_root_id);
- 			goto pick_me;
- 		}
- 	} else if (card->bm_generation != generation) {
+ static void nv_adma_error_handler(struct ata_port *ap)
 
 
