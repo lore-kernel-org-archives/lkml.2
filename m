@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab0GAPy5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:54:57 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47069 "EHLO
+	id S932102Ab0GAPzD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:55:03 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47057 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757123Ab0GAPyK (ORCPT
+	with ESMTP id S1757099Ab0GAPyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Jul 2010 11:54:10 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 20/21] amd64_edac: Remove polling mechanism
-Date: Thu,  1 Jul 2010 17:56:02 +0200
-Message-Id: <1277999763-20357-21-git-send-email-bp@amd64.org>
+Subject: [PATCH 18/21] perf: Split build-id.c
+Date: Thu,  1 Jul 2010 17:56:00 +0200
+Message-Id: <1277999763-20357-19-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1277999763-20357-1-git-send-email-bp@amd64.org>
 References: <1277999763-20357-1-git-send-email-bp@amd64.org>
@@ -21,226 +21,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Switch to reusing the mcheck core's machine check polling mechanism
-instead of duplicating functionality by using the EDAC polling routine.
-
-Correct formatting while at it.
+... into perf-specific and generic part.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/edac/amd64_edac.c   |  118 -------------------------------------------
- drivers/edac/edac_mce_amd.c |   16 +++---
- 2 files changed, 8 insertions(+), 126 deletions(-)
+ tools/lib/perf/build-id.c  |   49 --------------------------------------------
+ tools/lib/perf/build-id.h  |    4 +++
+ tools/perf/Makefile        |    1 +
+ tools/perf/util/build-id.c |   48 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 53 insertions(+), 49 deletions(-)
+ create mode 100644 tools/perf/util/build-id.c
 
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index cf17dbb..df47daf 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1975,107 +1975,6 @@ static int get_channel_from_ecc_syndrome(struct mem_ctl_info *mci, u16 syndrome)
+diff --git a/tools/lib/perf/build-id.c b/tools/lib/perf/build-id.c
+index 5969758..c4c1267 100644
+--- a/tools/lib/perf/build-id.c
++++ b/tools/lib/perf/build-id.c
+@@ -60,52 +60,3 @@ char *dso__build_id_filename(struct dso *self, char *bf, size_t size)
+ 			 build_id_hex, build_id_hex + 2);
+ 	return bf;
  }
- 
- /*
-- * Check for valid error in the NB Status High register. If so, proceed to read
-- * NB Status Low, NB Address Low and NB Address High registers and store data
-- * into error structure.
-- *
-- * Returns:
-- *	- 1: if hardware regs contains valid error info
-- *	- 0: if no valid error is indicated
-- */
--static int amd64_get_error_info_regs(struct mem_ctl_info *mci,
--				     struct err_regs *regs)
+-
+-struct buildid_dir_config {
+-	char *dir;
+-};
+-
+-static int buildid_dir_command_config(const char *var, const char *value,
+-				      void *data)
 -{
--	struct amd64_pvt *pvt;
--	struct pci_dev *misc_f3_ctl;
+-	struct buildid_dir_config *c = data;
+-	const char *v;
 -
--	pvt = mci->pvt_info;
--	misc_f3_ctl = pvt->misc_f3_ctl;
--
--	if (amd64_read_pci_cfg(misc_f3_ctl, K8_NBSH, &regs->nbsh))
--		return 0;
--
--	if (!(regs->nbsh & K8_NBSH_VALID_BIT))
--		return 0;
--
--	/* valid error, read remaining error information registers */
--	if (amd64_read_pci_cfg(misc_f3_ctl, K8_NBSL, &regs->nbsl) ||
--	    amd64_read_pci_cfg(misc_f3_ctl, K8_NBEAL, &regs->nbeal) ||
--	    amd64_read_pci_cfg(misc_f3_ctl, K8_NBEAH, &regs->nbeah) ||
--	    amd64_read_pci_cfg(misc_f3_ctl, K8_NBCFG, &regs->nbcfg))
--		return 0;
--
--	return 1;
--}
--
--/*
-- * This function is called to retrieve the error data from hardware and store it
-- * in the info structure.
-- *
-- * Returns:
-- *	- 1: if a valid error is found
-- *	- 0: if no error is found
-- */
--static int amd64_get_error_info(struct mem_ctl_info *mci,
--				struct err_regs *info)
--{
--	struct amd64_pvt *pvt;
--	struct err_regs regs;
--
--	pvt = mci->pvt_info;
--
--	if (!amd64_get_error_info_regs(mci, info))
--		return 0;
--
--	/*
--	 * Here's the problem with the K8's EDAC reporting: There are four
--	 * registers which report pieces of error information. They are shared
--	 * between CEs and UEs. Furthermore, contrary to what is stated in the
--	 * BKDG, the overflow bit is never used! Every error always updates the
--	 * reporting registers.
--	 *
--	 * Can you see the race condition? All four error reporting registers
--	 * must be read before a new error updates them! There is no way to read
--	 * all four registers atomically. The best than can be done is to detect
--	 * that a race has occured and then report the error without any kind of
--	 * precision.
--	 *
--	 * What is still positive is that errors are still reported and thus
--	 * problems can still be detected - just not localized because the
--	 * syndrome and address are spread out across registers.
--	 *
--	 * Grrrrr!!!!!  Here's hoping that AMD fixes this in some future K8 rev.
--	 * UEs and CEs should have separate register sets with proper overflow
--	 * bits that are used! At very least the problem can be fixed by
--	 * honoring the ErrValid bit in 'nbsh' and not updating registers - just
--	 * set the overflow bit - unless the current error is CE and the new
--	 * error is UE which would be the only situation for overwriting the
--	 * current values.
--	 */
--
--	regs = *info;
--
--	/* Use info from the second read - most current */
--	if (unlikely(!amd64_get_error_info_regs(mci, info)))
--		return 0;
--
--	/* clear the error bits in hardware */
--	pci_write_bits32(pvt->misc_f3_ctl, K8_NBSH, 0, K8_NBSH_VALID_BIT);
--
--	/* Check for the possible race condition */
--	if ((regs.nbsh != info->nbsh) ||
--	     (regs.nbsl != info->nbsl) ||
--	     (regs.nbeah != info->nbeah) ||
--	     (regs.nbeal != info->nbeal)) {
--		amd64_mc_printk(mci, KERN_WARNING,
--				"hardware STATUS read access race condition "
--				"detected!\n");
--		return 0;
+-	/* same dir for all commands */
+-	if (!prefixcmp(var, "buildid.") && !strcmp(var + 8, "dir")) {
+-		v = lk_config_dirname(var, value);
+-		if (!v)
+-			return -1;
+-		strncpy(c->dir, v, MAXPATHLEN-1);
+-		c->dir[MAXPATHLEN-1] = '\0';
 -	}
--	return 1;
+-	return 0;
 -}
--
--/*
-  * Handle any Correctable Errors (CEs) that have occurred. Check for valid ERROR
-  * ADDRESS and process.
-  */
-@@ -2199,20 +2098,6 @@ void amd64_decode_bus_error(int node_id, struct err_regs *regs)
- }
- 
- /*
-- * The main polling 'check' function, called FROM the edac core to perform the
-- * error checking and if an error is encountered, error processing.
-- */
--static void amd64_check(struct mem_ctl_info *mci)
+-static void check_buildid_dir_config(void)
 -{
--	struct err_regs regs;
--
--	if (amd64_get_error_info(mci, &regs)) {
--		struct amd64_pvt *pvt = mci->pvt_info;
--		amd_decode_nb_mce(pvt->mc_node_id, &regs, 1);
--	}
+-	struct buildid_dir_config c;
+-	c.dir = buildid_dir;
+-	perf_config(buildid_dir_command_config, &c);
 -}
 -
--/*
-  * Input:
-  *	1) struct amd64_pvt which contains pvt->dram_f2_ctl pointer
-  *	2) AMD Family index value
-@@ -2739,9 +2624,6 @@ static void amd64_setup_mci_misc_attributes(struct mem_ctl_info *mci)
- 	mci->dev_name		= pci_name(pvt->dram_f2_ctl);
- 	mci->ctl_page_to_phys	= NULL;
- 
--	/* IMPORTANT: Set the polling 'check' function in this module */
--	mci->edac_check		= amd64_check;
+-void set_buildid_dir(void)
+-{
+-	buildid_dir[0] = '\0';
 -
- 	/* memory scrubber interface */
- 	mci->set_sdram_scrub_rate = amd64_set_scrub_rate;
- 	mci->get_sdram_scrub_rate = amd64_get_scrub_rate;
-diff --git a/drivers/edac/edac_mce_amd.c b/drivers/edac/edac_mce_amd.c
-index 97e64bc..bae9351 100644
---- a/drivers/edac/edac_mce_amd.c
-+++ b/drivers/edac/edac_mce_amd.c
-@@ -133,7 +133,7 @@ static void amd_decode_dc_mce(u64 mc0_status)
- 	u32 ec  = mc0_status & 0xffff;
- 	u32 xec = (mc0_status >> 16) & 0xf;
+-	/* try config file */
+-	check_buildid_dir_config();
+-
+-	/* default to $HOME/.debug */
+-	if (buildid_dir[0] == '\0') {
+-		char *v = getenv("HOME");
+-		if (v) {
+-			snprintf(buildid_dir, MAXPATHLEN-1, "%s/%s",
+-				 v, DEBUG_CACHE_DIR);
+-		} else {
+-			strncpy(buildid_dir, DEBUG_CACHE_DIR, MAXPATHLEN-1);
+-		}
+-		buildid_dir[MAXPATHLEN-1] = '\0';
+-	}
+-	/* for communicating with external commands */
+-	setenv("PERF_BUILDID_DIR", buildid_dir, 1);
+-}
+diff --git a/tools/lib/perf/build-id.h b/tools/lib/perf/build-id.h
+index 1b73726..224c90b 100644
+--- a/tools/lib/perf/build-id.h
++++ b/tools/lib/perf/build-id.h
+@@ -6,6 +6,10 @@
  
--	pr_emerg(" Data Cache Error");
-+	pr_emerg("Data Cache Error");
+ extern struct perf_event_ops build_id__mark_dso_hit_ops;
  
- 	if (xec == 1 && TLB_ERROR(ec))
- 		pr_cont(": %s TLB multimatch.\n", LL_MSG(ec));
-@@ -176,7 +176,7 @@ static void amd_decode_ic_mce(u64 mc1_status)
- 	u32 ec  = mc1_status & 0xffff;
- 	u32 xec = (mc1_status >> 16) & 0xf;
++struct buildid_dir_config {
++	char *dir;
++};
++
+ char *dso__build_id_filename(struct dso *self, char *bf, size_t size);
+ extern void set_buildid_dir(void);
  
--	pr_emerg(" Instruction Cache Error");
-+	pr_emerg("Instruction Cache Error");
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 590c8f6..7d6ee06 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -387,6 +387,7 @@ LIB_OBJS += $(OUTPUT)util/trace-event-scripting.o
+ LIB_OBJS += $(OUTPUT)util/svghelper.o
+ LIB_OBJS += $(OUTPUT)util/probe-event.o
+ LIB_OBJS += $(OUTPUT)util/config.o
++LIB_OBJS += $(OUTPUT)util/build-id.o
  
- 	if (xec == 1 && TLB_ERROR(ec))
- 		pr_cont(": %s TLB multimatch.\n", LL_MSG(ec));
-@@ -233,7 +233,7 @@ static void amd_decode_bu_mce(u64 mc2_status)
- 	u32 ec = mc2_status & 0xffff;
- 	u32 xec = (mc2_status >> 16) & 0xf;
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
  
--	pr_emerg(" Bus Unit Error");
-+	pr_emerg("Bus Unit Error");
- 
- 	if (xec == 0x1)
- 		pr_cont(" in the write data buffers.\n");
-@@ -275,7 +275,7 @@ static void amd_decode_ls_mce(u64 mc3_status)
- 	u32 ec  = mc3_status & 0xffff;
- 	u32 xec = (mc3_status >> 16) & 0xf;
- 
--	pr_emerg(" Load Store Error");
-+	pr_emerg("Load Store Error");
- 
- 	if (xec == 0x0) {
- 		u8 rrrr = (ec >> 4) & 0xf;
-@@ -304,7 +304,7 @@ void amd_decode_nb_mce(int node_id, struct err_regs *regs, int handle_errors)
- 	if (TLB_ERROR(ec) && !report_gart_errors)
- 		return;
- 
--	pr_emerg(" Northbridge Error, node %d", node_id);
-+	pr_emerg("Northbridge Error, node %d", node_id);
- 
- 	/*
- 	 * F10h, revD can disable ErrCpu[3:0] so check that first and also the
-@@ -342,13 +342,13 @@ static void amd_decode_fr_mce(u64 mc5_status)
- static inline void amd_decode_err_code(unsigned int ec)
- {
- 	if (TLB_ERROR(ec)) {
--		pr_emerg(" Transaction: %s, Cache Level %s\n",
-+		pr_emerg("Transaction: %s, Cache Level %s\n",
- 			 TT_MSG(ec), LL_MSG(ec));
- 	} else if (MEM_ERROR(ec)) {
--		pr_emerg(" Transaction: %s, Type: %s, Cache Level: %s",
-+		pr_emerg("Transaction: %s, Type: %s, Cache Level: %s",
- 			 RRRR_MSG(ec), TT_MSG(ec), LL_MSG(ec));
- 	} else if (BUS_ERROR(ec)) {
--		pr_emerg(" Transaction type: %s(%s), %s, Cache Level: %s, "
-+		pr_emerg("Transaction type: %s(%s), %s, Cache Level: %s, "
- 			 "Participating Processor: %s\n",
- 			  RRRR_MSG(ec), II_MSG(ec), TO_MSG(ec), LL_MSG(ec),
- 			  PP_MSG(ec));
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+new file mode 100644
+index 0000000..af2f840
+--- /dev/null
++++ b/tools/perf/util/build-id.c
+@@ -0,0 +1,48 @@
++#include <lk/strbuf.h>
++#include <perf/build-id.h>
++
++static int buildid_dir_command_config(const char *var, const char *value,
++				      void *data)
++{
++	struct buildid_dir_config *c = data;
++	const char *v;
++
++	/* same dir for all commands */
++	if (!prefixcmp(var, "buildid.") && !strcmp(var + 8, "dir")) {
++		v = lk_config_dirname(var, value);
++		if (!v)
++			return -1;
++		strncpy(c->dir, v, MAXPATHLEN-1);
++		c->dir[MAXPATHLEN-1] = '\0';
++	}
++	return 0;
++}
++
++static void check_buildid_dir_config(void)
++{
++	struct buildid_dir_config c;
++	c.dir = buildid_dir;
++	perf_config(buildid_dir_command_config, &c);
++}
++
++void set_buildid_dir(void)
++{
++	buildid_dir[0] = '\0';
++
++	/* try config file */
++	check_buildid_dir_config();
++
++	/* default to $HOME/.debug */
++	if (buildid_dir[0] == '\0') {
++		char *v = getenv("HOME");
++		if (v) {
++			snprintf(buildid_dir, MAXPATHLEN-1, "%s/%s",
++				 v, DEBUG_CACHE_DIR);
++		} else {
++			strncpy(buildid_dir, DEBUG_CACHE_DIR, MAXPATHLEN-1);
++		}
++		buildid_dir[MAXPATHLEN-1] = '\0';
++	}
++	/* for communicating with external commands */
++	setenv("PERF_BUILDID_DIR", buildid_dir, 1);
++}
 -- 
 1.7.1
 
