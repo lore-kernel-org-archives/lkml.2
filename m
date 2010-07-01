@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab0GASN1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:13:27 -0400
-Received: from kroah.org ([198.145.64.141]:60061 "EHLO coco.kroah.org"
+	id S1754651Ab0GASKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:10:44 -0400
+Received: from kroah.org ([198.145.64.141]:59998 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755176Ab0GASKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:10:52 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:57 2010
-Message-Id: <20100701172857.463337479@clark.site>
+	id S1754579Ab0GASKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:10:42 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:56 2010
+Message-Id: <20100701172856.556860131@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:27:01 -0700
+Date: Thu, 01 Jul 2010 10:26:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Richard Kennedy <richard@rsk.demon.co.uk>,
-       Michal Marek <mmarek@suse.cz>
-Subject: [12/23] gconfig: fix build failure on fedora 13
+       Tejun Heo <tj@kernel.org>, Kay Sievers <kay.sievers@vrfy.org>,
+       Nick Bowler <nbowler@elliptictech.com>, David Zeuthen <david@fubar.dk>,
+       Jeff Garzik <jgarzik@redhat.com>
+Subject: [01/23] libata: disable ATAPI AN by default
 In-Reply-To: <20100701175134.GA2098@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Kennedy <richard@rsk.demon.co.uk>
+From: Tejun Heo <tj@kernel.org>
 
-commit cbab05f041a4cff6ca15856bdd35238b282b64eb upstream.
+commit e7ecd435692ca9bde9d124be30b3a26e672ea6c2 upstream.
 
-Making gconfig fails on fedora 13 as the linker cannot resolve dlsym.
+There are ATAPI devices which raise AN when hit by commands issued by
+open().  This leads to infinite loop of AN -> MEDIA_CHANGE uevent ->
+udev open() to check media -> AN.
 
-Adding libdl to the link command fixes this.
+Both ACS and SerialATA standards don't define in which case ATAPI
+devices are supposed to raise or not raise AN.  They both list media
+insertion event as a possible use case for ATAPI ANs but there is no
+clear description of what constitutes such events.  As such, it seems
+a bit too naive to export ANs directly to userland as MEDIA_CHANGE
+events without further verification (which should behave similarly to
+windows as it apparently is the only thing that some hardware vendors
+are testing against).
 
-make shows this error :-
-    /usr/bin/ld: scripts/kconfig/kconfig_load.o: undefined reference to symbol 'dlsym@@GLIBC_2.2.5'
-    /usr/bin/ld: note: 'dlsym@@GLIBC_2.2.5' is defined in DSO /lib64/libdl.so.2 so try adding it to the linker command line
-    /lib64/libdl.so.2: could not read symbols: Invalid operation
+This patch adds libata.atapi_an module parameter and disables ATAPI AN
+by default for now.
 
-tested on x86_64 fedora 13.
-
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Nick Bowler <nbowler@elliptictech.com>
+Cc: David Zeuthen <david@fubar.dk>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- scripts/kconfig/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/libata-core.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -161,7 +161,7 @@ HOSTCFLAGS_zconf.tab.o	:= -I$(src)
- HOSTLOADLIBES_qconf	= $(KC_QT_LIBS) -ldl
- HOSTCXXFLAGS_qconf.o	= $(KC_QT_CFLAGS) -D LKC_DIRECT_LINK
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -157,6 +157,10 @@ int libata_allow_tpm = 0;
+ module_param_named(allow_tpm, libata_allow_tpm, int, 0444);
+ MODULE_PARM_DESC(allow_tpm, "Permit the use of TPM commands");
  
--HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0`
-+HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0` -ldl
- HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
-                           -D LKC_DIRECT_LINK
- 
++static int atapi_an;
++module_param(atapi_an, int, 0444);
++MODULE_PARM_DESC(atapi_an, "Enable ATAPI AN media presence notification (0=0ff [default], 1=on)");
++
+ MODULE_AUTHOR("Jeff Garzik");
+ MODULE_DESCRIPTION("Library module for ATA devices");
+ MODULE_LICENSE("GPL");
+@@ -2341,7 +2345,8 @@ int ata_dev_configure(struct ata_device
+ 		 * to enable ATAPI AN to discern between PHY status
+ 		 * changed notifications and ATAPI ANs.
+ 		 */
+-		if ((ap->flags & ATA_FLAG_AN) && ata_id_has_atapi_AN(id) &&
++		if (atapi_an &&
++		    (ap->flags & ATA_FLAG_AN) && ata_id_has_atapi_AN(id) &&
+ 		    (!sata_pmp_attached(ap) ||
+ 		     sata_scr_read(&ap->link, SCR_NOTIFICATION, &sntf) == 0)) {
+ 			unsigned int err_mask;
 
 
