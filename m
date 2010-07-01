@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204Ab0GAVcS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:32:18 -0400
-Received: from kroah.org ([198.145.64.141]:33186 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932825Ab0GAVPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:10 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:01 2010
-Message-Id: <20100701174301.068024045@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:22 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Steven Whitehouse <swhiteho@redhat.com>
-Subject: [172/200] GFS2: Fix permissions checking for setflags ioctl()
-In-Reply-To: <20100701175201.GA2149@kroah.com>
+	id S1759272Ab0GAVUe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:20:34 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44080 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755591Ab0GAVT4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:19:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=aK/5t99gUJkPrRVm2ip1xEv74IKgfX68bQuIr1hweRdXTvqTHR2v5q/nj2wlEtfX8W
+         gaQoqL7tAvAkGoJTcTOH/DUgfBgQJPq5TdpstpF0BxXzVMAB9hZ2S9c13u4tn2iybzGv
+         kiHnFXQZYR6RZaYS994XyMRW9QqDNijGFAj+I=
+MIME-Version: 1.0
+In-Reply-To: <20100701162454.GD4152@core.coreip.homeip.net>
+References: <AANLkTilvxV18Qc2-34GtNmfAIvNL2dtEAPC3iPFNU2Pv@mail.gmail.com>
+	<20100701162454.GD4152@core.coreip.homeip.net>
+Date: Thu, 1 Jul 2010 23:19:53 +0200
+Message-ID: <AANLkTikx8AxRdPoSbsym9rUiA11BbufqImcD2sg4f8Ds@mail.gmail.com>
+Subject: Re: i8042 no mouse on resume. (i8042: failed to resume active 
+	multiplexor, mouse won't work.)
+From: Jerome Lacoste <jerome.lacoste@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jul 1, 2010 at 6:24 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Jerome,
+>
+[...]
+>> * the hardware is a Lenovo 3000 N100
+>
+> We already trying to disable MUX mode on Lenovo 3000 N100, see
+> drivers/input/serio/i8042-x86ia64io.h:
+>
+>        {
+>                /* Lenovo 3000 n100 */
+>                .matches = {
+>                        DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+>                        DMI_MATCH(DMI_PRODUCT_NAME, "076804U"),
+>                },
+>        },
+>
+> What's in your dmi?
 
-------------------
+System Information
+        Manufacturer: LENOVO
+        Product Name: 0768BKG
+        Version: 3000 N100
 
-From: Steven Whitehouse <swhiteho@redhat.com>
+according to dmidecode
 
-commit 7df0e0397b9a18358573274db9fdab991941062f upstream.
-
-We should be checking for the ownership of the file for which
-flags are being set, rather than just for write access.
-
-Reported-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/gfs2/file.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -218,6 +218,11 @@ static int do_gfs2_set_flags(struct file
- 	if (error)
- 		goto out_drop_write;
- 
-+	error = -EACCES;
-+	if (!is_owner_or_cap(inode))
-+		goto out;
-+
-+	error = 0;
- 	flags = ip->i_diskflags;
- 	new_flags = (flags & ~mask) | (reqflags & mask);
- 	if ((new_flags ^ flags) == 0)
-@@ -275,8 +280,10 @@ static int gfs2_set_flags(struct file *f
- {
- 	struct inode *inode = filp->f_path.dentry->d_inode;
- 	u32 fsflags, gfsflags;
-+
- 	if (get_user(fsflags, ptr))
- 		return -EFAULT;
-+
- 	gfsflags = fsflags_cvt(fsflags_to_gfs2, fsflags);
- 	if (!S_ISDIR(inode->i_mode)) {
- 		if (gfsflags & GFS2_DIF_INHERIT_JDATA)
-
-
+Jerome
