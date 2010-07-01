@@ -1,68 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab0GARxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 13:53:06 -0400
-Received: from kroah.org ([198.145.64.141]:41021 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998Ab0GARwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 13:52:16 -0400
-Date: Thu, 1 Jul 2010 10:51:34 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/23] 2.6.27.48 stable review
-Message-ID: <20100701175134.GA2098@kroah.com>
+	id S1753462Ab0GARyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 13:54:39 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54311 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998Ab0GARyh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 13:54:37 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "ohad@wizery.com" <ohad@wizery.com>, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+       "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+       "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
+Date: Thu, 1 Jul 2010 12:54:30 -0500
+Subject: RE: [PATCHv3 5/9] dspbridge: add mmufault support
+Thread-Topic: [PATCHv3 5/9] dspbridge: add mmufault support
+Thread-Index: AcsYr29geLDqkvcsTwW6nxBnghiRywAkS5RwAAFMioA=
+Message-ID: <496565EC904933469F292DDA3F1663E602CBDD373C@dlee06.ent.ti.com>
+References: <1277942401-3566-1-git-send-email-x0095840@ti.com>
+ <1277942401-3566-2-git-send-email-x0095840@ti.com>
+ <1277942401-3566-3-git-send-email-x0095840@ti.com>
+ <1277942401-3566-4-git-send-email-x0095840@ti.com>
+ <1277942401-3566-5-git-send-email-x0095840@ti.com>
+ <1277942401-3566-6-git-send-email-x0095840@ti.com>
+ <8F7AF80515AF0D4D93307E594F3CB40E4CA563BC@dlee03.ent.ti.com>
+In-Reply-To: <8F7AF80515AF0D4D93307E594F3CB40E4CA563BC@dlee03.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701175100.GA2078@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This is the start of the stable review cycle for the 2.6.27.48 release.
-There are 23 patches in this series, all will be posted as a response to
-this one.  If anyone has any issues with these being applied, please let
-me know.  If anyone is a maintainer of the proper subsystem, and wants
-to add a Signed-off-by: line to the patch, please respond with it.
 
-Responses should be made by Sat, July 3, 17:00:00 UTC UTC.
-Anything received after that time might be too late.
+Hi Hari,
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.27.48-rc1.gz
-and the diffstat can be found below.
+> -----Original Message-----
+> From: Kanigeri, Hari
+> Sent: Thursday, July 01, 2010 12:17 PM
+> To: Guzman Lugo, Fernando; linux-omap@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Cc: ohad@wizery.com; hiroshi.doyo@nokia.com; ameya.palande@nokia.com;
+> felipe.contreras@nokia.com; Guzman Lugo, Fernando
+> Subject: RE: [PATCHv3 5/9] dspbridge: add mmufault support
+> 
+> Hi Fernando,
+> 
+> > +int mmu_fault_isr(struct iommu *mmu)
+> >
+> > -/*
+> > - *  ======== mmu_check_if_fault =======
+> > - *      Check to see if MMU Fault is valid TLB miss from DSP
+> > - *  Note: This function is called from an ISR
+> > - */
+> > -static bool mmu_check_if_fault(struct bridge_dev_context *dev_context)
+> >  {
+> > +	struct deh_mgr *dm;
+> > +	u32 da;
+> > +
+> > +	dev_get_deh_mgr(dev_get_first(), &dm);
+> > +
+> > +	if (!dm)
+> > +		return -EPERM;
+> > +
+> > +	da = iommu_read_reg(mmu, MMU_FAULT_AD);
+> > +	iommu_write_reg(mmu, 0, MMU_IRQENABLE);
+> 
+> -- Isn't the MMU already enabled at this point when the function callback
+> is called by iommu ?
 
-thanks,
+This line is actually disabling the interrupts. I am writing "0x0" in the MMU_IRQENABLE.
 
-greg k-h
+> 
+> > +	dm->err_info.dw_val1 = da;
+> > +	tasklet_schedule(&dm->dpc_tasklet);
+> 
+> -- The iommu fault isr disables the IOMMU at the end of the fault handler,
+> so by the time your tasklet is scheduled you might have the MMU in a
+> disabled state. Looks to me either this requires change in iommu to remove
+> the disable part or enable the MMU in the tasklet instead of doing it
+> early in mmu_fault_isr.
 
- Makefile                              |    2 +-
- arch/parisc/math-emu/decode_exc.c     |    1 +
- arch/powerpc/lib/string.S             |    4 +-
- arch/powerpc/oprofile/op_model_cell.c |    2 +-
- arch/powerpc/platforms/pseries/smp.c  |    6 +
- drivers/ata/libata-core.c             |    7 +-
- drivers/char/ipmi/ipmi_si_intf.c      |   11 +-
- drivers/md/md.c                       |   29 ++++
- drivers/md/raid1.c                    |    9 +-
- drivers/md/raid10.c                   |    2 +-
- drivers/net/arcnet/com20020-pci.c     |    4 +-
- fs/ext4/inode.c                       |  240 ++++++++++++++++++++++++++------
- fs/ext4/resize.c                      |    3 +-
- fs/namespace.c                        |    9 +-
- fs/nfsd/nfssvc.c                      |    2 +-
- include/linux/fs.h                    |    2 +
- include/net/sctp/structs.h            |    1 +
- mm/filemap.c                          |    6 +
- net/sctp/sm_make_chunk.c              |   62 ++++++++-
- net/tipc/bearer.c                     |   37 +-----
- net/tipc/bearer.h                     |    2 +-
- net/tipc/net.c                        |   25 +---
- scripts/kconfig/Makefile              |    2 +-
- security/keys/keyring.c               |   18 ++--
- security/keys/process_keys.c          |    6 +-
- 25 files changed, 359 insertions(+), 133 deletions(-)
+I am returning 0 in the callback function, that means the callback function has managed the fault and the mmu_fault_isr does not do anything else
+
+
+	if (obj->isr)
+		err = obj->isr(obj);
+
+	if (!err)
+		return IRQ_HANDLED;
+
+it is working for me without not modifications in the iommu_fault_handler function.
+
+Thanks for the comments,
+Fernando.
+
+> 
+> Thank you,
+> Best regards,
+> Hari
