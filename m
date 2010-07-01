@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312Ab0GASdS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:33:18 -0400
-Received: from kroah.org ([198.145.64.141]:40736 "EHLO coco.kroah.org"
+	id S932296Ab0GAScU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:32:20 -0400
+Received: from kroah.org ([198.145.64.141]:40755 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757713Ab0GASYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:09 -0400
+	id S1757739Ab0GASYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:13 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:16 2010
-Message-Id: <20100701173216.423804835@clark.site>
+Message-Id: <20100701173216.764789302@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:20 -0700
+Date: Thu, 01 Jul 2010 10:32:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Roberto Sassu <roberto.sassu@polito.it>, Eric Paris <eparis@redhat.com>,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: [patch 114/149] wrong type for magic argument in simple_fill_super()
+       Grazvydas Ignotas <notasas@gmail.com>, Kalle Valo <kvalo@adurom.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 118/149] wl1251: fix a memory leak in probe
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roberto Sassu <roberto.sassu@polito.it>
+From: Grazvydas Ignotas <notasas@gmail.com>
 
-commit 7d683a09990ff095a91b6e724ecee0ff8733274a upstream.
+commit aa679c36756003f1fabdb9fc6f00eb159559f7c3 upstream.
 
-It's used to superblock ->s_magic, which is unsigned long.
+wl1251_sdio_probe() error path is missing wl1251_free_hw, add it.
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-Reviewed-by: Mimi Zohar <zohar@us.ibm.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
+Acked-by: Kalle Valo <kvalo@adurom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/libfs.c         |    3 ++-
- include/linux/fs.h |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/wireless/wl12xx/wl1251_sdio.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/libfs.c
-+++ b/fs/libfs.c
-@@ -415,7 +415,8 @@ int simple_write_end(struct file *file,
-  * unique inode values later for this filesystem, then you must take care
-  * to pass it an appropriate max_reserved value to avoid collisions.
-  */
--int simple_fill_super(struct super_block *s, int magic, struct tree_descr *files)
-+int simple_fill_super(struct super_block *s, unsigned long magic,
-+		      struct tree_descr *files)
- {
- 	struct inode *inode;
- 	struct dentry *root;
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2376,7 +2376,7 @@ extern const struct file_operations simp
- extern const struct inode_operations simple_dir_inode_operations;
- struct tree_descr { char *name; const struct file_operations *ops; int mode; };
- struct dentry *d_alloc_name(struct dentry *, const char *);
--extern int simple_fill_super(struct super_block *, int, struct tree_descr *);
-+extern int simple_fill_super(struct super_block *, unsigned long, struct tree_descr *);
- extern int simple_pin_fs(struct file_system_type *, struct vfsmount **mount, int *count);
- extern void simple_release_fs(struct vfsmount **mount, int *count);
+--- a/drivers/net/wireless/wl12xx/wl1251_sdio.c
++++ b/drivers/net/wireless/wl12xx/wl1251_sdio.c
+@@ -160,6 +160,7 @@ disable:
+ 	sdio_disable_func(func);
+ release:
+ 	sdio_release_host(func);
++	wl1251_free_hw(wl);
+ 	return ret;
+ }
  
 
 
