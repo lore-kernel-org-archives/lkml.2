@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339Ab0GASsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:48:22 -0400
-Received: from kroah.org ([198.145.64.141]:35459 "EHLO coco.kroah.org"
+	id S1758481Ab0GAShn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:37:43 -0400
+Received: from kroah.org ([198.145.64.141]:40622 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757726Ab0GASXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:03 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:10 2010
-Message-Id: <20100701173209.928813292@clark.site>
+	id S1757690Ab0GASXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:48 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
+Message-Id: <20100701173214.402845044@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:03 -0700
+Date: Thu, 01 Jul 2010 10:31:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [patch 037/149] USB: xhci: Fix issue with set interface after stall.
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [patch 090/149] ALSA: hda: Use LPIB for another mainboard
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,68 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 1624ae1c19e227096ba85bfc389d9b99cb6f7dde upstream.
+commit b90c076424da8166797bdc34187660fd0124f530 upstream.
 
-When the USB core installs a new interface, it unconditionally clears the
-halts on all the endpoints on the new interface.  Usually the xHCI host
-needs to know when an endpoint is reset, so it can change its internal
-endpoint state.  In this case, it doesn't care, because the endpoints were
-never halted in the first place.
+BugLink: https://launchpad.net/bugs/580749
 
-To avoid issuing a redundant Reset Endpoint command, the xHCI driver looks
-at xhci_virt_ep->stopped_td to determine if the endpoint was actually
-halted.  However, the functions that handle the stall never set that
-variable to NULL after it dealt with the stall.  So if an endpoint stalled
-and a Reset Endpoint command completed, and then the class driver tried to
-install a new alternate setting, the xHCI driver would access the old
-xhci_virt_ep->stopped_td pointer.  A similar problem occurs if the
-endpoint has been stopped to cancel a transfer.
+Symptom: on the original reporter's VIA VT1708-based board, the
+PulseAudio daemon dies shortly after the user attempts to play an audio
+file.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Test case: boot from Ubuntu 10.04 LTS live cd; attempt to play an audio
+file.
+
+Resolution: add SSID for the original reporter's hardware to the
+position_fix quirk table, explicitly specifying the LPIB method.
+
+Reported-and-Tested-By: Harald
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-hcd.c  |    2 ++
- drivers/usb/host/xhci-ring.c |    7 +++++++
- 2 files changed, 9 insertions(+)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/xhci-hcd.c
-+++ b/drivers/usb/host/xhci-hcd.c
-@@ -1414,6 +1414,8 @@ void xhci_endpoint_reset(struct usb_hcd
- 		kfree(virt_ep->stopped_td);
- 		xhci_ring_cmd_db(xhci);
- 	}
-+	virt_ep->stopped_td = NULL;
-+	virt_ep->stopped_trb = NULL;
- 	spin_unlock_irqrestore(&xhci->lock, flags);
- 
- 	if (ret)
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -548,6 +548,8 @@ static void handle_stopped_endpoint(stru
- 		/* Otherwise just ring the doorbell to restart the ring */
- 		ring_ep_doorbell(xhci, slot_id, ep_index);
- 	}
-+	ep->stopped_td = NULL;
-+	ep->stopped_trb = NULL;
- 
- 	/*
- 	 * Drop the lock and complete the URBs in the cancelled TD list.
-@@ -1065,8 +1067,13 @@ static int handle_tx_event(struct xhci_h
- 
- 			ep->stopped_td = td;
- 			ep->stopped_trb = event_trb;
-+
- 			xhci_queue_reset_ep(xhci, slot_id, ep_index);
- 			xhci_cleanup_stalled_ring(xhci, td->urb->dev, ep_index);
-+
-+			ep->stopped_td = NULL;
-+			ep->stopped_trb = NULL;
-+
- 			xhci_ring_cmd_db(xhci);
- 			goto td_cleanup;
- 		default:
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2241,6 +2241,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1565, 0x8218, "Biostar Microtech", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1849, 0x0888, "775Dual-VSTA", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x8086, 0x2503, "DG965OT AAD63733-203", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x8086, 0xd601, "eMachines T5212", POS_FIX_LPIB),
+ 	{}
 
 
