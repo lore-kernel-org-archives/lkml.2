@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664Ab0GAUuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:50:15 -0400
-Received: from kroah.org ([198.145.64.141]:47316 "EHLO coco.kroah.org"
+	id S932554Ab0GAWJy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:09:54 -0400
+Received: from kroah.org ([198.145.64.141]:47477 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932420Ab0GAUt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:57 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:30 2010
-Message-Id: <20100701173430.558744548@clark.site>
+	id S932669Ab0GAUuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:17 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:32 2010
+Message-Id: <20100701173432.456109002@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:50 -0700
+Date: Thu, 01 Jul 2010 10:34:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andres Salomon <dilinger@collabora.co.uk>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 044/164] mac80211: give warning if building w/out rate ctrl algorithm
+       Dan Williams <dan.j.williams@intel.com>, NeilBrown <neilb@suse.de>
+Subject: [patch 067/164] md: set mddev readonly flag on blkdev BLKROSET ioctl
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andres Salomon <dilinger@collabora.co.uk>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit c2ef355bf3ef0b8006b96128726684fba47ac928 upstream.
+commit e2218350465e7e0931676b4849b594c978437bce upstream.
 
-I discovered that if EMBEDDED=y, one can accidentally build a mac80211 stack
-and drivers w/ no rate control algorithm.  For drivers like RTL8187 that don't
-supply their own RC algorithms, this will cause ieee80211_register_hw to
-fail (making the driver unusable).
+When the user sets the block device to readwrite then the mddev should
+follow suit.  Otherwise, the BUG_ON in md_write_start() will be set to
+trigger.
 
-This will tell kconfig to provide a warning if no rate control algorithms
-have been selected.  That'll at least warn the user; users that know that
-their drivers supply a rate control algorithm can safely ignore the
-warning, and those who don't know (or who expect to be using multiple
-drivers) can select a default RC algorithm.
+The reverse direction, setting mddev->ro to match a set readonly
+request, can be ignored because the blkdev level readonly flag precludes
+the need to have mddev->ro set correctly.  Nevermind the fact that
+setting mddev->ro to 1 may fail if the array is in use.
 
-Signed-off-by: Andres Salomon <dilinger@collabora.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/Kconfig |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/md/md.c |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
---- a/net/mac80211/Kconfig
-+++ b/net/mac80211/Kconfig
-@@ -15,8 +15,12 @@ comment "CFG80211 needs to be enabled fo
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -5516,6 +5516,7 @@ static int md_ioctl(struct block_device
+ 	int err = 0;
+ 	void __user *argp = (void __user *)arg;
+ 	mddev_t *mddev = NULL;
++	int ro;
  
- if MAC80211 != n
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+@@ -5651,6 +5652,34 @@ static int md_ioctl(struct block_device
+ 			err = do_md_stop(mddev, 1, 1);
+ 			goto done_unlock;
  
-+config MAC80211_HAS_RC
-+	def_bool n
++		case BLKROSET:
++			if (get_user(ro, (int __user *)(arg))) {
++				err = -EFAULT;
++				goto done_unlock;
++			}
++			err = -EINVAL;
 +
- config MAC80211_RC_PID
- 	bool "PID controller based rate control algorithm" if EMBEDDED
-+	select MAC80211_HAS_RC
- 	---help---
- 	  This option enables a TX rate control algorithm for
- 	  mac80211 that uses a PID controller to select the TX
-@@ -24,12 +28,14 @@ config MAC80211_RC_PID
- 
- config MAC80211_RC_MINSTREL
- 	bool "Minstrel" if EMBEDDED
-+	select MAC80211_HAS_RC
- 	default y
- 	---help---
- 	  This option enables the 'minstrel' TX rate control algorithm
- 
- choice
- 	prompt "Default rate control algorithm"
-+	depends on MAC80211_HAS_RC
- 	default MAC80211_RC_DEFAULT_MINSTREL
- 	---help---
- 	  This option selects the default rate control algorithm
-@@ -62,6 +68,9 @@ config MAC80211_RC_DEFAULT
- 
- endif
- 
-+comment "Some wireless drivers require a rate control algorithm"
-+	depends on MAC80211_HAS_RC=n
++			/* if the bdev is going readonly the value of mddev->ro
++			 * does not matter, no writes are coming
++			 */
++			if (ro)
++				goto done_unlock;
 +
- config MAC80211_MESH
- 	bool "Enable mac80211 mesh networking (pre-802.11s) support"
- 	depends on MAC80211 && EXPERIMENTAL
++			/* are we are already prepared for writes? */
++			if (mddev->ro != 1)
++				goto done_unlock;
++
++			/* transitioning to readauto need only happen for
++			 * arrays that call md_write_start
++			 */
++			if (mddev->pers) {
++				err = restart_array(mddev);
++				if (err == 0) {
++					mddev->ro = 2;
++					set_disk_ro(mddev->gendisk, 0);
++				}
++			}
++			goto done_unlock;
+ 	}
+ 
+ 	/*
 
 
