@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796Ab0GASs7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:48:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59395 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932408Ab0GASst (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:48:49 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] trivial: fix typos concerning "sequential"
-Date: Thu,  1 Jul 2010 20:48:44 +0200
-Message-Id: <1278010125-20191-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S932412Ab0GASnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:43:16 -0400
+Received: from kroah.org ([198.145.64.141]:40475 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757858Ab0GASXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:25 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:12 2010
+Message-Id: <20100701173212.212464972@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:31:30 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Dan Carpenter <error27@gmail.com>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Malte Schroder <maltesch@gmx.de>, Ralf Baechle <ralf@linux-mips.org>,
+       Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+Subject: [patch 064/149] rtc-cmos: do dev_set_drvdata() earlier in the initialization
+In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/media/video/gspca/sunplus.c |    4 ++--
- include/linux/jffs2.h               |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-diff --git a/drivers/media/video/gspca/sunplus.c b/drivers/media/video/gspca/sunplus.c
-index 0c786e0..d0a133a 100644
---- a/drivers/media/video/gspca/sunplus.c
-+++ b/drivers/media/video/gspca/sunplus.c
-@@ -805,7 +805,7 @@ static int sd_init(struct gspca_dev *gspca_dev)
- 			/* Set AE AWB Banding Type 3-> 50Hz 2-> 60Hz */
- 			spca504A_acknowledged_command(gspca_dev, 0x24,
- 							8, 3, 0x9e, 1);
--			/* Twice sequencial need status 0xff->0x9e->0x9d */
-+			/* Twice sequential need status 0xff->0x9e->0x9d */
- 			spca504A_acknowledged_command(gspca_dev, 0x24,
- 							8, 3, 0x9e, 0);
+------------------
+
+From: Dan Carpenter <error27@gmail.com>
+
+commit 6ba8bcd457d9fc793ac9435aa2e4138f571d4ec5 upstream.
+
+The bug is an oops when dev_get_drvdata() returned null in
+cmos_update_irq_enable().  The call tree looks like this:
+  rtc_dev_ioctl()
+    => rtc_update_irq_enable()
+      => cmos_update_irq_enable()
+
+It's caused by a race condition in the module initialization.  It is
+rtc_device_register() which makes the ioctl operations live so I moved
+the call to dev_set_drvdata() before the call to rtc_device_register().
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=15963
+
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: Malte Schroder <maltesch@gmx.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/rtc/rtc-cmos.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -723,6 +723,9 @@ cmos_do_probe(struct device *dev, struct
+ 		}
+ 	}
  
-@@ -880,7 +880,7 @@ static int sd_start(struct gspca_dev *gspca_dev)
- 			/* Set AE AWB Banding Type 3-> 50Hz 2-> 60Hz */
- 			spca504A_acknowledged_command(gspca_dev, 0x24,
- 							8, 3, 0x9e, 1);
--			/* Twice sequencial need status 0xff->0x9e->0x9d */
-+			/* Twice sequential need status 0xff->0x9e->0x9d */
- 			spca504A_acknowledged_command(gspca_dev, 0x24,
- 							8, 3, 0x9e, 0);
- 			spca504A_acknowledged_command(gspca_dev, 0x24,
-diff --git a/include/linux/jffs2.h b/include/linux/jffs2.h
-index 0874ab5..edb9231 100644
---- a/include/linux/jffs2.h
-+++ b/include/linux/jffs2.h
-@@ -185,7 +185,7 @@ struct jffs2_raw_xref
- 	jint32_t hdr_crc;
- 	jint32_t ino;		/* inode number */
- 	jint32_t xid;		/* XATTR identifier number */
--	jint32_t xseqno;	/* xref sequencial number */
-+	jint32_t xseqno;	/* xref sequential number */
- 	jint32_t node_crc;
- } __attribute__((packed));
++	cmos_rtc.dev = dev;
++	dev_set_drvdata(dev, &cmos_rtc);
++
+ 	cmos_rtc.rtc = rtc_device_register(driver_name, dev,
+ 				&cmos_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(cmos_rtc.rtc)) {
+@@ -730,8 +733,6 @@ cmos_do_probe(struct device *dev, struct
+ 		goto cleanup0;
+ 	}
  
--- 
-1.7.1
+-	cmos_rtc.dev = dev;
+-	dev_set_drvdata(dev, &cmos_rtc);
+ 	rename_region(ports, dev_name(&cmos_rtc.rtc->dev));
+ 
+ 	spin_lock_irq(&rtc_lock);
+
 
