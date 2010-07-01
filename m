@@ -1,79 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab0GALUN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 07:20:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56467 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab0GALUL convert rfc822-to-8bit (ORCPT
+	id S1754932Ab0GALXA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 07:23:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45265 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab0GALW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 07:20:11 -0400
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+	Thu, 1 Jul 2010 07:22:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=q6tQ8DYBJE2Sv2YO+P1wj+0cP31dOw0VGJMAq0uTJFo3u3hRr+ozsxCHV22SgmHY71
+         DK1XUR8meFJgCGXvv8V2VA38Y5YX2Ie8a+N5lkP/iAwZ2/1Fc9jQ80iylbvovQag1iIq
+         U1lCb9XUKS7Rl1PVhlw6qdsUmMfZ6tRC4Z+WU=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: Kernel Janitors <kernel-janitors@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <20100701110708.GA27368@redhat.com>
-References: <4BFEA434.6080405@kernel.org>
-	 <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org>
-	 <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org>
-	 <20100530112925.GB27611@redhat.com> <4C02C99D.9070204@kernel.org>
-	 <20100624081135.GA937@redhat.com>
-	 <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
-	 <20100625101022.GA16321@redhat.com>  <20100701110708.GA27368@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 01 Jul 2010 13:19:39 +0200
-Message-ID: <1277983179.1917.10.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+       Dan Carpenter <error27@gmail.com>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 09/16] staging/otus: use ARRAY_SIZE
+Date: Thu,  1 Jul 2010 15:22:51 +0400
+Message-Id: <1277983372-29356-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-01 at 14:07 +0300, Michael S. Tsirkin wrote:
-> Author: Sridhar Samudrala <sri@us.ibm.com>
-> 
-> sched: export sched_set/getaffinity to modules
-> 
-> vhost-net driver wants to copy the affinity from the
-> owner thread to thread it creates. Export
-> sched_set/get affinity to modules to make this possible
-> when vhost is built as a module.
-> 
-> Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> ---
-> 
-> I'm not sure the previous time made it clear what exactly is the
-> proposed change, so reposting.  Info, Peter, could you ack merging the
-> following through the net-next tree please?
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index d484081..3759391 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -4744,6 +4744,7 @@ out_put_task:
->  	put_online_cpus();
->  	return retval;
->  }
-> +EXPORT_SYMBOL_GPL(sched_setaffinity);
->  
->  static int get_user_cpu_mask(unsigned long __user *user_mask_ptr, unsigned len,
->  			     struct cpumask *new_mask)
-> @@ -4807,6 +4808,7 @@ out_unlock:
->  
->  	return retval;
->  }
-> +EXPORT_SYMBOL_GPL(sched_getaffinity);
->  
->  /**
->   * sys_sched_getaffinity - get the cpu affinity of a process
+Change sizeof(x) / sizeof(*x) to ARRAY_SIZE(x).
 
-Urgh,.. so why again is that a good idea?
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/staging/otus/hal/hpani.c |   37 ++++++++++++++++---------------------
+ 1 files changed, 16 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/staging/otus/hal/hpani.c b/drivers/staging/otus/hal/hpani.c
+index f53e483..6940ddc 100644
+--- a/drivers/staging/otus/hal/hpani.c
++++ b/drivers/staging/otus/hal/hpani.c
+@@ -72,7 +72,6 @@ s32_t BEACON_RSSI(zdev_t *dev)
+ 
+ void zfHpAniAttach(zdev_t *dev)
+ {
+-#define N(a)     (sizeof(a) / sizeof(a[0]))
+     u32_t i;
+     struct zsHpPriv *HpPriv;
+ 
+@@ -125,7 +124,6 @@ void zfHpAniAttach(zdev_t *dev)
+     HpPriv->stats.ast_nodestats.ns_avgbrssi = ZM_RSSI_DUMMY_MARKER;
+     HpPriv->stats.ast_nodestats.ns_avgrssi = ZM_RSSI_DUMMY_MARKER;
+     HpPriv->stats.ast_nodestats.ns_avgtxrssi = ZM_RSSI_DUMMY_MARKER;
+-#undef N
+ }
+ 
+ /*
+@@ -133,7 +131,6 @@ void zfHpAniAttach(zdev_t *dev)
+  */
+ u8_t zfHpAniControl(zdev_t *dev, ZM_HAL_ANI_CMD cmd, int param)
+ {
+-#define N(a) (sizeof(a)/sizeof(a[0]))
+     typedef s32_t TABLE[];
+     struct zsHpPriv *HpPriv;
+     struct zsAniState *aniState;
+@@ -148,11 +145,12 @@ u8_t zfHpAniControl(zdev_t *dev, ZM_HAL_ANI_CMD cmd, int param)
+     {
+         u32_t level = param;
+ 
+-        if (level >= N(HpPriv->totalSizeDesired)) {
+-          zm_debug_msg1("level out of range, desired level : ", level);
+-          zm_debug_msg1("max level : ", N(HpPriv->totalSizeDesired));
+-          return FALSE;
+-        }
++	if (level >= ARRAY_SIZE(HpPriv->totalSizeDesired)) {
++		zm_debug_msg1("level out of range, desired level : ", level);
++		zm_debug_msg1("max level : ",
++			ARRAY_SIZE(HpPriv->totalSizeDesired));
++		return FALSE;
++	}
+ 
+         zfDelayWriteInternalReg(dev, AR_PHY_DESIRED_SZ,
+                 (HpPriv->regPHYDesiredSZ & ~AR_PHY_DESIRED_SZ_TOT_DES)
+@@ -260,12 +258,11 @@ u8_t zfHpAniControl(zdev_t *dev, ZM_HAL_ANI_CMD cmd, int param)
+         const TABLE firstep = { 0, 4, 8 };
+         u32_t level = param;
+ 
+-        if (level >= N(firstep))
+-        {
+-            zm_debug_msg1("level out of range, desired level : ", level);
+-            zm_debug_msg1("max level : ", N(firstep));
+-            return FALSE;
+-        }
++	if (level >= ARRAY_SIZE(firstep)) {
++		zm_debug_msg1("level out of range, desired level : ", level);
++		zm_debug_msg1("max level : ", ARRAY_SIZE(firstep));
++		return FALSE;
++	}
+         zfDelayWriteInternalReg(dev, AR_PHY_FIND_SIG,
+                 (HpPriv->regPHYFindSig & ~AR_PHY_FIND_SIG_FIRSTEP)
+                 | ((firstep[level] << AR_PHY_FIND_SIG_FIRSTEP_S)
+@@ -283,12 +280,11 @@ u8_t zfHpAniControl(zdev_t *dev, ZM_HAL_ANI_CMD cmd, int param)
+         const TABLE cycpwrThr1 = { 2, 4, 6, 8, 10, 12, 14, 16 };
+         u32_t level = param;
+ 
+-        if (level >= N(cycpwrThr1))
+-        {
+-            zm_debug_msg1("level out of range, desired level : ", level);
+-            zm_debug_msg1("max level : ", N(cycpwrThr1));
+-            return FALSE;
+-        }
++	if (level >= ARRAY_SIZE(cycpwrThr1)) {
++		zm_debug_msg1("level out of range, desired level : ", level);
++		zm_debug_msg1("max level : ", ARRAY_SIZE(cycpwrThr1));
++		return FALSE;
++	}
+         zfDelayWriteInternalReg(dev, AR_PHY_TIMING5,
+                 (HpPriv->regPHYTiming5 & ~AR_PHY_TIMING5_CYCPWR_THR1)
+                 | ((cycpwrThr1[level] << AR_PHY_TIMING5_CYCPWR_THR1_S)
+@@ -335,7 +331,6 @@ u8_t zfHpAniControl(zdev_t *dev, ZM_HAL_ANI_CMD cmd, int param)
+         return FALSE;
+     }
+     return TRUE;
+-#undef  N
+ }
+ 
+ void zfHpAniRestart(zdev_t* dev)
+-- 
+1.7.0.4
+
