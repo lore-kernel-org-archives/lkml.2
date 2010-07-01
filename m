@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281Ab0GAVes (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:34:48 -0400
-Received: from kroah.org ([198.145.64.141]:33084 "EHLO coco.kroah.org"
+	id S933204Ab0GAVcS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:32:18 -0400
+Received: from kroah.org ([198.145.64.141]:33186 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932632Ab0GAVOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:55 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:59 2010
-Message-Id: <20100701174259.485551438@clark.site>
+	id S932825Ab0GAVPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:15:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:01 2010
+Message-Id: <20100701174301.068024045@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:04 -0700
+Date: Thu, 01 Jul 2010 10:44:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [154/200] USB: xhci: Wait for host to start running.
+       Steven Whitehouse <swhiteho@redhat.com>
+Subject: [172/200] GFS2: Fix permissions checking for setflags ioctl()
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Steven Whitehouse <swhiteho@redhat.com>
 
-commit ed07453fd356025cc25272629e982f5e4607632c upstream.
+commit 7df0e0397b9a18358573274db9fdab991941062f upstream.
 
-When the run bit is set in the xHCI command register, it may take a few
-microseconds for the host to start running.  We cannot ring any doorbells
-until the host is actually running, so wait until the status register says
-the host is running.
+We should be checking for the ownership of the file for which
+flags are being set, rather than just for write access.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Shinya Saito <shinya.saito.sx@renesas.com>
+Reported-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |   39 ++++++++++++++++++++++++++++++++-------
- 1 file changed, 32 insertions(+), 7 deletions(-)
+ fs/gfs2/file.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -105,6 +105,33 @@ int xhci_halt(struct xhci_hcd *xhci)
- }
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -218,6 +218,11 @@ static int do_gfs2_set_flags(struct file
+ 	if (error)
+ 		goto out_drop_write;
  
- /*
-+ * Set the run bit and wait for the host to be running.
-+ */
-+int xhci_start(struct xhci_hcd *xhci)
-+{
-+	u32 temp;
-+	int ret;
++	error = -EACCES;
++	if (!is_owner_or_cap(inode))
++		goto out;
 +
-+	temp = xhci_readl(xhci, &xhci->op_regs->command);
-+	temp |= (CMD_RUN);
-+	xhci_dbg(xhci, "// Turn on HC, cmd = 0x%x.\n",
-+			temp);
-+	xhci_writel(xhci, temp, &xhci->op_regs->command);
++	error = 0;
+ 	flags = ip->i_diskflags;
+ 	new_flags = (flags & ~mask) | (reqflags & mask);
+ 	if ((new_flags ^ flags) == 0)
+@@ -275,8 +280,10 @@ static int gfs2_set_flags(struct file *f
+ {
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
+ 	u32 fsflags, gfsflags;
 +
-+	/*
-+	 * Wait for the HCHalted Status bit to be 0 to indicate the host is
-+	 * running.
-+	 */
-+	ret = handshake(xhci, &xhci->op_regs->status,
-+			STS_HALT, 0, XHCI_MAX_HALT_USEC);
-+	if (ret == -ETIMEDOUT)
-+		xhci_err(xhci, "Host took too long to start, "
-+				"waited %u microseconds.\n",
-+				XHCI_MAX_HALT_USEC);
-+	return ret;
-+}
+ 	if (get_user(fsflags, ptr))
+ 		return -EFAULT;
 +
-+/*
-  * Reset a halted HC, and set the internal HC state to HC_STATE_HALT.
-  *
-  * This resets pipelines, timers, counters, state machines, etc.
-@@ -452,13 +479,11 @@ int xhci_run(struct usb_hcd *hcd)
- 	if (NUM_TEST_NOOPS > 0)
- 		doorbell = xhci_setup_one_noop(xhci);
- 
--	temp = xhci_readl(xhci, &xhci->op_regs->command);
--	temp |= (CMD_RUN);
--	xhci_dbg(xhci, "// Turn on HC, cmd = 0x%x.\n",
--			temp);
--	xhci_writel(xhci, temp, &xhci->op_regs->command);
--	/* Flush PCI posted writes */
--	temp = xhci_readl(xhci, &xhci->op_regs->command);
-+	if (xhci_start(xhci)) {
-+		xhci_halt(xhci);
-+		return -ENODEV;
-+	}
-+
- 	xhci_dbg(xhci, "// @%p = 0x%x\n", &xhci->op_regs->command, temp);
- 	if (doorbell)
- 		(*doorbell)(xhci);
+ 	gfsflags = fsflags_cvt(fsflags_to_gfs2, fsflags);
+ 	if (!S_ISDIR(inode->i_mode)) {
+ 		if (gfsflags & GFS2_DIF_INHERIT_JDATA)
 
 
