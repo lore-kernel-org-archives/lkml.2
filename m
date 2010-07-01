@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab0GAAgi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 20:36:38 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49302 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab0GAAgg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 20:36:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 1 Jul 2010 09:31:30 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Nathan Fontenot <nfont@austin.ibm.com>,
-       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] memory hotplug disable boot option
-Message-Id: <20100701093130.c5e2b564.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100630154755.GB12158@suse.de>
-References: <20100628154455.GA13918@suse.de>
-	<1277769867.8354.531.camel@nimitz>
-	<20100629115232.38BC.A69D9226@jp.fujitsu.com>
-	<1277827384.8354.3413.camel@nimitz>
-	<20100629180415.GB1240@suse.de>
-	<20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100630154755.GB12158@suse.de>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752839Ab0GAApZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 20:45:25 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:46862 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752348Ab0GAApX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 20:45:23 -0400
+Date: Wed, 30 Jun 2010 17:45:19 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, muli@il.ibm.com,
+       cschultz@linux.vnet.ibm.com, stable@kernel.org, tglx@linutronix.de,
+       mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: [PATCH] x86, Calgary: Increase max PHB number
+Message-ID: <20100701004519.GQ15515@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20100624212647.GI15515@tux1.beaverton.ibm.com> <tip-499a00e92dd9a75395081f595e681629eb1eebad@git.kernel.org> <20100629155151.7caaff4b.akpm@linux-foundation.org> <4C2BB7C0.9040000@zytor.com> <20100630214923.GP15515@tux1.beaverton.ibm.com> <4C2BCDC6.1010004@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C2BCDC6.1010004@zytor.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010 08:47:55 -0700
-Greg KH <gregkh@suse.de> wrote:
-> > and adding a scalable interface for large scale machines ?
-> > I'd like to consider something..
-> 
-> Dynamically changing the layout on big memory boxes makes sense to me,
-> how about you?
-> 
+The x3950 family can have as many as 256 PCI buses in a single system, so
+change the limits to the maximum.  Since there can only be 256 PCI buses in one
+domain, we no longer need the BUG_ON check.
 
-like this ?
-==
-boot option:
-memory_sysfs_layout=compact
-memory_sysfs_layout=auto (default)
-memory_sysfs_layout=full
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-Considering briefly, how about this compact layout ?
-
-/sys/devices/system/memory/:
-                            list, hide, show, memoryX...
-
-list: // show available memory index list.
-  #cat list
-   0 1 2 ....10000...
-
-show: //an interface to enable the interface.
-  #echo INDEX > memory_index
-  will create memoryINDEX diretory.
-
-hide: //an interface to hide the interface.
-  #echo INDEX > memory_hide
-  will remove memoryINDEX sysfs directory.
+ arch/x86/kernel/pci-calgary_64.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
 
-In compact mode, all memoryX interface are hidden at boot.
-In full mode, all memoryX interaface are shown.
-The Boot option just affects status at boot. If users want, he can make
-all memory sysfs in shown state.
-
-At hot-add event (via acpi) or probe-event, newly created memory section
-should be start from "shown" mode. hotplug scirpt can hide it after online.
-
-At hot-remove, the users has to offline memory before hotplug. He'll has
-to do check list and show interface.
-
-I think this change is not very difficult technically but can this kind of
-interface be allowed ?
-
-Thanks,
--Kame
-
-
-
-
+diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+index 0b96b55..078d4ec 100644
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -110,7 +110,7 @@ int use_calgary __read_mostly = 0;
+  * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
+  * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
+  */
+-#define MAX_PHB_BUS_NUM		384
++#define MAX_PHB_BUS_NUM		256
+ 
+ #define PHBS_PER_CALGARY	  4
+ 
+@@ -1056,8 +1056,6 @@ static int __init calgary_init_one(struct pci_dev *dev)
+ 	struct iommu_table *tbl;
+ 	int ret;
+ 
+-	BUG_ON(dev->bus->number >= MAX_PHB_BUS_NUM);
+-
+ 	bbar = busno_to_bbar(dev->bus->number);
+ 	ret = calgary_setup_tar(dev, bbar);
+ 	if (ret)
