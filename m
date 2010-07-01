@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759680Ab0GAWIm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:08:42 -0400
-Received: from kroah.org ([198.145.64.141]:47530 "EHLO coco.kroah.org"
+	id S1759732Ab0GAWI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:08:56 -0400
+Received: from kroah.org ([198.145.64.141]:47519 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932683Ab0GAUuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:24 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:33 2010
-Message-Id: <20100701173432.964341871@clark.site>
+	id S932603Ab0GAUuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:23 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:32 2010
+Message-Id: <20100701173432.881541976@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:19 -0700
+Date: Thu, 01 Jul 2010 10:34:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Malte Schroder <maltesch@gmx.de>, Ralf Baechle <ralf@linux-mips.org>,
-       Herton Ronaldo Krzesinski <herton@mandriva.com.br>
-Subject: [patch 073/164] rtc-cmos: do dev_set_drvdata() earlier in the initialization
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Geert Uytterhoeven <geert@linux-m68k.org>,
+       Roman Zippel <zippel@linux-m68k.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [patch 072/164] m68k: set ARCH_KMALLOC_MINALIGN
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,58 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-commit 6ba8bcd457d9fc793ac9435aa2e4138f571d4ec5 upstream.
+commit dd6c26a66bdc629a500174ffe73b010b070b9f1b upstream.
 
-The bug is an oops when dev_get_drvdata() returned null in
-cmos_update_irq_enable().  The call tree looks like this:
-  rtc_dev_ioctl()
-    => rtc_update_irq_enable()
-      => cmos_update_irq_enable()
+Architectures that handle DMA-non-coherent memory need to set
+ARCH_KMALLOC_MINALIGN to make sure that kmalloc'ed buffer is DMA-safe: the
+buffer doesn't share a cache with the others.
 
-It's caused by a race condition in the module initialization.  It is
-rtc_device_register() which makes the ioctl operations live so I moved
-the call to dev_set_drvdata() before the call to rtc_device_register().
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=15963
-
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
-Cc: Malte Schroder <maltesch@gmx.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Roman Zippel <zippel@linux-m68k.org>
+Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-cmos.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/m68k/include/asm/cache.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -719,6 +719,9 @@ cmos_do_probe(struct device *dev, struct
- 		}
- 	}
+--- a/arch/m68k/include/asm/cache.h
++++ b/arch/m68k/include/asm/cache.h
+@@ -8,4 +8,6 @@
+ #define        L1_CACHE_SHIFT  4
+ #define        L1_CACHE_BYTES  (1<< L1_CACHE_SHIFT)
  
-+	cmos_rtc.dev = dev;
-+	dev_set_drvdata(dev, &cmos_rtc);
++#define ARCH_KMALLOC_MINALIGN	L1_CACHE_BYTES
 +
- 	cmos_rtc.rtc = rtc_device_register(driver_name, dev,
- 				&cmos_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(cmos_rtc.rtc)) {
-@@ -726,8 +729,6 @@ cmos_do_probe(struct device *dev, struct
- 		goto cleanup0;
- 	}
- 
--	cmos_rtc.dev = dev;
--	dev_set_drvdata(dev, &cmos_rtc);
- 	rename_region(ports, dev_name(&cmos_rtc.rtc->dev));
- 
- 	spin_lock_irq(&rtc_lock);
+ #endif
 
 
