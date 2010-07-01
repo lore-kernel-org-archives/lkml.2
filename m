@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758393Ab0GASpH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:45:07 -0400
-Received: from kroah.org ([198.145.64.141]:35528 "EHLO coco.kroah.org"
+	id S932475Ab0GASvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:51:54 -0400
+Received: from kroah.org ([198.145.64.141]:35396 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757793Ab0GASXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:15 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:11 2010
-Message-Id: <20100701173211.103422529@clark.site>
+	id S1757637Ab0GASWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:52 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:08 2010
+Message-Id: <20100701173208.832199460@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:17 -0700
+Date: Thu, 01 Jul 2010 10:30:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Adam Jackson <ajax@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [patch 051/149] drm/edid: Fix 1024x768@85Hz
+       Christian Lamparter <chunkeey@googlemail.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 024/149] ar9170usb: fix panic triggered by undersized rxstream buffer
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Jackson <ajax@redhat.com>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 61dd98fad58f945ed720ba132681acb58fcee015 upstream.
+commit 879999cec9489f8942ebce3ec1b5f23ef948dda7 upstream.
 
-Having hsync both start and end on pixel 1072 ain't gonna work very
-well.  Matches the X server's list.
+While ar9170's USB transport packet size is currently set to 8KiB,
+the PHY is capable of receiving AMPDUs with up to 64KiB.
+Such a large frame will be split over several rx URBs and
+exceed the previously allocated space for rx stream reconstruction.
 
-Signed-off-by: Adam Jackson <ajax@redhat.com>
-Tested-By: Michael Tokarev <mjt@tls.msk.ru>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This patch increases the buffer size to 64KiB which is
+in fact the phy & rx stream designed size limit.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=15591
+Reported-by: Christian Mehlis <mehlis@inf.fu-berlin.de>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_edid.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ath/ar9170/hw.h   |    1 +
+ drivers/net/wireless/ath/ar9170/main.c |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -324,7 +324,7 @@ static struct drm_display_mode drm_dmt_m
- 		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC) },
- 	/* 1024x768@85Hz */
- 	{ DRM_MODE("1024x768", DRM_MODE_TYPE_DRIVER, 94500, 1024, 1072,
--		   1072, 1376, 0, 768, 769, 772, 808, 0,
-+		   1168, 1376, 0, 768, 769, 772, 808, 0,
- 		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC) },
- 	/* 1152x864@75Hz */
- 	{ DRM_MODE("1152x864", DRM_MODE_TYPE_DRIVER, 108000, 1152, 1216,
+--- a/drivers/net/wireless/ath/ar9170/hw.h
++++ b/drivers/net/wireless/ath/ar9170/hw.h
+@@ -422,5 +422,6 @@ enum ar9170_txq {
+ 
+ #define AR9170_TXQ_DEPTH	32
+ #define AR9170_TX_MAX_PENDING	128
++#define AR9170_RX_STREAM_MAX_SIZE 65535
+ 
+ #endif /* __AR9170_HW_H */
+--- a/drivers/net/wireless/ath/ar9170/main.c
++++ b/drivers/net/wireless/ath/ar9170/main.c
+@@ -2526,7 +2526,7 @@ void *ar9170_alloc(size_t priv_size)
+ 	 * tends to split the streams into seperate rx descriptors.
+ 	 */
+ 
+-	skb = __dev_alloc_skb(AR9170_MAX_RX_BUFFER_SIZE, GFP_KERNEL);
++	skb = __dev_alloc_skb(AR9170_RX_STREAM_MAX_SIZE, GFP_KERNEL);
+ 	if (!skb)
+ 		goto err_nomem;
+ 
 
 
