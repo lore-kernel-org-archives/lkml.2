@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab0GAUwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:52:41 -0400
-Received: from kroah.org ([198.145.64.141]:47773 "EHLO coco.kroah.org"
+	id S932932Ab0GAUvq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:51:46 -0400
+Received: from kroah.org ([198.145.64.141]:47654 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932788Ab0GAUu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:57 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:36 2010
-Message-Id: <20100701173436.154376947@clark.site>
+	id S932744Ab0GAUul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:34 2010
+Message-Id: <20100701173434.545880312@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:57 -0700
+Date: Thu, 01 Jul 2010 10:34:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [patch 111/164] sata_nv: dont diddle with nIEN on mcp55
+       Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+       David Howells <dhowells@redhat.com>, Eric Paris <eparis@parisplace.org>,
+       Jakub Jelinek <jakub@redhat.com>, James Morris <jmorris@namei.org>,
+       Stephen Smalley <sds@tycho.nsa.gov>
+Subject: [patch 092/164] signals: check_kill_permission(): dont check creds if same_thread_group()
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit f3faf8fc3fab45c3526efe8c9e99bb23f8723350 upstream.
+commit 065add3941bdca54fe04ed3471a96bce9af88793 upstream.
 
-On mcp55, nIEN gets stuck once set and liteon blueray rom iHOS104-08
-violates ATA specification and fails to set I on D2H Reg FIS if nIEN
-is set when the command was issued.  When the other party is following
-the spec, both devices can work fine but when the two flaws are put
-together, they can't talk to each other.
+Andrew Tridgell reports that aio_read(SIGEV_SIGNAL) can fail if the
+notification from the helper thread races with setresuid(), see
+http://samba.org/~tridge/junkcode/aio_uid.c
 
-mcp55 has its own IRQ masking mechanism and there's no reason to mess
-with nIEN in the first place.  Fix it by dropping nIEN diddling from
-nv_mcp55_freeze/thaw().
+This happens because check_kill_permission() doesn't permit sending a
+signal to the task with the different cred->xids.  But there is not any
+security reason to check ->cred's when the task sends a signal (private or
+group-wide) to its sub-thread.  Whatever we do, any thread can bypass all
+security checks and send SIGKILL to all threads, or it can block a signal
+SIG and do kill(gettid(), SIG) to deliver this signal to another
+sub-thread.  Not to mention that CLONE_THREAD implies CLONE_VM.
 
-This was originally reported by Cengiz.  Although Cengiz hasn't
-verified the fix yet, I could reproduce this problem and verfiy the
-fix.  Even if Cengiz is experiencing different or additional problems,
-this patch is needed.
+Change check_kill_permission() to avoid the credentials check when the
+sender and the target are from the same thread group.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Cengiz Günay <cgunay@emory.edu>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Also, move "cred = current_cred()" down to avoid calling get_current()
+twice.
+
+Note: David Howells pointed out we could relax this even more, the
+CLONE_SIGHAND (without CLONE_THREAD) case probably does not need
+these checks too.
+
+Roland said:
+: The glibc (libpthread) that does set*id across threads has
+: been in use for a while (2.3.4?), probably in distro's using kernels as old
+: or older than any active -stable streams.  In the race in question, this
+: kernel bug is breaking valid POSIX application expectations.
+
+Reported-by: Andrew Tridgell <tridge@samba.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Roland McGrath <roland@redhat.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Cc: Eric Paris <eparis@parisplace.org>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Roland McGrath <roland@redhat.com>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/sata_nv.c |    2 --
- 1 file changed, 2 deletions(-)
+ kernel/signal.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/sata_nv.c
-+++ b/drivers/ata/sata_nv.c
-@@ -1673,7 +1673,6 @@ static void nv_mcp55_freeze(struct ata_p
- 	mask = readl(mmio_base + NV_INT_ENABLE_MCP55);
- 	mask &= ~(NV_INT_ALL_MCP55 << shift);
- 	writel(mask, mmio_base + NV_INT_ENABLE_MCP55);
--	ata_sff_freeze(ap);
- }
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -625,7 +625,7 @@ static inline bool si_fromuser(const str
+ static int check_kill_permission(int sig, struct siginfo *info,
+ 				 struct task_struct *t)
+ {
+-	const struct cred *cred = current_cred(), *tcred;
++	const struct cred *cred, *tcred;
+ 	struct pid *sid;
+ 	int error;
  
- static void nv_mcp55_thaw(struct ata_port *ap)
-@@ -1687,7 +1686,6 @@ static void nv_mcp55_thaw(struct ata_por
- 	mask = readl(mmio_base + NV_INT_ENABLE_MCP55);
- 	mask |= (NV_INT_MASK_MCP55 << shift);
- 	writel(mask, mmio_base + NV_INT_ENABLE_MCP55);
--	ata_sff_thaw(ap);
- }
+@@ -639,8 +639,10 @@ static int check_kill_permission(int sig
+ 	if (error)
+ 		return error;
  
- static void nv_adma_error_handler(struct ata_port *ap)
++	cred = current_cred();
+ 	tcred = __task_cred(t);
+-	if ((cred->euid ^ tcred->suid) &&
++	if (!same_thread_group(current, t) &&
++	    (cred->euid ^ tcred->suid) &&
+ 	    (cred->euid ^ tcred->uid) &&
+ 	    (cred->uid  ^ tcred->suid) &&
+ 	    (cred->uid  ^ tcred->uid) &&
 
 
