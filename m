@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759059Ab0GAVrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:47:00 -0400
-Received: from kroah.org ([198.145.64.141]:32788 "EHLO coco.kroah.org"
+	id S933355Ab0GAVme (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:42:34 -0400
+Received: from kroah.org ([198.145.64.141]:32909 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758917Ab0GAVOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
-Message-Id: <20100701174254.871961677@clark.site>
+	id S1758750Ab0GAVO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:56 2010
+Message-Id: <20100701174256.636809277@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:10 -0700
+Date: Thu, 01 Jul 2010 10:43:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       David Howells <dhowells@redhat.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [100/200] frv: set ARCH_KMALLOC_MINALIGN
+       "Ira W. Snyder" <iws@ovro.caltech.edu>,
+       Jean Delvare <khali@linux-fr.org>
+Subject: [121/200] hwmon: (ltc4245) Read only one GPIO pin
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+From: Ira W. Snyder <iws@ovro.caltech.edu>
 
-commit 69dcf3db03626c4f18de624e8632454ea12ff260 upstream.
+commit df16dd53c575d0cb9dbee20a3149927c862a9ff6 upstream.
 
-Architectures that handle DMA-non-coherent memory need to set
-ARCH_KMALLOC_MINALIGN to make sure that kmalloc'ed buffer is DMA-safe: the
-buffer doesn't share a cache with the others.
+Read only one of the GPIO pins as an analog voltage. The ADC can be
+switched to a different GPIO pin at runtime, but this is not supported.
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Acked-by: David Howells <dhowells@redhat.com>
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Previously, this driver would report the analog voltage of the currently
+selected GPIO pin as all three GPIO voltages: in9_input, in10_input and
+in11_input.
+
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/frv/include/asm/cache.h |    2 ++
- 1 file changed, 2 insertions(+)
+ Documentation/hwmon/ltc4245 |    4 +---
+ drivers/hwmon/ltc4245.c     |   18 +++++-------------
+ 2 files changed, 6 insertions(+), 16 deletions(-)
 
---- a/arch/frv/include/asm/cache.h
-+++ b/arch/frv/include/asm/cache.h
-@@ -17,6 +17,8 @@
- #define L1_CACHE_SHIFT		(CONFIG_FRV_L1_CACHE_SHIFT)
- #define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
+--- a/Documentation/hwmon/ltc4245
++++ b/Documentation/hwmon/ltc4245
+@@ -72,9 +72,7 @@ in6_min_alarm		5v  output undervoltage a
+ in7_min_alarm		3v  output undervoltage alarm
+ in8_min_alarm		Vee (-12v) output undervoltage alarm
  
-+#define ARCH_KMALLOC_MINALIGN	L1_CACHE_BYTES
-+
- #define __cacheline_aligned	__attribute__((aligned(L1_CACHE_BYTES)))
- #define ____cacheline_aligned	__attribute__((aligned(L1_CACHE_BYTES)))
+-in9_input		GPIO #1 voltage data
+-in10_input		GPIO #2 voltage data
+-in11_input		GPIO #3 voltage data
++in9_input		GPIO voltage data
  
+ power1_input		12v power usage (mW)
+ power2_input		5v  power usage (mW)
+--- a/drivers/hwmon/ltc4245.c
++++ b/drivers/hwmon/ltc4245.c
+@@ -45,9 +45,7 @@ enum ltc4245_cmd {
+ 	LTC4245_VEEIN			= 0x19,
+ 	LTC4245_VEESENSE		= 0x1a,
+ 	LTC4245_VEEOUT			= 0x1b,
+-	LTC4245_GPIOADC1		= 0x1c,
+-	LTC4245_GPIOADC2		= 0x1d,
+-	LTC4245_GPIOADC3		= 0x1e,
++	LTC4245_GPIOADC			= 0x1c,
+ };
+ 
+ struct ltc4245_data {
+@@ -61,7 +59,7 @@ struct ltc4245_data {
+ 	u8 cregs[0x08];
+ 
+ 	/* Voltage registers */
+-	u8 vregs[0x0f];
++	u8 vregs[0x0d];
+ };
+ 
+ static struct ltc4245_data *ltc4245_update_device(struct device *dev)
+@@ -86,7 +84,7 @@ static struct ltc4245_data *ltc4245_upda
+ 				data->cregs[i] = val;
+ 		}
+ 
+-		/* Read voltage registers -- 0x10 to 0x1f */
++		/* Read voltage registers -- 0x10 to 0x1c */
+ 		for (i = 0; i < ARRAY_SIZE(data->vregs); i++) {
+ 			val = i2c_smbus_read_byte_data(client, i+0x10);
+ 			if (unlikely(val < 0))
+@@ -128,9 +126,7 @@ static int ltc4245_get_voltage(struct de
+ 	case LTC4245_VEEOUT:
+ 		voltage = regval * -55;
+ 		break;
+-	case LTC4245_GPIOADC1:
+-	case LTC4245_GPIOADC2:
+-	case LTC4245_GPIOADC3:
++	case LTC4245_GPIOADC:
+ 		voltage = regval * 10;
+ 		break;
+ 	default:
+@@ -297,9 +293,7 @@ LTC4245_ALARM(in7_min_alarm,	(1 << 2),	L
+ LTC4245_ALARM(in8_min_alarm,	(1 << 3),	LTC4245_FAULT2);
+ 
+ /* GPIO voltages */
+-LTC4245_VOLTAGE(in9_input,			LTC4245_GPIOADC1);
+-LTC4245_VOLTAGE(in10_input,			LTC4245_GPIOADC2);
+-LTC4245_VOLTAGE(in11_input,			LTC4245_GPIOADC3);
++LTC4245_VOLTAGE(in9_input,			LTC4245_GPIOADC);
+ 
+ /* Power Consumption (virtual) */
+ LTC4245_POWER(power1_input,			LTC4245_12VSENSE);
+@@ -342,8 +336,6 @@ static struct attribute *ltc4245_attribu
+ 	&sensor_dev_attr_in8_min_alarm.dev_attr.attr,
+ 
+ 	&sensor_dev_attr_in9_input.dev_attr.attr,
+-	&sensor_dev_attr_in10_input.dev_attr.attr,
+-	&sensor_dev_attr_in11_input.dev_attr.attr,
+ 
+ 	&sensor_dev_attr_power1_input.dev_attr.attr,
+ 	&sensor_dev_attr_power2_input.dev_attr.attr,
 
 
