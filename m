@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944Ab0GAUvx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:51:53 -0400
-Received: from kroah.org ([198.145.64.141]:47668 "EHLO coco.kroah.org"
+	id S932736Ab0GAUwl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:52:41 -0400
+Received: from kroah.org ([198.145.64.141]:47773 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932507Ab0GAUun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:43 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:34 2010
-Message-Id: <20100701173434.713093758@clark.site>
+	id S932788Ab0GAUu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:57 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:36 2010
+Message-Id: <20100701173436.154376947@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:40 -0700
+Date: Thu, 01 Jul 2010 10:34:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jiri Kosina <jkosina@suse.cz>, Corey Minyard <minyard@acm.org>
-Subject: [patch 094/164] ipmi: handle run_to_completion properly in deliver_recv_msg()
+       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [patch 111/164] sata_nv: dont diddle with nIEN on mcp55
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Tejun Heo <tj@kernel.org>
 
-commit a747c5abc329611220f16df0bb4cf0ca4a7fdf0c upstream.
+commit f3faf8fc3fab45c3526efe8c9e99bb23f8723350 upstream.
 
-If run_to_completion flag is set, it means that we are running in a
-single-threaded mode, and thus no locks are held.
+On mcp55, nIEN gets stuck once set and liteon blueray rom iHOS104-08
+violates ATA specification and fails to set I on D2H Reg FIS if nIEN
+is set when the command was issued.  When the other party is following
+the spec, both devices can work fine but when the two flaws are put
+together, they can't talk to each other.
 
-This fixes a deadlock when IPMI notifier is being called during panic.
+mcp55 has its own IRQ masking mechanism and there's no reason to mess
+with nIEN in the first place.  Fix it by dropping nIEN diddling from
+nv_mcp55_freeze/thaw().
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Corey Minyard <minyard@acm.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This was originally reported by Cengiz.  Although Cengiz hasn't
+verified the fix yet, I could reproduce this problem and verfiy the
+fix.  Even if Cengiz is experiencing different or additional problems,
+this patch is needed.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Cengiz Günay <cgunay@emory.edu>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/ipmi/ipmi_si_intf.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/ata/sata_nv.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -311,9 +311,14 @@ static void deliver_recv_msg(struct smi_
- {
- 	/* Deliver the message to the upper layer with the lock
- 	   released. */
--	spin_unlock(&(smi_info->si_lock));
--	ipmi_smi_msg_received(smi_info->intf, msg);
--	spin_lock(&(smi_info->si_lock));
-+
-+	if (smi_info->run_to_completion) {
-+		ipmi_smi_msg_received(smi_info->intf, msg);
-+	} else {
-+		spin_unlock(&(smi_info->si_lock));
-+		ipmi_smi_msg_received(smi_info->intf, msg);
-+		spin_lock(&(smi_info->si_lock));
-+	}
+--- a/drivers/ata/sata_nv.c
++++ b/drivers/ata/sata_nv.c
+@@ -1673,7 +1673,6 @@ static void nv_mcp55_freeze(struct ata_p
+ 	mask = readl(mmio_base + NV_INT_ENABLE_MCP55);
+ 	mask &= ~(NV_INT_ALL_MCP55 << shift);
+ 	writel(mask, mmio_base + NV_INT_ENABLE_MCP55);
+-	ata_sff_freeze(ap);
  }
  
- static void return_hosed_msg(struct smi_info *smi_info, int cCode)
+ static void nv_mcp55_thaw(struct ata_port *ap)
+@@ -1687,7 +1686,6 @@ static void nv_mcp55_thaw(struct ata_por
+ 	mask = readl(mmio_base + NV_INT_ENABLE_MCP55);
+ 	mask |= (NV_INT_MASK_MCP55 << shift);
+ 	writel(mask, mmio_base + NV_INT_ENABLE_MCP55);
+-	ata_sff_thaw(ap);
+ }
+ 
+ static void nv_adma_error_handler(struct ata_port *ap)
 
 
