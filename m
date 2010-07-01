@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab0GASjU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:39:20 -0400
-Received: from kroah.org ([198.145.64.141]:40592 "EHLO coco.kroah.org"
+	id S1758261Ab0GAS1U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:27:20 -0400
+Received: from kroah.org ([198.145.64.141]:40851 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757922Ab0GASXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:43 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:13 2010
-Message-Id: <20100701173213.903524130@clark.site>
+	id S1758161Ab0GASYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:31 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:18 2010
+Message-Id: <20100701173218.635485092@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:50 -0700
+Date: Thu, 01 Jul 2010 10:32:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jiri Kosina <jkosina@suse.cz>, Corey Minyard <minyard@acm.org>
-Subject: [patch 084/149] ipmi: handle run_to_completion properly in deliver_recv_msg()
+       Glauber Costa <glommer@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: [patch 140/149] KVM: Fix wallclock version writing race
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Avi Kivity <avi@redhat.com>
 
-commit a747c5abc329611220f16df0bb4cf0ca4a7fdf0c upstream.
+Wallclock writing uses an unprotected global variable to hold the version;
+this can cause one guest to interfere with another if both write their
+wallclock at the same time.
 
-If run_to_completion flag is set, it means that we are running in a
-single-threaded mode, and thus no locks are held.
-
-This fixes a deadlock when IPMI notifier is being called during panic.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Corey Minyard <minyard@acm.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Glauber Costa <glommer@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+(cherry picked from commit 9ed3c444ab8987c7b219173a2f7807e3f71e234e)
 ---
- drivers/char/ipmi/ipmi_si_intf.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ arch/x86/kvm/x86.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -310,9 +310,14 @@ static void deliver_recv_msg(struct smi_
- {
- 	/* Deliver the message to the upper layer with the lock
- 	   released. */
--	spin_unlock(&(smi_info->si_lock));
--	ipmi_smi_msg_received(smi_info->intf, msg);
--	spin_lock(&(smi_info->si_lock));
-+
-+	if (smi_info->run_to_completion) {
-+		ipmi_smi_msg_received(smi_info->intf, msg);
-+	} else {
-+		spin_unlock(&(smi_info->si_lock));
-+		ipmi_smi_msg_received(smi_info->intf, msg);
-+		spin_lock(&(smi_info->si_lock));
-+	}
- }
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -554,14 +554,22 @@ static int do_set_msr(struct kvm_vcpu *v
  
- static void return_hosed_msg(struct smi_info *smi_info, int cCode)
+ static void kvm_write_wall_clock(struct kvm *kvm, gpa_t wall_clock)
+ {
+-	static int version;
++	int version;
++	int r;
+ 	struct pvclock_wall_clock wc;
+ 	struct timespec boot;
+ 
+ 	if (!wall_clock)
+ 		return;
+ 
+-	version++;
++	r = kvm_read_guest(kvm, wall_clock, &version, sizeof(version));
++	if (r)
++		return;
++
++	if (version & 1)
++		++version;  /* first time write, random junk */
++
++	++version;
+ 
+ 	kvm_write_guest(kvm, wall_clock, &version, sizeof(version));
+ 
 
 
