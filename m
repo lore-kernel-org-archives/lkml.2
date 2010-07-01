@@ -1,59 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab0GASVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:21:03 -0400
-Received: from p01c11o142.mxlogic.net ([208.65.144.65]:50214 "EHLO
-	p01c11o142.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545Ab0GASVA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:21:00 -0400
-X-MXL-Hash: 4c2cdc8c620bcd84-df6ddacbac5df0c79c707c4264853cd4ca9c6a54
-X-MXL-Hash: 4c2cdc8874a6436d-0bec4ebe1e1abe355c5f90accc68afef76c09cf4
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <gregkh@suse.de>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-       "ss@aao.gov.au" <ss@aao.gov.au>
-Date: Thu, 1 Jul 2010 13:19:56 -0500
-Subject: RE: [PATCH] Staging: dt3155_isr: cleanup fbuffer usage
-Thread-Topic: [PATCH] Staging: dt3155_isr: cleanup fbuffer usage
-Thread-Index: AcsZScelL4OgSJppTliZlxPg7demfwAAByWA
-Message-ID: <0D753D10438DA54287A00B02708426976373859459@AUSP01VMBX24.collaborationhost.net>
-References: <201006251514.10068.hartleys@visionengravers.com>
- <0D753D10438DA54287A00B02708426976373859415@AUSP01VMBX24.collaborationhost.net>
- <20100701181727.GA3247@suse.de>
-In-Reply-To: <20100701181727.GA3247@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010062801)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.32]
-X-AnalysisOut: [v=1.0 c=1 a=uN3pKissNAMA:10 a=hO-oPbc3tlwA:10 a=VphdPIyG4k]
-X-AnalysisOut: [EA:10 a=kj9zAlcOel0A:10 a=zbe46bahRtDx8aUBN1lPzQ==:17 a=VU]
-X-AnalysisOut: [CU1Qu8jvU1roXvovwA:9 a=qyvEUrHCYbz8rzSlbGIy1Qhu46EA:4 a=Cj]
-X-AnalysisOut: [uIK1q_8ugA:10]
+	id S1755400Ab0GASWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:22:34 -0400
+Received: from kroah.org ([198.145.64.141]:35253 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754539Ab0GASWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:32 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:06 2010
+Message-Id: <20100701173206.912545911@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:30:27 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Andi Kleen <andi@firstfloor.org>,
+       Robert Richter <robert.richter@amd.com>
+Subject: [patch 001/149] oprofile/x86: fix uninitialized counter usage during cpu hotplug
+In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 01, 2010 11:17 AM, Greg KH wrote:
-> On Thu, Jul 01, 2010 at 01:09:51PM -0500, H Hartley Sweeten wrote:
->> Ping...
->> 
->> Any comments on this patch?
->
-> Give me some time, I've been working on the -stable releases this week.
-> It's in my "todo" queue to get to after this is all done...
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Not a problem.
+------------------
 
-Keep up the great work!
+From: Robert Richter <robert.richter@amd.com>
 
-Regards,
-Hartley
+commit 2623a1d55a6260c855e1f6d1895900b50b40a896 upstream.
+
+This fixes a NULL pointer dereference that is triggered when taking a
+cpu offline after oprofile was initialized, e.g.:
+
+ $ opcontrol --init
+ $ opcontrol --start-daemon
+ $ opcontrol --shutdown
+ $ opcontrol --deinit
+ $ echo 0 > /sys/devices/system/cpu/cpu1/online
+
+See the crash dump below. Though the counter has been disabled the cpu
+notifier is still active and trying to use already freed counter data.
+
+This fix is for linux-stable. To proper fix this, the hotplug code
+must be rewritten. Thus I will leave a WARN_ON_ONCE() message with
+this patch.
+
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<ffffffff8132ad57>] op_amd_stop+0x2d/0x8e
+PGD 0
+Oops: 0000 [#1] SMP
+last sysfs file: /sys/devices/system/cpu/cpu1/online
+CPU 1
+Modules linked in:
+
+Pid: 0, comm: swapper Not tainted 2.6.34-rc5-oprofile-x86_64-standard-00210-g8c00f06 #16 Anaheim/Anaheim
+RIP: 0010:[<ffffffff8132ad57>]  [<ffffffff8132ad57>] op_amd_stop+0x2d/0x8e
+RSP: 0018:ffff880001843f28  EFLAGS: 00010006
+RAX: 0000000000000000 RBX: 0000000000000000 RCX: dead000000200200
+RDX: ffff880001843f68 RSI: dead000000100100 RDI: 0000000000000000
+RBP: ffff880001843f48 R08: 0000000000000000 R09: ffff880001843f08
+R10: ffffffff8102c9a5 R11: ffff88000184ea80 R12: 0000000000000000
+R13: ffff88000184f6c0 R14: 0000000000000000 R15: 0000000000000000
+FS:  00007fec6a92e6f0(0000) GS:ffff880001840000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000000 CR3: 000000000163b000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper (pid: 0, threadinfo ffff88042fcd8000, task ffff88042fcd51d0)
+Stack:
+ ffff880001843f48 0000000000000001 ffff88042e9f7d38 ffff880001843f68
+<0> ffff880001843f58 ffffffff8132a602 ffff880001843f98 ffffffff810521b3
+<0> ffff880001843f68 ffff880001843f68 ffff880001843f88 ffff88042fcd9fd8
+Call Trace:
+ <IRQ>
+ [<ffffffff8132a602>] nmi_cpu_stop+0x21/0x23
+ [<ffffffff810521b3>] generic_smp_call_function_single_interrupt+0xdf/0x11b
+ [<ffffffff8101804f>] smp_call_function_single_interrupt+0x22/0x31
+ [<ffffffff810029f3>] call_function_single_interrupt+0x13/0x20
+ <EOI>
+ [<ffffffff8102c9a5>] ? wake_up_process+0x10/0x12
+ [<ffffffff81008701>] ? default_idle+0x22/0x37
+ [<ffffffff8100896d>] c1e_idle+0xdf/0xe6
+ [<ffffffff813f1170>] ? atomic_notifier_call_chain+0x13/0x15
+ [<ffffffff810012fb>] cpu_idle+0x4b/0x7e
+ [<ffffffff813e8a4e>] start_secondary+0x1ae/0x1b2
+Code: 89 e5 41 55 49 89 fd 41 54 45 31 e4 53 31 db 48 83 ec 08 89 df e8 be f8 ff ff 48 98 48 83 3c c5 10 67 7a 81 00 74 1f 49 8b 45 08 <42> 8b 0c 20 0f 32 48 c1 e2 20 25 ff ff bf ff 48 09 d0 48 89 c2
+RIP  [<ffffffff8132ad57>] op_amd_stop+0x2d/0x8e
+ RSP <ffff880001843f28>
+CR2: 0000000000000000
+---[ end trace 679ac372d674b757 ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+Pid: 0, comm: swapper Tainted: G      D    2.6.34-rc5-oprofile-x86_64-standard-00210-g8c00f06 #16
+Call Trace:
+ <IRQ>  [<ffffffff813ebd6a>] panic+0x9e/0x10c
+ [<ffffffff810474b0>] ? up+0x34/0x39
+ [<ffffffff81031ccc>] ? kmsg_dump+0x112/0x12c
+ [<ffffffff813eeff1>] oops_end+0x81/0x8e
+ [<ffffffff8101efee>] no_context+0x1f3/0x202
+ [<ffffffff8101f1b7>] __bad_area_nosemaphore+0x1ba/0x1e0
+ [<ffffffff81028d24>] ? enqueue_task_fair+0x16d/0x17a
+ [<ffffffff810264dc>] ? activate_task+0x42/0x53
+ [<ffffffff8102c967>] ? try_to_wake_up+0x272/0x284
+ [<ffffffff8101f1eb>] bad_area_nosemaphore+0xe/0x10
+ [<ffffffff813f0f3f>] do_page_fault+0x1c8/0x37c
+ [<ffffffff81028d24>] ? enqueue_task_fair+0x16d/0x17a
+ [<ffffffff813ee55f>] page_fault+0x1f/0x30
+ [<ffffffff8102c9a5>] ? wake_up_process+0x10/0x12
+ [<ffffffff8132ad57>] ? op_amd_stop+0x2d/0x8e
+ [<ffffffff8132ad46>] ? op_amd_stop+0x1c/0x8e
+ [<ffffffff8132a602>] nmi_cpu_stop+0x21/0x23
+ [<ffffffff810521b3>] generic_smp_call_function_single_interrupt+0xdf/0x11b
+ [<ffffffff8101804f>] smp_call_function_single_interrupt+0x22/0x31
+ [<ffffffff810029f3>] call_function_single_interrupt+0x13/0x20
+ <EOI>  [<ffffffff8102c9a5>] ? wake_up_process+0x10/0x12
+ [<ffffffff81008701>] ? default_idle+0x22/0x37
+ [<ffffffff8100896d>] c1e_idle+0xdf/0xe6
+ [<ffffffff813f1170>] ? atomic_notifier_call_chain+0x13/0x15
+ [<ffffffff810012fb>] cpu_idle+0x4b/0x7e
+ [<ffffffff813e8a4e>] start_secondary+0x1ae/0x1b2
+------------[ cut here ]------------
+WARNING: at /local/rrichter/.source/linux/arch/x86/kernel/smp.c:118 native_smp_send_reschedule+0x27/0x53()
+Hardware name: Anaheim
+Modules linked in:
+Pid: 0, comm: swapper Tainted: G      D    2.6.34-rc5-oprofile-x86_64-standard-00210-g8c00f06 #16
+Call Trace:
+ <IRQ>  [<ffffffff81017f32>] ? native_smp_send_reschedule+0x27/0x53
+ [<ffffffff81030ee2>] warn_slowpath_common+0x77/0xa4
+ [<ffffffff81030f1e>] warn_slowpath_null+0xf/0x11
+ [<ffffffff81017f32>] native_smp_send_reschedule+0x27/0x53
+ [<ffffffff8102634b>] resched_task+0x60/0x62
+ [<ffffffff8102653a>] check_preempt_curr_idle+0x10/0x12
+ [<ffffffff8102c8ea>] try_to_wake_up+0x1f5/0x284
+ [<ffffffff8102c986>] default_wake_function+0xd/0xf
+ [<ffffffff810a110d>] pollwake+0x57/0x5a
+ [<ffffffff8102c979>] ? default_wake_function+0x0/0xf
+ [<ffffffff81026be5>] __wake_up_common+0x46/0x75
+ [<ffffffff81026ed0>] __wake_up+0x38/0x50
+ [<ffffffff81031694>] printk_tick+0x39/0x3b
+ [<ffffffff8103ac37>] update_process_times+0x3f/0x5c
+ [<ffffffff8104dc63>] tick_periodic+0x5d/0x69
+ [<ffffffff8104dc90>] tick_handle_periodic+0x21/0x71
+ [<ffffffff81018fd0>] smp_apic_timer_interrupt+0x82/0x95
+ [<ffffffff81002853>] apic_timer_interrupt+0x13/0x20
+ [<ffffffff81030cb5>] ? panic_blink_one_second+0x0/0x7b
+ [<ffffffff813ebdd6>] ? panic+0x10a/0x10c
+ [<ffffffff810474b0>] ? up+0x34/0x39
+ [<ffffffff81031ccc>] ? kmsg_dump+0x112/0x12c
+ [<ffffffff813eeff1>] ? oops_end+0x81/0x8e
+ [<ffffffff8101efee>] ? no_context+0x1f3/0x202
+ [<ffffffff8101f1b7>] ? __bad_area_nosemaphore+0x1ba/0x1e0
+ [<ffffffff81028d24>] ? enqueue_task_fair+0x16d/0x17a
+ [<ffffffff810264dc>] ? activate_task+0x42/0x53
+ [<ffffffff8102c967>] ? try_to_wake_up+0x272/0x284
+ [<ffffffff8101f1eb>] ? bad_area_nosemaphore+0xe/0x10
+ [<ffffffff813f0f3f>] ? do_page_fault+0x1c8/0x37c
+ [<ffffffff81028d24>] ? enqueue_task_fair+0x16d/0x17a
+ [<ffffffff813ee55f>] ? page_fault+0x1f/0x30
+ [<ffffffff8102c9a5>] ? wake_up_process+0x10/0x12
+ [<ffffffff8132ad57>] ? op_amd_stop+0x2d/0x8e
+ [<ffffffff8132ad46>] ? op_amd_stop+0x1c/0x8e
+ [<ffffffff8132a602>] ? nmi_cpu_stop+0x21/0x23
+ [<ffffffff810521b3>] ? generic_smp_call_function_single_interrupt+0xdf/0x11b
+ [<ffffffff8101804f>] ? smp_call_function_single_interrupt+0x22/0x31
+ [<ffffffff810029f3>] ? call_function_single_interrupt+0x13/0x20
+ <EOI>  [<ffffffff8102c9a5>] ? wake_up_process+0x10/0x12
+ [<ffffffff81008701>] ? default_idle+0x22/0x37
+ [<ffffffff8100896d>] ? c1e_idle+0xdf/0xe6
+ [<ffffffff813f1170>] ? atomic_notifier_call_chain+0x13/0x15
+ [<ffffffff810012fb>] ? cpu_idle+0x4b/0x7e
+ [<ffffffff813e8a4e>] ? start_secondary+0x1ae/0x1b2
+---[ end trace 679ac372d674b758 ]---
+
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/x86/oprofile/nmi_int.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -95,7 +95,10 @@ static void nmi_cpu_save_registers(struc
+ static void nmi_cpu_start(void *dummy)
+ {
+ 	struct op_msrs const *msrs = &__get_cpu_var(cpu_msrs);
+-	model->start(msrs);
++	if (!msrs->controls)
++		WARN_ON_ONCE(1);
++	else
++		model->start(msrs);
+ }
+ 
+ static int nmi_start(void)
+@@ -107,7 +110,10 @@ static int nmi_start(void)
+ static void nmi_cpu_stop(void *dummy)
+ {
+ 	struct op_msrs const *msrs = &__get_cpu_var(cpu_msrs);
+-	model->stop(msrs);
++	if (!msrs->controls)
++		WARN_ON_ONCE(1);
++	else
++		model->stop(msrs);
+ }
+ 
+ static void nmi_stop(void)
+
+
