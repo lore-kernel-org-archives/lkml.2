@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab0GAXgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 19:36:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52035 "EHLO arroyo.ext.ti.com"
+	id S1753859Ab0GAXh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 19:37:58 -0400
+Received: from doppler.zen.co.uk ([212.23.3.27]:51400 "EHLO doppler.zen.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750875Ab0GAXgO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 19:36:14 -0400
-From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "ohad@wizery.com" <ohad@wizery.com>,
-       "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-       "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-       "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-       "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Date: Thu, 1 Jul 2010 18:36:06 -0500
-Subject: RE: [PATCH 8/9] dspbridge: add map support for big buffers
-Thread-Topic: [PATCH 8/9] dspbridge: add map support for big buffers
-Thread-Index: AcsYsiGs9TjFYcgfQgej6lNQk7fClgAw2joA
-Message-ID: <8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
-References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
- <1277943660-4112-2-git-send-email-x0095840@ti.com>
- <1277943660-4112-3-git-send-email-x0095840@ti.com>
- <1277943660-4112-4-git-send-email-x0095840@ti.com>
- <1277943660-4112-5-git-send-email-x0095840@ti.com>
- <1277943660-4112-6-git-send-email-x0095840@ti.com>
- <1277943660-4112-7-git-send-email-x0095840@ti.com>
- <1277943660-4112-8-git-send-email-x0095840@ti.com>
- <1277943660-4112-9-git-send-email-x0095840@ti.com>
-In-Reply-To: <1277943660-4112-9-git-send-email-x0095840@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750875Ab0GAXh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 19:37:56 -0400
+X-Greylist: delayed 13660 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Jul 2010 19:37:56 EDT
+From: "Andrew Bird (Sphere Systems)" <ajb@spheresystems.co.uk>
+Organization: Sphere Systems Ltd
+To: gregkh@suse.de
+Subject: New PIDs for Qualcomm gobi 2000 (qcserial)
+Date: Thu, 1 Jul 2010 20:50:07 +0100
+User-Agent: KMail/1.13.3 (Linux/2.6.30.10-105.2.23.fc11.x86_64; KDE/4.4.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_wFPLMlAH2/VcRQx"
+Message-Id: <201007012050.08881.ajb@spheresystems.co.uk>
+X-Originating-Smarthost03-IP: [82.71.70.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fernando,
+--Boundary-00=_wFPLMlAH2/VcRQx
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 
-> -	for_each_sg(sgt->sgl, sg, sgt->nents, i)
-> -		sg_set_page(sg, usr_pgs[i], PAGE_SIZE, 0);
-> +		da = iommu_vmap(mmu, da, sgt, IOVMF_ENDIAN_LITTLE |
-> +							IOVMF_ELSZ_32);
+Hi Greg,
+	Attached is a patch to add a new pair of pids for the qcserial driver. It 
+adds support for the Qualcomm generic GOBI 2000 WWAN UMTS/CDMA modem. I wonder 
+if it's possible to squeeze into 2.6.35? I've successfully tested this against 
+2.6.35rc3 with the gobi_loader program 0.5, the patch is against Linus' 
+current git.
 
--- iommu_vmap does the Kernel mapping to the buffers you are mapping to DSP MMU. Why do you need Kernel mappings ? 
 
-If there is no benefit in maintaining Kernel mapping I would rather call iopgtable_store_entry directly to map the entries. 
+Thanks,
 
-Thank you,
-Best regards, Hari
+
+Andrew
+
+--Boundary-00=_wFPLMlAH2/VcRQx
+Content-Type: text/x-patch;
+  charset="UTF-8";
+  name="0001-Add-new-pair-of-PIDs-to-qcserial-gobi-driver.patch"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+	filename="0001-Add-new-pair-of-PIDs-to-qcserial-gobi-driver.patch"
+
+=46rom ea89f1b22b450560da78c36ab9e5027d97729b9b Mon Sep 17 00:00:00 2001
+=46rom: Andrew Bird <ajb@spheresytems.co.uk>
+Date: Thu, 1 Jul 2010 20:35:16 +0100
+Subject: [PATCH] Add new pair of PIDs to qcserial gobi driver
+
+Adds support for the Generic Qualcomm Gobi 2000 WWAN UMTS/CDMA modem
+
+Signed-off-by: Andrew Bird <ajb@spheresytems.co.uk>
+=2D--
+ drivers/usb/serial/qcserial.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 93d72eb..cde67ca 100644
+=2D-- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -51,6 +51,8 @@ static const struct usb_device_id id_table[] =3D {
+ 	{USB_DEVICE(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
+ 	{USB_DEVICE(0x413c, 0x8185)},	/* Dell Gobi 2000 QDL device (N0218, VU936)=
+ */
+ 	{USB_DEVICE(0x413c, 0x8186)},	/* Dell Gobi 2000 Modem device (N0218, VU93=
+6) */
++	{USB_DEVICE(0x05c6, 0x9208)},	/* Generic Gobi 2000 QDL device */
++	{USB_DEVICE(0x05c6, 0x920b)},	/* Generic Gobi 2000 Modem device */
+ 	{USB_DEVICE(0x05c6, 0x9224)},	/* Sony Gobi 2000 QDL device (N0279, VU730)=
+ */
+ 	{USB_DEVICE(0x05c6, 0x9225)},	/* Sony Gobi 2000 Modem device (N0279, VU73=
+0) */
+ 	{USB_DEVICE(0x05c6, 0x9244)},	/* Samsung Gobi 2000 QDL device (VL176) */
+=2D-=20
+1.6.2.5
+
+
+--Boundary-00=_wFPLMlAH2/VcRQx--
