@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739Ab0GAV2Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:28:25 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:51932 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759280Ab0GAV2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:28:13 -0400
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.53,522,1272844800"; 
-   d="scan'208";a="220576440"
-Date: Thu, 01 Jul 2010 14:24:32 -0700
-From: "Tom Lyon" <pugs@cisco.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       iommu@lists.linux-foundation.org, chrisw@sous-sol.org, mst@redhat.com,
-       dwmw2@infradead.org, joerg.roedel@amd.com
-Cc: aafabbri@cisco.com, scofeldm@cisco.com
-Subject: [PATCH V2] 2.6.34: simple IOMMU API extension to check safe
- interrupt remapping
-Message-ID: <4c2d0790.Bi9FugC8c/QW1Ike%pugs@cisco.com>
-User-Agent: Heirloom mailx 12.2 01/07/07
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S933141Ab0GAVPX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:15:23 -0400
+Received: from kroah.org ([198.145.64.141]:60825 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758927Ab0GAVNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:34 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:51 2010
+Message-Id: <20100701174251.498358157@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:42:30 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Henrik Kretzschmar <henne@nachtwindheim.de>,
+       =?ISO-8859-15?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [060/200] fbdev: section cleanup in w100fb
+In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows IOMMU users to determine whether the hardware and software
-support safe, isolated interrupt remapping.  Not all Intel IOMMUs have the
-hardware, and the software for AMD is not there yet.
-	Signed-off-by: Tom Lyon <pugs@cisco.com>
+2.6.34-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
+
+commit fb6cb3270af8f2ad3dd556906a9c52aa85754849 upstream.
+
+Fix up the section in the w100fb driver, by moving:
+
+*	w100fb_remove() from .text to .devexit.text
+
+*	w100_get_xtal_table() from .text to .devinit.text
+
+*	w100fb_init() from .devinit.text to .init.text
+
+Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
+ drivers/video/w100fb.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Version 2: previous ifdefs not needed.
-
-MST has convinced me that any user level driver for PCI master devices can't 
-be safe unless there is an IOMMU protecting the APIC MSI/MSI-X interrupt 
-addresses from device writes.  This interrupt remapping is not present in all
-Intel IOMMUs and the code for the interrupt mapping in the AMD IOMMUs is not
-implemented yet.
-
-Needed by not-yet-accepted VFIO driver.
-
-diff -uprN linux-2.6.34/drivers/pci/intel-iommu.c iommuapi-linux-2.6.34/drivers/pci/intel-iommu.c
---- linux-2.6.34/drivers/pci/intel-iommu.c	2010-05-16 14:17:36.000000000 -0700
-+++ iommuapi-linux-2.6.34/drivers/pci/intel-iommu.c	2010-06-30 15:47:10.000000000 -0700
-@@ -3705,6 +3705,10 @@ static int intel_iommu_domain_has_cap(st
+--- a/drivers/video/w100fb.c
++++ b/drivers/video/w100fb.c
+@@ -53,7 +53,7 @@ static void w100_update_enable(void);
+ static void w100_update_disable(void);
+ static void calc_hsync(struct w100fb_par *par);
+ static void w100_init_graphic_engine(struct w100fb_par *par);
+-struct w100_pll_info *w100_get_xtal_table(unsigned int freq);
++struct w100_pll_info *w100_get_xtal_table(unsigned int freq) __devinit;
  
- 	if (cap == IOMMU_CAP_CACHE_COHERENCY)
- 		return dmar_domain->iommu_snooping;
-+	if (cap == IOMMU_CAP_SAFE_INTR_REMAP)
-+		return intr_remapping_enabled;
- 
- 	return 0;
+ /* Pseudo palette size */
+ #define MAX_PALETTES      16
+@@ -782,7 +782,7 @@ out:
  }
-diff -uprN linux-2.6.34/include/linux/iommu.h iommuapi-linux-2.6.34/include/linux/iommu.h
---- linux-2.6.34/include/linux/iommu.h	2010-05-16 14:17:36.000000000 -0700
-+++ iommuapi-linux-2.6.34/include/linux/iommu.h	2010-06-30 15:47:34.000000000 -0700
-@@ -30,6 +30,7 @@ struct iommu_domain {
+ 
+ 
+-static int w100fb_remove(struct platform_device *pdev)
++static int __devexit w100fb_remove(struct platform_device *pdev)
+ {
+ 	struct fb_info *info = platform_get_drvdata(pdev);
+ 	struct w100fb_par *par=info->par;
+@@ -1020,7 +1020,7 @@ static struct pll_entries {
+ 	{ 0 },
  };
  
- #define IOMMU_CAP_CACHE_COHERENCY	0x1
-+#define IOMMU_CAP_SAFE_INTR_REMAP	0x2	/* isolates device intrs */
+-struct w100_pll_info *w100_get_xtal_table(unsigned int freq)
++struct w100_pll_info __devinit *w100_get_xtal_table(unsigned int freq)
+ {
+ 	struct pll_entries *pll_entry = w100_pll_tables;
  
- struct iommu_ops {
- 	int (*domain_init)(struct iommu_domain *domain);
+@@ -1611,7 +1611,7 @@ static void w100_vsync(void)
+ 
+ static struct platform_driver w100fb_driver = {
+ 	.probe		= w100fb_probe,
+-	.remove		= w100fb_remove,
++	.remove		= __devexit_p(w100fb_remove),
+ 	.suspend	= w100fb_suspend,
+ 	.resume		= w100fb_resume,
+ 	.driver		= {
+@@ -1619,7 +1619,7 @@ static struct platform_driver w100fb_dri
+ 	},
+ };
+ 
+-int __devinit w100fb_init(void)
++int __init w100fb_init(void)
+ {
+ 	return platform_driver_register(&w100fb_driver);
+ }
+
+
