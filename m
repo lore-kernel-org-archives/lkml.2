@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab0GAM3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 08:29:51 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:40351 "EHLO kernel.dk"
+	id S1755744Ab0GAMaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 08:30:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18251 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755280Ab0GAM3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 08:29:50 -0400
-Message-ID: <4C2C8A3C.8000803@kernel.dk>
-Date: Thu, 01 Jul 2010 14:29:48 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1755438Ab0GAMaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 08:30:09 -0400
+Date: Thu, 1 Jul 2010 15:23:40 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+Message-ID: <20100701122340.GB31333@redhat.com>
+References: <4BFFE742.2060205@kernel.org>
+ <20100530112925.GB27611@redhat.com>
+ <4C02C99D.9070204@kernel.org>
+ <20100624081135.GA937@redhat.com>
+ <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
+ <20100625101022.GA16321@redhat.com>
+ <20100701110708.GA27368@redhat.com>
+ <1277983179.1917.10.camel@laptop>
+ <1277984603.1917.15.camel@laptop>
+ <20100701115507.GA31333@redhat.com>
 MIME-Version: 1.0
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: snitzer@redhat.com, hch@lst.de, James.Bottomley@suse.de,
-       linux-scsi@vger.kernel.org, dm-devel@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re:
-References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100701115507.GA31333@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-07-01 12:49, FUJITA Tomonori wrote:
-> This patchset fixes page leak issue in discard commands with unprep
-> facility that James posted:
+On Thu, Jul 01, 2010 at 02:55:07PM +0300, Michael S. Tsirkin wrote:
+> On Thu, Jul 01, 2010 at 01:43:23PM +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-07-01 at 13:19 +0200, Peter Zijlstra wrote:
+> > > On Thu, 2010-07-01 at 14:07 +0300, Michael S. Tsirkin wrote:
+> > > > Author: Sridhar Samudrala <sri@us.ibm.com>
+> > > > 
+> > > > sched: export sched_set/getaffinity to modules
+> > > > 
+> > > > vhost-net driver wants to copy the affinity from the
+> > > > owner thread to thread it creates. Export
+> > > > sched_set/get affinity to modules to make this possible
+> > > > when vhost is built as a module.
+> > 
+> > > Urgh,.. so why again is that a good idea?
+> > 
+> > In particular:
+> >  - who sets the affinity of the task? 
 > 
-> http://marc.info/?l=linux-scsi&m=127791727508214&w=2
+> management tools do this when they start qemu.
 > 
-> The 1/3 patch adds unprep facility to the block layer (identical to
-> what James posted).
+> >  - why can't it set the kernel thread's affinity too?
 > 
-> The 2/3 patch frees a page for discard commands by using the unprep
-> facility. James' original patch doesn't work since it accesses to
-> rq->bio in q->unprep_rq_fn. We hit oops since q->unprep_rq_fn is
-> called when all the data buffer (req->bio and scsi_data_buffer) in the
-> request is freed.
+> It can. However: the threads are started internally by the driver
+> when qemu does an ioctl.  What we want to do is give it a sensible
+> default affinity. management tool can later tweak it if it wants to.
 > 
-> I use rq->buffer to keep track of an allocated page as the block layer
-> sets rq->buffer to the address of bio's page. scsi-ml (and llds) don't
-> use rq->buffer (rq->buffer is set to NULL). So I can't say that I like
-> it lots. Any other way to do that?
+> >  - what happens if someone changes the tasks' affinity?
 > 
-> The 3/3 path just removes the dead code.
+> We would normally create a cgroup including all internal
+> tasks, making it easy to find and change affinity for
+> them all if necessary.
+> 
+> > So no, I don't think this is a sensible thing to do at all.
 
-I've queued up these three for 2.6.36.
+The patch using this is here:
+http://www.mail-archive.com/kvm@vger.kernel.org/msg35411.html
+
+It simply copies the affinity from the parent when thread is created.
 
 -- 
-Jens Axboe
-
+MST
