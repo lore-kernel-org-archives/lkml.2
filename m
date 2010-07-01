@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab0GAALw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 20:11:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38025 "EHLO bear.ext.ti.com"
+	id S932361Ab0GAALy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 20:11:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48437 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab0GAALo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932313Ab0GAALo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jun 2010 20:11:44 -0400
 From: Fernando Guzman Lugo <x0095840@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Cc: <ohad@wizery.com>, <hiroshi.doyu@nokia.com>, <ameya.palande@nokia.com>,
        <felipe.contreras@nokia.com>, Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCH 9/9] dspbridge: cleanup bridge_dev_context and cfg_hostres structures
-Date: Wed, 30 Jun 2010 19:21:00 -0500
-Message-Id: <1277943660-4112-10-git-send-email-x0095840@ti.com>
+Subject: [PATCH 8/9] dspbridge: add map support for big buffers
+Date: Wed, 30 Jun 2010 19:20:59 -0500
+Message-Id: <1277943660-4112-9-git-send-email-x0095840@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1277943660-4112-9-git-send-email-x0095840@ti.com>
+In-Reply-To: <1277943660-4112-8-git-send-email-x0095840@ti.com>
 References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
  <1277943660-4112-2-git-send-email-x0095840@ti.com>
  <1277943660-4112-3-git-send-email-x0095840@ti.com>
@@ -23,141 +23,139 @@ References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
  <1277943660-4112-6-git-send-email-x0095840@ti.com>
  <1277943660-4112-7-git-send-email-x0095840@ti.com>
  <1277943660-4112-8-git-send-email-x0095840@ti.com>
- <1277943660-4112-9-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch cleans up cfg_hostres and bridge_dev_context
-structures of custom mmu code not needed anymore.
+due to a restriction in scatter gather lists, it can
+not be created a list for a buffer bigger than 1MB.
+This patch is spliting big mappings into 1MB mappings.
 
 Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
 ---
- arch/arm/plat-omap/include/dspbridge/cfgdefs.h |    1 -
- drivers/dsp/bridge/core/_tiomap.h              |    5 -----
- drivers/dsp/bridge/core/tiomap3430.c           |    8 --------
- drivers/dsp/bridge/core/tiomap_io.c            |    2 +-
- drivers/dsp/bridge/rmgr/drv.c                  |    4 ----
- 5 files changed, 1 insertions(+), 19 deletions(-)
+ arch/arm/plat-omap/include/dspbridge/dsp-mmu.h |    2 +-
+ drivers/dsp/bridge/core/dsp-mmu.c              |   55 ++++++++++++++---------
+ drivers/dsp/bridge/rmgr/proc.c                 |    3 +-
+ 3 files changed, 36 insertions(+), 24 deletions(-)
 
-diff --git a/arch/arm/plat-omap/include/dspbridge/cfgdefs.h b/arch/arm/plat-omap/include/dspbridge/cfgdefs.h
-index 38122db..dfb55cc 100644
---- a/arch/arm/plat-omap/include/dspbridge/cfgdefs.h
-+++ b/arch/arm/plat-omap/include/dspbridge/cfgdefs.h
-@@ -68,7 +68,6 @@ struct cfg_hostres {
- 	void __iomem *dw_per_base;
- 	u32 dw_per_pm_base;
- 	u32 dw_core_pm_base;
--	void __iomem *dw_dmmu_base;
- 	void __iomem *dw_sys_ctrl_base;
- };
+diff --git a/arch/arm/plat-omap/include/dspbridge/dsp-mmu.h b/arch/arm/plat-omap/include/dspbridge/dsp-mmu.h
+index 266f38b..2e4bf6a 100644
+--- a/arch/arm/plat-omap/include/dspbridge/dsp-mmu.h
++++ b/arch/arm/plat-omap/include/dspbridge/dsp-mmu.h
+@@ -85,6 +85,6 @@ int user_to_dsp_map(struct iommu *mmu, u32 uva, u32 da, u32 size,
+  * This function unmaps a user space buffer into DSP virtual address.
+  *
+  */
+-int user_to_dsp_unmap(struct iommu *mmu, u32 da);
++int user_to_dsp_unmap(struct iommu *mmu, u32 da, unsigned size);
  
-diff --git a/drivers/dsp/bridge/core/_tiomap.h b/drivers/dsp/bridge/core/_tiomap.h
-index 8a9a822..82bce7d 100644
---- a/drivers/dsp/bridge/core/_tiomap.h
-+++ b/drivers/dsp/bridge/core/_tiomap.h
-@@ -323,7 +323,6 @@ struct bridge_dev_context {
- 	 */
- 	u32 dw_dsp_ext_base_addr;	/* See the comment above */
- 	u32 dw_api_reg_base;	/* API mem map'd registers */
--	void __iomem *dw_dsp_mmu_base;	/* DSP MMU Mapped registers */
- 	u32 dw_api_clk_base;	/* CLK Registers */
- 	u32 dw_dsp_clk_m2_base;	/* DSP Clock Module m2 */
- 	u32 dw_public_rhea;	/* Pub Rhea */
-@@ -347,10 +346,6 @@ struct bridge_dev_context {
- 	/* DMMU TLB entries */
- 	struct bridge_ioctl_extproc atlb_entry[BRDIOCTL_NUMOFMMUTLB];
- 	u32 dw_brd_state;	/* Last known board state. */
--	u32 ul_int_mask;	/* int mask */
--	u16 io_base;		/* Board I/O base */
--	u32 num_tlb_entries;	/* DSP MMU TLB entry counter */
--	u32 fixed_tlb_entries;	/* Fixed DSPMMU TLB entry count */
+ #endif
+diff --git a/drivers/dsp/bridge/core/dsp-mmu.c b/drivers/dsp/bridge/core/dsp-mmu.c
+index e8da327..9a46206 100644
+--- a/drivers/dsp/bridge/core/dsp-mmu.c
++++ b/drivers/dsp/bridge/core/dsp-mmu.c
+@@ -133,7 +133,7 @@ int user_to_dsp_map(struct iommu *mmu, u32 uva, u32 da, u32 size,
+ 						struct page **usr_pgs)
+ {
+ 	int res, w;
+-	unsigned pages, i;
++	unsigned pages, i, j = 0;
+ 	struct vm_area_struct *vma;
+ 	struct mm_struct *mm = current->mm;
+ 	struct sg_table *sgt;
+@@ -162,24 +162,31 @@ int user_to_dsp_map(struct iommu *mmu, u32 uva, u32 da, u32 size,
+ 	if (res < 0)
+ 		return res;
  
- 	/* TC Settings */
- 	bool tc_word_swap_on;	/* Traffic Controller Word Swap */
-diff --git a/drivers/dsp/bridge/core/tiomap3430.c b/drivers/dsp/bridge/core/tiomap3430.c
-index aa6e999..83a9561 100644
---- a/drivers/dsp/bridge/core/tiomap3430.c
-+++ b/drivers/dsp/bridge/core/tiomap3430.c
-@@ -753,7 +753,6 @@ static int bridge_dev_create(OUT struct bridge_dev_context
- 		dev_context->atlb_entry[entry_ndx].ul_gpp_pa =
- 		    dev_context->atlb_entry[entry_ndx].ul_dsp_va = 0;
+-	sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
++	while (pages) {
++		sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
+ 
+-	if (!sgt)
+-		return -ENOMEM;
++		if (!sgt)
++			return -ENOMEM;
+ 
+-	res = sg_alloc_table(sgt, pages, GFP_KERNEL);
++		res = sg_alloc_table(sgt,
++			min((unsigned)SG_MAX_SINGLE_ALLOC, pages), GFP_KERNEL);
++		pages -= min((unsigned)SG_MAX_SINGLE_ALLOC, pages);
+ 
+-	if (res < 0)
+-		goto err_sg;
++		if (res < 0)
++			goto err_sg;
++
++		for_each_sg(sgt->sgl, sg, sgt->nents, i)
++			sg_set_page(sg, usr_pgs[j++], PAGE_SIZE, 0);
+ 
+-	for_each_sg(sgt->sgl, sg, sgt->nents, i)
+-		sg_set_page(sg, usr_pgs[i], PAGE_SIZE, 0);
++		da = iommu_vmap(mmu, da, sgt, IOVMF_ENDIAN_LITTLE |
++							IOVMF_ELSZ_32);
+ 
+-	da = iommu_vmap(mmu, da, sgt, IOVMF_ENDIAN_LITTLE | IOVMF_ELSZ_32);
++		if (IS_ERR_VALUE(da)) {
++			res = (int)da;
++			goto err_map;
++		}
+ 
+-	if (IS_ERR_VALUE(da)) {
+-		res = (int)da;
+-		goto err_map;
++		da += SG_MAX_SINGLE_ALLOC * PAGE_SIZE;
  	}
--	dev_context->num_tlb_entries = 0;
- 	dev_context->dw_dsp_base_addr = (u32) MEM_LINEAR_ADDRESS((void *)
- 								 (pConfig->
- 								  dw_mem_base
-@@ -766,11 +765,7 @@ static int bridge_dev_create(OUT struct bridge_dev_context
+ 	return 0;
  
+@@ -198,21 +205,25 @@ err_sg:
+  * This function unmaps a user space buffer into DSP virtual address.
+  *
+  */
+-int user_to_dsp_unmap(struct iommu *mmu, u32 da)
++int user_to_dsp_unmap(struct iommu *mmu, u32 da, unsigned size)
+ {
+ 	unsigned i;
+ 	struct sg_table *sgt;
+ 	struct scatterlist *sg;
++	const unsigned max_sz = SG_MAX_SINGLE_ALLOC * PAGE_SIZE;
+ 
+-	sgt = iommu_vunmap(mmu, da);
+-	if (!sgt)
+-		return -EFAULT;
+-
+-	for_each_sg(sgt->sgl, sg, sgt->nents, i)
+-		put_page(sg_page(sg));
++	while (size) {
++		size -= min(max_sz, size);
++		sgt = iommu_vunmap(mmu, da);
++		if (!sgt)
++			return -EFAULT;
+ 
+-	sg_free_table(sgt);
+-	kfree(sgt);
++		for_each_sg(sgt->sgl, sg, sgt->nents, i)
++			put_page(sg_page(sg));
+ 
++		sg_free_table(sgt);
++		kfree(sgt);
++		da += max_sz;
++	}
+ 	return 0;
+ }
+diff --git a/drivers/dsp/bridge/rmgr/proc.c b/drivers/dsp/bridge/rmgr/proc.c
+index 4f10a41..997918e 100644
+--- a/drivers/dsp/bridge/rmgr/proc.c
++++ b/drivers/dsp/bridge/rmgr/proc.c
+@@ -1713,7 +1713,8 @@ int proc_un_map(void *hprocessor, void *map_addr,
+ 	/* Remove mapping from the page tables. */
  	if (DSP_SUCCEEDED(status)) {
- 		dev_context->tc_word_swap_on = drv_datap->tc_wordswapon;
--		/* MMU address is obtained from the host
--		 * resources struct */
--		dev_context->dw_dsp_mmu_base = resources->dw_dmmu_base;
- 		dev_context->hdev_obj = hdev_obj;
--		dev_context->ul_int_mask = 0;
- 		/* Store current board state. */
- 		dev_context->dw_brd_state = BRD_STOPPED;
- 		dev_context->resources = resources;
-@@ -887,8 +882,6 @@ static int bridge_dev_destroy(struct bridge_dev_context *hDevContext)
- 			iounmap((void *)host_res->dw_mem_base[3]);
- 		if (host_res->dw_mem_base[4])
- 			iounmap((void *)host_res->dw_mem_base[4]);
--		if (host_res->dw_dmmu_base)
--			iounmap(host_res->dw_dmmu_base);
- 		if (host_res->dw_per_base)
- 			iounmap(host_res->dw_per_base);
- 		if (host_res->dw_per_pm_base)
-@@ -902,7 +895,6 @@ static int bridge_dev_destroy(struct bridge_dev_context *hDevContext)
- 		host_res->dw_mem_base[2] = (u32) NULL;
- 		host_res->dw_mem_base[3] = (u32) NULL;
- 		host_res->dw_mem_base[4] = (u32) NULL;
--		host_res->dw_dmmu_base = NULL;
- 		host_res->dw_sys_ctrl_base = NULL;
+ 		status = user_to_dsp_unmap(
+-			p_proc_object->hbridge_context->dsp_mmu, va_align);
++			p_proc_object->hbridge_context->dsp_mmu,
++			va_align, size_align);
+ 	}
  
- 		kfree(host_res);
-diff --git a/drivers/dsp/bridge/core/tiomap_io.c b/drivers/dsp/bridge/core/tiomap_io.c
-index 3c0d3a3..2f2f8c2 100644
---- a/drivers/dsp/bridge/core/tiomap_io.c
-+++ b/drivers/dsp/bridge/core/tiomap_io.c
-@@ -437,7 +437,7 @@ int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val)
- 		omap_mbox_restore_ctx(dev_context->mbox);
- 
- 		/* Access MMU SYS CONFIG register to generate a short wakeup */
--		__raw_readl(resources->dw_dmmu_base + 0x10);
-+		iommu_read_reg(dev_context->dsp_mmu, MMU_SYSCONFIG);
- 
- 		dev_context->dw_brd_state = BRD_RUNNING;
- 	} else if (dev_context->dw_brd_state == BRD_RETENTION) {
-diff --git a/drivers/dsp/bridge/rmgr/drv.c b/drivers/dsp/bridge/rmgr/drv.c
-index c6e38e5..7804479 100644
---- a/drivers/dsp/bridge/rmgr/drv.c
-+++ b/drivers/dsp/bridge/rmgr/drv.c
-@@ -829,7 +829,6 @@ static int request_bridge_resources(struct cfg_hostres *res)
- 	host_res->dw_sys_ctrl_base = ioremap(OMAP_SYSC_BASE, OMAP_SYSC_SIZE);
- 	dev_dbg(bridge, "dw_mem_base[0] 0x%x\n", host_res->dw_mem_base[0]);
- 	dev_dbg(bridge, "dw_mem_base[3] 0x%x\n", host_res->dw_mem_base[3]);
--	dev_dbg(bridge, "dw_dmmu_base %p\n", host_res->dw_dmmu_base);
- 
- 	/* for 24xx base port is not mapping the mamory for DSP
- 	 * internal memory TODO Do a ioremap here */
-@@ -883,8 +882,6 @@ int drv_request_bridge_res_dsp(void **phost_resources)
- 							 OMAP_PER_PRM_SIZE);
- 		host_res->dw_core_pm_base = (u32) ioremap(OMAP_CORE_PRM_BASE,
- 							  OMAP_CORE_PRM_SIZE);
--		host_res->dw_dmmu_base = ioremap(OMAP_DMMU_BASE,
--						 OMAP_DMMU_SIZE);
- 
- 		dev_dbg(bridge, "dw_mem_base[0] 0x%x\n",
- 			host_res->dw_mem_base[0]);
-@@ -896,7 +893,6 @@ int drv_request_bridge_res_dsp(void **phost_resources)
- 			host_res->dw_mem_base[3]);
- 		dev_dbg(bridge, "dw_mem_base[4] 0x%x\n",
- 			host_res->dw_mem_base[4]);
--		dev_dbg(bridge, "dw_dmmu_base %p\n", host_res->dw_dmmu_base);
- 
- 		shm_size = drv_datap->shm_size;
- 		if (shm_size >= 0x10000) {
+ 	mutex_unlock(&proc_lock);
 -- 
 1.6.3.3
 
