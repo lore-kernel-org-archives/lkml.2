@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757799Ab0GASiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:38:00 -0400
-Received: from kroah.org ([198.145.64.141]:40615 "EHLO coco.kroah.org"
+	id S1758085Ab0GASiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:38:23 -0400
+Received: from kroah.org ([198.145.64.141]:40610 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757991Ab0GASXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:47 -0400
+	id S1757985Ab0GASXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:46 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
-Message-Id: <20100701173214.316070109@clark.site>
+Message-Id: <20100701173214.232304345@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:55 -0700
+Date: Thu, 01 Jul 2010 10:31:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [patch 089/149] ALSA: hda: Use mb31 quirk for an iMac model
+Subject: [patch 088/149] ALSA: hda: Use LPIB for an ASUS device
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 26fd74fc01991a18f0e3bd54f8b1b75945ee3dbb upstream.
+commit dd37f8e8659bc617c3f2a84e007a4824ccdac458 upstream.
 
-BugLink: https://launchpad.net/bugs/542550
+BugLink: https://launchpad.net/bugs/465942
 
-Symptom: On the reporter's iMac, in Ubuntu 10.04 LTS neither playback
-nor capture appear audible out-of-the-box.
+Symptom: On the reporter's ASUS device, using PulseAudio in Ubuntu 10.04
+LTS results in the PA daemon crashing shortly after attempting to select
+capture or to configure the audio hardware profile.
 
-Test case: Boot from an Ubuntu 10.04 LTS live cd or from an installed
-configuration and attempt to play or capture audio.
+Test case: Using Ubuntu 10.04 LTS (Linux 2.6.32.12), Linux 2.6.33, or
+Linux 2.6.34, adjust the HDA device's capture volume with PulseAudio.
 
-Resolution: Specify the mb31 quirk for this machine in the codec SSID
-table.
+Resolution: add SSID for this machine to the position_fix quirk table,
+explicitly specifying the LPIB method.
 
-Reported-and-Tested-By: f3a97
+Reported-and-Tested-By: Irihapeti
 Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
+ sound/pci/hda/hda_intel.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -8937,6 +8937,7 @@ static struct snd_pci_quirk alc882_ssid_
- 	SND_PCI_QUIRK(0x106b, 0x1000, "iMac 24", ALC885_IMAC24),
- 	SND_PCI_QUIRK(0x106b, 0x2800, "AppleTV", ALC885_IMAC24),
- 	SND_PCI_QUIRK(0x106b, 0x2c00, "MacbookPro rev3", ALC885_MBP3),
-+	SND_PCI_QUIRK(0x106b, 0x3000, "iMac", ALC889A_MB31),
- 	SND_PCI_QUIRK(0x106b, 0x3600, "Macbook 3,1", ALC889A_MB31),
- 	SND_PCI_QUIRK(0x106b, 0x3800, "MacbookPro 4,1", ALC885_MBP3),
- 	SND_PCI_QUIRK(0x106b, 0x3e00, "iMac 24 Aluminum", ALC885_IMAC24),
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2232,6 +2232,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1043, 0x81b3, "ASUS", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x104d, 0x9069, "Sony VPCS11V9E", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1179, 0xff10, "Toshiba A100-259", POS_FIX_LPIB),
 
 
