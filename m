@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab0GAPbP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:31:15 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:39801 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752171Ab0GAPbN (ORCPT
+	id S1756657Ab0GAPfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:35:52 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33063 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab0GAPfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 11:31:13 -0400
-Date: Thu, 1 Jul 2010 16:31:12 +0100
-From: MattFleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>, paulus <paulus@samba.org>,
-       stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
-Message-ID: <20100701153112.GA13511@console-pimps.org>
-References: <20100624142804.431553874@chello.nl> <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com> <1277464589.32034.276.camel@twins> <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com> <1277477401.32034.670.camel@twins> <1277994970.1917.184.camel@laptop> <1277996555.1917.205.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277996555.1917.205.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 1 Jul 2010 11:35:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=UcS5ozEeM+hUEI30wvFtwJzGO/gfw5f1+PS3w70O//alcjLvuh3FYNaxejc+wJ/pj3
+         ZDinooe8G8YeslqBgU9L4ptvRD/jj2d2G37i3STvXjlMr11+oSHAZvpVUf3ovw7LsebO
+         3uLTH+p9Nu8VBsGLg0HzhQiJLc887X2wA+AB4=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [RFC PATCH 0/6] perf: cleanup and fixes
+Date: Thu,  1 Jul 2010 17:35:56 +0200
+Message-Id: <1277998562-21366-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 05:02:35PM +0200, Peter Zijlstra wrote:
-> 
-> Matt, you said it broke SH completely, but did you try perf stat? perf
-> record is not supposed to work on SH due to the hardware not having an
-> overflow interrupt.
+cleanups and fixes for perf core, although the last one could
+go to perf/urgent.
 
-perf record does work to some degree. It definitely worked before
-applying your changes but not after. I admit I haven't really read the
-perf event code, but Paul will know.
+It has only been tested in x86.
 
-> Which made me think, what on SH guarantees we update the counter often
-> enough not to suffer from counter wrap? Would it make sense to make the
-> SH code hook into their arch tick handler and update the counters from
-> there?
+Frederic Weisbecker (6):
+  perf: Drop unappropriate tests on arch callchains
+  perf: Generalize callchain_store()
+  perf: Generalize some arch callchain code
+  perf: Factorize callchain context handling
+  perf: Fix race in callchains
+  perf: Fix double put_ctx
 
-This was the way that the oprofile code used to work. Paul and I were
-talking about using a hrtimer to sample performance counters as
-opposed to piggy-backing on the tick handler.
+ arch/arm/kernel/perf_event.c         |   62 +--------
+ arch/powerpc/kernel/perf_callchain.c |   86 ++++---------
+ arch/sh/kernel/perf_callchain.c      |   50 +-------
+ arch/sparc/kernel/perf_event.c       |   69 ++++-------
+ arch/x86/kernel/cpu/perf_event.c     |   82 +++----------
+ include/linux/perf_event.h           |   16 +++-
+ kernel/perf_event.c                  |  228 +++++++++++++++++++++++++++++-----
+ 7 files changed, 289 insertions(+), 304 deletions(-)
+
