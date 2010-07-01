@@ -1,69 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756455Ab0GAOgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 10:36:17 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:37713 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756421Ab0GAOgP (ORCPT
+	id S1756493Ab0GAOgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 10:36:24 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:32925 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756466Ab0GAOgV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 10:36:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=aj207xZwYuTBkbZZCkLe26yDpLSQZvwLjUjat0TJ4+bmPulQKcMsKrFCQh+ist9C04
-         bH7yslEsOLkuvPMKhmohca7Y0xK69f0tQvhMVa/o8FsY4w0djHohShrFDEIu0o894sC7
-         jMjm79yJkYKJVUG9KQqSXDzROPvnh/Kd+/vnA=
-Date: Thu, 1 Jul 2010 23:36:08 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 05/11] oom: /proc/<pid>/oom_score treat kernel thread
- honestly
-Message-ID: <20100701143608.GB16383@barrios-desktop>
-References: <20100630182922.AA56.A69D9226@jp.fujitsu.com>
- <20100630140328.GC15644@barrios-desktop>
- <20100701085309.DA16.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701085309.DA16.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 1 Jul 2010 10:36:21 -0400
+Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <1277477401.32034.670.camel@twins>
+References: <20100624142804.431553874@chello.nl>
+	 <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com>
+	 <1277464589.32034.276.camel@twins>
+	 <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com>
+	 <1277477401.32034.670.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 01 Jul 2010 16:36:10 +0200
+Message-ID: <1277994970.1917.184.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 09:07:02AM +0900, KOSAKI Motohiro wrote:
-> > On Wed, Jun 30, 2010 at 06:30:19PM +0900, KOSAKI Motohiro wrote:
-> > > If kernel thread are using use_mm(), badness() return positive value.
-> > > This is not big issue because caller care it correctly. but there is
-> > > one exception, /proc/<pid>/oom_score call badness() directly and
-> > > don't care the task is regular process.
-> > > 
-> > > another example, /proc/1/oom_score return !0 value. but it's unkillable.
-> > > This incorrectness makes confusing to admin a bit.
-> > 
-> > Hmm. If it is a really problem, Could we solve it in proc_oom_score itself?
-> 
-> probably, no good idea. For maintainance view, all oom related code should
-> be gathered in oom_kill.c.
-> If you dislike to add messy into badness(), I hope to make badness_for_oom_score()
+On Fri, 2010-06-25 at 16:50 +0200, Peter Zijlstra wrote:
 
-I am looking forward to seeing your next series.
-Thanks, Kosaki. 
+> Not exactly sure how I could have messed up the ARM architecture code to
+> make this happen though... will have a peek. 
 
-P.S) 
-I think if the number of patch series is the bigger than #10, 
-It would be better to include or point url of all-at-once patch 
-in patch series.
+I did find a bug in there, not sure it could have been responsible for
+this but who knows...
 
-In case of your patch, post patches changes pre patches
-It could make hard review unless the reviewer merge patches into tree to
-see the final figure. 
+Pushed out a new git tree with the below delta folded in.
 
--- 
-Kind regards,
-Minchan Kim
+---
+Index: linux-2.6/arch/arm/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/arch/arm/kernel/perf_event.c
++++ linux-2.6/arch/arm/kernel/perf_event.c
+@@ -221,27 +221,6 @@ again:
+ }
+ 
+ static void
+-armpmu_del(struct perf_event *event, int flags)
+-{
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-	struct hw_perf_event *hwc = &event->hw;
+-	int idx = hwc->idx;
+-
+-	WARN_ON(idx < 0);
+-
+-	clear_bit(idx, cpuc->active_mask);
+-	armpmu->disable(hwc, idx);
+-
+-	barrier();
+-
+-	armpmu_event_update(event, hwc, idx);
+-	cpuc->events[idx] = NULL;
+-	clear_bit(idx, cpuc->used_mask);
+-
+-	perf_event_update_userpage(event);
+-}
+-
+-static void
+ armpmu_read(struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+@@ -267,6 +246,8 @@ armpmu_stop(struct perf_event *event, in
+ 	 */
+ 	if (!(hwc->state & PERF_HES_STOPPED)) {
+ 		armpmu->disable(hwc, hwc->idx);
++		barrier(); /* why? */
++		armpmu_event_update(event, hwc, hwc->idx);
+ 		hwc->state |= PERF_HES_STOPPED | PERF_HES_UPTODATE;
+ 	}
+ }
+@@ -289,7 +270,7 @@ armpmu_start(struct perf_event *event, i
+ 	hwc->state = 0;
+ 	/*
+ 	 * Set the period again. Some counters can't be stopped, so when we
+-	 * were throttled we simply disabled the IRQ source and the counter
++	 * were stopped we simply disabled the IRQ source and the counter
+ 	 * may have been left counting. If we don't do this step then we may
+ 	 * get an interrupt too soon or *way* too late if the overflow has
+ 	 * happened since disabling.
+@@ -298,6 +279,23 @@ armpmu_start(struct perf_event *event, i
+ 	armpmu->enable(hwc, hwc->idx);
+ }
+ 
++static void
++armpmu_del(struct perf_event *event, int flags)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct hw_perf_event *hwc = &event->hw;
++	int idx = hwc->idx;
++
++	WARN_ON(idx < 0);
++
++	clear_bit(idx, cpuc->active_mask);
++	armpmu_stop(event, PERF_EF_UPDATE);
++	cpuc->events[idx] = NULL;
++	clear_bit(idx, cpuc->used_mask);
++
++	perf_event_update_userpage(event);
++}
++
+ static int
+ armpmu_add(struct perf_event *event, int flags)
+ {
+@@ -1075,7 +1073,7 @@ armv6pmu_handle_irq(int irq_num,
+ 			continue;
+ 
+ 		if (perf_event_overflow(event, 0, &data, regs))
+-			armpmu_stop(event, 0);
++			armpmu->disable(hwc, idx);
+ 	}
+ 
+ 	/*
+
