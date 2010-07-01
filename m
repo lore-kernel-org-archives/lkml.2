@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab0GASKt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:10:49 -0400
-Received: from kroah.org ([198.145.64.141]:60029 "EHLO coco.kroah.org"
+	id S1755229Ab0GASKx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:10:53 -0400
+Received: from kroah.org ([198.145.64.141]:60049 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754840Ab0GASKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:10:46 -0400
+	id S1754840Ab0GASKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:10:50 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:57 2010
-Message-Id: <20100701172856.967470232@clark.site>
+Message-Id: <20100701172857.301476632@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:26:55 -0700
+Date: Thu, 01 Jul 2010 10:26:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Denis Kirjanov <dkirjanov@kernel.org>,
-       Robert Richter <robert.richter@amd.com>
-Subject: [06/23] powerpc/oprofile: fix potential buffer overrun in op_model_cell.c
+       Jeff Moyer <jmoyer@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Larry Woodman <lwoodman@redhat.com>
+Subject: [10/23] do_generic_file_read: clear page errors when issuing a fresh read of the page
 In-Reply-To: <20100701175134.GA2098@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis Kirjanov <dkirjanov@hera.kernel.org>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit 238c1a78c957f3dc7cb848b161dcf4805793ed56 upstream.
+commit 91803b499cca2fe558abad709ce83dc896b80950 upstream.
 
-Fix potential initial_lfsr buffer overrun.
-Writing past the end of the buffer could happen when index == ENTRIES
+I/O errors can happen due to temporary failures, like multipath
+errors or losing network contact with the iSCSI server. Because
+of that, the VM will retry readpage on the page.
 
-Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+However, do_generic_file_read does not clear PG_error.  This
+causes the system to be unable to actually use the data in the
+page cache page, even if the subsequent readpage completes
+successfully!
+
+The function filemap_fault has had a ClearPageError before
+readpage forever.  This patch simply adds the same to
+do_generic_file_read.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: Larry Woodman <lwoodman@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/oprofile/op_model_cell.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/filemap.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/powerpc/oprofile/op_model_cell.c
-+++ b/arch/powerpc/oprofile/op_model_cell.c
-@@ -821,7 +821,7 @@ static int calculate_lfsr(int n)
- 		index = ENTRIES-1;
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1118,6 +1118,12 @@ page_not_up_to_date_locked:
+ 		}
  
- 	/* make sure index is valid */
--	if ((index > ENTRIES) || (index < 0))
-+	if ((index >= ENTRIES) || (index < 0))
- 		index = ENTRIES-1;
+ readpage:
++		/*
++		 * A previous I/O error may have been due to temporary
++		 * failures, eg. multipath errors.
++		 * PG_error will be set again if readpage fails.
++		 */
++		ClearPageError(page);
+ 		/* Start the actual read. The read will unlock the page. */
+ 		error = mapping->a_ops->readpage(filp, page);
  
- 	return initial_lfsr[index];
 
 
