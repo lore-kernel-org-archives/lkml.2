@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab0GAUwS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:52:18 -0400
-Received: from kroah.org ([198.145.64.141]:47700 "EHLO coco.kroah.org"
+	id S932716Ab0GAUxM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:53:12 -0400
+Received: from kroah.org ([198.145.64.141]:47831 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932532Ab0GAUur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:47 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:35 2010
-Message-Id: <20100701173435.145452810@clark.site>
+	id S932819Ab0GAUvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:09 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:37 2010
+Message-Id: <20100701173437.339606380@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:45 -0700
+Date: Thu, 01 Jul 2010 10:35:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [patch 099/164] ALSA: hda: Use mb31 quirk for an iMac model
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [patch 125/164] perf: Fix signed comparison in perf_adjust_period()
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 26fd74fc01991a18f0e3bd54f8b1b75945ee3dbb upstream.
+commit f6ab91add6355e231e1c47897027b2a6ee4fa268 upstream.
 
-BugLink: https://launchpad.net/bugs/542550
+Frederic reported that frequency driven swevents didn't work properly
+and even caused a division-by-zero error.
 
-Symptom: On the reporter's iMac, in Ubuntu 10.04 LTS neither playback
-nor capture appear audible out-of-the-box.
+It turns out there are two bugs, the division-by-zero comes from a
+failure to deal with that in perf_calculate_period().
 
-Test case: Boot from an Ubuntu 10.04 LTS live cd or from an installed
-configuration and attempt to play or capture audio.
+The other was more interesting and turned out to be a wrong comparison
+in perf_adjust_period(). The comparison was between an s64 and u64 and
+got implicitly converted to an unsigned comparison. The problem is
+that period_left is typically < 0, so it ended up being always true.
 
-Resolution: Specify the mb31 quirk for this machine in the codec SSID
-table.
+Cure this by making the local period variables s64.
 
-Reported-and-Tested-By: f3a97
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/perf_event.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -9116,6 +9116,7 @@ static struct snd_pci_quirk alc882_ssid_
- 	SND_PCI_QUIRK(0x106b, 0x1000, "iMac 24", ALC885_IMAC24),
- 	SND_PCI_QUIRK(0x106b, 0x2800, "AppleTV", ALC885_IMAC24),
- 	SND_PCI_QUIRK(0x106b, 0x2c00, "MacbookPro rev3", ALC885_MBP3),
-+	SND_PCI_QUIRK(0x106b, 0x3000, "iMac", ALC889A_MB31),
- 	SND_PCI_QUIRK(0x106b, 0x3600, "Macbook 3,1", ALC889A_MB31),
- 	SND_PCI_QUIRK(0x106b, 0x3800, "MacbookPro 4,1", ALC885_MBP3),
- 	SND_PCI_QUIRK(0x106b, 0x3e00, "iMac 24 Aluminum", ALC885_IMAC24),
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1417,13 +1417,16 @@ do {					\
+ 		divisor = nsec * frequency;
+ 	}
+ 
++	if (!divisor)
++		return dividend;
++
+ 	return div64_u64(dividend, divisor);
+ }
+ 
+ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+-	u64 period, sample_period;
++	s64 period, sample_period;
+ 	s64 delta;
+ 
+ 	period = perf_calculate_period(event, nsec, count);
 
 
