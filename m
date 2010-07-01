@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932657Ab0GAWUC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:20:02 -0400
-Received: from kroah.org ([198.145.64.141]:47200 "EHLO coco.kroah.org"
+	id S932651Ab0GAWUU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:20:20 -0400
+Received: from kroah.org ([198.145.64.141]:47194 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932509Ab0GAUtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:39 -0400
+	id S932538Ab0GAUti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:38 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:28 2010
-Message-Id: <20100701173428.810589781@clark.site>
+Message-Id: <20100701173428.724860147@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:29 -0700
+Date: Thu, 01 Jul 2010 10:33:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Cory Maccarrone <darkstar6262@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [patch 023/164] HID: Add the GYR4101US USB ID to hid-gyration
+       =?ISO-8859-15?q?Erik=20Andr=C3=A9n?= <erik.andren@gmail.com>,
+       =?ISO-8859-15?q?Jean-Fran=C3=A7ois=20Moine?= <moinejf@free.fr>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [patch 022/164] V4L/DVB: gspca - stv06xx: Remove the 046d:08da from the stv06xx driver
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,55 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cory Maccarrone <darkstar6262@gmail.com>
+From: Erik Andrén <erik.andren@gmail.com>
 
-commit c2fd1a4ebf9127c280d227acb635eb1df213439c upstream.
+commit 55e0b489a39bb635a44f769d620e44c70d9c065b upstream.
 
-This change adds in the USB product ID for the Gyration
-GYR4101US USB media center remote control.  This remote
-is similar enough to the other two devices that this driver
-can be used without any other changes to get full support
-for the remote.
+The 046d:08da usb id shouldn't be associated with the stv06xx driver as they're
+not compatible with each other.
+This fixes a bug where Quickcam Messenger cams fail to use its proper driver
+(gspca-zc3xx), rendering the camera inoperable.
 
-Signed-off-by: Cory Maccarrone <darkstar6262@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Erik Andrén <erik.andren@gmail.com>
+Tested-by: Gabriel Craciunescu <nix.or.die@googlemail.com>
+Signed-off-by: Jean-François Moine <moinejf@free.fr>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/hid-core.c     |    1 +
- drivers/hid/hid-gyration.c |    1 +
- drivers/hid/hid-ids.h      |    1 +
- 3 files changed, 3 insertions(+)
+ drivers/media/video/gspca/stv06xx/stv06xx.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1305,6 +1305,7 @@ static const struct hid_device_id hid_bl
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GREENASIA, 0x0012) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
---- a/drivers/hid/hid-gyration.c
-+++ b/drivers/hid/hid-gyration.c
-@@ -73,6 +73,7 @@ static int gyration_event(struct hid_dev
- static const struct hid_device_id gyration_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
- 	{ }
+--- a/drivers/media/video/gspca/stv06xx/stv06xx.c
++++ b/drivers/media/video/gspca/stv06xx/stv06xx.c
+@@ -496,8 +496,6 @@ static const __devinitdata struct usb_de
+ 	{USB_DEVICE(0x046D, 0x08F5), .driver_info = BRIDGE_ST6422 },
+ 	/* QuickCam Messenger (new) */
+ 	{USB_DEVICE(0x046D, 0x08F6), .driver_info = BRIDGE_ST6422 },
+-	/* QuickCam Messenger (new) */
+-	{USB_DEVICE(0x046D, 0x08DA), .driver_info = BRIDGE_ST6422 },
+ 	{}
  };
- MODULE_DEVICE_TABLE(hid, gyration_devices);
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -256,6 +256,7 @@
- #define USB_VENDOR_ID_GYRATION		0x0c16
- #define USB_DEVICE_ID_GYRATION_REMOTE	0x0002
- #define USB_DEVICE_ID_GYRATION_REMOTE_2 0x0003
-+#define USB_DEVICE_ID_GYRATION_REMOTE_3 0x0008
- 
- #define USB_VENDOR_ID_HAPP		0x078b
- #define USB_DEVICE_ID_UGCI_DRIVING	0x0010
+ MODULE_DEVICE_TABLE(usb, device_table);
 
 
