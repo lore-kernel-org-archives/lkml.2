@@ -1,98 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab0GANpl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:45:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751941Ab0GANpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:45:39 -0400
-Date: Thu, 1 Jul 2010 16:39:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+	id S1755974Ab0GANqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:46:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49206 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab0GANqV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 09:46:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=e+KVkLDQ78ZBGx0GCLe3FoY1lbpmDREhtZWEy4R/iz0tj7aarWgvZC37sAfrrZWCtf
+         F3nA3oEO3A+OUg1tvenFtvhk5CuHfXihTev1zJ5FN4bP7Y0ccTWs0N8322u1tRkSvkJ4
+         qfw43FIDITkiaVf4HIZFWWlmPaz59d+g9ls54=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: Kernel Janitors <kernel-janitors@vger.kernel.org>
+Cc: Doug Gilbert <dgilbert@interlog.com>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-Message-ID: <20100701133956.GD32223@redhat.com>
-References: <20100625101022.GA16321@redhat.com>
- <20100701110708.GA27368@redhat.com>
- <1277983179.1917.10.camel@laptop>
- <1277984603.1917.15.camel@laptop>
- <20100701115507.GA31333@redhat.com>
- <20100701122340.GB31333@redhat.com>
- <1277987657.1917.32.camel@laptop>
- <1277988395.1917.47.camel@laptop>
- <20100701130816.GB32223@redhat.com>
- <1277991024.1917.108.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277991024.1917.108.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 10/25] scsi/sg: remove casts from void*
+Date: Thu,  1 Jul 2010 17:16:43 +0400
+Message-Id: <1277990204-22157-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 03:30:24PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-07-01 at 16:08 +0300, Michael S. Tsirkin wrote:
-> > On Thu, Jul 01, 2010 at 02:46:35PM +0200, Peter Zijlstra wrote:
-> > > On Thu, 2010-07-01 at 14:34 +0200, Peter Zijlstra wrote:
-> > > > On Thu, 2010-07-01 at 15:23 +0300, Michael S. Tsirkin wrote:
-> > > > > 
-> > > > > The patch using this is here:
-> > > > > http://www.mail-archive.com/kvm@vger.kernel.org/msg35411.html
-> > > > > 
-> > > > > It simply copies the affinity from the parent when thread is created.
-> > > > 
-> > > > Sounds like policy, not something the kernel should do..
-> > > 
-> > > The alternative would be using clone() instead of thread_create() and
-> > > inherit everything from the creating task.
-> > > Inheriting from kthreadd and then undoing some aspects just sounds
-> > > like daft policy that really ought to be in userspace.
-> > 
-> > Yes, that's basically what this patchset is trying to do:
-> > create a workqueue inheriting everything from the creating task.
-> > Sridhar started with an API to do exactly this:
-> > http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-05/msg07478.html
-> > 
-> > Then we switched to raw kthread to avoid stepping on cwq toes.
-> > Maybe it makes sense to add kthread_clone (in addition to
-> > kthread_create) that would do what you suggest?
-> > If yes, any hints on an implementation?
-> 
-> I think that's called kernel_thread() see
-> kernel/kthread.c:create_kthread().
-> 
-> Doing the whole kthreadd dance and then copying bits and pieces back
-> sounds very fragile, so yeah, something like that should work.
+Remove unnesessary casts from void*.
+Style fixes with assignments in if (...).
 
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/scsi/sg.c |   63 +++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 44 insertions(+), 19 deletions(-)
 
-Thanks!
-Sridhar, Tejun, have the time to look into this approach?
-
-> The other issue to consider is the thread group status of these things,
-> I think it would be best if these threads were still considered part of
-> the process that spawned them so that they would die nicely when the
-> process gets whacked.
-
-The proposed patch kills the thread when the fd is closed,
-so I think this already works without making it part of the process.
-
-> At which point one could wonder if the kthread interface makes any
-> sense, why not let userspace fork tasks and let them call into the
-> kernel to perform work...
-
-One thing I wanted to avoid is letting userspace know
-just how many threads are there. We are using a single one
-now, but we used to have threads per-cpu, and we might
-switch to a thread per virtqueue in the future.
-IMO all this should ideally be transparent to userspace.
-
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index ef752b2..58215af 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -210,7 +210,7 @@ static void sg_put_dev(Sg_device *sdp);
+ 
+ static int sg_allow_access(struct file *filp, unsigned char *cmd)
+ {
+-	struct sg_fd *sfp = (struct sg_fd *)filp->private_data;
++	struct sg_fd *sfp = filp->private_data;
+ 
+ 	if (sfp->parentdp->device->type == TYPE_SCANNER)
+ 		return 0;
+@@ -315,11 +315,15 @@ sg_put:
+ static int
+ sg_release(struct inode *inode, struct file *filp)
+ {
++	Sg_fd *sfp = filp->private_data;
+ 	Sg_device *sdp;
+-	Sg_fd *sfp;
+ 
+-	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
++	if (!sfp)
++		return -ENXIO;
++	sdp = sfp->parentdp;
++	if (!sdp)
+ 		return -ENXIO;
++
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_release: %s\n", sdp->disk->disk_name));
+ 
+ 	sfp->closed = 1;
+@@ -334,16 +338,20 @@ sg_release(struct inode *inode, struct file *filp)
+ static ssize_t
+ sg_read(struct file *filp, char __user *buf, size_t count, loff_t * ppos)
+ {
++	Sg_fd *sfp = filp->private_data;
+ 	Sg_device *sdp;
+-	Sg_fd *sfp;
+ 	Sg_request *srp;
+ 	int req_pack_id = -1;
+ 	sg_io_hdr_t *hp;
+ 	struct sg_header *old_hdr = NULL;
+ 	int retval = 0;
+ 
+-	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
++	if (!sfp)
++		return -ENXIO;
++	sdp = sfp->parentdp;
++	if (!sdp)
+ 		return -ENXIO;
++
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_read: %s, count=%d\n",
+ 				   sdp->disk->disk_name, (int) count));
+ 
+@@ -526,15 +534,19 @@ sg_write(struct file *filp, const char __user *buf, size_t count, loff_t * ppos)
+ 	int mxsize, cmd_size, k;
+ 	int input_size, blocking;
+ 	unsigned char opcode;
++	Sg_fd *sfp = filp->private_data;
+ 	Sg_device *sdp;
+-	Sg_fd *sfp;
+ 	Sg_request *srp;
+ 	struct sg_header old_hdr;
+ 	sg_io_hdr_t *hp;
+ 	unsigned char cmnd[MAX_COMMAND_SIZE];
+ 
+-	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
++	if (!sfp)
++		return -ENXIO;
++	sdp = sfp->parentdp;
++	if (!sdp)
+ 		return -ENXIO;
++
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_write: %s, count=%d\n",
+ 				   sdp->disk->disk_name, (int) count));
+ 	if (sdp->detached)
+@@ -763,12 +775,15 @@ sg_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
+ 	void __user *p = (void __user *)arg;
+ 	int __user *ip = p;
+ 	int result, val, read_only;
++	Sg_fd *sfp = filp->private_data;
+ 	Sg_device *sdp;
+-	Sg_fd *sfp;
+ 	Sg_request *srp;
+ 	unsigned long iflags;
+ 
+-	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
++	if (!sfp)
++		return -ENXIO;
++	sdp = sfp->parentdp;
++	if (!sdp)
+ 		return -ENXIO;
+ 
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_ioctl: %s, cmd=0x%x\n",
+@@ -1093,14 +1108,17 @@ sg_unlocked_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
+ static long sg_compat_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
+ {
+ 	Sg_device *sdp;
+-	Sg_fd *sfp;
++	Sg_fd *sfp = filp->private_data;
+ 	struct scsi_device *sdev;
+ 
+-	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
++	if (!sfp)
++		return -ENXIO;
++	sdp = sfp->parentdp;
++	if (!sdp)
+ 		return -ENXIO;
+ 
+ 	sdev = sdp->device;
+-	if (sdev->host->hostt->compat_ioctl) { 
++	if (sdev->host->hostt->compat_ioctl) {
+ 		int ret;
+ 
+ 		ret = sdev->host->hostt->compat_ioctl(sdev, cmd_in, (void __user *)arg);
+@@ -1116,15 +1134,18 @@ static unsigned int
+ sg_poll(struct file *filp, poll_table * wait)
+ {
+ 	unsigned int res = 0;
++	Sg_fd *sfp = filp->private_data;
+ 	Sg_device *sdp;
+-	Sg_fd *sfp;
+ 	Sg_request *srp;
+ 	int count = 0;
+ 	unsigned long iflags;
+ 
+-	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp))
+-	    || sfp->closed)
++	if (!sfp)
+ 		return POLLERR;
++	sdp = sfp->parentdp;
++	if ((!sdp) || sfp->closed)
++		return POLLERR;
++
+ 	poll_wait(filp, &sfp->read_wait, wait);
+ 	read_lock_irqsave(&sfp->rq_list_lock, iflags);
+ 	for (srp = sfp->headrp; srp; srp = srp->nextrp) {
+@@ -1150,11 +1171,15 @@ sg_poll(struct file *filp, poll_table * wait)
+ static int
+ sg_fasync(int fd, struct file *filp, int mode)
+ {
++	Sg_fd *sfp = filp->private_data;
+ 	Sg_device *sdp;
+-	Sg_fd *sfp;
+ 
+-	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
++	if (!sfp)
+ 		return -ENXIO;
++	sdp = sfp->parentdp;
++	if (!sdp)
++		return -ENXIO;
++
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_fasync: %s, mode=%d\n",
+ 				   sdp->disk->disk_name, mode));
+ 
+@@ -1203,12 +1228,12 @@ static const struct vm_operations_struct sg_mmap_vm_ops = {
+ static int
+ sg_mmap(struct file *filp, struct vm_area_struct *vma)
+ {
+-	Sg_fd *sfp;
++	Sg_fd *sfp = filp->private_data;
+ 	unsigned long req_sz, len, sa;
+ 	Sg_scatter_hold *rsv_schp;
+ 	int k, length;
+ 
+-	if ((!filp) || (!vma) || (!(sfp = (Sg_fd *) filp->private_data)))
++	if ((!filp) || (!vma) || !(sfp))
+ 		return -ENXIO;
+ 	req_sz = vma->vm_end - vma->vm_start;
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_mmap starting, vm_start=%p, len=%d\n",
 -- 
-MST
+1.7.0.4
+
