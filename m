@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759171Ab0GAVQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:16:07 -0400
+	id S933234Ab0GAVP7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:15:59 -0400
 Received: from kroah.org ([198.145.64.141]:60923 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759001Ab0GAVNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:52 -0400
+	id S1758992Ab0GAVNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:50 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:53 2010
-Message-Id: <20100701174253.175571610@clark.site>
+Message-Id: <20100701174252.999570212@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:50 -0700
+Date: Thu, 01 Jul 2010 10:42:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Li Yang <leoli@freescale.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Kumar Gala <galak@kernel.crashing.org>
-Subject: [080/200] powerpc: Fix ioremap_flags() with book3e pte definition
+       Michael Neuling <mikey@neuling.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [078/200] powerpc/pseries: Only call start-cpu when a CPU is stopped
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,59 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 55052eeca6d71d76f7c3f156c0501814d8e5e6d3 upstream.
+commit aef40e87d866355ffd279ab21021de733242d0d5 upstream.
 
-We can't just clear the user read permission in book3e pte, because
-that will also clear supervisor read permission.  This surely isn't
-desired.  Fix the problem by adding the supervisor read back.
+Currently we always call start-cpu irrespective of if the CPU is
+stopped or not. Unfortunatley on POWER7, firmware seems to not like
+start-cpu being called when a cpu already been started.  This was not
+the case on POWER6 and earlier.
 
-BenH: Slightly simplified the ifdef and applied to ppc64 too
+This patch checks to see if the CPU is stopped or not via an
+query-cpu-stopped-state call, and only calls start-cpu on CPUs which
+are stopped.
 
-Signed-off-by: Li Yang <leoli@freescale.com>
+This fixes a bug with kexec on POWER7 on PHYP where only the primary
+thread would make it to the second kernel.
+
+Reported-by: Ankita Garg <ankita@linux.vnet.ibm.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Kumar Gala <galak@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/mm/pgtable_32.c |    8 ++++++++
- arch/powerpc/mm/pgtable_64.c |    8 ++++++++
- 2 files changed, 16 insertions(+)
+ arch/powerpc/platforms/pseries/smp.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/powerpc/mm/pgtable_32.c
-+++ b/arch/powerpc/mm/pgtable_32.c
-@@ -146,6 +146,14 @@ ioremap_flags(phys_addr_t addr, unsigned
- 	/* we don't want to let _PAGE_USER and _PAGE_EXEC leak out */
- 	flags &= ~(_PAGE_USER | _PAGE_EXEC);
+--- a/arch/powerpc/platforms/pseries/smp.c
++++ b/arch/powerpc/platforms/pseries/smp.c
+@@ -82,6 +82,12 @@ static inline int __devinit smp_startup_
  
-+#ifdef _PAGE_BAP_SR
-+	/* _PAGE_USER contains _PAGE_BAP_SR on BookE using the new PTE format
-+	 * which means that we just cleared supervisor access... oops ;-) This
-+	 * restores it
-+	 */
-+	flags |= _PAGE_BAP_SR;
-+#endif
-+
- 	return __ioremap_caller(addr, size, flags, __builtin_return_address(0));
- }
- EXPORT_SYMBOL(ioremap_flags);
---- a/arch/powerpc/mm/pgtable_64.c
-+++ b/arch/powerpc/mm/pgtable_64.c
-@@ -265,6 +265,14 @@ void __iomem * ioremap_flags(phys_addr_t
- 	/* we don't want to let _PAGE_USER and _PAGE_EXEC leak out */
- 	flags &= ~(_PAGE_USER | _PAGE_EXEC);
+ 	pcpu = get_hard_smp_processor_id(lcpu);
  
-+#ifdef _PAGE_BAP_SR
-+	/* _PAGE_USER contains _PAGE_BAP_SR on BookE using the new PTE format
-+	 * which means that we just cleared supervisor access... oops ;-) This
-+	 * restores it
-+	 */
-+	flags |= _PAGE_BAP_SR;
-+#endif
++	/* Check to see if the CPU out of FW already for kexec */
++	if (smp_query_cpu_stopped(pcpu) == QCSS_NOT_STOPPED){
++		cpu_set(lcpu, of_spin_map);
++		return 1;
++	}
 +
- 	if (ppc_md.ioremap)
- 		return ppc_md.ioremap(addr, size, flags, caller);
- 	return __ioremap_caller(addr, size, flags, caller);
+ 	/* Fixup atomic count: it exited inside IRQ handler. */
+ 	task_thread_info(paca[lcpu].__current)->preempt_count	= 0;
+ 
 
 
