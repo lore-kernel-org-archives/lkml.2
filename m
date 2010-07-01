@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759823Ab0GAWPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:15:35 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53784 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759787Ab0GAWPa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 18:15:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Y7UwYci/JIlbXo29mFLJOoFGqExb5guzjKElFTKnX+mu7zqfiEi9hc5eh4LuJDiu6Y
-         lJmuXUEbmA3+G9Br6zbpeRKVHt6ozsIeTnvkSKenxDj/T1PtwU16Q9AdYVYQhVRVZDd6
-         cp0Jy2y/YgAZaNXYhpaaaULqRQ/jupRbh9MqM=
-MIME-Version: 1.0
-In-Reply-To: <1278013320.7738.19.camel@c-dwalke-linux.qualcomm.com>
-References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org>
-	<1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org>
-	<20100701101746.3810cc3b.randy.dunlap@oracle.com>
-	<20100701180241.GA3594@basil.fritz.box>
-	<1278012503.7738.17.camel@c-dwalke-linux.qualcomm.com>
-	<20100701193850.GB3594@basil.fritz.box>
-	<1278013320.7738.19.camel@c-dwalke-linux.qualcomm.com>
-Date: Thu, 1 Jul 2010 17:15:27 -0500
-Message-ID: <AANLkTinABCSdN6hnXVOvVZ12f1QBMR_UAi62qW8GmlkL@mail.gmail.com>
-Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
-From: Hari Kanigeri <hari.kanigeri@gmail.com>
-To: Daniel Walker <dwalker@codeaurora.org>,
-       Zach Pfeffer <zpfeffer@codeaurora.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Randy Dunlap <randy.dunlap@oracle.com>,
-       mel@csn.ul.ie, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759837Ab0GAWPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:15:54 -0400
+Received: from kroah.org ([198.145.64.141]:47296 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932589Ab0GAUty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:54 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:30 2010
+Message-Id: <20100701173430.309000244@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:33:47 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [patch 041/164] USB: xhci: Fix check for room on the ring.
+In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> He demonstrated the usage of his code in one of the emails he sent out
-> initially. Did you go over that, and what (or how many) step would you
-> use with the current code to do the same thing?
+2.6.33-stable review patch.  If anyone has any objections, please let me know.
 
--- So is this patch set adding layers and abstractions to help the User ?
+------------------
 
-If the idea is to share some memory across multiple devices, I guess
-you can achieve the same by calling the map function provided by iommu
-module and sharing the mapped address to the 10's or 100's of devices
-to access the buffers. You would only need a dedicated virtual pool
-per IOMMU device to manage its virtual memory allocations.
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-Hari
+commit 44ebd037c54f80db3121ac9f5fe6e677b76e11d5 upstream.
+
+The length of the scatter gather list a driver can enqueue is limited by
+the bus' sg_tablesize to 62 entries.  Each entry will be described by at
+least one transfer request block (TRB).  If the entry's buffer crosses a
+64KB boundary, then that entry will have to be described by two or more
+TRBs.  So even if the USB device driver respects sg_tablesize, the whole
+scatter list may take more than 62 TRBs to describe, and won't fit on
+the ring.
+
+Don't assume that an empty ring means there is enough room on the
+transfer ring.  The old code would unconditionally queue this too-large
+transfer, and over write the beginning of the transfer.  This would mean
+the cycle bit was unchanged in those overwritten transfers, causing the
+hardware to think it didn't own the TRBs, and the host would seem to
+hang.
+
+Now drivers may see submit_urb() fail with -ENOMEM if the transfers are
+too big to fit on the ring.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/usb/host/xhci-ring.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -241,10 +241,27 @@ static int room_on_ring(struct xhci_hcd
+ 	int i;
+ 	union xhci_trb *enq = ring->enqueue;
+ 	struct xhci_segment *enq_seg = ring->enq_seg;
++	struct xhci_segment *cur_seg;
++	unsigned int left_on_ring;
+ 
+ 	/* Check if ring is empty */
+-	if (enq == ring->dequeue)
++	if (enq == ring->dequeue) {
++		/* Can't use link trbs */
++		left_on_ring = TRBS_PER_SEGMENT - 1;
++		for (cur_seg = enq_seg->next; cur_seg != enq_seg;
++				cur_seg = cur_seg->next)
++			left_on_ring += TRBS_PER_SEGMENT - 1;
++
++		/* Always need one TRB free in the ring. */
++		left_on_ring -= 1;
++		if (num_trbs > left_on_ring) {
++			xhci_warn(xhci, "Not enough room on ring; "
++					"need %u TRBs, %u TRBs left\n",
++					num_trbs, left_on_ring);
++			return 0;
++		}
+ 		return 1;
++	}
+ 	/* Make sure there's an extra empty TRB available */
+ 	for (i = 0; i <= num_trbs; ++i) {
+ 		if (enq == ring->dequeue)
+
+
