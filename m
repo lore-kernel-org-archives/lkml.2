@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab0GAVdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:33:35 -0400
-Received: from kroah.org ([198.145.64.141]:33148 "EHLO coco.kroah.org"
+	id S933291Ab0GAVgB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:36:01 -0400
+Received: from kroah.org ([198.145.64.141]:33040 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759238Ab0GAVPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:04 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:00 2010
-Message-Id: <20100701174300.491449567@clark.site>
+	id S1759221Ab0GAVOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:48 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
+Message-Id: <20100701174258.769447197@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:15 -0700
+Date: Thu, 01 Jul 2010 10:43:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [165/200] tracing: Fix null pointer deref with SEND_SIG_FORCED
+       Alan Cox <device@lanana.org>
+Subject: [146/200] misc: Fix allocation borrowed by vhost_net
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,44 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit b9b76dfaac6fa2c289ee8a005be637afd2da7e2f upstream.
+commit 79907d89c397b8bc2e05b347ec94e928ea919d33 upstream.
 
-BUG: unable to handle kernel NULL pointer dereference at
-	0000000000000006
-IP: [<ffffffff8107bd37>] ftrace_raw_event_signal_generate+0x87/0x140
+10, 233 is allocated officially to /dev/kmview which is shipping in
+Ubuntu and Debian distributions.  vhost_net seem to have borrowed it
+without making a proper request and this causes regressions in the other
+distributions.
 
-TP_STORE_SIGINFO() forgets about SEND_SIG_FORCED, fix.
+vhost_net can use a dynamic minor so use that instead.  Also update the
+file with a comment to try and avoid future misunderstandings.
 
-We should probably export is_si_special() and change TP_STORE_SIGINFO()
-to use it in the longer term.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Roland McGrath <roland@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>
-LKML-Reference: <20100603213409.GA8307@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Alan Cox <device@lanana.org>
+[ We should have caught this before 2.6.34 got released.  - Linus ]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/trace/events/signal.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/vhost/net.c        |    2 +-
+ include/linux/miscdevice.h |    7 ++++++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/include/trace/events/signal.h
-+++ b/include/trace/events/signal.h
-@@ -10,7 +10,8 @@
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -637,7 +637,7 @@ const static struct file_operations vhos
+ };
  
- #define TP_STORE_SIGINFO(__entry, info)				\
- 	do {							\
--		if (info == SEND_SIG_NOINFO) {			\
-+		if (info == SEND_SIG_NOINFO ||			\
-+		    info == SEND_SIG_FORCED) {			\
- 			__entry->errno	= 0;			\
- 			__entry->code	= SI_USER;		\
- 		} else if (info == SEND_SIG_PRIV) {		\
+ static struct miscdevice vhost_net_misc = {
+-	VHOST_NET_MINOR,
++	MISC_DYNAMIC_MINOR,
+ 	"vhost-net",
+ 	&vhost_net_fops,
+ };
+--- a/include/linux/miscdevice.h
++++ b/include/linux/miscdevice.h
+@@ -3,6 +3,12 @@
+ #include <linux/module.h>
+ #include <linux/major.h>
+ 
++/*
++ *	These allocations are managed by device@lanana.org. If you use an
++ *	entry that is not in assigned your entry may well be moved and
++ *	reassigned, or set dynamic if a fixed value is not justified.
++ */
++
+ #define PSMOUSE_MINOR		1
+ #define MS_BUSMOUSE_MINOR	2
+ #define ATIXL_BUSMOUSE_MINOR	3
+@@ -30,7 +36,6 @@
+ #define HPET_MINOR		228
+ #define FUSE_MINOR		229
+ #define KVM_MINOR		232
+-#define VHOST_NET_MINOR		233
+ #define MISC_DYNAMIC_MINOR	255
+ 
+ struct device;
 
 
