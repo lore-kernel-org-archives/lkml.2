@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933406Ab0GAVoX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:44:23 -0400
-Received: from kroah.org ([198.145.64.141]:32868 "EHLO coco.kroah.org"
+	id S933174Ab0GAV3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:29:20 -0400
+Received: from kroah.org ([198.145.64.141]:33266 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759096Ab0GAVOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:19 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:55 2010
-Message-Id: <20100701174255.885288023@clark.site>
+	id S933170Ab0GAVPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:15:33 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:02 2010
+Message-Id: <20100701174302.568114781@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:22 -0700
+Date: Thu, 01 Jul 2010 10:44:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Moyer <jmoyer@redhat.com>, Zach Brown <zach.brown@oracle.com>
-Subject: [112/200] aio: fix the compat vectored operations
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [190/200] KVM: x86: Check LMA bit before set_efer
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,209 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Sheng Yang <sheng@linux.intel.com>
 
-commit 9d85cba718efeef9ca00ce3f7f34f5880737aa9b upstream.
+kvm_x86_ops->set_efer() would execute vcpu->arch.efer = efer, so the
+checking of LMA bit didn't work.
 
-The aio compat code was not converting the struct iovecs from 32bit to
-64bit pointers, causing either EINVAL to be returned from io_getevents, or
-EFAULT as the result of the I/O.  This patch passes a compat flag to
-io_submit to signal that pointer conversion is necessary for a given iocb
-array.
-
-A variant of this was tested by Michael Tokarev.  I have also updated the
-libaio test harness to exercise this code path with good success.
-Further, I grabbed a copy of ltp and ran the
-testcases/kernel/syscall/readv and writev tests there (compiled with -m32
-on my 64bit system).  All seems happy, but extra eyes on this would be
-welcome.
-
-[akpm@linux-foundation.org: coding-style fixes]
-[akpm@linux-foundation.org: fix CONFIG_COMPAT=n build]
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Reported-by: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Zach Brown <zach.brown@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
+(Cherry-picked from commit a3d204e28579427609c3d15d2310127ebaa47d94)
 ---
- fs/aio.c            |   65 ++++++++++++++++++++++++++++++++--------------------
- fs/compat.c         |    2 -
- include/linux/aio.h |    5 ++++
- 3 files changed, 47 insertions(+), 25 deletions(-)
+ arch/x86/kvm/x86.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -36,6 +36,7 @@
- #include <linux/blkdev.h>
- #include <linux/mempool.h>
- #include <linux/hash.h>
-+#include <linux/compat.h>
- 
- #include <asm/kmap_types.h>
- #include <asm/uaccess.h>
-@@ -1384,13 +1385,22 @@ static ssize_t aio_fsync(struct kiocb *i
- 	return ret;
- }
- 
--static ssize_t aio_setup_vectored_rw(int type, struct kiocb *kiocb)
-+static ssize_t aio_setup_vectored_rw(int type, struct kiocb *kiocb, bool compat)
- {
- 	ssize_t ret;
- 
--	ret = rw_copy_check_uvector(type, (struct iovec __user *)kiocb->ki_buf,
--				    kiocb->ki_nbytes, 1,
--				    &kiocb->ki_inline_vec, &kiocb->ki_iovec);
-+#ifdef CONFIG_COMPAT
-+	if (compat)
-+		ret = compat_rw_copy_check_uvector(type,
-+				(struct compat_iovec __user *)kiocb->ki_buf,
-+				kiocb->ki_nbytes, 1, &kiocb->ki_inline_vec,
-+				&kiocb->ki_iovec);
-+	else
-+#endif
-+		ret = rw_copy_check_uvector(type,
-+				(struct iovec __user *)kiocb->ki_buf,
-+				kiocb->ki_nbytes, 1, &kiocb->ki_inline_vec,
-+				&kiocb->ki_iovec);
- 	if (ret < 0)
- 		goto out;
- 
-@@ -1420,7 +1430,7 @@ static ssize_t aio_setup_single_vector(s
-  *	Performs the initial checks and aio retry method
-  *	setup for the kiocb at the time of io submission.
-  */
--static ssize_t aio_setup_iocb(struct kiocb *kiocb)
-+static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- {
- 	struct file *file = kiocb->ki_filp;
- 	ssize_t ret = 0;
-@@ -1469,7 +1479,7 @@ static ssize_t aio_setup_iocb(struct kio
- 		ret = security_file_permission(file, MAY_READ);
- 		if (unlikely(ret))
- 			break;
--		ret = aio_setup_vectored_rw(READ, kiocb);
-+		ret = aio_setup_vectored_rw(READ, kiocb, compat);
- 		if (ret)
- 			break;
- 		ret = -EINVAL;
-@@ -1483,7 +1493,7 @@ static ssize_t aio_setup_iocb(struct kio
- 		ret = security_file_permission(file, MAY_WRITE);
- 		if (unlikely(ret))
- 			break;
--		ret = aio_setup_vectored_rw(WRITE, kiocb);
-+		ret = aio_setup_vectored_rw(WRITE, kiocb, compat);
- 		if (ret)
- 			break;
- 		ret = -EINVAL;
-@@ -1548,7 +1558,8 @@ static void aio_batch_free(struct hlist_
- }
- 
- static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
--			 struct iocb *iocb, struct hlist_head *batch_hash)
-+			 struct iocb *iocb, struct hlist_head *batch_hash,
-+			 bool compat)
- {
- 	struct kiocb *req;
- 	struct file *file;
-@@ -1609,7 +1620,7 @@ static int io_submit_one(struct kioctx *
- 	req->ki_left = req->ki_nbytes = iocb->aio_nbytes;
- 	req->ki_opcode = iocb->aio_lio_opcode;
- 
--	ret = aio_setup_iocb(req);
-+	ret = aio_setup_iocb(req, compat);
- 
- 	if (ret)
- 		goto out_put_req;
-@@ -1637,20 +1648,8 @@ out_put_req:
- 	return ret;
- }
- 
--/* sys_io_submit:
-- *	Queue the nr iocbs pointed to by iocbpp for processing.  Returns
-- *	the number of iocbs queued.  May return -EINVAL if the aio_context
-- *	specified by ctx_id is invalid, if nr is < 0, if the iocb at
-- *	*iocbpp[0] is not properly initialized, if the operation specified
-- *	is invalid for the file descriptor in the iocb.  May fail with
-- *	-EFAULT if any of the data structures point to invalid data.  May
-- *	fail with -EBADF if the file descriptor specified in the first
-- *	iocb is invalid.  May fail with -EAGAIN if insufficient resources
-- *	are available to queue any iocbs.  Will return 0 if nr is 0.  Will
-- *	fail with -ENOSYS if not implemented.
-- */
--SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
--		struct iocb __user * __user *, iocbpp)
-+long do_io_submit(aio_context_t ctx_id, long nr,
-+		  struct iocb __user *__user *iocbpp, bool compat)
- {
- 	struct kioctx *ctx;
- 	long ret = 0;
-@@ -1687,7 +1686,7 @@ SYSCALL_DEFINE3(io_submit, aio_context_t
- 			break;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -657,11 +657,11 @@ static void set_efer(struct kvm_vcpu *vc
  		}
- 
--		ret = io_submit_one(ctx, user_iocb, &tmp, batch_hash);
-+		ret = io_submit_one(ctx, user_iocb, &tmp, batch_hash, compat);
- 		if (ret)
- 			break;
  	}
-@@ -1697,6 +1696,24 @@ SYSCALL_DEFINE3(io_submit, aio_context_t
- 	return i ? i : ret;
- }
  
-+/* sys_io_submit:
-+ *	Queue the nr iocbs pointed to by iocbpp for processing.  Returns
-+ *	the number of iocbs queued.  May return -EINVAL if the aio_context
-+ *	specified by ctx_id is invalid, if nr is < 0, if the iocb at
-+ *	*iocbpp[0] is not properly initialized, if the operation specified
-+ *	is invalid for the file descriptor in the iocb.  May fail with
-+ *	-EFAULT if any of the data structures point to invalid data.  May
-+ *	fail with -EBADF if the file descriptor specified in the first
-+ *	iocb is invalid.  May fail with -EAGAIN if insufficient resources
-+ *	are available to queue any iocbs.  Will return 0 if nr is 0.  Will
-+ *	fail with -ENOSYS if not implemented.
-+ */
-+SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
-+		struct iocb __user * __user *, iocbpp)
-+{
-+	return do_io_submit(ctx_id, nr, iocbpp, 0);
-+}
+-	kvm_x86_ops->set_efer(vcpu, efer);
+-
+ 	efer &= ~EFER_LMA;
+ 	efer |= vcpu->arch.efer & EFER_LMA;
+ 
++	kvm_x86_ops->set_efer(vcpu, efer);
 +
- /* lookup_kiocb
-  *	Finds a given iocb for cancellation.
-  */
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -600,7 +600,7 @@ compat_sys_io_submit(aio_context_t ctx_i
- 	iocb64 = compat_alloc_user_space(nr * sizeof(*iocb64));
- 	ret = copy_iocb(nr, iocb, iocb64);
- 	if (!ret)
--		ret = sys_io_submit(ctx_id, nr, iocb64);
-+		ret = do_io_submit(ctx_id, nr, iocb64, 1);
- 	return ret;
- }
+ 	vcpu->arch.efer = efer;
  
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -212,6 +212,8 @@ extern void kick_iocb(struct kiocb *iocb
- extern int aio_complete(struct kiocb *iocb, long res, long res2);
- struct mm_struct;
- extern void exit_aio(struct mm_struct *mm);
-+extern long do_io_submit(aio_context_t ctx_id, long nr,
-+			 struct iocb __user *__user *iocbpp, bool compat);
- #else
- static inline ssize_t wait_on_sync_kiocb(struct kiocb *iocb) { return 0; }
- static inline int aio_put_req(struct kiocb *iocb) { return 0; }
-@@ -219,6 +221,9 @@ static inline void kick_iocb(struct kioc
- static inline int aio_complete(struct kiocb *iocb, long res, long res2) { return 0; }
- struct mm_struct;
- static inline void exit_aio(struct mm_struct *mm) { }
-+static inline long do_io_submit(aio_context_t ctx_id, long nr,
-+				struct iocb __user * __user *iocbpp,
-+				bool compat) { return 0; }
- #endif /* CONFIG_AIO */
- 
- static inline struct kiocb *list_kiocb(struct list_head *h)
+ 	vcpu->arch.mmu.base_role.nxe = (efer & EFER_NX) && !tdp_enabled;
 
 
