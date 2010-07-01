@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab0GASY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:24:58 -0400
-Received: from kroah.org ([198.145.64.141]:40897 "EHLO coco.kroah.org"
+	id S1757704Ab0GASW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:22:59 -0400
+Received: from kroah.org ([198.145.64.141]:35427 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932105Ab0GASYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:38 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:19 2010
-Message-Id: <20100701173219.261815253@clark.site>
+	id S1757688Ab0GASW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:57 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:09 2010
+Message-Id: <20100701173209.337683716@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:53 -0700
+Date: Thu, 01 Jul 2010 10:30:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       David Howells <dhowells@redhat.com>, Serge Hallyn <serue@us.ibm.com>,
-       James Morris <jmorris@namei.org>, Ben Hutchings <ben@decadent.org.uk>,
-       Chuck Ebbert <cebbert@redhat.com>
-Subject: [patch 147/149] KEYS: find_keyring_by_name() can gain access to a freed keyring
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [patch 030/149] USB: serial: option: add cinterion device id
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,191 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-commit cea7daa3589d6b550546a8c8963599f7c1a3ae5c upstream.
+commit 6f44bcb60bfa58590142545096b64f44144f0bc1 upstream.
 
-find_keyring_by_name() can gain access to a keyring that has had its reference
-count reduced to zero, and is thus ready to be freed.  This then allows the
-dead keyring to be brought back into use whilst it is being destroyed.
+This adds a device id for a Cinterion device.
 
-The following timeline illustrates the process:
-
-|(cleaner)                           (user)
-|
-| free_user(user)                    sys_keyctl()
-|  |                                  |
-|  key_put(user->session_keyring)     keyctl_get_keyring_ID()
-|  ||	//=> keyring->usage = 0        |
-|  |schedule_work(&key_cleanup_task)   lookup_user_key()
-|  ||                                   |
-|  kmem_cache_free(,user)               |
-|  .                                    |[KEY_SPEC_USER_KEYRING]
-|  .                                    install_user_keyrings()
-|  .                                    ||
-| key_cleanup() [<= worker_thread()]    ||
-|  |                                    ||
-|  [spin_lock(&key_serial_lock)]        |[mutex_lock(&key_user_keyr..mutex)]
-|  |                                    ||
-|  atomic_read() == 0                   ||
-|  |{ rb_ease(&key->serial_node,) }     ||
-|  |                                    ||
-|  [spin_unlock(&key_serial_lock)]      |find_keyring_by_name()
-|  |                                    |||
-|  keyring_destroy(keyring)             ||[read_lock(&keyring_name_lock)]
-|  ||                                   |||
-|  |[write_lock(&keyring_name_lock)]    ||atomic_inc(&keyring->usage)
-|  |.                                   ||| *** GET freeing keyring ***
-|  |.                                   ||[read_unlock(&keyring_name_lock)]
-|  ||                                   ||
-|  |list_del()                          |[mutex_unlock(&key_user_k..mutex)]
-|  ||                                   |
-|  |[write_unlock(&keyring_name_lock)]  ** INVALID keyring is returned **
-|  |                                    .
-|  kmem_cache_free(,keyring)            .
-|                                       .
-|                                       atomic_dec(&keyring->usage)
-v                                         *** DESTROYED ***
-TIME
-
-If CONFIG_SLUB_DEBUG=y then we may see the following message generated:
-
-	=============================================================================
-	BUG key_jar: Poison overwritten
-	-----------------------------------------------------------------------------
-
-	INFO: 0xffff880197a7e200-0xffff880197a7e200. First byte 0x6a instead of 0x6b
-	INFO: Allocated in key_alloc+0x10b/0x35f age=25 cpu=1 pid=5086
-	INFO: Freed in key_cleanup+0xd0/0xd5 age=12 cpu=1 pid=10
-	INFO: Slab 0xffffea000592cb90 objects=16 used=2 fp=0xffff880197a7e200 flags=0x200000000000c3
-	INFO: Object 0xffff880197a7e200 @offset=512 fp=0xffff880197a7e300
-
-	Bytes b4 0xffff880197a7e1f0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-	  Object 0xffff880197a7e200:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
-
-Alternatively, we may see a system panic happen, such as:
-
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
-	IP: [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-	PGD 6b2b4067 PUD 6a80d067 PMD 0
-	Oops: 0000 [#1] SMP
-	last sysfs file: /sys/kernel/kexec_crash_loaded
-	CPU 1
-	...
-	Pid: 31245, comm: su Not tainted 2.6.34-rc5-nofixed-nodebug #2 D2089/PRIMERGY
-	RIP: 0010:[<ffffffff810e61a3>]  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-	RSP: 0018:ffff88006af3bd98  EFLAGS: 00010002
-	RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88007d19900b
-	RDX: 0000000100000000 RSI: 00000000000080d0 RDI: ffffffff81828430
-	RBP: ffffffff81828430 R08: ffff88000a293750 R09: 0000000000000000
-	R10: 0000000000000001 R11: 0000000000100000 R12: 00000000000080d0
-	R13: 00000000000080d0 R14: 0000000000000296 R15: ffffffff810f20ce
-	FS:  00007f97116bc700(0000) GS:ffff88000a280000(0000) knlGS:0000000000000000
-	CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-	CR2: 0000000000000001 CR3: 000000006a91c000 CR4: 00000000000006e0
-	DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-	DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-	Process su (pid: 31245, threadinfo ffff88006af3a000, task ffff8800374414c0)
-	Stack:
-	 0000000512e0958e 0000000000008000 ffff880037f8d180 0000000000000001
-	 0000000000000000 0000000000008001 ffff88007d199000 ffffffff810f20ce
-	 0000000000008000 ffff88006af3be48 0000000000000024 ffffffff810face3
-	Call Trace:
-	 [<ffffffff810f20ce>] ? get_empty_filp+0x70/0x12f
-	 [<ffffffff810face3>] ? do_filp_open+0x145/0x590
-	 [<ffffffff810ce208>] ? tlb_finish_mmu+0x2a/0x33
-	 [<ffffffff810ce43c>] ? unmap_region+0xd3/0xe2
-	 [<ffffffff810e4393>] ? virt_to_head_page+0x9/0x2d
-	 [<ffffffff81103916>] ? alloc_fd+0x69/0x10e
-	 [<ffffffff810ef4ed>] ? do_sys_open+0x56/0xfc
-	 [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
-	Code: 0f 1f 44 00 00 49 89 c6 fa 66 0f 1f 44 00 00 65 4c 8b 04 25 60 e8 00 00 48 8b 45 00 49 01 c0 49 8b 18 48 85 db 74 0d 48 63 45 18 <48> 8b 04 03 49 89 00 eb 14 4c 89 f9 83 ca ff 44 89 e6 48 89 ef
-	RIP  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
-
-This problem is that find_keyring_by_name does not confirm that the keyring is
-valid before accepting it.
-
-Skipping keyrings that have been reduced to a zero count seems the way to go.
-To this end, use atomic_inc_not_zero() to increment the usage count and skip
-the candidate keyring if that returns false.
-
-The following script _may_ cause the bug to happen, but there's no guarantee
-as the window of opportunity is small:
-
-	#!/bin/sh
-	LOOP=100000
-	USER=dummy_user
-	/bin/su -c "exit;" $USER || { /usr/sbin/adduser -m $USER; add=1; }
-	for ((i=0; i<LOOP; i++))
-	do
-		/bin/su -c "echo '$i' > /dev/null" $USER
-	done
-	(( add == 1 )) && /usr/sbin/userdel -r $USER
-	exit
-
-Note that the nominated user must not be in use.
-
-An alternative way of testing this may be:
-
-	for ((i=0; i<100000; i++))
-	do
-		keyctl session foo /bin/true || break
-	done >&/dev/null
-
-as that uses a keyring named "foo" rather than relying on the user and
-user-session named keyrings.
-
-Reported-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
-Signed-off-by: James Morris <jmorris@namei.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Chuck Ebbert <cebbert@redhat.com>
+Reported-by: John Race <John.Race@roscom.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/keys/keyring.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -524,9 +524,8 @@ struct key *find_keyring_by_name(const c
- 	struct key *keyring;
- 	int bucket;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -364,6 +364,8 @@ static int  option_resume(struct usb_ser
+ #define HAIER_VENDOR_ID				0x201e
+ #define HAIER_PRODUCT_CE100			0x2009
  
--	keyring = ERR_PTR(-EINVAL);
- 	if (!name)
--		goto error;
-+		return ERR_PTR(-EINVAL);
++#define CINTERION_VENDOR_ID			0x0681
++
+ static struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+@@ -859,6 +861,7 @@ static struct usb_device_id option_ids[]
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1011)},
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1012)},
  
- 	bucket = keyring_hash(name);
- 
-@@ -553,17 +552,18 @@ struct key *find_keyring_by_name(const c
- 					   KEY_SEARCH) < 0)
- 				continue;
- 
--			/* we've got a match */
--			atomic_inc(&keyring->usage);
--			read_unlock(&keyring_name_lock);
--			goto error;
-+			/* we've got a match but we might end up racing with
-+			 * key_cleanup() if the keyring is currently 'dead'
-+			 * (ie. it has a zero usage count) */
-+			if (!atomic_inc_not_zero(&keyring->usage))
-+				continue;
-+			goto out;
- 		}
- 	}
- 
--	read_unlock(&keyring_name_lock);
- 	keyring = ERR_PTR(-ENOKEY);
--
-- error:
-+out:
-+	read_unlock(&keyring_name_lock);
- 	return keyring;
- 
- } /* end find_keyring_by_name() */
++	{ USB_DEVICE(CINTERION_VENDOR_ID, 0x0047) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
