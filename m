@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671Ab0GAVFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:05:00 -0400
-Received: from kroah.org ([198.145.64.141]:47837 "EHLO coco.kroah.org"
+	id S932759Ab0GAUuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:50:46 -0400
+Received: from kroah.org ([198.145.64.141]:47400 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932823Ab0GAUvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:10 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:37 2010
-Message-Id: <20100701173437.424292198@clark.site>
+	id S932532Ab0GAUuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:05 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:31 2010
+Message-Id: <20100701173431.295858755@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:12 -0700
+Date: Thu, 01 Jul 2010 10:33:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [patch 126/164] tracing: Fix null pointer deref with SEND_SIG_FORCED
+       Alex Deucher <alexdeucher@gmail.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [patch 053/164] PCI quirks: disable msi on AMD rs4xx internal gfx bridges
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,44 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit b9b76dfaac6fa2c289ee8a005be637afd2da7e2f upstream.
+commit 9313ff450400e6a2ab10fe6b9bdb12a828329410 upstream.
 
-BUG: unable to handle kernel NULL pointer dereference at
-	0000000000000006
-IP: [<ffffffff8107bd37>] ftrace_raw_event_signal_generate+0x87/0x140
+Doesn't work reliably for internal gfx.  Fixes kernel bug
+https://bugzilla.kernel.org/show_bug.cgi?id=15626.
 
-TP_STORE_SIGINFO() forgets about SEND_SIG_FORCED, fix.
-
-We should probably export is_si_special() and change TP_STORE_SIGINFO()
-to use it in the longer term.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Roland McGrath <roland@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>
-LKML-Reference: <20100603213409.GA8307@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/trace/events/signal.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/pci/quirks.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/trace/events/signal.h
-+++ b/include/trace/events/signal.h
-@@ -10,7 +10,8 @@
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2114,6 +2114,7 @@ static void __devinit quirk_disable_msi(
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_8131_BRIDGE, quirk_disable_msi);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, 0xa238, quirk_disable_msi);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x5a3f, quirk_disable_msi);
  
- #define TP_STORE_SIGINFO(__entry, info)				\
- 	do {							\
--		if (info == SEND_SIG_NOINFO) {			\
-+		if (info == SEND_SIG_NOINFO ||			\
-+		    info == SEND_SIG_FORCED) {			\
- 			__entry->errno	= 0;			\
- 			__entry->code	= SI_USER;		\
- 		} else if (info == SEND_SIG_PRIV) {		\
+ /* Go through the list of Hypertransport capabilities and
+  * return 1 if a HT MSI capability is found and enabled */
 
 
