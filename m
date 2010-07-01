@@ -1,158 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab0GAOU6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 10:20:58 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33807 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755758Ab0GAOU4 (ORCPT
+	id S1755971Ab0GAOXQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 10:23:16 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:6819 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141Ab0GAOXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 10:20:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=vRp66+zN5xirOD5WVm4BiQ6j4NfervGSHByAwAesgW3R9HszNWk0RkHAhMGPv3N2ld
-         c4A9IdS0gXsVuom145ZuBxV9RKuNdblTJ/zg5m4SUvyRPLxqsGGXeAYQn+vn14GRzplT
-         60TZ9qsJ9GEzMBiDbQe9d51I1I/494lXdRhDQ=
-MIME-Version: 1.0
-In-Reply-To: <20100701131547.GI6805@amd.home.annexia.org>
-References: <AANLkTim1m-HIRMHVIkJLSZitXCh1ZwKh2eAN3UxUxJ1E@mail.gmail.com>
-	<20100701131547.GI6805@amd.home.annexia.org>
-Date: Thu, 1 Jul 2010 10:20:55 -0400
-Message-ID: <AANLkTinwzS04v3jFF5oWLJynOklIFuJV5DFiws--iyDg@mail.gmail.com>
-Subject: Re: [PATCH] virt-what.in: Added VMware virt detection using cpuid in 
-	wrapper script
-From: Chetan Loke <chetanloke@gmail.com>
-To: "Richard W.M. Jones" <rjones@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       Tzy-Jye Daniel Lin <ephemient@gmail.com>
-Content-Type: multipart/mixed; boundary=005045014132b0215b048a542d9b
+	Thu, 1 Jul 2010 10:23:14 -0400
+Date: Thu, 1 Jul 2010 09:28:24 -0500
+From: scameron@beardog.cce.hp.com
+To: zhanglinbao@gmail.com
+Cc: randy.dunlap@oracle.com, bob_zhang2004@163.com, axboe@kernel.dk,
+       mike.miller@hp.com, iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, james.bottomley@hansenpartnership.com,
+       scameron@beardog.cce.hp.com, mikem@beardog.cce.hp.com
+Subject: Re: cciss: WARNING/BUG in do_cciss_intr (it's back)
+Message-ID: <20100701142824.GT17187@beardog.cce.hp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---005045014132b0215b048a542d9b
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Bob Zhang wrote:
 
-On Thu, Jul 1, 2010 at 9:15 AM, Richard W.M. Jones <rjones@redhat.com> wrot=
-e:
-> On Tue, Jun 29, 2010 at 07:29:01PM -0400, Chetan Loke wrote:
->> Brief discussion thread - http://lkml.org/lkml/2010/6/29/355
->>
->> Added VMware detection via cpuid.Mimic'd VMware's balloon driver's init-=
-time
->> check(cpuid followed by dmi-checks). Moved the existing logic into a sim=
-ple
->> function to achieve that.
->>
->> Tested virt-what.in(ran as a script) and virt-what-cpuid-helper within
->> a Linux guest on ESX. Thanks.
->
+> Hi all,
+> 
+> I want to know the final result.
+> have you fixed this bug ?  if yes, how to fix ?
+> Now , I am using 2.6.32.12-7 from sles11SP1(ia64) , I still happened
+> this problem.
+> 
+> 
+> Any comments are welcome .
+> 
+> another point ,
+> >> Randy,
+> >> I think this is a different bug than the one you reported previously.
+> >> Please open a new bugzilla.
+> >
+> > I think it's the same one. The first warning that now triggers is:
+> >
+> Could you give me the previous one link ?
+> 
+> attachment is the booting information and eror.
 
-> Chetan, do you think you could send me this one again as an
-> attachment. =C2=A0Some MUA/MTA along the way has sufficiently mangled the
-> patch such that it can no longer be applied.
->
-Sure, I have attached the patch.
+( See: http://lkml.org/lkml/2009/2/4/342 for a bit more context )
 
+and Jens Axboe wrote, back in Feb of 2009:
 
-> Rich.
+> I think it's the same one. The first warning that now triggers is:
+> 
+> WARNING: at drivers/block/cciss.c:225 
+> 
+> which is
+> 
+>         if (WARN_ON(hlist_unhashed(&c->list)))
+> removeQ(), this is where we would have crashed before due to trying to
+> remove a command from a list it didn't belong to. And then we crash
+> right after in the interrupt handler. So I'm pretty sure this is 100%
+> the same bug.
+> 
 
-regards
-Chetan Loke
+I did not see a similar error in the log file you provided.
 
---005045014132b0215b048a542d9b
-Content-Type: application/octet-stream; name="virt-what.in.patch"
-Content-Disposition: attachment; filename="virt-what.in.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gb3oms7r0
+The above problem appeared to be triggered by the reset_devices path (e.g. kdump) picking
+up completions from the previous kernel, due to the device not actually being reset.
+All the Smart arrays since the p600 can't be reset by the PCI power management
+method.  Some of them can be reset by using the "doorbell" register, and a patch
+for hpsa to do this has been implemented, this one:
 
-QWRkZWQgVk13YXJlIGRldGVjdGlvbiB2aWEgY3B1aWQuTWltaWMnZCBWTXdhcmUncyBiYWxsb29u
-IGRyaXZlcidzIGluaXQtdGltZQpjaGVjayhjcHVpZCBmb2xsb3dlZCBieSBkbWktY2hlY2tzKS4g
-TW92ZWQgdGhlIGV4aXN0aW5nIGxvZ2ljIGludG8gYSBzaW1wbGUKZnVuY3Rpb24gdG8gYWNoaWV2
-ZSB0aGF0LiAKClRlc3RlZCB3aXRoaW4gYSBMaW51eCBndWVzdCBvbiBFU1guCgpTaWduZWQtb2Zm
-LWJ5OiBDaGV0YW4gTG9rZSA8bG9rZS5jQGFsdW1uaS5uZXUuZWR1PgoKLS0tCgp2aXJ0LXdoYXQu
-aW4gfCAxNTAgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0gCjEgZmlsZSBjaGFuZ2VkLCA5MyBpbnNlcnRpb25zKCspLCA1NyBkZWxldGlv
-bnMoLSkKCgoKLS0tIHZpcnQtd2hhdC5pbi5vcmlnCTIwMTAtMDYtMjkgMTg6NDI6MjAuMTY2NjQ3
-NTg1IC0wNDAwCisrKyB2aXJ0LXdoYXQuaW4JMjAxMC0wNi0yOSAxODo1OTo1NC43NjU2NDc3Mzkg
-LTA0MDAKQEAgLTI1LDkgKzI1LDE5IEBACiAjCiAjIFRoZSBmb2xsb3dpbmcgcmVzb3VyY2VzIHdl
-cmUgdXNlZnVsIGluIHdyaXRpbmcgdGhpcyBzY3JpcHQ6CiAjIC4gaHR0cDovL3d3dy5kbW8uY2Ev
-YmxvZy8yMDA4MDUzMDE1MTEwNworIworIyAKKyMgQWRkZWQgVk13YXJlIGRldGVjdGlvbiB1c2lu
-ZyBjcHVpZC4KKyMgQWRkZWQgZnVuY3Rpb25zIHRvIGNoZWNrIHRoZSBlbnZpcm9ubWVudCB0eXBl
-CisjIDA2LzI5LzIwMTAgLSBDaGV0YW4gTG9rZSA8bG9rZS5jQGFsdW1uaS5uZXUuZWR1PgorIwor
-CiAKIFZFUlNJT049IkBWRVJTSU9OQCIKIAorY3B1aWQ9Citpc194ZW49MQorCiBmdW5jdGlvbiBm
-YWlsIHsKICAgICBlY2hvICJ2aXJ0LXdoYXQ6ICQxIgogICAgIGV4aXQgMQpAQCAtMzgsNyArNDgs
-OCBAQAogICAgIGVjaG8gIk9wdGlvbnM6IgogICAgIGVjaG8gIiAgLS1oZWxwICAgICAgICAgIERp
-c3BsYXkgdGhpcyBoZWxwIgogICAgIGVjaG8gIiAgLS12ZXJzaW9uICAgICAgIERpc3BsYXkgdmVy
-c2lvbiBhbmQgZXhpdCIKLSAgICBleGl0IDAKKyAgICAjIGV4aXQgYWZ0ZXIgcHJpbnRpbmcKKyAg
-ICBleGl0IDEKIH0KIAogIyBIYW5kbGUgdGhlIGNvbW1hbmQgbGluZSBhcmd1bWVudHMsIGlmIGFu
-eS4KQEAgLTcwLDc0ICs4MSw5OSBAQAogZXhlY19wcmVmaXg9QGV4ZWNfcHJlZml4QAogUEFUSD1A
-bGliZXhlY2RpckA6L3NiaW46L3Vzci9zYmluOiRQQVRICiAKLSMgQ2hlY2sgZm9yIHZhcmlvdXMg
-cHJvZHVjdHMgaW4gdGhlIEJJT1MgaW5mb3JtYXRpb24uCitkZXRlY3RfdmlydF9lbnZfdXNpbmdf
-bWlzY19pbmZvKCkgewogCi1kbWk9YGRtaWRlY29kZSAyPiYxYAorCSMgQ2hlY2sgZm9yIHZhcmlv
-dXMgcHJvZHVjdHMgaW4gdGhlIEJJT1MgaW5mb3JtYXRpb24uCiAKLWlmIGVjaG8gIiRkbWkiIHwg
-Z3JlcCAtcSAnTWFudWZhY3R1cmVyOiBWTXdhcmUnOyB0aGVuCi0gICAgZWNobyB2bXdhcmUKLWZp
-CisJZG1pPWBkbWlkZWNvZGUgMj4mMWAKIAotaWYgZWNobyAiJGRtaSIgfCBncmVwIC1xICdNYW51
-ZmFjdHVyZXI6IE1pY3Jvc29mdCBDb3Jwb3JhdGlvbic7IHRoZW4KLSAgICBlY2hvIHZpcnR1YWxw
-YwotZmkKKwlpZiBlY2hvICIkZG1pIiB8IGdyZXAgLXEgJ01hbnVmYWN0dXJlcjogVk13YXJlJzsg
-dGhlbgorCQllY2hvIHZtd2FyZQorCQlleGl0IDAKKwlmaQogCi0jIENoZWNrIGZvciBWaXJ0dWFs
-Qm94LgotIyBBZGRlZCBieSBMYXVyZW50IEzDqW9uYXJkLgotaWYgZWNobyAiJGRtaSIgfCBncmVw
-IC1xICdNYW51ZmFjdHVyZXI6IGlubm90ZWsgR21iSCc7IHRoZW4KLSAgICBlY2hvIHZpcnR1YWxi
-b3gKLWZpCisJaWYgZWNobyAiJGRtaSIgfCBncmVwIC1xICdNYW51ZmFjdHVyZXI6IE1pY3Jvc29m
-dCBDb3Jwb3JhdGlvbic7IHRoZW4KKwkJZWNobyB2aXJ0dWFscGMKKwkJZXhpdCAwCisJZmkKIAot
-IyBDaGVjayBmb3IgT3BlblZaIC8gVmlydHVvenpvLgotIyBBZGRlZCBieSBFdmdlbml5IFNva29s
-b3YuCi0jIC9wcm9jL3Z6IC0gYWx3YXlzIGV4aXN0cyBpZiBPcGVuVloga2VybmVsIGlzIHJ1bm5p
-bmcgKGluc2lkZSBhbmQgb3V0c2lkZQotIyBjb250YWluZXIpCi0jIC9wcm9jL2JjIC0gZXhpc3Rz
-IG9uIG5vZGUsIGJ1dCBub3QgaW5zaWRlIGNvbnRhaW5lci4KKwkjIENoZWNrIGZvciBWaXJ0dWFs
-Qm94LgorCSMgQWRkZWQgYnkgTGF1cmVudCBMw6lvbmFyZC4KKwlpZiBlY2hvICIkZG1pIiB8IGdy
-ZXAgLXEgJ01hbnVmYWN0dXJlcjogaW5ub3RlayBHbWJIJzsgdGhlbgorCQllY2hvIHZpcnR1YWxi
-b3gKKwkJZXhpdCAwCisJZmkKIAotaWYgWyAtZCAvcHJvYy92eiAtYSAhIC1kIC9wcm9jL2JjIF07
-IHRoZW4KLSAgICBlY2hvIG9wZW52egotZmkKKwkjIENoZWNrIGZvciBPcGVuVlogLyBWaXJ0dW96
-em8uCisJIyBBZGRlZCBieSBFdmdlbml5IFNva29sb3YuCisJIyAvcHJvYy92eiAtIGFsd2F5cyBl
-eGlzdHMgaWYgT3BlblZaIGtlcm5lbCBpcyBydW5uaW5nIChpbnNpZGUgYW5kIG91dHNpZGUKKwkj
-IGNvbnRhaW5lcikKKwkjIC9wcm9jL2JjIC0gZXhpc3RzIG9uIG5vZGUsIGJ1dCBub3QgaW5zaWRl
-IGNvbnRhaW5lci4KKworCWlmIFsgLWQgL3Byb2MvdnogLWEgISAtZCAvcHJvYy9iYyBdOyB0aGVu
-CisJCWVjaG8gb3BlbnZ6CisJCWV4aXQgMAorCWZpCiAKLSMgQ2hlY2sgZm9yIFVNTC4KLSMgQWRk
-ZWQgYnkgTGF1cmVudCBMw6lvbmFyZC4KLWlmIGdyZXAgLXEgJ1VNTCcgL3Byb2MvY3B1aW5mbzsg
-dGhlbgotCWVjaG8gdW1sCi1maQorCSMgQ2hlY2sgZm9yIFVNTC4KKwkjIEFkZGVkIGJ5IExhdXJl
-bnQgTMOpb25hcmQuCisJaWYgZ3JlcCAtcSAnVU1MJyAvcHJvYy9jcHVpbmZvOyB0aGVuCisJCWVj
-aG8gdW1sCisJCWV4aXQgMAorCWZpCisKKwlleGl0IDEKK30KIAogIyBUbyB0ZWxsIGlmIGl0IGlz
-IFhlbiBhbmQgS1ZNIEhWTSAoZnVsbHkgdmlydHVhbGl6ZWQpIHdlIGNhbiB1c2UgdGhpcwogIyBo
-ZWxwZXIgQyBwcm9ncmFtLgogCi1jcHVpZD1gdmlydC13aGF0LWNwdWlkLWhlbHBlcmAKLQotIyBD
-aGVjayBmb3IgWGVuLgorZGV0ZWN0X3ZpcnRfZW52X3VzaW5nX2NwdWlkICgpIHsKKwljcHVpZD1g
-dmlydC13aGF0LWNwdWlkLWhlbHBlcmAKKwkKKwkjIENoZWNrIGZvciBYZW4uCisKKwlpZiBbICIk
-Y3B1aWQiID0gIlhlblZNTVhlblZNTSIgXTsgdGhlbgorCQllY2hvIHhlbjsgZWNobyB4ZW4taHZt
-CisJCWV4aXQgMAorCWVsaWYgWyAtZiAvcHJvYy94ZW4vcHJpdmNtZCBdOyB0aGVuCisJCWVjaG8g
-eGVuOyBlY2hvIHhlbi1kb20wCisJCWV4aXQgMAorCWVsaWYgWyAtZiAvcHJvYy94ZW4vY2FwYWJp
-bGl0aWVzIF07IHRoZW4KKwkJZWNobyB4ZW47IGVjaG8geGVuLWRvbVUKKwkJZXhpdCAwCisJZWxp
-ZiBbIC1kIC9wcm9jL3hlbiBdOyB0aGVuCisJCSMgVGhpcyBkaXJlY3RvcnkgY2FuIGJlIHByZXNl
-bnQgd2hlbiBYZW4gcGFyYXZpcnQgZHJpdmVycyBhcmUKKwkJIyBpbnN0YWxsZWQsIGV2ZW4gb24g
-YmFyZW1ldGFsLiAgRG9uJ3QgY29uZnVzZSBwZW9wbGUgYnkKKwkJIyBwcmludGluZyBhbnl0aGlu
-Zy4KKwkJOgorCWZpCiAKLWlmIFsgIiRjcHVpZCIgPSAiWGVuVk1NWGVuVk1NIiBdOyB0aGVuCi0g
-ICAgZWNobyB4ZW47IGVjaG8geGVuLWh2bQotICAgIGlzX3hlbj0xCi1lbGlmIFsgLWYgL3Byb2Mv
-eGVuL3ByaXZjbWQgXTsgdGhlbgotICAgIGVjaG8geGVuOyBlY2hvIHhlbi1kb20wCi0gICAgaXNf
-eGVuPTEKLWVsaWYgWyAtZiAvcHJvYy94ZW4vY2FwYWJpbGl0aWVzIF07IHRoZW4KLSAgICBlY2hv
-IHhlbjsgZWNobyB4ZW4tZG9tVQotICAgIGlzX3hlbj0xCi1lbGlmIFsgLWQgL3Byb2MveGVuIF07
-IHRoZW4KLSAgICAjIFRoaXMgZGlyZWN0b3J5IGNhbiBiZSBwcmVzZW50IHdoZW4gWGVuIHBhcmF2
-aXJ0IGRyaXZlcnMgYXJlCi0gICAgIyBpbnN0YWxsZWQsIGV2ZW4gb24gYmFyZW1ldGFsLiAgRG9u
-J3QgY29uZnVzZSBwZW9wbGUgYnkKLSAgICAjIHByaW50aW5nIGFueXRoaW5nLgotICAgIDoKLWZp
-CisJIyBDaGVjayBmb3IgUUVNVS9LVk0uCiAKLSMgQ2hlY2sgZm9yIFFFTVUvS1ZNLgorCWlmIFsg
-ISAiJGlzX3hlbiIgXTsgdGhlbgorCQkjIERpc2FibGUgdGhpcyB0ZXN0IGlmIHdlIGtub3cgdGhp
-cyBpcyBYZW4gYWxyZWFkeSwgYmVjYXVzZSBYZW4KKwkJIyB1c2VzIFFFTVUgZm9yIGl0cyBkZXZp
-Y2UgbW9kZWwuCisKKwlpZiBncmVwIC1xICdRRU1VJyAvcHJvYy9jcHVpbmZvOyB0aGVuCisJCWlm
-IFsgIiRjcHVpZCIgPSAiS1ZNS1ZNS1ZNIiBdOyB0aGVuCisJCQllY2hvIGt2bQorCQkJZXhpdCAw
-CisJCWVsc2UKKwkJCWVjaG8gcWVtdQorCQkJZXhpdCAwCisJCWZpCisgICAgZmkKKwlmaQkKIAot
-aWYgWyAhICIkaXNfeGVuIiBdOyB0aGVuCi0gICAgIyBEaXNhYmxlIHRoaXMgdGVzdCBpZiB3ZSBr
-bm93IHRoaXMgaXMgWGVuIGFscmVhZHksIGJlY2F1c2UgWGVuCi0gICAgIyB1c2VzIFFFTVUgZm9y
-IGl0cyBkZXZpY2UgbW9kZWwuCi0KLSAgICBpZiBncmVwIC1xICdRRU1VJyAvcHJvYy9jcHVpbmZv
-OyB0aGVuCi0JaWYgWyAiJGNwdWlkIiA9ICJLVk1LVk1LVk0iIF07IHRoZW4KLQkgICAgZWNobyBr
-dm0KLQllbHNlCi0JICAgIGVjaG8gcWVtdQorCSMgQ2hlY2sgZm9yIFZNd2FyZQorCWlmIFsgIiRj
-cHVpZCIgPSAiVk13YXJlVk13YXJlIiBdOyB0aGVuCisJCWVjaG8gdm13YXJlCisJCWV4aXQgMAog
-CWZpCi0gICAgZmkKLWZpCit9CisKKworZGV0ZWN0X3ZpcnRfZW52X3VzaW5nX2NwdWlkCisjIElm
-IHRoZSBhYm92ZSBmYWlscyB0aGVuIGNhbGwgdGhlIG5leHQgZnVuY3Rpb24KK2RldGVjdF92aXJ0
-X2Vudl91c2luZ19taXNjX2luZm8K
---005045014132b0215b048a542d9b--
+http://marc.info/?l=linux-scsi&m=127671403229420&w=2
+
+which is one patch in a series of other patches to hpsa.
+
+I am currently working on a similar series of patches for cciss.
+
+However, this won't help the P400, P400i, E500, P800, and P700m, which cannot
+be reset by either method.  Also, the 6402 and 6404, while they can
+be reset, it's inadvisable since they share a battery backed cache 
+module, hence this patch to hpsa:
+
+http://marc.info/?l=linux-scsi&m=127671403029407&w=2
+
+See also: https://bugzilla.redhat.com/show_bug.cgi?id=609522
+and https://bugzilla.redhat.com/show_bug.cgi?id=598681
+(you need an account to see those, I think.)
+
+-- steve
+ 
