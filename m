@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759360Ab0GAVhf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:37:35 -0400
-Received: from kroah.org ([198.145.64.141]:33024 "EHLO coco.kroah.org"
+	id S1759060Ab0GAVuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:50:12 -0400
+Received: from kroah.org ([198.145.64.141]:60923 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932576Ab0GAVOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:44 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
-Message-Id: <20100701174258.400595778@clark.site>
+	id S1759004Ab0GAVNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:53 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:53 2010
+Message-Id: <20100701174253.353141975@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:52 -0700
+Date: Thu, 01 Jul 2010 10:42:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Johannes Berg <johannes.berg@intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [142/200] mac80211: fix deauth before assoc
+       Kumar Gala <galak@kernel.crashing.org>
+Subject: [082/200] powerpc/fsl-booke: Move loadcam_entry back to asm code to fix SMP ftrace
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,81 +25,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Kumar Gala <galak@kernel.crashing.org>
 
-commit b054b747a694927879c94dd11af54d04346aed7d upstream.
+commit 78f622377f7d31d988db350a43c5689dd5f31876 upstream.
 
-When we receive a deauthentication frame before
-having successfully associated, we neither print
-a message nor abort assocation. The former makes
-it hard to debug, while the latter later causes
-a warning in cfg80211 when, as will typically be
-the case, association timed out.
+When we build with ftrace enabled its possible that loadcam_entry would
+have used the stack pointer (even though the code doesn't need it).  We
+call loadcam_entry in __secondary_start before the stack is setup.  To
+ensure that loadcam_entry doesn't use the stack pointer the easiest
+solution is to just have it in asm code.
 
-This warning was reported by many, e.g. in
-https://bugzilla.kernel.org/show_bug.cgi?id=15981,
-but I couldn't initially pinpoint it. I verified
-the fix by hacking hostapd to send a deauth frame
-instead of an association response.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Tested-by: Miles Lane <miles.lane@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/mlme.c |   40 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 38 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/asm-offsets.c |    8 ++++++++
+ arch/powerpc/mm/fsl_booke_mmu.c   |   25 +++----------------------
+ arch/powerpc/mm/mmu_decl.h        |    8 ++++++++
+ arch/powerpc/mm/tlb_nohash_low.S  |   28 ++++++++++++++++++++++++++++
+ 4 files changed, 47 insertions(+), 22 deletions(-)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -1530,9 +1530,45 @@ static void ieee80211_sta_rx_queued_mgmt
- 	mutex_unlock(&ifmgd->mtx);
+--- a/arch/powerpc/kernel/asm-offsets.c
++++ b/arch/powerpc/kernel/asm-offsets.c
+@@ -447,6 +447,14 @@ int main(void)
+ 	DEFINE(PGD_T_LOG2, PGD_T_LOG2);
+ 	DEFINE(PTE_T_LOG2, PTE_T_LOG2);
+ #endif
++#ifdef CONFIG_FSL_BOOKE
++	DEFINE(TLBCAM_SIZE, sizeof(struct tlbcam));
++	DEFINE(TLBCAM_MAS0, offsetof(struct tlbcam, MAS0));
++	DEFINE(TLBCAM_MAS1, offsetof(struct tlbcam, MAS1));
++	DEFINE(TLBCAM_MAS2, offsetof(struct tlbcam, MAS2));
++	DEFINE(TLBCAM_MAS3, offsetof(struct tlbcam, MAS3));
++	DEFINE(TLBCAM_MAS7, offsetof(struct tlbcam, MAS7));
++#endif
  
- 	if (skb->len >= 24 + 2 /* mgmt + deauth reason */ &&
--	    (fc & IEEE80211_FCTL_STYPE) == IEEE80211_STYPE_DEAUTH)
--		cfg80211_send_deauth(sdata->dev, (u8 *)mgmt, skb->len);
-+	    (fc & IEEE80211_FCTL_STYPE) == IEEE80211_STYPE_DEAUTH) {
-+		struct ieee80211_local *local = sdata->local;
-+		struct ieee80211_work *wk;
-+
-+		mutex_lock(&local->work_mtx);
-+		list_for_each_entry(wk, &local->work_list, list) {
-+			if (wk->sdata != sdata)
-+				continue;
-+
-+			if (wk->type != IEEE80211_WORK_ASSOC)
-+				continue;
-+
-+			if (memcmp(mgmt->bssid, wk->filter_ta, ETH_ALEN))
-+				continue;
-+			if (memcmp(mgmt->sa, wk->filter_ta, ETH_ALEN))
-+				continue;
+ #ifdef CONFIG_KVM_EXIT_TIMING
+ 	DEFINE(VCPU_TIMING_EXIT_TBU, offsetof(struct kvm_vcpu,
+--- a/arch/powerpc/mm/fsl_booke_mmu.c
++++ b/arch/powerpc/mm/fsl_booke_mmu.c
+@@ -2,7 +2,7 @@
+  * Modifications by Kumar Gala (galak@kernel.crashing.org) to support
+  * E500 Book E processors.
+  *
+- * Copyright 2004 Freescale Semiconductor, Inc
++ * Copyright 2004,2010 Freescale Semiconductor, Inc.
+  *
+  * This file contains the routines for initializing the MMU
+  * on the 4xx series of chips.
+@@ -56,19 +56,13 @@
  
-+			/*
-+			 * Printing the message only here means we can't
-+			 * spuriously print it, but it also means that it
-+			 * won't be printed when the frame comes in before
-+			 * we even tried to associate or in similar cases.
-+			 *
-+			 * Ultimately, I suspect cfg80211 should print the
-+			 * messages instead.
-+			 */
-+			printk(KERN_DEBUG
-+			       "%s: deauthenticated from %pM (Reason: %u)\n",
-+			       sdata->name, mgmt->bssid,
-+			       le16_to_cpu(mgmt->u.deauth.reason_code));
-+
-+			list_del_rcu(&wk->list);
-+			free_work(wk);
-+			break;
-+		}
-+		mutex_unlock(&local->work_mtx);
-+
-+		cfg80211_send_deauth(sdata->dev, (u8 *)mgmt, skb->len);
-+	}
-  out:
- 	kfree_skb(skb);
+ unsigned int tlbcam_index;
+ 
+-#define NUM_TLBCAMS	(64)
+ 
+ #if defined(CONFIG_LOWMEM_CAM_NUM_BOOL) && (CONFIG_LOWMEM_CAM_NUM >= NUM_TLBCAMS)
+ #error "LOWMEM_CAM_NUM must be less than NUM_TLBCAMS"
+ #endif
+ 
+-struct tlbcam {
+-	u32	MAS0;
+-	u32	MAS1;
+-	unsigned long	MAS2;
+-	u32	MAS3;
+-	u32	MAS7;
+-} TLBCAM[NUM_TLBCAMS];
++#define NUM_TLBCAMS	(64)
++struct tlbcam TLBCAM[NUM_TLBCAMS];
+ 
+ struct tlbcamrange {
+ 	unsigned long start;
+@@ -109,19 +103,6 @@ unsigned long p_mapped_by_tlbcam(phys_ad
+ 	return 0;
  }
+ 
+-void loadcam_entry(int idx)
+-{
+-	mtspr(SPRN_MAS0, TLBCAM[idx].MAS0);
+-	mtspr(SPRN_MAS1, TLBCAM[idx].MAS1);
+-	mtspr(SPRN_MAS2, TLBCAM[idx].MAS2);
+-	mtspr(SPRN_MAS3, TLBCAM[idx].MAS3);
+-
+-	if (mmu_has_feature(MMU_FTR_BIG_PHYS))
+-		mtspr(SPRN_MAS7, TLBCAM[idx].MAS7);
+-
+-	asm volatile("isync;tlbwe;isync" : : : "memory");
+-}
+-
+ /*
+  * Set up one of the I/D BAT (block address translation) register pairs.
+  * The parameters are not checked; in particular size must be a power
+--- a/arch/powerpc/mm/mmu_decl.h
++++ b/arch/powerpc/mm/mmu_decl.h
+@@ -149,7 +149,15 @@ extern unsigned long mmu_mapin_ram(unsig
+ extern void MMU_init_hw(void);
+ extern unsigned long mmu_mapin_ram(unsigned long top);
+ extern void adjust_total_lowmem(void);
++extern void loadcam_entry(unsigned int index);
+ 
++struct tlbcam {
++	u32	MAS0;
++	u32	MAS1;
++	unsigned long	MAS2;
++	u32	MAS3;
++	u32	MAS7;
++};
+ #elif defined(CONFIG_PPC32)
+ /* anything 32-bit except 4xx or 8xx */
+ extern void MMU_init_hw(void);
+--- a/arch/powerpc/mm/tlb_nohash_low.S
++++ b/arch/powerpc/mm/tlb_nohash_low.S
+@@ -271,3 +271,31 @@ _GLOBAL(set_context)
+ #else
+ #error Unsupported processor type !
+ #endif
++
++#if defined(CONFIG_FSL_BOOKE)
++/*
++ * extern void loadcam_entry(unsigned int index)
++ *
++ * Load TLBCAM[index] entry in to the L2 CAM MMU
++ */
++_GLOBAL(loadcam_entry)
++	LOAD_REG_ADDR(r4, TLBCAM)
++	mulli	r5,r3,TLBCAM_SIZE
++	add	r3,r5,r4
++	lwz	r4,TLBCAM_MAS0(r3)
++	mtspr	SPRN_MAS0,r4
++	lwz	r4,TLBCAM_MAS1(r3)
++	mtspr	SPRN_MAS1,r4
++	PPC_LL	r4,TLBCAM_MAS2(r3)
++	mtspr	SPRN_MAS2,r4
++	lwz	r4,TLBCAM_MAS3(r3)
++	mtspr	SPRN_MAS3,r4
++BEGIN_MMU_FTR_SECTION
++	lwz	r4,TLBCAM_MAS7(r3)
++	mtspr	SPRN_MAS7,r4
++END_MMU_FTR_SECTION_IFSET(MMU_FTR_BIG_PHYS)
++	isync
++	tlbwe
++	isync
++	blr
++#endif
 
 
