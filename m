@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758124Ab0GAS2V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:28:21 -0400
-Received: from kroah.org ([198.145.64.141]:40851 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758156Ab0GASY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:29 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:18 2010
-Message-Id: <20100701173218.385438877@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:43 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [patch 137/149] KVM: MMU: Segregate shadow pages with different cr0.wp
-In-Reply-To: <20100701175144.GA2116@kroah.com>
+	id S1758198Ab0GASZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:25:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43655 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758065Ab0GASZg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:25:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=r7qFRJtGBy2MOsC+7XPM35gRtNbJzXUNoAx67n1zsl3Z2FGFghhoNKdp3rEEQpzUSh
+         ZqPsdPjUHKt2MlSCtlpiJcuO3kLMSDclZDV35w8HRqip1gEj7qG+EJGaWsQY3xgJzQs4
+         OcEkgg+l1ErHdaYCeTTcGawkbmQV7t/0PzK0c=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: divya <dipraksh@linux.vnet.ibm.com>
+Subject: Re: Oops while running fs_racer test on a POWER6 box against latest git
+Date: Thu, 1 Jul 2010 20:25:30 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-git4; KDE/4.4.4; i686; ; )
+Cc: linuxppc-dev@ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+       Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>
+References: <4C2B28F3.7000006@linux.vnet.ibm.com>
+In-Reply-To: <4C2B28F3.7000006@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201007012025.30452.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On środa, 30 czerwca 2010 o 13:22:27 divya wrote:
+> While running fs_racer test from LTP on a POWER6 box against latest
+> git(2.6.35-rc3-git4 - commitid 984bc9601f64fd) came across the following
+> warning followed by multiple oops.
+> 
 
-------------------
-
-From: Avi Kivity <avi@redhat.com>
-
-When cr0.wp=0, we may shadow a gpte having u/s=1 and r/w=0 with an spte
-having u/s=0 and r/w=1.  This allows excessive access if the guest sets
-cr0.wp=1 and accesses through this spte.
-
-Fix by making cr0.wp part of the base role; we'll have different sptes for
-the two cases and the problem disappears.
-
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-(cherry picked from commit 3dbe141595faa48a067add3e47bba3205b79d33c)
----
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/mmu.c              |    3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
-
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -193,6 +193,7 @@ union kvm_mmu_page_role {
- 		unsigned invalid:1;
- 		unsigned cr4_pge:1;
- 		unsigned nxe:1;
-+		unsigned cr0_wp:1;
- 	};
- };
- 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -221,7 +221,7 @@ void kvm_mmu_set_mask_ptes(u64 user_mask
- }
- EXPORT_SYMBOL_GPL(kvm_mmu_set_mask_ptes);
- 
--static int is_write_protection(struct kvm_vcpu *vcpu)
-+static bool is_write_protection(struct kvm_vcpu *vcpu)
- {
- 	return vcpu->arch.cr0 & X86_CR0_WP;
- }
-@@ -2445,6 +2445,7 @@ static int init_kvm_softmmu(struct kvm_v
- 		r = paging32_init_context(vcpu);
- 
- 	vcpu->arch.mmu.base_role.glevels = vcpu->arch.mmu.root_level;
-+	vcpu->arch.mmu.base_role.cr0_wp = is_write_protection(vcpu);
- 
- 	return r;
- }
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16324
+for your bug report, please add your address to the CC list in there, thanks!
 
 
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
