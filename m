@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab0GASWf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:22:35 -0400
-Received: from kroah.org ([198.145.64.141]:35265 "EHLO coco.kroah.org"
+	id S932463Ab0GASxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:53:32 -0400
+Received: from kroah.org ([198.145.64.141]:35364 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755435Ab0GASWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:22:34 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:07 2010
-Message-Id: <20100701173207.083755471@clark.site>
+	id S1757574Ab0GASWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:47 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:08 2010
+Message-Id: <20100701173208.335817835@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:29 -0700
+Date: Thu, 01 Jul 2010 10:30:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
-       Andi Kleen <andi@firstfloor.org>
-Subject: [patch 003/149] cpumask: fix compat getaffinity
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [patch 018/149] ALSA: hda: Use LPIB for Sony VPCS11V9E
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,90 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit fa9dc265ace9774e62f0e31108e5f47911124bda upstream.
+commit e96d3127760a2fc509bca6bf7e61e8bc61497aeb upstream.
 
-Commit a45185d2d "cpumask: convert kernel/compat.c" broke libnuma, which
-abuses sched_getaffinity to find out NR_CPUS in order to parse
-/sys/devices/system/node/node*/cpumap.
+BugLink: https://launchpad.net/bugs/586347
 
-On NUMA systems with less than 32 possibly CPUs, the current
-compat_sys_sched_getaffinity now returns '4' instead of the actual
-NR_CPUS/8, which makes libnuma bail out when parsing the cpumap.
+Symptom: On the Sony VPCS11V9E, using GStreamer-based applications with
+PulseAudio in Ubuntu 10.04 LTS results in stuttering audio. It appears
+to worsen with increased I/O.
 
-The libnuma call sched_getaffinity(0, bitmap, 4096) at first.  It mean
-the libnuma expect the return value of sched_getaffinity() is either len
-argument or NR_CPUS.  But it doesn't expect to return nr_cpu_ids.
+Test case: use Rhythmbox under increased I/O pressure. This symptom is
+reproducible in the current daily stable alsa-driver snapshots (at least
+up until 21 May 2010; later snapshots fail to build from source due to
+missing preprocessor directives when compiled against 2.6.32).
 
-Strictly speaking, userland requirement are
+Resolution: add SSID for this machine to the position_fix quirk table,
+explicitly specifying the LPIB method.
 
-1) Glibc assume the return value mean the lengh of initialized
-   of mask argument. E.g. if sched_getaffinity(1024) return 128,
-   glibc make zero fill rest 896 byte.
-2) Libnuma assume the return value can be used to guess NR_CPUS
-   in kernel. It assume len-arg<NR_CPUS makes -EINVAL. But
-   it try len=4096 at first and 4096 is always bigger than
-   NR_CPUS. Then, if we remove strange min_length normalization,
-   we never hit -EINVAL case.
-
-sched_getaffinity() already solved this issue.  This patch adapts
-compat_sys_sched_getaffinity() to match the non-compat case.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Reported-by: Ken Werner <ken.werner@web.de>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-Tested-By: Lauri Kainulainen <lauri@sokkelo.net>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/compat.c |   25 +++++++++++--------------
- 1 file changed, 11 insertions(+), 14 deletions(-)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -494,29 +494,26 @@ asmlinkage long compat_sys_sched_getaffi
- {
- 	int ret;
- 	cpumask_var_t mask;
--	unsigned long *k;
--	unsigned int min_length = cpumask_size();
- 
--	if (nr_cpu_ids <= BITS_PER_COMPAT_LONG)
--		min_length = sizeof(compat_ulong_t);
--
--	if (len < min_length)
-+	if ((len * BITS_PER_BYTE) < nr_cpu_ids)
-+		return -EINVAL;
-+	if (len & (sizeof(compat_ulong_t)-1))
- 		return -EINVAL;
- 
- 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
- 		return -ENOMEM;
- 
- 	ret = sched_getaffinity(pid, mask);
--	if (ret < 0)
--		goto out;
-+	if (ret == 0) {
-+		size_t retlen = min_t(size_t, len, cpumask_size());
- 
--	k = cpumask_bits(mask);
--	ret = compat_put_bitmap(user_mask_ptr, k, min_length * 8);
--	if (ret == 0)
--		ret = min_length;
--
--out:
-+		if (compat_put_bitmap(user_mask_ptr, cpumask_bits(mask), retlen * 8))
-+			ret = -EFAULT;
-+		else
-+			ret = retlen;
-+	}
- 	free_cpumask_var(mask);
-+
- 	return ret;
- }
- 
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2232,6 +2232,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x104d, 0x9069, "Sony VPCS11V9E", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1179, 0xff10, "Toshiba A100-259", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1458, 0xa022, "ga-ma770-ud3", POS_FIX_LPIB),
 
 
