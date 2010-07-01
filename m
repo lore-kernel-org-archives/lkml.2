@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759252Ab0GAVQR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:16:17 -0400
-Received: from kroah.org ([198.145.64.141]:60935 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759008Ab0GAVNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:53 2010
-Message-Id: <20100701174253.438273949@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:53 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Denis Kirjanov <dkirjanov@kernel.org>,
-       Robert Richter <robert.richter@amd.com>
-Subject: [083/200] powerpc/oprofile: fix potential buffer overrun in op_model_cell.c
-In-Reply-To: <20100701175201.GA2149@kroah.com>
+	id S1759181Ab0GAV2o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:28:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60244 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759253Ab0GAV2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:28:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=R6a22pAXN1DBtcB88/SGYO9PCI1Y3771Fz7yrU8+Ud74qyhF9vNPKqSreac/xJODm6
+         Im+7zHYPZ70F9H7V7yBKLBJo3QSp/aMtTVRS3CELG30nKnrGmr0s5bIkxMXwBrK+kPuZ
+         l70kUWLWLONUnKJG9NB/3QOXbPooqqJ2UnOWs=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, arnd@arndb.de, jkosina@suse.cz,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH v3]kernel.h Move preprocessor #warning about using kernel headers in userpsace to types.h
+Date: Thu,  1 Jul 2010 14:28:27 -0700
+Message-Id: <1278019707-30585-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Denis Kirjanov <dkirjanov@hera.kernel.org>
-
-commit 238c1a78c957f3dc7cb848b161dcf4805793ed56 upstream.
-
-Fix potential initial_lfsr buffer overrun.
-Writing past the end of the buffer could happen when index == ENTRIES
-
-Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Move the preprocessor #warning message:
+warning: #warning Attempt to use kernel headers from user space, 
+see http://kernelnewbies.org/KernelHeaders
+from kernel.h to types.h.
+And also fixe the #warning message due to the preprocessor not being
+able to read the web address due to it thinking it was the start of a comment.
+also remove the extra #ifndef _KERNEL_ since it's already there.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 
 ---
- arch/powerpc/oprofile/op_model_cell.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/kernel.h |    6 ------
+ include/linux/types.h  |    5 ++++-
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
---- a/arch/powerpc/oprofile/op_model_cell.c
-+++ b/arch/powerpc/oprofile/op_model_cell.c
-@@ -1077,7 +1077,7 @@ static int calculate_lfsr(int n)
- 		index = ENTRIES-1;
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 8317ec4..bd8501a 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -728,12 +728,6 @@ extern int do_sysinfo(struct sysinfo *info);
  
- 	/* make sure index is valid */
--	if ((index > ENTRIES) || (index < 0))
-+	if ((index >= ENTRIES) || (index < 0))
- 		index = ENTRIES-1;
+ #endif /* __KERNEL__ */
  
- 	return initial_lfsr[index];
-
+-#ifndef __EXPORTED_HEADERS__
+-#ifndef __KERNEL__
+-#warning Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders
+-#endif /* __KERNEL__ */
+-#endif /* __EXPORTED_HEADERS__ */
+-
+ #define SI_LOAD_SHIFT	16
+ struct sysinfo {
+ 	long uptime;			/* Seconds since boot */
+diff --git a/include/linux/types.h b/include/linux/types.h
+index 23d237a..331d8ba 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -8,7 +8,10 @@
+ 
+ #define DECLARE_BITMAP(name,bits) \
+ 	unsigned long name[BITS_TO_LONGS(bits)]
+-
++#else
++#ifndef __EXPORTED_HEADERS__
++#warning "Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders"
++#endif /* __EXPORTED_HEADERS__ */
+ #endif
+ 
+ #include <linux/posix_types.h>
+-- 
+1.6.5.2.180.gc5b3e
 
