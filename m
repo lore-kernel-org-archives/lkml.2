@@ -1,107 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab0GAVIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:08:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55548 "EHLO mx1.redhat.com"
+	id S933037Ab0GAVGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:06:11 -0400
+Received: from kroah.org ([198.145.64.141]:47809 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932842Ab0GAVIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:08:04 -0400
-Date: Thu, 1 Jul 2010 17:07:49 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, axboe@kernel.dk,
-       hch@lst.de, linux-scsi@vger.kernel.org, dm-devel@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: scsi: address leak in the error path of discard page allocation
-Message-ID: <20100701210749.GB28546@redhat.com>
-References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
- <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
- <20100701130328.GB19605@redhat.com>
- <20100701201508.GA28546@redhat.com>
- <1278015548.2813.147.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278015548.2813.147.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S932810Ab0GAUvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:05 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:36 2010
+Message-Id: <20100701173436.917115389@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:35:06 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Ben Hutchings <ben@decadent.org.uk>
+Subject: [patch 120/164] wireless: report reasonable bitrate for MCS rates through wext
+In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01 2010 at  4:19pm -0400,
-James Bottomley <James.Bottomley@suse.de> wrote:
+2.6.33-stable review patch.  If anyone has any objections, please let me know.
 
-> On Thu, 2010-07-01 at 16:15 -0400, Mike Snitzer wrote:
-> > On Thu, Jul 01 2010 at  9:03am -0400,
-> > Mike Snitzer <snitzer@redhat.com> wrote:
-> > 
-> > > On Thu, Jul 01 2010 at  6:49am -0400,
-> > > FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-> > > 
-> > > > This fixes discard page leak by using q->unprep_rq_fn facility.
-> > > > 
-> > > > q->unprep_rq_fn is called when all the data buffer (req->bio and
-> > > > scsi_data_buffer) in the request is freed.
-> > > > 
-> > > > sd_unprep() uses rq->buffer to free discard page allocated in
-> > > > sd_prepare_discard().
-> > > > 
-> > > > Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> > > 
-> > > Thanks for sorting this out Tomo, all 3 patches work great!
-> > > 
-> > > BTW, there is one remaining (rare) leak in the allocation path.
-> > > 
-> > > The following patch serves to fix it but I'm not sure if there is a more
-> > > elegant way to address this.
-> > 
-> > I've continued to look at this to arrive at alternative implementation.
-> > Here is a summary of the problem:
-> > 
-> > A 'scsi_setup_discard_cmnd' return other than BLKPREP_OK will not cause
-> > a discard request to get completely stripped down ('blk_finish_request'
-> > isn't calling 'blk_unprep_request' because REQ_DONTPREP is not set by
-> > 'scsi_prep_return' for none BLKPREP_OK return).  Therefore the discard
-> > request's page will _not_ get cleaned up.
-> > 
-> > Aside from code inspection, I confirmed this by adding some test code to
-> > force a one-time initial BLKPREP_DEFER return from
-> > 'scsi_setup_discard_cmnd'.
-> > 
-> > > An alternative would be to check if the page is already allocated
-> > > (before allocating the page in scsi_setup_discard_cmnd)?
-> > 
-> > Unfortunatey this "alternative" won't work because it completely ignores
-> > the case where BLKPREP_KILL is returned from scsi_setup_discard_cmnd'.
-> >  
-> > > Please advise, thanks.
-> > 
-> > In short, I'm not too happy that the following patch doesn't allow for
-> > centralized cleanup of the discard request's page (via sd_unprep_fn).
-> > But in order to do that we'd likely have to:
-> > 1) relax blk_finish_request's REQ_DONTPREP constraint
-> > 2) add other weird conditionals within blk_unprep_request because
-> >    the discard request wasn't _really_ prepared?
-> > 
-> > So given this I'm inclined to stick with the following patch.
-> > 
-> > Jens and/or James, what do you think?
-> 
-> The rules are pretty clear:  Unprep is only called if the request gets
-> prepped ... that means you have to return BLKPREP_OK.  Defer or kill
-> assume there's no teardown to do, so the allocation (if it took place)
-> must be reversed before returning them
+------------------
 
-OK, thanks for clarifying.  This confirms that the general approach I
-took in this patch is correct.  It remains to be seen if Jens is
-agreeable with blk_clear_request_payload.
+From: John W. Linville <linville@tuxdriver.com>
 
-I know Christoph thought my introduction and use of
-blk_clear_request_payload was reasonable.  Christoph, please feel free
-to add your Ack to this patch if you approve.
+commit 254416aae70ab2e6b57fd79782c8a67196234d02 upstream.
 
-I look forward to feedback from Tomo and Jens now too.  Hopefully Jens
-will pick this patch up.
+Previously, cfg80211 had reported "0" for MCS (i.e. 802.11n) bitrates
+through the wireless extensions interface.  However, nl80211 was
+converting MCS rates into a reasonable bitrate number.  This patch moves
+the nl80211 code to cfg80211 where it is now shared between both the
+nl80211 interface and the wireless extensions interface.
 
-regards,
-Mike
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+--- a/net/wireless/core.h
++++ b/net/wireless/core.h
+@@ -378,6 +378,8 @@ int rdev_set_freq(struct cfg80211_registered_device *rdev,
+ 		  struct wireless_dev *for_wdev,
+ 		  int freq, enum nl80211_channel_type channel_type);
+ 
++u16 cfg80211_calculate_bitrate(struct rate_info *rate);
++
+ #ifdef CONFIG_CFG80211_DEVELOPER_WARNINGS
+ #define CFG80211_DEV_WARN_ON(cond)	WARN_ON(cond)
+ #else
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index a602843..7cb0d64 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -1637,39 +1637,6 @@ static int parse_station_flags(struct genl_info *info,
+ 	return 0;
+ }
+ 
+-static u16 nl80211_calculate_bitrate(struct rate_info *rate)
+-{
+-	int modulation, streams, bitrate;
+-
+-	if (!(rate->flags & RATE_INFO_FLAGS_MCS))
+-		return rate->legacy;
+-
+-	/* the formula below does only work for MCS values smaller than 32 */
+-	if (rate->mcs >= 32)
+-		return 0;
+-
+-	modulation = rate->mcs & 7;
+-	streams = (rate->mcs >> 3) + 1;
+-
+-	bitrate = (rate->flags & RATE_INFO_FLAGS_40_MHZ_WIDTH) ?
+-			13500000 : 6500000;
+-
+-	if (modulation < 4)
+-		bitrate *= (modulation + 1);
+-	else if (modulation == 4)
+-		bitrate *= (modulation + 2);
+-	else
+-		bitrate *= (modulation + 3);
+-
+-	bitrate *= streams;
+-
+-	if (rate->flags & RATE_INFO_FLAGS_SHORT_GI)
+-		bitrate = (bitrate / 9) * 10;
+-
+-	/* do NOT round down here */
+-	return (bitrate + 50000) / 100000;
+-}
+-
+ static int nl80211_send_station(struct sk_buff *msg, u32 pid, u32 seq,
+ 				int flags, struct net_device *dev,
+ 				u8 *mac_addr, struct station_info *sinfo)
+@@ -1716,8 +1683,8 @@ static int nl80211_send_station(struct sk_buff *msg, u32 pid, u32 seq,
+ 		if (!txrate)
+ 			goto nla_put_failure;
+ 
+-		/* nl80211_calculate_bitrate will return 0 for mcs >= 32 */
+-		bitrate = nl80211_calculate_bitrate(&sinfo->txrate);
++		/* cfg80211_calculate_bitrate will return 0 for mcs >= 32 */
++		bitrate = cfg80211_calculate_bitrate(&sinfo->txrate);
+ 		if (bitrate > 0)
+ 			NLA_PUT_U16(msg, NL80211_RATE_INFO_BITRATE, bitrate);
+ 
+diff --git a/net/wireless/util.c b/net/wireless/util.c
+index 59361fd..a3c841a 100644
+--- a/net/wireless/util.c
++++ b/net/wireless/util.c
+@@ -720,3 +720,36 @@ int cfg80211_change_iface(struct cfg80211_registered_device *rdev,
+ 
+ 	return err;
+ }
++
++u16 cfg80211_calculate_bitrate(struct rate_info *rate)
++{
++	int modulation, streams, bitrate;
++
++	if (!(rate->flags & RATE_INFO_FLAGS_MCS))
++		return rate->legacy;
++
++	/* the formula below does only work for MCS values smaller than 32 */
++	if (rate->mcs >= 32)
++		return 0;
++
++	modulation = rate->mcs & 7;
++	streams = (rate->mcs >> 3) + 1;
++
++	bitrate = (rate->flags & RATE_INFO_FLAGS_40_MHZ_WIDTH) ?
++			13500000 : 6500000;
++
++	if (modulation < 4)
++		bitrate *= (modulation + 1);
++	else if (modulation == 4)
++		bitrate *= (modulation + 2);
++	else
++		bitrate *= (modulation + 3);
++
++	bitrate *= streams;
++
++	if (rate->flags & RATE_INFO_FLAGS_SHORT_GI)
++		bitrate = (bitrate / 9) * 10;
++
++	/* do NOT round down here */
++	return (bitrate + 50000) / 100000;
++}
+diff --git a/net/wireless/wext-compat.c b/net/wireless/wext-compat.c
+index 584eb48..2fa8de1 100644
+--- a/net/wireless/wext-compat.c
++++ b/net/wireless/wext-compat.c
+@@ -1256,10 +1256,7 @@ int cfg80211_wext_giwrate(struct net_device *dev,
+ 	if (!(sinfo.filled & STATION_INFO_TX_BITRATE))
+ 		return -EOPNOTSUPP;
+ 
+-	rate->value = 0;
+-
+-	if (!(sinfo.txrate.flags & RATE_INFO_FLAGS_MCS))
+-		rate->value = 100000 * sinfo.txrate.legacy;
++	rate->value = 100000 * cfg80211_calculate_bitrate(&sinfo.txrate);
+ 
+ 	return 0;
+ }
+
+
