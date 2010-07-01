@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325Ab0GAVhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:37:07 -0400
-Received: from kroah.org ([198.145.64.141]:33037 "EHLO coco.kroah.org"
+	id S1753383Ab0GAVdj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:33:39 -0400
+Received: from kroah.org ([198.145.64.141]:33131 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759092Ab0GAVOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:47 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
-Message-Id: <20100701174258.675630047@clark.site>
+	id S1758931Ab0GAVPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:15:02 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:00 2010
+Message-Id: <20100701174300.245049802@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:55 -0700
+Date: Thu, 01 Jul 2010 10:44:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [145/200] firewire: core: check for 1394a compliant IRM, fix inaccessibility of Sony camcorder
+       Reinette Chatre <reinette.chatre@intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [162/200] iwlwifi: fix internal scan race
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,111 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Reinette Chatre <reinette.chatre@intel.com>
 
-commit 10389536742cefbedecb67a5b2906f155cf3a1c3 upstream.
+commit 073d5eab6fc85b6c278d507a5633b759a85dc878 upstream.
 
-Per IEEE 1394 clause 8.4.2.3, a contender for the IRM role shall check
-whether the current IRM complies to 1394a-2000 or later.  If not force a
-compliant node (e.g. itself) to become IRM.  This was implemented in the
-older ieee1394 driver but not yet in firewire-core.
+It is possible for internal scan to race against itself if the device is
+not returning the scan results from first requests. What happens in this
+case is the cleanup done during the abort of the first internal scan also
+cleans up part of the new scan, causing it to access memory it shouldn't.
 
-An older Sony camcorder (Sony DCR-TRV25) which implements 1394-1995 IRM
-but neither 1394a-2000 IRM nor BM was now found to cause an
-interoperability bug:
-  - Camcorder becomes root node when plugged in, hence gets IRM role.
-  - firewire-core successfully contends for BM role, proceeds to perform
-    gap count optimization and resets the bus.
-  - Sony camcorder ignores presence of a BM (against the spec, this is
-    a firmware bug), performs its idea of gap count optimization and
-    resets the bus.
-  - Preceding two steps are repeated endlessly, bus never settles,
-    regular I/O is practically impossible.
-http://thread.gmane.org/gmane.linux.kernel.firewire.user/3913
+Here are details:
+* First internal scan is triggered and scan command sent to device.
+* After seven seconds there is no scan results so the watchdog timer
+  triggers a scan abort.
+* The scan abort succeeds and a SCAN_COMPLETE_NOTIFICATION is received for
+ failed scan.
+* During processing of SCAN_COMPLETE_NOTIFICATION we clear STATUS_SCANNING
+  and queue the "scan_completed" work.
+** At this time, since the problem that caused the internal scan in first
+   place is still present, a new internal scan is triggered.
+The behavior at this point is a bit different between 2.6.34 and 2.6.35
+since 2.6.35 has a lot of this synchronized. The rest of the race
+description will thus be generalized.
+** As part of preparing for the scan "is_internal_short_scan" is set to
+true.
+* At this point the completion work for fist scan is run. As part of this
+  there is some locking missing around the "is_internal_short_scan"
+  variable and it is set to "false".
+** Now the second scan runs and it considers itself a real (not internal0
+   scan and thus causes problems with wrong memory being accessed.
 
-This is an interoperability regression from the old to the new drivers.
-Fix it indirectly by adding the 1394a IRM check.  The spec suggests
-three and a half methods to determine 1394a compliance of a remote IRM;
-we choose the method of testing the Config_ROM.Bus_Info.generation
-field.  This is data that firewire-core should have readily available at
-this point, i.e. does not require extra I/O.
+The fix is twofold.
+* Since "is_internal_short_scan" should be protected by mutex, fix this in
+  scan completion work so that changes to it can be serialized.
+* Do not queue a new internal scan if one is in progress.
 
-Reported-by: Clemens Ladisch <clemens@ladisch.de> (missing 1394a check)
-Reported-by: H. S. <hs.samix@gmail.com> (issue with Sony DCR-TRV25)
-Tested-by: H. S. <hs.samix@gmail.com>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=15824
+
+Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firewire/core-card.c |   24 +++++++++++++++++++-----
- 1 file changed, 19 insertions(+), 5 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-scan.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
---- a/drivers/firewire/core-card.c
-+++ b/drivers/firewire/core-card.c
-@@ -231,7 +231,7 @@ void fw_schedule_bm_work(struct fw_card
- static void fw_card_bm_work(struct work_struct *work)
+--- a/drivers/net/wireless/iwlwifi/iwl-scan.c
++++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
+@@ -561,6 +561,11 @@ static void iwl_bg_start_internal_scan(s
+ 
+ 	mutex_lock(&priv->mutex);
+ 
++	if (priv->is_internal_short_scan == true) {
++		IWL_DEBUG_SCAN(priv, "Internal scan already in progress\n");
++		goto unlock;
++	}
++
+ 	if (!iwl_is_ready_rf(priv)) {
+ 		IWL_DEBUG_SCAN(priv, "not ready or exit pending\n");
+ 		goto unlock;
+@@ -958,17 +963,27 @@ void iwl_bg_scan_completed(struct work_s
  {
- 	struct fw_card *card = container_of(work, struct fw_card, work.work);
--	struct fw_device *root_device;
-+	struct fw_device *root_device, *irm_device;
- 	struct fw_node *root_node;
- 	unsigned long flags;
- 	int root_id, new_root_id, irm_id, local_id;
-@@ -239,6 +239,7 @@ static void fw_card_bm_work(struct work_
- 	bool do_reset = false;
- 	bool root_device_is_running;
- 	bool root_device_is_cmc;
-+	bool irm_is_1394_1995_only;
+ 	struct iwl_priv *priv =
+ 	    container_of(work, struct iwl_priv, scan_completed);
++	bool internal = false;
  
- 	spin_lock_irqsave(&card->lock, flags);
+ 	IWL_DEBUG_SCAN(priv, "SCAN complete scan\n");
  
-@@ -248,12 +249,18 @@ static void fw_card_bm_work(struct work_
+ 	cancel_delayed_work(&priv->scan_check);
+ 
+-	if (!priv->is_internal_short_scan)
+-		ieee80211_scan_completed(priv->hw, false);
+-	else {
++	mutex_lock(&priv->mutex);
++	if (priv->is_internal_short_scan) {
+ 		priv->is_internal_short_scan = false;
+ 		IWL_DEBUG_SCAN(priv, "internal short scan completed\n");
++		internal = true;
  	}
++	mutex_unlock(&priv->mutex);
++
++	/*
++	 * Do not hold mutex here since this will cause mac80211 to call
++	 * into driver again into functions that will attempt to take
++	 * mutex.
++	 */
++	if (!internal)
++		ieee80211_scan_completed(priv->hw, false);
  
- 	generation = card->generation;
-+
- 	root_node = card->root_node;
- 	fw_node_get(root_node);
- 	root_device = root_node->data;
- 	root_device_is_running = root_device &&
- 			atomic_read(&root_device->state) == FW_DEVICE_RUNNING;
- 	root_device_is_cmc = root_device && root_device->cmc;
-+
-+	irm_device = card->irm_node->data;
-+	irm_is_1394_1995_only = irm_device && irm_device->config_rom &&
-+			(irm_device->config_rom[2] & 0x000000f0) == 0;
-+
- 	root_id  = root_node->node_id;
- 	irm_id   = card->irm_node->node_id;
- 	local_id = card->local_node->node_id;
-@@ -276,8 +283,15 @@ static void fw_card_bm_work(struct work_
- 
- 		if (!card->irm_node->link_on) {
- 			new_root_id = local_id;
--			fw_notify("IRM has link off, making local node (%02x) root.\n",
--				  new_root_id);
-+			fw_notify("%s, making local node (%02x) root.\n",
-+				  "IRM has link off", new_root_id);
-+			goto pick_me;
-+		}
-+
-+		if (irm_is_1394_1995_only) {
-+			new_root_id = local_id;
-+			fw_notify("%s, making local node (%02x) root.\n",
-+				  "IRM is not 1394a compliant", new_root_id);
- 			goto pick_me;
- 		}
- 
-@@ -316,8 +330,8 @@ static void fw_card_bm_work(struct work_
- 			 * root, and thus, IRM.
- 			 */
- 			new_root_id = local_id;
--			fw_notify("BM lock failed, making local node (%02x) root.\n",
--				  new_root_id);
-+			fw_notify("%s, making local node (%02x) root.\n",
-+				  "BM lock failed", new_root_id);
- 			goto pick_me;
- 		}
- 	} else if (card->bm_generation != generation) {
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+ 		return;
 
 
