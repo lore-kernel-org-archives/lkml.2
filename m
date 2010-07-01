@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab0GAIsl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 04:48:41 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47146 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab0GAIsj (ORCPT
+	id S1754368Ab0GAJBK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 05:01:10 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49854 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab0GAJBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 04:48:39 -0400
-Date: Thu, 1 Jul 2010 10:48:28 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-       Russell King <linux@arm.linux.org.uk>,
-       Amit Kucheria <amit.kucheria@canonical.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 14/33] Removing dead SDMA_IRAM
-Message-ID: <20100701084828.GE12115@pengutronix.de>
-References: <cover.1277911345.git.siccegge@cs.fau.de> <3dc9983ca244c19f18da8951444e1cc9fae0226f.1277911346.git.siccegge@cs.fau.de>
+	Thu, 1 Jul 2010 05:01:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=W+Po1uCEDzAvVpRltXe4INTPSd6yAuG91U1LstAkj7X1NzAA5/abdBCsbDRaJ2hpLU
+         UqYZHq/Nu4eaS0jUW7kCIbw2TC8TUrz6NTf5FzguGRorN24K/gzGCNeIyzpTlp2nIwfC
+         rYi8whOuJx98FAOdgQM+NOo+qWSLSSPV9RmH4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3dc9983ca244c19f18da8951444e1cc9fae0226f.1277911346.git.siccegge@cs.fau.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:48:09 up 24 days,  1:16, 34 users,  load average: 0.61, 1.20,
-	1.28
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikbk4zoFQfunWz1yQ7d2tYhm4illg6CyeOnVkDk@mail.gmail.com>
+References: <1277069076-30579-1-git-send-email-linus.walleij@stericsson.com>
+	<AANLkTikbk4zoFQfunWz1yQ7d2tYhm4illg6CyeOnVkDk@mail.gmail.com>
+Date: Thu, 1 Jul 2010 02:01:06 -0700
+X-Google-Sender-Auth: 2Ka0_b8TKJqvsk5papMS1ThpokQ
+Message-ID: <AANLkTin6lOBwDkQEDjknhDwCKOkBhO9Nqv_OrG4Ira53@mail.gmail.com>
+Subject: Re: [PATCH 00/19] DMAENGINE: ste_dma40: bugfixes v2
+From: Dan Williams <dan.j.williams@intel.com>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 05:58:25PM +0200, Christoph Egger wrote:
-> SDMA_IRAM doesn't exist in Kconfig, therefore removing all references
-> for it from the source code.
-> 
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+On Mon, Jun 28, 2010 at 1:20 PM, Linus Walleij
+<linus.ml.walleij@gmail.com> wrote:
+> Hi Dan, can these fixes go in now? I'd like to base
+> the new patches for channel control and PrimeCells on
+> top of these so it doesn't stack up...
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+Pressure should be relieved now... it's pushed out to -next, sorry for
+the delay.
 
-
-> ---
->  arch/arm/plat-mxc/include/mach/mx51.h |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/plat-mxc/include/mach/mx51.h b/arch/arm/plat-mxc/include/mach/mx51.h
-> index 5aad344..fd5ec07 100644
-> --- a/arch/arm/plat-mxc/include/mach/mx51.h
-> +++ b/arch/arm/plat-mxc/include/mach/mx51.h
-> @@ -149,11 +149,7 @@
->  #define MX51_MXC_DMA_CHANNEL_SSI1_RX	MXC_DMA_DYNAMIC_CHANNEL
->  #define MX51_MXC_DMA_CHANNEL_SSI1_TX	MXC_DMA_DYNAMIC_CHANNEL
->  #define MX51_MXC_DMA_CHANNEL_SSI2_RX	MXC_DMA_DYNAMIC_CHANNEL
-> -#ifdef CONFIG_SDMA_IRAM
-> -#define MX51_MXC_DMA_CHANNEL_SSI2_TX	(MX51_MXC_DMA_CHANNEL_IRAM + 1)
-> -#else				/*CONFIG_SDMA_IRAM */
->  #define MX51_MXC_DMA_CHANNEL_SSI2_TX	MXC_DMA_DYNAMIC_CHANNEL
-> -#endif				/*CONFIG_SDMA_IRAM */
->  #define MX51_MXC_DMA_CHANNEL_CSPI1_RX	MXC_DMA_DYNAMIC_CHANNEL
->  #define MX51_MXC_DMA_CHANNEL_CSPI1_TX	MXC_DMA_DYNAMIC_CHANNEL
->  #define MX51_MXC_DMA_CHANNEL_CSPI2_RX	MXC_DMA_DYNAMIC_CHANNEL
-> -- 
-> 1.7.0.4
-> 
-> 
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+--
+Dan
