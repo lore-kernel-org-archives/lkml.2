@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab0GASrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:47:24 -0400
-Received: from kroah.org ([198.145.64.141]:35483 "EHLO coco.kroah.org"
+	id S1757897Ab0GASrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:47:41 -0400
+Received: from kroah.org ([198.145.64.141]:35480 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757747Ab0GASXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:08 -0400
+	id S1757740Ab0GASXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:07 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:10 2010
-Message-Id: <20100701173210.427155877@clark.site>
+Message-Id: <20100701173210.347052890@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:09 -0700
+Date: Thu, 01 Jul 2010 10:31:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>
-Subject: [patch 043/149] drm/i915: Reject bind_to_gtt() early if object > aperture
+       Shanyu Zhao <shanyu.zhao@intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 042/149] mac80211: fix rts threshold check
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Shanyu Zhao <shanyu.zhao@intel.com>
 
-commit 654fc6073f68efa3b6c466825749e73e7fbb92cd upstream.
+commit a2c40249a36d0b4d76d1caf6bf806e4ae5b06e8a upstream.
 
-If the object is bigger than the entire aperture, reject it early
-before evicting everything in a vain attempt to find space.
+Currently whenever rts thresold is set, every packet will use RTS
+protection no matter its size exceeds the threshold or not. This is
+due to a bug in the rts threshold check.
+	if (len > tx->local->hw.wiphy->rts_threshold) {
+		txrc.rts = rts = true;
+	}
+Basically it is comparing an int (len) and a u32 (rts_threshold),
+and the variable len is assigned as:
+	len = min_t(int, tx->skb->len + FCS_LEN,
+			 tx->local->hw.wiphy->frag_threshold);
+However, when frag_threshold is "-1", len is always "-1", which is
+0xffffffff therefore rts is always set to true.
 
-v2: Use E2BIG as suggested by Owain G. Ainsworth.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Shanyu Zhao <shanyu.zhao@intel.com>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/mac80211/tx.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -2615,6 +2615,14 @@ i915_gem_object_bind_to_gtt(struct drm_g
- 		return -EINVAL;
- 	}
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -496,7 +496,8 @@ ieee80211_tx_h_rate_ctrl(struct ieee8021
+ 	struct ieee80211_hdr *hdr = (void *)tx->skb->data;
+ 	struct ieee80211_supported_band *sband;
+ 	struct ieee80211_rate *rate;
+-	int i, len;
++	int i;
++	u32 len;
+ 	bool inval = false, rts = false, short_preamble = false;
+ 	struct ieee80211_tx_rate_control txrc;
+ 	u32 sta_flags;
+@@ -505,7 +506,7 @@ ieee80211_tx_h_rate_ctrl(struct ieee8021
  
-+	/* If the object is bigger than the entire aperture, reject it early
-+	 * before evicting everything in a vain attempt to find space.
-+	 */
-+	if (obj->size > dev->gtt_total) {
-+		DRM_ERROR("Attempting to bind an object larger than the aperture\n");
-+		return -E2BIG;
-+	}
-+
-  search_free:
- 	free_space = drm_mm_search_free(&dev_priv->mm.gtt_space,
- 					obj->size, alignment, 0);
+ 	sband = tx->local->hw.wiphy->bands[tx->channel->band];
+ 
+-	len = min_t(int, tx->skb->len + FCS_LEN,
++	len = min_t(u32, tx->skb->len + FCS_LEN,
+ 			 tx->local->hw.wiphy->frag_threshold);
+ 
+ 	/* set up the tx rate control struct we give the RC algo */
 
 
