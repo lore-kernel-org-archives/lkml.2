@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933544Ab0GAWYu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:24:50 -0400
-Received: from kroah.org ([198.145.64.141]:47079 "EHLO coco.kroah.org"
+	id S933549Ab0GAWZo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:25:44 -0400
+Received: from shutemov.name ([188.40.19.243]:53832 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758424Ab0GAUtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:22 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:27 2010
-Message-Id: <20100701173427.135008414@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:09 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tejun Heo <tj@kernel.org>, Kay Sievers <kay.sievers@vrfy.org>,
-       Nick Bowler <nbowler@elliptictech.com>, David Zeuthen <david@fubar.dk>,
-       Jeff Garzik <jgarzik@redhat.com>
-Subject: [patch 003/164] libata: disable ATAPI AN by default
-In-Reply-To: <20100701175152.GA2135@kroah.com>
+	id S1756350Ab0GAWZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 18:25:42 -0400
+Date: Fri, 2 Jul 2010 01:25:41 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, Anfei Zhou <anfei.zhou@gmail.com>,
+       Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [patch 071/149] ARM: 6166/1: Proper prefetch abort handling on
+ pre-ARMv6
+Message-ID: <20100701222541.GB10481@shutemov.name>
+References: <20100701175144.GA2116@kroah.com>
+ <20100701173212.785441106@clark.site>
+ <20100701221420.GA10481@shutemov.name>
+ <20100701221728.GA12187@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100701221728.GA12187@suse.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jul 01, 2010 at 03:17:28PM -0700, Greg KH wrote:
+> On Fri, Jul 02, 2010 at 01:14:20AM +0300, Kirill A. Shutemov wrote:
+> > On Thu, Jul 01, 2010 at 10:31:37AM -0700, Greg KH wrote:
+> > > 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: Anfei <anfei.zhou@gmail.com>
+> > > 
+> > > commit 5e27fb78df95e027723af2c90ecc9b4527ae59e9 upstream.
+> > > 
+> > > Instruction faults on pre-ARMv6 CPUs are interpreted as
+> > > a 'translation fault', but do_translation_fault doesn't
+> > > handle well if user mode trying to run instruction above
+> > > TASK_SIZE, and result in the infinite retry of that
+> > > instruction.
+> >  
+> > Actually, this patch helps also on ARMv6+. Probably, better to correct
+> > commit message for stable.
+> 
+> We (well, I) like to keep the commit log identical to what is upstream
+> just to make things easier all around.  Otherwise people start asking
+> for spelling fixes, clarifications, and all sorts of other stuff (like
+> this.)
 
-------------------
+Ok, fair enough.
 
-From: Tejun Heo <tj@kernel.org>
+I asked for it because I was confused by this commit message while
+investigate (the same) problem on ARMv7 CPU.
 
-commit e7ecd435692ca9bde9d124be30b3a26e672ea6c2 upstream.
-
-There are ATAPI devices which raise AN when hit by commands issued by
-open().  This leads to infinite loop of AN -> MEDIA_CHANGE uevent ->
-udev open() to check media -> AN.
-
-Both ACS and SerialATA standards don't define in which case ATAPI
-devices are supposed to raise or not raise AN.  They both list media
-insertion event as a possible use case for ATAPI ANs but there is no
-clear description of what constitutes such events.  As such, it seems
-a bit too naive to export ANs directly to userland as MEDIA_CHANGE
-events without further verification (which should behave similarly to
-windows as it apparently is the only thing that some hardware vendors
-are testing against).
-
-This patch adds libata.atapi_an module parameter and disables ATAPI AN
-by default for now.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Nick Bowler <nbowler@elliptictech.com>
-Cc: David Zeuthen <david@fubar.dk>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/ata/libata-core.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -159,6 +159,10 @@ int libata_allow_tpm = 0;
- module_param_named(allow_tpm, libata_allow_tpm, int, 0444);
- MODULE_PARM_DESC(allow_tpm, "Permit the use of TPM commands (0=off [default], 1=on)");
- 
-+static int atapi_an;
-+module_param(atapi_an, int, 0444);
-+MODULE_PARM_DESC(atapi_an, "Enable ATAPI AN media presence notification (0=0ff [default], 1=on)");
-+
- MODULE_AUTHOR("Jeff Garzik");
- MODULE_DESCRIPTION("Library module for ATA devices");
- MODULE_LICENSE("GPL");
-@@ -2570,7 +2574,8 @@ int ata_dev_configure(struct ata_device
- 		 * to enable ATAPI AN to discern between PHY status
- 		 * changed notifications and ATAPI ANs.
- 		 */
--		if ((ap->flags & ATA_FLAG_AN) && ata_id_has_atapi_AN(id) &&
-+		if (atapi_an &&
-+		    (ap->flags & ATA_FLAG_AN) && ata_id_has_atapi_AN(id) &&
- 		    (!sata_pmp_attached(ap) ||
- 		     sata_scr_read(&ap->link, SCR_NOTIFICATION, &sntf) == 0)) {
- 			unsigned int err_mask;
-
-
+-- 
+ Kirill A. Shutemov
