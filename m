@@ -1,102 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab0GANwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:52:17 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:55140 "EHLO hernando.osrc.amd.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752548Ab0GANwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:52:16 -0400
-X-Greylist: delayed 1741 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Jul 2010 09:52:16 EDT
-From: Conny Seidel <conny.seidel@amd.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, borislav.petkov@amd.com,
-       Conny Seidel <conny.seidel@amd.com>
-Subject: [PATCH] perf tools: Fix fallback to cplus_demangle() when bfd_demangle() is not available
-Date: Thu,  1 Jul 2010 15:19:26 +0200
-Message-Id: <1277990366-1462-1-git-send-email-conny.seidel@amd.com>
-X-Mailer: git-send-email 1.7.2.rc0.13.gc9eaa
+	id S1756015Ab0GANxW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:53:22 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54641 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab0GANxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 09:53:20 -0400
+Date: Thu, 1 Jul 2010 14:53:11 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Corentin Chary <corentincj@iksaif.net>, Len Brown <len.brown@intel.com>,
+       Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+       acpi4asus-user@lists.sourceforge.net,
+       platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] asus-laptop: fix a memory leak in asus_laptop_get_info
+	error path
+Message-ID: <20100701135311.GC31804@srcf.ucam.org>
+References: <1277780987.5478.2.camel@mola>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277780987.5478.2.camel@mola>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-make version 3.80 doesn't support "else ifdef" on the same line, also it
-doesn't support unindented nested constructs.
+On Tue, Jun 29, 2010 at 11:09:47AM +0800, Axel Lin wrote:
+> The callers of write_acpi_int_ret() pass ACPI_ALLOCATE_BUFFER,
+> the caller must kfree the returned buffer if AE_OK is returned.
+> 
+> This patch adds a missing kfree(buffer.pointer) before return -ENOMEM
+> if kstrdup fail.
 
-Build fails with:
-Makefile:608: Extraneous text after `else' directive
-Makefile:611: *** only one `else' per conditional.  Stop.
+Applied, thanks.
 
-This patch fixes the build for make 3.80.
-
-Signed-off-by: Conny Seidel <conny.seidel@.amd.com>
----
- tools/perf/Makefile |   50 ++++++++++++++++++++++++++------------------------
- 1 files changed, 26 insertions(+), 24 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 17a3692..74fa34f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -605,33 +605,35 @@ endif
- 
- ifdef NO_DEMANGLE
- 	BASIC_CFLAGS += -DNO_DEMANGLE
--else ifdef HAVE_CPLUS_DEMANGLE
--	EXTLIBS += -liberty
--	BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
--else
--	FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
--	has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
--	ifeq ($(has_bfd),y)
--		EXTLIBS += -lbfd
--	else
--		FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
--		has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
--		ifeq ($(has_bfd_iberty),y)
--			EXTLIBS += -lbfd -liberty
-+else 
-+        ifdef HAVE_CPLUS_DEMANGLE
-+		EXTLIBS += -liberty
-+		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+        else
-+		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
-+		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
-+		ifeq ($(has_bfd),y)
-+			EXTLIBS += -lbfd
- 		else
--			FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
--			has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
--			ifeq ($(has_bfd_iberty_z),y)
--				EXTLIBS += -lbfd -liberty -lz
-+			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
-+			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
-+			ifeq ($(has_bfd_iberty),y)
-+				EXTLIBS += -lbfd -liberty
- 			else
--				FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
--				has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
--				ifeq ($(has_cplus_demangle),y)
--					EXTLIBS += -liberty
--					BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
-+				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
-+				ifeq ($(has_bfd_iberty_z),y)
-+					EXTLIBS += -lbfd -liberty -lz
- 				else
--					msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
--					BASIC_CFLAGS += -DNO_DEMANGLE
-+					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
-+					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
-+					ifeq ($(has_cplus_demangle),y)
-+						EXTLIBS += -liberty
-+						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+					else
-+						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+						BASIC_CFLAGS += -DNO_DEMANGLE
-+					endif
- 				endif
- 			endif
- 		endif
 -- 
-1.7.2.rc0.13.gc9eaa
-
+Matthew Garrett | mjg59@srcf.ucam.org
