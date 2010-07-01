@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759502Ab0GAVvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:51:45 -0400
-Received: from kroah.org ([198.145.64.141]:60892 "EHLO coco.kroah.org"
+	id S1758980Ab0GAVzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:55:33 -0400
+Received: from kroah.org ([198.145.64.141]:60786 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758971Ab0GAVNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:45 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:52 2010
-Message-Id: <20100701174252.573164537@clark.site>
+	id S1758915Ab0GAVN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:27 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:50 2010
+Message-Id: <20100701174250.915686639@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:43 -0700
+Date: Thu, 01 Jul 2010 10:42:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Adam Jackson <ajax@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [073/200] drm/edid: Fix 1024x768@85Hz
+       Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [053/200] USB: xhci: Fix check for room on the ring.
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Jackson <ajax@redhat.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 61dd98fad58f945ed720ba132681acb58fcee015 upstream.
+commit 44ebd037c54f80db3121ac9f5fe6e677b76e11d5 upstream.
 
-Having hsync both start and end on pixel 1072 ain't gonna work very
-well.  Matches the X server's list.
+The length of the scatter gather list a driver can enqueue is limited by
+the bus' sg_tablesize to 62 entries.  Each entry will be described by at
+least one transfer request block (TRB).  If the entry's buffer crosses a
+64KB boundary, then that entry will have to be described by two or more
+TRBs.  So even if the USB device driver respects sg_tablesize, the whole
+scatter list may take more than 62 TRBs to describe, and won't fit on
+the ring.
 
-Signed-off-by: Adam Jackson <ajax@redhat.com>
-Tested-By: Michael Tokarev <mjt@tls.msk.ru>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Don't assume that an empty ring means there is enough room on the
+transfer ring.  The old code would unconditionally queue this too-large
+transfer, and over write the beginning of the transfer.  This would mean
+the cycle bit was unchanged in those overwritten transfers, causing the
+hardware to think it didn't own the TRBs, and the host would seem to
+hang.
+
+Now drivers may see submit_urb() fail with -ENOMEM if the transfers are
+too big to fit on the ring.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_edid.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-ring.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -335,7 +335,7 @@ static struct drm_display_mode drm_dmt_m
- 		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC) },
- 	/* 1024x768@85Hz */
- 	{ DRM_MODE("1024x768", DRM_MODE_TYPE_DRIVER, 94500, 1024, 1072,
--		   1072, 1376, 0, 768, 769, 772, 808, 0,
-+		   1168, 1376, 0, 768, 769, 772, 808, 0,
- 		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC) },
- 	/* 1152x864@75Hz */
- 	{ DRM_MODE("1152x864", DRM_MODE_TYPE_DRIVER, 108000, 1152, 1216,
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -242,10 +242,27 @@ static int room_on_ring(struct xhci_hcd
+ 	int i;
+ 	union xhci_trb *enq = ring->enqueue;
+ 	struct xhci_segment *enq_seg = ring->enq_seg;
++	struct xhci_segment *cur_seg;
++	unsigned int left_on_ring;
+ 
+ 	/* Check if ring is empty */
+-	if (enq == ring->dequeue)
++	if (enq == ring->dequeue) {
++		/* Can't use link trbs */
++		left_on_ring = TRBS_PER_SEGMENT - 1;
++		for (cur_seg = enq_seg->next; cur_seg != enq_seg;
++				cur_seg = cur_seg->next)
++			left_on_ring += TRBS_PER_SEGMENT - 1;
++
++		/* Always need one TRB free in the ring. */
++		left_on_ring -= 1;
++		if (num_trbs > left_on_ring) {
++			xhci_warn(xhci, "Not enough room on ring; "
++					"need %u TRBs, %u TRBs left\n",
++					num_trbs, left_on_ring);
++			return 0;
++		}
+ 		return 1;
++	}
+ 	/* Make sure there's an extra empty TRB available */
+ 	for (i = 0; i <= num_trbs; ++i) {
+ 		if (enq == ring->dequeue)
 
 
