@@ -1,213 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab0GANqX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:46:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49206 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab0GANqV (ORCPT
+	id S1755987Ab0GANrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:47:05 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:53652 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab0GANrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:46:21 -0400
+	Thu, 1 Jul 2010 09:47:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=e+KVkLDQ78ZBGx0GCLe3FoY1lbpmDREhtZWEy4R/iz0tj7aarWgvZC37sAfrrZWCtf
-         F3nA3oEO3A+OUg1tvenFtvhk5CuHfXihTev1zJ5FN4bP7Y0ccTWs0N8322u1tRkSvkJ4
-         qfw43FIDITkiaVf4HIZFWWlmPaz59d+g9ls54=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: Doug Gilbert <dgilbert@interlog.com>,
-       "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>, linux-scsi@vger.kernel.org,
+        b=NW6uomVsfhP8AATUPVllcLhO1gUWp8nxwkkIfDTLvtkFjxefSIiFQefGKW29VQFr84
+         TZa9xSAdSgSIlUFBCBZxsQX5AXjdtHr3gxCQIJ8Q1Av6AKfx+GUu4Z+Ke3A64IKI6Nl/
+         KqDBtyH7KnTYifj5ec7X/I6rpj3ongy1puRbQ=
+From: Afzal Mohammed <lazfamam@gmail.com>
+To: tomi.valkeinen@nokia.com
+Cc: ville.syrjala@nokia.com, tj@kernel.org, lazfamam@gmail.com,
+       linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH 10/25] scsi/sg: remove casts from void*
-Date: Thu,  1 Jul 2010 17:16:43 +0400
-Message-Id: <1277990204-22157-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH] OMAP:DSS2:OMAPFB: Fix probe error path
+Date: Thu,  1 Jul 2010 19:10:00 +0530
+Message-Id: <1277991601-16528-1-git-send-email-lazfamam@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unnesessary casts from void*.
-Style fixes with assignments in if (...).
+Hi Tomi,
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- drivers/scsi/sg.c |   63 +++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 44 insertions(+), 19 deletions(-)
+Is this change ok instead of having sysfs entry removal in omapfb_free_resources() ?
+Hope this change makes probe look more of a remove mirror.
 
-diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index ef752b2..58215af 100644
---- a/drivers/scsi/sg.c
-+++ b/drivers/scsi/sg.c
-@@ -210,7 +210,7 @@ static void sg_put_dev(Sg_device *sdp);
- 
- static int sg_allow_access(struct file *filp, unsigned char *cmd)
- {
--	struct sg_fd *sfp = (struct sg_fd *)filp->private_data;
-+	struct sg_fd *sfp = filp->private_data;
- 
- 	if (sfp->parentdp->device->type == TYPE_SCANNER)
- 		return 0;
-@@ -315,11 +315,15 @@ sg_put:
- static int
- sg_release(struct inode *inode, struct file *filp)
- {
-+	Sg_fd *sfp = filp->private_data;
- 	Sg_device *sdp;
--	Sg_fd *sfp;
- 
--	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
-+	if (!sfp)
-+		return -ENXIO;
-+	sdp = sfp->parentdp;
-+	if (!sdp)
- 		return -ENXIO;
-+
- 	SCSI_LOG_TIMEOUT(3, printk("sg_release: %s\n", sdp->disk->disk_name));
- 
- 	sfp->closed = 1;
-@@ -334,16 +338,20 @@ sg_release(struct inode *inode, struct file *filp)
- static ssize_t
- sg_read(struct file *filp, char __user *buf, size_t count, loff_t * ppos)
- {
-+	Sg_fd *sfp = filp->private_data;
- 	Sg_device *sdp;
--	Sg_fd *sfp;
- 	Sg_request *srp;
- 	int req_pack_id = -1;
- 	sg_io_hdr_t *hp;
- 	struct sg_header *old_hdr = NULL;
- 	int retval = 0;
- 
--	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
-+	if (!sfp)
-+		return -ENXIO;
-+	sdp = sfp->parentdp;
-+	if (!sdp)
- 		return -ENXIO;
-+
- 	SCSI_LOG_TIMEOUT(3, printk("sg_read: %s, count=%d\n",
- 				   sdp->disk->disk_name, (int) count));
- 
-@@ -526,15 +534,19 @@ sg_write(struct file *filp, const char __user *buf, size_t count, loff_t * ppos)
- 	int mxsize, cmd_size, k;
- 	int input_size, blocking;
- 	unsigned char opcode;
-+	Sg_fd *sfp = filp->private_data;
- 	Sg_device *sdp;
--	Sg_fd *sfp;
- 	Sg_request *srp;
- 	struct sg_header old_hdr;
- 	sg_io_hdr_t *hp;
- 	unsigned char cmnd[MAX_COMMAND_SIZE];
- 
--	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
-+	if (!sfp)
-+		return -ENXIO;
-+	sdp = sfp->parentdp;
-+	if (!sdp)
- 		return -ENXIO;
-+
- 	SCSI_LOG_TIMEOUT(3, printk("sg_write: %s, count=%d\n",
- 				   sdp->disk->disk_name, (int) count));
- 	if (sdp->detached)
-@@ -763,12 +775,15 @@ sg_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
- 	void __user *p = (void __user *)arg;
- 	int __user *ip = p;
- 	int result, val, read_only;
-+	Sg_fd *sfp = filp->private_data;
- 	Sg_device *sdp;
--	Sg_fd *sfp;
- 	Sg_request *srp;
- 	unsigned long iflags;
- 
--	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
-+	if (!sfp)
-+		return -ENXIO;
-+	sdp = sfp->parentdp;
-+	if (!sdp)
- 		return -ENXIO;
- 
- 	SCSI_LOG_TIMEOUT(3, printk("sg_ioctl: %s, cmd=0x%x\n",
-@@ -1093,14 +1108,17 @@ sg_unlocked_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
- static long sg_compat_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
- {
- 	Sg_device *sdp;
--	Sg_fd *sfp;
-+	Sg_fd *sfp = filp->private_data;
- 	struct scsi_device *sdev;
- 
--	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
-+	if (!sfp)
-+		return -ENXIO;
-+	sdp = sfp->parentdp;
-+	if (!sdp)
- 		return -ENXIO;
- 
- 	sdev = sdp->device;
--	if (sdev->host->hostt->compat_ioctl) { 
-+	if (sdev->host->hostt->compat_ioctl) {
- 		int ret;
- 
- 		ret = sdev->host->hostt->compat_ioctl(sdev, cmd_in, (void __user *)arg);
-@@ -1116,15 +1134,18 @@ static unsigned int
- sg_poll(struct file *filp, poll_table * wait)
- {
- 	unsigned int res = 0;
-+	Sg_fd *sfp = filp->private_data;
- 	Sg_device *sdp;
--	Sg_fd *sfp;
- 	Sg_request *srp;
- 	int count = 0;
- 	unsigned long iflags;
- 
--	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp))
--	    || sfp->closed)
-+	if (!sfp)
- 		return POLLERR;
-+	sdp = sfp->parentdp;
-+	if ((!sdp) || sfp->closed)
-+		return POLLERR;
-+
- 	poll_wait(filp, &sfp->read_wait, wait);
- 	read_lock_irqsave(&sfp->rq_list_lock, iflags);
- 	for (srp = sfp->headrp; srp; srp = srp->nextrp) {
-@@ -1150,11 +1171,15 @@ sg_poll(struct file *filp, poll_table * wait)
- static int
- sg_fasync(int fd, struct file *filp, int mode)
- {
-+	Sg_fd *sfp = filp->private_data;
- 	Sg_device *sdp;
--	Sg_fd *sfp;
- 
--	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
-+	if (!sfp)
- 		return -ENXIO;
-+	sdp = sfp->parentdp;
-+	if (!sdp)
-+		return -ENXIO;
-+
- 	SCSI_LOG_TIMEOUT(3, printk("sg_fasync: %s, mode=%d\n",
- 				   sdp->disk->disk_name, mode));
- 
-@@ -1203,12 +1228,12 @@ static const struct vm_operations_struct sg_mmap_vm_ops = {
- static int
- sg_mmap(struct file *filp, struct vm_area_struct *vma)
- {
--	Sg_fd *sfp;
-+	Sg_fd *sfp = filp->private_data;
- 	unsigned long req_sz, len, sa;
- 	Sg_scatter_hold *rsv_schp;
- 	int k, length;
- 
--	if ((!filp) || (!vma) || (!(sfp = (Sg_fd *) filp->private_data)))
-+	if ((!filp) || (!vma) || !(sfp))
- 		return -ENXIO;
- 	req_sz = vma->vm_end - vma->vm_start;
- 	SCSI_LOG_TIMEOUT(3, printk("sg_mmap starting, vm_start=%p, len=%d\n",
--- 
-1.7.0.4
-
+Regards
+Afzal
