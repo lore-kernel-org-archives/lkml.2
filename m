@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab0GASr6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:47:58 -0400
-Received: from kroah.org ([198.145.64.141]:35469 "EHLO coco.kroah.org"
+	id S1757779Ab0GASrY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:47:24 -0400
+Received: from kroah.org ([198.145.64.141]:35483 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757731Ab0GASXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:04 -0400
+	id S1757747Ab0GASXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:08 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:10 2010
-Message-Id: <20100701173210.091203882@clark.site>
+Message-Id: <20100701173210.427155877@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:05 -0700
+Date: Thu, 01 Jul 2010 10:31:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andiry Xu <andiry.xu@amd.com>,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [patch 039/149] USB: xHCI: Fix wrong usage of macro TRB_TYPE
+       Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>
+Subject: [patch 043/149] drm/i915: Reject bind_to_gtt() early if object > aperture
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@amd.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 54b5acf3acb7a1f83ec281d111d3e2812cd7ad9d upstream.
+commit 654fc6073f68efa3b6c466825749e73e7fbb92cd upstream.
 
-Macro TRB_TYPE is misused in some places. Fix the wrong usage.
+If the object is bigger than the entire aperture, reject it early
+before evicting everything in a vain attempt to find space.
 
+v2: Use E2BIG as suggested by Owain G. Ainsworth.
 
-Signed-off-by: Andiry Xu <andiry.xu@amd.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -350,7 +350,8 @@ static struct xhci_segment *find_trb_seg
- 	while (cur_seg->trbs > trb ||
- 			&cur_seg->trbs[TRBS_PER_SEGMENT - 1] < trb) {
- 		generic_trb = &cur_seg->trbs[TRBS_PER_SEGMENT - 1].generic;
--		if (TRB_TYPE(generic_trb->field[3]) == TRB_LINK &&
-+		if ((generic_trb->field[3] & TRB_TYPE_BITMASK) ==
-+				TRB_TYPE(TRB_LINK) &&
- 				(generic_trb->field[3] & LINK_TOGGLE))
- 			*cycle_state = ~(*cycle_state) & 0x1;
- 		cur_seg = cur_seg->next;
-@@ -406,7 +407,7 @@ void xhci_find_new_dequeue_state(struct
- 		BUG();
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2615,6 +2615,14 @@ i915_gem_object_bind_to_gtt(struct drm_g
+ 		return -EINVAL;
+ 	}
  
- 	trb = &state->new_deq_ptr->generic;
--	if (TRB_TYPE(trb->field[3]) == TRB_LINK &&
-+	if ((trb->field[3] & TRB_TYPE_BITMASK) == TRB_TYPE(TRB_LINK) &&
- 				(trb->field[3] & LINK_TOGGLE))
- 		state->new_cycle_state = ~(state->new_cycle_state) & 0x1;
- 	next_trb(xhci, ep_ring, &state->new_deq_seg, &state->new_deq_ptr);
-@@ -1210,8 +1211,10 @@ static int handle_tx_event(struct xhci_h
- 			for (cur_trb = ep_ring->dequeue, cur_seg = ep_ring->deq_seg;
- 					cur_trb != event_trb;
- 					next_trb(xhci, ep_ring, &cur_seg, &cur_trb)) {
--				if (TRB_TYPE(cur_trb->generic.field[3]) != TRB_TR_NOOP &&
--						TRB_TYPE(cur_trb->generic.field[3]) != TRB_LINK)
-+				if ((cur_trb->generic.field[3] &
-+				 TRB_TYPE_BITMASK) != TRB_TYPE(TRB_TR_NOOP) &&
-+				    (cur_trb->generic.field[3] &
-+				 TRB_TYPE_BITMASK) != TRB_TYPE(TRB_LINK))
- 					td->urb->actual_length +=
- 						TRB_LEN(cur_trb->generic.field[2]);
- 			}
++	/* If the object is bigger than the entire aperture, reject it early
++	 * before evicting everything in a vain attempt to find space.
++	 */
++	if (obj->size > dev->gtt_total) {
++		DRM_ERROR("Attempting to bind an object larger than the aperture\n");
++		return -E2BIG;
++	}
++
+  search_free:
+ 	free_space = drm_mm_search_free(&dev_priv->mm.gtt_space,
+ 					obj->size, alignment, 0);
 
 
