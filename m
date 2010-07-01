@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483Ab0GASw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:52:28 -0400
-Received: from kroah.org ([198.145.64.141]:35386 "EHLO coco.kroah.org"
+	id S1758470Ab0GASit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:38:49 -0400
+Received: from kroah.org ([198.145.64.141]:40600 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757609Ab0GASWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:22:50 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:08 2010
-Message-Id: <20100701173208.668542812@clark.site>
+	id S1757976Ab0GASXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:45 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
+Message-Id: <20100701173214.067182700@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:48 -0700
+Date: Thu, 01 Jul 2010 10:31:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Cory Maccarrone <darkstar6262@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [patch 022/149] HID: Add the GYR4101US USB ID to hid-gyration
+       Ian Campbell <ian.campbell@citrix.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: [patch 086/149] xen: ensure timer tick is resumed even on CPU driving the resume
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,55 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cory Maccarrone <darkstar6262@gmail.com>
+From: Ian Campbell <ian.campbell@citrix.com>
 
-commit c2fd1a4ebf9127c280d227acb635eb1df213439c upstream.
+commit cd52e17ea8278f8449b6174a8e5ed439a2e44ffb upstream.
 
-This change adds in the USB product ID for the Gyration
-GYR4101US USB media center remote control.  This remote
-is similar enough to the other two devices that this driver
-can be used without any other changes to get full support
-for the remote.
+The core suspend/resume code is run from stop_machine on CPU0 but
+parts of the suspend/resume machinery (including xen_arch_resume) are
+run on whichever CPU happened to schedule the xenwatch kernel thread.
 
-Signed-off-by: Cory Maccarrone <darkstar6262@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+As part of the non-core resume code xen_arch_resume is called in order
+to restart the timer tick on non-boot processors. The boot processor
+itself is taken care of by core timekeeping code.
+
+xen_arch_resume uses smp_call_function which does not call the given
+function on the current processor. This means that we can end up with
+one CPU not receiving timer ticks if the xenwatch thread happened to
+be scheduled on CPU > 0.
+
+Use on_each_cpu instead of smp_call_function to ensure the timer tick
+is resumed everywhere.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/hid-core.c     |    1 +
- drivers/hid/hid-gyration.c |    1 +
- drivers/hid/hid-ids.h      |    1 +
- 3 files changed, 3 insertions(+)
+ arch/x86/xen/suspend.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1306,6 +1306,7 @@ static const struct hid_device_id hid_bl
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GREENASIA, 0x0012) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
---- a/drivers/hid/hid-gyration.c
-+++ b/drivers/hid/hid-gyration.c
-@@ -73,6 +73,7 @@ static int gyration_event(struct hid_dev
- static const struct hid_device_id gyration_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, gyration_devices);
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -251,6 +251,7 @@
- #define USB_VENDOR_ID_GYRATION		0x0c16
- #define USB_DEVICE_ID_GYRATION_REMOTE	0x0002
- #define USB_DEVICE_ID_GYRATION_REMOTE_2 0x0003
-+#define USB_DEVICE_ID_GYRATION_REMOTE_3 0x0008
+--- a/arch/x86/xen/suspend.c
++++ b/arch/x86/xen/suspend.c
+@@ -60,6 +60,6 @@ static void xen_vcpu_notify_restore(void
  
- #define USB_VENDOR_ID_HAPP		0x078b
- #define USB_DEVICE_ID_UGCI_DRIVING	0x0010
+ void xen_arch_resume(void)
+ {
+-	smp_call_function(xen_vcpu_notify_restore,
+-			       (void *)CLOCK_EVT_NOTIFY_RESUME, 1);
++	on_each_cpu(xen_vcpu_notify_restore,
++		    (void *)CLOCK_EVT_NOTIFY_RESUME, 1);
+ }
 
 
