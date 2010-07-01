@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab0GADVG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 23:21:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35653 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651Ab0GADVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 23:21:04 -0400
-Message-ID: <4C2C0985.2050104@zytor.com>
-Date: Wed, 30 Jun 2010 20:20:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1753398Ab0GADeD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 23:34:03 -0400
+Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:56542 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753251Ab0GADeA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 23:34:00 -0400
+Date: Thu, 1 Jul 2010 13:33:42 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 52/52] fs: icache less I_FREEING time
+Message-ID: <20100701033342.GT24712@dastard>
+References: <20100624030212.676457061@suse.de>
+ <20100624030734.042332166@suse.de>
+ <20100630101354.GK24712@dastard>
+ <20100630121452.GG21358@laptop>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Andreas Dilger <adilger@dilger.ca>, viro@ZenIV.linux.org.uk,
-       smfrench@gmail.com, jlayton@redhat.com, mcao@us.ibm.com,
-       aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       samba-technical@lists.samba.org, sjayaraman@suse.de,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3] Extended file stat functions [ver #2]
-References: <4C2BD2CE.1090201@zytor.com> <FB78A152-53D3-4000-ABDB-9D6051ECB887@dilger.ca> <52423201-3DF9-4045-8E8B-FAA915053D56@dilger.ca> <20100630011656.18960.4255.stgit@warthog.procyon.org.uk> <26505.1277899544@redhat.com> <30875.1277939713@redhat.com> <8331.1277943337@redhat.com>
-In-Reply-To: <8331.1277943337@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100630121452.GG21358@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2010 05:15 PM, David Howells wrote:
-> H. Peter Anvin <hpa@zytor.com> wrote:
+On Wed, Jun 30, 2010 at 10:14:52PM +1000, Nick Piggin wrote:
+> On Wed, Jun 30, 2010 at 08:13:54PM +1000, Dave Chinner wrote:
+> > On Thu, Jun 24, 2010 at 01:03:04PM +1000, npiggin@suse.de wrote:
+> > > Problem with inode reclaim is that it puts inodes into I_FREEING state
+> > > and then continues to gather more, during which it may iput,
+> > > invalidate_mapping_pages, be preempted, etc. Holding these inodes in
+> > > I_FREEING can cause pauses.
+> > 
+> > What sort of pauses? I can't see how holding a few inodes in
+> > I_FREEING state would cause any serious sort of holdoff...
 > 
->> gcc for 64-bit platforms does handle 128-bit numbers, but I don't think
->> it does on 32-bit platforms.
-> 
-> How do you specify them?  If I say "long long long" gcc moans that it can't
-> support it on x86_64.
-> 
+> Well if the inode is accessed again, it has to wait for potentially
+> hundreds of inodes to be found from the LRU, pagecache invalidated,
+> and destroyed.
 
-__int128
+So it's a theoretical concern you have, not something that's
+actually been demonstrated as a problem?
 
+As it is, If the inode is accessed immediately after teardown has
+started, then we failed to hold on to the inode at a higher level
+for long enough. Changing the I_FREEING behaviour is trying to
+address the issue at the wrong level...
+
+Cheers,
+
+Dave.
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Dave Chinner
+david@fromorbit.com
