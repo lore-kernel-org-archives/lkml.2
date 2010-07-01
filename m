@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605Ab0GAS4P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:56:15 -0400
-Received: from kroah.org ([198.145.64.141]:35259 "EHLO coco.kroah.org"
+	id S1757663Ab0GASyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:54:07 -0400
+Received: from kroah.org ([198.145.64.141]:35348 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754612Ab0GASWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:22:33 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:07 2010
-Message-Id: <20100701173206.997501756@clark.site>
+	id S1757550Ab0GASWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:44 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:08 2010
+Message-Id: <20100701173208.090187195@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:28 -0700
+Date: Thu, 01 Jul 2010 10:30:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andi Kleen <ak@linux.intel.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Robert Richter <robert.richter@amd.com>
-Subject: [patch 002/149] oprofile: remove double ring buffering
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [patch 015/149] ALSA: hda: Fix model quirk for Dell M1730
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,145 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <andi@firstfloor.org>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit cb6e943ccf19ab6d3189147e9d625a992e016084 upstream.
+commit 66668b6fb6861fad7f6bfef6646ac84693474c9a upstream.
 
-oprofile used a double buffer scheme for its cpu event buffer
-to avoid races on reading with the old locked ring buffer.
+BugLink: https://launchpad.net/bugs/576160
 
-But that is obsolete now with the new ring buffer, so simply
-use a single buffer. This greatly simplifies the code and avoids
-a lot of sample drops on large runs, especially with call graph.
+Symptom: Currently (2.6.32.12) the Dell M1730 uses the 3stack model
+quirk. Unfortunately this means that capture is not functional out-
+of-the-box despite ensuring that capture settings are unmuted and
+raised fully.
 
-Based on suggestions from Steven Rostedt
+Test case: boot from Ubuntu 10.04 LTS live cd; capture does not
+work.
 
-For stable kernels from v2.6.32, but not earlier.
+Resolution: Correct the model quirk for Dell M1730 to rely on the
+BIOS configuration.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+This patch also trivially sorts the quirk into the correct section
+based on the comments.
+
+Reported-and-Tested-By: <picdragon99@msn.com>
+Tested-By: Daren Hayward
+Tested-By: Tobias Krais
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/oprofile/cpu_buffer.c |   63 ++++++++----------------------------------
- 1 file changed, 13 insertions(+), 50 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/oprofile/cpu_buffer.c
-+++ b/drivers/oprofile/cpu_buffer.c
-@@ -30,23 +30,7 @@
- 
- #define OP_BUFFER_FLAGS	0
- 
--/*
-- * Read and write access is using spin locking. Thus, writing to the
-- * buffer by NMI handler (x86) could occur also during critical
-- * sections when reading the buffer. To avoid this, there are 2
-- * buffers for independent read and write access. Read access is in
-- * process context only, write access only in the NMI handler. If the
-- * read buffer runs empty, both buffers are swapped atomically. There
-- * is potentially a small window during swapping where the buffers are
-- * disabled and samples could be lost.
-- *
-- * Using 2 buffers is a little bit overhead, but the solution is clear
-- * and does not require changes in the ring buffer implementation. It
-- * can be changed to a single buffer solution when the ring buffer
-- * access is implemented as non-locking atomic code.
-- */
--static struct ring_buffer *op_ring_buffer_read;
--static struct ring_buffer *op_ring_buffer_write;
-+static struct ring_buffer *op_ring_buffer;
- DEFINE_PER_CPU(struct oprofile_cpu_buffer, cpu_buffer);
- 
- static void wq_sync_buffer(struct work_struct *work);
-@@ -69,12 +53,9 @@ void oprofile_cpu_buffer_inc_smpl_lost(v
- 
- void free_cpu_buffers(void)
- {
--	if (op_ring_buffer_read)
--		ring_buffer_free(op_ring_buffer_read);
--	op_ring_buffer_read = NULL;
--	if (op_ring_buffer_write)
--		ring_buffer_free(op_ring_buffer_write);
--	op_ring_buffer_write = NULL;
-+	if (op_ring_buffer)
-+		ring_buffer_free(op_ring_buffer);
-+	op_ring_buffer = NULL;
- }
- 
- #define RB_EVENT_HDR_SIZE 4
-@@ -87,11 +68,8 @@ int alloc_cpu_buffers(void)
- 	unsigned long byte_size = buffer_size * (sizeof(struct op_sample) +
- 						 RB_EVENT_HDR_SIZE);
- 
--	op_ring_buffer_read = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
--	if (!op_ring_buffer_read)
--		goto fail;
--	op_ring_buffer_write = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
--	if (!op_ring_buffer_write)
-+	op_ring_buffer = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
-+	if (!op_ring_buffer)
- 		goto fail;
- 
- 	for_each_possible_cpu(i) {
-@@ -163,16 +141,11 @@ struct op_sample
- *op_cpu_buffer_write_reserve(struct op_entry *entry, unsigned long size)
- {
- 	entry->event = ring_buffer_lock_reserve
--		(op_ring_buffer_write, sizeof(struct op_sample) +
-+		(op_ring_buffer, sizeof(struct op_sample) +
- 		 size * sizeof(entry->sample->data[0]));
--	if (entry->event)
--		entry->sample = ring_buffer_event_data(entry->event);
--	else
--		entry->sample = NULL;
--
--	if (!entry->sample)
-+	if (!entry->event)
- 		return NULL;
--
-+	entry->sample = ring_buffer_event_data(entry->event);
- 	entry->size = size;
- 	entry->data = entry->sample->data;
- 
-@@ -181,25 +154,16 @@ struct op_sample
- 
- int op_cpu_buffer_write_commit(struct op_entry *entry)
- {
--	return ring_buffer_unlock_commit(op_ring_buffer_write, entry->event);
-+	return ring_buffer_unlock_commit(op_ring_buffer, entry->event);
- }
- 
- struct op_sample *op_cpu_buffer_read_entry(struct op_entry *entry, int cpu)
- {
- 	struct ring_buffer_event *e;
--	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
--	if (e)
--		goto event;
--	if (ring_buffer_swap_cpu(op_ring_buffer_read,
--				 op_ring_buffer_write,
--				 cpu))
-+	e = ring_buffer_consume(op_ring_buffer, cpu, NULL);
-+	if (!e)
- 		return NULL;
--	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
--	if (e)
--		goto event;
--	return NULL;
- 
--event:
- 	entry->event = e;
- 	entry->sample = ring_buffer_event_data(e);
- 	entry->size = (ring_buffer_event_length(e) - sizeof(struct op_sample))
-@@ -210,8 +174,7 @@ event:
- 
- unsigned long op_cpu_buffer_entries(int cpu)
- {
--	return ring_buffer_entries_cpu(op_ring_buffer_read, cpu)
--		+ ring_buffer_entries_cpu(op_ring_buffer_write, cpu);
-+	return ring_buffer_entries_cpu(op_ring_buffer, cpu);
- }
- 
- static int
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -2059,12 +2059,12 @@ static struct snd_pci_quirk stac927x_cfg
+ 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_INTEL, 0xff00, 0x2000,
+ 			   "Intel D965", STAC_D965_3ST),
+ 	/* Dell 3 stack systems */
+-	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f7, "Dell XPS M1730", STAC_DELL_3ST),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01dd, "Dell Dimension E520", STAC_DELL_3ST),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01ed, "Dell     ", STAC_DELL_3ST),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f4, "Dell     ", STAC_DELL_3ST),
+ 	/* Dell 3 stack systems with verb table in BIOS */
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f3, "Dell Inspiron 1420", STAC_DELL_BIOS),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f7, "Dell XPS M1730", STAC_DELL_BIOS),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x0227, "Dell Vostro 1400  ", STAC_DELL_BIOS),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x022e, "Dell     ", STAC_DELL_BIOS),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x022f, "Dell Inspiron 1525", STAC_DELL_BIOS),
 
 
