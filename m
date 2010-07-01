@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab0GASiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:38:52 -0400
-Received: from kroah.org ([198.145.64.141]:40596 "EHLO coco.kroah.org"
+	id S1758049Ab0GASjz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:39:55 -0400
+Received: from kroah.org ([198.145.64.141]:40562 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757967Ab0GASXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:44 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
-Message-Id: <20100701173213.985495546@clark.site>
+	id S1757932Ab0GASXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:38 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:13 2010
+Message-Id: <20100701173213.386333846@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:51 -0700
+Date: Thu, 01 Jul 2010 10:31:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Gabor Gombas <gombasg@digikabel.hu>,
-       "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [patch 085/149] x86, setup: Phoenix BIOS fixup is needed on Dell Inspiron Mini 1012
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [patch 078/149] ASoC: Fix dB scales for WM8990
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Gombas <gombasg@digikabel.hu>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 3d6e77a3ddb8e4156b89f4273ff8c7d37abaf781 upstream.
+commit f68596c6d8711650722b2a54328a088a2c21bc5b upstream.
 
-The low-memory corruption checker triggers during suspend/resume, so we
-need to reserve the low 64k.  Don't be fooled that the BIOS identifies
-itself as "Dell Inc.", it's still Phoenix BIOS.
+These should be regular, not linear.
 
-[ hpa: I think we blacklist almost every BIOS in existence.  We should
-either change this to a whitelist or just make it unconditional. ]
-
-Signed-off-by: Gabor Gombas <gombasg@digikabel.hu>
-LKML-Reference: <201005241913.o4OJDIMM010877@imap1.linux-foundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/setup.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ sound/soc/codecs/wm8990.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -688,6 +688,17 @@ static struct dmi_system_id __initdata b
- 			DMI_MATCH(DMI_BOARD_NAME, "DG45FC"),
- 		},
- 	},
-+	/*
-+	 * The Dell Inspiron Mini 1012 has DMI_BIOS_VENDOR = "Dell Inc.", so
-+	 * match on the product name.
-+	 */
-+	{
-+		.callback = dmi_low_memory_corruption,
-+		.ident = "Phoenix BIOS",
-+		.matches = {
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 1012"),
-+		},
-+	},
- #endif
- 	{}
+--- a/sound/soc/codecs/wm8990.c
++++ b/sound/soc/codecs/wm8990.c
+@@ -110,21 +110,21 @@ static const u16 wm8990_reg[] = {
+ 
+ #define wm8990_reset(c) snd_soc_write(c, WM8990_RESET, 0)
+ 
+-static const DECLARE_TLV_DB_LINEAR(rec_mix_tlv, -1500, 600);
++static const DECLARE_TLV_DB_SCALE(rec_mix_tlv, -1500, 600, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(in_pga_tlv, -1650, 3000);
++static const DECLARE_TLV_DB_SCALE(in_pga_tlv, -1650, 3000, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_mix_tlv, 0, -2100);
++static const DECLARE_TLV_DB_SCALE(out_mix_tlv, 0, -2100, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_pga_tlv, -7300, 600);
++static const DECLARE_TLV_DB_SCALE(out_pga_tlv, -7300, 600, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_omix_tlv, -600, 0);
++static const DECLARE_TLV_DB_SCALE(out_omix_tlv, -600, 0, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_dac_tlv, -7163, 0);
++static const DECLARE_TLV_DB_SCALE(out_dac_tlv, -7163, 0, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(in_adc_tlv, -7163, 1763);
++static const DECLARE_TLV_DB_SCALE(in_adc_tlv, -7163, 1763, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_sidetone_tlv, -3600, 0);
++static const DECLARE_TLV_DB_SCALE(out_sidetone_tlv, -3600, 0, 0);
+ 
+ static int wm899x_outpga_put_volsw_vu(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol)
+@@ -450,7 +450,7 @@ static int outmixer_event(struct snd_soc
+ /* INMIX dB values */
+ static const unsigned int in_mix_tlv[] = {
+ 	TLV_DB_RANGE_HEAD(1),
+-	0, 7, TLV_DB_LINEAR_ITEM(-1200, 600),
++	0, 7, TLV_DB_SCALE_ITEM(-1200, 600, 0),
  };
+ 
+ /* Left In PGA Connections */
 
 
