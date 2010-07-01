@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab0GALtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 07:49:03 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44722 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab0GALtA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 07:49:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Lm0zr5TKMLNw4Sx2C+tOyYApSpQwbk99Z/bOL0weippK8XBYuKL49l9mobtjDeNLVb
-         +n553fnebGe7PNGlSuXGDnFAm6bEFiBeAY/lR8CJfBG6nNZ/28dDew4S/hTTO5skzkLz
-         /fTB/Vbuj9JeQK6HKY1kq3/c/x7V4zY222Zv0=
+	id S1755413Ab0GAMBE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 08:01:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751680Ab0GAMBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 08:01:01 -0400
+Date: Thu, 1 Jul 2010 14:55:07 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+Message-ID: <20100701115507.GA31333@redhat.com>
+References: <20100528150830.GB21880@redhat.com>
+ <4BFFE742.2060205@kernel.org>
+ <20100530112925.GB27611@redhat.com>
+ <4C02C99D.9070204@kernel.org>
+ <20100624081135.GA937@redhat.com>
+ <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
+ <20100625101022.GA16321@redhat.com>
+ <20100701110708.GA27368@redhat.com>
+ <1277983179.1917.10.camel@laptop>
+ <1277984603.1917.15.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <4C2C5F44.7010006@cn.fujitsu.com>
-References: <20100630120419.391D.A69D9226@jp.fujitsu.com>
-	<1277948436.25782.5.camel@gandalf.stny.rr.com>
-	<20100701104554.DA2D.A69D9226@jp.fujitsu.com>
-	<4C2C5F44.7010006@cn.fujitsu.com>
-Date: Thu, 1 Jul 2010 20:48:59 +0900
-X-Google-Sender-Auth: ihf0PnBuXYp_F9hE7OFKmtjjutQ
-Message-ID: <AANLkTinKPVPAMT2tsZ1it90K4Qu601jr12ulHZFOfFEy@mail.gmail.com>
-Subject: Re: [PATCH v2] tracing: shrink max latency ringbuffer if unnecessary
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: rostedt@goodmis.org, LKML <linux-kernel@vger.kernel.org>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277984603.1917.15.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/1 Lai Jiangshan <laijs@cn.fujitsu.com>:
-> KOSAKI Motohiro wrote:
->>
->> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> ---
->>  kernel/trace/trace.c              |   39 ++++++++++++++++++++++++++++++------
->>  kernel/trace/trace.h              |    1 +
->>  kernel/trace/trace_irqsoff.c      |    3 ++
->>  kernel/trace/trace_sched_wakeup.c |    2 +
->>  4 files changed, 38 insertions(+), 7 deletions(-)
->>
->
-> Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com
->
->
->> -
->> +     if (current_trace && current_trace->use_max_tr) {
->> +             /*
->> +              * We don't free the ring buffer. instead, resize it because
->> +              * The max_tr ring buffer has some state (e.g. ring->clock) and
->> +              * we want preserve it.
->> +              */
->> +             ring_buffer_resize(max_tr.buffer, 1);
->> +             max_tr.entries = 1;
->> +     }
->>       destroy_trace_option_files(topts);
->>
->>       current_trace = t;
->>
->>       topts = create_trace_option_files(current_trace);
->
-> I think we can skip the two resize when current_trace->use_max_tr==1 && t->use_max_tr==1
+On Thu, Jul 01, 2010 at 01:43:23PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-07-01 at 13:19 +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-07-01 at 14:07 +0300, Michael S. Tsirkin wrote:
+> > > Author: Sridhar Samudrala <sri@us.ibm.com>
+> > > 
+> > > sched: export sched_set/getaffinity to modules
+> > > 
+> > > vhost-net driver wants to copy the affinity from the
+> > > owner thread to thread it creates. Export
+> > > sched_set/get affinity to modules to make this possible
+> > > when vhost is built as a module.
+> 
+> > Urgh,.. so why again is that a good idea?
+> 
+> In particular:
+>  - who sets the affinity of the task? 
 
-Yup. but I don't think it's worthful because it's rarely operation.
+management tools do this when they start qemu.
 
+>  - why can't it set the kernel thread's affinity too?
 
->
->> +     if (current_trace->use_max_tr) {
->> +             ret = ring_buffer_resize(max_tr.buffer, global_trace.entries);
->> +             if (ret < 0)
->> +                     goto out;
->> +             max_tr.entries = global_trace.entries;
->> +     }
->>
->>       if (t->init) {
->>               ret = tracer_init(t, tr);
->
-> Does we need to shrink it when tracer_init() fails?
-> Although tracer_init() hardly fails, and there is no bad effect even we don't shrink it.
+It can. However: the threads are started internally by the driver
+when qemu does an ioctl.  What we want to do is give it a sensible
+default affinity. management tool can later tweak it if it wants to.
 
-Nope. brief code of tracing_set_tracer() is here
+>  - what happens if someone changes the tasks' affinity?
 
-========================================
-        if (current_trace && current_trace->reset)
-                current_trace->reset(tr);
+We would normally create a cgroup including all internal
+tasks, making it easy to find and change affinity for
+them all if necessary.
 
-        destroy_trace_option_files(topts);
-
-        current_trace = t;
-
-        topts = create_trace_option_files(current_trace);
-
-        if (t->init) {
-                ret = tracer_init(t, tr);
-                if (ret)
-                        goto out;
-        }
-========================================
-
-That's mean, if t->init fail, we can't rollback old tracer. so your
-suggested micro optimization
-doesn't makes observable improvement, I think.
-
-Thanks.
+> So no, I don't think this is a sensible thing to do at all.
