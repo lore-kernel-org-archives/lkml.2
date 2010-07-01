@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab0GAWV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:21:56 -0400
-Received: from kroah.org ([198.145.64.141]:47159 "EHLO coco.kroah.org"
+	id S932546Ab0GAWWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:22:17 -0400
+Received: from kroah.org ([198.145.64.141]:47140 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932511Ab0GAUtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:33 -0400
+	id S932502Ab0GAUtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:31 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:28 2010
-Message-Id: <20100701173428.225901534@clark.site>
+Message-Id: <20100701173427.976916106@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:22 -0700
+Date: Thu, 01 Jul 2010 10:33:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [patch 016/164] ALSA: hda: Fix model quirk for Dell M1730
+       Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [patch 013/164] staging: vt6655: Fix kernel BUG on driver wpa initialization
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 66668b6fb6861fad7f6bfef6646ac84693474c9a upstream.
+commit f65515275ea3e45fdcd0fb78455f542d6fdca086 upstream.
 
-BugLink: https://launchpad.net/bugs/576160
+In http://bugzilla.novell.com/show_bug.cgi?id=597299, the vt6655 driver
+generates a kernel BUG on a NULL pointer dereference at NULL. This problem
+has been traced to a failure in the wpa_set_wpadev() routine. As the vt6656
+driver does not call this routine, the vt6655 code is similarly set to skip
+the call.
 
-Symptom: Currently (2.6.32.12) the Dell M1730 uses the 3stack model
-quirk. Unfortunately this means that capture is not functional out-
-of-the-box despite ensuring that capture settings are unmuted and
-raised fully.
-
-Test case: boot from Ubuntu 10.04 LTS live cd; capture does not
-work.
-
-Resolution: Correct the model quirk for Dell M1730 to rely on the
-BIOS configuration.
-
-This patch also trivially sorts the quirk into the correct section
-based on the comments.
-
-Reported-and-Tested-By: <picdragon99@msn.com>
-Tested-By: Daren Hayward
-Tested-By: Tobias Krais
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Tested-by: Richard Meek <osl2008@googlemail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/vt6655/device_main.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -2070,12 +2070,12 @@ static struct snd_pci_quirk stac927x_cfg
- 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_INTEL, 0xff00, 0x2000,
- 			   "Intel D965", STAC_D965_3ST),
- 	/* Dell 3 stack systems */
--	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f7, "Dell XPS M1730", STAC_DELL_3ST),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01dd, "Dell Dimension E520", STAC_DELL_3ST),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01ed, "Dell     ", STAC_DELL_3ST),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f4, "Dell     ", STAC_DELL_3ST),
- 	/* Dell 3 stack systems with verb table in BIOS */
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f3, "Dell Inspiron 1420", STAC_DELL_BIOS),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f7, "Dell XPS M1730", STAC_DELL_BIOS),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x0227, "Dell Vostro 1400  ", STAC_DELL_BIOS),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x022e, "Dell     ", STAC_DELL_BIOS),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x022f, "Dell Inspiron 1525", STAC_DELL_BIOS),
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -1089,11 +1089,13 @@ device_found1(struct pci_dev *pcid, cons
+     }
+ //2008-07-21-01<Add>by MikeLiu
+ //register wpadev
++#if 0
+    if(wpa_set_wpadev(pDevice, 1)!=0) {
+      printk("Fail to Register WPADEV?\n");
+         unregister_netdev(pDevice->dev);
+         free_netdev(dev);
+    }
++#endif
+     device_print_info(pDevice);
+     pci_set_drvdata(pcid, pDevice);
+     return 0;
 
 
