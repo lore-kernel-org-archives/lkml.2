@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab0GASyq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:54:46 -0400
-Received: from kroah.org ([198.145.64.141]:35311 "EHLO coco.kroah.org"
+	id S932367Ab0GASlA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:41:00 -0400
+Received: from kroah.org ([198.145.64.141]:40517 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757185Ab0GASWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:22:41 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:07 2010
-Message-Id: <20100701173207.748122852@clark.site>
+	id S1757902Ab0GASXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:33 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:12 2010
+Message-Id: <20100701173212.865339778@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:37 -0700
+Date: Thu, 01 Jul 2010 10:31:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andrey Vagin <avagin@openvz.org>, Oleg Nesterov <oleg@tv-sign.ru>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: [patch 011/149] posix_timer: Fix error path in timer_create
+       Khem Raj <raj.khem@gmail.com>,
+       Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [patch 072/149] ARM: 6164/1: Add kto and kfrom to input operands list.
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,53 +26,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Khem Raj <raj.khem@gmail.com>
 
-commit 45e0fffc8a7778282e6a1514a6ae3e7ae6545111 upstream.
+commit 9a40ac86152c9cffd3dca482a15ddf9a8c5716b3 upstream.
 
-Move CLOCK_DISPATCH(which_clock, timer_create, (new_timer)) after all
-posible EFAULT erros.
+When functions incoming parameters are not in input operands list gcc
+4.5 does not load the parameters into registers before calling this
+function but the inline assembly assumes valid addresses inside this
+function. This breaks the code because r0 and r1 are invalid when
+execution enters v4wb_copy_user_page ()
 
-*_timer_create may allocate/get resources.
-(for example posix_cpu_timer_create does get_task_struct)
+Also the constant needs to be used as third input operand so account
+for that as well.
 
-[ tglx: fold the remove crappy comment patch into this ]
+Tested on qemu arm.
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Cc: Oleg Nesterov <oleg@tv-sign.ru>
-Cc: Pavel Emelyanov <xemul@openvz.org>
-Reviewed-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -559,14 +559,7 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 	new_timer->it_id = (timer_t) new_timer_id;
- 	new_timer->it_clock = which_clock;
- 	new_timer->it_overrun = -1;
--	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
--	if (error)
--		goto out;
+---
+ arch/arm/mm/copypage-feroceon.c |    4 ++--
+ arch/arm/mm/copypage-v4wb.c     |    4 ++--
+ arch/arm/mm/copypage-v4wt.c     |    4 ++--
+ arch/arm/mm/copypage-xsc3.c     |    4 ++--
+ 4 files changed, 8 insertions(+), 8 deletions(-)
+
+--- a/arch/arm/mm/copypage-feroceon.c
++++ b/arch/arm/mm/copypage-feroceon.c
+@@ -18,7 +18,7 @@ feroceon_copy_user_page(void *kto, const
+ {
+ 	asm("\
+ 	stmfd	sp!, {r4-r9, lr}		\n\
+-	mov	ip, %0				\n\
++	mov	ip, %2				\n\
+ 1:	mov	lr, r1				\n\
+ 	ldmia	r1!, {r2 - r9}			\n\
+ 	pld	[lr, #32]			\n\
+@@ -64,7 +64,7 @@ feroceon_copy_user_page(void *kto, const
+ 	mcr	p15, 0, ip, c7, c10, 4		@ drain WB\n\
+ 	ldmfd	sp!, {r4-r9, pc}"
+ 	:
+-	: "I" (PAGE_SIZE));
++	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE));
+ }
  
--	/*
--	 * return the timer_id now.  The next step is hard to
--	 * back out if there is an error.
--	 */
- 	if (copy_to_user(created_timer_id,
- 			 &new_timer_id, sizeof (new_timer_id))) {
- 		error = -EFAULT;
-@@ -597,6 +590,10 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 	new_timer->sigq->info.si_tid   = new_timer->it_id;
- 	new_timer->sigq->info.si_code  = SI_TIMER;
+ void feroceon_copy_user_highpage(struct page *to, struct page *from,
+--- a/arch/arm/mm/copypage-v4wb.c
++++ b/arch/arm/mm/copypage-v4wb.c
+@@ -27,7 +27,7 @@ v4wb_copy_user_page(void *kto, const voi
+ {
+ 	asm("\
+ 	stmfd	sp!, {r4, lr}			@ 2\n\
+-	mov	r2, %0				@ 1\n\
++	mov	r2, %2				@ 1\n\
+ 	ldmia	r1!, {r3, r4, ip, lr}		@ 4\n\
+ 1:	mcr	p15, 0, r0, c7, c6, 1		@ 1   invalidate D line\n\
+ 	stmia	r0!, {r3, r4, ip, lr}		@ 4\n\
+@@ -44,7 +44,7 @@ v4wb_copy_user_page(void *kto, const voi
+ 	mcr	p15, 0, r1, c7, c10, 4		@ 1   drain WB\n\
+ 	ldmfd	 sp!, {r4, pc}			@ 3"
+ 	:
+-	: "I" (PAGE_SIZE / 64));
++	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64));
+ }
  
-+	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
-+	if (error)
-+		goto out;
-+
- 	spin_lock_irq(&current->sighand->siglock);
- 	new_timer->it_signal = current->signal;
- 	list_add(&new_timer->list, &current->signal->posix_timers);
+ void v4wb_copy_user_highpage(struct page *to, struct page *from,
+--- a/arch/arm/mm/copypage-v4wt.c
++++ b/arch/arm/mm/copypage-v4wt.c
+@@ -25,7 +25,7 @@ v4wt_copy_user_page(void *kto, const voi
+ {
+ 	asm("\
+ 	stmfd	sp!, {r4, lr}			@ 2\n\
+-	mov	r2, %0				@ 1\n\
++	mov	r2, %2				@ 1\n\
+ 	ldmia	r1!, {r3, r4, ip, lr}		@ 4\n\
+ 1:	stmia	r0!, {r3, r4, ip, lr}		@ 4\n\
+ 	ldmia	r1!, {r3, r4, ip, lr}		@ 4+1\n\
+@@ -40,7 +40,7 @@ v4wt_copy_user_page(void *kto, const voi
+ 	mcr	p15, 0, r2, c7, c7, 0		@ flush ID cache\n\
+ 	ldmfd	sp!, {r4, pc}			@ 3"
+ 	:
+-	: "I" (PAGE_SIZE / 64));
++	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64));
+ }
+ 
+ void v4wt_copy_user_highpage(struct page *to, struct page *from,
+--- a/arch/arm/mm/copypage-xsc3.c
++++ b/arch/arm/mm/copypage-xsc3.c
+@@ -34,7 +34,7 @@ xsc3_mc_copy_user_page(void *kto, const
+ {
+ 	asm("\
+ 	stmfd	sp!, {r4, r5, lr}		\n\
+-	mov	lr, %0				\n\
++	mov	lr, %2				\n\
+ 						\n\
+ 	pld	[r1, #0]			\n\
+ 	pld	[r1, #32]			\n\
+@@ -67,7 +67,7 @@ xsc3_mc_copy_user_page(void *kto, const
+ 						\n\
+ 	ldmfd	sp!, {r4, r5, pc}"
+ 	:
+-	: "I" (PAGE_SIZE / 64 - 1));
++	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64 - 1));
+ }
+ 
+ void xsc3_mc_copy_user_highpage(struct page *to, struct page *from,
 
 
