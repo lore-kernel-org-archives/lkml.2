@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab0GAIGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 04:06:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42626 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752177Ab0GAIGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 04:06:31 -0400
-Date: Thu, 1 Jul 2010 18:06:28 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 52/52] fs: icache less I_FREEING time
-Message-ID: <20100701080628.GF22976@laptop>
-References: <20100624030212.676457061@suse.de>
- <20100624030734.042332166@suse.de>
- <20100630101354.GK24712@dastard>
- <20100630121452.GG21358@laptop>
- <20100701033342.GT24712@dastard>
+	id S1752310Ab0GAIKH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 04:10:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62328 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab0GAIKD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 04:10:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [PATCH 0/3] Extended file stat functions [ver #2]
+Date: Thu, 1 Jul 2010 10:09:32 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3+; KDE/4.4.90; x86_64; ; )
+Cc: David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk,
+       smfrench@gmail.com, jlayton@redhat.com, mcao@us.ibm.com,
+       aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       samba-technical@lists.samba.org, sjayaraman@suse.de,
+       linux-ext4@vger.kernel.org
+References: <FB78A152-53D3-4000-ABDB-9D6051ECB887@dilger.ca> <30875.1277939713@redhat.com> <84225B35-7365-4DE2-8920-5741011B347C@dilger.ca>
+In-Reply-To: <84225B35-7365-4DE2-8920-5741011B347C@dilger.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701033342.GT24712@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007011009.33197.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/o+iFRfxjAcq2rlieKQTXmS3cnfZNY6/9W3i9
+ csySH6E5Zho7LJHIOnlCDSaPtBUNCscwubJG4e4hw1YicUGKit
+ 8nYvUu7lVNr4cQXOLqccA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 01:33:42PM +1000, Dave Chinner wrote:
-> On Wed, Jun 30, 2010 at 10:14:52PM +1000, Nick Piggin wrote:
-> > On Wed, Jun 30, 2010 at 08:13:54PM +1000, Dave Chinner wrote:
-> > > On Thu, Jun 24, 2010 at 01:03:04PM +1000, npiggin@suse.de wrote:
-> > > > Problem with inode reclaim is that it puts inodes into I_FREEING state
-> > > > and then continues to gather more, during which it may iput,
-> > > > invalidate_mapping_pages, be preempted, etc. Holding these inodes in
-> > > > I_FREEING can cause pauses.
-> > > 
-> > > What sort of pauses? I can't see how holding a few inodes in
-> > > I_FREEING state would cause any serious sort of holdoff...
-> > 
-> > Well if the inode is accessed again, it has to wait for potentially
-> > hundreds of inodes to be found from the LRU, pagecache invalidated,
-> > and destroyed.
-> 
-> So it's a theoretical concern you have, not something that's
-> actually been demonstrated as a problem?
+On Thursday 01 July 2010 06:57:07 Andreas Dilger wrote:
+> If a future kernel gets a new static field at st_extra_results (say
+> unsigned long long st_ino_high) with a new flag XSTAT_REQUEST_INO_HIGH
+> 0x000040000ULL the kernel will think that the old app is requesting 
+> this field, and will fill in the 64-bit field at st_extra_results[1]
+> (which the old app didn't allocate space for, nor does it understand)
+> and may get a segfault, or stack smashing, or random heap corruption.
 
-Yes it causes holdoffs. I actually started visibly seeing the problem
-badly in my parallel git diff workload as I started experimenting with
-increasing batch size.
+That depends on whether the struct contains a 'buflen' field or not
+(it may be part of the struct, as a syscall argument, or in a second struct).
+I argue that it should not contain a buflen field and that users should
+consequently not set bits that they don't know about to prevent the
+scenario you describe.
 
-But even smaller batches could have a problem if the wrong inode is hit.
-I didn't add instrumentation in there, but I just didn't see such a
-benefit from batching after the lock breakups, so I prefer to go the
-other way and add back batching and its downsides IF that proves to be
-an improvement.
+If the buflen stays in, it will prevent the stack smashing part,
+but add extra complexity in the interface, which can cause other
+problems.
 
-Is this of any consequence for the filesystem?
-
- 
-> As it is, If the inode is accessed immediately after teardown has
-> started, then we failed to hold on to the inode at a higher level
-> for long enough.
-
-Or simply didn't anticpate userspace access pattern.
-
-
-> Changing the I_FREEING behaviour is trying to
-> address the issue at the wrong level...
-
-Reclaim should of course be as good as possible. But it is inherntly
-going to have problems. You need to design everything around reclaim
-thinking about the possibility that it will go wrong. Because it will,
-in unreproducable ways, on a customer's machine.
-
+	Arnd
