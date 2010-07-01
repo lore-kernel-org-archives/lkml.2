@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab0GAOJn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 10:09:43 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48028 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751307Ab0GAOJm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 10:09:42 -0400
-Date: Thu, 1 Jul 2010 10:09:39 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-cc: linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB: gadget: mass storage: use proper device class in
- device desc
-In-Reply-To: <59b191a020300966e20eef4e942bc75982d792fb.1277735580.git.m.nazarewicz@samsung.com>
-Message-ID: <Pine.LNX.4.44L0.1007011004370.1596-100000@iolanthe.rowland.org>
+	id S1755917Ab0GAOKv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 10:10:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41536 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752396Ab0GAOKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 10:10:50 -0400
+Date: Thu, 1 Jul 2010 16:08:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Salman Qazi <sqazi@google.com>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, Roland McGrath <roland@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: A possible sys_wait* bug
+Message-ID: <20100701140836.GA8379@redhat.com>
+References: <AANLkTinUy8Uk8pAom03DKzYTqthdXQ5ADfjGmjbI7jxN@mail.gmail.com> <20100701093621.DA24.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100701093621.DA24.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Jul 2010, Michal Nazarewicz wrote:
+On 07/01, KOSAKI Motohiro wrote:
+>
+> > Basically, it is possibly for readers to continuously hold
+> > tasklist_lock
 
-> Hello Alan,
-> 
-> Each time I see the device descriptor of the File Storage Gadget
-> I wonder if it shouldn't be set to the real value rather then leaving
-> it as per interface.
+Yes, this is the known problem.
 
-It should not be changed.
+Perhaps do_wait() is not the worst example. sys_kill(-1),
+sys_ioprio_set() scan the global list.
 
-> Is there a reason to leave it as per interface?
+> > I think the most direct approach to the problem is to have the
+> > readers-writer locks be writer biased (i.e. as soon as a writer
+> > contends, we do not permit any new readers).
 
-See Table 4.1 in the USB Mass Storage Bulk-Only Transport 
-specification and Table 3.1 in the CBI Transport specification.
+I thought about this too, but this is deadlockable. At least,
+read_lock(tasklist) should nest, and it should work in irq context.
 
->  Will chenging it to
-> the real value change anything?
+We need the more fine-grained locking, but it is not clear to me what
+should be done in the long term. Afaics, this is very nontrivial.
 
-You mean will it hurt anything?  I don't know; I have never tried it.
-
-> I checked my pendrive and an IDE<->USB adapter they as well use a per
-> interface class but maybe it'll be better to use proper call any way?
-
-No.  And it's not a proper call -- it's not even the proper descriptor
-valu.  So NAK on this patch.
-
-Alan Stern
+Oleg.
 
