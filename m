@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564Ab0GAUuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:50:19 -0400
-Received: from kroah.org ([198.145.64.141]:47325 "EHLO coco.kroah.org"
+	id S932703Ab0GAWJf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:09:35 -0400
+Received: from kroah.org ([198.145.64.141]:47487 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932603Ab0GAUt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:58 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:30 2010
-Message-Id: <20100701173430.639716853@clark.site>
+	id S932675Ab0GAUuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:32 2010
+Message-Id: <20100701173432.537908522@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:51 -0700
+Date: Thu, 01 Jul 2010 10:34:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jouni Malinen <j@w1.fi>, "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 045/164] mac80211: Fix robust management frame handling (MFP)
+       Joerg Roedel <joerg.roedel@amd.com>
+Subject: [patch 068/164] x86/amd-iommu: Fix crash when request_mem_region fails
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jouni Malinen <j@w1.fi>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit d211e90e28a074447584729018a39910d691d1a8 upstream.
+commit e82752d8b5a7e0a5e4d607fd8713549e2a4e2741 upstream.
 
-Commit e34e09401ee9888dd662b2fca5d607794a56daf2 incorrectly removed
-use of ieee80211_has_protected() from the management frame case and in
-practice, made this validation drop all Action frames when MFP is
-enabled. This should have only been done for frames with Protected
-field set to zero.
+When request_mem_region fails the error path tries to
+disable the IOMMUs. This accesses the mmio-region which was
+not allocated leading to a kernel crash. This patch fixes
+the issue.
 
-Signed-off-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/rx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/amd_iommu_init.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1399,7 +1399,8 @@ ieee80211_drop_unencrypted(struct ieee80
- 		     (rx->key || rx->sdata->drop_unencrypted)))
- 		return -EACCES;
- 	if (rx->sta && test_sta_flags(rx->sta, WLAN_STA_MFP)) {
--		if (unlikely(ieee80211_is_unicast_robust_mgmt_frame(rx->skb) &&
-+		if (unlikely(!ieee80211_has_protected(fc) &&
-+			     ieee80211_is_unicast_robust_mgmt_frame(rx->skb) &&
- 			     rx->key))
- 			return -EACCES;
- 		/* BIP does not use Protected field, so need to check MMIE */
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -286,8 +286,12 @@ static u8 * __init iommu_map_mmio_space(
+ {
+ 	u8 *ret;
+ 
+-	if (!request_mem_region(address, MMIO_REGION_LENGTH, "amd_iommu"))
++	if (!request_mem_region(address, MMIO_REGION_LENGTH, "amd_iommu")) {
++		pr_err("AMD-Vi: Can not reserve memory region %llx for mmio\n",
++			address);
++		pr_err("AMD-Vi: This is a BIOS bug. Please contact your hardware vendor\n");
+ 		return NULL;
++	}
+ 
+ 	ret = ioremap_nocache(address, MMIO_REGION_LENGTH);
+ 	if (ret != NULL)
+@@ -1296,7 +1300,7 @@ static int __init amd_iommu_init(void)
+ 		ret = amd_iommu_init_dma_ops();
+ 
+ 	if (ret)
+-		goto free;
++		goto free_disable;
+ 
+ 	amd_iommu_init_api();
+ 
+@@ -1314,9 +1318,10 @@ static int __init amd_iommu_init(void)
+ out:
+ 	return ret;
+ 
+-free:
++free_disable:
+ 	disable_iommus();
+ 
++free:
+ 	amd_iommu_uninit_devices();
+ 
+ 	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
 
 
