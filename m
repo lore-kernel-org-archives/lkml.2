@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759706Ab0GAWII (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:08:08 -0400
-Received: from kroah.org ([198.145.64.141]:47547 "EHLO coco.kroah.org"
+	id S932681Ab0GAUuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:50:24 -0400
+Received: from kroah.org ([198.145.64.141]:47334 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932692Ab0GAUu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:33 2010
-Message-Id: <20100701173433.129957748@clark.site>
+	id S932607Ab0GAUt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:59 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:30 2010
+Message-Id: <20100701173430.721198662@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:21 -0700
+Date: Thu, 01 Jul 2010 10:33:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       David Howells <dhowells@redhat.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [patch 075/164] frv: set ARCH_KMALLOC_MINALIGN
+       Shanyu Zhao <shanyu.zhao@intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 046/164] mac80211: fix rts threshold check
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+From: Shanyu Zhao <shanyu.zhao@intel.com>
 
-commit 69dcf3db03626c4f18de624e8632454ea12ff260 upstream.
+commit a2c40249a36d0b4d76d1caf6bf806e4ae5b06e8a upstream.
 
-Architectures that handle DMA-non-coherent memory need to set
-ARCH_KMALLOC_MINALIGN to make sure that kmalloc'ed buffer is DMA-safe: the
-buffer doesn't share a cache with the others.
+Currently whenever rts thresold is set, every packet will use RTS
+protection no matter its size exceeds the threshold or not. This is
+due to a bug in the rts threshold check.
+	if (len > tx->local->hw.wiphy->rts_threshold) {
+		txrc.rts = rts = true;
+	}
+Basically it is comparing an int (len) and a u32 (rts_threshold),
+and the variable len is assigned as:
+	len = min_t(int, tx->skb->len + FCS_LEN,
+			 tx->local->hw.wiphy->frag_threshold);
+However, when frag_threshold is "-1", len is always "-1", which is
+0xffffffff therefore rts is always set to true.
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Acked-by: David Howells <dhowells@redhat.com>
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shanyu Zhao <shanyu.zhao@intel.com>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/frv/include/asm/cache.h |    2 ++
- 1 file changed, 2 insertions(+)
+ net/mac80211/tx.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/frv/include/asm/cache.h
-+++ b/arch/frv/include/asm/cache.h
-@@ -17,6 +17,8 @@
- #define L1_CACHE_SHIFT		(CONFIG_FRV_L1_CACHE_SHIFT)
- #define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -501,7 +501,8 @@ ieee80211_tx_h_rate_ctrl(struct ieee8021
+ 	struct ieee80211_hdr *hdr = (void *)tx->skb->data;
+ 	struct ieee80211_supported_band *sband;
+ 	struct ieee80211_rate *rate;
+-	int i, len;
++	int i;
++	u32 len;
+ 	bool inval = false, rts = false, short_preamble = false;
+ 	struct ieee80211_tx_rate_control txrc;
+ 	u32 sta_flags;
+@@ -510,7 +511,7 @@ ieee80211_tx_h_rate_ctrl(struct ieee8021
  
-+#define ARCH_KMALLOC_MINALIGN	L1_CACHE_BYTES
-+
- #define __cacheline_aligned	__attribute__((aligned(L1_CACHE_BYTES)))
- #define ____cacheline_aligned	__attribute__((aligned(L1_CACHE_BYTES)))
+ 	sband = tx->local->hw.wiphy->bands[tx->channel->band];
  
+-	len = min_t(int, tx->skb->len + FCS_LEN,
++	len = min_t(u32, tx->skb->len + FCS_LEN,
+ 			 tx->local->hw.wiphy->frag_threshold);
+ 
+ 	/* set up the tx rate control struct we give the RC algo */
 
 
