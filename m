@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab0GAPkG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:40:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54830 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167Ab0GAPkE convert rfc822-to-8bit (ORCPT
+	id S1756765Ab0GAPmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:42:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56090 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756701Ab0GAPmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 11:40:04 -0400
-Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Will Deacon <will.deacon@arm.com>, paulus <paulus@samba.org>,
-       stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100701153112.GA13511@console-pimps.org>
-References: <20100624142804.431553874@chello.nl>
-	 <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com>
-	 <1277464589.32034.276.camel@twins>
-	 <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com>
-	 <1277477401.32034.670.camel@twins> <1277994970.1917.184.camel@laptop>
-	 <1277996555.1917.205.camel@laptop>
-	 <20100701153112.GA13511@console-pimps.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 01 Jul 2010 17:39:53 +0200
-Message-ID: <1277998793.1917.212.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 1 Jul 2010 11:42:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GlYj4NJ8bkn9LIQYEtG/1WUcZv1I7w0eX/9t4Ia9L48v+RYJglCy2rxkFt2SSR+qGU
+         vo8AlPaDP+vIppaZQsqoXGKESSs+2xEhzTrx8N920SvjRjb4bn/Ffo3L8BA+nWnMBeCW
+         DH4Z1hj7s76xSh94tKvcIzE/h9dMS8p5awlEw=
+Date: Thu, 1 Jul 2010 17:42:36 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       David Miller <davem@davemloft.net>, Borislav Petkov <bp@amd64.org>
+Subject: Re: [RFC PATCH 5/6] perf: Fix race in callchains
+Message-ID: <20100701154232.GA10616@nowhere>
+References: <1277998562-21366-1-git-send-regression-fweisbec@gmail.com> <1277998562-21366-6-git-send-regression-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277998562-21366-6-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-01 at 16:31 +0100, MattFleming wrote:
-> On Thu, Jul 01, 2010 at 05:02:35PM +0200, Peter Zijlstra wrote:
-> > 
-> > Matt, you said it broke SH completely, but did you try perf stat? perf
-> > record is not supposed to work on SH due to the hardware not having an
-> > overflow interrupt.
-> 
-> perf record does work to some degree. It definitely worked before
-> applying your changes but not after. I admit I haven't really read the
-> perf event code, but Paul will know.
+On Thu, Jul 01, 2010 at 05:36:01PM +0200, Frederic Weisbecker wrote:
+> +static struct perf_callchain_entry *get_callchain_entry(int *rctx)
+> +{
+> +	struct perf_callchain_entry_cpus *cpu_entries;
+> +
+> +	*rctx = get_recursion_context(&__get_cpu_var(callchain_recursion));
+> +	if (*rctx == -1)
+> +		return NULL;
+> +
+> +	cpu_entries = rcu_dereference(callchain_entries[*rctx]);
+> +	if (!cpu_entries)
+> +		return NULL;
+> +
+> +	return this_cpu_ptr(cpu_entries->entries);
+> +}
+> +
+> +static void
+> +put_callchain_entry(int rctx)
+> +{
+> +	put_recursion_context(&__get_cpu_var(callchain_recursion), rctx);
+> +}
+> +
+> +static struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
+> +{
+> +	int rctx;
+> +	struct perf_callchain_entry *entry;
+> +
+> +
+> +	entry = get_callchain_entry(&rctx);
+> +	if (!entry)
+> +		goto exit_put;
 
-Ok, let me look at that again.
 
-> > Which made me think, what on SH guarantees we update the counter often
-> > enough not to suffer from counter wrap? Would it make sense to make the
-> > SH code hook into their arch tick handler and update the counters from
-> > there?
-> 
-> This was the way that the oprofile code used to work. Paul and I were
-> talking about using a hrtimer to sample performance counters as
-> opposed to piggy-backing on the tick handler.
+I realize this should only call put_callchain_entry() if rctx == -1, but you
+got the idea...
 
-Ah, for sampling for sure, simply group a software perf event and a
-hardware perf event together and use PERF_SAMPLE_READ.
 
-But suppose its a non sampling counter, how do you avoid overflows of
-the hardware register?
+
+> +
+> +	entry->nr = 0;
+> +
+> +	if (!user_mode(regs)) {
+> +		perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
+> +		perf_callchain_kernel(entry, regs);
+> +		if (current->mm)
+> +			regs = task_pt_regs(current);
+> +		else
+> +			regs = NULL;
+> +	}
+> +
+> +	if (regs) {
+> +		perf_callchain_store(entry, PERF_CONTEXT_USER);
+> +		perf_callchain_user(entry, regs);
+> +	}
+> +
+> +exit_put:
+> +	put_callchain_entry(rctx);
+> +
+> +	return entry;
+> +}
+
