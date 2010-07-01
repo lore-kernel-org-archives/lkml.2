@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759262Ab0GAVQZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:16:25 -0400
-Received: from kroah.org ([198.145.64.141]:60946 "EHLO coco.kroah.org"
+	id S933029Ab0GAVKA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:10:00 -0400
+Received: from kroah.org ([198.145.64.141]:47708 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758724Ab0GAVNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:55 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:53 2010
-Message-Id: <20100701174253.601949372@clark.site>
+	id S932576Ab0GAUus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:48 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:35 2010
+Message-Id: <20100701173435.227065207@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:55 -0700
+Date: Thu, 01 Jul 2010 10:34:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       NeilBrown <neilb@suse.de>
-Subject: [085/200] md/raid1: fix counting of write targets.
-In-Reply-To: <20100701175201.GA2149@kroah.com>
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [patch 100/164] ALSA: hda: Use LPIB for another mainboard
+In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let me know.
+2.6.33-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 964147d5c86d63be79b442c30f3783d49860c078 upstream.
+commit b90c076424da8166797bdc34187660fd0124f530 upstream.
 
-There is a very small race window when writing to a
-RAID1 such that if a device is marked faulty at exactly the wrong
-time, the write-in-progress will not be sent to the device,
-but the bitmap (if present) will be updated to say that
-the write was sent.
+BugLink: https://launchpad.net/bugs/580749
 
-Then if the device turned out to still be usable as was re-added
-to the array, the bitmap-based-resync would skip resyncing that
-block, possibly leading to corruption.  This would only be a problem
-if no further writes were issued to that area of the device (i.e.
-that bitmap chunk).
+Symptom: on the original reporter's VIA VT1708-based board, the
+PulseAudio daemon dies shortly after the user attempts to play an audio
+file.
 
-Suitable for any pending -stable kernel.
+Test case: boot from Ubuntu 10.04 LTS live cd; attempt to play an audio
+file.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+Resolution: add SSID for the original reporter's hardware to the
+position_fix quirk table, explicitly specifying the LPIB method.
+
+Reported-and-Tested-By: Harald
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/raid1.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -912,9 +912,10 @@ static int make_request(struct request_q
- 			if (test_bit(Faulty, &rdev->flags)) {
- 				rdev_dec_pending(rdev, mddev);
- 				r1_bio->bios[i] = NULL;
--			} else
-+			} else {
- 				r1_bio->bios[i] = bio;
--			targets++;
-+				targets++;
-+			}
- 		} else
- 			r1_bio->bios[i] = NULL;
- 	}
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2278,6 +2278,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1565, 0x8218, "Biostar Microtech", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1849, 0x0888, "775Dual-VSTA", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x8086, 0x2503, "DG965OT AAD63733-203", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x8086, 0xd601, "eMachines T5212", POS_FIX_LPIB),
+ 	{}
 
 
