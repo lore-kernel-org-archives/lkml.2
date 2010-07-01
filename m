@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261Ab0GAS1U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:27:20 -0400
-Received: from kroah.org ([198.145.64.141]:40851 "EHLO coco.kroah.org"
+	id S932346Ab0GASkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:40:13 -0400
+Received: from kroah.org ([198.145.64.141]:40556 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758161Ab0GASYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:31 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:18 2010
-Message-Id: <20100701173218.635485092@clark.site>
+	id S1757911Ab0GASXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:37 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:13 2010
+Message-Id: <20100701173213.299182956@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:46 -0700
+Date: Thu, 01 Jul 2010 10:31:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Glauber Costa <glommer@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: [patch 140/149] KVM: Fix wallclock version writing race
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [patch 077/149] ASoC: Fix dB scales for WM8400
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Wallclock writing uses an unprotected global variable to hold the version;
-this can cause one guest to interfere with another if both write their
-wallclock at the same time.
+commit 3351e9fbb0fda6498ee149ee88c67f5849813c57 upstream.
 
-Acked-by: Glauber Costa <glommer@redhat.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+These scales should be regular, not linear.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-(cherry picked from commit 9ed3c444ab8987c7b219173a2f7807e3f71e234e)
----
- arch/x86/kvm/x86.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -554,14 +554,22 @@ static int do_set_msr(struct kvm_vcpu *v
+---
+ sound/soc/codecs/wm8400.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+--- a/sound/soc/codecs/wm8400.c
++++ b/sound/soc/codecs/wm8400.c
+@@ -106,21 +106,21 @@ static void wm8400_codec_reset(struct sn
+ 	wm8400_reset_codec_reg_cache(wm8400->wm8400);
+ }
  
- static void kvm_write_wall_clock(struct kvm *kvm, gpa_t wall_clock)
- {
--	static int version;
-+	int version;
-+	int r;
- 	struct pvclock_wall_clock wc;
- 	struct timespec boot;
+-static const DECLARE_TLV_DB_LINEAR(rec_mix_tlv, -1500, 600);
++static const DECLARE_TLV_DB_SCALE(rec_mix_tlv, -1500, 600, 0);
  
- 	if (!wall_clock)
- 		return;
+-static const DECLARE_TLV_DB_LINEAR(in_pga_tlv, -1650, 3000);
++static const DECLARE_TLV_DB_SCALE(in_pga_tlv, -1650, 3000, 0);
  
--	version++;
-+	r = kvm_read_guest(kvm, wall_clock, &version, sizeof(version));
-+	if (r)
-+		return;
-+
-+	if (version & 1)
-+		++version;  /* first time write, random junk */
-+
-+	++version;
+-static const DECLARE_TLV_DB_LINEAR(out_mix_tlv, -2100, 0);
++static const DECLARE_TLV_DB_SCALE(out_mix_tlv, -2100, 0, 0);
  
- 	kvm_write_guest(kvm, wall_clock, &version, sizeof(version));
+-static const DECLARE_TLV_DB_LINEAR(out_pga_tlv, -7300, 600);
++static const DECLARE_TLV_DB_SCALE(out_pga_tlv, -7300, 600, 0);
  
+-static const DECLARE_TLV_DB_LINEAR(out_omix_tlv, -600, 0);
++static const DECLARE_TLV_DB_SCALE(out_omix_tlv, -600, 0, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_dac_tlv, -7163, 0);
++static const DECLARE_TLV_DB_SCALE(out_dac_tlv, -7163, 0, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(in_adc_tlv, -7163, 1763);
++static const DECLARE_TLV_DB_SCALE(in_adc_tlv, -7163, 1763, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_sidetone_tlv, -3600, 0);
++static const DECLARE_TLV_DB_SCALE(out_sidetone_tlv, -3600, 0, 0);
+ 
+ static int wm8400_outpga_put_volsw_vu(struct snd_kcontrol *kcontrol,
+         struct snd_ctl_elem_value *ucontrol)
+@@ -439,7 +439,7 @@ static int outmixer_event (struct snd_so
+ /* INMIX dB values */
+ static const unsigned int in_mix_tlv[] = {
+ 	TLV_DB_RANGE_HEAD(1),
+-	0,7, TLV_DB_LINEAR_ITEM(-1200, 600),
++	0,7, TLV_DB_SCALE_ITEM(-1200, 600, 0),
+ };
+ 
+ /* Left In PGA Connections */
 
 
