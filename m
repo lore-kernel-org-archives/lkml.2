@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758227Ab0GAS0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:26:23 -0400
-Received: from kroah.org ([198.145.64.141]:40876 "EHLO coco.kroah.org"
+	id S1758055Ab0GASYA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:24:00 -0400
+Received: from kroah.org ([198.145.64.141]:40642 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758029Ab0GASYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:35 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:19 2010
-Message-Id: <20100701173218.982884910@clark.site>
+	id S1757998Ab0GASXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:52 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
+Message-Id: <20100701173214.742232205@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:50 -0700
+Date: Thu, 01 Jul 2010 10:32:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Helge Deller <deller@gmx.de>, Kyle McMartin <kyle@mcmartin.ca>
-Subject: [patch 144/149] parisc: clear floating point exception flag on SIGFPE signal
+       Bob Copeland <me@bobcopeland.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 094/149] ath5k: retain promiscuous setting
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Bob Copeland <me@bobcopeland.com>
 
-commit 550f0d922286556c7ea43974bb7921effb5a5278 upstream.
+commit 6b5dcccb495b66b3b0b9581cdccfed038e5d68a2 upstream.
 
-Clear the floating point exception flag before returning to
-user space. This is needed, else the libc trampoline handler
-may hit the same SIGFPE again while building up a trampoline
-to a signal handler.
+Commit 56d1de0a21db28e41741cfa0a66e18bc8d920554, "ath5k: clean up
+filter flags setting" introduced a regression in monitor mode such
+that the promisc filter flag would get lost.
 
-Fixes debian bug #559406.
+Although we set the promisc flag when it changed, we did not
+preserve it across subsequent calls to configure_filter.  This patch
+restores the original functionality.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: Kyle McMartin <kyle@mcmartin.ca>
+Bisected-by: weedy2887@gmail.com
+Tested-by: weedy2887@gmail.com
+Tested-by: Rick Farina <sidhayn@gmail.com>
+Signed-off-by: Bob Copeland <me@bobcopeland.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/parisc/math-emu/decode_exc.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ath/ath5k/base.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/parisc/math-emu/decode_exc.c
-+++ b/arch/parisc/math-emu/decode_exc.c
-@@ -342,6 +342,7 @@ decode_fpu(unsigned int Fpu_register[],
- 		return SIGNALCODE(SIGFPE, FPE_FLTINV);
- 	  case DIVISIONBYZEROEXCEPTION:
- 		update_trap_counts(Fpu_register, aflags, bflags, trap_counts);
-+		Clear_excp_register(exception_index);
- 	  	return SIGNALCODE(SIGFPE, FPE_FLTDIV);
- 	  case INEXACTEXCEPTION:
- 		update_trap_counts(Fpu_register, aflags, bflags, trap_counts);
+--- a/drivers/net/wireless/ath/ath5k/base.c
++++ b/drivers/net/wireless/ath/ath5k/base.c
+@@ -2975,13 +2975,15 @@ static void ath5k_configure_filter(struc
+ 
+ 	if (changed_flags & (FIF_PROMISC_IN_BSS | FIF_OTHER_BSS)) {
+ 		if (*new_flags & FIF_PROMISC_IN_BSS) {
+-			rfilt |= AR5K_RX_FILTER_PROM;
+ 			__set_bit(ATH_STAT_PROMISC, sc->status);
+ 		} else {
+ 			__clear_bit(ATH_STAT_PROMISC, sc->status);
+ 		}
+ 	}
+ 
++	if (test_bit(ATH_STAT_PROMISC, sc->status))
++		rfilt |= AR5K_RX_FILTER_PROM;
++
+ 	/* Note, AR5K_RX_FILTER_MCAST is already enabled */
+ 	if (*new_flags & FIF_ALLMULTI) {
+ 		mfilt[0] =  ~0;
 
 
