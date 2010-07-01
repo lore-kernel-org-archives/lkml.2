@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab0GARQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 13:16:44 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55878 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab0GARQm convert rfc822-to-8bit (ORCPT
+	id S1751847Ab0GART7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 13:19:59 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40063 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab0GART6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 13:16:42 -0400
-From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "ohad@wizery.com" <ohad@wizery.com>,
-       "hiroshi.doyo@nokia.com" <hiroshi.doyo@nokia.com>,
-       "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-       "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-       "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Date: Thu, 1 Jul 2010 12:16:38 -0500
-Subject: RE: [PATCHv3 5/9] dspbridge: add mmufault support
-Thread-Topic: [PATCHv3 5/9] dspbridge: add mmufault support
-Thread-Index: AcsYr29geLDqkvcsTwW6nxBnghiRywAkS5Rw
-Message-ID: <8F7AF80515AF0D4D93307E594F3CB40E4CA563BC@dlee03.ent.ti.com>
-References: <1277942401-3566-1-git-send-email-x0095840@ti.com>
- <1277942401-3566-2-git-send-email-x0095840@ti.com>
- <1277942401-3566-3-git-send-email-x0095840@ti.com>
- <1277942401-3566-4-git-send-email-x0095840@ti.com>
- <1277942401-3566-5-git-send-email-x0095840@ti.com>
- <1277942401-3566-6-git-send-email-x0095840@ti.com>
-In-Reply-To: <1277942401-3566-6-git-send-email-x0095840@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Jul 2010 13:19:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=ivM3kRXu2Tr3pZhyLsO5+/K/g3Vjjq3BvHKGbyRqTTsu7MUBQ5+Vp6TWTGAofy7B+L
+         zpAFys+VAgCOcoryw1onRWryPHS+cy9mNMs8HPa6JgS6pjt5F50LraWWZEugdJ9mE5Aw
+         1+AE7HXo6z4G6PCD8P1hfThRIrnzTOA17uxT8=
+Message-ID: <4C2CCE57.40208@gmail.com>
+Date: Thu, 01 Jul 2010 10:20:23 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, jkosina@suse.cz
+Subject: Re: [PATCH]kernel.h Move warning message about using kernel headers
+ for userspace to types.h
+References: <1277935785-6023-1-git-send-email-justinmattock@gmail.com> <201007010958.46720.arnd@arndb.de> <4C2C9962.3080307@gmail.com> <201007011707.31783.arnd@arndb.de>
+In-Reply-To: <201007011707.31783.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fernando,
+o.k. I resent an updated version. keep in mind this is a bit confusing 
+with the __KERNEL__ being in there multiple times, but with the v2 I'm 
+able to see the #warning message with my little program.
 
-> +int mmu_fault_isr(struct iommu *mmu)
-> 
-> -/*
-> - *  ======== mmu_check_if_fault =======
-> - *      Check to see if MMU Fault is valid TLB miss from DSP
-> - *  Note: This function is called from an ISR
-> - */
-> -static bool mmu_check_if_fault(struct bridge_dev_context *dev_context)
->  {
-> +	struct deh_mgr *dm;
-> +	u32 da;
-> +
-> +	dev_get_deh_mgr(dev_get_first(), &dm);
-> +
-> +	if (!dm)
-> +		return -EPERM;
-> +
-> +	da = iommu_read_reg(mmu, MMU_FAULT_AD);
-> +	iommu_write_reg(mmu, 0, MMU_IRQENABLE);
+As for the patch itself hopefully I corrected it's changelog etc..
+lately I've been a bit confused with the whole sighned off thing i.g.
+you suggested the #else so naturally I should add your name with a 
+sighned off, but with other patches I was told not to do so due to the 
+sighned off procedure/process. I'll re-read the submitting patches again 
+to make sure.
 
--- Isn't the MMU already enabled at this point when the function callback is called by iommu ?
+hopefully I get this right..
 
-> +	dm->err_info.dw_val1 = da;
-> +	tasklet_schedule(&dm->dpc_tasklet);
-
--- The iommu fault isr disables the IOMMU at the end of the fault handler, so by the time your tasklet is scheduled you might have the MMU in a disabled state. Looks to me either this requires change in iommu to remove the disable part or enable the MMU in the tasklet instead of doing it early in mmu_fault_isr.
-
-Thank you,
-Best regards,
-Hari
+Justin P. Mattock
