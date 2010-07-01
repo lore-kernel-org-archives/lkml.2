@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933180Ab0GAV3i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:29:38 -0400
-Received: from kroah.org ([198.145.64.141]:33262 "EHLO coco.kroah.org"
+	id S1759398Ab0GAVoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:44:44 -0400
+Received: from kroah.org ([198.145.64.141]:32848 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933163Ab0GAVPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:30 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:02 2010
-Message-Id: <20100701174302.487936206@clark.site>
+	id S1758776Ab0GAVOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:16 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:55 2010
+Message-Id: <20100701174255.628427493@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:39 -0700
+Date: Thu, 01 Jul 2010 10:43:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [189/200] KVM: Dont allow lmsw to clear cr0.pe
+       Marek Vasut <marek.vasut@gmail.com>,
+       Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [109/200] ARM: 6146/1: sa1111: Prevent deadlock in resume path
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: =?UTF-8?q?Marek=20Va=C5=A1ut?= <marek.vasut@gmail.com>
 
-The current lmsw implementation allows the guest to clear cr0.pe, contrary
-to the manual, which breaks EMM386.EXE.
+commit 3defb2476166445982a90c12d33f8947e75476c4 upstream.
 
-Fix by ORing the old cr0.pe with lmsw's operand.
+This patch reorganises the sa1111_resume() function in a manner the spinlock
+happens after calling the sa1111_wake(). This fixes two bugs:
 
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+1) This function called sa1111_wake() which tried to claim the same spinlock
+   the sa1111_resume() already claimed. This would result in certain deadlock.
+
+   Original idea for this part: Russell King <rmk+kernel@arm.linux.org.uk>
+
+2) The function didn't unlock the spinlock in case the chip didn't report
+   correct ID.
+
+   Original idea for this part: Julia Lawall <julia@diku.dk>
+
+Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-(Cherry-picked from commit f78e917688edbf1f14c318d2e50dc8e7dad20445)
 ---
- arch/x86/kvm/x86.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/common/sa1111.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -484,7 +484,7 @@ EXPORT_SYMBOL_GPL(kvm_set_cr0);
+--- a/arch/arm/common/sa1111.c
++++ b/arch/arm/common/sa1111.c
+@@ -951,8 +951,6 @@ static int sa1111_resume(struct platform
+ 	if (!save)
+ 		return 0;
  
- void kvm_lmsw(struct kvm_vcpu *vcpu, unsigned long msw)
- {
--	kvm_set_cr0(vcpu, kvm_read_cr0_bits(vcpu, ~0x0ful) | (msw & 0x0f));
-+	kvm_set_cr0(vcpu, kvm_read_cr0_bits(vcpu, ~0x0eul) | (msw & 0x0f));
- }
- EXPORT_SYMBOL_GPL(kvm_lmsw);
+-	spin_lock_irqsave(&sachip->lock, flags);
+-
+ 	/*
+ 	 * Ensure that the SA1111 is still here.
+ 	 * FIXME: shouldn't do this here.
+@@ -969,6 +967,13 @@ static int sa1111_resume(struct platform
+ 	 * First of all, wake up the chip.
+ 	 */
+ 	sa1111_wake(sachip);
++
++	/*
++	 * Only lock for write ops. Also, sa1111_wake must be called with
++	 * released spinlock!
++	 */
++	spin_lock_irqsave(&sachip->lock, flags);
++
+ 	sa1111_writel(0, sachip->base + SA1111_INTC + SA1111_INTEN0);
+ 	sa1111_writel(0, sachip->base + SA1111_INTC + SA1111_INTEN1);
  
 
 
