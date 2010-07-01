@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758235Ab0GAS0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:26:49 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38773 "EHLO arroyo.ext.ti.com"
+	id S1758230Ab0GAS0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:26:35 -0400
+Received: from kroah.org ([198.145.64.141]:40864 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758123Ab0GAS0m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:26:42 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "ohad@wizery.com" <ohad@wizery.com>, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-       "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-       "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
-Date: Thu, 1 Jul 2010 13:26:35 -0500
-Subject: RE: [PATCHv3 5/9] dspbridge: add mmufault support
-Thread-Topic: [PATCHv3 5/9] dspbridge: add mmufault support
-Thread-Index: AcsYr29geLDqkvcsTwW6nxBnghiRywAkS5RwAAFMioAAAGkFgAAAvf7A
-Message-ID: <496565EC904933469F292DDA3F1663E602CBDD3777@dlee06.ent.ti.com>
-References: <1277942401-3566-1-git-send-email-x0095840@ti.com>
- <1277942401-3566-2-git-send-email-x0095840@ti.com>
- <1277942401-3566-3-git-send-email-x0095840@ti.com>
- <1277942401-3566-4-git-send-email-x0095840@ti.com>
- <1277942401-3566-5-git-send-email-x0095840@ti.com>
- <1277942401-3566-6-git-send-email-x0095840@ti.com>
- <8F7AF80515AF0D4D93307E594F3CB40E4CA563BC@dlee03.ent.ti.com>
- <496565EC904933469F292DDA3F1663E602CBDD373C@dlee06.ent.ti.com>
- <8F7AF80515AF0D4D93307E594F3CB40E4CA5645D@dlee03.ent.ti.com>
-In-Reply-To: <8F7AF80515AF0D4D93307E594F3CB40E4CA5645D@dlee03.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1758171Ab0GASYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:33 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:18 2010
+Message-Id: <20100701173218.799346610@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:32:48 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
+Subject: [patch 142/149] KVM: x86: Inject #GP with the right rip on efer writes
+In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
+
+------------------
+
+From: Roedel, Joerg <Joerg.Roedel@amd.com>
+
+This patch fixes a bug in the KVM efer-msr write path. If a
+guest writes to a reserved efer bit the set_efer function
+injects the #GP directly. The architecture dependent wrmsr
+function does not see this, assumes success and advances the
+rip. This results in a #GP in the guest with the wrong rip.
+This patch fixes this by reporting efer write errors back to
+the architectural wrmsr function.
+
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+(cherry picked from commit b69e8caef5b190af48c525f6d715e7b7728a77f6)
+---
+ arch/x86/kvm/x86.c |   31 ++++++++++++-------------------
+ 1 file changed, 12 insertions(+), 19 deletions(-)
+
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -483,37 +483,29 @@ static u32 emulated_msrs[] = {
+ 	MSR_IA32_MISC_ENABLE,
+ };
+ 
+-static void set_efer(struct kvm_vcpu *vcpu, u64 efer)
++static int set_efer(struct kvm_vcpu *vcpu, u64 efer)
+ {
+-	if (efer & efer_reserved_bits) {
+-		kvm_inject_gp(vcpu, 0);
+-		return;
+-	}
++	if (efer & efer_reserved_bits)
++		return 1;
+ 
+ 	if (is_paging(vcpu)
+-	    && (vcpu->arch.shadow_efer & EFER_LME) != (efer & EFER_LME)) {
+-		kvm_inject_gp(vcpu, 0);
+-		return;
+-	}
++	    && (vcpu->arch.shadow_efer & EFER_LME) != (efer & EFER_LME))
++		return 1;
+ 
+ 	if (efer & EFER_FFXSR) {
+ 		struct kvm_cpuid_entry2 *feat;
+ 
+ 		feat = kvm_find_cpuid_entry(vcpu, 0x80000001, 0);
+-		if (!feat || !(feat->edx & bit(X86_FEATURE_FXSR_OPT))) {
+-			kvm_inject_gp(vcpu, 0);
+-			return;
+-		}
++		if (!feat || !(feat->edx & bit(X86_FEATURE_FXSR_OPT)))
++			return 1;
+ 	}
+ 
+ 	if (efer & EFER_SVME) {
+ 		struct kvm_cpuid_entry2 *feat;
+ 
+ 		feat = kvm_find_cpuid_entry(vcpu, 0x80000001, 0);
+-		if (!feat || !(feat->ecx & bit(X86_FEATURE_SVM))) {
+-			kvm_inject_gp(vcpu, 0);
+-			return;
+-		}
++		if (!feat || !(feat->ecx & bit(X86_FEATURE_SVM)))
++			return 1;
+ 	}
+ 
+ 	efer &= ~EFER_LMA;
+@@ -525,6 +517,8 @@ static void set_efer(struct kvm_vcpu *vc
+ 
+ 	vcpu->arch.mmu.base_role.nxe = (efer & EFER_NX) && !tdp_enabled;
+ 	kvm_mmu_reset_context(vcpu);
++
++	return 0;
+ }
+ 
+ void kvm_enable_efer_bits(u64 mask)
+@@ -827,8 +821,7 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ {
+ 	switch (msr) {
+ 	case MSR_EFER:
+-		set_efer(vcpu, data);
+-		break;
++		return set_efer(vcpu, data);
+ 	case MSR_K7_HWCR:
+ 		data &= ~(u64)0x40;	/* ignore flush filter disable */
+ 		if (data != 0) {
 
 
-> -----Original Message-----
-> From: Kanigeri, Hari
-> Sent: Thursday, July 01, 2010 1:04 PM
-> To: Guzman Lugo, Fernando; linux-omap@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Cc: ohad@wizery.com; Hiroshi DOYU; ameya.palande@nokia.com;
-> felipe.contreras@nokia.com
-> Subject: RE: [PATCHv3 5/9] dspbridge: add mmufault support
-> 
-> > > > +	da = iommu_read_reg(mmu, MMU_FAULT_AD);
-> > > > +	iommu_write_reg(mmu, 0, MMU_IRQENABLE);
-> > >
-> > > -- Isn't the MMU already enabled at this point when the function
-> > callback
-> > > is called by iommu ?
-> >
-> > This line is actually disabling the interrupts. I am writing "0x0" in
-> the
-> > MMU_IRQENABLE.
-> 
-> -- oops ! sorry about that. Didn't pay attention to 0x0. Yes, this should
-> work.
-
-Not problem :). Could you please comment in the second set of patches I sent? The previous ones have version 3 which is not correct, that was a version I was using internally, but the patches shouldn't have sent to mailing list with that version. Because it is the first version posted.
-
-Thanks and regards,
-Fernando.
-
-> 
-> Best regards,
-> Hari
