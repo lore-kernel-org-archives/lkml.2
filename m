@@ -1,124 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757590Ab0GASWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:22:48 -0400
-Received: from kroah.org ([198.145.64.141]:35299 "EHLO coco.kroah.org"
+	id S1756589Ab0GATEK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 15:04:10 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41648 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757126Ab0GASWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:22:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:07 2010
-Message-Id: <20100701173207.666918684@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:36 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: [patch 010/149] Fix racy use of anon_inode_getfd() in perf_event.c
-In-Reply-To: <20100701175144.GA2116@kroah.com>
+	id S1751979Ab0GATEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 15:04:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being lost
+Date: Thu, 1 Jul 2010 21:02:27 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       mark gross <640e9920@gmail.com>, "Arve Hj??nnev??g" <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Mickler <florian@mickler.org>, linux-pci@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+References: <201006261514.13491.rjw@sisk.pl> <20100701133208.GA1285@ucw.cz>
+In-Reply-To: <20100701133208.GA1285@ucw.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007012102.27495.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Thursday, July 01, 2010, Pavel Machek wrote:
+> Hi!
+> 
+> > @@ -114,3 +114,17 @@ Description:
+> >  		if this file contains "1", which is the default.  It may be
+> >  		disabled by writing "0" to this file, in which case all devices
+> >  		will be suspended and resumed synchronously.
+> > +
+> > +What:		/sys/power/wakeup_count
+> > +Date:		July 2010
+> > +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
+> > +Description:
+> > +		The /sys/power/wakeup_count file allows user space to avoid
+> > +		losing wakeup events when transitioning the system into a sleep
+> > +		state.  Reading from it returns the current number of registered
+> > +		wakeup events and it blocks if some wakeup events are being
+> > +		processed at the time the file is read from.  Writing to it
+> > +		will only succeed if the current number of wakeup events is
+> > +		equal to the written value and, if successful, will make the
+> > +		kernel abort a subsequent transition to a sleep state if any
+> > +		wakeup events are reported after the write has returned.
+> 
+> I assume that second suspend always succeeds?
 
-------------------
+The mechanism is one-shot if that's what you're asking for.
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+> I can't say I quite like the way two sysfs files interact with each
+> other, but it is certainly better then wakelocks...
+> 
+> Maybe we should create sys_suspend()?
 
-commit ea635c64e007061f6468ece5cc9cc62d41d4ecf2 upstream.
+Well, one can modify pm-utils to use the new sysfs file quite easily, but it
+wouldn't be that easy with sys_suspend() IMO.
 
-once anon_inode_getfd() is called, you can't expect *anything* about
-struct file that descriptor points to - another thread might be doing
-whatever it likes with descriptor table at that point.
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- kernel/perf_event.c |   40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
-
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4510,8 +4510,8 @@ SYSCALL_DEFINE5(perf_event_open,
- 	struct perf_event_context *ctx;
- 	struct file *event_file = NULL;
- 	struct file *group_file = NULL;
-+	int event_fd;
- 	int fput_needed = 0;
--	int fput_needed2 = 0;
- 	int err;
- 
- 	/* for future expandability... */
-@@ -4532,12 +4532,18 @@ SYSCALL_DEFINE5(perf_event_open,
- 			return -EINVAL;
- 	}
- 
-+	event_fd = get_unused_fd_flags(O_RDWR);
-+	if (event_fd < 0)
-+		return event_fd;
-+
- 	/*
- 	 * Get the target context (task or percpu):
- 	 */
- 	ctx = find_get_context(pid, cpu);
--	if (IS_ERR(ctx))
--		return PTR_ERR(ctx);
-+	if (IS_ERR(ctx)) {
-+		err = PTR_ERR(ctx);
-+		goto err_fd;
-+	}
- 
- 	/*
- 	 * Look up the group leader (we will attach this event to it):
-@@ -4577,13 +4583,11 @@ SYSCALL_DEFINE5(perf_event_open,
- 	if (IS_ERR(event))
- 		goto err_put_context;
- 
--	err = anon_inode_getfd("[perf_event]", &perf_fops, event, 0);
--	if (err < 0)
--		goto err_free_put_context;
--
--	event_file = fget_light(err, &fput_needed2);
--	if (!event_file)
-+	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event, O_RDWR);
-+	if (IS_ERR(event_file)) {
-+		err = PTR_ERR(event_file);
- 		goto err_free_put_context;
-+	}
- 
- 	if (flags & PERF_FLAG_FD_OUTPUT) {
- 		err = perf_event_set_output(event, group_fd);
-@@ -4604,19 +4608,19 @@ SYSCALL_DEFINE5(perf_event_open,
- 	list_add_tail(&event->owner_entry, &current->perf_event_list);
- 	mutex_unlock(&current->perf_event_mutex);
- 
--err_fput_free_put_context:
--	fput_light(event_file, fput_needed2);
-+	fput_light(group_file, fput_needed);
-+	fd_install(event_fd, event_file);
-+	return event_fd;
- 
-+err_fput_free_put_context:
-+	fput(event_file);
- err_free_put_context:
--	if (err < 0)
--		free_event(event);
--
-+	free_event(event);
- err_put_context:
--	if (err < 0)
--		put_ctx(ctx);
--
- 	fput_light(group_file, fput_needed);
--
-+	put_ctx(ctx);
-+err_fd:
-+	put_unused_fd(event_fd);
- 	return err;
- }
- 
-
-
+Rafael
