@@ -1,48 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab0GAAHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 20:07:11 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36667 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab0GAAHG (ORCPT
+	id S1757526Ab0GAAJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 20:09:57 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34820 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab0GAAJz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 20:07:06 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 05/11] oom: /proc/<pid>/oom_score treat kernel thread honestly
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100630140328.GC15644@barrios-desktop>
-References: <20100630182922.AA56.A69D9226@jp.fujitsu.com> <20100630140328.GC15644@barrios-desktop>
-Message-Id: <20100701085309.DA16.A69D9226@jp.fujitsu.com>
+	Wed, 30 Jun 2010 20:09:55 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "ohad@wizery.com" <ohad@wizery.com>,
+       "hiroshi.doyo@nokia.com" <hiroshi.doyo@nokia.com>,
+       "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+       "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
+Date: Wed, 30 Jun 2010 19:09:48 -0500
+Subject: RE: [PATCHv3 0/9] dspbridge: iommu migration
+Thread-Topic: [PATCHv3 0/9] dspbridge: iommu migration
+Thread-Index: AcsYrwYXPx+pSmK7TsK/RJBdRbFF/gAAnbXg
+Message-ID: <496565EC904933469F292DDA3F1663E602CBDD34E2@dlee06.ent.ti.com>
+References: <1277942401-3566-1-git-send-email-x0095840@ti.com>
+In-Reply-To: <1277942401-3566-1-git-send-email-x0095840@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  1 Jul 2010 09:07:02 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Jun 30, 2010 at 06:30:19PM +0900, KOSAKI Motohiro wrote:
-> > If kernel thread are using use_mm(), badness() return positive value.
-> > This is not big issue because caller care it correctly. but there is
-> > one exception, /proc/<pid>/oom_score call badness() directly and
-> > don't care the task is regular process.
-> > 
-> > another example, /proc/1/oom_score return !0 value. but it's unkillable.
-> > This incorrectness makes confusing to admin a bit.
+
+
+Sorry wrong version of the patches. Please discard them.
+
+Sorry for the spam,
+Fernando.
+
+
+> -----Original Message-----
+> From: Guzman Lugo, Fernando
+> Sent: Wednesday, June 30, 2010 7:00 PM
+> To: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org
+> Cc: ohad@wizery.com; hiroshi.doyo@nokia.com; ameya.palande@nokia.com;
+> felipe.contreras@nokia.com; Guzman Lugo, Fernando
+> Subject: [PATCHv3 0/9] dspbridge: iommu migration
 > 
-> Hmm. If it is a really problem, Could we solve it in proc_oom_score itself?
-
-probably, no good idea. For maintainance view, all oom related code should
-be gathered in oom_kill.c.
-If you dislike to add messy into badness(), I hope to make badness_for_oom_score()
-or something like instead.
-
-
+> This set of patches remove the dspbridge custom mmu implementation
+> and use iommu module instead.
+> 
+> 
+> NOTE: in order to dspbridge can work properly the patch
+> "0001-iovmm-add-superpages-support-to-fixed-da-address.patch"
+> is needed (specifically iommu_kmap calls need this patch).
+> 
+> Fernando Guzman Lugo (9):
+>   dspbridge: replace iommu custom for opensource implementation
+>   dspbridge: move shared memory iommu maps to tiomap3430.c
+>   dspbridge: rename bridge_brd_mem_map/unmap to a proper name
+>   dspbridge: remove custom mmu code from tiomap3430.c
+>   dspbridge: add mmufault support
+>   dspbridge: remove hw directory
+>   dspbridge: move all iommu related code to a new file
+>   dspbridge: add map support for big buffers
+>   dspbridge: cleanup bridge_dev_context and cfg_hostres structures
+> 
+>  arch/arm/plat-omap/include/dspbridge/cfgdefs.h  |    1 -
+>  arch/arm/plat-omap/include/dspbridge/dsp-mmu.h  |   90 ++
+>  arch/arm/plat-omap/include/dspbridge/dspdefs.h  |   44 -
+>  arch/arm/plat-omap/include/dspbridge/dspdeh.h   |    1 -
+>  arch/arm/plat-omap/include/dspbridge/dspioctl.h |    7 -
+>  drivers/dsp/bridge/Makefile                     |    5 +-
+>  drivers/dsp/bridge/core/_deh.h                  |    3 -
+>  drivers/dsp/bridge/core/_tiomap.h               |   15 +-
+>  drivers/dsp/bridge/core/dsp-mmu.c               |  229 ++++
+>  drivers/dsp/bridge/core/io_sm.c                 |  185 +---
+>  drivers/dsp/bridge/core/mmu_fault.c             |  139 ---
+>  drivers/dsp/bridge/core/mmu_fault.h             |   36 -
+>  drivers/dsp/bridge/core/tiomap3430.c            | 1297 ++++--------------
+> -----
+>  drivers/dsp/bridge/core/tiomap3430_pwr.c        |  183 +---
+>  drivers/dsp/bridge/core/tiomap_io.c             |   16 +-
+>  drivers/dsp/bridge/core/ue_deh.c                |   87 +--
+>  drivers/dsp/bridge/hw/EasiGlobal.h              |   41 -
+>  drivers/dsp/bridge/hw/GlobalTypes.h             |  308 ------
+>  drivers/dsp/bridge/hw/MMUAccInt.h               |   76 --
+>  drivers/dsp/bridge/hw/MMURegAcM.h               |  226 ----
+>  drivers/dsp/bridge/hw/hw_defs.h                 |   60 --
+>  drivers/dsp/bridge/hw/hw_mmu.c                  |  587 ----------
+>  drivers/dsp/bridge/hw/hw_mmu.h                  |  161 ---
+>  drivers/dsp/bridge/pmgr/dev.c                   |    2 -
+>  drivers/dsp/bridge/rmgr/drv.c                   |    4 -
+>  drivers/dsp/bridge/rmgr/node.c                  |    4 +-
+>  drivers/dsp/bridge/rmgr/proc.c                  |   19 +-
+>  27 files changed, 599 insertions(+), 3227 deletions(-)
+>  create mode 100644 arch/arm/plat-omap/include/dspbridge/dsp-mmu.h
+>  create mode 100644 drivers/dsp/bridge/core/dsp-mmu.c
+>  delete mode 100644 drivers/dsp/bridge/core/mmu_fault.c
+>  delete mode 100644 drivers/dsp/bridge/core/mmu_fault.h
+>  delete mode 100644 drivers/dsp/bridge/hw/EasiGlobal.h
+>  delete mode 100644 drivers/dsp/bridge/hw/GlobalTypes.h
+>  delete mode 100644 drivers/dsp/bridge/hw/MMUAccInt.h
+>  delete mode 100644 drivers/dsp/bridge/hw/MMURegAcM.h
+>  delete mode 100644 drivers/dsp/bridge/hw/hw_defs.h
+>  delete mode 100644 drivers/dsp/bridge/hw/hw_mmu.c
+>  delete mode 100644 drivers/dsp/bridge/hw/hw_mmu.h
 
