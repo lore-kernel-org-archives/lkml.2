@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab0GARj5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 13:39:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43619 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab0GARjz (ORCPT
+	id S1753235Ab0GARoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 13:44:19 -0400
+Received: from exprod5og108.obsmtp.com ([64.18.0.186]:40412 "HELO
+	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752998Ab0GARoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 13:39:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=sBEYU/lOSbxum7h+pdvRb8xjh2jCF+VbF/qC2MjcGNJM/58l/Z1NMvdKZ2J6UDYii7
-         L5QHbGGYrmQZK97AeWc2A8zSdoYZenTYBezr2/HxN3EN1bEZwsbWpb13kZgXzlNZ7aZw
-         SjaS4ucXZHfcGIuqV92VfguVfVUTHC/LbZWAI=
-Date: Thu, 1 Jul 2010 19:38:05 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       Doug Gilbert <dgilbert@interlog.com>,
-       "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/25] scsi/sg: remove casts from void*
-Message-ID: <20100701173805.GW19184@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Kulikov Vasiliy <segooon@gmail.com>,
-	Kernel Janitors <kernel-janitors@vger.kernel.org>,
-	Doug Gilbert <dgilbert@interlog.com>,
-	"James E.J. Bottomley" <James.Bottomley@suse.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-	Jens Axboe <jens.axboe@oracle.com>,
-	Alexey Dobriyan <adobriyan@gmail.com>, linux-scsi@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1277990204-22157-1-git-send-email-segooon@gmail.com>
+	Thu, 1 Jul 2010 13:44:18 -0400
+From: Rupjyoti Sarmah <rsarmah@apm.com>
+References: <201006241327.o5ODRY6m032299@amcc.com> <20100630115808.2D9241524EC@gemini.denx.de> 
+	<3b928476b2fffdcf0694e5436e8a482f@mail.gmail.com> <20100630184728.C02D014EBF9@gemini.denx.de> 
+	<4C2B9831.9020801@pobox.com> <20100630200325.GD7756@zod.rchland.ibm.com> 
+	<20100630225516.8F9D3152442@gemini.denx.de>
+In-Reply-To: <20100630225516.8F9D3152442@gemini.denx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277990204-22157-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcsYp1G6fI1Y4xp/S2yJLSTzi1VYZgAm51Rw
+Date: Thu, 1 Jul 2010 23:14:14 +0530
+Message-ID: <4645a5c409da26358f3102276bbccf72@mail.gmail.com>
+Subject: RE: [PATCH v1]460EX on-chip SATA driver<resubmisison>
+To: Wolfgang Denk <wd@denx.de>, Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+       Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, sr@denx.de, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 05:16:43PM +0400, Kulikov Vasiliy wrote:
-> -	Sg_fd *sfp;
-> +	Sg_fd *sfp = filp->private_data;
-                     ^^^^^^^^^^^^^^^^^^
-	Dereferenced here.
+Dear All,
 
->  	unsigned long req_sz, len, sa;
->  	Sg_scatter_hold *rsv_schp;
->  	int k, length;
->  
-> -	if ((!filp) || (!vma) || (!(sfp = (Sg_fd *) filp->private_data)))
-> +	if ((!filp) || (!vma) || !(sfp))
-             ^^^^^
+The Synopsis design ware core is task file orientated so the driver would
+still need CONFIG_ATA_SFF.
+I would be fixing the Kconfig file to make it dependent on the
+CONFIG_ATA_SFF.
 
-	Checked here.
+Regards,
+Rup
 
-I obviously just spotted that during the review but another way would be
-to use smatch to catch these.  (http://smatch.sf.net)
 
-$ /path/to/smatch_scripts/kchecker drivers/scsi/sg.c
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CHECK   drivers/scsi/sg.c
-drivers/scsi/sg.c +1236 sg_mmap(7) warn: variable dereferenced before check 'filp'
-  CC [M]  drivers/scsi/sg.o
-$
 
-You could also get rid of the extra parenthesis.
-+	if (!filp || !vma || !sfp)
+-----Original Message-----
+From: Wolfgang Denk [mailto:wd@denx.de]
+Sent: Thursday, July 01, 2010 4:25 AM
+To: Josh Boyer
+Cc: Jeff Garzik; linux-ide@vger.kernel.org; sr@denx.de; Rupjyoti Sarmah;
+linux-kernel@vger.kernel.org; linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH v1]460EX on-chip SATA driver<resubmisison>
 
->  		return -ENXIO;
->  	req_sz = vma->vm_end - vma->vm_start;
->  	SCSI_LOG_TIMEOUT(3, printk("sg_mmap starting, vm_start=%p, len=%d\n",
+Dear Josh Boyer,
 
-Btw.  These are _way_ better than when you sent them the first time.
-Thanks for doing resending them.
+In message <20100630200325.GD7756@zod.rchland.ibm.com> you wrote:
+>
+> The driver doesn't depend on CONFIG_ATA_SFF in it's Kconfig file, but
+seems to
+> require it at build time.  Isn't that something that needs fixing in the
+> driver?
 
-regards,
-dan carpenter
+Right.  Next question is if this is really needed for this driver.
 
+Best regards,
+
+Wolfgang Denk
+
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+Copy from one, it's plagiarism; copy from two, it's research.
