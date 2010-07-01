@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759438Ab0GAVtx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:49:53 -0400
-Received: from kroah.org ([198.145.64.141]:60951 "EHLO coco.kroah.org"
+	id S933343Ab0GAVkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:40:43 -0400
+Received: from kroah.org ([198.145.64.141]:32958 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758846Ab0GAVN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:56 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:53 2010
-Message-Id: <20100701174253.691749866@clark.site>
+	id S1759183Ab0GAVOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:34 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:57 2010
+Message-Id: <20100701174257.397874111@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:56 -0700
+Date: Thu, 01 Jul 2010 10:43:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       NeilBrown <neilb@suse.de>
-Subject: [086/200] md: Fix read balancing in RAID1 and RAID10 on drives > 2TB
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [130/200] ALSA: hda: Use LPIB for an ASUS device
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,55 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit af3a2cd6b8a479345786e7fe5e199ad2f6240e56 upstream.
+commit dd37f8e8659bc617c3f2a84e007a4824ccdac458 upstream.
 
-read_balance uses a "unsigned long" for a sector number which
-will get truncated beyond 2TB.
-This will cause read-balancing to be non-optimal, and can cause
-data to be read from the 'wrong' branch during a resync.  This has a
-very small chance of returning wrong data.
+BugLink: https://launchpad.net/bugs/465942
 
-Reported-by: Jordan Russell <jr-list-2010@quo.to>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Symptom: On the reporter's ASUS device, using PulseAudio in Ubuntu 10.04
+LTS results in the PA daemon crashing shortly after attempting to select
+capture or to configure the audio hardware profile.
+
+Test case: Using Ubuntu 10.04 LTS (Linux 2.6.32.12), Linux 2.6.33, or
+Linux 2.6.34, adjust the HDA device's capture volume with PulseAudio.
+
+Resolution: add SSID for this machine to the position_fix quirk table,
+explicitly specifying the LPIB method.
+
+Reported-and-Tested-By: Irihapeti
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/raid1.c  |    4 ++--
- drivers/md/raid10.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -418,7 +418,7 @@ static void raid1_end_write_request(stru
-  */
- static int read_balance(conf_t *conf, r1bio_t *r1_bio)
- {
--	const unsigned long this_sector = r1_bio->sector;
-+	const sector_t this_sector = r1_bio->sector;
- 	int new_disk = conf->last_used, disk = new_disk;
- 	int wonly_disk = -1;
- 	const int sectors = r1_bio->sectors;
-@@ -434,7 +434,7 @@ static int read_balance(conf_t *conf, r1
-  retry:
- 	if (conf->mddev->recovery_cp < MaxSector &&
- 	    (this_sector + sectors >= conf->next_resync)) {
--		/* Choose the first operation device, for consistancy */
-+		/* Choose the first operational device, for consistancy */
- 		new_disk = 0;
- 
- 		for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -494,7 +494,7 @@ static int raid10_mergeable_bvec(struct
-  */
- static int read_balance(conf_t *conf, r10bio_t *r10_bio)
- {
--	const unsigned long this_sector = r10_bio->sector;
-+	const sector_t this_sector = r10_bio->sector;
- 	int disk, slot, nslot;
- 	const int sectors = r10_bio->sectors;
- 	sector_t new_distance, current_distance;
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2269,6 +2269,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1043, 0x81b3, "ASUS", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x104d, 0x9069, "Sony VPCS11V9E", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1179, 0xff10, "Toshiba A100-259", POS_FIX_LPIB),
 
 
