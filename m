@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019Ab0GAU6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:58:43 -0400
-Received: from kroah.org ([198.145.64.141]:47979 "EHLO coco.kroah.org"
+	id S932935Ab0GAU44 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:56:56 -0400
+Received: from kroah.org ([198.145.64.141]:48012 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932899Ab0GAUve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:34 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:39 2010
-Message-Id: <20100701173439.792329292@clark.site>
+	id S932925Ab0GAUvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:40 2010
+Message-Id: <20100701173440.464169159@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:40 -0700
+Date: Thu, 01 Jul 2010 10:35:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>
-Subject: [patch 154/164] KVM: MMU: Dont read pdptrs with mmu spinlock held in mmu_alloc_roots
+       David Howells <dhowells@redhat.com>, Serge Hallyn <serue@us.ibm.com>,
+       James Morris <jmorris@namei.org>, Ben Hutchings <ben@decadent.org.uk>,
+       Chuck Ebbert <cebbert@redhat.com>
+Subject: [patch 162/164] KEYS: find_keyring_by_name() can gain access to a freed keyring
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,63 +27,191 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
 
-On svm, kvm_read_pdptr() may require reading guest memory, which can sleep.
+commit cea7daa3589d6b550546a8c8963599f7c1a3ae5c upstream.
 
-Push the spinlock into mmu_alloc_roots(), and only take it after we've read
-the pdptr.
+find_keyring_by_name() can gain access to a keyring that has had its reference
+count reduced to zero, and is thus ready to be freed.  This then allows the
+dead keyring to be brought back into use whilst it is being destroyed.
 
-Tested-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+The following timeline illustrates the process:
+
+|(cleaner)                           (user)
+|
+| free_user(user)                    sys_keyctl()
+|  |                                  |
+|  key_put(user->session_keyring)     keyctl_get_keyring_ID()
+|  ||	//=> keyring->usage = 0        |
+|  |schedule_work(&key_cleanup_task)   lookup_user_key()
+|  ||                                   |
+|  kmem_cache_free(,user)               |
+|  .                                    |[KEY_SPEC_USER_KEYRING]
+|  .                                    install_user_keyrings()
+|  .                                    ||
+| key_cleanup() [<= worker_thread()]    ||
+|  |                                    ||
+|  [spin_lock(&key_serial_lock)]        |[mutex_lock(&key_user_keyr..mutex)]
+|  |                                    ||
+|  atomic_read() == 0                   ||
+|  |{ rb_ease(&key->serial_node,) }     ||
+|  |                                    ||
+|  [spin_unlock(&key_serial_lock)]      |find_keyring_by_name()
+|  |                                    |||
+|  keyring_destroy(keyring)             ||[read_lock(&keyring_name_lock)]
+|  ||                                   |||
+|  |[write_lock(&keyring_name_lock)]    ||atomic_inc(&keyring->usage)
+|  |.                                   ||| *** GET freeing keyring ***
+|  |.                                   ||[read_unlock(&keyring_name_lock)]
+|  ||                                   ||
+|  |list_del()                          |[mutex_unlock(&key_user_k..mutex)]
+|  ||                                   |
+|  |[write_unlock(&keyring_name_lock)]  ** INVALID keyring is returned **
+|  |                                    .
+|  kmem_cache_free(,keyring)            .
+|                                       .
+|                                       atomic_dec(&keyring->usage)
+v                                         *** DESTROYED ***
+TIME
+
+If CONFIG_SLUB_DEBUG=y then we may see the following message generated:
+
+	=============================================================================
+	BUG key_jar: Poison overwritten
+	-----------------------------------------------------------------------------
+
+	INFO: 0xffff880197a7e200-0xffff880197a7e200. First byte 0x6a instead of 0x6b
+	INFO: Allocated in key_alloc+0x10b/0x35f age=25 cpu=1 pid=5086
+	INFO: Freed in key_cleanup+0xd0/0xd5 age=12 cpu=1 pid=10
+	INFO: Slab 0xffffea000592cb90 objects=16 used=2 fp=0xffff880197a7e200 flags=0x200000000000c3
+	INFO: Object 0xffff880197a7e200 @offset=512 fp=0xffff880197a7e300
+
+	Bytes b4 0xffff880197a7e1f0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+	  Object 0xffff880197a7e200:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
+
+Alternatively, we may see a system panic happen, such as:
+
+	BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
+	IP: [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+	PGD 6b2b4067 PUD 6a80d067 PMD 0
+	Oops: 0000 [#1] SMP
+	last sysfs file: /sys/kernel/kexec_crash_loaded
+	CPU 1
+	...
+	Pid: 31245, comm: su Not tainted 2.6.34-rc5-nofixed-nodebug #2 D2089/PRIMERGY
+	RIP: 0010:[<ffffffff810e61a3>]  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+	RSP: 0018:ffff88006af3bd98  EFLAGS: 00010002
+	RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88007d19900b
+	RDX: 0000000100000000 RSI: 00000000000080d0 RDI: ffffffff81828430
+	RBP: ffffffff81828430 R08: ffff88000a293750 R09: 0000000000000000
+	R10: 0000000000000001 R11: 0000000000100000 R12: 00000000000080d0
+	R13: 00000000000080d0 R14: 0000000000000296 R15: ffffffff810f20ce
+	FS:  00007f97116bc700(0000) GS:ffff88000a280000(0000) knlGS:0000000000000000
+	CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+	CR2: 0000000000000001 CR3: 000000006a91c000 CR4: 00000000000006e0
+	DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+	DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+	Process su (pid: 31245, threadinfo ffff88006af3a000, task ffff8800374414c0)
+	Stack:
+	 0000000512e0958e 0000000000008000 ffff880037f8d180 0000000000000001
+	 0000000000000000 0000000000008001 ffff88007d199000 ffffffff810f20ce
+	 0000000000008000 ffff88006af3be48 0000000000000024 ffffffff810face3
+	Call Trace:
+	 [<ffffffff810f20ce>] ? get_empty_filp+0x70/0x12f
+	 [<ffffffff810face3>] ? do_filp_open+0x145/0x590
+	 [<ffffffff810ce208>] ? tlb_finish_mmu+0x2a/0x33
+	 [<ffffffff810ce43c>] ? unmap_region+0xd3/0xe2
+	 [<ffffffff810e4393>] ? virt_to_head_page+0x9/0x2d
+	 [<ffffffff81103916>] ? alloc_fd+0x69/0x10e
+	 [<ffffffff810ef4ed>] ? do_sys_open+0x56/0xfc
+	 [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
+	Code: 0f 1f 44 00 00 49 89 c6 fa 66 0f 1f 44 00 00 65 4c 8b 04 25 60 e8 00 00 48 8b 45 00 49 01 c0 49 8b 18 48 85 db 74 0d 48 63 45 18 <48> 8b 04 03 49 89 00 eb 14 4c 89 f9 83 ca ff 44 89 e6 48 89 ef
+	RIP  [<ffffffff810e61a3>] kmem_cache_alloc+0x5b/0xe9
+
+This problem is that find_keyring_by_name does not confirm that the keyring is
+valid before accepting it.
+
+Skipping keyrings that have been reduced to a zero count seems the way to go.
+To this end, use atomic_inc_not_zero() to increment the usage count and skip
+the candidate keyring if that returns false.
+
+The following script _may_ cause the bug to happen, but there's no guarantee
+as the window of opportunity is small:
+
+	#!/bin/sh
+	LOOP=100000
+	USER=dummy_user
+	/bin/su -c "exit;" $USER || { /usr/sbin/adduser -m $USER; add=1; }
+	for ((i=0; i<LOOP; i++))
+	do
+		/bin/su -c "echo '$i' > /dev/null" $USER
+	done
+	(( add == 1 )) && /usr/sbin/userdel -r $USER
+	exit
+
+Note that the nominated user must not be in use.
+
+An alternative way of testing this may be:
+
+	for ((i=0; i<100000; i++))
+	do
+		keyctl session foo /bin/true || break
+	done >&/dev/null
+
+as that uses a keyring named "foo" rather than relying on the user and
+user-session named keyrings.
+
+Reported-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Acked-by: Serge Hallyn <serue@us.ibm.com>
+Signed-off-by: James Morris <jmorris@namei.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Chuck Ebbert <cebbert@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-(cherry picked from commit 8facbbff071ff2b19268d3732e31badc60471e21)
----
- arch/x86/kvm/mmu.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2097,11 +2097,14 @@ static int mmu_alloc_roots(struct kvm_vc
- 			direct = 1;
- 		if (mmu_check_root(vcpu, root_gfn))
- 			return 1;
-+
-+		spin_lock(&vcpu->kvm->mmu_lock);
- 		sp = kvm_mmu_get_page(vcpu, root_gfn, 0,
- 				      PT64_ROOT_LEVEL, direct,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
- 		++sp->root_count;
-+		spin_unlock(&vcpu->kvm->mmu_lock);
- 		vcpu->arch.mmu.root_hpa = root;
- 		return 0;
+---
+ security/keys/keyring.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -524,9 +524,8 @@ struct key *find_keyring_by_name(const c
+ 	struct key *keyring;
+ 	int bucket;
+ 
+-	keyring = ERR_PTR(-EINVAL);
+ 	if (!name)
+-		goto error;
++		return ERR_PTR(-EINVAL);
+ 
+ 	bucket = keyring_hash(name);
+ 
+@@ -553,17 +552,18 @@ struct key *find_keyring_by_name(const c
+ 					   KEY_SEARCH) < 0)
+ 				continue;
+ 
+-			/* we've got a match */
+-			atomic_inc(&keyring->usage);
+-			read_unlock(&keyring_name_lock);
+-			goto error;
++			/* we've got a match but we might end up racing with
++			 * key_cleanup() if the keyring is currently 'dead'
++			 * (ie. it has a zero usage count) */
++			if (!atomic_inc_not_zero(&keyring->usage))
++				continue;
++			goto out;
+ 		}
  	}
-@@ -2123,11 +2126,15 @@ static int mmu_alloc_roots(struct kvm_vc
- 			root_gfn = 0;
- 		if (mmu_check_root(vcpu, root_gfn))
- 			return 1;
-+
-+		spin_lock(&vcpu->kvm->mmu_lock);
- 		sp = kvm_mmu_get_page(vcpu, root_gfn, i << 30,
- 				      PT32_ROOT_LEVEL, direct,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
- 		++sp->root_count;
-+		spin_unlock(&vcpu->kvm->mmu_lock);
-+
- 		vcpu->arch.mmu.pae_root[i] = root | PT_PRESENT_MASK;
- 	}
- 	vcpu->arch.mmu.root_hpa = __pa(vcpu->arch.mmu.pae_root);
-@@ -2488,7 +2495,9 @@ int kvm_mmu_load(struct kvm_vcpu *vcpu)
- 		goto out;
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	kvm_mmu_free_some_pages(vcpu);
-+	spin_unlock(&vcpu->kvm->mmu_lock);
- 	r = mmu_alloc_roots(vcpu);
-+	spin_lock(&vcpu->kvm->mmu_lock);
- 	mmu_sync_roots(vcpu);
- 	spin_unlock(&vcpu->kvm->mmu_lock);
- 	if (r)
+ 
+-	read_unlock(&keyring_name_lock);
+ 	keyring = ERR_PTR(-ENOKEY);
+-
+- error:
++out:
++	read_unlock(&keyring_name_lock);
+ 	return keyring;
+ 
+ } /* end find_keyring_by_name() */
 
 
