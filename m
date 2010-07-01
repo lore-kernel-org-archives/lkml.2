@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756125Ab0GAN5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:57:48 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47775 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756088Ab0GAN5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:57:45 -0400
-Subject: Re: add sd_unprep_fn to free discard page
-From: James Bottomley <James.Bottomley@suse.de>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, axboe@kernel.dk,
-       snitzer@redhat.com, hch@lst.de, linux-scsi@vger.kernel.org,
-       dm-devel@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <4C2C9AE4.1050803@panasas.com>
-References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-	 <4C2C9AE4.1050803@panasas.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Jul 2010 08:57:37 -0500
-Message-ID: <1277992657.2813.18.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1756134Ab0GAN6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:58:17 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56870 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755912Ab0GAN6Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 09:58:16 -0400
+Date: Thu, 1 Jul 2010 09:58:12 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: linux-pm@lists.linux-foundation.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       mark gross <640e9920@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Mickler <florian@mickler.org>, <linux-pci@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [update] Re: [PATCH] PM: Make it possible to avoid wakeup events
+ from being lost
+In-Reply-To: <201007010152.03869.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1007010953060.1596-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-01 at 16:40 +0300, Boaz Harrosh wrote:
-> On 07/01/2010 01:49 PM, FUJITA Tomonori wrote:
-> > This patchset fixes page leak issue in discard commands with unprep
-> > facility that James posted:
-> > 
-> > http://marc.info/?l=linux-scsi&m=127791727508214&w=2
-> > 
-> > The 1/3 patch adds unprep facility to the block layer (identical to
-> > what James posted).
-> > 
-> 
-> Alternatively to this patch you could also call scsi_driver->done()
-> on all commands. There are only two users (sd sr) it's not that bad to add
-> an if (blk_pc_req()) inside these ->done() function.
+On Thu, 1 Jul 2010, Rafael J. Wysocki wrote:
 
-We could, but it wouldn't fix the problem.  The system issue is that
-->done isn't symmetrical to ->prep_rq_fn() ... ->done() sits in the
-middle of the SCSI completion path and we could decide to requeue the
-command after calling it (that's why we can't free the discard page
-either in ->done() or in the midlayer where ->done() is called).
+> I invented a slightly different version in the meantime, which is appended
+> as a patch on top of the original one (I don't want to modify the original
+> patch, since it's been reviewed already by several people and went to my
+> linux-next branch).
 
-The system solution is a symmetrical pair for ->prep_rq_fn() which is
-only called either after all error handling is complete, or we decide to
-completely strip the command down for a retry that goes through prep
-again.
+>  /**
+> - * pm_wakeup_work_fn - Deferred closing of a wakeup event.
+> + * pm_wakeup_timer_fn - Deferred closing of a wakeup event.
+>   *
+>   * Execute pm_relax() for a wakeup event detected in the past and free the
+>   * work item object used for queuing up the work.
+>   */
+> -static void pm_wakeup_work_fn(struct work_struct *work)
+> +static void pm_wakeup_timer_fn(unsigned long data)
+>  {
+> -	struct delayed_work *dwork = to_delayed_work(work);
+> +	unsigned long flags;
+>  
+> -	pm_relax();
+> -	kfree(dwork);
+> +	spin_lock_irqsave(&events_lock, flags);
+> +	if (events_timer_expires && time_after(jiffies, events_timer_expires)) {
 
-> > The 2/3 patch frees a page for discard commands by using the unprep
-> > facility. James' original patch doesn't work since it accesses to
-> > rq->bio in q->unprep_rq_fn. We hit oops since q->unprep_rq_fn is
-> > called when all the data buffer (req->bio and scsi_data_buffer) in the
-> > request is freed.
-> > 
-> > I use rq->buffer to keep track of an allocated page as the block layer
-> > sets rq->buffer to the address of bio's page. scsi-ml (and llds) don't
-> > use rq->buffer (rq->buffer is set to NULL). So I can't say that I like
-> > it lots. Any other way to do that?
-> > 
-> 
-> rq->buffer is intended for block-driver use as well as req->special.
-> sd+scsi-ml is the block-driver here. req->special is used by scsi-ml
-> and rq->buffer is set to NULL inside the call to
-> scsi_setup_blk_pc_cmnd/scsi_setup_fs_cmnd. Since you set the ->buffer
-> after the call to scsi_setup_blk_pc_cmnd you should be in the clear.
-> 
-> I think scsi-ml should stop setting rq->buffer to NULL and leave it
-> be for ULD use. It is left from the time that LLDs where converted
-> to use BIOs, just to make sure out-of-tree drivers crash.
+Should be time_after_eq.
 
-So I buy this more.  There is a slight assymmetry in that we have the
-bio in prep, but not in unprep.  Since requests can complete partially
-(freeing the bios on the way), there's no real way to avoid this.  I
-think the use of ->buffer is a bit unsavoury but it looks acceptable.
+> +		events_in_progress -= delayed_count;
+> +		event_count += delayed_count;
+> +		delayed_count = 0;
+> +		events_timer_expires = 0;
+> +	}
+> +	spin_unlock_irqrestore(&events_lock, flags);
+>  }
+>  
+>  /**
+> @@ -132,19 +145,31 @@ static void pm_wakeup_work_fn(struct wor
+>  void pm_wakeup_event(struct device *dev, unsigned int msec)
+>  {
+>  	unsigned long flags;
+> -	struct delayed_work *dwork;
+> -
+> -	dwork = msec ? kzalloc(sizeof(*dwork), GFP_ATOMIC) : NULL;
+>  
+>  	spin_lock_irqsave(&events_lock, flags);
+>  	if (dev)
+>  		dev->power.wakeup_count++;
+>  
+> -	if (dwork) {
+> -		INIT_DELAYED_WORK(dwork, pm_wakeup_work_fn);
+> -		schedule_delayed_work(dwork, msecs_to_jiffies(msec));
+> +	if (msec) {
+> +		ktime_t kt;
+> +		struct timespec ts;
+> +		unsigned long expires;
+> +
+> +		kt = ktime_get();
+> +		kt = ktime_add_ns(kt, msec * NSEC_PER_MSEC);
+> +		ts = ktime_to_timespec(kt);
+> +		expires = timespec_to_jiffies(&ts);
 
-James
+Is this somehow better than jiffies + msecs_to_jiffies(msec)?
 
+> +		if (!expires)
+> +			expires = 1;
+> +
+> +		if (!events_timer_expires
+> +		    || time_after(expires, events_timer_expires)) {
+> +			mod_timer(&events_timer, expires);
+> +			events_timer_expires = expires;
+> +		}
+>  
+>  		events_in_progress++;
+> +		delayed_count++;
+>  	} else {
+>  		event_count++;
+>  	}
+
+Alan Stern
 
