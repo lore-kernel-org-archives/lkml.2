@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933447Ab0GAVs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:48:29 -0400
-Received: from kroah.org ([198.145.64.141]:60984 "EHLO coco.kroah.org"
+	id S1759464Ab0GAVwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:52:24 -0400
+Received: from kroah.org ([198.145.64.141]:60867 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759038Ab0GAVOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:04 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
-Message-Id: <20100701174254.355875785@clark.site>
+	id S1758951Ab0GAVNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:52 2010
+Message-Id: <20100701174252.161221950@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:04 -0700
+Date: Thu, 01 Jul 2010 10:42:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: [094/200] exofs: confusion between kmap() and kmap_atomic() api
+       Jan Beulich <jbeulich@novell.com>, Andi Kleen <ak@linux.intel.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [068/200] drivers/base/cpu.c: fix the output from /sys/devices/system/cpu/offline
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Jan Beulich <JBeulich@novell.com>
 
-commit ddf08f4b90a413892bbb9bb2e8a57aed991cd47d upstream.
+commit cdc6e3d3968052cebb2f2ddcd742bff29fbd1a90 upstream.
 
-For kmap_atomic() we call kunmap_atomic() on the returned pointer.
-That's different from kmap() and kunmap() and so it's easy to get them
-backwards.
+Without CONFIG_CPUMASK_OFFSTACK, simply inverting cpu_online_mask leads
+to CPUs beyond nr_cpu_ids to be displayed twice and CPUs not even
+possible to be displayed as offline.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/exofs/dir.c |    2 +-
+ drivers/base/cpu.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/exofs/dir.c
-+++ b/fs/exofs/dir.c
-@@ -608,7 +608,7 @@ int exofs_make_empty(struct inode *inode
- 	de->inode_no = cpu_to_le64(parent->i_ino);
- 	memcpy(de->name, PARENT_DIR, sizeof(PARENT_DIR));
- 	exofs_set_de_type(de, inode);
--	kunmap_atomic(page, KM_USER0);
-+	kunmap_atomic(kaddr, KM_USER0);
- 	err = exofs_commit_chunk(page, 0, chunk_size);
- fail:
- 	page_cache_release(page);
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -186,7 +186,7 @@ static ssize_t print_cpus_offline(struct
+ 	/* display offline cpus < nr_cpu_ids */
+ 	if (!alloc_cpumask_var(&offline, GFP_KERNEL))
+ 		return -ENOMEM;
+-	cpumask_complement(offline, cpu_online_mask);
++	cpumask_andnot(offline, cpu_possible_mask, cpu_online_mask);
+ 	n = cpulist_scnprintf(buf, len, offline);
+ 	free_cpumask_var(offline);
+ 
 
 
