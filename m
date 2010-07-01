@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319Ab0GAVTb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:19:31 -0400
-Received: from kroah.org ([198.145.64.141]:33217 "EHLO coco.kroah.org"
+	id S932821Ab0GAVJi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:09:38 -0400
+Received: from kroah.org ([198.145.64.141]:47725 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759111Ab0GAVPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:01 2010
-Message-Id: <20100701174301.730443769@clark.site>
+	id S932771Ab0GAUuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:52 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:35 2010
+Message-Id: <20100701173435.478194249@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:30 -0700
+Date: Thu, 01 Jul 2010 10:34:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
-Subject: [180/200] KVM: SVM: Sync all control registers on nested vmexit
-In-Reply-To: <20100701175201.GA2149@kroah.com>
+       Aurelien Jarno <aurelien@aurel32.net>, Paul Mundt <lethal@linux-sh.org>
+Subject: [patch 103/164] clocksource: sh_tmu: compute mult and shift before registration
+In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let me know.
+2.6.33-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Aurelien Jarno <aurelien@aurel32.net>
 
-Currently the vmexit emulation does not sync control
-registers were the access is typically intercepted by the
-nested hypervisor. But we can not count on that intercepts
-to sync these registers too and make the code
-architecturally more correct.
+commit 66f49121ffa41a19c59965b31b046d8368fec3c7 upstream.
 
-Cc: stable@kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+Since commit 98962465ed9e6ea99c38e0af63fe1dcb5a79dc25 ("nohz: Prevent
+clocksource wrapping during idle"), the CPU of an R2D board never goes
+to idle. This commit assumes that mult and shift are assigned before
+the clocksource is registered. As a consequence the safe maximum sleep
+time is negative and the CPU never goes into idle.
+
+This patch fixes the problem by moving mult and shift initialization
+from sh_tmu_clocksource_enable() to sh_tmu_register_clocksource().
+
+Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-(Cherry-picked from commit cdbbdc1210223879450555fee04c29ebf116576b)
 ---
- arch/x86/kvm/svm.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/clocksource/sh_tmu.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -1647,9 +1647,13 @@ static int nested_svm_vmexit(struct vcpu
- 	nested_vmcb->save.ds     = vmcb->save.ds;
- 	nested_vmcb->save.gdtr   = vmcb->save.gdtr;
- 	nested_vmcb->save.idtr   = vmcb->save.idtr;
-+	nested_vmcb->save.cr0    = kvm_read_cr0(&svm->vcpu);
- 	if (npt_enabled)
- 		nested_vmcb->save.cr3    = vmcb->save.cr3;
-+	else
-+		nested_vmcb->save.cr3    = svm->vcpu.arch.cr3;
- 	nested_vmcb->save.cr2    = vmcb->save.cr2;
-+	nested_vmcb->save.cr4    = svm->vcpu.arch.cr4;
- 	nested_vmcb->save.rflags = vmcb->save.rflags;
- 	nested_vmcb->save.rip    = vmcb->save.rip;
- 	nested_vmcb->save.rsp    = vmcb->save.rsp;
+--- a/drivers/clocksource/sh_tmu.c
++++ b/drivers/clocksource/sh_tmu.c
+@@ -199,16 +199,8 @@ static cycle_t sh_tmu_clocksource_read(s
+ static int sh_tmu_clocksource_enable(struct clocksource *cs)
+ {
+ 	struct sh_tmu_priv *p = cs_to_sh_tmu(cs);
+-	int ret;
+ 
+-	ret = sh_tmu_enable(p);
+-	if (ret)
+-		return ret;
+-
+-	/* TODO: calculate good shift from rate and counter bit width */
+-	cs->shift = 10;
+-	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
+-	return 0;
++	return sh_tmu_enable(p);
+ }
+ 
+ static void sh_tmu_clocksource_disable(struct clocksource *cs)
+@@ -228,6 +220,16 @@ static int sh_tmu_register_clocksource(s
+ 	cs->disable = sh_tmu_clocksource_disable;
+ 	cs->mask = CLOCKSOURCE_MASK(32);
+ 	cs->flags = CLOCK_SOURCE_IS_CONTINUOUS;
++
++	/* clk_get_rate() needs an enabled clock */
++	clk_enable(p->clk);
++	/* channel will be configured at parent clock / 4 */
++	p->rate = clk_get_rate(p->clk) / 4;
++	clk_disable(p->clk);
++	/* TODO: calculate good shift from rate and counter bit width */
++	cs->shift = 10;
++	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
++
+ 	pr_info("sh_tmu: %s used as clock source\n", cs->name);
+ 	clocksource_register(cs);
+ 	return 0;
 
 
