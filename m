@@ -1,550 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab0GASKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:10:22 -0400
-Received: from p01c12o148.mxlogic.net ([208.65.145.71]:43404 "EHLO
-	p01c12o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab0GASKU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:10:20 -0400
-X-MXL-Hash: 4c2cda0c5fcc7b65-c0830d456bf4cbfa9ef58be1a0c82b3af69b5448
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-       "ss@aao.gov.au" <ss@aao.gov.au>, "gregkh@suse.de" <gregkh@suse.de>
-Date: Thu, 1 Jul 2010 13:09:51 -0500
-Subject: RE: [PATCH] Staging: dt3155_isr: cleanup fbuffer usage
-Thread-Topic: [PATCH] Staging: dt3155_isr: cleanup fbuffer usage
-Thread-Index: AcsUtAv49V9Y+MbMQEWyNKxi7q/6pgElIqKw
-Message-ID: <0D753D10438DA54287A00B02708426976373859415@AUSP01VMBX24.collaborationhost.net>
-References: <201006251514.10068.hartleys@visionengravers.com>
-In-Reply-To: <201006251514.10068.hartleys@visionengravers.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010062801)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [(unknown)]
-X-AnalysisOut: [v=1.0 c=1 a=uN3pKissNAMA:10 a=hO-oPbc3tlwA:10 a=VphdPIyG4k]
-X-AnalysisOut: [EA:10 a=kj9zAlcOel0A:10 a=IRTT+DMug47mVLgYdXzmDg==:17 a=DD]
-X-AnalysisOut: [OyTI_5AAAA:8 a=lTbjQzD5AAAA:8 a=i00gxMtYAAAA:8 a=7G8v7Rp2f]
-X-AnalysisOut: [F34PdsexTkA:9 a=8HiQJ3csiD3PXLT1BcgA:7 a=fdINdsWUEk7A30qTv]
-X-AnalysisOut: [kW-qqILD6AA:4 a=CjuIK1q_8ugA:10 a=GznomRg53nMA:10 a=0kPLrQ]
-X-AnalysisOut: [dw3YYA:10 a=x1WnkoZAwusA:10 a=SIpsKxvkOXkNAVlD:21 a=RRVfG_]
-X-AnalysisOut: [xyw6TMpMMe:21]
+	id S1754813Ab0GASKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:10:46 -0400
+Received: from kroah.org ([198.145.64.141]:60006 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752539Ab0GASKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:10:43 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:56 2010
+Message-Id: <20100701172856.637109117@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:26:51 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Pavel Emelyanov <xemul@openvz.org>, NeilBrown <neilb@suse.de>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>
+Subject: [02/23] NFSD: dont report compiled-out versions as present
+In-Reply-To: <20100701175134.GA2098@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping...
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
-Any comments on this patch?
+------------------
 
-Regards,
-Hartley
+From: Pavel Emelyanov <xemul@openvz.org>
 
------Original Message-----
-From: devel-bounces@linuxdriverproject.org [mailto:devel-bounces@linuxdriverproject.org] On Behalf Of H Hartley Sweeten
-Sent: Friday, June 25, 2010 3:14 PM
-To: Linux Kernel
-Cc: devel@driverdev.osuosl.org; ss@aao.gov.au; gregkh@suse.de
-Subject: [PATCH] Staging: dt3155_isr: cleanup fbuffer usage
+commit 15ddb4aec54422ead137b03ea4e9b3f5db3f7cc2 upstream.
 
-Now that dt3155_drv.c is not dependent on the global symbol
-dt3155_fbuffer[], declared in dt3155_isr.c, remove it.
+The /proc/fs/nfsd/versions file calls nfsd_vers() to check whether
+the particular nfsd version is present/available. The problem is
+that once I turn off e.g. NFSD-V4 this call returns -1 which is
+true from the callers POV which is wrong.
 
-This also fixes many of the coding style problems in dt3155_isr.c.
+The proposal is to report false in that case.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Scott Smedley <ss@aao.gov.au>
+The bug has existed since 6658d3a7bbfd1768 "[PATCH] knfsd: remove
+nfsd_versbits as intermediate storage for desired versions".
+
+Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
+Acked-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
+ fs/nfsd/nfssvc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/dt3155/dt3155_isr.c b/drivers/staging/dt3155/dt3155_isr.c
-index 59b7bfd..01ab888 100644
---- a/drivers/staging/dt3155/dt3155_isr.c
-+++ b/drivers/staging/dt3155/dt3155_isr.c
-@@ -59,158 +59,133 @@ Purpose: Buffer management routines, and other routines for the ISR
- #define UPPER_10_BITS   (0x3FF<<22)  /* Can't DMA accross a 4MB boundary!*/
-
-
--/* Pointer into global structure for handling buffers */
--struct dt3155_fbuffer *dt3155_fbuffer[MAXBOARDS] = {NULL
--#if MAXBOARDS == 2
--                                                     , NULL
--#endif
--};
--
- /******************************************************************************
-  * Simple array based que struct
-  *
-  * Some handy functions using the buffering structure.
-  *****************************************************************************/
-
--
- /***************************
-  * are_empty_buffers
-- * m is minor # of device
-  ***************************/
--bool are_empty_buffers(int m)
-+bool are_empty_buffers(int minor)
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -126,7 +126,7 @@ struct svc_program		nfsd_program = {
+ int nfsd_vers(int vers, enum vers_op change)
  {
--  return dt3155_fbuffer[m]->empty_len;
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-+
-+       return fb->empty_len;
- }
+ 	if (vers < NFSD_MINVERS || vers >= NFSD_NRVERS)
+-		return -1;
++		return 0;
+ 	switch(change) {
+ 	case NFSD_SET:
+ 		nfsd_versions[vers] = nfsd_version[vers];
 
- /**************************
-  * push_empty
-- * m is minor # of device
-  *
-  * This is slightly confusing.  The number empty_len is the literal #
-  * of empty buffers.  After calling, empty_len-1 is the index into the
-  * empty buffer stack.  So, if empty_len == 1, there is one empty buffer,
-- * given by dt3155_fbuffer[m]->empty_buffers[0].
-+ * given by fb->empty_buffers[0].
-  * empty_buffers should never fill up, though this is not checked.
-  **************************/
--void push_empty(int index, int m)
-+void push_empty(int index, int minor)
- {
--  dt3155_fbuffer[m]->empty_buffers[dt3155_fbuffer[m]->empty_len] = index;
--  dt3155_fbuffer[m]->empty_len++;
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-+
-+       fb->empty_buffers[fb->empty_len] = index;
-+       fb->empty_len++;
- }
 
- /**************************
-- * pop_empty(m)
-- * m is minor # of device
-+ * pop_empty
-  **************************/
--int pop_empty(int m)
-+int pop_empty(int minor)
- {
--  dt3155_fbuffer[m]->empty_len--;
--  return dt3155_fbuffer[m]->empty_buffers[dt3155_fbuffer[m]->empty_len];
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-+
-+       fb->empty_len--;
-+       return fb->empty_buffers[fb->empty_len];
- }
-
- /*************************
-- * is_ready_buf_empty(m)
-- * m is minor # of device
-+ * is_ready_buf_empty
-  *************************/
--bool is_ready_buf_empty(int m)
-+bool is_ready_buf_empty(int minor)
- {
--  return ((dt3155_fbuffer[m]->ready_len) == 0);
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-+
-+       return fb->ready_len == 0;
- }
-
- /*************************
-- * is_ready_buf_full(m)
-- * m is minor # of device
-+ * is_ready_buf_full
-+ *
-  * this should *never* be true if there are any active, locked or empty
-  * buffers, since it corresponds to nbuffers ready buffers!!
-  * 7/31/02: total rewrite. --NJC
-  *************************/
--bool is_ready_buf_full(int m)
-+bool is_ready_buf_full(int minor)
- {
--  return dt3155_fbuffer[m]->ready_len == dt3155_fbuffer[m]->nbuffers;
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-+
-+       return fb->ready_len == fb->nbuffers;
- }
-
- /*****************************************************
-- * push_ready(m, buffer)
-- * m is minor # of device
-- *
-+ * push_ready
-  *****************************************************/
--void push_ready(int m, int index)
-+void push_ready(int minor, int index)
- {
--  int head = dt3155_fbuffer[m]->ready_head;
--
--  dt3155_fbuffer[m]->ready_que[head] = index;
--  dt3155_fbuffer[m]->ready_head = ((head + 1) %
--                                     (dt3155_fbuffer[m]->nbuffers));
--  dt3155_fbuffer[m]->ready_len++;
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-+       int head = fb->ready_head;
-
-+       fb->ready_que[head] = index;
-+       fb->ready_head = (head + 1) % fb->nbuffers;
-+       fb->ready_len++;
- }
-
- /*****************************************************
-- * get_tail()
-- * m is minor # of device
-+ * get_tail
-  *
-  * Simply comptutes the tail given the head and the length.
-  *****************************************************/
--static int get_tail(int m)
-+static int get_tail(int minor)
- {
--       int ncount;
--       ncount = (dt3155_fbuffer[m]->ready_head -
--                       dt3155_fbuffer[m]->ready_len +
--                       dt3155_fbuffer[m]->nbuffers)%
--               (dt3155_fbuffer[m]->nbuffers);
--       return ncount;
--}
--
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-
-+       return (fb->ready_head - fb->ready_len + fb->nbuffers) % fb->nbuffers;
-+}
-
- /*****************************************************
-- * pop_ready()
-- * m is minor # of device
-+ * pop_ready
-  *
-  * This assumes that there is a ready buffer ready... should
-  * be checked (e.g. with is_ready_buf_empty()  prior to call.
-  *****************************************************/
--int pop_ready(int m)
-+int pop_ready(int minor)
- {
--  int tail;
--  tail = get_tail(m);
--  dt3155_fbuffer[m]->ready_len--;
--  return dt3155_fbuffer[m]->ready_que[tail];
--}
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-+       int tail = get_tail(minor);
-
-+       fb->ready_len--;
-+       return fb->ready_que[tail];
-+}
-
- /*****************************************************
-  * printques
-- * m is minor # of device
-  *****************************************************/
--void printques(int m)
-+void printques(int minor)
- {
--  int head = dt3155_fbuffer[m]->ready_head;
--  int tail;
--  int num = dt3155_fbuffer[m]->nbuffers;
--  int frame_index;
--  int index;
--
--  tail = get_tail(m);
--
--  printk(KERN_INFO "\n R:");
--    for (index = tail; index != head; index++, index = index % (num)) {
--       frame_index = dt3155_fbuffer[m]->ready_que[index];
--       printk(" %d ", frame_index);
--    }
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-+       int i;
-
--  printk(KERN_INFO "\n E:");
--    for (index = 0; index < dt3155_fbuffer[m]->empty_len; index++) {
--       frame_index = dt3155_fbuffer[m]->empty_buffers[index];
--       printk(" %d ", frame_index);
--    }
-+       printk(KERN_INFO "\n R:");
-+       for (i = get_tail(minor); i != fb->ready_head; i++, i %= fb->nbuffers)
-+               printk(" %d ", fb->ready_que[i]);
-
--  frame_index = dt3155_fbuffer[m]->active_buf;
--  printk(KERN_INFO "\n A: %d", frame_index);
-+       printk(KERN_INFO "\n E:");
-+       for (i = 0; i < fb->empty_len; i++)
-+               printk(" %d ", fb->empty_buffers[i]);
-
--  frame_index = dt3155_fbuffer[m]->locked_buf;
--  printk(KERN_INFO "\n L: %d\n", frame_index);
-+       printk(KERN_INFO "\n A: %d", fb->active_buf);
-
-+       printk(KERN_INFO "\n L: %d\n", fb->locked_buf);
- }
-
- /*****************************************************
-@@ -304,6 +279,7 @@ void allocate_buffers(u32 *buf_addr, u32* total_size_kbs,
- u32 dt3155_setup_buffers(u32 *allocatorAddr)
-
- {
-+  struct dt3155_fbuffer *fb;
-   u32 index;
-   u32 rambuff_addr; /* start of allocation */
-   u32 rambuff_size; /* total size allocated to driver */
-@@ -312,18 +288,12 @@ u32 dt3155_setup_buffers(u32 *allocatorAddr)
-   u32 rambuff_end;  /* end of rambuff */
-   u32 numbufs;      /* number of useful buffers allocated (per device) */
-   u32 bufsize      = DT3155_MAX_ROWS * DT3155_MAX_COLS;
--  int m;               /* minor # of device, looped for all devs */
-+  int minor;
-
-   /* zero the fbuffer status and address structure */
--    for (m = 0; m < ndevices; m++) {
--       dt3155_fbuffer[m] = &(dt3155_status[m].fbuffer);
--
--      /* Make sure the buffering variables are consistent */
--      {
--       u8 *ptr = (u8 *) dt3155_fbuffer[m];
--               for (index = 0; index < sizeof(struct dt3155_fbuffer); index++)
--                       *(ptr++) = 0;
--      }
-+    for (minor = 0; minor < ndevices; minor++) {
-+       fb = &dt3155_status[minor].fbuffer;
-+       memset(fb, 0, sizeof(*fb));
-     }
-
-   /* allocate a large contiguous chunk of RAM */
-@@ -362,11 +332,12 @@ u32 dt3155_setup_buffers(u32 *allocatorAddr)
-   /* now that we have board memory we spit it up */
-   /* between the boards and the buffers          */
-     rambuff_acm = rambuff_addr;
--    for (m = 0; m < ndevices; m++) {
-+    for (minor = 0; minor < ndevices; minor++) {
-+       fb = &dt3155_status[minor].fbuffer;
-        rambuff_acm = adjust_4MB(rambuff_acm, bufsize);
-
-        /* Save the start of this boards buffer space (for mmap).  */
--       dt3155_status[m].mem_addr = rambuff_acm;
-+       dt3155_status[minor].mem_addr = rambuff_acm;
-
-        for (index = 0; index < numbufs; index++) {
-                rambuff_acm = adjust_4MB(rambuff_acm, bufsize);
-@@ -377,31 +348,29 @@ u32 dt3155_setup_buffers(u32 *allocatorAddr)
-                        return -ENOMEM;
-                }
-
--               dt3155_fbuffer[m]->frame_info[index].addr = rambuff_acm;
--               push_empty(index, m);
--               /* printk("  - Buffer : %lx\n",
--               * dt3155_fbuffer[m]->frame_info[index].addr);
--               */
--               dt3155_fbuffer[m]->nbuffers += 1;
-+               fb->frame_info[index].addr = rambuff_acm;
-+               push_empty(index, minor);
-+               /* printk("  - Buffer : %lx\n", fb->frame_info[index].addr); */
-+               fb->nbuffers += 1;
-                rambuff_acm += bufsize;
-        }
-
-        /* Make sure there is an active buffer there. */
--       dt3155_fbuffer[m]->active_buf    = pop_empty(m);
--       dt3155_fbuffer[m]->even_happened = 0;
--       dt3155_fbuffer[m]->even_stopped  = 0;
-+       fb->active_buf    = pop_empty(minor);
-+       fb->even_happened = 0;
-+       fb->even_stopped  = 0;
-
-        /* make sure there is no locked_buf JML 2/28/00 */
--       dt3155_fbuffer[m]->locked_buf = -1;
-+       fb->locked_buf = -1;
-
--       dt3155_status[m].mem_size =
--       rambuff_acm - dt3155_status[m].mem_addr;
-+       dt3155_status[minor].mem_size = rambuff_acm -
-+                                       dt3155_status[minor].mem_addr;
-
-        /* setup the ready queue */
--       dt3155_fbuffer[m]->ready_head = 0;
--       dt3155_fbuffer[m]->ready_len = 0;
-+       fb->ready_head = 0;
-+       fb->ready_len = 0;
-        printk(KERN_INFO "Available buffers for device %d: %d\n",
--           m, dt3155_fbuffer[m]->nbuffers);
-+           minor, fb->nbuffers);
-     }
-
-     return 1;
-@@ -412,103 +381,100 @@ u32 dt3155_setup_buffers(u32 *allocatorAddr)
-  *
-  * The internal function for releasing a locked buffer.
-  * It assumes interrupts are turned off.
-- *
-- * m is minor number of device
-  *****************************************************/
--static void internal_release_locked_buffer(int m)
-+static void internal_release_locked_buffer(int minor)
- {
--  /* Pointer into global structure for handling buffers */
--    if (dt3155_fbuffer[m]->locked_buf >= 0) {
--       push_empty(dt3155_fbuffer[m]->locked_buf, m);
--       dt3155_fbuffer[m]->locked_buf = -1;
--    }
--}
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-
-+       if (fb->locked_buf >= 0) {
-+               push_empty(fb->locked_buf, minor);
-+               fb->locked_buf = -1;
-+       }
-+}
-
- /*****************************************************
-- * dt3155_release_locked_buffer()
-- * m is minor # of device
-+ * dt3155_release_locked_buffer
-  *
-  * The user function of the above.
-- *
-  *****************************************************/
--void dt3155_release_locked_buffer(int m)
-+void dt3155_release_locked_buffer(int minor)
- {
-        unsigned long int flags;
-+
-        local_save_flags(flags);
-        local_irq_disable();
--       internal_release_locked_buffer(m);
-+       internal_release_locked_buffer(minor);
-        local_irq_restore(flags);
- }
-
--
- /*****************************************************
-- * dt3155_flush()
-- * m is minor # of device
-- *
-+ * dt3155_flush
-  *****************************************************/
--int dt3155_flush(int m)
-+int dt3155_flush(int minor)
- {
--  int index;
--  unsigned long int flags;
--  local_save_flags(flags);
--  local_irq_disable();
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-+       unsigned long int flags;
-+       int index;
-
--  internal_release_locked_buffer(m);
--  dt3155_fbuffer[m]->empty_len = 0;
-+       local_save_flags(flags);
-+       local_irq_disable();
-
--    for (index = 0; index < dt3155_fbuffer[m]->nbuffers; index++)
--       push_empty(index,  m);
-+       internal_release_locked_buffer(minor);
-+       fb->empty_len = 0;
-
--  /* Make sure there is an active buffer there. */
--  dt3155_fbuffer[m]->active_buf = pop_empty(m);
-+       for (index = 0; index < fb->nbuffers; index++)
-+               push_empty(index, minor);
-
--  dt3155_fbuffer[m]->even_happened = 0;
--  dt3155_fbuffer[m]->even_stopped  = 0;
-+       /* Make sure there is an active buffer there. */
-+       fb->active_buf = pop_empty(minor);
-
--  /* setup the ready queue  */
--  dt3155_fbuffer[m]->ready_head = 0;
--  dt3155_fbuffer[m]->ready_len = 0;
-+       fb->even_happened = 0;
-+       fb->even_stopped  = 0;
-
--  local_irq_restore(flags);
-+       /* setup the ready queue  */
-+       fb->ready_head = 0;
-+       fb->ready_len = 0;
-
--  return 0;
-+       local_irq_restore(flags);
-+
-+       return 0;
- }
-
- /*****************************************************
-- * dt3155_get_ready_buffer()
-- * m is minor # of device
-+ * dt3155_get_ready_buffer
-  *
-  * get_ready_buffer will grab the next chunk of data
-  * if it is already there, otherwise it returns 0.
-  * If the user has a buffer locked it will unlock
-  * that buffer before returning the new one.
-  *****************************************************/
--int dt3155_get_ready_buffer(int m)
-+int dt3155_get_ready_buffer(int minor)
- {
--  int frame_index;
--  unsigned long int flags;
--  local_save_flags(flags);
--  local_irq_disable();
-+       struct dt3155_fbuffer *fb = &dt3155_status[minor].fbuffer;
-+       unsigned long int flags;
-+       int frame_index;
-+
-+       local_save_flags(flags);
-+       local_irq_disable();
-
- #ifdef DEBUG_QUES_A
--  printques(m);
-+       printques(minor);
- #endif
-
--  internal_release_locked_buffer(m);
-+       internal_release_locked_buffer(minor);
-
--    if (is_ready_buf_empty(m))
--       frame_index = -1;
--    else {
--       frame_index = pop_ready(m);
--       dt3155_fbuffer[m]->locked_buf = frame_index;
-+       if (is_ready_buf_empty(minor)) {
-+               frame_index = -1;
-+       } else {
-+               frame_index = pop_ready(minor);
-+               fb->locked_buf = frame_index;
-     }
-
- #ifdef DEBUG_QUES_B
--  printques(m);
-+       printques(minor);
- #endif
-
--  local_irq_restore(flags);
-+       local_irq_restore(flags);
-
--  return frame_index;
-+       return frame_index;
- }
-diff --git a/drivers/staging/dt3155/dt3155_isr.h b/drivers/staging/dt3155/dt3155_isr.h
-index 7d474cf..c4cf865 100644
---- a/drivers/staging/dt3155/dt3155_isr.h
-+++ b/drivers/staging/dt3155/dt3155_isr.h
-@@ -36,8 +36,6 @@ MA 02111-1307 USA
- #ifndef DT3155_ISR_H
- #define DT3155_ISR_H
-
--extern struct dt3155_fbuffer *dt3155_fbuffer[MAXBOARDS];
--
- /* User functions for buffering */
- /* Initialize the buffering system.  This should */
- /* be called prior to enabling interrupts */
-_______________________________________________
-devel mailing list
-devel@linuxdriverproject.org
-http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
