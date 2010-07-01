@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759392Ab0GAVi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:38:29 -0400
-Received: from kroah.org ([198.145.64.141]:32992 "EHLO coco.kroah.org"
+	id S1759221Ab0GAVha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:37:30 -0400
+Received: from kroah.org ([198.145.64.141]:33028 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759215Ab0GAVOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:43 -0400
+	id S1754340Ab0GAVOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:45 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
-Message-Id: <20100701174258.233494395@clark.site>
+Message-Id: <20100701174258.481975342@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:50 -0700
+Date: Thu, 01 Jul 2010 10:43:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: [140/200] pcmcia: only keep saved I365_CSCINT flag if there is no PCI irq
+       Bob Copeland <me@bobcopeland.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [143/200] ath5k: retain promiscuous setting
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dominik Brodowski <linux@dominikbrodowski.net>
+From: Bob Copeland <me@bobcopeland.com>
 
-commit 02caa56e4b789b80ae7e0f0f0789f94b44ad32ef upstream.
+commit 6b5dcccb495b66b3b0b9581cdccfed038e5d68a2 upstream.
 
-Keeping the saved I365_CSCINT flag around breaks PCMCIA on some system,
-and is only needed on a few systems to get PCMCIA to work. This patch
-allows PCMCIA to work on both types, and it fixes
-https://bugzilla.kernel.org/show_bug.cgi?id=16015
+Commit 56d1de0a21db28e41741cfa0a66e18bc8d920554, "ath5k: clean up
+filter flags setting" introduced a regression in monitor mode such
+that the promisc filter flag would get lost.
 
-Reported-by: Justin P. Mattock <justinmattock@gmail.com>
-Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
+Although we set the promisc flag when it changed, we did not
+preserve it across subsequent calls to configure_filter.  This patch
+restores the original functionality.
+
+Bisected-by: weedy2887@gmail.com
+Tested-by: weedy2887@gmail.com
+Tested-by: Rick Farina <sidhayn@gmail.com>
+Signed-off-by: Bob Copeland <me@bobcopeland.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pcmcia/yenta_socket.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath5k/base.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/pcmcia/yenta_socket.c
-+++ b/drivers/pcmcia/yenta_socket.c
-@@ -975,7 +975,7 @@ static irqreturn_t yenta_probe_handler(i
- /* probes the PCI interrupt, use only on override functions */
- static int yenta_probe_cb_irq(struct yenta_socket *socket)
- {
--	u8 reg;
-+	u8 reg = 0;
+--- a/drivers/net/wireless/ath/ath5k/base.c
++++ b/drivers/net/wireless/ath/ath5k/base.c
+@@ -2994,13 +2994,15 @@ static void ath5k_configure_filter(struc
  
- 	if (!socket->cb_irq)
- 		return -1;
-@@ -989,7 +989,8 @@ static int yenta_probe_cb_irq(struct yen
+ 	if (changed_flags & (FIF_PROMISC_IN_BSS | FIF_OTHER_BSS)) {
+ 		if (*new_flags & FIF_PROMISC_IN_BSS) {
+-			rfilt |= AR5K_RX_FILTER_PROM;
+ 			__set_bit(ATH_STAT_PROMISC, sc->status);
+ 		} else {
+ 			__clear_bit(ATH_STAT_PROMISC, sc->status);
+ 		}
  	}
  
- 	/* generate interrupt, wait */
--	reg = exca_readb(socket, I365_CSCINT);
-+	if (!socket->dev->irq)
-+		reg = exca_readb(socket, I365_CSCINT);
- 	exca_writeb(socket, I365_CSCINT, reg | I365_CSC_STSCHG);
- 	cb_writel(socket, CB_SOCKET_EVENT, -1);
- 	cb_writel(socket, CB_SOCKET_MASK, CB_CSTSMASK);
++	if (test_bit(ATH_STAT_PROMISC, sc->status))
++		rfilt |= AR5K_RX_FILTER_PROM;
++
+ 	/* Note, AR5K_RX_FILTER_MCAST is already enabled */
+ 	if (*new_flags & FIF_ALLMULTI) {
+ 		mfilt[0] =  ~0;
 
 
