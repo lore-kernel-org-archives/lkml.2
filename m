@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656Ab0GABJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 21:09:14 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39864 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab0GABJM (ORCPT
+	id S1751870Ab0GABMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 21:12:53 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19036 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab0GABMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 21:09:12 -0400
-X-AuditID: b753bd60-a9e06ba000007d15-e0-4c2beab5e948
-Message-ID: <4C2BEAAF.8050103@hitachi.com>
-Date: Thu, 01 Jul 2010 10:09:03 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Wed, 30 Jun 2010 21:12:50 -0400
+Date: Wed, 30 Jun 2010 18:12:17 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Ulrich Drepper <drepper@gmail.com>, viro@zeniv.linux.org.uk,
+       smfrench@gmail.com, jlayton@redhat.com, mcao@us.ibm.com,
+       aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       samba-technical@lists.samba.org, sjayaraman@suse.de,
+       linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 3/3] Add a pair of system calls to make extended file
+ stats available
+Message-ID: <20100701011217.GA5147@mail.oracle.com>
+Mail-Followup-To: David Howells <dhowells@redhat.com>,
+	Ulrich Drepper <drepper@gmail.com>, viro@zeniv.linux.org.uk,
+	smfrench@gmail.com, jlayton@redhat.com, mcao@us.ibm.com,
+	aneesh.kumar@linux.vnet.ibm.com, linux-cifs@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+	samba-technical@lists.samba.org, sjayaraman@suse.de,
+	linux-ext4@vger.kernel.org
+References: <20100629224844.GF4150@mail.oracle.com>
+ <AANLkTimSU_pCXW5zR8__Q3-fzgxwEUX8rPqLeZtPD_hX@mail.gmail.com>
+ <20100629200259.23196.81509.stgit@warthog.procyon.org.uk>
+ <20100629200315.23196.68742.stgit@warthog.procyon.org.uk>
+ <26026.1277851016@redhat.com>
+ <32322.1277854192@redhat.com>
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Bugfix] unregister_trace_probe needs to be called under mutex
-References: <20100630084548.GA10325@linux.vnet.ibm.com>
-In-Reply-To: <20100630084548.GA10325@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <32322.1277854192@redhat.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C2BEB82.0123:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srikar Dronamraju wrote:
-> Comment in unregister_trace_probe() says probe_lock will be held
-> when it gets called. However there is a case where it might called
-> without the probe_lock being held. Also since we are traversing the
-> probe_list and deleting an element from the probe_list, probe_lock
-> should be held.
+On Wed, Jun 30, 2010 at 12:29:52AM +0100, David Howells wrote:
+> Joel Becker <Joel.Becker@oracle.com> wrote:
 > 
-> This was first pointed in uprobes traceevent review by Frederic
-> Weisbecker here.  (http://lkml.org/lkml/2010/5/12/106)
+> > 	The less variable length stuff the better, I think.  At least,
+> > for the stuff stat(2) already returns, you should have a fixed-size
+> > structure.  Even if I only pass the GIVE_ME_UIDS flag, I don't want to
+> > have to deal with the variable size stuff until I've actually asked for
+> > esoteric things.  I'll know that the non-UIDS fields are garbage by the
+> > fact that I didn't ask for them.
 > 
-> This patch is needed for both 2.6.35-rc3 and 2.6.35-rc3-tip
-> 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> I was thinking of the fixed length xstat struct plus appendable extensions to
+> be defined later.
 
-Ah, right! That's definately needed.
+	I meant this.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Joel
 
-Thank you!
+-- 
 
+Life's Little Instruction Book #267
 
-> ---
-> 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 4f11a56..67670cd 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -269,14 +269,17 @@ static int create_trace_probe(int argc, char **argv)
->  			pr_info("Delete command needs an event name.\n");
->  			return -EINVAL;
->  		}
-> +		mutex_lock(&probe_lock);
->  		tp = find_probe_event(event, group);
->  		if (!tp) {
-> +			mutex_unlock(&probe_lock);
->  			pr_info("Event %s/%s doesn't exist.\n", group, event);
->  			return -ENOENT;
->  		}
->  		/* delete an event */
->  		unregister_trace_probe(tp);
->  		free_trace_probe(tp);
-> +		mutex_unlock(&probe_lock);
->  		return 0;
->  	}
->  
+	"Lie on your back and look at the stars."
 
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
