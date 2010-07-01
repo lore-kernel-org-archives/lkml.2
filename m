@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932815Ab0GAVfi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:35:38 -0400
-Received: from kroah.org ([198.145.64.141]:33069 "EHLO coco.kroah.org"
+	id S1759408Ab0GAVkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:40:22 -0400
+Received: from kroah.org ([198.145.64.141]:32966 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759230Ab0GAVOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:51 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:59 2010
-Message-Id: <20100701174259.134155086@clark.site>
+	id S1759187Ab0GAVOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:35 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:57 2010
+Message-Id: <20100701174257.477155726@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:00 -0700
+Date: Thu, 01 Jul 2010 10:43:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [150/200] sata_via: magic vt6421 fix for transmission problems w/ WD drives
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [131/200] ALSA: hda: Use mb31 quirk for an iMac model
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 8b27ff4cf6d15964aa2987aeb58db4dfb1f87a19 upstream.
+commit 26fd74fc01991a18f0e3bd54f8b1b75945ee3dbb upstream.
 
-vt6421 has problems talking to recent WD drives.  It causes a lot of
-transmission errors while high bandwidth transfer as reported in the
-following bugzilla entry.
+BugLink: https://launchpad.net/bugs/542550
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=15173
+Symptom: On the reporter's iMac, in Ubuntu 10.04 LTS neither playback
+nor capture appear audible out-of-the-box.
 
-Joseph Chan provided the following fix.  I don't have any idea what it
-does but I can verify the issue is gone with the patch applied.
+Test case: Boot from an Ubuntu 10.04 LTS live cd or from an installed
+configuration and attempt to play or capture audio.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Originally-from: Joseph Chan <JosephChan@via.com.tw>
-Reported-by: Jorrit Tijben <sjorrit@gmail.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Resolution: Specify the mb31 quirk for this machine in the codec SSID
+table.
+
+Reported-and-Tested-By: f3a97
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/sata_via.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/ata/sata_via.c
-+++ b/drivers/ata/sata_via.c
-@@ -575,6 +575,19 @@ static void svia_configure(struct pci_de
- 		tmp8 |= NATIVE_MODE_ALL;
- 		pci_write_config_byte(pdev, SATA_NATIVE_MODE, tmp8);
- 	}
-+
-+	/*
-+	 * vt6421 has problems talking to some drives.  The following
-+	 * is the magic fix from Joseph Chan <JosephChan@via.com.tw>.
-+	 * Please add proper documentation if possible.
-+	 *
-+	 * https://bugzilla.kernel.org/show_bug.cgi?id=15173
-+	 */
-+	if (pdev->device == 0x3249) {
-+		pci_read_config_byte(pdev, 0x52, &tmp8);
-+		tmp8 |= 1 << 2;
-+		pci_write_config_byte(pdev, 0x52, tmp8);
-+	}
- }
- 
- static int svia_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -9392,6 +9392,7 @@ static struct snd_pci_quirk alc882_ssid_
+ 	SND_PCI_QUIRK(0x106b, 0x1000, "iMac 24", ALC885_IMAC24),
+ 	SND_PCI_QUIRK(0x106b, 0x2800, "AppleTV", ALC885_IMAC24),
+ 	SND_PCI_QUIRK(0x106b, 0x2c00, "MacbookPro rev3", ALC885_MBP3),
++	SND_PCI_QUIRK(0x106b, 0x3000, "iMac", ALC889A_MB31),
+ 	SND_PCI_QUIRK(0x106b, 0x3600, "Macbook 3,1", ALC889A_MB31),
+ 	SND_PCI_QUIRK(0x106b, 0x3800, "MacbookPro 4,1", ALC885_MBP3),
+ 	SND_PCI_QUIRK(0x106b, 0x3e00, "iMac 24 Aluminum", ALC885_IMAC24),
 
 
