@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933470Ab0GAV4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:56:46 -0400
-Received: from kroah.org ([198.145.64.141]:60760 "EHLO coco.kroah.org"
+	id S933486Ab0GAV5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:57:11 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:57607 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758804Ab0GAVNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:21 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:50 2010
-Message-Id: <20100701174250.305229695@clark.site>
-User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:16 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Hans de Goede <hdegoede@redhat.com>
-Subject: [046/200] USB: unusual-dev: Add bad sense flag for Appotech ax203 based picture frames
-In-Reply-To: <20100701175201.GA2149@kroah.com>
+	id S933477Ab0GAV46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:56:58 -0400
+Date: Thu, 1 Jul 2010 14:56:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, davem@davemloft.net,
+       shemminger@linux-foundation.org, netdev@vger.kernel.org,
+       eric.dumazet@gmail.com, sfr@canb.auug.org.au
+Subject: [GIT PULL rcu/urgent] revert ->br_port fix, obsoleted by netdev
+ commit
+Message-ID: <20100701215655.GA24450@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let me know.
+Hello, Ingo,
 
-------------------
+This pull request reverts commit 81bdf5bd, which has been obsoleted
+by commit f350a0a87374 from the netdev folks.  This conflict was caught
+in the -next tree.
 
-From: Hans de Goede <hdegoede@redhat.com>
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
 
-commit a78f4f1a16d87f3d33158d036af94e48e32f8aad upstream.
+							Thanx, Paul
 
-These Appotech controllers are found in Picture Frames, they provide a
-(buggy) emulation of a cdrom drive which contains the windows software
-Uploading of pictures happens over the corresponding /dev/sg device.
+------------------>
+Paul E. McKenney (1):
+      Revert "net: Make accesses to ->br_port safe for sparse RCU"
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/storage/unusual_devs.h |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1853,6 +1853,21 @@ UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x
- 		US_SC_DEVICE, US_PR_DEVICE, NULL,
- 		US_FL_IGNORE_RESIDUE ),
- 
-+/* Reported by Hans de Goede <hdegoede@redhat.com>
-+ * These Appotech controllers are found in Picture Frames, they provide a
-+ * (buggy) emulation of a cdrom drive which contains the windows software
-+ * Uploading of pictures happens over the corresponding /dev/sg device. */
-+UNUSUAL_DEV( 0x1908, 0x1315, 0x0000, 0x0000,
-+		"BUILDWIN",
-+		"Photo Frame",
-+		US_SC_DEVICE, US_PR_DEVICE, NULL,
-+		US_FL_BAD_SENSE ),
-+UNUSUAL_DEV( 0x1908, 0x1320, 0x0000, 0x0000,
-+		"BUILDWIN",
-+		"Photo Frame",
-+		US_SC_DEVICE, US_PR_DEVICE, NULL,
-+		US_FL_BAD_SENSE ),
-+
- UNUSUAL_DEV( 0x2116, 0x0320, 0x0001, 0x0001,
- 		"ST",
- 		"2A",
-
-
+ include/linux/if_bridge.h           |    3 ---
+ net/bridge/br_fdb.c                 |    2 +-
+ net/bridge/br_private.h             |    5 -----
+ net/bridge/netfilter/ebt_redirect.c |    2 +-
+ net/bridge/netfilter/ebt_ulog.c     |    4 ++--
+ net/bridge/netfilter/ebtables.c     |    4 ++--
+ net/netfilter/nfnetlink_log.c       |    4 ++--
+ net/netfilter/nfnetlink_queue.c     |    4 ++--
+ 8 files changed, 10 insertions(+), 18 deletions(-)
