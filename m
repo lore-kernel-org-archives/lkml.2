@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab0GALM4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 07:12:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11131 "EHLO mx1.redhat.com"
+	id S1754509Ab0GALT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 07:19:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55254 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab0GALMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 07:12:54 -0400
-Date: Thu, 1 Jul 2010 14:07:08 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Cc: Sridhar Samudrala <sri@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, netdev <netdev@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH repost] sched: export sched_set/getaffinity to modules
-Message-ID: <20100701110708.GA27368@redhat.com>
-References: <4BFEA434.6080405@kernel.org>
- <20100527173207.GA21880@redhat.com>
- <4BFEE216.2070807@kernel.org>
- <20100528150830.GB21880@redhat.com>
- <4BFFE742.2060205@kernel.org>
- <20100530112925.GB27611@redhat.com>
- <4C02C99D.9070204@kernel.org>
- <20100624081135.GA937@redhat.com>
- <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
- <20100625101022.GA16321@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100625101022.GA16321@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1750848Ab0GALT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 07:19:28 -0400
+Message-Id: <89k77n$o7p5no@fmsmga001.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,519,1272870000"; 
+   d="scan'208";a="813471480"
+Date: Thu, 01 Jul 2010 12:19:21 +0100
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
+Cc: Dave Airlie <airlied@gmail.com>, earny@net4u.de,
+       Roman Jarosz <kedgedev@gmail.com>, intel-gfx@lists.freedesktop.org,
+       linux-kernel@vger.kernel.org, jcnengel@googlemail.com,
+       "A. Boulan" <arnaud.boulan@libertysurf.fr>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
+       michael@reinelt.co.at, stable@kernel.org,
+       Vefa Bicakci <bicave@superonline.com>
+References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain> <1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk> <alpine.LFD.2.00.1001270738220.24253@localhost.localdomain> <89k77n$ms73l9@fmsmga001.fm.intel.com> <alpine.LFD.2.00.1001270917120.24253@localhost.localdomain> <AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com> <89khjo$fr177d@orsmga002.jf.intel.com> <AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com> <AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Author: Sridhar Samudrala <sri@us.ibm.com>
+On Wed, 30 Jun 2010 18:24:04 -0700, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Wed, Jun 30, 2010 at 4:07 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > That commit changes the page cache allocation to use
+> >
+> > +                                          mapping_gfp_mask (mapping) |
+> > +                                          __GFP_COLD |
+> > +                                          gfpmask);
+> >
+> > if I read it right. And the default mapping_gfp_mask() is
+> > GFP_HIGHUSER_MOVABLE, so I think you get all of
+> > (__GFP_WAIT | __GFP_IO | __GFP_FS | __GFP_HARDWALL | __GFP_HIGHMEM)
+> > set by default.
+> 
+> .. and then I left out the one flag I _meant_ to have there, namely
+> __GFP_MOVABLE.
+> 
+> > The old code didn't just play games with ~__GFP_NORETRY and change
+> > that at runtime (which was buggy - no locking, no protection, no
+> > nothing), it also initialized the gfp mask. And that code also got
+> > removed:
 
-sched: export sched_set/getaffinity to modules
+That code I added with the original shrinker patch, and the flags lifted
+from the shmem defaults, tweaked to what seemed sane with the addition of
+NORETRY and friends. I see that i915 is unique in using shmem as the page
+allocator, which perhaps explains why this failure is not observed with
+the ttm drivers. ttm uses two sets of gfp mask: HIGHUSER and USER | DMA32.
+So replacing the mapping_gfp_mask() with HIGHUSER would seem appropriate.
+And the interaction of MOVABLE could explain why hibernate broke with the
+introduction of GEM.
 
-vhost-net driver wants to copy the affinity from the
-owner thread to thread it creates. Export
-sched_set/get affinity to modules to make this possible
-when vhost is built as a module.
-
-Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
----
-
-I'm not sure the previous time made it clear what exactly is the
-proposed change, so reposting.  Info, Peter, could you ack merging the
-following through the net-next tree please?
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index d484081..3759391 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4744,6 +4744,7 @@ out_put_task:
- 	put_online_cpus();
- 	return retval;
- }
-+EXPORT_SYMBOL_GPL(sched_setaffinity);
- 
- static int get_user_cpu_mask(unsigned long __user *user_mask_ptr, unsigned len,
- 			     struct cpumask *new_mask)
-@@ -4807,6 +4808,7 @@ out_unlock:
- 
- 	return retval;
- }
-+EXPORT_SYMBOL_GPL(sched_getaffinity);
- 
- /**
-  * sys_sched_getaffinity - get the cpu affinity of a process
+* turns to his trusty copy of LDD to explain the various meanings of
+gfp_t...
+-- 
+Chris Wilson, Intel Open Source Technology Centre
