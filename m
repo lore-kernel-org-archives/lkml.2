@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759849Ab0GAWUm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:20:42 -0400
-Received: from kroah.org ([198.145.64.141]:47184 "EHLO coco.kroah.org"
+	id S932643Ab0GAWU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:20:58 -0400
+Received: from kroah.org ([198.145.64.141]:47181 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932535Ab0GAUti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:38 -0400
+	id S932530Ab0GAUth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:37 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:28 2010
-Message-Id: <20100701173428.642134576@clark.site>
+Message-Id: <20100701173428.560619567@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:27 -0700
+Date: Thu, 01 Jul 2010 10:33:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Kamal Mostafa <kamal@canonical.com>, Zhang Rui <rui.zhang@intel.com>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>, Jiri Kosina <jkosina@suse.cz>,
-       Thomas Renninger <trenn@suse.de>, Len Brown <len.brown@intel.com>
-Subject: [patch 021/164] ACPI: video: fix acpi_backlight=video
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [patch 020/164] ALSA: hda: Use LPIB for a Shuttle device
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamal Mostafa <kamal@canonical.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit eeb4bcb4771679d7b3446c0293334faee11b090a upstream.
+commit 61bb42c37dfa9016dcacc86bcd41362ab2457d4a upstream.
 
-Make "acpi_backlight=video" param enable ACPI_VIDEO_BACKLIGHT_FORCE_VIDEO
-as intended, instead of incorrectly enabling video output switching.
+BugLink: https://launchpad.net/bugs/551949
 
-BugLink: http://bugs.launchpad.net/bugs/573120
+Symptom: On the reporter's Shuttle device, using PulseAudio in Ubuntu
+10.04 LTS results in "popping clicking" audio with the PA crashing
+shortly thereafter.
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Acked-by: Zhang Rui <rui.zhang@intel.com>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Test case: Using Ubuntu 10.04 LTS (Linux 2.6.32.12), Linux 2.6.33, or
+Linux 2.6.34, adjust the HDA device's volume with PulseAudio.
+
+Resolution: add SSID for this machine to the position_fix quirk table,
+explicitly specifying the LPIB method.
+
+Reported-and-Tested-By: Christian Mehlis <mehlis@inf.fu-berlin.de>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/video_detect.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -250,7 +250,7 @@ static int __init acpi_backlight(char *s
- 				ACPI_VIDEO_BACKLIGHT_FORCE_VENDOR;
- 		if (!strcmp("video", str))
- 			acpi_video_support |=
--				ACPI_VIDEO_OUTPUT_SWITCHING_FORCE_VIDEO;
-+				ACPI_VIDEO_BACKLIGHT_FORCE_VIDEO;
- 	}
- 	return 1;
- }
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2272,6 +2272,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x104d, 0x9069, "Sony VPCS11V9E", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1179, 0xff10, "Toshiba A100-259", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1297, 0x3166, "Shuttle", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1458, 0xa022, "ga-ma770-ud3", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
 
 
