@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab0GASXp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:23:45 -0400
-Received: from kroah.org ([198.145.64.141]:40576 "EHLO coco.kroah.org"
+	id S932387Ab0GASlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:41:47 -0400
+Received: from kroah.org ([198.145.64.141]:40517 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757947Ab0GASXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:13 2010
-Message-Id: <20100701173213.648034612@clark.site>
+	id S1757887Ab0GASXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:31 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:12 2010
+Message-Id: <20100701173212.704453976@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:47 -0700
+Date: Thu, 01 Jul 2010 10:31:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "Ira W. Snyder" <iws@ovro.caltech.edu>,
-       Jean Delvare <khali@linux-fr.org>
-Subject: [patch 081/149] hwmon: (ltc4245) Read only one GPIO pin
+       Sebastien Dugue <sebastien.dugue@bull.net>,
+       Roland Dreier <rolandd@cisco.com>
+Subject: [patch 070/149] mlx4_core: Fix possible chunk sg list overflow in mlx4_alloc_icm()
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,100 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ira W. Snyder <iws@ovro.caltech.edu>
+From: Sebastien Dugue <sebastien.dugue@bull.net>
 
-commit df16dd53c575d0cb9dbee20a3149927c862a9ff6 upstream.
+commit c0dc72bad9cf21071f5e4005de46f7c8b67a138a upstream.
 
-Read only one of the GPIO pins as an analog voltage. The ADC can be
-switched to a different GPIO pin at runtime, but this is not supported.
+If the number of sg entries in the ICM chunk reaches MLX4_ICM_CHUNK_LEN,
+we must set chunk to NULL even for coherent mappings so that the next
+time through the loop will allocate another chunk.  Otherwise we'll
+overflow the sg list the next time through the loop.  This will lead to
+memory corruption if this case is hit.
 
-Previously, this driver would report the analog voltage of the currently
-selected GPIO pin as all three GPIO voltages: in9_input, in10_input and
-in11_input.
+mthca does not have this bug.
 
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Sebastien Dugue <sebastien.dugue@bull.net>
+Signed-off-by: Roland Dreier <rolandd@cisco.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/hwmon/ltc4245 |    4 +---
- drivers/hwmon/ltc4245.c     |   18 +++++-------------
- 2 files changed, 6 insertions(+), 16 deletions(-)
+ drivers/net/mlx4/icm.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/Documentation/hwmon/ltc4245
-+++ b/Documentation/hwmon/ltc4245
-@@ -72,9 +72,7 @@ in6_min_alarm		5v  output undervoltage a
- in7_min_alarm		3v  output undervoltage alarm
- in8_min_alarm		Vee (-12v) output undervoltage alarm
+--- a/drivers/net/mlx4/icm.c
++++ b/drivers/net/mlx4/icm.c
+@@ -174,9 +174,10 @@ struct mlx4_icm *mlx4_alloc_icm(struct m
  
--in9_input		GPIO #1 voltage data
--in10_input		GPIO #2 voltage data
--in11_input		GPIO #3 voltage data
-+in9_input		GPIO voltage data
+ 				if (chunk->nsg <= 0)
+ 					goto fail;
++			}
  
- power1_input		12v power usage (mW)
- power2_input		5v  power usage (mW)
---- a/drivers/hwmon/ltc4245.c
-+++ b/drivers/hwmon/ltc4245.c
-@@ -45,9 +45,7 @@ enum ltc4245_cmd {
- 	LTC4245_VEEIN			= 0x19,
- 	LTC4245_VEESENSE		= 0x1a,
- 	LTC4245_VEEOUT			= 0x1b,
--	LTC4245_GPIOADC1		= 0x1c,
--	LTC4245_GPIOADC2		= 0x1d,
--	LTC4245_GPIOADC3		= 0x1e,
-+	LTC4245_GPIOADC			= 0x1c,
- };
++			if (chunk->npages == MLX4_ICM_CHUNK_LEN)
+ 				chunk = NULL;
+-			}
  
- struct ltc4245_data {
-@@ -61,7 +59,7 @@ struct ltc4245_data {
- 	u8 cregs[0x08];
- 
- 	/* Voltage registers */
--	u8 vregs[0x0f];
-+	u8 vregs[0x0d];
- };
- 
- static struct ltc4245_data *ltc4245_update_device(struct device *dev)
-@@ -86,7 +84,7 @@ static struct ltc4245_data *ltc4245_upda
- 				data->cregs[i] = val;
- 		}
- 
--		/* Read voltage registers -- 0x10 to 0x1f */
-+		/* Read voltage registers -- 0x10 to 0x1c */
- 		for (i = 0; i < ARRAY_SIZE(data->vregs); i++) {
- 			val = i2c_smbus_read_byte_data(client, i+0x10);
- 			if (unlikely(val < 0))
-@@ -128,9 +126,7 @@ static int ltc4245_get_voltage(struct de
- 	case LTC4245_VEEOUT:
- 		voltage = regval * -55;
- 		break;
--	case LTC4245_GPIOADC1:
--	case LTC4245_GPIOADC2:
--	case LTC4245_GPIOADC3:
-+	case LTC4245_GPIOADC:
- 		voltage = regval * 10;
- 		break;
- 	default:
-@@ -297,9 +293,7 @@ LTC4245_ALARM(in7_min_alarm,	(1 << 2),	L
- LTC4245_ALARM(in8_min_alarm,	(1 << 3),	LTC4245_FAULT2);
- 
- /* GPIO voltages */
--LTC4245_VOLTAGE(in9_input,			LTC4245_GPIOADC1);
--LTC4245_VOLTAGE(in10_input,			LTC4245_GPIOADC2);
--LTC4245_VOLTAGE(in11_input,			LTC4245_GPIOADC3);
-+LTC4245_VOLTAGE(in9_input,			LTC4245_GPIOADC);
- 
- /* Power Consumption (virtual) */
- LTC4245_POWER(power1_input,			LTC4245_12VSENSE);
-@@ -342,8 +336,6 @@ static struct attribute *ltc4245_attribu
- 	&sensor_dev_attr_in8_min_alarm.dev_attr.attr,
- 
- 	&sensor_dev_attr_in9_input.dev_attr.attr,
--	&sensor_dev_attr_in10_input.dev_attr.attr,
--	&sensor_dev_attr_in11_input.dev_attr.attr,
- 
- 	&sensor_dev_attr_power1_input.dev_attr.attr,
- 	&sensor_dev_attr_power2_input.dev_attr.attr,
+ 			npages -= 1 << cur_order;
+ 		} else {
 
 
