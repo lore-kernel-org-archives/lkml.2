@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab0GASWu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:22:50 -0400
-Received: from kroah.org ([198.145.64.141]:35333 "EHLO coco.kroah.org"
+	id S1757577Ab0GASzu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:55:50 -0400
+Received: from kroah.org ([198.145.64.141]:35275 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757537Ab0GASWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:22:43 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:08 2010
-Message-Id: <20100701173208.005781188@clark.site>
+	id S1755840Ab0GASWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:35 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:07 2010
+Message-Id: <20100701173207.164795446@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:40 -0700
+Date: Thu, 01 Jul 2010 10:30:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tony Breeds <tony@bakeyournoodle.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: [patch 014/149] mutex: Fix optimistic spinning vs. BKL
+       Pavel Emelyanov <xemul@openvz.org>, NeilBrown <neilb@suse.de>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>
+Subject: [patch 004/149] NFSD: dont report compiled-out versions as present
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,60 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Breeds <tony@bakeyournoodle.com>
+From: Pavel Emelyanov <xemul@openvz.org>
 
-commit fd6be105b883244127a734ac9f14ae94a022dcc0 upstream.
+commit 15ddb4aec54422ead137b03ea4e9b3f5db3f7cc2 upstream.
 
-Currently, we can hit a nasty case with optimistic
-spinning on mutexes:
+The /proc/fs/nfsd/versions file calls nfsd_vers() to check whether
+the particular nfsd version is present/available. The problem is
+that once I turn off e.g. NFSD-V4 this call returns -1 which is
+true from the callers POV which is wrong.
 
-    CPU A tries to take a mutex, while holding the BKL
+The proposal is to report false in that case.
 
-    CPU B tried to take the BLK while holding the mutex
+The bug has existed since 6658d3a7bbfd1768 "[PATCH] knfsd: remove
+nfsd_versbits as intermediate storage for desired versions".
 
-This looks like a AB-BA scenario but in practice, is
-allowed and happens due to the auto-release on
-schedule() nature of the BKL.
-
-In that case, the optimistic spinning code can get us
-into a situation where instead of going to sleep, A
-will spin waiting for B who is spinning waiting for
-A, and the only way out of that loop is the
-need_resched() test in mutex_spin_on_owner().
-
-This patch fixes it by completely disabling spinning
-if we own the BKL. This adds one more detail to the
-extensive list of reasons why it's a bad idea for
-kernel code to be holding the BKL.
-
-Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-LKML-Reference: <20100519054636.GC12389@ozlabs.org>
-[ added an unlikely() attribute to the branch ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
+Acked-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/mutex.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/nfsd/nfssvc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -172,6 +172,13 @@ __mutex_lock_common(struct mutex *lock,
- 		struct thread_info *owner;
- 
- 		/*
-+		 * If we own the BKL, then don't spin. The owner of
-+		 * the mutex might be waiting on us to release the BKL.
-+		 */
-+		if (unlikely(current->lock_depth >= 0))
-+			break;
-+
-+		/*
- 		 * If there's an owner, wait for it to either
- 		 * release the lock or go to sleep.
- 		 */
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -136,7 +136,7 @@ u32 nfsd_supported_minorversion;
+ int nfsd_vers(int vers, enum vers_op change)
+ {
+ 	if (vers < NFSD_MINVERS || vers >= NFSD_NRVERS)
+-		return -1;
++		return 0;
+ 	switch(change) {
+ 	case NFSD_SET:
+ 		nfsd_versions[vers] = nfsd_version[vers];
 
 
