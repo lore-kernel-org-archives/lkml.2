@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758585Ab0GAStn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:49:43 -0400
-Received: from kroah.org ([198.145.64.141]:35434 "EHLO coco.kroah.org"
+	id S1758487Ab0GASok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:44:40 -0400
+Received: from kroah.org ([198.145.64.141]:40431 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757699Ab0GASW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:22:58 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:09 2010
-Message-Id: <20100701173209.505465490@clark.site>
+	id S1757805Ab0GASXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:16 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:11 2010
+Message-Id: <20100701173211.273963698@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:58 -0700
+Date: Thu, 01 Jul 2010 10:31:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Johan Hovold <jhovold@gmail.com>
-Subject: [patch 032/149] USB: ir-usb: fix double free
+       Jeff Mahoney <jeffm@suse.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [patch 053/149] powerpc: Fix handling of strncmp with zero len
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 2ff78c0c2b67120c8e503268da3f177cae2228a2 upstream.
+commit 637a99022fb119b90fb281715d13172f0394fc12 upstream.
 
-If the user specifies a custom bulk buffer size we get a double free at
-port release.
+Commit 0119536c, which added the assembly version of strncmp to
+powerpc, mentions that it adds two instructions to the version from
+boot/string.S to allow it to handle len=0. Unfortunately, it doesn't
+always return 0 when that is the case. The length is passed in r5, but
+the return value is passed back in r3. In certain cases, this will
+happen to work. Otherwise it will pass back the address of the first
+string as the return value.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+This patch lifts the len <= 0 handling code from memcpy to handle that
+case.
+
+Reported by: Christian_Sellars@symantec.com
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ir-usb.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/lib/string.S |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ir-usb.c
-+++ b/drivers/usb/serial/ir-usb.c
-@@ -312,6 +312,7 @@ static int ir_open(struct tty_struct *tt
- 		kfree(port->read_urb->transfer_buffer);
- 		port->read_urb->transfer_buffer = buffer;
- 		port->read_urb->transfer_buffer_length = buffer_size;
-+		port->bulk_in_buffer = buffer;
+--- a/arch/powerpc/lib/string.S
++++ b/arch/powerpc/lib/string.S
+@@ -71,7 +71,7 @@ _GLOBAL(strcmp)
  
- 		buffer = kmalloc(buffer_size, GFP_KERNEL);
- 		if (!buffer) {
-@@ -321,6 +322,7 @@ static int ir_open(struct tty_struct *tt
- 		kfree(port->write_urb->transfer_buffer);
- 		port->write_urb->transfer_buffer = buffer;
- 		port->write_urb->transfer_buffer_length = buffer_size;
-+		port->bulk_out_buffer = buffer;
- 		port->bulk_out_size = buffer_size;
- 	}
+ _GLOBAL(strncmp)
+ 	PPC_LCMPI r5,0
+-	beqlr
++	ble-	2f
+ 	mtctr	r5
+ 	addi	r5,r3,-1
+ 	addi	r4,r4,-1
+@@ -82,6 +82,8 @@ _GLOBAL(strncmp)
+ 	beqlr	1
+ 	bdnzt	eq,1b
+ 	blr
++2:	li	r3,0
++	blr
  
+ _GLOBAL(strlen)
+ 	addi	r4,r3,-1
 
 
