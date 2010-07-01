@@ -1,148 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab0GAN46 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:56:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57943 "EHLO song.cn.fujitsu.com"
+	id S1756069Ab0GAN5j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:57:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64583 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752159Ab0GAN44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:56:56 -0400
-Message-ID: <4C2C9DC0.8050607@cn.fujitsu.com>
-Date: Thu, 01 Jul 2010 21:53:04 +0800
+	id S1755912Ab0GAN5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 09:57:37 -0400
+Message-ID: <4C2C9DEC.4040008@cn.fujitsu.com>
+Date: Thu, 01 Jul 2010 21:53:48 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
        KVM list <kvm@vger.kernel.org>
-Subject: [PATCH v4 1/6] KVM: MMU: introduce gfn_to_pfn_atomic() function
+Subject: [PATCH v4 2/6] KVM: MMU: introduce gfn_to_page_many_atomic() function
+References: <4C2C9DC0.8050607@cn.fujitsu.com>
+In-Reply-To: <4C2C9DC0.8050607@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce gfn_to_pfn_atomic(), it's the fast path and can used in atomic
-context, the later patch will use it
+This function not only return the gfn's page but also the page number
+after @gfn in the slot
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/mm/gup.c        |    2 ++
- include/linux/kvm_host.h |    1 +
- virt/kvm/kvm_main.c      |   32 +++++++++++++++++++++++++-------
- 3 files changed, 28 insertions(+), 7 deletions(-)
+ include/linux/kvm_host.h |    2 ++
+ virt/kvm/kvm_main.c      |   29 ++++++++++++++++++++++++++++-
+ 2 files changed, 30 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
-index 738e659..0c9034b 100644
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -6,6 +6,7 @@
-  */
- #include <linux/sched.h>
- #include <linux/mm.h>
-+#include <linux/module.h>
- #include <linux/vmstat.h>
- #include <linux/highmem.h>
- 
-@@ -274,6 +275,7 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 
- 	return nr;
- }
-+EXPORT_SYMBOL_GPL(__get_user_pages_fast);
- 
- /**
-  * get_user_pages_fast() - pin user pages in memory
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index e796326..e0fb543 100644
+index e0fb543..53f663c 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
-@@ -295,6 +295,7 @@ void kvm_release_page_dirty(struct page *page);
- void kvm_set_page_dirty(struct page *page);
- void kvm_set_page_accessed(struct page *page);
+@@ -288,6 +288,8 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
+ void kvm_disable_largepages(void);
+ void kvm_arch_flush_shadow(struct kvm *kvm);
  
-+pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn);
- pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
- pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
- 			 struct kvm_memory_slot *slot, gfn_t gfn);
++int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn,
++			    struct page **pages, int nr_pages, bool *enough);
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn);
+ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn);
+ void kvm_release_page_clean(struct page *page);
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index ec2e3c6..3f976b0 100644
+index 3f976b0..cc360d7 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -934,19 +934,25 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+@@ -923,15 +923,25 @@ static unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn)
+ 	return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
  }
+ 
+-unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
++static unsigned long gfn_to_hva_many(struct kvm *kvm, gfn_t gfn, int *entry)
+ {
+ 	struct kvm_memory_slot *slot;
+ 
+ 	slot = gfn_to_memslot(kvm, gfn);
++
+ 	if (!slot || slot->flags & KVM_MEMSLOT_INVALID)
+ 		return bad_hva();
++
++	if (entry)
++		*entry = slot->npages - (gfn - slot->base_gfn);
++
+ 	return gfn_to_hva_memslot(slot, gfn);
+ }
++
++unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
++{
++	return gfn_to_hva_many(kvm, gfn, NULL);
++}
  EXPORT_SYMBOL_GPL(gfn_to_hva);
  
--static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
-+static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
- {
- 	struct page *page[1];
- 	int npages;
- 	pfn_t pfn;
- 
--	might_sleep();
--
--	npages = get_user_pages_fast(addr, 1, 1, page);
-+	if (atomic)
-+		npages = __get_user_pages_fast(addr, 1, 1, page);
-+	else {
-+		might_sleep();
-+		npages = get_user_pages_fast(addr, 1, 1, page);
-+	}
- 
- 	if (unlikely(npages != 1)) {
- 		struct vm_area_struct *vma;
- 
-+		if (atomic)
-+			goto return_bad_page;
-+
- 		down_read(&current->mm->mmap_sem);
- 		if (is_hwpoison_address(addr)) {
- 			up_read(&current->mm->mmap_sem);
-@@ -959,6 +965,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
- 		if (vma == NULL || addr < vma->vm_start ||
- 		    !(vma->vm_flags & VM_PFNMAP)) {
- 			up_read(&current->mm->mmap_sem);
-+return_bad_page:
- 			get_page(bad_page);
- 			return page_to_pfn(bad_page);
- 		}
-@@ -972,7 +979,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
- 	return pfn;
+ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
+@@ -1011,6 +1021,23 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 	return hva_to_pfn(kvm, addr, false);
  }
  
--pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
-+pfn_t __gfn_to_pfn(struct kvm *kvm, gfn_t gfn, bool atomic)
- {
- 	unsigned long addr;
- 
-@@ -982,7 +989,18 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
- 		return page_to_pfn(bad_page);
- 	}
- 
--	return hva_to_pfn(kvm, addr);
-+	return hva_to_pfn(kvm, addr, atomic);
-+}
-+
-+pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn)
++int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn,
++			    struct page **pages, int nr_pages, bool *enough)
 +{
-+	return __gfn_to_pfn(kvm, gfn, true);
-+}
-+EXPORT_SYMBOL_GPL(gfn_to_pfn_atomic);
++	unsigned long addr;
++	int entry, ret;
 +
-+pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
-+{
-+	return __gfn_to_pfn(kvm, gfn, false);
- }
- EXPORT_SYMBOL_GPL(gfn_to_pfn);
- 
-@@ -990,7 +1008,7 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
- 			 struct kvm_memory_slot *slot, gfn_t gfn)
- {
- 	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
--	return hva_to_pfn(kvm, addr);
-+	return hva_to_pfn(kvm, addr, false);
- }
- 
++	addr = gfn_to_hva_many(kvm, gfn, &entry);
++	if (kvm_is_error_hva(addr))
++		return -1;
++
++	entry = min(entry, nr_pages);
++	*enough = (entry == nr_pages) ? true : false;
++	ret = __get_user_pages_fast(addr, entry, 1, pages);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(gfn_to_page_many_atomic);
++
  struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
+ {
+ 	pfn_t pfn;
 -- 
 1.6.1.2
+
 
