@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab0GAJcB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 05:32:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43157 "EHLO mx1.redhat.com"
+	id S1754726Ab0GAJgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 05:36:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47318 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab0GAJb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 05:31:59 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4C2B9F49.8090304@gmail.com>
-References: <4C2B9F49.8090304@gmail.com> <4C2A6B6C.1000306@gmail.com> <4C29674C.9070503@gmail.com> <4C28E14D.5050701@gmail.com> <1277621246-10960-4-git-send-email-justinmattock@gmail.com> <1277621246-10960-1-git-send-email-justinmattock@gmail.com> <7214.1277729293@redhat.com> <8066.1277750854@redhat.com> <22319.1277826461@redhat.com> <25800.1277889215@redhat.com> 
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-       linux-acpi@vger.kernel.org, lenb@kernel.org
-Subject: Re: [PATCH 3/5]acpi:glue.c Fix warning: variable 'ret' set but not used
-Date: Thu, 01 Jul 2010 10:31:46 +0100
-Message-ID: <16513.1277976706@redhat.com>
+	id S1754620Ab0GAJgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 05:36:09 -0400
+Date: Thu, 1 Jul 2010 19:36:02 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 29/52] fs: icache lock i_count
+Message-ID: <20100701093602.GJ22976@laptop>
+References: <20100624030212.676457061@suse.de>
+ <20100624030730.245992858@suse.de>
+ <20100630072702.GF24712@dastard>
+ <20100630120502.GB21358@laptop>
+ <20100701023618.GQ24712@dastard>
+ <20100701075426.GC22976@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100701075426.GC22976@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin P. Mattock <justinmattock@gmail.com> wrote:
+On Thu, Jul 01, 2010 at 05:54:26PM +1000, Nick Piggin wrote:
+> On Thu, Jul 01, 2010 at 12:36:18PM +1000, Dave Chinner wrote:
+> If there is a
+> difficulty with locking pops up in future, I'd prefer to look at it
+> then.
+> 
+> I don't think any filesystems cared at all when I converted them.
 
-> +		if (fn) {
-> +			dev_warn(&acpi_dev->dev,
-> +				"Failed to create firmware_node link to %s %s: %d\n",
-> +				dev_driver_string(dev), dev_name(dev), fn);
-> +		} else if (pn) {
-> +			dev_warn(&acpi_dev->dev,
-> +				"Failed to create physical_node link to %s %s: %d\n",
-> +				dev_driver_string(dev), dev_name(dev), pn);
-> +				return AE_ERROR;
-> +		}			
+What I mean by this is that _today_ no filesystems seemed to have
+any problems with how I did it. I did touch quota and notify code,
+which iterates inode sb lists, but it was pretty trivial. Not many
+others are about inode locking details enough to care about any
+of the locks in fs/inode.c.
 
-There's one more question to ask yourself: do you really need two dev_warn()
-statements?  You could have just one that prints both error values:
+And so instead of adding another lock now when I already have a
+(IMO) nice and working code, I will prefer to wait until some fs
+development runs into problem with locking.
 
-		if (fn || pn)
-			dev_warn(&acpi_dev->dev,
-				 "Failed to create link(s) to %s %s:"
-				 " fn=%d pn=%d\n",
-				 dev_driver_string(dev), dev_name(dev),
-				 fn, pn);
+There are several things that can be done. Using RCU for more of
+the inode lists is a possibility, and can improve lock order problems
+while actually reducing the amount of locking rather than adding
+locks.
 
-Not sure it's worth going that far.  You could reduce it still further:
-
-		if (fn || pn)
-			dev_warn(&acpi_dev->dev,
-				 "Failed to create link(s) to %s %s:"
-				 " %d\n",
-				 dev_driver_string(dev), dev_name(dev),
-				 fn ?: pn);
-
-Is it that important to know which failed to be created, or that both failed
-to be created?
-
-David
