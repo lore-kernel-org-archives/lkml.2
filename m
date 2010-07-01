@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab0GATzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 15:55:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19712 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754553Ab0GATzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 15:55:06 -0400
-Date: Thu, 1 Jul 2010 16:54:40 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH] perf wrong branches event on AMD
-Message-ID: <20100701195439.GJ4078@ghostprotocols.net>
-References: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1757755Ab0GAT6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 15:58:04 -0400
+Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:54385 "EHLO
+	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754553Ab0GAT6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 15:58:00 -0400
+Subject: Re: [PATCH 0/2] Yama: add PTRACE exception tracking
+From: Stephen Smalley <sds@tycho.nsa.gov>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100701194103.GA26620@hallyn.com>
+References: <20100630003844.GE4837@outflux.net>
+	 <20100630073158.GA4453@infradead.org>
+	 <alpine.LRH.2.00.1007011057520.24202@tundra.namei.org>
+	 <20100701044401.GY4837@outflux.net> <20100701132038.GA24394@hallyn.com>
+	 <20100701171624.GZ4837@outflux.net>  <20100701194103.GA26620@hallyn.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: National Security Agency
+Date: Thu, 01 Jul 2010 15:57:55 -0400
+Message-ID: <1278014275.15753.207.camel@moss-pluto.epoch.ncsc.mil>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 01, 2010 at 03:30:16PM -0400, Vince Weaver escreveu:
-> Hello
+On Thu, 2010-07-01 at 14:41 -0500, Serge E. Hallyn wrote:
+> Quoting Kees Cook (kees.cook@canonical.com):
+> > > > I still think simple chaining is the way to go.  I want to review the
+> > > > earlier discussions first (I think Serge said it was in 2004ish?) before I
+> > > > write up anything.  There is, I think, one sticking point, which is
+> > > > /proc/self/attr/current, but beyond that, I think some simple
+> > > > reorganization of LSM initialization routines and a list that security_*
+> > > > walks would be sufficient.
+> > > 
+> > > In the past, output results for each LSM were simply split by \n or a :
+> > > or something, and input was prepended by the LSM name.
+> > 
+> > This doesn't appear to be true anymore.  Looking at the fs/proc/base.c and
+> > security/selinux/hooks.c code, there is no checking for a prepended LSM
+> > name.  Maybe that's the first chaining limitation -- you can't chain 2 LSMs
+> > that both declare setprocattr hooks.
 > 
-> while doing some performance counter validation tests on some assembly 
-> language programs I noticed that the "branches:u" count was very wrong on 
-> AMD machines.
-> 
-> It looks like the wrong event was selected.
-> 
-> This is why event selection needs to be in user-space... it could be fixed 
-> instantly there, but the way things are done now it will take months to 
-> years for this fix to filter down to those trying to use perf counters...
+> No no, Stephen and I were talking about in the stacker patchset, again
+> around 2004-2005.  Never went upstream (per 2005 or 2006 ksummit
+> agreement).
 
-Well, you can use:
+Patch series was also available from:
+http://sourceforge.net/projects/lsm-stacker/files/
 
-  rNNN (see 'perf list --help' on how to encode it) [Raw hardware event descriptor]
+Looks like it was last updated in 2006.
 
-In the meantime.
+-- 
+Stephen Smalley
+National Security Agency
 
-- Arnaldo
