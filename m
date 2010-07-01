@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518Ab0GAVw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:52:57 -0400
-Received: from kroah.org ([198.145.64.141]:60853 "EHLO coco.kroah.org"
+	id S1759494Ab0GAVvl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:51:41 -0400
+Received: from kroah.org ([198.145.64.141]:60899 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758944Ab0GAVNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:38 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:51 2010
-Message-Id: <20100701174251.914639096@clark.site>
+	id S1758869Ab0GAVNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:46 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:52 2010
+Message-Id: <20100701174252.658403089@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:35 -0700
+Date: Thu, 01 Jul 2010 10:42:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sujith <Sujith.Manoharan@atheros.com>,
-       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [065/200] ath9k_hw: fix hardware deinit
+       Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [074/200] drm/radeon/kms: reset ddc_bus in object header parsing
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,55 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith <Sujith.Manoharan@atheros.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 736b3a27b3c50c4a23717b802240435a69e8d0ff upstream.
+commit 2bfcc0fc698d550689ef020c73b2d977b73e728c upstream.
 
-Without this you will get a panic if the device initialization
-fails. Also, free ath_hw instance properly. ath9k_hw_deinit()
-shouldn't do it.
+Some LVDS connectors don't have a ddc bus, so reset the
+ddc bus to invalid before parsing the next connector
+to avoid using stale ddc bus data.  Should fix
+fdo bug 28164.
 
-Signed-off-by: Sujith <Sujith.Manoharan@atheros.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c   |    4 +---
- drivers/net/wireless/ath/ath9k/init.c |    3 +++
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -1241,7 +1241,7 @@ void ath9k_hw_deinit(struct ath_hw *ah)
- {
- 	struct ath_common *common = ath9k_hw_common(ah);
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -530,6 +530,8 @@ bool radeon_get_atom_connector_info_from
+ 			}
  
--	if (common->state <= ATH_HW_INITIALIZED)
-+	if (common->state < ATH_HW_INITIALIZED)
- 		goto free_hw;
+ 			/* look up gpio for ddc, hpd */
++			ddc_bus.valid = false;
++			hpd.hpd = RADEON_HPD_NONE;
+ 			if ((le16_to_cpu(path->usDeviceTag) &
+ 			     (ATOM_DEVICE_TV_SUPPORT | ATOM_DEVICE_CV_SUPPORT)) == 0) {
+ 				for (j = 0; j < con_obj->ucNumberOfObjects; j++) {
+@@ -585,9 +587,6 @@ bool radeon_get_atom_connector_info_from
+ 						break;
+ 					}
+ 				}
+-			} else {
+-				hpd.hpd = RADEON_HPD_NONE;
+-				ddc_bus.valid = false;
+ 			}
  
- 	if (!AR_SREV_9100(ah))
-@@ -1252,8 +1252,6 @@ void ath9k_hw_deinit(struct ath_hw *ah)
- free_hw:
- 	if (!AR_SREV_9280_10_OR_LATER(ah))
- 		ath9k_hw_rf_free_ext_banks(ah);
--	kfree(ah);
--	ah = NULL;
- }
- EXPORT_SYMBOL(ath9k_hw_deinit);
- 
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -760,6 +760,9 @@ static void ath9k_deinit_softc(struct at
- 
- 	tasklet_kill(&sc->intr_tq);
- 	tasklet_kill(&sc->bcon_tasklet);
-+
-+	kfree(sc->sc_ah);
-+	sc->sc_ah = NULL;
- }
- 
- void ath9k_deinit_device(struct ath_softc *sc)
+ 			/* needed for aux chan transactions */
 
 
