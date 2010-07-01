@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503Ab0GAUtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:49:31 -0400
-Received: from kroah.org ([198.145.64.141]:47107 "EHLO coco.kroah.org"
+	id S932551Ab0GAUtn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:49:43 -0400
+Received: from kroah.org ([198.145.64.141]:47165 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758569Ab0GAUt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:27 2010
-Message-Id: <20100701173427.556843630@clark.site>
+	id S932520Ab0GAUte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:34 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:28 2010
+Message-Id: <20100701173428.311577510@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:14 -0700
+Date: Thu, 01 Jul 2010 10:33:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Pavel Emelyanov <xemul@openvz.org>, NeilBrown <neilb@suse.de>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>
-Subject: [patch 008/164] NFSD: dont report compiled-out versions as present
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [patch 017/164] ALSA: hda: Use LPIB for Toshiba A100-259
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Emelyanov <xemul@openvz.org>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 15ddb4aec54422ead137b03ea4e9b3f5db3f7cc2 upstream.
+commit 4e0938dba7fccf37a4aecba4d937da7f312b5d55 upstream.
 
-The /proc/fs/nfsd/versions file calls nfsd_vers() to check whether
-the particular nfsd version is present/available. The problem is
-that once I turn off e.g. NFSD-V4 this call returns -1 which is
-true from the callers POV which is wrong.
+BugLink: https://launchpad.net/bugs/549560
 
-The proposal is to report false in that case.
+Symptom: on a significant number of hardware, booting from a live cd
+results in capture working correctly, but once the distribution is
+installed, booting from the install results in capture not working.
 
-The bug has existed since 6658d3a7bbfd1768 "[PATCH] knfsd: remove
-nfsd_versbits as intermediate storage for desired versions".
+Test case: boot from Ubuntu 10.04 LTS live cd; capture works correctly.
+Install to HD and reboot; capture does not work. Reproduced with 2.6.32
+mainline build (vanilla kernel.org compile)
 
-Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
-Acked-by: NeilBrown <neilb@suse.de>
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Resolution: add SSID for Toshiba A100-259 to the position_fix quirk
+table, explicitly specifying the LPIB method.
+
+I'll be sending additional patches for these SSIDs as bug reports are
+confirmed.
+
+This patch also trivially sorts the quirk table in ascending order by
+subsystem vendor.
+
+Reported-and-Tested-by: <davide.molteni@gmail.com>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfssvc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_intel.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -120,7 +120,7 @@ u32 nfsd_supported_minorversion;
- int nfsd_vers(int vers, enum vers_op change)
- {
- 	if (vers < NFSD_MINVERS || vers >= NFSD_NRVERS)
--		return -1;
-+		return 0;
- 	switch(change) {
- 	case NFSD_SET:
- 		nfsd_versions[vers] = nfsd_version[vers];
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2267,8 +2267,9 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x1028, 0x01de, "Dell Precision 390", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
+-	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1179, 0xff10, "Toshiba A100-259", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1458, 0xa022, "ga-ma770-ud3", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
 
 
