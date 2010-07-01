@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932990Ab0GAUww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:52:52 -0400
-Received: from kroah.org ([198.145.64.141]:47799 "EHLO coco.kroah.org"
+	id S933024Ab0GAUxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:53:20 -0400
+Received: from kroah.org ([198.145.64.141]:47846 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932808Ab0GAUvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:04 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:36 2010
-Message-Id: <20100701173436.736439911@clark.site>
+	id S932828Ab0GAUvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:12 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:37 2010
+Message-Id: <20100701173437.597418086@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:04 -0700
+Date: Thu, 01 Jul 2010 10:35:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Axel Lin <axel.lin@gmail.com>, Oliver Neukum <oneukum@suse.de>
-Subject: [patch 118/164] USB: cdc-acm: fix resource reclaim in error path of acm_probe
+       Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [patch 128/164] ext4: check s_log_groups_per_flex in online resize code
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@gmail.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit c2572b78aa0447244a38e555ebb1b3b48a0088a5 upstream.
+commit 42007efd569f1cf3bfb9a61da60ef6c2179508ca upstream.
 
-This patch fixes resource reclaim in error path of acm_probe:
+If groups_per_flex < 2, sbi->s_flex_groups[] doesn't get filled out,
+and every other access to this first tests s_log_groups_per_flex;
+same thing needs to happen in resize or we'll wander off into
+a null pointer when doing an online resize of the file system.
 
-1. In the case of "out of memory (read urbs usb_alloc_urb)\n")", there
-   is no need to call acm_read_buffers_free(acm) here.  Fix it by goto
-   alloc_fail6 instead of alloc_fail7.
-2. In the case of "out of memory (write urbs usb_alloc_urb)",
-   usb_alloc_urb may fail in any iteration of the for loop.  Current
-   implementation does not properly free allocated snd->urb.  Fix it by
-   goto alloc_fail8 instead of alloc_fail7.
-3. In the case of device_create_file(&intf->dev,&dev_attr_iCountryCodeRelDate)
-   fail, acm->country_codes is kfreed. As a result, device_remove_file
-   for dev_attr_wCountryCodes will not be executed in acm_disconnect.
-   Fix it by calling device_remove_file for dev_attr_wCountryCodes
-   before goto skip_countries.
+Thanks to Christoph Biedl, who came up with the trivial testcase:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+# truncate --size 128M fsfile
+# mkfs.ext3 -F fsfile
+# tune2fs -O extents,uninit_bg,dir_index,flex_bg,huge_file,dir_nlink,extra_isize fsfile
+# e2fsck -yDf -C0 fsfile
+# truncate --size 132M fsfile
+# losetup /dev/loop0 fsfile
+# mount /dev/loop0 mnt
+# resize2fs -p /dev/loop0
+
+	https://bugzilla.kernel.org/show_bug.cgi?id=13549
+
+Reported-by: Alessandro Polverini <alex@nibbles.it>
+Test-case-by: Christoph Biedl  <bugzilla.kernel.bpeb@manchmal.in-ulm.de>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/ext4/resize.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1201,7 +1201,7 @@ made_compressed_probe:
- 		if (rcv->urb == NULL) {
- 			dev_dbg(&intf->dev,
- 				"out of memory (read urbs usb_alloc_urb)\n");
--			goto alloc_fail7;
-+			goto alloc_fail6;
- 		}
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -930,7 +930,8 @@ int ext4_group_add(struct super_block *s
+ 	percpu_counter_add(&sbi->s_freeinodes_counter,
+ 			   EXT4_INODES_PER_GROUP(sb));
  
- 		rcv->urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
-@@ -1225,7 +1225,7 @@ made_compressed_probe:
- 		if (snd->urb == NULL) {
- 			dev_dbg(&intf->dev,
- 				"out of memory (write urbs usb_alloc_urb)");
--			goto alloc_fail7;
-+			goto alloc_fail8;
- 		}
- 
- 		if (usb_endpoint_xfer_int(epwrite))
-@@ -1264,6 +1264,7 @@ made_compressed_probe:
- 		i = device_create_file(&intf->dev,
- 						&dev_attr_iCountryCodeRelDate);
- 		if (i < 0) {
-+			device_remove_file(&intf->dev, &dev_attr_wCountryCodes);
- 			kfree(acm->country_codes);
- 			goto skip_countries;
- 		}
-@@ -1300,6 +1301,7 @@ alloc_fail8:
- 		usb_free_urb(acm->wb[i].urb);
- alloc_fail7:
- 	acm_read_buffers_free(acm);
-+alloc_fail6:
- 	for (i = 0; i < num_rx_buf; i++)
- 		usb_free_urb(acm->ru[i].urb);
- 	usb_free_urb(acm->ctrlurb);
+-	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG)) {
++	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG) &&
++	    sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group;
+ 		flex_group = ext4_flex_group(sbi, input->group);
+ 		atomic_add(input->free_blocks_count,
 
 
