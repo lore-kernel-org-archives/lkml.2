@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab0GASmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:42:00 -0400
-Received: from kroah.org ([198.145.64.141]:40517 "EHLO coco.kroah.org"
+	id S1758509Ab0GASez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:34:55 -0400
+Received: from kroah.org ([198.145.64.141]:40689 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757884Ab0GASXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:31 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:12 2010
-Message-Id: <20100701173212.619617960@clark.site>
+	id S1758062Ab0GASYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:01 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:15 2010
+Message-Id: <20100701173215.575524532@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:35 -0700
+Date: Thu, 01 Jul 2010 10:32:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Hugh Dickins <hughd@google.com>,
-       Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: [patch 069/149] tmpfs: insert tmpfs cache pages to inactive list at first
+       Daniel Mack <daniel@caiaq.de>, Johan Hovold <jhovold@gmail.com>,
+       Alan Cox <alan@linux.intel.com>
+Subject: [patch 104/149] USB: ftdi_sio: fix DTR/RTS line modes
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,94 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Daniel Mack <daniel@caiaq.de>
 
-commit e9d6c157385e4efa61cb8293e425c9d8beba70d3 upstream.
+commit 6a1a82df91fa0eb1cc76069a9efe5714d087eccd upstream.
 
-Shaohua Li reported parallel file copy on tmpfs can lead to OOM killer.
-This is regression of caused by commit 9ff473b9a7 ("vmscan: evict
-streaming IO first").  Wow, It is 2 years old patch!
+Call set_mctrl() and clear_mctrl() according to the flow control mode
+selected. This makes serial communication for FT232 connected devices
+work when CRTSCTS is not set.
 
-Currently, tmpfs file cache is inserted active list at first.  This means
-that the insertion doesn't only increase numbers of pages in anon LRU, but
-it also reduces anon scanning ratio.  Therefore, vmscan will get totally
-confused.  It scans almost only file LRU even though the system has plenty
-unused tmpfs pages.
+This fixes a regression introduced by 4175f3e31 ("tty_port: If we are
+opened non blocking we still need to raise the carrier"). This patch
+calls the low-level driver's dtr_rts() function which consequently sets
+TIOCM_DTR | TIOCM_RTS. A later call to set_termios() without CRTSCTS in
+cflags, however, does not reset these bits, and so data is not actually
+sent out on the serial wire.
 
-Historically, lru_cache_add_active_anon() was used for two reasons.
-1) Intend to priotize shmem page rather than regular file cache.
-2) Intend to avoid reclaim priority inversion of used once pages.
-
-But we've lost both motivation because (1) Now we have separate anon and
-file LRU list.  then, to insert active list doesn't help such priotize.
-(2) In past, one pte access bit will cause page activation.  then to
-insert inactive list with pte access bit mean higher priority than to
-insert active list.  Its priority inversion may lead to uninteded lru
-chun.  but it was already solved by commit 645747462 (vmscan: detect
-mapped file pages used only once).  (Thanks Hannes, you are great!)
-
-Thus, now we can use lru_cache_add_anon() instead.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reported-by: Shaohua Li <shaohua.li@intel.com>
-Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Cc: Johan Hovold <jhovold@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/swap.h |   10 ----------
- mm/filemap.c         |    4 ++--
- 2 files changed, 2 insertions(+), 12 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -218,21 +218,11 @@ static inline void lru_cache_add_anon(st
- 	__lru_cache_add(page, LRU_INACTIVE_ANON);
- }
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2306,6 +2306,8 @@ static void ftdi_set_termios(struct tty_
+ 				"urb failed to set to rts/cts flow control\n");
+ 		}
  
--static inline void lru_cache_add_active_anon(struct page *page)
--{
--	__lru_cache_add(page, LRU_ACTIVE_ANON);
--}
--
- static inline void lru_cache_add_file(struct page *page)
- {
- 	__lru_cache_add(page, LRU_INACTIVE_FILE);
- }
++		/* raise DTR/RTS */
++		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	} else {
+ 		/*
+ 		 * Xon/Xoff code
+@@ -2353,6 +2355,8 @@ static void ftdi_set_termios(struct tty_
+ 			}
+ 		}
  
--static inline void lru_cache_add_active_file(struct page *page)
--{
--	__lru_cache_add(page, LRU_ACTIVE_FILE);
--}
--
- /* linux/mm/vmscan.c */
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -462,7 +462,7 @@ int add_to_page_cache_lru(struct page *p
- 	/*
- 	 * Splice_read and readahead add shmem/tmpfs pages into the page cache
- 	 * before shmem_readpage has a chance to mark them as SwapBacked: they
--	 * need to go on the active_anon lru below, and mem_cgroup_cache_charge
-+	 * need to go on the anon lru below, and mem_cgroup_cache_charge
- 	 * (called in add_to_page_cache) needs to know where they're going too.
- 	 */
- 	if (mapping_cap_swap_backed(mapping))
-@@ -473,7 +473,7 @@ int add_to_page_cache_lru(struct page *p
- 		if (page_is_file_cache(page))
- 			lru_cache_add_file(page);
- 		else
--			lru_cache_add_active_anon(page);
-+			lru_cache_add_anon(page);
++		/* lower DTR/RTS */
++		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
  	}
- 	return ret;
+ 	return;
  }
 
 
