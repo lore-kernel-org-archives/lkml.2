@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab0GAMqb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 08:46:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53687 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753877Ab0GAMqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 08:46:30 -0400
-Date: Thu, 1 Jul 2010 08:46:09 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-       device-mapper development <dm-devel@redhat.com>, axboe@kernel.dk,
-       linux-scsi@vger.kernel.org, martin.petersen@oracle.com,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 1/2] block: fix leaks associated with discard request
- payload
-Message-ID: <20100701124609.GA19605@redhat.com>
-References: <20100622180029.GA15950@redhat.com>
- <1277582211-10725-1-git-send-email-snitzer@redhat.com>
- <1277652576.4366.19.camel@mulgrave.site>
- <Pine.LNX.4.64.1006291811300.27462@hs20-bc2-1.build.redhat.com>
- <1277852600.4379.211.camel@mulgrave.site>
- <Pine.LNX.4.64.1006291925480.11847@hs20-bc2-1.build.redhat.com>
- <1277907738.2839.9.camel@mulgrave.site>
- <Pine.LNX.4.64.1007010803040.18570@hs20-bc2-1.build.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1007010803040.18570@hs20-bc2-1.build.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1755731Ab0GAMrX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 08:47:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36802 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753877Ab0GAMrV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 08:47:21 -0400
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <1277987657.1917.32.camel@laptop>
+References: <4BFFE742.2060205@kernel.org>
+	 <20100530112925.GB27611@redhat.com> <4C02C99D.9070204@kernel.org>
+	 <20100624081135.GA937@redhat.com>
+	 <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
+	 <20100625101022.GA16321@redhat.com> <20100701110708.GA27368@redhat.com>
+	 <1277983179.1917.10.camel@laptop> <1277984603.1917.15.camel@laptop>
+	 <20100701115507.GA31333@redhat.com>  <20100701122340.GB31333@redhat.com>
+	 <1277987657.1917.32.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 01 Jul 2010 14:46:35 +0200
+Message-ID: <1277988395.1917.47.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01 2010 at  8:28am -0400,
-Mikulas Patocka <mpatocka@redhat.com> wrote:
-
-> > > It is either/or choice. If the interface isn't fixed NOW, the existing 
-> > > flawed zeroed-page-allocation interface gets into RHEL
+On Thu, 2010-07-01 at 14:34 +0200, Peter Zijlstra wrote:
+> On Thu, 2010-07-01 at 15:23 +0300, Michael S. Tsirkin wrote:
 > > 
-> > That's a false dichotomy.  You might see an either apply this hack now
-> > or support the interface choice with RHEL, but upstream has the option
-> > to fix stuff correctly.  RHEL has never needed my blessing to apply
-> > random crap to their kernel before ... why is this patch any different?
-> 
-> We can't apply non-upstream patches (except few exceptions such as 
-> dm-raid45). It makes sense, non-upstream patches have smaller test 
-> coverage.
-> 
-> > And the rest of this rubbish is based on that false premise.  It might
-> > help you to take off your SCSI antipathy and see this as a system
-> > problem: it actually originates in block and spills out from there.
-> > Thus it requires a system solution.
+> > The patch using this is here:
+> > http://www.mail-archive.com/kvm@vger.kernel.org/msg35411.html
 > > 
-> > James
+> > It simply copies the affinity from the parent when thread is created.
 > 
-> Imagine this: I take a FPGA PCI board, I design a storage controller on it 
-> and this controller will need 3 pages to process a discard request. Now I 
-> say: I refuse to allocate these 3 pages in the driver because the driver 
-> would look ugly --- instead, I demand that everyone in the Linux kernel 
-> who creates a discard request must attach 3 pages to the request for my 
-> driver.
-> 
-> Do you think it is correct behavior? Would you accept such a driver? I 
-> guess you wouldn't! But this is the same thing that you are doing with 
-> SCSI.
-> 
-> Now lets take it a bit further and I say "I may clean up the driver for my 
-> controller one day, when I do it, I remove that 3-page requirement --- and 
-> then, everyone who allocated those pages will have to change his code and 
-> remove the allocations".
-> 
-> And this is what you are intending to do with SCSI.
+> Sounds like policy, not something the kernel should do..
 
-Mikulas,
-
-Jens has already queued up a comprehensive fix (3 patches) that James
-and Tomo developed.  Please stop the hostility.. it has no place.
-
-Others,
-I'd encourage you to not respond to this thread further ;)
-
-Regards,
-Mike
+The alternative would be using clone() instead of thread_create() and
+inherit everything from the creating task. Inheriting from kthreadd and
+then undoing some aspects just sounds like daft policy that really ought
+to be in userspace.
