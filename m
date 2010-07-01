@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab0GASYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:24:08 -0400
-Received: from kroah.org ([198.145.64.141]:40686 "EHLO coco.kroah.org"
+	id S932228Ab0GASYv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:24:51 -0400
+Received: from kroah.org ([198.145.64.141]:40909 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758056Ab0GASYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:00 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:15 2010
-Message-Id: <20100701173215.492766113@clark.site>
+	id S932129Ab0GASYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:39 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:19 2010
+Message-Id: <20100701173219.463415889@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:09 -0700
+Date: Thu, 01 Jul 2010 10:32:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [patch 103/149] USB: xhci: Wait for controller to be ready after reset.
+       Wei Yongjun <yjwei@cn.fujitsu.com>,
+       Vlad Yasevich <vladislav.yasevich@hp.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [patch 149/149] sctp: fix append error cause to ERROR chunk correctly
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Wei Yongjun <yjwei@cn.fujitsu.com>
 
-commit 2d62f3eea98354d61f90d6b115eecf9be5f4bdfe upstream.
+commit 2e3219b5c8a2e44e0b83ae6e04f52f20a82ac0f2 upstream.
 
-After software resets an xHCI host controller, it must wait for the
-"Controller Not Ready" (CNR) bit in the status register to be cleared.
-Software is not supposed to ring any doorbells or write to any registers
-except the status register until this bit is cleared.
+commit 5fa782c2f5ef6c2e4f04d3e228412c9b4a4c8809
+  sctp: Fix skb_over_panic resulting from multiple invalid \
+    parameter errors (CVE-2010-1173) (v4)
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+cause 'error cause' never be add the the ERROR chunk due to
+some typo when check valid length in sctp_init_cause_fixed().
+
+Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
+Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-hcd.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ net/sctp/sm_make_chunk.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-hcd.c
-+++ b/drivers/usb/host/xhci-hcd.c
-@@ -134,6 +134,7 @@ int xhci_reset(struct xhci_hcd *xhci)
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -140,7 +140,7 @@ int sctp_init_cause_fixed(struct sctp_ch
+ 	len = sizeof(sctp_errhdr_t) + paylen;
+ 	err.length  = htons(len);
+ 
+-	if (skb_tailroom(chunk->skb) >  len)
++	if (skb_tailroom(chunk->skb) < len)
+ 		return -ENOSPC;
+ 	chunk->subh.err_hdr = sctp_addto_chunk_fixed(chunk,
+ 						     sizeof(sctp_errhdr_t),
+@@ -1412,7 +1412,7 @@ void *sctp_addto_chunk(struct sctp_chunk
+ void *sctp_addto_chunk_fixed(struct sctp_chunk *chunk,
+ 			     int len, const void *data)
  {
- 	u32 command;
- 	u32 state;
-+	int ret;
- 
- 	state = xhci_readl(xhci, &xhci->op_regs->status);
- 	if ((state & STS_HALT) == 0) {
-@@ -148,7 +149,17 @@ int xhci_reset(struct xhci_hcd *xhci)
- 	/* XXX: Why does EHCI set this here?  Shouldn't other code do this? */
- 	xhci_to_hcd(xhci)->state = HC_STATE_HALT;
- 
--	return handshake(xhci, &xhci->op_regs->command, CMD_RESET, 0, 250 * 1000);
-+	ret = handshake(xhci, &xhci->op_regs->command,
-+			CMD_RESET, 0, 250 * 1000);
-+	if (ret)
-+		return ret;
-+
-+	xhci_dbg(xhci, "Wait for controller to be ready for doorbell rings\n");
-+	/*
-+	 * xHCI cannot write to any doorbells or operational registers other
-+	 * than status until the "Controller Not Ready" flag is cleared.
-+	 */
-+	return handshake(xhci, &xhci->op_regs->status, STS_CNR, 0, 250 * 1000);
- }
- 
- /*
+-	if (skb_tailroom(chunk->skb) > len)
++	if (skb_tailroom(chunk->skb) >= len)
+ 		return sctp_addto_chunk(chunk, len, data);
+ 	else
+ 		return NULL;
 
 
