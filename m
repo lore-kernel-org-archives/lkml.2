@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758802Ab0GAVNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:13:00 -0400
-Received: from kroah.org ([198.145.64.141]:33644 "EHLO coco.kroah.org"
+	id S1759569Ab0GAWCf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:02:35 -0400
+Received: from kroah.org ([198.145.64.141]:33771 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758707Ab0GAVMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:12:42 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:46 2010
-Message-Id: <20100701174246.620937896@clark.site>
+	id S1758789Ab0GAVNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:00 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:48 2010
+Message-Id: <20100701174248.215318524@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:41:32 -0700
+Date: Thu, 01 Jul 2010 10:41:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andi Kleen <ak@linux.intel.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Robert Richter <robert.richter@amd.com>
-Subject: [002/200] oprofile: remove double ring buffering
+       =?ISO-8859-15?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
+       Andrew Lunn <andrew@lunn.ch>
+Subject: [021/200] Staging: batman-adv: Fix VIS output bug for secondary interfaces
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,145 +26,224 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <andi@firstfloor.org>
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
 
-commit cb6e943ccf19ab6d3189147e9d625a992e016084 upstream.
+commit f6497e38fda6970819daacb67725d67474079381 upstream.
 
-oprofile used a double buffer scheme for its cpu event buffer
-to avoid races on reading with the old locked ring buffer.
+TQ and HNA records for originators on secondary interfaces were
+wrongly being included on the primary interface. Ensure we output a
+line for each source interface on every node, so we correctly separate
+primary and secondary interface records.
 
-But that is obsolete now with the new ring buffer, so simply
-use a single buffer. This greatly simplifies the code and avoids
-a lot of sample drops on large runs, especially with call graph.
-
-Based on suggestions from Steven Rostedt
-
-For stable kernels from v2.6.32, but not earlier.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/oprofile/cpu_buffer.c |   63 ++++++++----------------------------------
- 1 file changed, 13 insertions(+), 50 deletions(-)
+ drivers/staging/batman-adv/proc.c |   51 ++++++++++++++++++++++++++------------
+ drivers/staging/batman-adv/vis.c  |   25 ++++++------------
+ drivers/staging/batman-adv/vis.h  |    7 +++--
+ 3 files changed, 49 insertions(+), 34 deletions(-)
 
---- a/drivers/oprofile/cpu_buffer.c
-+++ b/drivers/oprofile/cpu_buffer.c
-@@ -30,23 +30,7 @@
+--- a/drivers/staging/batman-adv/proc.c
++++ b/drivers/staging/batman-adv/proc.c
+@@ -41,7 +41,7 @@ static int proc_interfaces_read(struct s
  
- #define OP_BUFFER_FLAGS	0
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(batman_if, &if_list, list) {
+-		seq_printf(seq, "[%8s] %s %s \n",
++		seq_printf(seq, "[%8s] %s %s\n",
+ 			   (batman_if->if_active == IF_ACTIVE ?
+ 			    "active" : "inactive"),
+ 			   batman_if->dev,
+@@ -188,18 +188,18 @@ static int proc_originators_read(struct
+ 	rcu_read_lock();
+ 	if (list_empty(&if_list)) {
+ 		rcu_read_unlock();
+-		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it \n");
++		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it\n");
+ 		goto end;
+ 	}
  
--/*
-- * Read and write access is using spin locking. Thus, writing to the
-- * buffer by NMI handler (x86) could occur also during critical
-- * sections when reading the buffer. To avoid this, there are 2
-- * buffers for independent read and write access. Read access is in
-- * process context only, write access only in the NMI handler. If the
-- * read buffer runs empty, both buffers are swapped atomically. There
-- * is potentially a small window during swapping where the buffers are
-- * disabled and samples could be lost.
-- *
-- * Using 2 buffers is a little bit overhead, but the solution is clear
-- * and does not require changes in the ring buffer implementation. It
-- * can be changed to a single buffer solution when the ring buffer
-- * access is implemented as non-locking atomic code.
-- */
--static struct ring_buffer *op_ring_buffer_read;
--static struct ring_buffer *op_ring_buffer_write;
-+static struct ring_buffer *op_ring_buffer;
- DEFINE_PER_CPU(struct oprofile_cpu_buffer, op_cpu_buffer);
+ 	if (((struct batman_if *)if_list.next)->if_active != IF_ACTIVE) {
+ 		rcu_read_unlock();
+-		seq_printf(seq, "BATMAN disabled - primary interface not active \n");
++		seq_printf(seq, "BATMAN disabled - primary interface not active\n");
+ 		goto end;
+ 	}
  
- static void wq_sync_buffer(struct work_struct *work);
-@@ -68,12 +52,9 @@ void oprofile_cpu_buffer_inc_smpl_lost(v
+ 	seq_printf(seq,
+-		   "  %-14s (%s/%i) %17s [%10s]: %20s ... [B.A.T.M.A.N. adv %s%s, MainIF/MAC: %s/%s] \n",
++		   "  %-14s (%s/%i) %17s [%10s]: %20s ... [B.A.T.M.A.N. adv %s%s, MainIF/MAC: %s/%s]\n",
+ 		   "Originator", "#", TQ_MAX_VALUE, "Nexthop", "outgoingIF",
+ 		   "Potential nexthops", SOURCE_VERSION, REVISION_VERSION_STR,
+ 		   ((struct batman_if *)if_list.next)->dev,
+@@ -240,7 +240,7 @@ static int proc_originators_read(struct
+ 	spin_unlock_irqrestore(&orig_hash_lock, flags);
  
- void free_cpu_buffers(void)
+ 	if (batman_count == 0)
+-		seq_printf(seq, "No batman nodes in range ... \n");
++		seq_printf(seq, "No batman nodes in range ...\n");
+ 
+ end:
+ 	return 0;
+@@ -262,7 +262,7 @@ static int proc_transt_local_read(struct
+ 	rcu_read_lock();
+ 	if (list_empty(&if_list)) {
+ 		rcu_read_unlock();
+-		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it \n");
++		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it\n");
+ 		goto end;
+ 	}
+ 
+@@ -294,7 +294,7 @@ static int proc_transt_global_read(struc
+ 	rcu_read_lock();
+ 	if (list_empty(&if_list)) {
+ 		rcu_read_unlock();
+-		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it \n");
++		seq_printf(seq, "BATMAN disabled - please specify interfaces to enable it\n");
+ 		goto end;
+ 	}
+ 	rcu_read_unlock();
+@@ -350,9 +350,9 @@ static int proc_vis_srv_read(struct seq_
  {
--	if (op_ring_buffer_read)
--		ring_buffer_free(op_ring_buffer_read);
--	op_ring_buffer_read = NULL;
--	if (op_ring_buffer_write)
--		ring_buffer_free(op_ring_buffer_write);
--	op_ring_buffer_write = NULL;
-+	if (op_ring_buffer)
-+		ring_buffer_free(op_ring_buffer);
-+	op_ring_buffer = NULL;
- }
+ 	int vis_server = atomic_read(&vis_mode);
  
- #define RB_EVENT_HDR_SIZE 4
-@@ -86,11 +67,8 @@ int alloc_cpu_buffers(void)
- 	unsigned long byte_size = buffer_size * (sizeof(struct op_sample) +
- 						 RB_EVENT_HDR_SIZE);
+-	seq_printf(seq, "[%c] client mode (server disabled) \n",
++	seq_printf(seq, "[%c] client mode (server disabled)\n",
+ 			(vis_server == VIS_TYPE_CLIENT_UPDATE) ? 'x' : ' ');
+-	seq_printf(seq, "[%c] server mode (server enabled) \n",
++	seq_printf(seq, "[%c] server mode (server enabled)\n",
+ 			(vis_server == VIS_TYPE_SERVER_SYNC) ? 'x' : ' ');
  
--	op_ring_buffer_read = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
--	if (!op_ring_buffer_read)
--		goto fail;
--	op_ring_buffer_write = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
--	if (!op_ring_buffer_write)
-+	op_ring_buffer = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
-+	if (!op_ring_buffer)
- 		goto fail;
+ 	return 0;
+@@ -369,6 +369,8 @@ static int proc_vis_data_read(struct seq
+ 	struct vis_info *info;
+ 	struct vis_info_entry *entries;
+ 	HLIST_HEAD(vis_if_list);
++	struct if_list_entry *entry;
++	struct hlist_node *pos, *n;
+ 	int i;
+ 	char tmp_addr_str[ETH_STR_LEN];
+ 	unsigned long flags;
+@@ -387,17 +389,34 @@ static int proc_vis_data_read(struct seq
+ 		info = hashit.bucket->data;
+ 		entries = (struct vis_info_entry *)
+ 			((char *)info + sizeof(struct vis_info));
+-		addr_to_string(tmp_addr_str, info->packet.vis_orig);
+-		seq_printf(seq, "%s,", tmp_addr_str);
  
- 	for_each_possible_cpu(i) {
-@@ -162,16 +140,11 @@ struct op_sample
- *op_cpu_buffer_write_reserve(struct op_entry *entry, unsigned long size)
+ 		for (i = 0; i < info->packet.entries; i++) {
+-			proc_vis_read_entry(seq, &entries[i], &vis_if_list,
+-					    info->packet.vis_orig);
++			if (entries[i].quality == 0)
++				continue;
++			proc_vis_insert_interface(entries[i].src, &vis_if_list,
++				compare_orig(entries[i].src,
++						info->packet.vis_orig));
+ 		}
+ 
+-		/* add primary/secondary records */
+-		proc_vis_read_prim_sec(seq, &vis_if_list);
+-		seq_printf(seq, "\n");
++		hlist_for_each_entry(entry, pos, &vis_if_list, list) {
++			addr_to_string(tmp_addr_str, entry->addr);
++			seq_printf(seq, "%s,", tmp_addr_str);
++
++			for (i = 0; i < info->packet.entries; i++)
++				proc_vis_read_entry(seq, &entries[i],
++						entry->addr, entry->primary);
++
++			/* add primary/secondary records */
++			if (compare_orig(entry->addr, info->packet.vis_orig))
++				proc_vis_read_prim_sec(seq, &vis_if_list);
++
++			seq_printf(seq, "\n");
++		}
++
++		hlist_for_each_entry_safe(entry, pos, n, &vis_if_list, list) {
++			hlist_del(&entry->list);
++			kfree(entry);
++		}
+ 	}
+ 	spin_unlock_irqrestore(&vis_hash_lock, flags);
+ 
+--- a/drivers/staging/batman-adv/vis.c
++++ b/drivers/staging/batman-adv/vis.c
+@@ -86,7 +86,7 @@ static int vis_info_choose(void *data, i
+ 
+ /* insert interface to the list of interfaces of one originator, if it
+  * does not already exist in the list */
+-static void proc_vis_insert_interface(const uint8_t *interface,
++void proc_vis_insert_interface(const uint8_t *interface,
+ 				      struct hlist_head *if_list,
+ 				      bool primary)
  {
- 	entry->event = ring_buffer_lock_reserve
--		(op_ring_buffer_write, sizeof(struct op_sample) +
-+		(op_ring_buffer, sizeof(struct op_sample) +
- 		 size * sizeof(entry->sample->data[0]));
--	if (entry->event)
--		entry->sample = ring_buffer_event_data(entry->event);
--	else
--		entry->sample = NULL;
+@@ -111,39 +111,32 @@ void proc_vis_read_prim_sec(struct seq_f
+ 			    struct hlist_head *if_list)
+ {
+ 	struct if_list_entry *entry;
+-	struct hlist_node *pos, *n;
++	struct hlist_node *pos;
+ 	char tmp_addr_str[ETH_STR_LEN];
+ 
+-	hlist_for_each_entry_safe(entry, pos, n, if_list, list) {
+-		if (entry->primary) {
++	hlist_for_each_entry(entry, pos, if_list, list) {
++		if (entry->primary)
+ 			seq_printf(seq, "PRIMARY, ");
+-		} else {
++		else {
+ 			addr_to_string(tmp_addr_str, entry->addr);
+ 			seq_printf(seq, "SEC %s, ", tmp_addr_str);
+ 		}
 -
--	if (!entry->sample)
-+	if (!entry->event)
- 		return NULL;
--
-+	entry->sample = ring_buffer_event_data(entry->event);
- 	entry->size = size;
- 	entry->data = entry->sample->data;
- 
-@@ -180,25 +153,16 @@ struct op_sample
- 
- int op_cpu_buffer_write_commit(struct op_entry *entry)
- {
--	return ring_buffer_unlock_commit(op_ring_buffer_write, entry->event);
-+	return ring_buffer_unlock_commit(op_ring_buffer, entry->event);
+-		hlist_del(&entry->list);
+-		kfree(entry);
+ 	}
  }
  
- struct op_sample *op_cpu_buffer_read_entry(struct op_entry *entry, int cpu)
+ /* read an entry  */
+ void proc_vis_read_entry(struct seq_file *seq,
+ 				struct vis_info_entry *entry,
+-				struct hlist_head *if_list,
+-				uint8_t *vis_orig)
++				uint8_t *src,
++				bool primary)
  {
- 	struct ring_buffer_event *e;
--	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
--	if (e)
--		goto event;
--	if (ring_buffer_swap_cpu(op_ring_buffer_read,
--				 op_ring_buffer_write,
--				 cpu))
-+	e = ring_buffer_consume(op_ring_buffer, cpu, NULL);
-+	if (!e)
- 		return NULL;
--	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
--	if (e)
--		goto event;
--	return NULL;
+ 	char to[40];
  
--event:
- 	entry->event = e;
- 	entry->sample = ring_buffer_event_data(e);
- 	entry->size = (ring_buffer_event_length(e) - sizeof(struct op_sample))
-@@ -209,8 +173,7 @@ event:
- 
- unsigned long op_cpu_buffer_entries(int cpu)
- {
--	return ring_buffer_entries_cpu(op_ring_buffer_read, cpu)
--		+ ring_buffer_entries_cpu(op_ring_buffer_write, cpu);
-+	return ring_buffer_entries_cpu(op_ring_buffer, cpu);
+ 	addr_to_string(to, entry->dest);
+-	if (entry->quality == 0) {
+-		proc_vis_insert_interface(vis_orig, if_list, true);
++	if (primary && entry->quality == 0)
+ 		seq_printf(seq, "HNA %s, ", to);
+-	} else {
+-		proc_vis_insert_interface(entry->src, if_list,
+-					  compare_orig(entry->src, vis_orig));
++	else if (compare_orig(entry->src, src))
+ 		seq_printf(seq, "TQ %s %d, ", to, entry->quality);
+-	}
  }
  
- static int
+ /* add the info packet to the send list, if it was not
+--- a/drivers/staging/batman-adv/vis.h
++++ b/drivers/staging/batman-adv/vis.h
+@@ -49,10 +49,13 @@ struct recvlist_node {
+ extern struct hashtable_t *vis_hash;
+ extern spinlock_t vis_hash_lock;
+ 
++void proc_vis_insert_interface(const uint8_t *interface,
++				      struct hlist_head *if_list,
++				      bool primary);
+ void proc_vis_read_entry(struct seq_file *seq,
+ 				struct vis_info_entry *entry,
+-				struct hlist_head *if_list,
+-				uint8_t *vis_orig);
++				uint8_t *src,
++				bool primary);
+ void proc_vis_read_prim_sec(struct seq_file *seq,
+ 			    struct hlist_head *if_list);
+ void receive_server_sync_packet(struct vis_packet *vis_packet,
 
 
