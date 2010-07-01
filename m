@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758650Ab0GAU5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:57:37 -0400
-Received: from kroah.org ([198.145.64.141]:47999 "EHLO coco.kroah.org"
+	id S1758641Ab0GAU4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:56:51 -0400
+Received: from kroah.org ([198.145.64.141]:48025 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932913Ab0GAUvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:38 -0400
+	id S932926Ab0GAUvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:43 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:40 2010
-Message-Id: <20100701173440.214873866@clark.site>
+Message-Id: <20100701173440.629406009@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:45 -0700
+Date: Thu, 01 Jul 2010 10:35:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
-Subject: [patch 159/164] KVM: SVM: Dont allow nested guest to VMMCALL into host
+       Wei Yongjun <yjwei@cn.fujitsu.com>,
+       Vlad Yasevich <vladislav.yasevich@hp.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [patch 164/164] sctp: fix append error cause to ERROR chunk correctly
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Wei Yongjun <yjwei@cn.fujitsu.com>
 
-This patch disables the possibility for a l2-guest to do a
-VMMCALL directly into the host. This would happen if the
-l1-hypervisor doesn't intercept VMMCALL and the l2-guest
-executes this instruction.
+commit 2e3219b5c8a2e44e0b83ae6e04f52f20a82ac0f2 upstream.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+commit 5fa782c2f5ef6c2e4f04d3e228412c9b4a4c8809
+  sctp: Fix skb_over_panic resulting from multiple invalid \
+    parameter errors (CVE-2010-1173) (v4)
+
+cause 'error cause' never be add the the ERROR chunk due to
+some typo when check valid length in sctp_init_cause_fixed().
+
+Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
+Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-(cherry picked from commit 0d945bd9351199744c1e89d57a70615b6ee9f394)
----
- arch/x86/kvm/svm.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -1829,8 +1829,13 @@ static bool nested_svm_vmrun(struct vcpu
- 		svm->vmcb->control.intercept_cr_write &= ~INTERCEPT_CR8_MASK;
- 	}
+---
+ net/sctp/sm_make_chunk.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -140,7 +140,7 @@ int sctp_init_cause_fixed(struct sctp_ch
+ 	len = sizeof(sctp_errhdr_t) + paylen;
+ 	err.length  = htons(len);
  
--	/* We don't want a nested guest to be more powerful than the guest,
--	   so all intercepts are ORed */
-+	/* We don't want to see VMMCALLs from a nested guest */
-+	svm->vmcb->control.intercept &= ~(1ULL << INTERCEPT_VMMCALL);
-+
-+	/*
-+	 * We don't want a nested guest to be more powerful than the guest, so
-+	 * all intercepts are ORed
-+	 */
- 	svm->vmcb->control.intercept_cr_read |=
- 		nested_vmcb->control.intercept_cr_read;
- 	svm->vmcb->control.intercept_cr_write |=
+-	if (skb_tailroom(chunk->skb) >  len)
++	if (skb_tailroom(chunk->skb) < len)
+ 		return -ENOSPC;
+ 	chunk->subh.err_hdr = sctp_addto_chunk_fixed(chunk,
+ 						     sizeof(sctp_errhdr_t),
+@@ -1420,7 +1420,7 @@ void *sctp_addto_chunk(struct sctp_chunk
+ void *sctp_addto_chunk_fixed(struct sctp_chunk *chunk,
+ 			     int len, const void *data)
+ {
+-	if (skb_tailroom(chunk->skb) > len)
++	if (skb_tailroom(chunk->skb) >= len)
+ 		return sctp_addto_chunk(chunk, len, data);
+ 	else
+ 		return NULL;
 
 
