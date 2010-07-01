@@ -1,118 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0GAIUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 04:20:35 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35055 "EHLO mx1.suse.de"
+	id S1753681Ab0GAIUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 04:20:50 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38892 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229Ab0GAIUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 04:20:30 -0400
-Date: Thu, 1 Jul 2010 18:20:26 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 00/52] vfs scalability patches updated
-Message-ID: <20100701082026.GG22976@laptop>
-References: <20100624030212.676457061@suse.de>
- <20100630113054.GL24712@dastard>
- <20100630124049.GH21358@laptop>
- <20100701035657.GU24712@dastard>
+	id S1752447Ab0GAIUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 04:20:46 -0400
+Date: Thu, 1 Jul 2010 10:19:42 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Steven Rostedt <rostedt@goodmis.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Steven Rostedt <rostedt@goodmis.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "H. Peter Anvin" <hpa@zytor.com>, Roland McGrath <roland@redhat.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCHv7 2.6.35-rc3-tip 0/11]  Uprobes Patches:
+Message-ID: <20100701081942.GA19826@elte.hu>
+References: <20100629183454.32537.63582.sendpatchset@localhost6.localdomain6>
+ <20100701050216.GI23231@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100701035657.GU24712@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100701050216.GI23231@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 01:56:57PM +1000, Dave Chinner wrote:
-> On Wed, Jun 30, 2010 at 10:40:49PM +1000, Nick Piggin wrote:
-> > On Wed, Jun 30, 2010 at 09:30:54PM +1000, Dave Chinner wrote:
-> > > On Thu, Jun 24, 2010 at 01:02:12PM +1000, npiggin@suse.de wrote:
-> > > > Performance:
-> > > > Last time I was testing on a 32-node Altix which could be considered as not a
-> > > > sweet-spot for Linux performance target (ie. improvements there may not justify
-> > > > complexity). So recently I've been testing with a tightly interconnected
-> > > > 4-socket Nehalem (4s/32c/64t). Linux needs to perform well on this size of
-> > > > system.
-> > > 
-> > > Sure, but I have to question how much of this is actually necessary?
-> > > A lot of it looks like scalability for scalabilities sake, not
-> > > because there is a demonstrated need...
-> > 
-> > People are complaining about vfs scalability already (at least Intel,
-> > Google, IBM, and networking people). By the time people start shouting,
-> > it's too late because it will take years to get the patches merged. I'm
-> > not counting -rt people who have a bad time with global vfs locks.
+
+* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+
+> Hi Ingo,
 > 
-> I'm not denying it that we need to do work here - I'm questioning
-> the "change everything at once" approach this patch set takes.
-> You've started from the assumption that everything the dcache_lock
-> and inode_lock protect are a problem and goes from there.
+> I have addressed all comments to the uprobes patchset.  We have few todos 
+> (most of them are features over the current code) which I plan to work in 
+> the immediate future.
 > 
-> However, if we move some things out fom under the dcache lock, then
-> the pressure on the lock goes down and the remaining operations may
-> not hinder scalability. That's what I'm trying to understand, and
-> why I'm suggesting that you need to break this down into smaller,
-> more easily verifable, benchamrked patch sets. IMO, I have no way of
-> verifying if any of these patches are necessary or not, and I need
-> to understand that as part of reviewing them...
+> So would it be possible for this patchset to be picked into the tip tree. 
+> Getting these patches merged into the tip tree would help in getting more 
+> comments/feedback and testing.
 
-I can see where you're coming from, and I tried to do that, but it
-got pretty hard and messy. Also, it was pretty difficult to lift
-dcache and inode lock out of many paths unless *everything* else
-was protected by other locks. It is also hard not to introduce more
-atomic operations and slow down single thread performance.
+If Masami-san, PeterZ and Arnaldo is happy with it being tried in its current 
+form then we could try it.
 
-It's not so much the lock hold times as the cacheline bouncing that
-hurts most. So when adding or removing a dentry for example, we
-manipulate hash, lru, inode alias, parent, and the fields in the
-dentry itself. If you have to take the dcache_lock for any of those
-manipulations, you incur the global cacheline bounce for that operation.
+Assuming everyone is reasonably happy about the code, here are some open areas 
+as i see them, before we can think about pushing things from -tip towards 
+upstream:
 
-Honestly, I like the way the locking turned out. In dcache.c, inode.c
-and fs-writeback.c it is complex, but it always has been. For
-filesystems I would say it is simpler.
+- One thing i havent seen is the ability to 'list' potential probe points:
+  i.e. function names. Often the user will not know precisely where to look 
+  and what to type. This leaves our probe capability under-utilized in 
+  practice.
 
-Need to stabilize a dentry? Take dentry->d_lock. This freezes all its
-fields, its refcount, pins it in (or out of) data structures, and
-pins its immediate parent and children, and inode we point to. Same
-for inodes.
+- On a similar note, it might also make sense to extend the Newt interface to 
+  perf report to integrate probes: if a function looks high-overhead, then a 
+  probe point could be inserted and the app could be traced straight away. We 
+  already allow per function actions in the Newt interface, such as assembly 
+  annotation - the adding of a probe point would be quite useful.
 
-The rest of the data structures (hash, lru, io lists, inode alias lists
-etc) that they may belong to, are protected by individual, narrow locks.
+- [ Optional: Another interesting area to look at would be the scripting 
+    engine: allow trace scripts to insert probes if they are not present yet. ]
 
- 
-> > > > *** 64 parallel git diff on 64 kernel trees fully cached (avg of 5 runs):
-> > > >                 vanilla         vfs
-> > > > real            0m4.911s        0m0.183s
-> > > > user            0m1.920s        0m1.610s
-> > > > sys             4m58.670s       0m5.770s
-> > > > After vfs patches, 26x increase in throughput, however parallelism is limited
-> > > > by test spawning and exit phases. sys time improvement shows closer to 50x
-> > > > improvement. vanilla is bottlenecked on dcache_lock.
-> > > 
-> > > So if we cherry pick patches out of the series, what is the bare
-> > > minimum set needed to obtain a result in this ballpark? Same for the
-> > > other tests?
-> > 
-> > Well it's very hard to just scale up bits and pieces because the
-> > dcache_lock is currently basically global (except for d_flags and
-> > some cases of d_count manipulations).
-> > 
-> > Start chipping away at bits and pieces of it as people hit bottlenecks
-> > and I think it will end in a bigger mess than we have now.
-> 
-> I'm not suggesting that we should do this randomly. A more
-> structured approach that demonstrates the improvement as groups of
-> changes are made will help us evaluate the changes more effectively.
-> It may be that we need every single change in the patch series, but
-> there is no way we can verify that with the information that has
-> been provided.
+- Plus the security model is an open question as well. Right now it's
+  root-only, but it would make sense to allow users to insert probes into 
+  their own apps. This brings up the next point:
 
-I didn't say randomly, but piece-wise, reducing locks bit by bit as
-problems are quantified. Doing that means that all the code has to go
-*far more* locking-scheme transitions and it's harder to come to a clean
-overall end result.
+- Proper syscall integration and more unification with kprobes and with the 
+  TRACE_EVENT() universe. As far as API design goes, 
+  /sys/kernel/debug/tracing/uprobe_events is quite sucky as a concept.
 
+Thanks,
+
+	Ingo
