@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab0GAGvw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 02:51:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32025 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753996Ab0GAGvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 02:51:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,518,1272870000"; 
-   d="scan'208";a="635305956"
-Message-ID: <4C2C3B07.7050200@intel.com>
-Date: Wed, 30 Jun 2010 23:51:51 -0700
-From: Dan Williams <dan.j.williams@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1754081Ab0GAG6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 02:58:13 -0400
+Received: from straum.hexapodia.org ([207.7.131.186]:42810 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab0GAG6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 02:58:11 -0400
+Date: Wed, 30 Jun 2010 23:58:11 -0700
+From: Andy Isaacson <adi@hexapodia.org>
+To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>, qi.wang@intel.com,
+       joel.clark@intel.com, andrew.chih.howe.khor@intel.com,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Packet hub driver of Topcliff PCH
+Message-ID: <20100701065811.GM29166@hexapodia.org>
+References: <4C204B0D.2030201@dsn.okisemi.com> <4C2C2423.4060705@dsn.okisemi.com>
 MIME-Version: 1.0
-To: "Woodhouse, David" <david.woodhouse@intel.com>
-CC: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	 <4C29420D.2010406@intel.com>	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	 <4C2A8879.8010000@intel.com>	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	 <4C2AC55E.3040303@intel.com>	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	 <1277923422.16256.8.camel@localhost>  <4C2B9DAC.1030806@intel.com>	 <1277928125.18854.0.camel@localhost>  <4C2BBACF.3080405@intel.com> <1277965264.18854.16.camel@localhost>
-In-Reply-To: <1277965264.18854.16.camel@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C2C2423.4060705@dsn.okisemi.com>
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/30/2010 11:21 PM, Woodhouse, David wrote:
-> On Wed, 2010-06-30 at 22:44 +0100, Williams, Dan J wrote:
->> I don't see a way around this beyond blacklisting this (platform, vt-d
->> setting, driver) combination.  Is there a quirk infrastructure for this
->> sort of problem?
->
-> Yeah, kind of. If the IOAT PCI device _always_ has its own IOMMU, we
-> could have a quirk for it which says it must _never_ be matched by a
-> catch-all IOMMU. That would probably solve it?
->
+On Thu, Jul 01, 2010 at 02:14:11PM +0900, Masayuki Ohtak wrote:
+> Hi Andy and Randy
+> 
+> I have modified for your comments.
+> Please confirm below.
 
-This version of the device only exists on the 5400 chipset and always 
-has its own iommu, but since other platforms get the DMAR entry right I 
-think this hammer is too big?  Wouldn't this break VT-d operation on 
-non-busted platforms?
+Your style is looking better, and the additional documentation is much
+appreciated.
 
-Alternatively I can just catch this failure earlier in the init process 
-and fail the driver load with a grumble printk about broken bios... 
-instead of the current BUG_ON() that is meant to catch runtime catastrophes.
+I still have concerns about the userland interface design.  It still
+seems to me that the MAC interface should be used by something in
+drivers/net and there's no reason to expose the SROM in /dev unless it
+contains more than just the MAC address.
 
---
-Dan
+
+A few more style issues I saw on a quick scan through -- this was not a
+comprehensive review:
+
+
+> +static long pch_phub_ioctl(struct file *file, unsigned int cmd,
+> +			   unsigned long arg)
+[snip]
+> +		ret_value = copy_to_user(varg,
+> +					 mac_addr, sizeof(mac_addr));
+
+Reformat this to fit on one line:
++		ret_value = copy_to_user(varg, mac_addr, sizeof(mac_addr));
+
+
+[snip]
+> +	case IOCTL_PHUB_WRITE_MAC_ADDR:
+> +		ret_value = copy_from_user(mac_addr, varg, sizeof(mac_addr));
+> +
+> +		if (ret_value)
+
+Here we need to break:
+
++               {
+> +			ret_value = -EFAULT;
++                       break;
++               }
+
+because if copy_from_user failed ...
+
+> +		for (i = 0; i < 6; i++)
+> +			pch_phub_write_gbe_mac_addr(i, mac_addr[i]);
+
+... we would pass garbage to pch_phub_write_gbe_mac_addr.
+
+[snip]
+> +		dev_dbg(&pdev->dev,
+> +				"\npch_phub_probe : pci_enable_device FAILED");
+
+Prefix \n is not correct.  This should be
+
++		dev_dbg(&pdev->dev, "pch_phub_probe: pci_enable_device FAILED");
+
+In general dev_dbg format strings should fit on one 80-char line.  If
+your format strings are longer than that, it's a clue you're doing
+something wrong.  For example:
+
+> +	dev_dbg(&pdev->dev, "pch_phub_probe : "
+> +			"pci_enable_device returns %d\n", ret);
+
++	dev_dbg(&pdev->dev, "pch_phub_probe: pci_enable_device returns %d\n",
++		 ret);
+
+> +	ret = pci_request_regions(pdev, MODULE_NAME);
+> +	if (ret) {
+> +		dev_dbg(&pdev->dev,
+> +				"pch_phub_probe : pci_request_regions FAILED");
+
+If you have a dev_dbg, please print ret.  It may give an important clue.
+
+[snip a bunch more I don't have time to review right now]
+
+Thanks,
+-andy
