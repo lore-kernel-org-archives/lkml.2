@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969Ab0GAU7L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:59:11 -0400
-Received: from kroah.org ([198.145.64.141]:47974 "EHLO coco.kroah.org"
+	id S932897Ab0GAVAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:00:54 -0400
+Received: from kroah.org ([198.145.64.141]:47951 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932896Ab0GAUvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:33 -0400
+	id S932879Ab0GAUv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:29 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:39 2010
-Message-Id: <20100701173439.709294964@clark.site>
+Message-Id: <20100701173439.280410459@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:39 -0700
+Date: Thu, 01 Jul 2010 10:35:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Shane Wang <shane.wang@intel.com>, Avi Kivity <avi@redhat.com>
-Subject: [patch 153/164] KVM: VMX: enable VMXON check with SMX enabled (Intel TXT)
+       Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
+Subject: [patch 148/164] KVM: SVM: Report emulated SVM features to userspace
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,123 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shane Wang <shane.wang@intel.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-Per document, for feature control MSR:
+This patch implements the reporting of the emulated SVM
+features to userspace instead of the real hardware
+capabilities. Every real hardware capability needs emulation
+in nested svm so the old behavior was broken.
 
-  Bit 1 enables VMXON in SMX operation. If the bit is clear, execution
-        of VMXON in SMX operation causes a general-protection exception.
-  Bit 2 enables VMXON outside SMX operation. If the bit is clear, execution
-        of VMXON outside SMX operation causes a general-protection exception.
-
-This patch is to enable this kind of check with SMX for VMXON in KVM.
-
-Signed-off-by: Shane Wang <shane.wang@intel.com>
+Cc: stable@kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-(cherry picked from commit cafd66595d92591e4bd25c3904e004fc6f897e2d)
+(cherry picked from commit c2c63a493924e09a1984d1374a0e60dfd54fc0b0)
 ---
- arch/x86/include/asm/msr-index.h |    5 +++--
- arch/x86/kernel/tboot.c          |    1 +
- arch/x86/kvm/vmx.c               |   32 +++++++++++++++++++++-----------
- include/linux/tboot.h            |    1 +
- 4 files changed, 26 insertions(+), 13 deletions(-)
+ arch/x86/kvm/svm.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -199,8 +199,9 @@
- #define MSR_IA32_EBL_CR_POWERON		0x0000002a
- #define MSR_IA32_FEATURE_CONTROL        0x0000003a
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -2887,6 +2887,16 @@ static u64 svm_get_mt_mask(struct kvm_vc
  
--#define FEATURE_CONTROL_LOCKED		(1<<0)
--#define FEATURE_CONTROL_VMXON_ENABLED	(1<<2)
-+#define FEATURE_CONTROL_LOCKED				(1<<0)
-+#define FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX	(1<<1)
-+#define FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX	(1<<2)
- 
- #define MSR_IA32_APICBASE		0x0000001b
- #define MSR_IA32_APICBASE_BSP		(1<<8)
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -46,6 +46,7 @@
- 
- /* Global pointer to shared data; NULL means no measured launch. */
- struct tboot *tboot __read_mostly;
-+EXPORT_SYMBOL(tboot);
- 
- /* timeout for APs (in secs) to enter wait-for-SIPI state during shutdown */
- #define AP_WAIT_TIMEOUT		1
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -26,6 +26,7 @@
- #include <linux/sched.h>
- #include <linux/moduleparam.h>
- #include <linux/ftrace_event.h>
-+#include <linux/tboot.h>
- #include "kvm_cache_regs.h"
- #include "x86.h"
- 
-@@ -1125,9 +1126,16 @@ static __init int vmx_disabled_by_bios(v
- 	u64 msr;
- 
- 	rdmsrl(MSR_IA32_FEATURE_CONTROL, msr);
--	return (msr & (FEATURE_CONTROL_LOCKED |
--		       FEATURE_CONTROL_VMXON_ENABLED))
--	    == FEATURE_CONTROL_LOCKED;
-+	if (msr & FEATURE_CONTROL_LOCKED) {
-+		if (!(msr & FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX)
-+			&& tboot_enabled())
-+			return 1;
-+		if (!(msr & FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX)
-+			&& !tboot_enabled())
-+			return 1;
-+	}
+ static void svm_set_supported_cpuid(u32 func, struct kvm_cpuid_entry2 *entry)
+ {
++	switch (func) {
++	case 0x8000000A:
++		entry->eax = 1; /* SVM revision 1 */
++		entry->ebx = 8; /* Lets support 8 ASIDs in case we add proper
++				   ASID emulation to nested SVM */
++		entry->ecx = 0; /* Reserved */
++		entry->edx = 0; /* Do not support any additional features */
 +
-+	return 0;
- 	/* locked but not enabled */
++		break;
++	}
  }
  
-@@ -1135,21 +1143,23 @@ static int hardware_enable(void *garbage
- {
- 	int cpu = raw_smp_processor_id();
- 	u64 phys_addr = __pa(per_cpu(vmxarea, cpu));
--	u64 old;
-+	u64 old, test_bits;
- 
- 	if (read_cr4() & X86_CR4_VMXE)
- 		return -EBUSY;
- 
- 	INIT_LIST_HEAD(&per_cpu(vcpus_on_cpu, cpu));
- 	rdmsrl(MSR_IA32_FEATURE_CONTROL, old);
--	if ((old & (FEATURE_CONTROL_LOCKED |
--		    FEATURE_CONTROL_VMXON_ENABLED))
--	    != (FEATURE_CONTROL_LOCKED |
--		FEATURE_CONTROL_VMXON_ENABLED))
-+
-+	test_bits = FEATURE_CONTROL_LOCKED;
-+	test_bits |= FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX;
-+	if (tboot_enabled())
-+		test_bits |= FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX;
-+
-+	if ((old & test_bits) != test_bits) {
- 		/* enable and lock */
--		wrmsrl(MSR_IA32_FEATURE_CONTROL, old |
--		       FEATURE_CONTROL_LOCKED |
--		       FEATURE_CONTROL_VMXON_ENABLED);
-+		wrmsrl(MSR_IA32_FEATURE_CONTROL, old | test_bits);
-+	}
- 	write_cr4(read_cr4() | X86_CR4_VMXE); /* FIXME: not cpu hotplug safe */
- 	asm volatile (ASM_VMX_VMXON_RAX
- 		      : : "a"(&phys_addr), "m"(phys_addr)
---- a/include/linux/tboot.h
-+++ b/include/linux/tboot.h
-@@ -150,6 +150,7 @@ extern int tboot_force_iommu(void);
- 
- #else
- 
-+#define tboot_enabled()			0
- #define tboot_probe()			do { } while (0)
- #define tboot_shutdown(shutdown_type)	do { } while (0)
- #define tboot_sleep(sleep_state, pm1a_control, pm1b_control)	\
+ static const struct trace_print_flags svm_exit_reasons_str[] = {
 
 
