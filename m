@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab0GASON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:14:13 -0400
-Received: from kroah.org ([198.145.64.141]:60025 "EHLO coco.kroah.org"
+	id S1755651Ab0GASMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:12:32 -0400
+Received: from kroah.org ([198.145.64.141]:60095 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754741Ab0GASKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:10:46 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:56 2010
-Message-Id: <20100701172856.882121276@clark.site>
+	id S1755278Ab0GASKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:10:55 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:57 2010
+Message-Id: <20100701172857.786701122@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:26:54 -0700
+Date: Thu, 01 Jul 2010 10:27:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Michael Neuling <mikey@neuling.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [05/23] powerpc/pseries: Only call start-cpu when a CPU is stopped
+       "Theodore Tso" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+       "Jayson R. King" <dev@jaysonking.com>,
+       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [16/23] ext4: Implement range_cyclic in ext4_da_writepages instead of write_cache_pages
 In-Reply-To: <20100701175134.GA2098@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +29,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
 
-commit aef40e87d866355ffd279ab21021de733242d0d5 upstream.
+From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-Currently we always call start-cpu irrespective of if the CPU is
-stopped or not. Unfortunatley on POWER7, firmware seems to not like
-start-cpu being called when a cpu already been started.  This was not
-the case on POWER6 and earlier.
+commit 2acf2c261b823d9d9ed954f348b97620297a36b5 upstream.
 
-This patch checks to see if the CPU is stopped or not via an
-query-cpu-stopped-state call, and only calls start-cpu on CPUs which
-are stopped.
+With delayed allocation we lock the page in write_cache_pages() and
+try to build an in memory extent of contiguous blocks.  This is needed
+so that we can get large contiguous blocks request.  If range_cyclic
+mode is enabled, write_cache_pages() will loop back to the 0 index if
+no I/O has been done yet, and try to start writing from the beginning
+of the range.  That causes an attempt to take the page lock of lower
+index page while holding the page lock of higher index page, which can
+cause a dead lock with another writeback thread.
 
-This fixes a bug with kexec on POWER7 on PHYP where only the primary
-thread would make it to the second kernel.
+The solution is to implement the range_cyclic behavior in
+ext4_da_writepages() instead.
 
-Reported-by: Ankita Garg <ankita@linux.vnet.ibm.com>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+http://bugzilla.kernel.org/show_bug.cgi?id=12579
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Jayson R. King <dev@jaysonking.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/platforms/pseries/smp.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ext4/inode.c |   21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/smp.c
-+++ b/arch/powerpc/platforms/pseries/smp.c
-@@ -84,6 +84,12 @@ static inline int __devinit smp_startup_
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2575,6 +2575,7 @@ static int ext4_da_writepages(struct add
+ 	struct mpage_da_data mpd;
+ 	struct inode *inode = mapping->host;
+ 	long pages_written = 0, pages_skipped;
++	int range_cyclic, cycled = 1, io_done = 0;
+ 	int needed_blocks, ret = 0, nr_to_writebump = 0;
+ 	struct ext4_sb_info *sbi = EXT4_SB(mapping->host->i_sb);
  
- 	pcpu = get_hard_smp_processor_id(lcpu);
+@@ -2612,9 +2613,15 @@ static int ext4_da_writepages(struct add
+ 	if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
+ 		range_whole = 1;
  
-+	/* Check to see if the CPU out of FW already for kexec */
-+	if (smp_query_cpu_stopped(pcpu) == QCSS_NOT_STOPPED){
-+		cpu_set(lcpu, of_spin_map);
-+		return 1;
+-	if (wbc->range_cyclic)
++	range_cyclic = wbc->range_cyclic;
++	if (wbc->range_cyclic) {
+ 		index = mapping->writeback_index;
+-	else
++		if (index)
++			cycled = 0;
++		wbc->range_start = index << PAGE_CACHE_SHIFT;
++		wbc->range_end  = LLONG_MAX;
++		wbc->range_cyclic = 0;
++	} else
+ 		index = wbc->range_start >> PAGE_CACHE_SHIFT;
+ 
+ 	mpd.wbc = wbc;
+@@ -2622,6 +2629,7 @@ static int ext4_da_writepages(struct add
+ 
+ 	pages_skipped = wbc->pages_skipped;
+ 
++retry:
+ 	while (!ret && wbc->nr_to_write > 0) {
+ 
+ 		/*
+@@ -2676,6 +2684,7 @@ static int ext4_da_writepages(struct add
+ 			pages_written += mpd.pages_written;
+ 			wbc->pages_skipped = pages_skipped;
+ 			ret = 0;
++			io_done = 1;
+ 		} else if (wbc->nr_to_write)
+ 			/*
+ 			 * There is no more writeout needed
+@@ -2684,6 +2693,13 @@ static int ext4_da_writepages(struct add
+ 			 */
+ 			break;
+ 	}
++	if (!io_done && !cycled) {
++		cycled = 1;
++		index = 0;
++		wbc->range_start = index << PAGE_CACHE_SHIFT;
++		wbc->range_end  = mapping->writeback_index - 1;
++		goto retry;
 +	}
-+
- 	/* Fixup atomic count: it exited inside IRQ handler. */
- 	task_thread_info(paca[lcpu].__current)->preempt_count	= 0;
+ 	if (pages_skipped != wbc->pages_skipped)
+ 		printk(KERN_EMERG "This should not happen leaving %s "
+ 				"with nr_to_write = %ld ret = %d\n",
+@@ -2691,6 +2707,7 @@ static int ext4_da_writepages(struct add
  
+ 	/* Update index */
+ 	index += pages_written;
++	wbc->range_cyclic = range_cyclic;
+ 	if (wbc->range_cyclic || (range_whole && wbc->nr_to_write > 0))
+ 		/*
+ 		 * set the writeback_index so that range_cyclic
 
 
