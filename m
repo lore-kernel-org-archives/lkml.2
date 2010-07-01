@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933255Ab0GAVTH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:19:07 -0400
-Received: from kroah.org ([198.145.64.141]:33091 "EHLO coco.kroah.org"
+	id S1759315Ab0GAVQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:16:51 -0400
+Received: from kroah.org ([198.145.64.141]:32872 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759235Ab0GAVPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:07 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:00 2010
-Message-Id: <20100701174300.739786513@clark.site>
+	id S1759099Ab0GAVOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:20 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:56 2010
+Message-Id: <20100701174255.972932019@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:18 -0700
+Date: Thu, 01 Jul 2010 10:43:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Johannes Berg <johannes.berg@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [168/200] iwlwifi: add missing rcu_read_lock
+       Imre Deak <imre.deak@nokia.com>, Eric Paris <eparis@redhat.com>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [113/200] idr: fix backtrack logic in idr_remove_all
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,42 +26,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Imre Deak <imre.deak@nokia.com>
 
-commit 6db6340c42d027b6364d49fa99d69019aca24de4 upstream.
+commit 2dcb22b346be7b7b7e630a8970d69cf3f1111ec1 upstream.
 
-Using ieee80211_find_sta() needs to be under
-RCU read lock, which iwlwifi currently misses,
-so fix it.
+Currently idr_remove_all will fail with a use after free error if
+idr::layers is bigger than 2, which on 32 bit systems corresponds to items
+more than 1024.  This is due to stepping back too many levels during
+backtracking.  For simplicity let's assume that IDR_BITS=1 -> we have 2
+nodes at each level below the root node and each leaf node stores two IDs.
+ (In reality for 32 bit systems IDR_BITS=5, with 32 nodes at each sub-root
+level and 32 IDs in each leaf node).  The sequence of freeing the nodes at
+the moment is as follows:
 
-Reported-by: Miles Lane <miles.lane@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Acked-by: Reinette Chatre <reinette.chatre@intel.com>
-Tested-by: Miles Lane <miles.lane@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+layer
+1 ->                       a(7)
+2 ->            b(3)                  c(5)
+3 ->        d(1)   e(2)           f(4)    g(6)
+
+Until step 4 things go fine, but then node c is freed, whereas node g
+should be freed first.  Since node c contains the pointer to node g we'll
+have a use after free error at step 6.
+
+How many levels we step back after visiting the leaf nodes is currently
+determined by the msb of the id we are currently visiting:
+
+Step
+1.          node d with IDs 0,1 is freed, current ID is advanced to 2.
+            msb of the current ID bit 1. This means we need to step back
+            1 level to node b and take the next sibling, node e.
+2-3.        node e with IDs 2,3 is freed, current ID is 4, msb is bit 2.
+            This means we need to step back 2 levels to node a, freeing
+            node b on the way.
+4-5.        node f with IDs 4,5 is freed, current ID is 6, msb is still
+            bit 2. This means we again need to step back 2 levels to node
+            a and free c on the way.
+6.          We should visit node g, but its pointer is not available as
+            node c was freed.
+
+The fix changes how we determine the number of levels to step back.
+Instead of deducting this merely from the msb of the current ID, we should
+really check if advancing the ID causes an overflow to a bit position
+corresponding to a given layer.  In the above example overflow from bit 0
+to bit 1 should mean stepping back 1 level.  Overflow from bit 1 to bit 2
+should mean stepping back 2 levels and so on.
+
+The fix was tested with IDs up to 1 << 20, which corresponds to 4 layers
+on 32 bit systems.
+
+Signed-off-by: Imre Deak <imre.deak@nokia.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-tx.c |    2 ++
- 1 file changed, 2 insertions(+)
+ lib/idr.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@ -1198,6 +1198,7 @@ static void iwl_tx_status(struct iwl_pri
- 	struct ieee80211_sta *sta;
- 	struct iwl_station_priv *sta_priv;
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -445,6 +445,7 @@ EXPORT_SYMBOL(idr_remove);
+ void idr_remove_all(struct idr *idp)
+ {
+ 	int n, id, max;
++	int bt_mask;
+ 	struct idr_layer *p;
+ 	struct idr_layer *pa[MAX_LEVEL];
+ 	struct idr_layer **paa = &pa[0];
+@@ -462,8 +463,10 @@ void idr_remove_all(struct idr *idp)
+ 			p = p->ary[(id >> n) & IDR_MASK];
+ 		}
  
-+	rcu_read_lock();
- 	sta = ieee80211_find_sta(priv->vif, hdr->addr1);
- 	if (sta) {
- 		sta_priv = (void *)sta->drv_priv;
-@@ -1206,6 +1207,7 @@ static void iwl_tx_status(struct iwl_pri
- 		    atomic_dec_return(&sta_priv->pending_frames) == 0)
- 			ieee80211_sta_block_awake(priv->hw, sta, false);
- 	}
-+	rcu_read_unlock();
- 
- 	ieee80211_tx_status_irqsafe(priv->hw, skb);
- }
++		bt_mask = id;
+ 		id += 1 << n;
+-		while (n < fls(id)) {
++		/* Get the highest bit that the above add changed from 0->1. */
++		while (n < fls(id ^ bt_mask)) {
+ 			if (p)
+ 				free_layer(p);
+ 			n += IDR_BITS;
 
 
