@@ -1,77 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab0GAVHT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:07:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42051 "EHLO ogre.sisk.pl"
+	id S932650Ab0GAVIM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:08:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55548 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758716Ab0GAVHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:07:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [update] Re: [PATCH] PM: Make it possible to avoid wakeup events from being lost
-Date: Thu, 1 Jul 2010 23:05:31 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Florian Mickler <florian@mickler.org>, linux-pci@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <Pine.LNX.4.44L0.1007011627030.1303-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1007011627030.1303-100000@iolanthe.rowland.org>
+	id S932842Ab0GAVIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:08:04 -0400
+Date: Thu, 1 Jul 2010 17:07:49 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, axboe@kernel.dk,
+       hch@lst.de, linux-scsi@vger.kernel.org, dm-devel@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: scsi: address leak in the error path of discard page allocation
+Message-ID: <20100701210749.GB28546@redhat.com>
+References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+ <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+ <20100701130328.GB19605@redhat.com>
+ <20100701201508.GA28546@redhat.com>
+ <1278015548.2813.147.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007012305.31380.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278015548.2813.147.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 01, 2010, Alan Stern wrote:
-> On Thu, 1 Jul 2010, Rafael J. Wysocki wrote:
-> 
-> > > > +	if (msec) {
-> > > > +		ktime_t kt;
-> > > > +		struct timespec ts;
-> > > > +		unsigned long expires;
-> > > > +
-> > > > +		kt = ktime_get();
-> > > > +		kt = ktime_add_ns(kt, msec * NSEC_PER_MSEC);
-> > > > +		ts = ktime_to_timespec(kt);
-> > > > +		expires = timespec_to_jiffies(&ts);
-> > > 
-> > > Is this somehow better than jiffies + msecs_to_jiffies(msec)?
+On Thu, Jul 01 2010 at  4:19pm -0400,
+James Bottomley <James.Bottomley@suse.de> wrote:
+
+> On Thu, 2010-07-01 at 16:15 -0400, Mike Snitzer wrote:
+> > On Thu, Jul 01 2010 at  9:03am -0400,
+> > Mike Snitzer <snitzer@redhat.com> wrote:
 > > 
-> > I'm not sure about overflows.  That said, the "+" version is used in many
-> > places, so there's no problem I think.
+> > > On Thu, Jul 01 2010 at  6:49am -0400,
+> > > FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+> > > 
+> > > > This fixes discard page leak by using q->unprep_rq_fn facility.
+> > > > 
+> > > > q->unprep_rq_fn is called when all the data buffer (req->bio and
+> > > > scsi_data_buffer) in the request is freed.
+> > > > 
+> > > > sd_unprep() uses rq->buffer to free discard page allocated in
+> > > > sd_prepare_discard().
+> > > > 
+> > > > Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> > > 
+> > > Thanks for sorting this out Tomo, all 3 patches work great!
+> > > 
+> > > BTW, there is one remaining (rare) leak in the allocation path.
+> > > 
+> > > The following patch serves to fix it but I'm not sure if there is a more
+> > > elegant way to address this.
+> > 
+> > I've continued to look at this to arrive at alternative implementation.
+> > Here is a summary of the problem:
+> > 
+> > A 'scsi_setup_discard_cmnd' return other than BLKPREP_OK will not cause
+> > a discard request to get completely stripped down ('blk_finish_request'
+> > isn't calling 'blk_unprep_request' because REQ_DONTPREP is not set by
+> > 'scsi_prep_return' for none BLKPREP_OK return).  Therefore the discard
+> > request's page will _not_ get cleaned up.
+> > 
+> > Aside from code inspection, I confirmed this by adding some test code to
+> > force a one-time initial BLKPREP_DEFER return from
+> > 'scsi_setup_discard_cmnd'.
+> > 
+> > > An alternative would be to check if the page is already allocated
+> > > (before allocating the page in scsi_setup_discard_cmnd)?
+> > 
+> > Unfortunatey this "alternative" won't work because it completely ignores
+> > the case where BLKPREP_KILL is returned from scsi_setup_discard_cmnd'.
+> >  
+> > > Please advise, thanks.
+> > 
+> > In short, I'm not too happy that the following patch doesn't allow for
+> > centralized cleanup of the discard request's page (via sd_unprep_fn).
+> > But in order to do that we'd likely have to:
+> > 1) relax blk_finish_request's REQ_DONTPREP constraint
+> > 2) add other weird conditionals within blk_unprep_request because
+> >    the discard request wasn't _really_ prepared?
+> > 
+> > So given this I'm inclined to stick with the following patch.
+> > 
+> > Jens and/or James, what do you think?
 > 
-> Hmm.  NSEC_PER_MSEC must be one million, right?  So if msec referred to
-> anything above 4 seconds (which seems unlikely but not impossible), the
-> multiplication would overflow on a 32-bit machine.
-> 
-> Apart from that, the main difference between the two patches lies in
-> when the events are counted, i.e., whether event_count gets incremented
-> at the start or when the timer expires.  I can't see that it matters 
-> much either way.
+> The rules are pretty clear:  Unprep is only called if the request gets
+> prepped ... that means you have to return BLKPREP_OK.  Defer or kill
+> assume there's no teardown to do, so the allocation (if it took place)
+> must be reversed before returning them
 
-Well, your version doesn't require the additional static variable and
-generally takes fewer lines of code. :-)
+OK, thanks for clarifying.  This confirms that the general approach I
+took in this patch is correct.  It remains to be seen if Jens is
+agreeable with blk_clear_request_payload.
 
-> > Index: linux-2.6/drivers/base/power/wakeup.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/base/power/wakeup.c
-> > +++ linux-2.6/drivers/base/power/wakeup.c
-> > @@ -9,6 +9,7 @@
-> >  #include <linux/device.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/sched.h>
-> > +#include <linux/ktime.h>
-> 
-> This isn't needed any more.
+I know Christoph thought my introduction and use of
+blk_clear_request_payload was reasonable.  Christoph, please feel free
+to add your Ack to this patch if you approve.
 
-Right, I've dropped this line.
+I look forward to feedback from Tomo and Jens now too.  Hopefully Jens
+will pick this patch up.
 
-Rafael
+regards,
+Mike
