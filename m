@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab0GANZS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:25:18 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:53822 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753626Ab0GANZR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:25:17 -0400
-Date: Thu, 1 Jul 2010 15:25:16 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Jassi Brar <jassi.brar@samsung.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
-Message-ID: <20100701132515.GC32541@faui48a.informatik.uni-erlangen.de>
-References: <cover.1277911345.git.siccegge@cs.fau.de> <e5391de6858597bbfd43874aed124a73f74850b5.1277911346.git.siccegge@cs.fau.de> <AANLkTinZa7_TEjYFTu9V6obndpVvMmHppaOArM1AJg_t@mail.gmail.com>
+	id S1754628Ab0GAN2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:28:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22073 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752543Ab0GAN2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 09:28:39 -0400
+Date: Thu, 1 Jul 2010 16:22:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+Message-ID: <20100701132252.GC32223@redhat.com>
+References: <20100624081135.GA937@redhat.com>
+ <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
+ <20100625101022.GA16321@redhat.com>
+ <20100701110708.GA27368@redhat.com>
+ <1277983179.1917.10.camel@laptop>
+ <1277984603.1917.15.camel@laptop>
+ <20100701115507.GA31333@redhat.com>
+ <1277987563.1917.28.camel@laptop>
+ <20100701125038.GA32223@redhat.com>
+ <1277989646.1917.77.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinZa7_TEjYFTu9V6obndpVvMmHppaOArM1AJg_t@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1277989646.1917.77.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 09:55:47PM +0900, Jassi Brar wrote:
-> On Thu, Jul 1, 2010 at 1:03 AM, Christoph Egger <siccegge@cs.fau.de> wrote:
-> > SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
-> > all references for it from the source code.
-> I'd rather have the code compiled unconditionally.
+On Thu, Jul 01, 2010 at 03:07:26PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-07-01 at 15:50 +0300, Michael S. Tsirkin wrote:
+> > On Thu, Jul 01, 2010 at 02:32:43PM +0200, Peter Zijlstra wrote:
+> > > On Thu, 2010-07-01 at 14:55 +0300, Michael S. Tsirkin wrote:
+> > > 
+> > > > >  - why can't it set the kernel thread's affinity too?
+> > > > 
+> > > > It can. However: the threads are started internally by the driver
+> > > > when qemu does an ioctl.  What we want to do is give it a sensible
+> > > > default affinity. management tool can later tweak it if it wants to.
+> > > 
+> > > So have that ioctl return the tid of that new fancy thread and then set
+> > > its affinity, stuff it in cgroup, whatever you fancy.
+> > > 
+> > > > >  - what happens if someone changes the tasks' affinity?
+> > > > 
+> > > > We would normally create a cgroup including all internal
+> > > > tasks, making it easy to find and change affinity for
+> > > > them all if necessary. 
+> > > 
+> > > And to stuff them in a cgroup you also need the tid, at which point it
+> > > might as well set the affinity from userspace, right?
+> > 
+> > We also put it in a cgroup transparently. I think that it's actually
+> > important to do it on thread creation: if we don't, malicious userspace
+> > can create large amount of work exceeding the cgroup limits.
+> > 
+> > And the same applies so the affinity, right? If the qemu process
+> > is limited to a set of CPUs, isn't it important to make
+> > the kernel thread that does work our behalf limited to the same
+> > set of CPUs?
+> 
+> I'm not sure we have anything like this, but I wouldn't think so, if a
+> driver creates a kthread and manages to inject tons of work its not
+> typically limited to whatever limits apply to the task that supplied the
+> work.
+> 
+> Take the encryption threads for example, those don't run in the context
+> of whoever provides the data to be encrypted (file,net whatever) and
+> thus the task responsible could consume heaps more resources than when
+> it would have to do the encryption itself.
+> 
+> That's how kthreads work.
 
-OK that would be done by the patch below
+Right. And IMHO ideally all such work would run on the appropriate
+CPU and be accounted to. It's just that with virt people seem to
+run untrusted applications and expect the damage to be contained.
+So we came up with a simple approach that seems to do the
+just just for us.
 
-----
-From: Christoph Egger <siccegge@cs.fau.de>
-Date: Wed, 30 Jun 2010 17:18:52 +0200
-Subject: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
-
-SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
-all references for it from the source code, building the parts
-unconditionally
-
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
----
- arch/arm/mach-s3c2443/mach-smdk2443.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-s3c2443/mach-smdk2443.c b/arch/arm/mach-s3c2443/mach-smdk2443.c
-index 4c863d3..764144a 100644
---- a/arch/arm/mach-s3c2443/mach-smdk2443.c
-+++ b/arch/arm/mach-s3c2443/mach-smdk2443.c
-@@ -106,9 +106,7 @@ static struct platform_device *smdk2443_devices[] __initdata = {
- 	&s3c_device_wdt,
- 	&s3c_device_i2c0,
- 	&s3c_device_hsmmc0,
--#ifdef CONFIG_SND_SOC_SMDK2443_WM9710
- 	&s3c_device_ac97,
--#endif
- };
- 
- static void __init smdk2443_map_io(void)
-@@ -122,9 +120,7 @@ static void __init smdk2443_machine_init(void)
- {
- 	s3c_i2c0_set_platdata(NULL);
- 
--#ifdef CONFIG_SND_SOC_SMDK2443_WM9710
- 	s3c24xx_ac97_setup_gpio(S3C24XX_AC97_GPE0);
--#endif
- 
- 	platform_add_devices(smdk2443_devices, ARRAY_SIZE(smdk2443_devices));
- 	smdk_machine_init();
 -- 
-1.7.0.4
-
+MST
