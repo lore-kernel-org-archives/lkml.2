@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759355Ab0GAVRc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:17:32 -0400
-Received: from kroah.org ([198.145.64.141]:32973 "EHLO coco.kroah.org"
+	id S933167Ab0GAVPc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:15:32 -0400
+Received: from kroah.org ([198.145.64.141]:60857 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759077Ab0GAVOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:36 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:57 2010
-Message-Id: <20100701174257.565453171@clark.site>
+	id S1758945Ab0GAVNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:39 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:52 2010
+Message-Id: <20100701174251.999488773@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:42 -0700
+Date: Thu, 01 Jul 2010 10:42:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [132/200] ALSA: hda: Use LPIB for another mainboard
+       Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>
+Subject: [066/200] drm/i915: Reject bind_to_gtt() early if object > aperture
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit b90c076424da8166797bdc34187660fd0124f530 upstream.
+commit 654fc6073f68efa3b6c466825749e73e7fbb92cd upstream.
 
-BugLink: https://launchpad.net/bugs/580749
+If the object is bigger than the entire aperture, reject it early
+before evicting everything in a vain attempt to find space.
 
-Symptom: on the original reporter's VIA VT1708-based board, the
-PulseAudio daemon dies shortly after the user attempts to play an audio
-file.
+v2: Use E2BIG as suggested by Owain G. Ainsworth.
 
-Test case: boot from Ubuntu 10.04 LTS live cd; attempt to play an audio
-file.
-
-Resolution: add SSID for the original reporter's hardware to the
-position_fix quirk table, explicitly specifying the LPIB method.
-
-Reported-and-Tested-By: Harald
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_intel.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/i915/i915_gem.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2278,6 +2278,7 @@ static struct snd_pci_quirk position_fix
- 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1565, 0x8218, "Biostar Microtech", POS_FIX_LPIB),
-+	SND_PCI_QUIRK(0x1849, 0x0888, "775Dual-VSTA", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x8086, 0x2503, "DG965OT AAD63733-203", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x8086, 0xd601, "eMachines T5212", POS_FIX_LPIB),
- 	{}
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2688,6 +2688,14 @@ i915_gem_object_bind_to_gtt(struct drm_g
+ 		return -EINVAL;
+ 	}
+ 
++	/* If the object is bigger than the entire aperture, reject it early
++	 * before evicting everything in a vain attempt to find space.
++	 */
++	if (obj->size > dev->gtt_total) {
++		DRM_ERROR("Attempting to bind an object larger than the aperture\n");
++		return -E2BIG;
++	}
++
+  search_free:
+ 	free_space = drm_mm_search_free(&dev_priv->mm.gtt_space,
+ 					obj->size, alignment, 0);
 
 
