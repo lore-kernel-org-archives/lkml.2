@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab0GAHgS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 03:36:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:35270 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab0GAHgR convert rfc822-to-8bit (ORCPT
+	id S1754292Ab0GAHi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 03:38:58 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:30705 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187Ab0GAHi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 03:36:17 -0400
-Subject: Re: What's the relationship between Linux driver running priority
- and FIFO policy?
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Zhang, Yongchao (GE Healthcare)" <Yongchao.Zhang@ge.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <9BC2BBFFF6E8F04094DB58B805758CE406C039A7@SHAMLVEM01.e2k.ad.ge.com>
-References: <9BC2BBFFF6E8F04094DB58B805758CE406C039A7@SHAMLVEM01.e2k.ad.ge.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 01 Jul 2010 09:36:14 +0200
-Message-ID: <1277969774.1917.9.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 1 Jul 2010 03:38:57 -0400
+Date: Thu, 1 Jul 2010 10:35:23 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: ext Christoph Egger <siccegge@cs.fau.de>
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+       Paul Walmsley <paul@pwsan.com>, Kalle Valo <kalle.valo@iki.fi>,
+       Santosh Shilimkar <santosh.shilimkar@ti.com>,
+       Ladislav Michl <ladis@linux-mips.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "vamos@i4.informatik.uni-erlangen.de" 
+	<vamos@i4.informatik.uni-erlangen.de>
+Subject: Re: [PATCH 20/33] Removing dead MACH_OMAP2_H4_USB1
+Message-ID: <20100701073523.GT3843@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <cover.1277911345.git.siccegge@cs.fau.de>
+ <24b01f2edebd09e37306c35f14401819d8219549.1277911346.git.siccegge@cs.fau.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <24b01f2edebd09e37306c35f14401819d8219549.1277911346.git.siccegge@cs.fau.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 01 Jul 2010 07:38:11.0664 (UTC) FILETIME=[5B81C500:01CB18F0]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-01 at 13:21 +0800, Zhang, Yongchao (GE Healthcare)
-wrote:
-> Hi
->   I have a question disturb me very much.
->   You know linux FIFO policy is common,and also there are many drivers
-> running in system,so
->   which level are these drivers running on? If I have a progrom which
-> priority is FIFO99, does it disturb the driver running?
->   I want know which level does drivers running on? For example, driver
-> running on FIFOXX? and how does linux schedule on this 
->   case?
->  
+On Wed, Jun 30, 2010 at 06:00:23PM +0200, ext Christoph Egger wrote:
+>MACH_OMAP2_H4_USB1 doesn't exist in Kconfig, therefore removing all
+>references for it from the source code.
+>
+>Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 
-Fully depends on what a driver is and what you expect it to. If part of
-the driver consists of a (or multiple) kernel thread, and that thread
-has lower priority than FIFO99 (very typical) then of course.
+Does this apply on top of Tony's recent patches ??
 
-If the driver is a pure IRQ driven thingy, then no, since hardirq
-context will still preempt any task context.
+-- 
+balbi
 
-Of course, if whatever proglet is talking to the driver is running at a
-lower priority, that will get starved and your driver might again not
-make any progress because all its queues are filled (incomming) or empty
-(outgoing).
-
-In general having a FIFO99 task around that consumes unbounded amounts
-of cpu time is not something that is healthy for the system and it not
-something I can recommend.
-
-The Real-Time classes (FIFO/RR) are designed for deterministic programs
-with bounded runtime. Things like spinning in userspace are very bad for
-a number of reasons (which nevertheless doesn't seem to stop people from
-doing just that).
-
-The only answer that I can give you is: don't do that.
-
-As to how Linux schedules, the scheduler is concerned only with tasks;
-it will run the highest priority FIFO/RR task available, if there are no
-FIFO/RR tasks present it will run SCHED_OTHER tasks, for those it will
-divide the remaining time fairly based on their nice value (which is
-mapped to a weight).
-
-Interrupts -- at a hardware level -- interrupt task context and are thus
-always ran whenever they happen.
-
-That's all, there's really nothing more to it.
+DefectiveByDesign.org
