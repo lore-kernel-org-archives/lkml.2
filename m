@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab0GAVdj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:33:39 -0400
-Received: from kroah.org ([198.145.64.141]:33131 "EHLO coco.kroah.org"
+	id S1759392Ab0GAVi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:38:29 -0400
+Received: from kroah.org ([198.145.64.141]:32992 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758931Ab0GAVPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:02 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:00 2010
-Message-Id: <20100701174300.245049802@clark.site>
+	id S1759215Ab0GAVOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:43 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
+Message-Id: <20100701174258.233494395@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:12 -0700
+Date: Thu, 01 Jul 2010 10:43:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Reinette Chatre <reinette.chatre@intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [162/200] iwlwifi: fix internal scan race
+       Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: [140/200] pcmcia: only keep saved I365_CSCINT flag if there is no PCI irq
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,95 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Reinette Chatre <reinette.chatre@intel.com>
+From: Dominik Brodowski <linux@dominikbrodowski.net>
 
-commit 073d5eab6fc85b6c278d507a5633b759a85dc878 upstream.
+commit 02caa56e4b789b80ae7e0f0f0789f94b44ad32ef upstream.
 
-It is possible for internal scan to race against itself if the device is
-not returning the scan results from first requests. What happens in this
-case is the cleanup done during the abort of the first internal scan also
-cleans up part of the new scan, causing it to access memory it shouldn't.
+Keeping the saved I365_CSCINT flag around breaks PCMCIA on some system,
+and is only needed on a few systems to get PCMCIA to work. This patch
+allows PCMCIA to work on both types, and it fixes
+https://bugzilla.kernel.org/show_bug.cgi?id=16015
 
-Here are details:
-* First internal scan is triggered and scan command sent to device.
-* After seven seconds there is no scan results so the watchdog timer
-  triggers a scan abort.
-* The scan abort succeeds and a SCAN_COMPLETE_NOTIFICATION is received for
- failed scan.
-* During processing of SCAN_COMPLETE_NOTIFICATION we clear STATUS_SCANNING
-  and queue the "scan_completed" work.
-** At this time, since the problem that caused the internal scan in first
-   place is still present, a new internal scan is triggered.
-The behavior at this point is a bit different between 2.6.34 and 2.6.35
-since 2.6.35 has a lot of this synchronized. The rest of the race
-description will thus be generalized.
-** As part of preparing for the scan "is_internal_short_scan" is set to
-true.
-* At this point the completion work for fist scan is run. As part of this
-  there is some locking missing around the "is_internal_short_scan"
-  variable and it is set to "false".
-** Now the second scan runs and it considers itself a real (not internal0
-   scan and thus causes problems with wrong memory being accessed.
-
-The fix is twofold.
-* Since "is_internal_short_scan" should be protected by mutex, fix this in
-  scan completion work so that changes to it can be serialized.
-* Do not queue a new internal scan if one is in progress.
-
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=15824
-
-Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Justin P. Mattock <justinmattock@gmail.com>
+Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-scan.c |   21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ drivers/pcmcia/yenta_socket.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-scan.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
-@@ -561,6 +561,11 @@ static void iwl_bg_start_internal_scan(s
- 
- 	mutex_lock(&priv->mutex);
- 
-+	if (priv->is_internal_short_scan == true) {
-+		IWL_DEBUG_SCAN(priv, "Internal scan already in progress\n");
-+		goto unlock;
-+	}
-+
- 	if (!iwl_is_ready_rf(priv)) {
- 		IWL_DEBUG_SCAN(priv, "not ready or exit pending\n");
- 		goto unlock;
-@@ -958,17 +963,27 @@ void iwl_bg_scan_completed(struct work_s
+--- a/drivers/pcmcia/yenta_socket.c
++++ b/drivers/pcmcia/yenta_socket.c
+@@ -975,7 +975,7 @@ static irqreturn_t yenta_probe_handler(i
+ /* probes the PCI interrupt, use only on override functions */
+ static int yenta_probe_cb_irq(struct yenta_socket *socket)
  {
- 	struct iwl_priv *priv =
- 	    container_of(work, struct iwl_priv, scan_completed);
-+	bool internal = false;
+-	u8 reg;
++	u8 reg = 0;
  
- 	IWL_DEBUG_SCAN(priv, "SCAN complete scan\n");
- 
- 	cancel_delayed_work(&priv->scan_check);
- 
--	if (!priv->is_internal_short_scan)
--		ieee80211_scan_completed(priv->hw, false);
--	else {
-+	mutex_lock(&priv->mutex);
-+	if (priv->is_internal_short_scan) {
- 		priv->is_internal_short_scan = false;
- 		IWL_DEBUG_SCAN(priv, "internal short scan completed\n");
-+		internal = true;
+ 	if (!socket->cb_irq)
+ 		return -1;
+@@ -989,7 +989,8 @@ static int yenta_probe_cb_irq(struct yen
  	}
-+	mutex_unlock(&priv->mutex);
-+
-+	/*
-+	 * Do not hold mutex here since this will cause mac80211 to call
-+	 * into driver again into functions that will attempt to take
-+	 * mutex.
-+	 */
-+	if (!internal)
-+		ieee80211_scan_completed(priv->hw, false);
  
- 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
- 		return;
+ 	/* generate interrupt, wait */
+-	reg = exca_readb(socket, I365_CSCINT);
++	if (!socket->dev->irq)
++		reg = exca_readb(socket, I365_CSCINT);
+ 	exca_writeb(socket, I365_CSCINT, reg | I365_CSC_STSCHG);
+ 	cb_writel(socket, CB_SOCKET_EVENT, -1);
+ 	cb_writel(socket, CB_SOCKET_MASK, CB_CSTSMASK);
 
 
