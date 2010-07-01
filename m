@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759464Ab0GAVwY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:52:24 -0400
-Received: from kroah.org ([198.145.64.141]:60867 "EHLO coco.kroah.org"
+	id S933440Ab0GAVrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:47:53 -0400
+Received: from kroah.org ([198.145.64.141]:32783 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758951Ab0GAVNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:41 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:52 2010
-Message-Id: <20100701174252.161221950@clark.site>
+	id S1759048Ab0GAVOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:08 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:54 2010
+Message-Id: <20100701174254.703438805@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:38 -0700
+Date: Thu, 01 Jul 2010 10:43:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jan Beulich <jbeulich@novell.com>, Andi Kleen <ak@linux.intel.com>,
-       Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [068/200] drivers/base/cpu.c: fix the output from /sys/devices/system/cpu/offline
+       Dan Carpenter <error27@gmail.com>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Malte Schroder <maltesch@gmx.de>, Ralf Baechle <ralf@linux-mips.org>,
+       Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+Subject: [098/200] rtc-cmos: do dev_set_drvdata() earlier in the initialization
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@novell.com>
+From: Dan Carpenter <error27@gmail.com>
 
-commit cdc6e3d3968052cebb2f2ddcd742bff29fbd1a90 upstream.
+commit 6ba8bcd457d9fc793ac9435aa2e4138f571d4ec5 upstream.
 
-Without CONFIG_CPUMASK_OFFSTACK, simply inverting cpu_online_mask leads
-to CPUs beyond nr_cpu_ids to be displayed twice and CPUs not even
-possible to be displayed as offline.
+The bug is an oops when dev_get_drvdata() returned null in
+cmos_update_irq_enable().  The call tree looks like this:
+  rtc_dev_ioctl()
+    => rtc_update_irq_enable()
+      => cmos_update_irq_enable()
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+It's caused by a race condition in the module initialization.  It is
+rtc_device_register() which makes the ioctl operations live so I moved
+the call to dev_set_drvdata() before the call to rtc_device_register().
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=15963
+
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: Malte Schroder <maltesch@gmx.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/base/cpu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/rtc/rtc-cmos.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -186,7 +186,7 @@ static ssize_t print_cpus_offline(struct
- 	/* display offline cpus < nr_cpu_ids */
- 	if (!alloc_cpumask_var(&offline, GFP_KERNEL))
- 		return -ENOMEM;
--	cpumask_complement(offline, cpu_online_mask);
-+	cpumask_andnot(offline, cpu_possible_mask, cpu_online_mask);
- 	n = cpulist_scnprintf(buf, len, offline);
- 	free_cpumask_var(offline);
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -719,6 +719,9 @@ cmos_do_probe(struct device *dev, struct
+ 		}
+ 	}
  
++	cmos_rtc.dev = dev;
++	dev_set_drvdata(dev, &cmos_rtc);
++
+ 	cmos_rtc.rtc = rtc_device_register(driver_name, dev,
+ 				&cmos_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(cmos_rtc.rtc)) {
+@@ -726,8 +729,6 @@ cmos_do_probe(struct device *dev, struct
+ 		goto cleanup0;
+ 	}
+ 
+-	cmos_rtc.dev = dev;
+-	dev_set_drvdata(dev, &cmos_rtc);
+ 	rename_region(ports, dev_name(&cmos_rtc.rtc->dev));
+ 
+ 	spin_lock_irq(&rtc_lock);
 
 
