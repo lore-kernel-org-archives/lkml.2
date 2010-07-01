@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab0GASsT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:48:19 -0400
-Received: from kroah.org ([198.145.64.141]:35464 "EHLO coco.kroah.org"
+	id S1757975Ab0GASko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:40:44 -0400
+Received: from kroah.org ([198.145.64.141]:40547 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757728Ab0GASXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:04 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:10 2010
-Message-Id: <20100701173210.009691575@clark.site>
+	id S1757845Ab0GASXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:35 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:13 2010
+Message-Id: <20100701173213.123829187@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:04 -0700
+Date: Thu, 01 Jul 2010 10:31:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [patch 038/149] USB: xhci: Fix check for room on the ring.
+       Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [patch 075/149] ARM: VFP: Fix vfp_put_double() for d16-d31
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 44ebd037c54f80db3121ac9f5fe6e677b76e11d5 upstream.
+commit 138de1c44a8e0606501cd8593407e9248e84f1b7 upstream.
 
-The length of the scatter gather list a driver can enqueue is limited by
-the bus' sg_tablesize to 62 entries.  Each entry will be described by at
-least one transfer request block (TRB).  If the entry's buffer crosses a
-64KB boundary, then that entry will have to be described by two or more
-TRBs.  So even if the USB device driver respects sg_tablesize, the whole
-scatter list may take more than 62 TRBs to describe, and won't fit on
-the ring.
+vfp_put_double() takes the double value in r0,r1 not r1,r2.
 
-Don't assume that an empty ring means there is enough room on the
-transfer ring.  The old code would unconditionally queue this too-large
-transfer, and over write the beginning of the transfer.  This would mean
-the cycle bit was unchanged in those overwritten transfers, causing the
-hardware to think it didn't own the TRBs, and the host would seem to
-hang.
-
-Now drivers may see submit_urb() fail with -ENOMEM if the transfers are
-too big to fit on the ring.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |   19 ++++++++++++++++++-
- 1 file changed, 18 insertions(+), 1 deletion(-)
+ arch/arm/vfp/vfphw.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -241,10 +241,27 @@ static int room_on_ring(struct xhci_hcd
- 	int i;
- 	union xhci_trb *enq = ring->enqueue;
- 	struct xhci_segment *enq_seg = ring->enq_seg;
-+	struct xhci_segment *cur_seg;
-+	unsigned int left_on_ring;
- 
- 	/* Check if ring is empty */
--	if (enq == ring->dequeue)
-+	if (enq == ring->dequeue) {
-+		/* Can't use link trbs */
-+		left_on_ring = TRBS_PER_SEGMENT - 1;
-+		for (cur_seg = enq_seg->next; cur_seg != enq_seg;
-+				cur_seg = cur_seg->next)
-+			left_on_ring += TRBS_PER_SEGMENT - 1;
-+
-+		/* Always need one TRB free in the ring. */
-+		left_on_ring -= 1;
-+		if (num_trbs > left_on_ring) {
-+			xhci_warn(xhci, "Not enough room on ring; "
-+					"need %u TRBs, %u TRBs left\n",
-+					num_trbs, left_on_ring);
-+			return 0;
-+		}
- 		return 1;
-+	}
- 	/* Make sure there's an extra empty TRB available */
- 	for (i = 0; i <= num_trbs; ++i) {
- 		if (enq == ring->dequeue)
+--- a/arch/arm/vfp/vfphw.S
++++ b/arch/arm/vfp/vfphw.S
+@@ -277,7 +277,7 @@ ENTRY(vfp_put_double)
+ #ifdef CONFIG_VFPv3
+ 	@ d16 - d31 registers
+ 	.irp	dr,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+-1:	mcrr	p11, 3, r1, r2, c\dr	@ fmdrr	r1, r2, d\dr
++1:	mcrr	p11, 3, r0, r1, c\dr	@ fmdrr	r0, r1, d\dr
+ 	mov	pc, lr
+ 	.org	1b + 8
+ 	.endr
 
 
