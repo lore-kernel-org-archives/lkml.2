@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757663Ab0GASyH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:54:07 -0400
-Received: from kroah.org ([198.145.64.141]:35348 "EHLO coco.kroah.org"
+	id S1757622Ab0GASWu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:22:50 -0400
+Received: from kroah.org ([198.145.64.141]:35333 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757550Ab0GASWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:22:44 -0400
+	id S1757537Ab0GASWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:43 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:08 2010
-Message-Id: <20100701173208.090187195@clark.site>
+Message-Id: <20100701173208.005781188@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:41 -0700
+Date: Thu, 01 Jul 2010 10:30:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [patch 015/149] ALSA: hda: Fix model quirk for Dell M1730
+       Tony Breeds <tony@bakeyournoodle.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: [patch 014/149] mutex: Fix optimistic spinning vs. BKL
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Tony Breeds <tony@bakeyournoodle.com>
 
-commit 66668b6fb6861fad7f6bfef6646ac84693474c9a upstream.
+commit fd6be105b883244127a734ac9f14ae94a022dcc0 upstream.
 
-BugLink: https://launchpad.net/bugs/576160
+Currently, we can hit a nasty case with optimistic
+spinning on mutexes:
 
-Symptom: Currently (2.6.32.12) the Dell M1730 uses the 3stack model
-quirk. Unfortunately this means that capture is not functional out-
-of-the-box despite ensuring that capture settings are unmuted and
-raised fully.
+    CPU A tries to take a mutex, while holding the BKL
 
-Test case: boot from Ubuntu 10.04 LTS live cd; capture does not
-work.
+    CPU B tried to take the BLK while holding the mutex
 
-Resolution: Correct the model quirk for Dell M1730 to rely on the
-BIOS configuration.
+This looks like a AB-BA scenario but in practice, is
+allowed and happens due to the auto-release on
+schedule() nature of the BKL.
 
-This patch also trivially sorts the quirk into the correct section
-based on the comments.
+In that case, the optimistic spinning code can get us
+into a situation where instead of going to sleep, A
+will spin waiting for B who is spinning waiting for
+A, and the only way out of that loop is the
+need_resched() test in mutex_spin_on_owner().
 
-Reported-and-Tested-By: <picdragon99@msn.com>
-Tested-By: Daren Hayward
-Tested-By: Tobias Krais
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch fixes it by completely disabling spinning
+if we own the BKL. This adds one more detail to the
+extensive list of reasons why it's a bad idea for
+kernel code to be holding the BKL.
+
+Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+LKML-Reference: <20100519054636.GC12389@ozlabs.org>
+[ added an unlikely() attribute to the branch ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/mutex.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -2059,12 +2059,12 @@ static struct snd_pci_quirk stac927x_cfg
- 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_INTEL, 0xff00, 0x2000,
- 			   "Intel D965", STAC_D965_3ST),
- 	/* Dell 3 stack systems */
--	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f7, "Dell XPS M1730", STAC_DELL_3ST),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01dd, "Dell Dimension E520", STAC_DELL_3ST),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01ed, "Dell     ", STAC_DELL_3ST),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f4, "Dell     ", STAC_DELL_3ST),
- 	/* Dell 3 stack systems with verb table in BIOS */
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f3, "Dell Inspiron 1420", STAC_DELL_BIOS),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x01f7, "Dell XPS M1730", STAC_DELL_BIOS),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x0227, "Dell Vostro 1400  ", STAC_DELL_BIOS),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x022e, "Dell     ", STAC_DELL_BIOS),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL,  0x022f, "Dell Inspiron 1525", STAC_DELL_BIOS),
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -172,6 +172,13 @@ __mutex_lock_common(struct mutex *lock,
+ 		struct thread_info *owner;
+ 
+ 		/*
++		 * If we own the BKL, then don't spin. The owner of
++		 * the mutex might be waiting on us to release the BKL.
++		 */
++		if (unlikely(current->lock_depth >= 0))
++			break;
++
++		/*
+ 		 * If there's an owner, wait for it to either
+ 		 * release the lock or go to sleep.
+ 		 */
 
 
