@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932938Ab0GAU5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:57:35 -0400
-Received: from kroah.org ([198.145.64.141]:48003 "EHLO coco.kroah.org"
+	id S932806Ab0GAVHP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:07:15 -0400
+Received: from kroah.org ([198.145.64.141]:47777 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932916Ab0GAUvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:39 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:40 2010
-Message-Id: <20100701173440.295531802@clark.site>
+	id S932793Ab0GAUu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:58 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:36 2010
+Message-Id: <20100701173436.242487159@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:46 -0700
+Date: Thu, 01 Jul 2010 10:34:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Helge Deller <deller@gmx.de>, Kyle McMartin <kyle@mcmartin.ca>
-Subject: [patch 160/164] parisc: clear floating point exception flag on SIGFPE signal
+       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [patch 112/164] sata_via: magic vt6421 fix for transmission problems w/ WD drives
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit 550f0d922286556c7ea43974bb7921effb5a5278 upstream.
+commit 8b27ff4cf6d15964aa2987aeb58db4dfb1f87a19 upstream.
 
-Clear the floating point exception flag before returning to
-user space. This is needed, else the libc trampoline handler
-may hit the same SIGFPE again while building up a trampoline
-to a signal handler.
+vt6421 has problems talking to recent WD drives.  It causes a lot of
+transmission errors while high bandwidth transfer as reported in the
+following bugzilla entry.
 
-Fixes debian bug #559406.
+  https://bugzilla.kernel.org/show_bug.cgi?id=15173
 
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: Kyle McMartin <kyle@mcmartin.ca>
+Joseph Chan provided the following fix.  I don't have any idea what it
+does but I can verify the issue is gone with the patch applied.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Originally-from: Joseph Chan <JosephChan@via.com.tw>
+Reported-by: Jorrit Tijben <sjorrit@gmail.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/parisc/math-emu/decode_exc.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/sata_via.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/arch/parisc/math-emu/decode_exc.c
-+++ b/arch/parisc/math-emu/decode_exc.c
-@@ -342,6 +342,7 @@ decode_fpu(unsigned int Fpu_register[],
- 		return SIGNALCODE(SIGFPE, FPE_FLTINV);
- 	  case DIVISIONBYZEROEXCEPTION:
- 		update_trap_counts(Fpu_register, aflags, bflags, trap_counts);
-+		Clear_excp_register(exception_index);
- 	  	return SIGNALCODE(SIGFPE, FPE_FLTDIV);
- 	  case INEXACTEXCEPTION:
- 		update_trap_counts(Fpu_register, aflags, bflags, trap_counts);
+--- a/drivers/ata/sata_via.c
++++ b/drivers/ata/sata_via.c
+@@ -558,6 +558,19 @@ static void svia_configure(struct pci_de
+ 		tmp8 |= NATIVE_MODE_ALL;
+ 		pci_write_config_byte(pdev, SATA_NATIVE_MODE, tmp8);
+ 	}
++
++	/*
++	 * vt6421 has problems talking to some drives.  The following
++	 * is the magic fix from Joseph Chan <JosephChan@via.com.tw>.
++	 * Please add proper documentation if possible.
++	 *
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=15173
++	 */
++	if (pdev->device == 0x3249) {
++		pci_read_config_byte(pdev, 0x52, &tmp8);
++		tmp8 |= 1 << 2;
++		pci_write_config_byte(pdev, 0x52, tmp8);
++	}
+ }
+ 
+ static int svia_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 
