@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab0GAUgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:36:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57672 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab0GAUgk (ORCPT
+	id S1757484Ab0GAUjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:39:14 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:60391 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755647Ab0GAUjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:36:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=ZN3u1Pf92zsKlilf4x3+PtFreQ3SK91KOhM03GHvUTctfDiLnGv9wDACHB+/fau8mR
-         bnmClEo+u6dTgOQDTmd227PJKP8jO3lJ4kaYajdMft4obCQJOHETbZeft4CXI6pHKtpz
-         TVlDTL/dtKuYyJoPFd26hpf+e+o8rVelLsb24=
-Message-ID: <4C2D187B.4020109@gmail.com>
-Date: Fri, 02 Jul 2010 00:36:43 +0200
-From: Roel Kluin <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	Thu, 1 Jul 2010 16:39:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: Re: [PATCH]kernel.h Move warning message about using kernel headers for userspace to types.h
+Date: Thu, 1 Jul 2010 22:38:58 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, jkosina@suse.cz
+References: <1277935785-6023-1-git-send-email-justinmattock@gmail.com> <201007011707.31783.arnd@arndb.de> <4C2CCE57.40208@gmail.com>
+In-Reply-To: <4C2CCE57.40208@gmail.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] USB: Don't return 0 if writing the download record failed
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007012238.58335.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/+kbP/UJxWLcb4kvDuMwXrbtKHOhlRV9cngTb
+ sIOXm+BRGziOy60Twgsykntu57CSIolCy61I/iwlEoGrawudsc
+ IeF2K8mnCdWCtg+qKILPQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the write download record failed we shouldn't return 0.
+On Thursday 01 July 2010, Justin P. Mattock wrote:
+> o.k. I resent an updated version. keep in mind this is a bit confusing 
+> with the __KERNEL__ being in there multiple times, but with the v2 I'm 
+> able to see the #warning message with my little program.
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
----
-Maybe a different error value is more appropriate?
+Well, it's technically correct, but the #ifndef __KERNEL__ in there
+would better get dropped, since you are already in the #else path.
 
-diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
-index 0fca265..03696b9 100644
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -1321,7 +1321,7 @@ static int download_fw(struct edgeport_serial *serial)
- 				kfree(header);
- 				kfree(rom_desc);
- 				kfree(ti_manuf_desc);
--				return status;
-+				return -EINVAL;
- 			}
- 
- 			kfree(vheader);
+> As for the patch itself hopefully I corrected it's changelog etc..
+> lately I've been a bit confused with the whole sighned off thing i.g.
+> you suggested the #else so naturally I should add your name with a 
+> sighned off, but with other patches I was told not to do so due to the 
+> sighned off procedure/process. I'll re-read the submitting patches again 
+> to make sure.
+
+You got that part right. The S-o-b only ever gets added by a person
+sending a patch for the sending address, so you would not add my
+address as S-o-B, though you could add it as Cc:.
+When someone picks up your patch and forwards it, that person 
+will add his/her own S-o-b line below yours and keep you listed
+as From.
+
+	Arnd
