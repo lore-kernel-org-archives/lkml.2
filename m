@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933420Ab0GAVor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:44:47 -0400
-Received: from kroah.org ([198.145.64.141]:32843 "EHLO coco.kroah.org"
+	id S1759044Ab0GAVOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:14:07 -0400
+Received: from kroah.org ([198.145.64.141]:33775 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759089Ab0GAVOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:15 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:55 2010
-Message-Id: <20100701174255.544253371@clark.site>
+	id S1758805Ab0GAVNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:00 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:48 2010
+Message-Id: <20100701174248.299881798@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:18 -0700
+Date: Thu, 01 Jul 2010 10:41:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Khem Raj <raj.khem@gmail.com>,
-       Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [108/200] ARM: 6164/1: Add kto and kfrom to input operands list.
+       =?ISO-8859-15?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
+       Sven Eckelmann <sven.eckelmann@gmx.de>, Andrew Lunn <andrew@lunn.ch>
+Subject: [022/200] Staging: batman-adv: Fixing wrap-around bug in vis
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,111 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Khem Raj <raj.khem@gmail.com>
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
 
-commit 9a40ac86152c9cffd3dca482a15ddf9a8c5716b3 upstream.
+commit ea4ceb18b525fd7016c10995c0f1313a729c7e2b upstream.
 
-When functions incoming parameters are not in input operands list gcc
-4.5 does not load the parameters into registers before calling this
-function but the inline assembly assumes valid addresses inside this
-function. This breaks the code because r0 and r1 are invalid when
-execution enters v4wb_copy_user_page ()
+When the seqno for a vis packet had a wrap around from i.e. 255 to 0,
+add_packet() would falsely claim the older packet with the seqno 255 as
+newer as the one with the seqno of 0 and would therefore ignore the new
+packet. This happens with all following vis packets until the old vis
+packet expires after 180 seconds timeout. This patch fixes this issue
+and gets rid of these highly undesired 3min. breaks for the vis-server.
 
-Also the constant needs to be used as third input operand so account
-for that as well.
-
-Tested on qemu arm.
-
-Signed-off-by: Khem Raj <raj.khem@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Signed-off-by: Sven Eckelmann <sven.eckelmann@gmx.de>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mm/copypage-feroceon.c |    4 ++--
- arch/arm/mm/copypage-v4wb.c     |    4 ++--
- arch/arm/mm/copypage-v4wt.c     |    4 ++--
- arch/arm/mm/copypage-xsc3.c     |    4 ++--
- 4 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/staging/batman-adv/vis.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mm/copypage-feroceon.c
-+++ b/arch/arm/mm/copypage-feroceon.c
-@@ -18,7 +18,7 @@ feroceon_copy_user_page(void *kto, const
- {
- 	asm("\
- 	stmfd	sp!, {r4-r9, lr}		\n\
--	mov	ip, %0				\n\
-+	mov	ip, %2				\n\
- 1:	mov	lr, r1				\n\
- 	ldmia	r1!, {r2 - r9}			\n\
- 	pld	[lr, #32]			\n\
-@@ -64,7 +64,7 @@ feroceon_copy_user_page(void *kto, const
- 	mcr	p15, 0, ip, c7, c10, 4		@ drain WB\n\
- 	ldmfd	sp!, {r4-r9, pc}"
- 	:
--	: "I" (PAGE_SIZE));
-+	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE));
- }
+--- a/drivers/staging/batman-adv/vis.c
++++ b/drivers/staging/batman-adv/vis.c
+@@ -27,6 +27,22 @@
+ #include "hard-interface.h"
+ #include "hash.h"
  
- void feroceon_copy_user_highpage(struct page *to, struct page *from,
---- a/arch/arm/mm/copypage-v4wb.c
-+++ b/arch/arm/mm/copypage-v4wb.c
-@@ -27,7 +27,7 @@ v4wb_copy_user_page(void *kto, const voi
- {
- 	asm("\
- 	stmfd	sp!, {r4, lr}			@ 2\n\
--	mov	r2, %0				@ 1\n\
-+	mov	r2, %2				@ 1\n\
- 	ldmia	r1!, {r3, r4, ip, lr}		@ 4\n\
- 1:	mcr	p15, 0, r0, c7, c6, 1		@ 1   invalidate D line\n\
- 	stmia	r0!, {r3, r4, ip, lr}		@ 4\n\
-@@ -44,7 +44,7 @@ v4wb_copy_user_page(void *kto, const voi
- 	mcr	p15, 0, r1, c7, c10, 4		@ 1   drain WB\n\
- 	ldmfd	 sp!, {r4, pc}			@ 3"
- 	:
--	: "I" (PAGE_SIZE / 64));
-+	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64));
- }
++/* Returns the smallest signed integer in two's complement with the sizeof x */
++#define smallest_signed_int(x) (1u << (7u + 8u * (sizeof(x) - 1u)))
++
++/* Checks if a sequence number x is a predecessor/successor of y.
++   they handle overflows/underflows and can correctly check for a
++   predecessor/successor unless the variable sequence number has grown by
++   more then 2**(bitwidth(x)-1)-1.
++   This means that for a uint8_t with the maximum value 255, it would think:
++    * when adding nothing - it is neither a predecessor nor a successor
++    * before adding more than 127 to the starting value - it is a predecessor,
++    * when adding 128 - it is neither a predecessor nor a successor,
++    * after adding more than 127 to the starting value - it is a successor */
++#define seq_before(x, y) ({typeof(x) _dummy = (x - y); \
++			  _dummy > smallest_signed_int(_dummy); })
++#define seq_after(x, y) seq_before(y, x)
++
+ struct hashtable_t *vis_hash;
+ DEFINE_SPINLOCK(vis_hash_lock);
+ static DEFINE_SPINLOCK(recv_list_lock);
+@@ -212,7 +228,7 @@ static struct vis_info *add_packet(struc
+ 	old_info = hash_find(vis_hash, &search_elem);
  
- void v4wb_copy_user_highpage(struct page *to, struct page *from,
---- a/arch/arm/mm/copypage-v4wt.c
-+++ b/arch/arm/mm/copypage-v4wt.c
-@@ -25,7 +25,7 @@ v4wt_copy_user_page(void *kto, const voi
- {
- 	asm("\
- 	stmfd	sp!, {r4, lr}			@ 2\n\
--	mov	r2, %0				@ 1\n\
-+	mov	r2, %2				@ 1\n\
- 	ldmia	r1!, {r3, r4, ip, lr}		@ 4\n\
- 1:	stmia	r0!, {r3, r4, ip, lr}		@ 4\n\
- 	ldmia	r1!, {r3, r4, ip, lr}		@ 4+1\n\
-@@ -40,7 +40,7 @@ v4wt_copy_user_page(void *kto, const voi
- 	mcr	p15, 0, r2, c7, c7, 0		@ flush ID cache\n\
- 	ldmfd	sp!, {r4, pc}			@ 3"
- 	:
--	: "I" (PAGE_SIZE / 64));
-+	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64));
- }
- 
- void v4wt_copy_user_highpage(struct page *to, struct page *from,
---- a/arch/arm/mm/copypage-xsc3.c
-+++ b/arch/arm/mm/copypage-xsc3.c
-@@ -34,7 +34,7 @@ xsc3_mc_copy_user_page(void *kto, const
- {
- 	asm("\
- 	stmfd	sp!, {r4, r5, lr}		\n\
--	mov	lr, %0				\n\
-+	mov	lr, %2				\n\
- 						\n\
- 	pld	[r1, #0]			\n\
- 	pld	[r1, #32]			\n\
-@@ -67,7 +67,7 @@ xsc3_mc_copy_user_page(void *kto, const
- 						\n\
- 	ldmfd	sp!, {r4, r5, pc}"
- 	:
--	: "I" (PAGE_SIZE / 64 - 1));
-+	: "r" (kto), "r" (kfrom), "I" (PAGE_SIZE / 64 - 1));
- }
- 
- void xsc3_mc_copy_user_highpage(struct page *to, struct page *from,
+ 	if (old_info != NULL) {
+-		if (vis_packet->seqno - old_info->packet.seqno <= 0) {
++		if (!seq_after(vis_packet->seqno, old_info->packet.seqno)) {
+ 			if (old_info->packet.seqno == vis_packet->seqno) {
+ 				recv_list_add(&old_info->recv_list,
+ 					      vis_packet->sender_orig);
 
 
