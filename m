@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758980Ab0GAVzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:55:33 -0400
-Received: from kroah.org ([198.145.64.141]:60786 "EHLO coco.kroah.org"
+	id S1758802Ab0GAVNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:13:00 -0400
+Received: from kroah.org ([198.145.64.141]:33644 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758915Ab0GAVN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:50 2010
-Message-Id: <20100701174250.915686639@clark.site>
+	id S1758707Ab0GAVMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:12:42 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:46 2010
+Message-Id: <20100701174246.620937896@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:42:23 -0700
+Date: Thu, 01 Jul 2010 10:41:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [053/200] USB: xhci: Fix check for room on the ring.
+       Andi Kleen <ak@linux.intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Robert Richter <robert.richter@amd.com>
+Subject: [002/200] oprofile: remove double ring buffering
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +26,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Andi Kleen <andi@firstfloor.org>
 
-commit 44ebd037c54f80db3121ac9f5fe6e677b76e11d5 upstream.
+commit cb6e943ccf19ab6d3189147e9d625a992e016084 upstream.
 
-The length of the scatter gather list a driver can enqueue is limited by
-the bus' sg_tablesize to 62 entries.  Each entry will be described by at
-least one transfer request block (TRB).  If the entry's buffer crosses a
-64KB boundary, then that entry will have to be described by two or more
-TRBs.  So even if the USB device driver respects sg_tablesize, the whole
-scatter list may take more than 62 TRBs to describe, and won't fit on
-the ring.
+oprofile used a double buffer scheme for its cpu event buffer
+to avoid races on reading with the old locked ring buffer.
 
-Don't assume that an empty ring means there is enough room on the
-transfer ring.  The old code would unconditionally queue this too-large
-transfer, and over write the beginning of the transfer.  This would mean
-the cycle bit was unchanged in those overwritten transfers, causing the
-hardware to think it didn't own the TRBs, and the host would seem to
-hang.
+But that is obsolete now with the new ring buffer, so simply
+use a single buffer. This greatly simplifies the code and avoids
+a lot of sample drops on large runs, especially with call graph.
 
-Now drivers may see submit_urb() fail with -ENOMEM if the transfers are
-too big to fit on the ring.
+Based on suggestions from Steven Rostedt
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+For stable kernels from v2.6.32, but not earlier.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |   19 ++++++++++++++++++-
- 1 file changed, 18 insertions(+), 1 deletion(-)
+ drivers/oprofile/cpu_buffer.c |   63 ++++++++----------------------------------
+ 1 file changed, 13 insertions(+), 50 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -242,10 +242,27 @@ static int room_on_ring(struct xhci_hcd
- 	int i;
- 	union xhci_trb *enq = ring->enqueue;
- 	struct xhci_segment *enq_seg = ring->enq_seg;
-+	struct xhci_segment *cur_seg;
-+	unsigned int left_on_ring;
+--- a/drivers/oprofile/cpu_buffer.c
++++ b/drivers/oprofile/cpu_buffer.c
+@@ -30,23 +30,7 @@
  
- 	/* Check if ring is empty */
--	if (enq == ring->dequeue)
-+	if (enq == ring->dequeue) {
-+		/* Can't use link trbs */
-+		left_on_ring = TRBS_PER_SEGMENT - 1;
-+		for (cur_seg = enq_seg->next; cur_seg != enq_seg;
-+				cur_seg = cur_seg->next)
-+			left_on_ring += TRBS_PER_SEGMENT - 1;
-+
-+		/* Always need one TRB free in the ring. */
-+		left_on_ring -= 1;
-+		if (num_trbs > left_on_ring) {
-+			xhci_warn(xhci, "Not enough room on ring; "
-+					"need %u TRBs, %u TRBs left\n",
-+					num_trbs, left_on_ring);
-+			return 0;
-+		}
- 		return 1;
-+	}
- 	/* Make sure there's an extra empty TRB available */
- 	for (i = 0; i <= num_trbs; ++i) {
- 		if (enq == ring->dequeue)
+ #define OP_BUFFER_FLAGS	0
+ 
+-/*
+- * Read and write access is using spin locking. Thus, writing to the
+- * buffer by NMI handler (x86) could occur also during critical
+- * sections when reading the buffer. To avoid this, there are 2
+- * buffers for independent read and write access. Read access is in
+- * process context only, write access only in the NMI handler. If the
+- * read buffer runs empty, both buffers are swapped atomically. There
+- * is potentially a small window during swapping where the buffers are
+- * disabled and samples could be lost.
+- *
+- * Using 2 buffers is a little bit overhead, but the solution is clear
+- * and does not require changes in the ring buffer implementation. It
+- * can be changed to a single buffer solution when the ring buffer
+- * access is implemented as non-locking atomic code.
+- */
+-static struct ring_buffer *op_ring_buffer_read;
+-static struct ring_buffer *op_ring_buffer_write;
++static struct ring_buffer *op_ring_buffer;
+ DEFINE_PER_CPU(struct oprofile_cpu_buffer, op_cpu_buffer);
+ 
+ static void wq_sync_buffer(struct work_struct *work);
+@@ -68,12 +52,9 @@ void oprofile_cpu_buffer_inc_smpl_lost(v
+ 
+ void free_cpu_buffers(void)
+ {
+-	if (op_ring_buffer_read)
+-		ring_buffer_free(op_ring_buffer_read);
+-	op_ring_buffer_read = NULL;
+-	if (op_ring_buffer_write)
+-		ring_buffer_free(op_ring_buffer_write);
+-	op_ring_buffer_write = NULL;
++	if (op_ring_buffer)
++		ring_buffer_free(op_ring_buffer);
++	op_ring_buffer = NULL;
+ }
+ 
+ #define RB_EVENT_HDR_SIZE 4
+@@ -86,11 +67,8 @@ int alloc_cpu_buffers(void)
+ 	unsigned long byte_size = buffer_size * (sizeof(struct op_sample) +
+ 						 RB_EVENT_HDR_SIZE);
+ 
+-	op_ring_buffer_read = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
+-	if (!op_ring_buffer_read)
+-		goto fail;
+-	op_ring_buffer_write = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
+-	if (!op_ring_buffer_write)
++	op_ring_buffer = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
++	if (!op_ring_buffer)
+ 		goto fail;
+ 
+ 	for_each_possible_cpu(i) {
+@@ -162,16 +140,11 @@ struct op_sample
+ *op_cpu_buffer_write_reserve(struct op_entry *entry, unsigned long size)
+ {
+ 	entry->event = ring_buffer_lock_reserve
+-		(op_ring_buffer_write, sizeof(struct op_sample) +
++		(op_ring_buffer, sizeof(struct op_sample) +
+ 		 size * sizeof(entry->sample->data[0]));
+-	if (entry->event)
+-		entry->sample = ring_buffer_event_data(entry->event);
+-	else
+-		entry->sample = NULL;
+-
+-	if (!entry->sample)
++	if (!entry->event)
+ 		return NULL;
+-
++	entry->sample = ring_buffer_event_data(entry->event);
+ 	entry->size = size;
+ 	entry->data = entry->sample->data;
+ 
+@@ -180,25 +153,16 @@ struct op_sample
+ 
+ int op_cpu_buffer_write_commit(struct op_entry *entry)
+ {
+-	return ring_buffer_unlock_commit(op_ring_buffer_write, entry->event);
++	return ring_buffer_unlock_commit(op_ring_buffer, entry->event);
+ }
+ 
+ struct op_sample *op_cpu_buffer_read_entry(struct op_entry *entry, int cpu)
+ {
+ 	struct ring_buffer_event *e;
+-	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
+-	if (e)
+-		goto event;
+-	if (ring_buffer_swap_cpu(op_ring_buffer_read,
+-				 op_ring_buffer_write,
+-				 cpu))
++	e = ring_buffer_consume(op_ring_buffer, cpu, NULL);
++	if (!e)
+ 		return NULL;
+-	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
+-	if (e)
+-		goto event;
+-	return NULL;
+ 
+-event:
+ 	entry->event = e;
+ 	entry->sample = ring_buffer_event_data(e);
+ 	entry->size = (ring_buffer_event_length(e) - sizeof(struct op_sample))
+@@ -209,8 +173,7 @@ event:
+ 
+ unsigned long op_cpu_buffer_entries(int cpu)
+ {
+-	return ring_buffer_entries_cpu(op_ring_buffer_read, cpu)
+-		+ ring_buffer_entries_cpu(op_ring_buffer_write, cpu);
++	return ring_buffer_entries_cpu(op_ring_buffer, cpu);
+ }
+ 
+ static int
 
 
