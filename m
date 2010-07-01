@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab0GABP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 21:15:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57027 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751629Ab0GABPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 21:15:24 -0400
-Message-ID: <4C2BEB48.3080705@cn.fujitsu.com>
-Date: Thu, 01 Jul 2010 09:11:36 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752051Ab0GABYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 21:24:46 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33517 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751429Ab0GABYp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jun 2010 21:24:45 -0400
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 9/11] KVM: MMU: prefetch ptes when intercepted guest
- #PF
-References: <4C2AF9FA.9020601@cn.fujitsu.com> <4C2AFB65.2030807@cn.fujitsu.com> <20100630204324.GA5366@amt.cnet>
-In-Reply-To: <20100630204324.GA5366@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com>
+References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain>
+	<1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk>
+	<alpine.LFD.2.00.1001270738220.24253@localhost.localdomain>
+	<89k77n$ms73l9@fmsmga001.fm.intel.com>
+	<alpine.LFD.2.00.1001270917120.24253@localhost.localdomain>
+	<AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
+	<89khjo$fr177d@orsmga002.jf.intel.com>
+	<AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com>
+Date: Wed, 30 Jun 2010 18:24:04 -0700
+Message-ID: <AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@gmail.com>, earny@net4u.de,
+       Roman Jarosz <kedgedev@gmail.com>, intel-gfx@lists.freedesktop.org,
+       linux-kernel@vger.kernel.org, jcnengel@googlemail.com,
+       "A. Boulan" <arnaud.boulan@libertysurf.fr>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
+       michael@reinelt.co.at, stable@kernel.org,
+       Vefa Bicakci <bicave@superonline.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 30, 2010 at 4:07 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> That commit changes the page cache allocation to use
+>
+> +                                          mapping_gfp_mask (mapping) |
+> +                                          __GFP_COLD |
+> +                                          gfpmask);
+>
+> if I read it right. And the default mapping_gfp_mask() is
+> GFP_HIGHUSER_MOVABLE, so I think you get all of
+> (__GFP_WAIT | __GFP_IO | __GFP_FS | __GFP_HARDWALL | __GFP_HIGHMEM)
+> set by default.
 
+.. and then I left out the one flag I _meant_ to have there, namely
+__GFP_MOVABLE.
 
-Marcelo Tosatti wrote:
+> The old code didn't just play games with ~__GFP_NORETRY and change
+> that at runtime (which was buggy - no locking, no protection, no
+> nothing), it also initialized the gfp mask. And that code also got
+> removed:
 
->> +
->> +		addr = gfn_to_hva_many(vcpu->kvm, gfn, &entry);
->> +		if (kvm_is_error_hva(addr))
->> +			return -1;
->> +
->> +		entry = min(entry, (int)(end - start));
->> +		ret = __get_user_pages_fast(addr, entry, 1, pages);
->> +		if (ret <= 0)
->> +			return -1;
-> 
-> Why can't you use gfn_to_pfn_atomic() here, one page at a time? Is 
-> the overhead significant that this is worthwhile?
-> 
-> You're bypassing the centralized interface.
+In fact, I don't really see why we should use that mapping_gfp_mask()
+at all, since all allocations should be going through that
+i915_gem_object_get_pages() function anyway. So why not just change
+that function to ignore the default gfp mask for the mapping, and just
+use the mask that the o915 driver wants?
 
-I think it's worthwhile to do since we can reduce gup overhead, no reason
-to traverse process's page table again and again for the consecutive pages.
+Btw, why did it want to mark the pages reclaimable?
 
-> 
->> +
->> +		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
->> +		mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
->> +			     is_dirty_gpte(gpte), NULL, sp->role.level, gfn,
->> +			     pfn, true, false);
-> 
-> reset_host_protection should be true, see commit 1403283acca (also for
-> direct case to be consistent).
-> 
+Anyway, what I'm suggesting somebody who sees this test is just
+something like the patch below (whitespace-damage - I'm cutting and
+pasting, it's a trivial one-liner).  Does this change any behavior?
+Vefa?
 
-Ah, i forgot it, thanks, Marcelo!
+                    Linus
 
-I'll post a small fix patch base on this patchset to change 'false' to 'true' if no
-other places no to be improved. :-)
+---
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 9ded3da..ec8ed6b 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2239,7 +2239,7 @@ i915_gem_object_get_pages(struct drm_gem_object *obj,
+        mapping = inode->i_mapping;
+        for (i = 0; i < page_count; i++) {
+                page = read_cache_page_gfp(mapping, i,
+-                                          mapping_gfp_mask (mapping) |
++                                          GFP_HIGHMEM |
+                                           __GFP_COLD |
+                                           gfpmask);
+                if (IS_ERR(page))
