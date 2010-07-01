@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab0GAV0i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:26:38 -0400
-Received: from kroah.org ([198.145.64.141]:33296 "EHLO coco.kroah.org"
+	id S933296Ab0GAVSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:18:22 -0400
+Received: from kroah.org ([198.145.64.141]:33087 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933209Ab0GAVPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:44 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:03 2010
-Message-Id: <20100701174303.311247741@clark.site>
+	id S932751Ab0GAVO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:59 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:00 2010
+Message-Id: <20100701174259.962895918@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:49 -0700
+Date: Thu, 01 Jul 2010 10:44:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Karsten Wiese <fzu@wemgehoertderstaat.de>,
-       Eric Anholt <eric@anholt.net>
-Subject: [199/200] drm/i915: Dont touch PORT_HOTPLUG_EN in intel_dp_detect()
+       Jason Dravet <dravet@hotmail.com>,
+       Larry Finger <Larry.Finger@lwfinger.net>,
+       Christian Lamparter <chunkeey@googlemail.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [159/200] p54usb: Add device ID for Dell WLA3310 USB
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Karsten Wiese <fzuuzf@googlemail.com>
+From: Jason Dravet <dravet@hotmail.com>
 
-commit 6e0032f0ae4440e75256bee11b163552cae21962 upstream.
+commit 0f666a08901f8b01f294ca0ad751019375240ae3 upstream.
 
-PORT_HOTPLUG_EN has allready been setup in i915_driver_irq_postinstall(),
-when intel_dp_detect() runs.
+Add Dell WLA3310 USB wireless card, which has a Z-Com XG-705A chipset, to the
+USB Ids in p54usb.
 
-Delete the DP[BCD]_HOTPLUG_INT_EN defines, they are not referenced anymore.
-
-I found this while searching for a fix for
-        https://bugzilla.redhat.com/show_bug.cgi?id=528312
-
-Signed-off-by: Karsten Wiese <fzu@wemgehoertderstaat.de>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Jason Dravet <dravet@hotmail.com>
+Tested-by: Richard Gregory Tillmore <rtillmore@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Acked-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_dp.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ drivers/net/wireless/p54/p54usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -1180,16 +1180,6 @@ intel_dp_detect(struct drm_connector *co
- 	if (HAS_PCH_SPLIT(dev))
- 		return ironlake_dp_detect(connector);
- 
--	temp = I915_READ(PORT_HOTPLUG_EN);
--
--	I915_WRITE(PORT_HOTPLUG_EN,
--	       temp |
--	       DPB_HOTPLUG_INT_EN |
--	       DPC_HOTPLUG_INT_EN |
--	       DPD_HOTPLUG_INT_EN);
--
--	POSTING_READ(PORT_HOTPLUG_EN);
--
- 	switch (dp_priv->output_reg) {
- 	case DP_B:
- 		bit = DPB_HOTPLUG_INT_STATUS;
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -80,6 +80,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x1413, 0x5400)},   /* Telsey 802.11g USB2.0 Adapter */
+ 	{USB_DEVICE(0x1435, 0x0427)},	/* Inventel UR054G */
+ 	{USB_DEVICE(0x2001, 0x3704)},	/* DLink DWL-G122 rev A2 */
++	{USB_DEVICE(0x413c, 0x5513)},	/* Dell WLA3310 USB Wireless Adapter */
+ 	{USB_DEVICE(0x413c, 0x8102)},	/* Spinnaker DUT */
+ 	{USB_DEVICE(0x413c, 0x8104)},	/* Cohiba Proto board */
+ 	{}
 
 
