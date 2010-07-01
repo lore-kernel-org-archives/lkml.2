@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324Ab0GAVif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:38:35 -0400
-Received: from kroah.org ([198.145.64.141]:33000 "EHLO coco.kroah.org"
+	id S1759375Ab0GAVjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:39:52 -0400
+Received: from kroah.org ([198.145.64.141]:32978 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759212Ab0GAVOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:42 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
-Message-Id: <20100701174258.151353253@clark.site>
+	id S1759197Ab0GAVOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:37 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:57 2010
+Message-Id: <20100701174257.652817781@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:49 -0700
+Date: Thu, 01 Jul 2010 10:43:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Julia Lawall <julia@diku.dk>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [139/200] arch/x86/kernel: Add missing spin_unlock
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [133/200] ALSA: hda: Use LPIB for ASUS M2V
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,82 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <julia@diku.dk>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 84fe6c19e4a598e8071e3bd1b2c923454eae1268 upstream.
+commit 9f75c1b12c5ef392ddcea575b13560842c28b1b3 upstream.
 
-Add a spin_unlock missing on the error path.  The locks and unlocks are
-balanced in other functions, so it seems that the same should be the case
-here.
+BugLink: https://launchpad.net/bugs/587546
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Symptom: On the reporter's ASUS M2V, using PulseAudio in Ubuntu 10.04 LTS
+results in the PA daemon crashing shortly after attempting playback of an
+audio file.
 
-// <smpl>
-@@
-expression E1;
-@@
+Test case: Using Ubuntu 10.04 LTS (Linux 2.6.32.12), Linux 2.6.33, or
+Linux 2.6.34, attempt playback of an audio file while PulseAudio is
+active.
 
-* spin_lock(E1,...);
-  <+... when != E1
-  if (...) {
-    ... when != E1
-*   return ...;
-  }
-  ...+>
-* spin_unlock(E1,...);
-// </smpl>
+Resolution: add SSID for this machine to the position_fix quirk table,
+explicitly specifying the LPIB method.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Reported-and-Tested-By: D Tangman
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/amd_iommu.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -1420,6 +1420,7 @@ static int __attach_device(struct device
- 			   struct protection_domain *domain)
- {
- 	struct iommu_dev_data *dev_data, *alias_data;
-+	int ret;
- 
- 	dev_data   = get_dev_data(dev);
- 	alias_data = get_dev_data(dev_data->alias);
-@@ -1431,13 +1432,14 @@ static int __attach_device(struct device
- 	spin_lock(&domain->lock);
- 
- 	/* Some sanity checks */
-+	ret = -EBUSY;
- 	if (alias_data->domain != NULL &&
- 	    alias_data->domain != domain)
--		return -EBUSY;
-+		goto out_unlock;
- 
- 	if (dev_data->domain != NULL &&
- 	    dev_data->domain != domain)
--		return -EBUSY;
-+		goto out_unlock;
- 
- 	/* Do real assignment */
- 	if (dev_data->alias != dev) {
-@@ -1453,10 +1455,14 @@ static int __attach_device(struct device
- 
- 	atomic_inc(&dev_data->bind);
- 
-+	ret = 0;
-+
-+out_unlock:
-+
- 	/* ready */
- 	spin_unlock(&domain->lock);
- 
--	return 0;
-+	return ret;
- }
- 
- /*
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2270,6 +2270,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1043, 0x81b3, "ASUS", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1043, 0x81e7, "ASUS M2V", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x104d, 0x9069, "Sony VPCS11V9E", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1179, 0xff10, "Toshiba A100-259", POS_FIX_LPIB),
 
 
