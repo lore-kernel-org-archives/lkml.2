@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759682Ab0GAWI3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:08:29 -0400
-Received: from kroah.org ([198.145.64.141]:47537 "EHLO coco.kroah.org"
+	id S1759680Ab0GAWIm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:08:42 -0400
+Received: from kroah.org ([198.145.64.141]:47530 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932554Ab0GAUu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:26 -0400
+	id S932683Ab0GAUuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:24 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:33 2010
-Message-Id: <20100701173433.047501087@clark.site>
+Message-Id: <20100701173432.964341871@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:20 -0700
+Date: Thu, 01 Jul 2010 10:34:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Maurus Cuelenaere <mcuelenaere@gmail.com>,
+       Dan Carpenter <error27@gmail.com>,
+       Alessandro Zummo <a.zummo@towertech.it>,
        Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Alessandro Zummo <a.zummo@towertech.it>
-Subject: [patch 074/164] rtc: s3c: initialize driver data before using it
+       Malte Schroder <maltesch@gmx.de>, Ralf Baechle <ralf@linux-mips.org>,
+       Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+Subject: [patch 073/164] rtc-cmos: do dev_set_drvdata() earlier in the initialization
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,45 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maurus Cuelenaere <mcuelenaere@gmail.com>
+From: Dan Carpenter <error27@gmail.com>
 
-commit e893de59a4982791368b3ce412bc67dd601a88a0 upstream.
+commit 6ba8bcd457d9fc793ac9435aa2e4138f571d4ec5 upstream.
 
-s3c_rtc_setfreq() uses the platform driver data to derive struct rtc_device,
-so make sure drvdata is set _before_ s3c_rtc_setfreq() is called.
+The bug is an oops when dev_get_drvdata() returned null in
+cmos_update_irq_enable().  The call tree looks like this:
+  rtc_dev_ioctl()
+    => rtc_update_irq_enable()
+      => cmos_update_irq_enable()
 
-Signed-off-by: Maurus Cuelenaere <mcuelenaere@gmail.com>
-Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+It's caused by a race condition in the module initialization.  It is
+rtc_device_register() which makes the ioctl operations live so I moved
+the call to dev_set_drvdata() before the call to rtc_device_register().
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=15963
+
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
 Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Maurus Cuelenaere <mcuelenaere@gmail.com>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: Malte Schroder <maltesch@gmx.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-s3c.c |    5 +++--
+ drivers/rtc/rtc-cmos.c |    5 +++--
  1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/rtc/rtc-s3c.c
-+++ b/drivers/rtc/rtc-s3c.c
-@@ -456,8 +456,6 @@ static int __devinit s3c_rtc_probe(struc
-  	pr_debug("s3c2410_rtc: RTCCON=%02x\n",
- 		 readb(s3c_rtc_base + S3C2410_RTCCON));
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -719,6 +719,9 @@ cmos_do_probe(struct device *dev, struct
+ 		}
+ 	}
  
--	s3c_rtc_setfreq(&pdev->dev, 1);
--
- 	device_init_wakeup(&pdev->dev, 1);
- 
- 	/* register RTC and exit */
-@@ -474,6 +472,9 @@ static int __devinit s3c_rtc_probe(struc
- 	rtc->max_user_freq = 128;
- 
- 	platform_set_drvdata(pdev, rtc);
++	cmos_rtc.dev = dev;
++	dev_set_drvdata(dev, &cmos_rtc);
 +
-+	s3c_rtc_setfreq(&pdev->dev, 1);
-+
- 	return 0;
+ 	cmos_rtc.rtc = rtc_device_register(driver_name, dev,
+ 				&cmos_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(cmos_rtc.rtc)) {
+@@ -726,8 +729,6 @@ cmos_do_probe(struct device *dev, struct
+ 		goto cleanup0;
+ 	}
  
-  err_nortc:
+-	cmos_rtc.dev = dev;
+-	dev_set_drvdata(dev, &cmos_rtc);
+ 	rename_region(ports, dev_name(&cmos_rtc.rtc->dev));
+ 
+ 	spin_lock_irq(&rtc_lock);
 
 
