@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab0GAVJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:09:38 -0400
-Received: from kroah.org ([198.145.64.141]:47725 "EHLO coco.kroah.org"
+	id S933117Ab0GAVGV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:06:21 -0400
+Received: from kroah.org ([198.145.64.141]:47794 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932771Ab0GAUuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:52 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:35 2010
-Message-Id: <20100701173435.478194249@clark.site>
+	id S932807Ab0GAUvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:04 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:36 2010
+Message-Id: <20100701173436.654965684@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:49 -0700
+Date: Thu, 01 Jul 2010 10:35:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Aurelien Jarno <aurelien@aurel32.net>, Paul Mundt <lethal@linux-sh.org>
-Subject: [patch 103/164] clocksource: sh_tmu: compute mult and shift before registration
+       Daniel Mack <daniel@caiaq.de>, Johan Hovold <jhovold@gmail.com>,
+       Alan Cox <alan@linux.intel.com>
+Subject: [patch 117/164] USB: ftdi_sio: fix DTR/RTS line modes
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,63 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aurelien Jarno <aurelien@aurel32.net>
+From: Daniel Mack <daniel@caiaq.de>
 
-commit 66f49121ffa41a19c59965b31b046d8368fec3c7 upstream.
+commit 6a1a82df91fa0eb1cc76069a9efe5714d087eccd upstream.
 
-Since commit 98962465ed9e6ea99c38e0af63fe1dcb5a79dc25 ("nohz: Prevent
-clocksource wrapping during idle"), the CPU of an R2D board never goes
-to idle. This commit assumes that mult and shift are assigned before
-the clocksource is registered. As a consequence the safe maximum sleep
-time is negative and the CPU never goes into idle.
+Call set_mctrl() and clear_mctrl() according to the flow control mode
+selected. This makes serial communication for FT232 connected devices
+work when CRTSCTS is not set.
 
-This patch fixes the problem by moving mult and shift initialization
-from sh_tmu_clocksource_enable() to sh_tmu_register_clocksource().
+This fixes a regression introduced by 4175f3e31 ("tty_port: If we are
+opened non blocking we still need to raise the carrier"). This patch
+calls the low-level driver's dtr_rts() function which consequently sets
+TIOCM_DTR | TIOCM_RTS. A later call to set_termios() without CRTSCTS in
+cflags, however, does not reset these bits, and so data is not actually
+sent out on the serial wire.
 
-Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Cc: Johan Hovold <jhovold@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/clocksource/sh_tmu.c |   20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/clocksource/sh_tmu.c
-+++ b/drivers/clocksource/sh_tmu.c
-@@ -199,16 +199,8 @@ static cycle_t sh_tmu_clocksource_read(s
- static int sh_tmu_clocksource_enable(struct clocksource *cs)
- {
- 	struct sh_tmu_priv *p = cs_to_sh_tmu(cs);
--	int ret;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2312,6 +2312,8 @@ static void ftdi_set_termios(struct tty_
+ 				"urb failed to set to rts/cts flow control\n");
+ 		}
  
--	ret = sh_tmu_enable(p);
--	if (ret)
--		return ret;
--
--	/* TODO: calculate good shift from rate and counter bit width */
--	cs->shift = 10;
--	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
--	return 0;
-+	return sh_tmu_enable(p);
++		/* raise DTR/RTS */
++		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	} else {
+ 		/*
+ 		 * Xon/Xoff code
+@@ -2359,6 +2361,8 @@ static void ftdi_set_termios(struct tty_
+ 			}
+ 		}
+ 
++		/* lower DTR/RTS */
++		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	}
+ 	return;
  }
- 
- static void sh_tmu_clocksource_disable(struct clocksource *cs)
-@@ -228,6 +220,16 @@ static int sh_tmu_register_clocksource(s
- 	cs->disable = sh_tmu_clocksource_disable;
- 	cs->mask = CLOCKSOURCE_MASK(32);
- 	cs->flags = CLOCK_SOURCE_IS_CONTINUOUS;
-+
-+	/* clk_get_rate() needs an enabled clock */
-+	clk_enable(p->clk);
-+	/* channel will be configured at parent clock / 4 */
-+	p->rate = clk_get_rate(p->clk) / 4;
-+	clk_disable(p->clk);
-+	/* TODO: calculate good shift from rate and counter bit width */
-+	cs->shift = 10;
-+	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
-+
- 	pr_info("sh_tmu: %s used as clock source\n", cs->name);
- 	clocksource_register(cs);
- 	return 0;
 
 
