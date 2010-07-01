@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758446Ab0GAUtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:49:23 -0400
-Received: from kroah.org ([198.145.64.141]:47067 "EHLO coco.kroah.org"
+	id S933544Ab0GAWYu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:24:50 -0400
+Received: from kroah.org ([198.145.64.141]:47079 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758189Ab0GAUtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:21 -0400
+	id S1758424Ab0GAUtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:22 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:27 2010
-Message-Id: <20100701173426.938120712@clark.site>
+Message-Id: <20100701173427.135008414@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:07 -0700
+Date: Thu, 01 Jul 2010 10:33:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: [patch 001/164] Fix racy use of anon_inode_getfd() in perf_event.c
+       Tejun Heo <tj@kernel.org>, Kay Sievers <kay.sievers@vrfy.org>,
+       Nick Bowler <nbowler@elliptictech.com>, David Zeuthen <david@fubar.dk>,
+       Jeff Garzik <jgarzik@redhat.com>
+Subject: [patch 003/164] libata: disable ATAPI AN by default
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,100 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Tejun Heo <tj@kernel.org>
 
-commit ea635c64e007061f6468ece5cc9cc62d41d4ecf2 upstream.
+commit e7ecd435692ca9bde9d124be30b3a26e672ea6c2 upstream.
 
-once anon_inode_getfd() is called, you can't expect *anything* about
-struct file that descriptor points to - another thread might be doing
-whatever it likes with descriptor table at that point.
+There are ATAPI devices which raise AN when hit by commands issued by
+open().  This leads to infinite loop of AN -> MEDIA_CHANGE uevent ->
+udev open() to check media -> AN.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Both ACS and SerialATA standards don't define in which case ATAPI
+devices are supposed to raise or not raise AN.  They both list media
+insertion event as a possible use case for ATAPI ANs but there is no
+clear description of what constitutes such events.  As such, it seems
+a bit too naive to export ANs directly to userland as MEDIA_CHANGE
+events without further verification (which should behave similarly to
+windows as it apparently is the only thing that some hardware vendors
+are testing against).
+
+This patch adds libata.atapi_an module parameter and disables ATAPI AN
+by default for now.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Nick Bowler <nbowler@elliptictech.com>
+Cc: David Zeuthen <david@fubar.dk>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/perf_event.c |   40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
+ drivers/ata/libata-core.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4712,8 +4712,8 @@ SYSCALL_DEFINE5(perf_event_open,
- 	struct perf_event_context *ctx;
- 	struct file *event_file = NULL;
- 	struct file *group_file = NULL;
-+	int event_fd;
- 	int fput_needed = 0;
--	int fput_needed2 = 0;
- 	int err;
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -159,6 +159,10 @@ int libata_allow_tpm = 0;
+ module_param_named(allow_tpm, libata_allow_tpm, int, 0444);
+ MODULE_PARM_DESC(allow_tpm, "Permit the use of TPM commands (0=off [default], 1=on)");
  
- 	/* for future expandability... */
-@@ -4734,12 +4734,18 @@ SYSCALL_DEFINE5(perf_event_open,
- 			return -EINVAL;
- 	}
- 
-+	event_fd = get_unused_fd_flags(O_RDWR);
-+	if (event_fd < 0)
-+		return event_fd;
++static int atapi_an;
++module_param(atapi_an, int, 0444);
++MODULE_PARM_DESC(atapi_an, "Enable ATAPI AN media presence notification (0=0ff [default], 1=on)");
 +
- 	/*
- 	 * Get the target context (task or percpu):
- 	 */
- 	ctx = find_get_context(pid, cpu);
--	if (IS_ERR(ctx))
--		return PTR_ERR(ctx);
-+	if (IS_ERR(ctx)) {
-+		err = PTR_ERR(ctx);
-+		goto err_fd;
-+	}
- 
- 	/*
- 	 * Look up the group leader (we will attach this event to it):
-@@ -4779,13 +4785,11 @@ SYSCALL_DEFINE5(perf_event_open,
- 	if (IS_ERR(event))
- 		goto err_put_context;
- 
--	err = anon_inode_getfd("[perf_event]", &perf_fops, event, O_RDWR);
--	if (err < 0)
--		goto err_free_put_context;
--
--	event_file = fget_light(err, &fput_needed2);
--	if (!event_file)
-+	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event, O_RDWR);
-+	if (IS_ERR(event_file)) {
-+		err = PTR_ERR(event_file);
- 		goto err_free_put_context;
-+	}
- 
- 	if (flags & PERF_FLAG_FD_OUTPUT) {
- 		err = perf_event_set_output(event, group_fd);
-@@ -4806,19 +4810,19 @@ SYSCALL_DEFINE5(perf_event_open,
- 	list_add_tail(&event->owner_entry, &current->perf_event_list);
- 	mutex_unlock(&current->perf_event_mutex);
- 
--err_fput_free_put_context:
--	fput_light(event_file, fput_needed2);
-+	fput_light(group_file, fput_needed);
-+	fd_install(event_fd, event_file);
-+	return event_fd;
- 
-+err_fput_free_put_context:
-+	fput(event_file);
- err_free_put_context:
--	if (err < 0)
--		free_event(event);
--
-+	free_event(event);
- err_put_context:
--	if (err < 0)
--		put_ctx(ctx);
--
- 	fput_light(group_file, fput_needed);
--
-+	put_ctx(ctx);
-+err_fd:
-+	put_unused_fd(event_fd);
- 	return err;
- }
- 
+ MODULE_AUTHOR("Jeff Garzik");
+ MODULE_DESCRIPTION("Library module for ATA devices");
+ MODULE_LICENSE("GPL");
+@@ -2570,7 +2574,8 @@ int ata_dev_configure(struct ata_device
+ 		 * to enable ATAPI AN to discern between PHY status
+ 		 * changed notifications and ATAPI ANs.
+ 		 */
+-		if ((ap->flags & ATA_FLAG_AN) && ata_id_has_atapi_AN(id) &&
++		if (atapi_an &&
++		    (ap->flags & ATA_FLAG_AN) && ata_id_has_atapi_AN(id) &&
+ 		    (!sata_pmp_attached(ap) ||
+ 		     sata_scr_read(&ap->link, SCR_NOTIFICATION, &sntf) == 0)) {
+ 			unsigned int err_mask;
 
 
