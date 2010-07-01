@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab0GASz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:55:29 -0400
-Received: from kroah.org ([198.145.64.141]:35284 "EHLO coco.kroah.org"
+	id S1757697Ab0GASw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:52:58 -0400
+Received: from kroah.org ([198.145.64.141]:35369 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756195Ab0GASWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:22:36 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:07 2010
-Message-Id: <20100701173207.328404432@clark.site>
+	id S1757583Ab0GASWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:47 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:08 2010
+Message-Id: <20100701173208.419325895@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:30:32 -0700
+Date: Thu, 01 Jul 2010 10:30:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andreas Bombe <aeb@debian.org>, "David S. Miller" <davem@davemloft.net>
-Subject: [patch 006/149] ARCNET: Limit com20020 PCI ID matches for SOHARD cards
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [patch 019/149] ALSA: hda: Use LPIB for a Shuttle device
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Bombe <aeb@debian.org>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit e7971c80a8e0299f91272ad8e8ac4167623e1862 upstream.
+commit 61bb42c37dfa9016dcacc86bcd41362ab2457d4a upstream.
 
-The SH SOHARD ARCNET cards are implemented using generic PLX Technology
-PCI<->IOBus bridges. Subvendor and subdevice IDs were not specified,
-causing the driver to attach to any such bridge and likely crash the
-system by attempting to initialize an unrelated device.
+BugLink: https://launchpad.net/bugs/551949
 
-Fix by specifying subvendor and subdevice according to the values found
-in the PCI-ID Repository at http://pci-ids.ucw.cz/ .
+Symptom: On the reporter's Shuttle device, using PulseAudio in Ubuntu
+10.04 LTS results in "popping clicking" audio with the PA crashing
+shortly thereafter.
 
-Signed-off-by: Andreas Bombe <aeb@debian.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Test case: Using Ubuntu 10.04 LTS (Linux 2.6.32.12), Linux 2.6.33, or
+Linux 2.6.34, adjust the HDA device's volume with PulseAudio.
+
+Resolution: add SSID for this machine to the position_fix quirk table,
+explicitly specifying the LPIB method.
+
+Reported-and-Tested-By: Christian Mehlis <mehlis@inf.fu-berlin.de>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/arcnet/com20020-pci.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/arcnet/com20020-pci.c
-+++ b/drivers/net/arcnet/com20020-pci.c
-@@ -165,8 +165,8 @@ static struct pci_device_id com20020pci_
- 	{ 0x1571, 0xa204, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{ 0x1571, 0xa205, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{ 0x1571, 0xa206, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x10B5, 0x9030, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x10B5, 0x9050, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
-+	{ 0x10B5, 0x9030, 0x10B5,     0x2978,     0, 0, ARC_CAN_10MBIT },
-+	{ 0x10B5, 0x9050, 0x10B5,     0x2273,     0, 0, ARC_CAN_10MBIT },
- 	{ 0x14BA, 0x6000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{ 0x10B5, 0x2200, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
- 	{0,}
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2235,6 +2235,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x104d, 0x9069, "Sony VPCS11V9E", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1179, 0xff10, "Toshiba A100-259", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1297, 0x3166, "Shuttle", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1458, 0xa022, "ga-ma770-ud3", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
 
 
