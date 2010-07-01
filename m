@@ -1,39 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab0GAMzu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 08:55:50 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41725 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789Ab0GAMzs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 08:55:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=gSgtOpsxAwseirP+0fIiJ914Dcv+86SdnTTvB+0uJtQNHqNVjeE7AmyxCOIo+QrxVs
-         q70ZHF6Z7ElPE93+8S7TQhDufH0Ny8jJMT6b8sOYeNyLMrxyctCmpZNJi2T2hFHUXAVu
-         WQqxqU/53xEd+O3FKLYhZVJdsd6EtoGl7Luzs=
+	id S1755891Ab0GAM4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 08:56:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54317 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753789Ab0GAM4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 08:56:53 -0400
+Date: Thu, 1 Jul 2010 15:50:38 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+Message-ID: <20100701125038.GA32223@redhat.com>
+References: <20100530112925.GB27611@redhat.com>
+ <4C02C99D.9070204@kernel.org>
+ <20100624081135.GA937@redhat.com>
+ <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
+ <20100625101022.GA16321@redhat.com>
+ <20100701110708.GA27368@redhat.com>
+ <1277983179.1917.10.camel@laptop>
+ <1277984603.1917.15.camel@laptop>
+ <20100701115507.GA31333@redhat.com>
+ <1277987563.1917.28.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <e5391de6858597bbfd43874aed124a73f74850b5.1277911346.git.siccegge@cs.fau.de>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
-	<e5391de6858597bbfd43874aed124a73f74850b5.1277911346.git.siccegge@cs.fau.de>
-Date: Thu, 1 Jul 2010 21:55:47 +0900
-Message-ID: <AANLkTinZa7_TEjYFTu9V6obndpVvMmHppaOArM1AJg_t@mail.gmail.com>
-Subject: Re: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Jassi Brar <jassi.brar@samsung.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277987563.1917.28.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 1, 2010 at 1:03 AM, Christoph Egger <siccegge@cs.fau.de> wrote:
-> SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
-> all references for it from the source code.
-I'd rather have the code compiled unconditionally.
+On Thu, Jul 01, 2010 at 02:32:43PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-07-01 at 14:55 +0300, Michael S. Tsirkin wrote:
+> 
+> > >  - why can't it set the kernel thread's affinity too?
+> > 
+> > It can. However: the threads are started internally by the driver
+> > when qemu does an ioctl.  What we want to do is give it a sensible
+> > default affinity. management tool can later tweak it if it wants to.
+> 
+> So have that ioctl return the tid of that new fancy thread and then set
+> its affinity, stuff it in cgroup, whatever you fancy.
+> 
+> > >  - what happens if someone changes the tasks' affinity?
+> > 
+> > We would normally create a cgroup including all internal
+> > tasks, making it easy to find and change affinity for
+> > them all if necessary. 
+> 
+> And to stuff them in a cgroup you also need the tid, at which point it
+> might as well set the affinity from userspace, right?
+
+We also put it in a cgroup transparently. I think that it's actually
+important to do it on thread creation: if we don't, malicious userspace
+can create large amount of work exceeding the cgroup limits.
+
+And the same applies so the affinity, right? If the qemu process
+is limited to a set of CPUs, isn't it important to make
+the kernel thread that does work our behalf limited to the same
+set of CPUs?
+
+-- 
+MST
