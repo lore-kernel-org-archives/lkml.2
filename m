@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab0GAOKv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 10:10:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41536 "EHLO mx1.redhat.com"
+	id S1756040Ab0GAOSX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 10:18:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27819 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752396Ab0GAOKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 10:10:50 -0400
-Date: Thu, 1 Jul 2010 16:08:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Salman Qazi <sqazi@google.com>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Roland McGrath <roland@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: A possible sys_wait* bug
-Message-ID: <20100701140836.GA8379@redhat.com>
-References: <AANLkTinUy8Uk8pAom03DKzYTqthdXQ5ADfjGmjbI7jxN@mail.gmail.com> <20100701093621.DA24.A69D9226@jp.fujitsu.com>
+	id S1754546Ab0GAOSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 10:18:21 -0400
+Message-ID: <4C2CA3A5.2040802@redhat.com>
+Date: Thu, 01 Jul 2010 17:18:13 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701093621.DA24.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] KVM: Remove unnecessary divide operations
+References: <1277992812-31945-1-git-send-email-joerg.roedel@amd.com> <1277992812-31945-2-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1277992812-31945-2-git-send-email-joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01, KOSAKI Motohiro wrote:
+On 07/01/2010 05:00 PM, Joerg Roedel wrote:
+> This patch converts unnecessary divide and modulo operations
+> in the KVM large page related code into logical operations.
+> This allows to convert gfn_t to u64 while not breaking 32
+> bit builds.
 >
-> > Basically, it is possibly for readers to continuously hold
-> > tasklist_lock
+>
+>   #define KVM_NR_PAGE_SIZES 2
+> -#define KVM_HPAGE_SHIFT(x) (PAGE_SHIFT + ((x) - 1) * 8)
+> +#define KVM_HPAGE_GFN_SHIFT(x) (((x) - 1) * 8)
+> +#define KVM_HPAGE_SHIFT(x) (PAGE_SHIFT + KVM_HPAGE_GFN_SHIFT(x))
+>   #define KVM_HPAGE_SIZE(x) (1UL<<  KVM_HPAGE_SHIFT(x))
+>   #define KVM_HPAGE_MASK(x)	(~(KVM_HPAGE_SIZE(x) - 1))
+>    
 
-Yes, this is the known problem.
+In theory, KVM_HPAGE_SIZE() needs s/1UL/(u64)1/, or KVM_HPAGE_MASK 
+becomes truncated if used against a gfn_t.  In practice, KVM_HPAGE_MASK 
+is not used at all, so this doesn't matter.
 
-Perhaps do_wait() is not the worst example. sys_kill(-1),
-sys_ioprio_set() scan the global list.
-
-> > I think the most direct approach to the problem is to have the
-> > readers-writer locks be writer biased (i.e. as soon as a writer
-> > contends, we do not permit any new readers).
-
-I thought about this too, but this is deadlockable. At least,
-read_lock(tasklist) should nest, and it should work in irq context.
-
-We need the more fine-grained locking, but it is not clear to me what
-should be done in the long term. Afaics, this is very nontrivial.
-
-Oleg.
+-- 
+error compiling committee.c: too many arguments to function
 
