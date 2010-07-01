@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950Ab0GASmk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:42:40 -0400
-Received: from kroah.org ([198.145.64.141]:40464 "EHLO coco.kroah.org"
+	id S1758020Ab0GAShX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:37:23 -0400
+Received: from kroah.org ([198.145.64.141]:40627 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757866Ab0GASX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:28 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:12 2010
-Message-Id: <20100701173212.372527060@clark.site>
+	id S1757995Ab0GASXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:49 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
+Message-Id: <20100701173214.496834167@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:32 -0700
+Date: Thu, 01 Jul 2010 10:31:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       David Howells <dhowells@redhat.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [patch 066/149] frv: set ARCH_KMALLOC_MINALIGN
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [patch 091/149] ALSA: hda: Use LPIB for ASUS M2V
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 69dcf3db03626c4f18de624e8632454ea12ff260 upstream.
+commit 9f75c1b12c5ef392ddcea575b13560842c28b1b3 upstream.
 
-Architectures that handle DMA-non-coherent memory need to set
-ARCH_KMALLOC_MINALIGN to make sure that kmalloc'ed buffer is DMA-safe: the
-buffer doesn't share a cache with the others.
+BugLink: https://launchpad.net/bugs/587546
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Acked-by: David Howells <dhowells@redhat.com>
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Symptom: On the reporter's ASUS M2V, using PulseAudio in Ubuntu 10.04 LTS
+results in the PA daemon crashing shortly after attempting playback of an
+audio file.
+
+Test case: Using Ubuntu 10.04 LTS (Linux 2.6.32.12), Linux 2.6.33, or
+Linux 2.6.34, attempt playback of an audio file while PulseAudio is
+active.
+
+Resolution: add SSID for this machine to the position_fix quirk table,
+explicitly specifying the LPIB method.
+
+Reported-and-Tested-By: D Tangman
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/frv/include/asm/cache.h |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/frv/include/asm/cache.h
-+++ b/arch/frv/include/asm/cache.h
-@@ -17,6 +17,8 @@
- #define L1_CACHE_SHIFT		(CONFIG_FRV_L1_CACHE_SHIFT)
- #define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
- 
-+#define ARCH_KMALLOC_MINALIGN	L1_CACHE_BYTES
-+
- #define __cacheline_aligned	__attribute__((aligned(L1_CACHE_BYTES)))
- #define ____cacheline_aligned	__attribute__((aligned(L1_CACHE_BYTES)))
- 
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2233,6 +2233,7 @@ static struct snd_pci_quirk position_fix
+ 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1043, 0x81b3, "ASUS", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1043, 0x81e7, "ASUS M2V", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x104d, 0x9069, "Sony VPCS11V9E", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1179, 0xff10, "Toshiba A100-259", POS_FIX_LPIB),
 
 
