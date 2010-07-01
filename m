@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab0GAFfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 01:35:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6241 "EHLO mx1.redhat.com"
+	id S1753781Ab0GAFqg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 01:46:36 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44758 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753759Ab0GAFfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 01:35:10 -0400
+	id S1753642Ab0GAFqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 01:46:35 -0400
+Date: Thu, 1 Jul 2010 05:45:53 GMT
+From: "tip-bot for Darrick J. Wong" <djwong@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       djwong@us.ibm.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       djwong@us.ibm.com, tglx@linutronix.de
+In-Reply-To: <20100701004519.GQ15515@tux1.beaverton.ibm.com>
+References: <20100701004519.GQ15515@tux1.beaverton.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, Calgary: Limit the max PHB number to 256
+Message-ID: <tip-d596043d71ff0d7b3d0bead19b1d68c55f003093@git.kernel.org>
+Git-Commit-ID: d596043d71ff0d7b3d0bead19b1d68c55f003093
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-X-Fcc: ~/Mail/linus
-Cc: Salman Qazi <sqazi@google.com>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, Oleg Nesterov <oleg@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: A possible sys_wait* bug
-In-Reply-To: KOSAKI Motohiro's message of  Thursday, 1 July 2010 09:47:30 +0900 <20100701093621.DA24.A69D9226@jp.fujitsu.com>
-References: <AANLkTinUy8Uk8pAom03DKzYTqthdXQ5ADfjGmjbI7jxN@mail.gmail.com>
-	<20100701093621.DA24.A69D9226@jp.fujitsu.com>
-Emacs: it's not slow --- it's stately.
-Message-Id: <20100701053442.D59F04C33C@magilla.sf.frob.com>
-Date: Wed, 30 Jun 2010 22:34:42 -0700 (PDT)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 01 Jul 2010 05:46:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several other ways than wait that pathological user processes can
-arrange to do tight loops taking tasklist_lock.  So if you call that a DoS
-risk then it's not solved with anything specific to the wait syscalls.
+Commit-ID:  d596043d71ff0d7b3d0bead19b1d68c55f003093
+Gitweb:     http://git.kernel.org/tip/d596043d71ff0d7b3d0bead19b1d68c55f003093
+Author:     Darrick J. Wong <djwong@us.ibm.com>
+AuthorDate: Wed, 30 Jun 2010 17:45:19 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Wed, 30 Jun 2010 22:41:42 -0700
 
-Using different rwlock behavior (at least for that lock) would be one way
-to address it.  Of course, changing the contention dynamics might have
-other effects that you don't want (i.e. fork/exec/exit/reap drowning out
-the reader uses, cascading to some bad pattern).  I don't have an opinion
-on that, and wish you good luck figuring it out.
+x86, Calgary: Limit the max PHB number to 256
 
-In the long run, things have been moving to finer-grained locking and/or
-less direct locking.  We can imagine tasklist_lock might go this way one
-day too, removing the general bottleneck (i.e. slicing it up into different
-smaller, bottlenecks).  As things stand today, it's a bit hard to see
-exactly how we might get there e.g. for wait/exit with the synchronization
-requirements for reparenting and all that.  But it's clear that eventually
-the big system-wide bottlenecks like tasklist_lock all get reduced.  I
-don't know of anything like this to expect to see any time soon, however.
+The x3950 family can have as many as 256 PCI buses in a single system, so
+change the limits to the maximum.  Since there can only be 256 PCI buses in one
+domain, we no longer need the BUG_ON check.
 
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+LKML-Reference: <20100701004519.GQ15515@tux1.beaverton.ibm.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/pci-calgary_64.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-Thanks,
-Roland
+diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+index 0b96b55..078d4ec 100644
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -110,7 +110,7 @@ int use_calgary __read_mostly = 0;
+  * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
+  * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
+  */
+-#define MAX_PHB_BUS_NUM		384
++#define MAX_PHB_BUS_NUM		256
+ 
+ #define PHBS_PER_CALGARY	  4
+ 
+@@ -1056,8 +1056,6 @@ static int __init calgary_init_one(struct pci_dev *dev)
+ 	struct iommu_table *tbl;
+ 	int ret;
+ 
+-	BUG_ON(dev->bus->number >= MAX_PHB_BUS_NUM);
+-
+ 	bbar = busno_to_bbar(dev->bus->number);
+ 	ret = calgary_setup_tar(dev, bbar);
+ 	if (ret)
