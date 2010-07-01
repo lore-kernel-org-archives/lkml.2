@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077Ab0GASYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:24:04 -0400
-Received: from kroah.org ([198.145.64.141]:40682 "EHLO coco.kroah.org"
+	id S1758284Ab0GAS2u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:28:50 -0400
+Received: from kroah.org ([198.145.64.141]:40838 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758050Ab0GASX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:59 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:15 2010
-Message-Id: <20100701173215.403017080@clark.site>
+	id S1757815Ab0GASY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:27 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:18 2010
+Message-Id: <20100701173218.125822294@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:08 -0700
+Date: Thu, 01 Jul 2010 10:32:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [patch 102/149] USB: xhci: Wait for host to start running.
+       Glauber Costa <glommer@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [patch 134/149] x86, paravirt: Add a global synchronization point for pvclock
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Glauber Costa <glommer@redhat.com>
 
-commit ed07453fd356025cc25272629e982f5e4607632c upstream.
+In recent stress tests, it was found that pvclock-based systems
+could seriously warp in smp systems. Using ingo's time-warp-test.c,
+I could trigger a scenario as bad as 1.5mi warps a minute in some systems.
+(to be fair, it wasn't that bad in most of them). Investigating further, I
+found out that such warps were caused by the very offset-based calculation
+pvclock is based on.
 
-When the run bit is set in the xHCI command register, it may take a few
-microseconds for the host to start running.  We cannot ring any doorbells
-until the host is actually running, so wait until the status register says
-the host is running.
+This happens even on some machines that report constant_tsc in its tsc flags,
+specially on multi-socket ones.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Shinya Saito <shinya.saito.sx@renesas.com>
+Two reads of the same kernel timestamp at approx the same time, will likely
+have tsc timestamped in different occasions too. This means the delta we
+calculate is unpredictable at best, and can probably be smaller in a cpu
+that is legitimately reading clock in a forward ocasion.
+
+Some adjustments on the host could make this window less likely to happen,
+but still, it pretty much poses as an intrinsic problem of the mechanism.
+
+A while ago, I though about using a shared variable anyway, to hold clock
+last state, but gave up due to the high contention locking was likely
+to introduce, possibly rendering the thing useless on big machines. I argue,
+however, that locking is not necessary.
+
+We do a read-and-return sequence in pvclock, and between read and return,
+the global value can have changed. However, it can only have changed
+by means of an addition of a positive value. So if we detected that our
+clock timestamp is less than the current global, we know that we need to
+return a higher one, even though it is not exactly the one we compared to.
+
+OTOH, if we detect we're greater than the current time source, we atomically
+replace the value with our new readings. This do causes contention on big
+boxes (but big here means *BIG*), but it seems like a good trade off, since
+it provide us with a time source guaranteed to be stable wrt time warps.
+
+After this patch is applied, I don't see a single warp in time during 5 days
+of execution, in any of the machines I saw them before.
+
+Signed-off-by: Glauber Costa <glommer@redhat.com>
+Acked-by: Zachary Amsden <zamsden@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Zachary Amsden <zamsden@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+(cherry picked from commit 489fb490dbf8dab0249ad82b56688ae3842a79e8)
 ---
- drivers/usb/host/xhci-hcd.c |   39 ++++++++++++++++++++++++++++++++-------
- 1 file changed, 32 insertions(+), 7 deletions(-)
+ arch/x86/kernel/pvclock.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
---- a/drivers/usb/host/xhci-hcd.c
-+++ b/drivers/usb/host/xhci-hcd.c
-@@ -97,6 +97,33 @@ int xhci_halt(struct xhci_hcd *xhci)
+--- a/arch/x86/kernel/pvclock.c
++++ b/arch/x86/kernel/pvclock.c
+@@ -109,11 +109,14 @@ unsigned long pvclock_tsc_khz(struct pvc
+ 	return pv_tsc_khz;
  }
  
- /*
-+ * Set the run bit and wait for the host to be running.
-+ */
-+int xhci_start(struct xhci_hcd *xhci)
-+{
-+	u32 temp;
-+	int ret;
++static atomic64_t last_value = ATOMIC64_INIT(0);
 +
-+	temp = xhci_readl(xhci, &xhci->op_regs->command);
-+	temp |= (CMD_RUN);
-+	xhci_dbg(xhci, "// Turn on HC, cmd = 0x%x.\n",
-+			temp);
-+	xhci_writel(xhci, temp, &xhci->op_regs->command);
-+
-+	/*
-+	 * Wait for the HCHalted Status bit to be 0 to indicate the host is
-+	 * running.
-+	 */
-+	ret = handshake(xhci, &xhci->op_regs->status,
-+			STS_HALT, 0, XHCI_MAX_HALT_USEC);
-+	if (ret == -ETIMEDOUT)
-+		xhci_err(xhci, "Host took too long to start, "
-+				"waited %u microseconds.\n",
-+				XHCI_MAX_HALT_USEC);
-+	return ret;
-+}
-+
-+/*
-  * Reset a halted HC, and set the internal HC state to HC_STATE_HALT.
-  *
-  * This resets pipelines, timers, counters, state machines, etc.
-@@ -460,13 +487,11 @@ int xhci_run(struct usb_hcd *hcd)
- 	if (NUM_TEST_NOOPS > 0)
- 		doorbell = xhci_setup_one_noop(xhci);
+ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
+ {
+ 	struct pvclock_shadow_time shadow;
+ 	unsigned version;
+ 	cycle_t ret, offset;
++	u64 last;
  
--	temp = xhci_readl(xhci, &xhci->op_regs->command);
--	temp |= (CMD_RUN);
--	xhci_dbg(xhci, "// Turn on HC, cmd = 0x%x.\n",
--			temp);
--	xhci_writel(xhci, temp, &xhci->op_regs->command);
--	/* Flush PCI posted writes */
--	temp = xhci_readl(xhci, &xhci->op_regs->command);
-+	if (xhci_start(xhci)) {
-+		xhci_halt(xhci);
-+		return -ENODEV;
-+	}
+ 	do {
+ 		version = pvclock_get_time_values(&shadow, src);
+@@ -123,6 +126,27 @@ cycle_t pvclock_clocksource_read(struct
+ 		barrier();
+ 	} while (version != src->version);
+ 
++	/*
++	 * Assumption here is that last_value, a global accumulator, always goes
++	 * forward. If we are less than that, we should not be much smaller.
++	 * We assume there is an error marging we're inside, and then the correction
++	 * does not sacrifice accuracy.
++	 *
++	 * For reads: global may have changed between test and return,
++	 * but this means someone else updated poked the clock at a later time.
++	 * We just need to make sure we are not seeing a backwards event.
++	 *
++	 * For updates: last_value = ret is not enough, since two vcpus could be
++	 * updating at the same time, and one of them could be slightly behind,
++	 * making the assumption that last_value always go forward fail to hold.
++	 */
++	last = atomic64_read(&last_value);
++	do {
++		if (ret < last)
++			return last;
++		last = atomic64_cmpxchg(&last_value, last, ret);
++	} while (unlikely(last != ret));
 +
- 	xhci_dbg(xhci, "// @%p = 0x%x\n", &xhci->op_regs->command, temp);
- 	if (doorbell)
- 		(*doorbell)(xhci);
+ 	return ret;
+ }
+ 
 
 
