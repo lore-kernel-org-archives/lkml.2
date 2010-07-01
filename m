@@ -1,53 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab0GADrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jun 2010 23:47:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37811 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278Ab0GADrH (ORCPT
+	id S1753507Ab0GADtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jun 2010 23:49:10 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46213 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab0GADtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jun 2010 23:47:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=tOAT3ZShgrjOC9HIt1XP+IctpvOzZ57YhixvVu20uy7WWBONf1fKMsDJBXdAk4hQ+u
-         Rm51ShTf/Q7IkvHRCgQlVyX6VX2OoR57YfyqImQnv6TSr7L3mAGoMcoI6gC7O94Eqs2h
-         WqwgeeD6ATLz07qA9AJJtHr3DZ1JQyXTqdUv4=
-Subject: Re: [PATCH] mtd/mxc_nand: remove unused variable
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-       Sascha Hauer <s.hauer@pengutronix.de>,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-       Ivo Clarysse <ivo.clarysse@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1276498911-28115-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1276498911-28115-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Jul 2010 06:47:01 +0300
-Message-Id: <1277956021.3599.28.camel@localhost.localdomain>
+	Wed, 30 Jun 2010 23:49:08 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 1 Jul 2010 12:30:57 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: Greg KH <gregkh@suse.de>, Dave Hansen <dave@linux.vnet.ibm.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] memory hotplug disable boot option
+Message-Id: <20100701123057.9e5b7881.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C2C08CF.4040901@austin.ibm.com>
+References: <20100628154455.GA13918@suse.de>
+	<1277769867.8354.531.camel@nimitz>
+	<20100629115232.38BC.A69D9226@jp.fujitsu.com>
+	<1277827384.8354.3413.camel@nimitz>
+	<20100629180415.GB1240@suse.de>
+	<20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100630154755.GB12158@suse.de>
+	<20100701093130.c5e2b564.kamezawa.hiroyu@jp.fujitsu.com>
+	<4C2C08CF.4040901@austin.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-14 at 09:01 +0200, Uwe Kleine-König wrote:
-> This fixes:
-> 
-> 	drivers/mtd/nand/mxc_nand.c: In function 'mxcnd_resume':
-> 	drivers/mtd/nand/mxc_nand.c:901: warning: unused variable 'host'
-> 
-> Removing this variable was missed in 9c14b153e6af.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+On Wed, 30 Jun 2010 22:17:35 -0500
+Nathan Fontenot <nfont@austin.ibm.com> wrote:
 
-Pushed to l2-mtd-2.6.git / master
+> On 06/30/2010 07:31 PM, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 30 Jun 2010 08:47:55 -0700
+> > Greg KH <gregkh@suse.de> wrote:
+> >>> and adding a scalable interface for large scale machines ?
+> >>> I'd like to consider something..
+> >>
+> >> Dynamically changing the layout on big memory boxes makes sense to me,
+> >> how about you?
+> >>
+> > 
+> > like this ?
+> > ==
+> > boot option:
+> > memory_sysfs_layout=compact
+> > memory_sysfs_layout=auto (default)
+> > memory_sysfs_layout=full
+> > 
+> > Considering briefly, how about this compact layout ?
+> > 
+> > /sys/devices/system/memory/:
+> >                             list, hide, show, memoryX...
+> > 
+> > list: // show available memory index list.
+> >   #cat list
+> >    0 1 2 ....10000...
+> > 
+> > show: //an interface to enable the interface.
+> >   #echo INDEX > memory_index
+> >   will create memoryINDEX diretory.
+> > 
+> > hide: //an interface to hide the interface.
+> >   #echo INDEX > memory_hide
+> >   will remove memoryINDEX sysfs directory.
+> > 
+> > 
+> > In compact mode, all memoryX interface are hidden at boot.
+> > In full mode, all memoryX interaface are shown.
+> > The Boot option just affects status at boot. If users want, he can make
+> > all memory sysfs in shown state.
+> 
+> Do we need to make something as complicated as dynamically adding and removing
+> the sysfs directories?  Why not a compact layout that just takes the files
+> that currently reside in the memoryXX dirs and move them up to the memory
+> directory. This would be state (which should probably be split into an
+> 'online' and 'offline' file), removable, phys_index, and phys_device.
+> 
+I've considered several patterns.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+with 4096 bytes buffer of sysfs, "printting bitmap" just covers small
+amount of sections even with smart ASCII format to show contiguous range
+as a chunk. That's my concern. (and 'list' file in above example
+is impossible to impelement.)
+
+If I can use rmdir/mkdir interface, it's much simple rather than above "echo".
+But it seems impossible.
+Because we have memory information in /proc/iomem already, I think hide/show
+interface (instead of mkdir/rmdir) is not very bad.
+
+If you can implement highly scalable interface, please.
+I just stop dreaming and ack yours.
+
+Thanks,
+-Kame
+
 
