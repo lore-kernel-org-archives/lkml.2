@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758741Ab0GAVLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:11:49 -0400
-Received: from kroah.org ([198.145.64.141]:47611 "EHLO coco.kroah.org"
+	id S933128Ab0GAVJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:09:06 -0400
+Received: from kroah.org ([198.145.64.141]:47738 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932731Ab0GAUui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:38 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:34 2010
-Message-Id: <20100701173434.220833375@clark.site>
+	id S932774Ab0GAUuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:52 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:35 2010
+Message-Id: <20100701173435.647295705@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:34 -0700
+Date: Thu, 01 Jul 2010 10:34:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [patch 088/164] ASoC: Fix dB scales for WM8990
+       Richard Kennedy <richard@rsk.demon.co.uk>,
+       Michal Marek <mmarek@suse.cz>
+Subject: [patch 105/164] gconfig: fix build failure on fedora 13
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Richard Kennedy <richard@rsk.demon.co.uk>
 
-commit f68596c6d8711650722b2a54328a088a2c21bc5b upstream.
+commit cbab05f041a4cff6ca15856bdd35238b282b64eb upstream.
 
-These should be regular, not linear.
+Making gconfig fails on fedora 13 as the linker cannot resolve dlsym.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Adding libdl to the link command fixes this.
+
+make shows this error :-
+    /usr/bin/ld: scripts/kconfig/kconfig_load.o: undefined reference to symbol 'dlsym@@GLIBC_2.2.5'
+    /usr/bin/ld: note: 'dlsym@@GLIBC_2.2.5' is defined in DSO /lib64/libdl.so.2 so try adding it to the linker command line
+    /lib64/libdl.so.2: could not read symbols: Invalid operation
+
+tested on x86_64 fedora 13.
+
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8990.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ scripts/kconfig/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8990.c
-+++ b/sound/soc/codecs/wm8990.c
-@@ -110,21 +110,21 @@ static const u16 wm8990_reg[] = {
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -198,7 +198,7 @@ HOSTCFLAGS_zconf.tab.o	:= -I$(src)
+ HOSTLOADLIBES_qconf	= $(KC_QT_LIBS) -ldl
+ HOSTCXXFLAGS_qconf.o	= $(KC_QT_CFLAGS) -D LKC_DIRECT_LINK
  
- #define wm8990_reset(c) snd_soc_write(c, WM8990_RESET, 0)
+-HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0`
++HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0` -ldl
+ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+                           -D LKC_DIRECT_LINK
  
--static const DECLARE_TLV_DB_LINEAR(rec_mix_tlv, -1500, 600);
-+static const DECLARE_TLV_DB_SCALE(rec_mix_tlv, -1500, 600, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(in_pga_tlv, -1650, 3000);
-+static const DECLARE_TLV_DB_SCALE(in_pga_tlv, -1650, 3000, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_mix_tlv, 0, -2100);
-+static const DECLARE_TLV_DB_SCALE(out_mix_tlv, 0, -2100, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_pga_tlv, -7300, 600);
-+static const DECLARE_TLV_DB_SCALE(out_pga_tlv, -7300, 600, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_omix_tlv, -600, 0);
-+static const DECLARE_TLV_DB_SCALE(out_omix_tlv, -600, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_dac_tlv, -7163, 0);
-+static const DECLARE_TLV_DB_SCALE(out_dac_tlv, -7163, 0, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(in_adc_tlv, -7163, 1763);
-+static const DECLARE_TLV_DB_SCALE(in_adc_tlv, -7163, 1763, 0);
- 
--static const DECLARE_TLV_DB_LINEAR(out_sidetone_tlv, -3600, 0);
-+static const DECLARE_TLV_DB_SCALE(out_sidetone_tlv, -3600, 0, 0);
- 
- static int wm899x_outpga_put_volsw_vu(struct snd_kcontrol *kcontrol,
- 	struct snd_ctl_elem_value *ucontrol)
-@@ -450,7 +450,7 @@ static int outmixer_event(struct snd_soc
- /* INMIX dB values */
- static const unsigned int in_mix_tlv[] = {
- 	TLV_DB_RANGE_HEAD(1),
--	0, 7, TLV_DB_LINEAR_ITEM(-1200, 600),
-+	0, 7, TLV_DB_SCALE_ITEM(-1200, 600, 0),
- };
- 
- /* Left In PGA Connections */
 
 
