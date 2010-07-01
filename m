@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab0GAU7v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:59:51 -0400
-Received: from kroah.org ([198.145.64.141]:47966 "EHLO coco.kroah.org"
+	id S932867Ab0GAUvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:51:24 -0400
+Received: from kroah.org ([198.145.64.141]:47500 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932891Ab0GAUvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:31 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:39 2010
-Message-Id: <20100701173439.541696001@clark.site>
+	id S1758592Ab0GAUuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:20 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:32 2010
+Message-Id: <20100701173432.706303719@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:37 -0700
+Date: Thu, 01 Jul 2010 10:34:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [patch 151/164] KVM: x86: Check LMA bit before set_efer
+       Dan Carpenter <error27@gmail.com>, Boaz Harrosh <bharrosh@panasas.com>
+Subject: [patch 070/164] exofs: confusion between kmap() and kmap_atomic() api
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sheng Yang <sheng@linux.intel.com>
+From: Dan Carpenter <error27@gmail.com>
 
-kvm_x86_ops->set_efer() would execute vcpu->arch.efer = efer, so the
-checking of LMA bit didn't work.
+commit ddf08f4b90a413892bbb9bb2e8a57aed991cd47d upstream.
 
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+For kmap_atomic() we call kunmap_atomic() on the returned pointer.
+That's different from kmap() and kunmap() and so it's easy to get them
+backwards.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-(cherry picked from commit a3d204e28579427609c3d15d2310127ebaa47d94)
----
- arch/x86/kvm/x86.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -603,11 +603,11 @@ static void set_efer(struct kvm_vcpu *vc
- 		}
- 	}
- 
--	kvm_x86_ops->set_efer(vcpu, efer);
--
- 	efer &= ~EFER_LMA;
- 	efer |= vcpu->arch.shadow_efer & EFER_LMA;
- 
-+	kvm_x86_ops->set_efer(vcpu, efer);
-+
- 	vcpu->arch.shadow_efer = efer;
- 
- 	vcpu->arch.mmu.base_role.nxe = (efer & EFER_NX) && !tdp_enabled;
+---
+ fs/exofs/dir.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/exofs/dir.c
++++ b/fs/exofs/dir.c
+@@ -608,7 +608,7 @@ int exofs_make_empty(struct inode *inode
+ 	de->inode_no = cpu_to_le64(parent->i_ino);
+ 	memcpy(de->name, PARENT_DIR, sizeof(PARENT_DIR));
+ 	exofs_set_de_type(de, inode);
+-	kunmap_atomic(page, KM_USER0);
++	kunmap_atomic(kaddr, KM_USER0);
+ 	err = exofs_commit_chunk(page, 0, chunk_size);
+ fail:
+ 	page_cache_release(page);
 
 
