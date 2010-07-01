@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab0GASOl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:14:41 -0400
-Received: from kroah.org ([198.145.64.141]:60018 "EHLO coco.kroah.org"
+	id S1755618Ab0GASMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:12:47 -0400
+Received: from kroah.org ([198.145.64.141]:60085 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754579Ab0GASKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:10:45 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:56 2010
-Message-Id: <20100701172856.795677782@clark.site>
+	id S1755267Ab0GASKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:10:54 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:28:57 2010
+Message-Id: <20100701172857.706696176@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:26:53 -0700
+Date: Thu, 01 Jul 2010 10:27:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Mahoney <jeffm@suse.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [04/23] powerpc: Fix handling of strncmp with zero len
+       "Jayson R. King" <dev@jaysonking.com>, Theodore Tso <tytso@mit.edu>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
+Subject: [15/23] ext4: Fix file fragmentation during large file write.
 In-Reply-To: <20100701175134.GA2098@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +29,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
 
-commit 637a99022fb119b90fb281715d13172f0394fc12 upstream.
+From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-Commit 0119536c, which added the assembly version of strncmp to
-powerpc, mentions that it adds two instructions to the version from
-boot/string.S to allow it to handle len=0. Unfortunately, it doesn't
-always return 0 when that is the case. The length is passed in r5, but
-the return value is passed back in r3. In certain cases, this will
-happen to work. Otherwise it will pass back the address of the first
-string as the return value.
+commit 22208dedbd7626e5fc4339c417f8d24cc21f79d7 upstream.
 
-This patch lifts the len <= 0 handling code from memcpy to handle that
-case.
+The range_cyclic writeback mode uses the address_space writeback_index
+as the start index for writeback.  With delayed allocation we were
+updating writeback_index wrongly resulting in highly fragmented file.
+This patch reduces the number of extents reduced from 4000 to 27 for a
+3GB file.
 
-Reported by: Christian_Sellars@symantec.com
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+[dev@jaysonking.com: Some changed lines from the original version of this patch were dropped, since they were rolled up with another cherry-picked patch applied to 2.6.27.y earlier.]
+[dev@jaysonking.com: Use of wbc->no_nrwrite_index_update was dropped, since write_cache_pages_da() implies it.]
+Signed-off-by: Jayson R. King <dev@jaysonking.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/lib/string.S |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/ext4/inode.c |   79 ++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 46 insertions(+), 33 deletions(-)
 
---- a/arch/powerpc/lib/string.S
-+++ b/arch/powerpc/lib/string.S
-@@ -71,7 +71,7 @@ _GLOBAL(strcmp)
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1721,7 +1721,11 @@ static int mpage_da_submit_io(struct mpa
  
- _GLOBAL(strncmp)
- 	PPC_LCMPI r5,0
--	beqlr
-+	ble-	2f
- 	mtctr	r5
- 	addi	r5,r3,-1
- 	addi	r4,r4,-1
-@@ -82,6 +82,8 @@ _GLOBAL(strncmp)
- 	beqlr	1
- 	bdnzt	eq,1b
- 	blr
-+2:	li	r3,0
-+	blr
+ 			pages_skipped = mpd->wbc->pages_skipped;
+ 			err = mapping->a_ops->writepage(page, mpd->wbc);
+-			if (!err)
++			if (!err && (pages_skipped == mpd->wbc->pages_skipped))
++				/*
++				 * have successfully written the page
++				 * without skipping the same
++				 */
+ 				mpd->pages_written++;
+ 			/*
+ 			 * In error case, we have to continue because
+@@ -2295,7 +2299,6 @@ static int mpage_da_writepages(struct ad
+ 			       struct writeback_control *wbc,
+ 			       struct mpage_da_data *mpd)
+ {
+-	long to_write;
+ 	int ret;
  
- _GLOBAL(strlen)
- 	addi	r4,r3,-1
+ 	if (!mpd->get_block)
+@@ -2310,19 +2313,18 @@ static int mpage_da_writepages(struct ad
+ 	mpd->pages_written = 0;
+ 	mpd->retval = 0;
+ 
+-	to_write = wbc->nr_to_write;
+-
+ 	ret = write_cache_pages_da(mapping, wbc, mpd);
+-
+ 	/*
+ 	 * Handle last extent of pages
+ 	 */
+ 	if (!mpd->io_done && mpd->next_page != mpd->first_page) {
+ 		if (mpage_da_map_blocks(mpd) == 0)
+ 			mpage_da_submit_io(mpd);
+-	}
+ 
+-	wbc->nr_to_write = to_write - mpd->pages_written;
++		mpd->io_done = 1;
++		ret = MPAGE_DA_EXTENT_TAIL;
++	}
++	wbc->nr_to_write -= mpd->pages_written;
+ 	return ret;
+ }
+ 
+@@ -2567,11 +2569,13 @@ static int ext4_da_writepages_trans_bloc
+ static int ext4_da_writepages(struct address_space *mapping,
+ 			      struct writeback_control *wbc)
+ {
++	pgoff_t	index;
++	int range_whole = 0;
+ 	handle_t *handle = NULL;
+ 	struct mpage_da_data mpd;
+ 	struct inode *inode = mapping->host;
++	long pages_written = 0, pages_skipped;
+ 	int needed_blocks, ret = 0, nr_to_writebump = 0;
+-	long to_write, pages_skipped = 0;
+ 	struct ext4_sb_info *sbi = EXT4_SB(mapping->host->i_sb);
+ 
+ 	/*
+@@ -2605,16 +2609,20 @@ static int ext4_da_writepages(struct add
+ 		nr_to_writebump = sbi->s_mb_stream_request - wbc->nr_to_write;
+ 		wbc->nr_to_write = sbi->s_mb_stream_request;
+ 	}
++	if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
++		range_whole = 1;
+ 
+-
+-	pages_skipped = wbc->pages_skipped;
++	if (wbc->range_cyclic)
++		index = mapping->writeback_index;
++	else
++		index = wbc->range_start >> PAGE_CACHE_SHIFT;
+ 
+ 	mpd.wbc = wbc;
+ 	mpd.inode = mapping->host;
+ 
+-restart_loop:
+-	to_write = wbc->nr_to_write;
+-	while (!ret && to_write > 0) {
++	pages_skipped = wbc->pages_skipped;
++
++	while (!ret && wbc->nr_to_write > 0) {
+ 
+ 		/*
+ 		 * we  insert one extent at a time. So we need
+@@ -2647,46 +2655,51 @@ restart_loop:
+ 				goto out_writepages;
+ 			}
+ 		}
+-		to_write -= wbc->nr_to_write;
+-
+ 		mpd.get_block = ext4_da_get_block_write;
+ 		ret = mpage_da_writepages(mapping, wbc, &mpd);
+ 
+ 		ext4_journal_stop(handle);
+ 
+-		if (mpd.retval == -ENOSPC)
++		if (mpd.retval == -ENOSPC) {
++			/* commit the transaction which would
++			 * free blocks released in the transaction
++			 * and try again
++			 */
+ 			jbd2_journal_force_commit_nested(sbi->s_journal);
+-
+-		/* reset the retry count */
+-		if (ret == MPAGE_DA_EXTENT_TAIL) {
++			wbc->pages_skipped = pages_skipped;
++			ret = 0;
++		} else if (ret == MPAGE_DA_EXTENT_TAIL) {
+ 			/*
+ 			 * got one extent now try with
+ 			 * rest of the pages
+ 			 */
+-			to_write += wbc->nr_to_write;
++			pages_written += mpd.pages_written;
++			wbc->pages_skipped = pages_skipped;
+ 			ret = 0;
+-		} else if (wbc->nr_to_write) {
++		} else if (wbc->nr_to_write)
+ 			/*
+ 			 * There is no more writeout needed
+ 			 * or we requested for a noblocking writeout
+ 			 * and we found the device congested
+ 			 */
+-			to_write += wbc->nr_to_write;
+ 			break;
+-		}
+-		wbc->nr_to_write = to_write;
+-	}
+-
+-	if (!wbc->range_cyclic && (pages_skipped != wbc->pages_skipped)) {
+-		/* We skipped pages in this loop */
+-		wbc->nr_to_write = to_write +
+-				wbc->pages_skipped - pages_skipped;
+-		wbc->pages_skipped = pages_skipped;
+-		goto restart_loop;
+ 	}
++	if (pages_skipped != wbc->pages_skipped)
++		printk(KERN_EMERG "This should not happen leaving %s "
++				"with nr_to_write = %ld ret = %d\n",
++				__func__, wbc->nr_to_write, ret);
++
++	/* Update index */
++	index += pages_written;
++	if (wbc->range_cyclic || (range_whole && wbc->nr_to_write > 0))
++		/*
++		 * set the writeback_index so that range_cyclic
++		 * mode will write it back later
++		 */
++		mapping->writeback_index = index;
+ 
+ out_writepages:
+-	wbc->nr_to_write = to_write - nr_to_writebump;
++	wbc->nr_to_write -= nr_to_writebump;
+ 	return ret;
+ }
+ 
 
 
