@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759307Ab0GAV2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:28:14 -0400
-Received: from kroah.org ([198.145.64.141]:33275 "EHLO coco.kroah.org"
+	id S933288Ab0GAVnh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:43:37 -0400
+Received: from kroah.org ([198.145.64.141]:32889 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933179Ab0GAVPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:36 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:02 2010
-Message-Id: <20100701174302.814231455@clark.site>
+	id S1759110Ab0GAVOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:14:22 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:56 2010
+Message-Id: <20100701174256.228552829@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:43 -0700
+Date: Thu, 01 Jul 2010 10:43:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Avi Kivity <avi@redhat.com>
-Subject: [193/200] KVM: MMU: Dont read pdptrs with mmu spinlock held in mmu_alloc_roots
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [116/200] ASoC: Fix dB scales for WM8400
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-On svm, kvm_read_pdptr() may require reading guest memory, which can sleep.
+commit 3351e9fbb0fda6498ee149ee88c67f5849813c57 upstream.
 
-Push the spinlock into mmu_alloc_roots(), and only take it after we've read
-the pdptr.
+These scales should be regular, not linear.
 
-Tested-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-(Cherry-picked from commit 8facbbff071ff2b19268d3732e31badc60471e21)
 ---
- arch/x86/kvm/mmu.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ sound/soc/codecs/wm8400.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2085,11 +2085,13 @@ static int mmu_alloc_roots(struct kvm_vc
- 			direct = 1;
- 		if (mmu_check_root(vcpu, root_gfn))
- 			return 1;
-+		spin_lock(&vcpu->kvm->mmu_lock);
- 		sp = kvm_mmu_get_page(vcpu, root_gfn, 0,
- 				      PT64_ROOT_LEVEL, direct,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
- 		++sp->root_count;
-+		spin_unlock(&vcpu->kvm->mmu_lock);
- 		vcpu->arch.mmu.root_hpa = root;
- 		return 0;
- 	}
-@@ -2111,11 +2113,14 @@ static int mmu_alloc_roots(struct kvm_vc
- 			root_gfn = 0;
- 		if (mmu_check_root(vcpu, root_gfn))
- 			return 1;
-+		spin_lock(&vcpu->kvm->mmu_lock);
- 		sp = kvm_mmu_get_page(vcpu, root_gfn, i << 30,
- 				      PT32_ROOT_LEVEL, direct,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
- 		++sp->root_count;
-+		spin_unlock(&vcpu->kvm->mmu_lock);
-+
- 		vcpu->arch.mmu.pae_root[i] = root | PT_PRESENT_MASK;
- 	}
- 	vcpu->arch.mmu.root_hpa = __pa(vcpu->arch.mmu.pae_root);
-@@ -2479,7 +2484,9 @@ int kvm_mmu_load(struct kvm_vcpu *vcpu)
- 		goto out;
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	kvm_mmu_free_some_pages(vcpu);
-+	spin_unlock(&vcpu->kvm->mmu_lock);
- 	r = mmu_alloc_roots(vcpu);
-+	spin_lock(&vcpu->kvm->mmu_lock);
- 	mmu_sync_roots(vcpu);
- 	spin_unlock(&vcpu->kvm->mmu_lock);
- 	if (r)
+--- a/sound/soc/codecs/wm8400.c
++++ b/sound/soc/codecs/wm8400.c
+@@ -107,21 +107,21 @@ static void wm8400_codec_reset(struct sn
+ 	wm8400_reset_codec_reg_cache(wm8400->wm8400);
+ }
+ 
+-static const DECLARE_TLV_DB_LINEAR(rec_mix_tlv, -1500, 600);
++static const DECLARE_TLV_DB_SCALE(rec_mix_tlv, -1500, 600, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(in_pga_tlv, -1650, 3000);
++static const DECLARE_TLV_DB_SCALE(in_pga_tlv, -1650, 3000, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_mix_tlv, -2100, 0);
++static const DECLARE_TLV_DB_SCALE(out_mix_tlv, -2100, 0, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_pga_tlv, -7300, 600);
++static const DECLARE_TLV_DB_SCALE(out_pga_tlv, -7300, 600, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_omix_tlv, -600, 0);
++static const DECLARE_TLV_DB_SCALE(out_omix_tlv, -600, 0, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_dac_tlv, -7163, 0);
++static const DECLARE_TLV_DB_SCALE(out_dac_tlv, -7163, 0, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(in_adc_tlv, -7163, 1763);
++static const DECLARE_TLV_DB_SCALE(in_adc_tlv, -7163, 1763, 0);
+ 
+-static const DECLARE_TLV_DB_LINEAR(out_sidetone_tlv, -3600, 0);
++static const DECLARE_TLV_DB_SCALE(out_sidetone_tlv, -3600, 0, 0);
+ 
+ static int wm8400_outpga_put_volsw_vu(struct snd_kcontrol *kcontrol,
+         struct snd_ctl_elem_value *ucontrol)
+@@ -440,7 +440,7 @@ static int outmixer_event (struct snd_so
+ /* INMIX dB values */
+ static const unsigned int in_mix_tlv[] = {
+ 	TLV_DB_RANGE_HEAD(1),
+-	0,7, TLV_DB_LINEAR_ITEM(-1200, 600),
++	0,7, TLV_DB_SCALE_ITEM(-1200, 600, 0),
+ };
+ 
+ /* Left In PGA Connections */
 
 
