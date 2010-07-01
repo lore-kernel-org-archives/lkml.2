@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab0GASCp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:02:45 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:47858 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab0GASCn (ORCPT
+	id S1753967Ab0GASEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:04:16 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44433 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753383Ab0GASEO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:02:43 -0400
-Date: Thu, 1 Jul 2010 20:02:41 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Zach Pfeffer <zpfeffer@codeaurora.org>, mel@csn.ul.ie, andi@firstfloor.org,
-       dwalker@codeaurora.org, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-       linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
-Message-ID: <20100701180241.GA3594@basil.fritz.box>
-References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org>
- <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org>
- <20100701101746.3810cc3b.randy.dunlap@oracle.com>
+	Thu, 1 Jul 2010 14:04:14 -0400
+From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
+To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "ohad@wizery.com" <ohad@wizery.com>, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+       "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+       "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
+Date: Thu, 1 Jul 2010 13:04:08 -0500
+Subject: RE: [PATCHv3 5/9] dspbridge: add mmufault support
+Thread-Topic: [PATCHv3 5/9] dspbridge: add mmufault support
+Thread-Index: AcsYr29geLDqkvcsTwW6nxBnghiRywAkS5RwAAFMioAAAGkFgA==
+Message-ID: <8F7AF80515AF0D4D93307E594F3CB40E4CA5645D@dlee03.ent.ti.com>
+References: <1277942401-3566-1-git-send-email-x0095840@ti.com>
+ <1277942401-3566-2-git-send-email-x0095840@ti.com>
+ <1277942401-3566-3-git-send-email-x0095840@ti.com>
+ <1277942401-3566-4-git-send-email-x0095840@ti.com>
+ <1277942401-3566-5-git-send-email-x0095840@ti.com>
+ <1277942401-3566-6-git-send-email-x0095840@ti.com>
+ <8F7AF80515AF0D4D93307E594F3CB40E4CA563BC@dlee03.ent.ti.com>
+ <496565EC904933469F292DDA3F1663E602CBDD373C@dlee06.ent.ti.com>
+In-Reply-To: <496565EC904933469F292DDA3F1663E602CBDD373C@dlee06.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701101746.3810cc3b.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What license (name/type) is this?
+> > > +	da = iommu_read_reg(mmu, MMU_FAULT_AD);
+> > > +	iommu_write_reg(mmu, 0, MMU_IRQENABLE);
+> >
+> > -- Isn't the MMU already enabled at this point when the function
+> callback
+> > is called by iommu ?
+> 
+> This line is actually disabling the interrupts. I am writing "0x0" in the
+> MMU_IRQENABLE.
 
-IANAL, but AFAIK standard wisdom is that "disclaimer in the documentation
-and/or other materials provided" is generally not acceptable for Linux
-because it's an excessive burden for all distributors.
+-- oops ! sorry about that. Didn't pay attention to 0x0. Yes, this should work.
 
-Also for me it's still quite unclear why we would want this code at all...
-It doesn't seem to do anything you couldn't do with the existing interfaces.
-
--Andi
+Best regards,
+Hari
