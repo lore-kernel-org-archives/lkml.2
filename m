@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766Ab0GASXL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:23:11 -0400
-Received: from kroah.org ([198.145.64.141]:35472 "EHLO coco.kroah.org"
+	id S1757962Ab0GASoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:44:07 -0400
+Received: from kroah.org ([198.145.64.141]:40464 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757345Ab0GASXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:05 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:10 2010
-Message-Id: <20100701173210.178617269@clark.site>
+	id S1757837Ab0GASXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:21 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:11 2010
+Message-Id: <20100701173211.702566018@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:06 -0700
+Date: Thu, 01 Jul 2010 10:31:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andres Salomon <dilinger@collabora.co.uk>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 040/149] mac80211: give warning if building w/out rate ctrl algorithm
+       NeilBrown <neilb@suse.de>
+Subject: [patch 058/149] md: Fix read balancing in RAID1 and RAID10 on drives > 2TB
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andres Salomon <dilinger@collabora.co.uk>
+From: NeilBrown <neilb@suse.de>
 
-commit c2ef355bf3ef0b8006b96128726684fba47ac928 upstream.
+commit af3a2cd6b8a479345786e7fe5e199ad2f6240e56 upstream.
 
-I discovered that if EMBEDDED=y, one can accidentally build a mac80211 stack
-and drivers w/ no rate control algorithm.  For drivers like RTL8187 that don't
-supply their own RC algorithms, this will cause ieee80211_register_hw to
-fail (making the driver unusable).
+read_balance uses a "unsigned long" for a sector number which
+will get truncated beyond 2TB.
+This will cause read-balancing to be non-optimal, and can cause
+data to be read from the 'wrong' branch during a resync.  This has a
+very small chance of returning wrong data.
 
-This will tell kconfig to provide a warning if no rate control algorithms
-have been selected.  That'll at least warn the user; users that know that
-their drivers supply a rate control algorithm can safely ignore the
-warning, and those who don't know (or who expect to be using multiple
-drivers) can select a default RC algorithm.
-
-Signed-off-by: Andres Salomon <dilinger@collabora.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Jordan Russell <jr-list-2010@quo.to>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/Kconfig |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/md/raid1.c  |    4 ++--
+ drivers/md/raid10.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/mac80211/Kconfig
-+++ b/net/mac80211/Kconfig
-@@ -15,8 +15,12 @@ comment "CFG80211 needs to be enabled fo
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -417,7 +417,7 @@ static void raid1_end_write_request(stru
+  */
+ static int read_balance(conf_t *conf, r1bio_t *r1_bio)
+ {
+-	const unsigned long this_sector = r1_bio->sector;
++	const sector_t this_sector = r1_bio->sector;
+ 	int new_disk = conf->last_used, disk = new_disk;
+ 	int wonly_disk = -1;
+ 	const int sectors = r1_bio->sectors;
+@@ -433,7 +433,7 @@ static int read_balance(conf_t *conf, r1
+  retry:
+ 	if (conf->mddev->recovery_cp < MaxSector &&
+ 	    (this_sector + sectors >= conf->next_resync)) {
+-		/* Choose the first operation device, for consistancy */
++		/* Choose the first operational device, for consistancy */
+ 		new_disk = 0;
  
- if MAC80211 != n
- 
-+config MAC80211_HAS_RC
-+	def_bool n
-+
- config MAC80211_RC_PID
- 	bool "PID controller based rate control algorithm" if EMBEDDED
-+	select MAC80211_HAS_RC
- 	---help---
- 	  This option enables a TX rate control algorithm for
- 	  mac80211 that uses a PID controller to select the TX
-@@ -24,12 +28,14 @@ config MAC80211_RC_PID
- 
- config MAC80211_RC_MINSTREL
- 	bool "Minstrel" if EMBEDDED
-+	select MAC80211_HAS_RC
- 	default y
- 	---help---
- 	  This option enables the 'minstrel' TX rate control algorithm
- 
- choice
- 	prompt "Default rate control algorithm"
-+	depends on MAC80211_HAS_RC
- 	default MAC80211_RC_DEFAULT_MINSTREL
- 	---help---
- 	  This option selects the default rate control algorithm
-@@ -62,6 +68,9 @@ config MAC80211_RC_DEFAULT
- 
- endif
- 
-+comment "Some wireless drivers require a rate control algorithm"
-+	depends on MAC80211_HAS_RC=n
-+
- config MAC80211_MESH
- 	bool "Enable mac80211 mesh networking (pre-802.11s) support"
- 	depends on MAC80211 && EXPERIMENTAL
+ 		for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -493,7 +493,7 @@ static int raid10_mergeable_bvec(struct
+  */
+ static int read_balance(conf_t *conf, r10bio_t *r10_bio)
+ {
+-	const unsigned long this_sector = r10_bio->sector;
++	const sector_t this_sector = r10_bio->sector;
+ 	int disk, slot, nslot;
+ 	const int sectors = r10_bio->sectors;
+ 	sector_t new_distance, current_distance;
 
 
