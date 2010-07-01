@@ -1,106 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab0GAJSC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 05:18:02 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:60539 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388Ab0GAJR7 (ORCPT
+	id S1754761Ab0GAJSU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 05:18:20 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:51113 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539Ab0GAJQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 05:17:59 -0400
-X-AuditID: b753bd60-a8003ba000007d15-12-4c2c5d443a68
-Message-ID: <4C2C5D41.40807@hitachi.com>
-Date: Thu, 01 Jul 2010 18:17:53 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCHv7 2.6.35-rc3-tip 0/11]  Uprobes Patches:
-References: <20100629183454.32537.63582.sendpatchset@localhost6.localdomain6> <20100701050216.GI23231@linux.vnet.ibm.com> <20100701081942.GA19826@elte.hu>
-In-Reply-To: <20100701081942.GA19826@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+	Thu, 1 Jul 2010 05:16:57 -0400
+Date: Thu, 01 Jul 2010 11:17:44 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCH] USB: gadget: mass storage: use proper device class in device
+ desc
+To: linux-usb@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <59b191a020300966e20eef4e942bc75982d792fb.1277735580.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar wrote:
-> * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
-> 
->> Hi Ingo,
->>
->> I have addressed all comments to the uprobes patchset.  We have few todos 
->> (most of them are features over the current code) which I plan to work in 
->> the immediate future.
->>
->> So would it be possible for this patchset to be picked into the tip tree. 
->> Getting these patches merged into the tip tree would help in getting more 
->> comments/feedback and testing.
-> 
-> If Masami-san, PeterZ and Arnaldo is happy with it being tried in its current 
-> form then we could try it.
+This patch changes the bDeviceClass, bDeviceSubClass, bDeviceProtocol
+to match the real class and protocol instead of leaving it as per
+interface.
 
-At least ftrace/perf side, it's almost good for me. (but I need time to test it)
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+---
+Hello Alan,
 
-> Assuming everyone is reasonably happy about the code, here are some open areas 
-> as i see them, before we can think about pushing things from -tip towards 
-> upstream:
-> 
-> - One thing i havent seen is the ability to 'list' potential probe points:
->   i.e. function names. Often the user will not know precisely where to look 
->   and what to type. This leaves our probe capability under-utilized in 
->   practice.
+Each time I see the device descriptor of the File Storage Gadget
+I wonder if it shouldn't be set to the real value rather then leaving
+it as per interface.
 
-It will be the next step for perf-(u)probe, debuginfo support. Since
-the perf-(k)probe already support in which function the probe is put,
-I think if perf-(u)probe support debuginfo, it's easy to be implemented.
+Is there a reason to leave it as per interface?  Will chenging it to
+the real value change anything?
 
-> - On a similar note, it might also make sense to extend the Newt interface to 
->   perf report to integrate probes: if a function looks high-overhead, then a 
->   probe point could be inserted and the app could be traced straight away. We 
->   already allow per function actions in the Newt interface, such as assembly 
->   annotation - the adding of a probe point would be quite useful.
+I checked my pendrive and an IDE<->USB adapter they as well use a per
+interface class but maybe it'll be better to use proper call any way?
 
-Hmm, does that mean that user puts a new probe point from Newt interface?
-That's a good idea:)
+ drivers/usb/gadget/file_storage.c |    6 +++++-
+ drivers/usb/gadget/mass_storage.c |    4 +++-
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-> - [ Optional: Another interesting area to look at would be the scripting 
->     engine: allow trace scripts to insert probes if they are not present yet. ]
-
-Sure, that's what I hope. :)
-
-> - Plus the security model is an open question as well. Right now it's
->   root-only, but it would make sense to allow users to insert probes into 
->   their own apps. This brings up the next point:
-
-Hmm, put a probe in user-space(by owner) may be good. But
-inside the kernel, there are more sensitive informations...
-
-> - Proper syscall integration and more unification with kprobes and with the 
->   TRACE_EVENT() universe. As far as API design goes, 
->   /sys/kernel/debug/tracing/uprobe_events is quite sucky as a concept.
-
-Yeah, we can extend the interface and merge it. But removing all
-debugfs interfaces should be discussed.
-
-Thank you,
-
-> 
-> Thanks,
-> 
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
+index d57c09f..1f76ea0 100644
+--- a/drivers/usb/gadget/file_storage.c
++++ b/drivers/usb/gadget/file_storage.c
+@@ -544,7 +544,9 @@ device_desc = {
+ 	.bDescriptorType =	USB_DT_DEVICE,
+ 
+ 	.bcdUSB =		cpu_to_le16(0x0200),
+-	.bDeviceClass =		USB_CLASS_PER_INTERFACE,
++	.bDeviceClass =		USB_CLASS_MASS_STORAGE,
++	.bDeviceSubClass =	USB_SC_SCSI, /* Adjusted during fsg_bind() */
++	.bDeviceProtocol =	USB_PR_BULK, /* Adjusted during fsg_bind() */
+ 
+ 	/* The next three values can be overridden by module parameters */
+ 	.idVendor =		cpu_to_le16(FSG_VENDOR_ID),
+@@ -3450,7 +3452,9 @@ static int __ref fsg_bind(struct usb_gadget *gadget)
+ 	i = (transport_is_cbi() ? 3 : 2);	// Number of endpoints
+ 	fsg_intf_desc.bNumEndpoints = i;
+ 	fsg_intf_desc.bInterfaceSubClass = mod_data.protocol_type;
++	device_desc.bDeviceSubClass = mod_data.protocol_type;
+ 	fsg_intf_desc.bInterfaceProtocol = mod_data.transport_type;
++	device_desc.bDeviceProtocol = mod_data.transport_type;
+ 	fsg_fs_function[i + FSG_FS_FUNCTION_PRE_EP_ENTRIES] = NULL;
+ 
+ 	if (gadget_is_dualspeed(gadget)) {
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index 585f255..59054a4 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -70,7 +70,9 @@ static struct usb_device_descriptor msg_device_desc = {
+ 	.bDescriptorType =	USB_DT_DEVICE,
+ 
+ 	.bcdUSB =		cpu_to_le16(0x0200),
+-	.bDeviceClass =		USB_CLASS_PER_INTERFACE,
++	.bDeviceClass =		USB_CLASS_MASS_STORAGE,
++	.bDeviceSubClass =	USB_SC_SCSI,
++	.bDeviceProtocol =	USB_PR_BULK,
+ 
+ 	/* Vendor and product id can be overridden by module parameters.  */
+ 	.idVendor =		cpu_to_le16(FSG_VENDOR_ID),
+-- 
+1.7.1
 
