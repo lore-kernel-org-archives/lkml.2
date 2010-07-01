@@ -1,92 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab0GAN2l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:28:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab0GAN2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:28:39 -0400
-Date: Thu, 1 Jul 2010 16:22:52 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-Message-ID: <20100701132252.GC32223@redhat.com>
-References: <20100624081135.GA937@redhat.com>
- <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
- <20100625101022.GA16321@redhat.com>
- <20100701110708.GA27368@redhat.com>
- <1277983179.1917.10.camel@laptop>
- <1277984603.1917.15.camel@laptop>
- <20100701115507.GA31333@redhat.com>
- <1277987563.1917.28.camel@laptop>
- <20100701125038.GA32223@redhat.com>
- <1277989646.1917.77.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277989646.1917.77.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754719Ab0GANa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:30:27 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49757 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753115Ab0GANa0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 09:30:26 -0400
+Subject: Re: [PATCH 1/3] block: implement an unprep function corresponding
+ directly to prep
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: axboe@kernel.dk, linux-scsi@vger.kernel.org, snitzer@redhat.com,
+       linux-kernel@vger.kernel.org, hch@lst.de
+In-Reply-To: <1277981359-10717-2-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+	 <1277981359-10717-2-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Jul 2010 08:30:22 -0500
+Message-ID: <1277991022.2813.3.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 03:07:26PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-07-01 at 15:50 +0300, Michael S. Tsirkin wrote:
-> > On Thu, Jul 01, 2010 at 02:32:43PM +0200, Peter Zijlstra wrote:
-> > > On Thu, 2010-07-01 at 14:55 +0300, Michael S. Tsirkin wrote:
-> > > 
-> > > > >  - why can't it set the kernel thread's affinity too?
-> > > > 
-> > > > It can. However: the threads are started internally by the driver
-> > > > when qemu does an ioctl.  What we want to do is give it a sensible
-> > > > default affinity. management tool can later tweak it if it wants to.
-> > > 
-> > > So have that ioctl return the tid of that new fancy thread and then set
-> > > its affinity, stuff it in cgroup, whatever you fancy.
-> > > 
-> > > > >  - what happens if someone changes the tasks' affinity?
-> > > > 
-> > > > We would normally create a cgroup including all internal
-> > > > tasks, making it easy to find and change affinity for
-> > > > them all if necessary. 
-> > > 
-> > > And to stuff them in a cgroup you also need the tid, at which point it
-> > > might as well set the affinity from userspace, right?
-> > 
-> > We also put it in a cgroup transparently. I think that it's actually
-> > important to do it on thread creation: if we don't, malicious userspace
-> > can create large amount of work exceeding the cgroup limits.
-> > 
-> > And the same applies so the affinity, right? If the qemu process
-> > is limited to a set of CPUs, isn't it important to make
-> > the kernel thread that does work our behalf limited to the same
-> > set of CPUs?
+On Thu, 2010-07-01 at 19:49 +0900, FUJITA Tomonori wrote:
+> From: James Bottomley <James.Bottomley@suse.de>
 > 
-> I'm not sure we have anything like this, but I wouldn't think so, if a
-> driver creates a kthread and manages to inject tons of work its not
-> typically limited to whatever limits apply to the task that supplied the
-> work.
-> 
-> Take the encryption threads for example, those don't run in the context
-> of whoever provides the data to be encrypted (file,net whatever) and
-> thus the task responsible could consume heaps more resources than when
-> it would have to do the encryption itself.
-> 
-> That's how kthreads work.
+> Reviewed-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-Right. And IMHO ideally all such work would run on the appropriate
-CPU and be accounted to. It's just that with virt people seem to
-run untrusted applications and expect the damage to be contained.
-So we came up with a simple approach that seems to do the
-just just for us.
+Well, I forgot this, but otherwise looks fine:
 
--- 
-MST
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+
+> ---
+>  block/blk-core.c        |   25 +++++++++++++++++++++++++
+>  block/blk-settings.c    |   17 +++++++++++++++++
+>  drivers/scsi/scsi_lib.c |    2 +-
+>  include/linux/blkdev.h  |    4 ++++
+>  4 files changed, 47 insertions(+), 1 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 3c37894..5ab3ac2 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -608,6 +608,7 @@ blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
+>  
+>  	q->request_fn		= rfn;
+>  	q->prep_rq_fn		= NULL;
+> +	q->unprep_rq_fn		= NULL;
+>  	q->unplug_fn		= generic_unplug_device;
+>  	q->queue_flags		= QUEUE_FLAG_DEFAULT;
+>  	q->queue_lock		= lock;
+> @@ -2133,6 +2134,26 @@ static bool blk_update_bidi_request(struct request *rq, int error,
+>  	return false;
+>  }
+>  
+> +/**
+> + * blk_unprep_request - unprepare a request
+> + * @req:	the request
+> + *
+> + * This function makes a request ready for complete resubmission (or
+> + * completion).  It happens only after all error handling is complete,
+> + * so represents the appropriate moment to deallocate any resources
+> + * that were allocated to the request in the prep_rq_fn.  The queue
+> + * lock is held when calling this.
+> + */
+> +void blk_unprep_request(struct request *req)
+> +{
+> +	struct request_queue *q = req->q;
+> +
+> +	req->cmd_flags &= ~REQ_DONTPREP;
+> +	if (q->unprep_rq_fn)
+> +		q->unprep_rq_fn(q, req);
+> +}
+> +EXPORT_SYMBOL_GPL(blk_unprep_request);
+> +
+>  /*
+>   * queue lock must be held
+>   */
+> @@ -2148,6 +2169,10 @@ static void blk_finish_request(struct request *req, int error)
+>  
+>  	blk_delete_timer(req);
+>  
+> +	if (req->cmd_flags & REQ_DONTPREP)
+> +		blk_unprep_request(req);
+> +
+> +
+>  	blk_account_io_done(req);
+>  
+>  	if (req->end_io)
+> diff --git a/block/blk-settings.c b/block/blk-settings.c
+> index f5ed5a1..a234f4b 100644
+> --- a/block/blk-settings.c
+> +++ b/block/blk-settings.c
+> @@ -37,6 +37,23 @@ void blk_queue_prep_rq(struct request_queue *q, prep_rq_fn *pfn)
+>  EXPORT_SYMBOL(blk_queue_prep_rq);
+>  
+>  /**
+> + * blk_queue_unprep_rq - set an unprepare_request function for queue
+> + * @q:		queue
+> + * @ufn:	unprepare_request function
+> + *
+> + * It's possible for a queue to register an unprepare_request callback
+> + * which is invoked before the request is finally completed. The goal
+> + * of the function is to deallocate any data that was allocated in the
+> + * prepare_request callback.
+> + *
+> + */
+> +void blk_queue_unprep_rq(struct request_queue *q, unprep_rq_fn *ufn)
+> +{
+> +	q->unprep_rq_fn = ufn;
+> +}
+> +EXPORT_SYMBOL(blk_queue_unprep_rq);
+> +
+> +/**
+>   * blk_queue_merge_bvec - set a merge_bvec function for queue
+>   * @q:		queue
+>   * @mbfn:	merge_bvec_fn
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index 5f11608..ee83619 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -85,7 +85,7 @@ static void scsi_unprep_request(struct request *req)
+>  {
+>  	struct scsi_cmnd *cmd = req->special;
+>  
+> -	req->cmd_flags &= ~REQ_DONTPREP;
+> +	blk_unprep_request(req);
+>  	req->special = NULL;
+>  
+>  	scsi_put_command(cmd);
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 204fbe2..6bba04c 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -200,6 +200,7 @@ struct request_pm_state
+>  typedef void (request_fn_proc) (struct request_queue *q);
+>  typedef int (make_request_fn) (struct request_queue *q, struct bio *bio);
+>  typedef int (prep_rq_fn) (struct request_queue *, struct request *);
+> +typedef void (unprep_rq_fn) (struct request_queue *, struct request *);
+>  typedef void (unplug_fn) (struct request_queue *);
+>  
+>  struct bio_vec;
+> @@ -282,6 +283,7 @@ struct request_queue
+>  	request_fn_proc		*request_fn;
+>  	make_request_fn		*make_request_fn;
+>  	prep_rq_fn		*prep_rq_fn;
+> +	unprep_rq_fn		*unprep_rq_fn;
+>  	unplug_fn		*unplug_fn;
+>  	merge_bvec_fn		*merge_bvec_fn;
+>  	prepare_flush_fn	*prepare_flush_fn;
+> @@ -841,6 +843,7 @@ extern void blk_complete_request(struct request *);
+>  extern void __blk_complete_request(struct request *);
+>  extern void blk_abort_request(struct request *);
+>  extern void blk_abort_queue(struct request_queue *);
+> +extern void blk_unprep_request(struct request *);
+>  
+>  /*
+>   * Access functions for manipulating queue properties
+> @@ -885,6 +888,7 @@ extern int blk_queue_dma_drain(struct request_queue *q,
+>  extern void blk_queue_lld_busy(struct request_queue *q, lld_busy_fn *fn);
+>  extern void blk_queue_segment_boundary(struct request_queue *, unsigned long);
+>  extern void blk_queue_prep_rq(struct request_queue *, prep_rq_fn *pfn);
+> +extern void blk_queue_unprep_rq(struct request_queue *, unprep_rq_fn *ufn);
+>  extern void blk_queue_merge_bvec(struct request_queue *, merge_bvec_fn *);
+>  extern void blk_queue_dma_alignment(struct request_queue *, int);
+>  extern void blk_queue_update_dma_alignment(struct request_queue *, int);
+
+
