@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab0GAPIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 11:08:24 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62600 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab0GAPIX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 11:08:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: Re: [PATCH]kernel.h Move warning message about using kernel headers for userspace to types.h
-Date: Thu, 1 Jul 2010 17:07:31 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, jkosina@suse.cz
-References: <1277935785-6023-1-git-send-email-justinmattock@gmail.com> <201007010958.46720.arnd@arndb.de> <4C2C9962.3080307@gmail.com>
-In-Reply-To: <4C2C9962.3080307@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	id S1754555Ab0GAPJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 11:09:00 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:35586 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752159Ab0GAPI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 11:08:58 -0400
+Date: Thu, 1 Jul 2010 17:08:04 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       mark gross <640e9920@gmail.com>, Arve Hj??nnev??g <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-pci@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being
+ lost
+Message-ID: <20100701170804.687d9604@schatten.dmk.lab>
+In-Reply-To: <20100701133208.GA1285@ucw.cz>
+References: <201006261514.13491.rjw@sisk.pl>
+	<20100701133208.GA1285@ucw.cz>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007011707.31783.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/QcYB1ZgSn1uV+li15Q3+Yac00iQJO+29G6yM
- 14rRNddIEW3yrfWEg9h5aIALipZBU6zLeKR1dkyRfTmN8VTD/E
- SW1Z9W8QEJS0WO95lyKpA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 July 2010, Justin P. Mattock wrote:
-> >>
-> >> +#ifndef __EXPORTED_HEADERS__
-> >> +#ifndef __KERNEL__
-> >> +#warning "Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders"
+On Thu, 1 Jul 2010 15:32:08 +0200
+Pavel Machek <pavel@ucw.cz> wrote:
+
+> Hi!
 > 
-> so this is legit with the length of the statement? or should this be 
-> broken down into a small quick line directing to a file with the address 
-> or something
+> > @@ -114,3 +114,17 @@ Description:
+> >  		if this file contains "1", which is the default.  It may be
+> >  		disabled by writing "0" to this file, in which case all devices
+> >  		will be suspended and resumed synchronously.
+> > +
+> > +What:		/sys/power/wakeup_count
+> > +Date:		July 2010
+> > +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
+> > +Description:
+> > +		The /sys/power/wakeup_count file allows user space to avoid
+> > +		losing wakeup events when transitioning the system into a sleep
+> > +		state.  Reading from it returns the current number of registered
+> > +		wakeup events and it blocks if some wakeup events are being
+> > +		processed at the time the file is read from.  Writing to it
+> > +		will only succeed if the current number of wakeup events is
+> > +		equal to the written value and, if successful, will make the
+> > +		kernel abort a subsequent transition to a sleep state if any
+> > +		wakeup events are reported after the write has returned.
 
-Yes, the length of the statement was never the problem, it only went wrong
-because the // in the url gets interpreted as the start of a one-line comment.
 
-	Arnd
+> I can't say I quite like the way two sysfs files interact with each
+> other, but it is certainly better then wakelocks...
+
+What two files? 
+
+Cheers,
+Flo 
