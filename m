@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932721Ab0GAWSi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:18:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44956 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932562Ab0GAWRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 18:17:55 -0400
-Date: Thu, 1 Jul 2010 15:17:28 -0700
-From: Greg KH <gregkh@suse.de>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Anfei Zhou <anfei.zhou@gmail.com>,
-       Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [patch 071/149] ARM: 6166/1: Proper prefetch abort handling on
- pre-ARMv6
-Message-ID: <20100701221728.GA12187@suse.de>
-References: <20100701175144.GA2116@kroah.com>
- <20100701173212.785441106@clark.site>
- <20100701221420.GA10481@shutemov.name>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701221420.GA10481@shutemov.name>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755328Ab0GAWTI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:19:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36057 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933516Ab0GAWS5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 18:18:57 -0400
+Date: Thu, 1 Jul 2010 15:18:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+       Alexander Clouter <alex@digriz.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VMware balloon: force compiling as a module
+Message-Id: <20100701151835.33874101.akpm@linux-foundation.org>
+In-Reply-To: <201006290940.38821.dtor@vmware.com>
+References: <20100628230035.GA18971@dtor-ws.eng.vmware.com>
+	<vcnof7-b9p.ln1@chipmunk.wormnet.eu>
+	<20100629182859.5acd5be7@neptune.home>
+	<201006290940.38821.dtor@vmware.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 01:14:20AM +0300, Kirill A. Shutemov wrote:
-> On Thu, Jul 01, 2010 at 10:31:37AM -0700, Greg KH wrote:
-> > 2.6.32-stable review patch.  If anyone has any objections, please let us know.
-> > 
-> > ------------------
-> > 
-> > From: Anfei <anfei.zhou@gmail.com>
-> > 
-> > commit 5e27fb78df95e027723af2c90ecc9b4527ae59e9 upstream.
-> > 
-> > Instruction faults on pre-ARMv6 CPUs are interpreted as
-> > a 'translation fault', but do_translation_fault doesn't
-> > handle well if user mode trying to run instruction above
-> > TASK_SIZE, and result in the infinite retry of that
-> > instruction.
->  
-> Actually, this patch helps also on ARMv6+. Probably, better to correct
-> commit message for stable.
+On Tue, 29 Jun 2010 09:40:38 -0700
+Dmitry Torokhov <dtor@vmware.com> wrote:
 
-We (well, I) like to keep the commit log identical to what is upstream
-just to make things easier all around.  Otherwise people start asking
-for spelling fixes, clarifications, and all sorts of other stuff (like
-this.)
+> On Tuesday, June 29, 2010 09:28:59 am Bruno Pr__mont wrote:
+> > On Tue, 29 June 2010 Alexander Clouter <alex@digriz.org.uk> wrote:
+> > > Dmitry Torokhov <dtor@vmware.com> wrote:
+> > > > VMware Tools installer requires the upstream driver to be compiled
+> > > > as a module in order to detect its presence and avoid installing
+> > > > our own version on top of it. To avoid surprises with 2 versions
+> > > > of the driver being installed and fighting with each other, let's
+> > > > force the driver to be compiled as a module unless user selects
+> > > > CONFIG_EMBEDDED.
+> > > 
+> > > *barf*
+> > > 
+> > > This surely is a problem in the installer and not the kernel?  Can you
+> > > not nosey around in /sys/class/misc or where-ever your driver appears?
+> > > If it does not, then I would probably suggest a patch to your balloon
+> > > driver that dumps some details in there, including module version
+> > > information.
+> > > 
+> > > Eugh.
+> > 
+> > In addition, the installer may check under /sys/module/ for it (as for
+> > any/most code that can be built as a module), even for built-in code.
+> > (if balloon driver does not show up there when built-in it would be
+> > better to get it to show up there)
+> > 
+> 
+> When driver is built-in the only thing exported in /sys/module/XXX are
+> module parameters.
+> 
+> We also need to handle scenario when module is not loaded into the
+> kernel.
+> 
 
-thanks,
+- check for the /sys/module directory.
 
-greg k-h
+- if that failed, modprobe the driver
+
+- if that failed, error out
+
+The patch really is pretty icky.  Adding restrictions to kernel
+configuration to work around problems in some installer program?
+
