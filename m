@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933173Ab0GAV1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:27:48 -0400
-Received: from kroah.org ([198.145.64.141]:33277 "EHLO coco.kroah.org"
+	id S933169Ab0GAVbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:31:39 -0400
+Received: from kroah.org ([198.145.64.141]:33200 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933185Ab0GAVPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:15:37 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:02 2010
-Message-Id: <20100701174302.895625064@clark.site>
+	id S933126Ab0GAVPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:15:14 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:43:01 2010
+Message-Id: <20100701174301.396919016@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:44:44 -0700
+Date: Thu, 01 Jul 2010 10:44:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Glauber Costa <glommer@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: [194/200] KVM: Fix wallclock version writing race
+       Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [176/200] NFS: Fix another nfs_wb_page() deadlock
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-Wallclock writing uses an unprotected global variable to hold the version;
-this can cause one guest to interfere with another if both write their
-wallclock at the same time.
+commit 0522f6adedd2736cbca3c0e16ca51df668993eee upstream.
 
-Acked-by: Glauber Costa <glommer@redhat.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+J.R. Okajima reports that the call to sync_inode() in nfs_wb_page() can
+deadlock with other writeback flush calls. It boils down to the fact
+that we cannot ever call writeback_single_inode() while holding a page
+lock (even if we do set nr_to_write to zero) since another process may
+already be waiting in the call to do_writepages(), and so will deny us
+the I_SYNC lock.
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-(Cherry-picked from commit 9ed3c444ab8987c7b219173a2f7807e3f71e234e)
 ---
- arch/x86/kvm/x86.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ fs/nfs/write.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -695,14 +695,22 @@ static int do_set_msr(struct kvm_vcpu *v
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1518,14 +1518,17 @@ int nfs_wb_page(struct inode *inode, str
+ 	};
+ 	int ret;
  
- static void kvm_write_wall_clock(struct kvm *kvm, gpa_t wall_clock)
- {
--	static int version;
-+	int version;
-+	int r;
- 	struct pvclock_wall_clock wc;
- 	struct timespec boot;
- 
- 	if (!wall_clock)
- 		return;
- 
--	version++;
-+	r = kvm_read_guest(kvm, wall_clock, &version, sizeof(version));
-+	if (r)
-+		return;
-+
-+	if (version & 1)
-+		++version;  /* first time write, random junk */
-+
-+	++version;
- 
- 	kvm_write_guest(kvm, wall_clock, &version, sizeof(version));
- 
+-	while(PagePrivate(page)) {
++	for (;;) {
+ 		wait_on_page_writeback(page);
+ 		if (clear_page_dirty_for_io(page)) {
+ 			ret = nfs_writepage_locked(page, &wbc);
+ 			if (ret < 0)
+ 				goto out_error;
++			continue;
+ 		}
+-		ret = sync_inode(inode, &wbc);
++		if (!PagePrivate(page))
++			break;
++		ret = nfs_commit_inode(inode, FLUSH_SYNC);
+ 		if (ret < 0)
+ 			goto out_error;
+ 	}
 
 
