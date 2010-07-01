@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab0GASg5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:36:57 -0400
-Received: from kroah.org ([198.145.64.141]:40646 "EHLO coco.kroah.org"
+	id S932483Ab0GASw2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:52:28 -0400
+Received: from kroah.org ([198.145.64.141]:35386 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758016Ab0GASXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:53 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
-Message-Id: <20100701173214.824349240@clark.site>
+	id S1757609Ab0GASWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:22:50 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:08 2010
+Message-Id: <20100701173208.668542812@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:01 -0700
+Date: Thu, 01 Jul 2010 10:30:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [patch 095/149] ahci: add pci quirk for JMB362
+       Cory Maccarrone <darkstar6262@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [patch 022/149] HID: Add the GYR4101US USB ID to hid-gyration
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Cory Maccarrone <darkstar6262@gmail.com>
 
-commit 4daedcfe8c6851aa01cc1997220f2577f4039c13 upstream.
+commit c2fd1a4ebf9127c280d227acb635eb1df213439c upstream.
 
-JMB362 is a new variant of jmicron controller which is similar to
-JMB360 but has two SATA ports instead of one.  As there is no PATA
-port, single function AHCI mode can be used as in JMB360.  Add pci
-quirk for JMB362.
+This change adds in the USB product ID for the Gyration
+GYR4101US USB media center remote control.  This remote
+is similar enough to the other two devices that this driver
+can be used without any other changes to get full support
+for the remote.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Aries Lee <arieslee@jmicron.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Cory Maccarrone <darkstar6262@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c    |    5 ++++-
- include/linux/pci_ids.h |    1 +
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/hid/hid-core.c     |    1 +
+ drivers/hid/hid-gyration.c |    1 +
+ drivers/hid/hid-ids.h      |    1 +
+ 3 files changed, 3 insertions(+)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -1444,7 +1444,8 @@ static void quirk_jmicron_ata(struct pci
- 	conf5 &= ~(1 << 24);  /* Clear bit 24 */
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1306,6 +1306,7 @@ static const struct hid_device_id hid_bl
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GREENASIA, 0x0012) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
+--- a/drivers/hid/hid-gyration.c
++++ b/drivers/hid/hid-gyration.c
+@@ -73,6 +73,7 @@ static int gyration_event(struct hid_dev
+ static const struct hid_device_id gyration_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, gyration_devices);
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -251,6 +251,7 @@
+ #define USB_VENDOR_ID_GYRATION		0x0c16
+ #define USB_DEVICE_ID_GYRATION_REMOTE	0x0002
+ #define USB_DEVICE_ID_GYRATION_REMOTE_2 0x0003
++#define USB_DEVICE_ID_GYRATION_REMOTE_3 0x0008
  
- 	switch (pdev->device) {
--	case PCI_DEVICE_ID_JMICRON_JMB360:
-+	case PCI_DEVICE_ID_JMICRON_JMB360: /* SATA single port */
-+	case PCI_DEVICE_ID_JMICRON_JMB362: /* SATA dual ports */
- 		/* The controller should be in single function ahci mode */
- 		conf1 |= 0x0002A100; /* Set 8, 13, 15, 17 */
- 		break;
-@@ -1480,12 +1481,14 @@ static void quirk_jmicron_ata(struct pci
- }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB360, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB361, quirk_jmicron_ata);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB362, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB363, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB365, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB366, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB368, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB360, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB361, quirk_jmicron_ata);
-+DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB362, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB363, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB365, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB366, quirk_jmicron_ata);
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2317,6 +2317,7 @@
- #define PCI_VENDOR_ID_JMICRON		0x197B
- #define PCI_DEVICE_ID_JMICRON_JMB360	0x2360
- #define PCI_DEVICE_ID_JMICRON_JMB361	0x2361
-+#define PCI_DEVICE_ID_JMICRON_JMB362	0x2362
- #define PCI_DEVICE_ID_JMICRON_JMB363	0x2363
- #define PCI_DEVICE_ID_JMICRON_JMB365	0x2365
- #define PCI_DEVICE_ID_JMICRON_JMB366	0x2366
+ #define USB_VENDOR_ID_HAPP		0x078b
+ #define USB_DEVICE_ID_UGCI_DRIVING	0x0010
 
 
