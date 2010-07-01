@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab0GANXy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:23:54 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:53726 "EHLO
+	id S1754631Ab0GANZS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:25:18 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:53822 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753666Ab0GANXw (ORCPT
+	by vger.kernel.org with ESMTP id S1753626Ab0GANZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:23:52 -0400
-Date: Thu, 1 Jul 2010 15:23:51 +0200
+	Thu, 1 Jul 2010 09:25:17 -0400
+Date: Thu, 1 Jul 2010 15:25:16 +0200
 From: Christoph Egger <siccegge@cs.fau.de>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Jassi Brar <jassi.brar@samsung.com>,
        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
        vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 06/33] Removing dead SHARPSL_LOCOMO
-Message-ID: <20100701132351.GB32541@faui48a.informatik.uni-erlangen.de>
-References: <cover.1277911345.git.siccegge@cs.fau.de> <b43850b1a1909496718e39687d1ca00543aa30ec.1277911346.git.siccegge@cs.fau.de> <AANLkTimVRdxeeQKazgFSIQJYtbmHnjDN5lUnTrVv6uoI@mail.gmail.com>
+Subject: Re: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
+Message-ID: <20100701132515.GC32541@faui48a.informatik.uni-erlangen.de>
+References: <cover.1277911345.git.siccegge@cs.fau.de> <e5391de6858597bbfd43874aed124a73f74850b5.1277911346.git.siccegge@cs.fau.de> <AANLkTinZa7_TEjYFTu9V6obndpVvMmHppaOArM1AJg_t@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimVRdxeeQKazgFSIQJYtbmHnjDN5lUnTrVv6uoI@mail.gmail.com>
+In-Reply-To: <AANLkTinZa7_TEjYFTu9V6obndpVvMmHppaOArM1AJg_t@mail.gmail.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 10:34:13AM +0800, Eric Miao wrote:
-> On Wed, Jun 30, 2010 at 11:55 PM, Christoph Egger <siccegge@cs.fau.de> wrote:
-> > SHARPSL_LOCOMO doesn't exist in Kconfig, therefore removing all
-> > references for it from the source code.
-> >
-> 
-> A good catch, though SHARPSL_LOCOMO has be changed to SHARP_LOCOMO
-> later, so a better fix would be the name change only.
+On Thu, Jul 01, 2010 at 09:55:47PM +0900, Jassi Brar wrote:
+> On Thu, Jul 1, 2010 at 1:03 AM, Christoph Egger <siccegge@cs.fau.de> wrote:
+> > SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
+> > all references for it from the source code.
+> I'd rather have the code compiled unconditionally.
 
-Hi! Updated patch below
+OK that would be done by the patch below
 
 ----
 From: Christoph Egger <siccegge@cs.fau.de>
-Date: Wed, 30 Jun 2010 12:36:20 +0200
-Subject: [PATCH 06/33] Replacing dead SHARPSL_LOCOMO with SHARP_LOCOMO
+Date: Wed, 30 Jun 2010 17:18:52 +0200
+Subject: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
 
-SHARP_LOCOMO doesn't exist in Kconfig, therefore replacing all
-references for it with SHARP_LOCOMO in the source code.
+SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
+all references for it from the source code, building the parts
+unconditionally
 
 Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 ---
- arch/arm/mach-sa1100/include/mach/irqs.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/arm/mach-s3c2443/mach-smdk2443.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-sa1100/include/mach/irqs.h b/arch/arm/mach-sa1100/include/mach/irqs.h
-index 8c8845b..d18f21a 100644
---- a/arch/arm/mach-sa1100/include/mach/irqs.h
-+++ b/arch/arm/mach-sa1100/include/mach/irqs.h
-@@ -77,7 +77,7 @@
-  */
- #ifdef CONFIG_SA1111
- #define NR_IRQS			(IRQ_BOARD_END + 55)
--#elif defined(CONFIG_SHARPSL_LOCOMO)
-+#elif defined(CONFIG_SHARP_LOCOMO)
- #define NR_IRQS			(IRQ_BOARD_START + 4)
- #else
- #define NR_IRQS			(IRQ_BOARD_START)
+diff --git a/arch/arm/mach-s3c2443/mach-smdk2443.c b/arch/arm/mach-s3c2443/mach-smdk2443.c
+index 4c863d3..764144a 100644
+--- a/arch/arm/mach-s3c2443/mach-smdk2443.c
++++ b/arch/arm/mach-s3c2443/mach-smdk2443.c
+@@ -106,9 +106,7 @@ static struct platform_device *smdk2443_devices[] __initdata = {
+ 	&s3c_device_wdt,
+ 	&s3c_device_i2c0,
+ 	&s3c_device_hsmmc0,
+-#ifdef CONFIG_SND_SOC_SMDK2443_WM9710
+ 	&s3c_device_ac97,
+-#endif
+ };
+ 
+ static void __init smdk2443_map_io(void)
+@@ -122,9 +120,7 @@ static void __init smdk2443_machine_init(void)
+ {
+ 	s3c_i2c0_set_platdata(NULL);
+ 
+-#ifdef CONFIG_SND_SOC_SMDK2443_WM9710
+ 	s3c24xx_ac97_setup_gpio(S3C24XX_AC97_GPE0);
+-#endif
+ 
+ 	platform_add_devices(smdk2443_devices, ARRAY_SIZE(smdk2443_devices));
+ 	smdk_machine_init();
 -- 
 1.7.0.4
-
 
