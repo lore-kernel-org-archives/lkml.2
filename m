@@ -1,121 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758364Ab0GAUtB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:49:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57302 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755647Ab0GAUs7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:48:59 -0400
-Date: Thu, 1 Jul 2010 13:48:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Anton Vorontsov <avorontsov@mvista.com>
-Cc: Ben Dooks <ben@simtec.co.uk>,
-       Richard =?ISO-8859-1?Q?R=F6jfors?= 
-	<richard.rojfors@pelagicore.com>,
-       linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] sdhci-pltfm: Add support for CNS3xxx SoC devices
-Message-Id: <20100701134839.d7cb4841.akpm@linux-foundation.org>
-In-Reply-To: <20100625180644.GC18241@oksana.dev.rtsoft.ru>
-References: <20100625180527.GA11280@oksana.dev.rtsoft.ru>
-	<20100625180644.GC18241@oksana.dev.rtsoft.ru>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932486Ab0GAUt2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:49:28 -0400
+Received: from kroah.org ([198.145.64.141]:47104 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932271Ab0GAUt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:49:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:27 2010
+Message-Id: <20100701173427.462712345@clark.site>
+User-Agent: quilt/0.48-10.1
+Date: Thu, 01 Jul 2010 10:33:13 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
+       Andi Kleen <andi@firstfloor.org>
+Subject: [patch 007/164] cpumask: fix compat getaffinity
+In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jun 2010 22:06:44 +0400
-Anton Vorontsov <avorontsov@mvista.com> wrote:
+2.6.33-stable review patch.  If anyone has any objections, please let me know.
 
-> There's nothing special, just SoC-specific ops and quirks.
-> 
-> ...
->
-> +static void sdhci_cns3xxx_set_clock(struct sdhci_host *host, unsigned int clock)
-> +{
-> +	struct device *dev = mmc_dev(host->mmc);
-> +	int div = 1;
-> +	u16 clk;
-> +	unsigned long timeout;
-> +
-> +	if (clock == host->clock)
-> +		return;
+------------------
 
-I assume that mmc core prevents this function from being exectued twice
-at the same time?
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-> +	sdhci_writew(host, 0, SDHCI_CLOCK_CONTROL);
-> +
-> +	if (clock == 0)
-> +		goto out;
-> +
-> +	while (host->max_clk / div > clock) {
-> +		/*
-> +		 * On CNS3xxx divider grows linearly up to 4, and then
-> +		 * exponentially up to 256.
-> +		 */
-> +		if (div < 4)
-> +			div += 1;
-> +		else if (div < 256)
-> +			div *= 2;
-> +		else
-> +			break;
-> +	}
-> +
-> +	dev_dbg(dev, "desired SD clock: %d, actual: %d\n",
-> +		clock, host->max_clk / div);
-> +
-> +	/* Divide by 3 is special. */
-> +	if (div != 3)
-> +		div >>= 1;
-> +
-> +	clk = div << SDHCI_DIVIDER_SHIFT;
-> +	clk |= SDHCI_CLOCK_INT_EN;
-> +	sdhci_writew(host, clk, SDHCI_CLOCK_CONTROL);
-> +
-> +	timeout = 20;
-> +	while (!((clk = sdhci_readw(host, SDHCI_CLOCK_CONTROL))
-> +			& SDHCI_CLOCK_INT_STABLE)) {
-> +		if (timeout == 0) {
-> +			dev_warn(dev, "clock is unstable");
-> +			break;
-> +		}
-> +		timeout--;
-> +		mdelay(1);
+commit fa9dc265ace9774e62f0e31108e5f47911124bda upstream.
 
-Could we have used the more polite msleep() here?
+Commit a45185d2d "cpumask: convert kernel/compat.c" broke libnuma, which
+abuses sched_getaffinity to find out NR_CPUS in order to parse
+/sys/devices/system/node/node*/cpumap.
 
-> +	}
-> +
-> +	clk |= SDHCI_CLOCK_CARD_EN;
-> +	sdhci_writew(host, clk, SDHCI_CLOCK_CONTROL);
-> +out:
-> +	host->clock = clock;
-> +}
-> +
->
-> ...
->
-> --- a/drivers/mmc/host/sdhci-pltfm.c
-> +++ b/drivers/mmc/host/sdhci-pltfm.c
-> @@ -158,6 +158,9 @@ static int __devexit sdhci_pltfm_remove(struct platform_device *pdev)
->  
->  static const struct platform_device_id sdhci_pltfm_ids[] = {
->  	{ "sdhci", },
-> +#ifdef CONFIG_MMC_SDHCI_CNS3XXX
-> +	{ "sdhci-cns3xxx", (kernel_ulong_t)&sdhci_cns3xxx_pdata },
-> +#endif
+On NUMA systems with less than 32 possibly CPUs, the current
+compat_sys_sched_getaffinity now returns '4' instead of the actual
+NR_CPUS/8, which makes libnuma bail out when parsing the cpumap.
 
-What the heck is this kernel_ulong_t thing and why did `struct
-platform_device_id' see a need to invent it??
+The libnuma call sched_getaffinity(0, bitmap, 4096) at first.  It mean
+the libnuma expect the return value of sched_getaffinity() is either len
+argument or NR_CPUS.  But it doesn't expect to return nr_cpu_ids.
+
+Strictly speaking, userland requirement are
+
+1) Glibc assume the return value mean the lengh of initialized
+   of mask argument. E.g. if sched_getaffinity(1024) return 128,
+   glibc make zero fill rest 896 byte.
+2) Libnuma assume the return value can be used to guess NR_CPUS
+   in kernel. It assume len-arg<NR_CPUS makes -EINVAL. But
+   it try len=4096 at first and 4096 is always bigger than
+   NR_CPUS. Then, if we remove strange min_length normalization,
+   we never hit -EINVAL case.
+
+sched_getaffinity() already solved this issue.  This patch adapts
+compat_sys_sched_getaffinity() to match the non-compat case.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Reported-by: Ken Werner <ken.werner@web.de>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/compat.c |   25 +++++++++++--------------
+ 1 file changed, 11 insertions(+), 14 deletions(-)
+
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -494,29 +494,26 @@ asmlinkage long compat_sys_sched_getaffi
+ {
+ 	int ret;
+ 	cpumask_var_t mask;
+-	unsigned long *k;
+-	unsigned int min_length = cpumask_size();
+ 
+-	if (nr_cpu_ids <= BITS_PER_COMPAT_LONG)
+-		min_length = sizeof(compat_ulong_t);
+-
+-	if (len < min_length)
++	if ((len * BITS_PER_BYTE) < nr_cpu_ids)
++		return -EINVAL;
++	if (len & (sizeof(compat_ulong_t)-1))
+ 		return -EINVAL;
+ 
+ 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+ 		return -ENOMEM;
+ 
+ 	ret = sched_getaffinity(pid, mask);
+-	if (ret < 0)
+-		goto out;
++	if (ret == 0) {
++		size_t retlen = min_t(size_t, len, cpumask_size());
+ 
+-	k = cpumask_bits(mask);
+-	ret = compat_put_bitmap(user_mask_ptr, k, min_length * 8);
+-	if (ret == 0)
+-		ret = min_length;
+-
+-out:
++		if (compat_put_bitmap(user_mask_ptr, cpumask_bits(mask), retlen * 8))
++			ret = -EFAULT;
++		else
++			ret = retlen;
++	}
+ 	free_cpumask_var(mask);
++
+ 	return ret;
+ }
+ 
 
 
->  	{ },
->  };
->  MODULE_DEVICE_TABLE(platform, sdhci_pltfm_ids);
->
-> ...
->
