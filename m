@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933373Ab0GAVik (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:38:40 -0400
-Received: from kroah.org ([198.145.64.141]:33000 "EHLO coco.kroah.org"
+	id S1759536Ab0GAVyQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:54:16 -0400
+Received: from kroah.org ([198.145.64.141]:60813 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759210Ab0GAVOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:14:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:58 2010
-Message-Id: <20100701174257.983808629@clark.site>
+	id S1758770Ab0GAVNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:32 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:51 2010
+Message-Id: <20100701174251.337449786@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:43:47 -0700
+Date: Thu, 01 Jul 2010 10:42:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Paul Mundt <lethal@linux-sh.org>
-Subject: [137/200] clocksource: sh_cmt: compute mult and shift before registration
+       Henrik Kretzschmar <henne@nachtwindheim.de>,
+       =?ISO-8859-15?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [058/200] fbdev: section cleanup in vga16fb
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +27,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mundt <lethal@linux-sh.org>
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
 
-commit f4d7c3565c1692c54d9152b52090fe73f0029e37 upstream.
+commit ad1458464cbbe6935be6e20d70920301733158af upstream.
 
-Based on the sh_tmu change in 66f49121ffa41a19c59965b31b046d8368fec3c7
-("clocksource: sh_tmu: compute mult and shift before registration").
-The same issues impact the sh_cmt driver, so we take the same approach
-here.
+Fix up the sections in the vga16fb driver, by moving:
 
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+*	the variables vga16_defined and vga16fb
+	from .init.data to .devinit.data
+
+*	vga16fb_setup() from .text to .init.text
+
+*	vga16fb_remove() from .text. to .devexit.text
+
+This fixes the following warnings issued by modpost:
+
+WARNING: drivers/video/built-in.o(.devinit.text+0x1a420): Section mismatch in re
+ference from the function vga16fb_probe() to the (unknown reference) .init.data:
+(unknown)
+The function __devinit vga16fb_probe() references
+a (unknown reference) __initdata (unknown).
+If (unknown) is only used by vga16fb_probe then
+annotate (unknown) with a matching annotation.
+
+WARNING: drivers/video/built-in.o(.devinit.text+0x1a437): Section mismatch in reference from the function vga16fb_probe() to the variable .init.data:vga16fb_defined
+The function __devinit vga16fb_probe() references
+a variable __initdata vga16fb_defined.
+If vga16fb_defined is only used by vga16fb_probe then
+annotate vga16fb_defined with a matching annotation.
+
+WARNING: drivers/video/built-in.o(.devinit.text+0x1a457): Section mismatch in reference from the function vga16fb_probe() to the variable .init.data:vga16fb_fix
+The function __devinit vga16fb_probe() references
+a variable __initdata vga16fb_fix.
+If vga16fb_fix is only used by vga16fb_probe then
+annotate vga16fb_fix with a matching annotation.
+
+Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/clocksource/sh_cmt.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ drivers/video/vga16fb.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/clocksource/sh_cmt.c
-+++ b/drivers/clocksource/sh_cmt.c
-@@ -413,18 +413,10 @@ static cycle_t sh_cmt_clocksource_read(s
- static int sh_cmt_clocksource_enable(struct clocksource *cs)
+--- a/drivers/video/vga16fb.c
++++ b/drivers/video/vga16fb.c
+@@ -65,7 +65,7 @@ struct vga16fb_par {
+ 
+ /* --------------------------------------------------------------------- */
+ 
+-static struct fb_var_screeninfo vga16fb_defined __initdata = {
++static struct fb_var_screeninfo vga16fb_defined __devinitdata = {
+ 	.xres		= 640,
+ 	.yres		= 480,
+ 	.xres_virtual	= 640,
+@@ -85,7 +85,7 @@ static struct fb_var_screeninfo vga16fb_
+ };
+ 
+ /* name should not depend on EGA/VGA */
+-static struct fb_fix_screeninfo vga16fb_fix __initdata = {
++static struct fb_fix_screeninfo vga16fb_fix __devinitdata = {
+ 	.id		= "VGA16 VGA",
+ 	.smem_start	= VGA_FB_PHYS,
+ 	.smem_len	= VGA_FB_PHYS_LEN,
+@@ -1278,7 +1278,7 @@ static struct fb_ops vga16fb_ops = {
+ };
+ 
+ #ifndef MODULE
+-static int vga16fb_setup(char *options)
++static int __init vga16fb_setup(char *options)
  {
- 	struct sh_cmt_priv *p = cs_to_sh_cmt(cs);
--	int ret;
- 
- 	p->total_cycles = 0;
- 
--	ret = sh_cmt_start(p, FLAG_CLOCKSOURCE);
--	if (ret)
--		return ret;
--
--	/* TODO: calculate good shift from rate and counter bit width */
--	cs->shift = 0;
--	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
--	return 0;
-+	return sh_cmt_start(p, FLAG_CLOCKSOURCE);
+ 	char *this_opt;
+ 	
+@@ -1376,7 +1376,7 @@ static int __devinit vga16fb_probe(struc
+ 	return ret;
  }
  
- static void sh_cmt_clocksource_disable(struct clocksource *cs)
-@@ -451,7 +443,18 @@ static int sh_cmt_register_clocksource(s
- 	cs->resume = sh_cmt_clocksource_resume;
- 	cs->mask = CLOCKSOURCE_MASK(sizeof(unsigned long) * 8);
- 	cs->flags = CLOCK_SOURCE_IS_CONTINUOUS;
-+
-+	/* clk_get_rate() needs an enabled clock */
-+	clk_enable(p->clk);
-+	p->rate = clk_get_rate(p->clk) / (p->width == 16) ? 512 : 8;
-+	clk_disable(p->clk);
-+
-+	/* TODO: calculate good shift from rate and counter bit width */
-+	cs->shift = 10;
-+	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
-+
- 	pr_info("sh_cmt: %s used as clock source\n", cs->name);
-+
- 	clocksource_register(cs);
- 	return 0;
- }
+-static int vga16fb_remove(struct platform_device *dev)
++static int __devexit vga16fb_remove(struct platform_device *dev)
+ {
+ 	struct fb_info *info = platform_get_drvdata(dev);
+ 
+@@ -1393,7 +1393,7 @@ static int vga16fb_remove(struct platfor
+ 
+ static struct platform_driver vga16fb_driver = {
+ 	.probe = vga16fb_probe,
+-	.remove = vga16fb_remove,
++	.remove = __devexit_p(vga16fb_remove),
+ 	.driver = {
+ 		.name = "vga16fb",
+ 	},
 
 
