@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab0GANay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:30:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52713 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555Ab0GANaw convert rfc822-to-8bit (ORCPT
+	id S1754964Ab0GANcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:32:19 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:56845 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754027Ab0GANcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:30:52 -0400
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <20100701130816.GB32223@redhat.com>
-References: <20100624081135.GA937@redhat.com>
-	 <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
-	 <20100625101022.GA16321@redhat.com> <20100701110708.GA27368@redhat.com>
-	 <1277983179.1917.10.camel@laptop> <1277984603.1917.15.camel@laptop>
-	 <20100701115507.GA31333@redhat.com> <20100701122340.GB31333@redhat.com>
-	 <1277987657.1917.32.camel@laptop> <1277988395.1917.47.camel@laptop>
-	 <20100701130816.GB32223@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 01 Jul 2010 15:30:24 +0200
-Message-ID: <1277991024.1917.108.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 1 Jul 2010 09:32:17 -0400
+Date: Thu, 1 Jul 2010 15:32:08 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       mark gross <640e9920@gmail.com>, Arve Hj??nnev??g <arve@android.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Mickler <florian@mickler.org>, linux-pci@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being
+ lost
+Message-ID: <20100701133208.GA1285@ucw.cz>
+References: <201006261514.13491.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006261514.13491.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-01 at 16:08 +0300, Michael S. Tsirkin wrote:
-> On Thu, Jul 01, 2010 at 02:46:35PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2010-07-01 at 14:34 +0200, Peter Zijlstra wrote:
-> > > On Thu, 2010-07-01 at 15:23 +0300, Michael S. Tsirkin wrote:
-> > > > 
-> > > > The patch using this is here:
-> > > > http://www.mail-archive.com/kvm@vger.kernel.org/msg35411.html
-> > > > 
-> > > > It simply copies the affinity from the parent when thread is created.
-> > > 
-> > > Sounds like policy, not something the kernel should do..
-> > 
-> > The alternative would be using clone() instead of thread_create() and
-> > inherit everything from the creating task.
-> > Inheriting from kthreadd and then undoing some aspects just sounds
-> > like daft policy that really ought to be in userspace.
-> 
-> Yes, that's basically what this patchset is trying to do:
-> create a workqueue inheriting everything from the creating task.
-> Sridhar started with an API to do exactly this:
-> http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-05/msg07478.html
-> 
-> Then we switched to raw kthread to avoid stepping on cwq toes.
-> Maybe it makes sense to add kthread_clone (in addition to
-> kthread_create) that would do what you suggest?
-> If yes, any hints on an implementation?
+Hi!
 
-I think that's called kernel_thread() see
-kernel/kthread.c:create_kthread().
+> @@ -114,3 +114,17 @@ Description:
+>  		if this file contains "1", which is the default.  It may be
+>  		disabled by writing "0" to this file, in which case all devices
+>  		will be suspended and resumed synchronously.
+> +
+> +What:		/sys/power/wakeup_count
+> +Date:		July 2010
+> +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
+> +Description:
+> +		The /sys/power/wakeup_count file allows user space to avoid
+> +		losing wakeup events when transitioning the system into a sleep
+> +		state.  Reading from it returns the current number of registered
+> +		wakeup events and it blocks if some wakeup events are being
+> +		processed at the time the file is read from.  Writing to it
+> +		will only succeed if the current number of wakeup events is
+> +		equal to the written value and, if successful, will make the
+> +		kernel abort a subsequent transition to a sleep state if any
+> +		wakeup events are reported after the write has returned.
 
-Doing the whole kthreadd dance and then copying bits and pieces back
-sounds very fragile, so yeah, something like that should work.
+I assume that second suspend always succeeds?
 
-The other issue to consider is the thread group status of these things,
-I think it would be best if these threads were still considered part of
-the process that spawned them so that they would die nicely when the
-process gets whacked.
+I can't say I quite like the way two sysfs files interact with each
+other, but it is certainly better then wakelocks...
 
-At which point one could wonder if the kthread interface makes any
-sense, why not let userspace fork tasks and let them call into the
-kernel to perform work...
+Maybe we should create sys_suspend()?
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
