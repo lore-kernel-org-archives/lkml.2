@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991Ab0GASji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:39:38 -0400
-Received: from kroah.org ([198.145.64.141]:40579 "EHLO coco.kroah.org"
+	id S932330Ab0GAScZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:32:25 -0400
+Received: from kroah.org ([198.145.64.141]:40749 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757951Ab0GASXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:41 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:13 2010
-Message-Id: <20100701173213.730761749@clark.site>
+	id S1758108Ab0GASYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:12 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:16 2010
+Message-Id: <20100701173216.676735701@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:48 -0700
+Date: Thu, 01 Jul 2010 10:32:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-       David Howells <dhowells@redhat.com>, Eric Paris <eparis@parisplace.org>,
-       Jakub Jelinek <jakub@redhat.com>, James Morris <jmorris@namei.org>,
-       Stephen Smalley <sds@tycho.nsa.gov>
-Subject: [patch 082/149] signals: check_kill_permission(): dont check creds if same_thread_group()
+       Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+       Reinette Chatre <reinette.chatre@intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 117/149] iwlwifi: update supported PCI_ID list for 5xx0 series
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,77 +27,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
-commit 065add3941bdca54fe04ed3471a96bce9af88793 upstream.
+commit ac592574a577162183b5c1dd040a188caa068a29 upstream.
 
-Andrew Tridgell reports that aio_read(SIGEV_SIGNAL) can fail if the
-notification from the helper thread races with setresuid(), see
-http://samba.org/~tridge/junkcode/aio_uid.c
+Update the PCI_ID list for 5xx0 series.
+Remove all the PCI_IDs which never made into production or not longer in
+production.
 
-This happens because check_kill_permission() doesn't permit sending a
-signal to the task with the different cred->xids.  But there is not any
-security reason to check ->cred's when the task sends a signal (private or
-group-wide) to its sub-thread.  Whatever we do, any thread can bypass all
-security checks and send SIGKILL to all threads, or it can block a signal
-SIG and do kill(gettid(), SIG) to deliver this signal to another
-sub-thread.  Not to mention that CLONE_THREAD implies CLONE_VM.
+Also make sure the supported bands(a/b/g/n) match specified PCI_IDs
 
-Change check_kill_permission() to avoid the credentials check when the
-sender and the target are from the same thread group.
-
-Also, move "cred = current_cred()" down to avoid calling get_current()
-twice.
-
-Note: David Howells pointed out we could relax this even more, the
-CLONE_SIGHAND (without CLONE_THREAD) case probably does not need
-these checks too.
-
-Roland said:
-: The glibc (libpthread) that does set*id across threads has
-: been in use for a while (2.3.4?), probably in distro's using kernels as old
-: or older than any active -stable streams.  In the race in question, this
-: kernel bug is breaking valid POSIX application expectations.
-
-Reported-by: Andrew Tridgell <tridge@samba.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Roland McGrath <roland@redhat.com>
-Acked-by: David Howells <dhowells@redhat.com>
-Cc: Eric Paris <eparis@parisplace.org>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Cc: James Morris <jmorris@namei.org>
-Cc: Roland McGrath <roland@redhat.com>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- kernel/signal.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -591,7 +591,7 @@ static int rm_from_queue(unsigned long m
- static int check_kill_permission(int sig, struct siginfo *info,
- 				 struct task_struct *t)
- {
--	const struct cred *cred = current_cred(), *tcred;
-+	const struct cred *cred, *tcred;
- 	struct pid *sid;
- 	int error;
+---
+ drivers/net/wireless/iwlwifi/iwl-5000.c |   23 ++++++++-
+ drivers/net/wireless/iwlwifi/iwl-agn.c  |   74 ++++++++++++++++++++++++--------
+ drivers/net/wireless/iwlwifi/iwl-dev.h  |    3 -
+ 3 files changed, 78 insertions(+), 22 deletions(-)
+
+--- a/drivers/net/wireless/iwlwifi/iwl-5000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
+@@ -1674,12 +1674,12 @@ struct iwl_cfg iwl5300_agn_cfg = {
+ 	.use_rts_for_ht = true, /* use rts/cts protection */
+ };
  
-@@ -605,8 +605,10 @@ static int check_kill_permission(int sig
- 	if (error)
- 		return error;
+-struct iwl_cfg iwl5100_bg_cfg = {
+-	.name = "5100BG",
++struct iwl_cfg iwl5100_bgn_cfg = {
++	.name = "5100BGN",
+ 	.fw_name_pre = IWL5000_FW_PRE,
+ 	.ucode_api_max = IWL5000_UCODE_API_MAX,
+ 	.ucode_api_min = IWL5000_UCODE_API_MIN,
+-	.sku = IWL_SKU_G,
++	.sku = IWL_SKU_G|IWL_SKU_N,
+ 	.ops = &iwl5000_ops,
+ 	.eeprom_size = IWL_5000_EEPROM_IMG_SIZE,
+ 	.eeprom_ver = EEPROM_5000_EEPROM_VERSION,
+@@ -1705,7 +1705,6 @@ struct iwl_cfg iwl5100_abg_cfg = {
+ 	.valid_tx_ant = ANT_B,
+ 	.valid_rx_ant = ANT_AB,
+ 	.need_pll_cfg = true,
+-	.ht_greenfield_support = true,
+ };
  
-+	cred = current_cred();
- 	tcred = __task_cred(t);
--	if ((cred->euid ^ tcred->suid) &&
-+	if (!same_thread_group(current, t) &&
-+	    (cred->euid ^ tcred->suid) &&
- 	    (cred->euid ^ tcred->uid) &&
- 	    (cred->uid  ^ tcred->suid) &&
- 	    (cred->uid  ^ tcred->uid) &&
+ struct iwl_cfg iwl5100_agn_cfg = {
+@@ -1762,6 +1761,22 @@ struct iwl_cfg iwl5150_agn_cfg = {
+ 	.use_rts_for_ht = true, /* use rts/cts protection */
+ };
+ 
++struct iwl_cfg iwl5150_abg_cfg = {
++	.name = "5150ABG",
++	.fw_name_pre = IWL5150_FW_PRE,
++	.ucode_api_max = IWL5150_UCODE_API_MAX,
++	.ucode_api_min = IWL5150_UCODE_API_MIN,
++	.sku = IWL_SKU_A|IWL_SKU_G,
++	.ops = &iwl5150_ops,
++	.eeprom_size = IWL_5000_EEPROM_IMG_SIZE,
++	.eeprom_ver = EEPROM_5050_EEPROM_VERSION,
++	.eeprom_calib_ver = EEPROM_5050_TX_POWER_VERSION,
++	.mod_params = &iwl50_mod_params,
++	.valid_tx_ant = ANT_A,
++	.valid_rx_ant = ANT_AB,
++	.need_pll_cfg = true,
++};
++
+ MODULE_FIRMWARE(IWL5000_MODULE_FIRMWARE(IWL5000_UCODE_API_MAX));
+ MODULE_FIRMWARE(IWL5150_MODULE_FIRMWARE(IWL5150_UCODE_API_MAX));
+ 
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -3203,23 +3203,63 @@ static struct pci_device_id iwl_hw_card_
+ 	{IWL_PCI_DEVICE(0x4230, PCI_ANY_ID, iwl4965_agn_cfg)},
+ #endif /* CONFIG_IWL4965 */
+ #ifdef CONFIG_IWL5000
+-	{IWL_PCI_DEVICE(0x4232, 0x1205, iwl5100_bg_cfg)},
+-	{IWL_PCI_DEVICE(0x4232, 0x1305, iwl5100_bg_cfg)},
+-	{IWL_PCI_DEVICE(0x4232, 0x1206, iwl5100_abg_cfg)},
+-	{IWL_PCI_DEVICE(0x4232, 0x1306, iwl5100_abg_cfg)},
+-	{IWL_PCI_DEVICE(0x4232, 0x1326, iwl5100_abg_cfg)},
+-	{IWL_PCI_DEVICE(0x4237, 0x1216, iwl5100_abg_cfg)},
+-	{IWL_PCI_DEVICE(0x4232, PCI_ANY_ID, iwl5100_agn_cfg)},
+-	{IWL_PCI_DEVICE(0x4235, PCI_ANY_ID, iwl5300_agn_cfg)},
+-	{IWL_PCI_DEVICE(0x4236, PCI_ANY_ID, iwl5300_agn_cfg)},
+-	{IWL_PCI_DEVICE(0x4237, PCI_ANY_ID, iwl5100_agn_cfg)},
+-/* 5350 WiFi/WiMax */
+-	{IWL_PCI_DEVICE(0x423A, 0x1001, iwl5350_agn_cfg)},
+-	{IWL_PCI_DEVICE(0x423A, 0x1021, iwl5350_agn_cfg)},
+-	{IWL_PCI_DEVICE(0x423B, 0x1011, iwl5350_agn_cfg)},
+-/* 5150 Wifi/WiMax */
+-	{IWL_PCI_DEVICE(0x423C, PCI_ANY_ID, iwl5150_agn_cfg)},
+-	{IWL_PCI_DEVICE(0x423D, PCI_ANY_ID, iwl5150_agn_cfg)},
++/* 5100 Series WiFi */
++	{IWL_PCI_DEVICE(0x4232, 0x1201, iwl5100_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1301, iwl5100_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1204, iwl5100_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1304, iwl5100_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1205, iwl5100_bgn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1305, iwl5100_bgn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1206, iwl5100_abg_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1306, iwl5100_abg_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1221, iwl5100_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1321, iwl5100_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1224, iwl5100_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1324, iwl5100_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1225, iwl5100_bgn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1325, iwl5100_bgn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1226, iwl5100_abg_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4232, 0x1326, iwl5100_abg_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4237, 0x1211, iwl5100_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4237, 0x1311, iwl5100_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4237, 0x1214, iwl5100_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4237, 0x1314, iwl5100_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4237, 0x1215, iwl5100_bgn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4237, 0x1315, iwl5100_bgn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4237, 0x1216, iwl5100_abg_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4237, 0x1316, iwl5100_abg_cfg)}, /* Half Mini Card */
++
++/* 5300 Series WiFi */
++	{IWL_PCI_DEVICE(0x4235, 0x1021, iwl5300_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4235, 0x1121, iwl5300_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4235, 0x1024, iwl5300_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4235, 0x1124, iwl5300_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4235, 0x1001, iwl5300_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4235, 0x1101, iwl5300_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4235, 0x1004, iwl5300_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4235, 0x1104, iwl5300_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4236, 0x1011, iwl5300_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4236, 0x1111, iwl5300_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x4236, 0x1014, iwl5300_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x4236, 0x1114, iwl5300_agn_cfg)}, /* Half Mini Card */
++
++/* 5350 Series WiFi/WiMax */
++	{IWL_PCI_DEVICE(0x423A, 0x1001, iwl5350_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x423A, 0x1021, iwl5350_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x423B, 0x1011, iwl5350_agn_cfg)}, /* Mini Card */
++
++/* 5150 Series Wifi/WiMax */
++	{IWL_PCI_DEVICE(0x423C, 0x1201, iwl5150_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x423C, 0x1301, iwl5150_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x423C, 0x1206, iwl5150_abg_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x423C, 0x1306, iwl5150_abg_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x423C, 0x1221, iwl5150_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x423C, 0x1321, iwl5150_agn_cfg)}, /* Half Mini Card */
++
++	{IWL_PCI_DEVICE(0x423D, 0x1211, iwl5150_agn_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x423D, 0x1311, iwl5150_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x423D, 0x1216, iwl5150_abg_cfg)}, /* Mini Card */
++	{IWL_PCI_DEVICE(0x423D, 0x1316, iwl5150_abg_cfg)}, /* Half Mini Card */
+ /* 6000/6050 Series */
+ 	{IWL_PCI_DEVICE(0x008D, PCI_ANY_ID, iwl6000h_2agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x008E, PCI_ANY_ID, iwl6000h_2agn_cfg)},
+--- a/drivers/net/wireless/iwlwifi/iwl-dev.h
++++ b/drivers/net/wireless/iwlwifi/iwl-dev.h
+@@ -53,9 +53,10 @@ extern struct iwl_cfg iwl4965_agn_cfg;
+ extern struct iwl_cfg iwl5300_agn_cfg;
+ extern struct iwl_cfg iwl5100_agn_cfg;
+ extern struct iwl_cfg iwl5350_agn_cfg;
+-extern struct iwl_cfg iwl5100_bg_cfg;
++extern struct iwl_cfg iwl5100_bgn_cfg;
+ extern struct iwl_cfg iwl5100_abg_cfg;
+ extern struct iwl_cfg iwl5150_agn_cfg;
++extern struct iwl_cfg iwl5150_abg_cfg;
+ extern struct iwl_cfg iwl6000h_2agn_cfg;
+ extern struct iwl_cfg iwl6000i_2agn_cfg;
+ extern struct iwl_cfg iwl6000_3agn_cfg;
 
 
