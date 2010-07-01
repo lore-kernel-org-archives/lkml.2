@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758427Ab0GASdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:33:55 -0400
-Received: from kroah.org ([198.145.64.141]:40720 "EHLO coco.kroah.org"
+	id S1758077Ab0GASYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:24:04 -0400
+Received: from kroah.org ([198.145.64.141]:40682 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758082Ab0GASYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:06 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:16 2010
-Message-Id: <20100701173216.089063380@clark.site>
+	id S1758050Ab0GASX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:23:59 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:15 2010
+Message-Id: <20100701173215.403017080@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:16 -0700
+Date: Thu, 01 Jul 2010 10:32:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Ben Hutchings <ben@decadent.org.uk>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [patch 110/149] Documentation/3c509: document ethtool support
+       Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [patch 102/149] USB: xhci: Wait for host to start running.
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +25,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit aa4e2e171385bb77b4da8b760d26dea2aa291587 upstream.
+commit ed07453fd356025cc25272629e982f5e4607632c upstream.
 
-3c509 was changed to support ethtool in 2002, making the 'xcvr' module
-parameter obsolete in most cases.  More recently 3c509 was converted
-to the modern driver model and this parameter was removed.  Fix the
-documentation to refer to ethtool rather than the module parameter.
+When the run bit is set in the xHCI command register, it may take a few
+microseconds for the host to start running.  We cannot ring any doorbells
+until the host is actually running, so wait until the status register says
+the host is running.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Shinya Saito <shinya.saito.sx@renesas.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/networking/3c509.txt |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci-hcd.c |   39 ++++++++++++++++++++++++++++++++-------
+ 1 file changed, 32 insertions(+), 7 deletions(-)
 
---- a/Documentation/networking/3c509.txt
-+++ b/Documentation/networking/3c509.txt
-@@ -48,11 +48,11 @@ for LILO parameters for doing this:
- This configures the first found 3c509 card for IRQ 10, base I/O 0x310, and
- transceiver type 3 (10base2). The flag "0x3c509" must be set to avoid conflicts
- with other card types when overriding the I/O address. When the driver is
--loaded as a module, only the IRQ and transceiver setting may be overridden.
--For example, setting two cards to 10base2/IRQ10 and AUI/IRQ11 is done by using
--the xcvr and irq module options:
-+loaded as a module, only the IRQ may be overridden. For example,
-+setting two cards to IRQ10 and IRQ11 is done by using the irq module
-+option:
+--- a/drivers/usb/host/xhci-hcd.c
++++ b/drivers/usb/host/xhci-hcd.c
+@@ -97,6 +97,33 @@ int xhci_halt(struct xhci_hcd *xhci)
+ }
  
--   options 3c509 xcvr=3,1 irq=10,11
-+   options 3c509 irq=10,11
- 
- 
- (2) Full-duplex mode
-@@ -77,6 +77,8 @@ operation.
- itself full-duplex capable. This is almost certainly one of two things: a full-
- duplex-capable  Ethernet switch (*not* a hub), or a full-duplex-capable NIC on
- another system that's connected directly to the 3c509B via a crossover cable.
+ /*
++ * Set the run bit and wait for the host to be running.
++ */
++int xhci_start(struct xhci_hcd *xhci)
++{
++	u32 temp;
++	int ret;
 +
-+Full-duplex mode can be enabled using 'ethtool'.
-  
- /////Extremely important caution concerning full-duplex mode/////
- Understand that the 3c509B's hardware's full-duplex support is much more
-@@ -113,6 +115,8 @@ This insured that merely upgrading the d
- never automatically enable full-duplex mode in an existing installation;
- it must always be explicitly enabled via one of these code in order to be
- activated.
++	temp = xhci_readl(xhci, &xhci->op_regs->command);
++	temp |= (CMD_RUN);
++	xhci_dbg(xhci, "// Turn on HC, cmd = 0x%x.\n",
++			temp);
++	xhci_writel(xhci, temp, &xhci->op_regs->command);
 +
-+The transceiver type can be changed using 'ethtool'.
-   
++	/*
++	 * Wait for the HCHalted Status bit to be 0 to indicate the host is
++	 * running.
++	 */
++	ret = handshake(xhci, &xhci->op_regs->status,
++			STS_HALT, 0, XHCI_MAX_HALT_USEC);
++	if (ret == -ETIMEDOUT)
++		xhci_err(xhci, "Host took too long to start, "
++				"waited %u microseconds.\n",
++				XHCI_MAX_HALT_USEC);
++	return ret;
++}
++
++/*
+  * Reset a halted HC, and set the internal HC state to HC_STATE_HALT.
+  *
+  * This resets pipelines, timers, counters, state machines, etc.
+@@ -460,13 +487,11 @@ int xhci_run(struct usb_hcd *hcd)
+ 	if (NUM_TEST_NOOPS > 0)
+ 		doorbell = xhci_setup_one_noop(xhci);
  
- (4a) Interpretation of error messages and common problems
+-	temp = xhci_readl(xhci, &xhci->op_regs->command);
+-	temp |= (CMD_RUN);
+-	xhci_dbg(xhci, "// Turn on HC, cmd = 0x%x.\n",
+-			temp);
+-	xhci_writel(xhci, temp, &xhci->op_regs->command);
+-	/* Flush PCI posted writes */
+-	temp = xhci_readl(xhci, &xhci->op_regs->command);
++	if (xhci_start(xhci)) {
++		xhci_halt(xhci);
++		return -ENODEV;
++	}
++
+ 	xhci_dbg(xhci, "// @%p = 0x%x\n", &xhci->op_regs->command, temp);
+ 	if (doorbell)
+ 		(*doorbell)(xhci);
 
 
