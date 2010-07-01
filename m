@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab0GAScU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:32:20 -0400
-Received: from kroah.org ([198.145.64.141]:40755 "EHLO coco.kroah.org"
+	id S1758440Ab0GASd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:33:58 -0400
+Received: from kroah.org ([198.145.64.141]:40715 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757739Ab0GASYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:24:13 -0400
+	id S1758081Ab0GASYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:05 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:16 2010
-Message-Id: <20100701173216.764789302@clark.site>
+Message-Id: <20100701173216.005256773@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:32:24 -0700
+Date: Thu, 01 Jul 2010 10:32:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Grazvydas Ignotas <notasas@gmail.com>, Kalle Valo <kvalo@adurom.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 118/149] wl1251: fix a memory leak in probe
+       Ben Hutchings <ben@decadent.org.uk>,
+       Grant Grundler <grundler@parisc-linux.org>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [patch 109/149] dmfe/tulip: Let dmfe handle DM910x except for SPARC on-board chips
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +27,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grazvydas Ignotas <notasas@gmail.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit aa679c36756003f1fabdb9fc6f00eb159559f7c3 upstream.
+commit 4d907069bc1b745f4abd4745c332d33098e733b8 upstream.
 
-wl1251_sdio_probe() error path is missing wl1251_free_hw, add it.
+The Davicom DM9100 and DM9102 chips are used on the motherboards of
+some SPARC systems (supported by the tulip driver) and also in PCI
+expansion cards (supported by the dmfe driver).  There is no
+difference in the PCI device ids for the two different configurations,
+so these drivers both claim the device ids.  However, it is possible
+to distinguish the two configurations by the presence of Open Firmware
+properties for them, so we do that.
 
-Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
-Acked-by: Kalle Valo <kvalo@adurom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Grant Grundler <grundler@parisc-linux.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/wl12xx/wl1251_sdio.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/tulip/Kconfig      |    4 ++++
+ drivers/net/tulip/dmfe.c       |   21 +++++++++++++++++++++
+ drivers/net/tulip/tulip_core.c |   32 +++++++++++++++++++++++++-------
+ 3 files changed, 50 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/wl12xx/wl1251_sdio.c
-+++ b/drivers/net/wireless/wl12xx/wl1251_sdio.c
-@@ -160,6 +160,7 @@ disable:
- 	sdio_disable_func(func);
- release:
- 	sdio_release_host(func);
-+	wl1251_free_hw(wl);
- 	return ret;
- }
+--- a/drivers/net/tulip/Kconfig
++++ b/drivers/net/tulip/Kconfig
+@@ -101,6 +101,10 @@ config TULIP_NAPI_HW_MITIGATION
  
+ 	  If in doubt, say Y.
+ 
++config TULIP_DM910X
++	def_bool y
++	depends on TULIP && SPARC
++
+ config DE4X5
+ 	tristate "Generic DECchip & DIGITAL EtherWORKS PCI/EISA"
+ 	depends on PCI || EISA
+--- a/drivers/net/tulip/dmfe.c
++++ b/drivers/net/tulip/dmfe.c
+@@ -92,6 +92,10 @@
+ #include <asm/uaccess.h>
+ #include <asm/irq.h>
+ 
++#ifdef CONFIG_TULIP_DM910X
++#include <linux/of.h>
++#endif
++
+ 
+ /* Board/System/Debug information/definition ---------------- */
+ #define PCI_DM9132_ID   0x91321282      /* Davicom DM9132 ID */
+@@ -377,6 +381,23 @@ static int __devinit dmfe_init_one (stru
+ 	if (!printed_version++)
+ 		printk(version);
+ 
++	/*
++	 *	SPARC on-board DM910x chips should be handled by the main
++	 *	tulip driver, except for early DM9100s.
++	 */
++#ifdef CONFIG_TULIP_DM910X
++	if ((ent->driver_data == PCI_DM9100_ID && pdev->revision >= 0x30) ||
++	    ent->driver_data == PCI_DM9102_ID) {
++		struct device_node *dp = pci_device_to_OF_node(pdev);
++
++		if (dp && of_get_property(dp, "local-mac-address", NULL)) {
++			printk(KERN_INFO DRV_NAME
++			       ": skipping on-board DM910x (use tulip)\n");
++			return -ENODEV;
++		}
++	}
++#endif
++
+ 	/* Init network device */
+ 	dev = alloc_etherdev(sizeof(*db));
+ 	if (dev == NULL)
+--- a/drivers/net/tulip/tulip_core.c
++++ b/drivers/net/tulip/tulip_core.c
+@@ -196,9 +196,13 @@ struct tulip_chip_table tulip_tbl[] = {
+ 	| HAS_NWAY | HAS_PCI_MWI, tulip_timer, tulip_media_task },
+ 
+   /* DM910X */
++#ifdef CONFIG_TULIP_DM910X
+   { "Davicom DM9102/DM9102A", 128, 0x0001ebef,
+ 	HAS_MII | HAS_MEDIA_TABLE | CSR12_IN_SROM | HAS_ACPI,
+ 	tulip_timer, tulip_media_task },
++#else
++  { NULL },
++#endif
+ 
+   /* RS7112 */
+   { "Conexant LANfinity", 256, 0x0001ebef,
+@@ -228,8 +232,10 @@ static struct pci_device_id tulip_pci_tb
+ 	{ 0x1259, 0xa120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
+ 	{ 0x11F6, 0x9881, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMPEX9881 },
+ 	{ 0x8086, 0x0039, PCI_ANY_ID, PCI_ANY_ID, 0, 0, I21145 },
++#ifdef CONFIG_TULIP_DM910X
+ 	{ 0x1282, 0x9100, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DM910X },
+ 	{ 0x1282, 0x9102, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DM910X },
++#endif
+ 	{ 0x1113, 0x1216, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
+ 	{ 0x1113, 0x1217, PCI_ANY_ID, PCI_ANY_ID, 0, 0, MX98715 },
+ 	{ 0x1113, 0x9511, PCI_ANY_ID, PCI_ANY_ID, 0, 0, COMET },
+@@ -1299,18 +1305,30 @@ static int __devinit tulip_init_one (str
+ 	}
+ 
+ 	/*
+-	 *	Early DM9100's need software CRC and the DMFE driver
++	 *	DM910x chips should be handled by the dmfe driver, except
++	 *	on-board chips on SPARC systems.  Also, early DM9100s need
++	 *	software CRC which only the dmfe driver supports.
+ 	 */
+ 
+-	if (pdev->vendor == 0x1282 && pdev->device == 0x9100)
+-	{
+-		/* Read Chip revision */
+-		if (pdev->revision < 0x30)
+-		{
+-			printk(KERN_ERR PFX "skipping early DM9100 with Crc bug (use dmfe)\n");
++#ifdef CONFIG_TULIP_DM910X
++	if (chip_idx == DM910X) {
++		struct device_node *dp;
++
++		if (pdev->vendor == 0x1282 && pdev->device == 0x9100 &&
++		    pdev->revision < 0x30) {
++			printk(KERN_INFO PFX
++			       "skipping early DM9100 with Crc bug (use dmfe)\n");
++			return -ENODEV;
++		}
++
++		dp = pci_device_to_OF_node(pdev);
++		if (!(dp && of_get_property(dp, "local-mac-address", NULL))) {
++			printk(KERN_INFO PFX
++			       "skipping DM910x expansion card (use dmfe)\n");
+ 			return -ENODEV;
+ 		}
+ 	}
++#endif
+ 
+ 	/*
+ 	 *	Looks for early PCI chipsets where people report hangs
 
 
