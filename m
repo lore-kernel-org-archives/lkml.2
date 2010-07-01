@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933102Ab0GAVE2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:04:28 -0400
-Received: from kroah.org ([198.145.64.141]:47850 "EHLO coco.kroah.org"
+	id S1758671Ab0GAVFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:05:00 -0400
+Received: from kroah.org ([198.145.64.141]:47837 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932608Ab0GAUvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:51:12 -0400
+	id S932823Ab0GAUvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:51:10 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:37 2010
-Message-Id: <20100701173437.686473133@clark.site>
+Message-Id: <20100701173437.424292198@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:35:15 -0700
+Date: Thu, 01 Jul 2010 10:35:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "Theodore Tso" <tytso@mit.edu>,
-       Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Subject: [patch 129/164] ext4: Make sure the MOVE_EXT ioctl cant overwrite append-only files
+       Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [patch 126/164] tracing: Fix null pointer deref with SEND_SIG_FORCED
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 1f5a81e41f8b1a782c68d3843e9ec1bfaadf7d72 upstream.
+commit b9b76dfaac6fa2c289ee8a005be637afd2da7e2f upstream.
 
-Dan Roseberg has reported a problem with the MOVE_EXT ioctl.  If the
-donor file is an append-only file, we should not allow the operation
-to proceed, lest we end up overwriting the contents of an append-only
-file.
+BUG: unable to handle kernel NULL pointer dereference at
+	0000000000000006
+IP: [<ffffffff8107bd37>] ftrace_raw_event_signal_generate+0x87/0x140
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+TP_STORE_SIGINFO() forgets about SEND_SIG_FORCED, fix.
+
+We should probably export is_si_special() and change TP_STORE_SIGINFO()
+to use it in the longer term.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Roland McGrath <roland@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jason Baron <jbaron@redhat.com>
+Cc: Masami Hiramatsu <mhiramat@redhat.com>
+LKML-Reference: <20100603213409.GA8307@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/move_extent.c |    3 +++
- 1 file changed, 3 insertions(+)
+ include/trace/events/signal.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/move_extent.c
-+++ b/fs/ext4/move_extent.c
-@@ -964,6 +964,9 @@ mext_check_arguments(struct inode *orig_
- 		return -EINVAL;
- 	}
+--- a/include/trace/events/signal.h
++++ b/include/trace/events/signal.h
+@@ -10,7 +10,8 @@
  
-+	if (IS_IMMUTABLE(donor_inode) || IS_APPEND(donor_inode))
-+		return -EPERM;
-+
- 	/* Ext4 move extent does not support swapfile */
- 	if (IS_SWAPFILE(orig_inode) || IS_SWAPFILE(donor_inode)) {
- 		ext4_debug("ext4 move extent: The argument files should "
+ #define TP_STORE_SIGINFO(__entry, info)				\
+ 	do {							\
+-		if (info == SEND_SIG_NOINFO) {			\
++		if (info == SEND_SIG_NOINFO ||			\
++		    info == SEND_SIG_FORCED) {			\
+ 			__entry->errno	= 0;			\
+ 			__entry->code	= SI_USER;		\
+ 		} else if (info == SEND_SIG_PRIV) {		\
 
 
