@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab0GAE2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 00:28:16 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44000 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab0GAE2O convert rfc822-to-8bit (ORCPT
+	id S1752939Ab0GAEeT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 00:34:19 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:9948 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab0GAEeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 00:28:14 -0400
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-To: Kevin Cernekee <cernekee@gmail.com>,
-       "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>
-Date: Thu, 1 Jul 2010 09:57:52 +0530
-Subject: RE: Additional fix : (was [v2]printk: fix delayed messages from CPU
- hotplug events)
-Thread-Topic: Additional fix : (was [v2]printk: fix delayed messages from
- CPU hotplug events)
-Thread-Index: AcsXaGXicqa8+43jSDSUdKePtrVn0ABbO0yA
-Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB02C5E41803@dbde02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Jul 2010 00:34:17 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.53,517,1272844800"; 
+   d="scan'208";a="552797244"
+From: Tom Lyon <pugs@lyon-about.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+Date: Wed, 30 Jun 2010 21:30:38 -0700
+User-Agent: KMail/1.9.9
+Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de, mst@redhat.com,
+       avi@redhat.com, gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com> <1277957783.10112.15.camel@x201>
+In-Reply-To: <1277957783.10112.15.camel@x201>
 MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201006302130.38987.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding linux-pm@lists.linux-foundation.org)
+On Wednesday 30 June 2010 09:16:23 pm Alex Williamson wrote:
+> On Tue, 2010-06-08 at 14:21 -0700, Tom Lyon wrote:
+> > +int vfio_dma_unmap_dm(struct vfio_listener *listener, struct vfio_dma_map *dmp)
+> > +{
+> > +	unsigned long start, npage;
+> > +	struct dma_map_page *mlp;
+> > +	struct list_head *pos, *pos2;
+> > +	int ret;
+> > +
+> > +	start = dmp->vaddr & ~PAGE_SIZE;
+> > +	npage = dmp->size >> PAGE_SHIFT;
+> > +
+> > +	ret = -ENXIO;
+> > +	mutex_lock(&listener->vdev->dgate);
+> > +	list_for_each_safe(pos, pos2, &listener->dm_list) {
+> > +		mlp = list_entry(pos, struct dma_map_page, list);
+> > +		if (dmp->vaddr != mlp->vaddr || mlp->npage != npage)
+> > +			continue;
+> > +		ret = 0;
+> > +		vfio_dma_unmap(listener, mlp);
+> > +		break;
+> > +	}
+> 
+> Hi Tom,
+> 
+> Shouldn't we be matching the mlp based on daddr instead of vaddr?  We
+> can have multiple dma address pointing at the same virtual address, so
+> dma address is the unique element.  I'm also nervous about this dm_list.
+> For qemu device assignment, we're potentially statically mapping many GB
+> of iova space.  It seems like this could get incredibly bloated and
+> slow.  Thanks,
+> 
+> Alex
 
-> -----Original Message-----
-> From: Shilimkar, Santosh
-> Sent: Tuesday, June 29, 2010 2:22 PM
-> To: 'Kevin Cernekee'
-> Cc: linux-kernel@vger.kernel.org; Russell King - ARM Linux
-> Subject: Additional fix : (was [v2]printk: fix delayed messages from CPU
-> hotplug events)
-> 
-> Hi,
-> 
-> I have faced similar issue as what is being described in below with
-> latest kernel.
-> 
-> ------------------------------------------------
-> https://patchwork.kernel.org/patch/103347/
-> 
-> When a secondary CPU is being brought up, it is not uncommon for
-> printk() to be invoked when cpu_online(smp_processor_id()) == 0.  The
-> case that I witnessed personally was on MIPS:
-> 
-> http://lkml.org/lkml/2010/5/30/4
-> 
-> If (can_use_console() == 0), printk() will spool its output to log_buf
-> and it will be visible in "dmesg", but that output will NOT be echoed to
-> the console until somebody calls release_console_sem() from a CPU that
-> is online.  Therefore, the boot time messages from the new CPU can get
-> stuck in "limbo" for a long time, and might suddenly appear on the
-> screen when a completely unrelated event (e.g. "eth0: link is down")
-> occurs.
-> 
-> This patch modifies the console code so that any pending messages are
-> automatically flushed out to the console whenever a CPU hotplug
-> operation completes successfully or aborts.
-> 
-> -----------------------------------------------
-> 
-> Above patch fixes only half of the problem. I mean the cpu online
-> path prints are coming on the console.
-> 
-> But similar problem also exist if there are prints in the cpu offline
-> path. I got that fixed by adding below patch on top of you patch.
-> 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index d370b74..f4d7352 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -982,6 +982,9 @@ static int __cpuinit console_cpu_notify(struct
-> notifier_bloc
->         switch (action) {
->         case CPU_ONLINE:
->         case CPU_UP_CANCELED:
-> +       case CPU_DEAD:
-> +       case CPU_DYING:
-> +       case CPU_DOWN_FAILED:
->                 if (try_acquire_console_sem() == 0)
->                         release_console_sem();
->         }
+In weird circumstances, differing user vaddrs could reolve to the same physical address,
+so the uniqueness of any mapping is the <vaddr,len>.
+
+Yes, a linear list is slow, but does qemu need a lot of mappings, or just big ones?
 > 
 > 
-> 
-> Regards
-> Santosh
+
+
