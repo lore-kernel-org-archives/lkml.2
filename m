@@ -1,173 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab0GANa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:30:27 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49757 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753115Ab0GANa0 (ORCPT
+	id S1755548Ab0GANay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:30:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52713 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555Ab0GANaw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:30:26 -0400
-Subject: Re: [PATCH 1/3] block: implement an unprep function corresponding
- directly to prep
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: device-mapper development <dm-devel@redhat.com>
-Cc: axboe@kernel.dk, linux-scsi@vger.kernel.org, snitzer@redhat.com,
-       linux-kernel@vger.kernel.org, hch@lst.de
-In-Reply-To: <1277981359-10717-2-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-	 <1277981359-10717-2-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+	Thu, 1 Jul 2010 09:30:52 -0400
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <20100701130816.GB32223@redhat.com>
+References: <20100624081135.GA937@redhat.com>
+	 <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
+	 <20100625101022.GA16321@redhat.com> <20100701110708.GA27368@redhat.com>
+	 <1277983179.1917.10.camel@laptop> <1277984603.1917.15.camel@laptop>
+	 <20100701115507.GA31333@redhat.com> <20100701122340.GB31333@redhat.com>
+	 <1277987657.1917.32.camel@laptop> <1277988395.1917.47.camel@laptop>
+	 <20100701130816.GB32223@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Jul 2010 08:30:22 -0500
-Message-ID: <1277991022.2813.3.camel@mulgrave.site>
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 01 Jul 2010 15:30:24 +0200
+Message-ID: <1277991024.1917.108.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-01 at 19:49 +0900, FUJITA Tomonori wrote:
-> From: James Bottomley <James.Bottomley@suse.de>
+On Thu, 2010-07-01 at 16:08 +0300, Michael S. Tsirkin wrote:
+> On Thu, Jul 01, 2010 at 02:46:35PM +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-07-01 at 14:34 +0200, Peter Zijlstra wrote:
+> > > On Thu, 2010-07-01 at 15:23 +0300, Michael S. Tsirkin wrote:
+> > > > 
+> > > > The patch using this is here:
+> > > > http://www.mail-archive.com/kvm@vger.kernel.org/msg35411.html
+> > > > 
+> > > > It simply copies the affinity from the parent when thread is created.
+> > > 
+> > > Sounds like policy, not something the kernel should do..
+> > 
+> > The alternative would be using clone() instead of thread_create() and
+> > inherit everything from the creating task.
+> > Inheriting from kthreadd and then undoing some aspects just sounds
+> > like daft policy that really ought to be in userspace.
 > 
-> Reviewed-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-
-Well, I forgot this, but otherwise looks fine:
-
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-
-> ---
->  block/blk-core.c        |   25 +++++++++++++++++++++++++
->  block/blk-settings.c    |   17 +++++++++++++++++
->  drivers/scsi/scsi_lib.c |    2 +-
->  include/linux/blkdev.h  |    4 ++++
->  4 files changed, 47 insertions(+), 1 deletions(-)
+> Yes, that's basically what this patchset is trying to do:
+> create a workqueue inheriting everything from the creating task.
+> Sridhar started with an API to do exactly this:
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-05/msg07478.html
 > 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 3c37894..5ab3ac2 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -608,6 +608,7 @@ blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
->  
->  	q->request_fn		= rfn;
->  	q->prep_rq_fn		= NULL;
-> +	q->unprep_rq_fn		= NULL;
->  	q->unplug_fn		= generic_unplug_device;
->  	q->queue_flags		= QUEUE_FLAG_DEFAULT;
->  	q->queue_lock		= lock;
-> @@ -2133,6 +2134,26 @@ static bool blk_update_bidi_request(struct request *rq, int error,
->  	return false;
->  }
->  
-> +/**
-> + * blk_unprep_request - unprepare a request
-> + * @req:	the request
-> + *
-> + * This function makes a request ready for complete resubmission (or
-> + * completion).  It happens only after all error handling is complete,
-> + * so represents the appropriate moment to deallocate any resources
-> + * that were allocated to the request in the prep_rq_fn.  The queue
-> + * lock is held when calling this.
-> + */
-> +void blk_unprep_request(struct request *req)
-> +{
-> +	struct request_queue *q = req->q;
-> +
-> +	req->cmd_flags &= ~REQ_DONTPREP;
-> +	if (q->unprep_rq_fn)
-> +		q->unprep_rq_fn(q, req);
-> +}
-> +EXPORT_SYMBOL_GPL(blk_unprep_request);
-> +
->  /*
->   * queue lock must be held
->   */
-> @@ -2148,6 +2169,10 @@ static void blk_finish_request(struct request *req, int error)
->  
->  	blk_delete_timer(req);
->  
-> +	if (req->cmd_flags & REQ_DONTPREP)
-> +		blk_unprep_request(req);
-> +
-> +
->  	blk_account_io_done(req);
->  
->  	if (req->end_io)
-> diff --git a/block/blk-settings.c b/block/blk-settings.c
-> index f5ed5a1..a234f4b 100644
-> --- a/block/blk-settings.c
-> +++ b/block/blk-settings.c
-> @@ -37,6 +37,23 @@ void blk_queue_prep_rq(struct request_queue *q, prep_rq_fn *pfn)
->  EXPORT_SYMBOL(blk_queue_prep_rq);
->  
->  /**
-> + * blk_queue_unprep_rq - set an unprepare_request function for queue
-> + * @q:		queue
-> + * @ufn:	unprepare_request function
-> + *
-> + * It's possible for a queue to register an unprepare_request callback
-> + * which is invoked before the request is finally completed. The goal
-> + * of the function is to deallocate any data that was allocated in the
-> + * prepare_request callback.
-> + *
-> + */
-> +void blk_queue_unprep_rq(struct request_queue *q, unprep_rq_fn *ufn)
-> +{
-> +	q->unprep_rq_fn = ufn;
-> +}
-> +EXPORT_SYMBOL(blk_queue_unprep_rq);
-> +
-> +/**
->   * blk_queue_merge_bvec - set a merge_bvec function for queue
->   * @q:		queue
->   * @mbfn:	merge_bvec_fn
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index 5f11608..ee83619 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -85,7 +85,7 @@ static void scsi_unprep_request(struct request *req)
->  {
->  	struct scsi_cmnd *cmd = req->special;
->  
-> -	req->cmd_flags &= ~REQ_DONTPREP;
-> +	blk_unprep_request(req);
->  	req->special = NULL;
->  
->  	scsi_put_command(cmd);
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index 204fbe2..6bba04c 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -200,6 +200,7 @@ struct request_pm_state
->  typedef void (request_fn_proc) (struct request_queue *q);
->  typedef int (make_request_fn) (struct request_queue *q, struct bio *bio);
->  typedef int (prep_rq_fn) (struct request_queue *, struct request *);
-> +typedef void (unprep_rq_fn) (struct request_queue *, struct request *);
->  typedef void (unplug_fn) (struct request_queue *);
->  
->  struct bio_vec;
-> @@ -282,6 +283,7 @@ struct request_queue
->  	request_fn_proc		*request_fn;
->  	make_request_fn		*make_request_fn;
->  	prep_rq_fn		*prep_rq_fn;
-> +	unprep_rq_fn		*unprep_rq_fn;
->  	unplug_fn		*unplug_fn;
->  	merge_bvec_fn		*merge_bvec_fn;
->  	prepare_flush_fn	*prepare_flush_fn;
-> @@ -841,6 +843,7 @@ extern void blk_complete_request(struct request *);
->  extern void __blk_complete_request(struct request *);
->  extern void blk_abort_request(struct request *);
->  extern void blk_abort_queue(struct request_queue *);
-> +extern void blk_unprep_request(struct request *);
->  
->  /*
->   * Access functions for manipulating queue properties
-> @@ -885,6 +888,7 @@ extern int blk_queue_dma_drain(struct request_queue *q,
->  extern void blk_queue_lld_busy(struct request_queue *q, lld_busy_fn *fn);
->  extern void blk_queue_segment_boundary(struct request_queue *, unsigned long);
->  extern void blk_queue_prep_rq(struct request_queue *, prep_rq_fn *pfn);
-> +extern void blk_queue_unprep_rq(struct request_queue *, unprep_rq_fn *ufn);
->  extern void blk_queue_merge_bvec(struct request_queue *, merge_bvec_fn *);
->  extern void blk_queue_dma_alignment(struct request_queue *, int);
->  extern void blk_queue_update_dma_alignment(struct request_queue *, int);
+> Then we switched to raw kthread to avoid stepping on cwq toes.
+> Maybe it makes sense to add kthread_clone (in addition to
+> kthread_create) that would do what you suggest?
+> If yes, any hints on an implementation?
 
+I think that's called kernel_thread() see
+kernel/kthread.c:create_kthread().
 
+Doing the whole kthreadd dance and then copying bits and pieces back
+sounds very fragile, so yeah, something like that should work.
+
+The other issue to consider is the thread group status of these things,
+I think it would be best if these threads were still considered part of
+the process that spawned them so that they would die nicely when the
+process gets whacked.
+
+At which point one could wonder if the kthread interface makes any
+sense, why not let userspace fork tasks and let them call into the
+kernel to perform work...
