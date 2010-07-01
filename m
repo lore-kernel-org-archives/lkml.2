@@ -1,72 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab0GAM4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 08:56:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54317 "EHLO mx1.redhat.com"
+	id S1755897Ab0GANDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:03:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47919 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753789Ab0GAM4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 08:56:53 -0400
-Date: Thu, 1 Jul 2010 15:50:38 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Sridhar Samudrala <sri@us.ibm.com>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-Message-ID: <20100701125038.GA32223@redhat.com>
-References: <20100530112925.GB27611@redhat.com>
- <4C02C99D.9070204@kernel.org>
- <20100624081135.GA937@redhat.com>
- <1277419551.27868.27.camel@w-sridhar.beaverton.ibm.com>
- <20100625101022.GA16321@redhat.com>
- <20100701110708.GA27368@redhat.com>
- <1277983179.1917.10.camel@laptop>
- <1277984603.1917.15.camel@laptop>
- <20100701115507.GA31333@redhat.com>
- <1277987563.1917.28.camel@laptop>
+	id S1755524Ab0GANDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 09:03:46 -0400
+Date: Thu, 1 Jul 2010 09:03:28 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: axboe@kernel.dk, hch@lst.de, James.Bottomley@suse.de,
+       linux-scsi@vger.kernel.org, dm-devel@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: address leak in the error path of discard page
+ allocation
+Message-ID: <20100701130328.GB19605@redhat.com>
+References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+ <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1277987563.1917.28.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 02:32:43PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-07-01 at 14:55 +0300, Michael S. Tsirkin wrote:
-> 
-> > >  - why can't it set the kernel thread's affinity too?
-> > 
-> > It can. However: the threads are started internally by the driver
-> > when qemu does an ioctl.  What we want to do is give it a sensible
-> > default affinity. management tool can later tweak it if it wants to.
-> 
-> So have that ioctl return the tid of that new fancy thread and then set
-> its affinity, stuff it in cgroup, whatever you fancy.
-> 
-> > >  - what happens if someone changes the tasks' affinity?
-> > 
-> > We would normally create a cgroup including all internal
-> > tasks, making it easy to find and change affinity for
-> > them all if necessary. 
-> 
-> And to stuff them in a cgroup you also need the tid, at which point it
-> might as well set the affinity from userspace, right?
+On Thu, Jul 01 2010 at  6:49am -0400,
+FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
 
-We also put it in a cgroup transparently. I think that it's actually
-important to do it on thread creation: if we don't, malicious userspace
-can create large amount of work exceeding the cgroup limits.
+> This fixes discard page leak by using q->unprep_rq_fn facility.
+> 
+> q->unprep_rq_fn is called when all the data buffer (req->bio and
+> scsi_data_buffer) in the request is freed.
+> 
+> sd_unprep() uses rq->buffer to free discard page allocated in
+> sd_prepare_discard().
+> 
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-And the same applies so the affinity, right? If the qemu process
-is limited to a set of CPUs, isn't it important to make
-the kernel thread that does work our behalf limited to the same
-set of CPUs?
+Thanks for sorting this out Tomo, all 3 patches work great!
 
--- 
-MST
+BTW, there is one remaining (rare) leak in the allocation path.
+
+The following patch serves to fix it but I'm not sure if there is a more
+elegant way to address this.
+
+An alternative would be to check if the page is already allocated
+(before allocating the page in scsi_setup_discard_cmnd)?
+
+Please advise, thanks.
+Mike
+
+
+
+From: Mike Snitzer <snitzer@redhat.com>
+Subject: scsi: address leak in the error path of discard page allocation
+
+Be sure to free the discard page if scsi_setup_blk_pc_cmnd fails.
+E.g. Returning BLKPREP_DEFER from scsi_setup_blk_pc_cmnd will not cause
+the request to be processed by sd_unprep_fn before the request is
+retried (preparation included).
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+
+---
+ block/blk-core.c       |   23 +++++++++++++++++++++++
+ drivers/scsi/sd.c      |    6 +++++-
+ include/linux/blkdev.h |    1 +
+ 3 files changed, 29 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/drivers/scsi/sd.c
+===================================================================
+--- linux-2.6.orig/drivers/scsi/sd.c
++++ linux-2.6/drivers/scsi/sd.c
+@@ -466,7 +466,11 @@ static int scsi_setup_discard_cmnd(struc
+ 
+ 	blk_add_request_payload(rq, page, len);
+ 	ret = scsi_setup_blk_pc_cmnd(sdp, rq);
+-	rq->buffer = page_address(page);
++	if (ret != BLKPREP_OK) {
++		blk_clear_request_payload(rq);
++		__free_page(page);
++	} else
++		rq->buffer = page_address(page);
+ 	return ret;
+ }
+ 
+Index: linux-2.6/block/blk-core.c
+===================================================================
+--- linux-2.6.orig/block/blk-core.c
++++ linux-2.6/block/blk-core.c
+@@ -1164,6 +1164,29 @@ void blk_add_request_payload(struct requ
+ }
+ EXPORT_SYMBOL_GPL(blk_add_request_payload);
+ 
++/**
++ * blk_clear_request_payload - clear a request's payload
++ * @rq: request to update
++ *
++ * The driver needs to take care of freeing the payload itself.
++ */
++void blk_clear_request_payload(struct request *rq)
++{
++	struct bio *bio = rq->bio;
++
++	rq->__data_len = rq->resid_len = 0;
++	rq->nr_phys_segments = 0;
++	rq->buffer = NULL;
++
++	bio->bi_size = 0;
++	bio->bi_vcnt = 0;
++	bio->bi_phys_segments = 0;
++
++	bio->bi_io_vec->bv_page = NULL;
++	bio->bi_io_vec->bv_len = 0;
++}
++EXPORT_SYMBOL_GPL(blk_clear_request_payload);
++
+ void init_request_from_bio(struct request *req, struct bio *bio)
+ {
+ 	req->cpu = bio->bi_comp_cpu;
+Index: linux-2.6/include/linux/blkdev.h
+===================================================================
+--- linux-2.6.orig/include/linux/blkdev.h
++++ linux-2.6/include/linux/blkdev.h
+@@ -781,6 +781,7 @@ extern void blk_insert_request(struct re
+ extern void blk_requeue_request(struct request_queue *, struct request *);
+ extern void blk_add_request_payload(struct request *rq, struct page *page,
+ 		unsigned int len);
++extern void blk_clear_request_payload(struct request *rq);
+ extern int blk_rq_check_limits(struct request_queue *q, struct request *rq);
+ extern int blk_lld_busy(struct request_queue *q);
+ extern int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
