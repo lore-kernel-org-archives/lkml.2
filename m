@@ -1,47 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab0GANyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 09:54:12 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:54713 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755910Ab0GANyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 09:54:10 -0400
-Date: Thu, 1 Jul 2010 14:54:01 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Mattia Dongili <malattia@linux.it>, Len Brown <len.brown@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Stefani Seibold <stefani@seibold.net>, Andi Kleen <ak@linux.intel.com>,
-       platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] sony-laptop: use platform_device_unregister in
-	sony_pf_remove
-Message-ID: <20100701135401.GG31804@srcf.ucam.org>
-References: <1277950681.30073.1.camel@mola>
+	id S1756002Ab0GAN46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 09:56:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57943 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752159Ab0GAN44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 09:56:56 -0400
+Message-ID: <4C2C9DC0.8050607@cn.fujitsu.com>
+Date: Thu, 01 Jul 2010 21:53:04 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277950681.30073.1.camel@mola>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: [PATCH v4 1/6] KVM: MMU: introduce gfn_to_pfn_atomic() function
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 10:18:01AM +0800, Axel Lin wrote:
-> platform_device_unregister calls platform_device_del and platform_device_put,
-> thus this change is logically equivalent to original code.
-> 
-> I made this change because the documents in platform.c shows that:
-> platform_device_del and platform_device_put must _only_ be externally called
-> in error cases.  All other usage is a bug.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Introduce gfn_to_pfn_atomic(), it's the fast path and can used in atomic
+context, the later patch will use it
 
-Applied, thanks.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/mm/gup.c        |    2 ++
+ include/linux/kvm_host.h |    1 +
+ virt/kvm/kvm_main.c      |   32 +++++++++++++++++++++++++-------
+ 3 files changed, 28 insertions(+), 7 deletions(-)
 
+diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+index 738e659..0c9034b 100644
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -6,6 +6,7 @@
+  */
+ #include <linux/sched.h>
+ #include <linux/mm.h>
++#include <linux/module.h>
+ #include <linux/vmstat.h>
+ #include <linux/highmem.h>
+ 
+@@ -274,6 +275,7 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 
+ 	return nr;
+ }
++EXPORT_SYMBOL_GPL(__get_user_pages_fast);
+ 
+ /**
+  * get_user_pages_fast() - pin user pages in memory
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index e796326..e0fb543 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -295,6 +295,7 @@ void kvm_release_page_dirty(struct page *page);
+ void kvm_set_page_dirty(struct page *page);
+ void kvm_set_page_accessed(struct page *page);
+ 
++pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index ec2e3c6..3f976b0 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -934,19 +934,25 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
+ 
+-static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
++static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
+ {
+ 	struct page *page[1];
+ 	int npages;
+ 	pfn_t pfn;
+ 
+-	might_sleep();
+-
+-	npages = get_user_pages_fast(addr, 1, 1, page);
++	if (atomic)
++		npages = __get_user_pages_fast(addr, 1, 1, page);
++	else {
++		might_sleep();
++		npages = get_user_pages_fast(addr, 1, 1, page);
++	}
+ 
+ 	if (unlikely(npages != 1)) {
+ 		struct vm_area_struct *vma;
+ 
++		if (atomic)
++			goto return_bad_page;
++
+ 		down_read(&current->mm->mmap_sem);
+ 		if (is_hwpoison_address(addr)) {
+ 			up_read(&current->mm->mmap_sem);
+@@ -959,6 +965,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 		if (vma == NULL || addr < vma->vm_start ||
+ 		    !(vma->vm_flags & VM_PFNMAP)) {
+ 			up_read(&current->mm->mmap_sem);
++return_bad_page:
+ 			get_page(bad_page);
+ 			return page_to_pfn(bad_page);
+ 		}
+@@ -972,7 +979,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 	return pfn;
+ }
+ 
+-pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
++pfn_t __gfn_to_pfn(struct kvm *kvm, gfn_t gfn, bool atomic)
+ {
+ 	unsigned long addr;
+ 
+@@ -982,7 +989,18 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
+ 		return page_to_pfn(bad_page);
+ 	}
+ 
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, atomic);
++}
++
++pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn)
++{
++	return __gfn_to_pfn(kvm, gfn, true);
++}
++EXPORT_SYMBOL_GPL(gfn_to_pfn_atomic);
++
++pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
++{
++	return __gfn_to_pfn(kvm, gfn, false);
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_pfn);
+ 
+@@ -990,7 +1008,7 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn)
+ {
+ 	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, false);
+ }
+ 
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.6.1.2
+
