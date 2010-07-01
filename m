@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab0GATEK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 15:04:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41648 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751979Ab0GATEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 15:04:06 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being lost
-Date: Thu, 1 Jul 2010 21:02:27 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>, "Arve Hj??nnev??g" <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Florian Mickler <florian@mickler.org>, linux-pci@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <201006261514.13491.rjw@sisk.pl> <20100701133208.GA1285@ucw.cz>
-In-Reply-To: <20100701133208.GA1285@ucw.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007012102.27495.rjw@sisk.pl>
+	id S1755338Ab0GATIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 15:08:22 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:57780 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab0GATIT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 15:08:19 -0400
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       Mimi Zohar <zohar@linux.vnet.ibm.com>,
+       Casey Schaufler <casey@schaufler-ca.com>,
+       James Morris <jmorris@namei.org>,
+       David Safford <safford@watson.ibm.com>,
+       Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH] security: move LSM xattrnames to xattr.h
+Date: Thu,  1 Jul 2010 15:07:43 -0400
+Message-Id: <1278011263-7951-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 01, 2010, Pavel Machek wrote:
-> Hi!
-> 
-> > @@ -114,3 +114,17 @@ Description:
-> >  		if this file contains "1", which is the default.  It may be
-> >  		disabled by writing "0" to this file, in which case all devices
-> >  		will be suspended and resumed synchronously.
-> > +
-> > +What:		/sys/power/wakeup_count
-> > +Date:		July 2010
-> > +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-> > +Description:
-> > +		The /sys/power/wakeup_count file allows user space to avoid
-> > +		losing wakeup events when transitioning the system into a sleep
-> > +		state.  Reading from it returns the current number of registered
-> > +		wakeup events and it blocks if some wakeup events are being
-> > +		processed at the time the file is read from.  Writing to it
-> > +		will only succeed if the current number of wakeup events is
-> > +		equal to the written value and, if successful, will make the
-> > +		kernel abort a subsequent transition to a sleep state if any
-> > +		wakeup events are reported after the write has returned.
-> 
-> I assume that second suspend always succeeds?
+Make the security extended attributes names global. Updated to move
+the remaining Smack xattrs.
 
-The mechanism is one-shot if that's what you're asking for.
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Acked-by: Serge Hallyn <serue@us.ibm.com>
+---
+ include/linux/capability.h |    3 ---
+ include/linux/xattr.h      |   14 ++++++++++++++
+ security/selinux/hooks.c   |    3 ---
+ security/smack/smack.h     |   10 ----------
+ 4 files changed, 14 insertions(+), 16 deletions(-)
 
-> I can't say I quite like the way two sysfs files interact with each
-> other, but it is certainly better then wakelocks...
-> 
-> Maybe we should create sys_suspend()?
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index 39e5ff5..90012b9 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -49,9 +49,6 @@ typedef struct __user_cap_data_struct {
+ } __user *cap_user_data_t;
+ 
+ 
+-#define XATTR_CAPS_SUFFIX "capability"
+-#define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
+-
+ #define VFS_CAP_REVISION_MASK	0xFF000000
+ #define VFS_CAP_REVISION_SHIFT	24
+ #define VFS_CAP_FLAGS_MASK	~VFS_CAP_REVISION_MASK
+diff --git a/include/linux/xattr.h b/include/linux/xattr.h
+index 0cfa1e9..f1e5bde 100644
+--- a/include/linux/xattr.h
++++ b/include/linux/xattr.h
+@@ -33,6 +33,20 @@
+ #define XATTR_USER_PREFIX "user."
+ #define XATTR_USER_PREFIX_LEN (sizeof (XATTR_USER_PREFIX) - 1)
+ 
++/* Security namespace */
++#define XATTR_SELINUX_SUFFIX "selinux"
++#define XATTR_NAME_SELINUX XATTR_SECURITY_PREFIX XATTR_SELINUX_SUFFIX
++
++#define XATTR_SMACK_SUFFIX "SMACK64"
++#define XATTR_SMACK_IPIN "SMACK64IPIN"
++#define XATTR_SMACK_IPOUT "SMACK64IPOUT"
++#define XATTR_NAME_SMACK XATTR_SECURITY_PREFIX XATTR_SMACK_SUFFIX
++#define XATTR_NAME_SMACKIPIN	XATTR_SECURITY_PREFIX XATTR_SMACK_IPIN
++#define XATTR_NAME_SMACKIPOUT	XATTR_SECURITY_PREFIX XATTR_SMACK_IPOUT
++
++#define XATTR_CAPS_SUFFIX "capability"
++#define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
++
+ struct inode;
+ struct dentry;
+ 
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 0f524b7..85338f0 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -87,9 +87,6 @@
+ #include "netlabel.h"
+ #include "audit.h"
+ 
+-#define XATTR_SELINUX_SUFFIX "selinux"
+-#define XATTR_NAME_SELINUX XATTR_SECURITY_PREFIX XATTR_SELINUX_SUFFIX
+-
+ #define NUM_SEL_MNT_OPTS 5
+ 
+ extern int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm);
+diff --git a/security/smack/smack.h b/security/smack/smack.h
+index c6e9aca..43ae747 100644
+--- a/security/smack/smack.h
++++ b/security/smack/smack.h
+@@ -123,16 +123,6 @@ struct smack_known {
+ #define SMK_FSHAT	"smackfshat="
+ #define SMK_FSROOT	"smackfsroot="
+ 
+-/*
+- * xattr names
+- */
+-#define XATTR_SMACK_SUFFIX	"SMACK64"
+-#define XATTR_SMACK_IPIN	"SMACK64IPIN"
+-#define XATTR_SMACK_IPOUT	"SMACK64IPOUT"
+-#define XATTR_NAME_SMACK	XATTR_SECURITY_PREFIX XATTR_SMACK_SUFFIX
+-#define XATTR_NAME_SMACKIPIN	XATTR_SECURITY_PREFIX XATTR_SMACK_IPIN
+-#define XATTR_NAME_SMACKIPOUT	XATTR_SECURITY_PREFIX XATTR_SMACK_IPOUT
+-
+ #define SMACK_CIPSO_OPTION 	"-CIPSO"
+ 
+ /*
+-- 
+1.6.6.1
 
-Well, one can modify pm-utils to use the new sysfs file quite easily, but it
-wouldn't be that easy with sys_suspend() IMO.
-
-Rafael
