@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab0GAK0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 06:26:16 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:56804 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500Ab0GAK0P convert rfc822-to-8bit (ORCPT
+	id S1755122Ab0GAK2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 06:28:48 -0400
+Received: from d4.f4.79ae.static.theplanet.com ([174.121.244.212]:48955 "EHLO
+	apf.apfelroth.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab0GAK2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 06:26:15 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Thu, 01 Jul 2010 12:27:20 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 1/2] USB: gadget: mass/file storage: set serial number
-In-reply-to: <c73431dbedd41f94c5f471fb5e466943cee870c1.1277974263.git.m.nazarewicz@samsung.com>
-To: linux-usb@vger.kernel.org, Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Greg KH <greg@kroah.com>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org,
-       Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-       stable <stable@kernel.org>
-Message-id: <op.ve5tzutp7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <c73431dbedd41f94c5f471fb5e466943cee870c1.1277974263.git.m.nazarewicz@samsung.com>
+	Thu, 1 Jul 2010 06:28:47 -0400
+Message-ID: <20100701042344.ocw2hc9xk44o0ccc@174.121.244.212>
+Date: Thu, 01 Jul 2010 04:23:44 -0500
+From: Alexander Schell <alexschell000@yahoo.cn>
+Reply-to: alexschell0012@yahoo.cn
+To: undisclosed-recipients:;
+Subject: Business Deal, Call Me
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - apf.apfelroth.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - yahoo.cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 01 Jul 2010 11:17:46 +0200, Michal Nazarewicz <m.nazarewicz@samsung.com> wrote:
-> This commit adds iSerialNumber to all gadgets that use the Mass
-> Storage Function.  It appears that Windows has problems when
-> it is not set.
->
-> Not to copy the same code all over again, a fsg_string_serial_fill()
-> macro has been added to the storage_common.c file which is now also
-> used in the File Storage Gadget.
+Dear,
 
-This patch applies to the -next and will work on it but neither of the
-patches will work on .35-rc3 or older.
 
-I've been testing everything on -next forgetting that it is a bit
-ahead of the .35-rc3 and that there is no usb_string_ids_tab() in
+I know it will be of much interest to you, this is the reason I contacted you.
 
-Therefore, as far as stable kernels are concerned, disregard those two
-patches.  I'll send an updated patch for stable in a minute.
 
-Sorry about the confusion.
+I want to transfer a certain amount of money from my bank here in
+England to any
+country you may suggest and I would required your full co-operation to
+transfer the money.
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+
+Call me on +44 701 11 64380, or contact via e-mail alexschell0011@yahoo.cn to
+discuss about this proposal with you.
+
+
+If you are interesting, I will discuss with you about the details and
+procedures
+of the transaction.
+
+
+Look forward to discussing this opportunity further with you in more detail
+shortly.
+
+
+Sincerely,
+
+Alexander Schell.
+Tel: +44 701 11 64380
+
+
