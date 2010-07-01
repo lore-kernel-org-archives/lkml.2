@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab0GAUt4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 16:49:56 -0400
-Received: from kroah.org ([198.145.64.141]:47241 "EHLO coco.kroah.org"
+	id S932726Ab0GAUug (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 16:50:36 -0400
+Received: from kroah.org ([198.145.64.141]:47375 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932420Ab0GAUtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:49:46 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:29 2010
-Message-Id: <20100701173429.468447004@clark.site>
+	id S932619Ab0GAUuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:01 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:31 2010
+Message-Id: <20100701173430.966059684@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:33:37 -0700
+Date: Thu, 01 Jul 2010 10:33:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [patch 031/164] USB: serial: option: add cinterion device id
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>
+Subject: [patch 049/164] drm/i915: Reject bind_to_gtt() early if object > aperture
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,37 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 6f44bcb60bfa58590142545096b64f44144f0bc1 upstream.
+commit 654fc6073f68efa3b6c466825749e73e7fbb92cd upstream.
 
-This adds a device id for a Cinterion device.
+If the object is bigger than the entire aperture, reject it early
+before evicting everything in a vain attempt to find space.
 
-Reported-by: John Race <John.Race@roscom.co.uk>
+v2: Use E2BIG as suggested by Owain G. Ainsworth.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/i915_gem.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -364,6 +364,8 @@ static int  option_resume(struct usb_ser
- #define HAIER_VENDOR_ID				0x201e
- #define HAIER_PRODUCT_CE100			0x2009
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2641,6 +2641,14 @@ i915_gem_object_bind_to_gtt(struct drm_g
+ 		return -EINVAL;
+ 	}
  
-+#define CINTERION_VENDOR_ID			0x0681
++	/* If the object is bigger than the entire aperture, reject it early
++	 * before evicting everything in a vain attempt to find space.
++	 */
++	if (obj->size > dev->gtt_total) {
++		DRM_ERROR("Attempting to bind an object larger than the aperture\n");
++		return -E2BIG;
++	}
 +
- static struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
-@@ -859,6 +861,7 @@ static struct usb_device_id option_ids[]
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1011)},
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1012)},
- 
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, 0x0047) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+  search_free:
+ 	free_space = drm_mm_search_free(&dev_priv->mm.gtt_space,
+ 					obj->size, alignment, 0);
 
 
