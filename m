@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759630Ab0GAWGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 18:06:15 -0400
-Received: from kroah.org ([198.145.64.141]:47600 "EHLO coco.kroah.org"
+	id S1758783Ab0GAWGh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 18:06:37 -0400
+Received: from kroah.org ([198.145.64.141]:47590 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932717Ab0GAUue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 16:50:34 -0400
+	id S932710Ab0GAUuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 16:50:32 -0400
 X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:34:33 2010
-Message-Id: <20100701173433.799619611@clark.site>
+Message-Id: <20100701173433.628588375@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:34:29 -0700
+Date: Thu, 01 Jul 2010 10:34:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Marek Vasut <marek.vasut@gmail.com>,
+       Anfei Zhou <anfei.zhou@gmail.com>,
        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [patch 083/164] ARM: 6146/1: sa1111: Prevent deadlock in resume path
+Subject: [patch 081/164] ARM: 6166/1: Proper prefetch abort handling on pre-ARMv6
 In-Reply-To: <20100701175152.GA2135@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Marek=20Va=C5=A1ut?= <marek.vasut@gmail.com>
+From: Anfei <anfei.zhou@gmail.com>
 
-commit 3defb2476166445982a90c12d33f8947e75476c4 upstream.
+commit 5e27fb78df95e027723af2c90ecc9b4527ae59e9 upstream.
 
-This patch reorganises the sa1111_resume() function in a manner the spinlock
-happens after calling the sa1111_wake(). This fixes two bugs:
+Instruction faults on pre-ARMv6 CPUs are interpreted as
+a 'translation fault', but do_translation_fault doesn't
+handle well if user mode trying to run instruction above
+TASK_SIZE, and result in the infinite retry of that
+instruction.
 
-1) This function called sa1111_wake() which tried to claim the same spinlock
-   the sa1111_resume() already claimed. This would result in certain deadlock.
-
-   Original idea for this part: Russell King <rmk+kernel@arm.linux.org.uk>
-
-2) The function didn't unlock the spinlock in case the chip didn't report
-   correct ID.
-
-   Original idea for this part: Julia Lawall <julia@diku.dk>
-
-Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+Signed-off-by: Anfei Zhou <anfei.zhou@gmail.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/common/sa1111.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ arch/arm/mm/fault.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/common/sa1111.c
-+++ b/arch/arm/common/sa1111.c
-@@ -887,8 +887,6 @@ static int sa1111_resume(struct platform
- 	if (!save)
- 		return 0;
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -386,6 +386,9 @@ do_translation_fault(unsigned long addr,
+ 	if (addr < TASK_SIZE)
+ 		return do_page_fault(addr, fsr, regs);
  
--	spin_lock_irqsave(&sachip->lock, flags);
--
++	if (user_mode(regs))
++		goto bad_area;
++
+ 	index = pgd_index(addr);
+ 
  	/*
- 	 * Ensure that the SA1111 is still here.
- 	 * FIXME: shouldn't do this here.
-@@ -905,6 +903,13 @@ static int sa1111_resume(struct platform
- 	 * First of all, wake up the chip.
- 	 */
- 	sa1111_wake(sachip);
-+
-+	/*
-+	 * Only lock for write ops. Also, sa1111_wake must be called with
-+	 * released spinlock!
-+	 */
-+	spin_lock_irqsave(&sachip->lock, flags);
-+
- 	sa1111_writel(0, sachip->base + SA1111_INTC + SA1111_INTEN0);
- 	sa1111_writel(0, sachip->base + SA1111_INTC + SA1111_INTEN1);
- 
 
 
