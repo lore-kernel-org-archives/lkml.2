@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab0GAOfn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 10:35:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46716 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754103Ab0GAOfm (ORCPT
+	id S1756455Ab0GAOgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 10:36:17 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:37713 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756421Ab0GAOgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 10:35:42 -0400
-Date: Thu, 1 Jul 2010 15:35:40 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Raffaele Recalcati <lamiaposta71@gmail.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-       Raffaele Recalcati <raffaele.recalcati@bticino.it>,
-       Davide Bonfanti <davide.bonfanti@bticino.it>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-       Takashi Iwai <tiwai@suse.de>,
-       Troy Kisky <troy.kisky@boundarydevices.com>,
-       alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] ASoC: DaVinci: Added two clocking possibilities to
- McBSP (I2S)
-Message-ID: <20100701143540.GC8742@rakim.wolfsonmicro.main>
-References: <1277905678-4695-1-git-send-email-lamiaposta71@gmail.com>
- <1277905678-4695-2-git-send-email-lamiaposta71@gmail.com>
+	Thu, 1 Jul 2010 10:36:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=aj207xZwYuTBkbZZCkLe26yDpLSQZvwLjUjat0TJ4+bmPulQKcMsKrFCQh+ist9C04
+         bH7yslEsOLkuvPMKhmohca7Y0xK69f0tQvhMVa/o8FsY4w0djHohShrFDEIu0o894sC7
+         jMjm79yJkYKJVUG9KQqSXDzROPvnh/Kd+/vnA=
+Date: Thu, 1 Jul 2010 23:36:08 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 05/11] oom: /proc/<pid>/oom_score treat kernel thread
+ honestly
+Message-ID: <20100701143608.GB16383@barrios-desktop>
+References: <20100630182922.AA56.A69D9226@jp.fujitsu.com>
+ <20100630140328.GC15644@barrios-desktop>
+ <20100701085309.DA16.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1277905678-4695-2-git-send-email-lamiaposta71@gmail.com>
-X-Cookie: Sign my PETITION.
+In-Reply-To: <20100701085309.DA16.A69D9226@jp.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 03:47:56PM +0200, Raffaele Recalcati wrote:
+On Thu, Jul 01, 2010 at 09:07:02AM +0900, KOSAKI Motohiro wrote:
+> > On Wed, Jun 30, 2010 at 06:30:19PM +0900, KOSAKI Motohiro wrote:
+> > > If kernel thread are using use_mm(), badness() return positive value.
+> > > This is not big issue because caller care it correctly. but there is
+> > > one exception, /proc/<pid>/oom_score call badness() directly and
+> > > don't care the task is regular process.
+> > > 
+> > > another example, /proc/1/oom_score return !0 value. but it's unkillable.
+> > > This incorrectness makes confusing to admin a bit.
+> > 
+> > Hmm. If it is a really problem, Could we solve it in proc_oom_score itself?
+> 
+> probably, no good idea. For maintainance view, all oom related code should
+> be gathered in oom_kill.c.
+> If you dislike to add messy into badness(), I hope to make badness_for_oom_score()
 
-> +static int davinci_i2s_dai_set_clkdiv(struct snd_soc_dai *cpu_dai,
-> +				int div_id, int div)
-> +{
-> +	struct davinci_mcbsp_dev *dev = cpu_dai->private_data;
-> +	int srgr;
-> +
-> +	dev->clk_div = div;
-> +	return 0;
-> +}
+I am looking forward to seeing your next series.
+Thanks, Kosaki. 
 
-As previously mentioned this should check the div_id argument.
+P.S) 
+I think if the number of patch series is the bigger than #10, 
+It would be better to include or point url of all-at-once patch 
+in patch series.
 
-> +	switch (master) {
-> +	case SND_SOC_DAIFMT_CBS_CFS:
+In case of your patch, post patches changes pre patches
+It could make hard review unless the reviewer merge patches into tree to
+see the final figure. 
 
-...
-
-> +	case SND_SOC_DAIFMT_CBM_CFS:
-
-...
-
-> +	default:
-> +		/* Clock and frame sync given from external sources */
-
-The two remaining options (_CBM_CFM and _CBS_CFM) are different, your
-description matches _CBM_CFM.
-
-> +		if (master == SND_SOC_DAIFMT_CBS_CFS ||
-> +				master == SND_SOC_DAIFMT_CBS_CFM) {
-
-Switch statement again.
-
-> +	if (master == SND_SOC_DAIFMT_CBS_CFS ||
-> +			master == SND_SOC_DAIFMT_CBS_CFM) {
-> +		rcr |= DAVINCI_MCBSP_RCR_RFRLEN1(0);
-> +		xcr |= DAVINCI_MCBSP_XCR_XFRLEN1(0);
-> +	} else {
-
-...and another.  Please fix all these.
+-- 
+Kind regards,
+Minchan Kim
