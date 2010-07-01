@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759066Ab0GAVOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 17:14:11 -0400
-Received: from kroah.org ([198.145.64.141]:33767 "EHLO coco.kroah.org"
+	id S933206Ab0GAVPm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 17:15:42 -0400
+Received: from kroah.org ([198.145.64.141]:60880 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758874Ab0GAVND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 17:13:03 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:48 2010
-Message-Id: <20100701174248.378648025@clark.site>
+	id S1758956Ab0GAVNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 17:13:42 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:42:52 2010
+Message-Id: <20100701174252.324103672@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:41:53 -0700
+Date: Thu, 01 Jul 2010 10:42:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tony Breeds <tony@bakeyournoodle.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: [023/200] mutex: Fix optimistic spinning vs. BKL
+       Alex Deucher <alexdeucher@gmail.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [070/200] PCI quirks: disable msi on AMD rs4xx internal gfx bridges
 In-Reply-To: <20100701175201.GA2149@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,60 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Breeds <tony@bakeyournoodle.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit fd6be105b883244127a734ac9f14ae94a022dcc0 upstream.
+commit 9313ff450400e6a2ab10fe6b9bdb12a828329410 upstream.
 
-Currently, we can hit a nasty case with optimistic
-spinning on mutexes:
+Doesn't work reliably for internal gfx.  Fixes kernel bug
+https://bugzilla.kernel.org/show_bug.cgi?id=15626.
 
-    CPU A tries to take a mutex, while holding the BKL
-
-    CPU B tried to take the BLK while holding the mutex
-
-This looks like a AB-BA scenario but in practice, is
-allowed and happens due to the auto-release on
-schedule() nature of the BKL.
-
-In that case, the optimistic spinning code can get us
-into a situation where instead of going to sleep, A
-will spin waiting for B who is spinning waiting for
-A, and the only way out of that loop is the
-need_resched() test in mutex_spin_on_owner().
-
-This patch fixes it by completely disabling spinning
-if we own the BKL. This adds one more detail to the
-extensive list of reasons why it's a bad idea for
-kernel code to be holding the BKL.
-
-Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-LKML-Reference: <20100519054636.GC12389@ozlabs.org>
-[ added an unlikely() attribute to the branch ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/mutex.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/pci/quirks.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -172,6 +172,13 @@ __mutex_lock_common(struct mutex *lock,
- 		struct thread_info *owner;
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2127,6 +2127,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AM
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ASUSTEK, 0x9602, quirk_disable_msi);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AI, 0x9602, quirk_disable_msi);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, 0xa238, quirk_disable_msi);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x5a3f, quirk_disable_msi);
  
- 		/*
-+		 * If we own the BKL, then don't spin. The owner of
-+		 * the mutex might be waiting on us to release the BKL.
-+		 */
-+		if (unlikely(current->lock_depth >= 0))
-+			break;
-+
-+		/*
- 		 * If there's an owner, wait for it to either
- 		 * release the lock or go to sleep.
- 		 */
+ /* Go through the list of Hypertransport capabilities and
+  * return 1 if a HT MSI capability is found and enabled */
 
 
