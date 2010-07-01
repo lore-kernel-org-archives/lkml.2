@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085Ab0GASiX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 14:38:23 -0400
-Received: from kroah.org ([198.145.64.141]:40610 "EHLO coco.kroah.org"
+	id S1758336Ab0GAScn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 14:32:43 -0400
+Received: from kroah.org ([198.145.64.141]:40746 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757985Ab0GASXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 14:23:46 -0400
-X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:14 2010
-Message-Id: <20100701173214.232304345@clark.site>
+	id S1758103Ab0GASYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 14:24:11 -0400
+X-Mailbox-Line: From gregkh@clark.site Thu Jul  1 10:32:16 2010
+Message-Id: <20100701173216.594223863@clark.site>
 User-Agent: quilt/0.48-10.1
-Date: Thu, 01 Jul 2010 10:31:54 -0700
+Date: Thu, 01 Jul 2010 10:32:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [patch 088/149] ALSA: hda: Use LPIB for an ASUS device
+       Reinette Chatre <reinette.chatre@intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 116/149] iwlwifi: recalculate average tpt if not current
 In-Reply-To: <20100701175144.GA2116@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Reinette Chatre <reinette.chatre@intel.com>
 
-commit dd37f8e8659bc617c3f2a84e007a4824ccdac458 upstream.
+commit 3d79b2a9eeaa066b35c49fbb17e3156a3c482c3e upstream.
 
-BugLink: https://launchpad.net/bugs/465942
+We currently have this check as a BUG_ON, which is being hit by people.
+Previously it was an error with a recalculation if not current, return that
+code.
 
-Symptom: On the reporter's ASUS device, using PulseAudio in Ubuntu 10.04
-LTS results in the PA daemon crashing shortly after attempting to select
-capture or to configure the audio hardware profile.
+The BUG_ON was introduced by:
+commit 3110bef78cb4282c58245bc8fd6d95d9ccb19749
+Author: Guy Cohen <guy.cohen@intel.com>
+Date:   Tue Sep 9 10:54:54 2008 +0800
 
-Test case: Using Ubuntu 10.04 LTS (Linux 2.6.32.12), Linux 2.6.33, or
-Linux 2.6.34, adjust the HDA device's capture volume with PulseAudio.
+    iwlwifi: Added support for 3 antennas
 
-Resolution: add SSID for this machine to the position_fix quirk table,
-explicitly specifying the LPIB method.
+... the portion adding the BUG_ON is reverted since we are encountering the error
+and BUG_ON was created with assumption that error is not encountered.
 
-Reported-and-Tested-By: Irihapeti
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_intel.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/iwlwifi/iwl-agn-rs.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2232,6 +2232,7 @@ static struct snd_pci_quirk position_fix
- 	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
-+	SND_PCI_QUIRK(0x1043, 0x81b3, "ASUS", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x104d, 0x9069, "Sony VPCS11V9E", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1179, 0xff10, "Toshiba A100-259", POS_FIX_LPIB),
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
+@@ -2193,9 +2193,12 @@ static void rs_rate_scale_perform(struct
+ 
+ 	/* Else we have enough samples; calculate estimate of
+ 	 * actual average throughput */
+-
+-	BUG_ON(window->average_tpt != ((window->success_ratio *
+-			tbl->expected_tpt[index] + 64) / 128));
++	if (window->average_tpt != ((window->success_ratio *
++			tbl->expected_tpt[index] + 64) / 128)) {
++		IWL_ERR(priv, "expected_tpt should have been calculated by now\n");
++		window->average_tpt = ((window->success_ratio *
++					tbl->expected_tpt[index] + 64) / 128);
++	}
+ 
+ 	/* If we are searching for better modulation mode, check success. */
+ 	if (lq_sta->search_better_tbl &&
 
 
