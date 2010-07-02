@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757778Ab0GBU6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 16:58:54 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:47809 "EHLO mgw1.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757757Ab0GBU6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 16:58:51 -0400
-From: Nicolas Palix <npalix@diku.dk>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Subject: Re: [PATCH 1/7] Add a target to use the Coccinelle checker
-Date: Fri, 2 Jul 2010 16:30:34 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
-       Joe Perches <joe@perches.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
-       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
-       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
-       linux-kbuild@vger.kernel.org, cocci@diku.dk,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       =?iso-8859-1?q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-       Andy Isaacson <adi@hexapodia.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, walter harms <wharms@bfs.de>,
-       Joerg Roedel <joro@8bytes.org>, Jan Engelhardt <jengelh@medozas.de>
-References: <1275837307-4283-1-git-send-email-npalix@diku.dk> <201006302352.34594.npalix@diku.dk> <20100702135247.GA18690@shinshilla>
-In-Reply-To: <20100702135247.GA18690@shinshilla>
+	id S1758880Ab0GBU7z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 16:59:55 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:1116 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757520Ab0GBU7y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 16:59:54 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.53,528,1272844800"; 
+   d="scan'208";a="553775595"
+Date: Fri, 02 Jul 2010 13:56:14 -0700
+From: "Tom Lyon" <pugs@cisco.com>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       iommu@lists.linux-foundation.org, chrisw@sous-sol.org, mst@redhat.com,
+       dwmw2@infradead.org, joerg.roedel@amd.com
+Cc: aafabbri@cisco.com, scofeldm@cisco.com
+Subject: [PATCH V3] 2.6.34: simple IOMMU API extension to check safe
+ interrupt remapping
+Message-ID: <4c2e526e.HXT+zIj7fSMwTdy/%pugs@cisco.com>
+User-Agent: Heirloom mailx 12.2 01/07/07
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007021630.35873.npalix@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 July 2010 15:52:50 Kulikov Vasiliy wrote:
-> On Wed, Jun 30, 2010 at 23:52 +0200, Nicolas Palix wrote:
-> > On Wednesday 30 June 2010 20:58:54 Kulikov Vasiliy wrote:
-> > > > +if [ "$COCCI" = "" ] ; then
-> > > > +    for f in `find $srctree/scripts/coccinelle/ -name '*.cocci' -type f | sort`; do
-> > > > +	coccinelle $f $srctree;
-> > > > +    done
-> > > > +else
-> > > > +    coccinelle $COCCI $srctree
-> > > > +fi
-> > > 
-> > > I think it is more usefull to use $M instead of $srctree to run simple
-> > > 'make coccicheck'.
-> > 
-> > What is the purpose of $M ?
-> > 
-> > I submitted an incremental patch to add support for $C.
-> 
-> From root Makefile:
-> # Use make M=dir to specify directory of external module to build
-> # Old syntax make ... SUBDIRS=$PWD is still supported
-> # Setting the environment variable KBUILD_EXTMOD take precedence
-> 
-> So, I compile all local modules as smth like
-> make -C ../../.. M=$PWD CONFIG_SMTH=m modules
-> 
-> If coccinelle is started as 'coccinelle $COCCI $M' then it checks only in
-> directory tree with $M root.
+This patch allows IOMMU users to determine whether the hardware and software
+support safe, isolated interrupt remapping.  Not all Intel IOMMUs have the
+hardware, and the software for AMD is not there yet.
+	Signed-off-by: Tom Lyon <pugs@cisco.com>
+---
+Version 3: shorter name requested by Joerg.
+Version 2: previous ifdefs not needed.
 
-That would be great indeed. And we can still use $srctree as a default
-value if $M is not set. Coccinelle already support this scheme with the
-combination of -dir and -patch, so the paths in the generated patches/messages
-can be fixed.
+MST has convinced me that any user level driver for PCI master devices can't 
+be safe unless there is an IOMMU protecting the APIC MSI/MSI-X interrupt 
+addresses from device writes.  This interrupt remapping is not present in all
+Intel IOMMUs and the code for the interrupt mapping in the AMD IOMMUs is not
+implemented yet.
 
-Kulikov, would you like to make the patch ?
+Needed by not-yet-accepted VFIO driver.
 
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
--- 
-Nicolas Palix
-Web: http://www.diku.dk/~npalix/
+diff -uprN linux-2.6.34/drivers/pci/intel-iommu.c iommuapi-linux-2.6.34/drivers/pci/intel-iommu.c
+--- linux-2.6.34/drivers/pci/intel-iommu.c	2010-05-16 14:17:36.000000000 -0700
++++ iommuapi-linux-2.6.34/drivers/pci/intel-iommu.c	2010-07-02 12:39:19.000000000 -0700
+@@ -3705,6 +3705,8 @@ static int intel_iommu_domain_has_cap(st
+ 
+ 	if (cap == IOMMU_CAP_CACHE_COHERENCY)
+ 		return dmar_domain->iommu_snooping;
++	if (cap == IOMMU_CAP_INTR_REMAP)
++		return intr_remapping_enabled;
+ 
+ 	return 0;
+ }
+diff -uprN linux-2.6.34/include/linux/iommu.h iommuapi-linux-2.6.34/include/linux/iommu.h
+--- linux-2.6.34/include/linux/iommu.h	2010-05-16 14:17:36.000000000 -0700
++++ iommuapi-linux-2.6.34/include/linux/iommu.h	2010-07-02 12:38:45.000000000 -0700
+@@ -30,6 +30,7 @@ struct iommu_domain {
+ };
+ 
+ #define IOMMU_CAP_CACHE_COHERENCY	0x1
++#define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
+ 
+ struct iommu_ops {
+ 	int (*domain_init)(struct iommu_domain *domain);
