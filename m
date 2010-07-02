@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758295Ab0GBJv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 05:51:27 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:61381 "EHLO poutre.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756910Ab0GBJvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 05:51:25 -0400
-Date: Fri, 2 Jul 2010 11:51:23 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jim Cromie <jim.cromie@gmail.com>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ethan Lawrence <e.law87@yahoo.com>,
-       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "lars4910@hotmail.com" <lars4910@hotmail.com>,
-       "birdie@permonline.ru" <birdie@permonline.ru>,
-       "jadcock@cox.net" <jadcock@cox.net>
-Subject: Re: [PATCH/RFC] hwmon: Add support for W83667HG-B
-Message-ID: <20100702115123.18e95e14@hyperion.delvare>
-In-Reply-To: <20100702083144.GD12911@ericsson.com>
-References: <1278021735-21188-1-git-send-email-guenter.roeck@ericsson.com>
-	<20100702092011.0acd753f@hyperion.delvare>
-	<20100702080704.GA12911@ericsson.com>
-	<20100702101345.6fe9d27a@hyperion.delvare>
-	<20100702083144.GD12911@ericsson.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+	id S1757393Ab0GBJwS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 05:52:18 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40711 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab0GBJwQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 05:52:16 -0400
+Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Matt Fleming <matt@console-pimps.org>, Will Deacon <will.deacon@arm.com>,
+       paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100702025716.GA25499@linux-sh.org>
+References: <20100624142804.431553874@chello.nl>
+	 <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com>
+	 <1277464589.32034.276.camel@twins>
+	 <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com>
+	 <1277477401.32034.670.camel@twins> <1277994970.1917.184.camel@laptop>
+	 <1277996555.1917.205.camel@laptop>
+	 <20100701153112.GA13511@console-pimps.org>
+	 <1277998793.1917.212.camel@laptop>  <20100702025716.GA25499@linux-sh.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 02 Jul 2010 11:52:03 +0200
+Message-ID: <1278064323.1917.245.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Jul 2010 01:31:44 -0700, Guenter Roeck wrote:
-> On Fri, Jul 02, 2010 at 04:13:45AM -0400, Jean Delvare wrote:
-> > On Fri, 2 Jul 2010 01:07:04 -0700, Guenter Roeck wrote:
-> > > I'll also add a check for the HG-I.
-> > 
-> > Do you have a datasheet for that one too?
-> > 
-> No. However, since we have a tester, we will have test coverage,
-> so I figured it should be worth a try. If it doesn't work
-> I can still drop it from the final patch.
+On Fri, 2010-07-02 at 11:57 +0900, Paul Mundt wrote:
+> At the moment it's not an issue since we have big enough counters that
+> overflows don't really happen, especially if we're primarily using them
+> for one-shot measuring.
+> 
+> SH-4A style counters behave in such a fashion that we have 2 general
+> purpose counters, and 2 counters for measuring bus transactions. These
+> bus counters can optionally be disabled and used in a chained mode to
+> provide the general purpose counters a 64-bit counter (the actual
+> validity in the upper half of the chained counter varies depending on the
+> CPUs, but all of them can do at least 48-bits when chained). 
 
-FYI, I have a datasheet, which unfortunately I am not allowed to share.
-Please let me know if you want me to look up something for you.
+Right, so I was reading some of that code and I couldn't actually find
+where you keep consistency between the hardware counter value and the
+stored prev_count value.
 
-> I suspect it is the same as the HG with a different chip ID.
+That is, suppose I'm counting, the hardware starts at 0, hwc->prev_count
+= 0 and event->count = 0.
 
-Beware, it's a different device number (677 vs. 667) so I would expect
-more differences.
+At some point, x we context switch this task away, so we ->disable(),
+which disables the counter and updates the values, so at that time
+hwc->prev = x and event->count = x, right?
 
--- 
-Jean Delvare
+Now suppose we schedule the task back in, so we do ->enable(), then what
+happens? sh_pmu_enable() finds an unused index, (disables it for some
+reason.. it should already be cleared if its not used, but I guess a few
+extra hardware writes dont hurt) and calls sh4a_pmu_enable() on it.
+
+sh4a_pmu_enable() does 3 writes:
+
+  PPC_PMCAT -- does this clear the counter value?
+  PPC_CCBR  -- writes the ->config bits
+  PPC_CCBR  (adds CCBR_DUC, couldn't this be done in the 
+             previous write to this reg?)
+
+Now assuming that enable does indeed clear the hardware counter value,
+shouldn't you also set hwc->prev_count to 0 again? Otherwise the next
+update will see a massive jump?
+
+Alternatively you could write the hwc->prev_count value back to the
+register.
+
+If you eventually want to drop the chained counter support I guess it
+would make sense to have sh_perf_event_update() read and clear the
+counter so that you're always 0 based and then enforce an update from
+the arch tick hander so you never overflow.
+
+
