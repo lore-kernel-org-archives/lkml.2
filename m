@@ -1,308 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab0GCCRy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 22:17:54 -0400
-Received: from king.tilera.com ([72.1.168.226]:11396 "EHLO king.tilera.com"
+	id S1757586Ab0GCCSQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 22:18:16 -0400
+Received: from king.tilera.com ([72.1.168.226]:11403 "EHLO king.tilera.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756501Ab0GCCRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 22:17:52 -0400
-Message-Id: <201007030217.o632HoK9004030@farm-0002.internal.tilera.com>
+	id S1757407Ab0GCCSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 22:18:03 -0400
+Message-Id: <201007030218.o632I2uv004036@farm-0002.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 2 Jul 2010 11:45:18 -0400
-Subject: [PATCH] arch/tile: updates to hardwall code from community feedback.
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Date: Fri, 2 Jul 2010 14:19:35 -0400
+Subject: [PATCH] arch/tile: catch up on various minor cleanups.
+To: linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de
-X-OriginalArrivalTime: 03 Jul 2010 02:17:51.0177 (UTC) FILETIME=[F007B390:01CB1A55]
+X-OriginalArrivalTime: 03 Jul 2010 02:18:02.0630 (UTC) FILETIME=[F6DB4A60:01CB1A55]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change reflects some feedback from Arnd Bergmann, and also
-fixes a compat issue by removing the requirement that the cpumask
-pointer passed to the ioctl point to memory whose size is a
-multiple of sizeof(long), since that is awkward when userspace
-has a different sizeof(long).
-
-The compat_ptr() declaration was fixed and used to pass the
-compat_ioctl argument to the normal ioctl.  So far we limit compat
-code to 2GB, so the difference between zero-extend and sign-extend
-(the latter being correct, eventually) had been overlooked.
-
-Remove the file_to_hardwall() abstractions since they're not
-really needed.
-
-In addition, use <linux/list_types.h> to simplify hardwall code.
-Instead of using a bogus hardwall_list type, we can now use
-the proper list_head type directly.
+None of these changes fix any actual bugs, but are just various cleanups
+that fell out along the way.  In particular, some unused #defines and
+includes are removed, PREFETCH_STRIDE is added (the default is right for
+our shipping chips, but wrong for our next generation), our tile-specific
+prefetching code is removed so the (identical) generic prefetching code
+can be used instead, a comment is fixed to be proper GPL and not just a
+"paste GPL here" token, a "//" comment is converted to "/* */", etc.
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/include/asm/compat.h    |    2 +-
- arch/tile/include/asm/hardwall.h  |    3 +-
- arch/tile/include/asm/processor.h |    9 +---
- arch/tile/kernel/hardwall.c       |   89 +++++++++++++++----------------------
- 4 files changed, 40 insertions(+), 63 deletions(-)
+ arch/tile/include/asm/cache.h       |    5 -----
+ arch/tile/include/asm/irqflags.h    |    1 -
+ arch/tile/include/asm/processor.h   |   24 ++++++------------------
+ arch/tile/include/asm/system.h      |    2 --
+ arch/tile/include/asm/thread_info.h |    5 -----
+ arch/tile/include/hv/hypervisor.h   |    2 +-
+ drivers/char/hvc_tile.c             |   18 +++++++++---------
+ 7 files changed, 16 insertions(+), 41 deletions(-)
 
-I'm cc'ing this to linux-arch since it includes the changes
-for <asm/processor.h> and arch/tile/kernel/hardwall.c to use
-<linux/list_types.h>, to illustrate the cleanup benefits of splitting
-<linux/list.h>.
-
-diff --git a/arch/tile/include/asm/compat.h b/arch/tile/include/asm/compat.h
-index 6ee9d07..5a34da6 100644
---- a/arch/tile/include/asm/compat.h
-+++ b/arch/tile/include/asm/compat.h
-@@ -181,7 +181,7 @@ struct compat_shmid64_ds {
+diff --git a/arch/tile/include/asm/cache.h b/arch/tile/include/asm/cache.h
+index 869a14f..f610184 100644
+--- a/arch/tile/include/asm/cache.h
++++ b/arch/tile/include/asm/cache.h
+@@ -21,11 +21,6 @@
+ #define L1_CACHE_SHIFT		CHIP_L1D_LOG_LINE_SIZE()
+ #define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
  
- static inline void __user *compat_ptr(compat_uptr_t uptr)
- {
--	return (void __user *)(unsigned long)uptr;
-+	return (void __user *)(long)(s32)uptr;
- }
+-/* bytes per L1 instruction cache line */
+-#define L1I_CACHE_SHIFT		CHIP_L1I_LOG_LINE_SIZE()
+-#define L1I_CACHE_BYTES		(1 << L1I_CACHE_SHIFT)
+-#define L1I_CACHE_ALIGN(x)	(((x)+(L1I_CACHE_BYTES-1)) & -L1I_CACHE_BYTES)
+-
+ /* bytes per L2 cache line */
+ #define L2_CACHE_SHIFT		CHIP_L2_LOG_LINE_SIZE()
+ #define L2_CACHE_BYTES		(1 << L2_CACHE_SHIFT)
+diff --git a/arch/tile/include/asm/irqflags.h b/arch/tile/include/asm/irqflags.h
+index cf5bffd..45cf67c 100644
+--- a/arch/tile/include/asm/irqflags.h
++++ b/arch/tile/include/asm/irqflags.h
+@@ -15,7 +15,6 @@
+ #ifndef _ASM_TILE_IRQFLAGS_H
+ #define _ASM_TILE_IRQFLAGS_H
  
- static inline compat_uptr_t ptr_to_compat(void __user *uptr)
-diff --git a/arch/tile/include/asm/hardwall.h b/arch/tile/include/asm/hardwall.h
-index 631a24f..0bed3ec 100644
---- a/arch/tile/include/asm/hardwall.h
-+++ b/arch/tile/include/asm/hardwall.h
-@@ -26,8 +26,7 @@
-  * The resulting ioctl value is passed to the kernel in conjunction
-  * with a pointer to a little-endian bitmask of cpus, which must be
-  * physically in a rectangular configuration on the chip.
-- * The "size" is the number of bytes of cpu mask data and must be a
-- * multiple of sizeof(long).
-+ * The "size" is the number of bytes of cpu mask data.
-  */
- #define _HARDWALL_CREATE 1
- #define HARDWALL_CREATE(size) \
+-#include <asm/processor.h>
+ #include <arch/interrupts.h>
+ #include <arch/chip.h>
+ 
 diff --git a/arch/tile/include/asm/processor.h b/arch/tile/include/asm/processor.h
-index 95b54bc..a67076b 100644
+index a67076b..2133c41 100644
 --- a/arch/tile/include/asm/processor.h
 +++ b/arch/tile/include/asm/processor.h
-@@ -21,6 +21,7 @@
-  * NOTE: we don't include <linux/ptrace.h> or <linux/percpu.h> as one
-  * normally would, due to #include dependencies.
-  */
-+#include <linux/list_types.h>
- #include <asm/ptrace.h>
- #include <asm/percpu.h>
+@@ -267,32 +267,20 @@ extern int hash_default;
  
-@@ -29,7 +30,6 @@
- 
- struct task_struct;
- struct thread_struct;
--struct list_head;
- 
- typedef struct {
- 	unsigned long seg;
-@@ -76,11 +76,6 @@ struct async_tlb {
- 
- #ifdef CONFIG_HARDWALL
- struct hardwall_info;
--
--/* Can't use a normal list_head here due to header-file inclusion issues. */
--struct hardwall_list {
--	struct list_head *next, *prev;
--};
- #endif
- 
- struct thread_struct {
-@@ -112,7 +107,7 @@ struct thread_struct {
- 	/* Is this task tied to an activated hardwall? */
- 	struct hardwall_info *hardwall;
- 	/* Chains this task into the list at hardwall->list. */
--	struct hardwall_list hardwall_list;
-+	struct list_head hardwall_list;
- #endif
- #if CHIP_HAS_TILE_DMA()
- 	/* Async DMA TLB fault information */
-diff --git a/arch/tile/kernel/hardwall.c b/arch/tile/kernel/hardwall.c
-index 27f2856..d399540 100644
---- a/arch/tile/kernel/hardwall.c
-+++ b/arch/tile/kernel/hardwall.c
-@@ -22,6 +22,7 @@
- #include <linux/uaccess.h>
- #include <linux/smp.h>
- #include <linux/cdev.h>
-+#include <linux/compat.h>
- #include <asm/hardwall.h>
- #include <asm/traps.h>
- #include <asm/siginfo.h>
-@@ -46,27 +47,11 @@ struct hardwall_info {
- 	int teardown_in_progress;          /* are we tearing this one down? */
- };
- 
--/* Work around list_head vs hardwall_list. */
--#define hardwall_for_each_entry(pos, head, member)			\
--	for (pos = list_entry((struct hardwall_list *)((head)->next),	\
--			      typeof(*pos), member);			\
--	     (struct list_head *)&pos->member != (head);		\
--	     pos = list_entry((struct hardwall_list *)(pos->member.next),\
--			      typeof(*pos), member))
- #define for_each_hardwall_task(pos, head) \
--	hardwall_for_each_entry(pos, head, thread.hardwall_list)
--
--#define hardwall_for_each_entry_safe(pos, n, head, member)		\
--	for (pos = list_entry((struct hardwall_list *)((head)->next),	\
--			      typeof(*pos), member),			\
--	     n = list_entry((struct hardwall_list *)(pos->member.next), \
--			      typeof(*pos), member);			\
--	     (struct list_head *)&pos->member != (head);		\
--	     pos = n,							\
--	     n = list_entry((struct hardwall_list *)(pos->member.next), \
--			      typeof(*n), member))
-+	list_for_each_entry(pos, head, thread.hardwall_list)
+ /* Should kernel stack pages be hash-for-home? */
+ extern int kstack_hash;
 +
- #define for_each_hardwall_task_safe(pos, n, head) \
--	hardwall_for_each_entry_safe(pos, n, head, thread.hardwall_list)
-+	list_for_each_entry_safe(pos, n, head, thread.hardwall_list)
- 
- 
- /* Currently allocated hardwall rectangles */
-@@ -99,11 +84,6 @@ early_param("noudn", noudn);
-  * Low-level primitives
-  */
- 
--/* Map a HARDWALL_FILE file to the matching hardwall info structure */
--#define _file_to_hardwall(file) ((file)->private_data)
--#define file_to_hardwall(file) \
--	((struct hardwall_info *)_file_to_hardwall(file))
--
- /* Set a CPU bit if the CPU is online. */
- #define cpu_online_set(cpu, dst) do { \
- 	if (cpu_online(cpu))          \
-@@ -355,30 +335,37 @@ void restrict_network_mpls(void)
- 
- /* Create a hardwall for the given rectangle */
- static struct hardwall_info *hardwall_create(
--	size_t size, const unsigned long __user *bits)
-+	size_t size, const unsigned char __user *bits)
- {
- 	struct hardwall_info *iter, *rect;
- 	struct cpumask mask;
- 	unsigned long flags;
--	int rc, cpu, maxcpus = smp_height * smp_width;
-+	int rc;
- 
--	/* If "size" is not a multiple of long, it's invalid. */
--	if (size % sizeof(long))
-+	/* Reject crazy sizes out of hand, a la sys_mbind(). */
-+	if (size > PAGE_SIZE)
- 		return ERR_PTR(-EINVAL);
- 
--	/* Validate that all the bits we are given fit in our coordinates. */
--	cpumask_clear(&mask);
--	for (cpu = 0; size > 0; ++bits, size -= sizeof(long)) {
--		int i;
--		unsigned long m;
--		if (get_user(m, bits) != 0)
--			return ERR_PTR(-EFAULT);
--		for (i = 0; i < BITS_PER_LONG; ++i, ++cpu)
--			if (m & (1UL << i)) {
--				if (cpu >= maxcpus)
--					return ERR_PTR(-EINVAL);
--				cpumask_set_cpu(cpu, &mask);
--			}
-+	/* Copy whatever fits into a cpumask. */
-+	if (copy_from_user(&mask, bits, min(sizeof(struct cpumask), size)))
-+		return ERR_PTR(-EFAULT);
++/* Does MAP_ANONYMOUS return hash-for-home pages by default? */
++#define uheap_hash hash_default
 +
-+	/*
-+	 * If the size was short, clear the rest of the mask;
-+	 * otherwise validate that the rest of the user mask was zero
-+	 * (we don't try hard to be efficient when validating huge masks).
-+	 */
-+	if (size < sizeof(struct cpumask)) {
-+		memset((char *)&mask + size, 0, sizeof(struct cpumask) - size);
-+	} else if (size > sizeof(struct cpumask)) {
-+		size_t i;
-+		for (i = sizeof(struct cpumask); i < size; ++i) {
-+			char c;
-+			if (get_user(c, &bits[i]))
-+				return ERR_PTR(-EFAULT);
-+			if (c)
-+				return ERR_PTR(-EINVAL);
-+		}
- 	}
- 
- 	/* Allocate a new rectangle optimistically. */
-@@ -451,7 +438,7 @@ static int hardwall_activate(struct hardwall_info *rect)
- 	/* Success!  This process gets to use the user networks on this cpu. */
- 	ts->hardwall = rect;
- 	spin_lock_irqsave(&hardwall_lock, flags);
--	list_add((struct list_head *)&ts->hardwall_list, &rect->task_head);
-+	list_add(&ts->hardwall_list, &rect->task_head);
- 	spin_unlock_irqrestore(&hardwall_lock, flags);
- 	grant_network_mpls();
- 	printk(KERN_DEBUG "Pid %d (%s) activated for hardwall: cpu %d\n",
-@@ -479,7 +466,7 @@ static void _hardwall_deactivate(struct task_struct *task)
- 
- 	BUG_ON(ts->hardwall == NULL);
- 	ts->hardwall = NULL;
--	list_del((struct list_head *)&ts->hardwall_list);
-+	list_del(&ts->hardwall_list);
- 	if (task == current)
- 		restrict_network_mpls();
- }
-@@ -710,7 +697,7 @@ int proc_tile_hardwall_show(struct seq_file *sf, void *v)
- 
- static long hardwall_ioctl(struct file *file, unsigned int a, unsigned long b)
- {
--	struct hardwall_info *rect = file_to_hardwall(file);
-+	struct hardwall_info *rect = file->private_data;
- 
- 	if (_IOC_TYPE(a) != HARDWALL_IOCTL_BASE)
- 		return -EINVAL;
-@@ -722,10 +709,10 @@ static long hardwall_ioctl(struct file *file, unsigned int a, unsigned long b)
- 		if (rect != NULL)
- 			return -EALREADY;
- 		rect = hardwall_create(_IOC_SIZE(a),
--					(const unsigned long __user *)b);
-+					(const unsigned char __user *)b);
- 		if (IS_ERR(rect))
- 			return PTR_ERR(rect);
--		_file_to_hardwall(file) = rect;
-+		file->private_data = rect;
- 		return 0;
- 
- 	case _HARDWALL_ACTIVATE:
-@@ -746,14 +733,14 @@ static long hardwall_compat_ioctl(struct file *file,
- 				  unsigned int a, unsigned long b)
- {
- 	/* Sign-extend the argument so it can be used as a pointer. */
--	return hardwall_ioctl(file, a, (int)(long)b);
-+	return hardwall_ioctl(file, a, (unsigned long)compat_ptr(b));
- }
+ #else
+ #define hash_default 0
+ #define kstack_hash 0
++#define uheap_hash 0
  #endif
  
- /* The user process closed the file; revoke access to user networks. */
- static int hardwall_flush(struct file *file, fl_owner_t owner)
- {
--	struct hardwall_info *rect = file_to_hardwall(file);
-+	struct hardwall_info *rect = file->private_data;
- 	struct task_struct *task, *tmp;
- 	unsigned long flags;
+ /* Are we using huge pages in the TLB for kernel data? */
+ extern int kdata_huge;
  
-@@ -780,7 +767,7 @@ static int hardwall_flush(struct file *file, fl_owner_t owner)
- /* This hardwall is gone, so destroy it. */
- static int hardwall_release(struct inode *inode, struct file *file)
- {
--	hardwall_destroy(file_to_hardwall(file));
-+	hardwall_destroy(file->private_data);
- 	return 0;
- }
- 
-@@ -808,10 +795,6 @@ static int __init dev_hardwall_init(void)
- 	if (rc < 0)
- 		return rc;
- 
--	/* Verify that hardwall_list can stand in for list_head. */
--	BUILD_BUG_ON(sizeof(struct list_head) !=
--		     sizeof(current->thread.hardwall_list));
+-/*
+- * Note that with OLOC the prefetch will return an unused read word to
+- * the issuing tile, which will cause some MDN traffic.  Benchmarking
+- * should be done to see whether this outweighs prefetching.
+- */
+-#define ARCH_HAS_PREFETCH
+-#define ARCH_HAS_PREFETCHW
+-#define ARCH_HAS_SPINLOCK_PREFETCH
 -
- 	return 0;
- }
- late_initcall(dev_hardwall_init);
+-#define prefetch(ptr) __builtin_prefetch((ptr), 0, 3)
+-#define prefetchw(ptr) __builtin_prefetch((ptr), 1, 3)
+-
+-#ifdef CONFIG_SMP
+-#define spin_lock_prefetch(ptr) prefetchw(ptr)
+-#else
+-/* Nothing to prefetch. */
+-#define spin_lock_prefetch(lock)	do { } while (0)
+-#endif
++#define PREFETCH_STRIDE CHIP_L2_LINE_SIZE()
+ 
+ #else /* __ASSEMBLY__ */
+ 
+diff --git a/arch/tile/include/asm/system.h b/arch/tile/include/asm/system.h
+index 0935094..f749be3 100644
+--- a/arch/tile/include/asm/system.h
++++ b/arch/tile/include/asm/system.h
+@@ -136,8 +136,6 @@ mb_incoherent(void)
+ #define set_mb(var, value) \
+ 	do { var = value; mb(); } while (0)
+ 
+-#include <linux/irqflags.h>
+-
+ /*
+  * Pause the DMA engine and static network before task switching.
+  */
+diff --git a/arch/tile/include/asm/thread_info.h b/arch/tile/include/asm/thread_info.h
+index beec872..3872f2b 100644
+--- a/arch/tile/include/asm/thread_info.h
++++ b/arch/tile/include/asm/thread_info.h
+@@ -150,11 +150,6 @@ extern void cpu_idle_on_new_stack(struct thread_info *old_ti,
+ #endif
+ #define TS_POLLING		0x0004	/* in idle loop but not sleeping */
+ #define TS_RESTORE_SIGMASK	0x0008	/* restore signal mask in do_signal */
+-#define TS_EXEC_HASH_SET	0x0010	/* apply TS_EXEC_HASH_xxx flags */
+-#define TS_EXEC_HASH_RO		0x0020	/* during exec, hash r/o segments */
+-#define TS_EXEC_HASH_RW		0x0040	/* during exec, hash r/w segments */
+-#define TS_EXEC_HASH_STACK	0x0080	/* during exec, hash the stack */
+-#define TS_EXEC_HASH_FLAGS	0x00f0	/* mask for TS_EXEC_HASH_xxx flags */
+ 
+ #define tsk_is_polling(t) (task_thread_info(t)->status & TS_POLLING)
+ 
+diff --git a/arch/tile/include/hv/hypervisor.h b/arch/tile/include/hv/hypervisor.h
+index a90d298..59b46dc 100644
+--- a/arch/tile/include/hv/hypervisor.h
++++ b/arch/tile/include/hv/hypervisor.h
+@@ -547,7 +547,7 @@ void hv_assert_intr(HV_IntrMask assert_mask);
+  */
+ HV_Errno hv_trigger_ipi(HV_Coord tile, int interrupt);
+ 
+-#endif // !CHIP_HAS_IPI()
++#endif /* !CHIP_HAS_IPI() */
+ 
+ /** Store memory mapping in debug memory so that external debugger can read it.
+  * A maximum of 16 entries can be stored.
+diff --git a/drivers/char/hvc_tile.c b/drivers/char/hvc_tile.c
+index 75715b3..c4efb55 100644
+--- a/drivers/char/hvc_tile.c
++++ b/drivers/char/hvc_tile.c
+@@ -1,15 +1,15 @@
+ /*
+- * %LINUX_LICENSE%
+- *
+- *
+- *
+- *
+- *
+- *
+- *
+- *
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
+  *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
+  *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
+  *
+  * Tilera TILE Processor hypervisor console
+  */
 -- 
 1.6.5.2
 
