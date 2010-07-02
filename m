@@ -1,187 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab0GBDEL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 23:04:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65387 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754692Ab0GBDEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 23:04:09 -0400
-Message-ID: <4C2D57F4.2050204@cn.fujitsu.com>
-Date: Fri, 02 Jul 2010 11:07:32 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1757274Ab0GBDFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 23:05:20 -0400
+Received: from bwv190.internetdsl.tpnet.pl ([83.18.229.190]:47596 "EHLO
+	bwv190.internetdsl.tpnet.pl" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754692Ab0GBDFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 23:05:18 -0400
+Date: Fri, 2 Jul 2010 05:01:58 +0200 (CEST)
+From: Piotr Gluszenia Slawinski <curious@bwv190.internetdsl.tpnet.pl>
+To: Dave Airlie <airlied@redhat.com>
+cc: Timothy Meade <zt.tmzt@gmail.com>, linux-arm-msm@vger.kernel.org,
+       Saravana Kannan <skannan@codeaurora.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: Closed source userspace graphics drivers with an open source 
+ kernel component
+In-Reply-To: <1278038796.19705.21.camel@clockmaker-el6>
+Message-ID: <Pine.LNX.4.64.1007020456250.9535@bwv190.internetdsl.tpnet.pl>
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
+ <AANLkTimgH-DiQyg0f-an5FS3Wyb2b6He3fxxB1L8Ziol@mail.gmail.com>
+ <1278024678.7738.54.camel@c-dwalke-linux.qualcomm.com>
+ <AANLkTinNrpcBg0TXTS78qaI5kPQKD-IbnLpDStu4_BIg@mail.gmail.com>
+ <1278026975.7738.89.camel@c-dwalke-linux.qualcomm.com>
+ <AANLkTilGdNgWIprJ2XZ2gSv2d-DVybGmb9phcboi4fNL@mail.gmail.com>
+ <1278029284.7738.116.camel@c-dwalke-linux.qualcomm.com>
+ <AANLkTilEKPmHKNDNbNpmUvcYC338YezLkNBc4ShfTFdp@mail.gmail.com>
+ <4C2D3066.9040104@codeaurora.org> <AANLkTilsqmCZwLUNJhvDKkralHQZzlRV3ZxaIGbt9-xB@mail.gmail.com>
+ <AANLkTinvzJrx4AqgWYuMg66Djf-snouLQZE7wI9Bu0Kv@mail.gmail.com>
+ <AANLkTimiNKRabIDCLvRwxVfdwuvt76PbDuTn2RocZLVG@mail.gmail.com>
+ <1278038796.19705.21.camel@clockmaker-el6>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] tracing: Allow to disable cmdline recording
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We found that even enabling a single trace event that will rarely be
-triggered can add big overhead to context switch.
+> There is no point supporting companies that give you a little bit of
+> information in exchange they want the support that being in a mainline
+> kernel gives. Its an unfair exchange of knowledge and time, and if they
+> claim they have to make a profit then its even more unfair.
 
-(lmbench context switch test)
- -------------------------------------------------
- 2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
- ctxsw  ctxsw  ctxsw ctxsw  ctxsw   ctxsw   ctxsw
------- ------ ------ ------ ------ ------- -------
-  2.19   2.3   2.21   2.56   2.13     2.54    2.07
-  2.39   2.51  2.35   2.75   2.27     2.81    2.24
+also, they seem to do it quite wrong way. i.e. much simpler would be to 
+just implement regular, open driver , and implement additional crypto
+mechanism in chipset itself, allowing to use simple userspace program
+sending certified keys allowing GPU to operate.
+if key is not available and device/driver not paid/registered, then
+GPU would simply lock itself , similiar to pre-paid designs from
+company whose name should not be spoken aloud.
 
-The overhead is 6% ~ 11%.
+also certain functionality could be ordered with same chip structure,
+i.e. framebuffer, unaccelerated 2d, accel 2d, 3d, etc.
+with user buying proper 'entry level' pre-paid code set from manufacturer.
 
-It's because when a trace event is enabled 3 tracepoints (sched_switch,
-sched_wakeup, sched_wakeup_new) will be activated to map pid to cmdname.
+this would provide quite same functionality (profit), without impacting
+open-source projects like Xorg with unnessesary complications.
 
-We'd like to avoid this overhead, so add a trace option '(no)record-cmd'
-to allow to disable cmdline recording.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- include/linux/ftrace_event.h |    7 +++++--
- kernel/trace/trace.c         |    6 +++++-
- kernel/trace/trace.h         |    3 +++
- kernel/trace/trace_events.c  |   30 ++++++++++++++++++++++++++++--
- 4 files changed, 41 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 01df7ca..2b7b139 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -152,11 +152,13 @@ extern int ftrace_event_reg(struct ftrace_event_call *event,
- enum {
- 	TRACE_EVENT_FL_ENABLED_BIT,
- 	TRACE_EVENT_FL_FILTERED_BIT,
-+	TRACE_EVENT_FL_RECORDED_CMD_BIT,
- };
- 
- enum {
--	TRACE_EVENT_FL_ENABLED	= (1 << TRACE_EVENT_FL_ENABLED_BIT),
--	TRACE_EVENT_FL_FILTERED	= (1 << TRACE_EVENT_FL_FILTERED_BIT),
-+	TRACE_EVENT_FL_ENABLED		= (1 << TRACE_EVENT_FL_ENABLED_BIT),
-+	TRACE_EVENT_FL_FILTERED		= (1 << TRACE_EVENT_FL_FILTERED_BIT),
-+	TRACE_EVENT_FL_RECORDED_CMD	= (1 << TRACE_EVENT_FL_RECORDED_CMD_BIT),
- };
- 
- struct ftrace_event_call {
-@@ -174,6 +176,7 @@ struct ftrace_event_call {
- 	 * 32 bit flags:
- 	 *   bit 1:		enabled
- 	 *   bit 2:		filter_active
-+	 *   bit 3:		enabled cmd record
- 	 *
- 	 * Changes to flags must hold the event_mutex.
- 	 *
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 8683dec..af90429 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -344,7 +344,7 @@ static DECLARE_WAIT_QUEUE_HEAD(trace_wait);
- /* trace_flags holds trace_options default values */
- unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
- 	TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
--	TRACE_ITER_GRAPH_TIME;
-+	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD;
- 
- static int trace_stop_count;
- static DEFINE_SPINLOCK(tracing_start_lock);
-@@ -428,6 +428,7 @@ static const char *trace_options[] = {
- 	"latency-format",
- 	"sleep-time",
- 	"graph-time",
-+	"record-cmd",
- 	NULL
- };
- 
-@@ -2561,6 +2562,9 @@ static void set_tracer_flags(unsigned int mask, int enabled)
- 		trace_flags |= mask;
- 	else
- 		trace_flags &= ~mask;
-+
-+	if (mask == TRACE_ITER_RECORD_CMD)
-+		trace_event_enable_cmd_record(enabled);
- }
- 
- static ssize_t
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index cc90ccd..e0fd494 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -597,6 +597,7 @@ enum trace_iterator_flags {
- 	TRACE_ITER_LATENCY_FMT		= 0x20000,
- 	TRACE_ITER_SLEEP_TIME		= 0x40000,
- 	TRACE_ITER_GRAPH_TIME		= 0x80000,
-+	TRACE_ITER_RECORD_CMD		= 0x100000,
- };
- 
- /*
-@@ -729,6 +730,8 @@ filter_check_discard(struct ftrace_event_call *call, void *rec,
- 	return 0;
- }
- 
-+extern void trace_event_enable_cmd_record(bool enable);
-+
- extern struct mutex event_mutex;
- extern struct list_head ftrace_events;
- 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index e8e6043..09b4fa6 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -170,6 +170,26 @@ int ftrace_event_reg(struct ftrace_event_call *call, enum trace_reg type)
- }
- EXPORT_SYMBOL_GPL(ftrace_event_reg);
- 
-+void trace_event_enable_cmd_record(bool enable)
-+{
-+	struct ftrace_event_call *call;
-+
-+	mutex_lock(&event_mutex);
-+	list_for_each_entry(call, &ftrace_events, list) {
-+		if (!(call->flags & TRACE_EVENT_FL_ENABLED))
-+			continue;
-+
-+		if (enable) {
-+			tracing_start_cmdline_record();
-+			call->flags |= TRACE_EVENT_FL_RECORDED_CMD;
-+		} else {
-+			tracing_stop_cmdline_record();
-+			call->flags &= ~TRACE_EVENT_FL_RECORDED_CMD;
-+		}
-+	}
-+	mutex_unlock(&event_mutex);
-+}
-+
- static int ftrace_event_enable_disable(struct ftrace_event_call *call,
- 					int enable)
- {
-@@ -179,13 +199,19 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
- 	case 0:
- 		if (call->flags & TRACE_EVENT_FL_ENABLED) {
- 			call->flags &= ~TRACE_EVENT_FL_ENABLED;
--			tracing_stop_cmdline_record();
-+			if (call->flags & TRACE_EVENT_FL_RECORDED_CMD) {
-+				tracing_stop_cmdline_record();
-+				call->flags &= ~TRACE_EVENT_FL_RECORDED_CMD;
-+			}
- 			call->class->reg(call, TRACE_REG_UNREGISTER);
- 		}
- 		break;
- 	case 1:
- 		if (!(call->flags & TRACE_EVENT_FL_ENABLED)) {
--			tracing_start_cmdline_record();
-+			if (trace_flags & TRACE_ITER_RECORD_CMD) {
-+				tracing_start_cmdline_record();
-+				call->flags |= TRACE_EVENT_FL_RECORDED_CMD;
-+			}
- 			ret = call->class->reg(call, TRACE_REG_REGISTER);
- 			if (ret) {
- 				tracing_stop_cmdline_record();
 -- 
-1.6.3
 
