@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759155Ab0GBQQv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 12:16:51 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:51488 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758945Ab0GBQQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 12:16:50 -0400
-Date: Fri, 2 Jul 2010 09:15:21 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Jim Cromie <jim.cromie@gmail.com>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ethan Lawrence <e.law87@yahoo.com>,
-       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "lars4910@hotmail.com" <lars4910@hotmail.com>,
-       "birdie@permonline.ru" <birdie@permonline.ru>,
-       "jadcock@cox.net" <jadcock@cox.net>
-Subject: Re: [PATCH/RFC] hwmon: Add support for W83667HG-B
-Message-ID: <20100702161521.GA14580@ericsson.com>
-References: <1278021735-21188-1-git-send-email-guenter.roeck@ericsson.com>
- <20100702092011.0acd753f@hyperion.delvare>
- <20100702080704.GA12911@ericsson.com>
- <20100702101345.6fe9d27a@hyperion.delvare>
- <20100702083144.GD12911@ericsson.com>
- <20100702115123.18e95e14@hyperion.delvare>
- <20100702140944.GA14032@ericsson.com>
- <20100702165903.3d9dcdab@hyperion.delvare>
+	id S1759127Ab0GBQUK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 12:20:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:21117 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759067Ab0GBQUG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 12:20:06 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=EWWk7z/gjWCVS7HH4k8SGLbyO7dKcYnCLIPufKZG7aiHstAljzhlWknLbV+JkheBf
+	aXP3P+k4Re8MGn8PBa3IQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100702165903.3d9dcdab@hyperion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1278057944.32034.15085.camel@twins>
+References: <1278025942-6750-1-git-send-email-venki@google.com>
+	<1278057944.32034.15085.camel@twins>
+Date: Fri, 2 Jul 2010 09:20:02 -0700
+Message-ID: <AANLkTikcZhbbtgNjW-JDf9FVD1jbyIsQ_RxeOUVK8c7C@mail.gmail.com>
+Subject: Re: [PATCH] sched: Call update_group_power only for local_group
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Gautham R Shenoy <ego@in.ibm.com>,
+       Joel Schopp <jschopp@austin.ibm.com>,
+       Suresh B Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 10:59:03AM -0400, Jean Delvare wrote:
-> On Fri, 2 Jul 2010 07:09:44 -0700, Guenter Roeck wrote:
-> > On Fri, Jul 02, 2010 at 05:51:23AM -0400, Jean Delvare wrote:
-> > > On Fri, 2 Jul 2010 01:31:44 -0700, Guenter Roeck wrote:
-> > > > On Fri, Jul 02, 2010 at 04:13:45AM -0400, Jean Delvare wrote:
-> > > > > On Fri, 2 Jul 2010 01:07:04 -0700, Guenter Roeck wrote:
-> > > > > > I'll also add a check for the HG-I.
-> > > > > 
-> > > > > Do you have a datasheet for that one too?
-> > > > > 
-> > > > No. However, since we have a tester, we will have test coverage,
-> > > > so I figured it should be worth a try. If it doesn't work
-> > > > I can still drop it from the final patch.
-> > > 
-> > > FYI, I have a datasheet, which unfortunately I am not allowed to share.
-> > > Please let me know if you want me to look up something for you.
-> > > 
-> > How about the changed registers ? Would give us an idea if the chip is closer to 
-> > 667 or to 667-B.
-> 
-> There is no summary of this available. The only way is to go through
-> both datasheets and compare all registers in sequence. This takes time,
-> which is exactly why I couldn't find the time to do it :(
-> 
-Yes, I noticed. Changes can be quite subtle, too. 
+On Fri, Jul 2, 2010 at 1:05 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2010-07-01 at 16:12 -0700, Venkatesh Pallipadi wrote:
+>> commit 871e35b moved update_group_power() call in update_sg_lb_stats(),
+>> resulting in it being called for each group, even though it only updates
+>> the power of local group. As a result we have frequent redundant
+>> update_group_power() calls.
+>>
+>> Move it back under "if (local_group)" condition.
+>>
+>> This reduces the number of calls to update_group_power by a factor of 4
+>> on my 4 core in 4 NUMA nodes test system.
+>
+> Hrm,.. so Gautham removed that because for things like the NO_HZ
+> balancer the initial balance_cpu == this_cpu constraint doesn't hold.
+>
+> Not I don't think the local_group constraint holds for that either, so
+> the below would again break that..
+>
+> Should we perhaps have a conditional on this_rq->nohz_balance_kick or
+> so?
 
-I'll remove the HG-I chip detection from the next patch rev
-unless I manage to get a datasheet as well.
+The thing is that update_group_power is only updating the power of
+local group (sd->groups).
+It is getting called multiple times however for each group as
+update_sd_lb_stats loops
+through groups->next calling update_sg_lb_stats.
+If we really want to update the power of non-local groups,
+update_cpu_power has to change
+to take a groups parameter and non this_cpu as arguments and may have
+to access non-local
+rq etc.
 
-Guenter
+Thanks,
+Venki
+>
+>> --- a/kernel/sched_fair.c
+>> +++ b/kernel/sched_fair.c
+>> @@ -2359,8 +2359,11 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+>>       unsigned int balance_cpu = -1, first_idle_cpu = 0;
+>>       unsigned long avg_load_per_task = 0;
+>>
+>> -     if (local_group)
+>> +     if (local_group) {
+>>               balance_cpu = group_first_cpu(group);
+>> +             update_group_power(sd, this_cpu);
+>> +     }
+>> +
+>>
+>>       /* Tally up the load of all CPUs in the group */
+>>       max_cpu_load = 0;
+>
+>
