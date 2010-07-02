@@ -1,38 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab0GBHel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 03:34:41 -0400
-Received: from sh.osrg.net ([192.16.179.4]:41489 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753446Ab0GBHeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 03:34:18 -0400
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-To: James.Bottomley@suse.de, axboe@kernel.dk
-Cc: hch@lst.de, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-       fujita.tomonori@lab.ntt.co.jp
-Subject: [PATCH 0/2] use q->prep_rq_fn for flush requests instead of q->prepare_flush_fn()
-Date: Fri,  2 Jul 2010 16:33:23 +0900
-Message-Id: <1278056005-25438-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.6.5
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 02 Jul 2010 16:34:03 +0900 (JST)
+	id S1755934Ab0GBHgF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 03:36:05 -0400
+Received: from adelphi.physics.adelaide.edu.au ([129.127.102.1]:35689 "EHLO
+	adelphi.physics.adelaide.edu.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751805Ab0GBHgD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 03:36:03 -0400
+From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+Message-Id: <201007020735.o627Z2E1025678@mercury.physics.adelaide.edu.au>
+Subject: Re: [PATCH v2] fujitsu-laptop: remove unnecessary input_free_device
+To: axel.lin@gmail.com (Axel Lin)
+Date: Fri, 2 Jul 2010 17:05:02 +0930 (CST)
+Cc: linux-kernel@vger.kernel.org (linux-kernel),
+       jwoithe@physics.adelaide.edu.au (Jonathan Woithe),
+       mjg@redhat.com (Matthew Garrett), len.brown@intel.com (Len Brown),
+       akpm@linux-foundation.org (Andrew Morton),
+       stefani@seibold.net (Stefani Seibold), ak@linux.intel.com (Andi Kleen),
+       platform-driver-x86@vger.kernel.org
+In-Reply-To: <1278055248.12339.5.camel@mola> from "Axel Lin" at Jul 02, 2010 03:20:48 PM
+X-Mailer: ELM [version 2.5 PL6]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scsi-ml builds flush requests via q->prepare_flush_fn(), however,
-builds discard requests via q->prep_rq_fn.
+Acked-by: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+ 
+> input_free_device should only be used if input_register_device()
+> was not called yet or if it failed.
+> This patch removes unnecessary input_free_device calls.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/platform/x86/fujitsu-laptop.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
+> index e325aeb..4346d26 100644
+> --- a/drivers/platform/x86/fujitsu-laptop.c
+> +++ b/drivers/platform/x86/fujitsu-laptop.c
+> @@ -725,6 +725,7 @@ static int acpi_fujitsu_add(struct acpi_device *device)
+>  
+>  err_unregister_input_dev:
+>  	input_unregister_device(input);
+> +	input = NULL;
+>  err_free_input_dev:
+>  	input_free_device(input);
+>  err_stop:
+> @@ -738,8 +739,6 @@ static int acpi_fujitsu_remove(struct acpi_device *device, int type)
+>  
+>  	input_unregister_device(input);
+>  
+> -	input_free_device(input);
+> -
+>  	fujitsu->acpi_handle = NULL;
+>  
+>  	return 0;
+> @@ -930,6 +929,7 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
+>  
+>  err_unregister_input_dev:
+>  	input_unregister_device(input);
+> +	input = NULL;
+>  err_free_input_dev:
+>  	input_free_device(input);
+>  err_free_fifo:
+> @@ -953,8 +953,6 @@ static int acpi_fujitsu_hotkey_remove(struct acpi_device *device, int type)
+>  
+>  	input_unregister_device(input);
+>  
+> -	input_free_device(input);
+> -
+>  	kfifo_free(&fujitsu_hotkey->fifo);
+>  
+>  	fujitsu_hotkey->acpi_handle = NULL;
+> -- 
+> 1.5.4.3
+> 
+> 
+> 
 
-Using two different mechnisms for the similar requests (building
-commands in SCSI ULD) doesn't make sense.
 
-Handing both via q->prep_rq_fn makes the code simpler.
-
-We could kill q->prepare_flush_fn(). Except for ide, all the users
-just mark flush requests. They can use REQ_FLUSH flag instead. Ide can
-do like SCSI.
-
-==
- block/blk-barrier.c |   12 ++++--------
- drivers/scsi/sd.c   |   26 ++++++++++++++++----------
- include/linux/bio.h |    2 ++
- 3 files changed, 22 insertions(+), 18 deletions(-)
+-- 
+* Jonathan Woithe    jwoithe@physics.adelaide.edu.au                        *
+*                    http://www.physics.adelaide.edu.au/~jwoithe            *
+***-----------------------------------------------------------------------***
+** "Time is an illusion; lunchtime doubly so"                              **
+*  "...you wouldn't recognize a subtle plan if it painted itself purple and *
+*   danced naked on a harpsichord singing 'subtle plans are here again'"    *
