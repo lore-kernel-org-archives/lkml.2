@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab0GBLZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 07:25:24 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39716 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438Ab0GBLZW (ORCPT
+	id S1756885Ab0GBL05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 07:26:57 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64702 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab0GBL04 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 07:25:22 -0400
-X-AuditID: b753bd60-a8a04ba000007d15-0c-4c2dcc9fe862
-Message-ID: <4C2DCC9D.1020001@hitachi.com>
-Date: Fri, 02 Jul 2010 20:25:17 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Fri, 2 Jul 2010 07:26:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IGEXV6t6rHYl37TAtHNPTpCJ3DNGKpU8nCg6NEYeFkUV9kRDOo8tczwIot5kmNiQsW
+         4WPkAdIA8chJDsZfuh7kAudqY/rvDc/4Ez+HMpUM1bd/12msVm/xtn7KTo4r7fo5AbTW
+         HHyh5AOa23ZQJZMS0p1uThoHZHzATiuKaafpc=
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv7 2.6.35-rc3-tip 11/11]  perf: perf interface for uprobes
-References: <20100629183454.32537.63582.sendpatchset@localhost6.localdomain6> <20100629183704.32537.28871.sendpatchset@localhost6.localdomain6> <4C2C2ECC.5060700@hitachi.com>
-In-Reply-To: <4C2C2ECC.5060700@hitachi.com>
+In-Reply-To: <20100702111236.GC6802@skynet.be>
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
+	<20100702095815.GA6802@skynet.be>
+	<20100702101535.GA9674@infradead.org>
+	<20100702111236.GC6802@skynet.be>
+Date: Fri, 2 Jul 2010 21:26:55 +1000
+Message-ID: <AANLkTilRfPf8Pkpy0OF-mQfXnEeYh-UYMd3yim_moZTq@mail.gmail.com>
+Subject: Re: Closed source userspace graphics drivers with an open source 
+	kernel component
+From: Dave Airlie <airlied@gmail.com>
+To: Luc Verhaegen <libv@skynet.be>
+Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Masami Hiramatsu wrote:
-> Srikar Dronamraju wrote:
->> perf: perf interface for uprobes
->>
->> Changelog from v4: Merged to 2.6.35-rc3-tip.
->>
->> Changelog from v3: (addressed comments from Masami Hiramatsu)
->> 	* Every process id has a different group name.
->> 	* event name starts with function name.
->> 	* If vaddr is specified, event name has vaddr appended
->> 	  along with function name, (this is to avoid subsequent probes
->> 	  using same event name.)
->> 	* warning if -p and --list options are used together.
->>
->> 	Also dso can either be a short name or absolute path.
->>
->> Enhances perf probe to accept pid and user vaddr.
->> Provides very basic support for uprobes.
-> 
-> It's unsure what will happen if user sets a probe by line number...
-> I'd like to suggest you if need_dwarf && uid, it should show an error message.
-> But other parts are OK for me.
+On Fri, Jul 2, 2010 at 9:12 PM, Luc Verhaegen <libv@skynet.be> wrote:
+> On Fri, Jul 02, 2010 at 06:15:35AM -0400, Christoph Hellwig wrote:
+>> Luc, can you please take your corporate bullshit out of this?  I can
+>> assume you know Dave personally and should be clearly aware that he's
+>> everything but a corporate drone.
+>
+> Yes, with mails like this he clearly shows that he isn't a corporate drone.
+>
 
-I've checked that perf probe was stopped by SEGV in convert_name_to_addr() with
-below options.
+Luc, this isn't phoronix forums, the adults are talking here, run along now.
 
-# perf probe -u 2403 hoge.c:100
-
-because pp->function == NULL.
-
-Thank you,
--- 
-Masami HIRAMATSU
-2nd Research Dept.
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Dave.
