@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab0GBQ1Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 12:27:16 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59329 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759089Ab0GBQ1O convert rfc822-to-8bit (ORCPT
+	id S1759229Ab0GBQaO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 12:30:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:44860 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755246Ab0GBQaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 12:27:14 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "ohad@wizery.com" <ohad@wizery.com>,
-       "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-       "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-       "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
-Date: Fri, 2 Jul 2010 11:27:09 -0500
-Subject: RE: [PATCH 8/9] dspbridge: add map support for big buffers
-Thread-Topic: [PATCH 8/9] dspbridge: add map support for big buffers
-Thread-Index: AcsYsiGs9TjFYcgfQgej6lNQk7fClgAw2joAACMEqqA=
-Message-ID: <496565EC904933469F292DDA3F1663E602CBDD3ADE@dlee06.ent.ti.com>
-References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
- <1277943660-4112-2-git-send-email-x0095840@ti.com>
- <1277943660-4112-3-git-send-email-x0095840@ti.com>
- <1277943660-4112-4-git-send-email-x0095840@ti.com>
- <1277943660-4112-5-git-send-email-x0095840@ti.com>
- <1277943660-4112-6-git-send-email-x0095840@ti.com>
- <1277943660-4112-7-git-send-email-x0095840@ti.com>
- <1277943660-4112-8-git-send-email-x0095840@ti.com>
- <1277943660-4112-9-git-send-email-x0095840@ti.com>
- <8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
-In-Reply-To: <8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Jul 2010 12:30:12 -0400
+Date: Fri, 2 Jul 2010 12:26:50 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Priit Laes <plaes@plaes.org>
+Cc: netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: iwl3945: HARDWARE GONE??
+Message-ID: <20100702162650.GC2381@tuxdriver.com>
+References: <1278086575.2889.8.camel@chi>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278086575.2889.8.camel@chi>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Hi Hari,
-
-> -----Original Message-----
-> From: Kanigeri, Hari
-> Sent: Thursday, July 01, 2010 6:36 PM
-> To: Guzman Lugo, Fernando; linux-omap@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Cc: ohad@wizery.com; hiroshi.doyu@nokia.com; ameya.palande@nokia.com;
-> felipe.contreras@nokia.com; Guzman Lugo, Fernando
-> Subject: RE: [PATCH 8/9] dspbridge: add map support for big buffers
+On Fri, Jul 02, 2010 at 07:02:55PM +0300, Priit Laes wrote:
+> Heya!
 > 
-> Fernando,
+> Bumped my kernel to version 2.6.35-rc3-00391-g97e0214 and ran into
+> HARDWARE GONE error message..
 > 
-> > -	for_each_sg(sgt->sgl, sg, sgt->nents, i)
-> > -		sg_set_page(sg, usr_pgs[i], PAGE_SIZE, 0);
-> > +		da = iommu_vmap(mmu, da, sgt, IOVMF_ENDIAN_LITTLE |
-> > +							IOVMF_ELSZ_32);
+> Hardware is Lenovo x60s and wireless card is intel 3945:
 > 
-> -- iommu_vmap does the Kernel mapping to the buffers you are mapping to
-> DSP MMU. Why do you need Kernel mappings ?
+> 03:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG [Golan] Network Connection (rev 02)
+> 	Subsystem: Intel Corporation ThinkPad R60e/X60s
+> 	Flags: bus master, fast devsel, latency 0, IRQ 47
+> 	Memory at edf00000 (32-bit, non-prefetchable) [size=4K]
+> 	Capabilities: [c8] Power Management version 2
+> 	Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+> 	Capabilities: [e0] Express Legacy Endpoint, MSI 00
+> 	Capabilities: [100] Advanced Error Reporting
+> 	Capabilities: [140] Device Serial Number 00-xx-xx-xx-xx-xx-xx-xx
+> 	Kernel driver in use: iwl3945
+> 	Kernel modules: iwl3945
 > 
-> If there is no benefit in maintaining Kernel mapping I would rather call
-> iopgtable_store_entry directly to map the entries.
-
-Where inside iommu_vmap is the mapping done? I thought the kernel can access to that buffer after get_user_pages() where the user pages are pin and we can get a kernel address. The intention using iommu_vmap was to use api's proved by the iovmmu module. iommu_vmap() it is also tracking the mapped areas, so maybe the next step could be: remove dmm.c/h files and also proc_reserve/unreserved functions. If you think the function is unneeded steps and could affect the performance I can do the change to use only iopgtable_store_entry().
-
-I think a kernel mapping is needed for flush/invalidate api's, please correct me if I am wrong. 
-
-Regards,
-Fernando.
-
+> I have attached dmesg error message...
 > 
-> Thank you,
-> Best regards, Hari
+> Cheers,
+> Priit :)
+
+> [13813.347617] Uhhuh. NMI received for unknown reason a1 on CPU 0.
+> [13813.347617] You have some hardware problem, likely on the PCI bus.
+> [13813.347617] Dazed and confused, but trying to continue
+> [13813.347617] iwl3945 0000:03:00.0: HARDWARE GONE?? INTA == 0xffffffff
+
+We've been seeing this sort of thing a lot -- somehow the iwl3945 gets
+disconnected from the PCI bus.  Anyone have any clue how that happens?
+
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
