@@ -1,74 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759967Ab0GBUcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 16:32:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6910 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758758Ab0GBUch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 16:32:37 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-ext4@vger.kernel.org, axboe@kernel.dk, linux-kernel@vger.kernel.org,
-       tao.ma@oracle.com
-Subject: Re: [PATCH 0/6 v6][RFC] jbd[2]: enhance fsync performance when using CFQ
-References: <1278100699-24132-1-git-send-email-jmoyer@redhat.com>
-	<20100702202342.GH7001@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 02 Jul 2010 16:32:31 -0400
-In-Reply-To: <20100702202342.GH7001@redhat.com> (Vivek Goyal's message of
-	"Fri, 2 Jul 2010 16:23:42 -0400")
-Message-ID: <x49iq4xtyjk.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1755002Ab0GBUnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 16:43:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59219 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab0GBUnR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 16:43:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH] Break out types from <linux/list.h> to <linux/list_types.h>.
+Date: Fri, 2 Jul 2010 22:43:13 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3+; KDE/4.4.90; x86_64; ; )
+Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+References: <201007021811.04197.arnd@arndb.de> <201007021747.o62HlgmV019405@farm-0002.internal.tilera.com> <20100702191910.GA5842@parisc-linux.org>
+In-Reply-To: <20100702191910.GA5842@parisc-linux.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007022243.13270.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1+aJWT0F+fV2EmLHCLIXcAZWF7auPLB7cfs/su
+ steTEezjuOQ1/ENHPSm56LSkA01MYm6g3US9qwAbspcuH6E8Gg
+ 39TkhzSf7us4iuc3bxgmg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On Friday 02 July 2010 21:19:11 Matthew Wilcox wrote:
+> Why a new header file instead of linux/types.h?
 
-> On Fri, Jul 02, 2010 at 03:58:13PM -0400, Jeff Moyer wrote:
->
-> [..]
->> Changes from the last posting:
->> - Yielding no longer expires the current queue.  Instead, it sets up new
->>   requests from the target process so that they are issued in the yielding
->>   process' cfqq.  This means that we don't need to worry about losing group
->>   or workload share.
->> - Journal commits are now synchronous I/Os, which was required to get any
->>   sort of performance out of the fs_mark process in the presence of a
->>   competing reader.
->> - WRITE_SYNC I/O no longer sets RQ_NOIDLE, for a similar reason.
->
-> Hi Jeff,
->
-> So this patchset relies on idling on WRITE_SYNC queues. Though in general
-> we don't have examples that why one should idle on processes doing WRITE_SYNC
-> IO because previous IO does not tell anything about the upcoming IO. I am
-> bringing up this point again to make sure that fundamentally we agree that
-> continue to idle on WRITE_SYNC is the right thing to do otherwise this patch
-> will fall apart.
+I think it mostly makes sense because a list_head by itself usually
+isn't all that useful, you also want the list_add/list_for_each/...
+macros, so you end up including linux/list.h anyway.
 
-I think a mail server would be an example of an application that might
-do this.  I'll see if I can get a real world test case (or perhaps some
-real world data) and verify that.
+linux/list_types.h is really a special case which can get included
+by other headers when they have a reason for doing that.
 
-I agree that if we choose not to idle on write's, then this approach can
-be thrown out the window.
-
-> I have yet to go through the patch in detail but allowing other queue to
-> dispatch requests in the same queue sounds like queue merging. So can
-> we use that semantics to say elv_merge_context() or elv_merge_queue()
-> instead of elv_yield(). In the code we can just merge the two queues when
-> the next request comes in and separate them out at the slice expiry I 
-> guess.
-
-I considered that approach, but then you run into all of the questions
-about losing fairness across workloads and across groups.  I believe the
-approach I've taken here is *significantly* simpler than merging and
-unmerging would be.
-
-Cheers,
-Jeff
+	Arnd
