@@ -1,87 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393Ab0GBJwS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 05:52:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40711 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab0GBJwQ convert rfc822-to-8bit (ORCPT
+	id S1752795Ab0GBJ6V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 05:58:21 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:37009 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab0GBJ6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 05:52:16 -0400
-Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Matt Fleming <matt@console-pimps.org>, Will Deacon <will.deacon@arm.com>,
-       paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100702025716.GA25499@linux-sh.org>
-References: <20100624142804.431553874@chello.nl>
-	 <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com>
-	 <1277464589.32034.276.camel@twins>
-	 <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com>
-	 <1277477401.32034.670.camel@twins> <1277994970.1917.184.camel@laptop>
-	 <1277996555.1917.205.camel@laptop>
-	 <20100701153112.GA13511@console-pimps.org>
-	 <1277998793.1917.212.camel@laptop>  <20100702025716.GA25499@linux-sh.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 02 Jul 2010 11:52:03 +0200
-Message-ID: <1278064323.1917.245.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 2 Jul 2010 05:58:18 -0400
+Date: Fri, 2 Jul 2010 11:58:15 +0200
+From: Luc Verhaegen <libv@skynet.be>
+To: Dave Airlie <airlied@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: Closed source userspace graphics drivers with an open source
+	kernel component
+Message-ID: <20100702095815.GA6802@skynet.be>
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-02 at 11:57 +0900, Paul Mundt wrote:
-> At the moment it's not an issue since we have big enough counters that
-> overflows don't really happen, especially if we're primarily using them
-> for one-shot measuring.
+On Fri, Jul 02, 2010 at 08:10:40AM +1000, Dave Airlie wrote:
+> Now this is just my opinion as maintainer of the drm, and doesn't
+> reflect anyone or any official policy, I've also no idea if Linus
+> agrees or not.
 > 
-> SH-4A style counters behave in such a fashion that we have 2 general
-> purpose counters, and 2 counters for measuring bus transactions. These
-> bus counters can optionally be disabled and used in a chained mode to
-> provide the general purpose counters a 64-bit counter (the actual
-> validity in the upper half of the chained counter varies depending on the
-> CPUs, but all of them can do at least 48-bits when chained). 
+> We are going to start to see a number of companies in the embedded
+> space submitting 3D drivers for mobile devices to the kernel. I'd like
+> to clarify my position once so they don't all come asking the same
+> questions.
+> 
+> If you aren't going to create an open userspace driver (either MIT or
+> LGPL) then don't waste time submitting a kernel driver to me.
+> 
+> My reasons are as follows, the thing is you can probably excuse some
+> of these on a point by point basis, but you need to justify why closed
+> userspace on all points.
+> 
+> a) licensing, Alan Cox pointed this out before, if you wrote a GPL
+> kernel driver, then wrote a closed userspace on top, you open up a
+> while world of derived work issues. Can the userspace operate on a
+> non-GPL kernel without major modifications etc. This is a can of worms
+> I'd rather not enter into, and there are a few workarounds.
 
-Right, so I was reading some of that code and I couldn't actually find
-where you keep consistency between the hardware counter value and the
-stored prev_count value.
+Yes, this a mess indeed.
 
-That is, suppose I'm counting, the hardware starts at 0, hwc->prev_count
-= 0 and event->count = 0.
+But i fear that this a mess that cannot be fixed, in its entirety, in a single shot.  
 
-At some point, x we context switch this task away, so we ->disable(),
-which disables the counter and updates the values, so at that time
-hwc->prev = x and event->count = x, right?
+Qualcomm making this code available already clearly shows the will and determination of 
+some people inside qualcomm to do The Right Thing. 
 
-Now suppose we schedule the task back in, so we do ->enable(), then what
-happens? sh_pmu_enable() finds an unused index, (disables it for some
-reason.. it should already be cleared if its not used, but I guess a few
-extra hardware writes dont hurt) and calls sh4a_pmu_enable() on it.
+This is Qualcomms first big step on the graphics side, where IP is always amongst the 
+heaviest. I am certain that Qualcomm wants to go further, but since Qualcomm most 
+likely licenses some parts of their graphics, Qualcomm can only open up those bits that 
+they truly own, and then use mainly market/sales-volume driven pressure to get the 
+original IP owner to play along.
 
-sh4a_pmu_enable() does 3 writes:
+You should also take into account who Jordan is. He is one of the guys who worked the 
+Geode before AMD decided to drop that, which is when he got hired by Qualcomm. He worked on 
+both the graphics drivers and on (then still) LinuxBIOS. I know that redhat has no 
+intention of going near coreboot, but in my world one cannot become more free, hardware 
+wise, than supporting coreboot. This gives me very good hopes that this is a serious 
+attempt by qualcomm to go somewhere, and that this is not some lame attempt to grab 
+marketing attention.
 
-  PPC_PMCAT -- does this clear the counter value?
-  PPC_CCBR  -- writes the ->config bits
-  PPC_CCBR  (adds CCBR_DUC, couldn't this be done in the 
-             previous write to this reg?)
+Now that you slammed the door on these guys (and on others in the process), what do you 
+think the response would be? Where will this get us to in the end?
 
-Now assuming that enable does indeed clear the hardware counter value,
-shouldn't you also set hwc->prev_count to 0 again? Otherwise the next
-update will see a massive jump?
+The licensing should get sorted, and that is of course something for Qualcomm to do, 
+or prove that it has been sorted already.
 
-Alternatively you could write the hwc->prev_count value back to the
-register.
+> b) verifying the sanity of the userspace API.
+> 1. Security: GPUs can do a lot of damage if left at home alone, since
+> mostly you are submitting command streams unverified into the GPU and
+> won't tell us what they mean, there is little way we can work out if
+> the GPU is going to over-write my passwd file to get 5 fps more in
+> quake. Now newer GPUs have at least started having MMUs, but again
+> we've no idea if that is the only way they work without docs or a lot
+> of trust.
 
-If you eventually want to drop the chained counter support I guess it
-would make sense to have sh_perf_event_update() read and clear the
-counter so that you're always 0 based and then enforce an update from
-the arch tick hander so you never overflow.
+This makes me wonder: Why do you even care?
 
+If redhat was working with qualcomm, you would not have taken this stance here at all.
 
+Since redhat is then not working with qualcomm, why is this then your responsibility?
+
+Or is denouncing responsibility exactly the reason for your mail here?
+
+If so, why couldn't you have stated "please guys, have fun with what you are doing, but 
+i will not be responsible for it" in a different way.
+
+What you achieved now is that people will stop bothering with even freeing this, 
+putting us even further back.
+
+But i fully understand where you are coming from: redhat only wants to seriously back 
+the server market, so free software graphics on arm based SOCs probably should not be 
+encouraged too much. As per usual, big statements are then more important than actual 
+free software advancement.
+
+> 2. General API suitability and versioning. How do we check that API is
+> sane wrt to userspace, if we can't verify the userspace. What happens
+> if the API has lots of 32/64 compat issues or things like that, and
+> when we fix them the binary userspace breaks? How do we know, how do
+> we test etc. What happens if a security issue forces us to break the
+> userspace API? how do we fix the userspace driver and test to confirm?
+> 
+> c) supplying docs in lieu of an open userspace
+> If you were to fully document the GPU so we could verify the
+> security/api aspects it leaves us in the position of writing our own
+> driver. Now writing that driver on top of the current kernel driver
+> would probably limit any innovation, and most people would want to
+> write a new kernel driver from scratch. Now we end up with two drivers
+> fighting, how do we pick which one to load at boot? can we ever do a
+> generic distro kernel for that device (assuming ARM ever solves that
+> issue).
+
+I think that by now you should have realized that this is not how it works for 
+things as complex as graphics drivers. If, for instance, you hadn't been given a 
+wildcard by your employer, you would never have gone close to AMD hw unless for some 
+spare time poking and occasional bugfixing.
+
+Also, before you throw this up: for nouveau, documentation would take part of the fun, 
+the attraction and excitement, away. Provide docs, and then only a few very industrious 
+people will remain, and they will also get weary after a while, or they get hired by 
+someone to continue their work, bringing us right back to the corporate world. 
+
+Now, it is interesting how you now are demanding documentation. When did recent and 
+relevant hw documentation happen for ATI? This pretty much died together when the 
+ATI<->SuSE relationship died, as the cooperation of SuSE and AMD is how documentation 
+was forced out of ATI in the first place, and ATI more and more found ways to get rid 
+of this responsibility, or overhead as bridgman would most likely name it.
+
+I think it even should be possible to find statements of you and/or alex, and 
+definitely bridgman, where it is claimed that for ATI, "the code is the documentation".
+
+If you are backing this reasoning for ATI, what is wrong with this code being the 
+documentation for Qualcomm?
+
+This point about documentation at least does not seem very credible coming from you, 
+with your history, especially with respect to the ATI story.
+
+> I've also noticed a trend to just reinvent the whole wheel instead of
+> writing a drm/kms driver and having that as the API, again maintainer
+> nightmares are made of this.
+
+Heh, in some of these cases, not having looked at this code in detail yet, such code 
+predates kms, and drm might not have provided what was needed. Not wanting to 
+completely diminish the responsibility of qualcomm (or the other companies who are 
+working or are forced to work like this), you might want to think about providing 
+stable and fitting infrastructure, not just stating that something is how _you_ are 
+doing it and declaring that the law.
+
+Next to that, the IP heavy part that cannot be released (yet?) might be some blob that 
+is used on both linux, windows, ximbian, etc. The concept of talking to some os 
+independent blob through some painful and ever-shifting layer is not that alien even to 
+you, with your staunch defending of ATIs AtomBIOS over more direct modesetting.
+
+Also, from where i sit, you complaining about people reinventing the wheel does bring 
+me some bitter amusement.
+
+As a conclusion: With you having sent this mail, guess what the guys at qualcomm, and 
+most likely imagination technologies and ARM as well (i think we can already discount 
+nvidia -- they are far too adept at producing solid closed source drivers -- to 
+desktop users satisfaction too), will do next?
+
+We already squandered the free software desktop (on x86), and part of the 
+responsibility for that is with the graphics hw support (and the radeon versus radeonhd 
+story shows nicely how to go about squandering such things). What i see here is that 
+you clearly want to go down a similar street with the now blossoming ARM market.
+
+Thanks alot,
+
+Luc Verhaegen.
