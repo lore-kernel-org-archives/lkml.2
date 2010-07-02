@@ -1,76 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759268Ab0GBROO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 13:14:14 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:51558 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757391Ab0GBRON (ORCPT
+	id S1759291Ab0GBRRx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 13:17:53 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45459 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262Ab0GBRRv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 13:14:13 -0400
-X-IronPort-AV: E=Sophos;i="4.53,527,1272844800"; 
-   d="scan'208";a="717972"
-Date: Fri, 2 Jul 2010 18:14:28 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-       Fitzhardinge <jeremy@goop.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Konrad Wilk <konrad.wilk@oracle.com>,
-       "Jeremy@acsinet12.oracle.com" <Jeremy@acsinet12.oracle.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
-Subject: RE: [Xen-devel] Re: [PATCH 0/12] PV on HVM Xen
-In-Reply-To: <9d5fb841-26be-4ce1-b549-eb7f17f88e61@default>
-Message-ID: <alpine.DEB.2.00.1007021810210.29110@kaball-desktop>
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop> <20100630175637.GC16488@phenom.dumpdata.com> <alpine.DEB.2.00.1007011111510.30135@kaball-desktop> <1411749d-666c-447d-bf05-954e2b4adf93@default alpine.DEB.2.00.1007021132390.29110@kaball-desktop>
- <9d5fb841-26be-4ce1-b549-eb7f17f88e61@default>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 2 Jul 2010 13:17:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <4C2CEF5D.8060609@redhat.com>
+References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop> 
+	<1277136847-13266-11-git-send-email-stefano@stabellini.net> 
+	<4C2CEF5D.8060609@redhat.com>
+From: Stefano Stabellini <stefano@stabellini.net>
+Date: Fri, 2 Jul 2010 18:17:29 +0100
+Message-ID: <AANLkTilZN48w9ODpbOQfPzgTH4wGOfAhCMgaGnO9goHu@mail.gmail.com>
+Subject: Re: [PATCH 11/13] Use xen_vcpuop_clockevent, xen_clocksource and xen 
+	wallclock.
+To: ddutile@redhat.com
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+       Stefano.Stabellini@eu.citrix.com, sheng@linux.intel.com,
+       jeremy@goop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Jul 2010, Dan Magenheimer wrote:
-> > From: Stefano Stabellini [mailto:stefano.stabellini@eu.citrix.com]
-> > 
-> > On Thu, 1 Jul 2010, Dan Magenheimer wrote:
-> > > Hi Stefano --
-> > >
-> > > What versions of Xen are compatible with this series?
-> > > I.e. is 4.0 required?  Are all Xen-side changes in
-> > > official 4.0.0?  Or only in 4.0-testing (and therefore
-> > > will be in 4.0.1)?  Or only in xen-unstable?
-> > >
-> > > If post-4.0.0 xen changes are necessary, could you point
-> > > out the changesets?
-> > 
-> > Any Xen version is going to work, but you need unstable to get all the
-> > features.
-> > 
-> > In particular you need these patches:
-> > 
-> > - 21647: implement HVMOP_pagetable_dying
-> > 
-> > - 21493: update_runstate_area for 32 bit PV on HVM guests
-> > 
-> > - 21449: implement vector callback for evtchn delivery
-> > 
-> > - 21445: TSC handling cleanups (version 2)
-> > 
-> > - 21341: Export timer hypercalls to HVM guests too
-> > 
-> > - 21339: TSC handling cleanups
-> 
-> Thanks for the thorough reply!  Any reason that any of these
-> cannot or should not be back-ported to go into 4.0.1?
-> 
+On Thu, Jul 1, 2010 at 8:41 PM, Don Dutile <ddutile@redhat.com> wrote:
+> stefano@stabellini.net wrote:
+>> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>
+>> Use xen_vcpuop_clockevent instead of hpet and APIC timers as main
+>> clockevent device on all vcpus, use the xen wallclock time as wallclock
+>> instead of rtc and use xen_clocksource as clocksource.
+>> The pv clock algorithm needs to work correctly for the xen_clocksource
+>> and xen wallclock to be usable, only modern Xen versions offer a
+>> reliable pv clock in HVM guests (XENFEAT_hvm_safe_pvclock).
+>>
+>> Using the hpet as clocksource means a VMEXIT every time we read/write to
+>> the hpet mmio addresses, pvclock give us a better rating without
+>> VMEXITs. Same goes for the xen wallclock and xen_vcpuop_clockevent
+>>
+>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>> ---
+>>  arch/x86/xen/enlighten.c         |   14 +--------
+>>  arch/x86/xen/suspend.c           |    4 ++
+>>  arch/x86/xen/time.c              |   59 ++++++++++++++++++++++++++++++++++---
+>>  arch/x86/xen/xen-ops.h           |    7 +---
+>>  include/xen/interface/features.h |    3 ++
+>>  5 files changed, 65 insertions(+), 22 deletions(-)
+>>
+>> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+>> index 90bac21..bcd98a9 100644
+>> --- a/arch/x86/xen/enlighten.c
+>> +++ b/arch/x86/xen/enlighten.c
+>> @@ -933,10 +933,6 @@ static const struct pv_init_ops xen_init_ops __initdata = {
+>>       .patch = xen_patch,
+>>  };
+>>
+>> -static const struct pv_time_ops xen_time_ops __initdata = {
+>> -     .sched_clock = xen_sched_clock,
+>> -};
+>> -
+>>  static const struct pv_cpu_ops xen_cpu_ops __initdata = {
+>>       .cpuid = xen_cpuid,
+>>
+>> @@ -1074,7 +1070,6 @@ asmlinkage void __init xen_start_kernel(void)
+>>       /* Install Xen paravirt ops */
+>>       pv_info = xen_info;
+>>       pv_init_ops = xen_init_ops;
+>> -     pv_time_ops = xen_time_ops;
+>>       pv_cpu_ops = xen_cpu_ops;
+>>       pv_apic_ops = xen_apic_ops;
+>>
+>> @@ -1082,13 +1077,7 @@ asmlinkage void __init xen_start_kernel(void)
+>>       x86_init.oem.arch_setup = xen_arch_setup;
+>>       x86_init.oem.banner = xen_banner;
+>>
+>> -     x86_init.timers.timer_init = xen_time_init;
+>> -     x86_init.timers.setup_percpu_clockev = x86_init_noop;
+>> -     x86_cpuinit.setup_percpu_clockev = x86_init_noop;
+>> -
+>> -     x86_platform.calibrate_tsc = xen_tsc_khz;
+>> -     x86_platform.get_wallclock = xen_get_wallclock;
+>> -     x86_platform.set_wallclock = xen_set_wallclock;
+>> +     xen_init_time_ops();
+>>
+>>       /*
+>>        * Set up some pagetable state before starting to set any ptes.
+>> @@ -1330,4 +1319,5 @@ void __init xen_hvm_guest_init(void)
+>>       register_cpu_notifier(&xen_hvm_cpu_notifier);
+>>       have_vcpu_info_placement = 0;
+>>       x86_init.irqs.intr_init = xen_init_IRQ;
+>> +     xen_hvm_init_time_ops();
+>>  }
+>> diff --git a/arch/x86/xen/suspend.c b/arch/x86/xen/suspend.c
+>> index 6ff9665..0774c67 100644
+>> --- a/arch/x86/xen/suspend.c
+>> +++ b/arch/x86/xen/suspend.c
+>> @@ -28,8 +28,12 @@ void xen_pre_suspend(void)
+>>
+>>  void xen_hvm_post_suspend(int suspend_cancelled)
+>>  {
+>> +     int cpu;
+>>       xen_hvm_init_shared_info();
+>>       xen_callback_vector();
+>> +     for_each_online_cpu(cpu) {
+>> +             xen_setup_runstate_info(cpu);
+>> +     }
+>>  }
+>>
+>
+> As I found out on older xen (non 'modern Xen version' ;-) )
+> w/o XENFEAT_hvm_safe_pvclock, the above patch should look like:
+>
+>        if (xen_feature(XENFEAT_hvm_safe_pvclock)) {
+>                int cpu;
+>                for_each_online_cpu(cpu) {
+>                        xen_setup_runstate_info(cpu);
+>                }
+>        }
+>
 
-They should be safe to backport, the only ones we should be extra
-careful are the TSC related patches, and you were the one to raise that
-complain :)
-If you have some spare time to test 21445 and 21339 on 4.0.1 to make
-sure that everything keeps working as expected, then we can safely
-apply them to xen 4.0 testing.
-
+Thank you for testing my series and for the patch, I'll include it in
+the next version.
