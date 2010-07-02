@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab0GBCqo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 22:46:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754002Ab0GBCqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 22:46:42 -0400
-Subject: Re: Closed source userspace graphics drivers with an open source 
- kernel component
-From: Dave Airlie <airlied@redhat.com>
-To: Timothy Meade <zt.tmzt@gmail.com>
-Cc: Saravana Kannan <skannan@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       dri-devel <dri-devel@lists.freedesktop.org>
-In-Reply-To: <AANLkTimiNKRabIDCLvRwxVfdwuvt76PbDuTn2RocZLVG@mail.gmail.com>
-References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
-	 <AANLkTimgH-DiQyg0f-an5FS3Wyb2b6He3fxxB1L8Ziol@mail.gmail.com>
-	 <1278024678.7738.54.camel@c-dwalke-linux.qualcomm.com>
-	 <AANLkTinNrpcBg0TXTS78qaI5kPQKD-IbnLpDStu4_BIg@mail.gmail.com>
-	 <1278026975.7738.89.camel@c-dwalke-linux.qualcomm.com>
-	 <AANLkTilGdNgWIprJ2XZ2gSv2d-DVybGmb9phcboi4fNL@mail.gmail.com>
-	 <1278029284.7738.116.camel@c-dwalke-linux.qualcomm.com>
-	 <AANLkTilEKPmHKNDNbNpmUvcYC338YezLkNBc4ShfTFdp@mail.gmail.com>
-	 <4C2D3066.9040104@codeaurora.org>
-	 <AANLkTilsqmCZwLUNJhvDKkralHQZzlRV3ZxaIGbt9-xB@mail.gmail.com>
-	 <AANLkTinvzJrx4AqgWYuMg66Djf-snouLQZE7wI9Bu0Kv@mail.gmail.com>
-	 <AANLkTimiNKRabIDCLvRwxVfdwuvt76PbDuTn2RocZLVG@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Jul 2010 12:46:36 +1000
-Message-ID: <1278038796.19705.21.camel@clockmaker-el6>
-Mime-Version: 1.0
+	id S1757238Ab0GBCuK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 22:50:10 -0400
+Received: from 94.43.138.210.xn.2iij.net ([210.138.43.94]:46347 "EHLO
+	mail.st-paulia.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754349Ab0GBCuI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 22:50:08 -0400
+Message-ID: <4C2D53D3.6050106@linux-ipv6.org>
+Date: Fri, 02 Jul 2010 11:49:55 +0900
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Organization: USAGI Project
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Fwd: Possible bug in net/ipv4/route.c?
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-01 at 20:42 -0400, Timothy Meade wrote:
-> ---------- Forwarded message ----------
+Switch to netdev.
 
-> Hello.  I've been working with the developers on the htc-linux project
-> and following the progress of Android on MSM devices closely for a few
-> years.  I've been excitied to see DRM/DRI replace PMEM and the Android
-> specific interfaces be replaced with more Linux-like ones.  The Xorg
-> driver from Qualcomm uses this same interface for 2D and it's possible
-> that Android will take the same approach, though it uses 3D and GLES
-> as a type of abstraction layer for surfaceflinger.  This allows for a
-> closed 3D driver with an open command submission layer that is in
-> itself not that different from the split for ATI devices using
-> radeonhd.  I say this because the alternative for these devices is a
-> fully closed binary and secrecy surrounding the graphics layers that
-> ensures that only the OS that ships with the device can ever really be
-> used and preventing those non-coorporate developers as myself from
-> utilising GPL code the way we want or even usuing are own cell phones
-> (in this case).  I would choose a fully open, X based OS even if that
-> meant only having 2D drivers, but I know that Quic and others aren't
-> going to develop just a (accelerated) 2D driver, not the kernel
-> components or userspace but instead rely on the same GLES layer that
-> Android uses, essentially making X and open environments a second
-> class citizen on modern mobile hardware.
+--yoshfuji
 
-The thing is you are prevented from using the GPU the way you want,
-telling you how to send commands and get irqs from a device but not
-telling you what those commands means is limiting you. So you can use it
-a framebuffer device, you can do that with a 500 line fbdev driver most
-likely, we don't need the maintainer burden of the other 5000 lines of
-code that are only in the driver to service some 3D userspace binary
-blob.
+-------- Original Message --------
+Subject: Possible bug in net/ipv4/route.c?
+Date: Thu, 1 Jul 2010 16:00:29 -0700
+From: Sol Kavy <skavy@ubicom.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Greg Ren <gren@ubicom.com>, Guojun Jin <gjin@ubicom.com>,        Murat Sezgin <msezgin@ubicom.com>, Sener Ilgen <silgen@ubicom.com>
 
-The radeon example is pointless since all pieces in that system are open
-even if AMD can't/won't disclose how certain parts of the GPU work, we
-have access to nearly all the functionality, we control all the open
-pieces and if someone reverse engineers it, AMD have to accept it.
+Found Linux: 2.6.28
+Arch: Ubicom32 <not yet pushed>
+Project: uCLinux based Router
+Test: Bit torrent Stress Test
 
-There is no point supporting companies that give you a little bit of
-information in exchange they want the support that being in a mainline
-kernel gives. Its an unfair exchange of knowledge and time, and if they
-claim they have to make a profit then its even more unfair.
+Note: The top of Linus git net/ipv4/route.c appears to have the same issue.
 
-Dave.
+The following is a patch for clearing out IP options area in an input skb during link failure processing.  Without this patch, the icmp_send() can result in a call to ip_options_echo() where the common buffer area of the skb is incorrectly interpreted.  Depending on the previous use of the skb->cb[], the interpreted option length values can cause stack corruption by copying more than 40 bytes to the output options.
+
+In our case, a driver is using the skb->cb[] area to hold driver specific data.   The driver is not zeroing out the area after use.  I can see three basic solutions:
+
+1) Drivers are not allowed to use the skb->cb[] area at all.  Ubicom should modify the driver to use a different approach.
+
+2) The layer using skb->cb[] should clear this area after use and before handing the skb to another layer.  Ubicom should modify the driver to clear the skb->cb[] area before sending it up the line.
+
+3) Any layer that "uses" the skb->cb[] area must clear the area before use.  In which case, the proposed patch would fix the problem for the ipv4_link_failure().  I believe that this is the correct fix because I see ip_rcv() clears the skb->cb[] before using it.
+
+Can someone confirm that this is the appropriate fix?  If this is documented somewhere, please direct me to the documentation.
+
+Please send email to sol@ubicom.com in addition to posting your response.
+
+Thanks,
+
+Sol Kavy/Murat Sezgin
+Ubicom, Inc.
+
+Patch:  
+
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 125ee64..d13805f 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1606,6 +1606,14 @@ static void ipv4_link_failure(struct sk_buff *skb)
+{
+        struct rtable *rt;
+
++       /*
++         * Since link failure can be called with skbs from many layers (see arp)
++         * the cb area of the skb must be cleared before use. Because the cb area 
++         * can be formatted according to the caller layer's cb area format and it may cause
++         * corruptions when it is handled in a different network layer.
++         */
++       memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
+        icmp_send(skb, ICMP_DEST_UNREACH, ICMP_HOST_UNREACH, 0);
+        rt = skb->rtable;
+
+The packet is enqueud by:
+do_IRQ()->do_softirq()->__do_softirq()->net_rx_action()->ubi32_eth_napi_poll()->ubi32_eth_receive()->__vlan_hwaccel_rx()->netif_receive_skb()->br_handle_frame()->nf_hook_slow()->br_nf_pre_routing_finish()->br_nfr_pre_routing_finish_bridge()->neight_resolve_output()->__neigh_event_send().
+
+The packet is then dequeued by: 
+do_IRQ() -> irq_exit() -> do_softirq() -> run_timer_softirq() -> neigh_timer_handler() -> arp_error_report() -> ipv4_link_failure() -> icmp_send() -> ip_options_echo().
+
+Because the Ubicom Ethernet driver overwrites the common buffer area, the enqueued packet contains garbage when casted as an IP options data structure.  This results in ip_options_echo() miss reading the option length information and overwriting memory.  By clearing the skb->cb[] before processing the icmp_send() against the packet, we ensure that ip_options_echo() does not corrupt memory.   
 
 
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
