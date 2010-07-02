@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758361Ab0GBMTk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 08:19:40 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:23469 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757746Ab0GBMTj (ORCPT
+	id S1758402Ab0GBMdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 08:33:06 -0400
+Received: from bipbip.grupopie.com ([195.23.16.24]:40048 "EHLO
+	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757088Ab0GBMdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 08:19:39 -0400
-Message-ID: <4C2DD958.7030005@tilera.com>
-Date: Fri, 2 Jul 2010 08:19:36 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	Fri, 2 Jul 2010 08:33:04 -0400
+X-Greylist: delayed 1602 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Jul 2010 08:33:04 EDT
+Message-ID: <4C2DD625.2030903@grupopie.com>
+Date: Fri, 02 Jul 2010 13:05:57 +0100
+From: Paulo Marques <pmarques@grupopie.com>
+Organization: Grupo PIE
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] arch/tile: Add driver to enable access to the user dynamic
- network.
-References: <201006252110.o5PLArvw010770@farm-0002.internal.tilera.com> <201006281312.16391.arnd@arndb.de> <4C28BE64.4050505@tilera.com> <201006282134.55166.arnd@arndb.de>
-In-Reply-To: <201006282134.55166.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
+To: werner@guyane.yi.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35-rc2,3 -- Problem with PS2 keyboard and mouse driver
+References: <1278041650.12788@guyane.yi.org>
+In-Reply-To: <1278041650.12788@guyane.yi.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[The question is how to use <linux/list.h> from within <asm/processor.h>.]
+werner@guyane.yi.org wrote:
+> 2.6.35-rc2,3,3-git1 -- Problem with PS2 keyboard and mouse driver
+> 
+> That problem continues at -git6 .
+> 
+> Since 2.6.35-rc2 the USB keyboard driver don't work longer, on
+> different mainboards and keyboards.
+> 
+> On 2.6.35-rc1 things still were (more or less) normal.
+> 
+> THIS IS AN ERROR WHICH ENTERED BETWEEN 2.6.35 -rc1 and -rc2 !!
 
-On 6/28/2010 3:34 PM, Arnd Bergmann wrote:
->> I think the only "true" fix would be to have a new <linux/list_types.h>
->> > header that provides list_head (and presumably hlist_head and
->> > hlist_node), which <linux/list.h> would include, as would our
->> > <asm/processor.h>.  This is certainly in line with recent
->> > header-separation changes (e.g. mm_types.h).  Would there be interest in
->> > a change like this?  I implemented it in my tree, and if it sounds
->> > plausible to you, I'll send out a git diff, but it looks pretty much
->> > exactly like this description :-)
->>     
-> Yes, I think that would be a reasonable change.
->
-> Another alternative might be to move the prefetch stuff from asm/processor.h
-> to asm/prefetch.h on all architectures, which also breaks the dependency loop,
-> unless I'm mistaken again
+The address 07200720 looks like a couple of gray spaces in a vga console
+and I've seen that before not long ago.
 
-In principle I like the <asm/prefetch.h> idea, but I'm concerned that
-the #include of <asm/system.h> from <linux/list.h> will recursively
-include <asm/processor.h> on some platforms; for example, s390 and
-xtensa include it directly.  We (tile) were including it indirectly via
-<asm/irqflags.h>, though this seems to be a spurious include on our
-part, but other platforms may also include it indirectly.  To be fair,
-I'm not sure why <asm/system.h> is included from <linux/list.h>.  It
-doesn't seem required for a tile build, at least, but no doubt it was
-put there for some reason.
+After a bit of searching, I've found it: it's in the thread that started
+with "Linux 2.6.35-rc2", and most importantly in the thread:
 
-So, if there's a good reason for it to be there, I'd say that pushes us
-back toward a separate <linux/list_types.h>.  Otherwise we can
-investigate splitting out the prefetch content on every platform to
-<asm/prefetch.h> (presumably creating some empty <asm/prefetch.h>
-headers on architectures that just use the gcc builtin) and adding new
-#includes of <asm/prefetch.h> to files that reference the prefetch
-functionality.  Arnd and other list folks, what's your instinct?
+BUG kmalloc-4096: Poison overwritten (2.6.35-rc2)
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+where there is a patch that is supposed to fix this. I thought this was
+already applied upstream, though...
+
+For your convenience, the patch in that thread is this one (might be
+white space mangled, as I just copy+pasted it, so you might need to
+apply it by hand):
+
+---
+ drivers/char/vt.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index 1296c42..e123958 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -304,8 +304,8 @@ static void scrup(struct vc_data *vc, unsigned int
+t, unsigned int b, int nr)
+ 	d = (unsigned short *)(vc->vc_origin + vc->vc_size_row * t);
+ 	s = (unsigned short *)(vc->vc_origin + vc->vc_size_row * (t + nr));
+ 	scr_memmovew(d, s, (b - t - nr) * vc->vc_size_row);
+-	scr_memsetw(d + (b - t - nr) * vc->vc_size_row, vc->vc_video_erase_char,
+-		    vc->vc_size_row * nr);
++	scr_memsetw((void *)d + (b - t - nr) * vc->vc_size_row,
++			vc->vc_video_erase_char, vc->vc_size_row * nr);
+ }
+
+ static void scrdown(struct vc_data *vc, unsigned int t, unsigned int b,
+int nr)
+
 
