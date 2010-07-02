@@ -1,72 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab0GBLKE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 07:10:04 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:41412 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754707Ab0GBLKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 07:10:02 -0400
-Date: Fri, 2 Jul 2010 13:11:38 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dan Kruchinin <dan.kruchinin@gmail.com>
+	id S1756371Ab0GBLKf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 07:10:35 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:33055 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756181Ab0GBLKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 07:10:33 -0400
+Date: Fri, 2 Jul 2010 13:10:29 +0200
+From: Luc Verhaegen <libv@skynet.be>
+To: Dave Airlie <airlied@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH 1/3] padata: separate serial and parallel cpumasks
-Message-ID: <20100702111138.GI10072@secunet.com>
-References: <AANLkTikeDE4hvZ3spyTBSHZsdQPc-2wlD5nTfb1aF-VD@mail.gmail.com>
- <20100702085323.GF10072@secunet.com>
- <AANLkTinyPGjXjlvJxB8WYB3EYFBtANXMzpTdUixyBRHW@mail.gmail.com>
- <20100702091726.GH10072@secunet.com>
- <AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
+       dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: Closed source userspace graphics drivers with an open source
+	kernel component
+Message-ID: <20100702111029.GB6802@skynet.be>
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com> <20100702095815.GA6802@skynet.be> <AANLkTimNgjtvDYY42dm-6akRjQfkHayagQWwHSS3AQs7@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 02 Jul 2010 11:09:59.0459 (UTC) FILETIME=[1C5B2730:01CB19D7]
+In-Reply-To: <AANLkTimNgjtvDYY42dm-6akRjQfkHayagQWwHSS3AQs7@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 01:32:29PM +0400, Dan Kruchinin wrote:
+On Fri, Jul 02, 2010 at 08:23:27PM +1000, Dave Airlie wrote:
 > >
-> > But the active cpumask, and now also your serial cpumask might change.
-> > We need to catch this changes somehow, that's why I checked the active
-> > cpumask against the callback cpu.
 > 
-> You're right, now I get it. Hence the right solution is to check if
-> callback CPU is set in serial cpumask every time we do
-> padata_do_serial and if it's not, recalculate its value.
-> The only thing that embarrasses me in this scheme is the fact that we
-> have to allocate cpumask_var_t in pcrypt_do_parallel every time we
-> call it then copy serial cpumask into allocated one and then check the
-> cb_cpu.
-> I think it would be better if we somehow could avoid dynamic cpumask
-> allocation. I see the following solutions:
-> 
-> 1) Do the check and cb_cpu value recalculation in padata_do_parallel.
-> It may check if cb_cpu is in serial_cpumask and recalculate its value
-> if it isn't. The drawback of this scheme is that padata_do_parallel
-> now doesn't guaranty it will forward serialization job to the same
-> callback CPU we passed to it. If passed CPU is not in serial cpumask
-> it will forward serialization to another CPU and we won't know its
-> number. The only thing we'll know is that this CPU is in the
-> serial_cpumask.
-> 2) Create new structure describing pcrypt instance in pcrypt.c which
-> will include waitqueue, padata instance and preallocated cpumask which
-> will be used for getting padata instance serial cpumsak. It'll help to
-> avoid dynamic cpumask allocation but it looks a bit awkward.
-> 
+> They own quite a lot of the IP in the 3D core, having bought it from
+> AMD, you can see the CP packets and PM4 stuff just like in radeon.
 
-I think the cleanest way to do it, is to maintain notifier chains
-for parallel/serial cpumask changes in padata. Users can register to
-these notifier chains if they are interestet in these events.
-pcrypt is probaply just in changes of the serial cpumsk interested,
-so you could alloc and initialize such a cpumask in pcrypt_aead_init_tfm
-and add a pointer to it to pcrypt_aead_ctx.
-Then you could update the cpumask with the notifier callback function.
-cpumask changes are rare and slow anyway, so copying the cpumask there does
-not matter that much. Since cpumask changes are rare, you can protect
-pcrypt_do_parallel with RCU against cpumask changes.
+Aha, imageon indeed, cool!
 
-Steffen
+I doubt that you know the conditions of this sale. This might just be about waiting for 
+Qualcomm to sort things out, or it might be about a licensing issue still. We just 
+cannot know this.
+
+> I know who Jordan is well from AMD, and I've stated this isn't a
+> Qualcomm only thing, but companies need to understand that putting
+> stuff into the kernel is part of a bargain, where you get the benefits
+> of all the work everyone has done on the kernel and they get the
+> benefits of being able to do stuff with the code you provide, only
+> giving us a half arsed interface to the hw and hiding all the good
+> stuff in userspace isn't accepting this bargain. You can say what you
+> like about liceneses and legalese but Linus picked the GPL for this
+> sort of everyone gives what they get.
+
+Sure, but you still slammed, and this affected in first order mostly Qualcomm, instead 
+of stating that you simply do not want to be involved.
+
+> They'll keep shipping closed stuff, just like they are now. Are you
+> going to reverse engineer the userspace drivers, so people who care
+> about open and free software platforms can use these drivers? (or have
+> you already signed NDAs saying you can't). Why should we maintain a
+> bunch of kernel code, when they are hiding away all the really useful
+> stuff that people could improve.
+
+Maintaining this exact code is not _your_ job, and you should've stated just that.
+
+> I would, some points
+> (a) Red Hat is the company I work for.
+> (b) Red Hat doesn't really care about this stuff at all.
+> (c) I'm the kernel maintainer for far longer that I worked for Red
+> Hat, I also work a lot with Intel at Red Hat and I've told them the
+> same thing, and VIA and now I'm stating it so I don't have to restate
+> individually to every company again.
+
+You will need to restate this every time anyway, unless you somehow manage to get your 
+rather daunting and loud statement to be the first thing such corporations management 
+people at linux.com, which is what people type in their browser first.
+
+But maybe you might want to adjust your message.
+
+> You don't understand what being a kernel maintainer is do you? at all?
+
+Heh, i could make a really nasty statement here, but i wont.
+
+> Wierd I'm still seeing new docs being produced and old docs being
+> updated, not as fast as I'd like but I understand how many people
+> there is working on it and I'd rather we also got fixes for all the
+> current stuff done as well.
+
+Hrm, i only see _very_ old docs getting updated, and none produced.
+
+I still have docs which are pretty ready to be shipped (from 2007), under uncertain 
+legal status (the ati game was fun!), which were never made public. I am sure that 
+bridgman, gave you these docs too, but under even more shady circumstances.
+
+> The code doesn't exist, there is no userspace code to be the
+> documents, if you read what I said, documents would be a good start in
+> lieu of code, but code is perfectly fine.
+
+> Imagintaion technologies seriously? they've never ever taken one step
+> towards opening anything, I don't think this statement is suddenly
+> going to jumpstart them.
+
+> Maybe you should disclose what NDAs you currently are under and who
+> pays your bills, since you accuse me of Red Hat mind-control.
+
+Oh, i now work for basysKom, a contractor for, amongst others, nokia, which i'm sure
+you knew.
+
+> I'm not sure how the ARM market would benefit from having no userspace
+> 3D drivers just like the x86 market, if you actually were normal you'd
+> realise the ARM people are trying to screw the market just like the
+> desktop people, to save themselves some money, but maybe working on
+> closed drivers has twisted you.
+
+Ah, so you did know.
+
+As a free software graphics driver developer there is little option left but to go 
+straight to the ARM world, at least things have potential to move there still.
+
+Well, unless the efforts there, like the one that triggered your mail, are thwarted 
+too, like with your mail.
+
+Luc Verhaegen.
