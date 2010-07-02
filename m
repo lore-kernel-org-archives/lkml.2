@@ -1,65 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759467Ab0GBSCU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 14:02:20 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:47955 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757475Ab0GBSCT (ORCPT
+	id S1758809Ab0GBSIH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 14:08:07 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:32904 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755361Ab0GBSID convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 14:02:19 -0400
-Message-ID: <4C2E2987.9040702@us.ibm.com>
-Date: Fri, 02 Jul 2010 11:01:43 -0700
-From: Sridhar Samudrala <sri@us.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       "Michael S. Tsirkin" <mst@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-References: <1277983179.1917.10.camel@laptop> <1277984603.1917.15.camel@laptop> <20100701115507.GA31333@redhat.com> <20100701122340.GB31333@redhat.com> <1277987657.1917.32.camel@laptop> <1277988395.1917.47.camel@laptop> <20100701130816.GB32223@redhat.com> <1277991024.1917.108.camel@laptop> <20100701133956.GD32223@redhat.com> <4C2CA5C5.4040402@kernel.org> <20100701144624.GA11171@redhat.com> <4C2CABF2.2020801@kernel.org> <1277996135.1917.198.camel@laptop>
-In-Reply-To: <1277996135.1917.198.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Jul 2010 14:08:03 -0400
+Subject: Re: [RFC PATCH 5/6] perf: Fix race in callchains
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       David Miller <davem@davemloft.net>, Borislav Petkov <bp@amd64.org>
+In-Reply-To: <1277998562-21366-6-git-send-regression-fweisbec@gmail.com>
+References: <1277998562-21366-1-git-send-regression-fweisbec@gmail.com>
+	 <1277998562-21366-6-git-send-regression-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 02 Jul 2010 20:07:35 +0200
+Message-ID: <1278094055.1917.285.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/1/2010 7:55 AM, Peter Zijlstra wrote:
-> On Thu, 2010-07-01 at 16:53 +0200, Tejun Heo wrote:
->    
->> Hello,
->>
->> On 07/01/2010 04:46 PM, Oleg Nesterov wrote:
->>      
->>>> It might be a good idea to make the function take extra clone flags
->>>> but anyways once created cloned task can be treated the same way as
->>>> other kthreads, so nothing else needs to be changed.
->>>>          
->>> This makes kthread_stop() work. Otherwise the new thread is just
->>> the CLONE_VM child of the caller, and the caller is the user-mode
->>> task doing ioctl() ?
->>>        
->> Hmmm, indeed.  It makes the attribute inheritance work but circumvents
->> the whole reason there is kthreadd.
->>      
-> I thought the whole reason there was threadd was to avoid the
-> inheritance? So avoiding the avoiding of inheritance seems like the goal
-> here, no?
->    
-I think so. Does  it (Tejun's kthread_clone() patch) also  inherit the 
-cgroup of the caller? or do we still need the explicit
-call to attach the thread to the current task's cgroup?
+On Thu, 2010-07-01 at 17:36 +0200, Frederic Weisbecker wrote:
+> Now that software events don't have interrupt disabled anymore in
+> the event path, callchains can nest on any context. So seperating
+> nmi and others contexts in two buffers has become racy.
+> 
+> Fix this by providing one buffer per nesting level. Given the size
+> of the callchain entries (2040 bytes * 4), we now need to allocate
+> them dynamically.
 
-I am on vacation next week and cannot look into this until Jul 12. Hope 
-this will be resoved by then.
-If not, i will look into after i am back.
+OK so I guess you want to allocate them because 8k per cpu is too much
+to always have about?
 
-Thanks
-Sridhar
+> +static int get_callchain_buffers(void)
+> +{
+> +	int i;
+> +	int err = 0;
+> +	struct perf_callchain_entry_cpus *buf;
+> +
+> +	mutex_lock(&callchain_mutex);
+> +
+> +	if (WARN_ON_ONCE(++nr_callchain_events < 1)) {
+> +		err = -EINVAL;
+> +		goto exit;
+> +	}
+> +
+> +	if (nr_callchain_events > 1)
+> +		goto exit;
+> +
+> +	for (i = 0; i < 4; i++) {
+> +		buf = kzalloc(sizeof(*buf), GFP_KERNEL);
+> +		/* free_event() will clean the rest */
+> +		if (!buf) {
+> +			err = -ENOMEM;
+> +			goto exit;
+> +		}
+> +		buf->entries = alloc_percpu(struct perf_callchain_entry);
+> +		if (!buf->entries) {
+> +			kfree(buf);
+> +			err = -ENOMEM;
+> +			goto exit;
+> +		}
+> +		rcu_assign_pointer(callchain_entries[i], buf);
+> +	}
+> +
+> +exit:
+> +	mutex_unlock(&callchain_mutex);
+> +
+> +	return err;
+> +}
+
+> +static void put_callchain_buffers(void)
+> +{
+> +	int i;
+> +	struct perf_callchain_entry_cpus *entry;
+> +
+> +	mutex_lock(&callchain_mutex);
+> +
+> +	if (WARN_ON_ONCE(--nr_callchain_events < 0))
+> +		goto exit;
+> +
+> +	if (nr_callchain_events > 0)
+> +		goto exit;
+> +
+> +	for (i = 0; i < 4; i++) {
+> +		entry = callchain_entries[i];
+> +		if (entry) {
+> +			callchain_entries[i] = NULL;
+> +			call_rcu(&entry->rcu_head, release_callchain_buffers);
+> +		}
+> +	}
+> +
+> +exit:
+> +	mutex_unlock(&callchain_mutex);
+> +}
+
+If you make nr_callchain_events an atomic_t, then you can do the
+refcounting outside the mutex. See the existing user of
+atomic_dec_and_mutex_lock().
+
+I would also split it in get/put and alloc/free functions for clarity.
+
+I'm not at all sure why you're using RCU though.
+
+> @@ -1895,6 +2072,8 @@ static void free_event(struct perf_event *event)
+>  			atomic_dec(&nr_comm_events);
+>  		if (event->attr.task)
+>  			atomic_dec(&nr_task_events);
+> +		if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN)
+> +			put_callchain_buffers();
+>  	}
+>  
+>  	if (event->buffer) {
+
+If this was the last even, there's no callchain user left, so nobody can
+be here:
+
+> @@ -3480,14 +3610,20 @@ static void perf_event_output(struct perf_event *event, int nmi,
+>  	struct perf_output_handle handle;
+>  	struct perf_event_header header;
+>  
+> +	/* protect the callchain buffers */
+> +	rcu_read_lock();
+> +
+>  	perf_prepare_sample(&header, data, event, regs);
+>  
+>  	if (perf_output_begin(&handle, event, header.size, nmi, 1))
+> -		return;
+> +		goto exit;
+>  
+>  	perf_output_sample(&handle, &header, data, event);
+>  
+>  	perf_output_end(&handle);
+> +
+> +exit:
+> +	rcu_read_unlock();
+>  }
+
+Rendering that RCU stuff superfluous.
+
 
