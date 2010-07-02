@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab0GBLyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 07:54:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50896 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752901Ab0GBLyM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 07:54:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=dkim-signature:domainkey-signature:mime-version:x-originating-ip
-         :in-reply-to:references:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=V5G91dmt/YGQI+9zB7U2gd8xlBLxuOUtYEur6EfFL8EkRGVlPwh/9uBpukQCRqoVat
-         hOdMYjRbQwcIGTmXVx7/KRCmo5vw93uk1p6KFzOsvgF1fDngMpnjyAXbQW7xnLevznOl
-         ZdJD55aPjfT03Z42myirY8iauL7Dg3Qcg+thI=
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:x-originating-ip:in-reply-to:references:date
-         :message-id:subject:from:to:content-type:content-transfer-encoding;
-        b=WxSzIjzhTlRzqcCsyuYaEL4pEsxxYRP4S20U61RULTHoTb7SXeDxaar4erEiZfowKJ
-         oS6lMTdWm6ezegklZ57wFvrzj3O32qPbzgFQso2B95wbo1kx5ZQ9o+sZQcaLDRCiE/uW
-         VnPz85aM0XT8voyXjG3WwuzLaOg1AtdW7zQWg=
-MIME-Version: 1.0
-X-Originating-IP: [193.174.122.53]
-In-Reply-To: <AANLkTilN60yM1WFKUOep0KsvXedtdyfEuCVRTeg61cEH@mail.gmail.com>
-References: <AANLkTilN60yM1WFKUOep0KsvXedtdyfEuCVRTeg61cEH@mail.gmail.com>
-Date: Fri, 2 Jul 2010 13:54:07 +0200
-Message-ID: <AANLkTilqdiyhixzrDO1v3T02gOQPnZoGqyGuimxl-otT@mail.gmail.com>
-Subject: Re: Fan control with kernel module "asus-laptop"
-From: orschiro@googlemail.com
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1757682Ab0GBLyv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 07:54:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36438 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754775Ab0GBLys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 07:54:48 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Martin Ettl <ettl.martin@gmx.de>,
+       David Gibson <david@gibson.dropbear.id.au>
+Subject: [PATCH] scripts/dtc: Fix a resource leak
+Date: Fri,  2 Jul 2010 13:52:14 +0200
+Message-Id: <1278071534-9820-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nobody?
+From: Martin Ettl <ettl.martin@gmx.de>
 
-Who is working on this module and updating it?
+during a check of the current git head of the linux kernel with the
+static code analysis tool cppcheck
+(http://sourceforge.net/apps/mediawiki/cppcheck/index.php?title=Main_Page)
+the tool discovered a resource leak in linux-2.6/scripts/dtc/fstree.c.
 
-Should I directly contact him?
+Please refer the attached patch, that fixes the issue.
 
-Regards
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id=15363
+Signed-off-by: Martin Ettl <ettl.martin@gmx.de>
+Cc: David Gibson <david@gibson.dropbear.id.au>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ scripts/dtc/fstree.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-2010/7/1 <orschiro@gmail.com>
->
-> Hello guys,
->
-> I'm using a Lenovo Thinkpad SL500 in combination with the asus-laptop kernel module. Everything is working quite fine, the last commit brought excellent support for my laptop, except the support for cpu fan-speed control. I remember to read somewhere that this feature was planned to be included but it still isn't.
->
-> I'm aware that there is an inofficial module called lenovo-sl-laptop that does exactly this but I prefer to use the official one.
->
-> Does anyone of you know when I can count with this feature?
->
-> Best regards
->
-> Robert
+diff --git a/scripts/dtc/fstree.c b/scripts/dtc/fstree.c
+index 766b269..8fe1bdf 100644
+--- a/scripts/dtc/fstree.c
++++ b/scripts/dtc/fstree.c
+@@ -77,6 +77,7 @@ static struct node *read_fstree(const char *dirname)
+ 		free(tmpnam);
+ 	}
+ 
++	closedir(d);
+ 	return tree;
+ }
+ 
+-- 
+1.7.1
+
