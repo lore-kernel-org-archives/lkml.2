@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758744Ab0GBOQF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 10:16:05 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:45865 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758716Ab0GBOQB (ORCPT
+	id S1754936Ab0GBOYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 10:24:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35523 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab0GBOYE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 10:16:01 -0400
-Date: Fri, 2 Jul 2010 10:15:59 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Alex Elder <aelder@sgi.com>
-Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-       xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/15] xfs: minimize DMAPI footprint
-Message-ID: <20100702141559.GA6259@infradead.org>
-References: <1277762653.2040.554.camel@doink>
- <20100629075734.GA31118@infradead.org>
- <20100630002043.GB24712@dastard>
- <1278079547.1876.82.camel@doink>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278079547.1876.82.camel@doink>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 2 Jul 2010 10:24:04 -0400
+Subject: Re: [PATCH] perf wrong branches event on AMD
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <alpine.DEB.2.00.1007020950420.29784@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>
+	 <1278070727.1917.253.camel@laptop>
+	 <alpine.DEB.2.00.1007020950420.29784@cl320.eecs.utk.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 02 Jul 2010 16:23:33 +0200
+Message-ID: <1278080613.1917.258.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 09:05:47AM -0500, Alex Elder wrote:
-> Here is what I plan to do:
-> - Accept Christoph's "drop dmapi hooks" patch into the
->   XFS master branch.  Once that's in, there's a huge
->   cascade of subsequent work that need to be pulled in
->   and I'll get those out there also.
-> - Work on creating a complete and working dmapi branch.
->   Once we've got a fairly well-integrated whole, I will
->   publish that branch on the XFS git tree.  We will plan
->   to maintain that in parallel with the XFS master branch,
->   re-basing it on the master branch periodically.
-> - I'll make an announcement on the list about the 
->   availability of the new branch.
+On Fri, 2010-07-02 at 09:56 -0400, Vince Weaver wrote:
+> You think I have root on this machine?
 
-Thanks.  I think I still have a few old patches for dmapi code from a
-few years ago that I can repost to simplify that code.
+Well yeah,.. I'd not want a dev job and not have full access to the
+hardware. But then, maybe I'm picky.
+
+> In any case, yes, there's the "-r" option.  Fun.  I get to modify all my 
+> scripts to have some complicated case... "if AMD machine and if kernel is 
+> new enough"... how new?  It gets confusing once things get backported to 
+> stable.  As far as I know there's no way to get a kernel to spit out what 
+> raw events it's using for the predefined events.
+
+You can stick the knowledge in perf if you really want to.. something
+like the below, add something that parses cpuid or /proc/cpuinfo and you
+should be good.
+
+---
+ tools/perf/util/parse-events.c |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/util/parse-events.c
+b/tools/perf/util/parse-events.c
+index 4af5bd5..800f864 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -771,6 +771,22 @@ parse_event_symbols(const char **str, struct
+perf_event_attr *attr)
+ modifier:
+ 	parse_event_modifier(str, attr);
+ 
++	if (attr->type == PERF_TYPE_HARDWARE) {
++		switch (attr->config) {
++		case PERF_COUNT_HW_BRANCH_INSTRUCTIONS:
++			attr->type = PERF_TYPE_RAW;
++			attr->config = 0x00c2;
++			break;
++		case PERF_COUNT_HW_BRANCH_MISSES:
++			attr->type = PERF_TYPE_RAW;
++			attr->config = 0x00c3;
++			break;
++
++		default:
++			break;
++		}
++	}
++
+ 	return ret;
+ }
+ 
+> If the solution really is to use raw events in a case like this, I 
+> question why the predefined events are in the kernel at all.  Pretty much 
+> anyone using the braches event on an AMD machine is going to be getting 
+> wrong results for all kernels between 2.6.31 and 2.6.35 and not even know 
+> it unless they read the kernel list. 
+
+And how would it be different if it the data table lived in userspace?
+They'd still get the wrong thing unless they updated.
