@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab0GBJeb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 05:34:31 -0400
+	id S1758249Ab0GBJeh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 05:34:37 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:46679 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326Ab0GBJe3 (ORCPT
+	with ESMTP id S1758207Ab0GBJef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 05:34:29 -0400
+	Fri, 2 Jul 2010 05:34:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=uJ8RvBD8LUtNs7zwsdqiTy6XGGELjXf3kOUb7Wef6SVghhoLI6O+AVy6bzRbMGVER2
-         /AEpU2V0idsCIvqvNxBq5VDf/94EbPIY7duhfBEPZ16mqNZbnkH9XykZAF5gOaMuHEP3
-         kE1je1YBMc1ForTtbhMRbPC3+PBpGRWIk5dpk=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=rnJZjE5JqJSG5MR7lIpkVk687euzHgWpnWsAoTBkwlXx+ul2/vJTk+xEjdLZiNLYPp
+         YNYXzi2LgI+WeA23JTd2s5QseNcOtdH7H7ZsgdtgV47WcgImZmOfbqEupwk9cINdJrEX
+         2FAYgaTmIQkPhg6RV5CykC6Y3rPPzDAcg3K28=
+Message-ID: <4C2DB211.1030903@gmail.com>
+Date: Fri, 02 Jul 2010 11:32:01 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
-References: <AANLkTikeDE4hvZ3spyTBSHZsdQPc-2wlD5nTfb1aF-VD@mail.gmail.com>
-	<20100702085323.GF10072@secunet.com>
-	<AANLkTinyPGjXjlvJxB8WYB3EYFBtANXMzpTdUixyBRHW@mail.gmail.com>
-	<20100702091726.GH10072@secunet.com>
-	<AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
-Date: Fri, 2 Jul 2010 13:34:27 +0400
-Message-ID: <AANLkTimTIWGJnPKWrQeqPCggXvhRBHYL6TniYsHC-_d5@mail.gmail.com>
-Subject: Re: [PATCH 1/3] padata: separate serial and parallel cpumasks
-From: Dan Kruchinin <dan.kruchinin@gmail.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Content-Type: text/plain; charset=UTF-8
+To: David Howells <dhowells@redhat.com>,
+       Arjan van de Ven <arjan@linux.intel.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
+       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
+       akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+       dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+       andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
+References: <4C2A2688.1020206@kernel.org> <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <25085.1277847455@redhat.com> <4C2DAEBB.7090607@kernel.org>
+In-Reply-To: <4C2DAEBB.7090607@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 2, 2010 at 1:32 PM, Dan Kruchinin <dan.kruchinin@gmail.com> wrote:
-> On Fri, Jul 2, 2010 at 1:17 PM, Steffen Klassert
-> <steffen.klassert@secunet.com> wrote:
->> On Fri, Jul 02, 2010 at 01:07:44PM +0400, Dan Kruchinin wrote:
->>> >
->>> ...
->>
->> But the active cpumask, and now also your serial cpumask might change.
->> We need to catch this changes somehow, that's why I checked the active
->> cpumask against the callback cpu.
->
-> You're right, now I get it. Hence the right solution is to check if
-> callback CPU is set in serial cpumask every time we do
-> padata_do_serial and if it's not, recalculate its value.
+On 07/02/2010 11:17 AM, Tejun Heo wrote:
+> Hello, David, Arjan.
+> 
+> These four patches implement unbound workqueues which can be used as
+> simple execution context provider.  I changed async to use it and will
+> also make fscache use it.  This can be used by setting WQ_UNBOUND on
+> workqueue creation.  Works queued to unbound workqueues are implicitly
+> HIGHPRI and dispatched to unbound workers as soon as resources are
+> available and the only limitation applied by workqueue code is
+> @max_active.  IOW, for both async and fscache, things will stay about
+> the same.
+> 
+> WQ_UNBOUND can serve the role of WQ_SINGLE_CPU.  WQ_SINGLE_CPU is
+> dropped and replaced by WQ_UNBOUND.
+> 
+> Arjan, I still think we'll be better off using bound workqueues for
+> async but let's first convert without causing behavior difference.
+> Either way isn't gonna result in any noticeable difference anyway.  If
+> you're okay with the conversion, please ack it.
+> 
+> David, this should work for fscache/slow-work the same way too.  That
+> should relieve your concern, right?  Oh, and Frederic suggested that
+> we would be better off with something based on tracing API and I
+> agree, so the debugfs thing is currently dropped from the tree.  What
+> do you think?
 
-padata_do_parallel of course.
+Oops, forgot something.  These four patches are on top of
+wq#for-next-candidate branch which is cmwq take#6 + four fix patches
 
-> The only thing that embarrasses me in this scheme is the fact that we
-> have to allocate cpumask_var_t in pcrypt_do_parallel every time we
-> call it then copy serial cpumask into allocated one and then check the
-> cb_cpu.
-> I think it would be better if we somehow could avoid dynamic cpumask
-> allocation. I see the following solutions:
->
-> 1) Do the check and cb_cpu value recalculation in padata_do_parallel.
-> It may check if cb_cpu is in serial_cpumask and recalculate its value
-> if it isn't. The drawback of this scheme is that padata_do_parallel
-> now doesn't guaranty it will forward serialization job to the same
-> callback CPU we passed to it. If passed CPU is not in serial cpumask
-> it will forward serialization to another CPU and we won't know its
-> number. The only thing we'll know is that this CPU is in the
-> serial_cpumask.
-> 2) Create new structure describing pcrypt instance in pcrypt.c which
-> will include waitqueue, padata instance and preallocated cpumask which
-> will be used for getting padata instance serial cpumsak. It'll help to
-> avoid dynamic cpumask allocation but it looks a bit awkward.
->
->>
->> Steffen
->>
->>
->
->
->
-> --
-> W.B.R.
-> Dan Kruchinin
->
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-next-candidate
 
+and available in the following git tree.
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-cmwq
+
+Thanks.
 
 -- 
-W.B.R.
-Dan Kruchinin
+tejun
