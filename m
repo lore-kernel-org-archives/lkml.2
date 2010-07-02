@@ -1,128 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab0GBAtu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 20:49:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36626 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745Ab0GBAts convert rfc822-to-8bit (ORCPT
+	id S1756783Ab0GBA6n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 20:58:43 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50400 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab0GBA6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 20:49:48 -0400
+	Thu, 1 Jul 2010 20:58:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dIODA+NyEiF4N4RqHjc4aU6xuc4dKnsuxtt3CZXgIntk7tqrozTZ+jbBibtH6xqLL4
-         YNStfQ1T6FuXaX07gEen8h9ydemCYayPiXkN0nNjPj2cOX/ojEM5yS+M7MSNmATyLu5R
-         UXYE+c2y0XG3b+6vd/V5X0a+hsaMYYsta2aLE=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Vsy67mob7RiQqCZWDyz8ieSUMWYVOulRsb7Kw3AvQfIkDrmWeunTveoSyhpTMlJ62s
+         UFeOXCDStwAd5blyNY4EhEafXJSCfA5ezLZ+5fV29GHdtQabX7yfFkEJCfG4E7z7Ln1F
+         LR7K8mC3Fop7VuuBI2ezoDpvp0dhgPz5k7XC0=
+Message-ID: <4C2D39DD.6010305@gmail.com>
+Date: Thu, 01 Jul 2010 17:59:09 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilOWu6ZwWjwPfHvNXDhyjb6n4N5KV1rUx6byJmq@mail.gmail.com>
-References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain>
-	<1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk>
-	<alpine.LFD.2.00.1001270738220.24253@localhost.localdomain>
-	<89k77n$ms73l9@fmsmga001.fm.intel.com>
-	<alpine.LFD.2.00.1001270917120.24253@localhost.localdomain>
-	<AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
-	<89khjo$fr177d@orsmga002.jf.intel.com>
-	<AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com>
-	<AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
-	<4C2D180C.5050805@superonline.com>
-	<AANLkTiklUBmNYs3710WftVX0Z3QihxFtDlK7tPlHZh8H@mail.gmail.com>
-	<AANLkTilOWu6ZwWjwPfHvNXDhyjb6n4N5KV1rUx6byJmq@mail.gmail.com>
-Date: Fri, 2 Jul 2010 10:49:47 +1000
-Message-ID: <AANLkTilfkCBfZtRQlybQ721PSF4lSlqeOKL3rYnEz2G1@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "M. Vefa Bicakci" <bicave@superonline.com>,
-       Chris Wilson <chris@chris-wilson.co.uk>, earny@net4u.de,
-       Roman Jarosz <kedgedev@gmail.com>, intel-gfx@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org, jcnengel@googlemail.com,
-       "A. Boulan" <arnaud.boulan@libertysurf.fr>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
-       michael@reinelt.co.at, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: David Howells <dhowells@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org
+Subject: Re: [PATCH 3/5]acpi:glue.c Fix warning: variable 'ret' set but not
+ used
+References: <4C2CF400.20507@gmail.com> <4C2B9F49.8090304@gmail.com> <4C2A6B6C.1000306@gmail.com> <4C29674C.9070503@gmail.com> <4C28E14D.5050701@gmail.com> <1277621246-10960-4-git-send-email-justinmattock@gmail.com> <1277621246-10960-1-git-send-email-justinmattock@gmail.com> <7214.1277729293@redhat.com> <8066.1277750854@redhat.com> <22319.1277826461@redhat.com> <25800.1277889215@redhat.com> <16513.1277976706@redhat.com> <19422.1278029445@redhat.com>
+In-Reply-To: <19422.1278029445@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 2, 2010 at 10:06 AM, Dave Airlie <airlied@gmail.com> wrote:
-> On Fri, Jul 2, 2010 at 9:59 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Thu, Jul 1, 2010 at 3:34 PM, M. Vefa Bicakci <bicave@superonline.com> wrote:
->>>
->>> Based on my testing, I am happy to report that the change you suggest
->>> fixes the "memory corruption (segfaults) after thaw" issue for me.
->>> I can't thank you enough times for this.
->>
->> Hey, goodie. And you're the one to be thanked - bisecting it down to
->> that commit that wasn't _meant_ to have any real semantic changes
->> (except for the bug-fix of racy mapping gfp-flags update) is what
->> really cracked the lid on the problem.
->>
->>> Now, the obligatory question: Could we have this fix applied to 2.6.32,
->>> 2.6.33 and 2.6.34 ?
->>
->> No problem, except we should first determine exactly what flags are
->> the appropriate ones. My original patch was obviously not even
->> compile-tested, and I actually meant for people to use GFP_HIGHUSER
->> rather than __GFP_HIGHMEM. That contains all the "regular" allocation
->> flags (but not the __GFP_MOVABLE, which is still just a suspicion of
->> being the core reason for the problem).
->>
->> And the original DRM code had:
->>
->>   GFP_HIGHUSER |
->>   __GFP_COLD |
->>   __GFP_FS |
->>   __GFP_RECLAIMABLE |
->>   __GFP_NORETRY |
->>   __GFP_NOWARN |
->>   __GFP_NOMEMALLOC
->>
->> which is not entirely sensible (__GFP_FS is already part of
->> GFP_HIGHUSER, for example), and two of the flags (NORETRY and NOWARN)
->> are the ones the driver wants to do conditionally.
->>
->> But that still leaves the question about __GFP_COLD (probably sane),
->> __GFP_RECLAIMABLE (I wonder about that one) and __GFP_NOMEMALLOC
->> (usually used together with NORETRY, and I'm not at all sure it makes
->> sense as a base flag).
->>
->> So I suspect the final patch should not look like the one you tested,
->> but instead likely have
->>
->>   GFP_HIGHUSER | __GFP_COLD
->>
->> and possibly the __GFP_RECLAIMABLE flag too instead of just the bare
->> __GFP_HIGHMEM..
->>
->> (Well, we already had that __GFP_COLD there from before, so it's
->> really about replacing __GFP_HIGHMEM with something like "GFP_HIGHUSER
->> | __GFP_RECLAIMABLE").
->>
->> But its' great to hear that this does seem to be the underlying cause.
->> If you could test with that GFP_HIGHUSER | __GFP_RECLAIMABLE, that
->> would be a good thing. After all - maybe the problem was triggered by
->> some other flag than __GFP_MOVABLE, and as such, having some
->> additional testing with a bigger set of allocation flags would be a
->> really good thing.
+On 07/01/2010 05:10 PM, David Howells wrote:
+> Justin P. Mattock<justinmattock@gmail.com>  wrote:
 >
-> I just sent a patch I tested here with GFP_HIGHUSER | __GFP_COLD
-> instead, and it resumes okay for me,
+>> a bit confused with the whole:  "?:" though
+>> *condition ? value if true : value if false* (what if both are true
+>> what if both are false or does it matter?)
 >
-> I'll play with GFP_RECLAIMABLE now,
+> If you say:
 >
-> If anyone wants to know why nobody uses hibernate, this laptop with a
-> 4200rpm driver boots faster than the hibernate cycle.
+> 	cond ?: false_value
+>
+> then you'll get cond if cond is non-zero and false_value if it isn't.
+>
+> I suspect it's a gccism.
+>
+> David
+>
 
-RECLAIMABLE added also seems fine, of course you can't have
-RECLAIMABLE and MOVABLE (I find this out when it oopses on boot).
+I'll have to experiment with this one..
+?:
 
-So I suspect MOVABLE is the problem. but I don't know enough about gfp
-flags to know what RECLAIMABLE buys us, and where it  might bite us so
-I can test some more.
-
-Dave.
+Justin P. Mattock
