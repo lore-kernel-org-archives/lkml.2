@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758387Ab0GBMyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 08:54:53 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:37479 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754550Ab0GBMyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 08:54:52 -0400
-Date: Fri, 2 Jul 2010 14:56:28 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dan Kruchinin <dkruchinin@acm.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] Fixed division by zero bug in kernel/padata.c
-Message-ID: <20100702125628.GK10072@secunet.com>
-References: <AANLkTimVTMsVkSBHWLve8t76-YkoSYposgv9wHir_wPa@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimVTMsVkSBHWLve8t76-YkoSYposgv9wHir_wPa@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 02 Jul 2010 12:54:50.0108 (UTC) FILETIME=[C1E003C0:01CB19E5]
+	id S1758561Ab0GBM5P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 08:57:15 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43756 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758356Ab0GBM5O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 08:57:14 -0400
+Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <1277994970.1917.184.camel@laptop>
+References: <20100624142804.431553874@chello.nl>
+	 <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com>
+	 <1277464589.32034.276.camel@twins>
+	 <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com>
+	 <1277477401.32034.670.camel@twins>  <1277994970.1917.184.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Jul 2010 13:55:38 +0100
+Message-ID: <1278075338.3154.10.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Jul 2010 12:55:42.0216 (UTC) FILETIME=[E0EF1080:01CB19E5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 03:59:54PM +0400, Dan Kruchinin wrote:
->  When boot CPU(typically CPU #0) is excluded from padata cpumask and
->  user enters halt command from console, kernel faults on division by zero;
->  This occurs because during the halt kernel shuts down each non-boot CPU one
->  by one and after it shuts down the last CPU that is set in the padata cpumask,
->  the only working CPU in the system is a boot CPU(#0) and it's the only CPU that
->  is set in the cpu_active_mask. Hence when padata_cpu_callback calls
->  __padata_remove_cpu(which calls padata_alloc_pd) it appears that
-> padata cpumask and
->  cpu_active_mask aren't intersect. Hence the following code in
-> padata_alloc_pd causes
->  a DZ error exception:
->   cpumask_and(pd->cpumask, cpumask, cpu_active_mask); // pd->cpumask
-> will be empty
->   ...
->   num_cpus = cpumask_weight(pd->cpumask); // num_cpus = 0
->   pd->max_seq_nr = (MAX_SEQ_NR / num_cpus) * num_cpus - 1; // DZ!
+Hi Peter,
+
+On Thu, 2010-07-01 at 15:36 +0100, Peter Zijlstra wrote:
+> On Fri, 2010-06-25 at 16:50 +0200, Peter Zijlstra wrote:
 > 
-
-Good catch!
-
+> > Not exactly sure how I could have messed up the ARM architecture code to
+> > make this happen though... will have a peek.
 > 
-> Signed-off-by: Dan Kruchinin <dkruchinin@acm.org>
-> ---
->  kernel/padata.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> I did find a bug in there, not sure it could have been responsible for
+> this but who knows...
 > 
-> diff --git a/kernel/padata.c b/kernel/padata.c
-> index fdd8ae6..dbe6d26 100644
-> --- a/kernel/padata.c
-> +++ b/kernel/padata.c
-> @@ -434,7 +434,7 @@ static struct parallel_data
-> *padata_alloc_pd(struct padata_instance *pinst,
->  		atomic_set(&queue->num_obj, 0);
->  	}
+> Pushed out a new git tree with the below delta folded in.
 > 
-> -	num_cpus = cpumask_weight(pd->cpumask);
-> +	num_cpus = cpumask_weight(pd->cpumask) + 1;
->  	pd->max_seq_nr = (MAX_SEQ_NR / num_cpus) * num_cpus - 1;
-> 
+I had a look at this yesterday and discovered a bug in the ARM
+backend code, which I've posted a patch for to ALKML:
 
-num_cpus should stay the number of cpus in this cpumask, this is required
-to handle a smooth overrun of the sequence numbers. 
-I think it's better to return with an error and to stop the instance
-if somebody takes away the last cpu in our cpumask. We can't run with an 
-empty cpumask anyway.
+http://lists.infradead.org/pipermail/linux-arm-kernel/2010-July/019461.html
 
-Let us look again at this on monday.
+Unfortunately, with this applied and your latest changes I still
+get 0 from pinned hardware counters:
 
-Thanks again for catching this,
+# perf stat -r 5 -e cycles -e instructions -e cs -e faults -e branches -a -- git status
 
-Steffen
+Performance counter stats for 'git status' (5 runs):
+
+                  0  cycles                     ( +-     nan% )
+                  0  instructions             #      0.000 IPC     ( +-     nan% )
+              88447  context-switches           ( +-  12.624% )
+              13647  page-faults                ( +-   0.015% )
+                  0  branches                   ( +-     nan% )
+
+The changes you've made to arch/arm/kernel/perf_event.c
+look sane. If I get some time I'll try and dig deeper.
+
+Will
+
