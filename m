@@ -1,46 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab0GBOy2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 10:54:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39187 "EHLO hera.kernel.org"
+	id S1758716Ab0GBOzH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 10:55:07 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:60304 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758043Ab0GBOyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 10:54:24 -0400
-Message-ID: <4C2DFD77.6070005@kernel.org>
-Date: Fri, 02 Jul 2010 16:53:43 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1755996Ab0GBOzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 10:55:02 -0400
+Date: Fri, 2 Jul 2010 07:54:04 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Jim Cromie <jim.cromie@gmail.com>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ethan Lawrence <e.law87@yahoo.com>,
+       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "lars4910@hotmail.com" <lars4910@hotmail.com>,
+       "birdie@permonline.ru" <birdie@permonline.ru>,
+       "jadcock@cox.net" <jadcock@cox.net>
+Subject: Re: [PATCH/RFC] hwmon: Add support for W83667HG-B
+Message-ID: <20100702145404.GC14032@ericsson.com>
+References: <1278021735-21188-1-git-send-email-guenter.roeck@ericsson.com>
+ <20100702092011.0acd753f@hyperion.delvare>
+ <20100702082530.GC12911@ericsson.com>
+ <20100702114949.3e62ec39@hyperion.delvare>
 MIME-Version: 1.0
-To: Jeff Garzik <jeff@garzik.org>
-CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-       stern@rowland.harvard.edu, gregkh@suse.de, khali@linux-fr.org
-Subject: Re: [PATCH 11/12] libata: use IRQ expecting
-References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-12-git-send-email-tj@kernel.org> <4C23F6C1.7070603@garzik.org> <4C245E50.7090701@kernel.org> <4C2577F2.4030005@garzik.org> <4C25BAD2.4070705@kernel.org> <4C25C551.8000404@garzik.org> <4C25CC18.2070507@kernel.org> <4C2DFAB0.3020703@kernel.org>
-In-Reply-To: <4C2DFAB0.3020703@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Jul 2010 14:53:50 +0000 (UTC)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100702114949.3e62ec39@hyperion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2010 04:41 PM, Tejun Heo wrote:
-> Hello, Jeff.
+On Fri, Jul 02, 2010 at 05:49:49AM -0400, Jean Delvare wrote:
+> Hi Guenter,
 > 
-> So, something like the following.  This should be applied on top of
-> the two previous libata patches.  The amount of code in the hot path
-> is very small.  Compared to the cpu actually taking an interrupt and
-> accessing hardware, it should be negligible, and this will give us
-> working and acceptably performing systems in the presence of most
-> types of IRQ problems.
+> On Fri, 2 Jul 2010 01:25:30 -0700, Guenter Roeck wrote:
+> > On Fri, Jul 02, 2010 at 03:20:11AM -0400, Jean Delvare wrote:
+> > > On Thu, 1 Jul 2010 15:02:15 -0700, Guenter Roeck wrote:
+> > > > -static const u8 W83627EHF_REG_FAN_MAX_OUTPUT[] = { 0xff, 0x67, 0xff, 0x69 };
+> > > > -static const u8 W83627EHF_REG_FAN_STEP_OUTPUT[] = { 0xff, 0x68, 0xff, 0x6a };
+> > > > +
+> > > > +static const u8 *W83627EHF_REG_FAN_MAX_OUTPUT;
+> > > > +static const u8 *W83627EHF_REG_FAN_STEP_OUTPUT;
+> > > > +
+> > > > +static const u8 W83627EHF_REG_FAN_MAX_OUTPUT_COMMON[]
+> > > > +						= { 0xff, 0x67, 0xff, 0x69 };
+> > > > +static const u8 W83627EHF_REG_FAN_STEP_OUTPUT_COMMON[]
+> > > > +						= { 0xff, 0x68, 0xff, 0x6a };
+> > > > +
+> > > > +static const u8 W83627EHF_REG_FAN_MAX_OUTPUT_W83667_B[] = { 0x67, 0x69, 0x6b };
+> > > > +static const u8 W83627EHF_REG_FAN_STEP_OUTPUT_W83667_B[] = { 0x68, 0x6a, 0x6c };
+> > > 
+> > > Is it just me or these arrays aren't used anywhere?
+> > > 
+> > > I think I would just drop them. The "0xff" are suspicious in the
+> > > original arrays, and the size difference between the common and
+> > > W83667HG-B cases is tricky. Anyone willing to add support for this
+> > > feature will need to read the datasheets anyway, so you don't add any
+> > > value by including the register addresses here.
+> > 
+> > After removing the defines and trying to compile I remembered.
+> > I _knew_ there was a reason for not removing them.
+> > Guess it's too late (or early) here to do serious work.
+> > 
+> > The defines _are_ used, in:
+> > 
+> > fan_functions(fan_max_output, FAN_MAX_OUTPUT)
+> > fan_functions(fan_step_output, FAN_STEP_OUTPUT)
+> > 
+> > which expands to W83627EHF_REG_FAN_MAX_OUTPUT and W83627EHF_REG_FAN_STEP_OUTPUT.
+> > 
+> > Tricky ... and that was also the reason why I retained the original 
+> > global variables.
+> 
+> Tricky indeed. We normally don't accept code like this in the kernel.
+> 
+> > I'll move the pointers into per-device code as you suggested, but I'll
+> > have to think about how to do that w/o having to change a lot of code.
+> 
+> If code changes are desirable, let's just do them. You can do that in a
+> preliminary patch, and then your patch adding support for the
+> W83667HG-B goes on top of it.
+> 
+Without the support for -B the changes are not really needed, so that patch
+would not make much sense without it. Have you looked at v2 of the patch ?
 
-The whole tree is available in the following branch.
+> > As for the 0xff - that pretty much applies to all chips supported by this driver. 
+> > I guess it is supposed to mean "not supported", and as a result the code will
+> > write to a non-existing register. I don't really want to touch that.
+> 
+> I want you to touch that. Writing to non-existing registers is a bad
+> idea. You never know what actually happens when you do that.
+> 
+Good point.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git libata-irq-expect
+Clean fix would be not to provide the unsupported attributes. Simple workaround
+would be to return an error if a write is attempted on a non-supported attribute.
+I am sure it would be better to not provide the attribute, but would you accept
+the workaround ?
 
-Thanks.
+> > The size difference (3 entries vs. 4) doesn't matter, since the chips are both 
+> > configured to have only three pwm fan controllers (even though the W83667HG
+> > is supposed to have four per its datasheet). So the 4th element of the arrays
+> > will not be accessed by the code if W83667HG(-B) is detected.
+> 
+> OK.
+> 
+On a side note, any idea why the 4th pwm is disabled for the W83667HG ?
 
--- 
-tejun
+Guenter
