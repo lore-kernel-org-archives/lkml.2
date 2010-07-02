@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758402Ab0GBMdG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 08:33:06 -0400
-Received: from bipbip.grupopie.com ([195.23.16.24]:40048 "EHLO
-	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757088Ab0GBMdE (ORCPT
+	id S1758430Ab0GBMeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 08:34:05 -0400
+Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:56598 "EHLO
+	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757181Ab0GBMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 08:33:04 -0400
-X-Greylist: delayed 1602 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Jul 2010 08:33:04 EDT
-Message-ID: <4C2DD625.2030903@grupopie.com>
-Date: Fri, 02 Jul 2010 13:05:57 +0100
-From: Paulo Marques <pmarques@grupopie.com>
-Organization: Grupo PIE
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Fri, 2 Jul 2010 08:34:04 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C2DDD2B.5090401@jic23.retrosnub.co.uk>
+Date: Fri, 02 Jul 2010 13:35:55 +0100
+From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: werner@guyane.yi.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35-rc2,3 -- Problem with PS2 keyboard and mouse driver
-References: <1278041650.12788@guyane.yi.org>
-In-Reply-To: <1278041650.12788@guyane.yi.org>
+To: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
+       "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+       "sfking@fdwdc.com" <sfking@fdwdc.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH] digital compass hmc5843
+References: <0680EC522D0CC943BC586913CF3768C003B360319D@dbde02.ent.ti.com> <4C2CBB40.5070104@cam.ac.uk> <0680EC522D0CC943BC586913CF3768C003B3603331@dbde02.ent.ti.com> <4C2DBBE3.1020804@cam.ac.uk> <0680EC522D0CC943BC586913CF3768C003B360338A@dbde02.ent.ti.com>
+In-Reply-To: <0680EC522D0CC943BC586913CF3768C003B360338A@dbde02.ent.ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-werner@guyane.yi.org wrote:
-> 2.6.35-rc2,3,3-git1 -- Problem with PS2 keyboard and mouse driver
+On 07/02/10 11:53, Datta, Shubhrajyoti wrote:
+>>
+>> <snip>
+>>>
+>>> I think that having a Hz as units will have its own issues. First the
+>> decimal implementation. However I am open to the implementation.
+>>> Also do you know of a driver that takes care of this.
+>> None of the current drivers go below 1Hz so not quite the same.
+>> lis3l02dq (accelerometer) does the match against a list, but it
+>> is done numerically rather than via string matches as would be needed
+>> here.
+>>>
+>>>>
+>>>> static IIO_CONST_ATTR_SAMP_FREQ_AVAIL("0.5 1 2 5 10 20 50");
+>>>>
+>>>>
+>>>> Then strncmp with the options to set the value up.  The rounding
+>> approach
+>>>> gets tricky with a non integer value so probably easier to only allow
+>>>> these
+>>>> values.
 > 
-> That problem continues at -git6 .
+> What is a recommended way of getting a double or float
+> Is there any Strict_srttod etc.
 > 
-> Since 2.6.35-rc2 the USB keyboard driver don't work longer, on
-> different mainboards and keyboards.
+You can't, hence the suggestion of comparing strings not numerical values.
+
+>>>
+>>> Allowing only this value will result in default/ reject case and will
+>> keep the previous value, may confuse the application
+>> Then the application is ignoring the interface spec that says it must read
+>> _available files if they are there.
+>> This way the rounding behaviour is left to userspace and what the
+>> application prefers rather
+>> than in kernel actually making it the most flexible option.
 > 
-> On 2.6.35-rc1 things still were (more or less) normal.
-> 
-> THIS IS AN ERROR WHICH ENTERED BETWEEN 2.6.35 -rc1 and -rc2 !!
-
-The address 07200720 looks like a couple of gray spaces in a vga console
-and I've seen that before not long ago.
-
-After a bit of searching, I've found it: it's in the thread that started
-with "Linux 2.6.35-rc2", and most importantly in the thread:
-
-BUG kmalloc-4096: Poison overwritten (2.6.35-rc2)
-
-where there is a patch that is supposed to fix this. I thought this was
-already applied upstream, though...
-
-For your convenience, the patch in that thread is this one (might be
-white space mangled, as I just copy+pasted it, so you might need to
-apply it by hand):
-
----
- drivers/char/vt.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/char/vt.c b/drivers/char/vt.c
-index 1296c42..e123958 100644
---- a/drivers/char/vt.c
-+++ b/drivers/char/vt.c
-@@ -304,8 +304,8 @@ static void scrup(struct vc_data *vc, unsigned int
-t, unsigned int b, int nr)
- 	d = (unsigned short *)(vc->vc_origin + vc->vc_size_row * t);
- 	s = (unsigned short *)(vc->vc_origin + vc->vc_size_row * (t + nr));
- 	scr_memmovew(d, s, (b - t - nr) * vc->vc_size_row);
--	scr_memsetw(d + (b - t - nr) * vc->vc_size_row, vc->vc_video_erase_char,
--		    vc->vc_size_row * nr);
-+	scr_memsetw((void *)d + (b - t - nr) * vc->vc_size_row,
-+			vc->vc_video_erase_char, vc->vc_size_row * nr);
- }
-
- static void scrdown(struct vc_data *vc, unsigned int t, unsigned int b,
-int nr)
-
+> Agree 
+>>>
+>>>>
+>>>>> +static IIO_DEV_ATTR_AVAIL_SAMP_FREQ(show_avail_samp_freq);
+>>>>> +
+>>>>> +static s32 hmc5843_set_rate(struct i2c_client *client,
+>>>>> +                               u8 rate)
+>>>>> +{
+>>>>> +       struct hmc5843_data *data = i2c_get_clientdata(client);
+>>>>> +       u8 reg_val;
+>>>>> +
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
