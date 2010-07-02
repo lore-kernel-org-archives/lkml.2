@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab0GBXpW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 19:45:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50260 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199Ab0GBXpU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 19:45:20 -0400
-Date: Fri, 2 Jul 2010 16:44:13 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-       bcollins@bluecherry.net
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] staging/solo: add delay.h header
-Message-Id: <20100702164413.20171588.randy.dunlap@oracle.com>
-In-Reply-To: <20100702163505.272e6fca.sfr@canb.auug.org.au>
-References: <20100702163505.272e6fca.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756105Ab0GBXzG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 19:55:06 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:33183 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753242Ab0GBXzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 19:55:04 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201007022354.o62NsucI020931@stout.americas.sgi.com>
+Date: Fri, 02 Jul 2010 18:54:55 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 2.6.35-rc4
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.4 7/29/08
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C2E7A05.00F6:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+These five commits implement a few security-related changes to XFS.
+One enforces more strict permission checks for swapping file
+extents.  Others do a better job of validating information from
+untrustworthy sources before using it.
 
-Several solo drivers need <linux/delay.h>, so add it to the
-private solo6010.h header file.
+					-Alex
 
-drivers/staging/solo6x10/solo6010-core.c:191: error: implicit declaration of function 'mdelay'
-drivers/staging/solo6x10/solo6010-tw28.c:181: error: implicit declaration of function 'msleep_interruptible'
-drivers/staging/solo6x10/solo6010-gpio.c:78: error: implicit declaration of function 'udelay'
-drivers/staging/solo6x10/solo6010-v4l2-enc.c:254: error: implicit declaration of function 'mdelay'
+The following changes since commit 123f94f22e3d283dfe68742b269c245b0501ad82:
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/staging/solo6x10/solo6010.h |    1 +
- 1 file changed, 1 insertion(+)
+  Merge branch 'sched-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-07-02 09:52:58 -0700)
 
---- linux-next-20100702.orig/drivers/staging/solo6x10/solo6010.h
-+++ linux-next-20100702/drivers/staging/solo6x10/solo6010.h
-@@ -26,6 +26,7 @@
- #include <linux/semaphore.h>
- #include <linux/mutex.h>
- #include <linux/list.h>
-+#include <linux/delay.h>
- #include <linux/wait.h>
- #include <asm/io.h>
- #include <asm/atomic.h>
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs for-linus
+
+Christoph Hellwig (1):
+      xfs: always use iget in bulkstat
+
+Dan Rosenberg (1):
+      xfs: prevent swapext from operating on write-only files
+
+Dave Chinner (3):
+      xfs: validate untrusted inode numbers during lookup
+      xfs: rename XFS_IGET_BULKSTAT to XFS_IGET_UNTRUSTED
+      xfs: remove block number from inode lookup code
+
+ fs/xfs/linux-2.6/xfs_export.c  |   11 +-
+ fs/xfs/linux-2.6/xfs_ioctl.c   |    7 +-
+ fs/xfs/linux-2.6/xfs_ioctl32.c |   15 +--
+ fs/xfs/quota/xfs_qm.c          |   18 +--
+ fs/xfs/quota/xfs_qm_syscalls.c |   27 ++--
+ fs/xfs/xfs_dfrag.c             |    5 +-
+ fs/xfs/xfs_ialloc.c            |  142 ++++++++++++---------
+ fs/xfs/xfs_iget.c              |   10 +-
+ fs/xfs/xfs_inode.c             |    5 +-
+ fs/xfs/xfs_inode.h             |    6 +-
+ fs/xfs/xfs_itable.c            |  285 ++++++----------------------------------
+ fs/xfs/xfs_itable.h            |   17 ---
+ fs/xfs/xfs_log_recover.c       |    2 +-
+ fs/xfs/xfs_mount.c             |    2 +-
+ fs/xfs/xfs_rtalloc.c           |    4 +-
+ fs/xfs/xfs_trans_inode.c       |    2 +-
+ fs/xfs/xfs_vnodeops.c          |    2 +-
+ 17 files changed, 172 insertions(+), 388 deletions(-)
