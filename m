@@ -1,101 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab0GBVrb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 17:47:31 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41812 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753452Ab0GBVr3 (ORCPT
+	id S1757630Ab0GBVuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 17:50:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34146 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752370Ab0GBVuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 17:47:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=E5VJzpONYTdODrW3pqTCvuKs16ZTWuI9M9MglhYnye8y3p8f/fjyNLk8BzQTdyG+6n
-         QizUxYbNj0ZO0zYNkCpsu6WAvI3XZA/gwH0eEXjRZB/bZDnzOf2yHTDXoxSU324q7mIl
-         +qVorAfNiU0XUrTONjBM1b/pRTY7xKvn7dzH0=
-MIME-Version: 1.0
-In-Reply-To: <20100702072826.GB16856@schottelius.org>
-References: <20100702072826.GB16856@schottelius.org>
-Date: Fri, 2 Jul 2010 14:47:26 -0700
-X-Google-Sender-Auth: 38hakKFo2aM9O0s3kTCkMnQ5WIk
-Message-ID: <AANLkTikO8yXXBC9Wt4LKZeu1JD5TKMOW5reB3jpk8Ahp@mail.gmail.com>
-Subject: Re: e1000e: receives no packets after resume (2.6.35-rc3-00262-g984bc96)
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Nico Schottelius <nico-linux-20100702@schottelius.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Cc: netdev <netdev@vger.kernel.org>, e1000-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+	Fri, 2 Jul 2010 17:50:11 -0400
+Date: Fri, 2 Jul 2010 14:49:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 10/11] oom: give the dying task a higher priority
+Message-Id: <20100702144941.8fa101c3.akpm@linux-foundation.org>
+In-Reply-To: <20100630183243.AA65.A69D9226@jp.fujitsu.com>
+References: <20100630172430.AA42.A69D9226@jp.fujitsu.com>
+	<20100630183243.AA65.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 2, 2010 at 00:28, Nico Schottelius
-<nico-linux-20100702@schottelius.org> wrote:
-> Good morning hackers,
->
-> I've seen that in kernels before, but now suffering from it:
-> e1000e does not receive any packets after third resume:
->
-> --------------------------------------------------------------------------------
-> [8:16] kr:clyde# dhcpcd eth0
-> dhcpcd[11589]: version 5.2.5 starting
-> dhcpcd[11589]: eth0: rebinding lease of 129.132.102.115
-> dhcpcd[11589]: eth0: broadcasting for a lease
-> ^Cdhcpcd[11589]: received SIGINT, stopping
-> dhcpcd[11589]: eth0: removing interface
-> [8:16] kr:clyde# dhcpcd eth0
-> dhcpcd[11601]: version 5.2.5 starting
-> dhcpcd[11601]: eth0: rebinding lease of 129.132.102.115
-> dhcpcd[11601]: eth0: broadcasting for a lease
-> ^Cdhcpcd[11601]: received SIGINT, stopping
-> dhcpcd[11601]: eth0: removing interface
-> [8:16] kr:clyde# dhcpcd eth0
-> dhcpcd[11784]: version 5.2.5 starting
-> dhcpcd[11784]: eth0: rebinding lease of 129.132.102.115
-> ^Cdhcpcd[11784]: received SIGINT, stopping
-> dhcpcd[11784]: eth0: removing interface
-> [8:16] kr:clyde# dhcpcd eth0
-> dhcpcd[11830]: version 5.2.5 starting
-> dhcpcd[11830]: eth0: rebinding lease of 129.132.102.115
-> dhcpcd[11830]: eth0: broadcasting for a lease
-> dhcpcd[11830]: timed out
-> [8:17] kr:clyde# rmmod e1000e
-> [8:18] kr:clyde# modprobe e1000e
-> [8:18] kr:clyde# dhcpcd eth0
-> dhcpcd[11855]: version 5.2.5 starting
-> dhcpcd[11855]: eth0: waiting for carrier
-> ^Cdhcpcd[11855]: received SIGINT, stopping
-> dhcpcd[11855]: eth0: removing interface
-> [8:18] kr:clyde# dhcpcd eth0
-> dhcpcd[11871]: version 5.2.5 starting
-> dhcpcd[11871]: eth0: rebinding lease of 129.132.102.115
-> dhcpcd[11871]: eth0: acknowledged 129.132.102.115 from 129.132.57.97
-> dhcpcd[11871]: eth0: checking for 129.132.102.115
-> dhcpcd[11871]: eth0: leased 129.132.102.115 for 86400 seconds
-> dhcpcd[11871]: forked to background, child pid 11892
-> [8:18] kr:clyde#
-> --------------------------------------------------------------------------------
->
-> Are you aware of this issues?
->
-> Cheers,
->
-> Nico
->
-> --
+On Wed, 30 Jun 2010 18:33:23 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-Adding the Networking Kernel mailing list (netdev) and Intel Linux LAN
-Driver mailing list (e1000-patches)...
+> +static void boost_dying_task_prio(struct task_struct *p,
+> +				  struct mem_cgroup *mem)
+> +{
+> +	struct sched_param param = { .sched_priority = 1 };
+> +
+> +	if (mem)
+> +		return;
+> +
+> +	if (!rt_task(p))
+> +		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
+> +}
 
-Would it be possible to get more information about the system/setup?
+We can actually make `param' static here.  That saves a teeny bit of
+code and a little bit of stack.  The oom-killer can be called when
+we're using a lot of stack.
 
-For example, can you provide the following information:
-     - full lspci output (lspci -vvv)
-     - ethtool -i ethX
-     - dmesg  - after loading the driver and configuring the interfaces
-     - kernel config
+But if we make that change we really should make the param arg to
+sched_setscheduler_nocheck() be const.  I did that (and was able to
+convert lots of callers to use a static `param') but to complete the
+job we'd need to chase through all the security goop, fixing up
+security_task_setscheduler() and callees, and I got bored.
 
--- 
-Cheers,
-Jeff
+
+ include/linux/sched.h |    2 +-
+ kernel/kthread.c      |    2 +-
+ kernel/sched.c        |    4 ++--
+ kernel/softirq.c      |    4 +++-
+ kernel/stop_machine.c |    2 +-
+ kernel/workqueue.c    |    2 +-
+ 6 files changed, 9 insertions(+), 7 deletions(-)
+
+diff -puN kernel/kthread.c~a kernel/kthread.c
+--- a/kernel/kthread.c~a
++++ a/kernel/kthread.c
+@@ -131,7 +131,7 @@ struct task_struct *kthread_create(int (
+ 	wait_for_completion(&create.done);
+ 
+ 	if (!IS_ERR(create.result)) {
+-		struct sched_param param = { .sched_priority = 0 };
++		static struct sched_param param = { .sched_priority = 0 };
+ 		va_list args;
+ 
+ 		va_start(args, namefmt);
+diff -puN kernel/workqueue.c~a kernel/workqueue.c
+--- a/kernel/workqueue.c~a
++++ a/kernel/workqueue.c
+@@ -962,7 +962,7 @@ init_cpu_workqueue(struct workqueue_stru
+ 
+ static int create_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
+ {
+-	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
++	static struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+ 	struct workqueue_struct *wq = cwq->wq;
+ 	const char *fmt = is_wq_single_threaded(wq) ? "%s" : "%s/%d";
+ 	struct task_struct *p;
+diff -puN kernel/stop_machine.c~a kernel/stop_machine.c
+--- a/kernel/stop_machine.c~a
++++ a/kernel/stop_machine.c
+@@ -291,7 +291,7 @@ repeat:
+ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+ 					   unsigned long action, void *hcpu)
+ {
+-	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
++	static struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+ 	unsigned int cpu = (unsigned long)hcpu;
+ 	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
+ 	struct task_struct *p;
+diff -puN kernel/sched.c~a kernel/sched.c
+--- a/kernel/sched.c~a
++++ a/kernel/sched.c
+@@ -4570,7 +4570,7 @@ static bool check_same_owner(struct task
+ }
+ 
+ static int __sched_setscheduler(struct task_struct *p, int policy,
+-				struct sched_param *param, bool user)
++				const struct sched_param *param, bool user)
+ {
+ 	int retval, oldprio, oldpolicy = -1, on_rq, running;
+ 	unsigned long flags;
+@@ -4734,7 +4734,7 @@ EXPORT_SYMBOL_GPL(sched_setscheduler);
+  * but our caller might not have that capability.
+  */
+ int sched_setscheduler_nocheck(struct task_struct *p, int policy,
+-			       struct sched_param *param)
++			       const struct sched_param *param)
+ {
+ 	return __sched_setscheduler(p, policy, param, false);
+ }
+diff -puN kernel/softirq.c~a kernel/softirq.c
+--- a/kernel/softirq.c~a
++++ a/kernel/softirq.c
+@@ -827,7 +827,9 @@ static int __cpuinit cpu_callback(struct
+ 			     cpumask_any(cpu_online_mask));
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN: {
+-		struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
++		static struct sched_param param = {
++				.sched_priority = MAX_RT_PRIO-1,
++			};
+ 
+ 		p = per_cpu(ksoftirqd, hotcpu);
+ 		per_cpu(ksoftirqd, hotcpu) = NULL;
+diff -puN include/linux/sched.h~a include/linux/sched.h
+--- a/include/linux/sched.h~a
++++ a/include/linux/sched.h
+@@ -1924,7 +1924,7 @@ extern int task_curr(const struct task_s
+ extern int idle_cpu(int cpu);
+ extern int sched_setscheduler(struct task_struct *, int, struct sched_param *);
+ extern int sched_setscheduler_nocheck(struct task_struct *, int,
+-				      struct sched_param *);
++				      const struct sched_param *);
+ extern struct task_struct *idle_task(int cpu);
+ extern struct task_struct *curr_task(int cpu);
+ extern void set_curr_task(int cpu, struct task_struct *p);
+_
+
