@@ -1,137 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab0GBFzZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 01:55:25 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60436 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab0GBFzX (ORCPT
+	id S1755884Ab0GBGRo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 02:17:44 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:52645 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754807Ab0GBGRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 01:55:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 2 Jul 2010 14:50:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Nathan Fontenot <nfont@austin.ibm.com>,
-       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] memory hotplug disable boot option
-Message-Id: <20100702145042.5298416f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100701232634.GD13617@suse.de>
-References: <20100628154455.GA13918@suse.de>
-	<1277769867.8354.531.camel@nimitz>
-	<20100629115232.38BC.A69D9226@jp.fujitsu.com>
-	<1277827384.8354.3413.camel@nimitz>
-	<20100629180415.GB1240@suse.de>
-	<20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100630154755.GB12158@suse.de>
-	<20100701093130.c5e2b564.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100701232634.GD13617@suse.de>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 2 Jul 2010 02:17:42 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6030"; a="46260772"
+Message-ID: <4C2D847E.5080602@codeaurora.org>
+Date: Thu, 01 Jul 2010 23:17:34 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Daniel Walker <dwalker@codeaurora.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org> <20100701101746.3810cc3b.randy.dunlap@oracle.com> <20100701180241.GA3594@basil.fritz.box> <1278012503.7738.17.camel@c-dwalke-linux.qualcomm.com> <20100701193850.GB3594@basil.fritz.box> <4C2D0FF1.6010206@codeaurora.org> <20100701230056.GD3594@basil.fritz.box>
+In-Reply-To: <20100701230056.GD3594@basil.fritz.box>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Jul 2010 16:26:34 -0700
-Greg KH <gregkh@suse.de> wrote:
-
-> On Thu, Jul 01, 2010 at 09:31:30AM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Wed, 30 Jun 2010 08:47:55 -0700
-> > Greg KH <gregkh@suse.de> wrote:
-> > > > and adding a scalable interface for large scale machines ?
-> > > > I'd like to consider something..
-> > > 
-> > > Dynamically changing the layout on big memory boxes makes sense to me,
-> > > how about you?
-> > > 
-> > 
-> > like this ?
-> > ==
-> > boot option:
-> > memory_sysfs_layout=compact
-> > memory_sysfs_layout=auto (default)
-> > memory_sysfs_layout=full
-> > 
-> > Considering briefly, how about this compact layout ?
-> > 
-> > /sys/devices/system/memory/:
-> >                             list, hide, show, memoryX...
-> > 
-> > list: // show available memory index list.
-> >   #cat list
-> >    0 1 2 ....10000...
-> > 
-> > show: //an interface to enable the interface.
-> >   #echo INDEX > memory_index
-> >   will create memoryINDEX diretory.
-> > 
-> > hide: //an interface to hide the interface.
-> >   #echo INDEX > memory_hide
-> >   will remove memoryINDEX sysfs directory.
+Andi Kleen wrote:
+>> The VCMM provides a more abstract, global view with finer-grained
+>> control of each mapping a user wants to create. For instance, the
+>> semantics of iommu_map preclude its use in setting up just the IOMMU
+>> side of a mapping. With a one-sided map, two IOMMU devices can be
 > 
-> Ick, that can get confusing very quickly, and not really solve any of
-> your root problems, right?
+> Hmm? dma_map_* does not change any CPU mappings. It only sets up
+> DMA mapping(s).
+
+Sure, but I was saying that iommu_map() doesn't just set up the IOMMU
+mappings, its sets up both the iommu and kernel buffer mappings.
+
 > 
-Why not ?
-
-I'm sorry if I misunderstand the problem . It is tooo many entries under
-a directory, which makes the routine slow. No ?
-By this interface, the sysfs entries pops up on demand if the user hides
-it at boot time (by boot options.)
-
-IIUC, the most problematic IBM's 16MB-sections system has no notification
-from firmware and their system management middleware controls all
-memory hotplug information. IOW, all memory-hotplug actions are from
-user-land, not from firmware. They should know which mem_section should be
-visible under /memory before starting hotplug.
-
-In other platforms, using ACPI, hot-added memory sections can be automatically
-visible. At memory hot-remove, management software should now which phys_address
-memory should be removed before it starts action. It can make visible
-section directory.
-
-For many many users, who never wants memory hotplug, they can avoid creating
-sysfs for memory hotplug and will be happy.
-
-
-
-> > In compact mode, all memoryX interface are hidden at boot.
-> > In full mode, all memoryX interaface are shown.
-> > The Boot option just affects status at boot. If users want, he can make
-> > all memory sysfs in shown state.
-> > 
-> > At hot-add event (via acpi) or probe-event, newly created memory section
-> > should be start from "shown" mode. hotplug scirpt can hide it after online.
-> > 
-> > At hot-remove, the users has to offline memory before hotplug. He'll has
-> > to do check list and show interface.
-> > 
-> > I think this change is not very difficult technically but can this kind of
-> > interface be allowed ?
+>> Additionally, the current IOMMU interface does not allow users to
+>> associate one page table with multiple IOMMUs unless the user explicitly
 > 
-> Not really, I don't like it.
+> That assumes that all the IOMMUs on the system support the same page table
+> format, right?
+
+Actually no. Since the VCMM abstracts a page-table as a Virtual
+Contiguous Region (VCM) a VCM can be associated with any device,
+regardless of their individual page table format.
+
 > 
-> Why not just simplify what you currently have to not use so many
-> directories and files?
+> As I understand your approach would help if you have different
+> IOMMus with an different low level interface, which just 
+> happen to have the same pte format. Is that very likely?
 > 
-> And maybe, this doesn't belong in sysfs at all...
+> I would assume if you have lots of copies of the same IOMMU
+> in the system then you could just use a single driver with multiple
+> instances that share some state for all of them.  That model
+> would fit in the current interfaces. There's no reason multiple
+> instances couldn't share the same allocation data structure.
 > 
+> And if you have lots of truly different IOMMUs then they likely
+> won't be able to share PTEs at the hardware level anyways, because
+> the formats are too different.
 
-Because the system has topology and sysfs's /sys/devices/system/ shows
-system's topology by directories and files, we use it. Especially, "node"
-information is important in some system and we'd made use of it.
+See VCM's above.
 
-If you recommend guys to remake all NUMA-cpu-memory topology information
-in other fs, someone will do.
+> 
+>> The VCMM takes the long view. Its designed for a future in which the
+>> number of IOMMUs will go up and the ways in which these IOMMUs are
+>> composed will vary from system to system, and may vary at
+>> runtime. Already, there are ~20 different IOMMU map implementations in
+>> the kernel. Had the Linux kernel had the VCMM, many of those
+>> implementations could have leveraged the mapping and topology management
+>> of a VCMM, while focusing on a few key hardware specific functions (map
+>> this physical address, program the page table base register).
+> 
+> The standard Linux approach to such a problem is to write
+> a library that drivers can use for common functionality, not put a middle 
+> layer in between. Libraries are much more flexible than layers.
 
-Fujitsu will not complain about that and welcome it because we have a long
-period until RHEL7 ages.
+That's true up to the, "is this middle layer so useful that its worth
+it" point. The VM is a middle layer, you could make the same argument
+about it, "the mapping code isn't too hard, just map in the memory
+that you need and be done with it". But the VM middle layer provides a
+clean separation between page frames and pages which turns out to be
+infinitely useful. The VCMM is built in the same spirit, It says
+things like, "mapping is a global problem, I'm going to abstract
+entire virtual spaces and allow people arbitrary chuck size
+allocation, I'm not going to care that my device is physically mapping
+this buffer and this other device is a virtual, virtual device."
 
-Thanks,
--Kame
+> 
+> That said I'm not sure there's all that much duplicated code anyways.
+> A lot of the code is always IOMMU specific. The only piece
+> which might be shareable is the mapping allocation, but I don't
+> think that's very much of a typical driver
+> 
+> In my old pci-gart driver the allocation was all only a few lines of code, 
+> although given it was somewhat dumb in this regard because it only managed a 
+> small remapping window.
 
+I agree that its not a lot of code, and that this layer may be a bit heavy, but I'd like to focus on is a global mapping view useful and if so is something like the graph management that the VCMM provides generally useful.
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
