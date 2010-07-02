@@ -1,85 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab0GBHKz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 03:10:55 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61294 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756793Ab0GBHKy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 03:10:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dIOrx99iPaX4YDjT01pUJ/3mqd6tDZSMRUxCxUIAkAiDYjZkyWqrVdhkLmrwCWcgoi
-         rvAY9KjZ7bF7uhx1LKtCmfZpfgMCCWZHPl72vqS+65H8jGb96hfxqgzPvxNjuG2shUJH
-         m4a026vVyiOEF5IY29/EksRAZcBzdNkQOH0cw=
-MIME-Version: 1.0
-In-Reply-To: <20100701132515.GC32541@faui48a.informatik.uni-erlangen.de>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
-	<e5391de6858597bbfd43874aed124a73f74850b5.1277911346.git.siccegge@cs.fau.de>
-	<AANLkTinZa7_TEjYFTu9V6obndpVvMmHppaOArM1AJg_t@mail.gmail.com>
-	<20100701132515.GC32541@faui48a.informatik.uni-erlangen.de>
-Date: Fri, 2 Jul 2010 16:10:53 +0900
-Message-ID: <AANLkTimtrIdkBbAJDfBj5a_Y8n6MnvBN2FlTztSB610X@mail.gmail.com>
-Subject: Re: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Jassi Brar <jassi.brar@samsung.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757707Ab0GBHUT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 03:20:19 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:62949 "EHLO poutre.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756801Ab0GBHUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 03:20:17 -0400
+Date: Fri, 2 Jul 2010 09:20:11 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jim Cromie <jim.cromie@gmail.com>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Guenter Roeck <guenter.roeck@ericsson.com>,
+       Ethan Lawrence <e.law87@yahoo.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org, lars4910@hotmail.com,
+       birdie@permonline.ru, jadcock@cox.net
+Subject: Re: [PATCH/RFC] hwmon: Add support for W83667HG-B
+Message-ID: <20100702092011.0acd753f@hyperion.delvare>
+In-Reply-To: <1278021735-21188-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1278021735-21188-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 1, 2010 at 10:25 PM, Christoph Egger <siccegge@cs.fau.de> wrote:
-> On Thu, Jul 01, 2010 at 09:55:47PM +0900, Jassi Brar wrote:
->> On Thu, Jul 1, 2010 at 1:03 AM, Christoph Egger <siccegge@cs.fau.de> wrote:
->> > SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
->> > all references for it from the source code.
->> I'd rather have the code compiled unconditionally.
->
-> OK that would be done by the patch below
->
-> ----
-> From: Christoph Egger <siccegge@cs.fau.de>
-> Date: Wed, 30 Jun 2010 17:18:52 +0200
-> Subject: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
->
-> SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
-> all references for it from the source code, building the parts
-> unconditionally
->
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> ---
->  arch/arm/mach-s3c2443/mach-smdk2443.c |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/arm/mach-s3c2443/mach-smdk2443.c b/arch/arm/mach-s3c2443/mach-smdk2443.c
-> index 4c863d3..764144a 100644
-> --- a/arch/arm/mach-s3c2443/mach-smdk2443.c
-> +++ b/arch/arm/mach-s3c2443/mach-smdk2443.c
-> @@ -106,9 +106,7 @@ static struct platform_device *smdk2443_devices[] __initdata = {
->        &s3c_device_wdt,
->        &s3c_device_i2c0,
->        &s3c_device_hsmmc0,
-> -#ifdef CONFIG_SND_SOC_SMDK2443_WM9710
->        &s3c_device_ac97,
-> -#endif
-This is ok provided 2440 support is included.
+Hi Guenter,
 
->  };
->
->  static void __init smdk2443_map_io(void)
-> @@ -122,9 +120,7 @@ static void __init smdk2443_machine_init(void)
->  {
->        s3c_i2c0_set_platdata(NULL);
->
-> -#ifdef CONFIG_SND_SOC_SMDK2443_WM9710
->        s3c24xx_ac97_setup_gpio(S3C24XX_AC97_GPE0);
-> -#endif
-This gpio setup is nowhere implemented. So might as well discard it.
+On Thu, 1 Jul 2010 15:02:15 -0700, Guenter Roeck wrote:
+> This patch adds support for W83667HG-B to the w83627ehf driver.
+> 
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+> 
+> Key relevant difference between W83667HG and W83667HG-B are the Chip ID as well
+> as the fan output and step output register addresses. Those differences are
+> addressed with this patch.
+> 
+> There are other relevant changes in the mapping of input sensors to fan
+> control (W83667HG datasheet chapter 8.7, W83667HG-B datasheet chapter 8.5).
+> However, control of those mappings is not implemented in the driver, thus the
+> respective changes should not have an impact on driver operation.
+> 
+> Changes made in this patch are based on information from datasheets only. The
+> patch has not yet been tested with real hardware. The patch must be tested with
+> real hardware before it is integrated, and is thus submitted as RFC.
+
+Thanks for doing this. Quick review:
+
+> 
+> ---
+>  drivers/hwmon/w83627ehf.c |   44 +++++++++++++++++++++++++++++++++++++-------
+>  1 files changed, 37 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
+> index 0dcaba9..074e15b 100644
+> --- a/drivers/hwmon/w83627ehf.c
+> +++ b/drivers/hwmon/w83627ehf.c
+> @@ -39,6 +39,7 @@
+>      w83627dhg    9      5       4       3      0xa020 0xc1    0x5ca3
+>      w83627dhg-p  9      5       4       3      0xb070 0xc1    0x5ca3
+>      w83667hg     9      5       3       3      0xa510 0xc1    0x5ca3
+> +    w83667hg-b   9      5       3       3      0xb350 0xc1    0x5ca3
+>  */
+>  
+>  #include <linux/module.h>
+> @@ -55,7 +56,7 @@
+>  #include <linux/io.h>
+>  #include "lm75.h"
+>  
+> -enum kinds { w83627ehf, w83627dhg, w83627dhg_p, w83667hg };
+> +enum kinds { w83627ehf, w83627dhg, w83627dhg_p, w83667hg, w83667hg_b };
+>  
+>  /* used to set data->name = w83627ehf_device_names[data->sio_kind] */
+>  static const char * w83627ehf_device_names[] = {
+> @@ -63,6 +64,7 @@ static const char * w83627ehf_device_names[] = {
+>  	"w83627dhg",
+>  	"w83627dhg",
+>  	"w83667hg",
+> +	"w83667hg-b",
+
+Dashes aren't allowed in hwmon device names. For consistency with what
+we did for the W83627DHG-Pg, you should simply drop the "-b". It's a small
+detail of little interest for the user anyway.
+
+>  };
+>  
+>  static unsigned short force_id;
+> @@ -91,6 +93,7 @@ MODULE_PARM_DESC(force_id, "Override the detected device ID");
+>  #define SIO_W83627DHG_ID	0xa020
+>  #define SIO_W83627DHG_P_ID	0xb070
+>  #define SIO_W83667HG_ID 	0xa510
+> +#define SIO_W83667HG_B_ID	0xb350
+>  #define SIO_ID_MASK		0xFFF0
+>  
+>  static inline void
+> @@ -201,8 +204,17 @@ static const u8 W83627EHF_REG_TOLERANCE[] = { 0x07, 0x07, 0x14, 0x62 };
+>  static const u8 W83627EHF_REG_FAN_START_OUTPUT[] = { 0x0a, 0x0b, 0x16, 0x65 };
+>  static const u8 W83627EHF_REG_FAN_STOP_OUTPUT[] = { 0x08, 0x09, 0x15, 0x64 };
+>  static const u8 W83627EHF_REG_FAN_STOP_TIME[] = { 0x0c, 0x0d, 0x17, 0x66 };
+> -static const u8 W83627EHF_REG_FAN_MAX_OUTPUT[] = { 0xff, 0x67, 0xff, 0x69 };
+> -static const u8 W83627EHF_REG_FAN_STEP_OUTPUT[] = { 0xff, 0x68, 0xff, 0x6a };
+> +
+> +static const u8 *W83627EHF_REG_FAN_MAX_OUTPUT;
+> +static const u8 *W83627EHF_REG_FAN_STEP_OUTPUT;
+> +
+> +static const u8 W83627EHF_REG_FAN_MAX_OUTPUT_COMMON[]
+> +						= { 0xff, 0x67, 0xff, 0x69 };
+> +static const u8 W83627EHF_REG_FAN_STEP_OUTPUT_COMMON[]
+> +						= { 0xff, 0x68, 0xff, 0x6a };
+> +
+> +static const u8 W83627EHF_REG_FAN_MAX_OUTPUT_W83667_B[] = { 0x67, 0x69, 0x6b };
+> +static const u8 W83627EHF_REG_FAN_STEP_OUTPUT_W83667_B[] = { 0x68, 0x6a, 0x6c };
+
+Is it just me or these arrays aren't used anywhere?
+
+I think I would just drop them. The "0xff" are suspicious in the
+original arrays, and the size difference between the common and
+W83667HG-B cases is tricky. Anyone willing to add support for this
+feature will need to read the datasheets anyway, so you don't add any
+value by including the register addresses here.
+
+>  
+>  /*
+>   * Conversions
+> @@ -1343,22 +1355,35 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+>  	/* 627EHG and 627EHF have 10 voltage inputs; 627DHG and 667HG have 9 */
+>  	data->in_num = (sio_data->kind == w83627ehf) ? 10 : 9;
+>  	/* 667HG has 3 pwms */
+> -	data->pwm_num = (sio_data->kind == w83667hg) ? 3 : 4;
+> +	data->pwm_num = (sio_data->kind == w83667hg
+> +			 || sio_data->kind == w83667hg_b) ? 3 : 4;
+>  
+>  	/* Check temp3 configuration bit for 667HG */
+> -	if (sio_data->kind == w83667hg) {
+> +	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
+>  		data->temp3_disable = w83627ehf_read_value(data,
+>  					W83627EHF_REG_TEMP_CONFIG[1]) & 0x01;
+>  		data->in6_skip = !data->temp3_disable;
+>  	}
+>  
+> +	if (sio_data->kind == w83667hg_b) {
+> +		W83627EHF_REG_FAN_MAX_OUTPUT
+> +		  = W83627EHF_REG_FAN_MAX_OUTPUT_W83667_B;
+> +		W83627EHF_REG_FAN_STEP_OUTPUT
+> +		  = W83627EHF_REG_FAN_STEP_OUTPUT_W83667_B;
+> +	} else {
+> +		W83627EHF_REG_FAN_MAX_OUTPUT
+> +		  = W83627EHF_REG_FAN_MAX_OUTPUT_COMMON;
+> +		W83627EHF_REG_FAN_STEP_OUTPUT
+> +		  = W83627EHF_REG_FAN_STEP_OUTPUT_COMMON;
+> +	}
+
+That's not correct. It would be valid (although totally unexpected) to
+have two different chips on the same system. Thus
+W83627EHF_REG_FAN_MAX_OUTPUT and W83627EHF_REG_FAN_STEP_OUTPUT
+shouldn't be global pointers but per-device pointers. You can simply
+add them to the data structure.
+
+But as said above, the easier is probably to just drop them.
+
+> +
+>  	/* Initialize the chip */
+>  	w83627ehf_init_device(data);
+>  
+>  	data->vrm = vid_which_vrm();
+>  	superio_enter(sio_data->sioreg);
+>  	/* Read VID value */
+> -	if (sio_data->kind == w83667hg) {
+> +	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
+>  		/* W83667HG has different pins for VID input and output, so
+>  		we can get the VID input values directly at logical device D
+>  		0xe3. */
+> @@ -1409,7 +1434,7 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	/* fan4 and fan5 share some pins with the GPIO and serial flash */
+> -	if (sio_data->kind == w83667hg) {
+> +	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
+>  		fan5pin = superio_inb(sio_data->sioreg, 0x27) & 0x20;
+>  		fan4pin = superio_inb(sio_data->sioreg, 0x27) & 0x40;
+>  	} else {
+> @@ -1556,6 +1581,7 @@ static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
+>  	static const char __initdata sio_name_W83627DHG[] = "W83627DHG";
+>  	static const char __initdata sio_name_W83627DHG_P[] = "W83627DHG-P";
+>  	static const char __initdata sio_name_W83667HG[] = "W83667HG";
+> +	static const char __initdata sio_name_W83667HG_B[] = "W83667HG-B";
+>  
+>  	u16 val;
+>  	const char *sio_name;
+> @@ -1588,6 +1614,10 @@ static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
+>  		sio_data->kind = w83667hg;
+>  		sio_name = sio_name_W83667HG;
+>  		break;
+> +	case SIO_W83667HG_B_ID:
+> +		sio_data->kind = w83667hg_b;
+> +		sio_name = sio_name_W83667HG_B;
+> +		break;
+>  	default:
+>  		if (val != 0xffff)
+>  			pr_debug(DRVNAME ": unsupported chip ID: 0x%04x\n",
+
+
+-- 
+Jean Delvare
