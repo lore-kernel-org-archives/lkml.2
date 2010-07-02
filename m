@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958Ab0GBVdL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 17:33:11 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:49591 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752118Ab0GBVdJ (ORCPT
+	id S1753579Ab0GBVhS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 17:37:18 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58187 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab0GBVhO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 17:33:09 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=OBnjHbbgYDvu8tuzV7Eu5inu+UqcQlLRL9lcil8xD9M048HqkjB+TkxGPZXL5Or8Ii7BlcWon1Y8PbZBRuWMKa1ol62s6GAP9zlBjI0sOghyqsPmkKN0UDs44fZprP0h;
-Date: Fri, 2 Jul 2010 14:30:39 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Chris Wright <chrisw@sous-sol.org>,
-       "Michael S. Tsirkin" <mst@redhat.com>,
-       Michal Schmidt <mschmidt@redhat.com>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/25] pci-sysfs: remove casts from void*
-Message-ID: <20100702143039.7bdac116@virtuousgeek.org>
-In-Reply-To: <1277806529-31010-1-git-send-email-segooon@gmail.com>
-References: <1277806529-31010-1-git-send-email-segooon@gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Fri, 2 Jul 2010 17:37:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ml3+YcJJ8FmGHtIFlJcepiu9AxXnTwPDqabTreCOdsFIaV/RMDkBw+GsGDUtXYbrpu
+         h9q8QSSFfoY1MmAqzB/T0KsiEI2SYeZB8SAXKkMQgYaNzbLogknoq8nYw2ZSmEcANmLU
+         JB1yHIfCH0Z9k1Ijg5D5CE1wrqgSRxLe9QT3U=
+MIME-Version: 1.0
+In-Reply-To: <20100525201837.GA13821@kroah.com>
+References: <20100511004655.30590.74584.stgit@localhost.localdomain>
+	<AANLkTinHm8ukQ3KlcrMKWvQ-QrlmBcWeVD-i99Q9Z7JL@mail.gmail.com>
+	<alpine.WNT.2.00.1005250926320.2708@jbrandeb-desk1.amr.corp.intel.com>
+	<20100525201837.GA13821@kroah.com>
+Date: Fri, 2 Jul 2010 14:37:13 -0700
+X-Google-Sender-Auth: YnNiPJi7eTCHZycHKkADwHd3v7g
+Message-ID: <AANLkTimr7-8TIjuCjIbqrJSVH4VI-Pjp8plpjTubuTfE@mail.gmail.com>
+Subject: Re: [stable] [stable-2.6.32 PATCH] ixgbe: backport bug fix for tx 
+	panic
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Greg KH <greg@kroah.com>
+Cc: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "stable@kernel.org" <stable@kernel.org>, Brandon <brandon@ifup.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "davem@davemloft.net" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010 14:15:28 +0400
-Kulikov Vasiliy <segooon@gmail.com> wrote:
+On Tue, May 25, 2010 at 13:18, Greg KH <greg@kroah.com> wrote:
+> On Tue, May 25, 2010 at 09:27:25AM -0700, Brandeburg, Jesse wrote:
+>>
+>>
+>> On Tue, 25 May 2010, Jeff Kirsher wrote:
+>>
+>> > On Mon, May 10, 2010 at 17:46, Jeff Kirsher <jeffrey.t.kirsher@intel.com> wrote:
+>> > > From: Jesse Brandeburg <jesse.brandeburg@intel.com>
+>> > >
+>> > > backporting this commit:
+>> > >
+>> > > commit fdd3d631cddad20ad9d3e1eb7dbf26825a8a121f
+>> > > Author: Krishna Kumar <krkumar2@in.ibm.com>
+>> > > Date:   Wed Feb 3 13:13:10 2010 +0000
+>> > >
+>> > >    ixgbe: Fix return of invalid txq
+>> > >
+>> > >    a developer had complained of getting lots of warnings:
+>> > >
+>> > >    "eth16 selects TX queue 98, but real number of TX queues is 64"
+>> > >
+>> > >    http://www.mail-archive.com/e1000-devel@lists.sourceforge.net/msg02200.html
+>> > >
+>> > >    As there was no follow up on that bug, I am submitting this
+>> > >    patch assuming that the other return points will not return
+>> > >    invalid txq's, and also that this fixes the bug (not tested).
+>> > >
+>> > >    Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+>> > >    Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+>> > >    Acked-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+>> > >    Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+>> > >    Signed-off-by: David S. Miller <davem@davemloft.net>
+>> > >
+>> > > CC: Brandon <brandon@ifup.org>
+>> > > Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+>> > > ---
+>> > >
+>> > >  drivers/net/ixgbe/ixgbe_main.c |    8 ++++++--
+>> > >  1 files changed, 6 insertions(+), 2 deletions(-)
+>> > >
+>> >
+>> > Greg - status?  Did you queue this patch for the stable release and I missed it?
+>>
+>> Maybe we didn't say (and we should have) that this fixes a panic on
+>> machines with > 64 cores.  Please apply to -stable 32.
+>
+> I'll get to it for the next release after this one, if that's ok.
+>
+> thanks,
+>
+> greg k-h
+> --
 
-> Remove unnesessary casts from void*.
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  drivers/pci/pci-sysfs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index afd2fbf..7f8bc8c 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -734,7 +734,7 @@ pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
->  {
->  	struct pci_dev *pdev = to_pci_dev(container_of(kobj,
->  						       struct device, kobj));
-> -	struct resource *res = (struct resource *)attr->private;
-> +	struct resource *res = attr->private;
->  	enum pci_mmap_state mmap_type;
->  	resource_size_t start, end;
->  	int i;
-
-Applied to my linux-next branch, thanks.
+I did not see this patch in the list of patches for the next release
+of the stable kernel.  Just want to make sure this patch makes it this
+time... :)
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Cheers,
+Jeff
