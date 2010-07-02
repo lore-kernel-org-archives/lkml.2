@@ -1,116 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab0GBCT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 22:19:28 -0400
-Received: from adelphi.physics.adelaide.edu.au ([129.127.102.1]:46406 "EHLO
-	adelphi.physics.adelaide.edu.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752314Ab0GBCT0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 22:19:26 -0400
-X-Greylist: delayed 737 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Jul 2010 22:19:26 EDT
-From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-Message-Id: <201007020206.o62260bc016340@turbo.physics.adelaide.edu.au>
-Subject: Re: [PATCH] fujitsu-laptop: remove unnecessary input_free_device calls
-To: axel.lin@gmail.com (Axel Lin)
-Date: Fri, 2 Jul 2010 11:36:00 +0930 (CST)
-Cc: linux-kernel@vger.kernel.org (linux-kernel),
-       jwoithe@physics.adelaide.edu.au (Jonathan Woithe),
-       mjg@redhat.com (Matthew Garrett), len.brown@intel.com (Len Brown),
-       akpm@linux-foundation.org (Andrew Morton),
-       stefani@seibold.net (Stefani Seibold), ak@linux.intel.com (Andi Kleen),
-       platform-driver-x86@vger.kernel.org
-In-Reply-To: <1278034977.24246.6.camel@mola> from "Axel Lin" at Jul 02, 2010 09:42:57 AM
-X-Mailer: ELM [version 2.5 PL6]
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757036Ab0GBCqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 22:46:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31859 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754002Ab0GBCqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 22:46:42 -0400
+Subject: Re: Closed source userspace graphics drivers with an open source 
+ kernel component
+From: Dave Airlie <airlied@redhat.com>
+To: Timothy Meade <zt.tmzt@gmail.com>
+Cc: Saravana Kannan <skannan@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>
+In-Reply-To: <AANLkTimiNKRabIDCLvRwxVfdwuvt76PbDuTn2RocZLVG@mail.gmail.com>
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
+	 <AANLkTimgH-DiQyg0f-an5FS3Wyb2b6He3fxxB1L8Ziol@mail.gmail.com>
+	 <1278024678.7738.54.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTinNrpcBg0TXTS78qaI5kPQKD-IbnLpDStu4_BIg@mail.gmail.com>
+	 <1278026975.7738.89.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTilGdNgWIprJ2XZ2gSv2d-DVybGmb9phcboi4fNL@mail.gmail.com>
+	 <1278029284.7738.116.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTilEKPmHKNDNbNpmUvcYC338YezLkNBc4ShfTFdp@mail.gmail.com>
+	 <4C2D3066.9040104@codeaurora.org>
+	 <AANLkTilsqmCZwLUNJhvDKkralHQZzlRV3ZxaIGbt9-xB@mail.gmail.com>
+	 <AANLkTinvzJrx4AqgWYuMg66Djf-snouLQZE7wI9Bu0Kv@mail.gmail.com>
+	 <AANLkTimiNKRabIDCLvRwxVfdwuvt76PbDuTn2RocZLVG@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Jul 2010 12:46:36 +1000
+Message-ID: <1278038796.19705.21.camel@clockmaker-el6>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> input_free_device should only be used if input_register_device()
-> was not called yet or if it failed.
->
-> This patch removes unnecessary input_free_device calls.
+On Thu, 2010-07-01 at 20:42 -0400, Timothy Meade wrote:
+> ---------- Forwarded message ----------
 
-Yes, indeed.  Good catch.  The patch looks good to me - thanks.
+> Hello.  I've been working with the developers on the htc-linux project
+> and following the progress of Android on MSM devices closely for a few
+> years.  I've been excitied to see DRM/DRI replace PMEM and the Android
+> specific interfaces be replaced with more Linux-like ones.  The Xorg
+> driver from Qualcomm uses this same interface for 2D and it's possible
+> that Android will take the same approach, though it uses 3D and GLES
+> as a type of abstraction layer for surfaceflinger.  This allows for a
+> closed 3D driver with an open command submission layer that is in
+> itself not that different from the split for ATI devices using
+> radeonhd.  I say this because the alternative for these devices is a
+> fully closed binary and secrecy surrounding the graphics layers that
+> ensures that only the OS that ships with the device can ever really be
+> used and preventing those non-coorporate developers as myself from
+> utilising GPL code the way we want or even usuing are own cell phones
+> (in this case).  I would choose a fully open, X based OS even if that
+> meant only having 2D drivers, but I know that Quic and others aren't
+> going to develop just a (accelerated) 2D driver, not the kernel
+> components or userspace but instead rely on the same GLES layer that
+> Android uses, essentially making X and open environments a second
+> class citizen on modern mobile hardware.
 
-Acked-by: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+The thing is you are prevented from using the GPU the way you want,
+telling you how to send commands and get irqs from a device but not
+telling you what those commands means is limiting you. So you can use it
+a framebuffer device, you can do that with a 500 line fbdev driver most
+likely, we don't need the maintainer burden of the other 5000 lines of
+code that are only in the driver to service some 3D userspace binary
+blob.
 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/platform/x86/fujitsu-laptop.c |   21 ++++++++-------------
->  1 files changed, 8 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
-> index e325aeb..dab1a0e 100644
-> --- a/drivers/platform/x86/fujitsu-laptop.c
-> +++ b/drivers/platform/x86/fujitsu-laptop.c
-> @@ -686,8 +686,10 @@ static int acpi_fujitsu_add(struct acpi_device *device)
->  	set_bit(KEY_UNKNOWN, input->keybit);
->  
->  	error = input_register_device(input);
-> -	if (error)
-> -		goto err_free_input_dev;
-> +	if (error) {
-> +		input_free_device(input);
-> +		goto err_stop;
-> +	}
->  
->  	result = acpi_bus_get_power(fujitsu->acpi_handle, &state);
->  	if (result) {
-> @@ -725,8 +727,6 @@ static int acpi_fujitsu_add(struct acpi_device *device)
->  
->  err_unregister_input_dev:
->  	input_unregister_device(input);
-> -err_free_input_dev:
-> -	input_free_device(input);
->  err_stop:
->  	return result;
->  }
-> @@ -737,9 +737,6 @@ static int acpi_fujitsu_remove(struct acpi_device *device, int type)
->  	struct input_dev *input = fujitsu->input;
->  
->  	input_unregister_device(input);
-> -
-> -	input_free_device(input);
-> -
->  	fujitsu->acpi_handle = NULL;
->  
->  	return 0;
-> @@ -855,8 +852,10 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
->  	set_bit(KEY_UNKNOWN, input->keybit);
->  
->  	error = input_register_device(input);
-> -	if (error)
-> -		goto err_free_input_dev;
-> +	if (error) {
-> +		input_free_device(input);
-> +		goto err_free_fifo;
-> +	}
->  
->  	result = acpi_bus_get_power(fujitsu_hotkey->acpi_handle, &state);
->  	if (result) {
-> @@ -930,8 +929,6 @@ static int acpi_fujitsu_hotkey_add(struct acpi_device *device)
->  
->  err_unregister_input_dev:
->  	input_unregister_device(input);
-> -err_free_input_dev:
-> -	input_free_device(input);
->  err_free_fifo:
->  	kfifo_free(&fujitsu_hotkey->fifo);
->  err_stop:
-> @@ -953,8 +950,6 @@ static int acpi_fujitsu_hotkey_remove(struct acpi_device *device, int type)
->  
->  	input_unregister_device(input);
->  
-> -	input_free_device(input);
-> -
->  	kfifo_free(&fujitsu_hotkey->fifo);
->  
->  	fujitsu_hotkey->acpi_handle = NULL;
-> -- 
-> 1.5.4.3
-> 
-> 
-> 
+The radeon example is pointless since all pieces in that system are open
+even if AMD can't/won't disclose how certain parts of the GPU work, we
+have access to nearly all the functionality, we control all the open
+pieces and if someone reverse engineers it, AMD have to accept it.
+
+There is no point supporting companies that give you a little bit of
+information in exchange they want the support that being in a mainline
+kernel gives. Its an unfair exchange of knowledge and time, and if they
+claim they have to make a profit then its even more unfair.
+
+Dave.
+
+
