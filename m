@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758682Ab0GBOLR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 10:11:17 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:35353 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753330Ab0GBOLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 10:11:16 -0400
-Date: Fri, 2 Jul 2010 07:09:44 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Jim Cromie <jim.cromie@gmail.com>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ethan Lawrence <e.law87@yahoo.com>,
-       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "lars4910@hotmail.com" <lars4910@hotmail.com>,
-       "birdie@permonline.ru" <birdie@permonline.ru>,
-       "jadcock@cox.net" <jadcock@cox.net>
-Subject: Re: [PATCH/RFC] hwmon: Add support for W83667HG-B
-Message-ID: <20100702140944.GA14032@ericsson.com>
-References: <1278021735-21188-1-git-send-email-guenter.roeck@ericsson.com>
- <20100702092011.0acd753f@hyperion.delvare>
- <20100702080704.GA12911@ericsson.com>
- <20100702101345.6fe9d27a@hyperion.delvare>
- <20100702083144.GD12911@ericsson.com>
- <20100702115123.18e95e14@hyperion.delvare>
+	id S1758690Ab0GBOMh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 10:12:37 -0400
+Received: from leopard.mail.utk.edu ([160.36.0.85]:39000 "EHLO
+	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757230Ab0GBOMf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 10:12:35 -0400
+X-Greylist: delayed 918 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Jul 2010 10:12:35 EDT
+Date: Fri, 2 Jul 2010 09:56:22 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf wrong branches event on AMD
+In-Reply-To: <1278070727.1917.253.camel@laptop>
+Message-ID: <alpine.DEB.2.00.1007020950420.29784@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu> <1278070727.1917.253.camel@laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100702115123.18e95e14@hyperion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 05:51:23AM -0400, Jean Delvare wrote:
-> On Fri, 2 Jul 2010 01:31:44 -0700, Guenter Roeck wrote:
-> > On Fri, Jul 02, 2010 at 04:13:45AM -0400, Jean Delvare wrote:
-> > > On Fri, 2 Jul 2010 01:07:04 -0700, Guenter Roeck wrote:
-> > > > I'll also add a check for the HG-I.
-> > > 
-> > > Do you have a datasheet for that one too?
-> > > 
-> > No. However, since we have a tester, we will have test coverage,
-> > so I figured it should be worth a try. If it doesn't work
-> > I can still drop it from the final patch.
-> 
-> FYI, I have a datasheet, which unfortunately I am not allowed to share.
-> Please let me know if you want me to look up something for you.
-> 
-How about the changed registers ? Would give us an idea if the chip is closer to 
-667 or to 667-B.
+On Fri, 2 Jul 2010, Peter Zijlstra wrote:
 
-> > I suspect it is the same as the HG with a different chip ID.
+> On Thu, 2010-07-01 at 15:30 -0400, Vince Weaver wrote:
+> > This is why event selection needs to be in user-space... it could be fixed 
+> > instantly there, but the way things are done now it will take months to 
+> > years for this fix to filter down to those trying to use perf counters...
 > 
-> Beware, it's a different device number (677 vs. 667) so I would expect
-> more differences.
-> 
-Ah, I missed that. I thought it was 667-I. Yes, you are right, that suggests
-more differences.
+> Last time I checked apt-get upgrade/yum upgrade simply upgraded
+> everything, including kernels.. (and upgrades to userspace packages can
+> take months too)
 
-Guenter
+The system I have this problem on is a large server used by many people, 
+and has some fiddly hardware.  The admins don't take kernel upgrades 
+lightly.
 
-> -- 
-> Jean Delvare
+User-space libraries can be installed in my home directory, by me, with 
+no changes to anyone else using the system.
+
+> If you don't want to reboot, there's the -r option Arnaldo already
+> mentioned. There's also the option of writing a kernel module to poke at
+> the data table if you really really want to update a running kernel.
+
+You think I have root on this machine?
+
+In any case, yes, there's the "-r" option.  Fun.  I get to modify all my 
+scripts to have some complicated case... "if AMD machine and if kernel is 
+new enough"... how new?  It gets confusing once things get backported to 
+stable.  As far as I know there's no way to get a kernel to spit out what 
+raw events it's using for the predefined events.
+
+Plus, the branches:u result is giving a *wrong* event with wrong values, 
+not just a 0 count which might be suspicious.
+
+If the solution really is to use raw events in a case like this, I 
+question why the predefined events are in the kernel at all.  Pretty much 
+anyone using the braches event on an AMD machine is going to be getting 
+wrong results for all kernels between 2.6.31 and 2.6.35 and not even know 
+it unless they read the kernel list.
+
+> If you think this is a really "important" feature you could even make a
+> patch that exposes all these data tables to userspace through sysfs or
+> whatever and see if people think its worth the effort.
+
+such a library already exists, called libpfm4.  I use it when I can.
+
+Unfortunately perf is widely used and comes with the kernel.
+
+Vince
