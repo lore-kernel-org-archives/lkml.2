@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab0GBKpB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 06:45:01 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:42379 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab0GBKpA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 06:45:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=LEqoF2plib4WF5T7KTfheG6eqdw5y+LY4mFUQp8MC+mp11wpcGxGtZ1ei77lkAWlSw
-         DgHmBf3cBE+dts8+RTePVgPt50Q0/xlEUKDFV8aCzavvD+KmVLahwx6IDEQ3NXfoIFgz
-         Lgjp9VLwfWLeW/j1KMSB+JvXyz1JYMfUweS0A=
-Message-ID: <4C2DC327.1090007@redhat.com>
-Date: Fri, 02 Jul 2010 12:44:55 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
-MIME-Version: 1.0
-To: stefano@stabellini.net
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-       Stefano.Stabellini@eu.citrix.com, sheng@linux.intel.com,
-       ddutile@redhat.com, jeremy@goop.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH 10/13] Do not try to disable hpet if it hasn't been initialized
- before
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop> <1277136847-13266-10-git-send-email-stefano@stabellini.net>
-In-Reply-To: <1277136847-13266-10-git-send-email-stefano@stabellini.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754516Ab0GBKsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 06:48:24 -0400
+Received: from verein.lst.de ([213.95.11.210]:59466 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753856Ab0GBKsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 06:48:22 -0400
+Date: Fri, 2 Jul 2010 12:48:01 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: axboe@kernel.dk, snitzer@redhat.com, hch@lst.de, James.Bottomley@suse.de,
+       linux-scsi@vger.kernel.org, dm-devel@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] scsi: add sd_unprep_fn to free discard page
+Message-ID: <20100702104801.GA26318@lst.de>
+References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp> <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2010 06:14 PM, stefano@stabellini.net wrote:
-> -	if (is_hpet_capable()) {
-> -		unsigned int cfg = hpet_readl(HPET_CFG);
-> +	unsigned int cfg;
+> sd_unprep() uses rq->buffer to free discard page allocated in
+> sd_prepare_discard().
 
-You changed this earlier from unsigned long to unsigned int, but it is 
-wrong (though it works because bits 32-63 of the HPET_CFG register are 
-unused).  Can you please make a note to change it back sometime?
+Eeek.  Accessing it using the bio in both haves seems a lot cleaner than
+abusing this.  Especially as we don't really need a mapped page anyway
+at least for WRITE SAME implementation.
 
-Thanks,
+> -	return scsi_setup_blk_pc_cmnd(sdp, rq);
+> +	ret = scsi_setup_blk_pc_cmnd(sdp, rq);
+> +	rq->buffer = page_address(page);
+> +	return ret;
 
-Paolo
+In addition I don't think this is quite correct.  You still need to undo
+the payload addition manually if scsi_setup_blk_pc_cmnd fails, as we
+haven't marked the request as REQ_DONTPREP at that point - it's only
+done by scsi_prep_return for the BLKPREP_OK case.
+
