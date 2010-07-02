@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab0GBIRx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 04:17:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58364 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756225Ab0GBIQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 04:16:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,525,1272870000"; 
-   d="scan'208";a="532503459"
-From: feng.tang@intel.com
-To: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-       hpa@zytor.com, jacob.jun.pan@intel.com, dtor@mail.ru,
-       randy.dunlap@oracle.com
-Cc: Feng Tang <feng.tang@intel.com>
-Subject: [PATCH 2/5] x86, mrst: add i8042_detect API for Moorestwon platform
-Date: Fri,  2 Jul 2010 16:35:13 +0800
-Message-Id: <1278059716-7147-3-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1278059716-7147-1-git-send-email-feng.tang@intel.com>
-References: <1278059716-7147-1-git-send-email-feng.tang@intel.com>
+	id S1756867Ab0GBIWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 04:22:35 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39753 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961Ab0GBIWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 04:22:32 -0400
+Date: Fri, 2 Jul 2010 10:22:25 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Daniel Walker <dwalker@codeaurora.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+Message-ID: <20100702082225.GA12221@basil.fritz.box>
+References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org>
+ <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org>
+ <20100701101746.3810cc3b.randy.dunlap@oracle.com>
+ <20100701180241.GA3594@basil.fritz.box>
+ <1278012503.7738.17.camel@c-dwalke-linux.qualcomm.com>
+ <20100701193850.GB3594@basil.fritz.box>
+ <4C2D0FF1.6010206@codeaurora.org>
+ <20100701230056.GD3594@basil.fritz.box>
+ <4C2D847E.5080602@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C2D847E.5080602@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Feng Tang <feng.tang@intel.com>
+On Thu, Jul 01, 2010 at 11:17:34PM -0700, Zach Pfeffer wrote:
+> Andi Kleen wrote:
+> >> The VCMM provides a more abstract, global view with finer-grained
+> >> control of each mapping a user wants to create. For instance, the
+> >> semantics of iommu_map preclude its use in setting up just the IOMMU
+> >> side of a mapping. With a one-sided map, two IOMMU devices can be
+> > 
+> > Hmm? dma_map_* does not change any CPU mappings. It only sets up
+> > DMA mapping(s).
+> 
+> Sure, but I was saying that iommu_map() doesn't just set up the IOMMU
+> mappings, its sets up both the iommu and kernel buffer mappings.
 
-It will just return 0 as there is no i8042 controller
+Normally the data is already in the kernel or mappings, so why
+would you need another CPU mapping too? Sometimes the CPU
+code has to scatter-gather, but that is considered acceptable
+(and if it really cannot be rewritten to support sg it's better
+to have an explicit vmap operation) 
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- arch/x86/kernel/mrst.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+In general on larger systems with many CPUs changing CPU mappings
+also gets expensive (because you have to communicate with all cores), 
+and is not a good idea on frequent IO paths.
 
-diff --git a/arch/x86/kernel/mrst.c b/arch/x86/kernel/mrst.c
-index e796448..5915e0b 100644
---- a/arch/x86/kernel/mrst.c
-+++ b/arch/x86/kernel/mrst.c
-@@ -216,6 +216,12 @@ static void __init mrst_setup_boot_clock(void)
- 		setup_boot_APIC_clock();
- };
- 
-+/* MID systems don't have i8042 controller */
-+static int mrst_i8042_detect(void)
-+{
-+	return 0;
-+}
-+
- /*
-  * Moorestown specific x86_init function overrides and early setup
-  * calls.
-@@ -233,6 +239,7 @@ void __init x86_mrst_early_setup(void)
- 	x86_cpuinit.setup_percpu_clockev = mrst_setup_secondary_clock;
- 
- 	x86_platform.calibrate_tsc = mrst_calibrate_tsc;
-+	x86_platform.i8042_detect = mrst_i8042_detect;
- 	x86_init.pci.init = pci_mrst_init;
- 	x86_init.pci.fixup_irqs = x86_init_noop;
- 
+> 
+> > 
+> >> Additionally, the current IOMMU interface does not allow users to
+> >> associate one page table with multiple IOMMUs unless the user explicitly
+> > 
+> > That assumes that all the IOMMUs on the system support the same page table
+> > format, right?
+> 
+> Actually no. Since the VCMM abstracts a page-table as a Virtual
+> Contiguous Region (VCM) a VCM can be associated with any device,
+> regardless of their individual page table format.
+
+But then there is no real page table sharing, isn't it? 
+The real information should be in the page tables, nowhere else.
+
+> > The standard Linux approach to such a problem is to write
+> > a library that drivers can use for common functionality, not put a middle 
+> > layer in between. Libraries are much more flexible than layers.
+> 
+> That's true up to the, "is this middle layer so useful that its worth
+> it" point. The VM is a middle layer, you could make the same argument
+> about it, "the mapping code isn't too hard, just map in the memory
+> that you need and be done with it". But the VM middle layer provides a
+> clean separation between page frames and pages which turns out to be
+
+Actually we use both PFNs and struct page *s in many layers up
+and down, there's not really any layering in that.
+
+-Andi
 -- 
-1.7.0.4
-
+ak@linux.intel.com -- Speaking for myself only.
