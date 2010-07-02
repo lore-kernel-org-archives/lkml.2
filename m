@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964Ab0GBLeo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 07:34:44 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:46971 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438Ab0GBLem (ORCPT
+	id S1757021Ab0GBLjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 07:39:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60680 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756584Ab0GBLjE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 07:34:42 -0400
-Date: Fri, 2 Jul 2010 16:58:36 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv7 2.6.35-rc3-tip 11/11]  perf: perf interface for
- uprobes
-Message-ID: <20100702112836.GC20680@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100629183454.32537.63582.sendpatchset@localhost6.localdomain6>
- <20100629183704.32537.28871.sendpatchset@localhost6.localdomain6>
- <4C2C2ECC.5060700@hitachi.com>
- <4C2DCC9D.1020001@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4C2DCC9D.1020001@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 2 Jul 2010 07:39:04 -0400
+Subject: Re: [PATCH] perf wrong branches event on AMD
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 02 Jul 2010 13:38:47 +0200
+Message-ID: <1278070727.1917.253.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-07-01 at 15:30 -0400, Vince Weaver wrote:
+> This is why event selection needs to be in user-space... it could be fixed 
+> instantly there, but the way things are done now it will take months to 
+> years for this fix to filter down to those trying to use perf counters...
 
-> Masami Hiramatsu wrote:
-> > Srikar Dronamraju wrote:
-> >> perf: perf interface for uprobes
-> >>
-> >> Changelog from v4: Merged to 2.6.35-rc3-tip.
-> >>
-> >> Changelog from v3: (addressed comments from Masami Hiramatsu)
-> >> 	* Every process id has a different group name.
-> >> 	* event name starts with function name.
-> >> 	* If vaddr is specified, event name has vaddr appended
-> >> 	  along with function name, (this is to avoid subsequent probes
-> >> 	  using same event name.)
-> >> 	* warning if -p and --list options are used together.
-> >>
-> >> 	Also dso can either be a short name or absolute path.
-> >>
-> >> Enhances perf probe to accept pid and user vaddr.
-> >> Provides very basic support for uprobes.
-> > 
-> > It's unsure what will happen if user sets a probe by line number...
-> > I'd like to suggest you if need_dwarf && uid, it should show an error message.
-> > But other parts are OK for me.
-> 
-> I've checked that perf probe was stopped by SEGV in convert_name_to_addr() with
-> below options.
-> 
-> # perf probe -u 2403 hoge.c:100
+Last time I checked apt-get upgrade/yum upgrade simply upgraded
+everything, including kernels.. (and upgrades to userspace packages can
+take months too)
 
-It should have been perf probe -p 2403 hode.c:100 
+Someone needs to build a new package and publish it, upgrading the
+kernel is no harder than upgrading any other.
 
-However I have taken your comment and fixed that part of the code.
-So if it uprobe based probes and need_dwarf is set, it errors out.
+If you don't want to reboot, there's the -r option Arnaldo already
+mentioned. There's also the option of writing a kernel module to poke at
+the data table if you really really want to update a running kernel.
 
-> 
-> because pp->function == NULL.
-> 
-> Thank you,
+If you think this is a really "important" feature you could even make a
+patch that exposes all these data tables to userspace through sysfs or
+whatever and see if people think its worth the effort.
+
+Personally I don't think people will ever use such a sysfs interface,
+but hey, that's my opinion.
