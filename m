@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462Ab0GBXNu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 19:13:50 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:39832 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756168Ab0GBXNs (ORCPT
+	id S1754692Ab0GBXm3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 19:42:29 -0400
+Received: from blv-smtpout-01.boeing.com ([130.76.32.69]:38104 "EHLO
+	blv-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab0GBXm1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 19:13:48 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=caP4Bjo+RVO6RbR3hvviHhFXl6m1IGfYoeO75hX7XW+A8pbpuYPBk9YFBUXp9zP+1LKeq2fOyYnZw9UDl5jYFlBzUNlJ69wYSe7G/RjvidpgDhUGok+ZoV+bPkRERal8;
-Date: Fri, 2 Jul 2010 16:13:46 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       lrodriguez@atheros.com, maximlevitsky@gmail.com
-Subject: Re: [PATCH] PCI: Default PCIe ASPM control to on and require
- !EMBEDDED to disable
-Message-ID: <20100702161346.78896982@virtuousgeek.org>
-In-Reply-To: <1277240583-5607-1-git-send-email-mjg@redhat.com>
-References: <1277240583-5607-1-git-send-email-mjg@redhat.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Fri, 2 Jul 2010 19:42:27 -0400
+X-Greylist: delayed 688 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Jul 2010 19:42:27 EDT
+From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Kumar Gala <galak@kernel.crashing.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Kyle D Moffett <kyle@moffetthome.net>
+Date: Fri, 2 Jul 2010 18:30:47 -0500
+Subject: [P2020] "Processor 1 is stuck" (introduced by 8b27f0b61)
+Thread-Topic: [P2020] "Processor 1 is stuck" (introduced by 8b27f0b61)
+Thread-Index: AcsaPpzeRs62FSfETumPyMsY8YLdrA==
+Message-ID: <BAD2EBFA-91F7-478B-8BA8-F7A099050A2F@boeing.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jun 2010 17:03:03 -0400
-Matthew Garrett <mjg@redhat.com> wrote:
+Hello,
 
-> The CONFIG_PCIEASPM option is confusing and potentially dangerous. ASPM is
-> a hardware mediated feature rather than one under direct OS control, and
-> even if the config option is disabled the system firmware may have turned
-> on ASPM on various bits of hardware. This can cause problems later -
-> various hardware that claims to support ASPM does a poor job of it and may
-> hang or cause other difficulties. The kernel is able to recognise this in
-> many cases and disable the ASPM functionality, but only if CONFIG_PCIEASPM
-> is enabled.
-> 
-> Given that in its default configuration this option will either leave the
-> hardware as it was originally or disable hardware functionality that may
-> cause problems, it should by default y. The only reason to disable it
-> ought to be to reduce code size, so make it dependent on CONFIG_EMBEDDED.
-> 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> Cc: lrodriguez@atheros.com
-> Cc: maximlevitsky@gmail.com
-> ---
->  drivers/pci/pcie/Kconfig |   20 ++++++++++++++------
->  1 files changed, 14 insertions(+), 6 deletions(-)
-> 
+I'm working on a new board port to a P2020-based system (e500v2) and I appear to be hitting a regression which causes the second core to fail to come up at boot with a "Processor 1 is stuck" message.
 
-Applied to my linux-next branch, thanks.
+In the successful case (my board support patches on top of v2.6.32):
+> smp_85xx_kick_cpu: kick CPU #1
+> smp_85xx_kick_cpu: cpu-release-addr: 0x7ffff280
+> smp_85xx_kick_cpu: got virt addr:    0xf1014280
+> waited 1 msecs for CPU #1
+> Processor 1 found.
+> Brought up 2 CPUs
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+In the failing case (with board support patches on top of either 8b27f0b61 or v2.6.34):
+> smp_85xx_kick_cpu: kick CPU #1
+> smp_85xx_kick_cpu: cpu-release-addr: 0x7ffff280
+> smp_85xx_kick_cpu: got virt addr:    0xf1014280
+> waited 1 msecs for CPU #1
+> [...5 second delay here...]
+> Processor 1 is stuck.
+> Brought up 1 CPUs
+
+I believe I've bisected a bug to this commit:
+
+> Commit: 8b27f0b61db57f5555fc2d3fc95c3ea9fd1a9d6c
+> Author: Kumar Gala <galak@kernel.crashing.org>
+> 
+> powerpc/fsl-booke: Rework TLB CAM code
+> * Bump'd # of CAM entries to 64 to support e500mc
+> * Make the code handle MAS7 properly
+> * Use pr_cont instead of creating a string as we go
+
+If I revert 8b27f0b61 on top of v2.6.34 (I fixed the conflicts by deleting the extra hunks), both CPUs come up properly.  My current board support files can be browsed via gitweb or cloned via smart-http or natively from here:
+  http://opensource.exmeritus.com/git/hww-1u-1a/linux.git
+  git://opensource.exmeritus.com/hww-1u-1a/linux.git
+
+The "latest-v2.6.34" branch is based on v2.6.34 and does not work (Processor 1 is stuck), the "latest-v2.6.32" branch is based on v2.6.32.15 and works correctly.
+
+Our U-Boot port can be browsed here:
+  http://opensource.exmeritus.com/git/hww-1u-1a/u-boot.git
+  git://opensource.exmeritus.com/hww-1u-1a/u-boot.git
+
+Any help you can provide would be greatly appreciated.
+
+Cheers,
+Kyle Moffett
+
