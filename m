@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759936Ab0GBTww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 15:52:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35062 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757401Ab0GBTwt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 15:52:49 -0400
-Date: Fri, 2 Jul 2010 12:51:55 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
-Message-Id: <20100702125155.69c02f85.akpm@linux-foundation.org>
-In-Reply-To: <1277811288-5195-13-git-send-email-mel@csn.ul.ie>
-References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
-	<1277811288-5195-13-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759984Ab0GBT6l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 15:58:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759688Ab0GBT6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 15:58:33 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: linux-ext4@vger.kernel.org
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
+       tao.ma@oracle.com, Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH 4/6] jbd: use WRITE_SYNC for journal I/O
+Date: Fri,  2 Jul 2010 15:58:17 -0400
+Message-Id: <1278100699-24132-5-git-send-email-jmoyer@redhat.com>
+In-Reply-To: <1278100699-24132-1-git-send-email-jmoyer@redhat.com>
+References: <1278100699-24132-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010 12:34:46 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
+In my fsync testing, journal I/O most definitely was sync I/O, since
+another process was blocked waiting for the results.  By marking all
+journal I/O as WRITE_SYNC, I can get better performance with CFQ.
 
-> When memory is under enough pressure, a process may enter direct
-> reclaim to free pages in the same manner kswapd does. If a dirty page is
-> encountered during the scan, this page is written to backing storage using
-> mapping->writepage. This can result in very deep call stacks, particularly
-> if the target storage or filesystem are complex. It has already been observed
-> on XFS that the stack overflows but the problem is not XFS-specific.
-> 
-> This patch prevents direct reclaim writing back pages by not setting
-> may_writepage in scan_control. Instead, dirty pages are placed back on the
-> LRU lists for either background writing by the BDI threads or kswapd. If
-> in direct lumpy reclaim and dirty pages are encountered, the process will
-> stall for the background flusher before trying to reclaim the pages again.
-> 
-> Memory control groups do not have a kswapd-like thread nor do pages get
-> direct reclaimed from the page allocator. Instead, memory control group
-> pages are reclaimed when the quota is being exceeded or the group is being
-> shrunk. As it is not expected that the entry points into page reclaim are
-> deep call chains memcg is still allowed to writeback dirty pages.
+If there is a way to mark this only for cases where it is blocking progress
+in a dependent process, then that would be preferrable.  Is there such a
+means for determining and flagging this?
 
-I already had "[PATCH 01/14] vmscan: Fix mapping use after free" and
-I'll send that in for 2.6.35.
+Cheers,
+Jeff
 
-I grabbed [02/14] up to [11/14].  Including "[PATCH 06/14] vmscan: kill
-prev_priority completely", grumpyouallsuck.
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+---
+ fs/jbd/commit.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I wimped out at this, "Do not writeback pages in direct reclaim".  It
-really is a profound change and needs a bit more thought, discussion
-and if possible testing which is designed to explore possible pathologies.
+diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+index 28a9dda..d97a0c6 100644
+--- a/fs/jbd/commit.c
++++ b/fs/jbd/commit.c
+@@ -317,7 +317,7 @@ void journal_commit_transaction(journal_t *journal)
+ 	int first_tag = 0;
+ 	int tag_flag;
+ 	int i;
+-	int write_op = WRITE;
++	int write_op = WRITE_SYNC;
+ 
+ 	/*
+ 	 * First job: lock down the current transaction and wait for
+-- 
+1.6.5.2
 
