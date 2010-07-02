@@ -1,62 +1,407 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229Ab0GBQaO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 12:30:14 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44860 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755246Ab0GBQaM (ORCPT
+	id S1759206Ab0GBQhX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 12:37:23 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59891 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757319Ab0GBQhV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 12:30:12 -0400
-Date: Fri, 2 Jul 2010 12:26:50 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Priit Laes <plaes@plaes.org>
-Cc: netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: iwl3945: HARDWARE GONE??
-Message-ID: <20100702162650.GC2381@tuxdriver.com>
-References: <1278086575.2889.8.camel@chi>
+	Fri, 2 Jul 2010 12:37:21 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "ohad@wizery.com" <ohad@wizery.com>,
+       "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+       "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
+Date: Fri, 2 Jul 2010 11:37:16 -0500
+Subject: RE: [PATCH 5/9] dspbridge: add mmufault support
+Thread-Topic: [PATCH 5/9] dspbridge: add mmufault support
+Thread-Index: AcsZr7C4wGdE6arZR9Gpr5/HEVPn/gAU8cKA
+Message-ID: <496565EC904933469F292DDA3F1663E602CBDD3AF0@dlee06.ent.ti.com>
+References: <1277943660-4112-4-git-send-email-x0095840@ti.com>
+	<1277943660-4112-5-git-send-email-x0095840@ti.com>
+	<1277943660-4112-6-git-send-email-x0095840@ti.com>
+ <20100702.092731.39168665.Hiroshi.DOYU@nokia.com>
+In-Reply-To: <20100702.092731.39168665.Hiroshi.DOYU@nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278086575.2889.8.camel@chi>
-User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 07:02:55PM +0300, Priit Laes wrote:
-> Heya!
-> 
-> Bumped my kernel to version 2.6.35-rc3-00391-g97e0214 and ran into
-> HARDWARE GONE error message..
-> 
-> Hardware is Lenovo x60s and wireless card is intel 3945:
-> 
-> 03:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG [Golan] Network Connection (rev 02)
-> 	Subsystem: Intel Corporation ThinkPad R60e/X60s
-> 	Flags: bus master, fast devsel, latency 0, IRQ 47
-> 	Memory at edf00000 (32-bit, non-prefetchable) [size=4K]
-> 	Capabilities: [c8] Power Management version 2
-> 	Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-> 	Capabilities: [e0] Express Legacy Endpoint, MSI 00
-> 	Capabilities: [100] Advanced Error Reporting
-> 	Capabilities: [140] Device Serial Number 00-xx-xx-xx-xx-xx-xx-xx
-> 	Kernel driver in use: iwl3945
-> 	Kernel modules: iwl3945
-> 
-> I have attached dmesg error message...
-> 
-> Cheers,
-> Priit :)
 
-> [13813.347617] Uhhuh. NMI received for unknown reason a1 on CPU 0.
-> [13813.347617] You have some hardware problem, likely on the PCI bus.
-> [13813.347617] Dazed and confused, but trying to continue
-> [13813.347617] iwl3945 0000:03:00.0: HARDWARE GONE?? INTA == 0xffffffff
+Hi Hiroshi,
 
-We've been seeing this sort of thing a lot -- somehow the iwl3945 gets
-disconnected from the PCI bus.  Anyone have any clue how that happens?
+> -----Original Message-----
+> From: Hiroshi DOYU [mailto:Hiroshi.DOYU@nokia.com]
+> Sent: Friday, July 02, 2010 1:28 AM
+> To: Guzman Lugo, Fernando
+> Cc: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org;
+> ohad@wizery.com; ameya.palande@nokia.com; felipe.contreras@nokia.com
+> Subject: Re: [PATCH 5/9] dspbridge: add mmufault support
+> 
+> Hi Fernando,
+> 
+> From: ext Fernando Guzman Lugo <x0095840@ti.com>
+> Subject: [PATCH 5/9] dspbridge: add mmufault support
+> Date: Thu, 1 Jul 2010 02:20:56 +0200
+> 
+> > With changes for iommu migration mmu fault report and dsp track
+> > dump is broken, this patch fixes that.
+> >
+> > Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+> > ---
+> >  drivers/dsp/bridge/core/mmu_fault.c  |   93 ++++++---------------------
+> ------
+> >  drivers/dsp/bridge/core/mmu_fault.h  |    5 +-
+> >  drivers/dsp/bridge/core/tiomap3430.c |    2 +
+> >  drivers/dsp/bridge/core/ue_deh.c     |   31 +++++-------
+> >  4 files changed, 34 insertions(+), 97 deletions(-)
+> >
+> > diff --git a/drivers/dsp/bridge/core/mmu_fault.c
+> b/drivers/dsp/bridge/core/mmu_fault.c
+> > index 5c0124f..d991c6a 100644
+> > --- a/drivers/dsp/bridge/core/mmu_fault.c
+> > +++ b/drivers/dsp/bridge/core/mmu_fault.c
+> > @@ -23,9 +23,12 @@
+> >  /*  ----------------------------------- Trace & Debug */
+> >  #include <dspbridge/host_os.h>
+> >  #include <dspbridge/dbc.h>
+> > +#include <plat/iommu.h>
+> >
+> >  /*  ----------------------------------- OS Adaptation Layer */
+> >  #include <dspbridge/drv.h>
+> > +#include <dspbridge/dev.h>
+> > +
+> >
+> >  /*  ----------------------------------- Link Driver */
+> >  #include <dspbridge/dspdeh.h>
+> > @@ -40,11 +43,6 @@
+> >  #include "_tiomap.h"
+> >  #include "mmu_fault.h"
+> >
+> > -static u32 dmmu_event_mask;
+> > -u32 fault_addr;
+> > -
+> > -static bool mmu_check_if_fault(struct bridge_dev_context *dev_context);
+> > -
+> >  /*
+> >   *  ======== mmu_fault_dpc ========
+> >   *      Deferred procedure call to handle DSP MMU fault.
+> > @@ -62,78 +60,21 @@ void mmu_fault_dpc(IN unsigned long pRefData)
+> >   *  ======== mmu_fault_isr ========
+> >   *      ISR to be triggered by a DSP MMU fault interrupt.
+> >   */
+> > -irqreturn_t mmu_fault_isr(int irq, IN void *pRefData)
+> > -{
+> > -	struct deh_mgr *deh_mgr_obj = (struct deh_mgr *)pRefData;
+> > -	struct bridge_dev_context *dev_context;
+> > -	struct cfg_hostres *resources;
+> > -
+> > -	DBC_REQUIRE(irq == INT_DSP_MMU_IRQ);
+> > -	DBC_REQUIRE(deh_mgr_obj);
+> > -
+> > -	if (deh_mgr_obj) {
+> > -
+> > -		dev_context =
+> > -		    (struct bridge_dev_context *)deh_mgr_obj->hbridge_context;
+> > -
+> > -		resources = dev_context->resources;
+> > -
+> > -		if (!resources) {
+> > -			dev_dbg(bridge, "%s: Failed to get Host Resources\n",
+> > -				__func__);
+> > -			return IRQ_HANDLED;
+> > -		}
+> > -		if (mmu_check_if_fault(dev_context)) {
+> > -			printk(KERN_INFO "***** DSPMMU FAULT ***** IRQStatus "
+> > -			       "0x%x\n", dmmu_event_mask);
+> > -			printk(KERN_INFO "***** DSPMMU FAULT ***** fault_addr "
+> > -			       "0x%x\n", fault_addr);
+> > -			/*
+> > -			 * Schedule a DPC directly. In the future, it may be
+> > -			 * necessary to check if DSP MMU fault is intended for
+> > -			 * Bridge.
+> > -			 */
+> > -			tasklet_schedule(&deh_mgr_obj->dpc_tasklet);
+> > -
+> > -			/* Reset err_info structure before use. */
+> > -			deh_mgr_obj->err_info.dw_err_mask = DSP_MMUFAULT;
+> > -			deh_mgr_obj->err_info.dw_val1 = fault_addr >> 16;
+> > -			deh_mgr_obj->err_info.dw_val2 = fault_addr & 0xFFFF;
+> > -			deh_mgr_obj->err_info.dw_val3 = 0L;
+> > -			/* Disable the MMU events, else once we clear it will
+> > -			 * start to raise INTs again */
+> > -			hw_mmu_event_disable(resources->dw_dmmu_base,
+> > -					     HW_MMU_TRANSLATION_FAULT);
+> > -		} else {
+> > -			hw_mmu_event_disable(resources->dw_dmmu_base,
+> > -					     HW_MMU_ALL_INTERRUPTS);
+> > -		}
+> > -	}
+> > -	return IRQ_HANDLED;
+> > -}
+> > +int mmu_fault_isr(struct iommu *mmu)
+> >
+> > -/*
+> > - *  ======== mmu_check_if_fault ========
+> > - *      Check to see if MMU Fault is valid TLB miss from DSP
+> > - *  Note: This function is called from an ISR
+> > - */
+> > -static bool mmu_check_if_fault(struct bridge_dev_context *dev_context)
+> >  {
+> > +	struct deh_mgr *dm;
+> > +	u32 da;
+> > +
+> > +	dev_get_deh_mgr(dev_get_first(), &dm);
+> > +
+> > +	if (!dm)
+> > +		return -EPERM;
+> > +
+> > +	da = iommu_read_reg(mmu, MMU_FAULT_AD);
+> > +	iommu_write_reg(mmu, 0, MMU_IRQENABLE);
+> > +	dm->err_info.dw_val1 = da;
+> > +	tasklet_schedule(&dm->dpc_tasklet);
+> 
+> I think that the following "iommu_disable()" does disabling MMU.
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+In this point the intention is no disable the mmu, because after the mmu fault the DSP dumps its stack in the share memory and that area is mapped using iommu module, if I disable the iommmu that feature will not be possible. Also and that point I can not ack the mmu fault interrupt because the DSP is not ready to dump the stack. Then to avoid the interrupt be triggered again and again I just disable the interrupts.
+
+> 
+> 	Modified arch/arm/plat-omap/iommu.c
+> diff --git a/arch/arm/plat-omap/iommu.c b/arch/arm/plat-omap/iommu.c
+> index a202a2c..17407f1 100644
+> --- a/arch/arm/plat-omap/iommu.c
+> +++ b/arch/arm/plat-omap/iommu.c
+> @@ -800,7 +800,7 @@ static irqreturn_t iommu_fault_handler(int irq, void
+> *data)
+>  	if (!stat)
+>  		return IRQ_HANDLED;
+> 
+> -	iommu_disable(obj);
+> +	iommu_disable(obj);	<- HERE!
+> 
+>  	iopgd = iopgd_offset(obj, da);
+> 
+> You can find the latest omap iommu code from:
+> git://gitorious.org/~doyu/lk/mainline.git v2.6.35-rc3-iommu-for-next
+> 
+> Also I just thought that, passing 'da' to user callback might be
+> cleaner as below. Then you can avoid the direct access to IOMMU
+> registers. Basically we should avoid the direct access to IOMMU
+> registers from client. If you have to, then it would be better to
+> modify omap iommu code itself.
+> 
+> 	Modified arch/arm/plat-omap/iommu.c
+> diff --git a/arch/arm/plat-omap/iommu.c b/arch/arm/plat-omap/iommu.c
+> index a202a2c..64d918e 100644
+> --- a/arch/arm/plat-omap/iommu.c
+> +++ b/arch/arm/plat-omap/iommu.c
+> @@ -787,13 +787,6 @@ static irqreturn_t iommu_fault_handler(int irq, void
+> *data)
+>  	if (!obj->refcount)
+>  		return IRQ_NONE;
+> 
+> -	/* Dynamic loading TLB or PTE */
+> -	if (obj->isr)
+> -		err = obj->isr(obj);
+> -
+> -	if (!err)
+> -		return IRQ_HANDLED;
+> -
+>  	clk_enable(obj->clk);
+>  	stat = iommu_report_fault(obj, &da);
+>  	clk_disable(obj->clk);
+> @@ -802,6 +795,13 @@ static irqreturn_t iommu_fault_handler(int irq, void
+> *data)
+> 
+>  	iommu_disable(obj);
+> 
+> +	/* user registered callback */
+> +	if (obj->isr)
+> +		err = obj->isr(obj, da);
+> +
+> +	if (!err)
+> +		return IRQ_HANDLED;
+> +
+>  	iopgd = iopgd_offset(obj, da);
+> 
+> >
+> > -	bool ret = false;
+> > -	hw_status hw_status_obj;
+> > -	struct cfg_hostres *resources = dev_context->resources;
+> > -
+> > -	if (!resources) {
+> > -		dev_dbg(bridge, "%s: Failed to get Host Resources in\n",
+> > -			__func__);
+> > -		return ret;
+> > -	}
+> > -	hw_status_obj =
+> > -	    hw_mmu_event_status(resources->dw_dmmu_base, &dmmu_event_mask);
+> > -	if (dmmu_event_mask == HW_MMU_TRANSLATION_FAULT) {
+> > -		hw_mmu_fault_addr_read(resources->dw_dmmu_base, &fault_addr);
+> > -		ret = true;
+> > -	}
+> > -	return ret;
+> > +	return 0;
+> >  }
+> > diff --git a/drivers/dsp/bridge/core/mmu_fault.h
+> b/drivers/dsp/bridge/core/mmu_fault.h
+> > index 74db489..df3fba6 100644
+> > --- a/drivers/dsp/bridge/core/mmu_fault.h
+> > +++ b/drivers/dsp/bridge/core/mmu_fault.h
+> > @@ -19,8 +19,6 @@
+> >  #ifndef MMU_FAULT_
+> >  #define MMU_FAULT_
+> >
+> > -extern u32 fault_addr;
+> > -
+> >  /*
+> >   *  ======== mmu_fault_dpc ========
+> >   *      Deferred procedure call to handle DSP MMU fault.
+> > @@ -31,6 +29,7 @@ void mmu_fault_dpc(IN unsigned long pRefData);
+> >   *  ======== mmu_fault_isr ========
+> >   *      ISR to be triggered by a DSP MMU fault interrupt.
+> >   */
+> > -irqreturn_t mmu_fault_isr(int irq, IN void *pRefData);
+> > +int mmu_fault_isr(struct iommu *mmu);
+> > +
+> >
+> >  #endif /* MMU_FAULT_ */
+> > diff --git a/drivers/dsp/bridge/core/tiomap3430.c
+> b/drivers/dsp/bridge/core/tiomap3430.c
+> > index 96cceea..89867e7 100644
+> > --- a/drivers/dsp/bridge/core/tiomap3430.c
+> > +++ b/drivers/dsp/bridge/core/tiomap3430.c
+> > @@ -57,6 +57,7 @@
+> >  #include "_tiomap.h"
+> >  #include "_tiomap_pwr.h"
+> >  #include "tiomap_io.h"
+> > +#include "mmu_fault.h"
+> >
+> >  /* Offset in shared mem to write to in order to synchronize start with
+> DSP */
+> >  #define SHMSYNCOFFSET 4		/* GPP byte offset */
+> > @@ -382,6 +383,7 @@ static int bridge_brd_start(struct
+> bridge_dev_context *hDevContext,
+> >  		goto end;
+> >  	}
+> >  	dev_context->dsp_mmu = mmu;
+> > +	mmu->isr = mmu_fault_isr;
+> >  	sm_sg = dev_context->sh_s;
+> >
+> >  	sm_sg->seg0_da = iommu_kmap(mmu, sm_sg->seg0_da, sm_sg->seg0_pa,
+> > diff --git a/drivers/dsp/bridge/core/ue_deh.c
+> b/drivers/dsp/bridge/core/ue_deh.c
+> > index ce13e6c..a03d172 100644
+> > --- a/drivers/dsp/bridge/core/ue_deh.c
+> > +++ b/drivers/dsp/bridge/core/ue_deh.c
+> > @@ -18,6 +18,7 @@
+> >
+> >  /*  ----------------------------------- Host OS */
+> >  #include <dspbridge/host_os.h>
+> > +#include <plat/iommu.h>
+> >
+> >  /*  ----------------------------------- DSP/BIOS Bridge */
+> >  #include <dspbridge/std.h>
+> > @@ -51,12 +52,6 @@
+> >  #include "_tiomap_pwr.h"
+> >  #include <dspbridge/io_sm.h>
+> >
+> > -
+> > -static struct hw_mmu_map_attrs_t map_attrs = { HW_LITTLE_ENDIAN,
+> > -	HW_ELEM_SIZE16BIT,
+> > -	HW_MMU_CPUES
+> > -};
+> > -
+> >  static void *dummy_va_addr;
+> >
+> >  int bridge_deh_create(struct deh_mgr **ret_deh_mgr,
+> > @@ -154,10 +149,10 @@ int bridge_deh_register_notify(struct deh_mgr
+> *deh_mgr, u32 event_mask,
+> >  void bridge_deh_notify(struct deh_mgr *deh_mgr, u32 ulEventMask, u32
+> dwErrInfo)
+> >  {
+> >  	struct bridge_dev_context *dev_context;
+> > -	int status = 0;
+> >  	u32 hw_mmu_max_tlb_count = 31;
+> >  	struct cfg_hostres *resources;
+> > -	hw_status hw_status_obj;
+> > +	u32 fault_addr, tmp;
+> > +	struct iotlb_entry e;
+> >
+> >  	if (!deh_mgr)
+> >  		return;
+> > @@ -181,6 +176,9 @@ void bridge_deh_notify(struct deh_mgr *deh_mgr, u32
+> ulEventMask, u32 dwErrInfo)
+> >  		break;
+> >  	case DSP_MMUFAULT:
+> >  		/* MMU fault routine should have set err info structure. */
+> > +		fault_addr = iommu_read_reg(dev_context->dsp_mmu,
+> > +							MMU_FAULT_AD);
+> > +
+> >  		deh_mgr->err_info.dw_err_mask = DSP_MMUFAULT;
+> >  		dev_err(bridge, "%s: %s, err_info = 0x%x\n",
+> >  				__func__, "DSP_MMUFAULT", dwErrInfo);
+> > @@ -206,21 +204,18 @@ void bridge_deh_notify(struct deh_mgr *deh_mgr,
+> u32 ulEventMask, u32 dwErrInfo)
+> >  			dev_context->num_tlb_entries =
+> >  				dev_context->fixed_tlb_entries;
+> >  		}
+> > -		if (DSP_SUCCEEDED(status)) {
+> > -			hw_status_obj =
+> > -				hw_mmu_tlb_add(resources->dw_dmmu_base,
+> > -						virt_to_phys(dummy_va_addr),
+> fault_addr,
+> > -						HW_PAGE_SIZE4KB, 1,
+> > -						&map_attrs, HW_SET, HW_SET);
+> > -		}
+> > +		dsp_iotlb_init(&e, fault_addr & PAGE_MASK,
+> > +			virt_to_phys(dummy_va_addr), IOVMF_PGSZ_4K);
+> > +		load_iotlb_entry(dev_context->dsp_mmu, &e);
+> > +
+> >
+> >  		dsp_clk_enable(DSP_CLK_GPT8);
+> >
+> >  		dsp_gpt_wait_overflow(DSP_CLK_GPT8, 0xfffffffe);
+> >
+> > -		/* Clear MMU interrupt */
+> > -		hw_mmu_event_ack(resources->dw_dmmu_base,
+> > -				HW_MMU_TRANSLATION_FAULT);
+> > +		tmp = iommu_read_reg(dev_context->dsp_mmu, MMU_IRQSTATUS);
+> > +		iommu_write_reg(dev_context->dsp_mmu, tmp, MMU_IRQSTATUS);
+> > +
+> 
+> Why is the above necessary?
+
+What you mean?
+
+a) The replacement of the function?
+
+All custom mmu api's are removed, so the hw_mmu_event_ack is not a valid function any more.
+
+
+b) acking mmu fault interrupt?
+
+After the mmu fault the iva2 iommu prevent DSP to continue executing until the ack is done. And in this point we need let DSP continue in order to dsp its stack in share memory.
+
+
+
+Thanks for the comments,
+Regards,
+Fernando.
+
+> 
+> >  		dump_dsp_stack(deh_mgr->hbridge_context);
+> >  		dsp_clk_disable(DSP_CLK_GPT8);
+> >  		break;
+> > --
+> > 1.6.3.3
+> >
