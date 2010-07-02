@@ -1,74 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab0GBL76 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 07:59:58 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64584 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab0GBL75 (ORCPT
+	id S1755672Ab0GBMBZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 08:01:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48595 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595Ab0GBMBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 07:59:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type;
-        b=knm/2oajZW3pxhjgUlxitKTxxfwMnBnyk+lvtci0wX0KrwSxH+fJ2g8OBeCbqPkiI4
-         ouk2+tBy7ItlXBJHDQ0l/hpbhH0CegatinJu21qg3H/5/oo6IeWHJUYv6Jvb+JBPcj1O
-         VZT6T6oG4h8kLwEbxdsi3NsX4wxsXo5KkLsKU=
+	Fri, 2 Jul 2010 08:01:24 -0400
+Message-ID: <4C2DD69E.6070509@pathscale.com>
+Date: Fri, 02 Jul 2010 19:07:58 +0700
+From: =?ISO-8859-1?Q?=22C=2E_Bergstr=F6m=22?= <cbergstrom@pathscale.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090909)
 MIME-Version: 1.0
-Date: Fri, 2 Jul 2010 15:59:54 +0400
-X-Google-Sender-Auth: de8n7XFSs2FjWvCrObnmTRWKbJw
-Message-ID: <AANLkTimVTMsVkSBHWLve8t76-YkoSYposgv9wHir_wPa@mail.gmail.com>
-Subject: [PATCH] Fixed division by zero bug in kernel/padata.c
-From: Dan Kruchinin <dkruchinin@acm.org>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Content-Type: text/plain; charset=UTF-8
+To: Dave Airlie <airlied@gmail.com>
+CC: Luc Verhaegen <libv@skynet.be>, LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: Closed source userspace graphics drivers with an open source
+ 	kernel component
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>	<20100702095815.GA6802@skynet.be>	<AANLkTimNgjtvDYY42dm-6akRjQfkHayagQWwHSS3AQs7@mail.gmail.com>	<20100702111029.GB6802@skynet.be> <AANLkTikomWNbwHT-kQOm8UsUS1xkMW69cZ-mC6d8Dj56@mail.gmail.com>
+In-Reply-To: <AANLkTikomWNbwHT-kQOm8UsUS1xkMW69cZ-mC6d8Dj56@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- When boot CPU(typically CPU #0) is excluded from padata cpumask and
- user enters halt command from console, kernel faults on division by zero;
- This occurs because during the halt kernel shuts down each non-boot CPU one
- by one and after it shuts down the last CPU that is set in the padata cpumask,
- the only working CPU in the system is a boot CPU(#0) and it's the only CPU that
- is set in the cpu_active_mask. Hence when padata_cpu_callback calls
- __padata_remove_cpu(which calls padata_alloc_pd) it appears that
-padata cpumask and
- cpu_active_mask aren't intersect. Hence the following code in
-padata_alloc_pd causes
- a DZ error exception:
-  cpumask_and(pd->cpumask, cpumask, cpu_active_mask); // pd->cpumask
-will be empty
-  ...
-  num_cpus = cpumask_weight(pd->cpumask); // num_cpus = 0
-  pd->max_seq_nr = (MAX_SEQ_NR / num_cpus) * num_cpus - 1; // DZ!
+Dave Airlie wrote:
+> What potential? there are maybe 6 players on the ARM graphics scene
+>
+> ...
+> Nvidia - well we know their position will never change.
+>   
+Never say never.  I have every reason to believe that Nvidia would 
+respond to market demand.
 
+*fingers crossed*
 
-Signed-off-by: Dan Kruchinin <dkruchinin@acm.org>
----
- kernel/padata.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+./C
 
-diff --git a/kernel/padata.c b/kernel/padata.c
-index fdd8ae6..dbe6d26 100644
---- a/kernel/padata.c
-+++ b/kernel/padata.c
-@@ -434,7 +434,7 @@ static struct parallel_data
-*padata_alloc_pd(struct padata_instance *pinst,
- 		atomic_set(&queue->num_obj, 0);
- 	}
-
--	num_cpus = cpumask_weight(pd->cpumask);
-+	num_cpus = cpumask_weight(pd->cpumask) + 1;
- 	pd->max_seq_nr = (MAX_SEQ_NR / num_cpus) * num_cpus - 1;
-
- 	setup_timer(&pd->timer, padata_reorder_timer, (unsigned long)pd);
--- 
-1.7.1
-
-
--- 
-W.B.R.
-Dan Kruchinin
