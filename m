@@ -1,35 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab0GBLMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 07:12:40 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:57189 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745Ab0GBLMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 07:12:38 -0400
-Date: Fri, 2 Jul 2010 13:12:36 +0200
-From: Luc Verhaegen <libv@skynet.be>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: Closed source userspace graphics drivers with an open source
-	kernel component
-Message-ID: <20100702111236.GC6802@skynet.be>
-References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com> <20100702095815.GA6802@skynet.be> <20100702101535.GA9674@infradead.org>
+	id S1756482Ab0GBLUP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 07:20:15 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:45259 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753172Ab0GBLUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 07:20:12 -0400
+Date: Fri, 2 Jul 2010 13:21:41 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Dan Kruchinin <dkruchinin@acm.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH 2/2] pcrypt: sysfs interface
+Message-ID: <20100702112141.GJ10072@secunet.com>
+References: <20100629203939.29a0b4ff@leibniz>
+ <20100630124742.GD10072@secunet.com>
+ <AANLkTimSgp_5LwfvECaAFnW-_UwxwsYVEjKcZTDIHadx@mail.gmail.com>
+ <20100702090801.GG10072@secunet.com>
+ <AANLkTinFqMtdfvbYDIGjQHoWa3dmUuruTvxG-upUU-7S@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100702101535.GA9674@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTinFqMtdfvbYDIGjQHoWa3dmUuruTvxG-upUU-7S@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 02 Jul 2010 11:20:02.0769 (UTC) FILETIME=[83F4F410:01CB19D8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 06:15:35AM -0400, Christoph Hellwig wrote:
-> Luc, can you please take your corporate bullshit out of this?  I can
-> assume you know Dave personally and should be clearly aware that he's
-> everything but a corporate drone.
+On Fri, Jul 02, 2010 at 02:20:15PM +0400, Dan Kruchinin wrote:
+> >
+> > Yes, I thought about something like this. You can still take the sum
+> > over the percpu objects when you output the statistics.
+> 
+> But summation can not be clear without some kind of lock because
+> while we're summing another CPU can increase or decrease its percpu statistic
+> counters. Then each statistic percpu counter must be modified under lock, right?
+> 
 
-Yes, with mails like this he clearly shows that he isn't a corporate drone.
+Yes, the counters must accessed under lock. In the fastpath functions you 
+hold the appropriate lock anyway. Modifying a local percpu value should
+not be too painfull there.
 
-Luc Verhaegen.
+The expensive thing is to access the percpu statistics, but this happens
+on demand and is probaply a rare event.
+
+Steffen
