@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151Ab0GBQ0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 12:26:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64404 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125Ab0GBQ0F (ORCPT
+	id S1759222Ab0GBQ1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 12:27:16 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59329 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759089Ab0GBQ1O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 12:26:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=L8b+bkxeWaF32UdyGHDAxSDMky6bbrn1pjjuOmULFC5Cl1Y+kQPzMxREN/W/RrPQyc
-         VgC+huvwDItt5h7m4/dHYfgVxFVf4LtkrFXp6GbyCaxCvSEQeAOJqJ/LzfoHohAWfVxf
-         t16bczpWMSbZOrLeGTMkmxYKfcjaTQLkJ9VJE=
-Message-ID: <4C2E1319.2050007@gmail.com>
-Date: Fri, 02 Jul 2010 18:26:01 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Fri, 2 Jul 2010 12:27:14 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "ohad@wizery.com" <ohad@wizery.com>,
+       "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
+       "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+       "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>
+Date: Fri, 2 Jul 2010 11:27:09 -0500
+Subject: RE: [PATCH 8/9] dspbridge: add map support for big buffers
+Thread-Topic: [PATCH 8/9] dspbridge: add map support for big buffers
+Thread-Index: AcsYsiGs9TjFYcgfQgej6lNQk7fClgAw2joAACMEqqA=
+Message-ID: <496565EC904933469F292DDA3F1663E602CBDD3ADE@dlee06.ent.ti.com>
+References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
+ <1277943660-4112-2-git-send-email-x0095840@ti.com>
+ <1277943660-4112-3-git-send-email-x0095840@ti.com>
+ <1277943660-4112-4-git-send-email-x0095840@ti.com>
+ <1277943660-4112-5-git-send-email-x0095840@ti.com>
+ <1277943660-4112-6-git-send-email-x0095840@ti.com>
+ <1277943660-4112-7-git-send-email-x0095840@ti.com>
+ <1277943660-4112-8-git-send-email-x0095840@ti.com>
+ <1277943660-4112-9-git-send-email-x0095840@ti.com>
+ <8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
+In-Reply-To: <8F7AF80515AF0D4D93307E594F3CB40E4CAD34D5@dlee03.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: David Howells <dhowells@redhat.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
-       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
-       akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
-       dwalker@codeaurora.org, florian@mickler.org, andi@firstfloor.org,
-       mst@redhat.com, randy.dunlap@oracle.com,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 4/4] async: use workqueue for worker pool
-References: <4C2A2688.1020206@kernel.org> <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <25085.1277847455@redhat.com> <4C2DAEBB.7090607@kernel.org> <4C2DB084.5040205@gmail.com> <4C2E0147.1090702@s5r6.in-berlin.de>
-In-Reply-To: <4C2E0147.1090702@s5r6.in-berlin.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2010 05:09 PM, Stefan Richter wrote:
-> Tejun Heo wrote:
->> Replace private worker pool with system_long_wq.
-> 
-> system_unbound_wq actually.
-> 
->> --- a/kernel/async.c
->> +++ b/kernel/async.c
->> @@ -49,40 +49,32 @@ asynchronous and synchronous parts of the kernel.
->>  */
->>
->>  #include <linux/async.h>
->> -#include <linux/bug.h>
->>  #include <linux/module.h>
->>  #include <linux/wait.h>
->>  #include <linux/sched.h>
->> -#include <linux/init.h>
->> -#include <linux/kthread.h>
->> -#include <linux/delay.h>
->>  #include <linux/slab.h>
->>  #include <asm/atomic.h>
->>
-> 
-> Shouldn't it include linux/workqueue.h now?
 
-Updated.  Thanks a lot.
 
--- 
-tejun
+Hi Hari,
+
+> -----Original Message-----
+> From: Kanigeri, Hari
+> Sent: Thursday, July 01, 2010 6:36 PM
+> To: Guzman Lugo, Fernando; linux-omap@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Cc: ohad@wizery.com; hiroshi.doyu@nokia.com; ameya.palande@nokia.com;
+> felipe.contreras@nokia.com; Guzman Lugo, Fernando
+> Subject: RE: [PATCH 8/9] dspbridge: add map support for big buffers
+> 
+> Fernando,
+> 
+> > -	for_each_sg(sgt->sgl, sg, sgt->nents, i)
+> > -		sg_set_page(sg, usr_pgs[i], PAGE_SIZE, 0);
+> > +		da = iommu_vmap(mmu, da, sgt, IOVMF_ENDIAN_LITTLE |
+> > +							IOVMF_ELSZ_32);
+> 
+> -- iommu_vmap does the Kernel mapping to the buffers you are mapping to
+> DSP MMU. Why do you need Kernel mappings ?
+> 
+> If there is no benefit in maintaining Kernel mapping I would rather call
+> iopgtable_store_entry directly to map the entries.
+
+Where inside iommu_vmap is the mapping done? I thought the kernel can access to that buffer after get_user_pages() where the user pages are pin and we can get a kernel address. The intention using iommu_vmap was to use api's proved by the iovmmu module. iommu_vmap() it is also tracking the mapped areas, so maybe the next step could be: remove dmm.c/h files and also proc_reserve/unreserved functions. If you think the function is unneeded steps and could affect the performance I can do the change to use only iopgtable_store_entry().
+
+I think a kernel mapping is needed for flush/invalidate api's, please correct me if I am wrong. 
+
+Regards,
+Fernando.
+
+> 
+> Thank you,
+> Best regards, Hari
