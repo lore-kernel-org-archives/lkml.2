@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab0GBVTk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 17:19:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22362 "EHLO mx1.redhat.com"
+	id S1751938Ab0GBVZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 17:25:56 -0400
+Received: from kroah.org ([198.145.64.141]:58515 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751Ab0GBVTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 17:19:38 -0400
-Message-ID: <4C2E57DE.1000202@redhat.com>
-Date: Fri, 02 Jul 2010 18:19:26 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Lightning/1.0b1 Thunderbird/3.0.4
+	id S1750868Ab0GBVZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 17:25:55 -0400
+Date: Fri, 2 Jul 2010 14:25:48 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Steve Glendinning <steve.glendinning@smsc.com>,
+       Jean Delvare <khali@linux-fr.org>
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ jdelvare-hwmon tree
+Message-ID: <20100702212548.GA10228@kroah.com>
+References: <20100702153827.cecff5e6.sfr@canb.auug.org.au>
+ <20100702054648.GA18023@kroah.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>
-Subject: [GIT PULL for 2.6.35] Fixes for i7core/nehalem EDAC driver
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100702054648.GA18023@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, Jul 01, 2010 at 10:46:48PM -0700, Greg KH wrote:
+> On Fri, Jul 02, 2010 at 03:38:27PM +1000, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > Today's linux-next merge of the driver-core tree got a conflict in
+> > MAINTAINERS drivers/hwmon/emc2103.c between commit
+> > 7c73bc52c98623e7ae2831ec8df80e882aa4087f ("hwmon: Add driver for SMSC
+> > EMC2103 temperature monitor and fan controller") from the jdelvare-hwmon
+> > tree and commit 3b52586d66843792f6556b3dd33205375d9b4196 ("hwmon: Add
+> > driver for SMSC EMC2103 temperature monitor and fan controller") from the
+> > driver-core tree.
+> > 
+> > Looks like two versions of the same patch.  I used the newer one (from
+> > the jdelvare-hwmon tree).  I guess this should be dropped from one of the
+> > two trees.
+> 
+> Yes, it will be dropped from my tree tomorrow, sorry, I was busy with
+> the -stable stuff for the past few days.
 
-Please pull from:
-	ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/i7core.git for_linus
+It is now removed from my tree.
 
-For two fixes that are needed to allow the i7core_edac driver to work with certain
-systems that use non-standard bus addresses for the QPI PCI devices.
+thanks,
 
-It also adds a MAINTAINERS entry for i7core_edac.
-
-Cheers,
-Mauro.
-
----
-
-The following changes since commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02:
-
-  Linux 2.6.35-rc3 (2010-06-11 19:14:04 -0700)
-
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/i7core.git for_linus
-
-Mauro Carvalho Chehab (3):
-      i7core_edac: Properly discover the first QPI device
-      i7core_edac: Avoid doing multiple probes for the same card
-      MAINTAINERS: Add an entry for i7core_edac
-
- MAINTAINERS                |    9 ++++++-
- drivers/edac/i7core_edac.c |   53 +++++++++++++++++++++++++++++++++----------
- 2 files changed, 48 insertions(+), 14 deletions(-)
-
+greg k-h
