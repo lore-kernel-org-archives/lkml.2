@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab0GBFtr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 01:49:47 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:46309 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab0GBFtn (ORCPT
+	id S1755809Ab0GBFt6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 01:49:58 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:50917 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754810Ab0GBFtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 01:49:43 -0400
+	Fri, 2 Jul 2010 01:49:47 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
        Wu Fengguang <fengguang.wu@intel.com>,
        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/7] hugetlb: add hugepage check in mem_cgroup_{register,end}_migration()
-Date: Fri,  2 Jul 2010 14:47:23 +0900
-Message-Id: <1278049646-29769-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 2/7] hugetlb, HWPOISON: move PG_HWPoison bit check
+Date: Fri,  2 Jul 2010 14:47:21 +0900
+Message-Id: <1278049646-29769-3-git-send-email-n-horiguchi@ah.jp.nec.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
@@ -23,38 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently memory cgroup doesn't charge hugepage,
-so avoid calling these functions in hugepage migration context.
+In order to handle metadatum correctly, we should check whether the hugepage
+we are going to access is HWPOISONed *before* incrementing mapcount,
+adding the hugepage into pagecache or constructing anon_vma.
+This patch also adds retry code when there is a race between
+alloc_huge_page() and memory failure.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 ---
- mm/memcontrol.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ mm/hugetlb.c |   34 +++++++++++++++++++++-------------
+ 1 files changed, 21 insertions(+), 13 deletions(-)
 
-diff --git v2.6.35-rc3-hwpoison/mm/memcontrol.c v2.6.35-rc3-hwpoison/mm/memcontrol.c
-index c6ece0a..fed32de 100644
---- v2.6.35-rc3-hwpoison/mm/memcontrol.c
-+++ v2.6.35-rc3-hwpoison/mm/memcontrol.c
-@@ -2504,6 +2504,8 @@ int mem_cgroup_prepare_migration(struct page *page,
+diff --git v2.6.35-rc3-hwpoison/mm/hugetlb.c v2.6.35-rc3-hwpoison/mm/hugetlb.c
+index a26c24a..5c77a73 100644
+--- v2.6.35-rc3-hwpoison/mm/hugetlb.c
++++ v2.6.35-rc3-hwpoison/mm/hugetlb.c
+@@ -2490,8 +2490,15 @@ retry:
+ 			int err;
+ 			struct inode *inode = mapping->host;
  
- 	if (mem_cgroup_disabled())
- 		return 0;
-+	if (PageHuge(page))
-+		return 0;
+-			err = add_to_page_cache(page, mapping, idx, GFP_KERNEL);
++			lock_page(page);
++			if (unlikely(PageHWPoison(page))) {
++				unlock_page(page);
++				goto retry;
++			}
++			err = add_to_page_cache_locked(page, mapping,
++						       idx, GFP_KERNEL);
+ 			if (err) {
++				unlock_page(page);
+ 				put_page(page);
+ 				if (err == -EEXIST)
+ 					goto retry;
+@@ -2504,6 +2511,10 @@ retry:
+ 			page_dup_rmap(page);
+ 		} else {
+ 			lock_page(page);
++			if (unlikely(PageHWPoison(page))) {
++				unlock_page(page);
++				goto retry;
++			}
+ 			if (unlikely(anon_vma_prepare(vma))) {
+ 				ret = VM_FAULT_OOM;
+ 				goto backout_unlocked;
+@@ -2511,22 +2522,19 @@ retry:
+ 			hugepage_add_new_anon_rmap(page, vma, address);
+ 		}
+ 	} else {
++		/*
++		 * If memory error occurs between mmap() and fault, some process
++		 * don't have hwpoisoned swap entry for errored virtual address.
++		 * So we need to block hugepage fault by PG_hwpoison bit check.
++		 */
++		if (unlikely(PageHWPoison(page))) {
++			ret = VM_FAULT_HWPOISON;
++			goto backout_unlocked;
++		}
+ 		page_dup_rmap(page);
+ 	}
  
- 	pc = lookup_page_cgroup(page);
- 	lock_page_cgroup(pc);
-@@ -2591,6 +2593,9 @@ void mem_cgroup_end_migration(struct mem_cgroup *mem,
- 
- 	if (!mem)
- 		return;
-+	if (PageHuge(oldpage))
-+		return;
-+
- 	/* blocks rmdir() */
- 	cgroup_exclude_rmdir(&mem->css);
- 	/* at migration success, oldpage->mapping is NULL. */
+ 	/*
+-	 * Since memory error handler replaces pte into hwpoison swap entry
+-	 * at the time of error handling, a process which reserved but not have
+-	 * the mapping to the error hugepage does not have hwpoison swap entry.
+-	 * So we need to block accesses from such a process by checking
+-	 * PG_hwpoison bit here.
+-	 */
+-	if (unlikely(PageHWPoison(page))) {
+-		ret = VM_FAULT_HWPOISON;
+-		goto backout_unlocked;
+-	}
+-
+-	/*
+ 	 * If we are going to COW a private mapping later, we examine the
+ 	 * pending reservations for this page now. This will ensure that
+ 	 * any allocations necessary to record that reservation occur outside
 -- 
 1.7.1
 
