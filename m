@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684Ab0GBHJA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 03:09:00 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37197 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab0GBHI7 (ORCPT
+	id S1757771Ab0GBHJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 03:09:07 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:36317 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757719Ab0GBHJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 03:08:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WFIkxcBHHbc/F3aA7qw2+LFAXuiESvSLOfzPPMW37b4qzk3pTebETcQ2Z8eiFw0nqA
-         BP26g4jQ//gDZCuY3+HsDRzUUpld/SmHwmHdoQkjU+XQRmMNScajk4VR6pKom5f+1aJt
-         9+VX7sfZHNGrnnK9MjOn8LpzLnEQHlXWNXd3Y=
+	Fri, 2 Jul 2010 03:09:03 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6030"; a="46114766"
+Message-ID: <4C2D908E.9030309@codeaurora.org>
+Date: Fri, 02 Jul 2010 00:09:02 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-In-Reply-To: <20100701130724.GC17698@sirena.org.uk>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
-	<e5391de6858597bbfd43874aed124a73f74850b5.1277911346.git.siccegge@cs.fau.de>
-	<AANLkTinZa7_TEjYFTu9V6obndpVvMmHppaOArM1AJg_t@mail.gmail.com>
-	<20100701130724.GC17698@sirena.org.uk>
-Date: Fri, 2 Jul 2010 16:08:56 +0900
-Message-ID: <AANLkTim0usB99K6orH0lxP73e-XK69ytdECtR5D1dPJt@mail.gmail.com>
-Subject: Re: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Christoph Egger <siccegge@cs.fau.de>, Ben Dooks <ben-linux@fluff.org>,
-       Russell King <linux@arm.linux.org.uk>,
-       Jassi Brar <jassi.brar@samsung.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Content-Type: text/plain; charset=UTF-8
+To: Hari Kanigeri <hari.kanigeri@gmail.com>
+CC: Daniel Walker <dwalker@codeaurora.org>, Andi Kleen <andi@firstfloor.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org> <20100701101746.3810cc3b.randy.dunlap@oracle.com> <20100701180241.GA3594@basil.fritz.box> <1278012503.7738.17.camel@c-dwalke-linux.qualc <AANLkTinABCSdN6hnXVOvVZ12f1QBMR_UAi62qW8GmlkL@mail.gmail.com>
+In-Reply-To: <AANLkTinABCSdN6hnXVOvVZ12f1QBMR_UAi62qW8GmlkL@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 1, 2010 at 10:07 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Jul 01, 2010 at 09:55:47PM +0900, Jassi Brar wrote:
->> On Thu, Jul 1, 2010 at 1:03 AM, Christoph Egger <siccegge@cs.fau.de> wrote:
->> > SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
->> > all references for it from the source code.
->
->> I'd rather have the code compiled unconditionally.
->
-> Hrm, if this is part of the default hardware build we should get the
-> driver merged.
-But the machine driver is already there
-   sound/soc/s3c24xx/smdk2443_wm9710.c
+Hari Kanigeri wrote:
+>> He demonstrated the usage of his code in one of the emails he sent out
+>> initially. Did you go over that, and what (or how many) step would you
+>> use with the current code to do the same thing?
+> 
+> -- So is this patch set adding layers and abstractions to help the User ?
+> 
+> If the idea is to share some memory across multiple devices, I guess
+> you can achieve the same by calling the map function provided by iommu
+> module and sharing the mapped address to the 10's or 100's of devices
+> to access the buffers. You would only need a dedicated virtual pool
+> per IOMMU device to manage its virtual memory allocations.
+
+Yeah, you can do that. My idea is to get away from explicit addressing
+and encapsulate the "device address to physical address" link into a
+mapping.
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
