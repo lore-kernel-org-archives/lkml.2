@@ -1,56 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab0GBGgX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 02:36:23 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47164 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754023Ab0GBGgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 02:36:21 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 2 Jul 2010 15:31:43 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 14/14] fs,xfs: Allow kswapd to writeback pages
-Message-Id: <20100702153143.44c5fec8.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100702152643.36019b4e.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
-	<1277811288-5195-15-git-send-email-mel@csn.ul.ie>
-	<20100629123722.GA725@infradead.org>
-	<20100629125143.GB31561@csn.ul.ie>
-	<20100630091411.49f92cff.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100701103032.GG31741@csn.ul.ie>
-	<20100702152643.36019b4e.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757445Ab0GBGh6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 02:37:58 -0400
+Received: from repo.hu ([80.249.166.97]:52117 "EHLO services.local.repo.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756268Ab0GBGhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 02:37:55 -0400
+X-Greylist: delayed 1401 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Jul 2010 02:37:55 EDT
+Date: Fri, 2 Jul 2010 08:24:34 +0200
+To: linux-kernel@vger.kernel.org
+From: hobure66@igor2.repo.hu
+Subject: interrupt problem with multiport serial card
+Message-ID: <20100702062433.GA24766@igor2.repo.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Jul 2010 15:26:43 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Hi all!
 
-> > I see the direction you are thinking of but I have big concerns about clean
-> > pages getting delayed for too long on the LRU_CLEANING pages before kswapd
-> > puts them back in the right place. I think a safer direction would be for
-> > memcg people to investigate Andrea's "switch stack" suggestion.
-> > 
-> Hmm, I may have to consider that. My concern is that IRQ's switch-stack works
-> well just because no-task-switch in IRQ routine. (I'm sorry if I misunderstand.)
-> 
-Ok, I'll think about this 1st.
+I am debugging a strange interrupt problem with multiport serial cards 
+and I am stuck with it. Suggestions are welcome!
 
-Thanks,
--Kame
+There are two machines mostly identical, let's call them Production and
+Testing. In Production there is a MOXA 8 port serial card sitting in a
+PCI express slot. In Testing we have the same MOXA card and a second, 4
+port card from digitus. I have no access to the Production machine but I
+am free to make experiments on the Testing machine. Production kernel is
+2.6.28.8-rt16. Both machines are 64-bit x86 with 2 cores, but the kernel
+is compiled with CONFIG_x86_32=y for whatever reason (I am not allowed
+to change this on the Production machine). Both cards have their own serial
+drivers, but they implement standard UART chips.
+
+The original issue found on the Production machine is that the MOXA card
+locks up after days of use. When this happens, the interrupt counter in
+/proc/interrupts is not increased when bytes are received on the line.
+
+I tried to reproduce this on the Testing machine, and after one and a
+half day experimenting with different setup of seemingly irrelevant
+things I could reliably reproduce the same (or a very similar) problem
+with the digitus card. I believe if I find the solution for this
+problem, the same solution would help on the remote Production machine
+as well.
+
+I connected one of the ports of the digitus card with a port of the
+other card on the same machine, using 3 wires (gnd, rx/tx
+cross-connected). After boot, I load the kernel driver, set baud rate to
+115200, 8 bit, no parity. I start sending bytes as fast as possible in
+both directions on the cable, also reading the input on both ports. The
+digitus card locks up after some time, it varies from boot to boot.
+Interrupt counter is not increased. Unloading and reloading the card's
+kernel module doesn't help, only reboot helps. I could not reproduce the
+same problem with the same kernel version/config without the real-time patch,
+but I am not sure if it's just a coincidence.
+
+I started debugging by looking at UART registers during such a lockup.
+It seems the chip has an interrupt pending, but as no interrupt was
+delivered to the kernel module, it doesn't poll the registers.
+
+My first idea was that an interrupt is lost by the driver and the UART
+is not polled so it stays in interrupt pending mode; if we
+have interrupt pending already on the UART, a new interrupt won't be
+generated (right?), so the card will be waiting for the driver to poll
+the registers clearing the interrupt pending flag while the driver will
+be waiting for an interrupt to do anything. Fortunately if I stop all
+reading and writing processes for a port, the kernel module cleans up
+the UART and there's no interrupt pending anymore. During the
+lockup, after this I still don't get any new interrupt even if the UART
+chip goes into interrupt pending mode again.
+
+To see what happens with the interrupts added printk()s all around in
+do_IRQ, and handle_fasteoi_irq down to the card's driver. Looking at
+the sequences, nothing special happens in the last few interrupts
+before the lockup.
+
+I also write a little test script that uses direct port IO to query
+and set UART ports. I switch the UART in loopback mode so I can ensure
+it really works, I send a few bytes and read those bytes back. Meanwhile
+I get at least one transition from no interrupt pending to interrupt
+pending on the UART. During normal operation this increases the interrupt
+counter but after a lockup no increase, with or without the digitus
+kernel module loaded.
+
+My first question is whether my following conclusion makes sense: in
+such a lockup the UART chip generates an event that should cause an
+interrupt, but the interrupt is not generated by the card or is not
+delivered to the CPU or is not collected by the kernel. Second question:
+any suggestion how to go on debugging this? Maybe a way to poll APIC
+settings on the fly? Or generate artificial interrupt on the APIC
+somehow to see if it gets to the kernel? Or is there an interrupt
+counter in the APIC I could look at?
+
+
+
+TIA,
+
+Tibor Palinkas
 
