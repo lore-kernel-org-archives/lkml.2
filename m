@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab0GBAII (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 20:08:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46399 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753139Ab0GBAIG (ORCPT
+	id S1756278Ab0GBAIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 20:08:18 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:41291 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756085Ab0GBAIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 20:08:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <4C2D180C.5050805@superonline.com>
-References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain>
-	<1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk>
-	<alpine.LFD.2.00.1001270738220.24253@localhost.localdomain>
-	<89k77n$ms73l9@fmsmga001.fm.intel.com>
-	<alpine.LFD.2.00.1001270917120.24253@localhost.localdomain>
-	<AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
-	<89khjo$fr177d@orsmga002.jf.intel.com>
-	<AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com>
-	<AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
-	<4C2D180C.5050805@superonline.com>
-Date: Thu, 1 Jul 2010 16:59:50 -0700
-Message-ID: <AANLkTiklUBmNYs3710WftVX0Z3QihxFtDlK7tPlHZh8H@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "M. Vefa Bicakci" <bicave@superonline.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@gmail.com>,
-       earny@net4u.de, Roman Jarosz <kedgedev@gmail.com>,
-       intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-       jcnengel@googlemail.com, "A. Boulan" <arnaud.boulan@libertysurf.fr>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
-       michael@reinelt.co.at, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Jul 2010 20:08:13 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6030"; a="46234397"
+Subject: Re: Closed source userspace graphics drivers with an open source 
+ kernel component
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>,
+       linux-arm-msm@vger.kernel.org, jcrouse@codeaurora.org
+In-Reply-To: <AANLkTilGdNgWIprJ2XZ2gSv2d-DVybGmb9phcboi4fNL@mail.gmail.com>
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
+	 <AANLkTimgH-DiQyg0f-an5FS3Wyb2b6He3fxxB1L8Ziol@mail.gmail.com>
+	 <1278024678.7738.54.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTinNrpcBg0TXTS78qaI5kPQKD-IbnLpDStu4_BIg@mail.gmail.com>
+	 <1278026975.7738.89.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTilGdNgWIprJ2XZ2gSv2d-DVybGmb9phcboi4fNL@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Jul 2010 17:08:04 -0700
+Message-ID: <1278029284.7738.116.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 1, 2010 at 3:34 PM, M. Vefa Bicakci <bicave@superonline.com> wrote:
->
-> Based on my testing, I am happy to report that the change you suggest
-> fixes the "memory corruption (segfaults) after thaw" issue for me.
-> I can't thank you enough times for this.
+On Fri, 2010-07-02 at 09:37 +1000, Dave Airlie wrote:
 
-Hey, goodie. And you're the one to be thanked - bisecting it down to
-that commit that wasn't _meant_ to have any real semantic changes
-(except for the bug-fix of racy mapping gfp-flags update) is what
-really cracked the lid on the problem.
+> > Oh, man .. It seems like any driver model that straddles userspace and
+> > kernel space is kind of asking for trouble (my opinion anyway)..
+> >
+> > Would you accept a userspace component that supported some subset of the
+> > features ? You would have a kernel space driver, and userspace both open
+> > source and GPL'd , but the userspace component wouldn't support ever
+> > feature available .. Then the company would be free to make another
+> > proprietary userspace with more features based off the open source one.
+> >
+> 
+> That starts to get a bit more towards useful, except you still run
+> into the problem of what happens if community developers start adding
+> features to the open driver, that conflict with  features in the
+> closed code. We'd also have to be very careful about what interfaces
+> the kernel exposed had corresponding code in userspace. i.e. adding
+> "special" ioctls for the closed bits would be a disaster, all such
+> ioctls would need open users for verification and testing.
 
-> Now, the obligatory question: Could we have this fix applied to 2.6.32,
-> 2.6.33 and 2.6.34 ?
+Ok .. The open userspace would just be like any other project, but
+whatever company pushed the driver would likely maintain the userspace
+component .. So the maintainer would have to handle the conflicts
+between the proprietary vs. open source sides of it.
 
-No problem, except we should first determine exactly what flags are
-the appropriate ones. My original patch was obviously not even
-compile-tested, and I actually meant for people to use GFP_HIGHUSER
-rather than __GFP_HIGHMEM. That contains all the "regular" allocation
-flags (but not the __GFP_MOVABLE, which is still just a suspicion of
-being the core reason for the problem).
+Actually , now that I think about it the biggest problem is the license
+of the userspace side.. Whatever company makes this would have to be
+able to relicense it and actually make a proprietary userspace.. So the
+userspace license would be really critical.. Either that or no one
+outside the company that pushed the driver could make code changes to
+the userspace side..
 
-And the original DRM code had:
+> So for example, if you have a kernel KMS/DRM driver, and it set the
+> hardware up, but then you had an open 2D driver and a closed 3D
+> driver, you would have to make sure there was no functionality in the
+> kernel that only the 3D driver used as it would become impossible to
+> openly validate it.
 
-   GFP_HIGHUSER |
-   __GFP_COLD |
-   __GFP_FS |
-   __GFP_RECLAIMABLE |
-   __GFP_NORETRY |
-   __GFP_NOWARN |
-   __GFP_NOMEMALLOC
+Ok. I'm not sure how crazy that would be to setup, but it doesn't seem
+like it would be that hard to just abstract the various components of
+the driver.
 
-which is not entirely sensible (__GFP_FS is already part of
-GFP_HIGHUSER, for example), and two of the flags (NORETRY and NOWARN)
-are the ones the driver wants to do conditionally.
+> The other issue I see with a lot of these, is the driver are presented
+> as this is the kernel driver, these APIs are set in stone as we have
+> binary userspaces already deployed, this is even more unacceptable,
+> since we need to be able to change the interface and do proper driver
+> design before merging what looks like crap thrown together in a pile
+> and made to stick.
 
-But that still leaves the question about __GFP_COLD (probably sane),
-__GFP_RECLAIMABLE (I wonder about that one) and __GFP_NOMEMALLOC
-(usually used together with NORETRY, and I'm not at all sure it makes
-sense as a base flag).
+This seems really wild to me .. Your talking about how you change the
+kernel space side and you need to be able to change the userspace side
+to match right ?
 
-So I suspect the final patch should not look like the one you tested,
-but instead likely have
+Where does the userspace side of these driver live? Not in the kernel
+right?
 
-   GFP_HIGHUSER | __GFP_COLD
+Daniel
 
-and possibly the __GFP_RECLAIMABLE flag too instead of just the bare
-__GFP_HIGHMEM..
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-(Well, we already had that __GFP_COLD there from before, so it's
-really about replacing __GFP_HIGHMEM with something like "GFP_HIGHUSER
-| __GFP_RECLAIMABLE").
-
-But its' great to hear that this does seem to be the underlying cause.
-If you could test with that GFP_HIGHUSER | __GFP_RECLAIMABLE, that
-would be a good thing. After all - maybe the problem was triggered by
-some other flag than __GFP_MOVABLE, and as such, having some
-additional testing with a bigger set of allocation flags would be a
-really good thing.
-
-                    Linus
