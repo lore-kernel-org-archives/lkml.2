@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab0GBU7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 16:59:55 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:1116 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757520Ab0GBU7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 16:59:54 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.53,528,1272844800"; 
-   d="scan'208";a="553775595"
-Date: Fri, 02 Jul 2010 13:56:14 -0700
-From: "Tom Lyon" <pugs@cisco.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       iommu@lists.linux-foundation.org, chrisw@sous-sol.org, mst@redhat.com,
-       dwmw2@infradead.org, joerg.roedel@amd.com
-Cc: aafabbri@cisco.com, scofeldm@cisco.com
-Subject: [PATCH V3] 2.6.34: simple IOMMU API extension to check safe
- interrupt remapping
-Message-ID: <4c2e526e.HXT+zIj7fSMwTdy/%pugs@cisco.com>
-User-Agent: Heirloom mailx 12.2 01/07/07
+	id S1757757Ab0GBVJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 17:09:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28174 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751470Ab0GBVJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 17:09:05 -0400
+Date: Fri, 2 Jul 2010 23:06:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sridhar Samudrala <sri@us.ibm.com>, Tejun Heo <tj@kernel.org>,
+       "Michael S. Tsirkin" <mst@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+Message-ID: <20100702210637.GA12433@redhat.com>
+References: <1277988395.1917.47.camel@laptop> <20100701130816.GB32223@redhat.com> <1277991024.1917.108.camel@laptop> <20100701133956.GD32223@redhat.com> <4C2CA5C5.4040402@kernel.org> <20100701144624.GA11171@redhat.com> <4C2CABF2.2020801@kernel.org> <1277996135.1917.198.camel@laptop> <4C2E2987.9040702@us.ibm.com> <1278094270.1917.288.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1278094270.1917.288.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows IOMMU users to determine whether the hardware and software
-support safe, isolated interrupt remapping.  Not all Intel IOMMUs have the
-hardware, and the software for AMD is not there yet.
-	Signed-off-by: Tom Lyon <pugs@cisco.com>
----
-Version 3: shorter name requested by Joerg.
-Version 2: previous ifdefs not needed.
+On 07/02, Peter Zijlstra wrote:
+>
+> On Fri, 2010-07-02 at 11:01 -0700, Sridhar Samudrala wrote:
+> >
+> >  Does  it (Tejun's kthread_clone() patch) also  inherit the
+> > cgroup of the caller?
+>
+> Of course, its a simple do_fork() which inherits everything just as you
+> would expect from a similar sys_clone()/sys_fork() call.
 
-MST has convinced me that any user level driver for PCI master devices can't 
-be safe unless there is an IOMMU protecting the APIC MSI/MSI-X interrupt 
-addresses from device writes.  This interrupt remapping is not present in all
-Intel IOMMUs and the code for the interrupt mapping in the AMD IOMMUs is not
-implemented yet.
+Yes. And I'm afraid it can inherit more than we want. IIUC, this is called
+from ioctl(), right?
 
-Needed by not-yet-accepted VFIO driver.
+Then the new thread becomes the natural child of the caller, and it shares
+->mm with the parent. And files, dup_fd() without CLONE_FS.
 
-diff -uprN linux-2.6.34/drivers/pci/intel-iommu.c iommuapi-linux-2.6.34/drivers/pci/intel-iommu.c
---- linux-2.6.34/drivers/pci/intel-iommu.c	2010-05-16 14:17:36.000000000 -0700
-+++ iommuapi-linux-2.6.34/drivers/pci/intel-iommu.c	2010-07-02 12:39:19.000000000 -0700
-@@ -3705,6 +3705,8 @@ static int intel_iommu_domain_has_cap(st
- 
- 	if (cap == IOMMU_CAP_CACHE_COHERENCY)
- 		return dmar_domain->iommu_snooping;
-+	if (cap == IOMMU_CAP_INTR_REMAP)
-+		return intr_remapping_enabled;
- 
- 	return 0;
- }
-diff -uprN linux-2.6.34/include/linux/iommu.h iommuapi-linux-2.6.34/include/linux/iommu.h
---- linux-2.6.34/include/linux/iommu.h	2010-05-16 14:17:36.000000000 -0700
-+++ iommuapi-linux-2.6.34/include/linux/iommu.h	2010-07-02 12:38:45.000000000 -0700
-@@ -30,6 +30,7 @@ struct iommu_domain {
- };
- 
- #define IOMMU_CAP_CACHE_COHERENCY	0x1
-+#define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
- 
- struct iommu_ops {
- 	int (*domain_init)(struct iommu_domain *domain);
+Signals. Say, if you send SIGKILL to this new thread, it can't sleep in
+TASK_INTERRUPTIBLE or KILLABLE after that. And this SIGKILL can be sent
+just because the parent gets SIGQUIT or abother coredumpable signal.
+Or the new thread can recieve SIGSTOP via ^Z.
+
+Perhaps this is OK, I do not know. Just to remind that kernel_thread()
+is merely clone(CLONE_VM).
+
+Oleg.
+
