@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758794Ab0GBPMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 11:12:00 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:53809 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851Ab0GBPL7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 11:11:59 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C2E0147.1090702@s5r6.in-berlin.de>
-Date: Fri, 02 Jul 2010 17:09:59 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	id S1758785Ab0GBPQq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 11:16:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38549 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756554Ab0GBPQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 11:16:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,526,1272870000"; 
+   d="scan'208";a="582215268"
+Date: Fri, 2 Jul 2010 17:16:40 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Magnus Damm <damm@opensource.se>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Julia Lawall <julia@diku.dk>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] t7l66xb: properly free clk32k clock source
+Message-ID: <20100702151639.GB2960@sortiz-mobl>
+References: <1277977430.9342.5.camel@mola>
 MIME-Version: 1.0
-To: Tejun Heo <htejun@gmail.com>
-CC: David Howells <dhowells@redhat.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
-       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
-       akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
-       dwalker@codeaurora.org, florian@mickler.org, andi@firstfloor.org,
-       mst@redhat.com, randy.dunlap@oracle.com,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 4/4] async: use workqueue for worker pool
-References: <4C2A2688.1020206@kernel.org> <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <25085.1277847455@redhat.com> <4C2DAEBB.7090607@kernel.org> <4C2DB084.5040205@gmail.com>
-In-Reply-To: <4C2DB084.5040205@gmail.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277977430.9342.5.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
-> Replace private worker pool with system_long_wq.
+Hi Alex,
 
-system_unbound_wq actually.
+On Thu, Jul 01, 2010 at 05:43:50PM +0800, Axel Lin wrote:
+> This patch includes below fixes to properly free clk32k clock source:
+> 1. remove a redundant clk_put in t7l66xb_probe error path
+> 2. add missing clk_disable(t7l66xb->clk32k) and clk_put(t7l66xb->clk32k)
+>    to properly free the clock source.
+Patch applied to my for-next branch. This almost looks like 2.6.35 material
+though.
 
-> --- a/kernel/async.c
-> +++ b/kernel/async.c
-> @@ -49,40 +49,32 @@ asynchronous and synchronous parts of the kernel.
->  */
+Cheers,
+Samuel.
+
+
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/mfd/t7l66xb.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 > 
->  #include <linux/async.h>
-> -#include <linux/bug.h>
->  #include <linux/module.h>
->  #include <linux/wait.h>
->  #include <linux/sched.h>
-> -#include <linux/init.h>
-> -#include <linux/kthread.h>
-> -#include <linux/delay.h>
->  #include <linux/slab.h>
->  #include <asm/atomic.h>
+> diff --git a/drivers/mfd/t7l66xb.c b/drivers/mfd/t7l66xb.c
+> index 5041d33..006c121 100644
+> --- a/drivers/mfd/t7l66xb.c
+> +++ b/drivers/mfd/t7l66xb.c
+> @@ -350,7 +350,6 @@ static int t7l66xb_probe(struct platform_device *dev)
+>  	t7l66xb->clk48m = clk_get(&dev->dev, "CLK_CK48M");
+>  	if (IS_ERR(t7l66xb->clk48m)) {
+>  		ret = PTR_ERR(t7l66xb->clk48m);
+> -		clk_put(t7l66xb->clk32k);
+>  		goto err_clk48m_get;
+>  	}
+>  
+> @@ -425,6 +424,8 @@ static int t7l66xb_remove(struct platform_device *dev)
+>  	ret = pdata->disable(dev);
+>  	clk_disable(t7l66xb->clk48m);
+>  	clk_put(t7l66xb->clk48m);
+> +	clk_disable(t7l66xb->clk32k);
+> +	clk_put(t7l66xb->clk32k);
+>  	t7l66xb_detach_irq(dev);
+>  	iounmap(t7l66xb->scr);
+>  	release_resource(&t7l66xb->rscr);
+> -- 
+> 1.5.4.3
+> 
+> 
 > 
 
-Shouldn't it include linux/workqueue.h now?
 -- 
-Stefan Richter
--=====-==-=- -=== ---=-
-http://arcgraph.de/sr/
+Intel Open Source Technology Centre
+http://oss.intel.com/
