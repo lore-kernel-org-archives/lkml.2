@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab0GBHFA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 03:05:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48222 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab0GBHE7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 03:04:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=l/NzNTOuIgGtZWORdtT63yuG2/qXeoKfQVMQMfavfQJS/vU6/fsW9YvRiRoYU4zahY
-         c3JS0WFQVSQokfx9+xL/5COKLBqIfYiYvsP0JqAdUhfmNOxXhwFswH6CU0geToHtSKgy
-         rYxSzDaeL9zOTUFuj06Xr27CiT2UBFMaXYokw=
-Date: Fri, 2 Jul 2010 11:04:54 +0400
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Dan Carpenter <error27@gmail.com>,
-       Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       Doug Gilbert <dgilbert@interlog.com>,
-       "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/25] scsi/sg: remove casts from void*
-Message-ID: <20100702070454.GA24442@shinshilla>
-References: <1277990204-22157-1-git-send-email-segooon@gmail.com>
- <20100701173805.GW19184@bicker>
- <20100701182724.GA22466@shinshilla>
+	id S1757628Ab0GBHFl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 03:05:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47156 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754000Ab0GBHFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 03:05:39 -0400
+Message-ID: <4C2D8FAD.7010704@kernel.org>
+Date: Fri, 02 Jul 2010 09:05:17 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701182724.GA22466@shinshilla>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Axel Lin <axel.lin@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+       David Brownell <dbrownell@users.sourceforge.net>
+Subject: Re: [PATCH] dmi-id: fix a memory leak in dmi_id_init error path
+References: <1277951707.30073.5.camel@mola>
+In-Reply-To: <1277951707.30073.5.camel@mola>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 02 Jul 2010 07:05:24 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 22:27 +0400, Kulikov Vasiliy wrote:
-> The problem is that this driver is not even compileable.
-Forget about this.
-staging/wlags49_h2/wl_pci.c is not compileable, not scsi/sg.c :)
+Hello,
+
+On 07/01/2010 04:35 AM, Axel Lin wrote:
+> This patch adds a missing kfree(dmi_dev) in dmi_id_init error path.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Greg, can you please route this through device tree?
+
+Thanks.
+
+-- 
+tejun
