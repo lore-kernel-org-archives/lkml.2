@@ -1,80 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab0GBKxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 06:53:53 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48516 "EHLO arroyo.ext.ti.com"
+	id S1755722Ab0GBLDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 07:03:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35032 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755348Ab0GBKxw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 06:53:52 -0400
-From: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-       "sfking@fdwdc.com" <sfking@fdwdc.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 2 Jul 2010 16:23:40 +0530
-Subject: RE: [RFC] [PATCH] digital compass hmc5843
-Thread-Topic: [RFC] [PATCH] digital compass hmc5843
-Thread-Index: AcsZzwdzUqLFoukMSUacjEkscxuLvwAAeFpQ
-Message-ID: <0680EC522D0CC943BC586913CF3768C003B360338A@dbde02.ent.ti.com>
-References: <0680EC522D0CC943BC586913CF3768C003B360319D@dbde02.ent.ti.com>
- <4C2CBB40.5070104@cam.ac.uk>
- <0680EC522D0CC943BC586913CF3768C003B3603331@dbde02.ent.ti.com>
- <4C2DBBE3.1020804@cam.ac.uk>
-In-Reply-To: <4C2DBBE3.1020804@cam.ac.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1753813Ab0GBLDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 07:03:51 -0400
+Date: Fri, 2 Jul 2010 21:03:46 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/3] xstat: Add a pair of system calls to make extended
+ file stats available [ver #4]
+Message-ID: <20100702110346.GB11732@laptop>
+References: <20100701235727.19035.84584.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100701235727.19035.84584.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> <snip>
-> >
-> > I think that having a Hz as units will have its own issues. First the
-> decimal implementation. However I am open to the implementation.
-> > Also do you know of a driver that takes care of this.
-> None of the current drivers go below 1Hz so not quite the same.
-> lis3l02dq (accelerometer) does the match against a list, but it
-> is done numerically rather than via string matches as would be needed
-> here.
-> >
-> >>
-> >> static IIO_CONST_ATTR_SAMP_FREQ_AVAIL("0.5 1 2 5 10 20 50");
-> >>
-> >>
-> >> Then strncmp with the options to set the value up.  The rounding
-> approach
-> >> gets tricky with a non integer value so probably easier to only allow
-> >> these
-> >> values.
+On Fri, Jul 02, 2010 at 12:57:28AM +0100, David Howells wrote:
+> Add a pair of system calls to make extended file stats available, including
+> file creation time, inode version and data version where available through the
+> underlying filesystem.
 
-What is a recommended way of getting a double or float
-Is there any Strict_srttod etc.
+Can you describe the expected atomicity requirements for the requests,
+please?
 
-> >
-> > Allowing only this value will result in default/ reject case and will
-> keep the previous value, may confuse the application
-> Then the application is ignoring the interface spec that says it must read
-> _available files if they are there.
-> This way the rounding behaviour is left to userspace and what the
-> application prefers rather
-> than in kernel actually making it the most flexible option.
+Thanks,
+Nick
 
-Agree 
-> >
-> >>
-> >>> +static IIO_DEV_ATTR_AVAIL_SAMP_FREQ(show_avail_samp_freq);
-> >>> +
-> >>> +static s32 hmc5843_set_rate(struct i2c_client *client,
-> >>> +                               u8 rate)
-> >>> +{
-> >>> +       struct hmc5843_data *data = i2c_get_clientdata(client);
-> >>> +       u8 reg_val;
-> >>> +
