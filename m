@@ -1,55 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab0GBAtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 20:49:11 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46248 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752183Ab0GBAtJ (ORCPT
+	id S1756814Ab0GBAtu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 20:49:50 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36626 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745Ab0GBAts convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 20:49:09 -0400
-X-Sasl-enc: oPRvKCz/SPJYPZVYJ50fDHCKj44WZAuUWeRcpxdaFem7 1278031747
-Date: Thu, 1 Jul 2010 21:49:03 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Jerome Lacoste <jerome.lacoste@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: i8042 no mouse on resume. (i8042: failed to resume active
- multiplexor, mouse won't work.)
-Message-ID: <20100702004903.GC15824@khazad-dum.debian.net>
-References: <AANLkTilvxV18Qc2-34GtNmfAIvNL2dtEAPC3iPFNU2Pv@mail.gmail.com>
- <20100701162454.GD4152@core.coreip.homeip.net>
- <AANLkTikx8AxRdPoSbsym9rUiA11BbufqImcD2sg4f8Ds@mail.gmail.com>
- <AANLkTikmcaQSNNy6ZHMvEwBJVkWdyQ5KALR6832hUkjz@mail.gmail.com>
+	Thu, 1 Jul 2010 20:49:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dIODA+NyEiF4N4RqHjc4aU6xuc4dKnsuxtt3CZXgIntk7tqrozTZ+jbBibtH6xqLL4
+         YNStfQ1T6FuXaX07gEen8h9ydemCYayPiXkN0nNjPj2cOX/ojEM5yS+M7MSNmATyLu5R
+         UXYE+c2y0XG3b+6vd/V5X0a+hsaMYYsta2aLE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikmcaQSNNy6ZHMvEwBJVkWdyQ5KALR6832hUkjz@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTilOWu6ZwWjwPfHvNXDhyjb6n4N5KV1rUx6byJmq@mail.gmail.com>
+References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain>
+	<1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk>
+	<alpine.LFD.2.00.1001270738220.24253@localhost.localdomain>
+	<89k77n$ms73l9@fmsmga001.fm.intel.com>
+	<alpine.LFD.2.00.1001270917120.24253@localhost.localdomain>
+	<AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
+	<89khjo$fr177d@orsmga002.jf.intel.com>
+	<AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com>
+	<AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
+	<4C2D180C.5050805@superonline.com>
+	<AANLkTiklUBmNYs3710WftVX0Z3QihxFtDlK7tPlHZh8H@mail.gmail.com>
+	<AANLkTilOWu6ZwWjwPfHvNXDhyjb6n4N5KV1rUx6byJmq@mail.gmail.com>
+Date: Fri, 2 Jul 2010 10:49:47 +1000
+Message-ID: <AANLkTilfkCBfZtRQlybQ721PSF4lSlqeOKL3rYnEz2G1@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "M. Vefa Bicakci" <bicave@superonline.com>,
+       Chris Wilson <chris@chris-wilson.co.uk>, earny@net4u.de,
+       Roman Jarosz <kedgedev@gmail.com>, intel-gfx@lists.freedesktop.org,
+       linux-kernel@vger.kernel.org, jcnengel@googlemail.com,
+       "A. Boulan" <arnaud.boulan@libertysurf.fr>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
+       michael@reinelt.co.at, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 Jul 2010, Jerome Lacoste wrote:
-> The discussion is in particular here:
-> http://lkml.indiana.edu/hypermail/linux/kernel/0809.0/0316.html
+On Fri, Jul 2, 2010 at 10:06 AM, Dave Airlie <airlied@gmail.com> wrote:
+> On Fri, Jul 2, 2010 at 9:59 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Thu, Jul 1, 2010 at 3:34 PM, M. Vefa Bicakci <bicave@superonline.com> wrote:
+>>>
+>>> Based on my testing, I am happy to report that the change you suggest
+>>> fixes the "memory corruption (segfaults) after thaw" issue for me.
+>>> I can't thank you enough times for this.
+>>
+>> Hey, goodie. And you're the one to be thanked - bisecting it down to
+>> that commit that wasn't _meant_ to have any real semantic changes
+>> (except for the bug-fix of racy mapping gfp-flags update) is what
+>> really cracked the lid on the problem.
+>>
+>>> Now, the obligatory question: Could we have this fix applied to 2.6.32,
+>>> 2.6.33 and 2.6.34 ?
+>>
+>> No problem, except we should first determine exactly what flags are
+>> the appropriate ones. My original patch was obviously not even
+>> compile-tested, and I actually meant for people to use GFP_HIGHUSER
+>> rather than __GFP_HIGHMEM. That contains all the "regular" allocation
+>> flags (but not the __GFP_MOVABLE, which is still just a suspicion of
+>> being the core reason for the problem).
+>>
+>> And the original DRM code had:
+>>
+>>   GFP_HIGHUSER |
+>>   __GFP_COLD |
+>>   __GFP_FS |
+>>   __GFP_RECLAIMABLE |
+>>   __GFP_NORETRY |
+>>   __GFP_NOWARN |
+>>   __GFP_NOMEMALLOC
+>>
+>> which is not entirely sensible (__GFP_FS is already part of
+>> GFP_HIGHUSER, for example), and two of the flags (NORETRY and NOWARN)
+>> are the ones the driver wants to do conditionally.
+>>
+>> But that still leaves the question about __GFP_COLD (probably sane),
+>> __GFP_RECLAIMABLE (I wonder about that one) and __GFP_NOMEMALLOC
+>> (usually used together with NORETRY, and I'm not at all sure it makes
+>> sense as a base flag).
+>>
+>> So I suspect the final patch should not look like the one you tested,
+>> but instead likely have
+>>
+>>   GFP_HIGHUSER | __GFP_COLD
+>>
+>> and possibly the __GFP_RECLAIMABLE flag too instead of just the bare
+>> __GFP_HIGHMEM..
+>>
+>> (Well, we already had that __GFP_COLD there from before, so it's
+>> really about replacing __GFP_HIGHMEM with something like "GFP_HIGHUSER
+>> | __GFP_RECLAIMABLE").
+>>
+>> But its' great to hear that this does seem to be the underlying cause.
+>> If you could test with that GFP_HIGHUSER | __GFP_RECLAIMABLE, that
+>> would be a good thing. After all - maybe the problem was triggered by
+>> some other flag than __GFP_MOVABLE, and as such, having some
+>> additional testing with a bigger set of allocation flags would be a
+>> really good thing.
+>
+> I just sent a patch I tested here with GFP_HIGHUSER | __GFP_COLD
+> instead, and it resumes okay for me,
+>
+> I'll play with GFP_RECLAIMABLE now,
+>
+> If anyone wants to know why nobody uses hibernate, this laptop with a
+> 4200rpm driver boots faster than the hibernate cycle.
 
-Which lists firmware version 61ET20WW, which according to:
-http://www-307.ibm.com/pc/support/site.wss/document.do?lndocid=MIGR-67008
+RECLAIMABLE added also seems fine, of course you can't have
+RECLAIMABLE and MOVABLE (I find this out when it oopses on boot).
 
-is a *VERY* outdated BIOS.
+So I suspect MOVABLE is the problem. but I don't know enough about gfp
+flags to know what RECLAIMABLE buys us, and where it  might bite us so
+I can test some more.
 
-And it looks like there are two firmware versions (61* and 63*).  And many
-releases.  If the BIOS update program also upgrades the EC, it can very well
-fix i8042-related problems, since it is usually emulated by EC firmware.
-
-Doesn't look like a quirk you can tie to just model type.  And if you do,
-the three last letters usually doesn't mean much on any Lenovo or IBM box.
-The first four are the main model type.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Dave.
