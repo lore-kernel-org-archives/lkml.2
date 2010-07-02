@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759973Ab0GBT6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 15:58:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44208 "EHLO mx1.redhat.com"
+	id S1759950Ab0GBT6g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 15:58:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2840 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757665Ab0GBT6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 15:58:33 -0400
+	id S1756777Ab0GBT6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 15:58:32 -0400
 From: Jeff Moyer <jmoyer@redhat.com>
 To: linux-ext4@vger.kernel.org
 Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
        tao.ma@oracle.com, Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 3/6] jbd2: yield the device queue when waiting for journal commits
-Date: Fri,  2 Jul 2010 15:58:16 -0400
-Message-Id: <1278100699-24132-4-git-send-email-jmoyer@redhat.com>
+Subject: [PATCH 2/6] jbd: yield the device queue when waiting for commits
+Date: Fri,  2 Jul 2010 15:58:15 -0400
+Message-Id: <1278100699-24132-3-git-send-email-jmoyer@redhat.com>
 In-Reply-To: <1278100699-24132-1-git-send-email-jmoyer@redhat.com>
 References: <1278100699-24132-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,22 +24,22 @@ those testing small files + fsync timings.
 
 Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 ---
- fs/jbd2/journal.c |    7 +++++++
+ fs/jbd/journal.c |    7 +++++++
  1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index bc2ff59..6b5bf0f 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -41,6 +41,7 @@
- #include <linux/hash.h>
- #include <linux/log2.h>
- #include <linux/vmalloc.h>
+diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+index 93d1e47..7bf7528 100644
+--- a/fs/jbd/journal.c
++++ b/fs/jbd/journal.c
+@@ -36,6 +36,7 @@
+ #include <linux/poison.h>
+ #include <linux/proc_fs.h>
+ #include <linux/debugfs.h>
 +#include <linux/blkdev.h>
  
- #define CREATE_TRACE_POINTS
- #include <trace/events/jbd2.h>
-@@ -192,6 +193,7 @@ loop:
+ #include <asm/uaccess.h>
+ #include <asm/page.h>
+@@ -183,6 +184,7 @@ loop:
  			should_sleep = 0;
  		if (should_sleep) {
  			spin_unlock(&journal->j_state_lock);
@@ -47,7 +47,7 @@ index bc2ff59..6b5bf0f 100644
  			schedule();
  			spin_lock(&journal->j_state_lock);
  		}
-@@ -580,6 +582,11 @@ int jbd2_log_wait_commit(journal_t *journal, tid_t tid)
+@@ -549,6 +551,11 @@ int log_wait_commit(journal_t *journal, tid_t tid)
  	while (tid_gt(tid, journal->j_commit_sequence)) {
  		jbd_debug(1, "JBD: want %d, j_commit_sequence=%d\n",
  				  tid, journal->j_commit_sequence);
