@@ -1,108 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab0GBExp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 00:53:45 -0400
-Received: from sh.osrg.net ([192.16.179.4]:44070 "EHLO sh.osrg.net"
+	id S1753141Ab0GBEy1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 00:54:27 -0400
+Received: from lirone.symas.net ([64.71.152.235]:50144 "EHLO lirone.symas.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751295Ab0GBExn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 00:53:43 -0400
-Date: Fri, 2 Jul 2010 13:53:14 +0900
-To: James.Bottomley@suse.de
-Cc: snitzer@redhat.com, fujita.tomonori@lab.ntt.co.jp, axboe@kernel.dk,
-       hch@lst.de, linux-scsi@vger.kernel.org, dm-devel@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: scsi: address leak in the error path of discard page allocation
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1278015548.2813.147.camel@mulgrave.site>
-References: <20100701130328.GB19605@redhat.com>
-	<20100701201508.GA28546@redhat.com>
-	<1278015548.2813.147.camel@mulgrave.site>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752761Ab0GBEyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 00:54:25 -0400
+Message-ID: <4C2D70F0.7090100@symas.com>
+Date: Thu, 01 Jul 2010 21:54:08 -0700
+From: Howard Chu <hyc@symas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; rv:1.9.3a5pre) Gecko/20100607 Firefox 3.6
+MIME-Version: 1.0
+To: Piotr Gluszenia Slawinski <curious@bwv190.internetdsl.tpnet.pl>
+CC: Dave Airlie <airlied@redhat.com>, Timothy Meade <zt.tmzt@gmail.com>,
+       linux-arm-msm@vger.kernel.org, Saravana Kannan <skannan@codeaurora.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: Closed source userspace graphics drivers with an open source
+  kernel component
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com> <AANLkTimgH-DiQyg0f-an5FS3Wyb2b6He3fxxB1L8Ziol@mail.gmail.com> <1278024678.7738.54.camel@c-dwalke-linux.qualcomm.com> <AANLkTinNrpcBg0TXTS78qaI5kPQKD-IbnLpDStu4_BIg@mail.gmail.com> <1278026975.7738.89.camel@c-dwalke-linux.qualcomm.com> <AANLkTilGdNgWIprJ2XZ2gSv2d-DVybGmb9phcboi4fNL@mail.gmail.com> <1278029284.7738.116.camel@c-dwalke-linux.qualcomm.com> <AANLkTilEKPmHKNDNbNpmUvcYC338YezLkNBc4ShfTFdp@mail.gmail.com> <4C2D3066.9040104@codeaurora.org> <AANLkTilsqmCZwLUNJhvDKkralHQZzlRV3ZxaIGbt9-xB@mail.gmail.com> <AANLkTinvzJrx4AqgWYuMg66Djf-snouLQZE7wI9Bu0Kv@mail.gmail.com> <AANLkTimiNKRabIDCLvRwxVfdwuvt76PbDuTn2RocZLVG@mail.gmail.com> <1278038796.19705.21.camel@clockmaker-el6> <Pine.LNX.4.64.1007020456250.9535@bwv190.internetdsl.tpnet.pl>
+In-Reply-To: <Pine.LNX.4.64.1007020456250.9535@bwv190.internetdsl.tpnet.pl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100702135300U.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 02 Jul 2010 13:53:16 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 01 Jul 2010 15:19:08 -0500
-James Bottomley <James.Bottomley@suse.de> wrote:
+Piotr Gluszenia Slawinski wrote:
+>> There is no point supporting companies that give you a little bit of
+>> information in exchange they want the support that being in a mainline
+>> kernel gives. Its an unfair exchange of knowledge and time, and if they
+>> claim they have to make a profit then its even more unfair.
+>
+> also, they seem to do it quite wrong way. i.e. much simpler would be to
+> just implement regular, open driver , and implement additional crypto
+> mechanism in chipset itself, allowing to use simple userspace program
+> sending certified keys allowing GPU to operate.
+> if key is not available and device/driver not paid/registered, then
+> GPU would simply lock itself , similiar to pre-paid designs from
+> company whose name should not be spoken aloud.
+>
+> also certain functionality could be ordered with same chip structure,
+> i.e. framebuffer, unaccelerated 2d, accel 2d, 3d, etc.
+> with user buying proper 'entry level' pre-paid code set from manufacturer.
+>
+> this would provide quite same functionality (profit), without impacting
+> open-source projects like Xorg with unnessesary complications.
 
-> On Thu, 2010-07-01 at 16:15 -0400, Mike Snitzer wrote:
-> > On Thu, Jul 01 2010 at  9:03am -0400,
-> > Mike Snitzer <snitzer@redhat.com> wrote:
-> > 
-> > > On Thu, Jul 01 2010 at  6:49am -0400,
-> > > FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-> > > 
-> > > > This fixes discard page leak by using q->unprep_rq_fn facility.
-> > > > 
-> > > > q->unprep_rq_fn is called when all the data buffer (req->bio and
-> > > > scsi_data_buffer) in the request is freed.
-> > > > 
-> > > > sd_unprep() uses rq->buffer to free discard page allocated in
-> > > > sd_prepare_discard().
-> > > > 
-> > > > Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> > > 
-> > > Thanks for sorting this out Tomo, all 3 patches work great!
-> > > 
-> > > BTW, there is one remaining (rare) leak in the allocation path.
-> > > 
-> > > The following patch serves to fix it but I'm not sure if there is a more
-> > > elegant way to address this.
-> > 
-> > I've continued to look at this to arrive at alternative implementation.
-> > Here is a summary of the problem:
-> > 
-> > A 'scsi_setup_discard_cmnd' return other than BLKPREP_OK will not cause
-> > a discard request to get completely stripped down ('blk_finish_request'
-> > isn't calling 'blk_unprep_request' because REQ_DONTPREP is not set by
-> > 'scsi_prep_return' for none BLKPREP_OK return).  Therefore the discard
-> > request's page will _not_ get cleaned up.
-> > 
-> > Aside from code inspection, I confirmed this by adding some test code to
-> > force a one-time initial BLKPREP_DEFER return from
-> > 'scsi_setup_discard_cmnd'.
-> > 
-> > > An alternative would be to check if the page is already allocated
-> > > (before allocating the page in scsi_setup_discard_cmnd)?
-> > 
-> > Unfortunatey this "alternative" won't work because it completely ignores
-> > the case where BLKPREP_KILL is returned from scsi_setup_discard_cmnd'.
-> >  
-> > > Please advise, thanks.
-> > 
-> > In short, I'm not too happy that the following patch doesn't allow for
-> > centralized cleanup of the discard request's page (via sd_unprep_fn).
-> > But in order to do that we'd likely have to:
-> > 1) relax blk_finish_request's REQ_DONTPREP constraint
-> > 2) add other weird conditionals within blk_unprep_request because
-> >    the discard request wasn't _really_ prepared?
-> > 
-> > So given this I'm inclined to stick with the following patch.
-> > 
-> > Jens and/or James, what do you think?
-> 
-> The rules are pretty clear:  Unprep is only called if the request gets
-> prepped ... that means you have to return BLKPREP_OK.  Defer or kill
-> assume there's no teardown to do, so the allocation (if it took place)
-> must be reversed before returning them
+Pardon me for intruding in this discussion, but I'm astonished that you 
+actually find what you posted to be acceptable. If I pay for a piece of 
+hardware, I have the right to use it. Requiring certified keys before it 
+performs the function for which it was purchased is pure nonsense.
 
-Seems that scsi-ml calls scsi_unprep_request() for not-prepped
-requests in scsi_init_io error path. So we could move that
-scsi_unprep_request() to the error path in scsi_prep_return(). Then we
-can free discard page in the single place.
-
-Applying the rule strictly is fine by me too; we remove
-scsi_unprep_request() in scsi_init_io error path and clean up things
-in each prep function's error path.
-
-
-Btw, blk_clear_request_payload() is necessary?
-
-Making sure that a request is clean is not a bad idea but if we hit
-BLKPREP_KILL or BLKPREP_DEFER, we call
-blk_end_request(). blk_end_request() can free a request properly even
-if we don't do something like blk_clear_request_payload?
+-- 
+   -- Howard Chu
+   CTO, Symas Corp.           http://www.symas.com
+   Director, Highland Sun     http://highlandsun.com/hyc/
+   Chief Architect, OpenLDAP  http://www.openldap.org/project/
