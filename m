@@ -1,118 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab0GBANS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 20:13:18 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44402 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755792Ab0GBANQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 20:13:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OV9hO5NeTGY57mcHRy8gQLuP2EeBbhDGc8nkIzc30IcTyfBOZvVpJDmuJfmMRbzR9H
-         huRXaXGWvOV1EkrZ+bAZV8Flt03Vnu4/tg+bWvqx30sHc4t8bK8znQ/ij7e/GX/rHVSS
-         vwvsDEPYMVCHYVZZxVVCSUM/TNoOnm5nA152I=
-MIME-Version: 1.0
-In-Reply-To: <1278029284.7738.116.camel@c-dwalke-linux.qualcomm.com>
-References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
-	<AANLkTimgH-DiQyg0f-an5FS3Wyb2b6He3fxxB1L8Ziol@mail.gmail.com>
-	<1278024678.7738.54.camel@c-dwalke-linux.qualcomm.com>
-	<AANLkTinNrpcBg0TXTS78qaI5kPQKD-IbnLpDStu4_BIg@mail.gmail.com>
-	<1278026975.7738.89.camel@c-dwalke-linux.qualcomm.com>
-	<AANLkTilGdNgWIprJ2XZ2gSv2d-DVybGmb9phcboi4fNL@mail.gmail.com>
-	<1278029284.7738.116.camel@c-dwalke-linux.qualcomm.com>
-Date: Fri, 2 Jul 2010 10:13:11 +1000
-Message-ID: <AANLkTilEKPmHKNDNbNpmUvcYC338YezLkNBc4ShfTFdp@mail.gmail.com>
-Subject: Re: Closed source userspace graphics drivers with an open source 
-	kernel component
-From: Dave Airlie <airlied@gmail.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       dri-devel <dri-devel@lists.freedesktop.org>,
-       linux-arm-msm@vger.kernel.org, jcrouse@codeaurora.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756635Ab0GBAPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 20:15:21 -0400
+Received: from ozlabs.org ([203.10.76.45]:33316 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755017Ab0GBAPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 20:15:20 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Greg KH <gregkh@suse.de>
+cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [079/200] powerpc/pseries: Make query_cpu_stopped callable outside hotplug cpu
+In-reply-to: <20100701174253.083176764@clark.site>
+References: <20100701174253.083176764@clark.site>
+Comments: In-reply-to Greg KH <gregkh@suse.de>
+   message dated "Thu, 01 Jul 2010 10:42:49 -0700."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
+Date: Fri, 02 Jul 2010 10:15:18 +1000
+Message-ID: <24721.1278029718@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 2, 2010 at 10:08 AM, Daniel Walker <dwalker@codeaurora.org> wrote:
-> On Fri, 2010-07-02 at 09:37 +1000, Dave Airlie wrote:
->
->> > Oh, man .. It seems like any driver model that straddles userspace and
->> > kernel space is kind of asking for trouble (my opinion anyway)..
->> >
->> > Would you accept a userspace component that supported some subset of the
->> > features ? You would have a kernel space driver, and userspace both open
->> > source and GPL'd , but the userspace component wouldn't support ever
->> > feature available .. Then the company would be free to make another
->> > proprietary userspace with more features based off the open source one.
->> >
->>
->> That starts to get a bit more towards useful, except you still run
->> into the problem of what happens if community developers start adding
->> features to the open driver, that conflict with  features in the
->> closed code. We'd also have to be very careful about what interfaces
->> the kernel exposed had corresponding code in userspace. i.e. adding
->> "special" ioctls for the closed bits would be a disaster, all such
->> ioctls would need open users for verification and testing.
->
-> Ok .. The open userspace would just be like any other project, but
-> whatever company pushed the driver would likely maintain the userspace
-> component .. So the maintainer would have to handle the conflicts
-> between the proprietary vs. open source sides of it.
->
-> Actually , now that I think about it the biggest problem is the license
-> of the userspace side.. Whatever company makes this would have to be
-> able to relicense it and actually make a proprietary userspace.. So the
-> userspace license would be really critical.. Either that or no one
-> outside the company that pushed the driver could make code changes to
-> the userspace side..
+Greg,
 
-We generally use MIT for userspace bits anyways, I don't think we have
-any LGPL/GPL drivers in userspace currently. So this would probably be
-an okay solution to continue with.
+This won't break ppc64, but it pointless without:
+aef40e87d866355ffd279ab21021de733242d0d5 powerpc/pseries: Make
+query_cpu_stopped callable outside hotplug cpu
 
-The thing is with architectures like Gallium it would be possible to
-write a complete open driver and just keep the Windows interface bits,
-granted we don't have an open gallium to windows driver layer so that
-would have to be worked on.
+There are two patches that can be put in stable, f8b676918 and
+aef40e87d.  In this batch of stable releases you have:
+ 
+  2.6.27.48 : aef40e87d only (breaks ppc64)
+  2.6.32.16 : aef40e87d only (breaks ppc64)
+  2.6.33.6  : aef40e87d & f8b676918 (works!)
+  2.6.34.1  : f8b676918 only (does nothing)
 
->
->> So for example, if you have a kernel KMS/DRM driver, and it set the
->> hardware up, but then you had an open 2D driver and a closed 3D
->> driver, you would have to make sure there was no functionality in the
->> kernel that only the 3D driver used as it would become impossible to
->> openly validate it.
->
-> Ok. I'm not sure how crazy that would be to setup, but it doesn't seem
-> like it would be that hard to just abstract the various components of
-> the driver.
+Mikey
 
-Its pretty much what something like gallium can do.
-
->
->> The other issue I see with a lot of these, is the driver are presented
->> as this is the kernel driver, these APIs are set in stone as we have
->> binary userspaces already deployed, this is even more unacceptable,
->> since we need to be able to change the interface and do proper driver
->> design before merging what looks like crap thrown together in a pile
->> and made to stick.
->
-> This seems really wild to me .. Your talking about how you change the
-> kernel space side and you need to be able to change the userspace side
-> to match right ?
->
-> Where does the userspace side of these driver live? Not in the kernel
-> right?
-
-This is more about initial development stages. We maintain kernel
-API/ABI for all in-tree drivers, however before we put a driver into
-mainline, we usually need to redo the crazy interfaces that vendors
-have come up with. Like 32/64 alignment, passing userspace addresses
-into the kernel, passing phy addresses to userspace etc. If the
-userspace binary is closed that process becomes next to impossible.
-
-Dave.
+In message <20100701174253.083176764@clark.site> you wrote:
+> 2.6.34-stable review patch.  If anyone has any objections, please let me know
+.
+> 
+> ------------------
+> 
+> From: Michael Neuling <mikey@neuling.org>
+> 
+> commit f8b67691828321f5c85bb853283aa101ae673130 upstream.
+> 
+> This moves query_cpu_stopped() out of the hotplug cpu code and into
+> smp.c so it can called in other places and renames it to
+> smp_query_cpu_stopped().
+> 
+> It also cleans up the return values by adding some #defines
+> 
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  arch/powerpc/platforms/pseries/hotplug-cpu.c    |   30 +++------------------
+---
+>  arch/powerpc/platforms/pseries/plpar_wrappers.h |    8 ++++++
+>  arch/powerpc/platforms/pseries/smp.c            |   22 +++++++++++++++++
+>  3 files changed, 34 insertions(+), 26 deletions(-)
+> 
+> --- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
+> +++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
+> @@ -154,30 +154,6 @@ static void pseries_mach_cpu_die(void)
+>  	for(;;);
+>  }
+>  
+> -static int qcss_tok;	/* query-cpu-stopped-state token */
+> -
+> -/* Get state of physical CPU.
+> - * Return codes:
+> - *	0	- The processor is in the RTAS stopped state
+> - *	1	- stop-self is in progress
+> - *	2	- The processor is not in the RTAS stopped state
+> - *	-1	- Hardware Error
+> - *	-2	- Hardware Busy, Try again later.
+> - */
+> -static int query_cpu_stopped(unsigned int pcpu)
+> -{
+> -	int cpu_status, status;
+> -
+> -	status = rtas_call(qcss_tok, 1, 2, &cpu_status, pcpu);
+> -	if (status != 0) {
+> -		printk(KERN_ERR
+> -		       "RTAS query-cpu-stopped-state failed: %i\n", status);
+> -		return status;
+> -	}
+> -
+> -	return cpu_status;
+> -}
+> -
+>  static int pseries_cpu_disable(void)
+>  {
+>  	int cpu = smp_processor_id();
+> @@ -224,8 +200,9 @@ static void pseries_cpu_die(unsigned int
+>  	} else if (get_preferred_offline_state(cpu) == CPU_STATE_OFFLINE) {
+>  
+>  		for (tries = 0; tries < 25; tries++) {
+> -			cpu_status = query_cpu_stopped(pcpu);
+> -			if (cpu_status == 0 || cpu_status == -1)
+> +			cpu_status = smp_query_cpu_stopped(pcpu);
+> +			if (cpu_status == QCSS_STOPPED ||
+> +			    cpu_status == QCSS_HARDWARE_ERROR)
+>  				break;
+>  			cpu_relax();
+>  		}
+> @@ -388,6 +365,7 @@ static int __init pseries_cpu_hotplug_in
+>  	struct device_node *np;
+>  	const char *typep;
+>  	int cpu;
+> +	int qcss_tok;
+>  
+>  	for_each_node_by_name(np, "interrupt-controller") {
+>  		typep = of_get_property(np, "compatible", NULL);
+> --- a/arch/powerpc/platforms/pseries/plpar_wrappers.h
+> +++ b/arch/powerpc/platforms/pseries/plpar_wrappers.h
+> @@ -4,6 +4,14 @@
+>  #include <asm/hvcall.h>
+>  #include <asm/page.h>
+>  
+> +/* Get state of physical CPU from query_cpu_stopped */
+> +int smp_query_cpu_stopped(unsigned int pcpu);
+> +#define QCSS_STOPPED 0
+> +#define QCSS_STOPPING 1
+> +#define QCSS_NOT_STOPPED 2
+> +#define QCSS_HARDWARE_ERROR -1
+> +#define QCSS_HARDWARE_BUSY -2
+> +
+>  static inline long poll_pending(void)
+>  {
+>  	return plpar_hcall_norets(H_POLL_PENDING);
+> --- a/arch/powerpc/platforms/pseries/smp.c
+> +++ b/arch/powerpc/platforms/pseries/smp.c
+> @@ -57,6 +57,28 @@
+>   */
+>  static cpumask_t of_spin_map;
+>  
+> +/* Query where a cpu is now.  Return codes #defined in plpar_wrappers.h */
+> +int smp_query_cpu_stopped(unsigned int pcpu)
+> +{
+> +	int cpu_status, status;
+> +	int qcss_tok = rtas_token("query-cpu-stopped-state");
+> +
+> +	if (qcss_tok == RTAS_UNKNOWN_SERVICE) {
+> +		printk(KERN_INFO "Firmware doesn't support "
+> +				"query-cpu-stopped-state\n");
+> +		return QCSS_HARDWARE_ERROR;
+> +	}
+> +
+> +	status = rtas_call(qcss_tok, 1, 2, &cpu_status, pcpu);
+> +	if (status != 0) {
+> +		printk(KERN_ERR
+> +		       "RTAS query-cpu-stopped-state failed: %i\n", status);
+> +		return status;
+> +	}
+> +
+> +	return cpu_status;
+> +}
+> +
+>  /**
+>   * smp_startup_cpu() - start the given cpu
+>   *
+> 
+> 
