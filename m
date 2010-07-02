@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab0GDLyU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 07:54:20 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:36185 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757425Ab0GDLyS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 07:54:18 -0400
-Message-ID: <4C307668.40002@tilera.com>
-Date: Sun, 4 Jul 2010 07:54:16 -0400
+	id S1757576Ab0GDMms (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 08:42:48 -0400
+Received: from king.tilera.com ([72.1.168.226]:26089 "EHLO king.tilera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757306Ab0GDMmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jul 2010 08:42:46 -0400
+Message-Id: <201007041242.o64CggfV012188@farm-0002.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Paul Mundt <lethal@linux-sh.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-       <arnd@arndb.de>
-Subject: Re: [PATCH] arch/tile: updates to hardwall code from community feedback.
-References: <201007030217.o632HoK9004030@farm-0002.internal.tilera.com> <20100704035759.GA5888@linux-sh.org>
-In-Reply-To: <20100704035759.GA5888@linux-sh.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Date: Fri, 2 Jul 2010 13:41:14 -0400
+Subject: [PATCH -v2] Move list types from <linux/list.h> to <linux/types.h>.
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthew Wilcox <matthew@wil.cx>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+X-OriginalArrivalTime: 04 Jul 2010 12:42:45.0486 (UTC) FILETIME=[66CAF8E0:01CB1B76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/3/2010 11:57 PM, Paul Mundt wrote:
-> On Fri, Jul 02, 2010 at 11:45:18AM -0400, Chris Metcalf wrote:
->   
->>  #define for_each_hardwall_task_safe(pos, n, head) \
->> -	hardwall_for_each_entry_safe(pos, n, head, thread.hardwall_list)
->> +	list_for_each_entry_safe(pos, n, head, thread.hardwall_list)
->>  
->>     
-> If you've killed off the rest of the wrappers due to them not really
-> having to do anything special, you could do the same for this one, too.
->   
+This allows a list_head (or hlist_head, etc.) to be used from places
+that used to be impractical, in particular <asm/processor.h>, which
+used to cause include file recursion: <linux/list.h> includes
+<linux/prefetch.h>, which always includes <asm/processor.h> for the
+prefetch macros, as well as <asm/system.h>, which often includes
+<asm/processor.h> directly or indirectly.
 
-Good point, thanks.  Done.
+This avoids a lot of painful workaround hackery on the tile
+architecture, where we use a list_head in the thread_struct to chain
+together tasks that are activated on a particular hardwall.
 
->>  static struct hardwall_info *hardwall_create(
->> -	size_t size, const unsigned long __user *bits)
->> +	size_t size, const unsigned char __user *bits)
->>  {
->> [...]
->>  
->>     
-> Does it even make any sense to accept > sizeof(struct cpumask) ? Your
-> case below obviously handles this by making sure the rest of the bits are
-> zeroed, but that still seems a bit excessive. If anything, the
-> sizeof(struct cpumask) should be your worst case (or just rejected out of
-> hand), and you could use cpumask_size() for everything else.
->   
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
 
-Yes, it does make sense; see get_nodes() in mm/mempolicy.c for a similar
-API philosophy.  The idea is that you don't want to tie userspace code
-to the particular NR_CPUS that you happened to build your kernel with. 
-So you let userspace use any reasonable value for its bitmask, and as
-long as it's passing zeroes for the >NR_CPUS positions, that's OK.
+Folks on the Cc: list who commented on the -v1 patch, let me know
+if I can add your Acked-by to this patch.  Thanks.
 
-cpumask_parse_user() won't help here, since we're not parsing an ASCII
-string input.  The main flow is just a copy_from_user() for the bits in
-the mask, then an optional memset() if the user specified fewer than
-NR_CPUS cpus, or a scan to check for set bits if the user specified more
-than NR_CPUS cpus.
+ include/linux/list.h  |   13 +------------
+ include/linux/types.h |   12 ++++++++++++
+ 2 files changed, 13 insertions(+), 12 deletions(-)
 
+diff --git a/include/linux/list.h b/include/linux/list.h
+index 8392884..bc43e8a 100644
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -1,6 +1,7 @@
+ #ifndef _LINUX_LIST_H
+ #define _LINUX_LIST_H
+ 
++#include <linux/types.h>
+ #include <linux/stddef.h>
+ #include <linux/poison.h>
+ #include <linux/prefetch.h>
+@@ -16,10 +17,6 @@
+  * using the generic single-entry routines.
+  */
+ 
+-struct list_head {
+-	struct list_head *next, *prev;
+-};
+-
+ #define LIST_HEAD_INIT(name) { &(name), &(name) }
+ 
+ #define LIST_HEAD(name) \
+@@ -551,14 +548,6 @@ static inline void list_splice_tail_init(struct list_head *list,
+  * You lose the ability to access the tail in O(1).
+  */
+ 
+-struct hlist_head {
+-	struct hlist_node *first;
+-};
+-
+-struct hlist_node {
+-	struct hlist_node *next, **pprev;
+-};
+-
+ #define HLIST_HEAD_INIT { .first = NULL }
+ #define HLIST_HEAD(name) struct hlist_head name = {  .first = NULL }
+ #define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL)
+diff --git a/include/linux/types.h b/include/linux/types.h
+index 23d237a..336cc39 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -197,6 +197,18 @@ typedef struct {
+ } atomic64_t;
+ #endif
+ 
++struct list_head {
++	struct list_head *next, *prev;
++};
++
++struct hlist_head {
++	struct hlist_node *first;
++};
++
++struct hlist_node {
++	struct hlist_node *next, **pprev;
++};
++
+ struct ustat {
+ 	__kernel_daddr_t	f_tfree;
+ 	__kernel_ino_t		f_tinode;
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.6.5.2
 
