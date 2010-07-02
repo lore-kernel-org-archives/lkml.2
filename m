@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab0GBMPG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 08:15:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34831 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756528Ab0GBMPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 08:15:02 -0400
-Date: Fri, 2 Jul 2010 14:14:56 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-security-module@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-       linux-kernel@vger.kernel.org,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
-Message-ID: <20100702121456.GD1904@jolsa.brq.redhat.com>
-References: <20100625133333.GA1918@jolsa.bos.redhat.com>
+	id S1758361Ab0GBMTk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 08:19:40 -0400
+Received: from usmamail.tilera.com ([72.1.168.231]:23469 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757746Ab0GBMTj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 08:19:39 -0400
+Message-ID: <4C2DD958.7030005@tilera.com>
+Date: Fri, 2 Jul 2010 08:19:36 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100625133333.GA1918@jolsa.bos.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch/tile: Add driver to enable access to the user dynamic
+ network.
+References: <201006252110.o5PLArvw010770@farm-0002.internal.tilera.com> <201006281312.16391.arnd@arndb.de> <4C28BE64.4050505@tilera.com> <201006282134.55166.arnd@arndb.de>
+In-Reply-To: <201006282134.55166.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-any feedback?
+[The question is how to use <linux/list.h> from within <asm/processor.h>.]
 
-jirka
+On 6/28/2010 3:34 PM, Arnd Bergmann wrote:
+>> I think the only "true" fix would be to have a new <linux/list_types.h>
+>> > header that provides list_head (and presumably hlist_head and
+>> > hlist_node), which <linux/list.h> would include, as would our
+>> > <asm/processor.h>.  This is certainly in line with recent
+>> > header-separation changes (e.g. mm_types.h).  Would there be interest in
+>> > a change like this?  I implemented it in my tree, and if it sounds
+>> > plausible to you, I'll send out a git diff, but it looks pretty much
+>> > exactly like this description :-)
+>>     
+> Yes, I think that would be a reasonable change.
+>
+> Another alternative might be to move the prefetch stuff from asm/processor.h
+> to asm/prefetch.h on all architectures, which also breaks the dependency loop,
+> unless I'm mistaken again
 
-On Fri, Jun 25, 2010 at 09:33:33AM -0400, Jiri Olsa wrote:
-> BZ 591015 - kernel BUG at kernel/cred.c:168
-> https://bugzilla.redhat.com/show_bug.cgi?id=591015
-> 
-> Above bugzilla reported bug during the releasing of
-> old cred structure.
-> 
-> There is reproducer attached to the bugzilla.
-> 
-> The issue is caused by releasing old cred struct while other
-> kernel path might be still using it. This leads to cred->usage
-> inconsistency inside the __put_cred and triggering the bug.
-> 
-> Following kernel paths are affected:
-> 
-> The CPU1 path is setting the new groups creds.
-> The CPU2 path is cat /proc/PID/status
-> 
-> 
-> CPU 1                              CPU 2
-> 
-> sys_setgroups                      proc_pid_status      
->   set_current_groups                 task_state
->     commit_creds                       rcu_read_lock
->       put_cred                         ...
->         __put_cred                     get_cred
->           BUG_ON(usage != 0)           ...
->                                        rcu_read_unlock
->                                        
-> 
-> 
-> If __put_cred got executed during the CPU2 holding the reference
-> the BUG_ON inside __put_cred is trigered.
-> 
-> I think there's no need to get the cred refference as long as
-> the 'cred' handling stays inside the rcu_read_lock block.
-> 
-> And the condition of __task_cred 'make sure task doesn't go away',
-> is done by proc_single_show as this is the proc file.
-> 
-> wbr,
-> jirka
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Acked-by: David Howells <dhowells@redhat.com>
-> ---
-> diff --git a/fs/proc/array.c b/fs/proc/array.c
-> index 9b58d38..ac3b3a4 100644
-> --- a/fs/proc/array.c
-> +++ b/fs/proc/array.c
-> @@ -176,7 +176,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
->  		if (tracer)
->  			tpid = task_pid_nr_ns(tracer, ns);
->  	}
-> -	cred = get_cred((struct cred *) __task_cred(p));
-> +	cred = __task_cred(p);
->  	seq_printf(m,
->  		"State:\t%s\n"
->  		"Tgid:\t%d\n"
-> @@ -199,15 +199,14 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
->  		"FDSize:\t%d\n"
->  		"Groups:\t",
->  		fdt ? fdt->max_fds : 0);
-> -	rcu_read_unlock();
->  
->  	group_info = cred->group_info;
->  	task_unlock(p);
->  
->  	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
->  		seq_printf(m, "%d ", GROUP_AT(group_info, g));
-> -	put_cred(cred);
->  
-> +	rcu_read_unlock();
->  	seq_printf(m, "\n");
->  }
->  
+In principle I like the <asm/prefetch.h> idea, but I'm concerned that
+the #include of <asm/system.h> from <linux/list.h> will recursively
+include <asm/processor.h> on some platforms; for example, s390 and
+xtensa include it directly.  We (tile) were including it indirectly via
+<asm/irqflags.h>, though this seems to be a spurious include on our
+part, but other platforms may also include it indirectly.  To be fair,
+I'm not sure why <asm/system.h> is included from <linux/list.h>.  It
+doesn't seem required for a tile build, at least, but no doubt it was
+put there for some reason.
+
+So, if there's a good reason for it to be there, I'd say that pushes us
+back toward a separate <linux/list_types.h>.  Otherwise we can
+investigate splitting out the prefetch content on every platform to
+<asm/prefetch.h> (presumably creating some empty <asm/prefetch.h>
+headers on architectures that just use the gcc builtin) and adding new
+#includes of <asm/prefetch.h> to files that reference the prefetch
+functionality.  Arnd and other list folks, what's your instinct?
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
