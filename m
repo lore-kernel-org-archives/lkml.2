@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab0GBH0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 03:26:23 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:35102 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab0GBH0V (ORCPT
+	id S1755517Ab0GBH1t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 03:27:49 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:52120 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab0GBH1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 03:26:21 -0400
-Subject: Re: macbook webcam no longer works on .35-rc
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1277932269.11050.1.camel@jlt3.sipsolutions.net>
-References: <1277932269.11050.1.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Jul 2010 09:26:15 +0200
-Message-ID: <1278055575.3737.7.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Jul 2010 03:27:48 -0400
+Date: Fri, 2 Jul 2010 09:28:26 +0200
+From: Nico Schottelius <nico-linux-20100702@schottelius.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Nico Schottelius <nico-linux-20100702@schottelius.org>
+Subject: e1000e: receives no packets after resume
+ (2.6.35-rc3-00262-g984bc96)
+Message-ID: <20100702072826.GB16856@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20100702@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7iMSBzlTiPOCCT2k"
+Content-Disposition: inline
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.35-rc3-00262-g984bc96 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-30 at 23:11 +0200, Johannes Berg wrote:
-> I'm pretty sure this was a regression in .34, but haven't checked right
-> now, can bisect when I find time but wanted to inquire first if somebody
-> had ideas. All I get is:
-> 
-> [57372.078968] uvcvideo: Failed to query (130) UVC control 5 (unit 3) :
-> -32 (exp. 1).
 
-Didn't have to bisect it. The problem is caused by
+--7iMSBzlTiPOCCT2k
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-commit 59529081e092506edb81a42d914e2d0522f65ca7
-Author: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Date:   Sat Jan 23 06:30:20 2010 -0300
+Good morning hackers,
 
-    V4L/DVB: uvcvideo: Cache control min, max, res and def query results
+I've seen that in kernels before, but now suffering from it:
+e1000e does not receive any packets after third resume:
 
-which reverts cleanly, but then the driver doesn't compile and one also
-needs to revert
+---------------------------------------------------------------------------=
+-----
+[8:16] kr:clyde# dhcpcd eth0
+dhcpcd[11589]: version 5.2.5 starting
+dhcpcd[11589]: eth0: rebinding lease of 129.132.102.115
+dhcpcd[11589]: eth0: broadcasting for a lease
+^Cdhcpcd[11589]: received SIGINT, stopping
+dhcpcd[11589]: eth0: removing interface
+[8:16] kr:clyde# dhcpcd eth0
+dhcpcd[11601]: version 5.2.5 starting
+dhcpcd[11601]: eth0: rebinding lease of 129.132.102.115
+dhcpcd[11601]: eth0: broadcasting for a lease
+^Cdhcpcd[11601]: received SIGINT, stopping
+dhcpcd[11601]: eth0: removing interface
+[8:16] kr:clyde# dhcpcd eth0
+dhcpcd[11784]: version 5.2.5 starting
+dhcpcd[11784]: eth0: rebinding lease of 129.132.102.115
+^Cdhcpcd[11784]: received SIGINT, stopping
+dhcpcd[11784]: eth0: removing interface
+[8:16] kr:clyde# dhcpcd eth0
+dhcpcd[11830]: version 5.2.5 starting
+dhcpcd[11830]: eth0: rebinding lease of 129.132.102.115
+dhcpcd[11830]: eth0: broadcasting for a lease
+dhcpcd[11830]: timed out
+[8:17] kr:clyde# rmmod e1000e
+[8:18] kr:clyde# modprobe e1000e
+[8:18] kr:clyde# dhcpcd eth0   =20
+dhcpcd[11855]: version 5.2.5 starting
+dhcpcd[11855]: eth0: waiting for carrier
+^Cdhcpcd[11855]: received SIGINT, stopping
+dhcpcd[11855]: eth0: removing interface
+[8:18] kr:clyde# dhcpcd eth0   =20
+dhcpcd[11871]: version 5.2.5 starting
+dhcpcd[11871]: eth0: rebinding lease of 129.132.102.115
+dhcpcd[11871]: eth0: acknowledged 129.132.102.115 from 129.132.57.97
+dhcpcd[11871]: eth0: checking for 129.132.102.115
+dhcpcd[11871]: eth0: leased 129.132.102.115 for 86400 seconds
+dhcpcd[11871]: forked to background, child pid 11892
+[8:18] kr:clyde#=20
+---------------------------------------------------------------------------=
+-----
 
-commit cf7a50eeb6f462a0b7d1619fcb27a727a2981769
-Author: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Date:   Sun Apr 25 16:27:14 2010 -0300
+Are you aware of this issues?
 
-    V4L/DVB: uvcvideo: Prevent division by 0 when control step value is 0
+Cheers,
 
-and
+Nico
 
-commit e54532e591cd5b9ce77dbc8d9786ae9f600f101a
-Author: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Date:   Sat Jan 23 07:07:53 2010 -0300
+--=20
+New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Please resign, if you signed 9885188C or 8D0E27A4.
 
-    V4L/DVB: uvcvideo: Clamp control values to the minimum and maximum values
+Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
 
+--7iMSBzlTiPOCCT2k
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-in that order.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-These are commits introduced in the .34/.35 cycles. Please fix.
+iEYEARECAAYFAkwtlRoACgkQ19zI5DGHffDhDwCgmT5BfNcSQUe9R5vd++RlZv7t
+1acAn0ftexP0dkZT1PZmr/eiAV07CmQA
+=pfc7
+-----END PGP SIGNATURE-----
 
-Can we revert things that are regressions pre-dating the current kernel
-version?
-
-johannes
-
+--7iMSBzlTiPOCCT2k--
