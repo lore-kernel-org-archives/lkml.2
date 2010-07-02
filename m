@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759364Ab0GBSpH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 14:45:07 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:50020 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759582Ab0GBSow (ORCPT
+	id S932165Ab0GBSpT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 14:45:19 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47991 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932087Ab0GBSpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 14:44:52 -0400
+	Fri, 2 Jul 2010 14:45:09 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
        sandeen@redhat.com, tytso@mit.edu, staubach@redhat.com,
@@ -14,9 +14,9 @@ To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
        nfsv4@linux-nfs.org, linux-ext4@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH -V2 09/16] richacl: Helper functions for implementing richacl inode operations
-Date: Sat,  3 Jul 2010 00:13:40 +0530
-Message-Id: <1278096227-16784-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V2 13/16] richacl: xattr mapping functions
+Date: Sat,  3 Jul 2010 00:13:44 +0530
+Message-Id: <1278096227-16784-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.rc1
 In-Reply-To: <1278096227-16784-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1278096227-16784-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,39 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@suse.de>
 
-These functions are supposed to be used by file systems so that the file
-system independent code remains in the vfs.
+Map between "system.richacl" xattrs and the in-kernel representation.
 
 Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/Makefile             |    2 +-
- fs/richacl_inode.c      |  194 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/richacl.h |   21 +++++
- 3 files changed, 216 insertions(+), 1 deletions(-)
- create mode 100644 fs/richacl_inode.c
+ fs/Makefile                   |    2 +-
+ fs/richacl_xattr.c            |  156 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/richacl_xattr.h |   47 ++++++++++++
+ 3 files changed, 204 insertions(+), 1 deletions(-)
+ create mode 100644 fs/richacl_xattr.c
+ create mode 100644 include/linux/richacl_xattr.h
 
 diff --git a/fs/Makefile b/fs/Makefile
-index 9ecd045..b38cfc7 100644
+index b38cfc7..35ac29d 100644
 --- a/fs/Makefile
 +++ b/fs/Makefile
 @@ -52,7 +52,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
  obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
  
  obj-$(CONFIG_FS_RICHACL)	+= richacl.o
--richacl-y			:= richacl_base.o
-+richacl-y			:= richacl_base.o richacl_inode.o
+-richacl-y			:= richacl_base.o richacl_inode.o
++richacl-y			:= richacl_base.o richacl_inode.o richacl_xattr.o
  
  obj-y				+= quota/
  
-diff --git a/fs/richacl_inode.c b/fs/richacl_inode.c
+diff --git a/fs/richacl_xattr.c b/fs/richacl_xattr.c
 new file mode 100644
-index 0000000..42f7f68
+index 0000000..1f6e3f2
 --- /dev/null
-+++ b/fs/richacl_inode.c
-@@ -0,0 +1,194 @@
++++ b/fs/richacl_xattr.c
+@@ -0,0 +1,156 @@
 +/*
-+ * Copyright (C) 2010  Novell, Inc.
++ * Copyright (C) 2006, 2010  Novell, Inc.
 + * Written by Andreas Gruenbacher <agruen@suse.de>
 + *
 + * This program is free software; you can redistribute it and/or modify it
@@ -72,215 +72,200 @@ index 0000000..42f7f68
 + * General Public License for more details.
 + */
 +
-+#include <linux/sched.h>
-+#include <linux/module.h>
++#include <linux/kernel.h>
 +#include <linux/fs.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/richacl_xattr.h>
++
++MODULE_LICENSE("GPL");
++
++/**
++ * richacl_from_xattr  -  convert a richacl xattr into the in-memory representation
++ */
++struct richacl *
++richacl_from_xattr(const void *value, size_t size)
++{
++	const struct richacl_xattr *xattr_acl = value;
++	const struct richace_xattr *xattr_ace = (void *)(xattr_acl + 1);
++	struct richacl *acl;
++	struct richace *ace;
++	int count;
++
++	if (size < sizeof(struct richacl_xattr) ||
++	    xattr_acl->a_version != ACL4_XATTR_VERSION ||
++	    (xattr_acl->a_flags & ~ACL4_VALID_FLAGS))
++		return ERR_PTR(-EINVAL);
++
++	count = le16_to_cpu(xattr_acl->a_count);
++	if (count > ACL4_XATTR_MAX_COUNT)
++		return ERR_PTR(-EINVAL);
++
++	acl = richacl_alloc(count);
++	if (!acl)
++		return ERR_PTR(-ENOMEM);
++
++	acl->a_flags = xattr_acl->a_flags;
++	acl->a_owner_mask = le32_to_cpu(xattr_acl->a_owner_mask);
++	if (acl->a_owner_mask & ~ACE4_VALID_MASK)
++		goto fail_einval;
++	acl->a_group_mask = le32_to_cpu(xattr_acl->a_group_mask);
++	if (acl->a_group_mask & ~ACE4_VALID_MASK)
++		goto fail_einval;
++	acl->a_other_mask = le32_to_cpu(xattr_acl->a_other_mask);
++	if (acl->a_other_mask & ~ACE4_VALID_MASK)
++		goto fail_einval;
++
++	richacl_for_each_entry(ace, acl) {
++		const char *who = (void *)(xattr_ace + 1), *end;
++		ssize_t used = (void *)who - value;
++
++		if (used > size)
++			goto fail_einval;
++		end = memchr(who, 0, size - used);
++		if (!end)
++			goto fail_einval;
++
++		ace->e_type = le16_to_cpu(xattr_ace->e_type);
++		ace->e_flags = le16_to_cpu(xattr_ace->e_flags);
++		ace->e_mask = le32_to_cpu(xattr_ace->e_mask);
++		ace->u.e_id = le32_to_cpu(xattr_ace->e_id);
++
++		if (ace->e_flags & ~ACE4_VALID_FLAGS)
++			goto fail_einval;
++		if (ace->e_type > ACE4_ACCESS_DENIED_ACE_TYPE ||
++		    (ace->e_mask & ~ACE4_VALID_MASK))
++			goto fail_einval;
++
++		if (who == end) {
++			if (ace->u.e_id == -1)
++				goto fail_einval;  /* uid/gid needed */
++		} else if (richace_set_who(ace, who))
++			goto fail_einval;
++
++		xattr_ace = (void *)who + ALIGN(end - who + 1, 4);
++	}
++
++	return acl;
++
++fail_einval:
++	richacl_put(acl);
++	return ERR_PTR(-EINVAL);
++}
++EXPORT_SYMBOL_GPL(richacl_from_xattr);
++
++/**
++ * richacl_xattr_size  -  compute the size of the xattr representation of @acl
++ */
++size_t
++richacl_xattr_size(const struct richacl *acl)
++{
++	size_t size = sizeof(struct richacl_xattr);
++	const struct richace *ace;
++
++	richacl_for_each_entry(ace, acl) {
++		size += sizeof(struct richace_xattr) +
++			(richace_is_unix_id(ace) ? 4 :
++			 ALIGN(strlen(ace->u.e_who) + 1, 4));
++	}
++	return size;
++}
++EXPORT_SYMBOL_GPL(richacl_xattr_size);
++
++/**
++ * richacl_to_xattr  -  convert @acl into its xattr representation
++ * @acl:	the richacl to convert
++ * @buffer:	buffer of size richacl_xattr_size(@acl) for the result
++ */
++void
++richacl_to_xattr(const struct richacl *acl, void *buffer)
++{
++	struct richacl_xattr *xattr_acl = buffer;
++	struct richace_xattr *xattr_ace;
++	const struct richace *ace;
++
++	xattr_acl->a_version = ACL4_XATTR_VERSION;
++	xattr_acl->a_flags = acl->a_flags;
++	xattr_acl->a_count = cpu_to_le16(acl->a_count);
++
++	xattr_acl->a_owner_mask = cpu_to_le32(acl->a_owner_mask);
++	xattr_acl->a_group_mask = cpu_to_le32(acl->a_group_mask);
++	xattr_acl->a_other_mask = cpu_to_le32(acl->a_other_mask);
++
++	xattr_ace = (void *)(xattr_acl + 1);
++	richacl_for_each_entry(ace, acl) {
++		xattr_ace->e_type = cpu_to_le16(ace->e_type);
++		xattr_ace->e_flags = cpu_to_le16(ace->e_flags &
++			ACE4_VALID_FLAGS);
++		xattr_ace->e_mask = cpu_to_le32(ace->e_mask);
++		if (richace_is_unix_id(ace)) {
++			xattr_ace->e_id = cpu_to_le32(ace->u.e_id);
++			memset(xattr_ace->e_who, 0, 4);
++			xattr_ace = (void *)xattr_ace->e_who + 4;
++		} else {
++			int sz = ALIGN(strlen(ace->u.e_who) + 1, 4);
++
++			xattr_ace->e_id = cpu_to_le32(-1);
++			memset(xattr_ace->e_who + sz - 4, 0, 4);
++			strcpy(xattr_ace->e_who, ace->u.e_who);
++			xattr_ace = (void *)xattr_ace->e_who + sz;
++		}
++	}
++}
++EXPORT_SYMBOL_GPL(richacl_to_xattr);
+diff --git a/include/linux/richacl_xattr.h b/include/linux/richacl_xattr.h
+new file mode 100644
+index 0000000..e038a7c
+--- /dev/null
++++ b/include/linux/richacl_xattr.h
+@@ -0,0 +1,47 @@
++/*
++ * Copyright (C) 2006, 2010  Novell, Inc.
++ * Written by Andreas Gruenbacher <agruen@suse.de>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ */
++
++#ifndef __RICHACL_XATTR_H
++#define __RICHACL_XATTR_H
++
 +#include <linux/richacl.h>
 +
-+/**
-+ * richacl_may_create  -  helper for implementing iop->may_create
-+ */
-+int
-+richacl_may_create(struct inode *dir, int isdir,
-+		int (*richacl_permission)(struct inode *, unsigned int))
-+{
-+	if (IS_RICHACL(dir))
-+		return richacl_permission(dir,
-+				ACE4_EXECUTE | (isdir ?
-+				ACE4_ADD_SUBDIRECTORY : ACE4_ADD_FILE));
-+	else
-+		return generic_permission(dir, MAY_WRITE | MAY_EXEC,
-+					  dir->i_op->check_acl);
-+}
-+EXPORT_SYMBOL(richacl_may_create);
++#define RICHACL_XATTR "system.richacl"
 +
-+static int
-+check_sticky(struct inode *dir, struct inode *inode)
-+{
-+	if (!(dir->i_mode & S_ISVTX))
-+		return 0;
-+	if (inode->i_uid == current_fsuid())
-+		return 0;
-+	if (dir->i_uid == current_fsuid())
-+		return 0;
-+	return !capable(CAP_FOWNER);
-+}
++struct richace_xattr {
++	__le16		e_type;
++	__le16		e_flags;
++	__le32		e_mask;
++	__le32		e_id;
++	char		e_who[0];
++};
 +
-+/**
-+ * richacl_may_delete  -  helper for implementing iop->may_delete
-+ */
-+int
-+richacl_may_delete(struct inode *dir, struct inode *inode, int replace,
-+		   int (*richacl_permission)(struct inode *, unsigned int))
-+{
-+	int error;
++struct richacl_xattr {
++	unsigned char	a_version;
++	unsigned char	a_flags;
++	__le16		a_count;
++	__le32		a_owner_mask;
++	__le32		a_group_mask;
++	__le32		a_other_mask;
++};
 +
-+	if (IS_RICHACL(inode)) {
-+		error = richacl_permission(dir,
-+				ACE4_EXECUTE | ACE4_DELETE_CHILD);
-+		if (!error && check_sticky(dir, inode))
-+			error = -EPERM;
-+		if (error && !richacl_permission(inode, ACE4_DELETE))
-+			error = 0;
-+		if (!error && replace)
-+			error = richacl_permission(dir,
-+					ACE4_EXECUTE | (S_ISDIR(inode->i_mode) ?
-+					ACE4_ADD_SUBDIRECTORY : ACE4_ADD_FILE));
-+	} else {
-+		error = generic_permission(dir, MAY_WRITE | MAY_EXEC,
-+					   dir->i_op->check_acl);
-+		if (!error && check_sticky(dir, inode))
-+			error = -EPERM;
-+	}
++#define ACL4_XATTR_VERSION	0
++#define ACL4_XATTR_MAX_COUNT	1024
 +
-+	return error;
-+}
-+EXPORT_SYMBOL(richacl_may_delete);
++extern struct richacl *richacl_from_xattr(const void *, size_t);
++extern size_t richacl_xattr_size(const struct richacl *acl);
++extern void richacl_to_xattr(const struct richacl *, void *);
 +
-+/**
-+ * richacl_inode_permission  -  helper for implementing iop->permission
-+ * @inode:	inode to check
-+ * @acl:	rich acl of the inode (may be NULL)
-+ * @mask:	requested access (ACE4_* bitmask)
-+ *
-+ * This function is supposed to be used by file systems for implementing the
-+ * permission inode operation.
-+ */
-+int
-+richacl_inode_permission(struct inode *inode, const struct richacl *acl,
-+			 unsigned int mask)
-+{
-+	if (acl) {
-+		if (!richacl_permission(inode, acl, mask))
-+			return 0;
-+	} else {
-+		int mode = inode->i_mode;
-+
-+		if (current_fsuid() == inode->i_uid)
-+			mode >>= 6;
-+		else if (in_group_p(inode->i_gid))
-+			mode >>= 3;
-+		if (!(mask & ~richacl_mode_to_mask(mode)))
-+			return 0;
-+	}
-+
-+	/*
-+	 * Keep in sync with the capability checks in generic_permission().
-+	 */
-+	if (!(mask & ~ACE4_POSIX_MODE_ALL)) {
-+		/*
-+		 * Read/write DACs are always overridable.
-+		 * Executable DACs are overridable if at
-+		 * least one exec bit is set.
-+		 */
-+		if (!(mask & ACE4_POSIX_MODE_EXEC) || execute_ok(inode))
-+			if (capable(CAP_DAC_OVERRIDE))
-+				return 0;
-+	}
-+	/*
-+	 * Searching includes executable on directories, else just read.
-+	 */
-+	if (!(mask & ~(ACE4_READ_DATA | ACE4_LIST_DIRECTORY | ACE4_EXECUTE)) &&
-+	    (S_ISDIR(inode->i_mode) || !(mask & ACE4_EXECUTE)))
-+		if (capable(CAP_DAC_READ_SEARCH))
-+			return 0;
-+
-+	return -EACCES;
-+}
-+EXPORT_SYMBOL_GPL(richacl_inode_permission);
-+
-+/**
-+ * richacl_inode_change_ok  -  helper for implementing iop->setattr
-+ * @inode:	inode to check
-+ * @attr:	requested inode attribute changes
-+ * @richacl_permission:	permission function taking an inode and ACE4_* flags
-+ *
-+ * Keep in sync with inode_change_ok().
-+ */
-+int
-+richacl_inode_change_ok(struct inode *inode, struct iattr *attr,
-+			int (*richacl_permission)(struct inode *, unsigned int))
-+{
-+	unsigned int ia_valid = attr->ia_valid;
-+
-+	/* If force is set do it anyway. */
-+	if (ia_valid & ATTR_FORCE)
-+		return 0;
-+
-+	/* Make sure a caller can chown. */
-+	if ((ia_valid & ATTR_UID) &&
-+	    (current_fsuid() != inode->i_uid ||
-+	     attr->ia_uid != inode->i_uid) &&
-+	    (current_fsuid() != attr->ia_uid ||
-+	     richacl_permission(inode, ACE4_WRITE_OWNER)) &&
-+	    !capable(CAP_CHOWN))
-+		goto error;
-+
-+	/* Make sure caller can chgrp. */
-+	if ((ia_valid & ATTR_GID)) {
-+		int in_group = in_group_p(attr->ia_gid);
-+		if ((current_fsuid() != inode->i_uid ||
-+		    (!in_group && attr->ia_gid != inode->i_gid)) &&
-+		    (!in_group ||
-+		     richacl_permission(inode, ACE4_WRITE_OWNER)) &&
-+		    !capable(CAP_CHOWN))
-+			goto error;
-+	}
-+
-+	/* Make sure a caller can chmod. */
-+	if (ia_valid & ATTR_MODE) {
-+		if (current_fsuid() != inode->i_uid &&
-+		    richacl_permission(inode, ACE4_WRITE_ACL) &&
-+		    !capable(CAP_FOWNER))
-+			goto error;
-+		/* Also check the setgid bit! */
-+		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
-+				inode->i_gid) && !capable(CAP_FSETID))
-+			attr->ia_mode &= ~S_ISGID;
-+	}
-+
-+	/* Check for setting the inode time. */
-+	if (ia_valid & (ATTR_MTIME_SET | ATTR_ATIME_SET)) {
-+		if (current_fsuid() != inode->i_uid &&
-+		    richacl_permission(inode, ACE4_WRITE_ATTRIBUTES) &&
-+		    !capable(CAP_FOWNER))
-+			goto error;
-+	}
-+	return 0;
-+error:
-+	return -EPERM;
-+}
-+EXPORT_SYMBOL_GPL(richacl_inode_change_ok);
-diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-index 3a8e6ab..ef82693 100644
---- a/include/linux/richacl.h
-+++ b/include/linux/richacl.h
-@@ -273,4 +273,25 @@ extern struct richacl *richacl_chmod(struct richacl *, mode_t);
- extern int richacl_permission(struct inode *, const struct richacl *,
- 			      unsigned int);
- 
-+/* richacl_inode.c */
-+
-+#ifdef CONFIG_FS_RICHACL
-+extern int richacl_may_create(struct inode *, int,
-+			      int (*)(struct inode *, unsigned int));
-+extern int richacl_may_delete(struct inode *, struct inode *, int,
-+			      int (*)(struct inode *, unsigned int));
-+extern int richacl_inode_permission(struct inode *, const struct richacl *,
-+				    unsigned int);
-+extern int richacl_inode_change_ok(struct inode *, struct iattr *,
-+				   int (*)(struct inode *, unsigned int));
-+#else
-+static inline int
-+richacl_inode_change_ok(struct inode *inode, struct iattr *attr,
-+			int (*richacl_permission)(struct inode *inode,
-+						  unsigned int mask))
-+{
-+	return -EPERM;
-+}
-+#endif
-+
- #endif /* __RICHACL_H */
++#endif /* __RICHACL_XATTR_H */
 -- 
 1.7.2.rc1
 
