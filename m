@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab0GBADo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 20:03:44 -0400
-Received: from ozlabs.org ([203.10.76.45]:59242 "EHLO ozlabs.org"
+	id S1755592Ab0GBAFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 20:05:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5137 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753302Ab0GBADm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 20:03:42 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Greg KH <gregkh@suse.de>
-cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [patch 054/149] powerpc/pseries: Only call start-cpu when a CPU is stopped
-In-reply-to: <20100701173211.356448329@clark.site>
-References: <20100701173211.356448329@clark.site>
-Comments: In-reply-to Greg KH <gregkh@suse.de>
-   message dated "Thu, 01 Jul 2010 10:31:20 -0700."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
-Date: Fri, 02 Jul 2010 10:03:41 +1000
-Message-ID: <24044.1278029021@neuling.org>
+	id S1753139Ab0GBAFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 20:05:46 -0400
+From: Dave Airlie <airlied@gmail.com>
+To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Dave Airlie <airlied@redhat.com>
+Subject: [PATCH] drm/i915: fix hibernation since 4bdadb9785696439c6e2b3efe34aa76df1149c83
+Date: Fri,  2 Jul 2010 10:04:42 +1000
+Message-Id: <1278029082-24223-1-git-send-email-airlied@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not going to work without:
-f8b67691828321f5c85bb853283aa101ae673130
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-It'll get a build failure.
+Since 4bdadb9785696439c6e2b3efe34aa76df1149c83, we've been passing
+GFP_MOVABLE where we weren't before caused hibernate on Intel hardware
+to results in a lot of memory corruptions on resume.
 
-You seemed to have pulled this one the 33 stable.
+[airlied: linus please enhance commit msg if you commit this]
 
-Mikey
+http://bugzilla.kernel.org/show_bug.cgi?id=13811
 
-In message <20100701173211.356448329@clark.site> you wrote:
-> 2.6.32-stable review patch.  If anyone has any objections, please let us know
-.
-> 
-> ------------------
-> 
-> From: Michael Neuling <mikey@neuling.org>
-> 
-> commit aef40e87d866355ffd279ab21021de733242d0d5 upstream.
-> 
-> Currently we always call start-cpu irrespective of if the CPU is
-> stopped or not. Unfortunatley on POWER7, firmware seems to not like
-> start-cpu being called when a cpu already been started.  This was not
-> the case on POWER6 and earlier.
-> 
-> This patch checks to see if the CPU is stopped or not via an
-> query-cpu-stopped-state call, and only calls start-cpu on CPUs which
-> are stopped.
-> 
-> This fixes a bug with kexec on POWER7 on PHYP where only the primary
-> thread would make it to the second kernel.
-> 
-> Reported-by: Ankita Garg <ankita@linux.vnet.ibm.com>
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  arch/powerpc/platforms/pseries/smp.c |    6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> --- a/arch/powerpc/platforms/pseries/smp.c
-> +++ b/arch/powerpc/platforms/pseries/smp.c
-> @@ -81,6 +81,12 @@ static inline int __devinit smp_startup_
->  
->  	pcpu = get_hard_smp_processor_id(lcpu);
->  
-> +	/* Check to see if the CPU out of FW already for kexec */
-> +	if (smp_query_cpu_stopped(pcpu) == QCSS_NOT_STOPPED){
-> +		cpu_set(lcpu, of_spin_map);
-> +		return 1;
-> +	}
-> +
->  	/* Fixup atomic count: it exited inside IRQ handler. */
->  	task_thread_info(paca[lcpu].__current)->preempt_count	= 0;
->  
-> 
-> 
+Reported-by: Evengi Golov (in bugzilla)
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Tested-by: M. Vefa Bicakci <bicave@superonline.com>
+---
+ drivers/gpu/drm/i915/i915_gem.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 9ded3da..0743858 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2239,7 +2239,7 @@ i915_gem_object_get_pages(struct drm_gem_object *obj,
+ 	mapping = inode->i_mapping;
+ 	for (i = 0; i < page_count; i++) {
+ 		page = read_cache_page_gfp(mapping, i,
+-					   mapping_gfp_mask (mapping) |
++					   GFP_HIGHUSER |
+ 					   __GFP_COLD |
+ 					   gfpmask);
+ 		if (IS_ERR(page))
+-- 
+1.7.0.1
+
