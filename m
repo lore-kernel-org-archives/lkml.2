@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab0GBACv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 20:02:51 -0400
-Received: from ozlabs.org ([203.10.76.45]:54301 "EHLO ozlabs.org"
+	id S1755696Ab0GBADo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 20:03:44 -0400
+Received: from ozlabs.org ([203.10.76.45]:59242 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753302Ab0GBACt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 20:02:49 -0400
+	id S1753302Ab0GBADm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 20:03:42 -0400
 From: Michael Neuling <mikey@neuling.org>
 To: Greg KH <gregkh@suse.de>
 cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
        torvalds@linux-foundation.org, akpm@linux-foundation.org,
        alan@lxorguk.ukuu.org.uk,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [05/23] powerpc/pseries: Only call start-cpu when a CPU is stopped
-In-reply-to: <20100701172856.882121276@clark.site>
-References: <20100701172856.882121276@clark.site>
+Subject: Re: [patch 054/149] powerpc/pseries: Only call start-cpu when a CPU is stopped
+In-reply-to: <20100701173211.356448329@clark.site>
+References: <20100701173211.356448329@clark.site>
 Comments: In-reply-to Greg KH <gregkh@suse.de>
-   message dated "Thu, 01 Jul 2010 10:26:54 -0700."
+   message dated "Thu, 01 Jul 2010 10:31:20 -0700."
 X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
-Date: Fri, 02 Jul 2010 10:02:48 +1000
-Message-ID: <23995.1278028968@neuling.org>
+Date: Fri, 02 Jul 2010 10:03:41 +1000
+Message-ID: <24044.1278029021@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,10 +29,12 @@ f8b67691828321f5c85bb853283aa101ae673130
 
 It'll get a build failure.
 
+You seemed to have pulled this one the 33 stable.
+
 Mikey
 
-In message <20100701172856.882121276@clark.site> you wrote:
-> 2.6.27-stable review patch.  If anyone has any objections, please let us know
+In message <20100701173211.356448329@clark.site> you wrote:
+> 2.6.32-stable review patch.  If anyone has any objections, please let us know
 .
 > 
 > ------------------
@@ -64,7 +66,7 @@ In message <20100701172856.882121276@clark.site> you wrote:
 > 
 > --- a/arch/powerpc/platforms/pseries/smp.c
 > +++ b/arch/powerpc/platforms/pseries/smp.c
-> @@ -84,6 +84,12 @@ static inline int __devinit smp_startup_
+> @@ -81,6 +81,12 @@ static inline int __devinit smp_startup_
 >  
 >  	pcpu = get_hard_smp_processor_id(lcpu);
 >  
