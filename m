@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201Ab0GBSO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 14:14:59 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:54879 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755002Ab0GBSO6 (ORCPT
+	id S1757154Ab0GBSZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 14:25:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43207 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756701Ab0GBSZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 14:14:58 -0400
-Date: Fri, 2 Jul 2010 20:14:49 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       mark gross <640e9920@gmail.com>, Arve Hj??nnev??g <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Florian Mickler <florian@mickler.org>, linux-pci@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] PM: Make it possible to avoid wakeup events from being
- lost
-Message-ID: <20100702181449.GC16577@elf.ucw.cz>
-References: <201006261514.13491.rjw@sisk.pl>
- <20100701133208.GA1285@ucw.cz>
- <201007012102.27495.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007012102.27495.rjw@sisk.pl>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 2 Jul 2010 14:25:12 -0400
+Date: Fri, 2 Jul 2010 11:24:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
+Subject: Re: mmotm 2010-07-01-12-19 uploaded
+Message-Id: <20100702112458.5af7ab81.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTil8PSxIkp_Bv4bomZkaLOfVX__dgW3XDVxjnxF8@mail.gmail.com>
+References: <201007011948.o61JmnT2022795@imap1.linux-foundation.org>
+	<AANLkTil8PSxIkp_Bv4bomZkaLOfVX__dgW3XDVxjnxF8@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2010-07-01 21:02:27, Rafael J. Wysocki wrote:
-> On Thursday, July 01, 2010, Pavel Machek wrote:
-> > Hi!
-> > 
-> > > @@ -114,3 +114,17 @@ Description:
-> > >  		if this file contains "1", which is the default.  It may be
-> > >  		disabled by writing "0" to this file, in which case all devices
-> > >  		will be suspended and resumed synchronously.
-> > > +
-> > > +What:		/sys/power/wakeup_count
-> > > +Date:		July 2010
-> > > +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-> > > +Description:
-> > > +		The /sys/power/wakeup_count file allows user space to avoid
-> > > +		losing wakeup events when transitioning the system into a sleep
-> > > +		state.  Reading from it returns the current number of registered
-> > > +		wakeup events and it blocks if some wakeup events are being
-> > > +		processed at the time the file is read from.  Writing to it
-> > > +		will only succeed if the current number of wakeup events is
-> > > +		equal to the written value and, if successful, will make the
-> > > +		kernel abort a subsequent transition to a sleep state if any
-> > > +		wakeup events are reported after the write has returned.
-> > 
-> > I assume that second suspend always succeeds?
+On Fri, 2 Jul 2010 17:26:11 +0800 Xiaotian Feng <xtfeng@gmail.com> wrote:
+
+> On Fri, Jul 2, 2010 at 3:19 AM,  <akpm@linux-foundation.org> wrote:
+> > The mm-of-the-moment snapshot 2010-07-01-12-19 has been uploaded to
+> >
+> > __ http://userweb.kernel.org/~akpm/mmotm/
+> >
+> > and will soon be available at
+> >
+> > __ git://zen-kernel.org/kernel/mmotm.git
+> >
+> > It contains the following patches against 2.6.35-rc3:
+> >
 > 
-> The mechanism is one-shot if that's what you're asking for.
+> I'm running into an oops with -mmotm. It might be drm related, I don't
+> have a camera on my hand.
 
-Yep, it would be nice to document it.
+Cellphone cameras work.
 
-Plus maybe... should there be way to clear the wakeup_count? For
-example when userspace decides that battery is low and that it wants
-to go to sleep now?
-
-> > I can't say I quite like the way two sysfs files interact with each
-> > other, but it is certainly better then wakelocks...
-> > 
-> > Maybe we should create sys_suspend()?
+> So I type the oops manually. My config is
+> attached. Any ideas on the oops? Thanks
 > 
-> Well, one can modify pm-utils to use the new sysfs file quite easily, but it
-> wouldn't be that easy with sys_suspend() IMO.
+> bad_area+0x42/0x49
+> do_page_fault+0x206/
+> page_fault+0x25/0x38
+> ? __list_add+0x3f/0x81
+> ? might_fault+0x1c/0x1e
+> __mutex_lock_common+0xc6/
+> ? drm_version+0x0/0x9c
+> __mutex_lock_slowpath
+> mutex_lock+0x31/0x4b
+> drm_fb_release+0x28/0x75
+> drm_release+0x36d/0x5e4
+> fput+0x120/0x1cd
+> filp_close+0x63/0x6d
+> sys_close+0x98/0xcd
+> system_call_fastpath
 
-Well... small C helper should be easy...
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Yup, that looks DRm-related.  cc added.
