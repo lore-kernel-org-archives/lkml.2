@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab0GBMeF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 08:34:05 -0400
-Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:56598 "EHLO
-	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757181Ab0GBMeE (ORCPT
+	id S1758436Ab0GBMlO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 08:41:14 -0400
+Received: from imap.ru.mvista.com ([213.79.90.228]:32948 "EHLO
+	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754550Ab0GBMlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 08:34:04 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C2DDD2B.5090401@jic23.retrosnub.co.uk>
-Date: Fri, 02 Jul 2010 13:35:55 +0100
-From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
+	Fri, 2 Jul 2010 08:41:12 -0400
+Date: Fri, 2 Jul 2010 16:41:11 +0400
+From: Anton Vorontsov <avorontsov@mvista.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Doug Thompson <dougthompson@xmission.com>,
+       Peter Tyser <ptyser@xes-inc.com>, Dave Jiang <djiang@mvista.com>,
+       Kumar Gala <galak@kernel.crashing.org>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org
+Subject: [PATCH 1/2] edac: mpc85xx: Fix MPC85xx dependency
+Message-ID: <20100702124111.GA23320@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-To: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
-CC: Jonathan Cameron <jic23@cam.ac.uk>,
-       "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-       "sfking@fdwdc.com" <sfking@fdwdc.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH] digital compass hmc5843
-References: <0680EC522D0CC943BC586913CF3768C003B360319D@dbde02.ent.ti.com> <4C2CBB40.5070104@cam.ac.uk> <0680EC522D0CC943BC586913CF3768C003B3603331@dbde02.ent.ti.com> <4C2DBBE3.1020804@cam.ac.uk> <0680EC522D0CC943BC586913CF3768C003B360338A@dbde02.ent.ti.com>
-In-Reply-To: <0680EC522D0CC943BC586913CF3768C003B360338A@dbde02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/10 11:53, Datta, Shubhrajyoti wrote:
->>
->> <snip>
->>>
->>> I think that having a Hz as units will have its own issues. First the
->> decimal implementation. However I am open to the implementation.
->>> Also do you know of a driver that takes care of this.
->> None of the current drivers go below 1Hz so not quite the same.
->> lis3l02dq (accelerometer) does the match against a list, but it
->> is done numerically rather than via string matches as would be needed
->> here.
->>>
->>>>
->>>> static IIO_CONST_ATTR_SAMP_FREQ_AVAIL("0.5 1 2 5 10 20 50");
->>>>
->>>>
->>>> Then strncmp with the options to set the value up.  The rounding
->> approach
->>>> gets tricky with a non integer value so probably easier to only allow
->>>> these
->>>> values.
-> 
-> What is a recommended way of getting a double or float
-> Is there any Strict_srttod etc.
-> 
-You can't, hence the suggestion of comparing strings not numerical values.
+Since commit 5753c082f66eca5be81f6bda85c1718c5eea6ada ("powerpc/85xx:
+Kconfig cleanup"), there is no MPC85xx Kconfig symbol anymore, so the
+driver became non-selectable.
 
->>>
->>> Allowing only this value will result in default/ reject case and will
->> keep the previous value, may confuse the application
->> Then the application is ignoring the interface spec that says it must read
->> _available files if they are there.
->> This way the rounding behaviour is left to userspace and what the
->> application prefers rather
->> than in kernel actually making it the most flexible option.
-> 
-> Agree 
->>>
->>>>
->>>>> +static IIO_DEV_ATTR_AVAIL_SAMP_FREQ(show_avail_samp_freq);
->>>>> +
->>>>> +static s32 hmc5843_set_rate(struct i2c_client *client,
->>>>> +                               u8 rate)
->>>>> +{
->>>>> +       struct hmc5843_data *data = i2c_get_clientdata(client);
->>>>> +       u8 reg_val;
->>>>> +
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This patch fixes the issue by switching to PPC_85xx symbol.
+
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+---
+ drivers/edac/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+index aedef79..0d2f9db 100644
+--- a/drivers/edac/Kconfig
++++ b/drivers/edac/Kconfig
+@@ -209,7 +209,7 @@ config EDAC_I5100
+ 
+ config EDAC_MPC85XX
+ 	tristate "Freescale MPC83xx / MPC85xx"
+-	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || MPC85xx)
++	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || PPC_85xx)
+ 	help
+ 	  Support for error detection and correction on the Freescale
+ 	  MPC8349, MPC8560, MPC8540, MPC8548
+-- 
+1.7.0.5
 
