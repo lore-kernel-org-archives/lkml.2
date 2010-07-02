@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939Ab0GBPbS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 11:31:18 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49446 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758912Ab0GBPbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 11:31:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,526,1272870000"; 
-   d="scan'208";a="582219641"
-Date: Fri, 2 Jul 2010 17:31:10 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Rabin Vincent <rabin.vincent@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-       linus.walleij@stericsson.com, l.fu@pengutronix.de
-Subject: Re: [PATCHv4 1/3] mfd: add STMPE I/O Expander support
-Message-ID: <20100702153109.GC2960@sortiz-mobl>
-References: <20100701123426.GD4092@pengutronix.de>
- <1278069730-4425-1-git-send-email-rabin.vincent@stericsson.com>
-MIME-Version: 1.0
+	id S1758977Ab0GBPt6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 11:49:58 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:16949 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160Ab0GBPty convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 11:49:54 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.0 c=1 a=oACb-Ty_HC0A:10 a=ygRHs6EKU7oA:10 a=VphdPIyG4kEA:10
+ a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=2Yc41jHLyiBWyj_teXQA:9
+ a=hESbSC559WZH6eRWmnoeAnA0MeUA:4 a=CjuIK1q_8ugA:10
+Subject: Re: [PATCH] Add a pair of system calls to make extended file stats available [ver #3]
+Mime-Version: 1.0 (Apple Message framework v1078)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278069730-4425-1-git-send-email-rabin.vincent@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <AANLkTinms69HPgZF4blqr962Ami3oS9FC-txQj9P37SC@mail.gmail.com>
+Date: Fri, 2 Jul 2010 09:49:52 -0600
+Cc: David Howells <dhowells@redhat.com>, linux-fsdevel@vger.kernel.org,
+       linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       samba-technical@lists.samba.org, linux-ext4@vger.kernel.org,
+       linux-api@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2DBA0FC9-192C-49F2-8DB5-F33090B1C221@dilger.ca>
+References: <20100630233614.32422.97038.stgit@warthog.procyon.org.uk> <AANLkTinms69HPgZF4blqr962Ami3oS9FC-txQj9P37SC@mail.gmail.com>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rabin,
+On 2010-07-01, at 23:36, Michael Kerrisk wrote:
+> * Include information from the "inode_info" structure, most notably
+> i_flags, but perhaps other info as well.
 
-On Fri, Jul 02, 2010 at 04:52:08PM +0530, Rabin Vincent wrote:
-> Add support for the STMPE family of I/O Expanders from
-> STMicroelectronics.  These devices include upto 24 gpios and a varying
-> selection of blocks, including PWM, keypad, and touchscreen controllers.
-> This patch adds the MFD core.
-Looks good now, all 3 patches applied. Thanks a lot for your efforts.
+This one is actually pretty interesting, though instead of exporting the i_flags directly (the S_* flags), it would be much better to export the FS_*_FL values.  The FS_*_FL values (e.g. FS_IMMUTABLE_FL) are already exposed to userspace via FS_IOC_{GET,SET}FLAGS and are stored on disk in ext2/3/4, so are guaranteed never to change.  The S_* flags DO in fact change between kernel releases.
 
-Cheers,
-Samuel.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Cheers, Andreas
+
+
+
+
+
