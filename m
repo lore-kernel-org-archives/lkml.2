@@ -1,205 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab0GBJYt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 05:24:49 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:46301 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755326Ab0GBJYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 05:24:46 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jim Cromie <jim.cromie@gmail.com>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Guenter Roeck <guenter.roeck@ericsson.com>,
-       Jean Delvare <khali@linux-fr.org>, Ethan Lawrence <e.law87@yahoo.com>
-CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-       lars4910@hotmail.com, birdie@permonline.ru, jadcock@cox.net,
-       binximeng@gmail.com, Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH/RFC v2] hwmon: Add support for W83667HG-B and W83667HG-I to w83627ehf driver.
-Date: Fri, 2 Jul 2010 02:23:26 -0700
-Message-ID: <1278062606-29000-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.0.87.g0901d
+	id S1758152Ab0GBJZe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 05:25:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34462 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757958Ab0GBJZb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 05:25:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=r6HCA4HyBJl5Y44pGw5EiulT1E1bkNsLSKhOjx3KQF0FKAZAKyV2nZCH7l1izr9lO9
+         xwQEm++SIxuyMsnqNYSIz6DmufkKk1iWEDcGg+LP4ZrnuzG8Z/+1PinEgy5XW5UGh2t8
+         wGzUPyRyVWemRER75BsI8H5VauEqfePd6Kpec=
+Message-ID: <4C2DB084.5040205@gmail.com>
+Date: Fri, 02 Jul 2010 11:25:24 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: David Howells <dhowells@redhat.com>,
+       Arjan van de Ven <arjan@linux.intel.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
+       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
+       akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+       dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+       andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: [PATCH 4/4] async: use workqueue for worker pool
+References: <4C2A2688.1020206@kernel.org> <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <25085.1277847455@redhat.com> <4C2DAEBB.7090607@kernel.org>
+In-Reply-To: <4C2DAEBB.7090607@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Replace private worker pool with system_long_wq.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Arjan van de Ven <arjan@infradead.org>
 ---
-Key relevant difference between W83667HG and W83667HG-B are the Chip ID as well
-as the fan output and step output register addresses. Those differences are
-addressed with this patch.
+ kernel/async.c |  140 ++++++++-----------------------------------------------
+ 1 files changed, 21 insertions(+), 119 deletions(-)
 
-There are other relevant changes in the mapping of input sensors to fan
-control (W83667HG datasheet chapter 8.7, W83667HG-B datasheet chapter 8.5).
-However, control of those mappings is not implemented in the driver, thus the
-respective changes should not have an impact on driver operation.
-
-Changes made in this patch are based on information from datasheets only. The
-patch has not yet been tested with real hardware. The patch will have to be
-tested with real hardware before it is integrated, and is thus submitted as RFC.
-
-Changes in v2:
-- Removed dash from hwmon device name.
-- Moved global array pointers to per-device data.
-- Added chip detection for W83667HG-I
-  (assumed to be identical to W83667HG; needs to be validated).
----
- drivers/hwmon/w83627ehf.c |   57 ++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 49 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-index 0dcaba9..099454b 100644
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -39,6 +39,8 @@
-     w83627dhg    9      5       4       3      0xa020 0xc1    0x5ca3
-     w83627dhg-p  9      5       4       3      0xb070 0xc1    0x5ca3
-     w83667hg     9      5       3       3      0xa510 0xc1    0x5ca3
-+    w83667hg-i   9      5       3       3      0xb340 0xc1    0x5ca3
-+    w83667hg-b   9      5       3       3      0xb350 0xc1    0x5ca3
+diff --git a/kernel/async.c b/kernel/async.c
+index 15319d6..52acfc0 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -49,40 +49,32 @@ asynchronous and synchronous parts of the kernel.
  */
- 
+
+ #include <linux/async.h>
+-#include <linux/bug.h>
  #include <linux/module.h>
-@@ -55,7 +57,7 @@
- #include <linux/io.h>
- #include "lm75.h"
- 
--enum kinds { w83627ehf, w83627dhg, w83627dhg_p, w83667hg };
-+enum kinds { w83627ehf, w83627dhg, w83627dhg_p, w83667hg, w83667hg_b };
- 
- /* used to set data->name = w83627ehf_device_names[data->sio_kind] */
- static const char * w83627ehf_device_names[] = {
-@@ -63,6 +65,7 @@ static const char * w83627ehf_device_names[] = {
- 	"w83627dhg",
- 	"w83627dhg",
- 	"w83667hg",
-+	"w83667hg",
+ #include <linux/wait.h>
+ #include <linux/sched.h>
+-#include <linux/init.h>
+-#include <linux/kthread.h>
+-#include <linux/delay.h>
+ #include <linux/slab.h>
+ #include <asm/atomic.h>
+
+ static async_cookie_t next_cookie = 1;
+
+-#define MAX_THREADS	256
+ #define MAX_WORK	32768
+
+ static LIST_HEAD(async_pending);
+ static LIST_HEAD(async_running);
+ static DEFINE_SPINLOCK(async_lock);
+
+-static int async_enabled = 0;
+-
+ struct async_entry {
+-	struct list_head list;
+-	async_cookie_t   cookie;
+-	async_func_ptr	 *func;
+-	void             *data;
+-	struct list_head *running;
++	struct list_head	list;
++	struct work_struct	work;
++	async_cookie_t		cookie;
++	async_func_ptr		*func;
++	void			*data;
++	struct list_head	*running;
  };
- 
- static unsigned short force_id;
-@@ -91,6 +94,8 @@ MODULE_PARM_DESC(force_id, "Override the detected device ID");
- #define SIO_W83627DHG_ID	0xa020
- #define SIO_W83627DHG_P_ID	0xb070
- #define SIO_W83667HG_ID 	0xa510
-+#define SIO_W83667HG_I_ID	0xb340
-+#define SIO_W83667HG_B_ID	0xb350
- #define SIO_ID_MASK		0xFFF0
- 
- static inline void
-@@ -201,8 +206,14 @@ static const u8 W83627EHF_REG_TOLERANCE[] = { 0x07, 0x07, 0x14, 0x62 };
- static const u8 W83627EHF_REG_FAN_START_OUTPUT[] = { 0x0a, 0x0b, 0x16, 0x65 };
- static const u8 W83627EHF_REG_FAN_STOP_OUTPUT[] = { 0x08, 0x09, 0x15, 0x64 };
- static const u8 W83627EHF_REG_FAN_STOP_TIME[] = { 0x0c, 0x0d, 0x17, 0x66 };
--static const u8 W83627EHF_REG_FAN_MAX_OUTPUT[] = { 0xff, 0x67, 0xff, 0x69 };
--static const u8 W83627EHF_REG_FAN_STEP_OUTPUT[] = { 0xff, 0x68, 0xff, 0x6a };
-+
-+static const u8 W83627EHF_REG_FAN_MAX_OUTPUT_COMMON[]
-+						= { 0xff, 0x67, 0xff, 0x69 };
-+static const u8 W83627EHF_REG_FAN_STEP_OUTPUT_COMMON[]
-+						= { 0xff, 0x68, 0xff, 0x6a };
-+
-+static const u8 W83627EHF_REG_FAN_MAX_OUTPUT_W83667_B[] = { 0x67, 0x69, 0x6b };
-+static const u8 W83627EHF_REG_FAN_STEP_OUTPUT_W83667_B[] = { 0x68, 0x6a, 0x6c };
- 
- /*
-  * Conversions
-@@ -277,6 +288,11 @@ struct w83627ehf_data {
- 	struct device *hwmon_dev;
- 	struct mutex lock;
- 
-+	const u8 *REG_FAN_START_OUTPUT;
-+	const u8 *REG_FAN_STOP_OUTPUT;
-+	const u8 *REG_FAN_MAX_OUTPUT;
-+	const u8 *REG_FAN_STEP_OUTPUT;
-+
- 	struct mutex update_lock;
- 	char valid;		/* !=0 if following fields are valid */
- 	unsigned long last_updated;	/* In jiffies */
-@@ -1126,7 +1142,7 @@ store_##reg(struct device *dev, struct device_attribute *attr, \
- 	u32 val = SENSORS_LIMIT(simple_strtoul(buf, NULL, 10), 1, 255); \
- 	mutex_lock(&data->update_lock); \
- 	data->reg[nr] = val; \
--	w83627ehf_write_value(data, W83627EHF_REG_##REG[nr], val); \
-+	w83627ehf_write_value(data, data->REG_##REG[nr], val); \
- 	mutex_unlock(&data->update_lock); \
- 	return count; \
+
+ static DECLARE_WAIT_QUEUE_HEAD(async_done);
+-static DECLARE_WAIT_QUEUE_HEAD(async_new);
+
+ static atomic_t entry_count;
+-static atomic_t thread_count;
+
+ extern int initcall_debug;
+
+@@ -117,27 +109,23 @@ static async_cookie_t  lowest_in_progress(struct list_head *running)
+ 	spin_unlock_irqrestore(&async_lock, flags);
+ 	return ret;
  }
-@@ -1343,22 +1359,37 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
- 	/* 627EHG and 627EHF have 10 voltage inputs; 627DHG and 667HG have 9 */
- 	data->in_num = (sio_data->kind == w83627ehf) ? 10 : 9;
- 	/* 667HG has 3 pwms */
--	data->pwm_num = (sio_data->kind == w83667hg) ? 3 : 4;
-+	data->pwm_num = (sio_data->kind == w83667hg
-+			 || sio_data->kind == w83667hg_b) ? 3 : 4;
- 
- 	/* Check temp3 configuration bit for 667HG */
--	if (sio_data->kind == w83667hg) {
-+	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
- 		data->temp3_disable = w83627ehf_read_value(data,
- 					W83627EHF_REG_TEMP_CONFIG[1]) & 0x01;
- 		data->in6_skip = !data->temp3_disable;
- 	}
- 
-+	data->REG_FAN_START_OUTPUT = W83627EHF_REG_FAN_START_OUTPUT;
-+	data->REG_FAN_STOP_OUTPUT = W83627EHF_REG_FAN_STOP_OUTPUT;
-+	if (sio_data->kind == w83667hg_b) {
-+		data->REG_FAN_MAX_OUTPUT
-+		  = W83627EHF_REG_FAN_MAX_OUTPUT_W83667_B;
-+		data->REG_FAN_STEP_OUTPUT
-+		  = W83627EHF_REG_FAN_STEP_OUTPUT_W83667_B;
-+	} else {
-+		data->REG_FAN_MAX_OUTPUT
-+		  = W83627EHF_REG_FAN_MAX_OUTPUT_COMMON;
-+		data->REG_FAN_STEP_OUTPUT
-+		  = W83627EHF_REG_FAN_STEP_OUTPUT_COMMON;
-+	}
 +
- 	/* Initialize the chip */
- 	w83627ehf_init_device(data);
- 
- 	data->vrm = vid_which_vrm();
- 	superio_enter(sio_data->sioreg);
- 	/* Read VID value */
--	if (sio_data->kind == w83667hg) {
-+	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
- 		/* W83667HG has different pins for VID input and output, so
- 		we can get the VID input values directly at logical device D
- 		0xe3. */
-@@ -1409,7 +1440,7 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+ /*
+  * pick the first pending entry and run it
+  */
+-static void run_one_entry(void)
++static void async_run_entry_fn(struct work_struct *work)
+ {
++	struct async_entry *entry =
++		container_of(work, struct async_entry, work);
+ 	unsigned long flags;
+-	struct async_entry *entry;
+ 	ktime_t calltime, delta, rettime;
+
+-	/* 1) pick one task from the pending queue */
+-
++	/* 1) move self to the running queue */
+ 	spin_lock_irqsave(&async_lock, flags);
+-	if (list_empty(&async_pending))
+-		goto out;
+-	entry = list_first_entry(&async_pending, struct async_entry, list);
+-
+-	/* 2) move it to the running queue */
+ 	list_move_tail(&entry->list, entry->running);
+ 	spin_unlock_irqrestore(&async_lock, flags);
+
+-	/* 3) run it (and print duration)*/
++	/* 2) run (and print duration) */
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+ 		printk("calling  %lli_%pF @ %i\n", (long long)entry->cookie,
+ 			entry->func, task_pid_nr(current));
+@@ -153,31 +141,25 @@ static void run_one_entry(void)
+ 			(long long)ktime_to_ns(delta) >> 10);
  	}
- 
- 	/* fan4 and fan5 share some pins with the GPIO and serial flash */
--	if (sio_data->kind == w83667hg) {
-+	if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
- 		fan5pin = superio_inb(sio_data->sioreg, 0x27) & 0x20;
- 		fan4pin = superio_inb(sio_data->sioreg, 0x27) & 0x40;
- 	} else {
-@@ -1556,6 +1587,8 @@ static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
- 	static const char __initdata sio_name_W83627DHG[] = "W83627DHG";
- 	static const char __initdata sio_name_W83627DHG_P[] = "W83627DHG-P";
- 	static const char __initdata sio_name_W83667HG[] = "W83667HG";
-+	static const char __initdata sio_name_W83667HG_I[] = "W83667HG-I";
-+	static const char __initdata sio_name_W83667HG_B[] = "W83667HG-B";
- 
- 	u16 val;
- 	const char *sio_name;
-@@ -1588,6 +1621,14 @@ static int __init w83627ehf_find(int sioaddr, unsigned short *addr,
- 		sio_data->kind = w83667hg;
- 		sio_name = sio_name_W83667HG;
- 		break;
-+	case SIO_W83667HG_I_ID:
-+		sio_data->kind = w83667hg;
-+		sio_name = sio_name_W83667HG_I;
-+		break;
-+	case SIO_W83667HG_B_ID:
-+		sio_data->kind = w83667hg_b;
-+		sio_name = sio_name_W83667HG_B;
-+		break;
- 	default:
- 		if (val != 0xffff)
- 			pr_debug(DRVNAME ": unsupported chip ID: 0x%04x\n",
+
+-	/* 4) remove it from the running queue */
++	/* 3) remove self from the running queue */
+ 	spin_lock_irqsave(&async_lock, flags);
+ 	list_del(&entry->list);
+
+-	/* 5) free the entry  */
++	/* 4) free the entry */
+ 	kfree(entry);
+ 	atomic_dec(&entry_count);
+
+ 	spin_unlock_irqrestore(&async_lock, flags);
+
+-	/* 6) wake up any waiters. */
++	/* 5) wake up any waiters */
+ 	wake_up(&async_done);
+-	return;
+-
+-out:
+-	spin_unlock_irqrestore(&async_lock, flags);
+ }
+
+-
+ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct list_head *running)
+ {
+ 	struct async_entry *entry;
+ 	unsigned long flags;
+ 	async_cookie_t newcookie;
+-	
+
+ 	/* allow irq-off callers */
+ 	entry = kzalloc(sizeof(struct async_entry), GFP_ATOMIC);
+@@ -186,7 +168,7 @@ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct l
+ 	 * If we're out of memory or if there's too much work
+ 	 * pending already, we execute synchronously.
+ 	 */
+-	if (!async_enabled || !entry || atomic_read(&entry_count) > MAX_WORK) {
++	if (!entry || atomic_read(&entry_count) > MAX_WORK) {
+ 		kfree(entry);
+ 		spin_lock_irqsave(&async_lock, flags);
+ 		newcookie = next_cookie++;
+@@ -196,6 +178,7 @@ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct l
+ 		ptr(data, newcookie);
+ 		return newcookie;
+ 	}
++	INIT_WORK(&entry->work, async_run_entry_fn);
+ 	entry->func = ptr;
+ 	entry->data = data;
+ 	entry->running = running;
+@@ -205,7 +188,10 @@ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct l
+ 	list_add_tail(&entry->list, &async_pending);
+ 	atomic_inc(&entry_count);
+ 	spin_unlock_irqrestore(&async_lock, flags);
+-	wake_up(&async_new);
++
++	/* schedule for execution */
++	queue_work(system_unbound_wq, &entry->work);
++
+ 	return newcookie;
+ }
+
+@@ -312,87 +298,3 @@ void async_synchronize_cookie(async_cookie_t cookie)
+ 	async_synchronize_cookie_domain(cookie, &async_running);
+ }
+ EXPORT_SYMBOL_GPL(async_synchronize_cookie);
+-
+-
+-static int async_thread(void *unused)
+-{
+-	DECLARE_WAITQUEUE(wq, current);
+-	add_wait_queue(&async_new, &wq);
+-
+-	while (!kthread_should_stop()) {
+-		int ret = HZ;
+-		set_current_state(TASK_INTERRUPTIBLE);
+-		/*
+-		 * check the list head without lock.. false positives
+-		 * are dealt with inside run_one_entry() while holding
+-		 * the lock.
+-		 */
+-		rmb();
+-		if (!list_empty(&async_pending))
+-			run_one_entry();
+-		else
+-			ret = schedule_timeout(HZ);
+-
+-		if (ret == 0) {
+-			/*
+-			 * we timed out, this means we as thread are redundant.
+-			 * we sign off and die, but we to avoid any races there
+-			 * is a last-straw check to see if work snuck in.
+-			 */
+-			atomic_dec(&thread_count);
+-			wmb(); /* manager must see our departure first */
+-			if (list_empty(&async_pending))
+-				break;
+-			/*
+-			 * woops work came in between us timing out and us
+-			 * signing off; we need to stay alive and keep working.
+-			 */
+-			atomic_inc(&thread_count);
+-		}
+-	}
+-	remove_wait_queue(&async_new, &wq);
+-
+-	return 0;
+-}
+-
+-static int async_manager_thread(void *unused)
+-{
+-	DECLARE_WAITQUEUE(wq, current);
+-	add_wait_queue(&async_new, &wq);
+-
+-	while (!kthread_should_stop()) {
+-		int tc, ec;
+-
+-		set_current_state(TASK_INTERRUPTIBLE);
+-
+-		tc = atomic_read(&thread_count);
+-		rmb();
+-		ec = atomic_read(&entry_count);
+-
+-		while (tc < ec && tc < MAX_THREADS) {
+-			if (IS_ERR(kthread_run(async_thread, NULL, "async/%i",
+-					       tc))) {
+-				msleep(100);
+-				continue;
+-			}
+-			atomic_inc(&thread_count);
+-			tc++;
+-		}
+-
+-		schedule();
+-	}
+-	remove_wait_queue(&async_new, &wq);
+-
+-	return 0;
+-}
+-
+-static int __init async_init(void)
+-{
+-	async_enabled =
+-		!IS_ERR(kthread_run(async_manager_thread, NULL, "async/mgr"));
+-
+-	WARN_ON(!async_enabled);
+-	return 0;
+-}
+-
+-core_initcall(async_init);
 -- 
-1.7.0.87.g0901d
+1.6.4.2
 
