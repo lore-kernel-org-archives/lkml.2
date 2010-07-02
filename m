@@ -1,107 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab0GBH1t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 03:27:49 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:52120 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab0GBH1s (ORCPT
+	id S1753748Ab0GBH37 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 03:29:59 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:16015 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab0GBH35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 03:27:48 -0400
-Date: Fri, 2 Jul 2010 09:28:26 +0200
-From: Nico Schottelius <nico-linux-20100702@schottelius.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Nico Schottelius <nico-linux-20100702@schottelius.org>
-Subject: e1000e: receives no packets after resume
- (2.6.35-rc3-00262-g984bc96)
-Message-ID: <20100702072826.GB16856@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20100702@schottelius.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	Fri, 2 Jul 2010 03:29:57 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6030"; a="46267916"
+Message-ID: <4C2D9575.9030002@codeaurora.org>
+Date: Fri, 02 Jul 2010 00:29:57 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7iMSBzlTiPOCCT2k"
-Content-Disposition: inline
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.35-rc3-00262-g984bc96 x86_64)
+To: Hari Kanigeri <hari.kanigeri@gmail.com>
+CC: Andi Kleen <andi@firstfloor.org>, Daniel Walker <dwalker@codeaurora.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-arm-kernel@jasper.es
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org> <20100701101746.3810cc3b.randy.dunlap@oracle.com> <20100701180241.GA3594@basil.fritz.box> <1278012503.7738.17.camel@c-dwalke-linux.qualc <AANLkTilQnopqrS-KrR3btOIkH68fIEdipWFF6fkO6fNA@mail.gmail.com>
+In-Reply-To: <AANLkTilQnopqrS-KrR3btOIkH68fIEdipWFF6fkO6fNA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hari Kanigeri wrote:
+>> The VCMM takes the long view. Its designed for a future in which the
+>> number of IOMMUs will go up and the ways in which these IOMMUs are
+>> composed will vary from system to system, and may vary at
+>> runtime. Already, there are ~20 different IOMMU map implementations in
+>> the kernel. Had the Linux kernel had the VCMM, many of those
+>> implementations could have leveraged the mapping and topology management
+>> of a VCMM, while focusing on a few key hardware specific functions (map
+>> this physical address, program the page table base register).
+>>
+> 
+> -- Sounds good.
+> Did you think of a way to handle the cases where one of the Device
+> that is using the mapped address crashed ?
+> How is the physical address unbacked in this case ?
 
---7iMSBzlTiPOCCT2k
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Actually the API takes care of that by design. Since the physical
+space is managed apart from the mapper the mapper can crash and not
+affect the physical memory allocation.
 
-Good morning hackers,
-
-I've seen that in kernels before, but now suffering from it:
-e1000e does not receive any packets after third resume:
-
----------------------------------------------------------------------------=
------
-[8:16] kr:clyde# dhcpcd eth0
-dhcpcd[11589]: version 5.2.5 starting
-dhcpcd[11589]: eth0: rebinding lease of 129.132.102.115
-dhcpcd[11589]: eth0: broadcasting for a lease
-^Cdhcpcd[11589]: received SIGINT, stopping
-dhcpcd[11589]: eth0: removing interface
-[8:16] kr:clyde# dhcpcd eth0
-dhcpcd[11601]: version 5.2.5 starting
-dhcpcd[11601]: eth0: rebinding lease of 129.132.102.115
-dhcpcd[11601]: eth0: broadcasting for a lease
-^Cdhcpcd[11601]: received SIGINT, stopping
-dhcpcd[11601]: eth0: removing interface
-[8:16] kr:clyde# dhcpcd eth0
-dhcpcd[11784]: version 5.2.5 starting
-dhcpcd[11784]: eth0: rebinding lease of 129.132.102.115
-^Cdhcpcd[11784]: received SIGINT, stopping
-dhcpcd[11784]: eth0: removing interface
-[8:16] kr:clyde# dhcpcd eth0
-dhcpcd[11830]: version 5.2.5 starting
-dhcpcd[11830]: eth0: rebinding lease of 129.132.102.115
-dhcpcd[11830]: eth0: broadcasting for a lease
-dhcpcd[11830]: timed out
-[8:17] kr:clyde# rmmod e1000e
-[8:18] kr:clyde# modprobe e1000e
-[8:18] kr:clyde# dhcpcd eth0   =20
-dhcpcd[11855]: version 5.2.5 starting
-dhcpcd[11855]: eth0: waiting for carrier
-^Cdhcpcd[11855]: received SIGINT, stopping
-dhcpcd[11855]: eth0: removing interface
-[8:18] kr:clyde# dhcpcd eth0   =20
-dhcpcd[11871]: version 5.2.5 starting
-dhcpcd[11871]: eth0: rebinding lease of 129.132.102.115
-dhcpcd[11871]: eth0: acknowledged 129.132.102.115 from 129.132.57.97
-dhcpcd[11871]: eth0: checking for 129.132.102.115
-dhcpcd[11871]: eth0: leased 129.132.102.115 for 86400 seconds
-dhcpcd[11871]: forked to background, child pid 11892
-[8:18] kr:clyde#=20
----------------------------------------------------------------------------=
------
-
-Are you aware of this issues?
-
-Cheers,
-
-Nico
-
---=20
-New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-Please resign, if you signed 9885188C or 8D0E27A4.
-
-Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
-
---7iMSBzlTiPOCCT2k
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwtlRoACgkQ19zI5DGHffDhDwCgmT5BfNcSQUe9R5vd++RlZv7t
-1acAn0ftexP0dkZT1PZmr/eiAV07CmQA
-=pfc7
------END PGP SIGNATURE-----
-
---7iMSBzlTiPOCCT2k--
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
