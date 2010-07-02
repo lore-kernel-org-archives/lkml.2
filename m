@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab0GBRp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 13:45:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54827 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754825Ab0GBRpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 13:45:20 -0400
-Date: Fri, 2 Jul 2010 14:42:43 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>,
-       Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Subject: Re: [PATCH v2] KVM: IOAPIC: only access APIC registers one dword at
- a time
-Message-ID: <20100702174243.GB27069@amt.cnet>
-References: <4C2D6D4B.5060309@cn.fujitsu.com>
- <4C2D95EA.6080209@np.css.fujitsu.com>
- <4C2D975A.2050704@cn.fujitsu.com>
- <4C2D9C8C.8060401@cn.fujitsu.com>
-MIME-Version: 1.0
+	id S1756617Ab0GBRqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 13:46:16 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:49067 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab0GBRqO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 13:46:14 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.0 c=1 a=355tMteATKMA:10 a=ygRHs6EKU7oA:10 a=VphdPIyG4kEA:10
+ a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=PTJhpT2F7kuk000POfEA:9
+ a=FAU9GvuURE9XI99NA_kA:7 a=04Pq_9k9KKBkVrHWPlZSPtlVmUcA:4 a=CjuIK1q_8ugA:10
+Subject: Re: [PATCH 3/3] xstat: Implement a requestable extra result to procure some inode flags [ver #4]
+Mime-Version: 1.0 (Apple Message framework v1078)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C2D9C8C.8060401@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20100701235738.19035.21536.stgit@warthog.procyon.org.uk>
+Date: Fri, 2 Jul 2010 11:45:41 -0600
+Cc: linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       linux-ext4@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C80B6032-0FB2-4D63-B940-3FE86B52992B@dilger.ca>
+References: <20100701235727.19035.84584.stgit@warthog.procyon.org.uk> <20100701235738.19035.21536.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 04:00:12PM +0800, Xiao Guangrong wrote:
-> The IOAPIC spec says:
-> 
-> When accessing these registers, accesses must be done one dword at a time.
-> For example, software should never access byte 2 from the Data register before
-> accessing bytes 0 and 1. The hardware will not attempt to recover from a bad
-> programming model in this case.
-> 
-> So, this patch removes other width access
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  virt/kvm/ioapic.c |   20 +++++++-------------
->  1 files changed, 7 insertions(+), 13 deletions(-)
-> 
-> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-> index 1149c60..6610d11 100644
-> --- a/virt/kvm/ioapic.c
-> +++ b/virt/kvm/ioapic.c
-> @@ -288,6 +288,11 @@ static int ioapic_mmio_read(struct kvm_io_device *this, gpa_t addr, int len,
->  	ioapic_debug("addr %lx\n", (unsigned long)addr);
->  	ASSERT(!(addr & 0xf));	/* check alignment */
->  
-> +	if (len != 4) {
-> +		printk(KERN_WARNING "ioapic: wrong length %d\n", len);
-> +		return 0;
-> +	}
-> +
+On 2010-07-01, at 17:57, David Howells wrote:
+> [This is, for the moment, to be considered an example.  Do we actually want to
+> export these flags?  Should they be a full member of struct xstat?]
 
-Just remove the printks please, as guests can flood hosts dmesg.
+I would say this should be a full-fledged member of struct xstat.  I think they are fairly standard (available on many filesystems today), and requiring an ioctl to access them is unpleasant.
+
+> (1) User settable flags (to be consistent with the BSD st_flags field):
+> 
+> 	UF_NODUMP	Do not dump this file.
+> 	UF_IMMUTABLE	This file is immutable.
+> 	UF_APPEND	This file is append-only.
+> 	UF_OPAQUE	This directory is opaque (unionfs).
+> 	UF_NOUNLINK	This file can't be removed or renamed.
+> 	UF_COMPRESSED	This file is compressed.
+> 	UF_HIDDEN	This file shouldn't be displayed in a GUI.
+> 
+>    The UF_SETTABLE constant is the union of the above flags.
+> 
+> (2) Superuser settable flags (to be consistent with the BSD st_flags field):
+> 
+> 	SF_ARCHIVED	This file has been archived.
+> 	SF_IMMUTABLE	This file is immutable.
+> 	SF_APPEND	This file is append-only.
+> 	SF_NOUNLINK	This file can't be removed or renamed.
+> 	SF_HIDDEN	This file is a snapshot inode.
+> 
+>    The SF_SETTABLE constant is the union of the above flags.
+> 
+> (3) Linux-specific flags:
+> 
+> 	XSTAT_LF_MAGIC_FILE	Magic file, such as found in procfs and sysfs.
+> 	XSTAT_LF_SYNC		File is written synchronously.
+> 	XSTAT_LF_NOATIME	Atime is not updated on this file.
+> 	XSTAT_LF_JOURNALLED_DATA Data modifications to this file are journalled.
+> 	XSTAT_LF_ENCRYPTED	This file is encrypted.
+> 	XSTAT_LF_SYSTEM		This file is a system file (FAT/NTFS/CIFS).
+> 	XSTAT_LF_TEMPORARY	This file is a temporary file (NTFS/CIFS).
+> 	XSTAT_LF_OFFLINE	file is currently unavailable (CIFS).
+
+Yuck on the names.  Why not stick with the "UF_" and "SF_" prefixes?  Since we don't need to keep _binary_ compatibility with these flag values (only name portability) we can use the same flag values as the FS_*_FL definitions in fs.h.  That is what all of the existing filesystems already use (ext2/3/4, ocfs, btrfs, reiserfs, xfs, jfs).
+
+Cheers, Andreas
+
+
+
+
 
