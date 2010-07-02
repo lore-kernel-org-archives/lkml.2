@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758249Ab0GBJeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 05:34:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46679 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758207Ab0GBJef (ORCPT
+	id S1758239Ab0GBJf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 05:35:59 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:29165 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756934Ab0GBJf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 05:34:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=rnJZjE5JqJSG5MR7lIpkVk687euzHgWpnWsAoTBkwlXx+ul2/vJTk+xEjdLZiNLYPp
-         YNYXzi2LgI+WeA23JTd2s5QseNcOtdH7H7ZsgdtgV47WcgImZmOfbqEupwk9cINdJrEX
-         2FAYgaTmIQkPhg6RV5CykC6Y3rPPzDAcg3K28=
-Message-ID: <4C2DB211.1030903@gmail.com>
-Date: Fri, 02 Jul 2010 11:32:01 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	Fri, 2 Jul 2010 05:35:57 -0400
+X-SpamScore: -36
+X-BigFish: VPS-36(z21eRz1432N98dN936eMzz1202hzz15d4Rz32i2a8h87h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L4XBKJ-02-1YS-02
+X-M-MSG: 
+Date: Fri, 2 Jul 2010 11:26:46 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Tom Lyon <pugs@cisco.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+       "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
+       "mst@redhat.com" <mst@redhat.com>,
+       "dwmw2@infradead.org" <dwmw2@infradead.org>,
+       "aafabbri@cisco.com" <aafabbri@cisco.com>,
+       "scofeldm@cisco.com" <scofeldm@cisco.com>
+Subject: Re: [PATCH V2] 2.6.34: simple IOMMU API extension to check safe
+ interrupt remapping
+Message-ID: <20100702092646.GF24084@amd.com>
+References: <4c2d0790.Bi9FugC8c/QW1Ike%pugs@cisco.com>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>,
-       Arjan van de Ven <arjan@linux.intel.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
-       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
-       akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
-       dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
-       andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
-References: <4C2A2688.1020206@kernel.org> <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <25085.1277847455@redhat.com> <4C2DAEBB.7090607@kernel.org>
-In-Reply-To: <4C2DAEBB.7090607@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4c2d0790.Bi9FugC8c/QW1Ike%pugs@cisco.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2010 11:17 AM, Tejun Heo wrote:
-> Hello, David, Arjan.
+On Thu, Jul 01, 2010 at 05:24:32PM -0400, Tom Lyon wrote:
+> This patch allows IOMMU users to determine whether the hardware and software
+> support safe, isolated interrupt remapping.  Not all Intel IOMMUs have the
+> hardware, and the software for AMD is not there yet.
+> 	Signed-off-by: Tom Lyon <pugs@cisco.com>
+
+It does not make a lot of sense to check for this feature in the
+IOMMU-API currently because there is no support for intr-remapping in
+there. But it will be there when intr-remapping support for AMD IOMMU is
+implemented. So this change can be considered as a first step in that
+direction. Please repost with the change requested below an I'll add
+this one to my tree.
+
+> Version 2: previous ifdefs not needed.
 > 
-> These four patches implement unbound workqueues which can be used as
-> simple execution context provider.  I changed async to use it and will
-> also make fscache use it.  This can be used by setting WQ_UNBOUND on
-> workqueue creation.  Works queued to unbound workqueues are implicitly
-> HIGHPRI and dispatched to unbound workers as soon as resources are
-> available and the only limitation applied by workqueue code is
-> @max_active.  IOW, for both async and fscache, things will stay about
-> the same.
+> MST has convinced me that any user level driver for PCI master devices can't 
+> be safe unless there is an IOMMU protecting the APIC MSI/MSI-X interrupt 
+> addresses from device writes.  This interrupt remapping is not present in all
+> Intel IOMMUs and the code for the interrupt mapping in the AMD IOMMUs is not
+> implemented yet.
 > 
-> WQ_UNBOUND can serve the role of WQ_SINGLE_CPU.  WQ_SINGLE_CPU is
-> dropped and replaced by WQ_UNBOUND.
+> Needed by not-yet-accepted VFIO driver.
 > 
-> Arjan, I still think we'll be better off using bound workqueues for
-> async but let's first convert without causing behavior difference.
-> Either way isn't gonna result in any noticeable difference anyway.  If
-> you're okay with the conversion, please ack it.
-> 
-> David, this should work for fscache/slow-work the same way too.  That
-> should relieve your concern, right?  Oh, and Frederic suggested that
-> we would be better off with something based on tracing API and I
-> agree, so the debugfs thing is currently dropped from the tree.  What
-> do you think?
+> diff -uprN linux-2.6.34/drivers/pci/intel-iommu.c iommuapi-linux-2.6.34/drivers/pci/intel-iommu.c
+> --- linux-2.6.34/drivers/pci/intel-iommu.c	2010-05-16 14:17:36.000000000 -0700
+> +++ iommuapi-linux-2.6.34/drivers/pci/intel-iommu.c	2010-06-30 15:47:10.000000000 -0700
+> @@ -3705,6 +3705,10 @@ static int intel_iommu_domain_has_cap(st
+>  
+>  	if (cap == IOMMU_CAP_CACHE_COHERENCY)
+>  		return dmar_domain->iommu_snooping;
+> +	if (cap == IOMMU_CAP_SAFE_INTR_REMAP)
+> +		return intr_remapping_enabled;
+>  
+>  	return 0;
+>  }
+> diff -uprN linux-2.6.34/include/linux/iommu.h iommuapi-linux-2.6.34/include/linux/iommu.h
+> --- linux-2.6.34/include/linux/iommu.h	2010-05-16 14:17:36.000000000 -0700
+> +++ iommuapi-linux-2.6.34/include/linux/iommu.h	2010-06-30 15:47:34.000000000 -0700
+> @@ -30,6 +30,7 @@ struct iommu_domain {
+>  };
+>  
+>  #define IOMMU_CAP_CACHE_COHERENCY	0x1
+> +#define IOMMU_CAP_SAFE_INTR_REMAP	0x2	/* isolates device intrs */
 
-Oops, forgot something.  These four patches are on top of
-wq#for-next-candidate branch which is cmwq take#6 + four fix patches
+I think the SAFE_ is not necessary in the name. It is misleading because
+it indicates that there is an unsafe variant of intr-remapping available
+when this capability is not set. Just call it IOMMU_CAP_INTR_REMAPPING.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-next-candidate
 
-and available in the following git tree.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-cmwq
-
-Thanks.
+	Joerg
 
 -- 
-tejun
+Joerg Roedel - AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
