@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab0GBHkH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 03:40:07 -0400
-Received: from sh.osrg.net ([192.16.179.4]:35275 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752396Ab0GBHkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 03:40:04 -0400
-Date: Fri, 2 Jul 2010 16:39:52 +0900
-To: James.Bottomley@suse.de, axboe@kernel.dk
-Cc: hch@lst.de, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 0/2] use q->prep_rq_fn for flush requests instead of
- q->prepare_flush_fn()
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1278056005-25438-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1278056005-25438-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1756149Ab0GBHlw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 03:41:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53019 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752202Ab0GBHlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 03:41:51 -0400
+Message-ID: <4C2D975A.2050704@cn.fujitsu.com>
+Date: Fri, 02 Jul 2010 15:38:02 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: IOAPIC: only access APIC registers one dword at
+ a time
+References: <4C2D6D4B.5060309@cn.fujitsu.com> <4C2D95EA.6080209@np.css.fujitsu.com>
+In-Reply-To: <4C2D95EA.6080209@np.css.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100702163942G.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 02 Jul 2010 16:39:53 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  2 Jul 2010 16:33:23 +0900
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
 
-> scsi-ml builds flush requests via q->prepare_flush_fn(), however,
-> builds discard requests via q->prep_rq_fn.
-> 
-> Using two different mechnisms for the similar requests (building
-> commands in SCSI ULD) doesn't make sense.
-> 
-> Handing both via q->prep_rq_fn makes the code simpler.
-> 
-> We could kill q->prepare_flush_fn(). Except for ide, all the users
-> just mark flush requests. They can use REQ_FLUSH flag instead. Ide can
-> do like SCSI.
-> 
-> ==
->  block/blk-barrier.c |   12 ++++--------
->  drivers/scsi/sd.c   |   26 ++++++++++++++++----------
->  include/linux/bio.h |    2 ++
->  3 files changed, 22 insertions(+), 18 deletions(-)
 
-Oops, this can be applied to Jens' for-2.6.36. It can't to scsi-misc
-due to the discard patches.
+Jin Dongming wrote:
+
+>>  
+>>  	switch (len) {
+>> -	case 8:
+>> -		*(u64 *) val = result;
+>> -		break;
+>> -	case 1:
+>> -	case 2:
+>>  	case 4:
+>> -		memcpy(val, (char *)&result, len);
+> 
+> Here the parameter len is not used for reading data from ioapic register, before switch case
+> the value of ioapic register has been read by ioapic_read_indirect().
+> 
+
+Yeah, it's right, but it's rarely operation that guest using incorrect width to access
+the registers, so i don't think it's worthy to move the width judgment before the real
+registers read.
+
+> 
+>> +		*(u32 *) val = result;
+>>  		break;
+>> +
+>>  	default:
+>>  		printk(KERN_WARNING "ioapic: wrong length %d\n", len);
+> 
+> And I think here is not good to print warning message. Maybe it is better to do
+> such kind of checking at the first of this function before ioapic_read_indirect().
+> 
+
+ditto
+
+Thanks for your review, Jin!
