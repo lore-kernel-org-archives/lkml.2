@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757771Ab0GBHJH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 03:09:07 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:36317 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757719Ab0GBHJD (ORCPT
+	id S1757750Ab0GBHKz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 03:10:55 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:61294 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756793Ab0GBHKy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 03:09:03 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6030"; a="46114766"
-Message-ID: <4C2D908E.9030309@codeaurora.org>
-Date: Fri, 02 Jul 2010 00:09:02 -0700
-From: Zach Pfeffer <zpfeffer@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Fri, 2 Jul 2010 03:10:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dIOrx99iPaX4YDjT01pUJ/3mqd6tDZSMRUxCxUIAkAiDYjZkyWqrVdhkLmrwCWcgoi
+         rvAY9KjZ7bF7uhx1LKtCmfZpfgMCCWZHPl72vqS+65H8jGb96hfxqgzPvxNjuG2shUJH
+         m4a026vVyiOEF5IY29/EksRAZcBzdNkQOH0cw=
 MIME-Version: 1.0
-To: Hari Kanigeri <hari.kanigeri@gmail.com>
-CC: Daniel Walker <dwalker@codeaurora.org>, Andi Kleen <andi@firstfloor.org>,
-       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
-References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org> <20100701101746.3810cc3b.randy.dunlap@oracle.com> <20100701180241.GA3594@basil.fritz.box> <1278012503.7738.17.camel@c-dwalke-linux.qualc <AANLkTinABCSdN6hnXVOvVZ12f1QBMR_UAi62qW8GmlkL@mail.gmail.com>
-In-Reply-To: <AANLkTinABCSdN6hnXVOvVZ12f1QBMR_UAi62qW8GmlkL@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100701132515.GC32541@faui48a.informatik.uni-erlangen.de>
+References: <cover.1277911345.git.siccegge@cs.fau.de>
+	<e5391de6858597bbfd43874aed124a73f74850b5.1277911346.git.siccegge@cs.fau.de>
+	<AANLkTinZa7_TEjYFTu9V6obndpVvMmHppaOArM1AJg_t@mail.gmail.com>
+	<20100701132515.GC32541@faui48a.informatik.uni-erlangen.de>
+Date: Fri, 2 Jul 2010 16:10:53 +0900
+Message-ID: <AANLkTimtrIdkBbAJDfBj5a_Y8n6MnvBN2FlTztSB610X@mail.gmail.com>
+Subject: Re: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Christoph Egger <siccegge@cs.fau.de>
+Cc: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Jassi Brar <jassi.brar@samsung.com>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       vamos@i4.informatik.uni-erlangen.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hari Kanigeri wrote:
->> He demonstrated the usage of his code in one of the emails he sent out
->> initially. Did you go over that, and what (or how many) step would you
->> use with the current code to do the same thing?
-> 
-> -- So is this patch set adding layers and abstractions to help the User ?
-> 
-> If the idea is to share some memory across multiple devices, I guess
-> you can achieve the same by calling the map function provided by iommu
-> module and sharing the mapped address to the 10's or 100's of devices
-> to access the buffers. You would only need a dedicated virtual pool
-> per IOMMU device to manage its virtual memory allocations.
+On Thu, Jul 1, 2010 at 10:25 PM, Christoph Egger <siccegge@cs.fau.de> wrote:
+> On Thu, Jul 01, 2010 at 09:55:47PM +0900, Jassi Brar wrote:
+>> On Thu, Jul 1, 2010 at 1:03 AM, Christoph Egger <siccegge@cs.fau.de> wrote:
+>> > SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
+>> > all references for it from the source code.
+>> I'd rather have the code compiled unconditionally.
+>
+> OK that would be done by the patch below
+>
+> ----
+> From: Christoph Egger <siccegge@cs.fau.de>
+> Date: Wed, 30 Jun 2010 17:18:52 +0200
+> Subject: [PATCH 29/33] Removing dead SND_SOC_SMDK2443_WM9710
+>
+> SND_SOC_SMDK2443_WM9710 doesn't exist in Kconfig, therefore removing
+> all references for it from the source code, building the parts
+> unconditionally
+>
+> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> ---
+>  arch/arm/mach-s3c2443/mach-smdk2443.c |    4 ----
+>  1 files changed, 0 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/arm/mach-s3c2443/mach-smdk2443.c b/arch/arm/mach-s3c2443/mach-smdk2443.c
+> index 4c863d3..764144a 100644
+> --- a/arch/arm/mach-s3c2443/mach-smdk2443.c
+> +++ b/arch/arm/mach-s3c2443/mach-smdk2443.c
+> @@ -106,9 +106,7 @@ static struct platform_device *smdk2443_devices[] __initdata = {
+>        &s3c_device_wdt,
+>        &s3c_device_i2c0,
+>        &s3c_device_hsmmc0,
+> -#ifdef CONFIG_SND_SOC_SMDK2443_WM9710
+>        &s3c_device_ac97,
+> -#endif
+This is ok provided 2440 support is included.
 
-Yeah, you can do that. My idea is to get away from explicit addressing
-and encapsulate the "device address to physical address" link into a
-mapping.
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>  };
+>
+>  static void __init smdk2443_map_io(void)
+> @@ -122,9 +120,7 @@ static void __init smdk2443_machine_init(void)
+>  {
+>        s3c_i2c0_set_platdata(NULL);
+>
+> -#ifdef CONFIG_SND_SOC_SMDK2443_WM9710
+>        s3c24xx_ac97_setup_gpio(S3C24XX_AC97_GPE0);
+> -#endif
+This gpio setup is nowhere implemented. So might as well discard it.
