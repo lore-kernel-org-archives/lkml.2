@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608Ab0GBTwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 15:52:47 -0400
-Received: from puma.mail.utk.edu ([160.36.178.106]:58687 "EHLO
-	puma.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757330Ab0GBTwq (ORCPT
+	id S1759936Ab0GBTww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 15:52:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35062 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757401Ab0GBTwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 15:52:46 -0400
-Date: Fri, 2 Jul 2010 15:52:22 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf wrong branches event on AMD
-In-Reply-To: <1278080613.1917.258.camel@laptop>
-Message-ID: <alpine.DEB.2.00.1007021546150.3405@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>  <1278070727.1917.253.camel@laptop>  <alpine.DEB.2.00.1007020950420.29784@cl320.eecs.utk.edu> <1278080613.1917.258.camel@laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 2 Jul 2010 15:52:49 -0400
+Date: Fri, 2 Jul 2010 12:51:55 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
+Message-Id: <20100702125155.69c02f85.akpm@linux-foundation.org>
+In-Reply-To: <1277811288-5195-13-git-send-email-mel@csn.ul.ie>
+References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
+	<1277811288-5195-13-git-send-email-mel@csn.ul.ie>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Jul 2010, Peter Zijlstra wrote:
+On Tue, 29 Jun 2010 12:34:46 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-> On Fri, 2010-07-02 at 09:56 -0400, Vince Weaver wrote:
-> > You think I have root on this machine?
+> When memory is under enough pressure, a process may enter direct
+> reclaim to free pages in the same manner kswapd does. If a dirty page is
+> encountered during the scan, this page is written to backing storage using
+> mapping->writepage. This can result in very deep call stacks, particularly
+> if the target storage or filesystem are complex. It has already been observed
+> on XFS that the stack overflows but the problem is not XFS-specific.
 > 
-> Well yeah,.. I'd not want a dev job and not have full access to the
-> hardware. But then, maybe I'm picky.
+> This patch prevents direct reclaim writing back pages by not setting
+> may_writepage in scan_control. Instead, dirty pages are placed back on the
+> LRU lists for either background writing by the BDI threads or kswapd. If
+> in direct lumpy reclaim and dirty pages are encountered, the process will
+> stall for the background flusher before trying to reclaim the pages again.
+> 
+> Memory control groups do not have a kswapd-like thread nor do pages get
+> direct reclaimed from the page allocator. Instead, memory control group
+> pages are reclaimed when the quota is being exceeded or the group is being
+> shrunk. As it is not expected that the entry points into page reclaim are
+> deep call chains memcg is still allowed to writeback dirty pages.
 
-I can see how this support call would go now.
+I already had "[PATCH 01/14] vmscan: Fix mapping use after free" and
+I'll send that in for 2.6.35.
 
-  Me:  Hello, I need you to upgrade the kernel on the
-       2.332 petaflop machine with 37,376 processors 
-       so I can have the right branch counter on perf.
-  Them: Umm... no.
-  Me:  Well then can I have root so I can patch
-       the kernel on the fly?
-  Them: <click>
+I grabbed [02/14] up to [11/14].  Including "[PATCH 06/14] vmscan: kill
+prev_priority completely", grumpyouallsuck.
 
-As a performance counter library developer, it is a bit frustrating having 
-to keep a compatibility matrix in my head of all the perf events 
-shortcomings.  Especially since the users tend not to have admin
-access on their machines.  Need to have at least 2.6.33 if you want
-multiplexing.  Need to have 2.6.34 if you want Nehalem-EX.  Need 2.6.35
-if you want Pentium 4.  Unfortunately most vendor kernels are stuck at 
-2.6.32 :(  Now I'll have to remember whatever kenel the AMD branches
-fix is committed at.  And there still isn't the Uncore support that 
-everyone is clamoring for.
+I wimped out at this, "Do not writeback pages in direct reclaim".  It
+really is a profound change and needs a bit more thought, discussion
+and if possible testing which is designed to explore possible pathologies.
 
-> You can stick the knowledge in perf if you really want to.. something
-> like the below, add something that parses cpuid or /proc/cpuinfo and you
-> should be good.
-
-again though, doesn't this defeat the purpose of the whole idea of common 
-named events?
-
-> And how would it be different if it the data table lived in userspace?
-> They'd still get the wrong thing unless they updated.
-
-because compiling and running an updated user-version of a library is 
-possible.  You can compile it in your home directory and link your tools 
-against it.  No need to bug the sysadmin.  You can even use LD_PRELOAD
-to get other apps to link against it.  Getting a kernel update installed 
-is many orders of magnitude harder out in the real world.
-
-Vince
