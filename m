@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759401Ab0GBRWh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 13:22:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38343 "EHLO mx1.redhat.com"
+	id S1759433Ab0GBRWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 13:22:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47211 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759370Ab0GBRWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 13:22:35 -0400
-Date: Fri, 2 Jul 2010 14:19:53 -0300
+	id S1759382Ab0GBRWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 13:22:37 -0400
+Date: Fri, 2 Jul 2010 14:03:03 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Use u64 for gfn_t in KVM
-Message-ID: <20100702171953.GD25969@amt.cnet>
-References: <1277992812-31945-1-git-send-email-joerg.roedel@amd.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 5/6] KVM: MMU: combine guest pte read between walk and
+ pte prefetch
+Message-ID: <20100702170303.GC25969@amt.cnet>
+References: <4C2C9DC0.8050607@cn.fujitsu.com>
+ <4C2C9E6C.2040803@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1277992812-31945-1-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <4C2C9E6C.2040803@cn.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 04:00:10PM +0200, Joerg Roedel wrote:
-> Hi, Avi, Marcelo,
+On Thu, Jul 01, 2010 at 09:55:56PM +0800, Xiao Guangrong wrote:
+> Combine guest pte read between guest pte walk and pte prefetch
 > 
-> these two patches currently lie on the bottom of my npt-npt patch set. They
-> came out of a discussion on the mailing list about the last version of the
-> npt-npt patchset. These patches are independent of the rest of the patchset, so
-> I post and discuss them seperatly. The changes to make gfn_t an u64 were
-> larger than I expected which is another reason for the seperate post. Please
-> let me know what you think about this change.
-> 
-> Thanks,
-> 
-> 	Joerg
-> 
-> Diffstat:
-> 
->  arch/ia64/include/asm/kvm_host.h    |    1 +
->  arch/powerpc/include/asm/kvm_host.h |    1 +
->  arch/s390/include/asm/kvm_host.h    |    3 ++-
->  arch/x86/include/asm/kvm_host.h     |    3 ++-
->  arch/x86/kvm/mmu.c                  |    8 ++++----
->  include/linux/kvm_types.h           |    4 ++--
->  virt/kvm/iommu.c                    |    2 +-
->  virt/kvm/kvm_main.c                 |   10 +++++-----
->  8 files changed, 18 insertions(+), 14 deletions(-)
-> 
-> Shortlog:
-> 
-> Joerg Roedel (2):
->       KVM: Remove unnecessary divide operations
->       KVM: Use u64 for frame data types
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  arch/x86/kvm/paging_tmpl.h |   48 ++++++++++++++++++++++++++++++-------------
+>  1 files changed, 33 insertions(+), 15 deletions(-)
 
-Applied, thanks.
+Can't do this, it can miss invlpg:
+
+vcpu0			vcpu1
+read guest ptes
+			modify guest pte
+			invlpg
+instantiate stale 
+guest pte
+
+See how the pte is reread inside fetch with mmu_lock held.
+
+Otherwise the patchset looks fine to me.
 
