@@ -1,247 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757384Ab0GBGbY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 02:31:24 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33641 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754447Ab0GBGbW (ORCPT
+	id S1757434Ab0GBGcj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 02:32:39 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:19278 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab0GBGch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 02:31:22 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 2 Jul 2010 15:26:43 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 14/14] fs,xfs: Allow kswapd to writeback pages
-Message-Id: <20100702152643.36019b4e.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100701103032.GG31741@csn.ul.ie>
-References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
-	<1277811288-5195-15-git-send-email-mel@csn.ul.ie>
-	<20100629123722.GA725@infradead.org>
-	<20100629125143.GB31561@csn.ul.ie>
-	<20100630091411.49f92cff.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100701103032.GG31741@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+	Fri, 2 Jul 2010 02:32:37 -0400
+Date: Fri, 02 Jul 2010 09:32:05 +0300 (EEST)
+Message-Id: <20100702.093205.59662898.Hiroshi.DOYU@nokia.com>
+To: x0095840@ti.com
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org, ohad@wizery.com,
+       ameya.palande@nokia.com, felipe.contreras@nokia.com
+Subject: Re: [PATCH 1/9] dspbridge: replace iommu custom for opensource
+ implementation
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+In-Reply-To: <1277943660-4112-2-git-send-email-x0095840@ti.com>
+References: <1277943660-4112-1-git-send-email-x0095840@ti.com>
+	<1277943660-4112-2-git-send-email-x0095840@ti.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Jul 2010 06:32:06.0060 (UTC) FILETIME=[4A3C5EC0:01CB19B0]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Jul 2010 11:30:32 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
-> > memcg shouldn't
-> > depends on it. If so, memcg should depends on some writeback-thread (as kswapd).
-> > ok.
-> > 
-> > Then, my concern here is that which kswapd we should wake up and how it can stop.
+Hi Fernando,
+
+From: ext Fernando Guzman Lugo <x0095840@ti.com>
+Subject: [PATCH 1/9] dspbridge: replace iommu custom for opensource implementation
+Date: Thu, 1 Jul 2010 02:20:52 +0200
+
+> This patch replace the call to custom dsp mmu implemenation
+> for the once on iommu module.
 > 
-> And also what the consequences are of kswapd being occupied with containers
-> instead of the global lists for a time.
+> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+> ---
+>  drivers/dsp/bridge/core/_tiomap.h    |   16 +
+>  drivers/dsp/bridge/core/io_sm.c      |  114 ++------
+>  drivers/dsp/bridge/core/tiomap3430.c |  501 +++++-----------------------------
+>  drivers/dsp/bridge/core/ue_deh.c     |   10 -
+>  4 files changed, 118 insertions(+), 523 deletions(-)
 > 
-yes, we may have to add a thread or workqueue for memcg for isolating workloads.
-
-
-> > IOW, how kswapd can know a memcg has some remaining writeback and struck on it.
-> > 
+> diff --git a/drivers/dsp/bridge/core/_tiomap.h b/drivers/dsp/bridge/core/_tiomap.h
+> index bf0164e..d13677a 100644
+> --- a/drivers/dsp/bridge/core/_tiomap.h
+> +++ b/drivers/dsp/bridge/core/_tiomap.h
+> @@ -23,6 +23,8 @@
+>  #include <plat/clockdomain.h>
+>  #include <mach-omap2/prm-regbits-34xx.h>
+>  #include <mach-omap2/cm-regbits-34xx.h>
+> +#include <plat/iommu.h>
+> +#include <plat/iovmm.h>
+>  #include <dspbridge/devdefs.h>
+>  #include <hw_defs.h>
+>  #include <dspbridge/dspioctl.h>        /* for bridge_ioctl_extproc defn */
+> @@ -330,6 +332,7 @@ struct bridge_dev_context {
+>         u32 dw_internal_size;   /* Internal memory size */
 > 
-> Another possibility for memcg would be to visit Andrea's suggestion on
-> switching stack in more detail. I still haven't gotten around to this as
-> phd stuff is sucking up piles of my time.
-
-Sure.
-
-> > One idea is here. (this patch will not work...not tested at all.)
-> > If we can have "victim page list" and kswapd can depend on it to know
-> > "which pages should be written", kswapd can know when it should work.
-> > 
-> > cpu usage by memcg will be a new problem...but...
-> > 
-> > ==
-> > Add a new LRU "CLEANING" and make kswapd launder it.
-> > This patch also changes PG_reclaim behavior. New PG_reclaim works
-> > as
-> >  - If PG_reclaim is set, a page is on CLEAINING LIST.
-> > 
-> > And when kswapd launder a page
-> >  - issue an writeback. (I'm thinking whehter I should put this
-> >    cleaned page back to CLEANING lru and free it later.) 
-> >  - if it can free directly, free it.
-> > This just use current shrink_list().
-> > 
-> > Maybe this patch itself inlcludes many bad point...
-> > 
-> > ---
-> >  fs/proc/meminfo.c         |    2 
-> >  include/linux/mm_inline.h |    9 ++
-> >  include/linux/mmzone.h    |    7 ++
-> >  mm/filemap.c              |    3 
-> >  mm/internal.h             |    1 
-> >  mm/page-writeback.c       |    1 
-> >  mm/page_io.c              |    1 
-> >  mm/swap.c                 |   31 ++-------
-> >  mm/vmscan.c               |  153 +++++++++++++++++++++++++++++++++++++++++++++-
-> >  9 files changed, 176 insertions(+), 32 deletions(-)
-> > 
-> > Index: mmotm-0611/include/linux/mmzone.h
-> > ===================================================================
-> > --- mmotm-0611.orig/include/linux/mmzone.h
-> > +++ mmotm-0611/include/linux/mmzone.h
-> > @@ -85,6 +85,7 @@ enum zone_stat_item {
-> >  	NR_INACTIVE_FILE,	/*  "     "     "   "       "         */
-> >  	NR_ACTIVE_FILE,		/*  "     "     "   "       "         */
-> >  	NR_UNEVICTABLE,		/*  "     "     "   "       "         */
-> > +	NR_CLEANING,		/*  "     "     "   "       "         */
-> >  	NR_MLOCK,		/* mlock()ed pages found and moved off LRU */
-> >  	NR_ANON_PAGES,	/* Mapped anonymous pages */
-> >  	NR_FILE_MAPPED,	/* pagecache pages mapped into pagetables.
-> > @@ -133,6 +134,7 @@ enum lru_list {
-> >  	LRU_INACTIVE_FILE = LRU_BASE + LRU_FILE,
-> >  	LRU_ACTIVE_FILE = LRU_BASE + LRU_FILE + LRU_ACTIVE,
-> >  	LRU_UNEVICTABLE,
-> > +	LRU_CLEANING,
-
- 
-> > +static inline int is_cleaning_lru(enum lru_list l)
-> > +{
-> > +	return (l == LRU_CLEANING);
-> > +}
-> > +
+>         struct omap_mbox *mbox;         /* Mail box handle */
+> +       struct iommu *dsp_mmu;          /* iommu for iva2 handler */
 > 
-> Nit - LRU_CLEAN_PENDING might be clearer as CLEANING implies it is currently
-> being cleaned (implying it's the same as NR_WRITEBACK) or is definely dirty
-> implying it's the same as NR_DIRTY.
+>         struct cfg_hostres *resources;  /* Host Resources */
 > 
-ok.
-
-> >  enum zone_watermarks {
-> >  	WMARK_MIN,
-> >  	WMARK_LOW,
-> > Index: mmotm-0611/include/linux/mm_inline.h
-> > ===================================================================
-> > --- mmotm-0611.orig/include/linux/mm_inline.h
-> > +++ mmotm-0611/include/linux/mm_inline.h
-> > @@ -56,7 +56,10 @@ del_page_from_lru(struct zone *zone, str
-> >  	enum lru_list l;
-> >  
-> >  	list_del(&page->lru);
-> > -	if (PageUnevictable(page)) {
-> > +	if (PageReclaim(page)) {
-> > +		ClearPageReclaim(page);
-> > +		l = LRU_CLEANING;
-> > +	} else if (PageUnevictable(page)) {
-> >  		__ClearPageUnevictable(page);
-> >  		l = LRU_UNEVICTABLE;
-> >  	} else {
+> @@ -374,4 +377,17 @@ extern s32 dsp_debug;
+>   */
+>  int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val);
 > 
-> One point of note is that having a LRU cleaning list will alter the aging
-> of pages quite a bit.
-> 
-yes.
+> +static inline void dsp_iotlb_init(struct iotlb_entry *e, u32 da, u32 pa,
+> +                                                       u32 pgsz)
+> +{
+> +       e->da = da;
+> +       e->pa = pa;
+> +       e->valid = 1;
+> +       e->prsvd = 1;
+> +       e->pgsz = pgsz & MMU_CAM_PGSZ_MASK;
+> +       e->endian = MMU_RAM_ENDIAN_LITTLE;
+> +       e->elsz = MMU_RAM_ELSZ_32;
+> +       e->mixed = 0;
+> +}
+> +
+>  #endif /* _TIOMAP_ */
+> diff --git a/drivers/dsp/bridge/core/io_sm.c b/drivers/dsp/bridge/core/io_sm.c
+> index 7fb840d..1f47f8b 100644
+> --- a/drivers/dsp/bridge/core/io_sm.c
+> +++ b/drivers/dsp/bridge/core/io_sm.c
+> @@ -290,6 +290,8 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
+>         struct cod_manager *cod_man;
+>         struct chnl_mgr *hchnl_mgr;
+>         struct msg_mgr *hmsg_mgr;
+> +       struct iommu *mmu;
+> +       struct iotlb_entry e;
+>         u32 ul_shm_base;
+>         u32 ul_shm_base_offset;
+>         u32 ul_shm_limit;
+> @@ -312,7 +314,6 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
+>         struct bridge_ioctl_extproc ae_proc[BRDIOCTL_NUMOFMMUTLB];
+>         struct cfg_hostres *host_res;
+>         struct bridge_dev_context *pbridge_context;
+> -       u32 map_attrs;
+>         u32 shm0_end;
+>         u32 ul_dyn_ext_base;
+>         u32 ul_seg1_size = 0;
+> @@ -336,6 +337,21 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
+>                 status = -EFAULT;
+>                 goto func_end;
+>         }
+> +
+> +       mmu = pbridge_context->dsp_mmu;
+> +
+> +       if (mmu)
+> +               iommu_put(mmu);
+> +       mmu = iommu_get("iva2");
 
-> A slightly greater concern is that clean pages can be temporarily "lost"
-> on the cleaning list. If a direct reclaimer moves pages to the LRU_CLEANING
-> list, it's no longer considering those pages even if a flusher thread
-> happened to clean those pages before kswapd had a chance. Lets say under
-> heavy memory pressure a lot of pages are being dirties and encountered on
-> the LRU list. They move to LRU_CLEANING where dirty balancing starts making
-> sure they get cleaned but are no longer being reclaimed.
-> 
-> Of course, I might be wrong but it's not a trivial direction to take.
-> 
++       mmu = iommu_get("iva2", mmu_fault_isr);
 
-I hope dirty_ratio at el may help us. But I agree this "hiding" can cause
-issue.
-IIRC, someone wrote a patch to prevent too many threads enter vmscan..
-such kinds of work may be necessary.
+I'm considering that it might be better to pass a mmu fault callback
+at this iommu_get.
 
-
-
-
-> > +/* only called by kswapd to do I/O and put back clean paes to its LRU */
-> > +static void shrink_cleaning_list(struct zone *zone)
-> > +{
-
-> > +		count_page_types(&page_list, count, 0);
-> > +		nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-> > +		nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-> > +		__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
-> > +		__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
-> > +
-> > +		nr_freed = shrink_page_list(&page_list, &sc, PAGEOUT_IO_ASYNC);
-> 
-> So, at this point the isolated pages are cleaned and put back which is
-> fine. If they were already clean, they get freed which is also fine. But
-> direct reclaimers do not call this function so they could be missing
-> clean and freeable pages which worries me.
-> 
-
-Hmm. I have to be afraid of that...my first thought was adding klaunderd
-and add waitqueue between klaunderd and direct-reclamers.
-I used kswapd to make the whole simple but I wonder we need some waitq
-if we're afraid that all pages are under I/O! case.
-
-
-> > +		/*
-> > +		 * Put back any unfreeable pages.
-> > +		 */
-
-> >  /*
-> >   * The background pageout daemon, started as a kernel thread
-> >   * from the init process.
-> > @@ -2275,7 +2422,9 @@ static int kswapd(void *p)
-> >  		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
-> >  		new_order = pgdat->kswapd_max_order;
-> >  		pgdat->kswapd_max_order = 0;
-> > -		if (order < new_order) {
-> > +		if (need_to_cleaning_node(pgdat)) {
-> > +			launder_pgdat(pgdat);
-> > +		} else if (order < new_order) {
-> >  			/*
-> >  			 * Don't sleep if someone wants a larger 'order'
-> >  			 * allocation
-> 
-> I see the direction you are thinking of but I have big concerns about clean
-> pages getting delayed for too long on the LRU_CLEANING pages before kswapd
-> puts them back in the right place. I think a safer direction would be for
-> memcg people to investigate Andrea's "switch stack" suggestion.
-> 
-Hmm, I may have to consider that. My concern is that IRQ's switch-stack works
-well just because no-task-switch in IRQ routine. (I'm sorry if I misunderstand.)
-
-One possibility for memcg will be limit the number of reclaimers who can use
-__GFP_FS and use shared stack per cpu per memcg.
-
-Hmm. yet another per-memcg memory shrinker may sound good. 2 years ago, I wrote
-a patch to do high-low-watermark memory shirker thread for memcg.
-  
-  - limit
-  - high
-  - low
-
-start memory reclaim/writeback when usage exceeds "high" and stop it is below
-"low". Implementing this with thread pool can be a choice.
-
-
-
-> In the meantime for my own series, memcg now treats dirty pages similar to
-> lumpy reclaim. It asks flusher threads to clean pages but stalls waiting
-> for those pages to be cleaned for a time. This is an untested patch on top
-> of the current series.
-> 
-
-Wow...Doesn't this make memcg too slow ? Anyway, memcg should kick flusher
-threads..or something, needs other works, too.
-
-Thanks,
--Kame
-
+What do you think?
