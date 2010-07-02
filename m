@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab0GBKni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 06:43:38 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:4213 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689Ab0GBKng (ORCPT
+	id S1753808Ab0GBKpB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 06:45:01 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:42379 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab0GBKpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 06:43:36 -0400
-X-IronPort-AV: E=Sophos;i="4.53,526,1272844800"; 
-   d="scan'208";a="709394"
-Date: Fri, 2 Jul 2010 11:43:52 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-       Konrad Wilk <konrad.wilk@oracle.com>, Fitzhardinge <jeremy@goop.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       "Jeremy@acsinet12.oracle.com" <Jeremy@acsinet12.oracle.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
-Subject: RE: [Xen-devel] Re: [PATCH 0/12] PV on HVM Xen
-In-Reply-To: <1411749d-666c-447d-bf05-954e2b4adf93@default>
-Message-ID: <alpine.DEB.2.00.1007021132390.29110@kaball-desktop>
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop> <20100630175637.GC16488@phenom.dumpdata.com alpine.DEB.2.00.1007011111510.30135@kaball-desktop> <1411749d-666c-447d-bf05-954e2b4adf93@default>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 2 Jul 2010 06:45:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=LEqoF2plib4WF5T7KTfheG6eqdw5y+LY4mFUQp8MC+mp11wpcGxGtZ1ei77lkAWlSw
+         DgHmBf3cBE+dts8+RTePVgPt50Q0/xlEUKDFV8aCzavvD+KmVLahwx6IDEQ3NXfoIFgz
+         Lgjp9VLwfWLeW/j1KMSB+JvXyz1JYMfUweS0A=
+Message-ID: <4C2DC327.1090007@redhat.com>
+Date: Fri, 02 Jul 2010 12:44:55 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: stefano@stabellini.net
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+       Stefano.Stabellini@eu.citrix.com, sheng@linux.intel.com,
+       ddutile@redhat.com, jeremy@goop.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 10/13] Do not try to disable hpet if it hasn't been initialized
+ before
+References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop> <1277136847-13266-10-git-send-email-stefano@stabellini.net>
+In-Reply-To: <1277136847-13266-10-git-send-email-stefano@stabellini.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Jul 2010, Dan Magenheimer wrote:
-> Hi Stefano --
-> 
-> What versions of Xen are compatible with this series?
-> I.e. is 4.0 required?  Are all Xen-side changes in
-> official 4.0.0?  Or only in 4.0-testing (and therefore
-> will be in 4.0.1)?  Or only in xen-unstable?
-> 
-> If post-4.0.0 xen changes are necessary, could you point
-> out the changesets?
-> 
+On 06/21/2010 06:14 PM, stefano@stabellini.net wrote:
+> -	if (is_hpet_capable()) {
+> -		unsigned int cfg = hpet_readl(HPET_CFG);
+> +	unsigned int cfg;
 
+You changed this earlier from unsigned long to unsigned int, but it is 
+wrong (though it works because bits 32-63 of the HPET_CFG register are 
+unused).  Can you please make a note to change it back sometime?
 
-Any Xen version is going to work, but you need unstable to get all the
-features.
+Thanks,
 
-In particular you need these patches:
-
-- 21647: implement HVMOP_pagetable_dying
-
-- 21493: update_runstate_area for 32 bit PV on HVM guests
-
-- 21449: implement vector callback for evtchn delivery
-
-- 21445: TSC handling cleanups (version 2)
-
-- 21341: Export timer hypercalls to HVM guests too
-
-- 21339: TSC handling cleanups
-
-
+Paolo
