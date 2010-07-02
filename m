@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758054Ab0GBJL1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 05:11:27 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:47942 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756878Ab0GBJLZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 05:11:25 -0400
-Date: Fri, 2 Jul 2010 11:11:24 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/7] hugetlb: add hugepage check in
- mem_cgroup_{register,end}_migration()
-Message-ID: <20100702091124.GE12221@basil.fritz.box>
-References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1278049646-29769-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1758062Ab0GBJOI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 05:14:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59151 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754200Ab0GBJOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 05:14:05 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH 5/6] X86 platform drivers: Remove EC dump from thinkpad_acpi
+Date: Fri, 2 Jul 2010 11:14:00 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org, astarikovskiy@suse.de,
+       ibm-acpi-devel@lists.sourceforge.net
+References: <1277996570-2686-1-git-send-email-trenn@suse.de> <20100701162741.GC4789@khazad-dum.debian.net> <201007012131.20031.trenn@suse.de>
+In-Reply-To: <201007012131.20031.trenn@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278049646-29769-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007021114.00982.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 02:47:23PM +0900, Naoya Horiguchi wrote:
-> Currently memory cgroup doesn't charge hugepage,
-> so avoid calling these functions in hugepage migration context.
+On Thursday 01 July 2010 21:31:18 Thomas Renninger wrote:
+> On Thursday 01 July 2010 06:27:41 pm Henrique de Moraes Holschuh wrote:
+> > On Thu, 01 Jul 2010, Thomas Renninger wrote:
+> ...
+> > I'd prefer if the above text gets replaced by something that adds a pointer
+> > to the new facility, instead of being just outright removed.  Also, the
+> > text about how to use the facility to detect tachometers and thermometers
+> > should be retained, if at all possible.
+> I agree. I'll repost this one in some days.
+Hmm, I take that back.
+This still should get removed completely from:
+Documentation/laptops/thinkpad-acpi.txt
 
-Sounds like something that really should be fixed, but ok for now 
-I guess...
+These problems apply to all laptops and instead of adding pointers to all
+Documentation/laptop/${vendor} files,
+a separate file should be added. This should then be more about thermal
+management problems in general and pointers to:
+Documentation/acpi/ec_sysfs
+and
+Documentation/acpi/debug.txt
+Documentation/acpi/*
+added there looks like the appropriate solution to me.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+If people agree:
+  - This patch is still fine and should get applied as it is
+  - I will send another patch adding some more documentation
+    in some days
+
+Thanks,
+
+    Thomas
