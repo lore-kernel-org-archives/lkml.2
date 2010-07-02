@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757546Ab0GBTvQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 15:51:16 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33790 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756603Ab0GBTvP convert rfc822-to-8bit (ORCPT
+	id S1757608Ab0GBTwr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 15:52:47 -0400
+Received: from puma.mail.utk.edu ([160.36.178.106]:58687 "EHLO
+	puma.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757330Ab0GBTwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 15:51:15 -0400
+	Fri, 2 Jul 2010 15:52:46 -0400
+Date: Fri, 2 Jul 2010 15:52:22 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf wrong branches event on AMD
+In-Reply-To: <1278080613.1917.258.camel@laptop>
+Message-ID: <alpine.DEB.2.00.1007021546150.3405@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>  <1278070727.1917.253.camel@laptop>  <alpine.DEB.2.00.1007020950420.29784@cl320.eecs.utk.edu> <1278080613.1917.258.camel@laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Message-ID: <3c3945c6-6a5d-48f9-bf6e-1e0b19edc2e2@default>
-Date: Fri, 2 Jul 2010 12:49:20 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-       Konrad Wilk <konrad.wilk@oracle.com>, Jeremy@acsinet12.oracle.com,
-       linux-kernel@vger.kernel.org, Don Dutile <ddutile@redhat.com>,
-       Sheng Yang <sheng@linux.intel.com>
-Subject: RE: [Xen-devel] Re: [PATCH 0/12] PV on HVM Xen
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
- <20100630175637.GC16488@phenom.dumpdata.com>
- <alpine.DEB.2.00.1007011111510.30135@kaball-desktop>
- <1411749d-666c-447d-bf05-954e2b4adf93@default>
- <alpine.DEB.2.00.1007021132390.29110@kaball-desktop>
- <9d5fb841-26be-4ce1-b549-eb7f17f88e61@default
- alpine.DEB.2.00.1007021810210.29110@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1007021810210.29110@kaball-desktop>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C2E431D.0219:SCFMA4539814,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Stefano Stabellini [mailto:stefano.stabellini@eu.citrix.com]
-> >
-> > Thanks for the thorough reply!  Any reason that any of these
-> > cannot or should not be back-ported to go into 4.0.1?
+On Fri, 2 Jul 2010, Peter Zijlstra wrote:
+
+> On Fri, 2010-07-02 at 09:56 -0400, Vince Weaver wrote:
+> > You think I have root on this machine?
 > 
-> They should be safe to backport, the only ones we should be extra
-> careful are the TSC related patches, and you were the one to raise that
-> complain :)
-> If you have some spare time to test 21445 and 21339 on 4.0.1 to make
-> sure that everything keeps working as expected, then we can safely
-> apply them to xen 4.0 testing.
+> Well yeah,.. I'd not want a dev job and not have full access to the
+> hardware. But then, maybe I'm picky.
 
-Thanks, yes, I was putting that task on my list and wasn't sure
-what the full set of required changes were and if there were
-interdependencies so that I could test on 4.0-testing instead
-of on xen-unstable.  (Depending on Keir's 4.0.1 schedule, I
-might not get it done in time for 4.0.1 though.)
+I can see how this support call would go now.
 
-Dan
+  Me:  Hello, I need you to upgrade the kernel on the
+       2.332 petaflop machine with 37,376 processors 
+       so I can have the right branch counter on perf.
+  Them: Umm... no.
+  Me:  Well then can I have root so I can patch
+       the kernel on the fly?
+  Them: <click>
+
+As a performance counter library developer, it is a bit frustrating having 
+to keep a compatibility matrix in my head of all the perf events 
+shortcomings.  Especially since the users tend not to have admin
+access on their machines.  Need to have at least 2.6.33 if you want
+multiplexing.  Need to have 2.6.34 if you want Nehalem-EX.  Need 2.6.35
+if you want Pentium 4.  Unfortunately most vendor kernels are stuck at 
+2.6.32 :(  Now I'll have to remember whatever kenel the AMD branches
+fix is committed at.  And there still isn't the Uncore support that 
+everyone is clamoring for.
+
+> You can stick the knowledge in perf if you really want to.. something
+> like the below, add something that parses cpuid or /proc/cpuinfo and you
+> should be good.
+
+again though, doesn't this defeat the purpose of the whole idea of common 
+named events?
+
+> And how would it be different if it the data table lived in userspace?
+> They'd still get the wrong thing unless they updated.
+
+because compiling and running an updated user-version of a library is 
+possible.  You can compile it in your home directory and link your tools 
+against it.  No need to bug the sysadmin.  You can even use LD_PRELOAD
+to get other apps to link against it.  Getting a kernel update installed 
+is many orders of magnitude harder out in the real world.
+
+Vince
