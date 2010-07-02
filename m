@@ -1,57 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab0GBFvc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 01:51:32 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:50896 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663Ab0GBFto (ORCPT
+	id S1756177Ab0GBFuy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 01:50:54 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:46383 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756036Ab0GBFuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 01:49:44 -0400
+	Fri, 2 Jul 2010 01:50:03 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
        Wu Fengguang <fengguang.wu@intel.com>,
        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/7] hugepage migration
-Date: Fri,  2 Jul 2010 14:47:19 +0900
-Message-Id: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 3/7] hugetlb: add allocate function for hugepage migration
+Date: Fri,  2 Jul 2010 14:47:22 +0900
+Message-Id: <1278049646-29769-4-git-send-email-n-horiguchi@ah.jp.nec.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We can't use existing hugepage allocation functions to allocate hugepage
+for page migration, because page migration can happen asynchronously with
+the running processes and page migration users should call the allocation
+function with physical addresses (not virtual addresses) as arguments.
 
-This is a patchset for hugepage migration.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+---
+ include/linux/hugetlb.h |    3 ++
+ mm/hugetlb.c            |   83 +++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 69 insertions(+), 17 deletions(-)
 
-There are many users of page migration such as soft offlining,
-memory hotplug, memory policy and memory compaction,
-but this patchset adds hugepage support only for soft offlining
-as the first step.
+diff --git v2.6.35-rc3-hwpoison/include/linux/hugetlb.h v2.6.35-rc3-hwpoison/include/linux/hugetlb.h
+index f479700..0b73c53 100644
+--- v2.6.35-rc3-hwpoison/include/linux/hugetlb.h
++++ v2.6.35-rc3-hwpoison/include/linux/hugetlb.h
+@@ -228,6 +228,8 @@ struct huge_bootmem_page {
+ 	struct hstate *hstate;
+ };
+ 
++struct page *alloc_huge_page_node(struct hstate *h, int nid);
++
+ /* arch callback */
+ int __init alloc_bootmem_huge_page(struct hstate *h);
+ 
+@@ -303,6 +305,7 @@ static inline struct hstate *page_hstate(struct page *page)
+ 
+ #else
+ struct hstate {};
++#define alloc_huge_page_node(h, nid) NULL
+ #define alloc_bootmem_huge_page(h) NULL
+ #define hstate_file(f) NULL
+ #define hstate_vma(v) NULL
+diff --git v2.6.35-rc3-hwpoison/mm/hugetlb.c v2.6.35-rc3-hwpoison/mm/hugetlb.c
+index 5c77a73..d7c462b 100644
+--- v2.6.35-rc3-hwpoison/mm/hugetlb.c
++++ v2.6.35-rc3-hwpoison/mm/hugetlb.c
+@@ -466,6 +466,18 @@ static void enqueue_huge_page(struct hstate *h, struct page *page)
+ 	h->free_huge_pages_node[nid]++;
+ }
+ 
++static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
++{
++	struct page *page;
++	if (list_empty(&h->hugepage_freelists[nid]))
++		return NULL;
++	page = list_entry(h->hugepage_freelists[nid].next, struct page, lru);
++	list_del(&page->lru);
++	h->free_huge_pages--;
++	h->free_huge_pages_node[nid]--;
++	return page;
++}
++
+ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 				struct vm_area_struct *vma,
+ 				unsigned long address, int avoid_reserve)
+@@ -497,18 +509,13 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 						MAX_NR_ZONES - 1, nodemask) {
+ 		nid = zone_to_nid(zone);
+-		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask) &&
+-		    !list_empty(&h->hugepage_freelists[nid])) {
+-			page = list_entry(h->hugepage_freelists[nid].next,
+-					  struct page, lru);
+-			list_del(&page->lru);
+-			h->free_huge_pages--;
+-			h->free_huge_pages_node[nid]--;
+-
+-			if (!avoid_reserve)
+-				decrement_hugepage_resv_vma(h, vma);
+-
+-			break;
++		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
++			page = dequeue_huge_page_node(h, nid);
++			if (page) {
++				if (!avoid_reserve)
++					decrement_hugepage_resv_vma(h, vma);
++				break;
++			}
+ 		}
+ 	}
+ err:
+@@ -616,7 +623,7 @@ int PageHuge(struct page *page)
+ }
+ EXPORT_SYMBOL_GPL(PageHuge);
+ 
+-static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
++static struct page *__alloc_huge_page_node(struct hstate *h, int nid)
+ {
+ 	struct page *page;
+ 
+@@ -627,14 +634,56 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ 		htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
+ 						__GFP_REPEAT|__GFP_NOWARN,
+ 		huge_page_order(h));
++	if (page && arch_prepare_hugepage(page)) {
++		__free_pages(page, huge_page_order(h));
++		return NULL;
++	}
++
++	return page;
++}
++
++static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
++{
++	struct page *page = __alloc_huge_page_node(h, nid);
++	if (page)
++		prep_new_huge_page(h, page, nid);
++	return page;
++}
++
++static struct page *alloc_buddy_huge_page_node(struct hstate *h, int nid)
++{
++	struct page *page = __alloc_huge_page_node(h, nid);
+ 	if (page) {
+-		if (arch_prepare_hugepage(page)) {
+-			__free_pages(page, huge_page_order(h));
++		set_compound_page_dtor(page, free_huge_page);
++		spin_lock(&hugetlb_lock);
++		h->nr_huge_pages++;
++		h->nr_huge_pages_node[nid]++;
++		spin_unlock(&hugetlb_lock);
++		put_page_testzero(page);
++	}
++	return page;
++}
++
++struct page *alloc_huge_page_node(struct hstate *h, int nid)
++{
++	struct page *page;
++
++	spin_lock(&hugetlb_lock);
++	get_mems_allowed();
++	page = dequeue_huge_page_node(h, nid);
++	put_mems_allowed();
++	spin_unlock(&hugetlb_lock);
++
++	if (!page) {
++		page = alloc_buddy_huge_page_node(h, nid);
++		if (!page) {
++			__count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
+ 			return NULL;
+-		}
+-		prep_new_huge_page(h, page, nid);
++		} else
++			__count_vm_event(HTLB_BUDDY_PGALLOC);
+ 	}
+ 
++	set_page_refcounted(page);
+ 	return page;
+ }
+ 
+-- 
+1.7.1
 
-This patchset is based on 2.6.35-rc3 applied with "HWPOISON for
-hugepage" patchset I previously posted (see Andi's git tree.)
-http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=summary
-
-I tested this patchset with 'make func' in libhugetlbfs and
-have gotten the same result as one from 2.6.35-rc3.
-
- [PATCH 1/7] hugetlb: add missing unlock in avoidcopy path in hugetlb_cow()
- [PATCH 2/7] hugetlb, HWPOISON: move PG_HWPoison bit check
- [PATCH 3/7] hugetlb: add allocate function for hugepage migration
- [PATCH 4/7] hugetlb: add hugepage check in mem_cgroup_{register,end}_migration()
- [PATCH 5/7] hugetlb: pin oldpage in page migration
- [PATCH 6/7] hugetlb: hugepage migration core
- [PATCH 7/7] hugetlb, HWPOISON: soft offlining for hugepage
-
- fs/hugetlbfs/inode.c    |    2 +
- include/linux/hugetlb.h |    6 ++
- mm/hugetlb.c            |  138 +++++++++++++++++++++++++++++++++++-----------
- mm/memcontrol.c         |    5 ++
- mm/memory-failure.c     |   57 +++++++++++++++-----
- mm/migrate.c            |   70 ++++++++++++++++++++++--
- 6 files changed, 226 insertions(+), 52 deletions(-)
-
-Thanks,
-Naoya Horiguchi
