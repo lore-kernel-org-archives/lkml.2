@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760002Ab0GBT7b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 15:59:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759913Ab0GBT6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 15:58:33 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-ext4@vger.kernel.org
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
-       tao.ma@oracle.com, Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 5/6] jbd2: use WRITE_SYNC for journal I/O
-Date: Fri,  2 Jul 2010 15:58:18 -0400
-Message-Id: <1278100699-24132-6-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1278100699-24132-1-git-send-email-jmoyer@redhat.com>
-References: <1278100699-24132-1-git-send-email-jmoyer@redhat.com>
+	id S1760009Ab0GBT7m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 15:59:42 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:48738 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759992Ab0GBT7a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 15:59:30 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Eric Anholt <eric@anholt.net>
+Subject: Re: [PATCH] [resend] intel_agp: Don't oops with zero stolen memory
+Date: Fri, 2 Jul 2010 21:59:20 +0200
+User-Agent: KMail/1.9.10
+Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
+References: <201006161013.53612.linux@rainbow-software.org> <87aaqa2560.fsf@pollan.anholt.net>
+In-Reply-To: <87aaqa2560.fsf@pollan.anholt.net>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201007022159.21848.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In my fsync testing, journal I/O most definitely was sync I/O, since
-another process was blocked waiting for the results.  By marking all
-journal I/O as WRITE_SYNC, I can get better performance with CFQ.
+On Friday 02 July 2010 00:44:39 Eric Anholt wrote:
+> On Wed, 16 Jun 2010 10:13:52 +0200, Ondrej Zary <linux@rainbow-software.org> 
+wrote:
+> > When "onboard video memory" is set do "disabled" in BIOS on Asus
+> > P4P800-VM board (i865G), kernel oopses with memory corruption:
+> > https://bugs.freedesktop.org/show_bug.cgi?id=28430
+> >
+> > Fix that by cleanly aborting the initialization.
+> >
+> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+>
+> I haven't seen a system with that option before. Is the integrated
+> graphics still supposed to work at that point, or is it "graphics is
+> disabled."?  What do other OSes do here?
 
-If there is a way to mark this only for cases where it is blocking progress
-in a dependent process, then that would be preferrable.  Is there such a
-means for determining and flagging this?
+Testing it right now with Windows XP. Integrated graphics works as secondary 
+only when the "onboard video memory" is set to "disabled"! If anything other 
+is set (e.g. 1MB or 32MB), the driver does not load (code 10).
 
-Cheers,
-Jeff
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
----
- fs/jbd2/commit.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index 75716d3..a078744 100644
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -369,7 +369,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
- 	int tag_bytes = journal_tag_bytes(journal);
- 	struct buffer_head *cbh = NULL; /* For transactional checksums */
- 	__u32 crc32_sum = ~0;
--	int write_op = WRITE;
-+	int write_op = WRITE_SYNC;
- 
- 	/*
- 	 * First job: lock down the current transaction and wait for
 -- 
-1.6.5.2
-
+Ondrej Zary
