@@ -1,95 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab0GBC56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jul 2010 22:57:58 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:34097 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab0GBC55 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jul 2010 22:57:57 -0400
-Date: Fri, 2 Jul 2010 11:57:16 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Matt Fleming <matt@console-pimps.org>, Will Deacon <will.deacon@arm.com>,
-       paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
-Message-ID: <20100702025716.GA25499@linux-sh.org>
-References: <20100624142804.431553874@chello.nl> <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com> <1277464589.32034.276.camel@twins> <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com> <1277477401.32034.670.camel@twins> <1277994970.1917.184.camel@laptop> <1277996555.1917.205.camel@laptop> <20100701153112.GA13511@console-pimps.org> <1277998793.1917.212.camel@laptop>
+	id S1757251Ab0GBDEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jul 2010 23:04:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65387 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754692Ab0GBDEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jul 2010 23:04:09 -0400
+Message-ID: <4C2D57F4.2050204@cn.fujitsu.com>
+Date: Fri, 02 Jul 2010 11:07:32 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277998793.1917.212.camel@laptop>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] tracing: Allow to disable cmdline recording
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 05:39:53PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-07-01 at 16:31 +0100, MattFleming wrote:
-> > On Thu, Jul 01, 2010 at 05:02:35PM +0200, Peter Zijlstra wrote:
-> > > 
-> > > Matt, you said it broke SH completely, but did you try perf stat? perf
-> > > record is not supposed to work on SH due to the hardware not having an
-> > > overflow interrupt.
-> > 
-> > perf record does work to some degree. It definitely worked before
-> > applying your changes but not after. I admit I haven't really read the
-> > perf event code, but Paul will know.
-> 
-> Ok, let me look at that again.
-> 
-Any perf record functionality observed is entirely coincidental and not
-by design. It was something I planned to revisit, but most of what we
-have right now is only geared at the one-shot perf stat case.
+We found that even enabling a single trace event that will rarely be
+triggered can add big overhead to context switch.
 
-> > > Which made me think, what on SH guarantees we update the counter often
-> > > enough not to suffer from counter wrap? Would it make sense to make the
-> > > SH code hook into their arch tick handler and update the counters from
-> > > there?
-> > 
-> > This was the way that the oprofile code used to work. Paul and I were
-> > talking about using a hrtimer to sample performance counters as
-> > opposed to piggy-backing on the tick handler.
-> 
-> Ah, for sampling for sure, simply group a software perf event and a
-> hardware perf event together and use PERF_SAMPLE_READ.
-> 
-> But suppose its a non sampling counter, how do you avoid overflows of
-> the hardware register?
+(lmbench context switch test)
+ -------------------------------------------------
+ 2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
+ ctxsw  ctxsw  ctxsw ctxsw  ctxsw   ctxsw   ctxsw
+------ ------ ------ ------ ------ ------- -------
+  2.19   2.3   2.21   2.56   2.13     2.54    2.07
+  2.39   2.51  2.35   2.75   2.27     2.81    2.24
 
-At the moment it's not an issue since we have big enough counters that
-overflows don't really happen, especially if we're primarily using them
-for one-shot measuring.
+The overhead is 6% ~ 11%.
 
-SH-4A style counters behave in such a fashion that we have 2 general
-purpose counters, and 2 counters for measuring bus transactions. These
-bus counters can optionally be disabled and used in a chained mode to
-provide the general purpose counters a 64-bit counter (the actual
-validity in the upper half of the chained counter varies depending on the
-CPUs, but all of them can do at least 48-bits when chained).
+It's because when a trace event is enabled 3 tracepoints (sched_switch,
+sched_wakeup, sched_wakeup_new) will be activated to map pid to cmdname.
 
-Each counter has overflow detection and asserts an overflow bit, but
-there are no exceptions associated with this, so it's something that we
-would have to tie in to the tick or defer to a bottom half handler in the
-non-sampling case (or simply test on every read, and accept some degree
-of accuracy loss). Any perf record functionality we implement with this
-sort of scheme is only going to provide ballpark figures anyways, so it's
-certainly within the parameters of acceptable loss in exchange for
-increased functionality.
+We'd like to avoid this overhead, so add a trace option '(no)record-cmd'
+to allow to disable cmdline recording.
 
-Different CPUs also implement their overflows differently, some will roll
-and resume counting, but most simply stop until the overflow bit is
-cleared.
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+---
+ include/linux/ftrace_event.h |    7 +++++--
+ kernel/trace/trace.c         |    6 +++++-
+ kernel/trace/trace.h         |    3 +++
+ kernel/trace/trace_events.c  |   30 ++++++++++++++++++++++++++++--
+ 4 files changed, 41 insertions(+), 5 deletions(-)
 
-My main plan was to build on top of the multi-pmu stuff, unchain the
-counters, and expose the bus counters with their own event map as a
-separate PMU instance. All of the other handling logic can pretty much be
-reused directly, but it does mean that we need to be a bit smarter about
-overflow detection/handling. Sampling and so on is also on the TODO list,
-but is as of yet still not supported.
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 01df7ca..2b7b139 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -152,11 +152,13 @@ extern int ftrace_event_reg(struct ftrace_event_call *event,
+ enum {
+ 	TRACE_EVENT_FL_ENABLED_BIT,
+ 	TRACE_EVENT_FL_FILTERED_BIT,
++	TRACE_EVENT_FL_RECORDED_CMD_BIT,
+ };
+ 
+ enum {
+-	TRACE_EVENT_FL_ENABLED	= (1 << TRACE_EVENT_FL_ENABLED_BIT),
+-	TRACE_EVENT_FL_FILTERED	= (1 << TRACE_EVENT_FL_FILTERED_BIT),
++	TRACE_EVENT_FL_ENABLED		= (1 << TRACE_EVENT_FL_ENABLED_BIT),
++	TRACE_EVENT_FL_FILTERED		= (1 << TRACE_EVENT_FL_FILTERED_BIT),
++	TRACE_EVENT_FL_RECORDED_CMD	= (1 << TRACE_EVENT_FL_RECORDED_CMD_BIT),
+ };
+ 
+ struct ftrace_event_call {
+@@ -174,6 +176,7 @@ struct ftrace_event_call {
+ 	 * 32 bit flags:
+ 	 *   bit 1:		enabled
+ 	 *   bit 2:		filter_active
++	 *   bit 3:		enabled cmd record
+ 	 *
+ 	 * Changes to flags must hold the event_mutex.
+ 	 *
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 8683dec..af90429 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -344,7 +344,7 @@ static DECLARE_WAIT_QUEUE_HEAD(trace_wait);
+ /* trace_flags holds trace_options default values */
+ unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
+ 	TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
+-	TRACE_ITER_GRAPH_TIME;
++	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD;
+ 
+ static int trace_stop_count;
+ static DEFINE_SPINLOCK(tracing_start_lock);
+@@ -428,6 +428,7 @@ static const char *trace_options[] = {
+ 	"latency-format",
+ 	"sleep-time",
+ 	"graph-time",
++	"record-cmd",
+ 	NULL
+ };
+ 
+@@ -2561,6 +2562,9 @@ static void set_tracer_flags(unsigned int mask, int enabled)
+ 		trace_flags |= mask;
+ 	else
+ 		trace_flags &= ~mask;
++
++	if (mask == TRACE_ITER_RECORD_CMD)
++		trace_event_enable_cmd_record(enabled);
+ }
+ 
+ static ssize_t
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index cc90ccd..e0fd494 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -597,6 +597,7 @@ enum trace_iterator_flags {
+ 	TRACE_ITER_LATENCY_FMT		= 0x20000,
+ 	TRACE_ITER_SLEEP_TIME		= 0x40000,
+ 	TRACE_ITER_GRAPH_TIME		= 0x80000,
++	TRACE_ITER_RECORD_CMD		= 0x100000,
+ };
+ 
+ /*
+@@ -729,6 +730,8 @@ filter_check_discard(struct ftrace_event_call *call, void *rec,
+ 	return 0;
+ }
+ 
++extern void trace_event_enable_cmd_record(bool enable);
++
+ extern struct mutex event_mutex;
+ extern struct list_head ftrace_events;
+ 
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index e8e6043..09b4fa6 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -170,6 +170,26 @@ int ftrace_event_reg(struct ftrace_event_call *call, enum trace_reg type)
+ }
+ EXPORT_SYMBOL_GPL(ftrace_event_reg);
+ 
++void trace_event_enable_cmd_record(bool enable)
++{
++	struct ftrace_event_call *call;
++
++	mutex_lock(&event_mutex);
++	list_for_each_entry(call, &ftrace_events, list) {
++		if (!(call->flags & TRACE_EVENT_FL_ENABLED))
++			continue;
++
++		if (enable) {
++			tracing_start_cmdline_record();
++			call->flags |= TRACE_EVENT_FL_RECORDED_CMD;
++		} else {
++			tracing_stop_cmdline_record();
++			call->flags &= ~TRACE_EVENT_FL_RECORDED_CMD;
++		}
++	}
++	mutex_unlock(&event_mutex);
++}
++
+ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+ 					int enable)
+ {
+@@ -179,13 +199,19 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+ 	case 0:
+ 		if (call->flags & TRACE_EVENT_FL_ENABLED) {
+ 			call->flags &= ~TRACE_EVENT_FL_ENABLED;
+-			tracing_stop_cmdline_record();
++			if (call->flags & TRACE_EVENT_FL_RECORDED_CMD) {
++				tracing_stop_cmdline_record();
++				call->flags &= ~TRACE_EVENT_FL_RECORDED_CMD;
++			}
+ 			call->class->reg(call, TRACE_REG_UNREGISTER);
+ 		}
+ 		break;
+ 	case 1:
+ 		if (!(call->flags & TRACE_EVENT_FL_ENABLED)) {
+-			tracing_start_cmdline_record();
++			if (trace_flags & TRACE_ITER_RECORD_CMD) {
++				tracing_start_cmdline_record();
++				call->flags |= TRACE_EVENT_FL_RECORDED_CMD;
++			}
+ 			ret = call->class->reg(call, TRACE_REG_REGISTER);
+ 			if (ret) {
+ 				tracing_stop_cmdline_record();
+-- 
+1.6.3
+
