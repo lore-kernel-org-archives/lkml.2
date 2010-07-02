@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759520Ab0GBSoe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 14:44:34 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:43301 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759261Ab0GBSoU (ORCPT
+	id S1759575Ab0GBSor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 14:44:47 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:37643 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759534Ab0GBSom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 14:44:20 -0400
+	Fri, 2 Jul 2010 14:44:42 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
        sandeen@redhat.com, tytso@mit.edu, staubach@redhat.com,
@@ -14,9 +14,9 @@ To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
        nfsv4@linux-nfs.org, linux-ext4@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH -V2 02/16] vfs: Add generic IS_ACL() test for acl support
-Date: Sat,  3 Jul 2010 00:13:33 +0530
-Message-Id: <1278096227-16784-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V2 07/16] richacl: Update the file masks in chmod()
+Date: Sat,  3 Jul 2010 00:13:38 +0530
+Message-Id: <1278096227-16784-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.rc1
 In-Reply-To: <1278096227-16784-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1278096227-16784-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,92 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@suse.de>
 
-When IS_POSIXACL() is true, the vfs does not apply the umask.  Other acl
-models will need the same exception, so introduce a separate IS_ACL()
-test.
+Doing a chmod() sets the file mode, which includes the file permission
+bits.  When a file has a richacl, the permissions that the richacl
+grants need to be limited to what the new file permission bits allow.
 
-The IS_POSIX_ACL() test is still needed so that nfsd can determine when
-the underlying file system supports POSIX ACLs (as opposed to some other
-kind).
+This is done by setting the file masks in the richacl to what the file
+permission bits map to.  The richacl access check algorithm takes the
+file masks into account, which ensures that the richacl cannot grant too
+many permissions.
+
+It is possible to explicitly add permissions to the file masks which go
+beyond what the file permission bits can grant (like the ACE4_WRITE_ACL
+permission).  The POSIX.1 standard calls this an alternate file access
+control mechanism.  A subsequent chmod() would ensure that those
+permissions are disabled again.
 
 Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c         |    6 +++---
- fs/nfs/nfs4proc.c  |    2 +-
- include/linux/fs.h |    8 +++++++-
- 3 files changed, 11 insertions(+), 5 deletions(-)
+ fs/richacl_base.c       |   37 +++++++++++++++++++++++++++++++++++++
+ include/linux/richacl.h |    1 +
+ 2 files changed, 38 insertions(+), 0 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 29e3461..a8d19ab 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1554,7 +1554,7 @@ static int __open_namei_create(struct nameidata *nd, struct path *path,
- 	int error;
- 	struct dentry *dir = nd->path.dentry;
- 
--	if (!IS_POSIXACL(dir->d_inode))
-+	if (!IS_ACL(dir->d_inode))
- 		mode &= ~current_umask();
- 	error = security_path_mknod(&nd->path, path->dentry, mode, 0);
- 	if (error)
-@@ -2077,7 +2077,7 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, int, mode,
- 		error = PTR_ERR(dentry);
- 		goto out_unlock;
+diff --git a/fs/richacl_base.c b/fs/richacl_base.c
+index d78ef35..bb9b762 100644
+--- a/fs/richacl_base.c
++++ b/fs/richacl_base.c
+@@ -331,3 +331,40 @@ restart:
  	}
--	if (!IS_POSIXACL(nd.path.dentry->d_inode))
-+	if (!IS_ACL(nd.path.dentry->d_inode))
- 		mode &= ~current_umask();
- 	error = may_mknod(mode);
- 	if (error)
-@@ -2154,7 +2154,7 @@ SYSCALL_DEFINE3(mkdirat, int, dfd, const char __user *, pathname, int, mode)
- 	if (IS_ERR(dentry))
- 		goto out_unlock;
- 
--	if (!IS_POSIXACL(nd.path.dentry->d_inode))
-+	if (!IS_ACL(nd.path.dentry->d_inode))
- 		mode &= ~current_umask();
- 	error = mnt_want_write(nd.path.mnt);
- 	if (error)
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 70015dd..aa8a694 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -2028,7 +2028,7 @@ nfs4_atomic_open(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
- 	if (nd->flags & LOOKUP_CREATE) {
- 		attr.ia_mode = nd->intent.open.create_mode;
- 		attr.ia_valid = ATTR_MODE;
--		if (!IS_POSIXACL(dir))
-+		if (!IS_ACL(dir))
- 			attr.ia_mode &= ~current_umask();
- 	} else {
- 		attr.ia_valid = 0;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 1ecb3a2..f49dd5c 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -200,7 +200,7 @@ struct inodes_stat_t {
- #define MS_VERBOSE	32768	/* War is peace. Verbosity is silence.
- 				   MS_VERBOSE is deprecated. */
- #define MS_SILENT	32768
--#define MS_POSIXACL	(1<<16)	/* VFS does not apply the umask */
-+#define MS_POSIXACL	(1<<16) /* Supports POSIX ACLs */
- #define MS_UNBINDABLE	(1<<17)	/* change to unbindable */
- #define MS_PRIVATE	(1<<18)	/* change to private */
- #define MS_SLAVE	(1<<19)	/* change to slave */
-@@ -270,6 +270,12 @@ struct inodes_stat_t {
- #define IS_SWAPFILE(inode)	((inode)->i_flags & S_SWAPFILE)
- #define IS_PRIVATE(inode)	((inode)->i_flags & S_PRIVATE)
- 
-+/*
-+ * IS_ACL() tells the VFS to not apply the umask
-+ * and use iop->check_acl for acl permission checks when defined.
-+ */
-+#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL)
+ }
+ EXPORT_SYMBOL_GPL(richacl_compute_max_masks);
 +
- /* the read-only stuff doesn't really belong here, but any other place is
-    probably as bad and I don't want to create yet another include file. */
++/**
++ * richacl_chmod  -  update the file masks to reflect the new mode
++ * @mode:	new file permission bits
++ *
++ * Return a copy of @acl where the file masks have been replaced by the file
++ * masks corresponding to the file permission bits in @mode, or returns @acl
++ * itself if the file masks are already up to date.  Takes over a reference
++ * to @acl.
++ */
++struct richacl *
++richacl_chmod(struct richacl *acl, mode_t mode)
++{
++	unsigned int owner_mask, group_mask, other_mask;
++	struct richacl *clone;
++
++	owner_mask = richacl_mode_to_mask(mode >> 6);
++	group_mask = richacl_mode_to_mask(mode >> 3);
++	other_mask = richacl_mode_to_mask(mode);
++
++	if (acl->a_owner_mask == owner_mask &&
++	    acl->a_group_mask == group_mask &&
++	    acl->a_other_mask == other_mask)
++		return acl;
++
++	clone = richacl_clone(acl);
++	richacl_put(acl);
++	if (!clone)
++		return ERR_PTR(-ENOMEM);
++
++	clone->a_owner_mask = owner_mask;
++	clone->a_group_mask = group_mask;
++	clone->a_other_mask = other_mask;
++
++	return clone;
++}
++EXPORT_SYMBOL_GPL(richacl_chmod);
+diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+index 738fd76..1ea33ee 100644
+--- a/include/linux/richacl.h
++++ b/include/linux/richacl.h
+@@ -269,5 +269,6 @@ extern int richacl_masks_to_mode(const struct richacl *);
+ extern unsigned int richacl_mode_to_mask(mode_t);
+ extern unsigned int richacl_want_to_mask(int);
+ extern void richacl_compute_max_masks(struct richacl *);
++extern struct richacl *richacl_chmod(struct richacl *, mode_t);
  
+ #endif /* __RICHACL_H */
 -- 
 1.7.2.rc1
 
