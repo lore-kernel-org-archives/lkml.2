@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab0GBH37 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 03:29:59 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:16015 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab0GBH35 (ORCPT
+	id S1754539Ab0GBHbY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 03:31:24 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:42460 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115Ab0GBHbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 03:29:57 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6030"; a="46267916"
-Message-ID: <4C2D9575.9030002@codeaurora.org>
-Date: Fri, 02 Jul 2010 00:29:57 -0700
-From: Zach Pfeffer <zpfeffer@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Fri, 2 Jul 2010 03:31:22 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4C2D95EA.6080209@np.css.fujitsu.com>
+Date: Fri, 02 Jul 2010 16:31:54 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
 MIME-Version: 1.0
-To: Hari Kanigeri <hari.kanigeri@gmail.com>
-CC: Andi Kleen <andi@firstfloor.org>, Daniel Walker <dwalker@codeaurora.org>,
-       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
-       linux-arm-kernel@jasper.es
-Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
-References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org> <20100701101746.3810cc3b.randy.dunlap@oracle.com> <20100701180241.GA3594@basil.fritz.box> <1278012503.7738.17.camel@c-dwalke-linux.qualc <AANLkTilQnopqrS-KrR3btOIkH68fIEdipWFF6fkO6fNA@mail.gmail.com>
-In-Reply-To: <AANLkTilQnopqrS-KrR3btOIkH68fIEdipWFF6fkO6fNA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: IOAPIC: only access APIC registers one dword at
+ a time
+References: <4C2D6D4B.5060309@cn.fujitsu.com>
+In-Reply-To: <4C2D6D4B.5060309@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hari Kanigeri wrote:
->> The VCMM takes the long view. Its designed for a future in which the
->> number of IOMMUs will go up and the ways in which these IOMMUs are
->> composed will vary from system to system, and may vary at
->> runtime. Already, there are ~20 different IOMMU map implementations in
->> the kernel. Had the Linux kernel had the VCMM, many of those
->> implementations could have leveraged the mapping and topology management
->> of a VCMM, while focusing on a few key hardware specific functions (map
->> this physical address, program the page table base register).
->>
+Hi, Xiao Guangrong
+
+Xiao Guangrong wrote:
+> The IOAPIC spec says:
 > 
-> -- Sounds good.
-> Did you think of a way to handle the cases where one of the Device
-> that is using the mapped address crashed ?
-> How is the physical address unbacked in this case ?
+> When accessing these registers, accesses must be done one dword at a time.
+> For example, software should never access byte 2 from the Data register before
+> accessing bytes 0 and 1. The hardware will not attempt to recover from a bad
+> programming model in this case.
 
-Actually the API takes care of that by design. Since the physical
-space is managed apart from the mapper the mapper can crash and not
-affect the physical memory allocation.
+I could understand what you described on the above, but I don't think it is 
+the best method to fix it. Could you consider a nice one?
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>
+> So, this patch removes other width access
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  virt/kvm/ioapic.c |   10 +++-------
+>  1 files changed, 3 insertions(+), 7 deletions(-)
+> 
+> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+> index 1149c60..f96816f 100644
+> --- a/virt/kvm/ioapic.c
+> +++ b/virt/kvm/ioapic.c
+> @@ -306,14 +306,10 @@ static int ioapic_mmio_read(struct kvm_io_device *this, gpa_t addr, int len,
+>  	spin_unlock(&ioapic->lock);
+>  
+>  	switch (len) {
+> -	case 8:
+> -		*(u64 *) val = result;
+> -		break;
+> -	case 1:
+> -	case 2:
+>  	case 4:
+> -		memcpy(val, (char *)&result, len);
+
+Here the parameter len is not used for reading data from ioapic register, before switch case
+the value of ioapic register has been read by ioapic_read_indirect().
+
+
+> +		*(u32 *) val = result;
+>  		break;
+> +
+>  	default:
+>  		printk(KERN_WARNING "ioapic: wrong length %d\n", len);
+
+And I think here is not good to print warning message. Maybe it is better to do
+such kind of checking at the first of this function before ioapic_read_indirect().
+
+>  	}
+> @@ -332,7 +328,7 @@ static int ioapic_mmio_write(struct kvm_io_device *this, gpa_t addr, int len,
+>  		     (void*)addr, len, val);
+>  	ASSERT(!(addr & 0xf));	/* check alignment */
+>  
+> -	if (len == 4 || len == 8)
+> +	if (len == 4)
+>  		data = *(u32 *) val;
+>  	else {
+>  		printk(KERN_WARNING "ioapic: Unsupported size %d\n", len);
+
+So I hope you could read the source code again. I think you can use a better method to fix it.
+
+Best Regards,
+Jin Dongming
+
