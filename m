@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675Ab0GBOF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 10:05:57 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:60943 "EHLO relay.sgi.com"
+	id S1758682Ab0GBOLR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 10:11:17 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:35353 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753752Ab0GBOFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 10:05:55 -0400
-Subject: Re: [PATCH 00/15] xfs: minimize DMAPI footprint
-From: Alex Elder <aelder@sgi.com>
-Reply-To: aelder@sgi.com
-To: Dave Chinner <david@fromorbit.com>
-Cc: Christoph Hellwig <hch@infradead.org>, xfs@oss.sgi.com,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100630002043.GB24712@dastard>
-References: <1277762653.2040.554.camel@doink>
-	 <20100629075734.GA31118@infradead.org>  <20100630002043.GB24712@dastard>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Jul 2010 09:05:47 -0500
-Message-ID: <1278079547.1876.82.camel@doink>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Jul 2010 14:05:48.0228 (UTC) FILETIME=[ABE99040:01CB19EF]
+	id S1753330Ab0GBOLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jul 2010 10:11:16 -0400
+Date: Fri, 2 Jul 2010 07:09:44 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Jim Cromie <jim.cromie@gmail.com>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ethan Lawrence <e.law87@yahoo.com>,
+       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "lars4910@hotmail.com" <lars4910@hotmail.com>,
+       "birdie@permonline.ru" <birdie@permonline.ru>,
+       "jadcock@cox.net" <jadcock@cox.net>
+Subject: Re: [PATCH/RFC] hwmon: Add support for W83667HG-B
+Message-ID: <20100702140944.GA14032@ericsson.com>
+References: <1278021735-21188-1-git-send-email-guenter.roeck@ericsson.com>
+ <20100702092011.0acd753f@hyperion.delvare>
+ <20100702080704.GA12911@ericsson.com>
+ <20100702101345.6fe9d27a@hyperion.delvare>
+ <20100702083144.GD12911@ericsson.com>
+ <20100702115123.18e95e14@hyperion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100702115123.18e95e14@hyperion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Responding to Dave, since it basically included all of
-Christoph's response as well.)
-
-Quick summary:  we'll go ahead with the suggestion to
-maintain the DMAPI code (all of it) in a separate branch.
-
-On Wed, 2010-06-30 at 10:20 +1000, Dave Chinner wrote:
-> On Tue, Jun 29, 2010 at 03:57:34AM -0400, Christoph Hellwig wrote:
-> > > SGI has a product that uses the DMAPI support code that's
-> > > included in mainline XFS, along with some additional code
-> > > (the "never merged" stuff Christoph refers to) that we
-> > > maintain separately.  To our customers that need it, this
-> > > is an extremely important feature.
-> > 
-> > So why don't you bother to get HSM support upstream properly,
-> > or at least maintain it somewhere where you can get at it?
-> > What sourcxe tree do those important customers use it?
-> > 
-> > > What follows is a set of patches that I think accomplishes
-> > > these goals.  The net result of these changes is:
-> > 
-> > While this is a lot better than the old DMAPI supoort, it's still
-> > lots of dead code in the mainline tree, that won't ever be used
-> > there, as proper HSM suport if it ever was merged would sit at
-> > the VFS layer.
-
-I agree that HSM support would be better implemented at
-the VFS layer, allowing other file systems to benefit.
-I do not agree that after my patch series is applied
-it's "lots" of dead code in the mainline tree.  I also
-think this is a case where it's better to preserve
-something that works and evolve it into something better
-than to throw it all away and start over.
-
-That being said, until now I personally have spent almost
-no time on the DMAPI code itself, and I don't claim any
-special knowledge about the best way to provide kernel
-support for HSM's.  I also acknowledge that there's a
-bunch of other required DMAPI code that's not in the
-mainline tree (but there was no intent to conceal it).
-
-> My question about the DMAPI hooks also still stands - if we leave
-> the hooks in mainline, how are we supposed to test that they are
-> still placed correctly for the out-of-tree patches to function
-> correctly? I can't see that we can actually do this, so I question
-> the value of even leaving minimal hooks in place....
-
-Point taken.  I (or SGI I guess) would much rather have
-all of the code in the mainline tree but it's not.  (I
-don't know any details on the history of that, by the way.)
-Maintaining the other parts separately was done of necessity.
-
-> > In addition to that the people who effectively maintain XFS for both
-> > the community and lots of paying customers have done a large amount
-> > of work ontop of the DMAPI removal of the last 1 1/2 month.  So I'd
-> > say rebase your changes over
-> > 
-> > 	http://git.kernel.org/?p=linux/kernel/git/dgc/xfsdev.git;a=shortlog;h=refs/heads/for-2.6.36
-> > 
-> > and keep them in a separate branch dmapi-dev branch where SGI can pull
-> > the code for it's customers from. This branch could also include the
-> > actual dmapi code and core kernel modifications, so that people that
-> > want dmapi support actually have chance to find a complete kernel tree
-> > for it.
+On Fri, Jul 02, 2010 at 05:51:23AM -0400, Jean Delvare wrote:
+> On Fri, 2 Jul 2010 01:31:44 -0700, Guenter Roeck wrote:
+> > On Fri, Jul 02, 2010 at 04:13:45AM -0400, Jean Delvare wrote:
+> > > On Fri, 2 Jul 2010 01:07:04 -0700, Guenter Roeck wrote:
+> > > > I'll also add a check for the HG-I.
+> > > 
+> > > Do you have a datasheet for that one too?
+> > > 
+> > No. However, since we have a tester, we will have test coverage,
+> > so I figured it should be worth a try. If it doesn't work
+> > I can still drop it from the final patch.
 > 
-> This makes a lot of sense to me. I'd prefer an all-or-nothing
-> approach to supporting DMAPI (and any other out-of-tree enabling
-> functionality for that matter) and putting it all in separate
-> branch would give us both all and nothing. ;)
+> FYI, I have a datasheet, which unfortunately I am not allowed to share.
+> Please let me know if you want me to look up something for you.
+> 
+How about the changed registers ? Would give us an idea if the chip is closer to 
+667 or to 667-B.
 
-I think this is a good solution, allowing all of the code to
-be published and available--and complete--while not forcing
-the mainline code to be polluted by the clutter of non-operative
-code.
+> > I suspect it is the same as the HG with a different chip ID.
+> 
+> Beware, it's a different device number (677 vs. 667) so I would expect
+> more differences.
+> 
+Ah, I missed that. I thought it was 667-I. Yes, you are right, that suggests
+more differences.
 
-> It would also help us test the DMAPI infrastructure without needing
-> a HSM as the xfsqa test suite does a pretty good job of testing it.
-> And, of course, we could also help clean it up if it is testable. As
-> such, I'd be quite happy to maintain a dmapi-dev branch in the above
-> repo if the eventual goal is to try to move the code towards being
-> more acceptible for mainline inclusion....
+Guenter
 
-Here is what I plan to do:
-- Accept Christoph's "drop dmapi hooks" patch into the
-  XFS master branch.  Once that's in, there's a huge
-  cascade of subsequent work that need to be pulled in
-  and I'll get those out there also.
-- Work on creating a complete and working dmapi branch.
-  Once we've got a fairly well-integrated whole, I will
-  publish that branch on the XFS git tree.  We will plan
-  to maintain that in parallel with the XFS master branch,
-  re-basing it on the master branch periodically.
-- I'll make an announcement on the list about the 
-  availability of the new branch.
-
-					-Alex
-
+> -- 
+> Jean Delvare
