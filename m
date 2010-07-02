@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759655Ab0GBSqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jul 2010 14:46:10 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:35905 "EHLO
+	id S1759702Ab0GBSqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jul 2010 14:46:30 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:35899 "EHLO
 	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104Ab0GBSpO (ORCPT
+	with ESMTP id S1759636Ab0GBSpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jul 2010 14:45:14 -0400
+	Fri, 2 Jul 2010 14:45:05 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
        sandeen@redhat.com, tytso@mit.edu, staubach@redhat.com,
@@ -14,9 +14,9 @@ To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
        nfsv4@linux-nfs.org, linux-ext4@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH -V2 14/16] ext4: Use IS_POSIXACL() to check for POSIX ACL support
-Date: Sat,  3 Jul 2010 00:13:45 +0530
-Message-Id: <1278096227-16784-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V2 12/16] richacl: Automatic Inheritance
+Date: Sat,  3 Jul 2010 00:13:43 +0530
+Message-Id: <1278096227-16784-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.rc1
 In-Reply-To: <1278096227-16784-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1278096227-16784-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,163 +24,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use IS_POSIXACL() instead of a file system specific mount flag since we
-have IS_POSIXACL() in the vfs already, anyway.
+From: Andreas Gruenbacher <agruen@suse.de>
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Automatic Inheritance (AI) allows changes to the acl of a directory to
+recursively propagate down to files and directories in the directory.
+
+To implement this, the kernel keeps track of which permissions have been
+inherited, and makes sure that permission propagation is turned off when
+the file permission bits of a file are changed (upon create or chmod).
+
+The actual permission propagation is implemented in user space.
+
+AI works as follows:
+
+ - When the ACL4_AUTO_INHERIT flag in the acl of a file is cleared, the
+   file is not affected by AI.
+
+ - When the ACL4_AUTO_INHERIT flag in the acl of a directory is set and
+   a file or subdirectory is created in that directory, files created in
+   the directory will have the ACL4_AUTO_INHERIT flag set, and all
+   inherited aces will have the ACE4_INHERITED_ACE flag set.  This
+   allows user space to distinguish between aces which have been
+   inherited, and aces which have been explicitly added.
+
+ - When the ACL4_PROTECTED acl flag in the acl of a file is set, AI will
+   not modify the acl of the file.  This does not affect propagation of
+   permissions from the file to its children (if the file is a
+   directory).
+
+Linux does not have a way of creating files without setting the file
+permission bits, so all files created inside a directory with
+ACL4_AUTO_INHERIT set will also have the ACL4_PROTECTED flag set.  This
+effectively disables AI.
+
+Protocols which support creating files without specifying permissions
+can explicitly clear the ACL4_PROTECTED flag after creating a file (and
+reset the file masks to "undo" applying the create mode; see
+richacl_compute_max_masks()).  This is a workaround; a per-create or
+per-process flag indicating to ignore the create mode when AI is in
+effect would fix this problem.
+
 Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/ext4/acl.c   |   16 ++++++++--------
- fs/ext4/ext4.h  |    1 -
- fs/ext4/super.c |   16 +++++-----------
- 3 files changed, 13 insertions(+), 20 deletions(-)
+ fs/richacl_base.c       |   10 +++++++++-
+ fs/richacl_inode.c      |    7 ++++++-
+ include/linux/richacl.h |   28 ++++++++++++++++++++++++++--
+ 3 files changed, 41 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ext4/acl.c b/fs/ext4/acl.c
-index feaf498..2e1fd20 100644
---- a/fs/ext4/acl.c
-+++ b/fs/ext4/acl.c
-@@ -139,7 +139,7 @@ ext4_get_acl(struct inode *inode, int type)
- 	struct posix_acl *acl;
- 	int retval;
+diff --git a/fs/richacl_base.c b/fs/richacl_base.c
+index 606f99e..b368b51 100644
+--- a/fs/richacl_base.c
++++ b/fs/richacl_base.c
+@@ -353,7 +353,8 @@ richacl_chmod(struct richacl *acl, mode_t mode)
  
--	if (!test_opt(inode->i_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(inode))
- 		return NULL;
+ 	if (acl->a_owner_mask == owner_mask &&
+ 	    acl->a_group_mask == group_mask &&
+-	    acl->a_other_mask == other_mask)
++	    acl->a_other_mask == other_mask &&
++	    (!richacl_is_auto_inherit(acl) || richacl_is_protected(acl)))
+ 		return acl;
  
- 	acl = get_cached_acl(inode, type);
-@@ -265,7 +265,7 @@ ext4_init_acl(handle_t *handle, struct inode *inode, struct inode *dir)
- 	int error = 0;
+ 	clone = richacl_clone(acl);
+@@ -364,6 +365,8 @@ richacl_chmod(struct richacl *acl, mode_t mode)
+ 	clone->a_owner_mask = owner_mask;
+ 	clone->a_group_mask = group_mask;
+ 	clone->a_other_mask = other_mask;
++	if (richacl_is_auto_inherit(clone))
++		clone->a_flags |= ACL4_PROTECTED;
  
- 	if (!S_ISLNK(inode->i_mode)) {
--		if (test_opt(dir->i_sb, POSIX_ACL)) {
-+		if (IS_POSIXACL(inode)) {
- 			acl = ext4_get_acl(dir, ACL_TYPE_DEFAULT);
- 			if (IS_ERR(acl))
- 				return PTR_ERR(acl);
-@@ -273,7 +273,7 @@ ext4_init_acl(handle_t *handle, struct inode *inode, struct inode *dir)
- 		if (!acl)
- 			inode->i_mode &= ~current_umask();
+ 	return clone;
+ }
+@@ -521,6 +524,11 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
+ 			ace++;
+ 		}
  	}
--	if (test_opt(inode->i_sb, POSIX_ACL) && acl) {
-+	if (IS_POSIXACL(inode) && acl) {
- 		struct posix_acl *clone;
- 		mode_t mode;
++	if (richacl_is_auto_inherit(dir_acl)) {
++		acl->a_flags = ACL4_AUTO_INHERIT;
++		richacl_for_each_entry(ace, acl)
++			ace->e_flags |= ACE4_INHERITED_ACE;
++	}
  
-@@ -327,7 +327,7 @@ ext4_acl_chmod(struct inode *inode)
+ 	return acl;
+ }
+diff --git a/fs/richacl_inode.c b/fs/richacl_inode.c
+index a209be8..1e9c901 100644
+--- a/fs/richacl_inode.c
++++ b/fs/richacl_inode.c
+@@ -212,9 +212,14 @@ richacl_inherit_inode(const struct richacl *dir_acl, struct inode *inode)
  
- 	if (S_ISLNK(inode->i_mode))
- 		return -EOPNOTSUPP;
--	if (!test_opt(inode->i_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(inode))
- 		return 0;
- 	acl = ext4_get_acl(inode, ACL_TYPE_ACCESS);
- 	if (IS_ERR(acl) || !acl)
-@@ -369,7 +369,7 @@ ext4_xattr_list_acl_access(struct dentry *dentry, char *list, size_t list_len,
- {
- 	const size_t size = sizeof(POSIX_ACL_XATTR_ACCESS);
+ 	acl = richacl_inherit(dir_acl, S_ISDIR(inode->i_mode));
+ 	if (acl) {
++		/*
++		 * We need to set ACL4_PROTECTED because we are
++		 * doing an implicit chmod
++		 */
++		if (richacl_is_auto_inherit(acl))
++			acl->a_flags |= ACL4_PROTECTED;
  
--	if (!test_opt(dentry->d_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(dentry->d_inode))
- 		return 0;
- 	if (list && size <= list_len)
- 		memcpy(list, POSIX_ACL_XATTR_ACCESS, size);
-@@ -382,7 +382,7 @@ ext4_xattr_list_acl_default(struct dentry *dentry, char *list, size_t list_len,
- {
- 	const size_t size = sizeof(POSIX_ACL_XATTR_DEFAULT);
- 
--	if (!test_opt(dentry->d_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(dentry->d_inode))
- 		return 0;
- 	if (list && size <= list_len)
- 		memcpy(list, POSIX_ACL_XATTR_DEFAULT, size);
-@@ -398,7 +398,7 @@ ext4_xattr_get_acl(struct dentry *dentry, const char *name, void *buffer,
- 
- 	if (strcmp(name, "") != 0)
- 		return -EINVAL;
--	if (!test_opt(dentry->d_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(dentry->d_inode))
- 		return -EOPNOTSUPP;
- 
- 	acl = ext4_get_acl(dentry->d_inode, type);
-@@ -423,7 +423,7 @@ ext4_xattr_set_acl(struct dentry *dentry, const char *name, const void *value,
- 
- 	if (strcmp(name, "") != 0)
- 		return -EINVAL;
--	if (!test_opt(inode->i_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(dentry->d_inode))
- 		return -EOPNOTSUPP;
- 	if (!is_owner_or_cap(inode))
- 		return -EPERM;
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 19a4de5..651379b 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -870,7 +870,6 @@ struct ext4_inode_info {
- #define EXT4_MOUNT_UPDATE_JOURNAL	0x01000	/* Update the journal format */
- #define EXT4_MOUNT_NO_UID32		0x02000  /* Disable 32-bit UIDs */
- #define EXT4_MOUNT_XATTR_USER		0x04000	/* Extended user attributes */
--#define EXT4_MOUNT_POSIX_ACL		0x08000	/* POSIX Access Control Lists */
- #define EXT4_MOUNT_NO_AUTO_DA_ALLOC	0x10000	/* No auto delalloc mapping */
- #define EXT4_MOUNT_BARRIER		0x20000 /* Use block barriers */
- #define EXT4_MOUNT_NOBH			0x40000 /* No bufferheads */
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 4e8983a..3836908 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -917,9 +917,9 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
- 	}
- #endif
- #ifdef CONFIG_EXT4_FS_POSIX_ACL
--	if (test_opt(sb, POSIX_ACL) && !(def_mount_opts & EXT4_DEFM_ACL))
-+	if ((sb->s_flags & MS_POSIXACL) && !(def_mount_opts & EXT4_DEFM_ACL))
- 		seq_puts(seq, ",acl");
--	if (!test_opt(sb, POSIX_ACL) && (def_mount_opts & EXT4_DEFM_ACL))
-+	if (!(sb->s_flags & MS_POSIXACL) && (def_mount_opts & EXT4_DEFM_ACL))
- 		seq_puts(seq, ",noacl");
- #endif
- 	if (sbi->s_commit_interval != JBD2_DEFAULT_MAX_COMMIT_AGE*HZ) {
-@@ -1423,10 +1423,10 @@ static int parse_options(char *options, struct super_block *sb,
- #endif
- #ifdef CONFIG_EXT4_FS_POSIX_ACL
- 		case Opt_acl:
--			set_opt(sbi->s_mount_opt, POSIX_ACL);
-+			sb->s_flags |= MS_POSIXACL;
- 			break;
- 		case Opt_noacl:
--			clear_opt(sbi->s_mount_opt, POSIX_ACL);
-+			sb->s_flags &= ~MS_POSIXACL;
- 			break;
- #else
- 		case Opt_acl:
-@@ -2531,7 +2531,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- #endif
- #ifdef CONFIG_EXT4_FS_POSIX_ACL
- 	if (def_mount_opts & EXT4_DEFM_ACL)
--		set_opt(sbi->s_mount_opt, POSIX_ACL);
-+		sb->s_flags |= MS_POSIXACL;
- #endif
- 	if ((def_mount_opts & EXT4_DEFM_JMODE) == EXT4_DEFM_JMODE_DATA)
- 		set_opt(sbi->s_mount_opt, JOURNAL_DATA);
-@@ -2566,9 +2566,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 			   &journal_ioprio, NULL, 0))
- 		goto failed_mount;
- 
--	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
--		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
+ 		richacl_compute_max_masks(acl);
 -
- 	if (le32_to_cpu(es->s_rev_level) == EXT4_GOOD_OLD_REV &&
- 	    (EXT4_HAS_COMPAT_FEATURE(sb, ~0U) ||
- 	     EXT4_HAS_RO_COMPAT_FEATURE(sb, ~0U) ||
-@@ -3618,9 +3615,6 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
- 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
- 		ext4_abort(sb, __func__, "Abort forced by user");
+ 		/*
+ 		 * Ensure that the acl will not grant any permissions beyond
+ 		 * the create mode.
+diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+index b1a02e6..943abab 100644
+--- a/include/linux/richacl.h
++++ b/include/linux/richacl.h
+@@ -47,6 +47,15 @@ struct richacl {
+ 	     _ace != _acl->a_entries - 1; \
+ 	     _ace--)
  
--	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
--		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
--
- 	es = sbi->s_es;
++/* a_flags values */
++#define ACL4_AUTO_INHERIT		0x01
++#define ACL4_PROTECTED			0x02
++/*#define ACL4_DEFAULTED			0x04*/
++
++#define ACL4_VALID_FLAGS (	\
++	ACL4_AUTO_INHERIT |	\
++	ACL4_PROTECTED)
++
+ /* e_type values */
+ #define ACE4_ACCESS_ALLOWED_ACE_TYPE	0x0000
+ #define ACE4_ACCESS_DENIED_ACE_TYPE	0x0001
+@@ -61,6 +70,7 @@ struct richacl {
+ /*#define ACE4_SUCCESSFUL_ACCESS_ACE_FLAG	0x0010*/
+ /*#define ACE4_FAILED_ACCESS_ACE_FLAG	0x0020*/
+ #define ACE4_IDENTIFIER_GROUP		0x0040
++#define ACE4_INHERITED_ACE		0x0080
+ /* in-memory representation only */
+ #define ACE4_SPECIAL_WHO		0x4000
  
- 	if (sbi->s_journal) {
+@@ -69,7 +79,8 @@ struct richacl {
+ 	ACE4_DIRECTORY_INHERIT_ACE |		\
+ 	ACE4_NO_PROPAGATE_INHERIT_ACE |		\
+ 	ACE4_INHERIT_ONLY_ACE |			\
+-	ACE4_IDENTIFIER_GROUP)
++	ACE4_IDENTIFIER_GROUP |			\
++	ACE4_INHERITED_ACE)
+ 
+ /* e_mask bitflags */
+ #define ACE4_READ_DATA			0x00000001
+@@ -162,6 +173,18 @@ richacl_put(struct richacl *acl)
+ 		kfree(acl);
+ }
+ 
++static inline int
++richacl_is_auto_inherit(const struct richacl *acl)
++{
++	return acl->a_flags & ACL4_AUTO_INHERIT;
++}
++
++static inline int
++richacl_is_protected(const struct richacl *acl)
++{
++	return acl->a_flags & ACL4_PROTECTED;
++}
++
+ /*
+  * Special e_who identifiers: we use these pointer values in comparisons
+  * instead of doing a strcmp.
+@@ -240,7 +263,8 @@ richace_clear_inheritance_flags(struct richace *ace)
+ 	ace->e_flags &= ~(ACE4_FILE_INHERIT_ACE |
+ 			  ACE4_DIRECTORY_INHERIT_ACE |
+ 			  ACE4_NO_PROPAGATE_INHERIT_ACE |
+-			  ACE4_INHERIT_ONLY_ACE);
++			  ACE4_INHERIT_ONLY_ACE |
++			  ACE4_INHERITED_ACE);
+ }
+ 
+ /**
 -- 
 1.7.2.rc1
 
