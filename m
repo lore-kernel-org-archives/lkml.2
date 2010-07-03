@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab0GCKC4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 06:02:56 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42238 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab0GCKCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 06:02:55 -0400
-Date: Sat, 3 Jul 2010 06:02:48 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] remove q->prepare_flush_fn hook
-Message-ID: <20100703100248.GA22329@infradead.org>
-References: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+	id S1754928Ab0GCKLZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 06:11:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754782Ab0GCKLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 06:11:23 -0400
+Message-ID: <4C2F0CC1.6020808@redhat.com>
+Date: Sat, 03 Jul 2010 13:11:13 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>,
+       Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Subject: Re: [PATCH v2] KVM: IOAPIC: only access APIC registers one dword
+ at a time
+References: <4C2D6D4B.5060309@cn.fujitsu.com> <4C2D95EA.6080209@np.css.fujitsu.com> <4C2D975A.2050704@cn.fujitsu.com> <4C2D9C8C.8060401@cn.fujitsu.com>
+In-Reply-To: <4C2D9C8C.8060401@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 03, 2010 at 05:45:31PM +0900, FUJITA Tomonori wrote:
-> This removes q->prepare_flush_fn. Except for ide and scsi, all the
-> users just mark flush requests. They can use REQ_FLUSH flag
-> instead.
-> 
-> SCSI and ide can use q->prep_rq_fn to build flush requests.
-> 
-> This can be applied to the block's for-2.6.36.
+On 07/02/2010 11:00 AM, Xiao Guangrong wrote:
+> The IOAPIC spec says:
+>
+> When accessing these registers, accesses must be done one dword at a time.
+> For example, software should never access byte 2 from the Data register before
+> accessing bytes 0 and 1. The hardware will not attempt to recover from a bad
+> programming model in this case.
+>
+> So, this patch removes other width access
+>
+>    
 
-The whole patchset looks good to me,
+The ioapic code also implements the ia64 iosapic.  I'm guessing that 
+does support 64-bit accesses.  Please check the iosapic documentation.
+
+There might be guests that use incorrect access despite the 
+documentation; if real hardware supports it, it should work.  So we need 
+to start with just a warning, and allow the access.  Later we can drop 
+the invalid access.
+
+> @@ -288,6 +288,11 @@ static int ioapic_mmio_read(struct kvm_io_device *this, gpa_t addr, int len,
+>   	ioapic_debug("addr %lx\n", (unsigned long)addr);
+>   	ASSERT(!(addr&  0xf));	/* check alignment */
+>
+> +	if (len != 4) {
+> +		printk(KERN_WARNING "ioapic: wrong length %d\n", len);
+> +		return 0;
+> +	}
+> +
+>    
+
+Guest triggered, so needs to be rate limited.
 
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
