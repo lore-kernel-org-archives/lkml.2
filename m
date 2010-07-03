@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab0GCIqs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 04:46:48 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47309 "EHLO sh.osrg.net"
+	id S1754818Ab0GCIqw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 04:46:52 -0400
+Received: from sh.osrg.net ([192.16.179.4]:47317 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649Ab0GCIqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 04:46:43 -0400
+	id S1754756Ab0GCIqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 04:46:48 -0400
 From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 To: axboe@kernel.dk
 Cc: hch@infradead.org, linux-kernel@vger.kernel.org,
-       fujita.tomonori@lab.ntt.co.jp
-Subject: [PATCH 2/9] block: permit PREFLUSH and POSTFLUSH without prepare_flush_fn
-Date: Sat,  3 Jul 2010 17:45:33 +0900
-Message-Id: <1278146740-8731-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+       fujita.tomonori@lab.ntt.co.jp, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 7/9] virtio_blk: stop using q->prepare_flush_fn
+Date: Sat,  3 Jul 2010 17:45:38 +0900
+Message-Id: <1278146740-8731-8-git-send-email-fujita.tomonori@lab.ntt.co.jp>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
 References: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 03 Jul 2010 17:46:32 +0900 (JST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 03 Jul 2010 17:46:33 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is preparation for removing q->prepare_flush_fn.
-
-Temporarily, blk_queue_ordered() permits QUEUE_ORDERED_DO_PREFLUSH and
-QUEUE_ORDERED_DO_POSTFLUSH without prepare_flush_fn.
+use REQ_FLUSH flag instead.
 
 Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
 ---
- block/blk-barrier.c |    9 ++-------
- 1 files changed, 2 insertions(+), 7 deletions(-)
+ drivers/block/virtio_blk.c |   50 ++++++++++++++++++-------------------------
+ 1 files changed, 21 insertions(+), 29 deletions(-)
 
-diff --git a/block/blk-barrier.c b/block/blk-barrier.c
-index a348242..7ce0a32 100644
---- a/block/blk-barrier.c
-+++ b/block/blk-barrier.c
-@@ -25,12 +25,6 @@
- int blk_queue_ordered(struct request_queue *q, unsigned ordered,
- 		      prepare_flush_fn *prepare_flush_fn)
- {
--	if (!prepare_flush_fn && (ordered & (QUEUE_ORDERED_DO_PREFLUSH |
--					     QUEUE_ORDERED_DO_POSTFLUSH))) {
--		printk(KERN_ERR "%s: prepare_flush_fn required\n", __func__);
--		return -EINVAL;
--	}
--
- 	if (ordered != QUEUE_ORDERED_NONE &&
- 	    ordered != QUEUE_ORDERED_DRAIN &&
- 	    ordered != QUEUE_ORDERED_DRAIN_FLUSH &&
-@@ -146,7 +140,8 @@ static void queue_flush(struct request_queue *q, unsigned which)
- 	rq->cmd_flags = REQ_HARDBARRIER | REQ_FLUSH;
- 	rq->rq_disk = q->bar_rq.rq_disk;
- 	rq->end_io = end_io;
--	q->prepare_flush_fn(q, rq);
-+	if (q->prepare_flush_fn)
-+		q->prepare_flush_fn(q, rq);
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index b5ebcd3..b277f9e 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -99,33 +99,32 @@ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
+ 		return false;
  
- 	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
+ 	vbr->req = req;
+-	switch (req->cmd_type) {
+-	case REQ_TYPE_FS:
+-		vbr->out_hdr.type = 0;
+-		vbr->out_hdr.sector = blk_rq_pos(vbr->req);
+-		vbr->out_hdr.ioprio = req_get_ioprio(vbr->req);
+-		break;
+-	case REQ_TYPE_BLOCK_PC:
+-		vbr->out_hdr.type = VIRTIO_BLK_T_SCSI_CMD;
+-		vbr->out_hdr.sector = 0;
+-		vbr->out_hdr.ioprio = req_get_ioprio(vbr->req);
+-		break;
+-	case REQ_TYPE_SPECIAL:
+-		vbr->out_hdr.type = VIRTIO_BLK_T_GET_ID;
++
++	if (req->cmd_flags & REQ_FLUSH) {
++		vbr->out_hdr.type = VIRTIO_BLK_T_FLUSH;
+ 		vbr->out_hdr.sector = 0;
+ 		vbr->out_hdr.ioprio = req_get_ioprio(vbr->req);
+-		break;
+-	case REQ_TYPE_LINUX_BLOCK:
+-		if (req->cmd[0] == REQ_LB_OP_FLUSH) {
+-			vbr->out_hdr.type = VIRTIO_BLK_T_FLUSH;
++	} else {
++		switch (req->cmd_type) {
++		case REQ_TYPE_FS:
++			vbr->out_hdr.type = 0;
++			vbr->out_hdr.sector = blk_rq_pos(vbr->req);
++			vbr->out_hdr.ioprio = req_get_ioprio(vbr->req);
++			break;
++		case REQ_TYPE_BLOCK_PC:
++			vbr->out_hdr.type = VIRTIO_BLK_T_SCSI_CMD;
+ 			vbr->out_hdr.sector = 0;
+ 			vbr->out_hdr.ioprio = req_get_ioprio(vbr->req);
+ 			break;
++		case REQ_TYPE_SPECIAL:
++			vbr->out_hdr.type = VIRTIO_BLK_T_GET_ID;
++			vbr->out_hdr.sector = 0;
++			vbr->out_hdr.ioprio = req_get_ioprio(vbr->req);
++			break;
++		default:
++			/* We don't put anything else in the queue. */
++			BUG();
+ 		}
+-		/*FALLTHRU*/
+-	default:
+-		/* We don't put anything else in the queue. */
+-		BUG();
+ 	}
+ 
+ 	if (vbr->req->cmd_flags & REQ_HARDBARRIER)
+@@ -195,12 +194,6 @@ static void do_virtblk_request(struct request_queue *q)
+ 		virtqueue_kick(vblk->vq);
  }
+ 
+-static void virtblk_prepare_flush(struct request_queue *q, struct request *req)
+-{
+-	req->cmd_type = REQ_TYPE_LINUX_BLOCK;
+-	req->cmd[0] = REQ_LB_OP_FLUSH;
+-}
+-
+ /* return id (s/n) string for *disk to *id_str
+  */
+ static int virtblk_get_id(struct gendisk *disk, char *id_str)
+@@ -373,8 +366,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ 
+ 	/* If barriers are supported, tell block layer that queue is ordered */
+ 	if (virtio_has_feature(vdev, VIRTIO_BLK_F_FLUSH))
+-		blk_queue_ordered(q, QUEUE_ORDERED_DRAIN_FLUSH,
+-				  virtblk_prepare_flush);
++		blk_queue_ordered(q, QUEUE_ORDERED_DRAIN_FLUSH, NULL);
+ 	else if (virtio_has_feature(vdev, VIRTIO_BLK_F_BARRIER))
+ 		blk_queue_ordered(q, QUEUE_ORDERED_TAG, NULL);
+ 
 -- 
 1.6.5
 
