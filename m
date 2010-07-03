@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab0GCJMv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 05:12:51 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:56054 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab0GCJMt (ORCPT
+	id S1753908Ab0GCJYt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 05:24:49 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55862 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab0GCJYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 05:12:49 -0400
-Date: Sat, 3 Jul 2010 17:12:37 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-Cc: "Dong, Eddie" <eddie.dong@intel.com>,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>
-Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
-	external.
-Message-ID: <20100703091237.GA6632@gondor.apana.org.au>
-References: <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com> <1A42CE6F5F474C41B63392A5F80372B21F58CD9A@shsmsx501.ccr.corp.intel.com> <20100623095254.GA32491@gondor.apana.org.au> <1A42CE6F5F474C41B63392A5F80372B21F58CE7F@shsmsx501.ccr.corp.intel.com> <20100624100836.GA16220@gondor.apana.org.au> <1A42CE6F5F474C41B63392A5F80372B21F58D666@shsmsx501.ccr.corp.intel.com> <20100627061455.GA16782@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7916B0129230@shsmsx502.ccr.corp.intel.com>
+	Sat, 3 Jul 2010 05:24:47 -0400
+Date: Sat, 3 Jul 2010 10:24:42 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, Jan Kara <jack@suse.cz>,
+       Christoph Hellwig <hch@lst.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Chris Mason <chris.mason@oracle.com>,
+       Jeff Mahoney <jeffm@jeffreymahoney.com>
+Subject: Re: reiserfs locking (v2)
+Message-ID: <20100703092441.GM31073@ZenIV.linux.org.uk>
+References: <20100702093451.GA3973@swordfish.minsk.epam.com>
+ <20100702131248.GA5324@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D7916B0129230@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100702131248.GA5324@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 05:56:07PM +0800, Xin, Xiaohui wrote:
->
-> >OK, if I understand you correctly then I don't think have a
-> >problem.  With your current patch-set you have exactly the same
-> >situation when the skb->data is reallocated as a kernel buffer.
+On Fri, Jul 02, 2010 at 03:12:52PM +0200, Frederic Weisbecker wrote:
+> Right.
 > 
-> When will skb->data to be reallocated? May you point me the code path?
+> 
+> The problem is:
+> 
+> vfs_readdir() {						do_munmap() {
+> 	mutex_lock(inode);					read or write(don't know)_lock(mm->mmap_sem)
+> 	reiserfs_readdir() {					reiserfs_file_release() {
+> 		read_lock(mm->mmap_sem)					mutex_lock(inode);
+> 	}							}
+> }							}
+> 
+> 
+> 
+> I don't think the deadlock can really happen, as we can't release the directory while
+> we are reading it. Plus I guess we can't mmap a directory (someone correct me if
+> I'm wrong).
 
-Anything that calls pskb_expand_head.
+Gyah...  For the 1001st time: readdir() is far from being the only thing that
+nests mmap_sem inside i_mutex.  In particular, write() does the same thing.
 
-> >This is OK because as you correctly argue, it is a rare situation.
-> >
-> >With my proposal you will need to get this extra external buffer
-> >in even less cases, because you'd only need to do it if the skb
-> >head grows, which only happens if it becomes encapsulated.
-> >So let me explain it in a bit more detail:
-> >
-> >Our packet starts out as a purely non-linear skb, i.e., skb->head
-> >contains nothing and all the page frags come from the guest.
-> >
-> >During host processing we may pull data into skb->head but the
-> >first frag will remain unless we pull all of it.  If we did do
-> >that then you would have a free external buffer anyway.
-> >
-> >Now in the common case the header may be modified or pulled, but
-> >it very rarely grows.  So you can just copy the header back into
-> >the first frag just before we give it to the guest.
-> >
-> Since the data is still there, so recompute the page offset and size is ok, right?
+So yes, it *is* a real deadlock, TYVM, with no directories involved.  Open the
+same file twice, mmap one fd, close it, then have munmap() hitting i_mutex
+in reiserfs_file_release() race with write() through another fd.
 
-Right, you just move the page offset back and increase the size.
-However, to do this safely we'd need to have a way of knowing
-whether the skb head has been modified.
-
-It may well turn out to be just as effective to do something like
-
-	if (memcmp(skb->data, page frag head, skb_headlen))
-		memcpy(page frag head, skb->data, skb_headlen)
-
-As the page frag head should be in cache since it would've been
-used to populate skb->data.
-
-It'd be good to run some benchmarks with this to see whether
-adding a bit to sk_buff to avoid the memcmp is worth it or not.
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Incidentally, reiserfs_file_release() checks in the fastpath look completely
+bogus.  Checking i_count?  What the hell is that one about?  And no, these
+checks won't stop open() coming between them and grabbing i_mutex, so they
+couldn't prevent the deadlock in question anyway.
