@@ -1,236 +1,481 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab0GCWPn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 18:15:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61812 "EHLO
+	id S1756401Ab0GCWPm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 18:15:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60325 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756172Ab0GCWPd (ORCPT
+	with ESMTP id S1755969Ab0GCWPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 18:15:33 -0400
+	Sat, 3 Jul 2010 18:15:31 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 6/6] bkl: remove locked .ioctl file operation
-Date: Sun,  4 Jul 2010 00:15:10 +0200
-Message-Id: <1278195310-25590-7-git-send-email-arnd@arndb.de>
+       Arnd Bergmann <arnd@arndb.de>, Jaroslav Kysela <perex@perex.cz>,
+       Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
+Subject: [PATCH 2/6] sound/oss: convert to unlocked_ioctl
+Date: Sun,  4 Jul 2010 00:15:06 +0200
+Message-Id: <1278195310-25590-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1278195310-25590-1-git-send-email-arnd@arndb.de>
 References: <1278195310-25590-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18Fe3FlbZR88h/zQ0nnEF8Df+qh5t4/GBo0sUa
- IuKu130gNV/ZeD3NScKyzCCYE6igEk7HYVN+Nq5ghfKLzDQqfN
- wmQaym8rNimEdYhj7mo2Q==
+X-Provags-ID: V01U2FsdGVkX1+Vpj746VQFPzokWgAnhh+LrcYmOI1Mef30Wm3
+ TUNSoUnImRBl03Tk+pyNwaeO9yzxPqONP99NMuoepVfH2ju1eJ
+ wfiDnC1gxsC7tlyN1v/nQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last user is gone, so we can safely remove this
+These are the final conversions for the ioctl
+file operation so we can remove it in the next
+merge window.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org
 ---
- Documentation/filesystems/Locking |    8 +-------
- Documentation/filesystems/vfs.txt |    6 +-----
- fs/bad_inode.c                    |    7 -------
- fs/compat_ioctl.c                 |    3 +--
- fs/ioctl.c                        |   18 ++++--------------
- fs/proc/inode.c                   |   17 ++++-------------
- include/linux/fs.h                |    5 ++---
- 7 files changed, 13 insertions(+), 51 deletions(-)
+ sound/oss/au1550_ac97.c            |   54 ++++++++++++++++++++++-------------
+ sound/oss/dmasound/dmasound_core.c |   35 ++++++++++++++++++----
+ sound/oss/msnd_pinnacle.c          |   15 ++++++---
+ sound/oss/sh_dac_audio.c           |   18 ++++++++++--
+ sound/oss/swarm_cs4297a.c          |   25 +++++++++++++---
+ sound/oss/vwsnd.c                  |   24 ++++++++-------
+ 6 files changed, 120 insertions(+), 51 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index 96d4293..34657e0 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -372,8 +372,6 @@ prototypes:
- 	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
- 	int (*readdir) (struct file *, void *, filldir_t);
- 	unsigned int (*poll) (struct file *, struct poll_table_struct *);
--	int (*ioctl) (struct inode *, struct file *, unsigned int,
--			unsigned long);
- 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
- 	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
- 	int (*mmap) (struct file *, struct vm_area_struct *);
-@@ -407,8 +405,7 @@ write:			no
- aio_write:		no
- readdir: 		no
- poll:			no
--ioctl:			yes	(see below)
--unlocked_ioctl:		no	(see below)
-+unlocked_ioctl:		no
- compat_ioctl:		no
- mmap:			no
- open:			no
-@@ -451,9 +448,6 @@ move ->readdir() to inode_operations and use a separate method for directory
- anything that resembles union-mount we won't have a struct file for all
- components. And there are other reasons why the current interface is a mess...
- 
--->ioctl() on regular files is superceded by the ->unlocked_ioctl() that
--doesn't take the BKL.
--
- ->read on directories probably must go away - we should just enforce -EISDIR
- in sys_read() and friends.
- 
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 94677e7..ed7e5ef 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -727,7 +727,6 @@ struct file_operations {
- 	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
- 	int (*readdir) (struct file *, void *, filldir_t);
- 	unsigned int (*poll) (struct file *, struct poll_table_struct *);
--	int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
- 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
- 	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
- 	int (*mmap) (struct file *, struct vm_area_struct *);
-@@ -768,10 +767,7 @@ otherwise noted.
- 	activity on this file and (optionally) go to sleep until there
- 	is activity. Called by the select(2) and poll(2) system calls
- 
--  ioctl: called by the ioctl(2) system call
--
--  unlocked_ioctl: called by the ioctl(2) system call. Filesystems that do not
--  	require the BKL should use this method instead of the ioctl() above.
-+  unlocked_ioctl: called by the ioctl(2) system call.
- 
-   compat_ioctl: called by the ioctl(2) system call when 32 bit system calls
-  	 are used on 64 bit kernels.
-diff --git a/fs/bad_inode.c b/fs/bad_inode.c
-index 52e59bf..f024d8a 100644
---- a/fs/bad_inode.c
-+++ b/fs/bad_inode.c
-@@ -55,12 +55,6 @@ static unsigned int bad_file_poll(struct file *filp, poll_table *wait)
- 	return POLLERR;
+diff --git a/sound/oss/au1550_ac97.c b/sound/oss/au1550_ac97.c
+index c1070e3..3547450 100644
+--- a/sound/oss/au1550_ac97.c
++++ b/sound/oss/au1550_ac97.c
+@@ -824,22 +824,26 @@ mixdev_ioctl(struct ac97_codec *codec, unsigned int cmd,
+ 	return codec->mixer_ioctl(codec, cmd, arg);
  }
  
--static int bad_file_ioctl (struct inode *inode, struct file *filp,
--			unsigned int cmd, unsigned long arg)
--{
--	return -EIO;
--}
--
- static long bad_file_unlocked_ioctl(struct file *file, unsigned cmd,
- 			unsigned long arg)
+-static int
+-au1550_ioctl_mixdev(struct inode *inode, struct file *file,
+-			       unsigned int cmd, unsigned long arg)
++static long
++au1550_ioctl_mixdev(struct file *file, unsigned int cmd, unsigned long arg)
  {
-@@ -159,7 +153,6 @@ static const struct file_operations bad_file_ops =
- 	.aio_write	= bad_file_aio_write,
- 	.readdir	= bad_file_readdir,
- 	.poll		= bad_file_poll,
--	.ioctl		= bad_file_ioctl,
- 	.unlocked_ioctl	= bad_file_unlocked_ioctl,
- 	.compat_ioctl	= bad_file_compat_ioctl,
- 	.mmap		= bad_file_mmap,
-diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
-index 618f381..0fffcdc 100644
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -1693,8 +1693,7 @@ asmlinkage long compat_sys_ioctl(unsigned int fd, unsigned int cmd,
- 				goto out_fput;
- 		}
+ 	struct au1550_state *s = (struct au1550_state *)file->private_data;
+ 	struct ac97_codec *codec = s->codec;
++	int ret;
++
++	lock_kernel();
++	ret = mixdev_ioctl(codec, cmd, arg);
++	unlock_kernel();
  
--		if (!filp->f_op ||
--		    (!filp->f_op->ioctl && !filp->f_op->unlocked_ioctl))
-+		if (!filp->f_op || !filp->f_op->unlocked_ioctl)
- 			goto do_ioctl;
- 		break;
- 	}
-diff --git a/fs/ioctl.c b/fs/ioctl.c
-index 2d140a7..f855ea4 100644
---- a/fs/ioctl.c
-+++ b/fs/ioctl.c
-@@ -29,7 +29,6 @@
-  * @arg:	command-specific argument for ioctl
-  *
-  * Invokes filesystem specific ->unlocked_ioctl, if one exists; otherwise
-- * invokes filesystem specific ->ioctl method.  If neither method exists,
-  * returns -ENOTTY.
-  *
-  * Returns 0 on success, -errno on error.
-@@ -39,21 +38,12 @@ static long vfs_ioctl(struct file *filp, unsigned int cmd,
- {
- 	int error = -ENOTTY;
- 
--	if (!filp->f_op)
-+	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
- 		goto out;
- 
--	if (filp->f_op->unlocked_ioctl) {
--		error = filp->f_op->unlocked_ioctl(filp, cmd, arg);
--		if (error == -ENOIOCTLCMD)
--			error = -EINVAL;
--		goto out;
--	} else if (filp->f_op->ioctl) {
--		lock_kernel();
--		error = filp->f_op->ioctl(filp->f_path.dentry->d_inode,
--					  filp, cmd, arg);
--		unlock_kernel();
--	}
--
-+	error = filp->f_op->unlocked_ioctl(filp, cmd, arg);
-+	if (error == -ENOIOCTLCMD)
-+		error = -EINVAL;
-  out:
- 	return error;
+-	return mixdev_ioctl(codec, cmd, arg);
++	return ret;
  }
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index aea8502..041517c 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -214,8 +214,7 @@ static long proc_reg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
+ 
+ static /*const */ struct file_operations au1550_mixer_fops = {
+-	owner:THIS_MODULE,
+-	llseek:au1550_llseek,
+-	ioctl:au1550_ioctl_mixdev,
+-	open:au1550_open_mixdev,
+-	release:au1550_release_mixdev,
++	.owner		= THIS_MODULE,
++	.llseek		= au1550_llseek,
++	.unlocked_ioctl	= au1550_ioctl_mixdev,
++	.open		= au1550_open_mixdev,
++	.release	= au1550_release_mixdev,
+ };
+ 
+ static int
+@@ -1343,8 +1347,7 @@ dma_count_done(struct dmabuf *db)
+ 
+ 
+ static int
+-au1550_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
+-							unsigned long arg)
++au1550_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
  {
- 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
- 	long rv = -ENOTTY;
--	long (*unlocked_ioctl)(struct file *, unsigned int, unsigned long);
--	int (*ioctl)(struct inode *, struct file *, unsigned int, unsigned long);
-+	long (*ioctl)(struct file *, unsigned int, unsigned long);
+ 	struct au1550_state *s = (struct au1550_state *)file->private_data;
+ 	unsigned long   flags;
+@@ -1780,6 +1783,17 @@ au1550_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
+ 	return mixdev_ioctl(s->codec, cmd, arg);
+ }
  
- 	spin_lock(&pde->pde_unload_lock);
- 	if (!pde->proc_fops) {
-@@ -223,19 +222,11 @@ static long proc_reg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
- 		return rv;
++static long
++au1550_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	int ret;
++
++	lock_kernel();
++	ret = au1550_ioctl(file, cmd, arg);
++	unlock_kernel();
++
++	return ret;
++}
+ 
+ static int
+ au1550_open(struct inode *inode, struct file *file)
+@@ -1885,15 +1899,15 @@ au1550_release(struct inode *inode, struct file *file)
+ }
+ 
+ static /*const */ struct file_operations au1550_audio_fops = {
+-	owner:		THIS_MODULE,
+-	llseek:		au1550_llseek,
+-	read:		au1550_read,
+-	write:		au1550_write,
+-	poll:		au1550_poll,
+-	ioctl:		au1550_ioctl,
+-	mmap:		au1550_mmap,
+-	open:		au1550_open,
+-	release:	au1550_release,
++	.owner		= THIS_MODULE,
++	.llseek		= au1550_llseek,
++	.read		= au1550_read,
++	.write		= au1550_write,
++	.poll		= au1550_poll,
++	.unlocked_ioctl	= au1550_unlocked_ioctl,
++	.mmap		= au1550_mmap,
++	.open		= au1550_open,
++	.release	= au1550_release,
+ };
+ 
+ MODULE_AUTHOR("Advanced Micro Devices (AMD), dan@embeddededge.com");
+diff --git a/sound/oss/dmasound/dmasound_core.c b/sound/oss/dmasound/dmasound_core.c
+index 3f3c3f7..b5464fb 100644
+--- a/sound/oss/dmasound/dmasound_core.c
++++ b/sound/oss/dmasound/dmasound_core.c
+@@ -337,8 +337,8 @@ static int mixer_release(struct inode *inode, struct file *file)
+ 	unlock_kernel();
+ 	return 0;
+ }
+-static int mixer_ioctl(struct inode *inode, struct file *file, u_int cmd,
+-		       u_long arg)
++
++static long mixer_ioctl(struct file *file, u_int cmd, u_long arg)
+ {
+ 	if (_SIOC_DIR(cmd) & _SIOC_WRITE)
+ 	    mixer.modify_counter++;
+@@ -362,11 +362,22 @@ static int mixer_ioctl(struct inode *inode, struct file *file, u_int cmd,
+ 	return -EINVAL;
+ }
+ 
++static long mixer_unlocked_ioctl(struct file *file, u_int cmd, u_long arg)
++{
++	int ret;
++
++	lock_kernel();
++	ret = mixer_ioctl(file, cmd, arg);
++	unlock_kernel();
++
++	return ret;
++}
++
+ static const struct file_operations mixer_fops =
+ {
+ 	.owner		= THIS_MODULE,
+ 	.llseek		= no_llseek,
+-	.ioctl		= mixer_ioctl,
++	.unlocked_ioctl	= mixer_unlocked_ioctl,
+ 	.open		= mixer_open,
+ 	.release	= mixer_release,
+ };
+@@ -955,8 +966,7 @@ printk("dmasound_core: tried to set_queue_frags on a locked queue\n") ;
+ 	return 0 ;
+ }
+ 
+-static int sq_ioctl(struct inode *inode, struct file *file, u_int cmd,
+-		    u_long arg)
++static long sq_ioctl(struct file *file, u_int cmd, u_long arg)
+ {
+ 	int val, result;
+ 	u_long fmt;
+@@ -1114,18 +1124,29 @@ static int sq_ioctl(struct inode *inode, struct file *file, u_int cmd,
+ 		return IOCTL_OUT(arg,val);
+ 
+ 	default:
+-		return mixer_ioctl(inode, file, cmd, arg);
++		return mixer_ioctl(file, cmd, arg);
  	}
- 	pde->pde_users++;
--	unlocked_ioctl = pde->proc_fops->unlocked_ioctl;
--	ioctl = pde->proc_fops->ioctl;
-+	ioctl = pde->proc_fops->unlocked_ioctl;
- 	spin_unlock(&pde->pde_unload_lock);
+ 	return -EINVAL;
+ }
  
--	if (unlocked_ioctl) {
--		rv = unlocked_ioctl(file, cmd, arg);
--		if (rv == -ENOIOCTLCMD)
--			rv = -EINVAL;
--	} else if (ioctl) {
--		WARN_ONCE(1, "Procfs ioctl handlers must use unlocked_ioctl, "
--			  "%pf will be called without the Bkl held\n", ioctl);
--		rv = ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
--	}
-+	if (ioctl)
-+		rv = ioctl(file, cmd, arg);
++static long sq_unlocked_ioctl(struct file *file, u_int cmd, u_long arg)
++{
++	int ret;
++
++	lock_kernel();
++	ret = sq_ioctl(file, cmd, arg);
++	unlock_kernel();
++
++	return ret;
++}
++
+ static const struct file_operations sq_fops =
+ {
+ 	.owner		= THIS_MODULE,
+ 	.llseek		= no_llseek,
+ 	.write		= sq_write,
+ 	.poll		= sq_poll,
+-	.ioctl		= sq_ioctl,
++	.unlocked_ioctl	= sq_unlocked_ioctl,
+ 	.open		= sq_open,
+ 	.release	= sq_release,
+ };
+diff --git a/sound/oss/msnd_pinnacle.c b/sound/oss/msnd_pinnacle.c
+index a1e3f96..9759e9c 100644
+--- a/sound/oss/msnd_pinnacle.c
++++ b/sound/oss/msnd_pinnacle.c
+@@ -639,21 +639,26 @@ static int mixer_ioctl(unsigned int cmd, unsigned long arg)
+ 	return -EINVAL;
+ }
  
- 	pde_users_dec(pde);
- 	return rv;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 471e1ff..019a1b8 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1479,8 +1479,8 @@ struct block_device_operations;
+-static int dev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
++static long dev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ {
+ 	int minor = iminor(inode);
++	int ret;
  
- /*
-  * NOTE:
-- * read, write, poll, fsync, readv, writev, unlocked_ioctl and compat_ioctl
-- * can be called without the big kernel lock held in all filesystems.
-+ * all file operations except setlease can be called without
-+ * the big kernel lock held in all filesystems.
-  */
- struct file_operations {
- 	struct module *owner;
-@@ -1491,7 +1491,6 @@ struct file_operations {
- 	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
- 	int (*readdir) (struct file *, void *, filldir_t);
- 	unsigned int (*poll) (struct file *, struct poll_table_struct *);
--	int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
- 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
- 	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
- 	int (*mmap) (struct file *, struct vm_area_struct *);
+ 	if (cmd == OSS_GETVERSION) {
+ 		int sound_version = SOUND_VERSION;
+ 		return put_user(sound_version, (int __user *)arg);
+ 	}
+ 
++	ret = -EINVAL;
++
++	lock_kernel();
+ 	if (minor == dev.dsp_minor)
+-		return dsp_ioctl(file, cmd, arg);
++		ret = dsp_ioctl(file, cmd, arg);
+ 	else if (minor == dev.mixer_minor)
+-		return mixer_ioctl(cmd, arg);
++		ret = mixer_ioctl(cmd, arg);
++	unlock_kernel();
+ 
+-	return -EINVAL;
++	return ret;
+ }
+ 
+ static void dsp_write_flush(void)
+@@ -1105,7 +1110,7 @@ static const struct file_operations dev_fileops = {
+ 	.owner		= THIS_MODULE,
+ 	.read		= dev_read,
+ 	.write		= dev_write,
+-	.ioctl		= dev_ioctl,
++	.unlocked_ioctl	= dev_ioctl,
+ 	.open		= dev_open,
+ 	.release	= dev_release,
+ };
+diff --git a/sound/oss/sh_dac_audio.c b/sound/oss/sh_dac_audio.c
+index 4153752..0f9f81c 100644
+--- a/sound/oss/sh_dac_audio.c
++++ b/sound/oss/sh_dac_audio.c
+@@ -15,6 +15,7 @@
+ #include <linux/linkage.h>
+ #include <linux/slab.h>
+ #include <linux/fs.h>
++#include <linux/smp_lock.h>
+ #include <linux/sound.h>
+ #include <linux/soundcard.h>
+ #include <linux/interrupt.h>
+@@ -92,7 +93,7 @@ static void dac_audio_set_rate(void)
+ 	wakeups_per_second = ktime_set(0, 1000000000 / rate);
+ }
+ 
+-static int dac_audio_ioctl(struct inode *inode, struct file *file,
++static int dac_audio_ioctl(struct file *file,
+ 			   unsigned int cmd, unsigned long arg)
+ {
+ 	int val;
+@@ -158,6 +159,17 @@ static int dac_audio_ioctl(struct inode *inode, struct file *file,
+ 	return -EINVAL;
+ }
+ 
++static long dac_audio_unlocked_ioctl(struct file *file, u_int cmd, u_long arg)
++{
++	int ret;
++
++	lock_kernel();
++	ret = dac_audio_ioctl(file, cmd, arg);
++	unlock_kernel();
++
++	return ret;
++}
++
+ static ssize_t dac_audio_write(struct file *file, const char *buf, size_t count,
+ 			       loff_t * ppos)
+ {
+@@ -237,8 +249,8 @@ static int dac_audio_release(struct inode *inode, struct file *file)
+ 
+ const struct file_operations dac_audio_fops = {
+       .read =		dac_audio_read,
+-      .write =	dac_audio_write,
+-      .ioctl =	dac_audio_ioctl,
++      .write =		dac_audio_write,
++      .unlocked_ioctl =	dac_audio_unlocked_ioctl,
+       .open =		dac_audio_open,
+       .release =	dac_audio_release,
+ };
+diff --git a/sound/oss/swarm_cs4297a.c b/sound/oss/swarm_cs4297a.c
+index 3136c88..d03f15a 100644
+--- a/sound/oss/swarm_cs4297a.c
++++ b/sound/oss/swarm_cs4297a.c
+@@ -68,6 +68,7 @@
+ #include <linux/delay.h>
+ #include <linux/sound.h>
+ #include <linux/slab.h>
++#include <linux/smp_lock.h>
+ #include <linux/soundcard.h>
+ #include <linux/ac97_codec.h>
+ #include <linux/pci.h>
+@@ -1566,11 +1567,15 @@ static int cs4297a_release_mixdev(struct inode *inode, struct file *file)
+ }
+ 
+ 
+-static int cs4297a_ioctl_mixdev(struct inode *inode, struct file *file,
++static int cs4297a_ioctl_mixdev(struct file *file,
+ 			       unsigned int cmd, unsigned long arg)
+ {
+-	return mixer_ioctl((struct cs4297a_state *) file->private_data, cmd,
++	int ret;
++	lock_kernel();
++	ret = mixer_ioctl((struct cs4297a_state *) file->private_data, cmd,
+ 			   arg);
++	unlock_kernel();
++	return ret;
+ }
+ 
+ 
+@@ -1580,7 +1585,7 @@ static int cs4297a_ioctl_mixdev(struct inode *inode, struct file *file,
+ static const struct file_operations cs4297a_mixer_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.llseek		= no_llseek,
+-	.ioctl		= cs4297a_ioctl_mixdev,
++	.unlocked_ioctl	= cs4297a_ioctl_mixdev,
+ 	.open		= cs4297a_open_mixdev,
+ 	.release	= cs4297a_release_mixdev,
+ };
+@@ -1944,7 +1949,7 @@ static int cs4297a_mmap(struct file *file, struct vm_area_struct *vma)
+ }
+ 
+ 
+-static int cs4297a_ioctl(struct inode *inode, struct file *file,
++static int cs4297a_ioctl(struct file *file,
+ 			unsigned int cmd, unsigned long arg)
+ {
+ 	struct cs4297a_state *s =
+@@ -2337,6 +2342,16 @@ static int cs4297a_ioctl(struct inode *inode, struct file *file,
+ 	return mixer_ioctl(s, cmd, arg);
+ }
+ 
++static long cs4297a_unlocked_ioctl(struct file *file, u_int cmd, u_long arg)
++{
++	int ret;
++
++	lock_kernel();
++	ret = cs4297a_ioctl(file, cmd, arg);
++	unlock_kernel();
++
++	return ret;
++}
+ 
+ static int cs4297a_release(struct inode *inode, struct file *file)
+ {
+@@ -2496,7 +2511,7 @@ static const struct file_operations cs4297a_audio_fops = {
+ 	.read		= cs4297a_read,
+ 	.write		= cs4297a_write,
+ 	.poll		= cs4297a_poll,
+-	.ioctl		= cs4297a_ioctl,
++	.unlocked_ioctl	= cs4297a_unlocked_ioctl,
+ 	.mmap		= cs4297a_mmap,
+ 	.open		= cs4297a_open,
+ 	.release	= cs4297a_release,
+diff --git a/sound/oss/vwsnd.c b/sound/oss/vwsnd.c
+index 20b3b32..23b69d6 100644
+--- a/sound/oss/vwsnd.c
++++ b/sound/oss/vwsnd.c
+@@ -2429,8 +2429,7 @@ static unsigned int vwsnd_audio_poll(struct file *file,
+ 	return mask;
+ }
+ 
+-static int vwsnd_audio_do_ioctl(struct inode *inode,
+-				struct file *file,
++static int vwsnd_audio_do_ioctl(struct file *file,
+ 				unsigned int cmd,
+ 				unsigned long arg)
+ {
+@@ -2446,8 +2445,8 @@ static int vwsnd_audio_do_ioctl(struct inode *inode,
+ 	int ival;
+ 
+ 	
+-	DBGEV("(inode=0x%p, file=0x%p, cmd=0x%x, arg=0x%lx)\n",
+-	      inode, file, cmd, arg);
++	DBGEV("(file=0x%p, cmd=0x%x, arg=0x%lx)\n",
++	      file, cmd, arg);
+ 	switch (cmd) {
+ 	case OSS_GETVERSION:		/* _SIOR ('M', 118, int) */
+ 		DBGX("OSS_GETVERSION\n");
+@@ -2885,17 +2884,19 @@ static int vwsnd_audio_do_ioctl(struct inode *inode,
+ 	return -EINVAL;
+ }
+ 
+-static int vwsnd_audio_ioctl(struct inode *inode,
+-				struct file *file,
++static long vwsnd_audio_ioctl(struct file *file,
+ 				unsigned int cmd,
+ 				unsigned long arg)
+ {
+ 	vwsnd_dev_t *devc = (vwsnd_dev_t *) file->private_data;
+ 	int ret;
+ 
++	lock_kernel();
+ 	mutex_lock(&devc->io_mutex);
+-	ret = vwsnd_audio_do_ioctl(inode, file, cmd, arg);
++	ret = vwsnd_audio_do_ioctl(file, cmd, arg);
+ 	mutex_unlock(&devc->io_mutex);
++	unlock_kernel();
++
+ 	return ret;
+ }
+ 
+@@ -3044,7 +3045,7 @@ static const struct file_operations vwsnd_audio_fops = {
+ 	.read =		vwsnd_audio_read,
+ 	.write =	vwsnd_audio_write,
+ 	.poll =		vwsnd_audio_poll,
+-	.ioctl =	vwsnd_audio_ioctl,
++	.unlocked_ioctl = vwsnd_audio_ioctl,
+ 	.mmap =		vwsnd_audio_mmap,
+ 	.open =		vwsnd_audio_open,
+ 	.release =	vwsnd_audio_release,
+@@ -3203,8 +3204,7 @@ static int mixer_write_ioctl(vwsnd_dev_t *devc, unsigned int nr, void __user *ar
+ 
+ /* This is the ioctl entry to the mixer driver. */
+ 
+-static int vwsnd_mixer_ioctl(struct inode *ioctl,
+-			      struct file *file,
++static long vwsnd_mixer_ioctl(struct file *file,
+ 			      unsigned int cmd,
+ 			      unsigned long arg)
+ {
+@@ -3215,6 +3215,7 @@ static int vwsnd_mixer_ioctl(struct inode *ioctl,
+ 
+ 	DBGEV("(devc=0x%p, cmd=0x%x, arg=0x%lx)\n", devc, cmd, arg);
+ 
++	lock_kernel();
+ 	mutex_lock(&devc->mix_mutex);
+ 	{
+ 		if ((cmd & ~nrmask) == MIXER_READ(0))
+@@ -3225,13 +3226,14 @@ static int vwsnd_mixer_ioctl(struct inode *ioctl,
+ 			retval = -EINVAL;
+ 	}
+ 	mutex_unlock(&devc->mix_mutex);
++	unlock_kernel();
+ 	return retval;
+ }
+ 
+ static const struct file_operations vwsnd_mixer_fops = {
+ 	.owner =	THIS_MODULE,
+ 	.llseek =	no_llseek,
+-	.ioctl =	vwsnd_mixer_ioctl,
++	.unlocked_ioctl = vwsnd_mixer_ioctl,
+ 	.open =		vwsnd_mixer_open,
+ 	.release =	vwsnd_mixer_release,
+ };
 -- 
 1.7.1
 
