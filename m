@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab0GCHys (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 03:54:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:37874 "EHLO ozlabs.org"
+	id S1754211Ab0GCHzH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 03:55:07 -0400
+Received: from ozlabs.org ([203.10.76.45]:37887 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530Ab0GCHyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 03:54:47 -0400
+	id S1754123Ab0GCHzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 03:55:01 -0400
 From: Michael Neuling <mikey@neuling.org>
 To: Greg KH <gregkh@suse.de>
 cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
        torvalds@linux-foundation.org, akpm@linux-foundation.org,
        alan@lxorguk.ukuu.org.uk,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [patch 054/149] powerpc/pseries: Only call start-cpu when a CPU is stopped
-In-reply-to: <20100703015713.GC16229@suse.de>
-References: <20100701173211.356448329@clark.site> <24044.1278029021@neuling.org> <20100703015713.GC16229@suse.de>
+Subject: Re: [05/23] powerpc/pseries: Only call start-cpu when a CPU is stopped
+In-reply-to: <20100703015627.GB16229@suse.de>
+References: <20100701172856.882121276@clark.site> <23995.1278028968@neuling.org> <20100703015627.GB16229@suse.de>
 Comments: In-reply-to Greg KH <gregkh@suse.de>
-   message dated "Fri, 02 Jul 2010 18:57:13 -0700."
+   message dated "Fri, 02 Jul 2010 18:56:27 -0700."
 X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
-Date: Sat, 03 Jul 2010 17:54:45 +1000
-Message-ID: <32137.1278143685@neuling.org>
+Date: Sat, 03 Jul 2010 17:55:00 +1000
+Message-ID: <32150.1278143700@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In message <20100703015627.GB16229@suse.de> you wrote:
+> On Fri, Jul 02, 2010 at 10:02:48AM +1000, Michael Neuling wrote:
 > > This is not going to work without:
 > > f8b67691828321f5c85bb853283aa101ae673130
 > > 
 > > It'll get a build failure.
 > 
-> That is because that patch does not apply to the .32 series.  If it is
-> needed, can you please send me a backported version to apply?
+> But that patch does not apply on the .27 series, care to provide a
+> backported version of it?
 
 Sure... Compile and boot tested only.
 
 Thanks,
 Mikey
-
 
 From: Michael Neuling <mikey@neuling.org>
 
@@ -48,14 +49,13 @@ smp_query_cpu_stopped().
 
 It also cleans up the return values by adding some #defines
 
-Cc: <stable@kernel.org>
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-Index: clone1/arch/powerpc/platforms/pseries/hotplug-cpu.c
+Index: clone3/arch/powerpc/platforms/pseries/hotplug-cpu.c
 ===================================================================
---- clone1.orig/arch/powerpc/platforms/pseries/hotplug-cpu.c
-+++ clone1/arch/powerpc/platforms/pseries/hotplug-cpu.c
+--- clone3.orig/arch/powerpc/platforms/pseries/hotplug-cpu.c
++++ clone3/arch/powerpc/platforms/pseries/hotplug-cpu.c
 @@ -66,30 +66,6 @@ static void pseries_mach_cpu_die(void)
  	for(;;);
  }
@@ -97,7 +97,7 @@ Index: clone1/arch/powerpc/platforms/pseries/hotplug-cpu.c
 +		if (cpu_status == QCSS_STOPPED ||
 +		    cpu_status == QCSS_HARDWARE_ERROR)
  			break;
- 		cpu_relax();
+ 		msleep(200);
  	}
 @@ -256,6 +233,7 @@ static int __init pseries_cpu_hotplug_in
  {
@@ -107,10 +107,10 @@ Index: clone1/arch/powerpc/platforms/pseries/hotplug-cpu.c
  
  	for_each_node_by_name(np, "interrupt-controller") {
  		typep = of_get_property(np, "compatible", NULL);
-Index: clone1/arch/powerpc/platforms/pseries/plpar_wrappers.h
+Index: clone3/arch/powerpc/platforms/pseries/plpar_wrappers.h
 ===================================================================
---- clone1.orig/arch/powerpc/platforms/pseries/plpar_wrappers.h
-+++ clone1/arch/powerpc/platforms/pseries/plpar_wrappers.h
+--- clone3.orig/arch/powerpc/platforms/pseries/plpar_wrappers.h
++++ clone3/arch/powerpc/platforms/pseries/plpar_wrappers.h
 @@ -4,6 +4,14 @@
  #include <asm/hvcall.h>
  #include <asm/page.h>
@@ -126,13 +126,13 @@ Index: clone1/arch/powerpc/platforms/pseries/plpar_wrappers.h
  static inline long poll_pending(void)
  {
  	return plpar_hcall_norets(H_POLL_PENDING);
-Index: clone1/arch/powerpc/platforms/pseries/smp.c
+Index: clone3/arch/powerpc/platforms/pseries/smp.c
 ===================================================================
---- clone1.orig/arch/powerpc/platforms/pseries/smp.c
-+++ clone1/arch/powerpc/platforms/pseries/smp.c
-@@ -56,6 +56,28 @@
-  */
- static cpumask_t of_spin_map;
+--- clone3.orig/arch/powerpc/platforms/pseries/smp.c
++++ clone3/arch/powerpc/platforms/pseries/smp.c
+@@ -59,6 +59,28 @@ static cpumask_t of_spin_map;
+ 
+ extern void generic_secondary_smp_init(unsigned long);
  
 +/* Query where a cpu is now.  Return codes #defined in plpar_wrappers.h */
 +int smp_query_cpu_stopped(unsigned int pcpu)
