@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab0GCQD6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 12:03:58 -0400
+	id S1755448Ab0GCQEG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 12:04:06 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:33284 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755187Ab0GCQDy (ORCPT
+	with ESMTP id S1754328Ab0GCQEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 12:03:54 -0400
+	Sat, 3 Jul 2010 12:04:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=CJg24INrUt3stIiz+1t06q7Q9l/UQuoU1yvKijssFZn5/FyUIPHMw94Nt0xLpNbdtg
-         BNVF8nie/Jk7w5+WA2d23YaP3IPs9J/0wTmGh29E00y94e4gusJCrCmr8p4/OsUtpCmG
-         DEzKPkvk5/x7ZlqdSXjpLsn4yIR1MKBg8JA88=
+        b=pK1i/5sabPqScx6bgSS+zjYkj9truX9zDU1mLyf/Cy9tTTKPMc7YSaX/92I41vUKoc
+         OZQdSRgB+61GOUEdJ6pJoKXfbdbAHhlQXSgGUtNgli/Yp9QJFGOICcewEJOkWyHhf9N5
+         XXQvThvuQjjU59q1IYBmhLUuju/3ljbZjbwCM=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       x86@kernel.org, iommu@lists.linux-foundation.org,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Borislav Petkov <borislav.petkov@amd.com>, Tejun Heo <tj@kernel.org>,
        linux-kernel@vger.kernel.org
-Subject: [PATCH 05/19] arch/x86/kernel: use for_each_pci_dev()
-Date: Sat,  3 Jul 2010 20:03:51 +0400
-Message-Id: <1278173032-11575-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH 07/19] arch/x86/kernel: use for_each_pci_dev()
+Date: Sat,  3 Jul 2010 20:03:59 +0400
+Message-Id: <1278173040-11643-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,22 +31,27 @@ Use for_each_pci_dev() to simplify the code.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- arch/x86/kernel/amd_iommu.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ arch/x86/kernel/k8.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-index 0d20286..29dd3b9 100644
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -2609,8 +2609,7 @@ int __init amd_iommu_init_passthrough(void)
+diff --git a/arch/x86/kernel/k8.c b/arch/x86/kernel/k8.c
+index 0f7bc20..0ea4b35 100644
+--- a/arch/x86/kernel/k8.c
++++ b/arch/x86/kernel/k8.c
+@@ -27,11 +27,10 @@ EXPORT_SYMBOL(k8_northbridges);
  
- 	pt_domain->mode |= PAGE_MODE_NONE;
- 
--	while ((dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev)) != NULL) {
--
+ static struct pci_dev *next_k8_northbridge(struct pci_dev *dev)
+ {
+-	do {
+-		dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev);
+-		if (!dev)
 +	for_each_pci_dev(dev) {
- 		if (!check_device(&dev->dev))
- 			continue;
++		if (pci_match_id(&k8_nb_ids[0], dev))
+ 			break;
+-	} while (!pci_match_id(&k8_nb_ids[0], dev));
++	}
+ 	return dev;
+ }
  
 -- 
 1.7.0.4
