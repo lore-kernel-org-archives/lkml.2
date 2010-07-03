@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab0GCIsb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 04:48:31 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47308 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751528Ab0GCIqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 04:46:43 -0400
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-To: axboe@kernel.dk
-Cc: hch@infradead.org, linux-kernel@vger.kernel.org,
-       fujita.tomonori@lab.ntt.co.jp
-Subject: [PATCH 5/9] ps3disk: stop using q->prepare_flush_fn
-Date: Sat,  3 Jul 2010 17:45:36 +0900
-Message-Id: <1278146740-8731-6-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 03 Jul 2010 17:46:33 +0900 (JST)
+	id S1752979Ab0GCJBF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 05:01:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62585 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab0GCJBD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 05:01:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH] Break out types from <linux/list.h> to <linux/list_types.h>.
+Date: Sat, 3 Jul 2010 11:00:43 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3+; KDE/4.4.90; x86_64; ; )
+Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+References: <201007021811.04197.arnd@arndb.de> <4C2E3F1F.3010202@tilera.com> <20100702204817.GB5842@parisc-linux.org>
+In-Reply-To: <20100702204817.GB5842@parisc-linux.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007031100.43158.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/nKJ6ch5E2FEb2mVYurRL5BoTVig9a70GKuzR
+ LFWzCqwejRJk1gCMIpqMC2AYrDKLVUgpqSfYN0XT97YcCtAJDY
+ PwghgnLlwMH7RBn9FWlhg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-REQ_FLUSH flag enables us to kill ps3disk_prepare_flush().
+On Friday 02 July 2010 22:48:17 Matthew Wilcox wrote:
+> I wouldn't mind seeing kvm_types.h, rwlock_types.h and spinlock_types.h
+> merged into types.h, personally.  They're all pretty fundamental kernel
+> kind of types.  It's a matter of taste, and I'm not particularly fussed
+> one way or the other.
+> 
+> mm_types.h is complex and full of mm-specific information, so keeping
+> it separate makes sense to me.
+> 
+> I just object to the unnecessary creation of tiny files like this.
+> Which is how we ended up with atomic_t and atomic64_t in there in the
+> first place :-)
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- drivers/block/ps3disk.c |   25 ++++++-------------------
- 1 files changed, 6 insertions(+), 19 deletions(-)
+Ah, I didn't notice you had moved the atomic types in there. I agree that
+the list types are in the same general category and it makes sense
+to treat them the same way.
 
-diff --git a/drivers/block/ps3disk.c b/drivers/block/ps3disk.c
-index 5f208c0..ab528a4 100644
---- a/drivers/block/ps3disk.c
-+++ b/drivers/block/ps3disk.c
-@@ -196,13 +196,12 @@ static void ps3disk_do_request(struct ps3_storage_device *dev,
- 	dev_dbg(&dev->sbd.core, "%s:%u\n", __func__, __LINE__);
- 
- 	while ((req = blk_fetch_request(q))) {
--		if (req->cmd_type == REQ_TYPE_FS) {
--			if (ps3disk_submit_request_sg(dev, req))
--				break;
--		} else if (req->cmd_type == REQ_TYPE_LINUX_BLOCK &&
--			   req->cmd[0] == REQ_LB_OP_FLUSH) {
-+		if (req->cmd_flags & REQ_FLUSH) {
- 			if (ps3disk_submit_flush_request(dev, req))
- 				break;
-+		} else if (req->cmd_type == REQ_TYPE_FS) {
-+			if (ps3disk_submit_request_sg(dev, req))
-+				break;
- 		} else {
- 			blk_dump_rq_flags(req, DEVICE_NAME " bad request");
- 			__blk_end_request_all(req, -EIO);
-@@ -257,8 +256,7 @@ static irqreturn_t ps3disk_interrupt(int irq, void *data)
- 		return IRQ_HANDLED;
- 	}
- 
--	if (req->cmd_type == REQ_TYPE_LINUX_BLOCK &&
--	    req->cmd[0] == REQ_LB_OP_FLUSH) {
-+	if (req->cmd_flags & REQ_FLUSH) {
- 		read = 0;
- 		op = "flush";
- 	} else {
-@@ -398,16 +396,6 @@ static int ps3disk_identify(struct ps3_storage_device *dev)
- 	return 0;
- }
- 
--static void ps3disk_prepare_flush(struct request_queue *q, struct request *req)
--{
--	struct ps3_storage_device *dev = q->queuedata;
--
--	dev_dbg(&dev->sbd.core, "%s:%u\n", __func__, __LINE__);
--
--	req->cmd_type = REQ_TYPE_LINUX_BLOCK;
--	req->cmd[0] = REQ_LB_OP_FLUSH;
--}
--
- static unsigned long ps3disk_mask;
- 
- static DEFINE_MUTEX(ps3disk_mask_mutex);
-@@ -480,8 +468,7 @@ static int __devinit ps3disk_probe(struct ps3_system_bus_device *_dev)
- 	blk_queue_dma_alignment(queue, dev->blk_size-1);
- 	blk_queue_logical_block_size(queue, dev->blk_size);
- 
--	blk_queue_ordered(queue, QUEUE_ORDERED_DRAIN_FLUSH,
--			  ps3disk_prepare_flush);
-+	blk_queue_ordered(queue, QUEUE_ORDERED_DRAIN_FLUSH, NULL);
- 
- 	blk_queue_max_segments(queue, -1);
- 	blk_queue_max_segment_size(queue, dev->bounce_size);
--- 
-1.6.5
+For rwlock_types.h and spinlock_types.h, I think including them in types.h
+would really cause too much other crap to be pulled in through lockdep
+and other things we might need in there in the future, which would in turn
+cause the same problems with types.h that Chris is trying to avoid
+in the first place by moving stuff out of list.h.
 
+	Arnd
