@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab0GCIqp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 04:46:45 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47300 "EHLO sh.osrg.net"
+	id S1754773Ab0GCIqs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 04:46:48 -0400
+Received: from sh.osrg.net ([192.16.179.4]:47309 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114Ab0GCIqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751649Ab0GCIqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 3 Jul 2010 04:46:43 -0400
 From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 To: axboe@kernel.dk
 Cc: hch@infradead.org, linux-kernel@vger.kernel.org,
        fujita.tomonori@lab.ntt.co.jp
-Subject: [PATCH 4/9] osdblk: stop using q->prepare_flush_fn
-Date: Sat,  3 Jul 2010 17:45:35 +0900
-Message-Id: <1278146740-8731-5-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH 2/9] block: permit PREFLUSH and POSTFLUSH without prepare_flush_fn
+Date: Sat,  3 Jul 2010 17:45:33 +0900
+Message-Id: <1278146740-8731-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
 References: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 03 Jul 2010 17:46:33 +0900 (JST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 03 Jul 2010 17:46:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use REQ_FLUSH flag instead.
+This is preparation for removing q->prepare_flush_fn.
+
+Temporarily, blk_queue_ordered() permits QUEUE_ORDERED_DO_PREFLUSH and
+QUEUE_ORDERED_DO_POSTFLUSH without prepare_flush_fn.
 
 Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 ---
- drivers/block/osdblk.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
+ block/blk-barrier.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/block/osdblk.c b/drivers/block/osdblk.c
-index 819002b..9639565 100644
---- a/drivers/block/osdblk.c
-+++ b/drivers/block/osdblk.c
-@@ -323,7 +323,7 @@ static void osdblk_rq_fn(struct request_queue *q)
- 		 * driver-specific, etc.
- 		 */
- 
--		do_flush = (rq->special == (void *) 0xdeadbeefUL);
-+		do_flush = rq->cmd_flags & REQ_FLUSH;
- 		do_write = (rq_data_dir(rq) == WRITE);
- 
- 		if (!do_flush) { /* osd_flush does not use a bio */
-@@ -380,14 +380,6 @@ static void osdblk_rq_fn(struct request_queue *q)
- 	}
- }
- 
--static void osdblk_prepare_flush(struct request_queue *q, struct request *rq)
--{
--	/* add driver-specific marker, to indicate that this request
--	 * is a flush command
--	 */
--	rq->special = (void *) 0xdeadbeefUL;
--}
--
- static void osdblk_free_disk(struct osdblk_device *osdev)
+diff --git a/block/blk-barrier.c b/block/blk-barrier.c
+index a348242..7ce0a32 100644
+--- a/block/blk-barrier.c
++++ b/block/blk-barrier.c
+@@ -25,12 +25,6 @@
+ int blk_queue_ordered(struct request_queue *q, unsigned ordered,
+ 		      prepare_flush_fn *prepare_flush_fn)
  {
- 	struct gendisk *disk = osdev->disk;
-@@ -447,7 +439,7 @@ static int osdblk_init_disk(struct osdblk_device *osdev)
- 	blk_queue_stack_limits(q, osd_request_queue(osdev->osd));
+-	if (!prepare_flush_fn && (ordered & (QUEUE_ORDERED_DO_PREFLUSH |
+-					     QUEUE_ORDERED_DO_POSTFLUSH))) {
+-		printk(KERN_ERR "%s: prepare_flush_fn required\n", __func__);
+-		return -EINVAL;
+-	}
+-
+ 	if (ordered != QUEUE_ORDERED_NONE &&
+ 	    ordered != QUEUE_ORDERED_DRAIN &&
+ 	    ordered != QUEUE_ORDERED_DRAIN_FLUSH &&
+@@ -146,7 +140,8 @@ static void queue_flush(struct request_queue *q, unsigned which)
+ 	rq->cmd_flags = REQ_HARDBARRIER | REQ_FLUSH;
+ 	rq->rq_disk = q->bar_rq.rq_disk;
+ 	rq->end_io = end_io;
+-	q->prepare_flush_fn(q, rq);
++	if (q->prepare_flush_fn)
++		q->prepare_flush_fn(q, rq);
  
- 	blk_queue_prep_rq(q, blk_queue_start_tag);
--	blk_queue_ordered(q, QUEUE_ORDERED_DRAIN_FLUSH, osdblk_prepare_flush);
-+	blk_queue_ordered(q, QUEUE_ORDERED_DRAIN_FLUSH, NULL);
- 
- 	disk->queue = q;
- 
+ 	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
+ }
 -- 
 1.6.5
 
