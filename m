@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab0GCKNX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 06:13:23 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59356 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754782Ab0GCKNW (ORCPT
+	id S1755080Ab0GCKPA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 06:15:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61998 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754782Ab0GCKO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 06:13:22 -0400
-Date: Sat, 3 Jul 2010 06:13:20 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, knikanth@suse.de,
-       jeremy@xensource.com, drzeus@drzeus.cx
-Subject: Re: [PATCH 9/9] block: remove q->prepare_flush_fn completely
-Message-ID: <20100703101320.GB22329@infradead.org>
-References: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
- <1278146740-8731-10-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278146740-8731-10-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 3 Jul 2010 06:14:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=BH9RT2rAm4M1isbTZaZBEO/V6zGOtzMb+bYUgHO4Ms57b7IUrSF2kwrT62BF4JGkDF
+         oWYIik0p0jWPgD0VAHn8N2LNDpyExyyhyLM54yySovk78yLgRDILwJKhgSe+mSKFj1BO
+         12cgredOLZmddC0WgJUrPO0hrCiyKklncNTTM=
+Subject: Re: [PATCH/RFC v2] hwmon: Add support for W83667HG-B and
+ W83667HG-I to w83627ehf driver.
+From: "=?gb2312?Q?=B1=F6=CE=F7=C3=C9?=" <binximeng@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+       Jim Cromie <jim.cromie@gmail.com>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ethan Lawrence <e.law87@yahoo.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org, lars4910@hotmail.com,
+       birdie@permonline.ru, jadcock@cox.net
+In-Reply-To: <20100703103536.2fdd833e@hyperion.delvare>
+References: <1278062606-29000-1-git-send-email-guenter.roeck@ericsson.com>
+	 <20100703103536.2fdd833e@hyperion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 03 Jul 2010 12:15:48 +0200
+Message-ID: <1278152148.7319.11.camel@xli51>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not a comment on the patch itself, but some interesting observations
-on the drivers ordered flags:
+在 2010-07-03六的 10:35 +0200，Jean Delvare写道：
+> Hi Guenter,
+> 
+> On Fri, 2 Jul 2010 02:23:26 -0700, Guenter Roeck wrote:
+> > +    w83667hg-i   9      5       3       3      0xb340 0xc1    0x5ca3
+> 
+> As discussed before, this one is a 677 series, not 667. That being
+> said, I admit that the device ID proximity between the 667HG-B and the
+> 677HG-I is troubling, and invites to optimism as far as compatibility
+> between these two chips is concerned.
 
-> diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-> index fedfdb7..d285a54 100644
-> --- a/drivers/block/loop.c
-> +++ b/drivers/block/loop.c
-> @@ -831,7 +831,7 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
->  	lo->lo_queue->unplug_fn = loop_unplug;
->  
->  	if (!(lo_flags & LO_FLAGS_READ_ONLY) && file->f_op->fsync)
-> -		blk_queue_ordered(lo->lo_queue, QUEUE_ORDERED_DRAIN, NULL);
-> +		blk_queue_ordered(lo->lo_queue, QUEUE_ORDERED_DRAIN);
+I think we got something confused here, I was looking for the W836
+*seven* 7 HG-I driver (which has ID 0xb470) and not the W836 *six* 7
+HG-I one, although maybe someone else might benefit from that one.
 
-loop actually does flushes.  But implements them by itself because
-it's bio based.  Seems like something is not so nice about the API
-for implementing barriers with bio based drivers.
-
-Also do we actually get the draining semantics right this way?  Unless
-loop only supports one in-flight bio this seems to not be correct.
-
-> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-> index 495533e..76af65b 100644
-> --- a/drivers/block/xen-blkfront.c
-> +++ b/drivers/block/xen-blkfront.c
-> @@ -373,8 +373,7 @@ static int xlvbd_barrier(struct blkfront_info *info)
->  	int err;
->  
->  	err = blk_queue_ordered(info->rq,
-> -				info->feature_barrier ? QUEUE_ORDERED_DRAIN : QUEUE_ORDERED_NONE,
-> -				NULL);
-> +				info->feature_barrier ? QUEUE_ORDERED_DRAIN : QUEUE_ORDERED_NONE);
-
-Something is really broken with the way Xen implements barriers.
-It claims to only require drains, but then actually marks barrier
-requests as such.  The qemu backend at least then does the pre and post
-drains by itself.  While this gets the correct results for writes marked
-as barriers, it can't properly implement empty barriers (aka cache
-flushes) which are just as important.
-
-> --- a/drivers/mmc/card/queue.c
-> +++ b/drivers/mmc/card/queue.c
-> @@ -128,7 +128,7 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card, spinlock_t *lock
->  	mq->req = NULL;
->  
->  	blk_queue_prep_rq(mq->queue, mmc_prep_request);
-> -	blk_queue_ordered(mq->queue, QUEUE_ORDERED_DRAIN, NULL);
-> +	blk_queue_ordered(mq->queue, QUEUE_ORDERED_DRAIN);
-
-So MMC device never have volatile write caches?
+It has at least 5 fans, with 3 pwm and 1 voltage regulatory. Using the
+w83667hg driver, I can only see the speed of fan2 and fan3 in sensors
+output. the w83627dhg-p already seems to read out 3 of the 5 fan speeds.
+The temperatures seem rather wonky, I might need to compare with the
+bios readings some more.
 
