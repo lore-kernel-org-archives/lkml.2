@@ -1,34 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab0GCQs1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 12:48:27 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56528
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751909Ab0GCQs0 (ORCPT
+	id S1755294Ab0GCSHs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 14:07:48 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43449 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326Ab0GCSHr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 12:48:26 -0400
-Date: Sat, 03 Jul 2010 09:48:39 -0700 (PDT)
-Message-Id: <20100703.094839.189697623.davem@davemloft.net>
-To: fujita.tomonori@lab.ntt.co.jp
-Cc: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/9] ide: stop using q->prepare_flush_fn
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1278146740-8731-9-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-	<1278146740-8731-9-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 3 Jul 2010 14:07:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=xJSj7zSa7Dbqx3z/tpfHX2uyiI2ai3OV1acCMD0E7zXsRN3JcWBO1PBmj1Ws+nexLE
+         dJGj7cRBmwDPcKUIbPgFhX239GOSYLPVx0VJFxOmcjUAbAcEEb0hZN9Ex8mcOWyek3Jl
+         fW4y7ktMDlIFHr/zSCqV3bzvhCNsu6atH4Bok=
+MIME-Version: 1.0
+Date: Sat, 3 Jul 2010 20:07:46 +0200
+Message-ID: <AANLkTinZfXXALWmmVPMHe-iJehQif7KC4tQCDdGge6g4@mail.gmail.com>
+Subject: SH-D163C
+From: Jacek Poplawski <jacekpoplawski@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Date: Sat,  3 Jul 2010 17:45:39 +0900
+Hello,
 
-> use REQ_FLUSH flag instead.
-> 
-> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+I bought new DVD burner and looks like I can't burn anything, because
+media is not recognized as burner.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+In logs I see:
+ata5.00: ATAPI: TSSTcorpDVD-ROM SH-D163C, SB00, max UDMA/100
+scsi 4:0:0:0: CD-ROM            TSSTcorp DVD-ROM SH-D163C SB00 PQ: 0 ANSI: 5
+
+Is this burner supported by kernel?
+If not, could you give me any hints how to add it at source code
+level? I assume it's a matter of adding new ID to some list? :)
