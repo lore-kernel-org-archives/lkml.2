@@ -1,119 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab0GCV0j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 17:26:39 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:43699 "EHLO mgw1.diku.dk"
+	id S1753557Ab0GCV3i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 17:29:38 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:55889 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264Ab0GCV0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 17:26:38 -0400
-From: Nicolas Palix <npalix@diku.dk>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Subject: Re: [PATCH] coccicheck: use $KBUILD_EXTMOD when available
-Date: Sat, 3 Jul 2010 21:49:30 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-       Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
-       Joerg Roedel <joerg.roedel@amd.com>, cocci@diku.dk,
-       linux-kernel@vger.kernel.org
-References: <1278170438-8136-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1278170438-8136-1-git-send-email-segooon@gmail.com>
+	id S1753265Ab0GCV3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 17:29:36 -0400
+Date: Sat, 3 Jul 2010 14:28:30 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: =?utf-8?B?5a6+6KW/6JKZ?= <binximeng@gmail.com>,
+       Jim Cromie <jim.cromie@gmail.com>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ethan Lawrence <e.law87@yahoo.com>,
+       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "lars4910@hotmail.com" <lars4910@hotmail.com>,
+       "birdie@permonline.ru" <birdie@permonline.ru>,
+       "jadcock@cox.net" <jadcock@cox.net>
+Subject: Re: [PATCH/RFC v2] hwmon: Add support for W83667HG-B and
+ W83667HG-I to w83627ehf driver.
+Message-ID: <20100703212830.GB19215@ericsson.com>
+References: <1278062606-29000-1-git-send-email-guenter.roeck@ericsson.com>
+ <20100703103536.2fdd833e@hyperion.delvare>
+ <1278152148.7319.11.camel@xli51>
+ <20100703225613.1236bf07@hyperion.delvare>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007032149.30704.npalix@diku.dk>
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100703225613.1236bf07@hyperion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Saturday 03 July 2010 17:20:34 Kulikov Vasiliy wrote:
-> Use $KBUILD_EXTMOD instead of $srctree when the latter is not null
-> to use make M=somedir.
+On Sat, Jul 03, 2010 at 04:56:13PM -0400, Jean Delvare wrote:
+> Hi 宾西蒙,
 > 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  scripts/coccicheck |    8 +++++++-
->  1 files changed, 7 insertions(+), 1 deletions(-)
+> On Sat, 03 Jul 2010 12:15:48 +0200, 宾西蒙 wrote:
+> > 在 2010-07-03六的 10:35 +0200，Jean Delvare写道：
+> > > Hi Guenter,
+> > > 
+> > > On Fri, 2 Jul 2010 02:23:26 -0700, Guenter Roeck wrote:
+> > > > +    w83667hg-i   9      5       3       3      0xb340 0xc1    0x5ca3
+> > > 
+> > > As discussed before, this one is a 677 series, not 667. That being
+> > > said, I admit that the device ID proximity between the 667HG-B and the
+> > > 677HG-I is troubling, and invites to optimism as far as compatibility
+> > > between these two chips is concerned.
+> > 
+> > I think we got something confused here, I was looking for the W836
+> > *seven* 7 HG-I driver (which has ID 0xb470) and not the W836 *six* 7
+> > HG-I one, although maybe someone else might benefit from that one.
 > 
-> diff --git a/scripts/coccicheck b/scripts/coccicheck
-> index b8bcf1f..7d66a55 100755
-> --- a/scripts/coccicheck
-> +++ b/scripts/coccicheck
-> @@ -1,5 +1,11 @@
->  #!/bin/sh
->  
-> +if [ -n "$KBUILD_EXTMOD" ]; then
-> +	CHECK_DIR="$KBUILD_EXTMOD"
-> +else
-> +	CHECK_DIR="$srctree"
-> +fi
-> +
->  SPATCH="`which ${SPATCH:=spatch}`"
->  
->  if [ "$C" = "1" -o "$C" = "2" ]; then
-> @@ -64,7 +70,7 @@ coccinelle () {
->  	echo ' http://coccinelle.lip6.fr/'
->  	echo ''
->  
-> -	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT -dir $srctree || exit 1
-> +	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT -dir $CHECK_DIR || exit 1
->      else
->  	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
->      fi
+> Yes, there was some confusion. For one thing, the W83667HG-I does not
+> exist. And for another, I have no idea where Guenter found the device
+> id 0xb340. None of the Nuvoton W836x7HG datasheets I have mention this
+> ID. All I know of is 0xb350 for the W83667HG-B and 0xb470 for the
+> W83677HG-I (which apparently was renamed to something different
+> meanwhile.)
 > 
+> -- 
+> Jean Delvare
 
-In doing so, the output of the patch mode will produce patches relative to $KBUILD_EXTMOD.
-I am not sure of what most of developers want but if the patches must be relative to
-the Linux kernel root, the following patch must be used.
+Most likely I just got it wrong.
 
-Any preference ?
-
-
-diff --git a/scripts/coccicheck b/scripts/coccicheck
-index b8bcf1f..cda66a3 100755
---- a/scripts/coccicheck
-+++ b/scripts/coccicheck
-@@ -1,5 +1,12 @@
- #!/bin/sh
- 
-+if [ -n "$KBUILD_EXTMOD" ]; then
-+       CHECK_DIR="$srctree/$KBUILD_EXTMOD"
-+       FLAGS="-patch $srctree"
-+else
-+       CHECK_DIR="$srctree"
-+fi
-+
- SPATCH="`which ${SPATCH:=spatch}`"
- 
- if [ "$C" = "1" -o "$C" = "2" ]; then
-@@ -10,12 +17,12 @@ if [ "$C" = "1" -o "$C" = "2" ]; then
- #    OPTIONS=$*
- 
- # Workaround for Coccinelle < 0.2.3
--    FLAGS="-I $srctree/include -very_quiet"
-+    FLAGS="-I $srctree/include -very_quiet $FLAGS"
-     shift $(( $# - 1 ))
-     OPTIONS=$1
- else
-     ONLINE=0
--    FLAGS="-very_quiet"
-+    FLAGS="-very_quiet $FLAGS"
- fi
- 
- if [ ! -x "$SPATCH" ]; then
-@@ -64,7 +71,7 @@ coccinelle () {
-        echo ' http://coccinelle.lip6.fr/'
-        echo ''
- 
--       $SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT -dir $srctree || exit 1
-+       $SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT -dir $CHECK_DIR || exit 1
-     else
-        $SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
-     fi
-
---
-Nicolas Palix
-Web: http://www.diku.dk/~npalix/
+Guenter
