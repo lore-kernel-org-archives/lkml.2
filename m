@@ -1,112 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753116Ab0GCPQv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 11:16:51 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51328 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752660Ab0GCPQt (ORCPT
+	id S1753274Ab0GCPUn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 11:20:43 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41513 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab0GCPUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 11:16:49 -0400
-X-Sasl-enc: D++Jy2b2cXljPP1WmthVC7/ftSNJggAI7ojGti+9/GWs 1278170206
-Date: Sat, 3 Jul 2010 12:16:36 -0300
-From: Henrique de Moraes Holschuh <hmh@debian.org>
-To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
-       "Theodore Ts'o" <tytso@mit.edu>
-Cc: Petter Reinholdtsen <pere@hungry.com>, 587665@bugs.debian.org,
-       Michael Biebl <biebl@debian.org>, linux-kernel@vger.kernel.org
-Subject: Safety of early boot init of /dev/random seed
-Message-ID: <20100703151636.GB23648@khazad-dum.debian.net>
-References: <20100630175615.2119.50822.reportbug@pluto.milchstrasse.xx>
- <20100630184209.GA30971@khazad-dum.debian.net>
- <4C2BCE88.20004@debian.org>
- <20100630234016.GD18711@login1.uio.no>
- <4C2BDCF0.5080203@debian.org>
- <20100701141022.GA3811@login1.uio.no>
- <20100701171357.GE4789@khazad-dum.debian.net>
- <20100702064415.GE3811@login1.uio.no>
- <20100702232919.GA14437@login2.uio.no>
- <20100703012833.GA20929@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100703012833.GA20929@khazad-dum.debian.net>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 3 Jul 2010 11:20:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=BEXOiF6U0wFrTV8NMKCgRQfvo5ovRR5v9S7tAR4adIjsrfLSJV8MEBTbrscMBrjP48
+         GYLgNMDOg06k266TfwUZjr8G7kFAUOFeN7+OVaVbZiCuAxa1yAkksgJ6dJChHPcQnrW0
+         oxnb9dMR5UzHCw9d9vogBfOLDQyxU3rBesFdo=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: Kernel Janitors <kernel-janitors@vger.kernel.org>
+Cc: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
+       Nicolas Palix <npalix@diku.dk>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Joerg Roedel <joerg.roedel@amd.com>,
+       cocci@diku.dk, linux-kernel@vger.kernel.org
+Subject: [PATCH] coccicheck: use $KBUILD_EXTMOD when available
+Date: Sat,  3 Jul 2010 19:20:34 +0400
+Message-Id: <1278170438-8136-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Use $KBUILD_EXTMOD instead of $srctree when the latter is not null
+to use make M=somedir.
 
-We are trying to enhance the Debian support for /dev/random seeding at early
-boot, and we need some expert help to do it right.  Maybe some of you could
-give us some enlightenment on a few issues?
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ scripts/coccicheck |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-Apologies in advance if I got the list of Linux kernel maintainers wrong.  I
-have also copied LKML just in case.
-
-A bit of context:  Debian tries to initialize /dev/random, by restoring the
-pool size and giving it some seed material (through a write to /dev/random)
-from saved state stored in /var.
-
-Since we store the seed data in /var, that means we only feed it to
-/dev/random relatively late in the boot sequence, after remote filesystems
-are available.  Thus, anything that needs random numbers earlier than that
-point will run with whatever the kernel managed to harness without any sort
-of userspace help (which is probably not much, especially on platforms that
-clear RAM contents at reboot, or after a cold boot).
-
-We take care of regenerating the stored seed data as soon as we use it, in
-order to avoid as much as possible the possibility of reuse of seed data.
-This means that we write the old seed data to /dev/random, and immediately
-copy poolsize bytes from /dev/urandom to the seed data file.
-
-The seed data file is also regenerated prior to shutdown.
-
-We would like to clarify some points, so as to know how safe they are on
-face of certain error modes, and also whether some of what we do is
-necessary at all.  Unfortunately, real answers require more intimate
-knowledge of the theory behind Linux' random pools than we have in the
-Debian initscripts team.
-
-Here are our questions:
-
-1. How much data of unknown quality can we feed the random pool at boot,
-   before it causes damage (i.e. what is the threshold where we violate the
-   "you are not goint to be any worse than you were before" rule) ?
-
-2. How dangerous it is to feed the pool with stale seed data in the next
-   boot (i.e. in a failure mode where we do not regenerate the seed file) ?
-
-3. What is the optimal size of the seed data based on the pool size ?
-
-4. How dangerous it is to have functions that need randomness (like
-   encripted network and partitions, possibly encripted swap with an
-   ephemeral key), BEFORE initializing the random seed ?
-
-5. Is there an optimal size for the pool?  Does the quality of the randomness
-   one extracts from the pool increase or decrease with pool size?
-
-Basically, we need these answers to find our way regarding the following
-decisions:
-
-a) Is it better to seed the pool as early as possible and risk a larger time
-   window for problem (2) above, instead of the current behaviour where we
-   have a large time window where (4) above happens?
-
-b) Is it worth the effort to base the seed file on the size of the pool,
-   instead of just using a constant size?  If a constant size is better,
-   which size would that be? 512 bytes? 4096 bytes? 16384 bytes?
-
-c) What is the maximum seed file size we can allow (maybe based on size of
-   the pool) to try to avoid problem (1) above ?
-
-We would be very grateful if you could help us find good answers to the
-questions above.
-
+diff --git a/scripts/coccicheck b/scripts/coccicheck
+index b8bcf1f..7d66a55 100755
+--- a/scripts/coccicheck
++++ b/scripts/coccicheck
+@@ -1,5 +1,11 @@
+ #!/bin/sh
+ 
++if [ -n "$KBUILD_EXTMOD" ]; then
++	CHECK_DIR="$KBUILD_EXTMOD"
++else
++	CHECK_DIR="$srctree"
++fi
++
+ SPATCH="`which ${SPATCH:=spatch}`"
+ 
+ if [ "$C" = "1" -o "$C" = "2" ]; then
+@@ -64,7 +70,7 @@ coccinelle () {
+ 	echo ' http://coccinelle.lip6.fr/'
+ 	echo ''
+ 
+-	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT -dir $srctree || exit 1
++	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT -dir $CHECK_DIR || exit 1
+     else
+ 	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
+     fi
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+1.7.0.4
+
