@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab0GCIq6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 04:46:58 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47320 "EHLO sh.osrg.net"
+	id S1754916Ab0GCIrJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 04:47:09 -0400
+Received: from sh.osrg.net ([192.16.179.4]:47326 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753928Ab0GCIqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 04:46:54 -0400
+	id S1751751Ab0GCIrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 04:47:04 -0400
 From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 To: axboe@kernel.dk
 Cc: hch@infradead.org, linux-kernel@vger.kernel.org,
-       fujita.tomonori@lab.ntt.co.jp, Alasdair G Kergon <agk@redhat.com>
-Subject: [PATCH 6/9] dm: stop using q->prepare_flush_fn
-Date: Sat,  3 Jul 2010 17:45:37 +0900
-Message-Id: <1278146740-8731-7-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+       fujita.tomonori@lab.ntt.co.jp,
+       James Bottomley <James.Bottomley@suse.de>,
+       "David S. Miller" <davem@davemloft.net>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Alasdair G Kergon <agk@redhat.com>
+Subject: [PATCH 1/9] block: introduce REQ_FLUSH flag
+Date: Sat,  3 Jul 2010 17:45:32 +0900
+Message-Id: <1278146740-8731-2-git-send-email-fujita.tomonori@lab.ntt.co.jp>
 X-Mailer: git-send-email 1.6.5
 In-Reply-To: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
 References: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 03 Jul 2010 17:46:33 +0900 (JST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 03 Jul 2010 17:46:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use REQ_FLUSH flag instead.
+SCSI-ml needs a way to mark a request as flush request in
+q->prepare_flush_fn because it needs to identify them later (e.g. in
+q->request_fn or prep_rq_fn).
+
+queue_flush sets REQ_HARDBARRIER in rq->cmd_flags however the block
+layer also sends normal REQ_TYPE_FS requests with REQ_HARDBARRIER. So
+SCSI-ml can't use REQ_HARDBARRIER to identify flush requests.
+
+We could change the block layer to clear REQ_HARDBARRIER bit before
+sending non flush requests to the lower layers. However, intorudcing
+the new flag looks cleaner (surely easier).
 
 Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: James Bottomley <James.Bottomley@suse.de>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Alasdair G Kergon <agk@redhat.com>
 ---
- drivers/md/dm.c |   16 ++--------------
- 1 files changed, 2 insertions(+), 14 deletions(-)
+ block/blk-barrier.c |    2 +-
+ include/linux/bio.h |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index d6f77ba..00c8105 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1455,20 +1455,9 @@ static int dm_request(struct request_queue *q, struct bio *bio)
- 	return _dm_request(q, bio);
- }
+diff --git a/block/blk-barrier.c b/block/blk-barrier.c
+index 7c6f4a7..a348242 100644
+--- a/block/blk-barrier.c
++++ b/block/blk-barrier.c
+@@ -143,7 +143,7 @@ static void queue_flush(struct request_queue *q, unsigned which)
+ 	}
  
--/*
-- * Mark this request as flush request, so that dm_request_fn() can
-- * recognize.
-- */
--static void dm_rq_prepare_flush(struct request_queue *q, struct request *rq)
--{
--	rq->cmd_type = REQ_TYPE_LINUX_BLOCK;
--	rq->cmd[0] = REQ_LB_OP_FLUSH;
--}
--
- static bool dm_rq_is_flush_request(struct request *rq)
- {
--	if (rq->cmd_type == REQ_TYPE_LINUX_BLOCK &&
--	    rq->cmd[0] == REQ_LB_OP_FLUSH)
-+	if (rq->cmd_flags & REQ_FLUSH)
- 		return true;
- 	else
- 		return false;
-@@ -1912,8 +1901,7 @@ static struct mapped_device *alloc_dev(int minor)
- 	blk_queue_softirq_done(md->queue, dm_softirq_done);
- 	blk_queue_prep_rq(md->queue, dm_prep_fn);
- 	blk_queue_lld_busy(md->queue, dm_lld_busy);
--	blk_queue_ordered(md->queue, QUEUE_ORDERED_DRAIN_FLUSH,
--			  dm_rq_prepare_flush);
-+	blk_queue_ordered(md->queue, QUEUE_ORDERED_DRAIN_FLUSH, NULL);
+ 	blk_rq_init(q, rq);
+-	rq->cmd_flags = REQ_HARDBARRIER;
++	rq->cmd_flags = REQ_HARDBARRIER | REQ_FLUSH;
+ 	rq->rq_disk = q->bar_rq.rq_disk;
+ 	rq->end_io = end_io;
+ 	q->prepare_flush_fn(q, rq);
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 4d379c8..f655b54 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -174,6 +174,7 @@ enum rq_flag_bits {
+ 	__REQ_ALLOCED,		/* request came from our alloc pool */
+ 	__REQ_COPY_USER,	/* contains copies of user pages */
+ 	__REQ_INTEGRITY,	/* integrity metadata has been remapped */
++	__REQ_FLUSH,		/* request for cache flush */
+ 	__REQ_IO_STAT,		/* account I/O stat */
+ 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
+ 	__REQ_NR_BITS,		/* stops here */
+@@ -213,6 +214,7 @@ enum rq_flag_bits {
+ #define REQ_ALLOCED		(1 << __REQ_ALLOCED)
+ #define REQ_COPY_USER		(1 << __REQ_COPY_USER)
+ #define REQ_INTEGRITY		(1 << __REQ_INTEGRITY)
++#define REQ_FLUSH		(1 << __REQ_FLUSH)
+ #define REQ_IO_STAT		(1 << __REQ_IO_STAT)
+ #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
  
- 	md->disk = alloc_disk(1);
- 	if (!md->disk)
 -- 
 1.6.5
 
