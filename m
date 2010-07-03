@@ -1,103 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313Ab0GCWPk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 18:15:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51041 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154Ab0GCWPd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 18:15:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
+	id S1756060Ab0GCWRp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 18:17:45 -0400
+Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:57700 "EHLO
+	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752121Ab0GCWRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 18:17:44 -0400
+X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Jul 2010 18:17:44 EDT
+Date: Sat, 3 Jul 2010 18:10:57 -0400
+From: Wakko Warner <wakko@animx.eu.org>
 To: linux-kernel@vger.kernel.org
-Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arnd@arndb.de>, alsa-devel@alsa-project.org,
-       Al Viro <viro@zeniv.linux.org.uk>, autofs@linux.kernel.org,
-       Cris <linux-cris-kernel@axis.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ian Kent <raven@themaw.net>, Jaroslav Kysela <perex@perex.cz>,
-       Jesper Nilsson <jesper.nilsson@axis.com>, linux-ia64@vger.kernel.org,
-       Mikael Starvik <starvik@axis.com>, Takashi Iwai <tiwai@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 0/6] kill .ioctl file_operation
-Date: Sun,  4 Jul 2010 00:15:04 +0200
-Message-Id: <1278195310-25590-1-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.1
-X-Provags-ID: V01U2FsdGVkX1+8ydfiD0MXDpKoy6K7vi1Od1oLM9uJSUsfnWV
- aXO5EW1hlogaCaCMTi3YjpsQJgtbUiU4Th6K2oxJLoSPgjvpG3
- D6GVMMvztjfmUhn8xHM0g==
+Subject: Radeon KMS doesn't work.
+Message-ID: <20100703221056.GA17817@animx.eu.org>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.6+20040907i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the .ioctl file operation from all the
-remaining users that are in today's linux-next
-tree.
+I have a Dell Inspiron 5100 with an ATI Radeon Mobility M7 (7500 R100
+PCI ID 1002:4c57 sub 1028:0149).
 
-I'd like to have this added to linux-next to make
-sure we don't get any new users and we can seamlessly
-apply the final patches for this in 2.6.36.
+Immediately when radeon.ko is loaded, the screen goes blank (The backlight
+stays on).  I have fbcon compiled into the kernel (I also tried as module). 
+I am unable to get the screen to work again until I reboot.  The logs did
+not appear to have any errors after the module loaded.  The system was still
+responsive on the network.
 
-The intention behind removing the .ioctl operation
-is to be able to remove the big kernel lock (BKL)
-from the ioctl system call.
+I tried kernels 2.6.33 and 2.6.34.
 
-Ideally, maintainers of the code in question should
-just apply the respective patches to their -next
-tree so we can simply apply the final patch removing
-the definition of .ioctl.
+I can provide kernel output if needed.
 
-	Arnd
-
-Cc: alsa-devel@alsa-project.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: autofs@linux.kernel.org
-Cc: Cris <linux-cris-kernel@axis.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ian Kent <raven@themaw.net>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: linux-ia64@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Luck <tony.luck@intel.com>
-
-Arnd Bergmann (5):
-  ia64/perfmon: convert to unlocked_ioctl
-  sound/oss: convert to unlocked_ioctl
-  autofs/autofs4: move compat_ioctl handling into fs
-  v4l: convert v4l2-dev to unlocked_ioctl
-  bkl: remove locked .ioctl file operation
-
-Frederic Weisbecker (1):
-  cris: Pushdown the bkl from ioctl
-
- Documentation/filesystems/Locking         |    8 +---
- Documentation/filesystems/vfs.txt         |    6 +--
- arch/cris/arch-v10/drivers/gpio.c         |   30 +++++++++----
- arch/cris/arch-v10/drivers/i2c.c          |   24 ++++++++---
- arch/cris/arch-v10/drivers/sync_serial.c  |   32 +++++++++----
- arch/cris/arch-v32/drivers/cryptocop.c    |   24 ++++++++---
- arch/cris/arch-v32/drivers/mach-a3/gpio.c |   28 ++++++++----
- arch/cris/arch-v32/drivers/mach-fs/gpio.c |   29 ++++++++----
- arch/cris/arch-v32/drivers/sync_serial.c  |   30 +++++++++----
- arch/ia64/kernel/perfmon.c                |   22 +++++-----
- drivers/media/video/v4l2-dev.c            |   52 ++++++----------------
- fs/autofs/root.c                          |   67 +++++++++++++++++++++++++++-
- fs/autofs4/root.c                         |   49 +++++++++++++++++++++
- fs/bad_inode.c                            |    7 ---
- fs/compat_ioctl.c                         |   39 +----------------
- fs/ioctl.c                                |   18 ++------
- fs/proc/inode.c                           |   17 ++------
- include/linux/auto_fs.h                   |    1 +
- include/linux/fs.h                        |    5 +-
- sound/oss/au1550_ac97.c                   |   54 +++++++++++++++---------
- sound/oss/dmasound/dmasound_core.c        |   35 ++++++++++++---
- sound/oss/msnd_pinnacle.c                 |   15 ++++--
- sound/oss/sh_dac_audio.c                  |   18 ++++++-
- sound/oss/swarm_cs4297a.c                 |   25 +++++++++--
- sound/oss/vwsnd.c                         |   24 ++++++-----
- 25 files changed, 410 insertions(+), 249 deletions(-)
-
+-- 
+ Lab tests show that use of micro$oft causes cancer in lab animals
