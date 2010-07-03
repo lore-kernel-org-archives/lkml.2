@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab0GCWCj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 18:02:39 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64881 "EHLO
+	id S1755409Ab0GCWCq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 18:02:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58915 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab0GCWCi (ORCPT
+	with ESMTP id S1751942Ab0GCWCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 18:02:38 -0400
+	Sat, 3 Jul 2010 18:02:39 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 2/8] init: remove the BKL from startup code
-Date: Sun,  4 Jul 2010 00:02:26 +0200
-Message-Id: <1278194552-24943-3-git-send-email-arnd@arndb.de>
+       Arnd Bergmann <arnd@arndb.de>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: [PATCH 5/8] dasd: no need for BKL in ioctl
+Date: Sun,  4 Jul 2010 00:02:29 +0200
+Message-Id: <1278194552-24943-6-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1278194552-24943-1-git-send-email-arnd@arndb.de>
 References: <1278194552-24943-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:VpI3ISWdudpAUNcKSimUvFuDH193lwpiIYlDrujNY7P
- s7zlp4TSkej4+NuvMO1LhdjLJGtxmGTyUI7VUHJHdu81KSfWsT
- tljMn3Fj2bt1DoRZfuIcs7SR6Asw/6XPpJrLUVQRkooJoWv4JY
- N1IFW8y/Q1uz5GvH6u4HAlRD1q9MSX7PPucrfOKabVm++ozOJZ
- 4EFJsPLRthUKOjyZUpvnQ==
+X-Provags-ID: V02:K0:HpPriIbXzaJTaomEWHH8Cq2Lbu0dSri3aG/KpnUk39V
+ GDK+Dnd8NOzsPD77SRulQxfBVfQvBmnMBmGrPrhbV9KwxfNndw
+ DL5gKSsbSNU/MgNdweGJlpFAqBxaepwwlKuGSv0yIOz9z42MCy
+ yY78OA+PqJ+354D5XIGkQVWM9sk+6nfluzYKndGeyK0tR9KWSJ
+ BIhqCSVkmdRPfMSFq9iSg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have shown by code review that no driver takes
-the BKL at init time any more, so whatever the
-init code was locking against is no longer there
-and it is now safe to remove the BKL there.
+The dasd driver does not need the BKL, so we can
+remove it here as well.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Steven Rostedt <rostedt@goodmis>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-s390@vger.kernel.org
 ---
- init/main.c          |    5 -----
- kernel/trace/trace.c |    8 --------
- 2 files changed, 0 insertions(+), 13 deletions(-)
+ drivers/s390/block/dasd_ioctl.c |   17 ++---------------
+ 1 files changed, 2 insertions(+), 15 deletions(-)
 
-diff --git a/init/main.c b/init/main.c
-index a42fdf4..9b34c1b 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -444,7 +444,6 @@ static noinline void __init_refok rest_init(void)
- 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
- 	rcu_read_unlock();
- 	complete(&kthreadd_done);
--	unlock_kernel();
- 
- 	/*
- 	 * The boot idle thread must execute schedule()
-@@ -565,7 +564,6 @@ asmlinkage void __init start_kernel(void)
-  * Interrupts are still disabled. Do necessary setups, then
-  * enable them
-  */
--	lock_kernel();
- 	tick_init();
- 	boot_cpu_init();
- 	page_address_init();
-@@ -829,7 +827,6 @@ static noinline int init_post(void)
- 	/* need to finish all async __init code before freeing the memory */
- 	async_synchronize_full();
- 	free_initmem();
--	unlock_kernel();
- 	mark_rodata_ro();
- 	system_state = SYSTEM_RUNNING;
- 	numa_default_policy();
-@@ -869,8 +866,6 @@ static int __init kernel_init(void * unused)
- 	 * Wait until kthreadd is all set-up.
- 	 */
- 	wait_for_completion(&kthreadd_done);
--	lock_kernel();
--
- 	/*
- 	 * init can allocate pages on any node
- 	 */
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 086d363..8047ca5 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -734,13 +734,6 @@ __acquires(kernel_lock)
- 		return -1;
- 	}
- 
--	/*
--	 * When this gets called we hold the BKL which means that
--	 * preemption is disabled. Various trace selftests however
--	 * need to disable and enable preemption for successful tests.
--	 * So we drop the BKL here and grab it after the tests again.
--	 */
--	unlock_kernel();
- 	mutex_lock(&trace_types_lock);
- 
- 	tracing_selftest_running = true;
-@@ -822,7 +815,6 @@ __acquires(kernel_lock)
- #endif
- 
-  out_unlock:
--	lock_kernel();
+diff --git a/drivers/s390/block/dasd_ioctl.c b/drivers/s390/block/dasd_ioctl.c
+index 1557214..26075e9 100644
+--- a/drivers/s390/block/dasd_ioctl.c
++++ b/drivers/s390/block/dasd_ioctl.c
+@@ -16,7 +16,6 @@
+ #include <linux/major.h>
+ #include <linux/fs.h>
+ #include <linux/blkpg.h>
+-#include <linux/smp_lock.h>
+ #include <linux/slab.h>
+ #include <asm/compat.h>
+ #include <asm/ccwdev.h>
+@@ -370,9 +369,8 @@ static int dasd_ioctl_readall_cmb(struct dasd_block *block, unsigned int cmd,
  	return ret;
  }
  
+-static int
+-dasd_do_ioctl(struct block_device *bdev, fmode_t mode,
+-	      unsigned int cmd, unsigned long arg)
++int dasd_ioctl(struct block_device *bdev, fmode_t mode,
++	       unsigned int cmd, unsigned long arg)
+ {
+ 	struct dasd_block *block = bdev->bd_disk->private_data;
+ 	void __user *argp;
+@@ -430,14 +428,3 @@ dasd_do_ioctl(struct block_device *bdev, fmode_t mode,
+ 		return -EINVAL;
+ 	}
+ }
+-
+-int dasd_ioctl(struct block_device *bdev, fmode_t mode,
+-	       unsigned int cmd, unsigned long arg)
+-{
+-	int rc;
+-
+-	lock_kernel();
+-	rc = dasd_do_ioctl(bdev, mode, cmd, arg);
+-	unlock_kernel();
+-	return rc;
+-}
 -- 
 1.7.1
 
