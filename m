@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab0GCJBF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 05:01:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62585 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab0GCJBD (ORCPT
+	id S1754475Ab0GCJMv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 05:12:51 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:56054 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab0GCJMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 05:01:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH] Break out types from <linux/list.h> to <linux/list_types.h>.
-Date: Sat, 3 Jul 2010 11:00:43 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3+; KDE/4.4.90; x86_64; ; )
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-References: <201007021811.04197.arnd@arndb.de> <4C2E3F1F.3010202@tilera.com> <20100702204817.GB5842@parisc-linux.org>
-In-Reply-To: <20100702204817.GB5842@parisc-linux.org>
+	Sat, 3 Jul 2010 05:12:49 -0400
+Date: Sat, 3 Jul 2010 17:12:37 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Cc: "Dong, Eddie" <eddie.dong@intel.com>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>
+Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Message-ID: <20100703091237.GA6632@gondor.apana.org.au>
+References: <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com> <1A42CE6F5F474C41B63392A5F80372B21F58CD9A@shsmsx501.ccr.corp.intel.com> <20100623095254.GA32491@gondor.apana.org.au> <1A42CE6F5F474C41B63392A5F80372B21F58CE7F@shsmsx501.ccr.corp.intel.com> <20100624100836.GA16220@gondor.apana.org.au> <1A42CE6F5F474C41B63392A5F80372B21F58D666@shsmsx501.ccr.corp.intel.com> <20100627061455.GA16782@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7916B0129230@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007031100.43158.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/nKJ6ch5E2FEb2mVYurRL5BoTVig9a70GKuzR
- LFWzCqwejRJk1gCMIpqMC2AYrDKLVUgpqSfYN0XT97YcCtAJDY
- PwghgnLlwMH7RBn9FWlhg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D7916B0129230@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 July 2010 22:48:17 Matthew Wilcox wrote:
-> I wouldn't mind seeing kvm_types.h, rwlock_types.h and spinlock_types.h
-> merged into types.h, personally.  They're all pretty fundamental kernel
-> kind of types.  It's a matter of taste, and I'm not particularly fussed
-> one way or the other.
+On Mon, Jun 28, 2010 at 05:56:07PM +0800, Xin, Xiaohui wrote:
+>
+> >OK, if I understand you correctly then I don't think have a
+> >problem.  With your current patch-set you have exactly the same
+> >situation when the skb->data is reallocated as a kernel buffer.
 > 
-> mm_types.h is complex and full of mm-specific information, so keeping
-> it separate makes sense to me.
-> 
-> I just object to the unnecessary creation of tiny files like this.
-> Which is how we ended up with atomic_t and atomic64_t in there in the
-> first place :-)
+> When will skb->data to be reallocated? May you point me the code path?
 
-Ah, I didn't notice you had moved the atomic types in there. I agree that
-the list types are in the same general category and it makes sense
-to treat them the same way.
+Anything that calls pskb_expand_head.
 
-For rwlock_types.h and spinlock_types.h, I think including them in types.h
-would really cause too much other crap to be pulled in through lockdep
-and other things we might need in there in the future, which would in turn
-cause the same problems with types.h that Chris is trying to avoid
-in the first place by moving stuff out of list.h.
+> >This is OK because as you correctly argue, it is a rare situation.
+> >
+> >With my proposal you will need to get this extra external buffer
+> >in even less cases, because you'd only need to do it if the skb
+> >head grows, which only happens if it becomes encapsulated.
+> >So let me explain it in a bit more detail:
+> >
+> >Our packet starts out as a purely non-linear skb, i.e., skb->head
+> >contains nothing and all the page frags come from the guest.
+> >
+> >During host processing we may pull data into skb->head but the
+> >first frag will remain unless we pull all of it.  If we did do
+> >that then you would have a free external buffer anyway.
+> >
+> >Now in the common case the header may be modified or pulled, but
+> >it very rarely grows.  So you can just copy the header back into
+> >the first frag just before we give it to the guest.
+> >
+> Since the data is still there, so recompute the page offset and size is ok, right?
 
-	Arnd
+Right, you just move the page offset back and increase the size.
+However, to do this safely we'd need to have a way of knowing
+whether the skb head has been modified.
+
+It may well turn out to be just as effective to do something like
+
+	if (memcmp(skb->data, page frag head, skb_headlen))
+		memcpy(page frag head, skb->data, skb_headlen)
+
+As the page frag head should be in cache since it would've been
+used to populate skb->data.
+
+It'd be good to run some benchmarks with this to see whether
+adding a bit to sk_buff to avoid the memcmp is worth it or not.
+
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
