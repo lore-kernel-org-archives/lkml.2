@@ -1,228 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab0GCWDN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 18:03:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55756 "EHLO
+	id S1756101Ab0GCWDF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 18:03:05 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57976 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755759Ab0GCWCv (ORCPT
+	with ESMTP id S1754278Ab0GCWCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 18:02:51 -0400
+	Sat, 3 Jul 2010 18:02:40 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arnd@arndb.de>, Clemens Ladisch <clemens@ladisch.de>,
-       Bob Picco <bob.picco@hp.com>
-Subject: [PATCH 3/8] hpet: kill BKL, add compat_ioctl
-Date: Sun,  4 Jul 2010 00:02:27 +0200
-Message-Id: <1278194552-24943-4-git-send-email-arnd@arndb.de>
+       Arnd Bergmann <arnd@arndb.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 7/8] soundcore_open: Reduce the area BKL coverage
+Date: Sun,  4 Jul 2010 00:02:31 +0200
+Message-Id: <1278194552-24943-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1278194552-24943-1-git-send-email-arnd@arndb.de>
 References: <1278194552-24943-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:QDFSdv6wSW/JpcVYL5rmMEQAEzh0tBmXfnbk7Jpu5Ew
- DWcX+PnRZ4QWSYsGJM6zRRg9seVW6kCVIVkAo6f7tursQOq9B7
- /AUgeKYvG0miOyvRGY5B0npu2nCz8/2Ka8X6UdhY4MyiQAylp6
- pRnx/kXH3PfD+saVtp1fCOJYQ4pfTi8AJGtT3OmoPYx1EtGXtv
- zetCmghUOhHnimjN6Hagg==
+X-Provags-ID: V02:K0:Z1xvTmQqFqhbI3wd3NzF7LNri3nsTV6eYFmXSY2DnL/
+ VVFYmq+XkjV5X9A5fquBXHHn82pPzd5paFbG9szEi8FtBv7vcH
+ U4z412YaVg8NJrUBF5zqDA7YPN60fC5CopHJ3KxsvPltOuXCOY
+ p/wOde8jGn8tpQ49cDTGK2U3x4Ct9v80n+zmwdCNLCXs7VsAQ+
+ ImCHVhpkF7Qzn/txFbUPg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hpet uses the big kernel lock in its ioctl and open
-functions. Replace this with a private mutex to be
-sure. Since we're already touching the ioctl function,
-add the compat_ioctl version as well -- all commands
-except HPET_INFO are compatible and that one is easy
-to add.
+From: John Kacur <jkacur@redhat.com>
 
+Most of this function is protected by the sound_loader_lock.
+We can push down the BKL to this call out err = file->f_op->open(inode,file);
+
+In order to build the sound core without the BKL, we
+will need to push the lock_kernel() call into the ~20
+device drivers that register their file operations.
+
+Signed-off-by: John Kacur <jkacur@redhat.com>
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Cc: Bob Picco <bob.picco@hp.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
+Cc: Takashi Iwai <tiwai@suse.de>
 ---
- drivers/char/hpet.c |   98 +++++++++++++++++++++++++++++++++------------------
- 1 files changed, 64 insertions(+), 34 deletions(-)
+ sound/sound_core.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index a0a1829..a4eee32 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -30,6 +30,7 @@
- #include <linux/bcd.h>
- #include <linux/seq_file.h>
- #include <linux/bitops.h>
-+#include <linux/compat.h>
- #include <linux/clocksource.h>
- #include <linux/slab.h>
+diff --git a/sound/sound_core.c b/sound/sound_core.c
+index 7c2d677..c8627fc 100644
+--- a/sound/sound_core.c
++++ b/sound/sound_core.c
+@@ -576,8 +576,6 @@ static int soundcore_open(struct inode *inode, struct file *file)
+ 	struct sound_unit *s;
+ 	const struct file_operations *new_fops = NULL;
  
-@@ -67,6 +68,7 @@
- #define	read_counter(MC)	readl(MC)
- #endif
- 
-+static DEFINE_MUTEX(hpet_mutex); /* replaces BKL */
- static u32 hpet_nhpet, hpet_max_freq = HPET_USER_FREQ;
- 
- /* This clocksource driver currently only works on ia64 */
-@@ -250,7 +252,7 @@ static int hpet_open(struct inode *inode, struct file *file)
- 	if (file->f_mode & FMODE_WRITE)
- 		return -EINVAL;
- 
--	lock_kernel();
-+	mutex_lock(&hpet_mutex);
- 	spin_lock_irq(&hpet_lock);
- 
- 	for (devp = NULL, hpetp = hpets; hpetp && !devp; hpetp = hpetp->hp_next)
-@@ -264,7 +266,7 @@ static int hpet_open(struct inode *inode, struct file *file)
- 
- 	if (!devp) {
- 		spin_unlock_irq(&hpet_lock);
--		unlock_kernel();
-+		mutex_unlock(&hpet_mutex);
- 		return -EBUSY;
- 	}
- 
-@@ -272,7 +274,7 @@ static int hpet_open(struct inode *inode, struct file *file)
- 	devp->hd_irqdata = 0;
- 	devp->hd_flags |= HPET_OPEN;
- 	spin_unlock_irq(&hpet_lock);
--	unlock_kernel();
-+	mutex_unlock(&hpet_mutex);
- 
- 	hpet_timer_set_irq(devp);
- 
-@@ -429,22 +431,6 @@ static int hpet_release(struct inode *inode, struct file *file)
- 	return 0;
- }
- 
--static int hpet_ioctl_common(struct hpet_dev *, int, unsigned long, int);
+-	lock_kernel ();
 -
--static long hpet_ioctl(struct file *file, unsigned int cmd,
--			unsigned long arg)
--{
--	struct hpet_dev *devp;
--	int ret;
--
--	devp = file->private_data;
--	lock_kernel();
--	ret = hpet_ioctl_common(devp, cmd, arg, 0);
--	unlock_kernel();
--
--	return ret;
--}
--
- static int hpet_ioctl_ieon(struct hpet_dev *devp)
- {
- 	struct hpet_timer __iomem *timer;
-@@ -553,7 +539,8 @@ static inline unsigned long hpet_time_div(struct hpets *hpets,
- }
- 
- static int
--hpet_ioctl_common(struct hpet_dev *devp, int cmd, unsigned long arg, int kernel)
-+hpet_ioctl_common(struct hpet_dev *devp, int cmd, unsigned long arg,
-+		  struct hpet_info *info)
- {
- 	struct hpet_timer __iomem *timer;
- 	struct hpet __iomem *hpet;
-@@ -594,23 +581,15 @@ hpet_ioctl_common(struct hpet_dev *devp, int cmd, unsigned long arg, int kernel)
- 		break;
- 	case HPET_INFO:
- 		{
--			struct hpet_info info;
--
- 			if (devp->hd_ireqfreq)
--				info.hi_ireqfreq =
-+				info->hi_ireqfreq =
- 					hpet_time_div(hpetp, devp->hd_ireqfreq);
- 			else
--				info.hi_ireqfreq = 0;
--			info.hi_flags =
-+				info->hi_ireqfreq = 0;
-+			info->hi_flags =
- 			    readq(&timer->hpet_config) & Tn_PER_INT_CAP_MASK;
--			info.hi_hpet = hpetp->hp_which;
--			info.hi_timer = devp - hpetp->hp_dev;
--			if (kernel)
--				memcpy((void *)arg, &info, sizeof(info));
--			else
--				if (copy_to_user((void __user *)arg, &info,
--						 sizeof(info)))
--					err = -EFAULT;
-+			info->hi_hpet = hpetp->hp_which;
-+			info->hi_timer = devp - hpetp->hp_dev;
- 			break;
+ 	chain=unit&0x0F;
+ 	if(chain==4 || chain==5)	/* dsp/audio/dsp16 */
+ 	{
+@@ -630,18 +628,23 @@ static int soundcore_open(struct inode *inode, struct file *file)
+ 		const struct file_operations *old_fops = file->f_op;
+ 		file->f_op = new_fops;
+ 		spin_unlock(&sound_loader_lock);
+-		if(file->f_op->open)
++
++		if (file->f_op->open) {
++			/* TODO: push down BKL into indivial open functions */
++			lock_kernel();
+ 			err = file->f_op->open(inode,file);
++			unlock_kernel();
++		}
++
+ 		if (err) {
+ 			fops_put(file->f_op);
+ 			file->f_op = fops_get(old_fops);
  		}
- 	case HPET_EPI:
-@@ -636,7 +615,7 @@ hpet_ioctl_common(struct hpet_dev *devp, int cmd, unsigned long arg, int kernel)
- 		devp->hd_flags &= ~HPET_PERIODIC;
- 		break;
- 	case HPET_IRQFREQ:
--		if (!kernel && (arg > hpet_max_freq) &&
-+		if ((arg > hpet_max_freq) &&
- 		    !capable(CAP_SYS_RESOURCE)) {
- 			err = -EACCES;
- 			break;
-@@ -653,12 +632,63 @@ hpet_ioctl_common(struct hpet_dev *devp, int cmd, unsigned long arg, int kernel)
- 	return err;
++
+ 		fops_put(old_fops);
+-		unlock_kernel();
+ 		return err;
+ 	}
+ 	spin_unlock(&sound_loader_lock);
+-	unlock_kernel();
+ 	return -ENODEV;
  }
  
-+static long
-+hpet_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct hpet_info info;
-+	int err;
-+
-+	mutex_lock(&hpet_mutex);
-+	err = hpet_ioctl_common(file->private_data, cmd, arg, &info);
-+	mutex_unlock(&hpet_mutex);
-+
-+	if ((cmd == HPET_INFO) && !err &&
-+	    (copy_to_user((void __user *)arg, &info, sizeof(info))))
-+		err = -EFAULT;
-+
-+	return err;
-+}
-+
-+#ifdef CONFIG_COMPAT
-+struct compat_hpet_info {
-+	compat_ulong_t hi_ireqfreq;	/* Hz */
-+	compat_ulong_t hi_flags;	/* information */
-+	unsigned short hi_hpet;
-+	unsigned short hi_timer;
-+};
-+
-+static long
-+hpet_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct hpet_info info;
-+	int err;
-+
-+	mutex_lock(&hpet_mutex);
-+	err = hpet_ioctl_common(file->private_data, cmd, arg, &info);
-+	mutex_unlock(&hpet_mutex);
-+
-+	if ((cmd == HPET_INFO) && !err) {
-+		struct compat_hpet_info __user *u = compat_ptr(arg);
-+		if (put_user(info.hi_ireqfreq, &u->hi_ireqfreq) ||
-+		    put_user(info.hi_flags, &u->hi_flags) ||
-+		    put_user(info.hi_hpet, &u->hi_hpet) ||
-+		    put_user(info.hi_timer, &u->hi_timer))
-+			err = -EFAULT;
-+	}
-+
-+	return err;
-+}
-+#endif
-+
- static const struct file_operations hpet_fops = {
- 	.owner = THIS_MODULE,
- 	.llseek = no_llseek,
- 	.read = hpet_read,
- 	.poll = hpet_poll,
- 	.unlocked_ioctl = hpet_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = hpet_compat_ioctl,
-+#endif
- 	.open = hpet_open,
- 	.release = hpet_release,
- 	.fasync = hpet_fasync,
 -- 
 1.7.1
 
