@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab0GCI0S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 04:26:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36602 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab0GCI0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 04:26:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=vhu1zJblr4yDqVruU32GGlr26q95wpn+RcPTCrsFs2lxbz3cBD0awjG99p4SxRGpqQ
-         qjuQAU9G1gPrzlf7ajJDqPBVzVgjeSFV/t1l+Z/8oR7J3D93dvTRhO0eYT/Yz7C1Va10
-         hT/uPevMFQS+aw3M8sgnYBEKzUHbrgkc++s1w=
+	id S1754715Ab0GCIai (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 04:30:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40626 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754147Ab0GCIag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 04:30:36 -0400
+Date: Sat, 3 Jul 2010 08:30:25 +0000
+From: Denis Kirjanov <dkirjanov@kernel.org>
+To: gregkh@suse.de
+Cc: liodot@gmail.com, charrer@alacritech.com, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH -staging] slicoss: README update
+Message-ID: <20100703083025.GA4919@hera.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20100701224235.GA29504@core.coreip.homeip.net>
-References: <AANLkTilvxV18Qc2-34GtNmfAIvNL2dtEAPC3iPFNU2Pv@mail.gmail.com>
-	<20100701162454.GD4152@core.coreip.homeip.net>
-	<AANLkTikx8AxRdPoSbsym9rUiA11BbufqImcD2sg4f8Ds@mail.gmail.com>
-	<AANLkTikmcaQSNNy6ZHMvEwBJVkWdyQ5KALR6832hUkjz@mail.gmail.com>
-	<20100701224235.GA29504@core.coreip.homeip.net>
-Date: Sat, 3 Jul 2010 10:26:13 +0200
-Message-ID: <AANLkTilPJ6Vod4zU4gfOC3id-Cxy_Ho4I5lxMh5fLaCV@mail.gmail.com>
-Subject: Re: i8042 no mouse on resume. (i8042: failed to resume active 
-	multiplexor, mouse won't work.)
-From: Jerome Lacoste <jerome.lacoste@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 03 Jul 2010 08:30:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 2, 2010 at 12:42 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Fri, Jul 02, 2010 at 12:28:17AM +0200, Jerome Lacoste wrote:
->> On Thu, Jul 1, 2010 at 11:19 PM, Jerome Lacoste
->> <jerome.lacoste@gmail.com> wrote:
->> > On Thu, Jul 1, 2010 at 6:24 PM, Dmitry Torokhov
->> > <dmitry.torokhov@gmail.com> wrote:
->> >> Hi Jerome,
->> >>
->> > [...]
->> >>> * the hardware is a Lenovo 3000 N100
->> >>
->> >> We already trying to disable MUX mode on Lenovo 3000 N100, see
->> >> drivers/input/serio/i8042-x86ia64io.h:
->> >>
-[...]
->> > System Information
->> >        Manufacturer: LENOVO
->> >        Product Name: 0768BKG
->> >        Version: 3000 N100
->> >
->> > according to dmidecode
->>
->> Note: I will try the i8042.nomux option, but can't reboot until tomorrow.
->
-> Could you please also try i8042.reset instead of i8042.nomux?
+Update README to remove completed tasks
+Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
+---
+ drivers/staging/slicoss/README |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-the i8042.reset works so far after 5 resumes.
+diff --git a/drivers/staging/slicoss/README b/drivers/staging/slicoss/README
+index 70f4909..38fa160 100644
+--- a/drivers/staging/slicoss/README
++++ b/drivers/staging/slicoss/README
+@@ -7,14 +7,10 @@ This driver is supposed to support:
+ The driver was actually tested on Oasis and Kalahari cards.
+ 
+ TODO:
+-	- move firmware loading to request_firmware()
+ 	- remove direct memory access of structures
+ 	- any remaining sparse and checkpatch.pl warnings
+ 
+-	- use net_device_ops
+ 	- use dev->stats rather than adapter->stats
+-	- don't cast netdev_priv it is already void
+-	- use compare_ether_addr
+ 	- GET RID OF MACROS
+ 	- work on all architectures
+ 	   - without CONFIG_X86_64 confusion
+@@ -25,10 +21,8 @@ TODO:
+ 	- no new SIOCDEVPRIVATE ioctl allowed
+ 	- don't use module_param for configuring interrupt mitigation
+ 	  use ethtool instead
+-	- reorder code to elminate use of forward declarations
+ 	- don't keep private linked list of drivers.
+ 	- remove all the gratiutous debug infrastructure
+-	- use PCI_DEVICE()
+ 	- do ethtool correctly using ethtool_ops
+ 	- NAPI?
+ 	- wasted overhead of extra stats
+-- 
+1.6.4.4
 
-Tested with: Linux expresso2 2.6.32-23-generic #37-Ubuntu SMP Fri Jun
-11 07:54:58 UTC 2010 i686 GNU/Linux
-
-Should I test something else ?
-
-Jerome
