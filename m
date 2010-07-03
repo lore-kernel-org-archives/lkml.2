@@ -1,50 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab0GCPMr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 11:12:47 -0400
-Received: from imr1.ericy.com ([198.24.6.9]:33559 "EHLO imr1.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582Ab0GCPMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 11:12:46 -0400
-Date: Sat, 3 Jul 2010 08:11:56 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Jim Cromie <jim.cromie@gmail.com>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ethan Lawrence <e.law87@yahoo.com>,
-       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "lars4910@hotmail.com" <lars4910@hotmail.com>,
-       "birdie@permonline.ru" <birdie@permonline.ru>,
-       "jadcock@cox.net" <jadcock@cox.net>,
-       "binximeng@gmail.com" <binximeng@gmail.com>
-Subject: Re: [PATCH/RFC v2] hwmon: Add support for W83667HG-B and
- W83667HG-I to w83627ehf driver.
-Message-ID: <20100703151156.GA18122@ericsson.com>
-References: <1278062606-29000-1-git-send-email-guenter.roeck@ericsson.com>
- <20100703103536.2fdd833e@hyperion.delvare>
+	id S1753116Ab0GCPQv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 11:16:51 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51328 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752660Ab0GCPQt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 11:16:49 -0400
+X-Sasl-enc: D++Jy2b2cXljPP1WmthVC7/ftSNJggAI7ojGti+9/GWs 1278170206
+Date: Sat, 3 Jul 2010 12:16:36 -0300
+From: Henrique de Moraes Holschuh <hmh@debian.org>
+To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
+       "Theodore Ts'o" <tytso@mit.edu>
+Cc: Petter Reinholdtsen <pere@hungry.com>, 587665@bugs.debian.org,
+       Michael Biebl <biebl@debian.org>, linux-kernel@vger.kernel.org
+Subject: Safety of early boot init of /dev/random seed
+Message-ID: <20100703151636.GB23648@khazad-dum.debian.net>
+References: <20100630175615.2119.50822.reportbug@pluto.milchstrasse.xx>
+ <20100630184209.GA30971@khazad-dum.debian.net>
+ <4C2BCE88.20004@debian.org>
+ <20100630234016.GD18711@login1.uio.no>
+ <4C2BDCF0.5080203@debian.org>
+ <20100701141022.GA3811@login1.uio.no>
+ <20100701171357.GE4789@khazad-dum.debian.net>
+ <20100702064415.GE3811@login1.uio.no>
+ <20100702232919.GA14437@login2.uio.no>
+ <20100703012833.GA20929@khazad-dum.debian.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100703103536.2fdd833e@hyperion.delvare>
+In-Reply-To: <20100703012833.GA20929@khazad-dum.debian.net>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 03, 2010 at 04:35:36AM -0400, Jean Delvare wrote:
-[...]
-> 
-> Other than this, I have no objection, your patch looks sane.
-> 
-> After your next iteration, I'll publish a standalone driver with your
-> patch, for easier testing.
-> 
-I submitted v3 a minute ago. I had to make a couple of additional changes,
-so you'll have to at least browse through it again. This is still a single 
-patch. There are some generic changes, though, so I plan to split it into 
-a generic patch and a -B specific patch next time around. Would be great
-to get some test feedback first, though.
+Hello,
 
-Guenter
+We are trying to enhance the Debian support for /dev/random seeding at early
+boot, and we need some expert help to do it right.  Maybe some of you could
+give us some enlightenment on a few issues?
+
+Apologies in advance if I got the list of Linux kernel maintainers wrong.  I
+have also copied LKML just in case.
+
+A bit of context:  Debian tries to initialize /dev/random, by restoring the
+pool size and giving it some seed material (through a write to /dev/random)
+from saved state stored in /var.
+
+Since we store the seed data in /var, that means we only feed it to
+/dev/random relatively late in the boot sequence, after remote filesystems
+are available.  Thus, anything that needs random numbers earlier than that
+point will run with whatever the kernel managed to harness without any sort
+of userspace help (which is probably not much, especially on platforms that
+clear RAM contents at reboot, or after a cold boot).
+
+We take care of regenerating the stored seed data as soon as we use it, in
+order to avoid as much as possible the possibility of reuse of seed data.
+This means that we write the old seed data to /dev/random, and immediately
+copy poolsize bytes from /dev/urandom to the seed data file.
+
+The seed data file is also regenerated prior to shutdown.
+
+We would like to clarify some points, so as to know how safe they are on
+face of certain error modes, and also whether some of what we do is
+necessary at all.  Unfortunately, real answers require more intimate
+knowledge of the theory behind Linux' random pools than we have in the
+Debian initscripts team.
+
+Here are our questions:
+
+1. How much data of unknown quality can we feed the random pool at boot,
+   before it causes damage (i.e. what is the threshold where we violate the
+   "you are not goint to be any worse than you were before" rule) ?
+
+2. How dangerous it is to feed the pool with stale seed data in the next
+   boot (i.e. in a failure mode where we do not regenerate the seed file) ?
+
+3. What is the optimal size of the seed data based on the pool size ?
+
+4. How dangerous it is to have functions that need randomness (like
+   encripted network and partitions, possibly encripted swap with an
+   ephemeral key), BEFORE initializing the random seed ?
+
+5. Is there an optimal size for the pool?  Does the quality of the randomness
+   one extracts from the pool increase or decrease with pool size?
+
+Basically, we need these answers to find our way regarding the following
+decisions:
+
+a) Is it better to seed the pool as early as possible and risk a larger time
+   window for problem (2) above, instead of the current behaviour where we
+   have a large time window where (4) above happens?
+
+b) Is it worth the effort to base the seed file on the size of the pool,
+   instead of just using a constant size?  If a constant size is better,
+   which size would that be? 512 bytes? 4096 bytes? 16384 bytes?
+
+c) What is the maximum seed file size we can allow (maybe based on size of
+   the pool) to try to avoid problem (1) above ?
+
+We would be very grateful if you could help us find good answers to the
+questions above.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
