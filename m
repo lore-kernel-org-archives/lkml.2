@@ -1,103 +1,408 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab0GCTV6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 15:21:58 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:59621 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab0GCTV4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 15:21:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PT3Dsm+sC37Zk1d+6lTQRUUCYAts+o8Ak6xVHZp99YvyHGVR5QgQAgohGdXOkwJ47a
-         DbrOYbYhm7o3qKOo9npENsPibOzHN88oQDt4cmOV1hbLJ7j62WatwpaNN6FWa7VpTb9+
-         Hk//re4DAJTPcdgLd3ZNlQYL0sPnLBulJVHgg=
-MIME-Version: 1.0
-In-Reply-To: <4C2F87C1.8000701@hardwarefreak.com>
-References: <AANLkTimVkG9TFgyOTTnrztBjqT4JoOzFaP268vWLAAm9@mail.gmail.com>
-	<4C2F5ECB.1040505@kernel.org>
-	<AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>
-	<4C2F87C1.8000701@hardwarefreak.com>
-Date: Sat, 3 Jul 2010 12:21:55 -0700
-Message-ID: <AANLkTimVJEO-yF3GZ2ghX6DNPuAu-A-MNNO9x8Q1EpRc@mail.gmail.com>
-Subject: Re: Drives missing at boot
-From: Mark Knecht <markknecht@gmail.com>
-To: Stan Hoeppner <stan@hardwarefreak.com>
-Cc: Tejun Heo <tj@kernel.org>,
-       Linux Kernel List <linux-kernel@vger.kernel.org>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756019Ab0GCTWK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 15:22:10 -0400
+Received: from md2.t-2.net ([84.255.209.81]:4919 "EHLO md2.t-2.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755954Ab0GCTWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 15:22:05 -0400
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+From: Samo Pogacnik <samo_pogacnik@t-2.net>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+       linux kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100627143518.104ef190@lxorguk.ukuu.org.uk>
+References: <1273918658.2341.17.camel@itpsd6lap>
+	 <1275171436.2122.29.camel@itpsd6lap>
+	 <20100529235402.296406d9@lxorguk.ukuu.org.uk>
+	 <1275175983.2122.42.camel@itpsd6lap> <1276123020.16010.97.camel@itpsd6lap>
+	 <20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
+	 <1276291932.2154.45.camel@itpsd6lap>
+	 <20100621153858.444695c0@lxorguk.ukuu.org.uk>
+	 <1277244410.2195.47.camel@itpsd6lap>
+	 <20100622232108.26752ff8@lxorguk.ukuu.org.uk>
+	 <1277462596.2143.101.camel@itpsd6lap>
+	 <20100625120329.1303aa61@lxorguk.ukuu.org.uk>
+	 <1277516912.29797.411.camel@itpsd6lap>
+	 <20100627143518.104ef190@lxorguk.ukuu.org.uk>
+Content-Type: text/plain
+Date: Sat, 03 Jul 2010 21:21:51 +0200
+Message-Id: <1278184911.2187.25.camel@itpsd6lap>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
+X-Junkmail-Status: score=10/150, host=md2.t-2.net
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A0B0204.4C2F8DD1.0246,ss=1,fgs=0,
+	ip=192.168.1.20,
+	so=2010-02-10 22:08:04,
+	dmn=5.4.3/2007-10-18,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 3, 2010 at 11:56 AM, Stan Hoeppner <stan@hardwarefreak.com> wrote:
-> Mark Knecht put forth on 7/3/2010 11:06 AM:
->
->>>>    I have a newish machine - maybe 3 months old - which unreliably
->>>> finds its disk drives at each boot. Probably 40% of the time booting 1
->>>> or more drives will be missing.
->
-> Please provide the make/model of the PC.  If it's whitebox or DIY please
-> provide make/model of PSU, mobo and CPU.  How many USB peripherals are powered
-> by the PC?  Are you powering a water cooling loop pump from the PC's power
-> supply?  Is this PC in a temperature controlled environment (A/C)?
->
-> --
-> Stan
->
+Hi,
 
-Build it myself.
+Please bear with me for a bit longer, because i got slightly modified
+perspective of some things i did within the driver.
+I.e. somewhere down the road i forgot that my pre-formatting function
+does not really limit output buffer size with its "one-line" buffer
+size. So now 4K output size is assumed and always provided by
+write_room(). The other thing is that i tried to resolve two things
+being in conflict. I tried to fit driver to existing distro
+initialization, which required immediate output also for not line
+terminated strings. And on the other hand not line terminated strings
+could have been provided by line discipline all the time. So i finally
+removed immediate output code and let user takes care by terminating
+lines if immediate output is required.
 
-Asus Rampage II Extreme motherboard
-12GB Crucial DRAM currently installed (Holds 24GB)
-Intel Core i7-980X CPU @ 3.33Ghz
-Palit nVidia 9500GT-based graphics card
-Sony Nec Optiarc AD-7241S-0B 24X Dual Layer DVD+/-RW SATA Drive
-(5x) WD5002ABYS RE3 Enterprise Class 500GB hard drives
+There is additional possibility to fine tune ratelimiting and printk
+delaying parameters via defines also with more comments added.
 
-No external devices other than monitor, mouse, keyboard and the USB
-interface to the UPS are attached. No USB, 1394 or eSATA are attached
-at this time.
+Alan, if you agree, i would send this one to GregKH?
 
-It's all powered by:
+regards, Samo
+---
+Signed-off-by: Samo Pogacnik <samo_pogacnik@t-2.net>
+diff --git a_linux/Documentation/devices.txt b_linux/Documentation/devices.txt
+index 53d64d3..71aef33 100644
+--- a_linux/Documentation/devices.txt
++++ b_linux/Documentation/devices.txt
+@@ -239,6 +239,7 @@ Your cooperation is appreciated.
+ 		  0 = /dev/tty		Current TTY device
+ 		  1 = /dev/console	System console
+ 		  2 = /dev/ptmx		PTY master multiplex
++		  3 = /dev/ttyprintk	User messages via printk TTY device
+ 		 64 = /dev/cua0		Callout device for ttyS0
+ 		    ...
+ 		255 = /dev/cua191	Callout device for ttyS191
+diff --git a_linux/drivers/char/Kconfig b_linux/drivers/char/Kconfig
+index 3141dd3..5c38a06 100644
+--- a_linux/drivers/char/Kconfig
++++ b_linux/drivers/char/Kconfig
+@@ -485,6 +485,20 @@ config LEGACY_PTY_COUNT
+ 	  When not in use, each legacy PTY occupies 12 bytes on 32-bit
+ 	  architectures and 24 bytes on 64-bit architectures.
+ 
++config TTY_PRINTK
++	bool "TTY driver to output user messages via printk"
++	default n
++	---help---
++	  If you say Y here, the support for writing user messages (i.e.
++	  console messages) via printk is available.
++
++	  The feature is useful to inline user messages with kernel
++	  messages.
++	  In order to use this feature, you should output user messages
++	  to /dev/ttyprintk or redirect console to this TTY.
++
++	  If unsure, say N.
++
+ config BRIQ_PANEL
+ 	tristate 'Total Impact briQ front panel driver'
+ 	depends on PPC_CHRP
+diff --git a_linux/drivers/char/Makefile b_linux/drivers/char/Makefile
+index f957edf..ed60f45 100644
+--- a_linux/drivers/char/Makefile
++++ b_linux/drivers/char/Makefile
+@@ -11,6 +11,7 @@ obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o tty_ldisc.o tty_buffer.o t
+ 
+ obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+ obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
++obj-$(CONFIG_TTY_PRINTK)	+= ttyprintk.o
+ obj-y				+= misc.o
+ obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
+ obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
+diff --git a_linux/drivers/char/ttyprintk.c b_linux/drivers/char/ttyprintk.c
+new file mode 100644
+index 0000000..22da614
+--- /dev/null
++++ b_linux/drivers/char/ttyprintk.c
+@@ -0,0 +1,283 @@
++/*
++ *  linux/drivers/char/ttyprintk.c
++ *
++ *  Copyright (C) 2010  Samo Pogacnik
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the smems of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ */
++
++/*
++ * This pseudo device allows user to make printk messages. It is possible
++ * to store "console" messages inline with kernel messages for better analyses
++ * of the boot process, for example.
++ */
++
++#include <linux/sched.h>
++#include <linux/delay.h>
++#include <linux/ratelimit.h>
++#include <linux/device.h>
++#include <linux/serial.h>
++#include <linux/tty.h>
++
++struct ttyprintk_port {
++	struct tty_port port;
++	struct mutex port_write_mutex;
++};
++
++static struct ttyprintk_port tpk_port;
++
++/*
++ * Ratelimiting support to handle to much output to this device,
++ * because of explicit writes or because of unintentional loop
++ * setup (caught printks again sent to this device).
++ * Max TPK...BURST printks per TPK...INTERVAL
++ */
++#define TPK_RATELIMIT_INTERVAL (1 * HZ)
++#define TPK_RATELIMIT_BURST 10
++static struct ratelimit_state ttyprintk_rs = {
++	.interval = TPK_RATELIMIT_INTERVAL,
++	.burst = TPK_RATELIMIT_BURST,
++};
++
++static int tpk_ratelimiting;
++
++/*
++ * Our private ratelimit function, to suppress its printk warnings about
++ * missed callbacks, which doesn't really happen (not discarding messages).
++ * Calls final printk at the end.
++ * Raise delay on every TPK_SCALE_DELAY ratelimited printk for another
++ * milisecond and can not exceed TPK_MAX_DELAY.
++ * Delay is reset allways, when ratelimiting ends.
++ */
++#define TPK_SCALE_DELAY 10
++#define TPK_MAX_DELAY 2000 /* 1 secs */
++static void ttyprintk_ratelimit(const char *tag, const char *buf)
++{
++	static unsigned int tpk_write_delay;
++
++	/* clear ratelimit missed callbacks counter */
++	ttyprintk_rs.missed = 0;
++	if (__ratelimit(&ttyprintk_rs)) {
++		tpk_ratelimiting = 0;
++		ttyprintk_rs.burst = TPK_RATELIMIT_BURST;
++	} else
++		tpk_ratelimiting = 1;
++
++	if (tpk_ratelimiting == 0) {
++		tpk_write_delay = 0;
++	} else {
++		/* increase delay under pressure */
++		if (tpk_write_delay < (TPK_MAX_DELAY * TPK_SCALE_DELAY))
++			tpk_write_delay++;
++		msleep_interruptible(tpk_write_delay / TPK_SCALE_DELAY);
++
++		/* eliminate delay in ratelimiting */
++		ttyprintk_rs.burst = 1;
++		ttyprintk_rs.begin = 0;
++		__ratelimit(&ttyprintk_rs);
++	}
++
++	/* send the string down the drain */
++	printk(KERN_INFO "%s%s", tag, buf);
++}
++
++/*
++ * Our simple preformatting supports transparent output of (time-stamped)
++ * printk messages (also suitable for logging service):
++ * - any cr is replaced by nl
++ * - adds a ttyprintk source tag in front of each line
++ * - too long message is fragmeted, with '\'nl between fragments
++ * - TPK_STR_SIZE isn't really the write_room limiting factor, bcause
++ *   it is emptied on the fly during preformatting.
++ */
++#define TPK_STR_SIZE 508 /* should be bigger then max expected line length */
++#define TPK_MAX_ROOM 4096 /* we could assume 4K for instance */
++static const char *tpk_tag = "[U] "; /* U for User */
++static int tpk_curr;
++
++static int tpk_printk(const unsigned char *buf, int count)
++{
++	static char tmp[TPK_STR_SIZE + 4];
++	int i = tpk_curr;
++
++	if (buf == NULL) {
++		/* flush tmp[] */
++		if (tpk_curr > 0) {
++			/* non nl or cr terminated message - add nl */
++			tmp[tpk_curr + 0] = '\n';
++			tmp[tpk_curr + 1] = '\0';
++			ttyprintk_ratelimit(tpk_tag, tmp);
++			tpk_curr = 0;
++		}
++		return i;
++	}
++
++	for (i = 0; i < count; i++) {
++		tmp[tpk_curr] = buf[i];
++		if (tpk_curr < TPK_STR_SIZE) {
++			switch (buf[i]) {
++			case '\r':
++				/* replace cr with nl */
++				tmp[tpk_curr + 0] = '\n';
++				tmp[tpk_curr + 1] = '\0';
++				ttyprintk_ratelimit(tpk_tag, tmp);
++				tpk_curr = 0;
++				if (buf[i + 1] == '\n')
++					i++;
++				break;
++			case '\n':
++				tmp[tpk_curr + 1] = '\0';
++				ttyprintk_ratelimit(tpk_tag, tmp);
++				tpk_curr = 0;
++				break;
++			default:
++				tpk_curr++;
++			}
++		} else {
++			/* end of tmp buffer reached: cut the message in two */
++			tmp[tpk_curr + 1] = '\\';
++			tmp[tpk_curr + 2] = '\n';
++			tmp[tpk_curr + 3] = '\0';
++			ttyprintk_ratelimit(tpk_tag, tmp);
++			tpk_curr = 0;
++		}
++	}
++
++	return count;
++}
++
++/*
++ * TTY operations open function.
++ */
++static int tpk_open(struct tty_struct *tty, struct file *filp)
++{
++	tty->driver_data = &tpk_port;
++
++	return tty_port_open(&tpk_port.port, tty, filp);
++}
++
++/*
++ * TTY operations close function.
++ */
++static void tpk_close(struct tty_struct *tty, struct file *filp)
++{
++	struct ttyprintk_port *tpkp = tty->driver_data;
++
++	mutex_lock(&tpkp->port_write_mutex);
++	/* flush tpk_printk buffer */
++	tpk_printk(NULL, 0);
++	mutex_unlock(&tpkp->port_write_mutex);
++
++	tty_port_close(&tpkp->port, tty, filp);
++}
++
++/*
++ * TTY operations write function.
++ */
++static int tpk_write(struct tty_struct *tty,
++		const unsigned char *buf, int count)
++{
++	struct ttyprintk_port *tpkp = tty->driver_data;
++	int ret;
++
++
++	/* exclusive use of tpk_printk within this tty */
++	mutex_lock(&tpkp->port_write_mutex);
++	ret = tpk_printk(buf, count);
++	mutex_unlock(&tpkp->port_write_mutex);
++
++	return ret;
++}
++
++/*
++ * TTY operations write_room function.
++ */
++static int tpk_write_room(struct tty_struct *tty)
++{
++	return TPK_MAX_ROOM;
++}
++
++/*
++ * TTY operations ioctl function.
++ */
++static int tpk_ioctl(struct tty_struct *tty, struct file *file,
++			unsigned int cmd, unsigned long arg)
++{
++	struct ttyprintk_port *tpkp = tty->driver_data;
++
++	if (!tpkp)
++		return -EINVAL;
++
++	switch (cmd) {
++	/* Stop TIOCCONS */
++	case TIOCCONS:
++		return -EOPNOTSUPP;
++	default:
++		return -ENOIOCTLCMD;
++	}
++	return 0;
++}
++
++static const struct tty_operations ttyprintk_ops = {
++	.open = tpk_open,
++	.close = tpk_close,
++	.write = tpk_write,
++	.write_room = tpk_write_room,
++	.ioctl = tpk_ioctl,
++};
++
++struct tty_port_operations null_ops = { };
++
++static struct tty_driver *ttyprintk_driver;
++
++static int __init ttyprintk_init(void)
++{
++	int ret = -ENOMEM;
++	void *rp;
++
++	ttyprintk_driver = alloc_tty_driver(1);
++	if (!ttyprintk_driver)
++		return ret;
++
++	ttyprintk_driver->owner = THIS_MODULE;
++	ttyprintk_driver->driver_name = "ttyprintk";
++	ttyprintk_driver->name = "ttyprintk";
++	ttyprintk_driver->major = TTYAUX_MAJOR;
++	ttyprintk_driver->minor_start = 3;
++	ttyprintk_driver->num = 1;
++	ttyprintk_driver->type = TTY_DRIVER_TYPE_CONSOLE;
++	ttyprintk_driver->init_termios = tty_std_termios;
++	ttyprintk_driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;
++	ttyprintk_driver->flags = TTY_DRIVER_RESET_TERMIOS |
++		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
++	tty_set_operations(ttyprintk_driver, &ttyprintk_ops);
++
++	ret = tty_register_driver(ttyprintk_driver);
++	if (ret < 0) {
++		printk(KERN_ERR "Couldn't register ttyprintk driver\n");
++		goto error;
++	}
++
++	/* create our unnumbered device */
++	rp = device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
++				ttyprintk_driver->name);
++	if (IS_ERR(rp)) {
++		printk(KERN_ERR "Couldn't create ttyprintk device\n");
++		ret = PTR_ERR(rp);
++		goto error;
++	}
++
++	tty_port_init(&tpk_port.port);
++	tpk_port.port.ops = &null_ops;
++	mutex_init(&tpk_port.port_write_mutex);
++
++	return 0;
++
++error:
++	put_tty_driver(ttyprintk_driver);
++	ttyprintk_driver = NULL;
++	return ret;
++}
++module_init(ttyprintk_init);
 
-Corsair CMPSU-750TX 750-Watt TX Series 80 Plus Certified Power Supply
 
-Air cooled using the stock Intel fan that came with the processor and
-sitting in a home office environment.
-
-The machine draws (steady state) about 250-275W according to both the
-UPS it's hooked to as well as my trusty Kill-a-Watt. What it might
-draw transient at power on while drives are spinning up I wouldn't
-hazard a guess but it does seem to be well below the rating of the
-supply. The PSU actually has something like 8 or 10 SATA power
-connections, not that that means anything. I'm using 6. (1 CDRW, 5
-drives)
-
-Note two things:
-
-1) All the drives are always reported by BIOS at boot time. Now, that
-doesn't guarantee that the drives spin up. It may only mean they can
-be read by BIOS, but they are there as far as I can tell. They show up
-in the boot screens and in BIOS itself if I drop in to play with
-settings.
-
-2) Whatever state the machine comes up in - drives recognized or not -
-it will run forever in that state under some pretty heavy loads so it
-isn't like the PSU can't completely do the job. It could possibly be
-marginal though.
-
-QUESTION: There are some settings in BIOS for delaying the drive. (Or
-something. I'm using the machine and not in BIOS) There were settings
-from 0 to 35 seconds if I remember correctly. Possibly I should try
-setting each drive to a different value to different value to stagger
-power up?
-
-If you need more info or have other ideas please let me know.
-
-Thanks,
-Mark
