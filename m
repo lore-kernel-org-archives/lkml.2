@@ -1,85 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759551Ab0GQAgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 20:36:49 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50640 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314Ab0GQAgr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 20:36:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AWOexyvXDp4rQvRS6j806mJCU2A1dHdj1s2rdd1HMrBa5nvnTFYpffUhk2ZmAjCYYP
-         lK0OB1JulhmU01yqpLNOun79ULnhRugWLx3CvXIwT/D20G1jSBv3GhW21Cl+sY5Azrj/
-         v3wl9BQdv8rbiEuisnjob6INs+0r3n4YQ8ThA=
-MIME-Version: 1.0
-In-Reply-To: <1279299709.2156.5814.camel@tng>
-References: <4C3D94E3.9080103@wildgooses.com>
-	<4C3DD5EB.9070908@tmr.com>
-	<20100714.111553.104052157.davem@davemloft.net>
-	<AANLkTil3MVGwJUG12dikut9X1s9Ozc_3GwMjx_gErvxI@mail.gmail.com>
-	<1279299709.2156.5814.camel@tng>
-Date: Fri, 16 Jul 2010 17:36:46 -0700
-Message-ID: <AANLkTil_c-TH6k2BDW2r5c0HYXFxiu85aMda1bT0nJt3@mail.gmail.com>
-Subject: Re: Raise initial congestion window size / speedup slow start?
-From: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
-To: Patrick McManus <mcmanus@ducksong.com>
-Cc: David Miller <davem@davemloft.net>, davidsen@tmr.com, lists@wildgooses.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1759573Ab0GQAs7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 20:48:59 -0400
+Received: from claw.goop.org ([74.207.240.146]:40888 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759520Ab0GQAs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 20:48:56 -0400
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Sat, 3 Jul 2010 01:06:04 +0100
+Subject: [PATCH RFC 02/12] x86/ticketlock: convert spin loop to C
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Nick Piggin <nickpiggin@yahoo.com.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>, Avi Kivity <avi@redhat.com>,
+        Xen-devel <xen-devel@lists.xensource.com>
+Message-Id: <20100717004855.B0B25A3C48@abulafia.goop.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 10:01 AM, Patrick McManus <mcmanus@ducksong.com> wrote:
-> On Wed, 2010-07-14 at 21:51 -0700, H.K. Jerry Chu wrote:
->>  except there are indeed bugs in the code today in that the
->> code in various places assumes initcwnd as per RFC3390. So when
->> initcwnd is raised, that actual value may be limited unnecessarily by
->> the initial wmem/sk_sndbuf.
->
-> Thanks for the discussion!
->
-> can you tell us more about the impl concerns of initcwnd stored on the
-> route?
+The inner loop of __ticket_spin_lock isn't doing anything very special,
+so reimplement it in C.
 
-We have found two issues when altering initcwnd through the ip route cmd:
-1. initcwnd is actually capped by sndbuf (i.e., tcp_wmem[1], which is
-defaulted to a small value of 16KB). This problem has been made obscured
-by the TSO code, which fudges the flow control limit (and could be a bug by
-itself).
+For the 8 bit ticket lock variant, we use a register union to get direct
+access to the lower and upper bytes in the tickets, but unfortunately gcc
+won't generate a direct comparison between the two halves of the register,
+so the generated asm isn't quite as pretty as the hand-coded version.
+However benchmarking shows that this is actually a small improvement in
+runtime performance on some benchmarks, and never a slowdown.
 
-2. the congestion backoff code is supposed to take inflight, rather than cwnd,
-but initcwnd presents a special case. I don't fully understand the code yet to
-propose a fix.
+We also need to make sure there's a barrier at the end of the lock loop
+to make sure that the compiler doesn't move any instructions from within
+the locked region into the region where we don't yet own the lock.
 
->
-> and while I'm asking for info, can you expand on the conclusion
-> regarding poor cache hit rates for reusing learned cwnds? (ok, I admit I
-> only read the slides.. maybe the paper has more info?)
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+---
+ arch/x86/include/asm/spinlock.h |   58 +++++++++++++++++++-------------------
+ 1 files changed, 29 insertions(+), 29 deletions(-)
 
-This is partly due to our load balancer policy resulting in poor cache hit,
-partly due to the sheer volumes of remote clients. Some of colleagues
-tried to change the host cache to a /24 subnet cache but the result wasn't
-that good either (sorry I don't remember all the details.)
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index d6d5784..6711d36 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -58,21 +58,21 @@
+ #if (NR_CPUS < 256)
+ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ {
+-	unsigned short inc = 1 << TICKET_SHIFT;
+-
+-	asm volatile (
+-		LOCK_PREFIX "xaddw %w0, %1\n"
+-		"1:\t"
+-		"cmpb %h0, %b0\n\t"
+-		"je 2f\n\t"
+-		"rep ; nop\n\t"
+-		"movb %1, %b0\n\t"
+-		/* don't need lfence here, because loads are in-order */
+-		"jmp 1b\n"
+-		"2:"
+-		: "+Q" (inc), "+m" (lock->slock)
+-		:
+-		: "memory", "cc");
++	register union {
++		struct __raw_tickets tickets;
++		unsigned short slock;
++	} inc = { .slock = 1 << TICKET_SHIFT };
++
++	asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
++		      : "+Q" (inc), "+m" (lock->slock) : : "memory", "cc");
++
++	for (;;) {
++		if (inc.tickets.head == inc.tickets.tail)
++			return;
++		cpu_relax();
++		inc.tickets.head = ACCESS_ONCE(lock->tickets.head);
++	}
++	barrier();		/* make sure nothing creeps before the lock is taken */
+ }
+ 
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+@@ -105,22 +105,22 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ {
+ 	unsigned inc = 1 << TICKET_SHIFT;
+-	unsigned tmp;
++	__ticket_t tmp;
+ 
+-	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
+-		     "movzwl %w0, %2\n\t"
+-		     "shrl $16, %0\n\t"
+-		     "1:\t"
+-		     "cmpl %0, %2\n\t"
+-		     "je 2f\n\t"
+-		     "rep ; nop\n\t"
+-		     "movzwl %1, %2\n\t"
+-		     /* don't need lfence here, because loads are in-order */
+-		     "jmp 1b\n"
+-		     "2:"
+-		     : "+r" (inc), "+m" (lock->slock), "=&r" (tmp)
+-		     :
+-		     : "memory", "cc");
++	asm volatile(LOCK_PREFIX "xaddl %0, %1\n\t"
++		     : "+r" (inc), "+m" (lock->slock)
++		     : : "memory", "cc");
++
++	tmp = inc;
++	inc >>= TICKET_SHIFT;
++
++	for (;;) {
++		if ((__ticket_t)inc == tmp)
++			return;
++		cpu_relax();
++		tmp = ACCESS_ONCE(lock->tickets.head);
++	}
++	barrier();		/* make sure nothing creeps before the lock is taken */
+ }
+ 
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+-- 
+1.7.1.1
 
->
-> article and slides much appreciated and very interetsing. I've long been
-> of the opinion that the downsides of being too aggressive once in a
-> while aren't all that serious anymore.. as someone else said in a
-> non-reservation world you are always trying to predict the future anyhow
-> and therefore overflowing a queue is always possible no matter how
-> conservative.
 
-Please voice your support to TCPM then :)
-
-Jerry
-
->
->
->
->
->
