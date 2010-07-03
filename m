@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab0GCIqq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 04:46:46 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47304 "EHLO sh.osrg.net"
+	id S1754828Ab0GCIr7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 04:47:59 -0400
+Received: from sh.osrg.net ([192.16.179.4]:47316 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428Ab0GCIqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 04:46:43 -0400
+	id S1752221Ab0GCIqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 04:46:44 -0400
 From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 To: axboe@kernel.dk
 Cc: hch@infradead.org, linux-kernel@vger.kernel.org,
-       fujita.tomonori@lab.ntt.co.jp
-Subject: [PATCH 0/9] remove q->prepare_flush_fn hook
-Date: Sat,  3 Jul 2010 17:45:31 +0900
-Message-Id: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+       fujita.tomonori@lab.ntt.co.jp, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 8/9] ide: stop using q->prepare_flush_fn
+Date: Sat,  3 Jul 2010 17:45:39 +0900
+Message-Id: <1278146740-8731-9-git-send-email-fujita.tomonori@lab.ntt.co.jp>
 X-Mailer: git-send-email 1.6.5
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 03 Jul 2010 17:46:30 +0900 (JST)
+In-Reply-To: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+References: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 03 Jul 2010 17:46:34 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes q->prepare_flush_fn. Except for ide and scsi, all the
-users just mark flush requests. They can use REQ_FLUSH flag
-instead.
+use REQ_FLUSH flag instead.
 
-SCSI and ide can use q->prep_rq_fn to build flush requests.
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: David S. Miller <davem@davemloft.net>
+---
+ drivers/ide/ide-disk.c |   16 +++++++++++-----
+ 1 files changed, 11 insertions(+), 5 deletions(-)
 
-This can be applied to the block's for-2.6.36.
-
-=
- block/blk-barrier.c          |   14 +---------
- drivers/block/brd.c          |    2 +-
- drivers/block/loop.c         |    2 +-
- drivers/block/osdblk.c       |   12 +--------
- drivers/block/ps3disk.c      |   25 +++++---------------
- drivers/block/virtio_blk.c   |   52 +++++++++++++++++------------------------
- drivers/block/xen-blkfront.c |    3 +-
- drivers/ide/ide-disk.c       |   16 +++++++++----
- drivers/md/dm.c              |   16 +-----------
- drivers/mmc/card/queue.c     |    2 +-
- drivers/s390/block/dasd.c    |    2 +-
- drivers/scsi/sd.c            |   26 +++++++++++++--------
- include/linux/bio.h          |    2 +
- include/linux/blkdev.h       |    4 +--
- 14 files changed, 69 insertions(+), 109 deletions(-)
+diff --git a/drivers/ide/ide-disk.c b/drivers/ide/ide-disk.c
+index df3d91b..c22e622 100644
+--- a/drivers/ide/ide-disk.c
++++ b/drivers/ide/ide-disk.c
+@@ -427,10 +427,15 @@ static void ide_disk_unlock_native_capacity(ide_drive_t *drive)
+ 		drive->dev_flags |= IDE_DFLAG_NOHPA; /* disable HPA on resume */
+ }
+ 
+-static void idedisk_prepare_flush(struct request_queue *q, struct request *rq)
++static int idedisk_prep_fn(struct request_queue *q, struct request *rq)
+ {
+ 	ide_drive_t *drive = q->queuedata;
+-	struct ide_cmd *cmd = kmalloc(sizeof(*cmd), GFP_ATOMIC);
++	struct ide_cmd *cmd;
++
++	if (!(rq->cmd_flags & REQ_FLUSH))
++		return BLKPREP_OK;
++
++	cmd = kmalloc(sizeof(*cmd), GFP_ATOMIC);
+ 
+ 	/* FIXME: map struct ide_taskfile on rq->cmd[] */
+ 	BUG_ON(cmd == NULL);
+@@ -448,6 +453,8 @@ static void idedisk_prepare_flush(struct request_queue *q, struct request *rq)
+ 	rq->cmd_type = REQ_TYPE_ATA_TASKFILE;
+ 	rq->special = cmd;
+ 	cmd->rq = rq;
++
++	return BLKPREP_OK;
+ }
+ 
+ ide_devset_get(multcount, mult_count);
+@@ -513,7 +520,6 @@ static void update_ordered(ide_drive_t *drive)
+ {
+ 	u16 *id = drive->id;
+ 	unsigned ordered = QUEUE_ORDERED_NONE;
+-	prepare_flush_fn *prep_fn = NULL;
+ 
+ 	if (drive->dev_flags & IDE_DFLAG_WCACHE) {
+ 		unsigned long long capacity;
+@@ -538,12 +544,12 @@ static void update_ordered(ide_drive_t *drive)
+ 
+ 		if (barrier) {
+ 			ordered = QUEUE_ORDERED_DRAIN_FLUSH;
+-			prep_fn = idedisk_prepare_flush;
++			blk_queue_prep_rq(drive->queue, idedisk_prep_fn);
+ 		}
+ 	} else
+ 		ordered = QUEUE_ORDERED_DRAIN;
+ 
+-	blk_queue_ordered(drive->queue, ordered, prep_fn);
++	blk_queue_ordered(drive->queue, ordered, NULL);
+ }
+ 
+ ide_devset_get_flag(wcache, IDE_DFLAG_WCACHE);
+-- 
+1.6.5
 
