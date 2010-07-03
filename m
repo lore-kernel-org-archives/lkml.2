@@ -1,95 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab0GCIGp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 04:06:45 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55980 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab0GCIGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 04:06:33 -0400
-Message-ID: <4C2EEEA2.5090305@cn.fujitsu.com>
-Date: Sat, 03 Jul 2010 16:02:42 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: [PATCH] KVM: VMX: fix tlb flush with invalid root
-Content-Type: text/plain; charset=UTF-8
+	id S1754455Ab0GCIJS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 04:09:18 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:55950 "EHLO poutre.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754175Ab0GCIJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 04:09:14 -0400
+Date: Sat, 3 Jul 2010 10:09:10 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jim Cromie <jim.cromie@gmail.com>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ethan Lawrence <e.law87@yahoo.com>,
+       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "lars4910@hotmail.com" <lars4910@hotmail.com>,
+       "birdie@permonline.ru" <birdie@permonline.ru>,
+       "jadcock@cox.net" <jadcock@cox.net>
+Subject: Re: [PATCH/RFC] hwmon: Add support for W83667HG-B
+Message-ID: <20100703100910.06c8e17e@hyperion.delvare>
+In-Reply-To: <20100702145404.GC14032@ericsson.com>
+References: <1278021735-21188-1-git-send-email-guenter.roeck@ericsson.com>
+	<20100702092011.0acd753f@hyperion.delvare>
+	<20100702082530.GC12911@ericsson.com>
+	<20100702114949.3e62ec39@hyperion.delvare>
+	<20100702145404.GC14032@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 341d9b535b6c simplify reload logic while entry guest mode, it
-can avoid unnecessary sync-root if KVM_REQ_MMU_RELOAD and
-KVM_REQ_MMU_SYNC both set.
+Hi Guenter,
 
-But, it cause a issue that when we handle 'KVM_REQ_TLB_FLUSH', the
-root is invalid, it is triggered during my test:
+On Fri, 2 Jul 2010 07:54:04 -0700, Guenter Roeck wrote:
+> On Fri, Jul 02, 2010 at 05:49:49AM -0400, Jean Delvare wrote:
+> > On Fri, 2 Jul 2010 01:25:30 -0700, Guenter Roeck wrote:
+> > > After removing the defines and trying to compile I remembered.
+> > > I _knew_ there was a reason for not removing them.
+> > > Guess it's too late (or early) here to do serious work.
+> > > 
+> > > The defines _are_ used, in:
+> > > 
+> > > fan_functions(fan_max_output, FAN_MAX_OUTPUT)
+> > > fan_functions(fan_step_output, FAN_STEP_OUTPUT)
+> > > 
+> > > which expands to W83627EHF_REG_FAN_MAX_OUTPUT and W83627EHF_REG_FAN_STEP_OUTPUT.
+> > > 
+> > > Tricky ... and that was also the reason why I retained the original 
+> > > global variables.
+> > 
+> > Tricky indeed. We normally don't accept code like this in the kernel.
+> > 
+> > > I'll move the pointers into per-device code as you suggested, but I'll
+> > > have to think about how to do that w/o having to change a lot of code.
+> > 
+> > If code changes are desirable, let's just do them. You can do that in a
+> > preliminary patch, and then your patch adding support for the
+> > W83667HG-B goes on top of it.
+> > 
+> Without the support for -B the changes are not really needed, so that patch
+> would not make much sense without it.
 
-Kernel BUG at ffffffffa00212b8 [verbose debug info unavailable]
-......
+It is still a good practice to split patches in this case. This makes
+review and bisection easier. Simply, we don't get to apply the first
+patch if we don't also apply the second.
 
- [<ffffffff810f5caf>] ? fget_light+0x111/0x28e
- [<ffffffff81103963>] sys_ioctl+0x47/0x6a
- [<ffffffff81002c1b>] system_call_fastpath+0x16/0x1b
-Code: f0 eb 21 f7 c2 00 00 00 04 74 22 48 8d 45 f0 48 c7 45 f0 00 00 00 00 48 c7 45 f8 00 00 00 00 b9 02 00 00 00 66 0f 38 80 08 77 02 <0f> 0b c9 c3 55 48 89 e5 0f 1f 44 00 00 ba 00 68 00 00 48 8b 8f 
-RIP  [<ffffffffa00212b8>] vmx_flush_tlb+0xdf/0xe3 [kvm_intel]
- RSP <ffff8800be269ca8>
+> Have you looked at v2 of the patch ?
 
-Fixed by directly return if the root is not ready.
+Not yet, will do now.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/include/asm/kvm_host.h |    2 ++
- arch/x86/kvm/mmu.c              |    2 --
- arch/x86/kvm/vmx.c              |    5 ++++-
- 3 files changed, 6 insertions(+), 3 deletions(-)
+> > > As for the 0xff - that pretty much applies to all chips supported by this driver. 
+> > > I guess it is supposed to mean "not supported", and as a result the code will
+> > > write to a non-existing register. I don't really want to touch that.
+> > 
+> > I want you to touch that. Writing to non-existing registers is a bad
+> > idea. You never know what actually happens when you do that.
+>
+> Good point.
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 2bda624..8f522ec 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -40,6 +40,8 @@
- 				  0xFFFFFF0000000000ULL)
- 
- #define INVALID_PAGE (~(hpa_t)0)
-+#define VALID_PAGE(x) ((x) != INVALID_PAGE)
-+
- #define UNMAPPED_GVA (~(gpa_t)0)
- 
- /* KVM Hugepage definitions for x86 */
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a0c5c31..399ddb0 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -92,8 +92,6 @@ module_param(oos_shadow, bool, 0644);
- #define PT_FIRST_AVAIL_BITS_SHIFT 9
- #define PT64_SECOND_AVAIL_BITS_SHIFT 52
- 
--#define VALID_PAGE(x) ((x) != INVALID_PAGE)
--
- #define PT64_LEVEL_BITS 9
- 
- #define PT64_LEVEL_SHIFT(level) \
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 806ab12..ebaaeaf 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1831,8 +1831,11 @@ static void exit_lmode(struct kvm_vcpu *vcpu)
- static void vmx_flush_tlb(struct kvm_vcpu *vcpu)
- {
- 	vpid_sync_context(to_vmx(vcpu));
--	if (enable_ept)
-+	if (enable_ept) {
-+		if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
-+			return;
- 		ept_sync_context(construct_eptp(vcpu->arch.mmu.root_hpa));
-+	}
- }
- 
- static void vmx_decache_cr0_guest_bits(struct kvm_vcpu *vcpu)
+BTW, as I wasn't clear enough about this originally: I didn't mean this
+to fix to be included into your W83667HG-B support patch. It should be
+a separate patch, so that it can be easily backported.
+
+> Clean fix would be not to provide the unsupported attributes. Simple workaround
+> would be to return an error if a write is attempted on a non-supported attribute.
+> I am sure it would be better to not provide the attribute, but would you accept
+> the workaround ?
+
+I will accept whatever you are willing to provide. As you're the one
+spending the time, I'm not the one deciding how much you spend.
+
+> > > The size difference (3 entries vs. 4) doesn't matter, since the chips are both 
+> > > configured to have only three pwm fan controllers (even though the W83667HG
+> > > is supposed to have four per its datasheet). So the 4th element of the arrays
+> > > will not be accessed by the code if W83667HG(-B) is detected.
+> > 
+> > OK.
+>
+> On a side note, any idea why the 4th pwm is disabled for the W83667HG ?
+
+The W83667HG chip has only 3 FANOUT pins (98, 125 and 127), so it is
+expected that the driver exposes only 3 pwm outputs for this chip. I
+don't understand why you think it is a problem?
+
+Pin 98 can be used for an alternative function, so the corresponding
+pwm output should not even be unconditionally instantiated.
+
+Now the chip is quite complex in that it apparently has 4 fan control
+units, and which one controls which fan output can be decided by
+register values. I have no idea why they made it so complex at the
+hardware level, but this certainly explains why the driver is a little
+messy in this respect. We might have to move 667HG and later support to
+a separate driver at some point, I don't know.
+
+Now I'm sure you understand why I never took the time to look into
+adding W83667HG-B support ;)
+
 -- 
-1.6.1.2
-
+Jean Delvare
