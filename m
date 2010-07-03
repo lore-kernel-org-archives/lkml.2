@@ -1,58 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab0GCWDK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 18:03:10 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64561 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665Ab0GCWCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 18:02:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 1/8] do_coredump: do not take BKL
-Date: Sun,  4 Jul 2010 00:02:25 +0200
-Message-Id: <1278194552-24943-2-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1278194552-24943-1-git-send-email-arnd@arndb.de>
-References: <1278194552-24943-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:d8pGYMlFB98FmMBR30cRNijc0iRM9+V69fYAhiRwYHF
- fwbASU1r+6nu2b8tMtiETIGGUymH5k+1VwyWe7SzLpHKdcEN5V
- JxZ3qJAlt301QgVuu0yxMwZwLthD7PDytSHpReDd/o648SKzCG
- srPvMa5R/SrrNIcvu0JIO48sQLKmMqrcKKorftxArujeOC3WJ6
- hOZOIrSveZQknYQ2jHq8Q==
+	id S1754682Ab0GCWNx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 18:13:53 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:58744 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753368Ab0GCWNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 18:13:52 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ethan Lawrence <e.law87@yahoo.com>, Jim Cromie <jim.cromie@gmail.com>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>
+CC: Iain <selsinork@gmail.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org, lars4910@hotmail.com,
+       birdie@permonline.ru, jadcock@cox.net, binximeng@gmail.com,
+       Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH v4 1/2] hwmon: w83627ehf driver cleanup
+Date: Sat, 3 Jul 2010 15:13:21 -0700
+Message-ID: <1278195202-2683-2-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.0.87.g0901d
+In-Reply-To: <1278195202-2683-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1278195202-2683-1-git-send-email-guenter.roeck@ericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-core_pattern is not actually protected and hasn't been
-ever since we introduced procfs support for sysctl -- a
-_long_ time. Don't take it here either.
+- Moved fan pwm register array pointers into per-instance data.
+- Only read fan pwm data for installed/supported fans.
+- Update fan max output and fan step output information from data in registers.
+- Create max_output and step_output attribute files only if respective
+  fan pwm registers exist.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 ---
- fs/exec.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ drivers/hwmon/w83627ehf.c |   59 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 56 insertions(+), 3 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index e19de6a..3d7aeeb 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1891,13 +1891,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 	 */
- 	clear_thread_flag(TIF_SIGPENDING);
+diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
+index 0dcaba9..e01a3e9 100644
+--- a/drivers/hwmon/w83627ehf.c
++++ b/drivers/hwmon/w83627ehf.c
+@@ -277,6 +277,11 @@ struct w83627ehf_data {
+ 	struct device *hwmon_dev;
+ 	struct mutex lock;
  
--	/*
--	 * lock_kernel() because format_corename() is controlled by sysctl, which
--	 * uses lock_kernel()
--	 */
-- 	lock_kernel();
- 	ispipe = format_corename(corename, signr);
--	unlock_kernel();
++	const u8 *REG_FAN_START_OUTPUT;
++	const u8 *REG_FAN_STOP_OUTPUT;
++	const u8 *REG_FAN_MAX_OUTPUT;
++	const u8 *REG_FAN_STEP_OUTPUT;
++
+ 	struct mutex update_lock;
+ 	char valid;		/* !=0 if following fields are valid */
+ 	unsigned long last_updated;	/* In jiffies */
+@@ -524,7 +529,10 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
+ 			}
+ 		}
  
-  	if (ispipe) {
- 		int dump_count;
+-		for (i = 0; i < 4; i++) {
++		for (i = 0; i < data->pwm_num; i++) {
++			if (!(data->has_fan & (1 << i)))
++				continue;
++
+ 			/* pwmcfg, tolerance mapped for i=0, i=1 to same reg */
+ 			if (i != 1) {
+ 				pwmcfg = w83627ehf_read_value(data,
+@@ -546,6 +554,17 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
+ 						W83627EHF_REG_FAN_STOP_OUTPUT[i]);
+ 			data->fan_stop_time[i] = w83627ehf_read_value(data,
+ 						W83627EHF_REG_FAN_STOP_TIME[i]);
++
++			if (data->REG_FAN_MAX_OUTPUT[i] != 0xff)
++				data->fan_max_output[i] =
++				  w83627ehf_read_value(data,
++					       data->REG_FAN_MAX_OUTPUT[i]);
++
++			if (data->REG_FAN_STEP_OUTPUT[i] != 0xff)
++				data->fan_step_output[i] =
++				  w83627ehf_read_value(data,
++					       data->REG_FAN_STEP_OUTPUT[i]);
++
+ 			data->target_temp[i] =
+ 				w83627ehf_read_value(data,
+ 					W83627EHF_REG_TARGET[i]) &
+@@ -1126,7 +1145,7 @@ store_##reg(struct device *dev, struct device_attribute *attr, \
+ 	u32 val = SENSORS_LIMIT(simple_strtoul(buf, NULL, 10), 1, 255); \
+ 	mutex_lock(&data->update_lock); \
+ 	data->reg[nr] = val; \
+-	w83627ehf_write_value(data, W83627EHF_REG_##REG[nr], val); \
++	w83627ehf_write_value(data, data->REG_##REG[nr], val); \
+ 	mutex_unlock(&data->update_lock); \
+ 	return count; \
+ }
+@@ -1206,12 +1225,26 @@ static struct sensor_device_attribute sda_sf3_arrays[] = {
+ 		    store_fan_stop_output, 1),
+ 	SENSOR_ATTR(pwm3_stop_output, S_IWUSR | S_IRUGO, show_fan_stop_output,
+ 		    store_fan_stop_output, 2),
++};
+ 
+-	/* pwm1 and pwm3 don't support max and step settings */
++
++/*
++ * pwm1 and pwm3 don't support max and step settings on all chips.
++ * Need to check support while generating/removing attribute files.
++ */
++static struct sensor_device_attribute sda_sf3_max_step_arrays[] = {
++	SENSOR_ATTR(pwm1_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
++		    store_fan_max_output, 0),
++	SENSOR_ATTR(pwm1_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
++		    store_fan_step_output, 0),
+ 	SENSOR_ATTR(pwm2_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
+ 		    store_fan_max_output, 1),
+ 	SENSOR_ATTR(pwm2_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
+ 		    store_fan_step_output, 1),
++	SENSOR_ATTR(pwm3_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
++		    store_fan_max_output, 2),
++	SENSOR_ATTR(pwm3_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
++		    store_fan_step_output, 2),
+ };
+ 
+ static ssize_t
+@@ -1235,6 +1268,12 @@ static void w83627ehf_device_remove_files(struct device *dev)
+ 
+ 	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays); i++)
+ 		device_remove_file(dev, &sda_sf3_arrays[i].dev_attr);
++	for (i = 0; i < ARRAY_SIZE(sda_sf3_max_step_arrays); i++) {
++		struct sensor_device_attribute *attr =
++		  &sda_sf3_max_step_arrays[i];
++		if (data->REG_FAN_STEP_OUTPUT[attr->index] != 0xff)
++			device_remove_file(dev, &attr->dev_attr);
++	}
+ 	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays_fan4); i++)
+ 		device_remove_file(dev, &sda_sf3_arrays_fan4[i].dev_attr);
+ 	for (i = 0; i < data->in_num; i++) {
+@@ -1352,6 +1391,11 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+ 		data->in6_skip = !data->temp3_disable;
+ 	}
+ 
++	data->REG_FAN_START_OUTPUT = W83627EHF_REG_FAN_START_OUTPUT;
++	data->REG_FAN_STOP_OUTPUT = W83627EHF_REG_FAN_STOP_OUTPUT;
++	data->REG_FAN_MAX_OUTPUT = W83627EHF_REG_FAN_MAX_OUTPUT;
++	data->REG_FAN_STEP_OUTPUT = W83627EHF_REG_FAN_STEP_OUTPUT;
++
+ 	/* Initialize the chip */
+ 	w83627ehf_init_device(data);
+ 
+@@ -1440,6 +1484,15 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+ 			&sda_sf3_arrays[i].dev_attr)))
+ 			goto exit_remove;
+ 
++	for (i = 0; i < ARRAY_SIZE(sda_sf3_max_step_arrays); i++) {
++		struct sensor_device_attribute *attr =
++		  &sda_sf3_max_step_arrays[i];
++		if (data->REG_FAN_STEP_OUTPUT[attr->index] != 0xff) {
++			err = device_create_file(dev, &attr->dev_attr);
++			if (err)
++				goto exit_remove;
++		}
++	}
+ 	/* if fan4 is enabled create the sf3 files for it */
+ 	if ((data->has_fan & (1 << 3)) && data->pwm_num >= 4)
+ 		for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays_fan4); i++) {
 -- 
-1.7.1
+1.7.0.87.g0901d
 
