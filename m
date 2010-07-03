@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab0GCQJr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 12:09:47 -0400
-Received: from kroah.org ([198.145.64.141]:53339 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753783Ab0GCQJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 12:09:46 -0400
-Date: Sat, 3 Jul 2010 09:08:57 -0700
-From: Greg KH <greg@kroah.com>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH 0/4] Introduce and use printk pointer extension %pV
-Message-ID: <20100703160857.GA29043@kroah.com>
-References: <cover.1277636090.git.joe@perches.com>
- <20100630.130709.93452021.davem@davemloft.net>
- <20100702.223244.193707555.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100702.223244.193707555.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755579Ab0GCQKI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 12:10:08 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35163 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783Ab0GCQKF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jul 2010 12:10:05 -0400
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Jul 2010 12:10:04 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DzlW66JqVPWOOqjVJP3i7/bLt1ANwMbt0zfY6oeMebVr9FjonScqu6ZX0jHNOQ9JSG
+         rtRWjFFaF4ka1kqAj6gKC/haFjoNGRmb4th3wXdgfwKdmW1L28aJgIyKANaTuc+0izrn
+         dJqV24yBwLi8k+vGe0gkaCSHBNoqAuNKAYqhg=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: Kernel Janitors <kernel-janitors@vger.kernel.org>
+Cc: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       x86@kernel.org, Tejun Heo <tj@kernel.org>, cpufreq@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 06/19] arch/x86/kernel/cpu/cpufreq: use for_each_pci_dev()
+Date: Sat,  3 Jul 2010 20:03:55 +0400
+Message-Id: <1278173036-11609-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 10:32:44PM -0700, David Miller wrote:
-> From: David Miller <davem@davemloft.net>
-> Date: Wed, 30 Jun 2010 13:07:09 -0700 (PDT)
-> 
-> > From: Joe Perches <joe@perches.com>
-> > Date: Sun, 27 Jun 2010 04:02:32 -0700
-> > 
-> >> Recursive printk can reduce the total image size of an x86 defconfig about 1% 
-> >> by reducing duplicated KERN_<level> strings and centralizing the functions
-> >> used by macros in new separate functions.
-> >> 
-> >> Joe Perches (4):
-> >>   vsprintf: Recursive vsnprintf: Add "%pV", struct va_format
-> >>   device.h drivers/base/core.c Convert dev_<level> logging macros to functions
-> >>   netdevice.h net/core/dev.c: Convert netdev_<level> logging macros to functions
-> >>   netdevice.h: Change netif_<level> macros to call netdev_<level> functions
-> > 
-> > I'm fine with this, thanks Joe.
-> > 
-> > Greg, could you ACK this and let me know if it's OK if it swings
-> > through my net-next-2.6 tree?
-> 
-> Greg, ping?
+Use for_each_pci_dev() to simplify the code.
 
-Sorry about the delay.
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ arch/x86/kernel/cpu/cpufreq/gx-suspmod.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yes, that's fine to take it through your tree, thanks for doing that:
-	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+diff --git a/arch/x86/kernel/cpu/cpufreq/gx-suspmod.c b/arch/x86/kernel/cpu/cpufreq/gx-suspmod.c
+index 16e3483..8c3325f 100644
+--- a/arch/x86/kernel/cpu/cpufreq/gx-suspmod.c
++++ b/arch/x86/kernel/cpu/cpufreq/gx-suspmod.c
+@@ -199,7 +199,7 @@ static __init struct pci_dev *gx_detect_chipset(void)
+ 	}
+ 
+ 	/* detect which companion chip is used */
+-	while ((gx_pci = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, gx_pci)) != NULL) {
++	for_each_pci_dev(gx_pci) {
+ 		if ((pci_match_id(gx_chipset_tbl, gx_pci)) != NULL)
+ 			return gx_pci;
+ 	}
+-- 
+1.7.0.4
 
-greg k-h
