@@ -1,142 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab0GCWPi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 18:15:38 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57263 "EHLO
+	id S1756313Ab0GCWPk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 18:15:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:51041 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756163Ab0GCWPc (ORCPT
+	with ESMTP id S1756154Ab0GCWPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 18:15:32 -0400
+	Sat, 3 Jul 2010 18:15:33 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 5/6] v4l: convert v4l2-dev to unlocked_ioctl
-Date: Sun,  4 Jul 2010 00:15:09 +0200
-Message-Id: <1278195310-25590-6-git-send-email-arnd@arndb.de>
+       Arnd Bergmann <arnd@arndb.de>, alsa-devel@alsa-project.org,
+       Al Viro <viro@zeniv.linux.org.uk>, autofs@linux.kernel.org,
+       Cris <linux-cris-kernel@axis.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ian Kent <raven@themaw.net>, Jaroslav Kysela <perex@perex.cz>,
+       Jesper Nilsson <jesper.nilsson@axis.com>, linux-ia64@vger.kernel.org,
+       Mikael Starvik <starvik@axis.com>, Takashi Iwai <tiwai@suse.de>,
+       Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 0/6] kill .ioctl file_operation
+Date: Sun,  4 Jul 2010 00:15:04 +0200
+Message-Id: <1278195310-25590-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1278195310-25590-1-git-send-email-arnd@arndb.de>
-References: <1278195310-25590-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/JtYC0g0fvsAZKYXKFJvm+b6uEJVZx+mF0OHu
- XhIzWnwELrsissz2s+fF0LDuHa87mVA8UsDH8RuD/0jWbMcaXj
- PRONw33Cxtl5r5LySs4PQ==
+X-Provags-ID: V01U2FsdGVkX1+8ydfiD0MXDpKoy6K7vi1Od1oLM9uJSUsfnWV
+ aXO5EW1hlogaCaCMTi3YjpsQJgtbUiU4Th6K2oxJLoSPgjvpG3
+ D6GVMMvztjfmUhn8xHM0g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v4l2 implements two separate file operations for drivers that use locked
-and unlocked ioctl callbacks. Since we want to remove the ioctl file operation
-in favor of the unlocked variant, this separation no longer seems helpful.
+This removes the .ioctl file operation from all the
+remaining users that are in today's linux-next
+tree.
 
-There is another series from Frederic Weisbecker that takes care
-of converting all v4l drivers to use the unlocked_ioctl variant, which
-brings the BKL pushdown one level further.
+I'd like to have this added to linux-next to make
+sure we don't get any new users and we can seamlessly
+apply the final patches for this in 2.6.36.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Acked-by: Hans Verkuil <hverkuil@xs4all.nl>
+The intention behind removing the .ioctl operation
+is to be able to remove the big kernel lock (BKL)
+from the ioctl system call.
+
+Ideally, maintainers of the code in question should
+just apply the respective patches to their -next
+tree so we can simply apply the final patch removing
+the definition of .ioctl.
+
+	Arnd
+
+Cc: alsa-devel@alsa-project.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: autofs@linux.kernel.org
+Cc: Cris <linux-cris-kernel@axis.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
- drivers/media/video/v4l2-dev.c |   52 +++++++++++----------------------------
- 1 files changed, 15 insertions(+), 37 deletions(-)
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ian Kent <raven@themaw.net>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: linux-ia64@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Luck <tony.luck@intel.com>
 
-diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c
-index 0ca7ec9..a869418 100644
---- a/drivers/media/video/v4l2-dev.c
-+++ b/drivers/media/video/v4l2-dev.c
-@@ -25,6 +25,7 @@
- #include <linux/init.h>
- #include <linux/kmod.h>
- #include <linux/slab.h>
-+#include <linux/smp_lock.h>
- #include <asm/uaccess.h>
- #include <asm/system.h>
- 
-@@ -215,28 +216,24 @@ static unsigned int v4l2_poll(struct file *filp, struct poll_table_struct *poll)
- 	return vdev->fops->poll(filp, poll);
- }
- 
--static int v4l2_ioctl(struct inode *inode, struct file *filp,
--		unsigned int cmd, unsigned long arg)
-+static long v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- {
- 	struct video_device *vdev = video_devdata(filp);
-+	int ret;
- 
--	if (!vdev->fops->ioctl)
--		return -ENOTTY;
- 	/* Allow ioctl to continue even if the device was unregistered.
- 	   Things like dequeueing buffers might still be useful. */
--	return vdev->fops->ioctl(filp, cmd, arg);
--}
--
--static long v4l2_unlocked_ioctl(struct file *filp,
--		unsigned int cmd, unsigned long arg)
--{
--	struct video_device *vdev = video_devdata(filp);
-+	if (vdev->fops->unlocked_ioctl) {
-+		ret = vdev->fops->unlocked_ioctl(filp, cmd, arg);
-+	} else if (vdev->fops->ioctl) {
-+		/* TODO: convert all drivers to unlocked_ioctl */
-+		lock_kernel();
-+		ret = vdev->fops->ioctl(filp, cmd, arg);
-+		unlock_kernel();
-+	} else
-+		ret = -ENOTTY;
- 
--	if (!vdev->fops->unlocked_ioctl)
--		return -ENOTTY;
--	/* Allow ioctl to continue even if the device was unregistered.
--	   Things like dequeueing buffers might still be useful. */
--	return vdev->fops->unlocked_ioctl(filp, cmd, arg);
-+	return ret;
- }
- 
- #ifdef CONFIG_MMU
-@@ -307,22 +304,6 @@ static int v4l2_release(struct inode *inode, struct file *filp)
- 	return ret;
- }
- 
--static const struct file_operations v4l2_unlocked_fops = {
--	.owner = THIS_MODULE,
--	.read = v4l2_read,
--	.write = v4l2_write,
--	.open = v4l2_open,
--	.get_unmapped_area = v4l2_get_unmapped_area,
--	.mmap = v4l2_mmap,
--	.unlocked_ioctl = v4l2_unlocked_ioctl,
--#ifdef CONFIG_COMPAT
--	.compat_ioctl = v4l2_compat_ioctl32,
--#endif
--	.release = v4l2_release,
--	.poll = v4l2_poll,
--	.llseek = no_llseek,
--};
--
- static const struct file_operations v4l2_fops = {
- 	.owner = THIS_MODULE,
- 	.read = v4l2_read,
-@@ -330,7 +311,7 @@ static const struct file_operations v4l2_fops = {
- 	.open = v4l2_open,
- 	.get_unmapped_area = v4l2_get_unmapped_area,
- 	.mmap = v4l2_mmap,
--	.ioctl = v4l2_ioctl,
-+	.unlocked_ioctl = v4l2_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = v4l2_compat_ioctl32,
- #endif
-@@ -521,10 +502,7 @@ static int __video_register_device(struct video_device *vdev, int type, int nr,
- 		ret = -ENOMEM;
- 		goto cleanup;
- 	}
--	if (vdev->fops->unlocked_ioctl)
--		vdev->cdev->ops = &v4l2_unlocked_fops;
--	else
--		vdev->cdev->ops = &v4l2_fops;
-+	vdev->cdev->ops = &v4l2_fops;
- 	vdev->cdev->owner = vdev->fops->owner;
- 	ret = cdev_add(vdev->cdev, MKDEV(VIDEO_MAJOR, vdev->minor), 1);
- 	if (ret < 0) {
--- 
-1.7.1
+Arnd Bergmann (5):
+  ia64/perfmon: convert to unlocked_ioctl
+  sound/oss: convert to unlocked_ioctl
+  autofs/autofs4: move compat_ioctl handling into fs
+  v4l: convert v4l2-dev to unlocked_ioctl
+  bkl: remove locked .ioctl file operation
+
+Frederic Weisbecker (1):
+  cris: Pushdown the bkl from ioctl
+
+ Documentation/filesystems/Locking         |    8 +---
+ Documentation/filesystems/vfs.txt         |    6 +--
+ arch/cris/arch-v10/drivers/gpio.c         |   30 +++++++++----
+ arch/cris/arch-v10/drivers/i2c.c          |   24 ++++++++---
+ arch/cris/arch-v10/drivers/sync_serial.c  |   32 +++++++++----
+ arch/cris/arch-v32/drivers/cryptocop.c    |   24 ++++++++---
+ arch/cris/arch-v32/drivers/mach-a3/gpio.c |   28 ++++++++----
+ arch/cris/arch-v32/drivers/mach-fs/gpio.c |   29 ++++++++----
+ arch/cris/arch-v32/drivers/sync_serial.c  |   30 +++++++++----
+ arch/ia64/kernel/perfmon.c                |   22 +++++-----
+ drivers/media/video/v4l2-dev.c            |   52 ++++++----------------
+ fs/autofs/root.c                          |   67 +++++++++++++++++++++++++++-
+ fs/autofs4/root.c                         |   49 +++++++++++++++++++++
+ fs/bad_inode.c                            |    7 ---
+ fs/compat_ioctl.c                         |   39 +----------------
+ fs/ioctl.c                                |   18 ++------
+ fs/proc/inode.c                           |   17 ++------
+ include/linux/auto_fs.h                   |    1 +
+ include/linux/fs.h                        |    5 +-
+ sound/oss/au1550_ac97.c                   |   54 +++++++++++++++---------
+ sound/oss/dmasound/dmasound_core.c        |   35 ++++++++++++---
+ sound/oss/msnd_pinnacle.c                 |   15 ++++--
+ sound/oss/sh_dac_audio.c                  |   18 ++++++-
+ sound/oss/swarm_cs4297a.c                 |   25 +++++++++--
+ sound/oss/vwsnd.c                         |   24 ++++++-----
+ 25 files changed, 410 insertions(+), 249 deletions(-)
 
