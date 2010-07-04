@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab0GDJPb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 05:15:31 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38502 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab0GDJP3 (ORCPT
+	id S1757350Ab0GDKJy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 06:09:54 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47451 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757255Ab0GDKJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 05:15:29 -0400
-Date: Sun, 4 Jul 2010 10:15:23 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, Jan Kara <jack@suse.cz>,
-       Christoph Hellwig <hch@lst.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Chris Mason <chris.mason@oracle.com>,
-       Jeff Mahoney <jeffm@jeffreymahoney.com>
-Subject: Re: reiserfs locking (v2)
-Message-ID: <20100704091523.GP31073@ZenIV.linux.org.uk>
-References: <20100702093451.GA3973@swordfish.minsk.epam.com>
- <20100702131248.GA5324@nowhere>
- <20100703092441.GM31073@ZenIV.linux.org.uk>
- <20100703094323.GN31073@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100703094323.GN31073@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Sun, 4 Jul 2010 06:09:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:content-type:date:message-id
+         :mime-version:x-mailer:content-transfer-encoding;
+        b=FD1dMFmnyPjVgqFAsr3I8v1b23UO7rQuJV0o0FQ6P7r0aUx/NxlzIcGR5r+1pCS6mV
+         DV+DkQvbkDW4m/E0FoGjzjMBAuomtMotP1lFth0xKevxUaxceSIekr56WbfcsihEuXqD
+         fFmpuFpFLLd9iyAznqp0MiOVA1dQhVH/LMckA=
+Subject: [PATCH] Staging: cx25821: fix brace coding style issue in
+ cx25821-audio-upstream.c
+From: Joe Eloff <kagen101@gmail.com>
+Reply-To: kagen101@gmail.com
+To: gregkh@suse.de, mchehab@redhat.com, olimpiu.pascariu@gmail.com,
+       julia@diku.dk, tj@kernel.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 04 Jul 2010 12:09:34 +0200
+Message-ID: <1278238174.17566.4.camel@dermezel>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 03, 2010 at 10:43:23AM +0100, Al Viro wrote:
-> On Sat, Jul 03, 2010 at 10:24:42AM +0100, Al Viro wrote:
-> 
-> > Gyah...  For the 1001st time: readdir() is far from being the only thing that
-> > nests mmap_sem inside i_mutex.  In particular, write() does the same thing.
-> > 
-> > So yes, it *is* a real deadlock, TYVM, with no directories involved.  Open the
-> > same file twice, mmap one fd, close it, then have munmap() hitting i_mutex
-> > in reiserfs_file_release() race with write() through another fd.
-> > 
-> > Incidentally, reiserfs_file_release() checks in the fastpath look completely
-> > bogus.  Checking i_count?  What the hell is that one about?  And no, these
-> > checks won't stop open() coming between them and grabbing i_mutex, so they
-> > couldn't prevent the deadlock in question anyway.
-> 
-> ... and unfortunately it's been that way since the the initial merge in 2.4.early.
-> FWIW, it seems that i_count check was a misguided attempt to check that no other
-> opened struct file are there, but it's
-> 	a) wrong, since way, _way_ back - open() affects d_count, not i_count
-> 	b) wrong even with such modification (consider hardlinks)
-> 	c) wrong for even more reasons since forever - i_count and d_count could
-> be bumped by many things at any time
-> 	d) hopelessly racy anyway, since another open() could very well have
-> happened just as we'd finished these checks.
+>From b7f34cd4bf14c07f64a95f70410f34e2c843fd3b Mon Sep 17 00:00:00 2001
+From: Joe Eloff <kagen101@gmail.com>
+Date: Sun, 4 Jul 2010 11:37:03 +0200
+Subject: [PATCH] Staging: cx25821: fix brace coding style issue in cx25821-audio-upstream.c
+ This is a patch to the cx25821.c file that fixes up a brace warning found by the checkpatch.pl tool
+ Signed-off-by: Joe Eloff <kagen101@gmail.com>
 
-OK...  See 22093b8f3d387f77 in vfs-2.6.git for-next (should propagate to
-git.kernel.org shortly).  That ought to deal with this crap, assuming I hadn't
-fucked up somewhere...
+---
+ drivers/staging/cx25821/cx25821-audio-upstream.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
+index eb39d13..e7346ec 100644
+--- a/drivers/staging/cx25821/cx25821-audio-upstream.c
++++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
+@@ -762,9 +762,9 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+ 		       str_length + 1);
+ 
+ 		/* Default if filename is empty string */
+-		if (strcmp(dev->input_audiofilename, "") == 0) {
++		if (strcmp(dev->input_audiofilename, "") == 0)
+ 			dev->_audiofilename = "/root/audioGOOD.wav";
+-		}
++
+ 	} else {
+ 		str_length = strlen(_defaultAudioName);
+ 		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+-- 
+1.6.3.3
+
+
+
