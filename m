@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab0GDH1y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 03:27:54 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:40911 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756090Ab0GDH1x (ORCPT
+	id S1756790Ab0GDHax (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 03:30:53 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:54358 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755070Ab0GDHaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 03:27:53 -0400
-Date: Sun, 4 Jul 2010 16:05:16 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-       Julian Anastasov <ja@ssi.bg>, Wensong Zhang <wensong@linux-vs.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipvs: Kconfig cleanup
-Message-ID: <20100704070516.GA9437@verge.net.au>
-References: <1278102728-20217-1-git-send-email-mmarek@suse.cz>
+	Sun, 4 Jul 2010 03:30:52 -0400
+Date: Sun, 4 Jul 2010 09:30:50 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       John Kacur <jkacur@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/6] block: push down BKL into .locked_ioctl
+Message-ID: <20100704073050.GA31823@merkur.ravnborg.org>
+References: <1278193640-24223-1-git-send-email-arnd@arndb.de> <1278193640-24223-2-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1278102728-20217-1-git-send-email-mmarek@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1278193640-24223-2-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 10:32:08PM +0200, Michal Marek wrote:
-> IP_VS_PROTO_AH_ESP should be set iff either of IP_VS_PROTO_{AH,ESP} is
-> selected. Express this with standard kconfig syntax.
-> 
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+> index 8a549db..1f70aec 100644
+> --- a/drivers/block/pktcdvd.c
+> +++ b/drivers/block/pktcdvd.c
+> @@ -57,6 +57,7 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/miscdevice.h>
+>  #include <linux/freezer.h>
+> +#include <linux/smp_lock.h>
+>  #include <linux/mutex.h>
+>  #include <linux/slab.h>
+>  #include <scsi/scsi_cmnd.h>
+> @@ -2762,10 +2763,12 @@ out_mem:
+>  static int pkt_ioctl(struct block_device *bdev, fmode_t mode, unsigned int cmd, unsigned long arg)
+>  {
+>  	struct pktcdvd_device *pd = bdev->bd_disk->private_data;
+> +	int ret;
+>  
+>  	VPRINTK("pkt_ioctl: cmd %x, dev %d:%d\n", cmd,
+>  		MAJOR(bdev->bd_dev), MINOR(bdev->bd_dev));
+>  
+> +	lock_kernel();
+>  	switch (cmd) {
+>  	case CDROMEJECT:
+>  		/*
+> @@ -2783,12 +2786,14 @@ static int pkt_ioctl(struct block_device *bdev, fmode_t mode, unsigned int cmd,
+>  	case CDROM_LAST_WRITTEN:
+>  	case CDROM_SEND_PACKET:
+>  	case SCSI_IOCTL_SEND_COMMAND:
+> -		return __blkdev_driver_ioctl(pd->bdev, mode, cmd, arg);
+> +		ret = __blkdev_driver_ioctl(pd->bdev, mode, cmd, arg);
+> +		break;
+>  
+>  	default:
+>  		VPRINTK(DRIVER_NAME": Unknown ioctl for %s (%x)\n", pd->name, cmd);
+> -		return -ENOTTY;
+> +		ret = -ENOTTY;
+>  	}
+> +	unlock_kernel();
+>  
+>  	return 0;
+>  }
+You are loosing the return result here in the two error situations above.
+Initialise ret to 0 and return ret seems the easy way to do it.
 
-Acked-by: Simon Horman <horms@verge.net.au>
+The rest looked ok - I only looked at the patches.
 
-> ---
->  net/netfilter/ipvs/Kconfig |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
-> 
-> diff --git a/net/netfilter/ipvs/Kconfig b/net/netfilter/ipvs/Kconfig
-> index f2d7623..91e7373 100644
-> --- a/net/netfilter/ipvs/Kconfig
-> +++ b/net/netfilter/ipvs/Kconfig
-> @@ -83,19 +83,16 @@ config	IP_VS_PROTO_UDP
->  	  protocol. Say Y if unsure.
->  
->  config	IP_VS_PROTO_AH_ESP
-> -	bool
-> -	depends on UNDEFINED
-> +	def_bool IP_VS_PROTO_ESP || IP_VS_PROTO_AH
->  
->  config	IP_VS_PROTO_ESP
->  	bool "ESP load balancing support"
-> -	select IP_VS_PROTO_AH_ESP
->  	---help---
->  	  This option enables support for load balancing ESP (Encapsulation
->  	  Security Payload) transport protocol. Say Y if unsure.
->  
->  config	IP_VS_PROTO_AH
->  	bool "AH load balancing support"
-> -	select IP_VS_PROTO_AH_ESP
->  	---help---
->  	  This option enables support for load balancing AH (Authentication
->  	  Header) transport protocol. Say Y if unsure.
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	Sam
