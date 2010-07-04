@@ -1,208 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab0GDNvr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 09:51:47 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:55348 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757609Ab0GDNvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 09:51:46 -0400
-Date: Sun, 4 Jul 2010 06:50:10 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       Ethan Lawrence <e.law87@yahoo.com>, Jim Cromie <jim.cromie@gmail.com>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Iain <selsinork@gmail.com>,
-       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "lars4910@hotmail.com" <lars4910@hotmail.com>,
-       "birdie@permonline.ru" <birdie@permonline.ru>,
-       "jadcock@cox.net" <jadcock@cox.net>,
-       "binximeng@gmail.com" <binximeng@gmail.com>
-Subject: Re: [PATCH v4 1/2] hwmon: w83627ehf driver cleanup
-Message-ID: <20100704135010.GA21500@ericsson.com>
-References: <1278195202-2683-1-git-send-email-guenter.roeck@ericsson.com>
- <1278195202-2683-2-git-send-email-guenter.roeck@ericsson.com>
- <20100704132442.07a5ef40@hyperion.delvare>
+	id S1757718Ab0GDN7z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 09:59:55 -0400
+Received: from [163.20.135.129] ([163.20.135.129]:54170 "EHLO
+	mail.phjh.tpc.edu.tw" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1757587Ab0GDN7y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jul 2010 09:59:54 -0400
+From: "DR.DONALD ALLEN LOAN SERVICES" <dr.donaldallenloans@info.org>
+Reply-To: donald_allen01@hotmail.com
+Subject: N/A
+Date: Sun, 4 Jul 2010 16:36:15 +0300
+Message-Id: <20100704133616.M82902@info.org>
+X-Mailer: OpenWebMail 2.52 20060502
+X-OriginatingIP: 41.138.172.43 (winnie116)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100704132442.07a5ef40@hyperion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset=euc-jp
+To: undisclosed-recipients:;
+X-NetStation-Status: PASS
+X-NetStation-SPAM: 0.00/5.00-6.00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
+Hello Viewers.
 
-On Sun, Jul 04, 2010 at 07:24:42AM -0400, Jean Delvare wrote:
-> Hi Guenter,
-> 
-> On Sat, 3 Jul 2010 15:13:21 -0700, Guenter Roeck wrote:
-> > - Moved fan pwm register array pointers into per-instance data.
-> > - Only read fan pwm data for installed/supported fans.
-> > - Update fan max output and fan step output information from data in registers.
-> > - Create max_output and step_output attribute files only if respective
-> >   fan pwm registers exist.
-> > 
-> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> > ---
-> >  drivers/hwmon/w83627ehf.c |   59 ++++++++++++++++++++++++++++++++++++++++++--
-> >  1 files changed, 56 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-> > index 0dcaba9..e01a3e9 100644
-> > --- a/drivers/hwmon/w83627ehf.c
-> > +++ b/drivers/hwmon/w83627ehf.c
-> > @@ -277,6 +277,11 @@ struct w83627ehf_data {
-> >  	struct device *hwmon_dev;
-> >  	struct mutex lock;
-> >  
-> > +	const u8 *REG_FAN_START_OUTPUT;
-> > +	const u8 *REG_FAN_STOP_OUTPUT;
-> > +	const u8 *REG_FAN_MAX_OUTPUT;
-> > +	const u8 *REG_FAN_STEP_OUTPUT;
-> > +
-> >  	struct mutex update_lock;
-> >  	char valid;		/* !=0 if following fields are valid */
-> >  	unsigned long last_updated;	/* In jiffies */
-> > @@ -524,7 +529,10 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
-> >  			}
-> >  		}
-> >  
-> > -		for (i = 0; i < 4; i++) {
-> > +		for (i = 0; i < data->pwm_num; i++) {
-> > +			if (!(data->has_fan & (1 << i)))
-> > +				continue;
-> 
-> I'm skeptical. data->has_fan refers to fan inputs, not fan outputs.
-> There is no guarantee that pwm1 is mapped to fan1, etc., so you can't
-> use data->has_fan to discard fan outputs.
-> 
-Maybe, but they are treated as 1:1 for fan4 when creating the pwm files,
-and the pwm files for fan4 are not created if the matching bit isn't set.
-This applies to all chips supported by this driver. And for fan1..3, the
-mapping is supposed to be 1:1 per the driver documentation.
+I am a financier I am willing to lend out loans at 3% interest, contact this 
+management today with these details if interested.
 
-I figured that it does not make sense to read the registers for a non-existing
-attribute file.
+We offer the following kinds of loans and many more;
+  * Personal Loans ( Unsecured Loan)
+  * Business Loans ( Unsecured Loan)
+  * Consolidation Loan
+  * Combination Loan
+  * Home Improvement
 
-> > +
-> >  			/* pwmcfg, tolerance mapped for i=0, i=1 to same reg */
-> >  			if (i != 1) {
-> >  				pwmcfg = w83627ehf_read_value(data,
-> > @@ -546,6 +554,17 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
-> >  						W83627EHF_REG_FAN_STOP_OUTPUT[i]);
-> >  			data->fan_stop_time[i] = w83627ehf_read_value(data,
-> >  						W83627EHF_REG_FAN_STOP_TIME[i]);
-> > +
-> > +			if (data->REG_FAN_MAX_OUTPUT[i] != 0xff)
-> > +				data->fan_max_output[i] =
-> > +				  w83627ehf_read_value(data,
-> > +					       data->REG_FAN_MAX_OUTPUT[i]);
-> > +
-> > +			if (data->REG_FAN_STEP_OUTPUT[i] != 0xff)
-> > +				data->fan_step_output[i] =
-> > +				  w83627ehf_read_value(data,
-> > +					       data->REG_FAN_STEP_OUTPUT[i]);
-> > +
-> 
-> Huuu, wait a minute, So these values were supposedly exposed to
-> user-space, but were never read from their respective registers? So
-> this is a plain bug you're fixing?
-> 
-This one, yes.
+{BORROWER'S DATA INFORMATION}
 
-> Now I'm wondering, how useful is a feature that has been broken forever
-> and nobody ever complained?
-> 
-No idea, really.
+FULL NAME:..................
+FULL ADDRESS:...............
+COUNTRY:....................
+PHONE NUMBER: ..............
+OCCUPATION:.................
+MONTHLY INCOME..............
+LOAN AMOUNT NEEDED:.........
+LOAN DURATION...............
+AGE:........................
+SEX.........................
+Email:......................
 
-> >  			data->target_temp[i] =
-> >  				w83627ehf_read_value(data,
-> >  					W83627EHF_REG_TARGET[i]) &
-> > @@ -1126,7 +1145,7 @@ store_##reg(struct device *dev, struct device_attribute *attr, \
-> >  	u32 val = SENSORS_LIMIT(simple_strtoul(buf, NULL, 10), 1, 255); \
-> >  	mutex_lock(&data->update_lock); \
-> >  	data->reg[nr] = val; \
-> > -	w83627ehf_write_value(data, W83627EHF_REG_##REG[nr], val); \
-> > +	w83627ehf_write_value(data, data->REG_##REG[nr], val); \
-> >  	mutex_unlock(&data->update_lock); \
-> >  	return count; \
-> >  }
-> > @@ -1206,12 +1225,26 @@ static struct sensor_device_attribute sda_sf3_arrays[] = {
-> >  		    store_fan_stop_output, 1),
-> >  	SENSOR_ATTR(pwm3_stop_output, S_IWUSR | S_IRUGO, show_fan_stop_output,
-> >  		    store_fan_stop_output, 2),
-> > +};
-> >  
-> > -	/* pwm1 and pwm3 don't support max and step settings */
-> > +
-> > +/*
-> > + * pwm1 and pwm3 don't support max and step settings on all chips.
-> > + * Need to check support while generating/removing attribute files.
-> > + */
-> > +static struct sensor_device_attribute sda_sf3_max_step_arrays[] = {
-> > +	SENSOR_ATTR(pwm1_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
-> > +		    store_fan_max_output, 0),
-> > +	SENSOR_ATTR(pwm1_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
-> > +		    store_fan_step_output, 0),
-> >  	SENSOR_ATTR(pwm2_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
-> >  		    store_fan_max_output, 1),
-> >  	SENSOR_ATTR(pwm2_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
-> >  		    store_fan_step_output, 1),
-> > +	SENSOR_ATTR(pwm3_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
-> > +		    store_fan_max_output, 2),
-> > +	SENSOR_ATTR(pwm3_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
-> > +		    store_fan_step_output, 2),
-> >  };
-> >  
-> >  static ssize_t
-> > @@ -1235,6 +1268,12 @@ static void w83627ehf_device_remove_files(struct device *dev)
-> >  
-> >  	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays); i++)
-> >  		device_remove_file(dev, &sda_sf3_arrays[i].dev_attr);
-> > +	for (i = 0; i < ARRAY_SIZE(sda_sf3_max_step_arrays); i++) {
-> > +		struct sensor_device_attribute *attr =
-> > +		  &sda_sf3_max_step_arrays[i];
-> > +		if (data->REG_FAN_STEP_OUTPUT[attr->index] != 0xff)
-> > +			device_remove_file(dev, &attr->dev_attr);
-> > +	}
-> >  	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays_fan4); i++)
-> >  		device_remove_file(dev, &sda_sf3_arrays_fan4[i].dev_attr);
-> >  	for (i = 0; i < data->in_num; i++) {
-> > @@ -1352,6 +1391,11 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
-> >  		data->in6_skip = !data->temp3_disable;
-> >  	}
-> >  
-> > +	data->REG_FAN_START_OUTPUT = W83627EHF_REG_FAN_START_OUTPUT;
-> > +	data->REG_FAN_STOP_OUTPUT = W83627EHF_REG_FAN_STOP_OUTPUT;
-> > +	data->REG_FAN_MAX_OUTPUT = W83627EHF_REG_FAN_MAX_OUTPUT;
-> > +	data->REG_FAN_STEP_OUTPUT = W83627EHF_REG_FAN_STEP_OUTPUT;
-> > +
-> >  	/* Initialize the chip */
-> >  	w83627ehf_init_device(data);
-> >  
-> > @@ -1440,6 +1484,15 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
-> >  			&sda_sf3_arrays[i].dev_attr)))
-> >  			goto exit_remove;
-> >  
-> > +	for (i = 0; i < ARRAY_SIZE(sda_sf3_max_step_arrays); i++) {
-> > +		struct sensor_device_attribute *attr =
-> > +		  &sda_sf3_max_step_arrays[i];
-> > +		if (data->REG_FAN_STEP_OUTPUT[attr->index] != 0xff) {
-> > +			err = device_create_file(dev, &attr->dev_attr);
-> > +			if (err)
-> > +				goto exit_remove;
-> > +		}
-> > +	}
-> >  	/* if fan4 is enabled create the sf3 files for it */
-> >  	if ((data->has_fan & (1 << 3)) && data->pwm_num >= 4)
-> >  		for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays_fan4); i++) {
-> 
-> 
-> Nice cleanup overall.
-> 
-Thanks
+Note: we only give out loan in US Dollar, Euro and Great British Pound and 
+you have to choose among these currency.
 
-Guenter
+Regards.
+DR.DONALD ALLEN LOAN SERVICES.
