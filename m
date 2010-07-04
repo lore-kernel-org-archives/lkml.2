@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab0GDHNx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 03:13:53 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:55342 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768Ab0GDHNw (ORCPT
+	id S1756769Ab0GDHYf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 03:24:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59283 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab0GDHYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 03:13:52 -0400
-X-Greylist: delayed 511 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jul 2010 03:13:51 EDT
-Date: Sun, 4 Jul 2010 16:13:47 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-       Julian Anastasov <ja@ssi.bg>, Wensong Zhang <wensong@linux-vs.org>,
-       linux-kernel@vger.kernel.org, Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH] ipvs: Kconfig cleanup
-Message-ID: <20100704071347.GB9437@verge.net.au>
-References: <1278102728-20217-1-git-send-email-mmarek@suse.cz>
- <20100704070516.GA9437@verge.net.au>
+	Sun, 4 Jul 2010 03:24:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=McCmVaPFYSNky4rEIBxprB37B6LMdvOmAMxmJaAflBIcBYMwj0S/d9vxlpFdE/zCAb
+         QHdEYzld3gK/+kfsotydvmVtGBvt1qAXPOCXbqNkry7sJPfCS7Aehuhi9Ss/9sFQMzLm
+         RZgE90lZ3TWbdEQ+mM0KXeQmFtae2HKoSLUQ8=
+Message-ID: <4C30372D.9050304@suse.cz>
+Date: Sun, 04 Jul 2010 09:24:29 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100704070516.GA9437@verge.net.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andy Walls <awalls@md.metrocast.net>
+CC: mchehab@infradead.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Ian Armstrong <ian@iarmst.demon.co.uk>,
+       ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH] VIDEO: ivtvfb, remove unneeded NULL test
+References: <1277206910-27228-1-git-send-email-jslaby@suse.cz> <1278216707.2644.32.camel@localhost>
+In-Reply-To: <1278216707.2644.32.camel@localhost>
+X-Enigmail-Version: 1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added Patrick McHardy to CC ]
+On 07/04/2010 06:11 AM, Andy Walls wrote:
+> You missed an identical instance of the useless test 10 lines prior in
+> ivtvfb_callback_init(). :)
 
-On Sun, Jul 04, 2010 at 04:05:16PM +0900, Simon Horman wrote:
-> On Fri, Jul 02, 2010 at 10:32:08PM +0200, Michal Marek wrote:
-> > IP_VS_PROTO_AH_ESP should be set iff either of IP_VS_PROTO_{AH,ESP} is
-> > selected. Express this with standard kconfig syntax.
-> > 
-> > Signed-off-by: Michal Marek <mmarek@suse.cz>
-> 
-> Acked-by: Simon Horman <horms@verge.net.au>
-> 
-> > ---
-> >  net/netfilter/ipvs/Kconfig |    5 +----
-> >  1 files changed, 1 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/net/netfilter/ipvs/Kconfig b/net/netfilter/ipvs/Kconfig
-> > index f2d7623..91e7373 100644
-> > --- a/net/netfilter/ipvs/Kconfig
-> > +++ b/net/netfilter/ipvs/Kconfig
-> > @@ -83,19 +83,16 @@ config	IP_VS_PROTO_UDP
-> >  	  protocol. Say Y if unsure.
-> >  
-> >  config	IP_VS_PROTO_AH_ESP
-> > -	bool
-> > -	depends on UNDEFINED
-> > +	def_bool IP_VS_PROTO_ESP || IP_VS_PROTO_AH
-> >  
-> >  config	IP_VS_PROTO_ESP
-> >  	bool "ESP load balancing support"
-> > -	select IP_VS_PROTO_AH_ESP
-> >  	---help---
-> >  	  This option enables support for load balancing ESP (Encapsulation
-> >  	  Security Payload) transport protocol. Say Y if unsure.
-> >  
-> >  config	IP_VS_PROTO_AH
-> >  	bool "AH load balancing support"
-> > -	select IP_VS_PROTO_AH_ESP
-> >  	---help---
-> >  	  This option enables support for load balancing AH (Authentication
-> >  	  Header) transport protocol. Say Y if unsure.
-> > -- 
-> > 1.7.1
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Ah, thank you for pointing out. Find my comment below.
+
+> --- a/drivers/media/video/ivtv/ivtvfb.c
+> +++ b/drivers/media/video/ivtv/ivtvfb.c
+> @@ -1201,9 +1201,14 @@ static int ivtvfb_init_card(struct ivtv *itv)
+>  static int __init ivtvfb_callback_init(struct device *dev, void *p)
+>  {
+>         struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
+> -       struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
+> +       struct ivtv *itv;
+>  
+> -       if (itv && (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT)) {
+> +       if (v4l2_dev == NULL)
+> +               return 0;
+> +
+> +       itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
+> +
+> +       if (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT) {
+>                 if (ivtvfb_init_card(itv) == 0) {
+>                         IVTVFB_INFO("Framebuffer registered on %s\n",
+>                                         itv->v4l2_dev.name);
+> @@ -1216,10 +1221,16 @@ static int __init ivtvfb_callback_init(struct device *de
+>  static int ivtvfb_callback_cleanup(struct device *dev, void *p)
+>  {
+>         struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
+> -       struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
+> -       struct osd_info *oi = itv->osd_info;
+> +       struct ivtv *itv;
+> +       struct osd_info *oi;
+> +
+> +       if (v4l2_dev == NULL)
+> +               return 0;
+
+>From my POV I NACK this. Given that it never triggered and drvdata are
+set in v4l2_device_register called from ivtv_probe I can't see how
+v4l2_dev be NULL. Could you elaborate?
+
+-- 
+js
+suse labs
