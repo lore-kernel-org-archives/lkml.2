@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab0GDBsF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 21:48:05 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:21273 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756494Ab0GDBsD (ORCPT
+	id S1756600Ab0GDBwc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 21:52:32 -0400
+Received: from wdscspam2.wdc.com ([129.253.170.131]:52267 "EHLO
+	wdscspam2.wdc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756494Ab0GDBwb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 21:48:03 -0400
-Message-ID: <4C2FE84E.4010407@tilera.com>
-Date: Sat, 3 Jul 2010 21:47:58 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	Sat, 3 Jul 2010 21:52:31 -0400
+X-Greylist: delayed 698 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Jul 2010 21:52:31 EDT
+X-IronPort-AV: E=Sophos;i="4.53,532,1272870000"; 
+   d="scan'208";a="117638745"
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Matthew Wilcox <matthew@wil.cx>, <linux-kernel@vger.kernel.org>,
-       <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] Break out types from <linux/list.h> to <linux/list_types.h>.
-References: <201007021811.04197.arnd@arndb.de> <4C2E3F1F.3010202@tilera.com> <20100702204817.GB5842@parisc-linux.org> <201007031100.43158.arnd@arndb.de>
-In-Reply-To: <201007031100.43158.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: EXT3 FS and 64K blocks error
+Date: Sat, 3 Jul 2010 18:40:40 -0700
+Message-ID: <469D2D911E4BF043BFC8AD32E8E30F5B24AED0@wdscexbe07.sc.wdc.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: EXT3 FS and 64K blocks error
+Thread-Index: AcsbGelH/Dcv3mRTQsmpF8v1Oq8SeQ==
+From: "Daniel Taylor" <Daniel.Taylor@wdc.com>
+To: <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 04 Jul 2010 01:40:40.0247 (UTC) FILETIME=[E8B48C70:01CB1B19]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/3/2010 5:00 AM, Arnd Bergmann wrote:
-> On Friday 02 July 2010 22:48:17 Matthew Wilcox wrote:
->   
->> I wouldn't mind seeing kvm_types.h, rwlock_types.h and spinlock_types.h
->> merged into types.h, personally.  They're all pretty fundamental kernel
->> kind of types.  It's a matter of taste, and I'm not particularly fussed
->> one way or the other.
->>
->> mm_types.h is complex and full of mm-specific information, so keeping
->> it separate makes sense to me.
->>
->> I just object to the unnecessary creation of tiny files like this.
->> Which is how we ended up with atomic_t and atomic64_t in there in the
->> first place :-)
->>     
-> Ah, I didn't notice you had moved the atomic types in there. I agree that
-> the list types are in the same general category and it makes sense
-> to treat them the same way.
->
-> For rwlock_types.h and spinlock_types.h, I think including them in types.h
-> would really cause too much other crap to be pulled in through lockdep
-> and other things we might need in there in the future, which would in turn
-> cause the same problems with types.h that Chris is trying to avoid
-> in the first place by moving stuff out of list.h.
->   
+We're getting the following error with an EXT3 file sytem that
+has 64K blocks (2.6.32.12, on a powerpc), although I don't see
+any fixes for later kernels in a diff against 2.6.35-rc3):
 
-Sounds like we have a consensus on moving the list_head, hlist_head, and
-hlist_node types to <linux/types.h>.  I assume everyone is agreed that
-initializers, etc., should stay in <linux/list.h>.  I will send out a
-revised git patch on Sunday.
+ext3_readdir: bad entry in directory #11: rec_len is smaller than minimal -
+offset=0, inode=0, rec_len=0, name_len=0
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+That message is generated in fs/ext3/dir.c:ext3_check_dir_entry()
+when called from fs/ext3/dir.c:ext3_readdir(), AFAICT.
 
+Did something get missed when EXT* handling for 64K blocks was
+implemented or when a new feature was added?
+
+Dan Taylor
