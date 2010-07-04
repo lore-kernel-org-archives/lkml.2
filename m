@@ -1,206 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab0GDHpI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 03:45:08 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46392 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756090Ab0GDHpE (ORCPT
+	id S1756926Ab0GDHtM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 03:49:12 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:52829 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756257Ab0GDHtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 03:45:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=D/GaOQPExD5hED58oJHIcwOw8a+6Bjzugn9ZcUYcQ7awAetJzxizNJUAy6+xiGuJ5R
-         DIiPiEGIWDlj04NSAT0m3JDsNbPwetutnKd5aywj/qidZtOctDvE/srkMj5hPlWJImEE
-         oBDt1BT690Ur+XjvcSGhyCExI0wTk82n0CuwY=
-Date: Sun, 4 Jul 2010 00:44:57 -0700
-From: Kent Overstreet <kent.overstreet@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: kent.overstreet@gmail.com
-Subject: [RFC][PATCH 3/3] Bcache: Version 6 - Hooks
-Message-ID: <6d4844bb7aeae01a639c50fb84727fb51c7716c9.1278227772.git.kent.overstreet@gmail.com>
-References: <a0bdf4c5c6b14d429900cc58c28795bd5b6b8e85.1278227772.git.kent.overstreet@gmail.com>
+	Sun, 4 Jul 2010 03:49:09 -0400
+Date: Sun, 4 Jul 2010 09:51:10 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+       Tejun Heo <tj@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/19] arch/x86/kernel: use for_each_pci_dev()
+Message-ID: <20100704075110.GA5356@aftab>
+References: <1278173040-11643-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <a0bdf4c5c6b14d429900cc58c28795bd5b6b8e85.1278227772.git.kent.overstreet@gmail.com>
+In-Reply-To: <1278173040-11643-1-git-send-email-segooon@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of what's here is going to have to be rewritten before it can be merged;
-consider it more a rough idea as to what I'm trying to do. But the code here
-does work, so I've been loathe to start on that until I can get some input
-as to what a real solution will look like. I have some ideas, but this'll
-likely involve some of the sketchier areas of the block layer...
+From: Kulikov Vasiliy <segooon@gmail.com>
+Date: Sat, Jul 03, 2010 at 12:03:59PM -0400
 
-Signed-off-by: Kent Overstreet <kent.overstreet@gmail.com>
----
- block/blk-core.c       |   10 +++++++---
- fs/bio.c               |   26 ++++++++++++++++++++++++++
- include/linux/bio.h    |    3 +++
- include/linux/blkdev.h |    2 ++
- include/linux/fs.h     |    5 +++++
- 5 files changed, 43 insertions(+), 3 deletions(-)
+> Use for_each_pci_dev() to simplify the code.
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index f0640d7..4d54e9e 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1428,11 +1428,11 @@ static inline int bio_check_eod(struct bio *bio, unsigned int nr_sectors)
-  * bi_sector for remaps as it sees fit.  So the values of these fields
-  * should NOT be depended on after the call to generic_make_request.
-  */
--static inline void __generic_make_request(struct bio *bio)
-+inline void __generic_make_request(struct bio *bio)
- {
- 	struct request_queue *q;
- 	sector_t old_sector;
--	int ret, nr_sectors = bio_sectors(bio);
-+	int ret = 1, nr_sectors = bio_sectors(bio);
- 	dev_t old_dev;
- 	int err = -EIO;
- 
-@@ -1505,7 +1505,10 @@ static inline void __generic_make_request(struct bio *bio)
- 
- 		trace_block_bio_queue(q, bio);
- 
--		ret = q->make_request_fn(q, bio);
-+		if (bio->bi_bdev->bd_cache_fn)
-+			ret = bio->bi_bdev->bd_cache_fn(q, bio);
-+		if (ret)
-+			ret = q->make_request_fn(q, bio);
- 	} while (ret);
- 
- 	return;
-@@ -1513,6 +1516,7 @@ static inline void __generic_make_request(struct bio *bio)
- end_io:
- 	bio_endio(bio, err);
- }
-+EXPORT_SYMBOL_GPL(__generic_make_request);
- 
- /*
-  * We only want one ->make_request_fn to be active at a time,
-diff --git a/fs/bio.c b/fs/bio.c
-index e7bf6ca..d86764f 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -257,6 +257,7 @@ void bio_init(struct bio *bio)
- 	bio->bi_flags = 1 << BIO_UPTODATE;
- 	bio->bi_comp_cpu = -1;
- 	atomic_set(&bio->bi_cnt, 1);
-+	atomic_set(&bio->bi_remaining, 1);
- }
- EXPORT_SYMBOL(bio_init);
- 
-@@ -1422,16 +1423,41 @@ EXPORT_SYMBOL(bio_flush_dcache_pages);
-  **/
- void bio_endio(struct bio *bio, int error)
- {
-+	int old, new;
- 	if (error)
- 		clear_bit(BIO_UPTODATE, &bio->bi_flags);
- 	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
- 		error = -EIO;
- 
-+	if (error) {
-+		do {
-+			old = new = atomic_read(&bio->bi_remaining);
-+			if (!(new >> 16))
-+				new += -error << 16;
-+
-+		} while (atomic_cmpxchg(&bio->bi_remaining, old, --new) != old);
-+	} else {
-+		new = atomic_sub_return(1, &bio->bi_remaining);
-+		error = -(new >> 16);
-+	}
-+
-+	if (new & ~(~0 << 16))
-+		return;
-+	atomic_set(&bio->bi_remaining, 0);
-+
- 	if (bio->bi_end_io)
- 		bio->bi_end_io(bio, error);
- }
- EXPORT_SYMBOL(bio_endio);
- 
-+void bio_split_endio(struct bio *bio, int error)
-+{
-+	struct bio *p = bio->bi_private;
-+	bio_put(bio);
-+	bio_endio(p, error);
-+}
-+EXPORT_SYMBOL(bio_split_endio);
-+
- void bio_pair_release(struct bio_pair *bp)
- {
- 	if (atomic_dec_and_test(&bp->cnt)) {
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 7fc5606..d9c84da 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -94,6 +94,8 @@ struct bio {
- 
- 	struct bio_vec		*bi_io_vec;	/* the actual vec list */
- 
-+	atomic_t		bi_remaining;	/* split count */
-+
- 	bio_end_io_t		*bi_end_io;
- 
- 	void			*bi_private;
-@@ -364,6 +366,7 @@ extern void bio_put(struct bio *);
- extern void bio_free(struct bio *, struct bio_set *);
- 
- extern void bio_endio(struct bio *, int);
-+extern void bio_split_endio(struct bio *bio, int error);
- struct request_queue;
- extern int bio_phys_segments(struct request_queue *, struct bio *);
- 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 09a8402..8978c29 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -347,6 +347,7 @@ struct request_queue
- 	make_request_fn		*make_request_fn;
- 	prep_rq_fn		*prep_rq_fn;
- 	unplug_fn		*unplug_fn;
-+	unplug_fn		*cache_unplug_fn;
- 	merge_bvec_fn		*merge_bvec_fn;
- 	prepare_flush_fn	*prepare_flush_fn;
- 	softirq_done_fn		*softirq_done_fn;
-@@ -772,6 +773,7 @@ static inline void rq_flush_dcache_pages(struct request *rq)
- extern int blk_register_queue(struct gendisk *disk);
- extern void blk_unregister_queue(struct gendisk *disk);
- extern void register_disk(struct gendisk *dev);
-+extern void __generic_make_request(struct bio *bio);
- extern void generic_make_request(struct bio *bio);
- extern void blk_rq_init(struct request_queue *q, struct request *rq);
- extern void blk_put_request(struct request *);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 471e1ff..0c0a04e 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -514,6 +514,8 @@ enum positive_aop_returns {
- struct page;
- struct address_space;
- struct writeback_control;
-+struct bio;
-+struct request_queue;
- 
- struct iov_iter {
- 	const struct iovec *iov;
-@@ -665,6 +667,9 @@ struct block_device {
- 	int			bd_invalidated;
- 	struct gendisk *	bd_disk;
- 	struct list_head	bd_list;
-+
-+	int (*bd_cache_fn)(struct request_queue *q, struct bio *bio);
-+	char			bd_cache_identifier;
- 	/*
- 	 * Private data.  You must have bd_claim'ed the block_device
- 	 * to use this.  NOTE:  bd_claim allows an owner to claim
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+
+> ---
+>  arch/x86/kernel/k8.c |    7 +++----
+>  1 files changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/k8.c b/arch/x86/kernel/k8.c
+> index 0f7bc20..0ea4b35 100644
+> --- a/arch/x86/kernel/k8.c
+> +++ b/arch/x86/kernel/k8.c
+> @@ -27,11 +27,10 @@ EXPORT_SYMBOL(k8_northbridges);
+>  
+>  static struct pci_dev *next_k8_northbridge(struct pci_dev *dev)
+>  {
+> -	do {
+> -		dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev);
+> -		if (!dev)
+> +	for_each_pci_dev(dev) {
+> +		if (pci_match_id(&k8_nb_ids[0], dev))
+>  			break;
+> -	} while (!pci_match_id(&k8_nb_ids[0], dev));
+> +	}
+>  	return dev;
+>  }
+>  
+> -- 
+> 1.7.0.4
+> 
+> 
+
 -- 
-1.7.0.4
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
