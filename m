@@ -1,91 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab0GDD6p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 23:58:45 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:54992 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab0GDD6n (ORCPT
+	id S1752146Ab0GDEM0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 00:12:26 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:55738 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751257Ab0GDEMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 23:58:43 -0400
-Date: Sun, 4 Jul 2010 12:57:59 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH] arch/tile: updates to hardwall code from community feedback.
-Message-ID: <20100704035759.GA5888@linux-sh.org>
-References: <201007030217.o632HoK9004030@farm-0002.internal.tilera.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007030217.o632HoK9004030@farm-0002.internal.tilera.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Sun, 4 Jul 2010 00:12:25 -0400
+Subject: Re: [PATCH] VIDEO: ivtvfb, remove unneeded NULL test
+From: Andy Walls <awalls@md.metrocast.net>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+       Tejun Heo <tj@kernel.org>, Ian Armstrong <ian@iarmst.demon.co.uk>,
+       ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
+In-Reply-To: <1277206910-27228-1-git-send-email-jslaby@suse.cz>
+References: <1277206910-27228-1-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 04 Jul 2010 00:11:47 -0400
+Message-ID: <1278216707.2644.32.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
+ definitions=2010-07-02_03:2010-02-06,2010-07-02,2010-07-03 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
+ bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1005130000 definitions=main-1007030141
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 11:45:18AM -0400, Chris Metcalf wrote:
->  #define for_each_hardwall_task_safe(pos, n, head) \
-> -	hardwall_for_each_entry_safe(pos, n, head, thread.hardwall_list)
-> +	list_for_each_entry_safe(pos, n, head, thread.hardwall_list)
+On Tue, 2010-06-22 at 13:41 +0200, Jiri Slaby wrote:
+> Stanse found that in ivtvfb_callback_cleanup there is an unneeded test
+> for itv being NULL. But itv is initialized as container_of with
+> non-zero offset, so it is never NULL (even if v4l2_dev is). This was
+> found because itv is dereferenced earlier than the test.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Andy Walls <awalls@md.metrocast.net>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Ian Armstrong <ian@iarmst.demon.co.uk>
+> Cc: ivtv-devel@ivtvdriver.org
+> Cc: linux-media@vger.kernel.org
+> ---
+>  drivers/media/video/ivtv/ivtvfb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/ivtv/ivtvfb.c b/drivers/media/video/ivtv/ivtvfb.c
+> index 9ff3425..5dc460e 100644
+> --- a/drivers/media/video/ivtv/ivtvfb.c
+> +++ b/drivers/media/video/ivtv/ivtvfb.c
+> @@ -1219,7 +1219,7 @@ static int ivtvfb_callback_cleanup(struct device *dev, void *p)
+>  	struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
+>  	struct osd_info *oi = itv->osd_info;
 >  
-If you've killed off the rest of the wrappers due to them not really
-having to do anything special, you could do the same for this one, too.
+> -	if (itv && (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT)) {
+> +	if (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT) {
+>  		if (unregister_framebuffer(&itv->osd_info->ivtvfb_info)) {
+>  			IVTVFB_WARN("Framebuffer %d is in use, cannot unload\n",
+>  				       itv->instance);
 
->  static struct hardwall_info *hardwall_create(
-> -	size_t size, const unsigned long __user *bits)
-> +	size_t size, const unsigned char __user *bits)
->  {
->  	struct hardwall_info *iter, *rect;
->  	struct cpumask mask;
->  	unsigned long flags;
-> -	int rc, cpu, maxcpus = smp_height * smp_width;
-> +	int rc;
->  
-> -	/* If "size" is not a multiple of long, it's invalid. */
-> -	if (size % sizeof(long))
-> +	/* Reject crazy sizes out of hand, a la sys_mbind(). */
-> +	if (size > PAGE_SIZE)
->  		return ERR_PTR(-EINVAL);
->  
-Does it even make any sense to accept > sizeof(struct cpumask) ? Your
-case below obviously handles this by making sure the rest of the bits are
-zeroed, but that still seems a bit excessive. If anything, the
-sizeof(struct cpumask) should be your worst case (or just rejected out of
-hand), and you could use cpumask_size() for everything else.
+Jiri,
 
-> -	/* Validate that all the bits we are given fit in our coordinates. */
-> -	cpumask_clear(&mask);
-> -	for (cpu = 0; size > 0; ++bits, size -= sizeof(long)) {
-> -		int i;
-> -		unsigned long m;
-> -		if (get_user(m, bits) != 0)
-> -			return ERR_PTR(-EFAULT);
-> -		for (i = 0; i < BITS_PER_LONG; ++i, ++cpu)
-> -			if (m & (1UL << i)) {
-> -				if (cpu >= maxcpus)
-> -					return ERR_PTR(-EINVAL);
-> -				cpumask_set_cpu(cpu, &mask);
-> -			}
-> +	/* Copy whatever fits into a cpumask. */
-> +	if (copy_from_user(&mask, bits, min(sizeof(struct cpumask), size)))
-> +		return ERR_PTR(-EFAULT);
-> +
-> +	/*
-> +	 * If the size was short, clear the rest of the mask;
-> +	 * otherwise validate that the rest of the user mask was zero
-> +	 * (we don't try hard to be efficient when validating huge masks).
-> +	 */
-> +	if (size < sizeof(struct cpumask)) {
-> +		memset((char *)&mask + size, 0, sizeof(struct cpumask) - size);
-> +	} else if (size > sizeof(struct cpumask)) {
-> +		size_t i;
-> +		for (i = sizeof(struct cpumask); i < size; ++i) {
-> +			char c;
-> +			if (get_user(c, &bits[i]))
-> +				return ERR_PTR(-EFAULT);
-> +			if (c)
-> +				return ERR_PTR(-EINVAL);
-> +		}
->  	}
->  
-Surely you can just replace all of this with cpumask_parse_user()?
+You missed an identical instance of the useless test 10 lines prior in
+ivtvfb_callback_init(). :)
+
+How about the patch below, instead?
+
+Regards,
+Andy
+
+[PATCH] VIDEO: ivtvfb, fix NULL check
+
+Jiri Slaby reported that stanse found ivtvfb_callback_cleanup has an
+unneeded test for itv being NULL. itv was initialized as container_of
+with non-zero offset, so it was never NULL (even if v4l2_dev was).
+
+This fix now checks for v4l2_dev being NULL, and not itv.
+
+Thanks to Jiri Slaby for reporting this problem and providing an initial
+patch.
+
+Reported-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Ian Armstrong <ian@iarmst.demon.co.uk>
+Cc: ivtv-devel@ivtvdriver.org
+Cc: linux-media@vger.kernel.org
+
+
+ drivers/media/video/ivtv/ivtvfb.c |   21 ++++++++++++++++-----
+ 1 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/media/video/ivtv/ivtvfb.c b/drivers/media/video/ivtv/ivtvfb
+index 9ff3425..2b3259c 100644
+--- a/drivers/media/video/ivtv/ivtvfb.c
++++ b/drivers/media/video/ivtv/ivtvfb.c
+@@ -1201,9 +1201,14 @@ static int ivtvfb_init_card(struct ivtv *itv)
+ static int __init ivtvfb_callback_init(struct device *dev, void *p)
+ {
+        struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
+-       struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
++       struct ivtv *itv;
+ 
+-       if (itv && (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT)) {
++       if (v4l2_dev == NULL)
++               return 0;
++
++       itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
++
++       if (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT) {
+                if (ivtvfb_init_card(itv) == 0) {
+                        IVTVFB_INFO("Framebuffer registered on %s\n",
+                                        itv->v4l2_dev.name);
+@@ -1216,10 +1221,16 @@ static int __init ivtvfb_callback_init(struct device *de
+ static int ivtvfb_callback_cleanup(struct device *dev, void *p)
+ {
+        struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
+-       struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
+-       struct osd_info *oi = itv->osd_info;
++       struct ivtv *itv;
++       struct osd_info *oi;
++
++       if (v4l2_dev == NULL)
++               return 0;
++
++       itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
++       oi = itv->osd_info;
+ 
+-       if (itv && (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT)) {
++       if (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT) {
+                if (unregister_framebuffer(&itv->osd_info->ivtvfb_info)) {
+                        IVTVFB_WARN("Framebuffer %d is in use, cannot unload\n",
+                                       itv->instance);
+
+
