@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab0GDHYf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 03:24:35 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59283 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab0GDHYd (ORCPT
+	id S1756720Ab0GDH1J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 03:27:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61731 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755070Ab0GDH1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 03:24:33 -0400
+	Sun, 4 Jul 2010 03:27:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=McCmVaPFYSNky4rEIBxprB37B6LMdvOmAMxmJaAflBIcBYMwj0S/d9vxlpFdE/zCAb
-         QHdEYzld3gK/+kfsotydvmVtGBvt1qAXPOCXbqNkry7sJPfCS7Aehuhi9Ss/9sFQMzLm
-         RZgE90lZ3TWbdEQ+mM0KXeQmFtae2HKoSLUQ8=
-Message-ID: <4C30372D.9050304@suse.cz>
-Date: Sun, 04 Jul 2010 09:24:29 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=S9QqjJeOYAOcFo/8IFyW6UvenwRlsZZm7jpeDg3eEnX9FbWVizQ9IoRF51xReBcw4U
+         42VoMOG4BMvCboYQSbbNQql8J7hYbLZsxdeNr2ibP8KZ5yfaei9tp4mlHeZw4NUzgieE
+         4uSr/n/Jutz4H+IWfOaquuy7QPcFGX/QmYeCs=
 MIME-Version: 1.0
-To: Andy Walls <awalls@md.metrocast.net>
-CC: mchehab@infradead.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Ian Armstrong <ian@iarmst.demon.co.uk>,
-       ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH] VIDEO: ivtvfb, remove unneeded NULL test
-References: <1277206910-27228-1-git-send-email-jslaby@suse.cz> <1278216707.2644.32.camel@localhost>
-In-Reply-To: <1278216707.2644.32.camel@localhost>
-X-Enigmail-Version: 1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTinZXHi_mbmsX1HTzbMNjQx7j0rbEfTKSoz-02CF@mail.gmail.com>
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com>
+	<20100702095815.GA6802@skynet.be>
+	<AANLkTimNgjtvDYY42dm-6akRjQfkHayagQWwHSS3AQs7@mail.gmail.com>
+	<20100702111029.GB6802@skynet.be>
+	<AANLkTikomWNbwHT-kQOm8UsUS1xkMW69cZ-mC6d8Dj56@mail.gmail.com>
+	<AANLkTinZXHi_mbmsX1HTzbMNjQx7j0rbEfTKSoz-02CF@mail.gmail.com>
+Date: Sun, 4 Jul 2010 17:27:05 +1000
+Message-ID: <AANLkTim9Y7m3gU-w6kHvQeXT92h11kIpM8dAVaDO12uZ@mail.gmail.com>
+Subject: Re: Closed source userspace graphics drivers with an open source 
+	kernel component
+From: Dave Airlie <airlied@gmail.com>
+To: Magnus Wendt <magnus.wendt@gmail.com>
+Cc: Luc Verhaegen <libv@skynet.be>, LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2010 06:11 AM, Andy Walls wrote:
-> You missed an identical instance of the useless test 10 lines prior in
-> ivtvfb_callback_init(). :)
+On Sun, Jul 4, 2010 at 5:06 PM, Magnus Wendt <magnus.wendt@gmail.com> wrote:
+>
+>
+> 2010/7/2 Dave Airlie <airlied@gmail.com>
+>>
+>> ARM Mali - not sure what is going on there, I;m going to go with no
+>> hope but would be nice to be proved wrong
+>
+> So far no user space but at least kernel space is available under GPLv2
+>
+> http://www.malideveloper.com/drivers.php
+>
 
-Ah, thank you for pointing out. Find my comment below.
+So its as crap as the others since the kernel space is uninteresting
+and doesn't give you any idea how to actually use the GPU, its just a
+slightly intelligent shim which transfers command streams and
+interrupt to/from gpu/userspace.
 
-> --- a/drivers/media/video/ivtv/ivtvfb.c
-> +++ b/drivers/media/video/ivtv/ivtvfb.c
-> @@ -1201,9 +1201,14 @@ static int ivtvfb_init_card(struct ivtv *itv)
->  static int __init ivtvfb_callback_init(struct device *dev, void *p)
->  {
->         struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
-> -       struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
-> +       struct ivtv *itv;
->  
-> -       if (itv && (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT)) {
-> +       if (v4l2_dev == NULL)
-> +               return 0;
-> +
-> +       itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
-> +
-> +       if (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT) {
->                 if (ivtvfb_init_card(itv) == 0) {
->                         IVTVFB_INFO("Framebuffer registered on %s\n",
->                                         itv->v4l2_dev.name);
-> @@ -1216,10 +1221,16 @@ static int __init ivtvfb_callback_init(struct device *de
->  static int ivtvfb_callback_cleanup(struct device *dev, void *p)
->  {
->         struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
-> -       struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
-> -       struct osd_info *oi = itv->osd_info;
-> +       struct ivtv *itv;
-> +       struct osd_info *oi;
-> +
-> +       if (v4l2_dev == NULL)
-> +               return 0;
+Its like having an ELF loader but no source to the compiler or linker,
+and saying the CPU is open.
 
->From my POV I NACK this. Given that it never triggered and drvdata are
-set in v4l2_device_register called from ivtv_probe I can't see how
-v4l2_dev be NULL. Could you elaborate?
-
--- 
-js
-suse labs
+Dave.
