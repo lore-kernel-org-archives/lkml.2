@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab0GDQ4l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 12:56:41 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:33881 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757851Ab0GDQ4k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 12:56:40 -0400
-Date: Sun, 4 Jul 2010 10:56:38 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       Alexey Dobriyan <adobriyan@gmail.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH -v2] Move list types from <linux/list.h> to
-	<linux/types.h>.
-Message-ID: <20100704165638.GE5842@parisc-linux.org>
-References: <201007041242.o64CggfV012188@farm-0002.internal.tilera.com>
+	id S1757964Ab0GDQ44 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 12:56:56 -0400
+Received: from mail.unilim.fr ([164.81.1.45]:45962 "EHLO smtp.unilim.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755524Ab0GDQ4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jul 2010 12:56:53 -0400
+X-Greylist: delayed 11690 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jul 2010 12:56:52 EDT
+Message-ID: <20100704152757.475267ei0mv59pxc@webmail.unilim.fr>
+X-Priority: 3 (Normal)
+Date: Sun, 04 Jul 2010 15:27:57 +0200
+From: Western Union Transfer <veronique.loustaud-ratti@unilim.fr>
+Reply-to: western.uniontransfer@w.cn
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <201007041242.o64CggfV012188@farm-0002.internal.tilera.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
+X-Univ-Limoges-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (smtp.unilim.fr [164.81.1.45]); Sun, 04 Jul 2010 15:28:01 +0200 (CEST)
+X-Univ-Limoges-MD: Pas de virus trouve
+X-Univ-Limoges-MailScanner-Information: Serveur Anti-virus Please contact postmaster@unilim.fr for more information
+X-Univ-Limoges-MailScanner-ID: o64DRw0K021320
+X-Univ-Limoges-MailScanner: Found to be clean
+X-Univ-Limoges-MailScanner-Envelope-From: veronique.loustaud-ratti@unilim.fr
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 01:41:14PM -0400, Chris Metcalf wrote:
-> This allows a list_head (or hlist_head, etc.) to be used from places
-> that used to be impractical, in particular <asm/processor.h>, which
-> used to cause include file recursion: <linux/list.h> includes
-> <linux/prefetch.h>, which always includes <asm/processor.h> for the
-> prefetch macros, as well as <asm/system.h>, which often includes
-> <asm/processor.h> directly or indirectly.
-> 
-> This avoids a lot of painful workaround hackery on the tile
-> architecture, where we use a list_head in the thread_struct to chain
-> together tasks that are activated on a particular hardwall.
-> 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-
-Reviewed-by: Matthew Wilcox <willy@linux.intel.com>
 
 -- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+My working partner has helped me to send your
+first payment of US$7,500 to you as
+instructed by Mr. David Cameron and will
+keep sending you US$7,500 twice a week until
+the payment of (US$360,000) is completed
+within six months and here is the information
+below:
+
+MONEY TRANSFER CONTROL NUMBER (MTCN):
+841-116-3297
+
+SENDER'S NAME: Mr.Alexander Onyibor
+AMOUNT: US$7,500
+
+To track your funds forward Western Union
+Money Transfer agent your Full Names and
+Mobile Number via Email to:
+
+Mr Gary Moore
+E-mail:western.uniontransfer@w.cn
+D/L: Tel:+447045713697
+
+Please direct all enquiring to:
+western.uniontransfer@w.cn
+
+Best Regards,
+Mrs. Mr Gary Moore.
+
+
+
+
+
