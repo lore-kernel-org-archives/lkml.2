@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758023Ab0GDUto (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 16:49:44 -0400
-Received: from web82704.mail.mud.yahoo.com ([68.142.201.85]:29565 "HELO
-	web82704.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757979Ab0GDUtm (ORCPT
+	id S1758034Ab0GDUwi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 16:52:38 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64384 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757979Ab0GDUwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 16:49:42 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=03gUgJowv6UiT+wUoyw6HskW6ZiWj9+GapxX+RrlDj8FVdBcyCi1Q94FvqBXRFxY6vJimP9T8uCNkFinB+6XxYKexxKEZpuZjhKsRjNugT9d9mJwJ+W55NlD9eyd+sZCpPk/C0jRBMlQ52KmpFjFr4l3/LaUcMpUJmZyA73QjoU=;
-Message-ID: <15182.46772.qm@web82704.mail.mud.yahoo.com>
-X-YMail-OSG: uSNGcjkVM1ldGN9U3_W.RkbdTyNKwbFsEiShNBXHnrcLv7R
- kzaGRyFcxr8uvcu2grs5e3uhVLi3.RZob4YTtfYIRJa9ZU2fSIPxmamRwoVo
- p4yzyh32tX8UJV94no4x69IGnWt2rYBnQ7Ml5FG3tPXQelrR_b_ZBCIlvVk6
- Bzkvm0O.H6ax_82GFgO8i8dRPTopMlOF9TPC6yX9pasUzhy.AIicCGHhfbw6
- 3xCzh7jN2JjwpkvrWp_T0.ouRbWxG1voTM07ZNecW75miKUlMBdgC9VZVI9R
- DuulYTL4tmDQYoKBQrx4QlHsOOa2lBqxofFkHHCsN.8oSEqSH61a_vBOJVDo
- mDBtk8V6C.cEruXZZNHNU7J.vpcsTw9jDGFm7MKVOYQVxaPZOay.3.mbbOPX
- uiREyNtrJAtj9BfZdvXRfIvLQZjW9BpobznwCdVRaNkOP5iTZdZuf4JQbRny
- Tdf7mdRWU4YCRFtsWvVyralshKqBJTOrwFFM3uertYs63briBt7dTMltaVOr
- qc7HRPYuz4e.c3yZ7cvP2JAaxOWE2wnuuR_FbqZ8LczwNcI9MtqMKzy1Qac3
- KRrOyj0vi50ygnG1QXSTTRiFkvWfv7n2AoNfV7t_EobYCqVKi3c_zAB4q0dV
- 9ocH7mxms9WYNjwDu8K9bscHITdb2u.btKvpBbXpnNjqcWWvuxyMEnzvaCUu
- tyGNwz3vHPL3vW9PakAeBwkEZMNNLbsHDIsJWnpOJ6rYpnkv7QNSZfFWvD4a
- UOPZKnyPmnBBTBkNTfHERzzFyWUHNBS.WklnXG24Bn46B51fMhshqZ0t9nI.
- I_KKLH1N05whPJv6ZDSYnMNvG6l3EUX_32PrHHPRdX7oVmrq9PdJsclWkgEt
- iXJMrNA5Vgfu9XuRhBbMeFsi2qw4groSoIdvzyabK2bw3WPR0msismzB8DAg
- _Kt7Fe089txX1Atah3t5gUl4yaQQojdpF4mQXy0cQDK.SxpbT5DRfZpxYy.p
- S3ttTfMHFUEVslQWu0lWaBIW_.2cjyqK0K5BCT9PtTPjsYrSjVLTwu1KhaCf
- 4lN64H9qhkPbDiPXg5XKfkBjpvZZkn6uReDDPLzM.Wq5yHqqdIznpLvV3gJ4
- FomyePwPgOOEMPogrIWnqxnMT0BD5E8GADMJWV49yab9FtF35foKqGkOzNrH
- rcb3l9Ruwhpe22wlldVR5umkM78C1.NijVB.pfti7U9WurV1ygdaB0EzMe5P
- 3hdn1scPN7CwxjutVeK8Jhyy0qz2G6BO0ULCHDsWfsHgsLsm_oyV7vcfQ4TZ
- vR9_4XQfwkGLXfi2QxMeg0R6K5eqZfpIm3rlSOdHdDp4KBrICcZynP5t_PYV
- OBQNrYGKHLORjR.BU1XG9siHxThlF4BxhuPJvDw61kGROICFH9n_1QH5J7hi
- vEa1FmvlkSb_HNVK9ILwI9fbtpzE2fMYom4MqTSS2aa6Q246h.kosJN5L24k
- JariaQtIA4odyHzF.rWYgXcp8_.bfAxedfBh.a3mA.zH4Gdqp7RibMV9Z.4s
- HAq1PQAV03aeWVEKo6gCwSOV6KEGMP9ozeiuVqePTK8qGdrkdSPBByAXOxZW
- 5rRdluYaDQrAtXkCiKHOPAxZsfAGHgA8pzvhF6tz7frjWEQudzCGdOGJa18P
- tOFStSEvUrMCE58BJV_RIMv3oG4PeXfyear3PTatoCYWtq1pAZVptXLWukJw
- lxyW5T_7IFpYLzcwYKY..6JsBZ3u1Twjk3DWfD3Frtcbi_WdXC265Z55nLYS
- rdQTTKYVeYFxpd1TBuuuUXJBxV_5qMvuw3y8MVqLlCR8sLoMGgG_2fh17RTJ
- aHPSyeb8cP8GoFAq0aKulc8OjsSMnHNmu_GjwMtf7f_gQVxH6najExMfmHTy
- OciX_G8jBnHrkMJg_1F9G6HwKuE8WUh__y8jAo0jw63XlJcA0laENr7eDj4J
- .OusozWyE05iTT0JkHL6ii4nuTRyTDqpDCAxQyGHwitlUFFdIn3bMtl7nmoJ
- JRVuDs8fMzQf6XT6klrLxHQ5t77zURwV3HUq_2Pk_6SvGcBCrnlu0mM8upI6
- v5VZqQi45XWjhKVA9jlNlhyEKaD1n5P3Ywd3q6yuBsLHVdwPMT4AlbROueod
- vgslmnNZboA_1lXTT3dThEj6s8fqJVW._1XlbMMhWv_JqYw1Wq2IICwUAaqI
- X9DCH2gK2FGdXX6fwe3dQp0NkhKKJLxdYBUID2_iNYxMaXL8vkmHhGPbB2pD
- YlJVSBOAfuiIoiZypUeRyb5MUHJu853rwtxxpNAlQ._I84qQN7UP9wdaZrzW
- FeoT15FgD1Xnlt1JOwf2t7gSwO2kAmSa7abfllNoSnQJcNQmwSSXV0v8DvWJ
- 7qI6IYhf6JnwQIst39n0_xn6KqqH1JX40iKCAU8YsNir8kym6RUtlgm0GpYT
- fNMSjdUcvlZJjtHWpeUNmlY5pgzYgG.2ZprXAquYimEFoImdftb6bqRX8bh1
- PnASrVN85jmvw2VW96YTvToSgJbhRIKuBitfluhyc1Vnu8ZgUo_2QfYL0bxy
- iLVO4YLgfyZ0foVJfHCNQ1Bf7zZB.Os4csP6FjpY0V452b6HT1GvBP_3xmN8
- WYhS3aCxsjfLmWV.xSb9ySiX.mdHNmWxpjE7Hgu5g8.Qj0xZ8VLf18qIBGyI
- _KAFkeS7TlpBEZ5HnfGKXEl1ylOiLREf3jb1LTn1sWMIAYQAQHWbykb80AFn
- gD.1mBZuV7y1GwflzJEVV7MTjBInLglYWqo7gZV6Kx1cyKzwJblY23V1vklJ
- gBy4mfui7HuOkA3HnfVZma5kjtQ0dFRsbXRQtvKYBLJqJOHJXQD6B.qsCnAL
- g.ZdJutd5cBLWLRkyqDAkCtLx.9xNnPysdgOHnnpt6cEwE1HSZ_Rsn_IYlEn
- 9K.zB5EErDTlEE2RlqKVmojIZ_61VVVwGkGxEyE0QBqQAe7UR4IQOQvPb_Jg
- pbPtGZuun4Kb3kf_pimRbPTm67XbwGdmMlIj8c3qTCA0VcFURXoONW9w6MYR
- LdgYG7SU1Cko1_wfDVLcQVoByBWmux3uMyMmnlGY941zEuS78QbsViYTIehR
- FTstgdUUc7YkM2JUANIzBs4Z0FusO0La9Jd6EXDuPPFnKJ1vdEYdQ1dFGcww
- 1LyBoUWBkfswjP.S8ajY5JxT.dxSOyGeQ3vYfPk3CtOCXe8Ox3MBbmQ--
-X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.104.274457
-Date: Sun, 4 Jul 2010 13:49:40 -0700 (PDT)
-From: Rose <tom-coffey@sbcglobal.net>
-Subject: E-mail ID
-To: undisclosed recipients:;
+	Sun, 4 Jul 2010 16:52:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH 2/6] sound/oss: convert to unlocked_ioctl
+Date: Sun, 4 Jul 2010 22:52:29 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3+; KDE/4.4.90; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+       alsa-devel@alsa-project.org
+References: <1278195310-25590-1-git-send-email-arnd@arndb.de> <1278195310-25590-3-git-send-email-arnd@arndb.de> <20100704110835.GA31920@merkur.ravnborg.org>
+In-Reply-To: <20100704110835.GA31920@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007042252.29997.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1+CrIUPZbkiS03ye6usVOTlb465NwiL3jDpBgi
+ 2cpysEPP/1240EAumwvSx15AWsZSX9SpZFZODq9V+/asQeajYV
+ YLHqttWRiGe3AuUkolj7Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sunday 04 July 2010 13:08:35 Sam Ravnborg wrote:
+>
+> General comment...
+> In several places you declare a local variable of type "int",
+> but the function return a long.
+> 
+> I know that mixdev_ioctl() return an int so nothing is lost but
+> it just looks wrong.
 
-750,000.00 Pounds has been Awarded to your E-mail ID in our Toyota 2010 Promo. Send: Names..Address..
+This is completely intentional and follows what we have done in
+lots of other drivers that are already converted the same way.
+
+The idea is that it was a bad choice to make the 'unlocked_ioctl'
+operation return 'long' in the first place. I remember Al
+ranting about this a few years ago. The ioctl syscall always
+returns an 'int' to user space, the only reason we have a
+'long' return code in the definition of sys_ioctl and most
+other syscalls is to avoid problems for 32 bit emulation
+on some architectures.
+ 
+Maybe one day someone will rename all unlocked_ioctl calls
+back to ioctl and change the return type back to int.
+
+> > diff --git a/sound/oss/dmasound/dmasound_core.c b/sound/oss/dmasound/dmasound_core.c
+> > index 3f3c3f7..b5464fb 100644
+> > --- a/sound/oss/dmasound/dmasound_core.c
+> > +++ b/sound/oss/dmasound/dmasound_core.c
+> > @@ -337,8 +337,8 @@ static int mixer_release(struct inode *inode, struct file *file)
+> >  	unlock_kernel();
+> >  	return 0;
+> >  }
+> > -static int mixer_ioctl(struct inode *inode, struct file *file, u_int cmd,
+> > -		       u_long arg)
+> > +
+> > +static long mixer_ioctl(struct file *file, u_int cmd, u_long arg)
+> >  {
+> >  	if (_SIOC_DIR(cmd) & _SIOC_WRITE)
+> >  	    mixer.modify_counter++;
+> > @@ -362,11 +362,22 @@ static int mixer_ioctl(struct inode *inode, struct file *file, u_int cmd,
+> >  	return -EINVAL;
+> >  }
+> >  
+> > +static long mixer_unlocked_ioctl(struct file *file, u_int cmd, u_long arg)
+> > +{
+> > +	int ret;
+> > +
+> > +	lock_kernel();
+> > +	ret = mixer_ioctl(file, cmd, arg);
+> > +	unlock_kernel();
+> > +
+> > +	return ret;
+> > +}
+> 
+> Here it looks like a potential but.
+> mixer_ioctl() return a long which is stored in an int and then we return a long.
+
+Right. I should probably have left the return value of mixer_ioctl as an int
+instead, to follow the scheme used in other drivers.
+
+	Arnd
