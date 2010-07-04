@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718Ab0GDN7z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 09:59:55 -0400
-Received: from [163.20.135.129] ([163.20.135.129]:54170 "EHLO
+	id S1757672Ab0GDORX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 10:17:23 -0400
+Received: from [163.20.135.129] ([163.20.135.129]:62248 "EHLO
 	mail.phjh.tpc.edu.tw" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1757587Ab0GDN7y (ORCPT
+	with ESMTP id S1756379Ab0GDORW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 09:59:54 -0400
+	Sun, 4 Jul 2010 10:17:22 -0400
 From: "DR.DONALD ALLEN LOAN SERVICES" <dr.donaldallenloans@info.org>
 Reply-To: donald_allen01@hotmail.com
 Subject: N/A
-Date: Sun, 4 Jul 2010 16:36:15 +0300
-Message-Id: <20100704133616.M82902@info.org>
+Date: Sun, 4 Jul 2010 16:38:51 +0300
+Message-Id: <20100704133852.M56692@info.org>
 X-Mailer: OpenWebMail 2.52 20060502
 X-OriginatingIP: 41.138.172.43 (winnie116)
 MIME-Version: 1.0
