@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab0GDCd5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jul 2010 22:33:57 -0400
-Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:59210 "EHLO
-	homiemail-a10.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756588Ab0GDCd4 (ORCPT
+	id S1756700Ab0GDCqh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jul 2010 22:46:37 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45826 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756658Ab0GDCqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jul 2010 22:33:56 -0400
-X-Greylist: delayed 58361 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Jul 2010 22:33:55 EDT
-Subject: [PATCH] omfs: fix memory leak
-From: Davidlohr Bueso <dave.bueso@gmail.com>
-Reply-To: dave.bueso@gmail.com
-To: me@bobcopeland.com, linux-karma-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 03 Jul 2010 22:33:48 -0400
-Message-ID: <1278210828.27014.2.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 3 Jul 2010 22:46:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=rBopS47KJzi+R32Fg4T4UaUMJwJWc6qNoHoHJyybaYtwKgn8rBzDc6OaEx7vjfCB4h
+         3x143iBUA1UQhZUzhgMsW+WEa5sxY62h2FqW+jTwz4bN+gk0BwCxXnuYXrMaCO2SCfpR
+         6qYhEKOL7riA35RbyuRcO+d/j4XBq9yWwYb3U=
+MIME-Version: 1.0
+In-Reply-To: <4C2FD0B5.3020004@gmail.com>
+References: <AANLkTinZfXXALWmmVPMHe-iJehQif7KC4tQCDdGge6g4@mail.gmail.com>
+	<201007032302.41796.linux@rainbow-software.org>
+	<AANLkTiki_vUhyJzVW1ywwlFKnllpP05nGRkjYtlUaMDP@mail.gmail.com>
+	<4C2FD0B5.3020004@gmail.com>
+Date: Sun, 4 Jul 2010 04:46:34 +0200
+Message-ID: <AANLkTik0hjeYmOvO4hzDqfezN5vCRVw3qHSrxc1R93pz@mail.gmail.com>
+Subject: Re: SH-D163C
+From: Jacek Poplawski <jacekpoplawski@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Ondrej Zary <linux@rainbow-software.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Jul 4, 2010 at 2:07 AM, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+>>> The problem is that it really is a DVD-ROM:
+>>> http://www.google.com/search?q=%22SH-D163C%22+site%3Asamsung.com
+>>
+>> You are right, now I understand why it was so cheap :) Sorry :)
+>
+> so creating a patch is not worth it then!?.. was hoping you did..
 
-In omfs_fill_super(), when returning on error, sbi is not being freed.
-
-Thanks,
-Davidlohr.
-
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- fs/omfs/inode.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/fs/omfs/inode.c b/fs/omfs/inode.c
-index 089839a..253846e 100644
---- a/fs/omfs/inode.c
-+++ b/fs/omfs/inode.c
-@@ -523,12 +523,14 @@ static int omfs_fill_super(struct super_block *sb, void *data, int silent)
- 	}
- 	printk(KERN_DEBUG "omfs: Mounted volume %s\n", omfs_rb->r_name);
- 
--	ret = 0;
-+	ret = 0; /* success */
- out_brelse_bh2:
- 	brelse(bh2);
- out_brelse_bh:
- 	brelse(bh);
- end:
-+	if (ret != 0)
-+		kfree(sbi);
- 	return ret;
- }
- 
--- 
-1.7.0.4
-
-
-
+It works as a DVD reader without problems, I was just wondering why I
+can't burn anything :)
+Sorry again.
