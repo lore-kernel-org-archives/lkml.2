@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672Ab0GDORX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 10:17:23 -0400
-Received: from [163.20.135.129] ([163.20.135.129]:62248 "EHLO
-	mail.phjh.tpc.edu.tw" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756379Ab0GDORW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 10:17:22 -0400
-From: "DR.DONALD ALLEN LOAN SERVICES" <dr.donaldallenloans@info.org>
-Reply-To: donald_allen01@hotmail.com
-Subject: N/A
-Date: Sun, 4 Jul 2010 16:38:51 +0300
-Message-Id: <20100704133852.M56692@info.org>
-X-Mailer: OpenWebMail 2.52 20060502
-X-OriginatingIP: 41.138.172.43 (winnie116)
+	id S1757683Ab0GDObK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 10:31:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45903 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757395Ab0GDObH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jul 2010 10:31:07 -0400
+Message-ID: <4C309B23.9060808@redhat.com>
+Date: Sun, 04 Jul 2010 17:30:59 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=euc-jp
-To: undisclosed-recipients:;
-X-NetStation-Status: PASS
-X-NetStation-SPAM: 0.00/5.00-6.00
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 5/6] KVM: MMU: combine guest pte read between walk
+ and pte prefetch
+References: <4C2C9DC0.8050607@cn.fujitsu.com> <4C2C9E6C.2040803@cn.fujitsu.com> <20100702170303.GC25969@amt.cnet> <4C2F117C.2000006@cn.fujitsu.com> <4C2F2835.5060508@redhat.com> <4C2F2A0C.90704@cn.fujitsu.com> <4C2F2C5B.9020503@redhat.com> <4C2F2DBB.50904@cn.fujitsu.com> <4C2F30BD.7050702@redhat.com> <4C2F31D9.5010104@redhat.com> <4C2F3527.3020307@cn.fujitsu.com>
+In-Reply-To: <4C2F3527.3020307@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Viewers.
+On 07/03/2010 04:03 PM, Xiao Guangrong wrote:
+>
+> Avi Kivity wrote:
+>
+>    
+>>>
+>>> Well, in the description, it looked like everything was using small
+>>> pages (in kvm, level=1 means PTE level, we need to change this one
+>>> day).  Please describe again and say exactly when the guest or host
+>>> uses large pages.
+>>>
+>>>
+>>>        
+>> Oh, I see what you mean.
+>>
+>> Regarding the patch, is it possible just to move the check before,
+>> instead of adding the 'check' variable?
+>>
+>>      
+> Umm, if we move the check before the judgment, it'll check every level,
+> actually, only the opened mapping and the laster level need checked, so
+> for the performance reason, maybe it's better to keep two check-point.
+>    
 
-I am a financier I am willing to lend out loans at 3% interest, contact this 
-management today with these details if interested.
+What exactly are the conditions when you want to check?
 
-We offer the following kinds of loans and many more;
-  * Personal Loans ( Unsecured Loan)
-  * Business Loans ( Unsecured Loan)
-  * Consolidation Loan
-  * Combination Loan
-  * Home Improvement
+Perhaps we do need to check every level.  A write to a PDE (or higher 
+level) will clear the corresponding spte, but a fault immediately 
+afterwards can re-establish the spte to point to the new page.
 
-{BORROWER'S DATA INFORMATION}
+-- 
+error compiling committee.c: too many arguments to function
 
-FULL NAME:..................
-FULL ADDRESS:...............
-COUNTRY:....................
-PHONE NUMBER: ..............
-OCCUPATION:.................
-MONTHLY INCOME..............
-LOAN AMOUNT NEEDED:.........
-LOAN DURATION...............
-AGE:........................
-SEX.........................
-Email:......................
-
-Note: we only give out loan in US Dollar, Euro and Great British Pound and 
-you have to choose among these currency.
-
-Regards.
-DR.DONALD ALLEN LOAN SERVICES.
