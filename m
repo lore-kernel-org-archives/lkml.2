@@ -1,122 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab0GDNW5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 09:22:57 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:56743 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757524Ab0GDNW4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 09:22:56 -0400
-Subject: Re: [PATCH] VIDEO: ivtvfb, remove unneeded NULL test
-From: Andy Walls <awalls@md.metrocast.net>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Ian Armstrong <ian@iarmst.demon.co.uk>,
-       ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
-In-Reply-To: <4C30372D.9050304@suse.cz>
-References: <1277206910-27228-1-git-send-email-jslaby@suse.cz>
-	 <1278216707.2644.32.camel@localhost>  <4C30372D.9050304@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 04 Jul 2010 09:22:25 -0400
-Message-ID: <1278249745.2280.46.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
- definitions=2010-07-02_03:2010-02-06,2010-07-02,2010-07-04 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1007040050
+	id S1757722Ab0GDNvr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 09:51:47 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:55348 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757609Ab0GDNvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jul 2010 09:51:46 -0400
+Date: Sun, 4 Jul 2010 06:50:10 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       Ethan Lawrence <e.law87@yahoo.com>, Jim Cromie <jim.cromie@gmail.com>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Iain <selsinork@gmail.com>,
+       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "lars4910@hotmail.com" <lars4910@hotmail.com>,
+       "birdie@permonline.ru" <birdie@permonline.ru>,
+       "jadcock@cox.net" <jadcock@cox.net>,
+       "binximeng@gmail.com" <binximeng@gmail.com>
+Subject: Re: [PATCH v4 1/2] hwmon: w83627ehf driver cleanup
+Message-ID: <20100704135010.GA21500@ericsson.com>
+References: <1278195202-2683-1-git-send-email-guenter.roeck@ericsson.com>
+ <1278195202-2683-2-git-send-email-guenter.roeck@ericsson.com>
+ <20100704132442.07a5ef40@hyperion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100704132442.07a5ef40@hyperion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-04 at 09:24 +0200, Jiri Slaby wrote:
-> On 07/04/2010 06:11 AM, Andy Walls wrote:
-> > You missed an identical instance of the useless test 10 lines prior in
-> > ivtvfb_callback_init(). :)
+Hi Jean,
+
+On Sun, Jul 04, 2010 at 07:24:42AM -0400, Jean Delvare wrote:
+> Hi Guenter,
 > 
-> Ah, thank you for pointing out. Find my comment below.
-> 
-> > --- a/drivers/media/video/ivtv/ivtvfb.c
-> > +++ b/drivers/media/video/ivtv/ivtvfb.c
-> > @@ -1201,9 +1201,14 @@ static int ivtvfb_init_card(struct ivtv *itv)
-> >  static int __init ivtvfb_callback_init(struct device *dev, void *p)
-> >  {
-> >         struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
-> > -       struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
-> > +       struct ivtv *itv;
+> On Sat, 3 Jul 2010 15:13:21 -0700, Guenter Roeck wrote:
+> > - Moved fan pwm register array pointers into per-instance data.
+> > - Only read fan pwm data for installed/supported fans.
+> > - Update fan max output and fan step output information from data in registers.
+> > - Create max_output and step_output attribute files only if respective
+> >   fan pwm registers exist.
+> > 
+> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > ---
+> >  drivers/hwmon/w83627ehf.c |   59 ++++++++++++++++++++++++++++++++++++++++++--
+> >  1 files changed, 56 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
+> > index 0dcaba9..e01a3e9 100644
+> > --- a/drivers/hwmon/w83627ehf.c
+> > +++ b/drivers/hwmon/w83627ehf.c
+> > @@ -277,6 +277,11 @@ struct w83627ehf_data {
+> >  	struct device *hwmon_dev;
+> >  	struct mutex lock;
 > >  
-> > -       if (itv && (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT)) {
-> > +       if (v4l2_dev == NULL)
-> > +               return 0;
+> > +	const u8 *REG_FAN_START_OUTPUT;
+> > +	const u8 *REG_FAN_STOP_OUTPUT;
+> > +	const u8 *REG_FAN_MAX_OUTPUT;
+> > +	const u8 *REG_FAN_STEP_OUTPUT;
 > > +
-> > +       itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
-> > +
-> > +       if (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT) {
-> >                 if (ivtvfb_init_card(itv) == 0) {
-> >                         IVTVFB_INFO("Framebuffer registered on %s\n",
-> >                                         itv->v4l2_dev.name);
-> > @@ -1216,10 +1221,16 @@ static int __init ivtvfb_callback_init(struct device *de
-> >  static int ivtvfb_callback_cleanup(struct device *dev, void *p)
-> >  {
-> >         struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
-> > -       struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
-> > -       struct osd_info *oi = itv->osd_info;
-> > +       struct ivtv *itv;
-> > +       struct osd_info *oi;
-> > +
-> > +       if (v4l2_dev == NULL)
-> > +               return 0;
+> >  	struct mutex update_lock;
+> >  	char valid;		/* !=0 if following fields are valid */
+> >  	unsigned long last_updated;	/* In jiffies */
+> > @@ -524,7 +529,10 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
+> >  			}
+> >  		}
+> >  
+> > -		for (i = 0; i < 4; i++) {
+> > +		for (i = 0; i < data->pwm_num; i++) {
+> > +			if (!(data->has_fan & (1 << i)))
+> > +				continue;
 > 
-> >From my POV I NACK this. Given that it never triggered and drvdata are
-> set in v4l2_device_register called from ivtv_probe I can't see how
-> v4l2_dev be NULL. Could you elaborate?
+> I'm skeptical. data->has_fan refers to fan inputs, not fan outputs.
+> There is no guarantee that pwm1 is mapped to fan1, etc., so you can't
+> use data->has_fan to discard fan outputs.
+> 
+Maybe, but they are treated as 1:1 for fan4 when creating the pwm files,
+and the pwm files for fan4 are not created if the matching bit isn't set.
+This applies to all chips supported by this driver. And for fan1..3, the
+mapping is supposed to be 1:1 per the driver documentation.
 
-I hemmed and hawed over that too.  I didn't do a very thorough analysis
-of the restrictions on unloading modules, but here was my line of
-reasoning:
+I figured that it does not make sense to read the registers for a non-existing
+attribute file.
 
-1. I assumed the check was there because presumably someone has run into
-an Ooops there before, prior to the conversion to the v4l2_device
-infrastrucutre.
+> > +
+> >  			/* pwmcfg, tolerance mapped for i=0, i=1 to same reg */
+> >  			if (i != 1) {
+> >  				pwmcfg = w83627ehf_read_value(data,
+> > @@ -546,6 +554,17 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
+> >  						W83627EHF_REG_FAN_STOP_OUTPUT[i]);
+> >  			data->fan_stop_time[i] = w83627ehf_read_value(data,
+> >  						W83627EHF_REG_FAN_STOP_TIME[i]);
+> > +
+> > +			if (data->REG_FAN_MAX_OUTPUT[i] != 0xff)
+> > +				data->fan_max_output[i] =
+> > +				  w83627ehf_read_value(data,
+> > +					       data->REG_FAN_MAX_OUTPUT[i]);
+> > +
+> > +			if (data->REG_FAN_STEP_OUTPUT[i] != 0xff)
+> > +				data->fan_step_output[i] =
+> > +				  w83627ehf_read_value(data,
+> > +					       data->REG_FAN_STEP_OUTPUT[i]);
+> > +
+> 
+> Huuu, wait a minute, So these values were supposedly exposed to
+> user-space, but were never read from their respective registers? So
+> this is a plain bug you're fixing?
+> 
+This one, yes.
 
-I have reasearched that with git log this morning, and found that
-assumption was false.  The itv NULL check is a hold-over from when the
-ivtvfb and ivtv were apparently more tightly coupled.  The itv pointer
-was originally read from an array in ivtv that could have entries set to
-NULL.  That array is long gone.
+> Now I'm wondering, how useful is a feature that has been broken forever
+> and nobody ever complained?
+> 
+No idea, really.
 
+> >  			data->target_temp[i] =
+> >  				w83627ehf_read_value(data,
+> >  					W83627EHF_REG_TARGET[i]) &
+> > @@ -1126,7 +1145,7 @@ store_##reg(struct device *dev, struct device_attribute *attr, \
+> >  	u32 val = SENSORS_LIMIT(simple_strtoul(buf, NULL, 10), 1, 255); \
+> >  	mutex_lock(&data->update_lock); \
+> >  	data->reg[nr] = val; \
+> > -	w83627ehf_write_value(data, W83627EHF_REG_##REG[nr], val); \
+> > +	w83627ehf_write_value(data, data->REG_##REG[nr], val); \
+> >  	mutex_unlock(&data->update_lock); \
+> >  	return count; \
+> >  }
+> > @@ -1206,12 +1225,26 @@ static struct sensor_device_attribute sda_sf3_arrays[] = {
+> >  		    store_fan_stop_output, 1),
+> >  	SENSOR_ATTR(pwm3_stop_output, S_IWUSR | S_IRUGO, show_fan_stop_output,
+> >  		    store_fan_stop_output, 2),
+> > +};
+> >  
+> > -	/* pwm1 and pwm3 don't support max and step settings */
+> > +
+> > +/*
+> > + * pwm1 and pwm3 don't support max and step settings on all chips.
+> > + * Need to check support while generating/removing attribute files.
+> > + */
+> > +static struct sensor_device_attribute sda_sf3_max_step_arrays[] = {
+> > +	SENSOR_ATTR(pwm1_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
+> > +		    store_fan_max_output, 0),
+> > +	SENSOR_ATTR(pwm1_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
+> > +		    store_fan_step_output, 0),
+> >  	SENSOR_ATTR(pwm2_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
+> >  		    store_fan_max_output, 1),
+> >  	SENSOR_ATTR(pwm2_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
+> >  		    store_fan_step_output, 1),
+> > +	SENSOR_ATTR(pwm3_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
+> > +		    store_fan_max_output, 2),
+> > +	SENSOR_ATTR(pwm3_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
+> > +		    store_fan_step_output, 2),
+> >  };
+> >  
+> >  static ssize_t
+> > @@ -1235,6 +1268,12 @@ static void w83627ehf_device_remove_files(struct device *dev)
+> >  
+> >  	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays); i++)
+> >  		device_remove_file(dev, &sda_sf3_arrays[i].dev_attr);
+> > +	for (i = 0; i < ARRAY_SIZE(sda_sf3_max_step_arrays); i++) {
+> > +		struct sensor_device_attribute *attr =
+> > +		  &sda_sf3_max_step_arrays[i];
+> > +		if (data->REG_FAN_STEP_OUTPUT[attr->index] != 0xff)
+> > +			device_remove_file(dev, &attr->dev_attr);
+> > +	}
+> >  	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays_fan4); i++)
+> >  		device_remove_file(dev, &sda_sf3_arrays_fan4[i].dev_attr);
+> >  	for (i = 0; i < data->in_num; i++) {
+> > @@ -1352,6 +1391,11 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+> >  		data->in6_skip = !data->temp3_disable;
+> >  	}
+> >  
+> > +	data->REG_FAN_START_OUTPUT = W83627EHF_REG_FAN_START_OUTPUT;
+> > +	data->REG_FAN_STOP_OUTPUT = W83627EHF_REG_FAN_STOP_OUTPUT;
+> > +	data->REG_FAN_MAX_OUTPUT = W83627EHF_REG_FAN_MAX_OUTPUT;
+> > +	data->REG_FAN_STEP_OUTPUT = W83627EHF_REG_FAN_STEP_OUTPUT;
+> > +
+> >  	/* Initialize the chip */
+> >  	w83627ehf_init_device(data);
+> >  
+> > @@ -1440,6 +1484,15 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+> >  			&sda_sf3_arrays[i].dev_attr)))
+> >  			goto exit_remove;
+> >  
+> > +	for (i = 0; i < ARRAY_SIZE(sda_sf3_max_step_arrays); i++) {
+> > +		struct sensor_device_attribute *attr =
+> > +		  &sda_sf3_max_step_arrays[i];
+> > +		if (data->REG_FAN_STEP_OUTPUT[attr->index] != 0xff) {
+> > +			err = device_create_file(dev, &attr->dev_attr);
+> > +			if (err)
+> > +				goto exit_remove;
+> > +		}
+> > +	}
+> >  	/* if fan4 is enabled create the sf3 files for it */
+> >  	if ((data->has_fan & (1 << 3)) && data->pwm_num >= 4)
+> >  		for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays_fan4); i++) {
+> 
+> 
+> Nice cleanup overall.
+> 
+Thanks
 
-
-2. Note that the ivtvfb driver is not automatically loaded nor unloaded
-by the kernel ivtv driver.  Something from userspace will reqeust the
-load and unload of the module.
-
-There are windows of time where a struct device * will exist for a card
-in the ivtv driver, but a struct v4l2_device * may not: the end of
-ivtv_remove() and the beginning of ivtv_probe().
-
-I was contemplating a case where user space requested unloading both the
-ivtvfb and the ivtv driver.  Given all the I2C devices these cards can
-have, I thought v4l2_device_unregister() at the end of ivtv_remove()
-could present a window of time large enough to worry about a race.
-v4l2_device_unregister() sets the struct device  drvdata pointer to
-NULL, and then begins unregistering the i2c clients.  I haven't profiled
-the process to know how long it typically takes, though.
-
-I also don't know if kernel mechanisms will absolutely prevent
-initiating the unload of ivtv.ko before the unload of ivtvfb.ko is
-completely finished.  Will they?
-
-$ modinfo ivtvfb | grep -E '(depend)|(alias)'
-depends:        ivtv
-
-$ modinfo ivtv | grep -E '(depend)|(alias)'
-alias:          pci:v00004444d00000016sv*sd*bc*sc*i*
-alias:          pci:v00004444d00000803sv*sd*bc*sc*i*
-depends:        cx2341x,videodev,tveeprom,v4l2-common,i2c-core,i2c-algo-bit
-
-Regards,
-Andy
-
+Guenter
