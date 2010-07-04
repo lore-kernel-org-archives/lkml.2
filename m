@@ -1,301 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab0GDIBt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 04:01:49 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:50498 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755847Ab0GDIBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 04:01:48 -0400
-X-Greylist: delayed 1855 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jul 2010 04:01:47 EDT
-Date: Sun, 4 Jul 2010 10:01:46 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       John Kacur <jkacur@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 2/6] block: push down BKL into .open and .release
-Message-ID: <20100704080146.GA31828@merkur.ravnborg.org>
-References: <1278193640-24223-1-git-send-email-arnd@arndb.de> <1278193640-24223-3-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278193640-24223-3-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756938Ab0GDIXw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 04:23:52 -0400
+Received: from a.ns.protobalance.com ([95.211.116.249]:40617 "EHLO
+	protonet.co.za" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756220Ab0GDIXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jul 2010 04:23:50 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jul 2010 04:23:49 EDT
+Subject: USB mass storage fails to register on kernel 2.6.32
+From: Paul Sheer <p@2038bug.com>
+To: linux-kernel@vger.kernel.org, zaitcev@redhat.com,
+       linux-usb-devel@lists.sourceforge.net, dbrownell@users.sourceforge.net,
+       johannes@erdfelt.com, mdharm-usb@one-eyed-alien.net, gregkh@suse.de,
+       stern@rowland.harvard.edu, paulsheer@gmail.com
+Content-Type: text/plain
+Date: Sun, 04 Jul 2010 10:03:03 +0200
+Message-Id: <1278230583.6443.27.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.6.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  
->  static int DAC960_getgeo(struct block_device *bdev, struct hd_geometry *geo)
-> diff --git a/drivers/block/amiflop.c b/drivers/block/amiflop.c
-> index 7a51535..8af7af7 100644
-> --- a/drivers/block/amiflop.c
-> +++ b/drivers/block/amiflop.c
-> @@ -1555,10 +1555,13 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
->  	int old_dev;
->  	unsigned long flags;
->  
-> +	lock_kernel();
->  	old_dev = fd_device[drive];
->  
-> -	if (fd_ref[drive] && old_dev != system)
-> +	if (fd_ref[drive] && old_dev != system) {
-> +		unlock_kernel();
->  		return -EBUSY;
-> +	}
->  
->  	if (mode & (FMODE_READ|FMODE_WRITE)) {
->  		check_disk_change(bdev);
-> @@ -1571,8 +1574,10 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
->  			fd_deselect (drive);
->  			rel_fdc();
->  
-> -			if (wrprot)
-> +			if (wrprot) {
-> +				unlock_kernel();
->  				return -EROFS;
-> +			}
->  		}
->  	}
->  
-> @@ -1589,6 +1594,7 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
->  	printk(KERN_INFO "fd%d: accessing %s-disk with %s-layout\n",drive,
->  	       unit[drive].type->name, data_types[system].name);
->  
-> +	unlock_kernel();
->  	return 0;
->  }
 
-Using goto for errorhandling here would have been nicer.
-Also did you forget to include smp_locks.h?
+Hi there,
+
+I have a Samsung Story external USB-2.0 1.5TB drive that fails to
+detect as a device in more recent kernel versions. Full kmsg details
+are below. Note that a USB thumb drive works fine on my system.
+Older kernels work fine with the Samsung also. In terms of which
+version of the kernel this stopped working, this I don't know.
+
+
+uname -a gives:
+
+    Linux version 2.6.32-23-generic (buildd@rothera) (gcc version
+    4.4.3 (Ubuntu 4.4.3-4ubuntu5) ) #37-Ubuntu SMP Fri Jun 11
+    07:54:58 UTC 2010
 
 
 
->  
-> @@ -1597,6 +1603,7 @@ static int floppy_release(struct gendisk *disk, fmode_t mode)
->  	struct amiga_floppy_struct *p = disk->private_data;
->  	int drive = p - unit;
->  
-> +	lock_kernel();
->  	if (unit[drive].dirty == 1) {
->  		del_timer (flush_track_timer + drive);
->  		non_int_flush_track (drive);
-> @@ -1610,6 +1617,7 @@ static int floppy_release(struct gendisk *disk, fmode_t mode)
->  /* the mod_use counter is handled this way */
->  	floppy_off (drive | 0x40000000);
->  #endif
-> +	unlock_kernel();
->  	return 0;
->  }
-
-Cooked up the following replacement patch:
-[Not build tested]
-
-diff --git a/drivers/block/amiflop.c b/drivers/block/amiflop.c
-index 832798a..25d63cf 100644
---- a/drivers/block/amiflop.c
-+++ b/drivers/block/amiflop.c
-@@ -67,6 +67,7 @@
- #include <linux/elevator.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
-+#include <linux/smp_lock.h>
- 
- #include <asm/setup.h>
- #include <asm/uaccess.h>
-@@ -1541,11 +1542,16 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
- 	int system =  (MINOR(bdev->bd_dev) & 4) >> 2;
- 	int old_dev;
- 	unsigned long flags;
-+	int err;
- 
-+	err = 0;
-+	lock_kernel();
- 	old_dev = fd_device[drive];
- 
--	if (fd_ref[drive] && old_dev != system)
--		return -EBUSY;
-+	if (fd_ref[drive] && old_dev != system) {
-+		err = -EBUSY;
-+		goto out;
-+	}
- 
- 	if (mode & (FMODE_READ|FMODE_WRITE)) {
- 		check_disk_change(bdev);
-@@ -1558,8 +1564,10 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
- 			fd_deselect (drive);
- 			rel_fdc();
- 
--			if (wrprot)
--				return -EROFS;
-+			if (wrprot) {
-+				err = -EROFS;
-+				goto out;
-+			}
- 		}
- 	}
- 
-@@ -1576,7 +1584,9 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
- 	printk(KERN_INFO "fd%d: accessing %s-disk with %s-layout\n",drive,
- 	       unit[drive].type->name, data_types[system].name);
- 
--	return 0;
-+out:
-+	unlock_kernel();
-+	return err;
- }
- 
- static int floppy_release(struct gendisk *disk, fmode_t mode)
-@@ -1584,6 +1594,7 @@ static int floppy_release(struct gendisk *disk, fmode_t mode)
- 	struct amiga_floppy_struct *p = disk->private_data;
- 	int drive = p - unit;
- 
-+	lock_kernel();
- 	if (unit[drive].dirty == 1) {
- 		del_timer (flush_track_timer + drive);
- 		non_int_flush_track (drive);
-@@ -1597,6 +1608,7 @@ static int floppy_release(struct gendisk *disk, fmode_t mode)
- /* the mod_use counter is handled this way */
- 	floppy_off (drive | 0x40000000);
- #endif
-+	unlock_kernel();
- 	return 0;
- }
- 
-
-Feel free to use this as is.
+My kmsg output when plugging in the drive is as follows:
 
 
-> +++ b/drivers/block/aoe/aoeblk.c
-> @@ -12,6 +12,7 @@
->  #include <linux/slab.h>
->  #include <linux/genhd.h>
->  #include <linux/netdevice.h>
-> +#include <linux/smp_lock.h>
->  #include "aoe.h"
->  
->  static struct kmem_cache *buf_pool_cache;
-> @@ -124,13 +125,16 @@ aoeblk_open(struct block_device *bdev, fmode_t mode)
->  	struct aoedev *d = bdev->bd_disk->private_data;
->  	ulong flags;
->  
-> +	lock_kernel();
->  	spin_lock_irqsave(&d->lock, flags);
->  	if (d->flags & DEVFL_UP) {
->  		d->nopen++;
->  		spin_unlock_irqrestore(&d->lock, flags);
-> +		unlock_kernel();
->  		return 0;
->  	}
->  	spin_unlock_irqrestore(&d->lock, flags);
-> +	unlock_kernel();
->  	return -ENODEV;
->  }
+    <6>[  244.624034] usb 1-10: new high speed USB device using ehci_hcd
+and address 3
+    <3>[  244.780033] usb 1-10: device descriptor read/64, error -32
+    <3>[  245.036030] usb 1-10: device descriptor read/64, error -32
+    <6>[  245.252038] usb 1-10: new high speed USB device using ehci_hcd
+and address 4
+    <3>[  245.862496] usb 1-10: unable to read config index 0
+descriptor/start: -71
+    <3>[  245.862615] usb 1-10: chopping to 0 config(s)
+    <3>[  245.979496] usb 1-10: string descriptor 0 read error: -71
+    <4>[  245.980413] usb 1-10: no configuration chosen from 0 choices
 
-"goto out" would be cleaner.
 
-> diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-> index 1f70aec..4f2e12f 100644
-> --- a/drivers/block/pktcdvd.c
-> +++ b/drivers/block/pktcdvd.c
-> @@ -2383,6 +2383,7 @@ static int pkt_open(struct block_device *bdev, fmode_t mode)
->  
->  	VPRINTK(DRIVER_NAME": entering open\n");
->  
-> +	lock_kernel();
->  	mutex_lock(&ctl_mutex);
->  	pd = pkt_find_dev_from_minor(MINOR(bdev->bd_dev));
->  	if (!pd) {
-> @@ -2410,6 +2411,7 @@ static int pkt_open(struct block_device *bdev, fmode_t mode)
->  	}
->  
->  	mutex_unlock(&ctl_mutex);
-> +	unlock_kernel();
->  	return 0;
->  
->  out_dec:
-> @@ -2417,6 +2419,7 @@ out_dec:
->  out:
->  	VPRINTK(DRIVER_NAME": failed open (%d)\n", ret);
->  	mutex_unlock(&ctl_mutex);
-> +	unlock_kernel();
->  	return ret;
->  }
->  
-> @@ -2425,6 +2428,7 @@ static int pkt_close(struct gendisk *disk, fmode_t mode)
->  	struct pktcdvd_device *pd = disk->private_data;
->  	int ret = 0;
->  
-> +	lock_kernel();
->  	mutex_lock(&ctl_mutex);
->  	pd->refcnt--;
->  	BUG_ON(pd->refcnt < 0);
-> @@ -2433,6 +2437,7 @@ static int pkt_close(struct gendisk *disk, fmode_t mode)
->  		pkt_release_dev(pd, flush);
->  	}
->  	mutex_unlock(&ctl_mutex);
-> +	unlock_kernel();
->  	return ret;
->  }
 
-Improved "goto" errorhandling would be nicer.
-Is smp_lock.h included by other files?
 
-Replacement patch (not build tested...):
+When plugging in my thumb drive I get the expected results:
 
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index 8a549db..30d585d 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -59,6 +59,8 @@
- #include <linux/freezer.h>
- #include <linux/mutex.h>
- #include <linux/slab.h>
-+#include <linux/smp_lock.h>
-+
- #include <scsi/scsi_cmnd.h>
- #include <scsi/scsi_ioctl.h>
- #include <scsi/scsi.h>
-@@ -2382,11 +2384,12 @@ static int pkt_open(struct block_device *bdev, fmode_t mode)
- 
- 	VPRINTK(DRIVER_NAME": entering open\n");
- 
-+	lock_kernel();
- 	mutex_lock(&ctl_mutex);
- 	pd = pkt_find_dev_from_minor(MINOR(bdev->bd_dev));
- 	if (!pd) {
- 		ret = -ENODEV;
--		goto out;
-+		goto out_fail;
- 	}
- 	BUG_ON(pd->refcnt < 0);
- 
-@@ -2408,14 +2411,16 @@ static int pkt_open(struct block_device *bdev, fmode_t mode)
- 		set_blocksize(bdev, CD_FRAMESIZE);
- 	}
- 
--	mutex_unlock(&ctl_mutex);
--	return 0;
-+	ret = 0;
-+	goto out;
- 
- out_dec:
- 	pd->refcnt--;
--out:
-+out_fail:
- 	VPRINTK(DRIVER_NAME": failed open (%d)\n", ret);
-+out:
- 	mutex_unlock(&ctl_mutex);
-+	unlock_kernel();
- 	return ret;
- }
- 
-Lot's of other places could benefit from improved goto error handling.
-The driver maintainers should do this (if there is a maintainer).
-I stopped with the small replacement patches.
 
-I did not find anything else going through this patch.
+    <6>[  135.216034] usb 1-10: new high speed USB device using ehci_hcd
+and address 2
+    <6>[  135.352726] usb 1-10: configuration #1 chosen from 1 choice
+    <6>[  135.410021] Initializing USB Mass Storage driver...
+    <6>[  135.410186] scsi6 : SCSI emulation for USB Mass Storage
+devices
+    <6>[  135.410460] usbcore: registered new interface driver
+usb-storage
+    <6>[  135.410466] USB Mass Storage support registered.
+    <7>[  135.414677] usb-storage: device found at 2
+    <7>[  135.414682] usb-storage: waiting for device to settle before
+scanning
+    <7>[  140.412291] usb-storage: device scan complete
+    <5>[  140.414270] scsi 6:0:0:0: Direct-Access     USB      Flash
+Disk       1100 PQ: 0 ANSI: 0 CCS
+    <5>[  140.417527] sd 6:0:0:0: Attached scsi generic sg3 type 0
+    <5>[  140.419744] sd 6:0:0:0: [sdc] 1014784 512-byte logical blocks:
+(519 MB/495 MiB)
+    <5>[  140.424490] sd 6:0:0:0: [sdc] Write Protect is off
+    <7>[  140.424500] sd 6:0:0:0: [sdc] Mode Sense: 43 00 00 00
+    <3>[  140.424506] sd 6:0:0:0: [sdc] Assuming drive cache: write
+through
+    <3>[  140.428511] sd 6:0:0:0: [sdc] Assuming drive cache: write
+through
+    <6>[  140.428631]  sdc: sdc1
+    <3>[  140.494141] sd 6:0:0:0: [sdc] Assuming drive cache: write
+through
+    <5>[  140.494261] sd 6:0:0:0: [sdc] Attached SCSI removable disk
 
-	Sam
+
+
+
+usb-devices  output is as follows:
+
+    
+    T:  Bus=01 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=480 MxCh=10
+    D:  Ver= 2.00 Cls=09(hub  ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+    P:  Vendor=1d6b ProdID=0002 Rev=02.06
+    S:  Manufacturer=Linux 2.6.32-23-generic ehci_hcd
+    S:  Product=EHCI Host Controller
+    S:  SerialNumber=0000:00:02.1
+    C:  #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=0mA
+    I:  If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
+    
+    T:  Bus=01 Lev=01 Prnt=01 Port=09 Cnt=01 Dev#=  2 Spd=480 MxCh= 0
+    D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  0
+    P:  Vendor=04e8 ProdID=5f06 Rev=00.00
+    S:  Manufacturer=JMicron
+    S:  SerialNumber=0000002CE09310500626
+    C:  #Ifs= 0 Cfg#= 0 Atr= MxPwr=
+    cat: /sys/bus/usb/devices/usb1/1-10/1-*:?.*/bInterfaceNumber: No
+such file or directory
+    cat: /sys/bus/usb/devices/usb1/1-10/1-*:?.*/bAlternateSetting: No
+such file or directory
+    cat: /sys/bus/usb/devices/usb1/1-10/1-*:?.*/bNumEndpoints: No such
+file or directory
+    cat: /sys/bus/usb/devices/usb1/1-10/1-*:?.*/bInterfaceClass: No such
+file or directory
+    cat: /sys/bus/usb/devices/usb1/1-10/1-*:?.*/bInterfaceSubClass: No
+such file or directory
+    cat: /sys/bus/usb/devices/usb1/1-10/1-*:?.*/bInterfaceProtocol: No
+such file or directory
+    /usr/bin/usb-devices: line 79: printf: (none): invalid number
+    I:  If#= 0 Alt= 0 #EPs= 0 Cls=() Sub= Prot= Driver=
+    
+    T:  Bus=02 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh=10
+    D:  Ver= 1.10 Cls=09(hub  ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+    P:  Vendor=1d6b ProdID=0001 Rev=02.06
+    S:  Manufacturer=Linux 2.6.32-23-generic ohci_hcd
+    S:  Product=OHCI Host Controller
+    S:  SerialNumber=0000:00:02.0
+    C:  #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=0mA
+    I:  If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
+
+
+I think this might be a related problem:
+
+
+http://quantan.blogspot.com/2010/03/ubuntu-1004-lts-b1-dan-usb-modem-gsm.html
+
+
+I will be unsubscribing from these lists after sending this bug
+report, so please contact me directly if you need more info at
+paulsheer at gmail
+
+
+-paul
+
+
+
+
+
