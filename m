@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab0GDKJy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 06:09:54 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47451 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757255Ab0GDKJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 06:09:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:date:message-id
-         :mime-version:x-mailer:content-transfer-encoding;
-        b=FD1dMFmnyPjVgqFAsr3I8v1b23UO7rQuJV0o0FQ6P7r0aUx/NxlzIcGR5r+1pCS6mV
-         DV+DkQvbkDW4m/E0FoGjzjMBAuomtMotP1lFth0xKevxUaxceSIekr56WbfcsihEuXqD
-         fFmpuFpFLLd9iyAznqp0MiOVA1dQhVH/LMckA=
-Subject: [PATCH] Staging: cx25821: fix brace coding style issue in
- cx25821-audio-upstream.c
-From: Joe Eloff <kagen101@gmail.com>
-Reply-To: kagen101@gmail.com
-To: gregkh@suse.de, mchehab@redhat.com, olimpiu.pascariu@gmail.com,
-       julia@diku.dk, tj@kernel.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 04 Jul 2010 12:09:34 +0200
-Message-ID: <1278238174.17566.4.camel@dermezel>
+	id S1757374Ab0GDK1M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 06:27:12 -0400
+Received: from a.ns.protobalance.com ([95.211.116.249]:40843 "EHLO
+	protonet.co.za" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756858Ab0GDK1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jul 2010 06:27:11 -0400
+Subject: Re: USB mass storage fails to register on kernel 2.6.32
+From: Paul Sheer <p@2038bug.com>
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+       Daniel Mack <daniel@caiaq.de>
+In-Reply-To: <20100704091125.GX17833@buzzloop.caiaq.de>
+References: <1278230583.6443.27.camel@localhost>
+	 <20100704091125.GX17833@buzzloop.caiaq.de>
+Content-Type: text/plain
+Date: Sun, 04 Jul 2010 12:13:03 +0200
+Message-Id: <1278238383.6443.63.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 2.6.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From b7f34cd4bf14c07f64a95f70410f34e2c843fd3b Mon Sep 17 00:00:00 2001
-From: Joe Eloff <kagen101@gmail.com>
-Date: Sun, 4 Jul 2010 11:37:03 +0200
-Subject: [PATCH] Staging: cx25821: fix brace coding style issue in cx25821-audio-upstream.c
- This is a patch to the cx25821.c file that fixes up a brace warning found by the checkpatch.pl tool
- Signed-off-by: Joe Eloff <kagen101@gmail.com>
 
----
- drivers/staging/cx25821/cx25821-audio-upstream.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Sun, 2010-07-04 at 11:11 +0200, Daniel Mack wrote:
+> On Sun, Jul 04, 2010 at 10:03:03AM +0200, Paul Sheer wrote:
+> > I have a Samsung Story external USB-2.0 1.5TB drive that fails to
+> > detect as a device in more recent kernel versions. Full kmsg details
+> 
+> Can you bisect this problem maybe?
+> 
 
-diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
-index eb39d13..e7346ec 100644
---- a/drivers/staging/cx25821/cx25821-audio-upstream.c
-+++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
-@@ -762,9 +762,9 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
- 		       str_length + 1);
- 
- 		/* Default if filename is empty string */
--		if (strcmp(dev->input_audiofilename, "") == 0) {
-+		if (strcmp(dev->input_audiofilename, "") == 0)
- 			dev->_audiofilename = "/root/audioGOOD.wav";
--		}
-+
- 	} else {
- 		str_length = strlen(_defaultAudioName);
- 		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
--- 
-1.6.3.3
+I would love to but I don't have the time unfortunately.
+
+If someone is interested in fixing this I can send them
+a new Samsung Story by mail.
+
+Any takers?
+
+-paul
+
+
 
 
 
