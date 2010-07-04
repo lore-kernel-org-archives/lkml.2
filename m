@@ -1,103 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757765Ab0GDPOV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 11:14:21 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52653 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757587Ab0GDPOT (ORCPT
+	id S1757808Ab0GDPhX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 11:37:23 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:42143 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757602Ab0GDPhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 11:14:19 -0400
-Message-ID: <4C30A4FD.4030900@oracle.com>
-Date: Sun, 04 Jul 2010 23:13:01 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Sun, 4 Jul 2010 11:37:22 -0400
+Date: Sun, 4 Jul 2010 16:37:08 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: Dave Airlie <airlied@gmail.com>, Magnus Wendt <magnus.wendt@gmail.com>,
+       Luc Verhaegen <libv@skynet.be>, LKML <linux-kernel@vger.kernel.org>,
+       dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: Closed source userspace graphics drivers with an open source
+	kernel component
+Message-ID: <20100704153708.GA21516@srcf.ucam.org>
+References: <AANLkTikfYwkxF5CXgt-fGMIYTlcmt99lOz_VyA3Kr-4R@mail.gmail.com> <20100702095815.GA6802@skynet.be> <AANLkTimNgjtvDYY42dm-6akRjQfkHayagQWwHSS3AQs7@mail.gmail.com> <20100702111029.GB6802@skynet.be> <AANLkTikomWNbwHT-kQOm8UsUS1xkMW69cZ-mC6d8Dj56@mail.gmail.com> <AANLkTinZXHi_mbmsX1HTzbMNjQx7j0rbEfTKSoz-02CF@mail.gmail.com> <AANLkTim9Y7m3gU-w6kHvQeXT92h11kIpM8dAVaDO12uZ@mail.gmail.com> <131ED6E6-9BAB-4BAC-A795-889C765C35F6@mit.edu>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>
-Subject: Re: [PATCH 2/2] ocfs2: No need to zero pages past i_size. i_size
- v2
-References: <20100702224912.GC5800@mail.oracle.com> <20100703213219.GB21262@mail.oracle.com> <20100703213343.GC21262@mail.oracle.com>
-In-Reply-To: <20100703213343.GC21262@mail.oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C30A521.0029:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <131ED6E6-9BAB-4BAC-A795-889C765C35F6@mit.edu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joel,
+On Sun, Jul 04, 2010 at 07:03:22AM -0400, Theodore Tso wrote:
 
-On 07/04/2010 05:33 AM, Joel Becker wrote:
-> 	Here's the second patch, the one that keeps us from zeroing
-> pages past i_size.  This should keep ocfs2 and Dave's writeback patch
-> happy.
->
-> Joel
->
-> -------------------------------------------------------
->
-> When ocfs2 fills a hole, it does so by allocating clusters.  When a
-> cluster is larger than the write, ocfs2 must zero the portions of the
-> cluster outside of the write.  If the clustersize is smaller than a
-> pagecache page, this is handled by the normal pagecache mechanisms, but
-> when the clustersize is larger than a page, ocfs2's write code will zero
-> the pages adjacent to the write.  This makes sure the entire cluster is
-> zeroed correctly.
->
-> Currently ocfs2 behaves exactly the same when writing past i_size.
-> However, this means ocfs2 is writing zeroed pages for portions of a new
-> cluster that are beyond i_size.  The page writeback code isn't expecting
-> this.  It treats all pages past the one containing i_size as left behind
-> due to a previous truncate operation.
->
-> Thankfully, ocfs2 calculates the number of pages it will be working on
-> up front.  The rest of the write code merely honors the original
-> calculation.  We can simply trim the number of pages to only cover the
-> actual file data.
->
-> Signed-off-by: Joel Becker<joel.becker@oracle.com>
-> ---
->   fs/ocfs2/aops.c |   15 +++++++++++----
->   1 files changed, 11 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-> index 96e6aeb..e90ad74 100644
-> --- a/fs/ocfs2/aops.c
-> +++ b/fs/ocfs2/aops.c
-<snip>
-> @@ -1142,11 +1143,17 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
->   	/*
->   	 * Figure out how many pages we'll be manipulating here. For
->   	 * non allocating write, we just change the one
-> -	 * page. Otherwise, we'll need a whole clusters worth.
-> +	 * page. Otherwise, we'll need a whole clusters worth.  If we're
-> +	 * writing past i_size, we only need enough pages to cover the
-> +	 * last page of the write.
-The comments for the whole function before the function name also needs 
-this change accordingly?
->   	 */
->   	if (new) {
->   		wc->w_num_pages = ocfs2_pages_per_cluster(inode->i_sb);
->   		start = ocfs2_align_clusters_to_page_index(inode->i_sb, cpos);
-> +		/* This is the index *past* the write */
-> +		end_index = ((user_pos + user_len)>>  PAGE_CACHE_SHIFT) + 1;
-should it be
-		end_index = ((user_pos + user_len - 1) >> PAGE_CACHE_SHIFT) + 1?
+> We have sources to our web browsers but not to the a number of the
+> various web services that the browsers talk to (GMail, AIM, Gmane, 
+> Yahoo Finance, Google Search, etc.).    
+> 
+> And we have the sources to the Intel wireless drivers, but not to the
+> firmware, and that's not necessarily considered a horrendous thing.  
 
+But we did consider it a horrendous thing when we had the source to a 
+Intel wireless driver but not the source to the usercode regulatory 
+daemon it required. Sufficiently horrendous not to merge the driver.
 
-> +		if ((start + wc->w_num_pages)>  end_index)
-> +			wc->w_num_pages = end_index - start;
-I just noticed that the below loop in ocfs2_grab_pages_for_write is
-for (i = 0; i < wc->w_num_pages; i++)
-
-I guess w_num_pages should be set to end_index - 
-start_page_of_the_cluster so that we can make sure we grab all the pages 
-in this cluster until i_size?
-
-Regards,
-Tao
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
