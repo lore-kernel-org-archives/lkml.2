@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab0GDVJb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 17:09:31 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53474 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758017Ab0GDVJ3 (ORCPT
+	id S1758078Ab0GDV3q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 17:29:46 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:31735 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758033Ab0GDV3o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 17:09:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH 2/6] block: push down BKL into .open and .release
-Date: Sun, 4 Jul 2010 23:09:09 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3+; KDE/4.4.90; x86_64; ; )
-Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       John Kacur <jkacur@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org
-References: <1278193640-24223-1-git-send-email-arnd@arndb.de> <1278193640-24223-3-git-send-email-arnd@arndb.de> <20100704080146.GA31828@merkur.ravnborg.org>
-In-Reply-To: <20100704080146.GA31828@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007042309.09727.arnd@arndb.de>
-X-Provags-ID: V02:K0:CO+NI5sFShK/H4xgOnnC4LMlAazrEDs4kQmxTf9kEou
- sYg/lawG38M8biEdEdeK2cpyA20lRoBGzFzGIZYRHtNmX8Wrki
- y4gsvLz5kNWV925cvP/m+jU0YVHXNAXKoI0196lo/j1i7TFKvv
- qGxWjgHzAkfBsLbHt8B7Jf2dFhbOXoUntDQ+uQDtsmfUerDfYz
- svEC0SVzETOwCNRDkYCvA==
+	Sun, 4 Jul 2010 17:29:44 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.0 c=1 a=oACb-Ty_HC0A:10 a=ygRHs6EKU7oA:10 a=VphdPIyG4kEA:10
+ a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=UvF3DzHK7xGbBxS6SvgA:9
+ a=v1mRptM8XqYpEFq6Dh2w4AD7SukA:4 a=CjuIK1q_8ugA:10
+Subject: Re: [PATCH] Add a pair of system calls to make extended file stats available [ver #3]
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20100630233614.32422.97038.stgit@warthog.procyon.org.uk>
+Date: Sun, 4 Jul 2010 15:06:05 -0600
+Cc: linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       linux-ext4@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A4F0A2FD-2E7E-4694-BBF0-054DE680B0CE@dilger.ca>
+References: <20100630233614.32422.97038.stgit@warthog.procyon.org.uk>
+To: David Howells <dhowells@redhat.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 04 July 2010 10:01:46 Sam Ravnborg wrote:
-> > --- a/drivers/block/amiflop.c
-> > +++ b/drivers/block/amiflop.c
-> > @@ -1555,10 +1555,13 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
-> >  	int old_dev;
-> >  	unsigned long flags;
-> >  
-> > +	lock_kernel();
-> >  	old_dev = fd_device[drive];
-> >  
-> > -	if (fd_ref[drive] && old_dev != system)
-> > +	if (fd_ref[drive] && old_dev != system) {
-> > +		unlock_kernel();
-> >  		return -EBUSY;
-> > +	}
-> >  
-> >  	if (mode & (FMODE_READ|FMODE_WRITE)) {
-> >  		check_disk_change(bdev);
-> > @@ -1571,8 +1574,10 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
-> >  			fd_deselect (drive);
-> >  			rel_fdc();
-> >  
-> > -			if (wrprot)
-> > +			if (wrprot) {
-> > +				unlock_kernel();
-> >  				return -EROFS;
-> > +			}
-> >  		}
-> >  	}
-> >  
-> > @@ -1589,6 +1594,7 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
-> >  	printk(KERN_INFO "fd%d: accessing %s-disk with %s-layout\n",drive,
-> >  	       unit[drive].type->name, data_types[system].name);
-> >  
-> > +	unlock_kernel();
-> >  	return 0;
-> >  }
-> 
-> Using goto for errorhandling here would have been nicer.
+On 2010-06-30, at 17:36, David Howells wrote:
+> Add a pair of system calls to make extended file stats available, including
+> file creation time, inode version and data version where available through the
+> underlying filesystem.
 
-I tried to minimize the chance for breaking stuff in code I cannot easily
-test build. As shown by the bug you found in my pktcdvd patch, changing the
-control flow of a function has a higher potential of introducing bugs,
-so I didn't do it for drivers that people don't care much about any more.
+I think we could spend forever discussing minor details (e.g. if it would be better to put the st_result_mask as the first field, or at least before st_gen), but it looks fairly reasonable as-is.
 
-> Also did you forget to include smp_locks.h?
+> When the system call is executed, the request_mask bitmask is read from the
+> parameter block to work out what the user is requesting.  If params is NULL, then request_mask will be assumed to be XSTAT_REQUEST__GET_ANYWAY.
 
-No, that was already there from the first patch.
+I think the only reasonable default if params == NULL is to return XSTAT_REQUEST__BASIC_STATS.  The value of XSTAT_REQUEST__EXTENDED_STATS may (AFAIK) change in the kernel in the future as the struct xstat gets more fields, unless that is not the intention.  The other option would be to rename this mask XSTAT_REQUEST__BASIC_XSTATS to indicate it represents (forever) all of the fields in the original struct xstat.
 
-> Lot's of other places could benefit from improved goto error handling.
-> The driver maintainers should do this (if there is a maintainer).
+> +int afs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+> {
+> +
+> +	stat->result_mask |= XSTAT_REQUEST_GEN | XSTAT_REQUEST_DATA_VERSION;
+> +	stat->gen = inode->i_generation;
+> +	stat->data_version = inode->i_version;
 
-If that makes Jens accept my patches, I'd gladly change them this way.
-I agree that it's cleaner and I always write my own code like that,
-but when modifying (mostly) unmaintained code, my preference is on
-trying to ensure the patch is correct.
+You didn't update the field names in any of the kernel patches,
+
+> @@ -994,6 +994,8 @@ int ecryptfs_getattr(struct vfsmount *mnt,
+> +	lower_stat.query_flags = stat->query_flags;
+> +	lower_stat.request_mask = stat->request_mask | XSTAT_REQUEST_BLOCKS;
+> 	rc = vfs_getattr(ecryptfs_dentry_to_lower_mnt(dentry),
+> 			 ecryptfs_dentry_to_lower(dentry), &lower_stat);
 
 
-> I did not find anything else going through this patch.
+Likewise, this doesn't have the newer field names.  I also don't understand why this is adding in the XSTAT_REQUEST_BLOCKS mask when that isn't requested by the caller?
 
-Ok, thanks a lot for looking through this!
+> int nfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+> {
+> +	if ((force || stat->request_mask & (XSTAT_REQUEST_MTIME |
+> +					    XSTAT_REQUEST_CTIME |
+> +					    XSTAT_REQUEST_DATA_VERSION
+> +					    )) &&
+> +	    S_ISREG(inode->i_mode)
+> +	    ) {
 
-	Arnd
+Minor nit - the parenthesis placement here looks decidedly unLinuxy.  Normally I think it should look like:
+
+	if ((force || stat->request_mask & (XSTAT_REQUEST_MTIME |
+					    XSTAT_REQUEST_CTIME |
+					    XSTAT_REQUEST_DATA_VERSION)) &&
+	    S_ISREG(inode->i_mode)) {
+
+> +	if (force || stat->request_mask & (XSTAT_REQUEST__BASIC_STATS |
+> +					   XSTAT_REQUEST_DATA_VERSION)
+> +	    ) {
+
+Likewise, I think the right style here is:
+
+	if (force || stat->request_mask & (XSTAT_REQUEST__BASIC_STATS |
+					   XSTAT_REQUEST_DATA_VERSION)) {
+
+
+Cheers, Andreas
+
+
+
+
+
