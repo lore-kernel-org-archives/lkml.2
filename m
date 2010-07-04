@@ -1,126 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab0GDLIo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 07:08:44 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:51652 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757449Ab0GDLIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 07:08:37 -0400
-Date: Sun, 4 Jul 2010 13:08:35 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-       alsa-devel@alsa-project.org
-Subject: Re: [PATCH 2/6] sound/oss: convert to unlocked_ioctl
-Message-ID: <20100704110835.GA31920@merkur.ravnborg.org>
-References: <1278195310-25590-1-git-send-email-arnd@arndb.de> <1278195310-25590-3-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278195310-25590-3-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757477Ab0GDLYt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 07:24:49 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:61888 "EHLO poutre.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757306Ab0GDLYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jul 2010 07:24:47 -0400
+Date: Sun, 4 Jul 2010 13:24:42 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Ethan Lawrence <e.law87@yahoo.com>, Jim Cromie <jim.cromie@gmail.com>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Iain <selsinork@gmail.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org, lars4910@hotmail.com,
+       birdie@permonline.ru, jadcock@cox.net, binximeng@gmail.com
+Subject: Re: [PATCH v4 1/2] hwmon: w83627ehf driver cleanup
+Message-ID: <20100704132442.07a5ef40@hyperion.delvare>
+In-Reply-To: <1278195202-2683-2-git-send-email-guenter.roeck@ericsson.com>
+References: <1278195202-2683-1-git-send-email-guenter.roeck@ericsson.com>
+	<1278195202-2683-2-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Guenter,
+
+On Sat, 3 Jul 2010 15:13:21 -0700, Guenter Roeck wrote:
+> - Moved fan pwm register array pointers into per-instance data.
+> - Only read fan pwm data for installed/supported fans.
+> - Update fan max output and fan step output information from data in registers.
+> - Create max_output and step_output attribute files only if respective
+>   fan pwm registers exist.
 > 
-> diff --git a/sound/oss/au1550_ac97.c b/sound/oss/au1550_ac97.c
-> index c1070e3..3547450 100644
-> --- a/sound/oss/au1550_ac97.c
-> +++ b/sound/oss/au1550_ac97.c
-> @@ -824,22 +824,26 @@ mixdev_ioctl(struct ac97_codec *codec, unsigned int cmd,
->  	return codec->mixer_ioctl(codec, cmd, arg);
->  }
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+>  drivers/hwmon/w83627ehf.c |   59 ++++++++++++++++++++++++++++++++++++++++++--
+>  1 files changed, 56 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
+> index 0dcaba9..e01a3e9 100644
+> --- a/drivers/hwmon/w83627ehf.c
+> +++ b/drivers/hwmon/w83627ehf.c
+> @@ -277,6 +277,11 @@ struct w83627ehf_data {
+>  	struct device *hwmon_dev;
+>  	struct mutex lock;
 >  
-> -static int
-> -au1550_ioctl_mixdev(struct inode *inode, struct file *file,
-> -			       unsigned int cmd, unsigned long arg)
-> +static long
-> +au1550_ioctl_mixdev(struct file *file, unsigned int cmd, unsigned long arg)
->  {
->  	struct au1550_state *s = (struct au1550_state *)file->private_data;
->  	struct ac97_codec *codec = s->codec;
-> +	int ret;
+> +	const u8 *REG_FAN_START_OUTPUT;
+> +	const u8 *REG_FAN_STOP_OUTPUT;
+> +	const u8 *REG_FAN_MAX_OUTPUT;
+> +	const u8 *REG_FAN_STEP_OUTPUT;
 > +
-> +	lock_kernel();
-> +	ret = mixdev_ioctl(codec, cmd, arg);
-> +	unlock_kernel();
+>  	struct mutex update_lock;
+>  	char valid;		/* !=0 if following fields are valid */
+>  	unsigned long last_updated;	/* In jiffies */
+> @@ -524,7 +529,10 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
+>  			}
+>  		}
 >  
-> -	return mixdev_ioctl(codec, cmd, arg);
-> +	return ret;
->  }
+> -		for (i = 0; i < 4; i++) {
+> +		for (i = 0; i < data->pwm_num; i++) {
+> +			if (!(data->has_fan & (1 << i)))
+> +				continue;
 
-General comment...
-In several places you declare a local variable of type "int",
-but the function return a long.
+I'm skeptical. data->has_fan refers to fan inputs, not fan outputs.
+There is no guarantee that pwm1 is mapped to fan1, etc., so you can't
+use data->has_fan to discard fan outputs.
 
-I know that mixdev_ioctl() return an int so nothing is lost but
-it just looks wrong.
-
-> diff --git a/sound/oss/dmasound/dmasound_core.c b/sound/oss/dmasound/dmasound_core.c
-> index 3f3c3f7..b5464fb 100644
-> --- a/sound/oss/dmasound/dmasound_core.c
-> +++ b/sound/oss/dmasound/dmasound_core.c
-> @@ -337,8 +337,8 @@ static int mixer_release(struct inode *inode, struct file *file)
->  	unlock_kernel();
->  	return 0;
->  }
-> -static int mixer_ioctl(struct inode *inode, struct file *file, u_int cmd,
-> -		       u_long arg)
 > +
-> +static long mixer_ioctl(struct file *file, u_int cmd, u_long arg)
->  {
->  	if (_SIOC_DIR(cmd) & _SIOC_WRITE)
->  	    mixer.modify_counter++;
-> @@ -362,11 +362,22 @@ static int mixer_ioctl(struct inode *inode, struct file *file, u_int cmd,
->  	return -EINVAL;
+>  			/* pwmcfg, tolerance mapped for i=0, i=1 to same reg */
+>  			if (i != 1) {
+>  				pwmcfg = w83627ehf_read_value(data,
+> @@ -546,6 +554,17 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
+>  						W83627EHF_REG_FAN_STOP_OUTPUT[i]);
+>  			data->fan_stop_time[i] = w83627ehf_read_value(data,
+>  						W83627EHF_REG_FAN_STOP_TIME[i]);
+> +
+> +			if (data->REG_FAN_MAX_OUTPUT[i] != 0xff)
+> +				data->fan_max_output[i] =
+> +				  w83627ehf_read_value(data,
+> +					       data->REG_FAN_MAX_OUTPUT[i]);
+> +
+> +			if (data->REG_FAN_STEP_OUTPUT[i] != 0xff)
+> +				data->fan_step_output[i] =
+> +				  w83627ehf_read_value(data,
+> +					       data->REG_FAN_STEP_OUTPUT[i]);
+> +
+
+Huuu, wait a minute, So these values were supposedly exposed to
+user-space, but were never read from their respective registers? So
+this is a plain bug you're fixing?
+
+Now I'm wondering, how useful is a feature that has been broken forever
+and nobody ever complained?
+
+>  			data->target_temp[i] =
+>  				w83627ehf_read_value(data,
+>  					W83627EHF_REG_TARGET[i]) &
+> @@ -1126,7 +1145,7 @@ store_##reg(struct device *dev, struct device_attribute *attr, \
+>  	u32 val = SENSORS_LIMIT(simple_strtoul(buf, NULL, 10), 1, 255); \
+>  	mutex_lock(&data->update_lock); \
+>  	data->reg[nr] = val; \
+> -	w83627ehf_write_value(data, W83627EHF_REG_##REG[nr], val); \
+> +	w83627ehf_write_value(data, data->REG_##REG[nr], val); \
+>  	mutex_unlock(&data->update_lock); \
+>  	return count; \
 >  }
+> @@ -1206,12 +1225,26 @@ static struct sensor_device_attribute sda_sf3_arrays[] = {
+>  		    store_fan_stop_output, 1),
+>  	SENSOR_ATTR(pwm3_stop_output, S_IWUSR | S_IRUGO, show_fan_stop_output,
+>  		    store_fan_stop_output, 2),
+> +};
 >  
-> +static long mixer_unlocked_ioctl(struct file *file, u_int cmd, u_long arg)
-> +{
-> +	int ret;
+> -	/* pwm1 and pwm3 don't support max and step settings */
 > +
-> +	lock_kernel();
-> +	ret = mixer_ioctl(file, cmd, arg);
-> +	unlock_kernel();
-> +
-> +	return ret;
-> +}
-
-Here it looks like a potential but.
-mixer_ioctl() return a long which is stored in an int and then we return a long.
-
-
-> -static int sq_ioctl(struct inode *inode, struct file *file, u_int cmd,
-> -		    u_long arg)
-> +static long sq_ioctl(struct file *file, u_int cmd, u_long arg)
->  {
->  	int val, result;
->  	u_long fmt;
-> @@ -1114,18 +1124,29 @@ static int sq_ioctl(struct inode *inode, struct file *file, u_int cmd,
->  		return IOCTL_OUT(arg,val);
+> +/*
+> + * pwm1 and pwm3 don't support max and step settings on all chips.
+> + * Need to check support while generating/removing attribute files.
+> + */
+> +static struct sensor_device_attribute sda_sf3_max_step_arrays[] = {
+> +	SENSOR_ATTR(pwm1_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
+> +		    store_fan_max_output, 0),
+> +	SENSOR_ATTR(pwm1_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
+> +		    store_fan_step_output, 0),
+>  	SENSOR_ATTR(pwm2_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
+>  		    store_fan_max_output, 1),
+>  	SENSOR_ATTR(pwm2_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
+>  		    store_fan_step_output, 1),
+> +	SENSOR_ATTR(pwm3_max_output, S_IWUSR | S_IRUGO, show_fan_max_output,
+> +		    store_fan_max_output, 2),
+> +	SENSOR_ATTR(pwm3_step_output, S_IWUSR | S_IRUGO, show_fan_step_output,
+> +		    store_fan_step_output, 2),
+>  };
 >  
->  	default:
-> -		return mixer_ioctl(inode, file, cmd, arg);
-> +		return mixer_ioctl(file, cmd, arg);
+>  static ssize_t
+> @@ -1235,6 +1268,12 @@ static void w83627ehf_device_remove_files(struct device *dev)
+>  
+>  	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays); i++)
+>  		device_remove_file(dev, &sda_sf3_arrays[i].dev_attr);
+> +	for (i = 0; i < ARRAY_SIZE(sda_sf3_max_step_arrays); i++) {
+> +		struct sensor_device_attribute *attr =
+> +		  &sda_sf3_max_step_arrays[i];
+> +		if (data->REG_FAN_STEP_OUTPUT[attr->index] != 0xff)
+> +			device_remove_file(dev, &attr->dev_attr);
+> +	}
+>  	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays_fan4); i++)
+>  		device_remove_file(dev, &sda_sf3_arrays_fan4[i].dev_attr);
+>  	for (i = 0; i < data->in_num; i++) {
+> @@ -1352,6 +1391,11 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+>  		data->in6_skip = !data->temp3_disable;
 >  	}
->  	return -EINVAL;
->  }
 >  
-> +static long sq_unlocked_ioctl(struct file *file, u_int cmd, u_long arg)
-> +{
-> +	int ret;
+> +	data->REG_FAN_START_OUTPUT = W83627EHF_REG_FAN_START_OUTPUT;
+> +	data->REG_FAN_STOP_OUTPUT = W83627EHF_REG_FAN_STOP_OUTPUT;
+> +	data->REG_FAN_MAX_OUTPUT = W83627EHF_REG_FAN_MAX_OUTPUT;
+> +	data->REG_FAN_STEP_OUTPUT = W83627EHF_REG_FAN_STEP_OUTPUT;
 > +
-> +	lock_kernel();
-> +	ret = sq_ioctl(file, cmd, arg);
-> +	unlock_kernel();
-> +
-> +	return ret;
-> +}
-ditto: long -> int -> long
+>  	/* Initialize the chip */
+>  	w83627ehf_init_device(data);
+>  
+> @@ -1440,6 +1484,15 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+>  			&sda_sf3_arrays[i].dev_attr)))
+>  			goto exit_remove;
+>  
+> +	for (i = 0; i < ARRAY_SIZE(sda_sf3_max_step_arrays); i++) {
+> +		struct sensor_device_attribute *attr =
+> +		  &sda_sf3_max_step_arrays[i];
+> +		if (data->REG_FAN_STEP_OUTPUT[attr->index] != 0xff) {
+> +			err = device_create_file(dev, &attr->dev_attr);
+> +			if (err)
+> +				goto exit_remove;
+> +		}
+> +	}
+>  	/* if fan4 is enabled create the sf3 files for it */
+>  	if ((data->has_fan & (1 << 3)) && data->pwm_num >= 4)
+>  		for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays_fan4); i++) {
 
 
-	Sam
+Nice cleanup overall.
+
+-- 
+Jean Delvare
