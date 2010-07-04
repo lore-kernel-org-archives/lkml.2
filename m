@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab0GDMms (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 08:42:48 -0400
-Received: from king.tilera.com ([72.1.168.226]:26089 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757306Ab0GDMmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 08:42:46 -0400
-Message-Id: <201007041242.o64CggfV012188@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 2 Jul 2010 13:41:14 -0400
-Subject: [PATCH -v2] Move list types from <linux/list.h> to <linux/types.h>.
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-X-OriginalArrivalTime: 04 Jul 2010 12:42:45.0486 (UTC) FILETIME=[66CAF8E0:01CB1B76]
+	id S1757626Ab0GDNC6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 09:02:58 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:46786 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757451Ab0GDNC5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jul 2010 09:02:57 -0400
+Date: Sun, 4 Jul 2010 09:02:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Paul Sheer <p@2038bug.com>
+cc: Kernel development list <linux-kernel@vger.kernel.org>,
+       Pete Zaitcev <zaitcev@redhat.com>, <linux-usb@lists.sourceforge.net>,
+       <dbrownell@users.sourceforge.net>, <johannes@erdfelt.com>,
+       Matthew Dharm <mdharm-usb@one-eyed-alien.net>, <gregkh@suse.de>,
+       <paulsheer@gmail.com>
+Subject: Re: USB mass storage fails to register on kernel 2.6.32
+In-Reply-To: <1278230583.6443.27.camel@localhost>
+Message-ID: <Pine.LNX.4.44L0.1007040853120.16841-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows a list_head (or hlist_head, etc.) to be used from places
-that used to be impractical, in particular <asm/processor.h>, which
-used to cause include file recursion: <linux/list.h> includes
-<linux/prefetch.h>, which always includes <asm/processor.h> for the
-prefetch macros, as well as <asm/system.h>, which often includes
-<asm/processor.h> directly or indirectly.
+On Sun, 4 Jul 2010, Paul Sheer wrote:
 
-This avoids a lot of painful workaround hackery on the tile
-architecture, where we use a list_head in the thread_struct to chain
-together tasks that are activated on a particular hardwall.
+> Hi there,
+> 
+> I have a Samsung Story external USB-2.0 1.5TB drive that fails to
+> detect as a device in more recent kernel versions. Full kmsg details
+> are below. Note that a USB thumb drive works fine on my system.
+> Older kernels work fine with the Samsung also. In terms of which
+> version of the kernel this stopped working, this I don't know.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
+Are you certain this is related to the kernel version and isn't just a 
+bad USB connection or something of that sort?  Have you tried plugging 
+the Samsung drive into a different computer running a recent kernel?
 
-Folks on the Cc: list who commented on the -v1 patch, let me know
-if I can add your Acked-by to this patch.  Thanks.
+> My kmsg output when plugging in the drive is as follows:
+> 
+> 
+>     <6>[  244.624034] usb 1-10: new high speed USB device using ehci_hcd
+> and address 3
+>     <3>[  244.780033] usb 1-10: device descriptor read/64, error -32
+>     <3>[  245.036030] usb 1-10: device descriptor read/64, error -32
+>     <6>[  245.252038] usb 1-10: new high speed USB device using ehci_hcd
+> and address 4
+>     <3>[  245.862496] usb 1-10: unable to read config index 0
+> descriptor/start: -71
+>     <3>[  245.862615] usb 1-10: chopping to 0 config(s)
+>     <3>[  245.979496] usb 1-10: string descriptor 0 read error: -71
+>     <4>[  245.980413] usb 1-10: no configuration chosen from 0 choices
 
- include/linux/list.h  |   13 +------------
- include/linux/types.h |   12 ++++++++++++
- 2 files changed, 13 insertions(+), 12 deletions(-)
+These -71 errors are what you typically get when a device stops 
+responding or the USB signals aren't transmitted properly.
 
-diff --git a/include/linux/list.h b/include/linux/list.h
-index 8392884..bc43e8a 100644
---- a/include/linux/list.h
-+++ b/include/linux/list.h
-@@ -1,6 +1,7 @@
- #ifndef _LINUX_LIST_H
- #define _LINUX_LIST_H
- 
-+#include <linux/types.h>
- #include <linux/stddef.h>
- #include <linux/poison.h>
- #include <linux/prefetch.h>
-@@ -16,10 +17,6 @@
-  * using the generic single-entry routines.
-  */
- 
--struct list_head {
--	struct list_head *next, *prev;
--};
--
- #define LIST_HEAD_INIT(name) { &(name), &(name) }
- 
- #define LIST_HEAD(name) \
-@@ -551,14 +548,6 @@ static inline void list_splice_tail_init(struct list_head *list,
-  * You lose the ability to access the tail in O(1).
-  */
- 
--struct hlist_head {
--	struct hlist_node *first;
--};
--
--struct hlist_node {
--	struct hlist_node *next, **pprev;
--};
--
- #define HLIST_HEAD_INIT { .first = NULL }
- #define HLIST_HEAD(name) struct hlist_head name = {  .first = NULL }
- #define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL)
-diff --git a/include/linux/types.h b/include/linux/types.h
-index 23d237a..336cc39 100644
---- a/include/linux/types.h
-+++ b/include/linux/types.h
-@@ -197,6 +197,18 @@ typedef struct {
- } atomic64_t;
- #endif
- 
-+struct list_head {
-+	struct list_head *next, *prev;
-+};
-+
-+struct hlist_head {
-+	struct hlist_node *first;
-+};
-+
-+struct hlist_node {
-+	struct hlist_node *next, **pprev;
-+};
-+
- struct ustat {
- 	__kernel_daddr_t	f_tfree;
- 	__kernel_ino_t		f_tinode;
--- 
-1.6.5.2
+> I will be unsubscribing from these lists after sending this bug
+> report, so please contact me directly if you need more info at
+> paulsheer at gmail
+
+You know, it's not necessary to subscribe to the mailing lists before 
+posting messages on them.
+
+Alan Stern
 
