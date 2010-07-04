@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab0GDRkk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 13:40:40 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54237
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757844Ab0GDRkj (ORCPT
+	id S1757865Ab0GDR62 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 13:58:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41014 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab0GDR60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 13:40:39 -0400
-Date: Sun, 04 Jul 2010 10:40:52 -0700 (PDT)
-Message-Id: <20100704.104052.112588682.davem@davemloft.net>
-To: greg@kroah.com
-Cc: joe@perches.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH 0/4] Introduce and use printk pointer extension %pV
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100703160857.GA29043@kroah.com>
-References: <20100630.130709.93452021.davem@davemloft.net>
-	<20100702.223244.193707555.davem@davemloft.net>
-	<20100703160857.GA29043@kroah.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Sun, 4 Jul 2010 13:58:26 -0400
+Date: Sun, 4 Jul 2010 10:33:10 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jens Axboe <axboe@kernel.dk>,
+       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 2/6] block: push down BKL into .open and .release
+Message-ID: <20100704103310.368dee05@infradead.org>
+In-Reply-To: <20100704080146.GA31828@merkur.ravnborg.org>
+References: <1278193640-24223-1-git-send-email-arnd@arndb.de>
+	<1278193640-24223-3-git-send-email-arnd@arndb.de>
+	<20100704080146.GA31828@merkur.ravnborg.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <greg@kroah.com>
-Date: Sat, 3 Jul 2010 09:08:57 -0700
+On Sun, 4 Jul 2010 10:01:46 +0200
+Sam Ravnborg <sam@ravnborg.org> wrote:
+> Lot's of other places could benefit from improved goto error handling.
+> The driver maintainers should do this (if there is a maintainer).
+> I stopped with the small replacement patches.
 
-> On Fri, Jul 02, 2010 at 10:32:44PM -0700, David Miller wrote:
->> From: David Miller <davem@davemloft.net>
->> Date: Wed, 30 Jun 2010 13:07:09 -0700 (PDT)
->> 
->> > From: Joe Perches <joe@perches.com>
->> > Date: Sun, 27 Jun 2010 04:02:32 -0700
->> > 
->> >> Recursive printk can reduce the total image size of an x86 defconfig about 1% 
->> >> by reducing duplicated KERN_<level> strings and centralizing the functions
->> >> used by macros in new separate functions.
->> >> 
->> >> Joe Perches (4):
->> >>   vsprintf: Recursive vsnprintf: Add "%pV", struct va_format
->> >>   device.h drivers/base/core.c Convert dev_<level> logging macros to functions
->> >>   netdevice.h net/core/dev.c: Convert netdev_<level> logging macros to functions
->> >>   netdevice.h: Change netif_<level> macros to call netdev_<level> functions
->> > 
->> > I'm fine with this, thanks Joe.
->> > 
->> > Greg, could you ACK this and let me know if it's OK if it swings
->> > through my net-next-2.6 tree?
->> 
->> Greg, ping?
-> 
-> Sorry about the delay.
-> 
-> Yes, that's fine to take it through your tree, thanks for doing that:
-> 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+it's the floppy driver for amigas
+not sure if any of those are still alive at all running linux.....
 
-Thanks!  I've added this set to my tree.
+I think time can be more usefully spend on other drivers... 
+
+this guy probably should move to staging instead
+
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
