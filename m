@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab0GDQvF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 12:51:05 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:36000 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573Ab0GDQvD (ORCPT
+	id S1757941Ab0GDQ4l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 12:56:41 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:33881 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757851Ab0GDQ4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 12:51:03 -0400
-Message-ID: <4C30BBF0.1030801@cs.helsinki.fi>
-Date: Sun, 04 Jul 2010 19:50:56 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	Sun, 4 Jul 2010 12:56:40 -0400
+Date: Sun, 4 Jul 2010 10:56:38 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH -v2] Move list types from <linux/list.h> to
+	<linux/types.h>.
+Message-ID: <20100704165638.GE5842@parisc-linux.org>
+References: <201007041242.o64CggfV012188@farm-0002.internal.tilera.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Xiaotian Feng <dfeng@redhat.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Matt Mackall <mpm@selenic.com>, Vegard Nossum <vegard.nossum@gmail.com>,
-       Dmitry Monakhov <dmonakhov@openvz.org>,
-       Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH V2] slab: fix caller tracking on !CONFIG_DEBUG_SLAB &&
- CONFIG_TRACING
-References: <alpine.DEB.2.00.1004090947030.10992@chino.kir.corp.google.com> <1277891842-18898-1-git-send-email-dfeng@redhat.com> <alpine.DEB.2.00.1006301307001.27676@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1006301307001.27676@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007041242.o64CggfV012188@farm-0002.internal.tilera.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Rientjes wrote:
-> On Wed, 30 Jun 2010, Xiaotian Feng wrote:
+On Fri, Jul 02, 2010 at 01:41:14PM -0400, Chris Metcalf wrote:
+> This allows a list_head (or hlist_head, etc.) to be used from places
+> that used to be impractical, in particular <asm/processor.h>, which
+> used to cause include file recursion: <linux/list.h> includes
+> <linux/prefetch.h>, which always includes <asm/processor.h> for the
+> prefetch macros, as well as <asm/system.h>, which often includes
+> <asm/processor.h> directly or indirectly.
 > 
->> In slab, all __xxx_track_caller is defined on CONFIG_DEBUG_SLAB || CONFIG_TRACING,
->> thus caller tracking function should be worked for CONFIG_TRACING. But if
->> CONFIG_DEBUG_SLAB is not set, include/linux/slab.h will define xxx_track_caller to
->> __xxx() without consideration of CONFIG_TRACING. This will break the caller tracking
->> behaviour then.
->>
->> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
->> Cc: Christoph Lameter <cl@linux-foundation.org>
->> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
->> Cc: Matt Mackall <mpm@selenic.com>
->> Cc: Vegard Nossum <vegard.nossum@gmail.com>
->> Cc: Dmitry Monakhov <dmonakhov@openvz.org>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Cc: David Rientjes <rientjes@google.com>
+> This avoids a lot of painful workaround hackery on the tile
+> architecture, where we use a list_head in the thread_struct to chain
+> together tasks that are activated on a particular hardwall.
 > 
-> Acked-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Applied, thanks!
+Reviewed-by: Matthew Wilcox <willy@linux.intel.com>
+
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
