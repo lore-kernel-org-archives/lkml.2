@@ -1,103 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab0GDFda (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 01:33:30 -0400
-Received: from sh.osrg.net ([192.16.179.4]:46908 "EHLO sh.osrg.net"
+	id S1754638Ab0GDFjJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 01:39:09 -0400
+Received: from troy.hostgo.com ([64.62.143.130]:58479 "EHLO troy.hostgo.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753362Ab0GDFd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 01:33:28 -0400
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-To: linux-nilfs@vger.kernel.org
-Cc: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-       Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: [PATCH] nilfs2: remove BKL uses
-Date: Sun,  4 Jul 2010 14:22:08 +0900
-Message-Id: <1278220928-28121-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.6.6.2
-X-Dispatcher: imput version 20070423(IM149)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 04 Jul 2010 14:33:19 +0900 (JST)
+	id S1753888Ab0GDFjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jul 2010 01:39:07 -0400
+From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
+To: linux-kernel@vger.kernel.org
+Subject: Re: SH-D163C
+Date: Sat, 3 Jul 2010 23:38:56 -0600
+User-Agent: KMail/1.13.3 (Linux/2.6.34-0.dmz.10-liquorix-amd64; KDE/4.4.4; x86_64; ; )
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+       Jacek Poplawski <jacekpoplawski@gmail.com>,
+       Ondrej Zary <linux@rainbow-software.org>
+References: <AANLkTinZfXXALWmmVPMHe-iJehQif7KC4tQCDdGge6g4@mail.gmail.com> <AANLkTik0hjeYmOvO4hzDqfezN5vCRVw3qHSrxc1R93pz@mail.gmail.com> <4C301782.9080306@gmail.com>
+In-Reply-To: <4C301782.9080306@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007032338.57331.tfjellstrom@strangesoft.net>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - troy.hostgo.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - strangesoft.net
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nilfs has BKL uses in its put_super and remount functions, but none of
-them are necessary, just came from earlier push downs.  This
-eliminates the BKL uses from nilfs.
+On July 3, 2010, Justin P. Mattock wrote:
+> On 07/03/2010 07:46 PM, Jacek Poplawski wrote:
+> > On Sun, Jul 4, 2010 at 2:07 AM, Justin P. Mattock
+> > 
+> > <justinmattock@gmail.com>  wrote:
+> >>>> The problem is that it really is a DVD-ROM:
+> >>>> http://www.google.com/search?q=%22SH-D163C%22+site%3Asamsung.com
+> >>> 
+> >>> You are right, now I understand why it was so cheap :) Sorry :)
+> >> 
+> >> so creating a patch is not worth it then!?.. was hoping you did..
+> > 
+> > It works as a DVD reader without problems, I was just wondering why I
+> > can't burn anything :)
+> > Sorry again.
+> 
+> no reason to say sorry.. as for not burning tough to say, could be
+> software cdio, dvdrw-tools, etc... but then again could be kernel. heres
+> what I came up with(keep in mind mind could be totally wrong)
 
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
----
- fs/nilfs2/ioctl.c |    1 -
- fs/nilfs2/super.c |    9 ---------
- 2 files changed, 0 insertions(+), 10 deletions(-)
+Apparently the drive in question isn't a DVDR/DVDRW. Just a plain old 
+DVDROM.
 
-diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-index f90a33d..0442ee3 100644
---- a/fs/nilfs2/ioctl.c
-+++ b/fs/nilfs2/ioctl.c
-@@ -22,7 +22,6 @@
- 
- #include <linux/fs.h>
- #include <linux/wait.h>
--#include <linux/smp_lock.h>	/* lock_kernel(), unlock_kernel() */
- #include <linux/slab.h>
- #include <linux/capability.h>	/* capable() */
- #include <linux/uaccess.h>	/* copy_from_user(), copy_to_user() */
-diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
-index f2cfbba..29be735 100644
---- a/fs/nilfs2/super.c
-+++ b/fs/nilfs2/super.c
-@@ -45,7 +45,6 @@
- #include <linux/parser.h>
- #include <linux/random.h>
- #include <linux/crc32.h>
--#include <linux/smp_lock.h>
- #include <linux/vfs.h>
- #include <linux/writeback.h>
- #include <linux/kobject.h>
-@@ -357,8 +356,6 @@ static void nilfs_put_super(struct super_block *sb)
- 	struct nilfs_sb_info *sbi = NILFS_SB(sb);
- 	struct the_nilfs *nilfs = sbi->s_nilfs;
- 
--	lock_kernel();
--
- 	nilfs_detach_segment_constructor(sbi);
- 
- 	if (!(sb->s_flags & MS_RDONLY)) {
-@@ -376,8 +373,6 @@ static void nilfs_put_super(struct super_block *sb)
- 	sbi->s_super = NULL;
- 	sb->s_fs_info = NULL;
- 	nilfs_put_sbinfo(sbi);
--
--	unlock_kernel();
- }
- 
- static int nilfs_sync_fs(struct super_block *sb, int wait)
-@@ -913,8 +908,6 @@ static int nilfs_remount(struct super_block *sb, int *flags, char *data)
- 	struct nilfs_mount_options old_opts;
- 	int was_snapshot, err;
- 
--	lock_kernel();
--
- 	down_write(&nilfs->ns_super_sem);
- 	old_sb_flags = sb->s_flags;
- 	old_opts.mount_opt = sbi->s_mount_opt;
-@@ -988,7 +981,6 @@ static int nilfs_remount(struct super_block *sb, int *flags, char *data)
- 	}
-  out:
- 	up_write(&nilfs->ns_super_sem);
--	unlock_kernel();
- 	return 0;
- 
-  restore_opts:
-@@ -996,7 +988,6 @@ static int nilfs_remount(struct super_block *sb, int *flags, char *data)
- 	sbi->s_mount_opt = old_opts.mount_opt;
- 	sbi->s_snapshot_cno = old_opts.snapshot_cno;
- 	up_write(&nilfs->ns_super_sem);
--	unlock_kernel();
- 	return err;
- }
- 
+> _totally_ _un-tested_
+> 
+> 
+> 
+>  From b95d7b285344300b850112eb2777611fb8bae248 Mon Sep 17 00:00:00 2001
+> From: Justin P. Mattock <justinmattock@gmail.com>
+> Date: Sat, 3 Jul 2010 11:23:19 -0700
+> Subject: [PATCH] SH-D163C
+> 
+>   Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>   drivers/ata/libata-core.c |    1 +
+>   drivers/ide/ide-iops.c    |    1 +
+>   2 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+> index ddf8e48..22c99f2 100644
+> --- a/drivers/ata/libata-core.c
+> +++ b/drivers/ata/libata-core.c
+> @@ -4304,6 +4304,7 @@ static const struct ata_blacklist_entry
+> ata_device_blacklist [] = {
+>          { "QUANTUM FIREBALLlct10 05", "A03.0900", ATA_HORKAGE_IVB, },
+>          /* Maybe we should just blacklist TSSTcorp... */
+>          { "TSSTcorp CDDVDW SH-S202H", "SB00",     ATA_HORKAGE_IVB, },
+> +       { "TSSTcorp CDDVDW SH-D163C", "SB00",     ATA_HORKAGE_IVB, },
+>          { "TSSTcorp CDDVDW SH-S202H", "SB01",     ATA_HORKAGE_IVB, },
+>          { "TSSTcorp CDDVDW SH-S202J", "SB00",     ATA_HORKAGE_IVB, },
+>          { "TSSTcorp CDDVDW SH-S202J", "SB01",     ATA_HORKAGE_IVB, },
+> diff --git a/drivers/ide/ide-iops.c b/drivers/ide/ide-iops.c
+> index 376f2dc..70a6bd6 100644
+> --- a/drivers/ide/ide-iops.c
+> +++ b/drivers/ide/ide-iops.c
+> @@ -212,6 +212,7 @@ static const struct drive_list_entry ivb_list[] = {
+>          { "QUANTUM FIREBALLlct10 05"    , "A03.0900"    },
+>          { "QUANTUM FIREBALLlct20 30"    , "APL.0900"    },
+>          { "TSSTcorp CDDVDW SH-S202J"    , "SB00"        },
+> +       { "TSSTcorp CDDVDW SH-D163C"    , "SB00"        },
+>          { "TSSTcorp CDDVDW SH-S202J"    , "SB01"        },
+>          { "TSSTcorp CDDVDW SH-S202N"    , "SB00"        },
+>          { "TSSTcorp CDDVDW SH-S202N"    , "SB01"        },
+
+
 -- 
-1.6.6.2
-
+Thomas Fjellstrom
+tfjellstrom@strangesoft.net
