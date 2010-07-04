@@ -1,139 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab0GDEM0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 00:12:26 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:55738 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751257Ab0GDEMZ (ORCPT
+	id S1752718Ab0GDE1g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 00:27:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39059 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab0GDE1d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 00:12:25 -0400
-Subject: Re: [PATCH] VIDEO: ivtvfb, remove unneeded NULL test
-From: Andy Walls <awalls@md.metrocast.net>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-       Tejun Heo <tj@kernel.org>, Ian Armstrong <ian@iarmst.demon.co.uk>,
-       ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
-In-Reply-To: <1277206910-27228-1-git-send-email-jslaby@suse.cz>
-References: <1277206910-27228-1-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 04 Jul 2010 00:11:47 -0400
-Message-ID: <1278216707.2644.32.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
- definitions=2010-07-02_03:2010-02-06,2010-07-02,2010-07-03 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1007030141
+	Sun, 4 Jul 2010 00:27:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=v3qQyPGuGbG6ZnriOyGHOqGZD5y27IGUqV7G3uwujmztTKrfkmUd7FQth5fUf2qzxK
+         itzwZGmOad3w3mrq3hYjpIm5HFDs8Vbk6Nmp1CZeLzz529eriaxz8yPxL9ddFNqfABja
+         cXn8nTzKQ2JOMN+iNP/vRXR8zP1IELPSgq+GA=
+MIME-Version: 1.0
+In-Reply-To: <20100701235738.19035.21536.stgit@warthog.procyon.org.uk>
+References: <20100701235727.19035.84584.stgit@warthog.procyon.org.uk>
+	<20100701235738.19035.21536.stgit@warthog.procyon.org.uk>
+Date: Sun, 4 Jul 2010 06:27:30 +0200
+X-Google-Sender-Auth: 6LPYRSV50XQfSZlvdVDggEPUw2s
+Message-ID: <AANLkTilJVYGllPB5I2lG_MPWgxYSJmHh4dproHx563kT@mail.gmail.com>
+Subject: Re: [PATCH 3/3] xstat: Implement a requestable extra result to 
+	procure some inode flags [ver #4]
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       linux-ext4@vger.kernel.org, linux-api@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 13:41 +0200, Jiri Slaby wrote:
-> Stanse found that in ivtvfb_callback_cleanup there is an unneeded test
-> for itv being NULL. But itv is initialized as container_of with
-> non-zero offset, so it is never NULL (even if v4l2_dev is). This was
-> found because itv is dereferenced earlier than the test.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Andy Walls <awalls@md.metrocast.net>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Ian Armstrong <ian@iarmst.demon.co.uk>
-> Cc: ivtv-devel@ivtvdriver.org
-> Cc: linux-media@vger.kernel.org
+[CC+=linux-api]
+
+On Fri, Jul 2, 2010 at 1:57 AM, David Howells <dhowells@redhat.com> wrote:
+> [This is, for the moment, to be considered an example.  Do we actually want to
+>  export these flags?  Should they be a full member of struct xstat?]
+
+
+Since I suggested the idea, obviously I'm inclined to think they should ;-).
+
+Cheers,
+
+Michael
+
+
+> Allow an extra result to be requested that makes available some inode flags,
+> along the lines of BSD's st_flags and Ext2/3/4's inode flags.  This is
+> requested by setting XSTAT_REQUEST_INODE_FLAGS in the request_mask.  If the
+> filesystem supports it for that file, then this will be set in result_mask and
+> 16 bytes of information will be appended to the xstat buffer, if sufficient
+> buffer space is available.
+>
+> The extra result is laid out according to the following structure:
+>
+>        struct xstat_inode_flags {
+>                unsigned long long      st_flags;
+>                unsigned long long      st_supported_flags;
+>        };
+>
+> where the filesystem indicates the flags it supports for that file and the
+> flags that are set on that file.  The structure is of length:
+>
+>        XSTAT_LENGTH_INODE_FLAGS
+>
+> The flags come in three sets:
+>
+>  (1) User settable flags (to be consistent with the BSD st_flags field):
+>
+>        UF_NODUMP       Do not dump this file.
+>        UF_IMMUTABLE    This file is immutable.
+>        UF_APPEND       This file is append-only.
+>        UF_OPAQUE       This directory is opaque (unionfs).
+>        UF_NOUNLINK     This file can't be removed or renamed.
+>        UF_COMPRESSED   This file is compressed.
+>        UF_HIDDEN       This file shouldn't be displayed in a GUI.
+>
+>     The UF_SETTABLE constant is the union of the above flags.
+>
+>  (2) Superuser settable flags (to be consistent with the BSD st_flags field):
+>
+>        SF_ARCHIVED     This file has been archived.
+>        SF_IMMUTABLE    This file is immutable.
+>        SF_APPEND       This file is append-only.
+>        SF_NOUNLINK     This file can't be removed or renamed.
+>        SF_HIDDEN       This file is a snapshot inode.
+>
+>     The SF_SETTABLE constant is the union of the above flags.
+>
+>  (3) Linux-specific flags:
+>
+>        XSTAT_LF_MAGIC_FILE     Magic file, such as found in procfs and sysfs.
+>        XSTAT_LF_SYNC           File is written synchronously.
+>        XSTAT_LF_NOATIME        Atime is not updated on this file.
+>        XSTAT_LF_JOURNALLED_DATA Data modifications to this file are journalled.
+>        XSTAT_LF_ENCRYPTED      This file is encrypted.
+>        XSTAT_LF_SYSTEM         This file is a system file (FAT/NTFS/CIFS).
+>        XSTAT_LF_TEMPORARY      This file is a temporary file (NTFS/CIFS).
+>        XSTAT_LF_OFFLINE        file is currently unavailable (CIFS).
+>
+>
+> The Ext4 filesystem has been modified to map certain Ext4 inode flags to the
+> above:
+>
+>        EXT4 FLAG               MAPPED TO
+>        ======================= =======================================
+>        EXT4_COMPR_FL           UF_COMPRESSED
+>        EXT4_SYNC_FL            XSTAT_LF_SYNC
+>        EXT4_IMMUTABLE_FL       UF_IMMUTABLE and SF_IMMUTABLE
+>        EXT4_APPEND_FL          UF_APPEND and SF_APPEND
+>        EXT4_NODUMP_FL          UF_NODUMP
+>        EXT4_NOATIME_FL         XSTAT_LF_NOATIME
+>        EXT4_JOURNAL_DATA_FL    XSTAT_LF_JOURNALLED_DATA
+>        EXT4_DIRSYNC_FL         XSTAT_LF_SYNC (directories only)
+>
+> With this patch applied, the test program given in the patch that introduced
+> the xstat() syscalls now does this:
+>
+>        [root@andromeda ~]# chattr +ia /var/cache/fscache/cull_atimes
+>        [root@andromeda ~]# lsattr /var/cache/fscache/cull_atimes
+>        ----ia-------e- /var/cache/fscache/cull_atimes
+>        [root@andromeda ~]# /tmp/xstat /var/cache/fscache/cull_atimes
+>        xstat(/var/cache/fscache/cull_atimes) = 168
+>        results=5fef
+>          Size: 78088           Blocks: 168        IO Block: 4096    regular file
+>        Device: 08:06           Inode: 13          Links: 1
+>        Access: (0600/-rw-------)  Uid: 0
+>        Gid: 0
+>        Access: 2010-06-29 18:17:41.092290108+0100
+>        Modify: 2010-06-25 17:25:53.320261493+0100
+>        Change: 2010-07-02 00:46:51.278803967+0100
+>        Create: 2010-06-25 15:17:39.711172889+0100
+>        Inode version: f585ab73h
+>        0098: 0000000000060006 0000000e00060027
+>
+> The extra results are hex dumped at the end in 64-bit chunks.  As can be seen
+> above, st_flags=0x0000000000060006 and st_supported_flags=0000000e00060027.
+> That's showing that the file now has [SU]F_IMMUTABLE and [SU]F_APPEND enabled.
+>
+> Note also that XSTAT_REQUEST_INODE_FLAGS (0x4000) is present in the result_mask
+> value (0x5fef) returned to userspace, and the amount of data returned by
+> xstat() has increased from 152 to 168 as appropriate for 16 bytes of extra
+> data.
+>
+> Signed-off-by: David Howells <dhowells@redhat.com>
 > ---
->  drivers/media/video/ivtv/ivtvfb.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/media/video/ivtv/ivtvfb.c b/drivers/media/video/ivtv/ivtvfb.c
-> index 9ff3425..5dc460e 100644
-> --- a/drivers/media/video/ivtv/ivtvfb.c
-> +++ b/drivers/media/video/ivtv/ivtvfb.c
-> @@ -1219,7 +1219,7 @@ static int ivtvfb_callback_cleanup(struct device *dev, void *p)
->  	struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
->  	struct osd_info *oi = itv->osd_info;
->  
-> -	if (itv && (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT)) {
-> +	if (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT) {
->  		if (unregister_framebuffer(&itv->osd_info->ivtvfb_info)) {
->  			IVTVFB_WARN("Framebuffer %d is in use, cannot unload\n",
->  				       itv->instance);
+>
+>  fs/ext4/ext4.h       |    2 ++
+>  fs/ext4/file.c       |    1 +
+>  fs/ext4/inode.c      |   50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  fs/ext4/namei.c      |    2 ++
+>  fs/ext4/symlink.c    |    2 ++
+>  include/linux/stat.h |   47 ++++++++++++++++++++++++++++++++++++++++++++++-
+>  6 files changed, 103 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index 96823f3..26b8dd6 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -1573,6 +1573,8 @@ extern int  ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
+>                                struct kstat *stat);
+>  extern int  ext4_file_getattr(struct vfsmount *mnt, struct dentry *dentry,
+>                                struct kstat *stat);
+> +extern int  ext4_getattr_extra(struct vfsmount *, struct dentry *,
+> +                              struct xstat_extra_result *);
+>  extern void ext4_delete_inode(struct inode *);
+>  extern int  ext4_sync_inode(handle_t *, struct inode *);
+>  extern void ext4_dirty_inode(struct inode *);
+> diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+> index 18c29ab..657ffa0 100644
+> --- a/fs/ext4/file.c
+> +++ b/fs/ext4/file.c
+> @@ -151,6 +151,7 @@ const struct inode_operations ext4_file_inode_operations = {
+>        .truncate       = ext4_truncate,
+>        .setattr        = ext4_setattr,
+>        .getattr        = ext4_file_getattr,
+> +       .getattr_extra  = ext4_getattr_extra,
+>  #ifdef CONFIG_EXT4_FS_XATTR
+>        .setxattr       = generic_setxattr,
+>        .getxattr       = generic_getxattr,
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index f9a730a..efa17d6 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -5595,6 +5595,56 @@ int ext4_file_getattr(struct vfsmount *mnt, struct dentry *dentry,
+>        return 0;
+>  }
+>
+> +int ext4_getattr_inode_flags(struct inode *inode,
+> +                            struct xstat_extra_result *extra)
+> +{
+> +       struct ext4_inode_info *ei = EXT4_I(inode);
+> +       struct xstat_inode_flags xif = { 0, 0 };
+> +
+> +#define _(FL, ST)                    \
+> +       xif.st_supported_flags |= ST; \
+> +       if (ei->i_flags & FL)         \
+> +               xif.st_flags |= ST;
+> +
+> +       _(EXT4_COMPR_FL,        UF_COMPRESSED);
+> +       _(EXT4_SYNC_FL,         XSTAT_LF_SYNC);
+> +       _(EXT4_IMMUTABLE_FL,    UF_IMMUTABLE | SF_IMMUTABLE);
+> +       _(EXT4_APPEND_FL,       UF_APPEND | SF_APPEND);
+> +       _(EXT4_NODUMP_FL,       UF_NODUMP);
+> +       _(EXT4_NOATIME_FL,      XSTAT_LF_NOATIME);
+> +       _(EXT4_JOURNAL_DATA_FL, XSTAT_LF_JOURNALLED_DATA);
+> +
+> +       if (S_ISDIR(ei->vfs_inode.i_mode))
+> +               _(EXT4_DIRSYNC_FL,      XSTAT_LF_SYNC);
+> +
+> +       return extra->pass_result(extra, ilog2(XSTAT_REQUEST_INODE_FLAGS),
+> +                                 &xif, sizeof(xif));
+> +}
+> +
+> +int ext4_getattr_extra(struct vfsmount *mnt, struct dentry *dentry,
+> +                      struct xstat_extra_result *extra)
+> +{
+> +       struct inode *inode = dentry->d_inode;
+> +       u64 request_mask = extra->request_mask;
+> +       int request, ret;
+> +
+> +       do {
+> +               request = __ffs64(request_mask);
+> +               request_mask &= ~(1ULL << request);
+> +
+> +               switch (request) {
+> +               case ilog2(XSTAT_REQUEST_INODE_FLAGS):
+> +                       ret = ext4_getattr_inode_flags(inode, extra);
+> +                       break;
+> +               default:
+> +                       ret = 0;
+> +                       break;
+> +               }
+> +
+> +       } while (ret == 0 && request_mask);
+> +       return ret;
+> +}
+> +
+>  static int ext4_indirect_trans_blocks(struct inode *inode, int nrblocks,
+>                                      int chunk)
+>  {
+> diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+> index 0f776c7..3c37b3f 100644
+> --- a/fs/ext4/namei.c
+> +++ b/fs/ext4/namei.c
+> @@ -2543,6 +2543,7 @@ const struct inode_operations ext4_dir_inode_operations = {
+>        .rename         = ext4_rename,
+>        .setattr        = ext4_setattr,
+>        .getattr        = ext4_getattr,
+> +       .getattr_extra  = ext4_getattr_extra,
+>  #ifdef CONFIG_EXT4_FS_XATTR
+>        .setxattr       = generic_setxattr,
+>        .getxattr       = generic_getxattr,
+> @@ -2556,6 +2557,7 @@ const struct inode_operations ext4_dir_inode_operations = {
+>  const struct inode_operations ext4_special_inode_operations = {
+>        .setattr        = ext4_setattr,
+>        .getattr        = ext4_getattr,
+> +       .getattr_extra  = ext4_getattr_extra,
+>  #ifdef CONFIG_EXT4_FS_XATTR
+>        .setxattr       = generic_setxattr,
+>        .getxattr       = generic_getxattr,
+> diff --git a/fs/ext4/symlink.c b/fs/ext4/symlink.c
+> index d8fe7fb..8c206b2 100644
+> --- a/fs/ext4/symlink.c
+> +++ b/fs/ext4/symlink.c
+> @@ -36,6 +36,7 @@ const struct inode_operations ext4_symlink_inode_operations = {
+>        .put_link       = page_put_link,
+>        .setattr        = ext4_setattr,
+>        .getattr        = ext4_getattr,
+> +       .getattr_extra  = ext4_getattr_extra,
+>  #ifdef CONFIG_EXT4_FS_XATTR
+>        .setxattr       = generic_setxattr,
+>        .getxattr       = generic_getxattr,
+> @@ -49,6 +50,7 @@ const struct inode_operations ext4_fast_symlink_inode_operations = {
+>        .follow_link    = ext4_follow_link,
+>        .setattr        = ext4_setattr,
+>        .getattr        = ext4_getattr,
+> +       .getattr_extra  = ext4_getattr_extra,
+>  #ifdef CONFIG_EXT4_FS_XATTR
+>        .setxattr       = generic_setxattr,
+>        .getxattr       = generic_getxattr,
+> diff --git a/include/linux/stat.h b/include/linux/stat.h
+> index 9e27f88..4c87878 100644
+> --- a/include/linux/stat.h
+> +++ b/include/linux/stat.h
+> @@ -107,7 +107,8 @@ struct xstat_parameters {
+>  #define XSTAT_REQUEST_GEN              0x00001000ULL   /* want/got st_gen */
+>  #define XSTAT_REQUEST_DATA_VERSION     0x00002000ULL   /* want/got st_data_version */
+>  #define XSTAT_REQUEST__EXTENDED_STATS  0x00003fffULL   /* the stuff in the xstat struct */
+> -#define XSTAT_REQUEST__ALL_STATS       0x00003fffULL   /* the defined set of requestables */
+> +#define XSTAT_REQUEST_INODE_FLAGS      0x00004000ULL   /* want/got xstat_inode_flags */
+> +#define XSTAT_REQUEST__ALL_STATS       0x00007fffULL   /* the defined set of requestables */
+>  #define XSTAT_REQUEST__EXTRA_STATS     (XSTAT_REQUEST__ALL_STATS & ~XSTAT_REQUEST__EXTENDED_STATS)
+>  };
+>
+> @@ -140,6 +141,50 @@ struct xstat {
+>        unsigned long long      st_extra_results[0]; /* extra requested results */
+>  };
+>
+> +/*
+> + * Extra result field for inode flags (XSTAT_REQUEST_INODE_FLAGS)
+> + */
+> +struct xstat_inode_flags {
+> +       /* Flags set on the file
+> +        * - the LSW matches the BSD st_flags
+> +        * - the MSW are Linux-specific
+> +        */
+> +       unsigned long long      st_flags;
+> +       /* st_flags that users can set */
+> +#define UF_SETTABLE    0x0000ffff
+> +#define UF_NODUMP      0x00000001      /* do not dump */
+> +#define UF_IMMUTABLE   0x00000002      /* immutable */
+> +#define UF_APPEND      0x00000004      /* append-only */
+> +#define UF_OPAQUE      0x00000008      /* directory is opaque (unionfs) */
+> +#define UF_NOUNLINK    0x00000010      /* can't be removed or renamed */
+> +#define UF_COMPRESSED  0x00000020      /* file is compressed */
+> +#define UF_HIDDEN      0x00008000      /* file shouldn't be displayed in a GUI */
+> +
+> +       /* st_flags that only root can set */
+> +#define SF_SETTABLE    0xffff0000
+> +#define SF_ARCHIVED    0x00010000      /* archived */
+> +#define SF_IMMUTABLE   0x00020000      /* immutable */
+> +#define SF_APPEND      0x00040000      /* append-only */
+> +#define SF_NOUNLINK    0x00100000      /* can't be removed or renamed */
+> +#define SF_SNAPSHOT    0x00200000      /* snapshot inode */
+> +
+> +       /* Linux-specific st_flags */
+> +#define XSTAT_LF_MAGIC_FILE    (1ULL << 32)    /* magic file, such as /proc/? and /sys/? */
+> +#define XSTAT_LF_SYNC          (1ULL << 33)    /* file is written synchronously */
+> +#define XSTAT_LF_NOATIME       (1ULL << 34)    /* atime is not updated on file */
+> +#define XSTAT_LF_JOURNALLED_DATA (1ULL << 35)  /* data modifications to file are journalled */
+> +#define XSTAT_LF_ENCRYPTED     (1ULL << 36)    /* file is encrypted */
+> +#define XSTAT_LF_SYSTEM                (1ULL << 37)    /* system file */
+> +#define XSTAT_LF_TEMPORARY     (1ULL << 38)    /* temporary file */
+> +#define XSTAT_LF_OFFLINE       (1ULL << 39)    /* file is currently unavailable */
+> +
+> +       /* Which st_flags are actually supported by this filesystem for this
+> +        * file */
+> +       unsigned long long      st_supported_flags;
+> +};
+> +#define XSTAT_LENGTH_INODE_FLAGS (sizeof(struct xstat_inode_flags))
+> +
+> +
+>  #ifdef __KERNEL__
+>  #define S_IRWXUGO      (S_IRWXU|S_IRWXG|S_IRWXO)
+>  #define S_IALLUGO      (S_ISUID|S_ISGID|S_ISVTX|S_IRWXUGO)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-Jiri,
-
-You missed an identical instance of the useless test 10 lines prior in
-ivtvfb_callback_init(). :)
-
-How about the patch below, instead?
-
-Regards,
-Andy
-
-[PATCH] VIDEO: ivtvfb, fix NULL check
-
-Jiri Slaby reported that stanse found ivtvfb_callback_cleanup has an
-unneeded test for itv being NULL. itv was initialized as container_of
-with non-zero offset, so it was never NULL (even if v4l2_dev was).
-
-This fix now checks for v4l2_dev being NULL, and not itv.
-
-Thanks to Jiri Slaby for reporting this problem and providing an initial
-patch.
-
-Reported-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Andy Walls <awalls@md.metrocast.net>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Ian Armstrong <ian@iarmst.demon.co.uk>
-Cc: ivtv-devel@ivtvdriver.org
-Cc: linux-media@vger.kernel.org
 
 
- drivers/media/video/ivtv/ivtvfb.c |   21 ++++++++++++++++-----
- 1 files changed, 16 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/media/video/ivtv/ivtvfb.c b/drivers/media/video/ivtv/ivtvfb
-index 9ff3425..2b3259c 100644
---- a/drivers/media/video/ivtv/ivtvfb.c
-+++ b/drivers/media/video/ivtv/ivtvfb.c
-@@ -1201,9 +1201,14 @@ static int ivtvfb_init_card(struct ivtv *itv)
- static int __init ivtvfb_callback_init(struct device *dev, void *p)
- {
-        struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
--       struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
-+       struct ivtv *itv;
- 
--       if (itv && (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT)) {
-+       if (v4l2_dev == NULL)
-+               return 0;
-+
-+       itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
-+
-+       if (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT) {
-                if (ivtvfb_init_card(itv) == 0) {
-                        IVTVFB_INFO("Framebuffer registered on %s\n",
-                                        itv->v4l2_dev.name);
-@@ -1216,10 +1221,16 @@ static int __init ivtvfb_callback_init(struct device *de
- static int ivtvfb_callback_cleanup(struct device *dev, void *p)
- {
-        struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
--       struct ivtv *itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
--       struct osd_info *oi = itv->osd_info;
-+       struct ivtv *itv;
-+       struct osd_info *oi;
-+
-+       if (v4l2_dev == NULL)
-+               return 0;
-+
-+       itv = container_of(v4l2_dev, struct ivtv, v4l2_dev);
-+       oi = itv->osd_info;
- 
--       if (itv && (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT)) {
-+       if (itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT) {
-                if (unregister_framebuffer(&itv->osd_info->ivtvfb_info)) {
-                        IVTVFB_WARN("Framebuffer %d is in use, cannot unload\n",
-                                       itv->instance);
-
-
+-- 
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
