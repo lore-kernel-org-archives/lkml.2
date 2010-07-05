@@ -1,91 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab0GFADq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 20:03:46 -0400
-Received: from ozlabs.org ([203.10.76.45]:54412 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551Ab0GFADo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 20:03:44 -0400
-Date: Tue, 6 Jul 2010 10:03:43 +1000
-From: Tony Breeds <tony@bakeyournoodle.com>
-To: LEROY Christophe <christophe.leroy@c-s.fr>
-Cc: linux-kernel@vger.kernel.org, LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-       Anton Vorontsov <avorontsov@ru.mvista.com>,
-       Kumar Gala <galak@kernel.crashing.org>
-Subject: Re: 2.6.34: arch/powerpc/sysdev/micropatch.c not compiling
-Message-ID: <20100706000343.GE23985@ozlabs.org>
-Mail-Followup-To: LEROY Christophe <christophe.leroy@c-s.fr>,
-	linux-kernel@vger.kernel.org,
-	LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-	Anton Vorontsov <avorontsov@ru.mvista.com>,
-	Kumar Gala <galak@kernel.crashing.org>
-References: <4C318D87.1010306@c-s.fr>
+	id S1754388Ab0GFAJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 20:09:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51934 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588Ab0GFAJH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 20:09:07 -0400
+Message-ID: <4C323F6A.6080102@zytor.com>
+Date: Mon, 05 Jul 2010 13:24:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C318D87.1010306@c-s.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: feng.tang@intel.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+       mingo@elte.hu, jacob.jun.pan@intel.com, randy.dunlap@oracle.com
+Subject: Re: [PATCH v2 0/5] patches to settle i8042 with Intel MID platforms
+References: <1278342202-10973-1-git-send-email-feng.tang@intel.com> <4C32364D.2040705@zytor.com> <20100705202221.GA16978@core.coreip.homeip.net>
+In-Reply-To: <20100705202221.GA16978@core.coreip.homeip.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 09:45:11AM +0200, LEROY Christophe wrote:
-> When activating micropatch option, the kernel does not compile.
-
-powerpc problems should alos CC linuxppc-dev.
- 
-> It looks like a spi_t is not defined anywhere.
+On 07/05/2010 01:22 PM, Dmitry Torokhov wrote:
 > 
-> CC arch/powerpc/sysdev/micropatch.o
-> arch/powerpc/sysdev/micropatch.c: In function ‘cpm_load_patch’:
-> arch/powerpc/sysdev/micropatch.c:629: erreur: expected ‘=’, ‘,’,
-> ‘;’, ‘asm’ or ‘__attribute__’ before ‘*’ token
-> arch/powerpc/sysdev/micropatch.c:629: erreur: ‘spp’ undeclared
-> (first use in this function)
-> arch/powerpc/sysdev/micropatch.c:629: erreur: (Each undeclared
-> identifier is reported only once
-> arch/powerpc/sysdev/micropatch.c:629: erreur: for each function it
-> appears in.)
-> cc1: warnings being treated as errors
-> arch/powerpc/sysdev/micropatch.c:630: erreur: ISO C89 interdit les
-> mélanges de déclarations et de code
-> arch/powerpc/sysdev/micropatch.c:671: erreur: ‘spi_t’ undeclared
-> (first use in this function)
-> arch/powerpc/sysdev/micropatch.c:671: erreur: expected expression
-> before ‘)’ token
-> make[1]: *** [arch/powerpc/sysdev/micropatch.o] Erreur 1
-> make: *** [arch/powerpc/sysdev] Erreur 2
+> Looks hood to me as well. We can either merge it through my tree or x86
+> tree, I don't have a preference.
+> 
 
-spi_t was removed in commit 644b2a680ccc51a9ec4d6beb12e9d47d2dee98e2
-(powerpc/cpm: Remove SPI defines and spi structs).  Anton, Kumar it looks like
-something along the lines of:
+OK if I merge it then with your Acked-by:?
 
-diff --git a/arch/powerpc/sysdev/micropatch.c b/arch/powerpc/sysdev/micropatch.c
-index d8d6028..aa1785e 100644
---- a/arch/powerpc/sysdev/micropatch.c
-+++ b/arch/powerpc/sysdev/micropatch.c
-@@ -626,7 +626,6 @@ cpm_load_patch(cpm8xx_t     *cp)
-        volatile uint           *dp;            /* Dual-ported RAM. */
-        volatile cpm8xx_t       *commproc;
-        volatile iic_t          *iip;
--       volatile spi_t          *spp;
-        volatile smc_uart_t     *smp;
-        int     i;
- 
-@@ -668,8 +667,8 @@ cpm_load_patch(cpm8xx_t     *cp)
-        /* Put SPI above the IIC, also 32-byte aligned.
-        */
-        i = (RPBASE + sizeof(iic_t) + 31) & ~31;
--       spp = (spi_t *)&commproc->cp_dparam[PROFF_SPI];
--       spp->spi_rpbase = i;
-+       smp = (smc_uart_t *)&commproc->cp_dparam[PROFF_SPI];
-+       smp->smc_rpbase = i;
- 
- # if defined(CONFIG_I2C_SPI_UCODE_PATCH)
-        commproc->cp_cpmcr1 = 0x802a;
+	-hpa
 
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Would help?
-
-Yours Tony
