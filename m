@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758317Ab0GEMfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 08:35:32 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:21853 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753135Ab0GEMfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 08:35:30 -0400
-Subject: Re: [PATCH] sunrpc: make the cache cleaner workqueue deferrable
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Trond Myklebust <Trond.Myklebust@netapp.com>,
-       "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <1277996756-8415-1-git-send-email-dedekind1@gmail.com>
-References: <1277996756-8415-1-git-send-email-dedekind1@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Jul 2010 15:31:30 +0300
-Message-ID: <1278333090.29620.47.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 05 Jul 2010 12:35:07.0205 (UTC) FILETIME=[800C9750:01CB1C3E]
-X-Nokia-AV: Clean
+	id S1758828Ab0GEMqa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 08:46:30 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37571 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753829Ab0GEMq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 08:46:29 -0400
+Date: Mon, 5 Jul 2010 14:45:49 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Ali Gholami Rudi <ali@rudi.ir>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, dfeng@redhat.com, x86@kernel.org,
+       venki@google.com, tglx@linutronix.de, suresh.b.siddha@intel.com,
+       mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [regression] commit 6a4f3b52 causes invalid memtype
+Message-ID: <20100705124549.GA2260@elte.hu>
+References: <20100507075128@tarekhel>
+ <4C319D61.5090002@redhat.com>
+ <20100507092842@tarekhel>
+ <4C31A7A0.1020800@redhat.com>
+ <4c31ac7b.J+CU0Yt+zKZ9ho1fjKvu6Z1v@tarekhel>
+ <20100705104035.GA28190@elte.hu>
+ <20100507113814@tarekhel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100507113814@tarekhel>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
+	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
+	[score: 0.0563]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-01 at 18:05 +0300, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> 
-> This patch makes the cache_cleaner workqueue deferrable, to prevent
-> unnecessary system wake-ups, which is very important for embedded
-> battery-powered devices.
-> 
-> do_cache_clean() is called every 30 seconds at the moment, and often
-> makes the system wake up from its power-save sleep state. With this
-> change, when the workqueue uses a deferrable timer, the
-> do_cache_clean() invocation will be delayed and combined with the
-> closest "real" wake-up. This improves the power consumption situation.
-> 
-> Note, I tried to create a DECLARE_DELAYED_WORK_DEFERRABLE() helper
-> macro, similar to DECLARE_DELAYED_WORK(), but failed because of the
-> way the timer wheel core stores the deferrable flag (it is the
-> LSBit in the time->base pointer). My attempt to define a static
-> variable with this bit set ended up with the "initializer element is
-> not constant" error.
-> 
-> Thus, I have to use run-time initialization, so I created a new
-> cache_initialize() function which is called once when sunrpc is
-> being initialized.
-> 
-> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Bruce,
+* Ali Gholami Rudi <ali@rudi.ir> wrote:
 
-I did some git-logging, and found out that sunrpc stuff goes from you,
-from Trond, and from David, and MAINTAINERS also mentions Neil. Whom
-should I ping WRT to merging this patch?
+> Ingo Molnar <mingo@elte.hu> wrote:
+> > > > >> commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+> > > > >> Author: Peter Zijlstra<peterz@infradead.org>
+> > > > >> Date:   Sat May 29 15:31:43 2010 +0200
+> > > > >>
+> > > > >>       rbtree: Undo augmented trees performance damage
+> > > > >
+> > > > > Where can I get it?  I couldn't find it either in
+> > > > > Linus' or x86 repo tip.
+> > > > http://git.kernel.org/tip/2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+> > > 
+> > > It does fix it.
+> > 
+> > Hm, interesting. That's a pure performance fix - so why does it fix a 
+> > regression?
+> > 
+> > Does Peter's augmented rbtrees improvements fix a bug too, as a side-effect? 
+> > If yes then we need to accelerate that commit - right now it's aimed for 
+> > v2.6.36.
+> 
+> Since the bug appears after commit 6a4f3b52, it seems to be
+> related to the value of memtype->subtree_max_end.  Peter's
+> patch seems to change the way memtype->subtree_max_end is
+> updated, which seems to fix the problem too.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Ok - i've cherry-picked it over into x86/urgent and it should go to Linus in 
+the next round of x86 fixes.
 
+Thanks,
+
+	Ingo
