@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab0GEM4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 08:56:34 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:56652 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237Ab0GEM4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 08:56:32 -0400
-Date: Mon, 5 Jul 2010 13:55:44 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jpirko@redhat.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Patrick McHardy <kaber@trash.net>,
-       Alexey Dobriyan <adobriyan@gmail.com>, linux-mips@linux-mips.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ioc3-eth: Use the instance of net_device_stats from
- net_device.
-Message-ID: <20100705125544.GA28849@linux-mips.org>
-References: <1278332034-17122-1-git-send-email-segooon@gmail.com>
+	id S1755367Ab0GEM5j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 08:57:39 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61195 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab0GEM5h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 08:57:37 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/tDTFE/J3HZcEpridfvB5b
+Date: Mon, 5 Jul 2010 15:57:16 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Thomas Weber <weber@corscience.de>
+Cc: linux-omap@vger.kernel.org, Kan-Ru Chen <kanru@0xlab.org>,
+       Russell King <linux@arm.linux.org.uk>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 04/11] OMAP2: Devkit8000: Setup LCD reset
+Message-ID: <20100705125714.GW15951@atomide.com>
+References: <1275478671-24563-1-git-send-email-weber@corscience.de>
+ <1275478671-24563-5-git-send-email-weber@corscience.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1278332034-17122-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1275478671-24563-5-git-send-email-weber@corscience.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 04:13:51PM +0400, Kulikov Vasiliy wrote:
-
-> Since net_device has an instance of net_device_stats,
-> we can remove the instance of this from the adapter structure.
+* Thomas Weber <weber@corscience.de> [100602 14:33]:
+> From: Kan-Ru Chen <kanru@0xlab.org>
 > 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> This patch corrects the LCD reset pin configuration.
+> 
+> Original code from early devkit8000 patch sets the TWL4030 GPIO_1
+> to EHCI_nOC and TWL4030_GPIO_MAX+1 to ledA. Indeed these two pins
+> are both LCD_PWREN. Setup the lcd reset_gpio properly so it can be
+> disabled when other display is turned on.
 
-NACK, your patch doesn't compile.  I'll post a fixed patch in a separate
-mail.
+Applied this and the rest of the series too.
 
-  Ralf
+Tony
