@@ -1,111 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab0GEJ7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 05:59:33 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:34511 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab0GEJ7c (ORCPT
+	id S1754248Ab0GEKHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 06:07:32 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:18887 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751809Ab0GEKHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 05:59:32 -0400
-Date: Mon, 5 Jul 2010 11:59:28 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/7] hugetlb: hugepage migration core
-Message-ID: <20100705095927.GC8510@basil.fritz.box>
-References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1278049646-29769-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+	Mon, 5 Jul 2010 06:07:31 -0400
+Message-ID: <4C31AEDE.7050008@panasas.com>
+Date: Mon, 05 Jul 2010 13:07:26 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278049646-29769-7-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Christoph Hellwig <hch@lst.de>
+CC: axboe@kernel.dk, snitzer@redhat.com, James.Bottomley@suse.de,
+       linux-scsi@vger.kernel.org, dm-devel@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] scsi: add sd_unprep_fn to free discard page
+References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp> <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Jul 2010 10:07:29.0603 (UTC) FILETIME=[E081C930:01CB1C29]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 02:47:25PM +0900, Naoya Horiguchi wrote:
-> diff --git v2.6.35-rc3-hwpoison/mm/migrate.c v2.6.35-rc3-hwpoison/mm/migrate.c
-> index e4a381c..e7af148 100644
-> --- v2.6.35-rc3-hwpoison/mm/migrate.c
-> +++ v2.6.35-rc3-hwpoison/mm/migrate.c
-> @@ -32,6 +32,7 @@
->  #include <linux/security.h>
->  #include <linux/memcontrol.h>
->  #include <linux/syscalls.h>
-> +#include <linux/hugetlb.h>
->  #include <linux/gfp.h>
+On 07/01/2010 01:49 PM, FUJITA Tomonori wrote:
+> This fixes discard page leak by using q->unprep_rq_fn facility.
+> 
+> q->unprep_rq_fn is called when all the data buffer (req->bio and
+> scsi_data_buffer) in the request is freed.
+> 
+> sd_unprep() uses rq->buffer to free discard page allocated in
+> sd_prepare_discard().
+> 
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+
+Sorry for thinking about this just now. It was on the tip of my
+mind, but I was too busy with other things to notice.
+
+There is a simple more STD way to solve all this without the need
+for any new API.
+
+*Use the bio destructor to also deallocate it's pages*
+
+Now that is not such a novel idea, it's used all over the place.
+Well it's the proper way to submit a bio and be notified on done.
+Since there are no bio leaks, we know all error paths are just
+as covered.
+
+For this to work all these patches could be removed and the
+blk_add_request_payload need to change to recieve a bio destructor
+pointer.
+
+If you ask me I hate what was done with discard at the block layer
+since it's only in Jens tree for-next I think it is good time to change
+it. What is this alloc the bio in one place and add it's pages in another
+place. Rrrrr
+
+to quote from the author himself:
+<block-core.c>
+/**
+ * blk_add_request_payload - add a payload to a request
+ <snip>
+ *
+ * Note that this is a quite horrible hack and nothing but handling of
+ * discard requests should ever use it.
+ */
+void blk_add_request_payload(struct request *rq, struct page *page,
+		unsigned int len)
+</block-core.c>
+
+The block-layer users think of a discard as zero-load, so should the
+block-layer. The block driver like sd that needs to add a payload can
+set in a bio just like any other place. when allocating the bio, set
+it's destructor and be done with it. All allocations and cleanups are
+done at one place, at same level.
+
+As it stands now blk_add_request_payload will have to either chain the
+bio destructors and/or if it knows where it's allocated then chain to
+the proper bio_free, after calling the block-driver supplied callback.
+
+BTW where is that zero-pages discard bio allocated. Why is it not allocated
+inside blk_add_request_payload? What is the meaning of zero length bio?
+I though everywhere we check for "if (req->bio)" not "if (bio_size(req_bio))"
+isn't all this asking for trouble?
+
+my $0.017
+Boaz
+
+> ---
+>  drivers/scsi/sd.c |   12 +++++++++++-
+>  1 files changed, 11 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> index 86da819..2d4e3a8 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -425,6 +425,7 @@ static int scsi_setup_discard_cmnd(struct scsi_device *sdp, struct request *rq)
+>  	sector_t sector = bio->bi_sector;
+>  	unsigned int nr_sectors = bio_sectors(bio);
+>  	unsigned int len;
+> +	int ret;
+>  	struct page *page;
 >  
->  #include "internal.h"
-> @@ -74,6 +75,8 @@ void putback_lru_pages(struct list_head *l)
->  	struct page *page2;
+>  	if (sdkp->device->sector_size == 4096) {
+> @@ -465,7 +466,15 @@ static int scsi_setup_discard_cmnd(struct scsi_device *sdp, struct request *rq)
+>  	}
 >  
->  	list_for_each_entry_safe(page, page2, l, lru) {
-> +		if (PageHuge(page))
-> +			break;
-
-Why is this a break and not a continue? Couldn't you have small and large
-pages in the same list?
-
-There's more code that handles LRU in this file. Do they all handle huge pages
-correctly?
-
-I also noticed we do not always lock all sub pages in the huge page. Now if
-IO happens it will lock on subpages, not the head page. But this code
-handles all subpages as a unit. Could this cause locking problems?
-Perhaps it would be safer to lock all sub pages always? Or would 
-need  to audit other page users to make sure they always lock on the head
-and do the same here.
-
-Hmm page reference counts may have the same issue?
-
-> @@ -95,6 +98,12 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
->  	pte_t *ptep, pte;
->   	spinlock_t *ptl;
->  
-> +	if (unlikely(PageHuge(new))) {
-> +		ptep = huge_pte_offset(mm, addr);
-> +		ptl = &mm->page_table_lock;
-> +		goto check;
-> +	}
+>  	blk_add_request_payload(rq, page, len);
+> -	return scsi_setup_blk_pc_cmnd(sdp, rq);
+> +	ret = scsi_setup_blk_pc_cmnd(sdp, rq);
+> +	rq->buffer = page_address(page);
+> +	return ret;
+> +}
 > +
->   	pgd = pgd_offset(mm, addr);
->  	if (!pgd_present(*pgd))
->  		goto out;
-> @@ -115,6 +124,7 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
->   	}
+> +static void sd_unprep_fn(struct request_queue *q, struct request *rq)
+> +{
+> +	if (rq->cmd_flags & REQ_DISCARD)
+> +		__free_page(virt_to_page(rq->buffer));
+>  }
 >  
->   	ptl = pte_lockptr(mm, pmd);
-> +check:
+>  /**
+> @@ -2242,6 +2251,7 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
+>  	sd_revalidate_disk(gd);
+>  
+>  	blk_queue_prep_rq(sdp->request_queue, sd_prep_fn);
+> +	blk_queue_unprep_rq(sdp->request_queue, sd_unprep_fn);
+>  
+>  	gd->driverfs_dev = &sdp->sdev_gendev;
+>  	gd->flags = GENHD_FL_EXT_DEVT;
 
-I think I would prefer a proper if else over a goto here.
-
-The lookup should probably just call a helper to make this function more readable
-(like lookup_address(), unfortunately that's x86 specific right now)
-
-
-> @@ -284,7 +308,17 @@ static int migrate_page_move_mapping(struct address_space *mapping,
->   */
->  static void migrate_page_copy(struct page *newpage, struct page *page)
->  {
-> -	copy_highpage(newpage, page);
-> +	int i;
-> +	struct hstate *h;
-> +	if (!PageHuge(newpage))
-> +		copy_highpage(newpage, page);
-> +	else {
-> +		h = page_hstate(newpage);
-> +		for (i = 0; i < pages_per_huge_page(h); i++) {
-> +			cond_resched();
-> +			copy_highpage(newpage + i, page + i);
-
-Better reuse copy_huge_page() instead of open coding.
-
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
