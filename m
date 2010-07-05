@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab0GEOo1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 10:44:27 -0400
-Received: from mga03.intel.com ([143.182.124.21]:60744 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752951Ab0GEOo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 10:44:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,540,1272870000"; 
-   d="scan'208";a="296676669"
-From: feng.tang@intel.com
-To: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-       hpa@zytor.com, jacob.jun.pan@intel.com, dtor@mail.ru,
-       randy.dunlap@oracle.com
-Cc: Feng Tang <feng.tang@intel.com>
-Subject: [PATCH v2 0/5] patches to settle i8042 with Intel MID platforms
-Date: Mon,  5 Jul 2010 23:03:17 +0800
-Message-Id: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756627Ab0GEOub (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 10:50:31 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57873 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756416Ab0GEOua (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 10:50:30 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: Re: [PATCH] nilfs2: remove BKL uses
+Date: Mon, 5 Jul 2010 16:50:23 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, Jan Blunck <jblunck@suse.de>
+References: <1278220928-28121-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+In-Reply-To: <1278220928-28121-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007051650.23761.arnd@arndb.de>
+X-Provags-ID: V02:K0:w9rLfWHU/4xmlCzAvnsmH3B4cPK20A8qwRUf8HB+aU3
+ eOP5bnzzjlzzvCyzrqZhBpIqeYzBQa9P2zlMq+cC+0hODiHph5
+ 2rchU+YdOM/GS2WOkU7nPV4QwvjcXwTdQ9Q83z4s5t0XusV+Mu
+ sWwHCMQ/IDPiUup+7jw+dyI8gVBcBkg/yzRpRt1hQQg3ivxOcl
+ oB5f5BBFgpQpu/TNd+QWQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Feng Tang <feng.tang@intel.com>
+On Sunday 04 July 2010, Ryusuke Konishi wrote:
+> Nilfs has BKL uses in its put_super and remount functions, but none of
+> them are necessary, just came from earlier push downs.  This
+> eliminates the BKL uses from nilfs.
+> 
+> Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-Hi All,
+This looks good, but there is a another patch series pushing the BKL
+into the get_sb and fill_super operations, which should be the final
+pushdown for file systems. I wonder if there is a way to find a
+shortcut on this so we don't need to add it first just to have you
+go through the effort of removing it again.
 
-Some x86 platforms like intel MID platforms don't have i8042 controllers,
-and i8042 driver's probe to some non-exist legacy IO ports may hang
-the MID processor. 
-
-Current solution for this is add dependency of SERIO_I8042 over
-!X86_MRST, then if we build a x86 kernel image with X86_MRST=y,
-it won't have i8042 driver support over common x86 platforms.
-
-So we add a i8042 pre-detect hook into x86_platforms ops, so that
-i8042 driver can use it to run-time judge whether to go on with
-probe process.
-
-Please review these patches.
-
-Thanks,
-Feng
-
-Changelog:
-	v2:
-	   * only call x86_platforms.i8042_detect() for x86 platforms
-
-----------------
-Feng Tang (5):
-  x86: add i8042 pre-detection hook to x86_platform_ops
-  x86, mrst: add i8042_detect API for Moorestwon platform
-  Revert "Input: do not force selecting i8042 on Moorestown"
-  Revert "Input: fixup X86_MRST selects"
-  input: i8042 - add runtime check in x86's i8042_platform_init
-
- arch/x86/include/asm/x86_init.h       |    2 ++
- arch/x86/kernel/mrst.c                |    7 +++++++
- arch/x86/kernel/x86_init.c            |    4 +++-
- drivers/input/keyboard/Kconfig        |    4 ++--
- drivers/input/mouse/Kconfig           |    2 +-
- drivers/input/serio/Kconfig           |    2 +-
- drivers/input/serio/i8042-x86ia64io.h |    6 ++++++
- 7 files changed, 22 insertions(+), 5 deletions(-)
-
+	Arnd
