@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab0GELmD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 07:42:03 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:36068 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920Ab0GELmA (ORCPT
+	id S1754754Ab0GEL6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 07:58:08 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55682 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab0GEL6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 07:42:00 -0400
-Date: Mon, 5 Jul 2010 13:41:56 +0200
-From: Alexander Schmidt <alexs@linux.vnet.ibm.com>
-To: Roland Dreier <rdreier@cisco.com>, Linux RDMA <linux-rdma@vger.kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-       Stefan Roscher <stefan.roscher@de.ibm.com>,
-       Joachim Fenkes <fenkes@de.ibm.com>,
-       Christoph Raisch <raisch@de.ibm.com>,
-       Hoang-Nam Nguyen <HNGUYEN@linux.vnet.ibm.com>
-Subject: [PATCH] ib/ehca: init irq tasklet before irq can happen
-Message-ID: <20100705134156.36803536@alex-laptop>
-X-Mailer: Claws Mail 3.6.1 (GTK+ 2.16.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Jul 2010 07:58:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:in-reply-to:references
+         :user-agent;
+        b=U6K86Jj1nWoVgEkunFZ0uUG4By3yyLhX7qR5T7AunjooHxzOPyGxCmn8wDy3t8s7Cf
+         wKODilUldvagWsTIlDRuu7t+eou2+zUF4uRoYaVqLJyCWNuvdVV3AzSFTYcrNjCtC5X3
+         WjIN4OlXUzrqGkQTk5WKCc9tGcPtlW/qwRa+Q=
+Date: Mon, 05 Jul 2010 11:38:14 +0000
+From: Ali Gholami Rudi <ali@rudi.ir>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, dfeng@redhat.com, x86@kernel.org,
+       venki@google.com, tglx@linutronix.de, suresh.b.siddha@intel.com,
+       mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [regression] commit 6a4f3b52 causes invalid memtype
+Message-ID: <20100507113814@tarekhel>
+In-Reply-To: <20100705104035.GA28190@elte.hu>
+References: <20100507075128@tarekhel>
+ <4C319D61.5090002@redhat.com>
+ <20100507092842@tarekhel>
+ <4C31A7A0.1020800@redhat.com>
+ <4c31ac7b.J+CU0Yt+zKZ9ho1fjKvu6Z1v@tarekhel>
+	<20100705104035.GA28190@elte.hu>
+User-Agent: git://repo.or.cz/mailx.git
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize tasklet before interrupts are requested to prevent scheduling of
-uninitialized tasklet.
+Ingo Molnar <mingo@elte.hu> wrote:
+> > > >> commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+> > > >> Author: Peter Zijlstra<peterz@infradead.org>
+> > > >> Date:   Sat May 29 15:31:43 2010 +0200
+> > > >>
+> > > >>       rbtree: Undo augmented trees performance damage
+> > > >
+> > > > Where can I get it?  I couldn't find it either in
+> > > > Linus' or x86 repo tip.
+> > > http://git.kernel.org/tip/2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+> > 
+> > It does fix it.
+> 
+> Hm, interesting. That's a pure performance fix - so why does it fix a 
+> regression?
+> 
+> Does Peter's augmented rbtrees improvements fix a bug too, as a side-effect? 
+> If yes then we need to accelerate that commit - right now it's aimed for 
+> v2.6.36.
 
-Signed-off-by: Alexander Schmidt <alexs@linux.vnet.ibm.com>
----
-Hi Roland, please queue this fix for 2.6.36, thanks!
+Since the bug appears after commit 6a4f3b52, it seems to be
+related to the value of memtype->subtree_max_end.  Peter's
+patch seems to change the way memtype->subtree_max_end is
+updated, which seems to fix the problem too.
 
- drivers/infiniband/hw/ehca/ehca_eq.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Thanks,
+Ali
 
---- linux-2.6.orig/drivers/infiniband/hw/ehca/ehca_eq.c
-+++ linux-2.6/drivers/infiniband/hw/ehca/ehca_eq.c
-@@ -122,21 +122,21 @@ int ehca_create_eq(struct ehca_shca *shc
- 
- 	/* register interrupt handlers and initialize work queues */
- 	if (type == EHCA_EQ) {
-+		tasklet_init(&eq->interrupt_task, ehca_tasklet_eq, (long)shca);
-+
- 		ret = ibmebus_request_irq(eq->ist, ehca_interrupt_eq,
- 					  IRQF_DISABLED, "ehca_eq",
- 					  (void *)shca);
- 		if (ret < 0)
- 			ehca_err(ib_dev, "Can't map interrupt handler.");
--
--		tasklet_init(&eq->interrupt_task, ehca_tasklet_eq, (long)shca);
- 	} else if (type == EHCA_NEQ) {
-+		tasklet_init(&eq->interrupt_task, ehca_tasklet_neq, (long)shca);
-+
- 		ret = ibmebus_request_irq(eq->ist, ehca_interrupt_neq,
- 					  IRQF_DISABLED, "ehca_neq",
- 					  (void *)shca);
- 		if (ret < 0)
- 			ehca_err(ib_dev, "Can't map interrupt handler.");
--
--		tasklet_init(&eq->interrupt_task, ehca_tasklet_neq, (long)shca);
- 	}
- 
- 	eq->is_initialized = 1;
