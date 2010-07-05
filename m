@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab0GEXFN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 19:05:13 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:48562 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab0GEXFM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 19:05:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=UBTEUsQp5OvULnXOldm9/b9OPHcdwqpCeZDuxUF6LA98kOQFIMzE43tlMeQ0vWtA66
-         1bGNMd/EDTfxNlbMDjFn0wrxVSP/dZw2cmRI7HiHO4WuFxm5kozaF055Nx0X67eSBXPT
-         rPqt7qy4uCrylzRkBQf4qXg8+XgjEIft7huDo=
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Kevin Winchester <kjwinchester@gmail.com>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH] dmar: Fix statement with no effect warning in include/linux/dmar.h
-Date: Mon,  5 Jul 2010 20:04:54 -0300
-Message-Id: <1278371094-14393-1-git-send-email-kjwinchester@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755492Ab0GEXMq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 19:12:46 -0400
+Received: from claw.goop.org ([74.207.240.146]:45275 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754453Ab0GEXMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 19:12:45 -0400
+Message-ID: <4C3266EB.9010200@goop.org>
+Date: Mon, 05 Jul 2010 16:12:43 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: Dan Williams <dan.j.williams@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jan Beulich <JBeulich@novell.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       Ky Srinivasan <KSrinivasan@novell.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4, v2] x86: enlightenment for ticket spin locks -	 Xen
+  implementation
+References: <4C2A200F02000078000089E4@vpn.id2.novell.com> <4C2B1769.5090107@goop.org> <4C2B47190200007800008CB7@vpn.id2.novell.com> <4C2B4564.7030203@goop.org> <4C2BC1AB.9050500@zytor.com>
+In-Reply-To: <4C2BC1AB.9050500@zytor.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the CONFIG_INTR_REMAP=N case, most dmar functions become one-
-line static inline functions.  However a few functions were instead
-defined to constants.  This causes the following warnings for me:
+On 06/30/2010 03:14 PM, H. Peter Anvin wrote:
+> On 06/30/2010 06:23 AM, Jeremy Fitzhardinge wrote:
+>   
+>> pvops is a superset of alternative instruction patching, and are really
+>> designed to serve different purposes.  There are some areas in which
+>> there's some overlap, but otherwise they are distinct.  In particular,
+>> alternative instructions are really only useful if you can express the
+>> patch in terms of the presence or absence of a particular cpu feature. 
+>> It can't do multi-way choice, and it can't do anything other than insert
+>> literal instructions.  pvops patching can do multi-way, and has a
+>> higher-level view of each patch site which allows it to do things like
+>> generate appropraite save/restores, make inline vs call decisions, nop
+>> out nop callsites, etc.
+>>
+>>     
+> A lot of this -- in particular the multiway -- is a defect in the
+> alternatives implementation and should have been addressed as such.
 
-arch/x86/kernel/apic/apic.c: In function ‘lapic_suspend’:
-arch/x86/kernel/apic/apic.c:2014:3: warning: statement with no effect
-arch/x86/kernel/apic/apic.c: In function ‘lapic_resume’:
-arch/x86/kernel/apic/apic.c:2091:3: warning: statement with no effect
+The pvops and asm alternatives have different design goals.  Asm
+alternatives is all about replacing particular instructions with
+different ones depending on the properties of the CPU.  pvops is about
+inserting an ops vector in front of various OS-level interfaces to allow
+alternate implementations; the patching part was a later optimisation
+sprinkled on top to reduce the abstraction overhead.  The fact that
+there's some similarity in mechanism is the result of convergence rather
+than a desire to reinvent.
 
-Correct these warnings by converting the defines into static inline
-functions instead.
+>   One
+> of the biggest problems with pvops as it currently stands is that it is
+> monolithic; in general we have this class of problems (static selection)
+> in a *lot* more places than we're dealing with right now, and as such,
+> generalizing *something* -- be it pvops or alternatives -- would be useful.
+>   
 
-Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
----
- include/linux/dmar.h |   19 +++++++++++++++----
- 1 files changed, 15 insertions(+), 4 deletions(-)
+Yes.  The module system might also be a candidate for making more
+general (by allowing the kernel to have unbound references, and the
+module system can be used to create a runtime binding).  Modules are
+already arch neutral (the arch-specific bits), which is an improvement
+over alternatives or pvops, but it has no notion of patching anything
+beyond linker relocs (but aside from very hot-path pvops such as
+interrupt enable/disable, instruction patching isn't used all that much).
 
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index d7cecc9..f6fcece 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -176,11 +176,22 @@ static inline int set_msi_sid(struct irte *irte, struct pci_dev *dev)
- {
- 	return 0;
- }
-+static inline int irq_remapped(int irq)
-+{
-+	return 0;
-+}
-+static inline int enable_intr_remapping(int mode)
-+{
-+	return -1;
-+}
-+static inline void disable_intr_remapping(void)
-+{
-+}
-+static inline int reenable_intr_remapping(int mode)
-+{
-+	return 0;
-+}
- 
--#define irq_remapped(irq)		(0)
--#define enable_intr_remapping(mode)	(-1)
--#define disable_intr_remapping()	(0)
--#define reenable_intr_remapping(mode)	(0)
- #define intr_remapping_enabled		(0)
- #endif
- 
--- 
-1.7.1
+> gcc 4.5 also includes a very powerful facility called "asm goto", which
+> I have already used to implement static_cpu_has().  Again, that
+> particular construct (unlike "asm goto" itself) doesn't support multiway.
+>   
 
+What does the fallback for older compilers look like?
+
+    J
