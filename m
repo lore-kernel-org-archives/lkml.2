@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab0GEIAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:00:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57278 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563Ab0GEIAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:00:12 -0400
-Message-ID: <4C319024.9050300@cn.fujitsu.com>
-Date: Mon, 05 Jul 2010 15:56:20 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752993Ab0GEIBM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 04:01:12 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:37734 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955Ab0GEIBJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 04:01:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=WPK7jIr0Riqq2diGG0qUMn3IgesbPv93QPPQZXQColzgoZz5H5Ml3+EZsS3lSjmWSa
+         kCLA95HTJCekZZ0AzamhMn9LEPGkwgPyH7fZxXoGtJnRHrLK2Todqs5+gP9/WwsvBYOR
+         Bkqgm99VHu+SXrLHIpmi0MuSLsef2CTP8DJGM=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: Kernel Janitors <kernel-janitors@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Don Zickus <dzickus@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: [PATCH] kernel/watchdog: Initialize 'result'
+Date: Mon,  5 Jul 2010 12:00:54 +0400
+Message-Id: <1278316854-28442-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>,
-       Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Subject: Re: [PATCH v2] KVM: IOAPIC: only access APIC registers one dword
- at a time
-References: <4C2D6D4B.5060309@cn.fujitsu.com> <4C2D95EA.6080209@np.css.fujitsu.com> <4C2D975A.2050704@cn.fujitsu.com> <4C2D9C8C.8060401@cn.fujitsu.com> <4C2F0CC1.6020808@redhat.com> <4C3155BA.4070903@cn.fujitsu.com> <4C318FAC.8010605@redhat.com>
-In-Reply-To: <4C318FAC.8010605@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Variable on the stack is not initialized to zero, do it explicitly.
 
+This patch silences a compiler warning:
+kernel/watchdog.c:463: warning: ‘result’ may be used uninitialized in this function
 
-Avi Kivity wrote:
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ kernel/watchdog.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> 
->>> There might be guests that use incorrect access despite the
->>> documentation; if real hardware supports it, it should work.  So we need
->>> to start with just a warning, and allow the access.  Later we can drop
->>> the invalid access.
->>>      
->> If the OS contravene the spec, i thinks it's the OS's bug, also, i
->> have tested some versions
->> windows/linux guests, it's no broken, can we directly drop the other
->> wide access?
->>    
-> 
-> Well, there's the spec and there's real life, but in this case we can
-> try and if we see a problem we'll re-add the other access length.
-> 
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 91b0b26..613bc1f 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -460,7 +460,7 @@ static void watchdog_disable(int cpu)
+ static void watchdog_enable_all_cpus(void)
+ {
+ 	int cpu;
+-	int result;
++	int result = 0;
+ 
+ 	for_each_online_cpu(cpu)
+ 		result += watchdog_enable(cpu);
+-- 
+1.7.0.4
 
-OK, i'll do it as your suggestion, thanks.
