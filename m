@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab0GETYm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 15:24:42 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:58949 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752075Ab0GETYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 15:24:40 -0400
-Message-ID: <4C323177.3070606@kernel.dk>
-Date: Mon, 05 Jul 2010 21:24:39 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1753914Ab0GET1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 15:27:21 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38040 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab0GET1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 15:27:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gtvmq0HF7hlyWhBTQA46/UK4MZQN/HXZpGeh9nVtsV6IwDtB5kXxVZpOZo8vHxUh8C
+         4WpUMBvo5mO6OrpcQMA5doqqVyisDJAjYNgFRBffnedPRg61SuKNg723prDay4B7wUXb
+         PhrhZT027gWhWuvI/gBZSR1i4z9H9cdW+bXo0=
+Date: Mon, 5 Jul 2010 21:27:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>, Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
+       Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: [PATCH 5/6] v4l: convert v4l2-dev to unlocked_ioctl
+Message-ID: <20100705192731.GD5240@nowhere>
+References: <1278195310-25590-1-git-send-email-arnd@arndb.de> <1278195310-25590-6-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [regression] Crash in wb_clear_pending()
-References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com> <20100705085550.GA26775@elte.hu> <20100705164022.GA26995@infradead.org> <20100705171125.GB26202@elte.hu> <20100705171420.GA29697@elte.hu> <20100705182003.GA12332@infradead.org>
-In-Reply-To: <20100705182003.GA12332@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278195310-25590-6-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/10 20.20, Christoph Hellwig wrote:
-> On Mon, Jul 05, 2010 at 07:14:20PM +0200, Ingo Molnar wrote:
->> Nor does it apply to v2.6.35-rc4:
+On Sun, Jul 04, 2010 at 12:15:09AM +0200, Arnd Bergmann wrote:
+> v4l2 implements two separate file operations for drivers that use locked
+> and unlocked ioctl callbacks. Since we want to remove the ioctl file operation
+> in favor of the unlocked variant, this separation no longer seems helpful.
 > 
-> It's indeed missing the two previous patches to the writeback code that
-> I thought Jens sent to Linus aswell [1].  The race was initially found using
-> a distro kernel with the patches backported, and in the meantime we've
-> done a lot of testing with this patch (and the two previous that also
-> were backported).  I'd prefer to get this full stack that's been in
-> -next for a while and got large machine testing, but if Jens prefers it
-> I can aim for a smaller variant.  Jens, what version do you prefer?
+> There is another series from Frederic Weisbecker that takes care
+> of converting all v4l drivers to use the unlocked_ioctl variant, which
+> brings the BKL pushdown one level further.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-The oops itself looks like a recurrence of the missing RCU grace or
-too early stack wakeup, which should be a 1-2 liner once it's found.
-So I think such a patch would be greatly preferable to doing this
-much churn this late in the cycle.
 
-Christoph, do you have time to look into that? We can always punt to
-the larger version in a few days if unsuccessful, which gets rid of
-the problem by simply deleting the troublesome and complex
-clear/wakeup logic.
 
--- 
-Jens Axboe
+Mauro, would you prefer to take this version or the other that does the complete
+v4l pushdown?
+
+I can rebase the other series to the latest v4l branch if needed.
+
+
+Thanks.
+
+
+> Acked-by: Hans Verkuil <hverkuil@xs4all.nl>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
 
