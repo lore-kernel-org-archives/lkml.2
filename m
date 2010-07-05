@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab0GEI2W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:28:22 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:55313 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062Ab0GEI2V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:28:21 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX181Csn+wAcrq4cHF4bOBORd
-Date: Mon, 5 Jul 2010 11:28:12 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Tero Kristo <tero.kristo@nokia.com>,
-       Hiroshi DOYU <Hiroshi.DOYU@nokia.com>, Pavel Machek <pavel@ucw.cz>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Magnus Damm <damm@igel.co.jp>, Alexey Dobriyan <adobriyan@gmail.com>,
-       linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 13/33] Replacing LEDS_OMAP_DEBUG with OMAP_DEBUG_LEDS
-Message-ID: <20100705082810.GG15951@atomide.com>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
- <b1363abf63cf2e35450acae82765ba679f1979bc.1277911346.git.siccegge@cs.fau.de>
+	id S1757652Ab0GEIaV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 04:30:21 -0400
+Received: from pegase1.c-s.fr ([194.2.40.7]:56791 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754680Ab0GEIaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 04:30:17 -0400
+X-Greylist: delayed 2692 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jul 2010 04:30:17 EDT
+Message-ID: <4C318D87.1010306@c-s.fr>
+Date: Mon, 05 Jul 2010 09:45:11 +0200
+From: LEROY Christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b1363abf63cf2e35450acae82765ba679f1979bc.1277911346.git.siccegge@cs.fau.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.34: arch/powerpc/sysdev/micropatch.c not compiling
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Christoph Egger <siccegge@cs.fau.de> [100630 18:58]:
-> LEDS_OMAP_DEBUG doesn't exist in Kconfig, therefore replacing all
-> references for it with OMAP_DEBUG_LEDS from the source code.
+When activating micropatch option, the kernel does not compile.
 
-Applied.
+It looks like a spi_t is not defined anywhere.
 
-Tony
+CC arch/powerpc/sysdev/micropatch.o
+arch/powerpc/sysdev/micropatch.c: In function ‘cpm_load_patch’:
+arch/powerpc/sysdev/micropatch.c:629: erreur: expected ‘=’, ‘,’, ‘;’, 
+‘asm’ or ‘__attribute__’ before ‘*’ token
+arch/powerpc/sysdev/micropatch.c:629: erreur: ‘spp’ undeclared (first 
+use in this function)
+arch/powerpc/sysdev/micropatch.c:629: erreur: (Each undeclared 
+identifier is reported only once
+arch/powerpc/sysdev/micropatch.c:629: erreur: for each function it 
+appears in.)
+cc1: warnings being treated as errors
+arch/powerpc/sysdev/micropatch.c:630: erreur: ISO C89 interdit les 
+mélanges de déclarations et de code
+arch/powerpc/sysdev/micropatch.c:671: erreur: ‘spi_t’ undeclared (first 
+use in this function)
+arch/powerpc/sysdev/micropatch.c:671: erreur: expected expression before 
+‘)’ token
+make[1]: *** [arch/powerpc/sysdev/micropatch.o] Erreur 1
+make: *** [arch/powerpc/sysdev] Erreur 2
+
+Regards
+
