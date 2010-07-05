@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab0GESLb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 14:11:31 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:48744 "EHLO hernando.osrc.amd.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754051Ab0GESLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 14:11:30 -0400
-From: Conny Seidel <conny.seidel@amd.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, borislav.petkov@amd.com,
-       Conny Seidel <conny.seidel@amd.com>
-Subject: [PATCH] perf tools: Fix fallback to cplus_demangle() when bfd_demangle() is not available
-Date: Mon,  5 Jul 2010 20:07:30 +0200
-Message-Id: <1278353250-28490-1-git-send-email-conny.seidel@amd.com>
-X-Mailer: git-send-email 1.7.2.rc0.13.gc9eaa
+	id S1755529Ab0GESSE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 14:18:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37719 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043Ab0GESSB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 14:18:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=gqVGLKanpe/E2ug7mdFVDZOQiDLoX2LtBu1kNkEkPdMEac7ZnLerLcMsYol9xNDWwp
+         rr73B3JoFbCrYnjN2q4SXdVRksDX2Jm3GwV4/8ocDuOfGR5ll9rTTTNvMotZjtzxjfM9
+         aKrDG/2JCKMEVPliq8IkQ89XR0WVSvCuZd010=
+Message-ID: <4C3221FA.6070507@gmail.com>
+Date: Mon, 05 Jul 2010 11:18:34 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Marvin <marvin24@gmx.de>
+CC: linux-kernel@vger.kernel.org, xorg-driver-ati@lists.x.org
+Subject: Re: Radeon KMS doesn't work.
+References: <20100703221056.GA17817@animx.eu.org> <20100704231926.GA1780@animx.eu.org> <201007051927.17001.marvin24@gmx.de>
+In-Reply-To: <201007051927.17001.marvin24@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-make version 3.80 doesn't support "else ifdef" on the same line, also it
-doesn't support unindented nested constructs.
+On 07/05/2010 10:27 AM, Marvin wrote:
+>
+> Hi Wakko,
+>
+> as nobody seems to have answered yet, I think it's better that you file a bug
+> against the radeon driver (bugs.freedesktop.org, one bug for each defect).
+> There may be similar bugs already, so please check this also.
+>
+> Thanks
+>
+> Marvin
+>
+> Am Montag 05 Juli 2010, 01:19:26 schrieb Wakko Warner:
+>> Wakko Warner wrote:
+>>> I have a Dell Inspiron 5100 with an ATI Radeon Mobility M7 (7500 R100
+>>> PCI ID 1002:4c57 sub 1028:0149).
+>>>
+>>> Immediately when radeon.ko is loaded, the screen goes blank (The
+>>> backlight stays on).  I have fbcon compiled into the kernel (I also
+>>> tried as module). I am unable to get the screen to work again until I
+>>> reboot.  The logs did not appear to have any errors after the module
+>>> loaded.  The system was still responsive on the network.
+>>>
+>>> I tried kernels 2.6.33 and 2.6.34.
+>>>
+>>> I can provide kernel output if needed.
+>>
+>> I need to add that if I use modeset=0, the screen does not blank.
+>>
+>> Also 2.6.34 (with modeset=0) doesn't do 3D very well on this system.  Some
+>> objects look ok, some are garbled, some do not appear at all.  The gears
+>> from xscreensaver does not show up at all.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Build fails with:
-Makefile:608: Extraneous text after `else' directive
-Makefile:611: *** only one `else' per conditional.  Stop.
 
-This patch fixes the build for make 3.80.
+I've hit a couple of things with radeon as well.. the first was this:
+http://lkml.org/lkml/2010/6/6/172
+(if your hitting this issue, then the patch should work and/or it should 
+already be in the main tree).
 
-Signed-off-by: Conny Seidel <conny.seidel@amd.com>
----
- tools/perf/Makefile |   50 ++++++++++++++++++++++++++------------------------
- 1 files changed, 26 insertions(+), 24 deletions(-)
+then a few days ago hit another:
+https://bugzilla.kernel.org/show_bug.cgi?id=16335
+(keep in mind still uncertain on a fix for this, reverting the commit 
+gets me up and running(I created a patch, but an umsure if it's a right 
+solution)).
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 17a3692..74fa34f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -605,33 +605,35 @@ endif
- 
- ifdef NO_DEMANGLE
- 	BASIC_CFLAGS += -DNO_DEMANGLE
--else ifdef HAVE_CPLUS_DEMANGLE
--	EXTLIBS += -liberty
--	BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
--else
--	FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
--	has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
--	ifeq ($(has_bfd),y)
--		EXTLIBS += -lbfd
--	else
--		FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
--		has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
--		ifeq ($(has_bfd_iberty),y)
--			EXTLIBS += -lbfd -liberty
-+else 
-+        ifdef HAVE_CPLUS_DEMANGLE
-+		EXTLIBS += -liberty
-+		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+        else
-+		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
-+		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
-+		ifeq ($(has_bfd),y)
-+			EXTLIBS += -lbfd
- 		else
--			FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
--			has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
--			ifeq ($(has_bfd_iberty_z),y)
--				EXTLIBS += -lbfd -liberty -lz
-+			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
-+			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
-+			ifeq ($(has_bfd_iberty),y)
-+				EXTLIBS += -lbfd -liberty
- 			else
--				FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
--				has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
--				ifeq ($(has_cplus_demangle),y)
--					EXTLIBS += -liberty
--					BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
-+				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
-+				ifeq ($(has_bfd_iberty_z),y)
-+					EXTLIBS += -lbfd -liberty -lz
- 				else
--					msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
--					BASIC_CFLAGS += -DNO_DEMANGLE
-+					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
-+					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
-+					ifeq ($(has_cplus_demangle),y)
-+						EXTLIBS += -liberty
-+						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+					else
-+						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+						BASIC_CFLAGS += -DNO_DEMANGLE
-+					endif
- 				endif
- 			endif
- 		endif
--- 
-1.7.2.rc0.13.gc9eaa
+if none of these are what your hitting, then maybe(if you can) do a 
+bisect on this!
 
+Justin P. Mattock
