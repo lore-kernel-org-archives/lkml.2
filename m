@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab0GEJ20 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 05:28:26 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35025 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab0GEJ2W (ORCPT
+	id S1754648Ab0GEJfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 05:35:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39190 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753560Ab0GEJfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 05:28:22 -0400
-Date: Mon, 5 Jul 2010 11:28:16 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] hugetlb: add allocate function for hugepage
- migration
-Message-ID: <20100705092816.GA8510@basil.fritz.box>
-References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1278049646-29769-4-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20100702090854.GD12221@basil.fritz.box>
- <20100705084629.GC29648@spritzera.linux.bs1.fc.nec.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100705084629.GC29648@spritzera.linux.bs1.fc.nec.co.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 5 Jul 2010 05:35:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:in-reply-to:references
+         :user-agent;
+        b=xC5yM4r19KeQJU03aiA6Lu42H5QN0nNfmFAbcqPpUnp7QSurjWKi0cC/OoFO51DJkC
+         y7WoxgCqhbBDOU8DHVeupyG5LJU2bINNF3isH+23qbm304bUNGYNf+D//TlGS87mJnZ0
+         k2pdac8bSIGTEwmraFI0i1h7Qd/m6+Y5TqMTI=
+Date: Mon, 05 Jul 2010 09:28:42 +0000
+From: Ali Gholami Rudi <ali@rudi.ir>
+To: Xiaotian Feng <dfeng@redhat.com>
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Venkatesh Pallipadi <venki@google.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [regression] commit 6a4f3b52 causes invalid memtype
+Message-ID: <20100507092842@tarekhel>
+In-Reply-To: <4C319D61.5090002@redhat.com>
+References: <20100507075128@tarekhel>
+	<4C319D61.5090002@redhat.com>
+User-Agent: git://repo.or.cz/mailx.git
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 05:46:29PM +0900, Naoya Horiguchi wrote:
-> On Fri, Jul 02, 2010 at 11:08:54AM +0200, Andi Kleen wrote:
-> > On Fri, Jul 02, 2010 at 02:47:22PM +0900, Naoya Horiguchi wrote:
-> > > We can't use existing hugepage allocation functions to allocate hugepage
-> > > for page migration, because page migration can happen asynchronously with
-> > > the running processes and page migration users should call the allocation
-> > > function with physical addresses (not virtual addresses) as arguments.
-> > 
-> > I looked through this patch and didn't see anything bad. Some more
-> > eyes familiar with hugepages would be good though.
+Xiaotian Feng <dfeng@redhat.com> wrote:
+> Could you please try following commit in -tip tree?
 > 
-> Yes.
+> commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+> Author: Peter Zijlstra <peterz@infradead.org>
+> Date:   Sat May 29 15:31:43 2010 +0200
 > 
-> > Since there are now so many different allocation functions some
-> > comments on when they should be used may be useful too
-> 
-> OK. How about this?
-> 
-> +/*
-> + * This allocation function is useful in the context where vma is irrelevant.
-> + * E.g. soft-offlining uses this function because it only cares physical
-> + * address of error page.
-> + */
+>      rbtree: Undo augmented trees performance damage
 
-Looks good thanks.
+Where can I get it?  I couldn't find it either in
+Linus' or x86 repo tip.
 
-> +struct page *alloc_huge_page_node(struct hstate *h, int nid)
-> +{
-> 
-> BTW, I don't like this function name very much.
-> Since the most significant difference of this function to alloc_huge_page()
-> is lack of vma argument, so I'm going to change the name to
-> alloc_huge_page_no_vma_node() in the next version if it is no problem.
-> 
-> Or, since the postfix like "_no_vma" is verbose, I think it might be
-> a good idea to rename present alloc_huge_page() to alloc_huge_page_vma().
-> Is this worthwhile?
+Thanks,
+Ali
 
-Yes, in a separate patch
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
