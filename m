@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab0GERs3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 13:48:29 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:34833 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab0GERs1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 13:48:27 -0400
-Date: Mon, 5 Jul 2010 18:48:23 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Martin Filip <bugtraq@smoula.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Macbook Pro 5,5 nvidia backlight fix
-Message-ID: <20100705174823.GA16764@srcf.ucam.org>
-References: <4C31F9C4.8090609@smoula.net> <20100705172552.GA16298@srcf.ucam.org> <4C321A0D.20008@smoula.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C321A0D.20008@smoula.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1756029Ab0GERz2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 13:55:28 -0400
+Received: from sh.osrg.net ([192.16.179.4]:34805 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754236Ab0GERz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 13:55:27 -0400
+Date: Tue, 06 Jul 2010 02:55:11 +0900 (JST)
+Message-Id: <20100706.025511.266421917.ryusuke@osrg.net>
+To: fweisbec@gmail.com
+Cc: arnd@arndb.de, konishi.ryusuke@lab.ntt.co.jp, linux-nilfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       jblunck@suse.de
+Subject: Re: [PATCH] nilfs2: remove BKL uses
+From: Ryusuke Konishi <ryusuke@osrg.net>
+In-Reply-To: <20100705145324.GA5240@nowhere>
+References: <1278220928-28121-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+	<201007051650.23761.arnd@arndb.de>
+	<20100705145324.GA5240@nowhere>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 06 Jul 2010 02:55:13 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 07:44:45PM +0200, Martin Filip wrote:
-> On 5.7.2010 19:25, Matthew Garrett wrote:
-> > On Mon, Jul 05, 2010 at 05:27:00PM +0200, Martin Filip wrote:
-> >> Maybe someone involved with this module can merge this one?
+On Mon, 5 Jul 2010 16:53:29 +0200, Frederic Weisbecker wrote:
+> On Mon, Jul 05, 2010 at 04:50:23PM +0200, Arnd Bergmann wrote:
+> > On Sunday 04 July 2010, Ryusuke Konishi wrote:
+> > > Nilfs has BKL uses in its put_super and remount functions, but none of
+> > > them are necessary, just came from earlier push downs.  This
+> > > eliminates the BKL uses from nilfs.
+> > > 
+> > > Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 > > 
-> > This is a really bad idea. You're hardcoding the location of PDISPLAY, 
-> > which the kernel is at liberty to remap at boot time, and even then 
-> > you're writing into the address space of a device that's controlled by 
-> > another driver.
-> well, I understand what you do not like. But I'm not capable of fixing
-> this. Let's say I'm just reporting something that does not work and
-> pointing out, that "this way it works for me for almost a year on
-> different versions of kernel". Is there someone, who understands that?
+> > This looks good, but there is a another patch series pushing the BKL
+> > into the get_sb and fill_super operations, which should be the final
+> > pushdown for file systems. I wonder if there is a way to find a
+> > shortcut on this so we don't need to add it first just to have you
+> > go through the effort of removing it again.
+> 
+> 
+> I could take his patch in the mount pushdown series.
 
-Yes, which is why I added support for it to nouveau...
+OK, please treat this patch as needed.
 
-> > Does nouveau not handle this hardware properly?
-> I'm user of nvidia binary drivers. I can try, but I doubt.
+I've forgotten the additional BKL push down patch and Jan's BKL
+removal patch on nilfs, but yes, it looks omissible to add BKL and
+remove it again there.
 
-The graphics hardware is supposed to be under the control of the 
-graphics driver. If your graphics driver is deficient then you'll really 
-have to take that up with your vendor.
+For now, I will drop my patch from my tree.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks,
+Ryusuke Konishi
