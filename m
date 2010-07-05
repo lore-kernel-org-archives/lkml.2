@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab0GEVfH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 17:35:07 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58902 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab0GEVfE (ORCPT
+	id S1755931Ab0GEVlg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 17:41:36 -0400
+Received: from cynthia.allandria.com ([76.245.85.235]:52912 "EHLO
+	cynthia.pants.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755529Ab0GEVlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 17:35:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:date:message-id
-         :mime-version:x-mailer:content-transfer-encoding;
-        b=nyW7PchAI5/Uyf1pUoZlKCgWYjU5mM9oMrjbavdOAH07ym+VsDREh/t/YkDhpvc1zt
-         kmVJwSaOCzQfhbyY8EWWP5boF6mDQ01uxkduit9yUpvCWx6ht565WTE3DcV7KqonwQs4
-         AlCUTwqFoMzG0AmlkXjca5ovvwSmc53oh6G+4=
-Subject: PATCH] Scripts: checkpatch: change externals to globals
-From: Joe Eloff <kagen101@gmail.com>
-Reply-To: kagen101@gmail.com
-To: Andy Whitcroft <apw@canonical.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Jul 2010 23:34:43 +0200
-Message-ID: <1278365683.5396.55.camel@dermezel>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Jul 2010 17:41:35 -0400
+X-Greylist: delayed 2592 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jul 2010 17:41:35 EDT
+Date: Mon, 5 Jul 2010 13:58:06 -0700
+From: Brad Boyer <flar@allandria.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Christoph Hellwig <hch@infradead.org>, Nick Piggin <npiggin@suse.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Al Viro <viro@ZenIV.linux.org.uk>, Ulrich Drepper <drepper@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [rfc] new stat*fs-like syscall?
+Message-ID: <20100705205806.GA12517@cynthia.pants.nu>
+References: <20100624131455.GA10441@laptop> <7897.1277531612@jrobl> <20100626093544.GA27715@infradead.org> <13226.1277556884@jrobl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <13226.1277556884@jrobl>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 9745542c84ef223eec8309a9fb7abf225153419d Mon Sep 17 00:00:00 2001
-From: Joe Eloff <kagen101@gmail.com>
-Date: Mon, 5 Jul 2010 23:28:21 +0200
-Subject: [PATCH] Scripts: checkpatch: change externals to globals
+On Sat, Jun 26, 2010 at 09:54:44PM +0900, J. R. Okajima wrote:
+> Christoph Hellwig:
+> > That's really job for a pathconf system call that allows quering random
+> > paramters.
+> 
+> Do you mean it should be implemented such like this?
+> vfs_pathconf(struct dentry, int parm)
+> --> return d_sb->s_op->pathconf(parm)
 
-Made error message say 'ERROR: do not initialise globals to 0 or NULL'
-rather than 'ERROR: do not initialise externals to 0 or NULL'.
-Makes more sense in the context since there is an extern keyword in C and
-that is a global declaration within the scope of the current file.
-Signed-off-by: Joe Eloff <kagen101@gmail.com>
----
- scripts/checkpatch.pl |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+I would suggest making it an inode operation if we do actually add it. Most
+cases are going to be per super-block, but it might be easier to transparently
+handle things like _PC_PIPE_BUF in glibc if it could call an fpathconf type
+system call on the pipe fd. I haven't looked at the current glibc code for
+that particular selector. The only one I looked at in any detail was
+_PC_LINK_MAX, which is the one you already discussed and is obviously a
+per-sb option. The only drawback I can see is that making it an inode
+operation would make the vfs_pathconf fail on a negative dentry, but that
+seems like a very strange thing to support in any case.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index bd88f11..6b003cf 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1778,9 +1778,9 @@ sub process {
- 			WARN("EXPORT_SYMBOL(foo); should immediately follow its function/variable\n" . $herecurr);
- 		}
- 
--# check for external initialisers.
-+# check for global initialisers.
- 		if ($line =~ /^.$Type\s*$Ident\s*(?:\s+$Modifier)*\s*=\s*(0|NULL|false)\s*;/) {
--			ERROR("do not initialise externals to 0 or NULL\n" .
-+			ERROR("do not initialise globals to 0 or NULL\n" .
- 				$herecurr);
- 		}
- # check for static initialisers.
--- 
-1.6.3.3
+> I am afraid it is overdesign because the actual parameter(for FS) is
+> _PC_LINK_MAX only. All other params are already handled by VFS, glibc or
+> sb->statfs.
 
-
+	Brad Boyer
+	flar@allandria.com
 
