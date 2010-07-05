@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab0GENBp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 09:01:45 -0400
-Received: from eastrmfep01.cox.net ([68.230.240.57]:52054 "EHLO
-	eastrmfep01.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab0GENBo (ORCPT
+	id S1754207Ab0GENIY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 09:08:24 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:52598 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680Ab0GENIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 09:01:44 -0400
-X-Greylist: delayed 863 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jul 2010 09:01:43 EDT
-X-VR-Score: 110.00
-X-Authority-Analysis: v=1.1 cv=9hqMks3O5GNLj/qlJOa2Pir5HjFKYRx/CqtbUNZ5PAg=
- c=1 sm=1 a=KcAmvaR-1bUA:10 a=ood2b7iyd8MA:10 a=M58Ut_zYM0YA:10
- a=l-mjcx2A0XsA:10 a=IkcTkHD0fZMA:10 a=40W+Lnb4GQCKcVHw9Z7S9g==:17
- a=U8HIJEYLeAgXfRdZ4xkA:9 a=_UvDnNQNBRSkyA5IekGlP9GlU8AA:4 a=QEXdDO2ut3YA:10
- a=40W+Lnb4GQCKcVHw9Z7S9g==:117
-X-CM-Score: 0.00
-Message-ID: <20100705084717.EQW3N.280501.imail@eastrmwml40>
-Date: Mon, 5 Jul 2010 8:47:17 -0400
-From: Mrs Claire Page <ade107@cox.net>
-Reply-To: barrlwatson001@aol.com
-Subject: Contact my Lawyer on (barrlwatson006@9.cn)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 5 Jul 2010 09:08:22 -0400
+Subject: Re: [PATCH 0/1] VFS: introduce s_dirty accessors
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>, tytso@mit.edu,
+       linux-fsdevel@vger.kernel.org
+In-Reply-To: <1276167393-31492-1-git-send-email-dedekind1@gmail.com>
+References: <1276167393-31492-1-git-send-email-dedekind1@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Jul 2010 16:04:27 +0300
+Message-ID: <1278335067.29620.51.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 05 Jul 2010 13:08:04.0596 (UTC) FILETIME=[1AAA8340:01CB1C43]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Mrs Claire Page, I am sick at the Hospital
+On Thu, 2010-06-10 at 13:56 +0300, Artem Bityutskiy wrote:
+> Hi Linus,
+> 
+> would it be possible to add the following patch to your tree. I'm trying
+> to lessen amount of useless wake-ups in the kernel, and the 'sync_supers'
+> thread if one of those kernel threads which wakes up every 5 seconds to
+> (mostly) do nothing.
+> 
+> This is still work in progress, but putting the below patch to your tree
+> would make life easier at the next merge window. This patch just adds 3
+> accessor functions, but no one will use them so fare, so it must be
+> harmless. This was suggested by Ted and supported by Al:
+> http://lkml.org/lkml/2010/6/9/216
 
-Please contact my lawyer, Barrister Landon Watson via email above for more details.
+Linus,
+
+I wonder, you did not take this because of the vacation or because you
+do not like it?
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
