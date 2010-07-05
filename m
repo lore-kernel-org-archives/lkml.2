@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab0GELU2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 07:20:28 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55320 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab0GELU1 convert rfc822-to-8bit (ORCPT
+	id S1754273Ab0GELmD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 07:42:03 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:36068 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920Ab0GELmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 07:20:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=YF6oUPeW1mA+DKq6+s5ZZuj9ym3Gmks8WD3hQrjg7Q5N0kWCPidT7OGaSepXjWqPfZ
-         aMo1zguCB/Tcgw0l5Ib0lRTIuBx2PCLGuSt7aW+fLqyjvUEbvwJrYbMnCOB/OI0T/1aX
-         AysveMG2ZBe3uqDAroFH/xg4F+DACDtq3J56s=
-MIME-Version: 1.0
-Date: Mon, 5 Jul 2010 12:20:24 +0100
-Message-ID: <AANLkTild_NZP5B33ITuaS67bvuREiukbQCtcguKEO4XG@mail.gmail.com>
-Subject: re: PC Beeps not working with HDA Intel module
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: =?ISO-8859-1?B?U2jpcmFi?= <Sebastien.Hinderer@ens-lyon.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Jul 2010 07:42:00 -0400
+Date: Mon, 5 Jul 2010 13:41:56 +0200
+From: Alexander Schmidt <alexs@linux.vnet.ibm.com>
+To: Roland Dreier <rdreier@cisco.com>, Linux RDMA <linux-rdma@vger.kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+       Stefan Roscher <stefan.roscher@de.ibm.com>,
+       Joachim Fenkes <fenkes@de.ibm.com>,
+       Christoph Raisch <raisch@de.ibm.com>,
+       Hoang-Nam Nguyen <HNGUYEN@linux.vnet.ibm.com>
+Subject: [PATCH] ib/ehca: init irq tasklet before irq can happen
+Message-ID: <20100705134156.36803536@alex-laptop>
+X-Mailer: Claws Mail 3.6.1 (GTK+ 2.16.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jun 26, 12:40 pm, Shérab <Sebastien.Hinderer@ens-lyon.org> wrote:
-> Dear all,
->
-> The problem is on a computer with an HDA Intel sound card, Intel G45
-> DEVCTG chip and appears will all version s of the kernel.
->
-> Running e.g.
-> beep 440
-> produces a beep whose audible frequency is very low, definitely not 440
-> Hz.
->
-> However, it is worth notiing that grub is able to produce a beep of the
-> right frequency at boot time.
->
-> Can this problem be fixed ?
->
-> Should you need any additional bit of information or testing, please ask.
+Initialize tasklet before interrupts are requested to prevent scheduling of
+uninitialized tasklet.
 
-I was finding the same with my Dell Studio 1557.
+Signed-off-by: Alexander Schmidt <alexs@linux.vnet.ibm.com>
+---
+Hi Roland, please queue this fix for 2.6.36, thanks!
 
-It may be worth using some printk calls [1] showing what frequency
-value is sent to the codec, then checking with the codec datasheet -
-we'll need to know which one, eg from 'dmesg' or 'alsa-info.sh' (from
-http://www.alsa-project.org/alsa-info.sh).
+ drivers/infiniband/hw/ehca/ehca_eq.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-We'll probably need to check the configuration registers of the beep
-widget to check what divider it's using...
-
-Thanks,
-  Daniel
-
---- [1]
-
-diff --git a/sound/pci/hda/hda_beep.c b/sound/pci/hda/hda_beep.c
-index 29714c8..98d0d6c 100644
---- a/sound/pci/hda/hda_beep.c
-+++ b/sound/pci/hda/hda_beep.c
-@@ -69,6 +69,7 @@ static int beep_linear_tone(struct hda_beep *beep, int hz)
- 		hz /= DIGBEEP_HZ_STEP;
- 		hz = 255 - hz;
+--- linux-2.6.orig/drivers/infiniband/hw/ehca/ehca_eq.c
++++ linux-2.6/drivers/infiniband/hw/ehca/ehca_eq.c
+@@ -122,21 +122,21 @@ int ehca_create_eq(struct ehca_shca *shc
+ 
+ 	/* register interrupt handlers and initialize work queues */
+ 	if (type == EHCA_EQ) {
++		tasklet_init(&eq->interrupt_task, ehca_tasklet_eq, (long)shca);
++
+ 		ret = ibmebus_request_irq(eq->ist, ehca_interrupt_eq,
+ 					  IRQF_DISABLED, "ehca_eq",
+ 					  (void *)shca);
+ 		if (ret < 0)
+ 			ehca_err(ib_dev, "Can't map interrupt handler.");
+-
+-		tasklet_init(&eq->interrupt_task, ehca_tasklet_eq, (long)shca);
+ 	} else if (type == EHCA_NEQ) {
++		tasklet_init(&eq->interrupt_task, ehca_tasklet_neq, (long)shca);
++
+ 		ret = ibmebus_request_irq(eq->ist, ehca_interrupt_neq,
+ 					  IRQF_DISABLED, "ehca_neq",
+ 					  (void *)shca);
+ 		if (ret < 0)
+ 			ehca_err(ib_dev, "Can't map interrupt handler.");
+-
+-		tasklet_init(&eq->interrupt_task, ehca_tasklet_neq, (long)shca);
  	}
-+	printk(KERN_ERR "HDA beep: linear value %d\n", hz);
- 	return hz;
- }
-
-@@ -87,6 +88,7 @@ static int beep_standard_tone(struct hda_beep *beep, int hz)
- 		return 0xff;
- 	if (hz <= 0)
- 		return 1;
-+	printk(KERN_ERR "HDA beep: standard value %d\n", hz);
- 	return hz;
- }
-
--- 
-Daniel J Blueman
+ 
+ 	eq->is_initialized = 1;
