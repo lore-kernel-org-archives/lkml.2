@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854Ab0GEKoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 06:44:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39014 "EHLO smtps.tip.net.au"
+	id S1753898Ab0GEK5N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 06:57:13 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:53437 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183Ab0GEKo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 06:44:27 -0400
-Date: Mon, 5 Jul 2010 20:44:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jeff Layton <jlayton@redhat.com>
-Subject: Re: linux-next: build warning after merge of the vfs tree
-Message-Id: <20100705204414.2fa0e1d3.sfr@canb.auug.org.au>
-In-Reply-To: <20100705081019.GQ31073@ZenIV.linux.org.uk>
-References: <20100705100121.d089bf12.sfr@canb.auug.org.au>
-	<20100705081019.GQ31073@ZenIV.linux.org.uk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__5_Jul_2010_20_44_14_+1000_mvQqjI4WYNtts_Tn"
+	id S1751009Ab0GEK5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 06:57:08 -0400
+Date: Mon, 5 Jul 2010 12:58:55 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Dan Kruchinin <dan.kruchinin@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH 1/3] padata: separate serial and parallel cpumasks
+Message-ID: <20100705105855.GL10072@secunet.com>
+References: <AANLkTikeDE4hvZ3spyTBSHZsdQPc-2wlD5nTfb1aF-VD@mail.gmail.com>
+ <20100702085323.GF10072@secunet.com>
+ <AANLkTinyPGjXjlvJxB8WYB3EYFBtANXMzpTdUixyBRHW@mail.gmail.com>
+ <20100702091726.GH10072@secunet.com>
+ <AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
+ <20100702111138.GI10072@secunet.com>
+ <AANLkTil3pa-WKRKo3IQzgxkKc0I5qs5UPpgpiNiKlVBO@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTil3pa-WKRKo3IQzgxkKc0I5qs5UPpgpiNiKlVBO@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 05 Jul 2010 10:57:03.0079 (UTC) FILETIME=[CCD63770:01CB1C30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Jul_2010_20_44_14_+1000_mvQqjI4WYNtts_Tn
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jul 02, 2010 at 05:01:28PM +0400, Dan Kruchinin wrote:
+> 
+> Sounds good. But if I understand linux crypto framework right, it
+> calls init_tfm every time it creates new security association. Ideally
+> pcrypt should have only two cpumasks one for pencrypt instance and
+> another for pdecrypt.
+> If we'll initialize these cpumasks in pcrypt_alloc_tfm they'll be
+> initialized every time new SA appears.
 
-Hi Al,
+Yes, you are absolutely right. Placing this to instance context
+is the right way to do it.
 
-On Mon, 5 Jul 2010 09:10:19 +0100 Al Viro <viro@ZenIV.linux.org.uk> wrote:
->
-> Fixed.
+Thanks,
 
-Thanks.
+Steffen
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__5_Jul_2010_20_44_14_+1000_mvQqjI4WYNtts_Tn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMMbd+AAoJEDMEi1NhKgbsBB4H/Azz2H0lflsuWt8n7Q+v5OJL
-jqqehAWutoabR55ES8/H51ABzGBpBGstYpCZxfdlMnxBpyyaPxmJGzE6ffbEtzA4
-iwJDm3q+cdeFHtFpFqcGLpA3Dg16P025//yeFj/iaRop2Gs0tS0D5Z7cCeocGyfN
-oyy7BilhVV31qvIqePqD4+VxgoWrYobaJNjlze9QBuIWSEkvTv80cXO+Ag42p+iT
-5QPoCtginWPDIih1RZNlhZN756/ZLph5MiDsgp4afg5n5o4eEt+G9RVJy6JouYr2
-4OUANiN3HPl8zxKw9L0a6eOFhDzUqp5dv2Ld7hJrJCFa+bPKatCkWBq3Ns5qkPo=
-=mX/C
------END PGP SIGNATURE-----
-
---Signature=_Mon__5_Jul_2010_20_44_14_+1000_mvQqjI4WYNtts_Tn--
