@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab0GEKcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 06:32:19 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:49524 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305Ab0GEKcP convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Mon, 5 Jul 2010 06:32:15 -0400
-Message-Id: <4C31D0C70200007800009863@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 05 Jul 2010 11:32:07 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: eliminate pointless adjustment attempts in
-	 fixup_irqs()
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755831Ab0GEKdl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 06:33:41 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43685 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755305Ab0GEKdk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 06:33:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=u9yG9JEPyZ7RR3Eo1Rh63XXlEDMCqXHNB0/CywHhRxE2fqSVGbLVZbHneM0fX0T6ol
+         ui53tjYb21v0Phj2E2gGRHeAfKqD19K9mE9J8J8jDUI3S0FGawYZFBK47Xw+6iSgnSIa
+         HGgga32ekrq+roEqWGErqSTmfgH7ly45ZEb+c=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 17/33] Removing dead SX1_OLD_FLASH
+Date: Mon, 5 Jul 2010 12:31:13 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.33-2-amd64; KDE/4.4.3; x86_64; ; )
+Cc: Christoph Egger <siccegge@cs.fau.de>,
+       Russell King <linux@arm.linux.org.uk>, Kalle Valo <kalle.valo@iki.fi>,
+       Ladislav Michl <ladis@linux-mips.org>,
+       Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>, linux-omap@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       vamos@i4.informatik.uni-erlangen.de
+References: <cover.1277911345.git.siccegge@cs.fau.de> <201006302024.47025.marek.vasut@gmail.com> <20100705083346.GI15951@atomide.com>
+In-Reply-To: <20100705083346.GI15951@atomide.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Message-Id: <201007051231.14171.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not only when an IRQ's affinity equals cpu_online_mask is there no
-need to actually try to adjust the affinity, but also when it's a
-subset thereof. This particularly avoids adjustment attempts during
-system shutdown to any IRQs bound to CPU#0.
+Dne Po 5. července 2010 10:33:48 Tony Lindgren napsal(a):
+> * Marek Vasut <marek.vasut@gmail.com> [100630 21:21]:
+> > Dne St 30. června 2010 17:59:25 Christoph Egger napsal(a):
+> > > SX1_OLD_FLASH doesn't exist in Kconfig, therefore removing all
+> > > references for it from the source code.
+> > 
+> > There were two models of the phone made, you can toggle between old and
+> > new version. Maybe better documentation won't hurt.
+> 
+> Sounds like this should be done dynamically based on omap_rev,
+> or some cmdline option from the bootloader? Not applying this
+> one.
+> 
+> Tony
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Yea, the russian guy who ported this is gone I guess though. Just maybe I can 
+get my hands on linux-powered SX1 and try looking into this, but I can't promise 
+it'll be any soon.
 
----
- arch/x86/kernel/irq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-2.6.35-rc4/arch/x86/kernel/irq.c	2010-02-24 19:52:17.000000000 +0100
-+++ 2.6.35-rc4-x86-reduce-irq-fixup/arch/x86/kernel/irq.c	2010-07-05 10:20:16.000000000 +0200
-@@ -298,7 +298,7 @@ void fixup_irqs(void)
- 
- 		affinity = desc->affinity;
- 		if (!irq_has_action(irq) ||
--		    cpumask_equal(affinity, cpu_online_mask)) {
-+		    cpumask_subset(affinity, cpu_online_mask)) {
- 			raw_spin_unlock(&desc->lock);
- 			continue;
- 		}
-
-
-
+Cheers
