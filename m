@@ -1,146 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758652Ab0GEMOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 08:14:34 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:47228 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758608Ab0GEMO3 (ORCPT
+	id S1756925Ab0GEMSt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 08:18:49 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:49111 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab0GEMSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 08:14:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=dxDDHmvGiMI5zpLY9IQUAPTKp1QmTBYiFAa/SHenYNi4DbBD14Oou0P2WNEalCg5HR
-         /ux0msUBc07wY7uLp79WK3lYbWjAlCKDy6W+2gfmawU05vlTtFMFTL3eDmE2wVbma5T1
-         pn21P4JzYlqLomjD69zp+1+VHMNp4ze1hwums=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-       Jiri Pirko <jpirko@redhat.com>,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       Jiri Kosina <jkosina@suse.cz>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] ni52: Use the instance of net_device_stats from net_device.
-Date: Mon,  5 Jul 2010 16:14:23 +0400
-Message-Id: <1278332065-17831-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 5 Jul 2010 08:18:47 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: [PATCHv6 3/9] BFS: clean up the superblock usage
+Date: Mon,  5 Jul 2010 15:15:01 +0300
+Message-Id: <1278332107-11443-4-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <1278332107-11443-1-git-send-email-dedekind1@gmail.com>
+References: <1278332107-11443-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 05 Jul 2010 12:18:43.0027 (UTC) FILETIME=[356EF230:01CB1C3C]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since net_device has an instance of net_device_stats,
-we can remove the instance of this from the adapter structure.
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+BFS is a very simple FS and its superblocks contains only static
+information and is never changed. However, the BFS code for some
+misterious reasons marked its buffer head as dirty from time to
+time, but nothing in that buffer was ever changed.
+
+This patch removes all the BFS superblock manipulation, simply
+because it is not needed. It removes:
+
+1. The si_sbh filed from 'struct bfs_sb_info' because it is not
+   needed. We only need to read the SB once on mount to get the
+   start of data blocks and the FS size. After this, we can forget
+   about the SB.
+2. All instances of 'mark_buffer_dirty(sbh)' for BFS SB because
+   it is never changed.
+3. The '->sync_fs()' method because there is nothing to sync
+   (inodes are synched by VFS).
+4. The '->write_super()' method, again, because the SB is never
+   changed.
+
+Tested-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 ---
- drivers/net/ni52.c |   37 ++++++++++++++++++-------------------
- 1 files changed, 18 insertions(+), 19 deletions(-)
+ fs/bfs/bfs.h   |    1 -
+ fs/bfs/file.c  |    3 ---
+ fs/bfs/inode.c |   46 +++++++---------------------------------------
+ 3 files changed, 7 insertions(+), 43 deletions(-)
 
-diff --git a/drivers/net/ni52.c b/drivers/net/ni52.c
-index 9bddb5f..33618ed 100644
---- a/drivers/net/ni52.c
-+++ b/drivers/net/ni52.c
-@@ -185,7 +185,6 @@ static void    ni52_xmt_int(struct net_device *dev);
- static void    ni52_rnr_int(struct net_device *dev);
+diff --git a/fs/bfs/bfs.h b/fs/bfs/bfs.h
+index 7109e45..f7f87e2 100644
+--- a/fs/bfs/bfs.h
++++ b/fs/bfs/bfs.h
+@@ -17,7 +17,6 @@ struct bfs_sb_info {
+ 	unsigned long si_lf_eblk;
+ 	unsigned long si_lasti;
+ 	unsigned long *si_imap;
+-	struct buffer_head *si_sbh;		/* buffer header w/superblock */
+ 	struct mutex bfs_lock;
+ };
  
- struct priv {
--	struct net_device_stats stats;
- 	char __iomem *base;
- 	char __iomem *mapped;
- 	char __iomem *memtop;
-@@ -972,10 +971,10 @@ static void ni52_rcv_int(struct net_device *dev)
- 					memcpy_fromio(skb->data, p->base + readl(&rbd->buffer), totlen);
- 					skb->protocol = eth_type_trans(skb, dev);
- 					netif_rx(skb);
--					p->stats.rx_packets++;
--					p->stats.rx_bytes += totlen;
-+					dev->stats.rx_packets++;
-+					dev->stats.rx_bytes += totlen;
- 				} else
--					p->stats.rx_dropped++;
-+					dev->stats.rx_dropped++;
- 			} else {
- 				int rstat;
- 				 /* free all RBD's until RBD_LAST is set */
-@@ -993,12 +992,12 @@ static void ni52_rcv_int(struct net_device *dev)
- 				writew(0, &rbd->status);
- 				printk(KERN_ERR "%s: received oversized frame! length: %d\n",
- 					dev->name, totlen);
--				p->stats.rx_dropped++;
-+				dev->stats.rx_dropped++;
- 			 }
- 		} else {/* frame !(ok), only with 'save-bad-frames' */
- 			printk(KERN_ERR "%s: oops! rfd-error-status: %04x\n",
- 				dev->name, status);
--			p->stats.rx_errors++;
-+			dev->stats.rx_errors++;
- 		}
- 		writeb(0, &p->rfd_top->stat_high);
- 		writeb(RFD_SUSP, &p->rfd_top->last); /* maybe exchange by RFD_LAST */
-@@ -1043,7 +1042,7 @@ static void ni52_rnr_int(struct net_device *dev)
- {
- 	struct priv *p = netdev_priv(dev);
+diff --git a/fs/bfs/file.c b/fs/bfs/file.c
+index 8fc2e9c..eb67edd 100644
+--- a/fs/bfs/file.c
++++ b/fs/bfs/file.c
+@@ -70,7 +70,6 @@ static int bfs_get_block(struct inode *inode, sector_t block,
+ 	struct super_block *sb = inode->i_sb;
+ 	struct bfs_sb_info *info = BFS_SB(sb);
+ 	struct bfs_inode_info *bi = BFS_I(inode);
+-	struct buffer_head *sbh = info->si_sbh;
  
--	p->stats.rx_errors++;
-+	dev->stats.rx_errors++;
- 
- 	wait_for_scb_cmd(dev);		/* wait for the last cmd, WAIT_4_FULLSTAT?? */
- 	writeb(RUC_ABORT, &p->scb->cmd_ruc); /* usually the RU is in the 'no resource'-state .. abort it now. */
-@@ -1076,29 +1075,29 @@ static void ni52_xmt_int(struct net_device *dev)
- 		printk(KERN_ERR "%s: strange .. xmit-int without a 'COMPLETE'\n", dev->name);
- 
- 	if (status & STAT_OK) {
--		p->stats.tx_packets++;
--		p->stats.collisions += (status & TCMD_MAXCOLLMASK);
-+		dev->stats.tx_packets++;
-+		dev->stats.collisions += (status & TCMD_MAXCOLLMASK);
- 	} else {
--		p->stats.tx_errors++;
-+		dev->stats.tx_errors++;
- 		if (status & TCMD_LATECOLL) {
- 			printk(KERN_ERR "%s: late collision detected.\n",
- 				dev->name);
--			p->stats.collisions++;
-+			dev->stats.collisions++;
- 		} else if (status & TCMD_NOCARRIER) {
--			p->stats.tx_carrier_errors++;
-+			dev->stats.tx_carrier_errors++;
- 			printk(KERN_ERR "%s: no carrier detected.\n",
- 				dev->name);
- 		} else if (status & TCMD_LOSTCTS)
- 			printk(KERN_ERR "%s: loss of CTS detected.\n",
- 				dev->name);
- 		else if (status & TCMD_UNDERRUN) {
--			p->stats.tx_fifo_errors++;
-+			dev->stats.tx_fifo_errors++;
- 			printk(KERN_ERR "%s: DMA underrun detected.\n",
- 				dev->name);
- 		} else if (status & TCMD_MAXCOLL) {
- 			printk(KERN_ERR "%s: Max. collisions exceeded.\n",
- 				dev->name);
--			p->stats.collisions += 16;
-+			dev->stats.collisions += 16;
- 		}
+ 	phys = bi->i_sblock + block;
+ 	if (!create) {
+@@ -112,7 +111,6 @@ static int bfs_get_block(struct inode *inode, sector_t block,
+ 		info->si_freeb -= phys - bi->i_eblock;
+ 		info->si_lf_eblk = bi->i_eblock = phys;
+ 		mark_inode_dirty(inode);
+-		mark_buffer_dirty(sbh);
+ 		err = 0;
+ 		goto out;
  	}
- #if (NUM_XMIT_BUFFS > 1)
-@@ -1286,12 +1285,12 @@ static struct net_device_stats *ni52_get_stats(struct net_device *dev)
- 	ovrn = readw(&p->scb->ovrn_errs);
- 	writew(0, &p->scb->ovrn_errs);
+@@ -147,7 +145,6 @@ static int bfs_get_block(struct inode *inode, sector_t block,
+ 	 */
+ 	info->si_freeb -= bi->i_eblock - bi->i_sblock + 1 - inode->i_blocks;
+ 	mark_inode_dirty(inode);
+-	mark_buffer_dirty(sbh);
+ 	map_bh(bh_result, sb, phys);
+ out:
+ 	mutex_unlock(&info->bfs_lock);
+diff --git a/fs/bfs/inode.c b/fs/bfs/inode.c
+index f22a7d3..fe152dd 100644
+--- a/fs/bfs/inode.c
++++ b/fs/bfs/inode.c
+@@ -31,7 +31,6 @@ MODULE_LICENSE("GPL");
+ #define dprintf(x...)
+ #endif
  
--	p->stats.rx_crc_errors += crc;
--	p->stats.rx_fifo_errors += ovrn;
--	p->stats.rx_frame_errors += aln;
--	p->stats.rx_dropped += rsc;
-+	dev->stats.rx_crc_errors += crc;
-+	dev->stats.rx_fifo_errors += ovrn;
-+	dev->stats.rx_frame_errors += aln;
-+	dev->stats.rx_dropped += rsc;
+-static void bfs_write_super(struct super_block *s);
+ void dump_imap(const char *prefix, struct super_block *s);
  
--	return &p->stats;
-+	return &dev->stats;
+ struct inode *bfs_iget(struct super_block *sb, unsigned long ino)
+@@ -209,34 +208,12 @@ static void bfs_delete_inode(struct inode *inode)
+ 	 * "last block of the last file" even if there is no
+ 	 * real file there, saves us 1 gap.
+ 	 */
+-	if (info->si_lf_eblk == bi->i_eblock) {
++	if (info->si_lf_eblk == bi->i_eblock)
+ 		info->si_lf_eblk = bi->i_sblock - 1;
+-		mark_buffer_dirty(info->si_sbh);
+-	}
+ 	mutex_unlock(&info->bfs_lock);
+ 	clear_inode(inode);
  }
  
- /********************************************************
+-static int bfs_sync_fs(struct super_block *sb, int wait)
+-{
+-	struct bfs_sb_info *info = BFS_SB(sb);
+-
+-	mutex_lock(&info->bfs_lock);
+-	mark_buffer_dirty(info->si_sbh);
+-	sb->s_dirt = 0;
+-	mutex_unlock(&info->bfs_lock);
+-
+-	return 0;
+-}
+-
+-static void bfs_write_super(struct super_block *sb)
+-{
+-	if (!(sb->s_flags & MS_RDONLY))
+-		bfs_sync_fs(sb, 1);
+-	else
+-		sb->s_dirt = 0;
+-}
+-
+ static void bfs_put_super(struct super_block *s)
+ {
+ 	struct bfs_sb_info *info = BFS_SB(s);
+@@ -246,10 +223,6 @@ static void bfs_put_super(struct super_block *s)
+ 
+ 	lock_kernel();
+ 
+-	if (s->s_dirt)
+-		bfs_write_super(s);
+-
+-	brelse(info->si_sbh);
+ 	mutex_destroy(&info->bfs_lock);
+ 	kfree(info->si_imap);
+ 	kfree(info);
+@@ -321,8 +294,6 @@ static const struct super_operations bfs_sops = {
+ 	.write_inode	= bfs_write_inode,
+ 	.delete_inode	= bfs_delete_inode,
+ 	.put_super	= bfs_put_super,
+-	.write_super	= bfs_write_super,
+-	.sync_fs	= bfs_sync_fs,
+ 	.statfs		= bfs_statfs,
+ };
+ 
+@@ -349,7 +320,7 @@ void dump_imap(const char *prefix, struct super_block *s)
+ 
+ static int bfs_fill_super(struct super_block *s, void *data, int silent)
+ {
+-	struct buffer_head *bh;
++	struct buffer_head *bh, *sbh;
+ 	struct bfs_super_block *bfs_sb;
+ 	struct inode *inode;
+ 	unsigned i, imap_len;
+@@ -365,10 +336,10 @@ static int bfs_fill_super(struct super_block *s, void *data, int silent)
+ 
+ 	sb_set_blocksize(s, BFS_BSIZE);
+ 
+-	info->si_sbh = sb_bread(s, 0);
+-	if (!info->si_sbh)
++	sbh = sb_bread(s, 0);
++	if (!sbh)
+ 		goto out;
+-	bfs_sb = (struct bfs_super_block *)info->si_sbh->b_data;
++	bfs_sb = (struct bfs_super_block *)sbh->b_data;
+ 	if (le32_to_cpu(bfs_sb->s_magic) != BFS_MAGIC) {
+ 		if (!silent)
+ 			printf("No BFS filesystem on %s (magic=%08x)\n", 
+@@ -472,10 +443,7 @@ static int bfs_fill_super(struct super_block *s, void *data, int silent)
+ 			info->si_lf_eblk = eblock;
+ 	}
+ 	brelse(bh);
+-	if (!(s->s_flags & MS_RDONLY)) {
+-		mark_buffer_dirty(info->si_sbh);
+-		s->s_dirt = 1;
+-	} 
++	brelse(sbh);
+ 	dump_imap("read_super", s);
+ 	return 0;
+ 
+@@ -485,7 +453,7 @@ out3:
+ out2:
+ 	kfree(info->si_imap);
+ out1:
+-	brelse(info->si_sbh);
++	brelse(sbh);
+ out:
+ 	mutex_destroy(&info->bfs_lock);
+ 	kfree(info);
 -- 
-1.7.0.4
+1.7.0.1
 
