@@ -1,100 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab0GETqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 15:46:04 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:42250 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752817Ab0GETqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 15:46:01 -0400
-Message-ID: <4C323677.9040209@kernel.dk>
-Date: Mon, 05 Jul 2010 21:45:59 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [regression] Crash in wb_clear_pending()
-References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com> <20100705085550.GA26775@elte.hu> <20100705164022.GA26995@infradead.org> <20100705171125.GB26202@elte.hu> <20100705171420.GA29697@elte.hu> <20100705182003.GA12332@infradead.org> <4C323177.3070606@kernel.dk> <20100705193200.GA2917@infradead.org>
-In-Reply-To: <20100705193200.GA2917@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755056Ab0GETqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 15:46:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50960 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821Ab0GETqe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 15:46:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=vJYtBCb073OnrqJCnsDemGZNGA543t1DWvyFHBJrR/wl1461mVLG13BH/2SBA00+O+
+         eQYro+yRtsAnHfTfZUuwjuZqGxw60+jRK/zLLXSNVZN73Fq2/9zgYf7p/ZzYH4/NUcYE
+         GlcHH+O6h5AeKB5l7SwmQxgLwY2+05+jLD9m0=
+Date: Mon, 5 Jul 2010 22:46:27 +0300
+From: =?UTF-8?B?VMO2csO2aw==?= Edwin <edwintorok@gmail.com>
+To: linux-ide@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: ata: failed to IDENTIFY / SRST failed (errno = -16) problems
+ on/after booting 2.6.35-rc3
+Message-ID: <20100705224627.3a158e8c@debian>
+In-Reply-To: <20100627232347.2f1dc4fd@debian>
+References: <20100627232347.2f1dc4fd@debian>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/10 21.32, Christoph Hellwig wrote:
-> On Mon, Jul 05, 2010 at 09:24:39PM +0200, Jens Axboe wrote:
->> The oops itself looks like a recurrence of the missing RCU grace or
->> too early stack wakeup, which should be a 1-2 liner once it's found.
+On Sun, 27 Jun 2010 23:23:47 +0300
+Török Edwin <edwintorok@gmail.com> wrote:
+
+> Hi,
 > 
-> See the previous thread.  There's at least two issues:
-> 
->  - wb_do_writeback checks work->state after it's been freed when we do
->    the second test_bit for WS_ONSTACK
->  - bdi_work_free accesses work->state after waking up the caller doing
->    bdi_wait_on_work_done, which might have re-used the stack space
->    allocated for the work item.
-> 
-> The fix for that is to get rid of the fragile work->state stuff and the
-> bit wakeups by just using a completion and using that as indicator
-> for the stack wait.  That's the main change the above patch does.  In
-> addition it also merges the two structures used for the writeback
-> requests.  Onl doing the completion and earlier list removal would
-> be something like the untested patch below:
+> Using 2.6.35-rc3 I noticed this in my dmesg (see end of email for full dmesg output)
+> [28144.351747] ata9: drained 65536 bytes to clear DRQ.
+> [28144.460834] ata9.01: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6
+> [28144.460838] sr 8:0:1:0: CDB: Prevent/Allow Medium Removal: 1e 00 00
+> 00 00 00 [28144.460846] ata9.01: cmd
+> a0/00:00:00:00:00/00:00:00:00:00/b0 tag 0 [28144.460846]          res
+> 7f/7f:7f:7f:7f:7f/00:00:00:00:00/7f Emask 0x3 (HSM violation)
+> [28144.460849] ata9.01: status: { DRDY DF DRQ ERR } [28144.460867]
+> ata9: soft resetting link
+> ....
+> [32977.433092] ata9: EH complete
 
-If those two late ON_STACK checks is the only issue left there,
-why not just apply the below for 2.6.35?
+The problem has just become worse:
+ - an error occurs on ata9 during boot, taking several minutes to bring
+   up the link:
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 0609607..15ce6ab 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -90,12 +90,13 @@ int writeback_in_progress(struct backing_dev_info *bdi)
- static void bdi_work_free(struct rcu_head *head)
- {
- 	struct bdi_work *work = container_of(head, struct bdi_work, rcu_head);
-+	int on_stack = test_bit(WS_ONSTACK, &work->state);
- 
- 	clear_bit(WS_INPROGRESS, &work->state);
- 	smp_mb__after_clear_bit();
- 	wake_up_bit(&work->state, WS_INPROGRESS);
- 
--	if (!test_bit(WS_ONSTACK, &work->state))
-+	if (!on_stack)
- 		kfree(work);
- }
- 
-@@ -854,6 +855,7 @@ long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
- 
- 	while ((work = get_next_work_item(bdi, wb)) != NULL) {
- 		struct wb_writeback_args args = work->args;
-+		int on_stack = test_bit(WS_ONSTACK, &work->state);
- 
- 		/*
- 		 * Override sync mode, in case we must wait for completion
-@@ -865,7 +867,7 @@ long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
- 		 * If this isn't a data integrity operation, just notify
- 		 * that we have seen this work and we are now starting it.
- 		 */
--		if (!test_bit(WS_ONSTACK, &work->state))
-+		if (!on_stack)
- 			wb_clear_pending(wb, work);
- 
- 		wrote += wb_writeback(wb, &args);
-@@ -874,7 +876,7 @@ long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
- 		 * This is a data integrity writeback, so only do the
- 		 * notification when we have completed the work.
- 		 */
--		if (test_bit(WS_ONSTACK, &work->state))
-+		if (on_stack)
- 			wb_clear_pending(wb, work);
- 	}
- 
+Jul  5 09:41:49 debian kernel: [   15.824148] ata9.01: qc timeout (cmd
+0xa1)
+Jul  5 09:41:49 debian kernel: [   15.824155] ata9.01: failed to
+IDENTIFY (I/O error, err_mask=0x4)
+Jul  5 09:41:49 debian kernel: [   20.864007] ata9: link is slow to
+respond, please be patient (ready=0)
+Jul  5 09:41:49 debian kernel: [   25.848007] ata9: device not ready
+(errno=-16), forcing hardreset
+Jul  5 09:41:49 debian kernel: [   31.044007] ata9: link is slow to
+respond, please be patient (ready=0)
+Jul  5 09:41:49 debian kernel: [   41.056006] ata9: link is slow to
+respond, please be patient (ready=0)
+Jul  5 09:41:49 debian kernel: [   51.068007] ata9: link is slow to
+respond, please be patient (ready=0)
+Jul  5 09:41:49 debian kernel: [   74.492148] ata9.00: qc timeout (cmd
+0xa1)
+Jul  5 09:41:49 debian kernel: [   74.492154] ata9.00: failed to
+IDENTIFY (I/O error, err_mask=0x4)
+Jul  5 09:41:49 debian kernel: [   79.532006] ata9: link is slow to
+respond, please be patient (ready=0)
+Jul  5 09:41:49 debian kernel: [   84.516007] ata9: device not ready
+(errno=-16), forcing hardreset
+Jul  5 09:41:49 debian kernel: [   89.712006] ata9: link is slow to
+respond, please be patient (ready=0)
+Jul  5 09:41:49 debian kernel: [   99.724007] ata9: link is slow to
+respond, please be patient (ready=0)
+Jul  5 09:41:49 debian kernel: [  109.736007] ata9: link is slow to
+respond, please be patient (ready=0)
+Jul  5 09:41:49 debian kernel: [  138.184642] ata9.00: ATAPI: ASUS
+CRW-5232AS, 1.01, max UDMA/33
+Jul  5 09:41:49 debian kernel: [  138.192670] ata9.00: configured for
+UDMA/33
 
--- 
-Jens Axboe
+   - sometimes the link never comes up (well never is ~5m, I
+didn't wait longer). it just keeps trying to reset the link saying
+that SRST failed with errno -16 ... endlessly, hence booting is
+impossible.
 
+This is bad: the CDROM is not required to successfully boot (in this
+case anyway), the kernel should IMHO just try reestablishing that link
+in a background thread and finish booting normally.
+
+Note that while this DID started to occur soon after I installed
+2.6.35-rc3 (like 1 bisection run + 5 more boots later), if I now try to
+boot 2.6.34 the same thing happens (i.e. link resets endlessly on boot).
+This has NEVER happened with a kernel <2.6.35-rc3 though .. until
+now.
+
+Also I noticed that the BIOS sometimes hanged during boot (probably
+trying to establish a link to the CDROM too), resetting it a couple of
+times allowed it to reach Linux, but then Linux hanged.
+It could be a hardware failure of the CDROM that just happened to occur
+after I installed 2.6.35-rc3, I don't know.
+
+For now I pulled out the power+data cables from my 2 CDROMs so I can at
+least boot. That of course made all these problems go away.
+
+When I have some more time I'll try plugging back the 2 CDROMs one at a
+time, exchange the cables, etc. to see if it is a problem with one of
+the CDROM drives themselves.
+
+In the meantime are there any debug messages I can enable for the next
+time I try booting with the CDROMs?
+Is there any diagnostic I can run from Linux to tell where the problem
+is:
+ - the JMicron PATA controller?
+ - the cables?
+ - the CDROM drive(s) themselves?
+ 
+Best regards,
+--Edwin
