@@ -1,126 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab0GEHQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 03:16:41 -0400
-Received: from adelphi.physics.adelaide.edu.au ([129.127.102.1]:33024 "EHLO
-	adelphi.physics.adelaide.edu.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753494Ab0GEHQj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 03:16:39 -0400
-From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-Message-Id: <201007050712.o657CpjO028121@turbo.physics.adelaide.edu.au>
-Subject: Re: [PATCH] compal-laptop/fujitsu-laptop/msi-laptop: make dmi_check_cb
-To: axel.lin@gmail.com (Axel Lin)
-Date: Mon, 5 Jul 2010 16:42:51 +0930 (CST)
-Cc: linux-kernel@vger.kernel.org (linux-kernel),
-       cezary.jackiewicz@gmail.com (Cezary Jackiewicz),
-       mjg@redhat.com (Matthew Garrett),
-       tim.gardner@canonical.com (Tim Gardner),
-       Mario_Limonciello@Dell.com (Mario Limonciello),
-       rpurdie@linux.intel.com (Richard Purdie), mmarek@suse.cz (Michal Marek),
-       jwoithe@physics.adelaide.edu.au (Jonathan Woithe),
-       len.brown@intel.com (Len Brown),
-       akpm@linux-foundation.org (Andrew Morton),
-       stefani@seibold.net (Stefani Seibold), ak@linux.intel.com (Andi Kleen),
-       mzxreary@0pointer.de (Lennart Poettering),
-       jlee@novell.com (Lee Chun-Yi), platform-driver-x86@vger.kernel.org
-In-Reply-To: <1278061453.15256.1.camel@mola> from "Axel Lin" at Jul 02, 2010 05:04:13 PM
-X-Mailer: ELM [version 2.5 PL6]
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755140Ab0GEHTH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 03:19:07 -0400
+Received: from bamako.nerim.net ([62.4.17.28]:56312 "EHLO bamako.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753538Ab0GEHTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 03:19:04 -0400
+Date: Mon, 5 Jul 2010 09:18:57 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Ira W. Snyder" <iws@ovro.caltech.edu>,
+       "Darrick J. Wong" <djwong@us.ibm.com>,
+       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+       Hans de Goede <hdegoede@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Samuel Ortiz <sameo@linux.intel.com>, Crane Cai <crane.cai@amd.com>,
+       Linus Walleij <linus.walleij@stericsson.com>,
+       Ralf Baechle <ralf@linux-mips.org>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+       Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: Re: [PATCH/RFC v2 4/4] hwmon: sysfs API updates
+Message-ID: <20100705091857.77ce0077@hyperion.delvare>
+In-Reply-To: <1278303018-22069-5-git-send-email-guenter.roeck@ericsson.com>
+References: <1278303018-22069-1-git-send-email-guenter.roeck@ericsson.com>
+	<1278303018-22069-5-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is there no possibility of some other matching function existing after ours
-in the tree which might need to also be called?  If so, this change would
-prevent that.
+Hi Guenter,
 
-Regards
-  jonathan
-
-> dmi_check_system() walks the table running matching functions until someone
-> returns non zero or we hit the end.
-> 
-> This patch makes dmi_check_cb to return 1 so dmi_check_system() return
-> immediately when a match is found.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Sun, 4 Jul 2010 21:10:18 -0700, Guenter Roeck wrote:
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 > ---
->  drivers/platform/x86/compal-laptop.c  |    2 +-
->  drivers/platform/x86/fujitsu-laptop.c |    6 +++---
->  drivers/platform/x86/msi-laptop.c     |    2 +-
->  3 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/compal-laptop.c b/drivers/platform/x86/compal-laptop.c
-> index 71ff154..dc31a08 100644
-> --- a/drivers/platform/x86/compal-laptop.c
-> +++ b/drivers/platform/x86/compal-laptop.c
-> @@ -190,7 +190,7 @@ static int dmi_check_cb(const struct dmi_system_id *id)
->  	printk(KERN_INFO "compal-laptop: Identified laptop model '%s'.\n",
->  		id->ident);
->  
-> -	return 0;
-> +	return 1;
->  }
->  
->  static struct dmi_system_id __initdata compal_dmi_table[] = {
-> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
-> index dab1a0e..1859d7f 100644
-> --- a/drivers/platform/x86/fujitsu-laptop.c
-> +++ b/drivers/platform/x86/fujitsu-laptop.c
-> @@ -603,7 +603,7 @@ static int dmi_check_cb_s6410(const struct dmi_system_id *id)
->  	dmi_check_cb_common(id);
->  	fujitsu->keycode1 = KEY_SCREENLOCK;	/* "Lock" */
->  	fujitsu->keycode2 = KEY_HELP;	/* "Mobility Center" */
-> -	return 0;
-> +	return 1;
->  }
->  
->  static int dmi_check_cb_s6420(const struct dmi_system_id *id)
-> @@ -611,7 +611,7 @@ static int dmi_check_cb_s6420(const struct dmi_system_id *id)
->  	dmi_check_cb_common(id);
->  	fujitsu->keycode1 = KEY_SCREENLOCK;	/* "Lock" */
->  	fujitsu->keycode2 = KEY_HELP;	/* "Mobility Center" */
-> -	return 0;
-> +	return 1;
->  }
->  
->  static int dmi_check_cb_p8010(const struct dmi_system_id *id)
-> @@ -620,7 +620,7 @@ static int dmi_check_cb_p8010(const struct dmi_system_id *id)
->  	fujitsu->keycode1 = KEY_HELP;	/* "Support" */
->  	fujitsu->keycode3 = KEY_SWITCHVIDEOMODE;	/* "Presentation" */
->  	fujitsu->keycode4 = KEY_WWW;	/* "Internet" */
-> -	return 0;
-> +	return 1;
->  }
->  
->  static struct dmi_system_id fujitsu_dmi_table[] = {
-> diff --git a/drivers/platform/x86/msi-laptop.c b/drivers/platform/x86/msi-laptop.c
-> index afd762b..c67a74c 100644
-> --- a/drivers/platform/x86/msi-laptop.c
-> +++ b/drivers/platform/x86/msi-laptop.c
-> @@ -434,7 +434,7 @@ static int dmi_check_cb(const struct dmi_system_id *id)
->  {
->  	printk(KERN_INFO "msi-laptop: Identified laptop model '%s'.\n",
->  	       id->ident);
-> -	return 0;
-> +	return 1;
->  }
->  
->  static struct dmi_system_id __initdata msi_dmi_table[] = {
-> -- 
-> 1.5.4.3
-> 
-> 
-> 
+>  Documentation/hwmon/sysfs-interface |   37 +++++++++++++++++++++++++++++-----
+>  1 files changed, 31 insertions(+), 6 deletions(-)
 
+As usual, I don't have the time to review the code, but I'd like to at
+least comment on the sysfs interface changes:
+
+> 
+> diff --git a/Documentation/hwmon/sysfs-interface b/Documentation/hwmon/sysfs-interface
+> index d4e2917..2dcec0f 100644
+> --- a/Documentation/hwmon/sysfs-interface
+> +++ b/Documentation/hwmon/sysfs-interface
+> @@ -421,11 +421,12 @@ power[1-*]_accuracy		Accuracy of the power meter.
+>  				Unit: Percent
+>  				RO
+>  
+> -power[1-*]_alarm		1 if the system is drawing more power than the
+> -				cap allows; 0 otherwise.  A poll notification is
+> -				sent to this file when the power use exceeds the
+> -				cap.  This file only appears if the cap is known
+> -				to be enforced by hardware.
+> +power[1-*]_alarm		1 if the system is drawing more power than cap
+> +				or max allows; 0 otherwise.  A poll notification
+> +				is sent to this file when the power use exceeds
+> +				the cap or max limit. If only cap is supported,
+> +				this file only appears if the cap is known to be
+> +				enforced by hardware.
+>  				RO
+>  
+>  power[1-*]_cap			If power use rises above this limit, the
+> @@ -450,6 +451,18 @@ power[1-*]_cap_min		Minimum cap that can be set.
+>  				Unit: microWatt
+>  				RO
+>  
+> +power[1-*]_max			Maximum power.
+> +				Unit: microWatt
+> +				RW
+> +
+> +power[1-*]_crit			Critical maximum power.
+> +				If power rises to or above this limit, the
+> +				system will take drastic action to reduce power
+> +				consumption, such as a system shutdown. At the
+> +				very least, a power fault will be generated.
+> +				Unit: microWatt
+> +				RO
+
+Why RO and not RW as every other limit file?
+
+> +
+>  **********
+>  * Energy *
+>  **********
+> @@ -471,8 +484,14 @@ limit-related alarms, not both. The driver should just reflect the hardware
+>  implementation.
+>  
+>  in[0-*]_alarm
+> +in[0-*]_crit_alarm
+> +curr[1-*]_alarm
+> +curr[1-*]_crit_alarm
+> +power[1-*]_alarm
+> +power[1-*]_crit_alarm
+>  fan[1-*]_alarm
+>  temp[1-*]_alarm
+> +temp[1-*]_crit_alarm
+>  		Channel alarm
+>  		0: no alarm
+>  		1: alarm
+
+The limit-specific alarms (*_crit_alarm) go in the second section,
+below. And as a matter of fact, you've already added some of them
+there...
+
+> @@ -482,10 +501,17 @@ OR
+>  
+>  in[0-*]_min_alarm
+>  in[0-*]_max_alarm
+> +in[0-*]_lcrit_alarm
+> +in[0-*]_crit_alarm
+> +curr[1-*]_lcrit_alarm
+> +curr[1-*]_crit_alarm
+
+No _min and _max alarm for curr?
+
+> +power[1-*]_min_alarm
+> +power[1-*]_max_alarm
+>  fan[1-*]_min_alarm
+>  fan[1-*]_max_alarm
+>  temp[1-*]_min_alarm
+>  temp[1-*]_max_alarm
+> +temp[1-*]_lcrit_alarm
+>  temp[1-*]_crit_alarm
+>  		Limit alarm
+>  		0: no alarm
+> @@ -497,7 +523,6 @@ to notify open diodes, unconnected fans etc. where the hardware
+>  supports it. When this boolean has value 1, the measurement for that
+>  channel should not be trusted.
+>  
+> -in[0-*]_fault
+
+I've removed it already in a separate patch, so your patch won't apply
+if you try to remove it again.
+
+>  fan[1-*]_fault
+>  temp[1-*]_fault
+>  		Input fault condition
+
+In general, I'm happy with the proposed changes.
 
 -- 
-* Jonathan Woithe    jwoithe@physics.adelaide.edu.au                        *
-*                    http://www.physics.adelaide.edu.au/~jwoithe            *
-***-----------------------------------------------------------------------***
-** "Time is an illusion; lunchtime doubly so"                              **
-*  "...you wouldn't recognize a subtle plan if it painted itself purple and *
-*   danced naked on a harpsichord singing 'subtle plans are here again'"    *
+Jean Delvare
