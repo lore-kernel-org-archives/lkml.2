@@ -1,84 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab0GEBkA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 21:40:00 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52651 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016Ab0GEBj6 (ORCPT
+	id S1756590Ab0GEBkt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 21:40:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58422 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab0GEBks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 21:39:58 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 5 Jul 2010 10:35:06 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 0/14] Avoid overflowing of stack during page reclaim V3
-Message-Id: <20100705103506.8fbd1509.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100702123315.667c6eac.akpm@linux-foundation.org>
-References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
-	<20100702123315.667c6eac.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 4 Jul 2010 21:40:48 -0400
+Message-ID: <4C3137A2.8040409@oracle.com>
+Date: Mon, 05 Jul 2010 09:38:42 +0800
+From: Tao Ma <tao.ma@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>
+Subject: Re: [PATCH 2/2] ocfs2: No need to zero pages past i_size. i_size
+ v2
+References: <20100702224912.GC5800@mail.oracle.com> <20100703213219.GB21262@mail.oracle.com> <20100703213343.GC21262@mail.oracle.com> <4C30A4FD.4030900@oracle.com>
+In-Reply-To: <4C30A4FD.4030900@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C3137FE.0078:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Jul 2010 12:33:15 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Hi Joel,
 
-> On Tue, 29 Jun 2010 12:34:34 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > Here is V3 that depends again on flusher threads to do writeback in
-> > direct reclaim rather than stack switching which is not something I'm
-> > likely to get done before xfs/btrfs are ignoring writeback in mainline
-> > (phd sucking up time).
-> 
-> IMO, implemetning stack switching for this is not a good idea.  We
-> _already_ have a way of doing stack-switching.  It's called
-> "schedule()".
-> 
-Sure. 
+On 07/04/2010 11:13 PM, Tao Ma wrote:
+> Hi Joel,
+>
+> On 07/04/2010 05:33 AM, Joel Becker wrote:
+>> Here's the second patch, the one that keeps us from zeroing
+>> pages past i_size. This should keep ocfs2 and Dave's writeback patch
+>> happy.
+>>
+>> Joel
+>>
+>> -------------------------------------------------------
+>>
+>> When ocfs2 fills a hole, it does so by allocating clusters. When a
+>> cluster is larger than the write, ocfs2 must zero the portions of the
+>> cluster outside of the write. If the clustersize is smaller than a
+>> pagecache page, this is handled by the normal pagecache mechanisms, but
+>> when the clustersize is larger than a page, ocfs2's write code will zero
+>> the pages adjacent to the write. This makes sure the entire cluster is
+>> zeroed correctly.
+>>
+>> Currently ocfs2 behaves exactly the same when writing past i_size.
+>> However, this means ocfs2 is writing zeroed pages for portions of a new
+>> cluster that are beyond i_size. The page writeback code isn't expecting
+>> this. It treats all pages past the one containing i_size as left behind
+>> due to a previous truncate operation.
+>>
+>> Thankfully, ocfs2 calculates the number of pages it will be working on
+>> up front. The rest of the write code merely honors the original
+>> calculation. We can simply trim the number of pages to only cover the
+>> actual file data.
+>>
+>> Signed-off-by: Joel Becker<joel.becker@oracle.com>
+>> ---
+>> fs/ocfs2/aops.c | 15 +++++++++++----
+>> 1 files changed, 11 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+>> index 96e6aeb..e90ad74 100644
+>> --- a/fs/ocfs2/aops.c
+>> +++ b/fs/ocfs2/aops.c
+> <snip>
+>> @@ -1142,11 +1143,17 @@ static int ocfs2_grab_pages_for_write(struct
+>> address_space *mapping,
+>> /*
+>> * Figure out how many pages we'll be manipulating here. For
+>> * non allocating write, we just change the one
+>> - * page. Otherwise, we'll need a whole clusters worth.
+>> + * page. Otherwise, we'll need a whole clusters worth. If we're
+>> + * writing past i_size, we only need enough pages to cover the
+>> + * last page of the write.
+> The comments for the whole function before the function name also needs
+> this change accordingly?
+>> */
+>> if (new) {
+>> wc->w_num_pages = ocfs2_pages_per_cluster(inode->i_sb);
+>> start = ocfs2_align_clusters_to_page_index(inode->i_sb, cpos);
+>> + /* This is the index *past* the write */
+>> + end_index = ((user_pos + user_len)>> PAGE_CACHE_SHIFT) + 1;
+> should it be
+> end_index = ((user_pos + user_len - 1) >> PAGE_CACHE_SHIFT) + 1?
+>
+>
+>> + if ((start + wc->w_num_pages)> end_index)
+>> + wc->w_num_pages = end_index - start;
+> I just noticed that the below loop in ocfs2_grab_pages_for_write is
+> for (i = 0; i < wc->w_num_pages; i++)
+>
+> I guess w_num_pages should be set to end_index -
+> start_page_of_the_cluster so that we can make sure we grab all the pages
+> in this cluster until i_size?
+oh, start is set to that value, sorry for this bit.
+btw, do we ever have a chance that start + wc->w_num_pages > end_index? 
+I can't find it.
 
-> The only reason I can see for implementing an in-place stack switch
-> would be if schedule() is too expensive.  And if we were to see
-> excessive context-switch overheads in this code path (and we won't)
-> then we should get in there and try to reduce the contect switch rate
-> first.
-> 
-
-Maybe a concern of in-place stack exchange lovers is that it's difficult
-to guarantee when the pageout() will be issued.
-
-I'd like to try to add a call as
-
- - pageout_request(page) .... request to pageout a page to a daemon(kswapd).
- - pageout_barrier(zone? node?) .... wait until all writebacks ends.
-
-Implementation dilemmna:
-
-Because page->lru is very useful link to implement calls like above, but
-there is a concern that using it will hide pages from vmscan unnecessarily.
-Avoding to use of page->lru means to use another structure like pagevec,
-but it means page_count()+1 and pins pages unnecessarily. I'm now considering
-how to implement safe&scalable way to pageout-in-another-stack(thread)...
-I wonder it will require some throttling method for pageout, anyway.
-
-And my own problem is that I should add per-memcg threads or using some
-thread-pool ;( But it will be an another topic.
-
-Thanks,
--Kame
-
-
-
+Regards,
+Tao
