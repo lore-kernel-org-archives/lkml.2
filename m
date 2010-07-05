@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab0GEK03 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 06:26:29 -0400
-Received: from cicero-fbr1.cybercity.dk ([212.242.40.5]:64945 "EHLO
-	cicero-fbr1.cybercity.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754297Ab0GEK00 (ORCPT
+	id S1755197Ab0GEK2s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 06:28:48 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35153 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab0GEK2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 06:26:26 -0400
-Reply-To: <jwdjames@qatar.io>
-From: "Lloyds Tsb Bank Plc" <digitsoft@digitsoft.dk>
-Subject: Partnership Request
-Date: Mon, 5 Jul 2010 11:25:09 +0100
+	Mon, 5 Jul 2010 06:28:46 -0400
+Date: Mon, 5 Jul 2010 12:28:44 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/7] hugetlb, HWPOISON: soft offlining for hugepage
+Message-ID: <20100705102844.GD8510@basil.fritz.box>
+References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1278049646-29769-8-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20100705102801.128B2586890@smtp1.cybercity.dk>
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278049646-29769-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> +void isolate_hwpoisoned_huge_page(struct page *hpage)
+> +{
+> +	lock_page(hpage);
+> +	__isolate_hwpoisoned_huge_page(hpage);
+> +	unlock_page(hpage);
+> +}
 
-I am Mr. Jawad James, Credit Accounting officer of Lloyds TSB Bank.
-I am contacting you for a possible business transfer worth 122.5 Million Pounds. 
-It will be in my interest to finish this transaction with you hoping that you will not cheat or blackmail me at the conclusion of this goal because i have planned it for long.
+This assumes all other users (even outside this file)
+who lock always do so on the head page too.  Needs some double-checking?
 
-If you can be a collaborator to this transaction, please indicate your positive interest immediately for us to proceed. Remember this is absolutely confidential because my Bank does not know about it. 
+>  	} else {
+>  		pr_debug("soft offline: %#lx: isolation failed: %d, page count %d, type %lx\n",
+>  				pfn, ret, page_count(page), page->flags);
+> @@ -1351,8 +1380,8 @@ int soft_offline_page(struct page *page, int flags)
+>  		return ret;
+>  
+>  done:
+> -	atomic_long_add(1, &mce_bad_pages);
+> -	SetPageHWPoison(page);
+> +	atomic_long_add(1 << compound_order(hpage), &mce_bad_pages);
 
-Your contact phone numbers and name will be necessary for this effect.
-Thank you for your time and attention.
+Probably should add a separate counter too?
 
-Warmest regards,
-
-Mr. Jawad James
-Credit Accounting Officer,
-Lloyds TSB Bank
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
