@@ -1,156 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab0GEWCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 18:02:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64324 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951Ab0GEWCp (ORCPT
+	id S1756318Ab0GEWMV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 18:12:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42542 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754550Ab0GEWMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 18:02:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:date:message-id
-         :mime-version:x-mailer:content-transfer-encoding;
-        b=ANNImmpI1jmuR06GYJ1O6NV+J2u3RTSb0FHBI1s4sQoYaNl3icOlt5jTtH/4IawCr9
-         tWzxIlrgDbFui7zscE/32kCctpZ1KOqNXANP6GiaLlR8Z+6DzGo1w9Ev65DBC+CUNXg6
-         ISNZr4ja2D/ztgNjVtTj5S5SF3dE8xkuCIxJs=
-Subject: [PATCH 2/2] Staging: dt3155: fix coding style issues in
- dt3155_drv.c
-From: Joe Eloff <kagen101@gmail.com>
-Reply-To: kagen101@gmail.com
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Simon Horman <horms@verge.net.au>
-Cc: devel <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Jul 2010 00:02:25 +0200
-Message-ID: <1278367345.5396.64.camel@dermezel>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Mon, 5 Jul 2010 18:12:19 -0400
+Message-ID: <4C3258B7.5070900@infradead.org>
+Date: Mon, 05 Jul 2010 19:12:07 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Lightning/1.0b2 Thunderbird/3.1
+MIME-Version: 1.0
+To: Renzo Dani <arons7@gmail.com>
+CC: adams.xu@azwave.com.cn, rdunlap@xenotime.net, o.endriss@gmx.de,
+       awalls@radix.net, crope@iki.fi, manu@linuxtv.org,
+       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/1] Added Technisat Skystar USB HD CI
+References: <1277719055-14585-1-git-send-email-arons7@gmail.com>
+In-Reply-To: <1277719055-14585-1-git-send-email-arons7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From eba804d73097793329e857bebb31bd1de39cad5c Mon Sep 17 00:00:00 2001
-From: Joe Eloff <kagen101@gmail.com>
-Date: Mon, 5 Jul 2010 23:53:36 +0200
-Subject: [PATCH 2/2] Staging: dt3155: fix coding style issues in
-dt3155_drv.c
-
-This is a patch to the dt3155_drv.c file that fixes up last errors found
-by the checkpatch.pl tool.
-Signed-off-by: Joe Eloff <kagen101@gmail.com>
----
- drivers/staging/dt3155/dt3155_drv.c |   33
-++++++++++++++++++---------------
- 1 files changed, 18 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/staging/dt3155/dt3155_drv.c
-b/drivers/staging/dt3155/dt3155_drv.c
-index 75a2244..66db878 100644
---- a/drivers/staging/dt3155/dt3155_drv.c
-+++ b/drivers/staging/dt3155/dt3155_drv.c
-@@ -78,7 +78,7 @@ extern void printques(int);
- MODULE_LICENSE("GPL");
- 
- /* Error variable.  Zero means no error. */
--int dt3155_errno = 0;
-+int dt3155_errno ;
- 
- #ifndef PCI_DEVICE_ID_INTEL_7116
- #define PCI_DEVICE_ID_INTEL_7116 0x1223
-@@ -99,7 +99,7 @@ wait_queue_head_t dt3155_read_wait_queue[MAXBOARDS];
- 
- /* set to dynamicaly allocate, but it is tunable: */
- /* insmod DT_3155 dt3155 dt3155_major=XX */
--int dt3155_major = 0;
-+int dt3155_major;
- 
- /* The minor numbers are 0 and 1 ... they are not tunable.
-  * They are used as the indices for the structure vectors,
-@@ -124,8 +124,8 @@ u32  dt3155_dev_open[MAXBOARDS] = {0
- #endif
- };
- 
--u32  ndevices = 0;
--u32 unique_tag = 0;;
-+u32  ndevices;
-+u32 unique_tag;
- 
- 
- /*
-@@ -827,8 +827,9 @@ static int find_PCI(void)
- 		dts = &dt3155_status[pci_index++];
- 
- 		/* Is it really there? */
--		if ((error = pci_read_config_word(pci_dev,
--		    PCI_CLASS_DEVICE, &rev_device)))
-+		error = pci_read_config_word(pci_dev,
-+		    PCI_CLASS_DEVICE, &rev_device);
-+		if (error)
- 			continue;
- 
- 		/* Found a board */
-@@ -847,8 +848,9 @@ static int find_PCI(void)
- 
- 		/* Now, just go out and make sure that this/these device(s)
- 		   is/are actually mapped into the kernel address space */
--		if ((error = pci_read_config_dword(pci_dev, PCI_BASE_ADDRESS_0,
--		    (u32 *) &base))) {
-+		error = pci_read_config_dword(pci_dev, PCI_BASE_ADDRESS_0,
-+		    (u32 *) &base);
-+		if (error) {
- 			printk(KERN_INFO "DT3155: Was not able to find device\n");
- 			goto err;
- 		}
-@@ -868,9 +870,9 @@ static int find_PCI(void)
- 			printk(KERN_INFO "DT3155: Unable to remap control registers\n");
- 			goto err;
- 		}
--
--		if ((error = pci_read_config_byte(pci_dev,
--		    PCI_INTERRUPT_LINE, &irq))) {
-+		error = pci_read_config_byte(pci_dev,
-+		    PCI_INTERRUPT_LINE, &irq);
-+		if (error) {
- 			printk(KERN_INFO "DT3155: Was not able to find device\n");
- 			goto err;
- 		}
-@@ -892,7 +894,7 @@ err:
-  return -EIO;
- }
- 
--u32 allocatorAddr = 0;
-+u32 allocatorAddr;
- 
- /*****************************************************
-  * init_module()
-@@ -942,15 +944,16 @@ int init_module(void)
- 	}
- 	/* Now let's find the hardware.  find_PCI() will set ndevices to the
- 	 * number of cards found in this machine. */
--
--	if ((rcode = find_PCI()) != 0) {
-+	rcode = find_PCI();
-+	if (rcode != 0) {
- 		printk(KERN_ERR "DT3155 error: find_PCI() failed to find dt3155
-board(s)\n");
- 		unregister_chrdev(dt3155_major, "dt3155");
- 		return rcode;
- 	}
- 
- 	/* Ok, time to setup the frame buffers */
--	if ((rcode = dt3155_setup_buffers(&allocatorAddr)) < 0) {
-+	rcode = dt3155_setup_buffers(&allocatorAddr);
-+	if (rcode < 0) {
- 		printk(KERN_ERR "DT3155: Error: setting up buffer not large
-enough.");
- 		unregister_chrdev(dt3155_major, "dt3155");
- 		return rcode;
--- 
-1.6.3.3
+Em 28-06-2010 06:57, Renzo Dani escreveu:
+> From: Renzo Dani <arons7@gmail.com>
+> 
+> 
+> Signed-off-by: Renzo Dani <arons7@gmail.com>
+> ---
+>  Documentation/dvb/get_dvb_firmware |   19 ++++++++++++++++++-
+>  drivers/media/dvb/dvb-usb/az6027.c |   14 ++++++++++++--
 
 
+Please, re-base your patch against upstream and send the firmware patch on a separate
+email.
+
+Cheers,
+Mauro
+>  2 files changed, 30 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/dvb/get_dvb_firmware b/Documentation/dvb/get_dvb_firmware
+> index 239cbdb..c203e94 100644
+> --- a/Documentation/dvb/get_dvb_firmware
+> +++ b/Documentation/dvb/get_dvb_firmware
+> @@ -26,7 +26,7 @@ use IO::Handle;
+>  		"dec3000s", "vp7041", "dibusb", "nxt2002", "nxt2004",
+>  		"or51211", "or51132_qam", "or51132_vsb", "bluebird",
+>  		"opera1", "cx231xx", "cx18", "cx23885", "pvrusb2", "mpc718",
+> -		"af9015", "ngene");
+> +		"af9015", "ngene", "az6027");
+>  
+>  # Check args
+>  syntax() if (scalar(@ARGV) != 1);
+> @@ -567,6 +567,23 @@ sub ngene {
+>      "$file1, $file2";
+>  }
+>  
+> +sub az6027{
+> +    my $file = "AZ6027_Linux_Driver.tar.gz";
+> +	my $url = "http://linux.terratec.de/files/$file";
+> +    my $firmware = "dvb-usb-az6027-03.fw";
+> +
+> +	wgetfile($file, $url);
+> +
+> +	#untar
+> +    if( system("tar xzvf $file")){
+> +		die "failed to untar firmware";
+> +	}
+> +	if( system("rm -rf AZ6027_Linux_Driver; rm $file")){
+> +		die ("unable to remove unnecessary files");
+> +    }
+> +
+> +    $firmware;
+> +}
+>  # ---------------------------------------------------------------
+>  # Utilities
+>  
+> diff --git a/drivers/media/dvb/dvb-usb/az6027.c b/drivers/media/dvb/dvb-usb/az6027.c
+> index d7290b2..891ae04 100644
+> --- a/drivers/media/dvb/dvb-usb/az6027.c
+> +++ b/drivers/media/dvb/dvb-usb/az6027.c
+> @@ -1103,13 +1103,23 @@ static struct dvb_usb_device_properties az6027_properties = {
+>  	.rc_query         = az6027_rc_query,
+>  	.i2c_algo         = &az6027_i2c_algo,
+>  
+> -	.num_device_descs = 1,
+> +	.num_device_descs = 2,
+>  	.devices = {
+>  		{
+>  			.name = "AZUREWAVE DVB-S/S2 USB2.0 (AZ6027)",
+>  			.cold_ids = { &az6027_usb_table[0], NULL },
+>  			.warm_ids = { NULL },
+>  		},
+> +		{
+> +		    .name = " Terratec DVB 2 CI",
+> +			.cold_ids = { &az6027_usb_table[1], NULL },
+> +			.warm_ids = { NULL },
+> +		},
+> +		{
+> +		    .name = "TechniSat SkyStar USB 2 HD CI (AZ6027)",
+> +			.cold_ids = { &az6027_usb_table[2], NULL },
+> +			.warm_ids = { NULL },
+> +		},
+>  		{ NULL },
+>  	}
+>  };
+> @@ -1118,7 +1128,7 @@ static struct dvb_usb_device_properties az6027_properties = {
+>  static struct usb_driver az6027_usb_driver = {
+>  	.name		= "dvb_usb_az6027",
+>  	.probe 		= az6027_usb_probe,
+> -	.disconnect 	= az6027_usb_disconnect,
+> +	.disconnect	= az6027_usb_disconnect,
+>  	.id_table 	= az6027_usb_table,
+>  };
+>  
 
