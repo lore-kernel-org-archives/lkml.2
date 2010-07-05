@@ -1,99 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273Ab0GEI5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:57:33 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:39857 "EHLO h5.dl5rb.org.uk"
+	id S1754086Ab0GEJFv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 05:05:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6949 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756173Ab0GEI5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:57:32 -0400
-Date: Mon, 5 Jul 2010 09:57:20 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Manuel Lauss <manuel.lauss@googlemail.com>
-Cc: Christoph Egger <siccegge@cs.fau.de>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 6/9] Removing dead CONFIG_I2C_PNX0105
-Message-ID: <20100705085719.GA4461@linux-mips.org>
-References: <cover.1275925108.git.siccegge@cs.fau.de>
- <e58860bae0d4571f3932df24fb6db0757bc260fe.1275925108.git.siccegge@cs.fau.de>
- <AANLkTind_RjQ5X2zR1fhTgKuLOU4Kbve3uQlgGMI559X@mail.gmail.com>
+	id S1752081Ab0GEJFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 05:05:50 -0400
+Message-ID: <4C31A069.6090806@redhat.com>
+Date: Mon, 05 Jul 2010 12:05:45 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTind_RjQ5X2zR1fhTgKuLOU4Kbve3uQlgGMI559X@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 5/6] KVM: MMU: combine guest pte read between walk
+ and pte prefetch
+References: <4C2C9DC0.8050607@cn.fujitsu.com> <4C2C9E6C.2040803@cn.fujitsu.com> <20100702170303.GC25969@amt.cnet> <4C2F117C.2000006@cn.fujitsu.com> <4C2F2835.5060508@redhat.com> <4C2F2A0C.90704@cn.fujitsu.com> <4C2F2C5B.9020503@redhat.com> <4C2F2DBB.50904@cn.fujitsu.com> <4C2F30BD.7050702@redhat.com> <4C2F31D9.5010104@redhat.com> <4C2F3527.3020307@cn.fujitsu.com> <4C309B23.9060808@redhat.com> <4C3148FF.3030209@cn.fujitsu.com> <4C319699.9000104@redhat.com> <4C319BBB.5020408@cn.fujitsu.com>
+In-Reply-To: <4C319BBB.5020408@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 09, 2010 at 01:47:33PM +0200, Manuel Lauss wrote:
+On 07/05/2010 11:45 AM, Xiao Guangrong wrote:
+>
+>
+> Avi Kivity wrote:
+>
+>>> Looks into the code more carefully, maybe this code is wrong:
+>>>
+>>>
+>>>                if (!direct) {
+>>>                        r = kvm_read_guest_atomic(vcpu->kvm,
+>>> -                                          gw->pte_gpa[level - 2],
+>>> +                                          gw->pte_gpa[level - 1],
+>>>                                         &curr_pte, sizeof(curr_pte));
+>>> -                    if (r || curr_pte != gw->ptes[level - 2]) {
+>>> +                    if (r || curr_pte != gw->ptes[level - 1]) {
+>>>                                   kvm_mmu_put_page(sp, sptep);
+>>>                                   kvm_release_pfn_clean(pfn);
+>>>                                   sptep = NULL;
+>>>
+>>> It should check the 'level' mapping not 'level - 1', in the later
+>>> description
+>>> i'll explain it.
+>>>
+>>
+>> Right, this fixes the check for the top level, but it removes a check
+>> from the bottom level.
+>>
+>
+> We no need check the bottom level if guest not modify the bottom level,
+> if guest modify it, the bottom level is no-present,
 
-> The code should probably just be adjusted to use the i2c-pnx driver.
-> According to the comments it supports the pnx0105 i2c cell.
+Why?  VCPU1 will call kvm_mmu_pte_write (or invlpg) and establishes the 
+HPTE.  Then VCPU0 calls mmu_set_pte() and writes the old GPTE.
 
-So something like this then.
+> it also can broke
+> Point A's judgment and be checked by 'Point C'
 
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Well, the 'continue' in point A means we skip the check.  That's not good.
 
- arch/mips/pnx833x/common/platform.c |   12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+>> We need to move this to the top of the loop so we check all levels.  I
+>> guess this is why you needed to add a new check point.  But since we
+>> loop at least glevels times, we don't need two check points.
+>>
+>
+>>
+>> Ok.   So moving the check to before point A, and s/level - 2/level - 1/
+>> should work, yes?
+>>
+>> Should be slightly simpler since we don't need to kvm_mmu_put_page(sp,
+>> sptep) any more.
+>
+> Yeah, it can work, but check all levels is really unnecessary, if guest not
+> modify the level, the check can be avoid.
+>
+> This is why i choose two check-point, one is behind Point A's judgment, this
+> point checks the level which modified by guest, and another point is at mapping
+> last level point, this check is alway need.
 
-Index: linux-queue/arch/mips/pnx833x/common/platform.c
-===================================================================
---- linux-queue.orig/arch/mips/pnx833x/common/platform.c
-+++ linux-queue/arch/mips/pnx833x/common/platform.c
-@@ -24,6 +24,7 @@
-  */
- #include <linux/device.h>
- #include <linux/dma-mapping.h>
-+#include <linux/i2c-pnx.h>
- #include <linux/platform_device.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
-@@ -33,11 +34,6 @@
- #include <linux/mtd/nand.h>
- #include <linux/mtd/partitions.h>
- 
--#ifdef CONFIG_I2C_PNX0105
--/* Until i2c driver available in kernel.*/
--#include <linux/i2c-pnx0105.h>
--#endif
--
- #include <irq.h>
- #include <irq-mapping.h>
- #include <pnx833x.h>
-@@ -134,7 +130,6 @@ static struct platform_device pnx833x_us
- 	.resource	= pnx833x_usb_ehci_resources,
- };
- 
--#ifdef CONFIG_I2C_PNX0105
- static struct resource pnx833x_i2c0_resources[] = {
- 	{
- 		.start		= PNX833X_I2C0_PORTS_START,
-@@ -188,7 +183,7 @@ static struct platform_device pnx833x_i2
- };
- 
- static struct platform_device pnx833x_i2c1_device = {
--	.name		= "i2c-pnx0105",
-+	.name		= "pnx-i2c",
- 	.id		= 1,
- 	.dev = {
- 		.platform_data = &pnx833x_i2c_dev[1],
-@@ -196,7 +191,6 @@ static struct platform_device pnx833x_i2
- 	.num_resources  = ARRAY_SIZE(pnx833x_i2c1_resources),
- 	.resource	= pnx833x_i2c1_resources,
- };
--#endif
- 
- static u64 ethernet_dmamask = DMA_BIT_MASK(32);
- 
-@@ -297,10 +291,8 @@ static struct platform_device pnx833x_fl
- static struct platform_device *pnx833x_platform_devices[] __initdata = {
- 	&pnx833x_uart_device,
- 	&pnx833x_usb_ehci_device,
--#ifdef CONFIG_I2C_PNX0105
- 	&pnx833x_i2c0_device,
- 	&pnx833x_i2c1_device,
--#endif
- 	&pnx833x_ethernet_device,
- 	&pnx833x_sata_device,
- 	&pnx833x_flash_nand,
+I'm not convinced we can bypass the checks.  Consider:
+
+
+VCPU0                 VCPU1
+
+#PF
+walk_addr
+-> gpml4e0,gpdpe0,gpde0,gpte0
+
+                       replace gpdpe0 with gpdpe1
+                       #PF
+                       walk_addr
+-> gpml4e0,gpdpe1,gpde1,gpte1
+                       fetch
+                       -> establish hpml4e0,hpdpte1,hpde0,hpte1
+fetch
+read hpdpe1
+if (present(hpdpe1))
+     continue;
+...
+write hpte0 using shadow hieratchy for hpte1
+
+-- 
+error compiling committee.c: too many arguments to function
+
