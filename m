@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab0GEWld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 18:41:33 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:39631 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754328Ab0GEWlc (ORCPT
+	id S1754685Ab0GEXFN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 19:05:13 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48562 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab0GEXFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 18:41:32 -0400
-Date: Tue, 6 Jul 2010 08:41:06 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-       Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 29/52] fs: icache lock i_count
-Message-ID: <20100705224106.GZ24712@dastard>
-References: <20100624030212.676457061@suse.de>
- <20100624030730.245992858@suse.de>
- <20100630072702.GF24712@dastard>
- <20100630120502.GB21358@laptop>
- <20100702190355.2b3fe6d2.akpm@linux-foundation.org>
- <20100703034123.GE11732@laptop>
- <20100702213149.f0ca2f72.akpm@linux-foundation.org>
- <20100703050652.GF11732@laptop>
+	Mon, 5 Jul 2010 19:05:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=UBTEUsQp5OvULnXOldm9/b9OPHcdwqpCeZDuxUF6LA98kOQFIMzE43tlMeQ0vWtA66
+         1bGNMd/EDTfxNlbMDjFn0wrxVSP/dZw2cmRI7HiHO4WuFxm5kozaF055Nx0X67eSBXPT
+         rPqt7qy4uCrylzRkBQf4qXg8+XgjEIft7huDo=
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Kevin Winchester <kjwinchester@gmail.com>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH] dmar: Fix statement with no effect warning in include/linux/dmar.h
+Date: Mon,  5 Jul 2010 20:04:54 -0300
+Message-Id: <1278371094-14393-1-git-send-email-kjwinchester@gmail.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100703050652.GF11732@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: Dan Williams <dan.j.williams@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 03, 2010 at 03:06:52PM +1000, Nick Piggin wrote:
-> So it makes a lot of sense to have a lock to rule the inode (as opposed
-> to now we have a lock to rule *all* inodes).
+In the CONFIG_INTR_REMAP=N case, most dmar functions become one-
+line static inline functions.  However a few functions were instead
+defined to constants.  This causes the following warnings for me:
 
-I don't disagree with this approach - I object to the fact that you
-repurpose an existing lock and change it's locking rules to "rule
-the inode". We don't have any one lock that "rules the inode",
-anyway, so adding a new "i_list_lock" for the new VFS level locking
-strategies makes it a lot more self-contained. Fundamentally I'm
-less concerned about the additional memory usage than I am about
-having landmines planted around i_lock...
+arch/x86/kernel/apic/apic.c: In function ‘lapic_suspend’:
+arch/x86/kernel/apic/apic.c:2014:3: warning: statement with no effect
+arch/x86/kernel/apic/apic.c: In function ‘lapic_resume’:
+arch/x86/kernel/apic/apic.c:2091:3: warning: statement with no effect
 
-Cheers,
+Correct these warnings by converting the defines into static inline
+functions instead.
 
-Dave.
+Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+---
+ include/linux/dmar.h |   19 +++++++++++++++----
+ 1 files changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+index d7cecc9..f6fcece 100644
+--- a/include/linux/dmar.h
++++ b/include/linux/dmar.h
+@@ -176,11 +176,22 @@ static inline int set_msi_sid(struct irte *irte, struct pci_dev *dev)
+ {
+ 	return 0;
+ }
++static inline int irq_remapped(int irq)
++{
++	return 0;
++}
++static inline int enable_intr_remapping(int mode)
++{
++	return -1;
++}
++static inline void disable_intr_remapping(void)
++{
++}
++static inline int reenable_intr_remapping(int mode)
++{
++	return 0;
++}
+ 
+-#define irq_remapped(irq)		(0)
+-#define enable_intr_remapping(mode)	(-1)
+-#define disable_intr_remapping()	(0)
+-#define reenable_intr_remapping(mode)	(0)
+ #define intr_remapping_enabled		(0)
+ #endif
+ 
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.1
+
