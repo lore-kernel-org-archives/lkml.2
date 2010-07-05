@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab0GEGTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 02:19:36 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60125 "EHLO hera.kernel.org"
+	id S1752818Ab0GEGYL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 02:24:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64738 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697Ab0GEGTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 02:19:32 -0400
-Message-ID: <4C31796C.8050209@kernel.org>
-Date: Mon, 05 Jul 2010 08:19:24 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	id S1751754Ab0GEGYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 02:24:10 -0400
+Date: Mon, 5 Jul 2010 09:23:57 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
+       Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Subject: Re: [PATCH v2] KVM: IOAPIC: only access APIC registers one dword
+ at a time
+Message-ID: <20100705062357.GH4689@redhat.com>
+References: <4C2D6D4B.5060309@cn.fujitsu.com>
+ <4C2D95EA.6080209@np.css.fujitsu.com>
+ <4C2D975A.2050704@cn.fujitsu.com>
+ <4C2D9C8C.8060401@cn.fujitsu.com>
+ <4C2F0CC1.6020808@redhat.com>
+ <4C3155BA.4070903@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Mark Knecht <markknecht@gmail.com>
-CC: Stan Hoeppner <stan@hardwarefreak.com>,
-       Linux Kernel List <linux-kernel@vger.kernel.org>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: Drives missing at boot
-References: <AANLkTimVkG9TFgyOTTnrztBjqT4JoOzFaP268vWLAAm9@mail.gmail.com>	<4C2F5ECB.1040505@kernel.org>	<AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>	<4C2F87C1.8000701@hardwarefreak.com>	<AANLkTimVJEO-yF3GZ2ghX6DNPuAu-A-MNNO9x8Q1EpRc@mail.gmail.com>	<4C2F9292.708@hardwarefreak.com>	<AANLkTikPsRvvpSZirSygnZqyGKcS-Bz0eVeASZZqvZwH@mail.gmail.com> <AANLkTintf2mwgBVuk_4GmfHTzyJebP2kyfcNGij_epy-@mail.gmail.com>
-In-Reply-To: <AANLkTintf2mwgBVuk_4GmfHTzyJebP2kyfcNGij_epy-@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 05 Jul 2010 06:19:26 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3155BA.4070903@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Jul 05, 2010 at 11:47:06AM +0800, Xiao Guangrong wrote:
+> > There might be guests that use incorrect access despite the
+> > documentation; if real hardware supports it, it should work.  So we need
+> > to start with just a warning, and allow the access.  Later we can drop
+> > the invalid access.
+> 
+> If the OS contravene the spec, i thinks it's the OS's bug, also, i have tested some versions
+> windows/linux guests, it's no broken, can we directly drop the other wide access?
+> 
+If reality contradicts spec we should emulate reality. I vaguely
+remember some guest using memcpy on apic page for instance.
 
-On 07/04/2010 12:31 AM, Mark Knecht wrote:
-> OK, I don't know if this is related but so far I cannot get the
-> machine to boot if I set BIOS SATA configuration to AHCI. I believe
-> that I have AHCI support as well as SATA support built into the kernel
-> but when I set the BIOS to AHCI the machine just hangs saying it finds
-> no medium. I assume that means no hard drive. I have to set SATA
-> support to enhanced and then IDE to get the machine to boot at all.
-
-That's odd.  Can you please attach kernel boot log w/ ahci mode?
-Booting a recent live CD and saving boot log from there should do the
-trick.
-
-Thanks.
-
--- 
-tejun
+--
+			Gleb.
