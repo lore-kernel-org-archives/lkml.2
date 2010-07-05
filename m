@@ -1,80 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab0GEIXB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:23:01 -0400
-Received: from perceval.irobotique.be ([92.243.18.41]:32800 "EHLO
-	perceval.irobotique.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab0GEIW7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:22:59 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: macbook webcam no longer works on .35-rc
-Date: Mon, 5 Jul 2010 10:23:39 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; x86_64; ; )
-Cc: linux-media@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-References: <1277932269.11050.1.camel@jlt3.sipsolutions.net> <201007050928.46888.laurent.pinchart@ideasonboard.com> <1278317753.4993.136.camel@jlt3.sipsolutions.net>
-In-Reply-To: <1278317753.4993.136.camel@jlt3.sipsolutions.net>
+	id S1753926Ab0GEIX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 04:23:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9176 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752596Ab0GEIX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 04:23:57 -0400
+Message-ID: <4C319699.9000104@redhat.com>
+Date: Mon, 05 Jul 2010 11:23:53 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 5/6] KVM: MMU: combine guest pte read between walk
+ and pte prefetch
+References: <4C2C9DC0.8050607@cn.fujitsu.com> <4C2C9E6C.2040803@cn.fujitsu.com> <20100702170303.GC25969@amt.cnet> <4C2F117C.2000006@cn.fujitsu.com> <4C2F2835.5060508@redhat.com> <4C2F2A0C.90704@cn.fujitsu.com> <4C2F2C5B.9020503@redhat.com> <4C2F2DBB.50904@cn.fujitsu.com> <4C2F30BD.7050702@redhat.com> <4C2F31D9.5010104@redhat.com> <4C2F3527.3020307@cn.fujitsu.com> <4C309B23.9060808@redhat.com> <4C3148FF.3030209@cn.fujitsu.com>
+In-Reply-To: <4C3148FF.3030209@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007051023.40923.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
+On 07/05/2010 05:52 AM, Xiao Guangrong wrote:
+>
+> Avi Kivity wrote:
+>
+>    
+>>> Umm, if we move the check before the judgment, it'll check every level,
+>>> actually, only the opened mapping and the laster level need checked, so
+>>> for the performance reason, maybe it's better to keep two check-point.
+>>>
+>>>        
+>> What exactly are the conditions when you want to check?
+>>
+>> Perhaps we do need to check every level.  A write to a PDE (or higher
+>> level) will clear the corresponding spte, but a fault immediately
+>> afterwards can re-establish the spte to point to the new page.
+>>
+>>      
+> Looks into the code more carefully, maybe this code is wrong:
+>
+>
+>               if (!direct) {
+>                       r = kvm_read_guest_atomic(vcpu->kvm,
+> -                                          gw->pte_gpa[level - 2],
+> +                                          gw->pte_gpa[level - 1],
+>                                        &curr_pte, sizeof(curr_pte));
+> -                    if (r || curr_pte != gw->ptes[level - 2]) {
+> +                    if (r || curr_pte != gw->ptes[level - 1]) {
+>                                  kvm_mmu_put_page(sp, sptep);
+>                                  kvm_release_pfn_clean(pfn);
+>                                  sptep = NULL;
+>
+> It should check the 'level' mapping not 'level - 1', in the later description
+> i'll explain it.
+>    
 
-On Monday 05 July 2010 10:15:53 Johannes Berg wrote:
-> On Mon, 2010-07-05 at 09:28 +0200, Laurent Pinchart wrote:
-> > Hi Johannes,
-> > 
-> > On Friday 02 July 2010 09:26:15 Johannes Berg wrote:
-> > > On Wed, 2010-06-30 at 23:11 +0200, Johannes Berg wrote:
-> > > > I'm pretty sure this was a regression in .34, but haven't checked
-> > > > right now, can bisect when I find time but wanted to inquire first
-> > > > if somebody had ideas. All I get is:
-> > > > 
-> > > > [57372.078968] uvcvideo: Failed to query (130) UVC control 5 (unit 3)
-> > > > : -32 (exp. 1).
-> > 
-> > Does it prevent your camera from working, or does it "just" print
-> > annoying messages to the kernel log ?
-> 
-> It prevents it from working, and it's the only error message since the
-> tool/driver/libv4l/whatever just gives up after getting -EIO.
-> 
-> lsusb -v is:
+Right, this fixes the check for the top level, but it removes a check 
+from the bottom level.
 
-[snip]
+We need to move this to the top of the loop so we check all levels.  I 
+guess this is why you needed to add a new check point.  But since we 
+loop at least glevels times, we don't need two check points.
 
-Thanks.
+> Since the 'walk_addr' functions is out of mmu_lock protection, we should
+> handle the guest modify its mapping between 'walk_addr' and 'fetch'.
+> Now, let's consider every case may be happened while handle guest #PF.
+>
+> One case is host handle guest written after 'fetch', just like this order:
+>
+> VCPU 0		VCPU 1
+> walk_addr
+>                  guest modify its mapping
+> fetch
+>                  host handle this written(pte_write or invlpg)
+>
+> This case is not broken anything, even if 'fetch' setup the wrong mapping, the
+> later written handler will fix it.
+>    
 
-> PS: I'll be on vacation until Saturday starting right now.
+Ok.
 
-Could you please test the following patch when you will have time ?
+> Another case is host handle guest written before 'fetch', like this:
+>
+> CPU 0		VCPU 1
+> walk_addr
+>                  guest modify its mapping
+>                  host handle this written(pte_write or invlpg)
+> fetch
+>
+> We should notice this case, since the later 'fetch' will setup the wrong mapping.
+>
+> For example, the guest mapping which 'walk_addr' got is:
+>
+> GPML4E ->  GPDPE ->  GPDE ->  GPTE ->  GFNA
+> (Just take small page for example, other mapping way is also applied)
+>
+> And, for good to describe, we abstract 'fetch''s work:
+>
+> for_each_shadow_entry(vcpu, addr, iterator) {
+> 	if (iterator.level == hlevel)
+> 		Mapping the later level
+>
+> 	if (is_shadow_present_pte(*sptep)&&
+> 		!is_large_pte(*sptep))		<------ Point A
+> 		continue;
+>
+> 	/* handle the non-present/wrong  middle level */
+>
+> 	find/create the corresponding sp<----- Point B
+>
+> 	if (the guest mapping is modified)<----- Point C
+> 		break;
+> 	setup this level's mapping<----- Point D
+>
+> }
+>
+> [
+>   Note: the later level means PTE, PDE if 2M page size, PDPE if 1G page size
+>   the middle level means PDE, PDPE if not using large page size / PML4E
+> ]
+>
+> There are two cases:
+>
+> 1: Guest modify the middle level, for example, guest modify the GPDE.
+>     a: the GPDE has corresponding sp entry, after VCPU1 handle this written,
+>        the corresponding host mapping is like this:
+>        HPML4E ->  HPDPE ->  HPDE
+>        [ HPDE.P = 0 since VCPU1 written handler zapped it in pte_wirte ]
+>
+>        Under this case, it can broke Point A's judgment and Point C can detect
+>        the guest mapping is modified, so it exits this function without setup the
+>        mapping.
+>
+>        And, we should check the guest mapping at GPDE not GPTE since it's GPDE
+>        modified not GPTE, it's the explanation for the front fix.
+>    
 
-diff --git a/drivers/media/video/uvc/uvc_ctrl.c b/drivers/media/video/uvc/uvc_ctrl.c
-index 9af4d47..a350fad 100644
---- a/drivers/media/video/uvc/uvc_ctrl.c
-+++ b/drivers/media/video/uvc/uvc_ctrl.c
-@@ -122,8 +122,8 @@ static struct uvc_control_info uvc_ctrls[] = {
- 		.selector	= UVC_PU_POWER_LINE_FREQUENCY_CONTROL,
- 		.index		= 10,
- 		.size		= 1,
--		.flags		= UVC_CONTROL_SET_CUR | UVC_CONTROL_GET_RANGE
--				| UVC_CONTROL_RESTORE,
-+		.flags		= UVC_CONTROL_SET_CUR | UVC_CONTROL_GET_CUR
-+				| UVC_CONTROL_GET_DEF | UVC_CONTROL_RESTORE,
- 	},
- 	{
- 		.entity		= UVC_GUID_UVC_PROCESSING,
+Agree.
 
+>    b: the GPDE not has corresponding sp entry(the area is firstly accessed),
+>       corresponding host mapping is like this:
+>       HPML4E ->  HPDPE
+>       [ HPDPE.P = 0]
+>
+>       under this case, VCPU1 happily write GPDE without #PF since the GPDE not has shadow
+>       page, it's not write-protected.
+>
+>       while we handle HPDPE, we will create the shadow page for GPDE
+>       at Point B, then the host mapping is like this:
+>       HPML4E ->  HPDPE ->  HPDE
+>       [ HPDE.P = 0 ]
+>       it's the same as 1.a, so do the same work as 1.a
+>
+>       Note: there is a trick: we should put 'Point C' behind of 'Point B', since after we
+>             create sp for GPDE, the later modify GPDE will cause #PF, it can ensure later
+>             check is valid
+>
+> 2: Guest modify the later level.
+>     Form 'fetch''s abstract, we can see the late level is not checked by 'Point C', if
+>     guest modified the GPTE's mapping, the wrong-mapping will be setup by 'fetch', this
+>     is just this path does
+>
+>    
+
+Ok.   So moving the check to before point A, and s/level - 2/level - 1/ 
+should work, yes?
+
+Should be slightly simpler since we don't need to kvm_mmu_put_page(sp, 
+sptep) any more.
+
+Thanks for the detailed explanation.
 
 -- 
-Regards,
+error compiling committee.c: too many arguments to function
 
-Laurent Pinchart
