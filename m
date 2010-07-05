@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab0GEV1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 17:27:36 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53756 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753759Ab0GEV1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 17:27:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Michal Marek <mmarek@suse.cz>
-Subject: Re: Linux 2.6.35-rc4 - CONFIG_LOCALVERSION ignored?
-Date: Mon, 5 Jul 2010 23:25:56 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com>
-In-Reply-To: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1755836Ab0GEVfH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 17:35:07 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58902 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540Ab0GEVfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 17:35:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:content-type:date:message-id
+         :mime-version:x-mailer:content-transfer-encoding;
+        b=nyW7PchAI5/Uyf1pUoZlKCgWYjU5mM9oMrjbavdOAH07ym+VsDREh/t/YkDhpvc1zt
+         kmVJwSaOCzQfhbyY8EWWP5boF6mDQ01uxkduit9yUpvCWx6ht565WTE3DcV7KqonwQs4
+         AlCUTwqFoMzG0AmlkXjca5ovvwSmc53oh6G+4=
+Subject: PATCH] Scripts: checkpatch: change externals to globals
+From: Joe Eloff <kagen101@gmail.com>
+Reply-To: kagen101@gmail.com
+To: Andy Whitcroft <apw@canonical.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Jul 2010 23:34:43 +0200
+Message-ID: <1278365683.5396.55.camel@dermezel>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007052325.56971.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 05, 2010, Linus Torvalds wrote:
-> Hey everybody, there's finally a new -rc out there..
-> 
-> I've been back online for a week, and at least judging by the kinds of
-> patches and pull requests I've been getting, I have to say that I
-> think that having been strict for -rc3 ended up working out pretty
-> well. The diffstat of rc3..rc4 looks quite reasonable, despite the
-> longer window between rc's. And while there were certainly some things
-> that needed fixing, I'm hoping that we'll have a timely 2.6.35 release
-> despite my vacation (my longest time away from the kernel in many
-> years, I do believe - I followed email on a cellphone, but did not a
-> single kernel compile, and had a great time under water).
-> 
-> So go out and test -rc4. It fixes a number of regressions, a couple of
-> them harking back to from before 2.6.34. Networking, cfq, i915 and
-> radeo. And filesystem writeback performance issues, etc. It's all
-> good.
+>From 9745542c84ef223eec8309a9fb7abf225153419d Mon Sep 17 00:00:00 2001
+From: Joe Eloff <kagen101@gmail.com>
+Date: Mon, 5 Jul 2010 23:28:21 +0200
+Subject: [PATCH] Scripts: checkpatch: change externals to globals
 
-Hmm.  Am I dong anything particularly wrong, or is CONFIG_LOCALVERSION ignored
-now, as it seems?
+Made error message say 'ERROR: do not initialise globals to 0 or NULL'
+rather than 'ERROR: do not initialise externals to 0 or NULL'.
+Makes more sense in the context since there is an extern keyword in C and
+that is a global declaration within the scope of the current file.
+Signed-off-by: Joe Eloff <kagen101@gmail.com>
+---
+ scripts/checkpatch.pl |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Rafael
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index bd88f11..6b003cf 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1778,9 +1778,9 @@ sub process {
+ 			WARN("EXPORT_SYMBOL(foo); should immediately follow its function/variable\n" . $herecurr);
+ 		}
+ 
+-# check for external initialisers.
++# check for global initialisers.
+ 		if ($line =~ /^.$Type\s*$Ident\s*(?:\s+$Modifier)*\s*=\s*(0|NULL|false)\s*;/) {
+-			ERROR("do not initialise externals to 0 or NULL\n" .
++			ERROR("do not initialise globals to 0 or NULL\n" .
+ 				$herecurr);
+ 		}
+ # check for static initialisers.
+-- 
+1.6.3.3
+
+
+
