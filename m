@@ -1,90 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab0GEIIB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:08:01 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:64475 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757Ab0GEIH7 (ORCPT
+	id S1755501Ab0GEIKX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 04:10:23 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35054 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab0GEIKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:07:59 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18knV6VuUVJlodDpRLubeCr
-Date: Mon, 5 Jul 2010 11:07:59 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Christoph Egger <siccegge@cs.fau.de>,
-       Russell King <linux@arm.linux.org.uk>,
-       Cory Maccarrone <darkstar6262@gmail.com>,
-       "Zebediah C. McClure" <zmc@lurian.net>,
-       Alistair Buxton <a.j.buxton@gmail.com>, linux-omap@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 03/33] Removing dead OMAP_MUX_ERRORS
-Message-ID: <20100705080757.GC15951@atomide.com>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
- <b6ca168f9459162f2c96aa8ef999047a3c4f6f9c.1277911346.git.siccegge@cs.fau.de>
- <20100630195409.GC3969@shutemov.name>
- <20100701132255.GA32541@faui48a.informatik.uni-erlangen.de>
- <20100701152743.GA8588@shutemov.name>
+	Mon, 5 Jul 2010 04:10:22 -0400
+Date: Mon, 5 Jul 2010 09:10:19 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jeff Layton <jlayton@redhat.com>
+Subject: Re: linux-next: build warning after merge of the vfs tree
+Message-ID: <20100705081019.GQ31073@ZenIV.linux.org.uk>
+References: <20100705100121.d089bf12.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100701152743.GA8588@shutemov.name>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100705100121.d089bf12.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Kirill A. Shutemov <kirill@shutemov.name> [100701 18:21]:
-> On Thu, Jul 01, 2010 at 03:22:55PM +0200, Christoph Egger wrote:
-> > On Wed, Jun 30, 2010 at 10:54:09PM +0300, Kirill A. Shutemov wrote:
-> > > On Wed, Jun 30, 2010 at 05:54:42PM +0200, Christoph Egger wrote:
-> > > > OMAP_MUX_ERRORS doesn't exist in Kconfig, therefore removing all
-> > > > references for it from the source code.
-> > > 
-> > > IIUC, CONFIG_OMAP_MUX_WARNINGS should be used here instead of it.
-> > 
-> > Something like the patch below?
+On Mon, Jul 05, 2010 at 10:01:21AM +1000, Stephen Rothwell wrote:
+> Hi Al,
 > 
-> Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
-
-Thanks, I've queued up this.
-
-Tony
- 
-> > 
-> > ----
-> > From: Christoph Egger <siccegge@cs.fau.de>
-> > Date: Wed, 30 Jun 2010 12:30:36 +0200
-> > Subject: [PATCH 03/33] Replace dead OMAP_MUX_ERRORS with OMAP_MUX_WARNINGS
-> > 
-> > OMAP_MUX_ERRORS doesn't exist in Kconfig, therefore replacing all
-> > references for it with OMAP_MUX_WARNINGS in the source code.
-> > 
-> > Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> > ---
-> >  arch/arm/mach-omap1/mux.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-omap1/mux.c b/arch/arm/mach-omap1/mux.c
-> > index 8434137..3e98835 100644
-> > --- a/arch/arm/mach-omap1/mux.c
-> > +++ b/arch/arm/mach-omap1/mux.c
-> > @@ -440,7 +440,7 @@ int __init_or_module omap1_cfg_reg(const struct pin_config *cfg)
-> >  	}
-> >  #endif
-> >  
-> > -#ifdef CONFIG_OMAP_MUX_ERRORS
-> > +#ifdef CONFIG_OMAP_MUX_WARNINGS
-> >  	return warn ? -ETXTBSY : 0;
-> >  #else
-> >  	return 0;
-> > -- 
-> > 1.7.0.4
-> > 
-> > 
+> After merging the vfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced these warnings:
 > 
-> -- 
->  Kirill A. Shutemov
+> fs/cifs/cifsfs.c: In function 'cifs_drop_inode':
+> fs/cifs/cifsfs.c:481: warning: 'return' with a value, in function returning void
+> fs/cifs/cifsfs.c:483: warning: 'return' with a value, in function returning void
+> fs/cifs/cifsfs.c: At top level:
+> fs/cifs/cifsfs.c:491: warning: initialization from incompatible pointer type
+> 
+> Introduced by commit 12420ac341533f3715b3deb788637568f22b78ff ("cifs:
+> implement drop_inode superblock op") (which entered Linus' tree on June
+> 28) interacting with commit 1fd3b83deb5125288bee98f32a41c3267b8ed534
+> ("Make ->drop_inode() just return whether inode needs to be dropped")
+> from the vfs tree.  I guess the cifs tree was missed bye the vfs tree
+> update.
+
+Fixed.  Incidentally, could somebody explain WTF do we put the inodes into
+icache in case !serverino?
