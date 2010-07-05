@@ -1,234 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab0GEPnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 11:43:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51795 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752171Ab0GEPnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 11:43:23 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] Rearrange i_flags to be consistent with FS_IOC_GETFLAGS
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Mon, 05 Jul 2010 16:43:19 +0100
-Message-ID: <20100705154319.31193.56706.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1756670Ab0GEPoB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 11:44:01 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:53952 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754578Ab0GEPoA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 11:44:00 -0400
+Message-ID: <4C31FDA3.3040708@metafoo.de>
+Date: Mon, 05 Jul 2010 17:43:31 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 22/26] MFD: Add JZ4740 ADC driver
+References: <1276924111-11158-1-git-send-email-lars@metafoo.de> <1276924111-11158-23-git-send-email-lars@metafoo.de> <20100705145306.GA3850@sortiz-mobl>
+In-Reply-To: <20100705145306.GA3850@sortiz-mobl>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rearrange the constituent bits of i_flags to be consistent with the flag values
-returned by the FS_IOC_GETFLAGS ioctl where flags with common meanings occur.
-Otherwise pack the bits of i_flags as low as possible so that RISC CPUs can
-use small instructions.
+Hi
 
-This allows those filesystems that use i_flags (Ext2/3/4) to simplify their
-get/set flags routines.
+Samuel Ortiz wrote:
+> Hi Lars,
+> 
+> Sorry for the review delay. This one got lost in my inbox :-/
+> 
+> On Sat, Jun 19, 2010 at 07:08:27AM +0200, Lars-Peter Clausen wrote:
+>> This patch adds a MFD driver for the JZ4740 ADC unit. The driver is used to
+>> demultiplex IRQs and synchronize access to shared registers between the battery,
+>> hwmon and (future) touchscreen driver.
+> The driver looks pretty clean. I only have a couple nitpicks:
+> 
+>> +static void jz4740_adc_irq_demux(unsigned int irq, struct irq_desc *desc)
+>> +{
+>> +	struct jz4740_adc *adc = get_irq_desc_data(desc);
+>> +	uint8_t status;
+>> +	unsigned int i;
+>> +
+>> +	status = readb(adc->base + JZ_REG_ADC_STATUS);
+>> +
+>> +	for (i = 0; i < 5; ++i) {
+>> +		if (status & BIT(i))
+>> +			generic_handle_irq(adc->irq_base + i);
+> for_each_set_bit() could nicely replace your loop here.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+I wonder if it would make sense to optimize for_each_set_bit for small builtin
+constants. Using it in it's current form for this loop would likely add some overhead.
 
- fs/ext2/inode.c    |   33 ++++++---------------------------
- fs/ext3/inode.c    |   31 +++++--------------------------
- fs/ext4/inode.c    |   32 +++++---------------------------
- include/linux/fs.h |   30 ++++++++++++++++++------------
- 4 files changed, 34 insertions(+), 92 deletions(-)
+> 
+>> +static inline void jz4740_adc_clk_enable(struct jz4740_adc *adc)
+>> +{
+>> +	unsigned long flags;
+>> +
+>> +	spin_lock_irqsave(&adc->lock, flags);
+>> +	if (adc->clk_ref++ == 0)
+>> +		clk_enable(adc->clk);
+>> +	spin_unlock_irqrestore(&adc->lock, flags);
+>> +}
+> I'm not familiar with your platform clock framework, but shouldn't the
+> refcounting be handled there instead of spread over all your drivers ?
 
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 3675088..da5fd2d 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -1259,38 +1259,17 @@ Egdp:
- 
- void ext2_set_inode_flags(struct inode *inode)
- {
--	unsigned int flags = EXT2_I(inode)->i_flags;
--
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
--	if (flags & EXT2_SYNC_FL)
--		inode->i_flags |= S_SYNC;
--	if (flags & EXT2_APPEND_FL)
--		inode->i_flags |= S_APPEND;
--	if (flags & EXT2_IMMUTABLE_FL)
--		inode->i_flags |= S_IMMUTABLE;
--	if (flags & EXT2_NOATIME_FL)
--		inode->i_flags |= S_NOATIME;
--	if (flags & EXT2_DIRSYNC_FL)
--		inode->i_flags |= S_DIRSYNC;
-+	unsigned int flags = EXT2_I(inode)->i_flags & S_FS_IOC_FLAGS;
-+
-+	inode->i_flags = (inode->i_flags & ~S_FS_IOC_FLAGS) | flags;
- }
- 
- /* Propagate flags from i_flags to EXT2_I(inode)->i_flags */
- void ext2_get_inode_flags(struct ext2_inode_info *ei)
- {
--	unsigned int flags = ei->vfs_inode.i_flags;
--
--	ei->i_flags &= ~(EXT2_SYNC_FL|EXT2_APPEND_FL|
--			EXT2_IMMUTABLE_FL|EXT2_NOATIME_FL|EXT2_DIRSYNC_FL);
--	if (flags & S_SYNC)
--		ei->i_flags |= EXT2_SYNC_FL;
--	if (flags & S_APPEND)
--		ei->i_flags |= EXT2_APPEND_FL;
--	if (flags & S_IMMUTABLE)
--		ei->i_flags |= EXT2_IMMUTABLE_FL;
--	if (flags & S_NOATIME)
--		ei->i_flags |= EXT2_NOATIME_FL;
--	if (flags & S_DIRSYNC)
--		ei->i_flags |= EXT2_DIRSYNC_FL;
-+	unsigned int flags = ei->vfs_inode.i_flags & S_FS_IOC_FLAGS;
-+
-+	ei->i_flags = (ei->i_flags & ~S_FS_IOC_FLAGS) | flags;
- }
- 
- struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
-diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
-index 735f019..4a1e45e 100644
---- a/fs/ext3/inode.c
-+++ b/fs/ext3/inode.c
-@@ -2737,38 +2737,17 @@ int ext3_get_inode_loc(struct inode *inode, struct ext3_iloc *iloc)
- 
- void ext3_set_inode_flags(struct inode *inode)
- {
--	unsigned int flags = EXT3_I(inode)->i_flags;
-+	unsigned int flags = EXT3_I(inode)->i_flags & S_FS_IOC_FLAGS;
- 
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
--	if (flags & EXT3_SYNC_FL)
--		inode->i_flags |= S_SYNC;
--	if (flags & EXT3_APPEND_FL)
--		inode->i_flags |= S_APPEND;
--	if (flags & EXT3_IMMUTABLE_FL)
--		inode->i_flags |= S_IMMUTABLE;
--	if (flags & EXT3_NOATIME_FL)
--		inode->i_flags |= S_NOATIME;
--	if (flags & EXT3_DIRSYNC_FL)
--		inode->i_flags |= S_DIRSYNC;
-+	inode->i_flags = (inode->i_flags & ~S_FS_IOC_FLAGS) | flags;
- }
- 
- /* Propagate flags from i_flags to EXT3_I(inode)->i_flags */
- void ext3_get_inode_flags(struct ext3_inode_info *ei)
- {
--	unsigned int flags = ei->vfs_inode.i_flags;
--
--	ei->i_flags &= ~(EXT3_SYNC_FL|EXT3_APPEND_FL|
--			EXT3_IMMUTABLE_FL|EXT3_NOATIME_FL|EXT3_DIRSYNC_FL);
--	if (flags & S_SYNC)
--		ei->i_flags |= EXT3_SYNC_FL;
--	if (flags & S_APPEND)
--		ei->i_flags |= EXT3_APPEND_FL;
--	if (flags & S_IMMUTABLE)
--		ei->i_flags |= EXT3_IMMUTABLE_FL;
--	if (flags & S_NOATIME)
--		ei->i_flags |= EXT3_NOATIME_FL;
--	if (flags & S_DIRSYNC)
--		ei->i_flags |= EXT3_DIRSYNC_FL;
-+	unsigned int flags = ei->vfs_inode.i_flags & S_FS_IOC_FLAGS;
-+
-+	ei->i_flags = (ei->i_flags & ~S_FS_IOC_FLAGS) | flags;
- }
- 
- struct inode *ext3_iget(struct super_block *sb, unsigned long ino)
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index efa17d6..63a5da7 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4924,19 +4924,9 @@ int ext4_get_inode_loc(struct inode *inode, struct ext4_iloc *iloc)
- 
- void ext4_set_inode_flags(struct inode *inode)
- {
--	unsigned int flags = EXT4_I(inode)->i_flags;
--
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
--	if (flags & EXT4_SYNC_FL)
--		inode->i_flags |= S_SYNC;
--	if (flags & EXT4_APPEND_FL)
--		inode->i_flags |= S_APPEND;
--	if (flags & EXT4_IMMUTABLE_FL)
--		inode->i_flags |= S_IMMUTABLE;
--	if (flags & EXT4_NOATIME_FL)
--		inode->i_flags |= S_NOATIME;
--	if (flags & EXT4_DIRSYNC_FL)
--		inode->i_flags |= S_DIRSYNC;
-+	unsigned int flags = EXT4_I(inode)->i_flags & S_FS_IOC_FLAGS;
-+
-+	inode->i_flags = (inode->i_flags & ~S_FS_IOC_FLAGS) | flags;
- }
- 
- /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
-@@ -4946,21 +4936,9 @@ void ext4_get_inode_flags(struct ext4_inode_info *ei)
- 	unsigned long old_fl, new_fl;
- 
- 	do {
--		vfs_fl = ei->vfs_inode.i_flags;
-+		vfs_fl = ei->vfs_inode.i_flags & S_FS_IOC_FLAGS;
- 		old_fl = ei->i_flags;
--		new_fl = old_fl & ~(EXT4_SYNC_FL|EXT4_APPEND_FL|
--				EXT4_IMMUTABLE_FL|EXT4_NOATIME_FL|
--				EXT4_DIRSYNC_FL);
--		if (vfs_fl & S_SYNC)
--			new_fl |= EXT4_SYNC_FL;
--		if (vfs_fl & S_APPEND)
--			new_fl |= EXT4_APPEND_FL;
--		if (vfs_fl & S_IMMUTABLE)
--			new_fl |= EXT4_IMMUTABLE_FL;
--		if (vfs_fl & S_NOATIME)
--			new_fl |= EXT4_NOATIME_FL;
--		if (vfs_fl & S_DIRSYNC)
--			new_fl |= EXT4_DIRSYNC_FL;
-+		new_fl = (old_fl & ~S_FS_IOC_FLAGS) | vfs_fl;
- 	} while (cmpxchg(&ei->i_flags, old_fl, new_fl) != old_fl);
- }
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 48616db..5808b9b 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -223,18 +223,24 @@ struct inodes_stat_t {
- #define MS_MGC_VAL 0xC0ED0000
- #define MS_MGC_MSK 0xffff0000
- 
--/* Inode flags - they have nothing to superblock flags now */
--
--#define S_SYNC		1	/* Writes are synced at once */
--#define S_NOATIME	2	/* Do not update access times */
--#define S_APPEND	4	/* Append-only file */
--#define S_IMMUTABLE	8	/* Immutable file */
--#define S_DEAD		16	/* removed, but still open directory */
--#define S_NOQUOTA	32	/* Inode is not counted to quota */
--#define S_DIRSYNC	64	/* Directory modifications are synchronous */
--#define S_NOCMTIME	128	/* Do not update file c/mtime */
--#define S_SWAPFILE	256	/* Do not truncate: swapon got its bmaps */
--#define S_PRIVATE	512	/* Inode is fs-internal */
-+/*
-+ * Inode flags - they have no relation to superblock flags now
-+ *
-+ * Where applicable, flags that are also in FS_IOC_GETFLAGS have the same bit
-+ * position
-+ */
-+#define S_DEAD		0x00000001	/* removed, but still open directory */
-+#define S_NOQUOTA	0x00000002	/* Inode is not counted to quota */
-+#define S_NOCMTIME	0x00000004	/* Do not update file c/mtime */
-+#define S_SYNC		0x00000008	/* [FS_SYNC_FL] Writes are synced at once */
-+#define S_IMMUTABLE	0x00000010	/* [FS_IMMUTABLE_FL] Immutable file */
-+#define S_APPEND	0x00000020	/* [FS_APPEND_FL] Append-only file */
-+#define S_SWAPFILE	0x00000040	/* Do not truncate: swapon got its bmaps */
-+#define S_NOATIME	0x00000080	/* [FS_NOATIME_FL] Do not update access times */
-+#define S_PRIVATE	0x00000100	/* Inode is fs-internal */
-+#define S_DIRSYNC	0x00010000	/* [FS_DIRSYNC_FL] Directory mods are synchronous */
-+
-+#define S_FS_IOC_FLAGS	0x000100B8	/* the S_xxx flags that are also FS_xxx_FL flags */
- 
- /*
-  * Note that nosuid etc flags are inode-specific: setting some file-system
+The ADC clock is the only clock on this platform which is shared between multiple
+devices so I refrained from adding the refcounting to the core for now. But to be
+strictly complaint with the clock API as defined in linux/clk.h the implementation
+should do refcounting. I'm still a bit uncertain what would be done best here.
+
+> 
+>> +static int __devinit jz4740_adc_probe(struct platform_device *pdev)
+>> +{
+>> +	int ret;
+>> +	struct jz4740_adc *adc;
+>> +	struct resource *mem_base;
+>> +	int irq;
+>> +
+>> +	adc = kmalloc(sizeof(*adc), GFP_KERNEL);
+>> +
+>> +	adc->irq = platform_get_irq(pdev, 0);
+>> +	if (adc->irq < 0) {
+>> +		ret = adc->irq;
+>> +		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
+>> +		goto err_free;
+>> +	}
+>> +
+>> +	adc->irq_base = platform_get_irq(pdev, 1);
+>> +	if (adc->irq_base < 0) {
+>> +		ret = adc->irq_base;
+>> +		dev_err(&pdev->dev, "Failed to get irq base: %d\n", ret);
+>> +		goto err_free;
+>> +	}
+>> +
+>> +	mem_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	if (!mem_base) {
+>> +		ret = -ENOENT;
+>> +		dev_err(&pdev->dev, "Failed to get platform mmio resource\n");
+>> +		goto err_free;
+>> +	}
+>> +
+>> +	/* Only request the shared registers for the MFD driver */
+>> +	adc->mem = request_mem_region(mem_base->start, JZ_REG_ADC_STATUS,
+>> +					pdev->name);
+>> +	if (!adc->mem) {
+>> +		ret = -EBUSY;
+>> +		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
+>> +		goto err_free;
+>> +	}
+>> +
+>> +	adc->base = ioremap_nocache(adc->mem->start, resource_size(adc->mem));
+>> +	if (!adc->base) {
+>> +		ret = -EBUSY;
+>> +		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
+>> +		goto err_release_mem_region;
+>> +	}
+>> +
+>> +	adc->clk = clk_get(&pdev->dev, "adc");
+>> +	if (IS_ERR(adc->clk)) {
+>> +		ret = PTR_ERR(adc->clk);
+>> +		dev_err(&pdev->dev, "Failed to get clock: %d\n", ret);
+>> +		goto err_iounmap;
+>> +	}
+>> +
+>> +	spin_lock_init(&adc->lock);
+>> +
+>> +	adc->clk_ref = 0;
+>> +
+>> +	platform_set_drvdata(pdev, adc);
+>> +
+>> +	for (irq = adc->irq_base; irq < adc->irq_base + 5; ++irq) {
+>> +		set_irq_chip_data(irq, adc);
+>> +		set_irq_chip_and_handler(irq, &jz4740_adc_irq_chip,
+>> +		    handle_level_irq);
+>> +	}
+>> +
+>> +	set_irq_data(adc->irq, adc);
+>> +	set_irq_chained_handler(adc->irq, jz4740_adc_irq_demux);
+>> +
+>> +	writeb(0x00, adc->base + JZ_REG_ADC_ENABLE);
+>> +	writeb(0xff, adc->base + JZ_REG_ADC_CTRL);
+>> +
+>> +	mfd_add_devices(&pdev->dev, 0, jz4740_adc_cells,
+>> +		ARRAY_SIZE(jz4740_adc_cells), mem_base, adc->irq_base);
+>> +
+>> +	return 0;
+> Please return the mfd_add_devices return value.
+> 
+> Cheers,
+> Samuel.
+> 
+
+Thanks for reviewing the patch
+
+- Lars
 
