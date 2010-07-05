@@ -1,80 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab0GEHQB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 03:16:01 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41060 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab0GEHQA (ORCPT
+	id S1755101Ab0GEHQl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 03:16:41 -0400
+Received: from adelphi.physics.adelaide.edu.au ([129.127.102.1]:33024 "EHLO
+	adelphi.physics.adelaide.edu.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753494Ab0GEHQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 03:16:00 -0400
-Date: Mon, 5 Jul 2010 09:15:53 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Russell King <linux@arm.linux.org.uk>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 15/33] Removing dead PROCESSOR_NS9750
-Message-ID: <20100705071553.GD18865@pengutronix.de>
-References: <cover.1277911345.git.siccegge@cs.fau.de> <73d2b3929175d36d8bfdedf2d49150d2ed911b2a.1277911346.git.siccegge@cs.fau.de>
+	Mon, 5 Jul 2010 03:16:39 -0400
+From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+Message-Id: <201007050712.o657CpjO028121@turbo.physics.adelaide.edu.au>
+Subject: Re: [PATCH] compal-laptop/fujitsu-laptop/msi-laptop: make dmi_check_cb
+To: axel.lin@gmail.com (Axel Lin)
+Date: Mon, 5 Jul 2010 16:42:51 +0930 (CST)
+Cc: linux-kernel@vger.kernel.org (linux-kernel),
+       cezary.jackiewicz@gmail.com (Cezary Jackiewicz),
+       mjg@redhat.com (Matthew Garrett),
+       tim.gardner@canonical.com (Tim Gardner),
+       Mario_Limonciello@Dell.com (Mario Limonciello),
+       rpurdie@linux.intel.com (Richard Purdie), mmarek@suse.cz (Michal Marek),
+       jwoithe@physics.adelaide.edu.au (Jonathan Woithe),
+       len.brown@intel.com (Len Brown),
+       akpm@linux-foundation.org (Andrew Morton),
+       stefani@seibold.net (Stefani Seibold), ak@linux.intel.com (Andi Kleen),
+       mzxreary@0pointer.de (Lennart Poettering),
+       jlee@novell.com (Lee Chun-Yi), platform-driver-x86@vger.kernel.org
+In-Reply-To: <1278061453.15256.1.camel@mola> from "Axel Lin" at Jul 02, 2010 05:04:13 PM
+X-Mailer: ELM [version 2.5 PL6]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <73d2b3929175d36d8bfdedf2d49150d2ed911b2a.1277911346.git.siccegge@cs.fau.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 30, 2010 at 05:58:48PM +0200, Christoph Egger wrote:
-> PROCESSOR_NS9750 doesn't exist in Kconfig, therefore removing all
-> references for it from the source code.
+Is there no possibility of some other matching function existing after ours
+in the tree which might need to also be called?  If so, this change would
+prevent that.
+
+Regards
+  jonathan
+
+> dmi_check_system() walks the table running matching functions until someone
+> returns non zero or we hit the end.
 > 
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> This patch makes dmi_check_cb to return 1 so dmi_check_system() return
+> immediately when a match is found.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 > ---
->  arch/arm/mach-ns9xxx/gpio.c |    8 --------
->  1 files changed, 0 insertions(+), 8 deletions(-)
+>  drivers/platform/x86/compal-laptop.c  |    2 +-
+>  drivers/platform/x86/fujitsu-laptop.c |    6 +++---
+>  drivers/platform/x86/msi-laptop.c     |    2 +-
+>  3 files changed, 5 insertions(+), 5 deletions(-)
 > 
-> diff --git a/arch/arm/mach-ns9xxx/gpio.c b/arch/arm/mach-ns9xxx/gpio.c
-> index 5503ca0..58f4f50 100644
-> --- a/arch/arm/mach-ns9xxx/gpio.c
-> +++ b/arch/arm/mach-ns9xxx/gpio.c
-> @@ -25,9 +25,6 @@
+> diff --git a/drivers/platform/x86/compal-laptop.c b/drivers/platform/x86/compal-laptop.c
+> index 71ff154..dc31a08 100644
+> --- a/drivers/platform/x86/compal-laptop.c
+> +++ b/drivers/platform/x86/compal-laptop.c
+> @@ -190,7 +190,7 @@ static int dmi_check_cb(const struct dmi_system_id *id)
+>  	printk(KERN_INFO "compal-laptop: Identified laptop model '%s'.\n",
+>  		id->ident);
 >  
->  #if defined(CONFIG_PROCESSOR_NS9360)
->  #define GPIO_MAX 72
-> -#elif defined(CONFIG_PROCESSOR_NS9750)
-> -#define GPIO_MAX 49
-> -#endif
+> -	return 0;
+> +	return 1;
+>  }
 >  
->  /* protects BBU_GCONFx and BBU_GCTRLx */
->  static spinlock_t gpio_lock = __SPIN_LOCK_UNLOCKED(gpio_lock);
-> @@ -42,11 +39,6 @@ static inline int ns9xxx_valid_gpio(unsigned gpio)
->  		return gpio <= 72;
->  	else
->  #endif
-> -#if defined(CONFIG_PROCESSOR_NS9750)
-> -	if (processor_is_ns9750())
-> -		return gpio <= 49;
-> -	else
-> -#endif
->  	{
->  		BUG();
->  		return 0;
-The code is correct as is, but AFAIK the ns9750 isn't supported anymore
-even in the Digi provided BSPs and as it seems there aren't any efforts
-to maintain ns9xxx in mainline.
+>  static struct dmi_system_id __initdata compal_dmi_table[] = {
+> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
+> index dab1a0e..1859d7f 100644
+> --- a/drivers/platform/x86/fujitsu-laptop.c
+> +++ b/drivers/platform/x86/fujitsu-laptop.c
+> @@ -603,7 +603,7 @@ static int dmi_check_cb_s6410(const struct dmi_system_id *id)
+>  	dmi_check_cb_common(id);
+>  	fujitsu->keycode1 = KEY_SCREENLOCK;	/* "Lock" */
+>  	fujitsu->keycode2 = KEY_HELP;	/* "Mobility Center" */
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  static int dmi_check_cb_s6420(const struct dmi_system_id *id)
+> @@ -611,7 +611,7 @@ static int dmi_check_cb_s6420(const struct dmi_system_id *id)
+>  	dmi_check_cb_common(id);
+>  	fujitsu->keycode1 = KEY_SCREENLOCK;	/* "Lock" */
+>  	fujitsu->keycode2 = KEY_HELP;	/* "Mobility Center" */
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  static int dmi_check_cb_p8010(const struct dmi_system_id *id)
+> @@ -620,7 +620,7 @@ static int dmi_check_cb_p8010(const struct dmi_system_id *id)
+>  	fujitsu->keycode1 = KEY_HELP;	/* "Support" */
+>  	fujitsu->keycode3 = KEY_SWITCHVIDEOMODE;	/* "Presentation" */
+>  	fujitsu->keycode4 = KEY_WWW;	/* "Internet" */
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  static struct dmi_system_id fujitsu_dmi_table[] = {
+> diff --git a/drivers/platform/x86/msi-laptop.c b/drivers/platform/x86/msi-laptop.c
+> index afd762b..c67a74c 100644
+> --- a/drivers/platform/x86/msi-laptop.c
+> +++ b/drivers/platform/x86/msi-laptop.c
+> @@ -434,7 +434,7 @@ static int dmi_check_cb(const struct dmi_system_id *id)
+>  {
+>  	printk(KERN_INFO "msi-laptop: Identified laptop model '%s'.\n",
+>  	       id->ident);
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  static struct dmi_system_id __initdata msi_dmi_table[] = {
+> -- 
+> 1.5.4.3
+> 
+> 
+> 
 
-So, Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-
-Best regards
-Uwe
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+* Jonathan Woithe    jwoithe@physics.adelaide.edu.au                        *
+*                    http://www.physics.adelaide.edu.au/~jwoithe            *
+***-----------------------------------------------------------------------***
+** "Time is an illusion; lunchtime doubly so"                              **
+*  "...you wouldn't recognize a subtle plan if it painted itself purple and *
+*   danced naked on a harpsichord singing 'subtle plans are here again'"    *
