@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758461Ab0GEMNu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 08:13:50 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51488 "EHLO
+	id S1758558Ab0GEMOk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 08:14:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44685 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758384Ab0GEMNr (ORCPT
+	with ESMTP id S1758659Ab0GEMOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 08:13:47 -0400
+	Mon, 5 Jul 2010 08:14:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=AQtQxft1yJplKriV52RnfRqcoFQCqznG1tT2NQrzsSh+Bk+TKaXLRdUJ+PxfRXE6CI
-         dQMybfJHIcaGtQHdAAQYIzNSMvkK8vBVeR9AcuQsSOnNuU3wJu4uebdwLMcDjNjwAuWC
-         ZMXKg4i14pDZ8/lpw+HV8+ORF4Rfb9LImmit4=
+        b=AFAaPQaKY1gwXA3LPdXtIAq+GjcWD8ElqvZsj6EhVIBwb8xblRnf5pzCOUHcmfUDNu
+         jFEj+O+y+sHhIkMbwE3Tf+zihh+2HzvyqjOiij2LSOgynX5wO8UUPRbF9TUFFcOSAD55
+         u1AKYnFheKJYQj/dF8/VS/Us4xyvZnPkt947I=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-       Jiri Pirko <jpirko@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-       Stephen Hemminger <shemminger@vyatta.com>, netdev@vger.kernel.org,
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
+       Jiri Pirko <jpirko@redhat.com>, netdev@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH] hamachi: Use the instance of net_device_stats from net_device.
-Date: Mon,  5 Jul 2010 16:13:41 +0400
-Message-Id: <1278332023-16524-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH] ns83820: Use the instance of net_device_stats from net_device.
+Date: Mon,  5 Jul 2010 16:14:28 +0400
+Message-Id: <1278332071-17865-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,139 +33,115 @@ we can remove the instance of this from the adapter structure.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/net/hamachi.c |   63 ++++++++++++++++++++++++++++--------------------
- 1 files changed, 37 insertions(+), 26 deletions(-)
+ drivers/net/ns83820.c |   44 ++++++++++++++++++++++----------------------
+ 1 files changed, 22 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/net/hamachi.c b/drivers/net/hamachi.c
-index 61f2b1c..49aac70 100644
---- a/drivers/net/hamachi.c
-+++ b/drivers/net/hamachi.c
-@@ -492,7 +492,6 @@ struct hamachi_private {
- 	struct sk_buff* tx_skbuff[TX_RING_SIZE];
- 	dma_addr_t tx_ring_dma;
- 	dma_addr_t rx_ring_dma;
--	struct net_device_stats stats;
- 	struct timer_list timer;		/* Media selection timer. */
- 	/* Frequently used and paired value: keep adjacent for cache effect. */
- 	spinlock_t lock;
-@@ -1036,7 +1035,7 @@ static inline int hamachi_tx(struct net_device *dev)
- 		if (entry >= TX_RING_SIZE-1)
- 			hmp->tx_ring[TX_RING_SIZE-1].status_n_length |=
- 				cpu_to_le32(DescEndRing);
--		hmp->stats.tx_packets++;
-+		dev->stats.tx_packets++;
- 	}
+diff --git a/drivers/net/ns83820.c b/drivers/net/ns83820.c
+index e88e97c..5a3488f 100644
+--- a/drivers/net/ns83820.c
++++ b/drivers/net/ns83820.c
+@@ -424,7 +424,6 @@ struct rx_info {
  
- 	return 0;
-@@ -1167,7 +1166,7 @@ static void hamachi_tx_timeout(struct net_device *dev)
  
- 	/* Trigger an immediate transmit demand. */
- 	dev->trans_start = jiffies; /* prevent tx timeout */
--	hmp->stats.tx_errors++;
-+	dev->stats.tx_errors++;
+ struct ns83820 {
+-	struct net_device_stats	stats;
+ 	u8			__iomem *base;
  
- 	/* Restart the chip's Tx/Rx processes . */
- 	writew(0x0002, ioaddr + TxCmd); /* STOP Tx */
-@@ -1434,7 +1433,7 @@ static irqreturn_t hamachi_interrupt(int irq, void *dev_instance)
- 					if (entry >= TX_RING_SIZE-1)
- 						hmp->tx_ring[TX_RING_SIZE-1].status_n_length |=
- 							cpu_to_le32(DescEndRing);
--					hmp->stats.tx_packets++;
-+					dev->stats.tx_packets++;
- 				}
- 				if (hmp->cur_tx - hmp->dirty_tx < TX_RING_SIZE - 4){
- 					/* The ring is no longer full */
-@@ -1525,18 +1524,22 @@ static int hamachi_rx(struct net_device *dev)
- 				   le32_to_cpu(hmp->rx_ring[(hmp->cur_rx+1) % RX_RING_SIZE].status_n_length) & 0xffff0000,
- 				   le32_to_cpu(hmp->rx_ring[(hmp->cur_rx+1) % RX_RING_SIZE].status_n_length) & 0x0000ffff,
- 				   le32_to_cpu(hmp->rx_ring[(hmp->cur_rx-1) % RX_RING_SIZE].status_n_length));
--			hmp->stats.rx_length_errors++;
-+			dev->stats.rx_length_errors++;
- 		} /* else  Omit for prototype errata??? */
- 		if (frame_status & 0x00380000) {
- 			/* There was an error. */
- 			if (hamachi_debug > 2)
- 				printk(KERN_DEBUG "  hamachi_rx() Rx error was %8.8x.\n",
- 					   frame_status);
--			hmp->stats.rx_errors++;
--			if (frame_status & 0x00600000) hmp->stats.rx_length_errors++;
--			if (frame_status & 0x00080000) hmp->stats.rx_frame_errors++;
--			if (frame_status & 0x00100000) hmp->stats.rx_crc_errors++;
--			if (frame_status < 0) hmp->stats.rx_dropped++;
-+			dev->stats.rx_errors++;
-+			if (frame_status & 0x00600000)
-+				dev->stats.rx_length_errors++;
-+			if (frame_status & 0x00080000)
-+				dev->stats.rx_frame_errors++;
-+			if (frame_status & 0x00100000)
-+				dev->stats.rx_crc_errors++;
-+			if (frame_status < 0)
-+				dev->stats.rx_dropped++;
+ 	struct pci_dev		*pci_dev;
+@@ -918,9 +917,9 @@ static void rx_irq(struct net_device *ndev)
+ 			if (unlikely(!skb))
+ 				goto netdev_mangle_me_harder_failed;
+ 			if (cmdsts & CMDSTS_DEST_MULTI)
+-				dev->stats.multicast ++;
+-			dev->stats.rx_packets ++;
+-			dev->stats.rx_bytes += len;
++				ndev->stats.multicast++;
++			ndev->stats.rx_packets++;
++			ndev->stats.rx_bytes += len;
+ 			if ((extsts & 0x002a0000) && !(extsts & 0x00540000)) {
+ 				skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 			} else {
+@@ -940,7 +939,7 @@ static void rx_irq(struct net_device *ndev)
+ #endif
+ 			if (NET_RX_DROP == rx_rc) {
+ netdev_mangle_me_harder_failed:
+-				dev->stats.rx_dropped ++;
++				ndev->stats.rx_dropped++;
+ 			}
  		} else {
- 			struct sk_buff *skb;
- 			/* Omit CRC */
-@@ -1654,7 +1657,7 @@ static int hamachi_rx(struct net_device *dev)
- #endif  /* RX_CHECKSUM */
+ 			kfree_skb(skb);
+@@ -1008,11 +1007,11 @@ static void do_tx_done(struct net_device *ndev)
+ 		dma_addr_t addr;
  
- 			netif_rx(skb);
--			hmp->stats.rx_packets++;
-+			dev->stats.rx_packets++;
- 		}
- 		entry = (++hmp->cur_rx) % RX_RING_SIZE;
+ 		if (cmdsts & CMDSTS_ERR)
+-			dev->stats.tx_errors ++;
++			ndev->stats.tx_errors++;
+ 		if (cmdsts & CMDSTS_OK)
+-			dev->stats.tx_packets ++;
++			ndev->stats.tx_packets++;
+ 		if (cmdsts & CMDSTS_OK)
+-			dev->stats.tx_bytes += cmdsts & 0xffff;
++			ndev->stats.tx_bytes += cmdsts & 0xffff;
+ 
+ 		dprintk("tx_done_idx=%d free_idx=%d cmdsts=%08x\n",
+ 			tx_done_idx, dev->tx_free_idx, cmdsts);
+@@ -1212,20 +1211,21 @@ again:
+ 
+ static void ns83820_update_stats(struct ns83820 *dev)
+ {
++	struct net_device *ndev = dev->ndev;
+ 	u8 __iomem *base = dev->base;
+ 
+ 	/* the DP83820 will freeze counters, so we need to read all of them */
+-	dev->stats.rx_errors		+= readl(base + 0x60) & 0xffff;
+-	dev->stats.rx_crc_errors	+= readl(base + 0x64) & 0xffff;
+-	dev->stats.rx_missed_errors	+= readl(base + 0x68) & 0xffff;
+-	dev->stats.rx_frame_errors	+= readl(base + 0x6c) & 0xffff;
+-	/*dev->stats.rx_symbol_errors +=*/ readl(base + 0x70);
+-	dev->stats.rx_length_errors	+= readl(base + 0x74) & 0xffff;
+-	dev->stats.rx_length_errors	+= readl(base + 0x78) & 0xffff;
+-	/*dev->stats.rx_badopcode_errors += */ readl(base + 0x7c);
+-	/*dev->stats.rx_pause_count += */  readl(base + 0x80);
+-	/*dev->stats.tx_pause_count += */  readl(base + 0x84);
+-	dev->stats.tx_carrier_errors	+= readl(base + 0x88) & 0xff;
++	ndev->stats.rx_errors		+= readl(base + 0x60) & 0xffff;
++	ndev->stats.rx_crc_errors	+= readl(base + 0x64) & 0xffff;
++	ndev->stats.rx_missed_errors	+= readl(base + 0x68) & 0xffff;
++	ndev->stats.rx_frame_errors	+= readl(base + 0x6c) & 0xffff;
++	/*ndev->stats.rx_symbol_errors +=*/ readl(base + 0x70);
++	ndev->stats.rx_length_errors	+= readl(base + 0x74) & 0xffff;
++	ndev->stats.rx_length_errors	+= readl(base + 0x78) & 0xffff;
++	/*ndev->stats.rx_badopcode_errors += */ readl(base + 0x7c);
++	/*ndev->stats.rx_pause_count += */  readl(base + 0x80);
++	/*ndev->stats.tx_pause_count += */  readl(base + 0x84);
++	ndev->stats.tx_carrier_errors	+= readl(base + 0x88) & 0xff;
+ }
+ 
+ static struct net_device_stats *ns83820_get_stats(struct net_device *ndev)
+@@ -1237,7 +1237,7 @@ static struct net_device_stats *ns83820_get_stats(struct net_device *ndev)
+ 	ns83820_update_stats(dev);
+ 	spin_unlock_irq(&dev->misc_lock);
+ 
+-	return &dev->stats;
++	return &ndev->stats;
+ }
+ 
+ /* Let ethtool retrieve info */
+@@ -1464,12 +1464,12 @@ static void ns83820_do_isr(struct net_device *ndev, u32 isr)
+ 
+ 	if (unlikely(ISR_RXSOVR & isr)) {
+ 		//printk("overrun: rxsovr\n");
+-		dev->stats.rx_fifo_errors ++;
++		ndev->stats.rx_fifo_errors++;
  	}
-@@ -1724,9 +1727,9 @@ static void hamachi_error(struct net_device *dev, int intr_status)
- 		       dev->name, intr_status);
- 	/* Hmmmmm, it's not clear how to recover from PCI faults. */
- 	if (intr_status & (IntrTxPCIErr | IntrTxPCIFault))
--		hmp->stats.tx_fifo_errors++;
-+		dev->stats.tx_fifo_errors++;
- 	if (intr_status & (IntrRxPCIErr | IntrRxPCIFault))
--		hmp->stats.rx_fifo_errors++;
-+		dev->stats.rx_fifo_errors++;
- }
  
- static int hamachi_close(struct net_device *dev)
-@@ -1828,19 +1831,27 @@ static struct net_device_stats *hamachi_get_stats(struct net_device *dev)
-            so I think I'll comment it out here and see if better things
-            happen.
-         */
--	/* hmp->stats.tx_packets	= readl(ioaddr + 0x000); */
--
--	hmp->stats.rx_bytes = readl(ioaddr + 0x330); /* Total Uni+Brd+Multi */
--	hmp->stats.tx_bytes = readl(ioaddr + 0x3B0); /* Total Uni+Brd+Multi */
--	hmp->stats.multicast		= readl(ioaddr + 0x320); /* Multicast Rx */
--
--	hmp->stats.rx_length_errors	= readl(ioaddr + 0x368); /* Over+Undersized */
--	hmp->stats.rx_over_errors	= readl(ioaddr + 0x35C); /* Jabber */
--	hmp->stats.rx_crc_errors	= readl(ioaddr + 0x360); /* Jabber */
--	hmp->stats.rx_frame_errors	= readl(ioaddr + 0x364); /* Symbol Errs */
--	hmp->stats.rx_missed_errors	= readl(ioaddr + 0x36C); /* Dropped */
--
--	return &hmp->stats;
-+	/* dev->stats.tx_packets	= readl(ioaddr + 0x000); */
-+
-+	/* Total Uni+Brd+Multi */
-+	dev->stats.rx_bytes = readl(ioaddr + 0x330);
-+	/* Total Uni+Brd+Multi */
-+	dev->stats.tx_bytes = readl(ioaddr + 0x3B0);
-+	/* Multicast Rx */
-+	dev->stats.multicast = readl(ioaddr + 0x320);
-+
-+	/* Over+Undersized */
-+	dev->stats.rx_length_errors = readl(ioaddr + 0x368);
-+	/* Jabber */
-+	dev->stats.rx_over_errors = readl(ioaddr + 0x35C);
-+	/* Jabber */
-+	dev->stats.rx_crc_errors = readl(ioaddr + 0x360);
-+	/* Symbol Errs */
-+	dev->stats.rx_frame_errors = readl(ioaddr + 0x364);
-+	/* Dropped */
-+	dev->stats.rx_missed_errors = readl(ioaddr + 0x36C);
-+
-+	return &dev->stats;
- }
+ 	if (unlikely(ISR_RXORN & isr)) {
+ 		//printk("overrun: rxorn\n");
+-		dev->stats.rx_fifo_errors ++;
++		ndev->stats.rx_fifo_errors++;
+ 	}
  
- static void set_rx_mode(struct net_device *dev)
+ 	if ((ISR_RXRCMP & isr) && dev->rx_info.up)
 -- 
 1.7.0.4
 
