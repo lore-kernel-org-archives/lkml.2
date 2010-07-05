@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab0GETr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 15:47:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44302 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752817Ab0GETrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 15:47:25 -0400
-Message-ID: <4C32364D.2040705@zytor.com>
-Date: Mon, 05 Jul 2010 12:45:17 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1755708Ab0GETrr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 15:47:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39047 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754943Ab0GETrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 15:47:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=igszdY6oC8ca+oWhyZl1ORfqrNpB/Xi8sOvAwwZ36lrl9F2M/7fE5XqwMwh/h9Czlw
+         fYs4etfXuswC3FM5wnkWePBQqwrepRbWJ0vIR9HrgE8J79p4CMqfTemggVbO9dFAKmD4
+         3PnmH69EyMNvfcBrCMQrTefSdNheL4BZ9VxUs=
+Date: Mon, 5 Jul 2010 21:48:01 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ian Kent <raven@themaw.net>, autofs@linux.kernel.org
+Subject: Re: [PATCH 3/6] autofs/autofs4: move compat_ioctl handling into fs
+Message-ID: <20100705194759.GE5240@nowhere>
+References: <1278195310-25590-1-git-send-email-arnd@arndb.de> <1278195310-25590-4-git-send-email-arnd@arndb.de> <20100705192358.GC5240@nowhere> <4C3235C3.7050303@zytor.com>
 MIME-Version: 1.0
-To: feng.tang@intel.com
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-       jacob.jun.pan@intel.com, dtor@mail.ru, randy.dunlap@oracle.com
-Subject: Re: [PATCH v2 0/5] patches to settle i8042 with Intel MID platforms
-References: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
-In-Reply-To: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3235C3.7050303@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2010 08:03 AM, feng.tang@intel.com wrote:
-> From: Feng Tang <feng.tang@intel.com>
+On Mon, Jul 05, 2010 at 12:42:59PM -0700, H. Peter Anvin wrote:
+> On 07/05/2010 12:24 PM, Frederic Weisbecker wrote:
+> > On Sun, Jul 04, 2010 at 12:15:07AM +0200, Arnd Bergmann wrote:
+> >> Handling of autofs ioctl numbers does not need to be generic
+> >> and can easily be done directly in autofs itself.
+> >>
+> >> This also pushes the BKL into autofs and autofs4 ioctl
+> >> methods.
+> >>
+> >> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> >> Cc: H. Peter Anvin <hpa@zytor.com>
+> > 
+> > Peter, if you're fine with this version. May I apply it?
+> > Unless you have a tree for autofs.
+> > 
+> > Thanks.
 > 
-> Hi All,
+> Ian Kent is the maintainer of autofs4 and patches for autofs4 should go
+> through him (or acked by him.)
 > 
-> Some x86 platforms like intel MID platforms don't have i8042 controllers,
-> and i8042 driver's probe to some non-exist legacy IO ports may hang
-> the MID processor. 
-> 
-> Current solution for this is add dependency of SERIO_I8042 over
-> !X86_MRST, then if we build a x86 kernel image with X86_MRST=y,
-> it won't have i8042 driver support over common x86 platforms.
-> 
-> So we add a i8042 pre-detect hook into x86_platforms ops, so that
-> i8042 driver can use it to run-time judge whether to go on with
-> probe process.
-> 
-> Please review these patches.
-> 
+> autofs 3 is officially unmaintained; I'm more than happy to have you
+> push the autofs 3 bits of this patch.
 
-Looks good to me.  Dmitry, what do you think?
 
-	-hpa
+Sure, I can split up the patch and integrate the autofs 3 part, I'll send
+the standalone autofs4 version to Ian.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Thanks.
 
