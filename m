@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758288Ab0GEI4u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:56:50 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54643 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758246Ab0GEI4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:56:44 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/NFbLlP7QUxg+niyLgrlQW
-Date: Mon, 5 Jul 2010 11:56:56 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Lam <lzg@ema-tech.com>,
-       linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de,
-       Tomi Valkeinen <tomi.valkeinen@nokia.com>
-Subject: Re: [PATCH 21/33] Removing dead OMAP2_VENC_OUT_TYPE_SVIDEO,
- OMAP2_VENC_OUT_TYPE_COMPOSITE
-Message-ID: <20100705085654.GL15951@atomide.com>
-References: <cover.1277911345.git.siccegge@cs.fau.de>
- <2709d1406900af2436f6f8af00555507baf8dac9.1277911346.git.siccegge@cs.fau.de>
+	id S1758273Ab0GEI5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 04:57:33 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:39857 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756173Ab0GEI5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 04:57:32 -0400
+Date: Mon, 5 Jul 2010 09:57:20 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Manuel Lauss <manuel.lauss@googlemail.com>
+Cc: Christoph Egger <siccegge@cs.fau.de>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 6/9] Removing dead CONFIG_I2C_PNX0105
+Message-ID: <20100705085719.GA4461@linux-mips.org>
+References: <cover.1275925108.git.siccegge@cs.fau.de>
+ <e58860bae0d4571f3932df24fb6db0757bc260fe.1275925108.git.siccegge@cs.fau.de>
+ <AANLkTind_RjQ5X2zR1fhTgKuLOU4Kbve3uQlgGMI559X@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2709d1406900af2436f6f8af00555507baf8dac9.1277911346.git.siccegge@cs.fau.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTind_RjQ5X2zR1fhTgKuLOU4Kbve3uQlgGMI559X@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Christoph Egger <siccegge@cs.fau.de> [100630 18:58]:
-> OMAP2_VENC_OUT_TYPE_SVIDEO, OMAP2_VENC_OUT_TYPE_COMPOSITE doesn't
-> exist in Kconfig, therefore removing all references for it from the
-> source code.
+On Wed, Jun 09, 2010 at 01:47:33PM +0200, Manuel Lauss wrote:
 
-Let's let Tomi figure out this one, added him to Cc.
+> The code should probably just be adjusted to use the i2c-pnx driver.
+> According to the comments it supports the pnx0105 i2c cell.
 
-Regards,
+So something like this then.
 
-Tony
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+
+ arch/mips/pnx833x/common/platform.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+Index: linux-queue/arch/mips/pnx833x/common/platform.c
+===================================================================
+--- linux-queue.orig/arch/mips/pnx833x/common/platform.c
++++ linux-queue/arch/mips/pnx833x/common/platform.c
+@@ -24,6 +24,7 @@
+  */
+ #include <linux/device.h>
+ #include <linux/dma-mapping.h>
++#include <linux/i2c-pnx.h>
+ #include <linux/platform_device.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+@@ -33,11 +34,6 @@
+ #include <linux/mtd/nand.h>
+ #include <linux/mtd/partitions.h>
  
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> ---
->  arch/arm/mach-omap2/board-omap3stalker.c |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-omap3stalker.c b/arch/arm/mach-omap2/board-omap3stalker.c
-> index f848ba8..b38afd5 100644
-> --- a/arch/arm/mach-omap2/board-omap3stalker.c
-> +++ b/arch/arm/mach-omap2/board-omap3stalker.c
-> @@ -181,11 +181,6 @@ static struct omap_dss_device omap3_stalker_tv_device = {
->  	.name			= "tv",
->  	.driver_name		= "venc",
->  	.type			= OMAP_DISPLAY_TYPE_VENC,
-> -#if defined(CONFIG_OMAP2_VENC_OUT_TYPE_SVIDEO)
-> -	.phy.venc.type		= OMAP_DSS_VENC_TYPE_SVIDEO,
-> -#elif defined(CONFIG_OMAP2_VENC_OUT_TYPE_COMPOSITE)
-> -	.u.venc.type		= OMAP_DSS_VENC_TYPE_COMPOSITE,
-> -#endif
->  	.platform_enable	= omap3_stalker_enable_tv,
->  	.platform_disable	= omap3_stalker_disable_tv,
->  };
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-#ifdef CONFIG_I2C_PNX0105
+-/* Until i2c driver available in kernel.*/
+-#include <linux/i2c-pnx0105.h>
+-#endif
+-
+ #include <irq.h>
+ #include <irq-mapping.h>
+ #include <pnx833x.h>
+@@ -134,7 +130,6 @@ static struct platform_device pnx833x_us
+ 	.resource	= pnx833x_usb_ehci_resources,
+ };
+ 
+-#ifdef CONFIG_I2C_PNX0105
+ static struct resource pnx833x_i2c0_resources[] = {
+ 	{
+ 		.start		= PNX833X_I2C0_PORTS_START,
+@@ -188,7 +183,7 @@ static struct platform_device pnx833x_i2
+ };
+ 
+ static struct platform_device pnx833x_i2c1_device = {
+-	.name		= "i2c-pnx0105",
++	.name		= "pnx-i2c",
+ 	.id		= 1,
+ 	.dev = {
+ 		.platform_data = &pnx833x_i2c_dev[1],
+@@ -196,7 +191,6 @@ static struct platform_device pnx833x_i2
+ 	.num_resources  = ARRAY_SIZE(pnx833x_i2c1_resources),
+ 	.resource	= pnx833x_i2c1_resources,
+ };
+-#endif
+ 
+ static u64 ethernet_dmamask = DMA_BIT_MASK(32);
+ 
+@@ -297,10 +291,8 @@ static struct platform_device pnx833x_fl
+ static struct platform_device *pnx833x_platform_devices[] __initdata = {
+ 	&pnx833x_uart_device,
+ 	&pnx833x_usb_ehci_device,
+-#ifdef CONFIG_I2C_PNX0105
+ 	&pnx833x_i2c0_device,
+ 	&pnx833x_i2c1_device,
+-#endif
+ 	&pnx833x_ethernet_device,
+ 	&pnx833x_sata_device,
+ 	&pnx833x_flash_nand,
