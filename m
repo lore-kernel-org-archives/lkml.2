@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab0GEIyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:54:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25905 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238Ab0GEIyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:54:16 -0400
-Message-ID: <4C319D61.5090002@redhat.com>
-Date: Mon, 05 Jul 2010 16:52:49 +0800
-From: Xiaotian Feng <dfeng@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1758189Ab0GEIzf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 04:55:35 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:53472 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab0GEIzd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 04:55:33 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+CLP4lJ1ifJgkvHjjGYWHf
+Date: Mon, 5 Jul 2010 11:55:20 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <felipe.balbi@nokia.com>
+Cc: ext Christoph Egger <siccegge@cs.fau.de>,
+       Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
+       Kalle Valo <kalle.valo@iki.fi>,
+       Santosh Shilimkar <santosh.shilimkar@ti.com>,
+       Ladislav Michl <ladis@linux-mips.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "vamos@i4.informatik.uni-erlangen.de" 
+	<vamos@i4.informatik.uni-erlangen.de>
+Subject: Re: [PATCH 20/33] Removing dead MACH_OMAP2_H4_USB1
+Message-ID: <20100705085518.GK15951@atomide.com>
+References: <cover.1277911345.git.siccegge@cs.fau.de>
+ <24b01f2edebd09e37306c35f14401819d8219549.1277911346.git.siccegge@cs.fau.de>
+ <20100701073523.GT3843@nokia.com>
 MIME-Version: 1.0
-To: Ali Gholami Rudi <ali@rudi.ir>
-CC: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Venkatesh Pallipadi <venki@google.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [regression] commit 6a4f3b52 causes invalid memtype
-References: <20100507075128@tarekhel>
-In-Reply-To: <20100507075128@tarekhel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100701073523.GT3843@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2010 03:51 PM, Ali Gholami Rudi wrote:
-> Hi,
->
-> In -rc4 kernel these messages appear in my dmesg (complete dmesg
-> at the end of this mail):
->
-> 	[    0.400777] swapper:1 freeing invalid memtype e0000000-e0040000
-> 	...
-> 	[    0.453489] swapper:1 freeing invalid memtype e0000000-e0010000
-> 	[    0.453585] swapper:1 freeing invalid memtype e0041000-e0045000
-> 	[    0.453673] swapper:1 freeing invalid memtype e0045000-e0049000
-> 	...
-> 	[   12.662571] fbpad:980 conflicting memory types e0049000-e0549000 uncached-minus<->write-combining
-> 	[   12.662579] reserve_memtype failed 0xe0049000-0xe0549000, track uncached-minus, req uncached-minus
-> 	[   13.303389] fbpad:980 map pfn expected mapping type uncached-minus for e0049000-e0549000, got write-combining
->
-> The last 3 lines appear when mmap()ing nouveau framebuffer.
->
-> I reverted this commit and everything seems ok once more:
->
-> 	commit 6a4f3b523779b67e7d560ed42652f8a59f2f9782
-> 	Author: Venkatesh Pallipadi<venki@google.com>
-> 	Date:   Thu Jun 10 17:45:01 2010 -0700
-> 	
-> 	    x86, pat: Proper init of memtype subtree_max_end
->
-> Thanks,
-> Ali
+* Felipe Balbi <felipe.balbi@nokia.com> [100701 10:32]:
+> On Wed, Jun 30, 2010 at 06:00:23PM +0200, ext Christoph Egger wrote:
+> >MACH_OMAP2_H4_USB1 doesn't exist in Kconfig, therefore removing all
+> >references for it from the source code.
+> >
+> >Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> 
+> Does this apply on top of Tony's recent patches ??
 
-Could you please try following commit in -tip tree?
+Yes, I've applied both this and the previous patch.
 
-commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Sat May 29 15:31:43 2010 +0200
-
-     rbtree: Undo augmented trees performance damage
-
-Thanks
-Xiaotian
+Tony
