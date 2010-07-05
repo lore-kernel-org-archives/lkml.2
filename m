@@ -1,37 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab0GEPOp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 11:14:45 -0400
-Received: from srv72999s2.trdns.com ([77.245.151.60]:58458 "EHLO
-	srv72999s2.trdns.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755376Ab0GEPOo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 11:14:44 -0400
-Reply-To: kartusmurekkebi@hotmail.com
-Message-ID: <125b674fc780b6030ee074011c6b6333@dnsbn.com>
-From: "=?iso-8859-9?B?S2FydHX+IERvbHVtdSBCZWRhdmE=?=" 
-	<uzmanburom@dnsbn.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?iso-8859-9?B?a2FydHX+IGRvbHVtdSBt/HJla2tlYmkgMSBLZyAxMC4wMCBUTC4=?=
-Date: Mon, 5 Jul 2010 17:48:08 +0300
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-9"
-Content-Transfer-Encoding: 8BIT
+	id S1756507Ab0GEPX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 11:23:57 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:53760 "EHLO poutre.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753115Ab0GEPX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 11:23:56 -0400
+Date: Mon, 5 Jul 2010 17:23:53 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Iain <selsinork@gmail.com>, binximeng@gmail.com, jadcock@cox.net,
+       Jim Cromie <jim.cromie@gmail.com>, linux-kernel@vger.kernel.org,
+       lm-sensors@lm-sensors.org,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Ethan Lawrence <e.law87@yahoo.com>,
+       Andrew Morton <akpm@linux-foundation.org>, birdie@permonline.ru,
+       lars4910@hotmail.com
+Subject: Re: [lm-sensors] [PATCH v4 1/2] hwmon: w83627ehf driver cleanup
+Message-ID: <20100705172353.3effa134@hyperion.delvare>
+In-Reply-To: <20100705135900.457764e7@hyperion.delvare>
+References: <1278195202-2683-1-git-send-email-guenter.roeck@ericsson.com>
+	<1278195202-2683-2-git-send-email-guenter.roeck@ericsson.com>
+	<20100704132442.07a5ef40@hyperion.delvare>
+	<20100704135010.GA21500@ericsson.com>
+	<20100705135900.457764e7@hyperion.delvare>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yazýcý Kartuþlarýna  Servet Ödemeyin.
-Evinizde, Ýþyeriniz de Kullandýðýnýz Mürekkep kartuþlu Ýnk jet Yazýcýlarýn kartuþlarýný kendiniz doldurun 
-Milyonlarca resminizi, Yazýnýzý  Ýster Cep telefonunuzdan, Ýster Dijital Fotoðraf Makinenizden
-Kendiniz Bedava Ya Basýn. Tam 50.000 Fotoðraf Baský Yapabileceðiniz 4 Kg Kartuþ dolum mürekkebi 
-sadece 45.00 Tl 
-Ýnanýlmaz. Satýn Almak Ýçin Hemen Týklayýnýz.
-http://www.uzmanburom.com/default.asp?git=7&kategori=9771
-Detaylý Bilgi her türlü destek ve sorularýnýz için.
-info@uzmanburom.com
+On Mon, 5 Jul 2010 13:59:00 +0200, Jean Delvare wrote:
+> I have no further objections to your patch, so I'll apply it now. Then
+> I'll publish the patches and update the stand-alone driver, and we can
+> call for testers.
 
-www.uzmanburom.com
+Standalone driver is available for testing:
+http://khali.linux-fr.org/devel/misc/w83667hg/
 
-
+-- 
+Jean Delvare
