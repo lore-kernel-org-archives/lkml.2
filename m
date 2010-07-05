@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758199Ab0GEItn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:49:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51427 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753800Ab0GEItl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:49:41 -0400
-Message-ID: <4C319BBB.5020408@cn.fujitsu.com>
-Date: Mon, 05 Jul 2010 16:45:47 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1758231Ab0GEItq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 04:49:46 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:56775 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758208Ab0GEIto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 04:49:44 -0400
+Date: Mon, 5 Jul 2010 17:44:15 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] hugepage migration
+Message-ID: <20100705084415.GA29648@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20100702083026.GB12221@basil.fritz.box>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 5/6] KVM: MMU: combine guest pte read between walk
- and pte prefetch
-References: <4C2C9DC0.8050607@cn.fujitsu.com> <4C2C9E6C.2040803@cn.fujitsu.com> <20100702170303.GC25969@amt.cnet> <4C2F117C.2000006@cn.fujitsu.com> <4C2F2835.5060508@redhat.com> <4C2F2A0C.90704@cn.fujitsu.com> <4C2F2C5B.9020503@redhat.com> <4C2F2DBB.50904@cn.fujitsu.com> <4C2F30BD.7050702@redhat.com> <4C2F31D9.5010104@redhat.com> <4C2F3527.3020307@cn.fujitsu.com> <4C309B23.9060808@redhat.com> <4C3148FF.3030209@cn.fujitsu.com> <4C319699.9000104@redhat.com>
-In-Reply-To: <4C319699.9000104@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100702083026.GB12221@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Avi Kivity wrote:
-
->> Looks into the code more carefully, maybe this code is wrong:
->>
->>
->>               if (!direct) {
->>                       r = kvm_read_guest_atomic(vcpu->kvm,
->> -                                          gw->pte_gpa[level - 2],
->> +                                          gw->pte_gpa[level - 1],
->>                                        &curr_pte, sizeof(curr_pte));
->> -                    if (r || curr_pte != gw->ptes[level - 2]) {
->> +                    if (r || curr_pte != gw->ptes[level - 1]) {
->>                                  kvm_mmu_put_page(sp, sptep);
->>                                  kvm_release_pfn_clean(pfn);
->>                                  sptep = NULL;
->>
->> It should check the 'level' mapping not 'level - 1', in the later
->> description
->> i'll explain it.
->>    
+On Fri, Jul 02, 2010 at 10:30:26AM +0200, Andi Kleen wrote:
+> On Fri, Jul 02, 2010 at 02:47:19PM +0900, Naoya Horiguchi wrote:
+> > This is a patchset for hugepage migration.
 > 
-> Right, this fixes the check for the top level, but it removes a check
-> from the bottom level.
+> Thanks for working on this.
+> > 
+> > There are many users of page migration such as soft offlining,
+> > memory hotplug, memory policy and memory compaction,
+> > but this patchset adds hugepage support only for soft offlining
+> > as the first step.
 > 
+> Is that simply because the callers are not hooked up yet 
+> for the other cases, or more fundamental issues?
 
-We no need check the bottom level if guest not modify the bottom level,
-if guest modify it, the bottom level is no-present, it also can broke
-Point A's judgment and be checked by 'Point C'
-
-> We need to move this to the top of the loop so we check all levels.  I
-> guess this is why you needed to add a new check point.  But since we
-> loop at least glevels times, we don't need two check points.
-> 
-  
-> 
-> Ok.   So moving the check to before point A, and s/level - 2/level - 1/
-> should work, yes?
-> 
-> Should be slightly simpler since we don't need to kvm_mmu_put_page(sp,
-> sptep) any more.
-
-Yeah, it can work, but check all levels is really unnecessary, if guest not
-modify the level, the check can be avoid.
-
-This is why i choose two check-point, one is behind Point A's judgment, this
-point checks the level which modified by guest, and another point is at mapping
-last level point, this check is alway need.
+Yes, it's just underway.
+I hope we have no critical problems to implement other cases at the time.
 
 > 
-> Thanks for the detailed explanation.
+> > I tested this patchset with 'make func' in libhugetlbfs and
+> > have gotten the same result as one from 2.6.35-rc3.
 > 
+> Is there a tester for the functionality too? (e.g. mce-test test cases)
 
-It's really my pleasure :-)
+Yes.
+I'll send patches on mce-test suite later.
 
+Thanks,
+Naoya Horiguchi
