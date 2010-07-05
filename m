@@ -1,135 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab0GEKHc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 06:07:32 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:18887 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751809Ab0GEKHb (ORCPT
+	id S1754822Ab0GEKQW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 06:16:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50143 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab0GEKQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 06:07:31 -0400
-Message-ID: <4C31AEDE.7050008@panasas.com>
-Date: Mon, 05 Jul 2010 13:07:26 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Christoph Hellwig <hch@lst.de>
-CC: axboe@kernel.dk, snitzer@redhat.com, James.Bottomley@suse.de,
-       linux-scsi@vger.kernel.org, dm-devel@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] scsi: add sd_unprep_fn to free discard page
-References: <1277981359-10717-1-git-send-email-fujita.tomonori@lab.ntt.co.jp> <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1277981359-10717-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 5 Jul 2010 06:16:20 -0400
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+From: David Woodhouse <dwmw2@infradead.org>
+To: Chris Li <lkml@chrisli.org>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
+	 <4C29420D.2010406@intel.com>
+	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>
+	 <4C2A8879.8010000@intel.com>
+	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>
+	 <4C2AC55E.3040303@intel.com>
+	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
+	 <1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>
+	 <1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>
+	 <1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>
+	 <1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>
+	 <1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>
+	 <AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>
+	 <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Jul 2010 11:16:13 +0100
+Message-ID: <1278324973.16975.68.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.31.4 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Jul 2010 10:07:29.0603 (UTC) FILETIME=[E081C930:01CB1C29]
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2010 01:49 PM, FUJITA Tomonori wrote:
-> This fixes discard page leak by using q->unprep_rq_fn facility.
-> 
-> q->unprep_rq_fn is called when all the data buffer (req->bio and
-> scsi_data_buffer) in the request is freed.
-> 
-> sd_unprep() uses rq->buffer to free discard page allocated in
-> sd_prepare_discard().
-> 
-> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+On Fri, 2010-07-02 at 20:00 +0100, Chris Li wrote:
+> But I don't see the line that print out BIOS is lying.
 
-Sorry for thinking about this just now. It was on the tip of my
-mind, but I was too busy with other things to notice.
+Hrm. Want to augment the dmar_find_matched_drhd_unit() function to
+_always_ print the DRHD returned for the offending PCI device? And if
+that still doesn't show, make it print pdev->vendor, pdev->device and
+the returned DRHD pointer for _every_ call?
 
-There is a simple more STD way to solve all this without the need
-for any new API.
-
-*Use the bio destructor to also deallocate it's pages*
-
-Now that is not such a novel idea, it's used all over the place.
-Well it's the proper way to submit a bio and be notified on done.
-Since there are no bio leaks, we know all error paths are just
-as covered.
-
-For this to work all these patches could be removed and the
-blk_add_request_payload need to change to recieve a bio destructor
-pointer.
-
-If you ask me I hate what was done with discard at the block layer
-since it's only in Jens tree for-next I think it is good time to change
-it. What is this alloc the bio in one place and add it's pages in another
-place. Rrrrr
-
-to quote from the author himself:
-<block-core.c>
-/**
- * blk_add_request_payload - add a payload to a request
- <snip>
- *
- * Note that this is a quite horrible hack and nothing but handling of
- * discard requests should ever use it.
- */
-void blk_add_request_payload(struct request *rq, struct page *page,
-		unsigned int len)
-</block-core.c>
-
-The block-layer users think of a discard as zero-load, so should the
-block-layer. The block driver like sd that needs to add a payload can
-set in a bio just like any other place. when allocating the bio, set
-it's destructor and be done with it. All allocations and cleanups are
-done at one place, at same level.
-
-As it stands now blk_add_request_payload will have to either chain the
-bio destructors and/or if it knows where it's allocated then chain to
-the proper bio_free, after calling the block-driver supplied callback.
-
-BTW where is that zero-pages discard bio allocated. Why is it not allocated
-inside blk_add_request_payload? What is the meaning of zero length bio?
-I though everywhere we check for "if (req->bio)" not "if (bio_size(req_bio))"
-isn't all this asking for trouble?
-
-my $0.017
-Boaz
-
-> ---
->  drivers/scsi/sd.c |   12 +++++++++++-
->  1 files changed, 11 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index 86da819..2d4e3a8 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -425,6 +425,7 @@ static int scsi_setup_discard_cmnd(struct scsi_device *sdp, struct request *rq)
->  	sector_t sector = bio->bi_sector;
->  	unsigned int nr_sectors = bio_sectors(bio);
->  	unsigned int len;
-> +	int ret;
->  	struct page *page;
->  
->  	if (sdkp->device->sector_size == 4096) {
-> @@ -465,7 +466,15 @@ static int scsi_setup_discard_cmnd(struct scsi_device *sdp, struct request *rq)
->  	}
->  
->  	blk_add_request_payload(rq, page, len);
-> -	return scsi_setup_blk_pc_cmnd(sdp, rq);
-> +	ret = scsi_setup_blk_pc_cmnd(sdp, rq);
-> +	rq->buffer = page_address(page);
-> +	return ret;
-> +}
-> +
-> +static void sd_unprep_fn(struct request_queue *q, struct request *rq)
-> +{
-> +	if (rq->cmd_flags & REQ_DISCARD)
-> +		__free_page(virt_to_page(rq->buffer));
->  }
->  
->  /**
-> @@ -2242,6 +2251,7 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
->  	sd_revalidate_disk(gd);
->  
->  	blk_queue_prep_rq(sdp->request_queue, sd_prep_fn);
-> +	blk_queue_unprep_rq(sdp->request_queue, sd_unprep_fn);
->  
->  	gd->driverfs_dev = &sdp->sdev_gendev;
->  	gd->flags = GENHD_FL_EXT_DEVT;
+-- 
+dwmw2
 
