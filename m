@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab0GEQU2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 12:20:28 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:44123 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753139Ab0GEQU1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 12:20:27 -0400
-Subject: Re: [PATCH] VIDEO: ivtvfb, remove unneeded NULL test
-From: Andy Walls <awalls@md.metrocast.net>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Ian Armstrong <ian@iarmst.demon.co.uk>,
-       ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
-In-Reply-To: <4C31855B.7030509@suse.cz>
-References: <1277206910-27228-1-git-send-email-jslaby@suse.cz>
-	 <1278216707.2644.32.camel@localhost>  <4C30372D.9050304@suse.cz>
-	 <1278249745.2280.46.camel@localhost>  <4C31855B.7030509@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Jul 2010 12:19:55 -0400
-Message-ID: <1278346795.2229.2.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
- definitions=2010-07-05_04:2010-02-06,2010-07-05,2010-07-05 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1007050076
+	id S1756280Ab0GEQX1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 12:23:27 -0400
+Received: from imr1.ericy.com ([198.24.6.9]:43926 "EHLO imr1.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752183Ab0GEQX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 12:23:26 -0400
+Date: Mon, 5 Jul 2010 09:22:46 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: David Dajun Chen <Dajun.Chen@diasemi.com>
+CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCHv2 6/11] HWMON: Reformatting of files and
+ removal of testing framework
+Message-ID: <20100705162246.GA26119@ericsson.com>
+References: <3495EC08FA53E94AAA00CC4743D5BA7E013FA985@pandora.diasemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <3495EC08FA53E94AAA00CC4743D5BA7E013FA985@pandora.diasemi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-07-05 at 09:10 +0200, Jiri Slaby wrote:
-> On 07/04/2010 03:22 PM, Andy Walls wrote:
-> > On Sun, 2010-07-04 at 09:24 +0200, Jiri Slaby wrote:
-> >> On 07/04/2010 06:11 AM, Andy Walls wrote:
+Hi David,
 
-> > There are windows of time where a struct device * will exist for a card
-> > in the ivtv driver, but a struct v4l2_device * may not: the end of
-> > ivtv_remove() and the beginning of ivtv_probe().
+I was about to reply, but then I saw your displaimer.
+
+> Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information,
+> some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it
+> is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure,
+> copying, distribution or any action taken or omitted to be taken in reliance on it, is prohibited and may be unlawful.
 > 
-> If there is no locking or refcounting, this won't change with the added
-> check. The window is still there, but it begins after the check with
-> your patch. Hence will still cause oopses.
+Given that, I am not sure if it is appropriate for me (or anyone else) to provide feedback.
+After all, I don't want to do anything unlawful, and I have no idea if I am an intended recipient.
 
-Jiri,
-
-Of course, you're absolutley right.
-
-Please resubmit a version of your original patch fixing both instances
-of the check.  I'll add my ack and SOB.
-
-If any users ever report an Oops, then I'll bother to add interlocking.
-
-Regards,
-Andy
+Thanks,
+Guenter
 
