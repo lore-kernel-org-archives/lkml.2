@@ -1,250 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab0GEPew (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 11:34:52 -0400
-Received: from scarab.smoula.net ([83.240.14.6]:58390 "EHLO scarab.smoula.net"
+	id S1756001Ab0GEPnZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 11:43:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51795 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755267Ab0GEPev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 11:34:51 -0400
-X-Greylist: delayed 466 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jul 2010 11:34:51 EDT
-Message-ID: <4C31F9C4.8090609@smoula.net>
-Date: Mon, 05 Jul 2010 17:27:00 +0200
-From: Martin Filip <bugtraq@smoula.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100630 Thunderbird/3.0.5
+	id S1752171Ab0GEPnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 11:43:23 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] Rearrange i_flags to be consistent with FS_IOC_GETFLAGS
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, David Howells <dhowells@redhat.com>
+Date: Mon, 05 Jul 2010 16:43:19 +0100
+Message-ID: <20100705154319.31193.56706.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Macbook Pro 5,5 nvidia backlight fix
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Rearrange the constituent bits of i_flags to be consistent with the flag values
+returned by the FS_IOC_GETFLAGS ioctl where flags with common meanings occur.
+Otherwise pack the bits of i_flags as low as possible so that RISC CPUs can
+use small instructions.
 
-I've MacBookPro5,5 with nVidia Corporation C79 [GeForce 9400M]. Until
-now (last tested 2.6.34) it has broken brightness control in mbp_nvidia_bl.
+This allows those filesystems that use i_flags (Ext2/3/4) to simplify their
+get/set flags routines.
 
-I've patch is based on:
-http://spuriousinterrupt.org/stuff/mbp_nvidia_bl-add_mmio_backlight_reg-2.6.31rc1.diff
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-Maybe someone involved with this module can merge this one?
+ fs/ext2/inode.c    |   33 ++++++---------------------------
+ fs/ext3/inode.c    |   31 +++++--------------------------
+ fs/ext4/inode.c    |   32 +++++---------------------------
+ include/linux/fs.h |   30 ++++++++++++++++++------------
+ 4 files changed, 34 insertions(+), 92 deletions(-)
 
-Patch for 2.6.34:
-diff -ruN a/drivers/video/backlight/mbp_nvidia_bl.c
-b/drivers/video/backlight/mbp_nvidia_bl.c
---- a/drivers/video/backlight/mbp_nvidia_bl.c	2010-05-16
-23:17:36.000000000 +0200
-+++ b/drivers/video/backlight/mbp_nvidia_bl.c	2010-07-05
-13:02:23.000000000 +0200
-@@ -24,6 +24,7 @@
- #include <linux/err.h>
- #include <linux/dmi.h>
- #include <linux/io.h>
-+#include <linux/pci.h>
-
- static struct backlight_device *mbp_backlight_device;
-
-@@ -32,6 +33,12 @@
- 	/* I/O resource to allocate. */
- 	unsigned long iostart;
- 	unsigned long iolen;
+diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+index 3675088..da5fd2d 100644
+--- a/fs/ext2/inode.c
++++ b/fs/ext2/inode.c
+@@ -1259,38 +1259,17 @@ Egdp:
+ 
+ void ext2_set_inode_flags(struct inode *inode)
+ {
+-	unsigned int flags = EXT2_I(inode)->i_flags;
+-
+-	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
+-	if (flags & EXT2_SYNC_FL)
+-		inode->i_flags |= S_SYNC;
+-	if (flags & EXT2_APPEND_FL)
+-		inode->i_flags |= S_APPEND;
+-	if (flags & EXT2_IMMUTABLE_FL)
+-		inode->i_flags |= S_IMMUTABLE;
+-	if (flags & EXT2_NOATIME_FL)
+-		inode->i_flags |= S_NOATIME;
+-	if (flags & EXT2_DIRSYNC_FL)
+-		inode->i_flags |= S_DIRSYNC;
++	unsigned int flags = EXT2_I(inode)->i_flags & S_FS_IOC_FLAGS;
 +
-+	/* ... or MMIO region to allocate. */
-+	unsigned long memstart;
-+	unsigned long memlen;
-+	void *membase;
++	inode->i_flags = (inode->i_flags & ~S_FS_IOC_FLAGS) | flags;
+ }
+ 
+ /* Propagate flags from i_flags to EXT2_I(inode)->i_flags */
+ void ext2_get_inode_flags(struct ext2_inode_info *ei)
+ {
+-	unsigned int flags = ei->vfs_inode.i_flags;
+-
+-	ei->i_flags &= ~(EXT2_SYNC_FL|EXT2_APPEND_FL|
+-			EXT2_IMMUTABLE_FL|EXT2_NOATIME_FL|EXT2_DIRSYNC_FL);
+-	if (flags & S_SYNC)
+-		ei->i_flags |= EXT2_SYNC_FL;
+-	if (flags & S_APPEND)
+-		ei->i_flags |= EXT2_APPEND_FL;
+-	if (flags & S_IMMUTABLE)
+-		ei->i_flags |= EXT2_IMMUTABLE_FL;
+-	if (flags & S_NOATIME)
+-		ei->i_flags |= EXT2_NOATIME_FL;
+-	if (flags & S_DIRSYNC)
+-		ei->i_flags |= EXT2_DIRSYNC_FL;
++	unsigned int flags = ei->vfs_inode.i_flags & S_FS_IOC_FLAGS;
 +
- 	/* Backlight operations structure. */
- 	const struct backlight_ops backlight_ops;
- };
-@@ -41,6 +48,9 @@
- module_param_named(debug, debug, int, 0644);
- MODULE_PARM_DESC(debug, "Set to one to enable debugging messages.");
-
-+static /* const */ struct dmi_match_data *driver_data;
++	ei->i_flags = (ei->i_flags & ~S_FS_IOC_FLAGS) | flags;
+ }
+ 
+ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
+diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+index 735f019..4a1e45e 100644
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -2737,38 +2737,17 @@ int ext3_get_inode_loc(struct inode *inode, struct ext3_iloc *iloc)
+ 
+ void ext3_set_inode_flags(struct inode *inode)
+ {
+-	unsigned int flags = EXT3_I(inode)->i_flags;
++	unsigned int flags = EXT3_I(inode)->i_flags & S_FS_IOC_FLAGS;
+ 
+-	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
+-	if (flags & EXT3_SYNC_FL)
+-		inode->i_flags |= S_SYNC;
+-	if (flags & EXT3_APPEND_FL)
+-		inode->i_flags |= S_APPEND;
+-	if (flags & EXT3_IMMUTABLE_FL)
+-		inode->i_flags |= S_IMMUTABLE;
+-	if (flags & EXT3_NOATIME_FL)
+-		inode->i_flags |= S_NOATIME;
+-	if (flags & EXT3_DIRSYNC_FL)
+-		inode->i_flags |= S_DIRSYNC;
++	inode->i_flags = (inode->i_flags & ~S_FS_IOC_FLAGS) | flags;
+ }
+ 
+ /* Propagate flags from i_flags to EXT3_I(inode)->i_flags */
+ void ext3_get_inode_flags(struct ext3_inode_info *ei)
+ {
+-	unsigned int flags = ei->vfs_inode.i_flags;
+-
+-	ei->i_flags &= ~(EXT3_SYNC_FL|EXT3_APPEND_FL|
+-			EXT3_IMMUTABLE_FL|EXT3_NOATIME_FL|EXT3_DIRSYNC_FL);
+-	if (flags & S_SYNC)
+-		ei->i_flags |= EXT3_SYNC_FL;
+-	if (flags & S_APPEND)
+-		ei->i_flags |= EXT3_APPEND_FL;
+-	if (flags & S_IMMUTABLE)
+-		ei->i_flags |= EXT3_IMMUTABLE_FL;
+-	if (flags & S_NOATIME)
+-		ei->i_flags |= EXT3_NOATIME_FL;
+-	if (flags & S_DIRSYNC)
+-		ei->i_flags |= EXT3_DIRSYNC_FL;
++	unsigned int flags = ei->vfs_inode.i_flags & S_FS_IOC_FLAGS;
 +
++	ei->i_flags = (ei->i_flags & ~S_FS_IOC_FLAGS) | flags;
+ }
+ 
+ struct inode *ext3_iget(struct super_block *sb, unsigned long ino)
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index efa17d6..63a5da7 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4924,19 +4924,9 @@ int ext4_get_inode_loc(struct inode *inode, struct ext4_iloc *iloc)
+ 
+ void ext4_set_inode_flags(struct inode *inode)
+ {
+-	unsigned int flags = EXT4_I(inode)->i_flags;
+-
+-	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
+-	if (flags & EXT4_SYNC_FL)
+-		inode->i_flags |= S_SYNC;
+-	if (flags & EXT4_APPEND_FL)
+-		inode->i_flags |= S_APPEND;
+-	if (flags & EXT4_IMMUTABLE_FL)
+-		inode->i_flags |= S_IMMUTABLE;
+-	if (flags & EXT4_NOATIME_FL)
+-		inode->i_flags |= S_NOATIME;
+-	if (flags & EXT4_DIRSYNC_FL)
+-		inode->i_flags |= S_DIRSYNC;
++	unsigned int flags = EXT4_I(inode)->i_flags & S_FS_IOC_FLAGS;
 +
- /*
-  * Implementation for MacBooks with Intel chipset.
-  */
-@@ -123,11 +133,58 @@
- 	}
- };
-
-+#define NV_PDISPLAY_OFFSET 0x610000
-+#define NV_PDISPLAY_SOR0_REGS_BRIGHTNESS 0xc084
-+#define NV_PDISPLAY_SOR0_REGS_BRIGHTNESS_CONTROL_ENABLED 0x80000000
-+
-+/* leave the driver's max_brightness value at 15 to avoid reworking how
-+ * the driver works entirely.  we can just scale to the 'real' max of 1024
++	inode->i_flags = (inode->i_flags & ~S_FS_IOC_FLAGS) | flags;
+ }
+ 
+ /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
+@@ -4946,21 +4936,9 @@ void ext4_get_inode_flags(struct ext4_inode_info *ei)
+ 	unsigned long old_fl, new_fl;
+ 
+ 	do {
+-		vfs_fl = ei->vfs_inode.i_flags;
++		vfs_fl = ei->vfs_inode.i_flags & S_FS_IOC_FLAGS;
+ 		old_fl = ei->i_flags;
+-		new_fl = old_fl & ~(EXT4_SYNC_FL|EXT4_APPEND_FL|
+-				EXT4_IMMUTABLE_FL|EXT4_NOATIME_FL|
+-				EXT4_DIRSYNC_FL);
+-		if (vfs_fl & S_SYNC)
+-			new_fl |= EXT4_SYNC_FL;
+-		if (vfs_fl & S_APPEND)
+-			new_fl |= EXT4_APPEND_FL;
+-		if (vfs_fl & S_IMMUTABLE)
+-			new_fl |= EXT4_IMMUTABLE_FL;
+-		if (vfs_fl & S_NOATIME)
+-			new_fl |= EXT4_NOATIME_FL;
+-		if (vfs_fl & S_DIRSYNC)
+-			new_fl |= EXT4_DIRSYNC_FL;
++		new_fl = (old_fl & ~S_FS_IOC_FLAGS) | vfs_fl;
+ 	} while (cmpxchg(&ei->i_flags, old_fl, new_fl) != old_fl);
+ }
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 48616db..5808b9b 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -223,18 +223,24 @@ struct inodes_stat_t {
+ #define MS_MGC_VAL 0xC0ED0000
+ #define MS_MGC_MSK 0xffff0000
+ 
+-/* Inode flags - they have nothing to superblock flags now */
+-
+-#define S_SYNC		1	/* Writes are synced at once */
+-#define S_NOATIME	2	/* Do not update access times */
+-#define S_APPEND	4	/* Append-only file */
+-#define S_IMMUTABLE	8	/* Immutable file */
+-#define S_DEAD		16	/* removed, but still open directory */
+-#define S_NOQUOTA	32	/* Inode is not counted to quota */
+-#define S_DIRSYNC	64	/* Directory modifications are synchronous */
+-#define S_NOCMTIME	128	/* Do not update file c/mtime */
+-#define S_SWAPFILE	256	/* Do not truncate: swapon got its bmaps */
+-#define S_PRIVATE	512	/* Inode is fs-internal */
++/*
++ * Inode flags - they have no relation to superblock flags now
++ *
++ * Where applicable, flags that are also in FS_IOC_GETFLAGS have the same bit
++ * position
 + */
-+#define NV_PDISPLAY_BACKLIGHT_MAX  1024
-+static int nvidia_chipset_send_intensity_mmio(struct backlight_device *bd)
-+{
-+	int intensity = bd->props.brightness;
++#define S_DEAD		0x00000001	/* removed, but still open directory */
++#define S_NOQUOTA	0x00000002	/* Inode is not counted to quota */
++#define S_NOCMTIME	0x00000004	/* Do not update file c/mtime */
++#define S_SYNC		0x00000008	/* [FS_SYNC_FL] Writes are synced at once */
++#define S_IMMUTABLE	0x00000010	/* [FS_IMMUTABLE_FL] Immutable file */
++#define S_APPEND	0x00000020	/* [FS_APPEND_FL] Append-only file */
++#define S_SWAPFILE	0x00000040	/* Do not truncate: swapon got its bmaps */
++#define S_NOATIME	0x00000080	/* [FS_NOATIME_FL] Do not update access times */
++#define S_PRIVATE	0x00000100	/* Inode is fs-internal */
++#define S_DIRSYNC	0x00010000	/* [FS_DIRSYNC_FL] Directory mods are synchronous */
 +
-+	if (debug)
-+		printk(KERN_DEBUG "mbp_nvidia_bl: setting brightness to %d\n",
-+		       intensity);
-+
-+	writel((intensity * NV_PDISPLAY_BACKLIGHT_MAX / 15) |
-NV_PDISPLAY_SOR0_REGS_BRIGHTNESS_CONTROL_ENABLED,
-+		   driver_data->membase + NV_PDISPLAY_OFFSET +
-NV_PDISPLAY_SOR0_REGS_BRIGHTNESS);
-+
-+	return 0;
-+}
-+
-+static int nvidia_chipset_get_intensity_mmio(struct backlight_device *bd)
-+{
-+	int intensity;
-+	unsigned int val = readl(driver_data->membase + NV_PDISPLAY_OFFSET +
-NV_PDISPLAY_SOR0_REGS_BRIGHTNESS);
-+
-+	if (debug)
-+		printk(KERN_DEBUG "mbp_nvidia_bl: read brightness of %u\n",
-+		       val);
-+
-+	/* convert to level between 0 and 15 */
-+	intensity = (((double)val / NV_PDISPLAY_BACKLIGHT_MAX * 15) + 0.5);
-+	return intensity;
-+}
-+
-+static const struct dmi_match_data nvidia_chipset_data_mmio = {
-+	.iolen = 0,
-+	.backlight_ops		= {
-+		.options	= BL_CORE_SUSPENDRESUME,
-+		.get_brightness = nvidia_chipset_get_intensity_mmio,
-+		.update_status	= nvidia_chipset_send_intensity_mmio
-+	}
-+};
-+
-+
++#define S_FS_IOC_FLAGS	0x000100B8	/* the S_xxx flags that are also FS_xxx_FL flags */
+ 
  /*
-  * DMI matching.
-  */
- static /* const */ struct dmi_match_data *driver_data;
+  * Note that nosuid etc flags are inode-specific: setting some file-system
 
-+
- static int mbp_dmi_match(const struct dmi_system_id *id)
- {
- 	driver_data = id->driver_data;
-@@ -136,6 +193,35 @@
- 	return 1;
- }
-
-+
-+static int mbp_dmi_match_mmio(const struct dmi_system_id *id)
-+{
-+	struct pci_dev *pdev = NULL;
-+
-+	driver_data = id->driver_data;
-+
-+	printk(KERN_INFO "mbp_nvidia_bl: %s detected\n", id->ident);
-+
-+	while((pdev = pci_get_device(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID, pdev))) {
-+		if((pdev->class >> 16) != PCI_BASE_CLASS_DISPLAY)  /* XXX: should we
-use PCI_CLASS_DISPLAY_VGA? */
-+			continue;
-+
-+		driver_data->memstart = pdev->resource[0].start;
-+		driver_data->memlen = pdev->resource[0].end - pdev->resource[0].start
-+ 1;
-+		if (debug)
-+			printk(KERN_DEBUG "Found video device, memstart=0x%lx, memlen=0x%lx\n",
-+			       driver_data->memstart, driver_data->memlen);
-+		return 1;
-+	}
-+
-+	driver_data = NULL;
-+	printk(KERN_ERR "mbp_nvidia_bl: Couldn't find PCI device\n");
-+
-+	return 0;
-+}
-+
-+
-+
- static const struct dmi_system_id __initdata mbp_device_table[] = {
- 	{
- 		.callback	= mbp_dmi_match,
-@@ -281,27 +367,35 @@
- 		},
- 		.driver_data	= (void *)&nvidia_chipset_data,
- 	},
--	{
--		.callback	= mbp_dmi_match,
--		.ident		= "MacBookPro 5,5",
--		.matches	= {
--			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5,5"),
--		},
--		.driver_data	= (void *)&nvidia_chipset_data,
--	},
-+ 	{
-+ 		.callback	= mbp_dmi_match_mmio,
-+ 		.ident		= "MacBookPro 5,5",
-+ 		.matches	= {
-+ 			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-+ 			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5,5"),
-+ 		},
-+ 		.driver_data	= (void *)&nvidia_chipset_data_mmio,
-+ 	},
- 	{ }
- };
-
- static int __init mbp_init(void)
- {
- 	struct backlight_properties props;
--	if (!dmi_check_system(mbp_device_table))
-+ 	if (!dmi_check_system(mbp_device_table) || !driver_data)
- 		return -ENODEV;
-
--	if (!request_region(driver_data->iostart, driver_data->iolen,
-+ 	if (driver_data->iolen != 0) {
-+ 		if (!request_region(driver_data->iostart, driver_data->iolen,
- 						"Macbook Pro backlight"))
- 		return -ENXIO;
-+ 	} else if (driver_data->memlen != 0) {
-+ 		driver_data->membase = ioremap(driver_data->memstart,
-+ 						driver_data->memlen);
-+
-+ 		if (!driver_data->membase)
-+ 			return -ENXIO;
-+ 	}
-
- 	memset(&props, 0, sizeof(struct backlight_properties));
- 	props.max_brightness = 15;
-@@ -310,7 +404,11 @@
- 							 &driver_data->backlight_ops,
- 							 &props);
- 	if (IS_ERR(mbp_backlight_device)) {
--		release_region(driver_data->iostart, driver_data->iolen);
-+ 		if (driver_data->iolen != 0)
-+ 			release_region(driver_data->iostart, driver_data->iolen);
-+ 		else if (driver_data->memlen != 0)
-+ 			iounmap(driver_data->membase);
-+
- 		return PTR_ERR(mbp_backlight_device);
- 	}
-
-@@ -325,7 +423,10 @@
- {
- 	backlight_device_unregister(mbp_backlight_device);
-
--	release_region(driver_data->iostart, driver_data->iolen);
-+	if (driver_data->iolen != 0)
-+		release_region(driver_data->iostart, driver_data->iolen);
-+	else if (driver_data->membase)
-+		iounmap(driver_data->membase);
- }
-
- module_init(mbp_init);
-
-
-Thank you for your time
--- 
-Martin Filip
-e-mail: nexus@smoula.net
-jabberID: nexus@smoula.net
-http://www.smoula.net
