@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155Ab0GEIq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:46:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47262 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758115Ab0GEIq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:46:26 -0400
-Date: Mon, 5 Jul 2010 08:45:58 GMT
-From: tip-bot for Thavidu Ranatunga <tharan@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
-       tharan@au1.ibm.com, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, imunsie@au1.ibm.com, tglx@linutronix.de,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, tharan@au1.ibm.com,
-       paulus@samba.org, acme@redhat.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, imunsie@au1.ibm.com,
-       mingo@elte.hu
-In-Reply-To: <1278316815-6099-2-git-send-email-tharan@au1.ibm.com>
-References: <1278316815-6099-2-git-send-email-tharan@au1.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Version String fix, for fallback if not from git
-Message-ID: <tip-869599ceda4a035cdb3345c563b74cdeef10f790@git.kernel.org>
-Git-Commit-ID: 869599ceda4a035cdb3345c563b74cdeef10f790
-X-Mailer: tip-git-log-daemon
+	id S1758200Ab0GEIsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 04:48:12 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:56208 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758166Ab0GEIsJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 04:48:09 -0400
+Date: Mon, 5 Jul 2010 17:46:29 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] hugetlb: add allocate function for hugepage migration
+Message-ID: <20100705084629.GC29648@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1278049646-29769-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20100702090854.GD12221@basil.fritz.box>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-2022-jp
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 05 Jul 2010 08:45:58 +0000 (UTC)
+In-Reply-To: <20100702090854.GD12221@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  869599ceda4a035cdb3345c563b74cdeef10f790
-Gitweb:     http://git.kernel.org/tip/869599ceda4a035cdb3345c563b74cdeef10f790
-Author:     Thavidu Ranatunga <tharan@au1.ibm.com>
-AuthorDate: Mon, 5 Jul 2010 18:00:15 +1000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 5 Jul 2010 10:42:58 +0200
+On Fri, Jul 02, 2010 at 11:08:54AM +0200, Andi Kleen wrote:
+> On Fri, Jul 02, 2010 at 02:47:22PM +0900, Naoya Horiguchi wrote:
+> > We can't use existing hugepage allocation functions to allocate hugepage
+> > for page migration, because page migration can happen asynchronously with
+> > the running processes and page migration users should call the allocation
+> > function with physical addresses (not virtual addresses) as arguments.
+> 
+> I looked through this patch and didn't see anything bad. Some more
+> eyes familiar with hugepages would be good though.
 
-perf: Version String fix, for fallback if not from git
+Yes.
 
-This gets rid of the default version fallback for Perf and
-changes it so that it returns the version of the kernel from
-it's Makefile (if sources were not from git, ie. if it was
-downloaded from a tarball)
+> Since there are now so many different allocation functions some
+> comments on when they should be used may be useful too
 
-Signed-off-by: Thavidu Ranatunga <tharan@au1.ibm.com>
-Acked-by: Ian Munsie <imunsie@au1.ibm.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-LKML-Reference: <1278316815-6099-2-git-send-email-tharan@au1.ibm.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- tools/perf/util/PERF-VERSION-GEN |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
+OK. How about this?
 
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index 1b32e8c..97d7656 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -5,17 +5,13 @@ if [ $# -eq 1 ]  ; then
- fi
- 
- GVF=${OUTPUT}PERF-VERSION-FILE
--DEF_VER=v0.0.2.PERF
- 
- LF='
- '
- 
--# First see if there is a version file (included in release tarballs),
--# then try git-describe, then default.
--if test -f version
--then
--	VN=$(cat version) || VN="$DEF_VER"
--elif test -d ../../.git -o -f ../../.git &&
-+# First check if there is a .git to get the version from git describe
-+# otherwise try to get the version from the kernel makefile
-+if test -d ../../.git -o -f ../../.git &&
- 	VN=$(git describe --abbrev=4 HEAD 2>/dev/null) &&
- 	case "$VN" in
- 	*$LF*) (exit 1) ;;
-@@ -27,7 +23,12 @@ elif test -d ../../.git -o -f ../../.git &&
- then
- 	VN=$(echo "$VN" | sed -e 's/-/./g');
- else
--	VN="$DEF_VER"
-+	eval `grep '^VERSION\s*=' ../../Makefile|tr -d ' '`
-+	eval `grep '^PATCHLEVEL\s*=' ../../Makefile|tr -d ' '`
-+	eval `grep '^SUBLEVEL\s*=' ../../Makefile|tr -d ' '`
-+	eval `grep '^EXTRAVERSION\s*=' ../../Makefile|tr -d ' '`
-+
-+	VN="${VERSION}.${PATCHLEVEL}.${SUBLEVEL}${EXTRAVERSION}"
- fi
- 
- VN=$(expr "$VN" : v*'\(.*\)')
++/*
++ * This allocation function is useful in the context where vma is irrelevant.
++ * E.g. soft-offlining uses this function because it only cares physical
++ * address of error page.
++ */
++struct page *alloc_huge_page_node(struct hstate *h, int nid)
++{
+
+BTW, I don't like this function name very much.
+Since the most significant difference of this function to alloc_huge_page()
+is lack of vma argument, so I'm going to change the name to
+alloc_huge_page_no_vma_node() in the next version if it is no problem.
+
+Or, since the postfix like "_no_vma" is verbose, I think it might be
+a good idea to rename present alloc_huge_page() to alloc_huge_page_vma().
+Is this worthwhile?
+
+Thanks,
+Naoya Horiguchi
