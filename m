@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496Ab0GEIBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:01:24 -0400
+	id S1757139Ab0GEIBk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 04:01:40 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:37734 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463Ab0GEIBW (ORCPT
+	with ESMTP id S1752800Ab0GEIBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:01:22 -0400
+	Mon, 5 Jul 2010 04:01:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:mime-version
          :content-type:content-transfer-encoding;
-        b=KDzXTDxWcjELdc5l8cfA9bZRql3fn49B1YpRx/zNsc5PjfGcUQjzyMJYVoas5IJhVM
-         dapQHzxBpOA+VUVLfMdtgTbS+aspULlp2IZM1PmqLxrd/2z/inBBiukX2ch9c0un1ooR
-         wPrdQ+xsUX9v1F3+01RzbORdf1HkO+ASWmJg4=
+        b=VVeXkgACr4KcSqmw3wJhtjn5YFV0kC1wri2Vl5COhuA3L0gI7zALroTl4VEWnCgQ8K
+         wUERF+vXh62v0NoPVg1QS69adN/87YX174uSIheGugsULcmSTJYwj/Oz22LCaDzcTkHE
+         9anW1p/rLZ1JfFt0ZaeMHcuWEzDqcmmNoPvWA=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: Steve French <sfrench@samba.org>, Jeff Layton <jlayton@redhat.com>,
-       Suresh Jayaraman <sjayaraman@suse.de>, linux-cifs@vger.kernel.org,
-       samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] cifs: silence compiler warning
-Date: Mon,  5 Jul 2010 12:01:09 +0400
-Message-Id: <1278316870-29112-1-git-send-email-segooon@gmail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>, Bing Zhao <bzhao@marvell.com>,
+       Ben Hutchings <ben@decadent.org.uk>,
+       =?UTF-8?q?Andr=C3=A9=20Goddard=20Rosa?= <andre.goddard@gmail.com>,
+       Julia Lawall <julia@diku.dk>, linux-bluetooth@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] bluetooth: btmrvl_sdio: silence warning
+Date: Mon,  5 Jul 2010 12:01:22 +0400
+Message-Id: <1278316883-29784-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -30,30 +32,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If buf is NULL then ppdata is unitialized after exit from validate_ntransact().
-In this case we do not use ppdata, but compiler warns us. Make it happy.
+Clone checking of ret to simplify the code.
 
 This patch silences a compiler warning:
-fs/cifs/cifssmb.c: In function ‘CIFSSMBGetCIFSACL’:
-fs/cifs/cifssmb.c:3082: warning: ‘pdata’ may be used uninitialized in this function
+drivers/bluetooth/btmrvl_sdio.c: In function ‘btmrvl_sdio_verify_fw_download’:
+drivers/bluetooth/btmrvl_sdio.c:80: warning: ‘fws1’ may be used uninitialized in this function
+drivers/bluetooth/btmrvl_sdio.c:80: note: ‘fws1’ was declared here
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- fs/cifs/cifssmb.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/bluetooth/btmrvl_sdio.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
-index c65c341..22805e2 100644
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -2506,6 +2506,7 @@ validate_ntransact(char *buf, char **ppparm, char **ppdata,
+diff --git a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
+index df0773e..47f0f91 100644
+--- a/drivers/bluetooth/btmrvl_sdio.c
++++ b/drivers/bluetooth/btmrvl_sdio.c
+@@ -83,10 +83,10 @@ static int btmrvl_sdio_read_fw_status(struct btmrvl_sdio_card *card, u16 *dat)
+ 	*dat = 0;
  
- 	*pdatalen = 0;
- 	*pparmlen = 0;
-+	*ppdata = 0;
+ 	fws0 = sdio_readb(card->func, CARD_FW_STATUS0_REG, &ret);
++	if (ret)
++		return -EIO;
  
- 	if (buf == NULL)
- 		return -EINVAL;
+-	if (!ret)
+-		fws1 = sdio_readb(card->func, CARD_FW_STATUS1_REG, &ret);
+-
++	fws1 = sdio_readb(card->func, CARD_FW_STATUS1_REG, &ret);
+ 	if (ret)
+ 		return -EIO;
+ 
 -- 
 1.7.0.4
 
