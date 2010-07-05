@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab0GEKdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 06:33:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43685 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305Ab0GEKdk convert rfc822-to-8bit (ORCPT
+	id S1756587Ab0GEKjO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 06:39:14 -0400
+Received: from exprod5og113.obsmtp.com ([64.18.0.26]:54221 "EHLO
+	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944Ab0GEKjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 06:33:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=u9yG9JEPyZ7RR3Eo1Rh63XXlEDMCqXHNB0/CywHhRxE2fqSVGbLVZbHneM0fX0T6ol
-         ui53tjYb21v0Phj2E2gGRHeAfKqD19K9mE9J8J8jDUI3S0FGawYZFBK47Xw+6iSgnSIa
-         HGgga32ekrq+roEqWGErqSTmfgH7ly45ZEb+c=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 17/33] Removing dead SX1_OLD_FLASH
-Date: Mon, 5 Jul 2010 12:31:13 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.33-2-amd64; KDE/4.4.3; x86_64; ; )
-Cc: Christoph Egger <siccegge@cs.fau.de>,
-       Russell King <linux@arm.linux.org.uk>, Kalle Valo <kalle.valo@iki.fi>,
-       Ladislav Michl <ladis@linux-mips.org>,
-       Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>, linux-omap@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-References: <cover.1277911345.git.siccegge@cs.fau.de> <201006302024.47025.marek.vasut@gmail.com> <20100705083346.GI15951@atomide.com>
-In-Reply-To: <20100705083346.GI15951@atomide.com>
+	Mon, 5 Jul 2010 06:39:12 -0400
+Message-ID: <4C31B620.4060301@ge.com>
+Date: Mon, 05 Jul 2010 11:38:24 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201007051231.14171.marek.vasut@gmail.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+CC: Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       Julia Lawall <julia@diku.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 21/25] vme_ca91cx42: remove casts from void*
+References: <1277806577-31418-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1277806577-31418-1-git-send-email-segooon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne Po 5. července 2010 10:33:48 Tony Lindgren napsal(a):
-> * Marek Vasut <marek.vasut@gmail.com> [100630 21:21]:
-> > Dne St 30. června 2010 17:59:25 Christoph Egger napsal(a):
-> > > SX1_OLD_FLASH doesn't exist in Kconfig, therefore removing all
-> > > references for it from the source code.
-> > 
-> > There were two models of the phone made, you can toggle between old and
-> > new version. Maybe better documentation won't hurt.
-> 
-> Sounds like this should be done dynamically based on omap_rev,
-> or some cmdline option from the bootloader? Not applying this
-> one.
-> 
-> Tony
+Kulikov Vasiliy wrote:
+> Remove unnesessary casts from void*.
+>
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+>   
+Seems ok, cheers,
 
-Yea, the russian guy who ported this is gone I guess though. Just maybe I can 
-get my hands on linux-powered SX1 and try looking into this, but I can't promise 
-it'll be any soon.
+Signed-off-by: Martyn Welch <martyn.welch@ge.com>
 
-Cheers
+
+> ---
+>  drivers/staging/vme/bridges/vme_ca91cx42.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
+> index 0c82eb4..ce05ffa 100644
+> --- a/drivers/staging/vme/bridges/vme_ca91cx42.c
+> +++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
+> @@ -961,11 +961,11 @@ int ca91cx42_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
+>  
+>  	if (dest->type == VME_DMA_VME) {
+>  		entry->descriptor.dctl |= CA91CX42_DCTL_L2V;
+> -		vme_attr = (struct vme_dma_vme *)dest->private;
+> -		pci_attr = (struct vme_dma_pci *)src->private;
+> +		vme_attr = dest->private;
+> +		pci_attr = src->private;
+>  	} else {
+> -		vme_attr = (struct vme_dma_vme *)src->private;
+> -		pci_attr = (struct vme_dma_pci *)dest->private;
+> +		vme_attr = src->private;
+> +		pci_attr = dest->private;
+>  	}
+>  
+>  	/* Check we can do fullfill required attributes */
+>   
+
+
+-- 
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square, Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+
