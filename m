@@ -1,69 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab0GEObG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 10:31:06 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:54860 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387Ab0GEObD (ORCPT
+	id S1756224Ab0GEOhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 10:37:11 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:36817 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045Ab0GEOhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 10:31:03 -0400
-Subject: Re: [PATCH -tip 0/4] perf-probe updates: string support, etc.
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Chase Douglas <chase.douglas@canonical.com>
-In-Reply-To: <20100519195717.2885.90799.stgit@localhost6.localdomain6>
-Date: Mon, 5 Jul 2010 10:30:47 -0400
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>
-Content-Transfer-Encoding: 7bit
-Message-Id: <56FC4434-EA6C-4A0C-A95B-3D7BE818774B@canonical.com>
-References: <20100519195717.2885.90799.stgit@localhost6.localdomain6>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-X-Mailer: Apple Mail (2.1081)
+	Mon, 5 Jul 2010 10:37:09 -0400
+Date: Mon, 05 Jul 2010 16:38:04 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv2] USB: gadget: storage_common: comments updated
+In-reply-to: <4C3061E9.8060103@ru.mvista.com>
+To: linux-usb@vger.kernel.org
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>, Greg KH <greg@kroah.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <dd71cb106d8ded3a1d204102ffbe67f089fff923.1278324780.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <35e07b59ee0738c2019d2b81958890a472941a0e.1277902597.git.m.nazarewicz@samsung.com>
+ <4C3061E9.8060103@ru.mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 19, 2010, at 3:57 PM, Masami Hiramatsu wrote:
-> Hi,
-> 
-> Here is a series of patches which improves perf probe to
-> add below features. I cleared some coding style issues.
-> 
-> - String support, which enables dynamic events to trace string
->  variables instead of its address.
-> 
-> - Fixed-index array entry support, which allows user to trace
->  an array entry with digit index, e.g. array[0].
-> 
-> - Global/static variable support, which allows user to trace
->  global or static variables, as same as local one.
-> 
-> 
-> TODOs (possible features):
->  - Support dynamic array-indexing (var[var2])
->  - Support force type-casting ((type)var)
->  - Show what deta-structure member is assigned to each argument.
->  - Better support for probes on modules
->  - More debugger like enhancements(%next, --disasm, etc.)
-> 
-> Thank you,
-> 
-> ---
-> 
-> Masami Hiramatsu (4):
->      perf probe: Support static and global variables
->      perf probe: Support tracing an entry of array
->      perf probe: Support "string" type
->      tracing/kprobes: Support "string" type
+Updated comment to describe why printing macros are needed even
+thought they are copied form the composite.h.  Also, made multiline
+comments follow the coding standard.
 
-What's the status of these patches? They seem very useful to me, but I
-don't see them in Arnaldo's tree at git.kernel.org.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+---
+> Michal Nazarewicz wrote:
+>> -/* Keep those macros in sync with thos in
+>> - * include/linux/ubs/composite.h or else GCC will complain.  If they
+>> +/*
+>> + * Keep those macros in sync with thos in
 
-Thanks,
+On Sun, 04 Jul 2010 12:26:49 +0200, Sergei Shtylyov wrote:
+>     s/thos/those/ while at, please.
 
--- Chase
+Haven't thought about spell checking the comments.  Fixed.
+
+>> + * No checking if those symbols is defined is performed because
+>                                     ^^ are
+
+Rewritten the paragragh a bit.
+
+>     Hm, why reformat the paragraph?
+
+Fixed.
+
+Thanks for the comments.
+
+ drivers/usb/gadget/storage_common.c |   69 ++++++++++++++++++++++++-----------
+ 1 files changed, 48 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index 04c462f..08d9628 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -57,10 +57,12 @@
+ #include <asm/unaligned.h>
+ 
+ 
+-/* Thanks to NetChip Technologies for donating this product ID.
++/*
++ * Thanks to NetChip Technologies for donating this product ID.
+  *
+  * DO NOT REUSE THESE IDs with any other driver!!  Ever!!
+- * Instead:  allocate your own, using normal USB-IF procedures. */
++ * Instead:  allocate your own, using normal USB-IF procedures.
++ */
+ #define FSG_VENDOR_ID	0x0525	/* NetChip */
+ #define FSG_PRODUCT_ID	0xa4a5	/* Linux-USB File-backed Storage Gadget */
+ 
+@@ -84,14 +86,27 @@
+ #define LWARN(lun, fmt, args...)  dev_warn(&(lun)->dev, fmt, ## args)
+ #define LINFO(lun, fmt, args...)  dev_info(&(lun)->dev, fmt, ## args)
+ 
+-/* Keep those macros in sync with thos in
+- * include/linux/ubs/composite.h or else GCC will complain.  If they
++/*
++ * Keep those macros in sync with those in
++ * include/linux/usb/composite.h or else GCC will complain.  If they
+  * are identical (the same names of arguments, white spaces in the
+  * same places) GCC will allow redefinition otherwise (even if some
+- * white space is removed or added) warning will be issued.  No
+- * checking if those symbols is defined is performed because warning
+- * is desired when those macros were defined by someone else to mean
+- * something else. */
++ * white space is removed or added) warning will be issued.
++ *
++ * Those macros are needed here because File Storage Gadget does not
++ * include the composite.h header.  For composite gadgets those macros
++ * are redundant since composite.h is included any way.
++ *
++ * One could check whether those macros are already defined (which
++ * would indicate composite.h had been included) or not (which would
++ * indicate we were in FSG) but this is not done because a warning is
++ * desired if definitions here differ from the ones in composite.h.
++ *
++ * We want the definitions to match and be the same in File Storage
++ * Gadget as well as Mass Storage Function (and so composite gadgets
++ * using MSF).  If someone changes them in composite.h it will produce
++ * a warning in this file when building MSF.
++ */
+ #define DBG(d, fmt, args...)     dev_dbg(&(d)->gadget->dev , fmt , ## args)
+ #define VDBG(d, fmt, args...)    dev_vdbg(&(d)->gadget->dev , fmt , ## args)
+ #define ERROR(d, fmt, args...)   dev_err(&(d)->gadget->dev , fmt , ## args)
+@@ -313,9 +328,11 @@ struct fsg_buffhd {
+ 	enum fsg_buffer_state		state;
+ 	struct fsg_buffhd		*next;
+ 
+-	/* The NetChip 2280 is faster, and handles some protocol faults
++	/*
++	 * The NetChip 2280 is faster, and handles some protocol faults
+ 	 * better, if we don't submit any short bulk-out read requests.
+-	 * So we will record the intended request length here. */
++	 * So we will record the intended request length here.
++	 */
+ 	unsigned int			bulk_out_intended_length;
+ 
+ 	struct usb_request		*inreq;
+@@ -395,8 +412,10 @@ fsg_intf_desc = {
+ 	.iInterface =		FSG_STRING_INTERFACE,
+ };
+ 
+-/* Three full-speed endpoint descriptors: bulk-in, bulk-out,
+- * and interrupt-in. */
++/*
++ * Three full-speed endpoint descriptors: bulk-in, bulk-out, and
++ * interrupt-in.
++ */
+ 
+ static struct usb_endpoint_descriptor
+ fsg_fs_bulk_in_desc = {
+@@ -459,7 +478,7 @@ static struct usb_descriptor_header *fsg_fs_function[] = {
+  *
+  * That means alternate endpoint descriptors (bigger packets)
+  * and a "device qualifier" ... plus more construction options
+- * for the config descriptor.
++ * for the configuration descriptor.
+  */
+ static struct usb_endpoint_descriptor
+ fsg_hs_bulk_in_desc = {
+@@ -547,8 +566,10 @@ static struct usb_gadget_strings	fsg_stringtab = {
+ 
+  /*-------------------------------------------------------------------------*/
+ 
+-/* If the next two routines are called while the gadget is registered,
+- * the caller must own fsg->filesem for writing. */
++/*
++ * If the next two routines are called while the gadget is registered,
++ * the caller must own fsg->filesem for writing.
++ */
+ 
+ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
+ {
+@@ -587,8 +608,10 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
+ 		goto out;
+ 	}
+ 
+-	/* If we can't read the file, it's no good.
+-	 * If we can't write the file, use it read-only. */
++	/*
++	 * If we can't read the file, it's no good.
++	 * If we can't write the file, use it read-only.
++	 */
+ 	if (!filp->f_op || !(filp->f_op->read || filp->f_op->aio_read)) {
+ 		LINFO(curlun, "file not readable: %s\n", filename);
+ 		goto out;
+@@ -646,8 +669,10 @@ static void fsg_lun_close(struct fsg_lun *curlun)
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-/* Sync the file data, don't bother with the metadata.
+- * This code was copied from fs/buffer.c:sys_fdatasync(). */
++/*
++ * Sync the file data, don't bother with the metadata.
++ * This code was copied from fs/buffer.c:sys_fdatasync().
++ */
+ static int fsg_lun_fsync_sub(struct fsg_lun *curlun)
+ {
+ 	struct file	*filp = curlun->filp;
+@@ -728,8 +753,10 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
+ 	if (sscanf(buf, "%d", &i) != 1)
+ 		return -EINVAL;
+ 
+-	/* Allow the write-enable status to change only while the backing file
+-	 * is closed. */
++	/*
++	 * Allow the write-enable status to change only while the
++	 * backing file is closed.
++	 */
+ 	down_read(filesem);
+ 	if (fsg_lun_is_open(curlun)) {
+ 		LDBG(curlun, "read-only status change prevented\n");
+-- 
+1.7.1
+
