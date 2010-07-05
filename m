@@ -1,53 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab0GEOCv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 10:02:51 -0400
-Received: from mail.deathmatch.net ([72.66.92.28]:3176 "EHLO
-	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578Ab0GEOCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 10:02:50 -0400
-Date: Mon, 5 Jul 2010 10:00:08 -0400
-From: me@bobcopeland.com
-To: Davidlohr Bueso <dave.bueso@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-karma-devel@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org
-Subject: Re: [linux-karma-devel] [PATCH] omfs: fix memory leak
-Message-ID: <20100705140008.GA3378@hash.localnet>
-References: <1278210828.27014.2.camel@cowboy> <20100704113711.GA15067@hash.localnet> <1278306759.3811.24.camel@cowboy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278306759.3811.24.camel@cowboy>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757338Ab0GEOK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 10:10:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24152 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755675Ab0GEOKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 10:10:25 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <A4F0A2FD-2E7E-4694-BBF0-054DE680B0CE@dilger.ca>
+References: <A4F0A2FD-2E7E-4694-BBF0-054DE680B0CE@dilger.ca> <20100630233614.32422.97038.stgit@warthog.procyon.org.uk>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+       linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] Add a pair of system calls to make extended file stats available [ver #3]
+Date: Mon, 05 Jul 2010 15:10:15 +0100
+Message-ID: <4055.1278339015@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 01:12:39AM -0400, Davidlohr Bueso wrote:
-> Isn't put_super() called to free data when things run "normally", like
-> for unmounting? So this function does two things:
+Andreas Dilger <adilger@dilger.ca> wrote:
 
-Ok, I checked it out and you are right, FS put_super is only called
-after successful mount so there is a leak.  I'll take your patch,
-but please:
-
- - remove the /* success */ comment, IMO it's just noise
- - write the if conditional as the more usual:
-
-        if (ret)
-
-> kfree(sbi->s_imap)
-> kfree(sbi)
+> > Add a pair of system calls to make extended file stats available,
+> > including file creation time, inode version and data version where
+> > available through the underlying filesystem.
 > 
-> However, in omfs_get_imap() 'sbi->s_imap' is freed upon failure, so
-> wouldn't this also crash on the first kfree in omfs_put_super()?
+> I think we could spend forever discussing minor details (e.g. if it would be
+> better to put the st_result_mask as the first field, or at least before
+> st_gen), but it looks fairly reasonable as-is.
 
-This is ok, since sbi->s_imap is set to null in that case and
-kfree(NULL) is fine.
+I just arranged things such that all the fields of the same type were together
+for packing purposes, but st_result_mask could easily be brought to the front
+without upsetting structure packing.
 
-Thanks for the review!
- 
--- 
-Bob Copeland %% www.bobcopeland.com
+> > When the system call is executed, the request_mask bitmask is read from
+> > the parameter block to work out what the user is requesting.  If params is
+> > NULL, then request_mask will be assumed to be XSTAT_REQUEST__GET_ANYWAY.
+> 
+> I think the only reasonable default if params == NULL is to return
+> XSTAT_REQUEST__BASIC_STATS.  The value of XSTAT_REQUEST__EXTENDED_STATS may
+> (AFAIK) change in the kernel in the future as the struct xstat gets more
+> fields, unless that is not the intention.  The other option would be to
+> rename this mask XSTAT_REQUEST__BASIC_XSTATS to indicate it represents
+> (forever) all of the fields in the original struct xstat.
 
+This is reasonable.  I've made that change.  I've also fixed the commit message
+to not mention XSTAT_REQUEST__GET_ANYWAY anymore.
+
+> > +int afs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+> > {
+> > +
+> > +	stat->result_mask |= XSTAT_REQUEST_GEN | XSTAT_REQUEST_DATA_VERSION;
+> > +	stat->gen = inode->i_generation;
+> > +	stat->data_version = inode->i_version;
+> 
+> You didn't update the field names in any of the kernel patches,
+
+What do you mean?  That's the kstat struct, not the xstat struct being set in
+your excerpt.  Certainly 'inode_version' has become 'gen' in it and
+'result_mask' now appears.
+
+> > @@ -994,6 +994,8 @@ int ecryptfs_getattr(struct vfsmount *mnt,
+> > +	lower_stat.query_flags = stat->query_flags;
+> > +	lower_stat.request_mask = stat->request_mask | XSTAT_REQUEST_BLOCKS;
+> > 	rc = vfs_getattr(ecryptfs_dentry_to_lower_mnt(dentry),
+> > 			 ecryptfs_dentry_to_lower(dentry), &lower_stat);
+> 
+> 
+> Likewise, this doesn't have the newer field names.
+
+Doesn't it?  Where?
+
+I'm unsure as to whether I should copy across the btime, data_version and gen
+fields here.
+
+
+> I also don't understand why this is adding in the XSTAT_REQUEST_BLOCKS mask
+> when that isn't requested by the caller?
+
+Because it is wanted by ecryptfs_getattr:
+
+ 		stat->blocks = lower_stat.blocks;
+
+though possibly this should be contingent on XSTAT_REQUEST_BLOCKS being set in
+stat->request_mask.
+
+> > int nfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+> > {
+> > +	if ((force || stat->request_mask & (XSTAT_REQUEST_MTIME |
+> > +					    XSTAT_REQUEST_CTIME |
+> > +					    XSTAT_REQUEST_DATA_VERSION
+> > +					    )) &&
+> > +	    S_ISREG(inode->i_mode)
+> > +	    ) {
+> 
+> Minor nit - the parenthesis placement here looks decidedly unLinuxy.  Normally I think it should look like:
+
+It makes it easier to see that the S_ISREG is part of the if-condition and not
+part of the body.
+
+David
