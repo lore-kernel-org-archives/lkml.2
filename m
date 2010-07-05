@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab0GENuN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 09:50:13 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:41309 "EHLO gir.skynet.ie"
+	id S1755007Ab0GENvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 09:51:16 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:48075 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752495Ab0GENuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 09:50:10 -0400
-Date: Mon, 5 Jul 2010 14:49:49 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
-Message-ID: <20100705134949.GC13780@csn.ul.ie>
-References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie> <1277811288-5195-13-git-send-email-mel@csn.ul.ie> <20100702125155.69c02f85.akpm@linux-foundation.org>
+	id S1752495Ab0GENvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 09:51:15 -0400
+Date: Mon, 5 Jul 2010 15:53:06 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Dan Kruchinin <dkruchinin@acm.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Fixed division by zero bug in kernel/padata.c
+Message-ID: <20100705135306.GP10072@secunet.com>
+References: <AANLkTimVTMsVkSBHWLve8t76-YkoSYposgv9wHir_wPa@mail.gmail.com>
+ <20100702125628.GK10072@secunet.com>
+ <AANLkTimH9IKkqqLADjUbycKD8bh4oX8oCxSDTCGxv4r1@mail.gmail.com>
+ <20100705131835.GN10072@secunet.com>
+ <AANLkTimvyUiQqAO_uBxTMTLRWdujDWKSo7WBuI7cPLKc@mail.gmail.com>
+ <20100705134357.GC6974@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100702125155.69c02f85.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100705134357.GC6974@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 05 Jul 2010 13:51:13.0486 (UTC) FILETIME=[21C3C6E0:01CB1C49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 12:51:55PM -0700, Andrew Morton wrote:
-> On Tue, 29 Jun 2010 12:34:46 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > When memory is under enough pressure, a process may enter direct
-> > reclaim to free pages in the same manner kswapd does. If a dirty page is
-> > encountered during the scan, this page is written to backing storage using
-> > mapping->writepage. This can result in very deep call stacks, particularly
-> > if the target storage or filesystem are complex. It has already been observed
-> > on XFS that the stack overflows but the problem is not XFS-specific.
+On Mon, Jul 05, 2010 at 09:43:57PM +0800, Herbert Xu wrote:
+> On Mon, Jul 05, 2010 at 05:35:32PM +0400, Dan Kruchinin wrote:
+> >
+> > > Both cases should be handled in the same way. So we could just
+> > > stop the instance if the cpumasks do not intersect, and enable
+> > > it as soon as they do intersect again. The padata instance would
+> > > refuse to do anything as long as the cpumasks do not intersect,
+> > > but it is still in a consistent state. Let me add the infrastructure
+> > > to handle this, then you can use it with your patches.
 > > 
-> > This patch prevents direct reclaim writing back pages by not setting
-> > may_writepage in scan_control. Instead, dirty pages are placed back on the
-> > LRU lists for either background writing by the BDI threads or kswapd. If
-> > in direct lumpy reclaim and dirty pages are encountered, the process will
-> > stall for the background flusher before trying to reclaim the pages again.
-> > 
-> > Memory control groups do not have a kswapd-like thread nor do pages get
-> > direct reclaimed from the page allocator. Instead, memory control group
-> > pages are reclaimed when the quota is being exceeded or the group is being
-> > shrunk. As it is not expected that the entry points into page reclaim are
-> > deep call chains memcg is still allowed to writeback dirty pages.
+> > Ok, get it.
 > 
-> I already had "[PATCH 01/14] vmscan: Fix mapping use after free" and
-> I'll send that in for 2.6.35.
+> So I should wait for another patch, right?
 > 
 
-Perfect, thanks.
-
-> I grabbed [02/14] up to [11/14].  Including "[PATCH 06/14] vmscan: kill
-> prev_priority completely", grumpyouallsuck.
-> 
-> I wimped out at this, "Do not writeback pages in direct reclaim".  It
-> really is a profound change and needs a bit more thought, discussion
-> and if possible testing which is designed to explore possible pathologies.
-> 
-
-Ok, that's reasonable as I'm still working on that patch. For example, the
-patch disabled anonymous page writeback which is unnecessary as the stack
-usage for anon writeback is less than file writeback. Second, using systemtap,
-I was able to see that file-backed dirty pages have a tendency to be near the
-end of the LRU even though they are a small percentage of the overall pages
-in the LRU. I'm hoping to figure out why this is as it would make avoiding
-writeback a lot less controversial.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Right.
