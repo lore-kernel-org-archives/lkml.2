@@ -1,67 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab0GEVnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 17:43:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32786 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755645Ab0GEVnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 17:43:09 -0400
-Date: Mon, 5 Jul 2010 23:43:04 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 2.6.35-rc4 - CONFIG_LOCALVERSION ignored?
-Message-ID: <20100705214304.GA24291@sepie.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007052325.56971.rjw@sisk.pl>
- <20100705103941.9b57282d.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756260Ab0GEWCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 18:02:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64324 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754951Ab0GEWCp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 18:02:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:content-type:date:message-id
+         :mime-version:x-mailer:content-transfer-encoding;
+        b=ANNImmpI1jmuR06GYJ1O6NV+J2u3RTSb0FHBI1s4sQoYaNl3icOlt5jTtH/4IawCr9
+         tWzxIlrgDbFui7zscE/32kCctpZ1KOqNXANP6GiaLlR8Z+6DzGo1w9Ev65DBC+CUNXg6
+         ISNZr4ja2D/ztgNjVtTj5S5SF3dE8xkuCIxJs=
+Subject: [PATCH 2/2] Staging: dt3155: fix coding style issues in
+ dt3155_drv.c
+From: Joe Eloff <kagen101@gmail.com>
+Reply-To: kagen101@gmail.com
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Simon Horman <horms@verge.net.au>
+Cc: devel <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Jul 2010 00:02:25 +0200
+Message-ID: <1278367345.5396.64.camel@dermezel>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 11:25:56PM +0200, Rafael J. Wysocki wrote:
-> Hmm.  Am I dong anything particularly wrong, or is CONFIG_LOCALVERSION ignored
-> now, as it seems?
+>From eba804d73097793329e857bebb31bd1de39cad5c Mon Sep 17 00:00:00 2001
+From: Joe Eloff <kagen101@gmail.com>
+Date: Mon, 5 Jul 2010 23:53:36 +0200
+Subject: [PATCH 2/2] Staging: dt3155: fix coding style issues in
+dt3155_drv.c
 
-(also reported by Stephen earlier that day)
+This is a patch to the dt3155_drv.c file that fixes up last errors found
+by the checkpatch.pl tool.
+Signed-off-by: Joe Eloff <kagen101@gmail.com>
+---
+ drivers/staging/dt3155/dt3155_drv.c |   33
+++++++++++++++++++---------------
+ 1 files changed, 18 insertions(+), 15 deletions(-)
 
-On Mon, Jul 05, 2010 at 10:39:41AM +1000, Stephen Rothwell wrote:
-> After merging the libata tree, today's linux-next build produced this
-> warning (but it should be a failure ...):
-> 
-> /bin/sh: scripts/setlocalversion: No such file or directory
-> 
-> Probably introduced by commit 0a564b2645c8766a669c55bde1f1ef5b0518caec
-> ("kbuild: Propagate LOCALVERSION= down to scripts/setlocalversion").
-> 
-> That commit really isn't ready for inclusion in Linus' tree ...
-
-
-Oops, I'm an idiot. The below patch should fix localversion again:
-
-From: Michal Marek <mmarek@suse.cz>
-Subject: [PATCH] kbuild: Fix path to scripts/setlocalversion
-
-Commit 0a564b2 broke LOCALVERSION for O=... builds. Ouch.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-
-diff --git a/Makefile b/Makefile
-index 12ab175..df16c4f 100644
---- a/Makefile
-+++ b/Makefile
-@@ -886,7 +886,7 @@ $(vmlinux-dirs): prepare scripts
- # Store (new) KERNELRELASE string in include/config/kernel.release
- include/config/kernel.release: include/config/auto.conf FORCE
- 	$(Q)rm -f $@
--	$(Q)echo "$(KERNELVERSION)$$($(CONFIG_SHELL) scripts/setlocalversion $(srctree))" > $@
-+	$(Q)echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))" > $@
+diff --git a/drivers/staging/dt3155/dt3155_drv.c
+b/drivers/staging/dt3155/dt3155_drv.c
+index 75a2244..66db878 100644
+--- a/drivers/staging/dt3155/dt3155_drv.c
++++ b/drivers/staging/dt3155/dt3155_drv.c
+@@ -78,7 +78,7 @@ extern void printques(int);
+ MODULE_LICENSE("GPL");
+ 
+ /* Error variable.  Zero means no error. */
+-int dt3155_errno = 0;
++int dt3155_errno ;
+ 
+ #ifndef PCI_DEVICE_ID_INTEL_7116
+ #define PCI_DEVICE_ID_INTEL_7116 0x1223
+@@ -99,7 +99,7 @@ wait_queue_head_t dt3155_read_wait_queue[MAXBOARDS];
+ 
+ /* set to dynamicaly allocate, but it is tunable: */
+ /* insmod DT_3155 dt3155 dt3155_major=XX */
+-int dt3155_major = 0;
++int dt3155_major;
+ 
+ /* The minor numbers are 0 and 1 ... they are not tunable.
+  * They are used as the indices for the structure vectors,
+@@ -124,8 +124,8 @@ u32  dt3155_dev_open[MAXBOARDS] = {0
+ #endif
+ };
+ 
+-u32  ndevices = 0;
+-u32 unique_tag = 0;;
++u32  ndevices;
++u32 unique_tag;
  
  
- # Things we need to do before we recursively start building the kernel
+ /*
+@@ -827,8 +827,9 @@ static int find_PCI(void)
+ 		dts = &dt3155_status[pci_index++];
+ 
+ 		/* Is it really there? */
+-		if ((error = pci_read_config_word(pci_dev,
+-		    PCI_CLASS_DEVICE, &rev_device)))
++		error = pci_read_config_word(pci_dev,
++		    PCI_CLASS_DEVICE, &rev_device);
++		if (error)
+ 			continue;
+ 
+ 		/* Found a board */
+@@ -847,8 +848,9 @@ static int find_PCI(void)
+ 
+ 		/* Now, just go out and make sure that this/these device(s)
+ 		   is/are actually mapped into the kernel address space */
+-		if ((error = pci_read_config_dword(pci_dev, PCI_BASE_ADDRESS_0,
+-		    (u32 *) &base))) {
++		error = pci_read_config_dword(pci_dev, PCI_BASE_ADDRESS_0,
++		    (u32 *) &base);
++		if (error) {
+ 			printk(KERN_INFO "DT3155: Was not able to find device\n");
+ 			goto err;
+ 		}
+@@ -868,9 +870,9 @@ static int find_PCI(void)
+ 			printk(KERN_INFO "DT3155: Unable to remap control registers\n");
+ 			goto err;
+ 		}
+-
+-		if ((error = pci_read_config_byte(pci_dev,
+-		    PCI_INTERRUPT_LINE, &irq))) {
++		error = pci_read_config_byte(pci_dev,
++		    PCI_INTERRUPT_LINE, &irq);
++		if (error) {
+ 			printk(KERN_INFO "DT3155: Was not able to find device\n");
+ 			goto err;
+ 		}
+@@ -892,7 +894,7 @@ err:
+  return -EIO;
+ }
+ 
+-u32 allocatorAddr = 0;
++u32 allocatorAddr;
+ 
+ /*****************************************************
+  * init_module()
+@@ -942,15 +944,16 @@ int init_module(void)
+ 	}
+ 	/* Now let's find the hardware.  find_PCI() will set ndevices to the
+ 	 * number of cards found in this machine. */
+-
+-	if ((rcode = find_PCI()) != 0) {
++	rcode = find_PCI();
++	if (rcode != 0) {
+ 		printk(KERN_ERR "DT3155 error: find_PCI() failed to find dt3155
+board(s)\n");
+ 		unregister_chrdev(dt3155_major, "dt3155");
+ 		return rcode;
+ 	}
+ 
+ 	/* Ok, time to setup the frame buffers */
+-	if ((rcode = dt3155_setup_buffers(&allocatorAddr)) < 0) {
++	rcode = dt3155_setup_buffers(&allocatorAddr);
++	if (rcode < 0) {
+ 		printk(KERN_ERR "DT3155: Error: setting up buffer not large
+enough.");
+ 		unregister_chrdev(dt3155_major, "dt3155");
+ 		return rcode;
+-- 
+1.6.3.3
+
+
+
