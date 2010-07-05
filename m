@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758579Ab0GEMOV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 08:14:21 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52064 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758560Ab0GEMOR (ORCPT
+	id S1758555Ab0GEMOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 08:14:08 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47228 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758538Ab0GEMOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 08:14:17 -0400
+	Mon, 5 Jul 2010 08:14:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=wpTyDcaCK1Hjnx9oyuY2qfWyLjVi5l3v3SjFXz1ny0UWKYxVH9W1iiArxodBn3BlGO
-         IrD+UIkrH4jnIp6gsVmnAwMO6mRq9UIcb+xLks/sVsaVZ9zSrK1OAV3C6QqeYjvZLdcC
-         UGxOnSIGkYR7xoRwue04yZ0jE0IbboNz2ky3s=
+        b=BHTfr+geO1Xm0fAaYCkepcKDZVgY7kRNgHA9Z7phVy8uMvUYNEQL1Nj3WE7hiqChlh
+         guYxW6i6pOPAK8VKlyqDY6ntw0x0BMeiNrG2QFH4lF9wj7G5n/1finq3TK+0912MsAJO
+         gf2o2KFa6YsPemjSOEMvqfqkvz6M7pHAdKt2E=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Patrick McHardy <kaber@trash.net>, Tejun Heo <tj@kernel.org>,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mac89x0: Use the instance of net_device_stats from net_device.
-Date: Mon,  5 Jul 2010 16:14:09 +0400
-Message-Id: <1278332051-17760-1-git-send-email-segooon@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <eric.dumazet@gmail.com>, Jiri Pirko <jpirko@redhat.com>,
+       Denis Kirjanov <dkirjanov@kernel.org>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] ksz884x: Use the instance of net_device_stats from net_device.
+Date: Mon,  5 Jul 2010 16:13:58 +0400
+Message-Id: <1278332040-17160-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,129 +32,136 @@ we can remove the instance of this from the adapter structure.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/net/mac89x0.c |   52 +++++++++++++++++++++++++++---------------------
- 1 files changed, 29 insertions(+), 23 deletions(-)
+ drivers/net/ksz884x.c |   46 ++++++++++++++++++++++------------------------
+ 1 files changed, 22 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/net/mac89x0.c b/drivers/net/mac89x0.c
-index 69fa4ef..669b317 100644
---- a/drivers/net/mac89x0.c
-+++ b/drivers/net/mac89x0.c
-@@ -110,7 +110,6 @@ static unsigned int net_debug = NET_DEBUG;
- 
- /* Information that need to be kept for each board. */
- struct net_local {
+diff --git a/drivers/net/ksz884x.c b/drivers/net/ksz884x.c
+index f715348..1d998e1 100644
+--- a/drivers/net/ksz884x.c
++++ b/drivers/net/ksz884x.c
+@@ -1457,7 +1457,6 @@ struct dev_info {
+  * @adapter:		Adapter device information.
+  * @port:		Port information.
+  * @monitor_time_info:	Timer to monitor ports.
+- * @stats:		Network statistics.
+  * @proc_sem:		Semaphore for proc accessing.
+  * @id:			Device ID.
+  * @mii_if:		MII interface information.
+@@ -1471,7 +1470,6 @@ struct dev_priv {
+ 	struct dev_info *adapter;
+ 	struct ksz_port port;
+ 	struct ksz_timer_info monitor_timer_info;
 -	struct net_device_stats stats;
- 	int chip_type;		/* one of: CS8900, CS8920, CS8920M */
- 	char chip_revision;	/* revision letter of the chip ('A'...) */
- 	int send_cmd;		/* the propercommand used to send a packet. */
-@@ -444,13 +443,18 @@ static irqreturn_t net_interrupt(int irq, void *dev_id)
- 			net_rx(dev);
- 			break;
- 		case ISQ_TRANSMITTER_EVENT:
--			lp->stats.tx_packets++;
-+			dev->stats.tx_packets++;
- 			netif_wake_queue(dev);
--			if ((status & TX_OK) == 0) lp->stats.tx_errors++;
--			if (status & TX_LOST_CRS) lp->stats.tx_carrier_errors++;
--			if (status & TX_SQE_ERROR) lp->stats.tx_heartbeat_errors++;
--			if (status & TX_LATE_COL) lp->stats.tx_window_errors++;
--			if (status & TX_16_COL) lp->stats.tx_aborted_errors++;
-+			if ((status & TX_OK) == 0)
-+				dev->stats.tx_errors++;
-+			if (status & TX_LOST_CRS)
-+				dev->stats.tx_carrier_errors++;
-+			if (status & TX_SQE_ERROR)
-+				dev->stats.tx_heartbeat_errors++;
-+			if (status & TX_LATE_COL)
-+				dev->stats.tx_window_errors++;
-+			if (status & TX_16_COL)
-+				dev->stats.tx_aborted_errors++;
- 			break;
- 		case ISQ_BUFFER_EVENT:
- 			if (status & READY_FOR_TX) {
-@@ -469,10 +473,10 @@ static irqreturn_t net_interrupt(int irq, void *dev_id)
-                         }
- 			break;
- 		case ISQ_RX_MISS_EVENT:
--			lp->stats.rx_missed_errors += (status >>6);
-+			dev->stats.rx_missed_errors += (status >> 6);
- 			break;
- 		case ISQ_TX_COL_EVENT:
--			lp->stats.collisions += (status >>6);
-+			dev->stats.collisions += (status >> 6);
- 			break;
- 		}
- 	}
-@@ -483,19 +487,22 @@ static irqreturn_t net_interrupt(int irq, void *dev_id)
- static void
- net_rx(struct net_device *dev)
- {
--	struct net_local *lp = netdev_priv(dev);
- 	struct sk_buff *skb;
- 	int status, length;
  
- 	status = readreg(dev, PP_RxStatus);
- 	if ((status & RX_OK) == 0) {
--		lp->stats.rx_errors++;
--		if (status & RX_RUNT) lp->stats.rx_length_errors++;
--		if (status & RX_EXTRA_DATA) lp->stats.rx_length_errors++;
--		if (status & RX_CRC_ERROR) if (!(status & (RX_EXTRA_DATA|RX_RUNT)))
-+		dev->stats.rx_errors++;
-+		if (status & RX_RUNT)
-+				dev->stats.rx_length_errors++;
-+		if (status & RX_EXTRA_DATA)
-+				dev->stats.rx_length_errors++;
-+		if ((status & RX_CRC_ERROR) &&
-+		    !(status & (RX_EXTRA_DATA|RX_RUNT)))
- 			/* per str 172 */
--			lp->stats.rx_crc_errors++;
--		if (status & RX_DRIBBLE) lp->stats.rx_frame_errors++;
-+			dev->stats.rx_crc_errors++;
-+		if (status & RX_DRIBBLE)
-+				dev->stats.rx_frame_errors++;
- 		return;
- 	}
+ 	struct semaphore proc_sem;
+ 	int id;
+@@ -4751,8 +4749,8 @@ static void send_packet(struct sk_buff *skb, struct net_device *dev)
+ 	hw_send_pkt(hw);
  
-@@ -504,7 +511,7 @@ net_rx(struct net_device *dev)
- 	skb = alloc_skb(length, GFP_ATOMIC);
- 	if (skb == NULL) {
- 		printk("%s: Memory squeeze, dropping packet.\n", dev->name);
--		lp->stats.rx_dropped++;
-+		dev->stats.rx_dropped++;
- 		return;
- 	}
- 	skb_put(skb, length);
-@@ -519,8 +526,8 @@ net_rx(struct net_device *dev)
- 
-         skb->protocol=eth_type_trans(skb,dev);
- 	netif_rx(skb);
--	lp->stats.rx_packets++;
--	lp->stats.rx_bytes += length;
-+	dev->stats.rx_packets++;
-+	dev->stats.rx_bytes += length;
+ 	/* Update transmit statistics. */
+-	priv->stats.tx_packets++;
+-	priv->stats.tx_bytes += len;
++	dev->stats.tx_packets++;
++	dev->stats.tx_bytes += len;
  }
  
- /* The inverse routine to net_open(). */
-@@ -548,16 +555,15 @@ net_close(struct net_device *dev)
- static struct net_device_stats *
- net_get_stats(struct net_device *dev)
- {
--	struct net_local *lp = netdev_priv(dev);
- 	unsigned long flags;
+ /**
+@@ -5030,7 +5028,7 @@ static inline int rx_proc(struct net_device *dev, struct ksz_hw* hw,
+ 		/* skb->data != skb->head */
+ 		skb = dev_alloc_skb(packet_len + 2);
+ 		if (!skb) {
+-			priv->stats.rx_dropped++;
++			dev->stats.rx_dropped++;
+ 			return -ENOMEM;
+ 		}
  
- 	local_irq_save(flags);
- 	/* Update the statistics from the device registers. */
--	lp->stats.rx_missed_errors += (readreg(dev, PP_RxMiss) >> 6);
--	lp->stats.collisions += (readreg(dev, PP_TxCol) >> 6);
-+	dev->stats.rx_missed_errors += (readreg(dev, PP_RxMiss) >> 6);
-+	dev->stats.collisions += (readreg(dev, PP_TxCol) >> 6);
- 	local_irq_restore(flags);
+@@ -5050,8 +5048,8 @@ static inline int rx_proc(struct net_device *dev, struct ksz_hw* hw,
+ 		csum_verified(skb);
  
--	return &lp->stats;
+ 	/* Update receive statistics. */
+-	priv->stats.rx_packets++;
+-	priv->stats.rx_bytes += packet_len;
++	dev->stats.rx_packets++;
++	dev->stats.rx_bytes += packet_len;
+ 
+ 	/* Notify upper layer for received packet. */
+ 	rx_status = netif_rx(skb);
+@@ -5291,7 +5289,7 @@ static irqreturn_t netdev_intr(int irq, void *dev_id)
+ 		}
+ 
+ 		if (unlikely(int_enable & KS884X_INT_RX_OVERRUN)) {
+-			priv->stats.rx_fifo_errors++;
++			dev->stats.rx_fifo_errors++;
+ 			hw_resume_rx(hw);
+ 		}
+ 
+@@ -5522,7 +5520,7 @@ static int netdev_open(struct net_device *dev)
+ 	priv->promiscuous = 0;
+ 
+ 	/* Reset device statistics. */
+-	memset(&priv->stats, 0, sizeof(struct net_device_stats));
++	memset(&dev->stats, 0, sizeof(struct net_device_stats));
+ 	memset((void *) port->counter, 0,
+ 		(sizeof(u64) * OID_COUNTER_LAST));
+ 
+@@ -5622,42 +5620,42 @@ static struct net_device_stats *netdev_query_statistics(struct net_device *dev)
+ 	int i;
+ 	int p;
+ 
+-	priv->stats.rx_errors = port->counter[OID_COUNTER_RCV_ERROR];
+-	priv->stats.tx_errors = port->counter[OID_COUNTER_XMIT_ERROR];
++	dev->stats.rx_errors = port->counter[OID_COUNTER_RCV_ERROR];
++	dev->stats.tx_errors = port->counter[OID_COUNTER_XMIT_ERROR];
+ 
+ 	/* Reset to zero to add count later. */
+-	priv->stats.multicast = 0;
+-	priv->stats.collisions = 0;
+-	priv->stats.rx_length_errors = 0;
+-	priv->stats.rx_crc_errors = 0;
+-	priv->stats.rx_frame_errors = 0;
+-	priv->stats.tx_window_errors = 0;
++	dev->stats.multicast = 0;
++	dev->stats.collisions = 0;
++	dev->stats.rx_length_errors = 0;
++	dev->stats.rx_crc_errors = 0;
++	dev->stats.rx_frame_errors = 0;
++	dev->stats.tx_window_errors = 0;
+ 
+ 	for (i = 0, p = port->first_port; i < port->mib_port_cnt; i++, p++) {
+ 		mib = &hw->port_mib[p];
+ 
+-		priv->stats.multicast += (unsigned long)
++		dev->stats.multicast += (unsigned long)
+ 			mib->counter[MIB_COUNTER_RX_MULTICAST];
+ 
+-		priv->stats.collisions += (unsigned long)
++		dev->stats.collisions += (unsigned long)
+ 			mib->counter[MIB_COUNTER_TX_TOTAL_COLLISION];
+ 
+-		priv->stats.rx_length_errors += (unsigned long)(
++		dev->stats.rx_length_errors += (unsigned long)(
+ 			mib->counter[MIB_COUNTER_RX_UNDERSIZE] +
+ 			mib->counter[MIB_COUNTER_RX_FRAGMENT] +
+ 			mib->counter[MIB_COUNTER_RX_OVERSIZE] +
+ 			mib->counter[MIB_COUNTER_RX_JABBER]);
+-		priv->stats.rx_crc_errors += (unsigned long)
++		dev->stats.rx_crc_errors += (unsigned long)
+ 			mib->counter[MIB_COUNTER_RX_CRC_ERR];
+-		priv->stats.rx_frame_errors += (unsigned long)(
++		dev->stats.rx_frame_errors += (unsigned long)(
+ 			mib->counter[MIB_COUNTER_RX_ALIGNMENT_ERR] +
+ 			mib->counter[MIB_COUNTER_RX_SYMBOL_ERR]);
+ 
+-		priv->stats.tx_window_errors += (unsigned long)
++		dev->stats.tx_window_errors += (unsigned long)
+ 			mib->counter[MIB_COUNTER_TX_LATE_COLLISION];
+ 	}
+ 
+-	return &priv->stats;
 +	return &dev->stats;
  }
  
- static void set_multicast_list(struct net_device *dev)
+ /**
 -- 
 1.7.0.4
 
