@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307Ab0GENo3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 09:44:29 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:49278 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab0GENoP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 09:44:15 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18UEnzQXsriRZlYDH5bT9gV
-Date: Mon, 5 Jul 2010 16:44:02 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Nicolas Pitre <nico@fluxnic.net>, linux-omap@vger.kernel.org,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the omap tree with the arm tree
-Message-ID: <20100705134401.GC15951@atomide.com>
-References: <20100705092055.859d31d8.sfr@canb.auug.org.au>
- <alpine.LFD.2.00.1007042144410.6020@xanadu.home>
- <20100705171428.cb58b867.sfr@canb.auug.org.au>
+	id S1754467Ab0GENuN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 09:50:13 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:41309 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752495Ab0GENuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 09:50:10 -0400
+Date: Mon, 5 Jul 2010 14:49:49 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
+Message-ID: <20100705134949.GC13780@csn.ul.ie>
+References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie> <1277811288-5195-13-git-send-email-mel@csn.ul.ie> <20100702125155.69c02f85.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100705171428.cb58b867.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100702125155.69c02f85.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Rothwell <sfr@canb.auug.org.au> [100705 10:08]:
-> Hi Nicolas,
+On Fri, Jul 02, 2010 at 12:51:55PM -0700, Andrew Morton wrote:
+> On Tue, 29 Jun 2010 12:34:46 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> On Sun, 04 Jul 2010 21:46:27 -0400 (EDT) Nicolas Pitre <nico@fluxnic.net> wrote:
-> >
-> > Yes, the fix is fine.  If you can carry it until either of those is 
-> > merged upstream that would be great.
+> > When memory is under enough pressure, a process may enter direct
+> > reclaim to free pages in the same manner kswapd does. If a dirty page is
+> > encountered during the scan, this page is written to backing storage using
+> > mapping->writepage. This can result in very deep call stacks, particularly
+> > if the target storage or filesystem are complex. It has already been observed
+> > on XFS that the stack overflows but the problem is not XFS-specific.
+> > 
+> > This patch prevents direct reclaim writing back pages by not setting
+> > may_writepage in scan_control. Instead, dirty pages are placed back on the
+> > LRU lists for either background writing by the BDI threads or kswapd. If
+> > in direct lumpy reclaim and dirty pages are encountered, the process will
+> > stall for the background flusher before trying to reclaim the pages again.
+> > 
+> > Memory control groups do not have a kswapd-like thread nor do pages get
+> > direct reclaimed from the page allocator. Instead, memory control group
+> > pages are reclaimed when the quota is being exceeded or the group is being
+> > shrunk. As it is not expected that the entry points into page reclaim are
+> > deep call chains memcg is still allowed to writeback dirty pages.
 > 
-> Thanks for the confirmation.  I can carry the merge fix as long as
-> necessary.
+> I already had "[PATCH 01/14] vmscan: Fix mapping use after free" and
+> I'll send that in for 2.6.35.
+> 
 
-Thanks, I've dropped this patch from omap for-next branch, I'll send
-it into Russell's patch system.
+Perfect, thanks.
 
-Regards,
+> I grabbed [02/14] up to [11/14].  Including "[PATCH 06/14] vmscan: kill
+> prev_priority completely", grumpyouallsuck.
+> 
+> I wimped out at this, "Do not writeback pages in direct reclaim".  It
+> really is a profound change and needs a bit more thought, discussion
+> and if possible testing which is designed to explore possible pathologies.
+> 
 
-Tony
+Ok, that's reasonable as I'm still working on that patch. For example, the
+patch disabled anonymous page writeback which is unnecessary as the stack
+usage for anon writeback is less than file writeback. Second, using systemtap,
+I was able to see that file-backed dirty pages have a tendency to be near the
+end of the LRU even though they are a small percentage of the overall pages
+in the LRU. I'm hoping to figure out why this is as it would make avoiding
+writeback a lot less controversial.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
