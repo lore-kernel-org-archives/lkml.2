@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab0GEPFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 11:05:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37464 "EHLO mx1.redhat.com"
+	id S1758376Ab0GEPHU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 11:07:20 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:49030 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753160Ab0GEPFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 11:05:48 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <C80B6032-0FB2-4D63-B940-3FE86B52992B@dilger.ca>
-References: <C80B6032-0FB2-4D63-B940-3FE86B52992B@dilger.ca> <20100701235727.19035.84584.stgit@warthog.procyon.org.uk> <20100701235738.19035.21536.stgit@warthog.procyon.org.uk>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-       linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 3/3] xstat: Implement a requestable extra result to procure some inode flags [ver #4]
-Date: Mon, 05 Jul 2010 16:05:40 +0100
-Message-ID: <4964.1278342340@redhat.com>
+	id S1752951Ab0GEPHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 11:07:18 -0400
+Date: Mon, 5 Jul 2010 17:07:15 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH] drivers/net: correct valid flag
+Message-ID: <Pine.LNX.4.64.1007051706530.15185@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Dilger <adilger@dilger.ca> wrote:
+From: Julia Lawall <julia@diku.dk>
 
-> I would say this should be a full-fledged member of struct xstat.  I think
-> they are fairly standard (available on many filesystems today), and
-> requiring an ioctl to access them is unpleasant.
+Elsewhere in the "optimized" functions, the "2" constants are used.
+NV_TX_VALID and NV_TX2_VALID have the same value.
 
-Remember: adding them to xstat and kstat will use up three extra 64-bit words
-of stack at least if ecryptfs.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Are they used often enough to justify this?
-
-> Yuck on the names.  Why not stick with the "UF_" and "SF_" prefixes?
-
-Firstly, this is a quick and dirty example, primarily because I'd like someone
-to take a look at the mechanism.
-
-Secondly, because the flags I've added don't have UF_ and SF_ variants within
-Linux.
-
-> Since we don't need to keep _binary_ compatibility with these flag values
-> (only name portability) we can use the same flag values as the FS_*_FL
-> definitions in fs.h.
-
-No, you can't, because Linux doesn't have separate S and U variants.
-
-However, I'd be quite happy to just use the FS_*_FL, perhaps plus a couple of
-flags, and have userspace munge together the BSD-compatible st_flags.  To that
-end, could we rearrange i_flags to match the ioctl?
-
-David
+---
+diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
+index 268ea4d..870c18b 100644
+--- a/drivers/net/forcedeth.c
++++ b/drivers/net/forcedeth.c
+@@ -2468,7 +2468,8 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
+ 	struct ring_desc_ex* orig_get_tx = np->get_tx.ex;
+ 
+ 	while ((np->get_tx.ex != np->put_tx.ex) &&
+-	       !((flags = le32_to_cpu(np->get_tx.ex->flaglen)) & NV_TX_VALID) &&
++	       !((flags = le32_to_cpu(np->get_tx.ex->flaglen)) & NV_TX2_VALID)
++	       &&
+ 	       (tx_work < limit)) {
+ 
+ 		dprintk(KERN_DEBUG "%s: nv_tx_done_optimized: flags 0x%x.\n",
