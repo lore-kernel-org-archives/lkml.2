@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab0GEO76 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 10:59:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25487 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920Ab0GEO74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 10:59:56 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <AANLkTinms69HPgZF4blqr962Ami3oS9FC-txQj9P37SC@mail.gmail.com>
-References: <AANLkTinms69HPgZF4blqr962Ami3oS9FC-txQj9P37SC@mail.gmail.com> <20100630233614.32422.97038.stgit@warthog.procyon.org.uk>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-       linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       samba-technical@lists.samba.org, linux-ext4@vger.kernel.org,
-       linux-api@vger.kernel.org
-Subject: Re: [PATCH] Add a pair of system calls to make extended file stats available [ver #3]
-Date: Mon, 05 Jul 2010 15:59:49 +0100
-Message-ID: <4859.1278341989@redhat.com>
+	id S1756444Ab0GEPEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 11:04:32 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57262 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab0GEPEa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 11:04:30 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+Subject: Re: [PATCH] Packet hub driver of Topcliff PCH
+Date: Mon, 5 Jul 2010 17:04:00 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>, qi.wang@intel.com,
+       joel.clark@intel.com, andrew.chih.howe.khor@intel.com,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       LKML <linux-kernel@vger.kernel.org>
+References: <4C204B0D.2030201@dsn.okisemi.com> <4C3187A3.10407@dsn.okisemi.com>
+In-Reply-To: <4C3187A3.10407@dsn.okisemi.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-2022-jp"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007051704.01100.arnd@arndb.de>
+X-Provags-ID: V02:K0:5OSUoq1hXe07jMVcGGpCYRO4yM6WUzhL47wBU1a1qGR
+ Nj9ajDYiQ1S26vT8CG3uwgV2fD57clxg9YsP7Ka2P/Te8e+u+L
+ QkZC9A8eH6crUeW3VBus2hJzBxDNO1vvtuYe1XqztmVZuQ6LZU
+ t69W39wr29Hk3saK8lGq0yiLBVpbKZg0j8tF65xtJZWIgknJMS
+ aOrt6yEf/NcFs/JHJPECQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+I took another look and found some more things that should be improved.
+Overall, the quality of this driver has improved enourmously, and I'm
+optimistic that it will be a lot easier for you in your next device
+driver with all the details you have learned about the coding style.
 
-> * Include information from the "inode_info" structure, most notably
-> i_flags, but perhaps other info as well.
+On Monday 05 July 2010, Masayuki Ohtak wrote:
+ 
+> +struct pch_phub_reg {
+> +	u32 phub_id_reg;
+> +	u32 q_pri_val_reg;
+> +	u32 rc_q_maxsize_reg;
+> +	u32 bri_q_maxsize_reg;
+> +	u32 comp_resp_timeout_reg;
+> +	u32 bus_slave_control_reg;
+> +	u32 deadlock_avoid_type_reg;
+> +	u32 intpin_reg_wpermit_reg0;
+> +	u32 intpin_reg_wpermit_reg1;
+> +	u32 intpin_reg_wpermit_reg2;
+> +	u32 intpin_reg_wpermit_reg3;
+> +	u32 int_reduce_control_reg[MAX_NUM_INT_REDUCE_CONTROL_REG];
+> +	u32 clkcfg_reg;
+> +	void __iomem *pch_phub_base_address;
+> +	void __iomem *pch_phub_extrom_base_address;
+> +	int pch_phub_suspended;
+> +} pch_phub_reg;
 
-This thought has occurred to me, but are the contents of i_flags identical for
-all filesystems?  Certainly, i_flags doesn't seem to match the FS_IOC_GETFLAGS
-mask.  For example:
+The variable you define here is in the global namespace, which it
+should not be in. I'd suggest making it static and splitting the
+type defintion from the variable definition to make that more obvious,
+like:
 
-	#define	FS_SECRM_FL			0x00000001
+struct pch_phub_reg {
+	...
+};
 
-vs:
+static struct pch_phub_reg pch_phub_reg;
 
-	#define S_SYNC		1	/* Writes are synced at once */
+> +static DEFINE_MUTEX(pch_phub_ioctl_mutex);
+> +static DEFINE_MUTEX(pch_phub_read_mutex);
+> +static DEFINE_MUTEX(pch_phub_write_mutex);
 
-I've also been asked to provide st_flags as for BSD, which aren't compatible
-either:-/.
+Having three mutexes here means that you have effectively no
+serialization between the functions at all. The mutex only
+has an effect if you use the same one in all three functions!
 
-Some questions:
-
- (1) Does it make sense to rearrange the S_xxxx flags to match the numbers for
-     FS_xxxx_FL?
-
- (2) Does it make sense to do the BSD st_flags compatibility in userspace?
-
- (3) Can we add a couple more flags to make Samba's life easier?  Say an
-     archived bit and a hidden bit?
-
- (4) Do I actually need to provide a mask saying what st_flags are applicable
-     to the file you've just queried?
-
- (5) How often are these flags required?  E.g. does it make more sense to keep
-     them as an additional result, or does it make sense to stick them in the
-     kstat and xstat structs, knowing that these are allocated on the kernel
-     stack maybe as three times if an ecryptfs file?
-
-> * Return a bit mask indicating the presence of additional information
-> associated with the i-node. Here, I am thinking of flags that indicate
-> that the file has any of the following: capabilities, an ACL, and
-> extended attributes (obviously a superset of the previous). I could
-> imagine some apps that, having got the xstat info, would be interested
-> to obtain some of this other info.
-> 
-> Obviously, the above only make sense if the overhead of providing the
-> extra information is low.
-
-That might make sense as an 'additional result'.  These things may have to be
-probed for on disk or on a server, so you might not want to return them by
-default, and you may want to indicate what the filesystem can support vs what
-the file actually has:
-
-	u64	st_fs_additional_info;	/* what the filesystem supports */
-	u64	st_file_additional_info; /* what the file actually has */
-
-	#define XST_ADDINFO_CAPABILITY_MASK
-	#define XST_ADDINFO_ACL
-	#define XST_ADDINFO_XATTRS
-	#define XST_ADDINFO_SECLABEL
-
-David
+	Arnd
