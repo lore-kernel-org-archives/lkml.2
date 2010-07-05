@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab0GEKjh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 06:39:37 -0400
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:60287 "EHLO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756204Ab0GEKjg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 06:39:36 -0400
-Message-ID: <4C31B637.6070604@ge.com>
-Date: Mon, 05 Jul 2010 11:38:47 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1756788Ab0GEKky (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 06:40:54 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49391 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755944Ab0GEKkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 06:40:51 -0400
+Date: Mon, 5 Jul 2010 12:40:35 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Ali Gholami Rudi <ali@rudi.ir>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: dfeng@redhat.com, x86@kernel.org, venki@google.com, tglx@linutronix.de,
+       suresh.b.siddha@intel.com, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [regression] commit 6a4f3b52 causes invalid memtype
+Message-ID: <20100705104035.GA28190@elte.hu>
+References: <20100507075128@tarekhel>
+ <4C319D61.5090002@redhat.com>
+ <20100507092842@tarekhel>
+ <4C31A7A0.1020800@redhat.com>
+ <4c31ac7b.J+CU0Yt+zKZ9ho1fjKvu6Z1v@tarekhel>
 MIME-Version: 1.0
-To: Kulikov Vasiliy <segooon@gmail.com>
-CC: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Julia Lawall <julia@diku.dk>,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 22/25] vme_tsi148: remove casts from void*
-References: <1277806581-31452-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1277806581-31452-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4c31ac7b.J+CU0Yt+zKZ9ho1fjKvu6Z1v@tarekhel>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kulikov Vasiliy wrote:
-> Remove unnesessary casts from void*.
->
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
->   
 
-Seems ok, cheers,
+* Ali Gholami Rudi <ali@rudi.ir> wrote:
 
-Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+> Xiaotian Feng <dfeng@redhat.com> wrote:
+> > On 07/05/2010 05:28 PM, Ali Gholami Rudi wrote:
+> > > Xiaotian Feng<dfeng@redhat.com>  wrote:
+> > >> Could you please try following commit in -tip tree?
+> > >>
+> > >> commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+> > >> Author: Peter Zijlstra<peterz@infradead.org>
+> > >> Date:   Sat May 29 15:31:43 2010 +0200
+> > >>
+> > >>       rbtree: Undo augmented trees performance damage
+> > >
+> > > Where can I get it?  I couldn't find it either in
+> > > Linus' or x86 repo tip.
+> > http://git.kernel.org/tip/2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+> 
+> It does fix it.
 
+Hm, interesting. That's a pure performance fix - so why does it fix a 
+regression?
 
-> ---
->  drivers/staging/vme/bridges/vme_tsi148.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
-> index abe88a3..4685a31 100644
-> --- a/drivers/staging/vme/bridges/vme_tsi148.c
-> +++ b/drivers/staging/vme/bridges/vme_tsi148.c
-> @@ -1649,7 +1649,7 @@ int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
->  	/* Fill out source part */
->  	switch (src->type) {
->  	case VME_DMA_PATTERN:
-> -		pattern_attr = (struct vme_dma_pattern *)src->private;
-> +		pattern_attr = src->private;
->  
->  		entry->descriptor.dsal = pattern_attr->pattern;
->  		entry->descriptor.dsat = TSI148_LCSR_DSAT_TYP_PAT;
-> @@ -1663,7 +1663,7 @@ int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
->  
->  		break;
->  	case VME_DMA_PCI:
-> -		pci_attr = (struct vme_dma_pci *)src->private;
-> +		pci_attr = src->private;
->  
->  		reg_split((unsigned long long)pci_attr->address, &address_high,
->  			&address_low);
-> @@ -1672,7 +1672,7 @@ int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
->  		entry->descriptor.dsat = TSI148_LCSR_DSAT_TYP_PCI;
->  		break;
->  	case VME_DMA_VME:
-> -		vme_attr = (struct vme_dma_vme *)src->private;
-> +		vme_attr = src->private;
->  
->  		reg_split((unsigned long long)vme_attr->address, &address_high,
->  			&address_low);
-> @@ -1701,7 +1701,7 @@ int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
->  	/* Fill out destination part */
->  	switch (dest->type) {
->  	case VME_DMA_PCI:
-> -		pci_attr = (struct vme_dma_pci *)dest->private;
-> +		pci_attr = dest->private;
->  
->  		reg_split((unsigned long long)pci_attr->address, &address_high,
->  			&address_low);
-> @@ -1710,7 +1710,7 @@ int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
->  		entry->descriptor.ddat = TSI148_LCSR_DDAT_TYP_PCI;
->  		break;
->  	case VME_DMA_VME:
-> -		vme_attr = (struct vme_dma_vme *)dest->private;
-> +		vme_attr = dest->private;
->  
->  		reg_split((unsigned long long)vme_attr->address, &address_high,
->  			&address_low);
->   
+Does Peter's augmented rbtrees improvements fix a bug too, as a side-effect? 
+If yes then we need to accelerate that commit - right now it's aimed for 
+v2.6.36.
 
+Thanks,
 
--- 
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square, Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
-
+	Ingo
