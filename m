@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757708Ab0GEOod (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 10:44:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:60744 "EHLO mga03.intel.com"
+	id S1758215Ab0GEOou (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 10:44:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32392 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752951Ab0GEOob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 10:44:31 -0400
+	id S1758170Ab0GEOor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 10:44:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,540,1272870000"; 
-   d="scan'208";a="296676688"
+   d="scan'208";a="296676701"
 From: feng.tang@intel.com
 To: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
        hpa@zytor.com, jacob.jun.pan@intel.com, dtor@mail.ru,
        randy.dunlap@oracle.com
-Cc: Feng Tang <feng.tang@intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH v2 3/5] Revert "Input: do not force selecting i8042 on Moorestown"
-Date: Mon,  5 Jul 2010 23:03:20 +0800
-Message-Id: <1278342202-10973-4-git-send-email-feng.tang@intel.com>
+Cc: Feng Tang <feng.tang@intel.com>
+Subject: [PATCH v2 5/5] input: i8042 - add runtime check in x86's i8042_platform_init
+Date: Mon,  5 Jul 2010 23:03:22 +0800
+Message-Id: <1278342202-10973-6-git-send-email-feng.tang@intel.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
 References: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
@@ -26,44 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Feng Tang <feng.tang@intel.com>
 
-This reverts commit 685afae02557a178185a4be36f58332976e79f63.
+Then it will first check x86_platforms's i8042 detection result,
+then go on with normal probe.
 
-After adding x86_platform's detection for i8042 controller, we
-don't need the force dependency on !X86_MRST any more
-
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Feng Tang <feng.tang@intel.com>
 ---
- drivers/input/keyboard/Kconfig |    2 +-
- drivers/input/mouse/Kconfig    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/input/serio/i8042-x86ia64io.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 0f9a478..917eec3 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -73,7 +73,7 @@ config KEYBOARD_ATKBD
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
--	select SERIO_I8042 if X86 && !X86_MRST
-+	select SERIO_I8042 if X86
- 	select SERIO_GSCPS2 if GSC
- 	help
- 	  Say Y here if you want to use a standard AT or PS/2 keyboard. Usually
-diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
-index eeb58c1..c714ca2 100644
---- a/drivers/input/mouse/Kconfig
-+++ b/drivers/input/mouse/Kconfig
-@@ -17,7 +17,7 @@ config MOUSE_PS2
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
--	select SERIO_I8042 if X86 && !X86_MRST
-+	select SERIO_I8042 if X86
- 	select SERIO_GSCPS2 if GSC
- 	help
- 	  Say Y here if you have a PS/2 mouse connected to your system. This
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index 6168469..6228526 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -7,6 +7,8 @@
+  * the Free Software Foundation.
+  */
+ 
++#include <asm/x86_init.h>
++
+ /*
+  * Names.
+  */
+@@ -840,6 +842,12 @@ static int __init i8042_platform_init(void)
+ {
+ 	int retval;
+ 
++#ifdef CONFIG_X86
++	/* Just return if pre-detection shows no i8042 controller exist */
++	if (!x86_platform.i8042_detect())
++		return -ENODEV;
++#endif
++
+ /*
+  * On ix86 platforms touching the i8042 data register region can do really
+  * bad things. Because of this the region is always reserved on ix86 boxes.
 -- 
 1.7.0.4
 
