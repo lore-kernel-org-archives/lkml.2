@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab0GEIBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 04:01:40 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:37734 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab0GEIBg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 04:01:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=VVeXkgACr4KcSqmw3wJhtjn5YFV0kC1wri2Vl5COhuA3L0gI7zALroTl4VEWnCgQ8K
-         wUERF+vXh62v0NoPVg1QS69adN/87YX174uSIheGugsULcmSTJYwj/Oz22LCaDzcTkHE
-         9anW1p/rLZ1JfFt0ZaeMHcuWEzDqcmmNoPvWA=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: Marcel Holtmann <marcel@holtmann.org>, Bing Zhao <bzhao@marvell.com>,
-       Ben Hutchings <ben@decadent.org.uk>,
-       =?UTF-8?q?Andr=C3=A9=20Goddard=20Rosa?= <andre.goddard@gmail.com>,
-       Julia Lawall <julia@diku.dk>, linux-bluetooth@vger.kernel.org,
+	id S1756511Ab0GEICQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 04:02:16 -0400
+Received: from sh.osrg.net ([192.16.179.4]:41301 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752275Ab0GEICO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 04:02:14 -0400
+Date: Mon, 5 Jul 2010 17:01:57 +0900
+To: axboe@kernel.dk
+Cc: fujita.tomonori@lab.ntt.co.jp, hch@infradead.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH] bluetooth: btmrvl_sdio: silence warning
-Date: Mon,  5 Jul 2010 12:01:22 +0400
-Message-Id: <1278316883-29784-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 0/9] remove q->prepare_flush_fn hook
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4C3181E8.8010802@kernel.dk>
+References: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+	<4C3181E8.8010802@kernel.dk>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100705170050Z.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 05 Jul 2010 17:01:58 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clone checking of ret to simplify the code.
+On Mon, 05 Jul 2010 08:55:36 +0200
+Jens Axboe <axboe@kernel.dk> wrote:
 
-This patch silences a compiler warning:
-drivers/bluetooth/btmrvl_sdio.c: In function ‘btmrvl_sdio_verify_fw_download’:
-drivers/bluetooth/btmrvl_sdio.c:80: warning: ‘fws1’ may be used uninitialized in this function
-drivers/bluetooth/btmrvl_sdio.c:80: note: ‘fws1’ was declared here
+> On 2010-07-03 10:45, FUJITA Tomonori wrote:
+> > This removes q->prepare_flush_fn. Except for ide and scsi, all the
+> > users just mark flush requests. They can use REQ_FLUSH flag
+> > instead.
+> > 
+> > SCSI and ide can use q->prep_rq_fn to build flush requests.
+> > 
+> > This can be applied to the block's for-2.6.36.
+> 
+> Thanks, applied.
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- drivers/bluetooth/btmrvl_sdio.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Thanks,
 
-diff --git a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
-index df0773e..47f0f91 100644
---- a/drivers/bluetooth/btmrvl_sdio.c
-+++ b/drivers/bluetooth/btmrvl_sdio.c
-@@ -83,10 +83,10 @@ static int btmrvl_sdio_read_fw_status(struct btmrvl_sdio_card *card, u16 *dat)
- 	*dat = 0;
- 
- 	fws0 = sdio_readb(card->func, CARD_FW_STATUS0_REG, &ret);
-+	if (ret)
-+		return -EIO;
- 
--	if (!ret)
--		fws1 = sdio_readb(card->func, CARD_FW_STATUS1_REG, &ret);
--
-+	fws1 = sdio_readb(card->func, CARD_FW_STATUS1_REG, &ret);
- 	if (ret)
- 		return -EIO;
- 
--- 
-1.7.0.4
+looks like you applied the patches in a wrong order (breaks bisect).
 
+At least, the first two patches need to be applied in order before the
+rest:
+
+[PATCH 1/9] block: introduce REQ_FLUSH flag
+[PATCH 2/9] block: permit PREFLUSH and POSTFLUSH without prepare_flush_fn
