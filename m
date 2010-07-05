@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab0GEBkt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jul 2010 21:40:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58422 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab0GEBks (ORCPT
+	id S1758076Ab0GEBqb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jul 2010 21:46:31 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:45271 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755016Ab0GEBq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 21:40:48 -0400
-Message-ID: <4C3137A2.8040409@oracle.com>
-Date: Mon, 05 Jul 2010 09:38:42 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>
-Subject: Re: [PATCH 2/2] ocfs2: No need to zero pages past i_size. i_size
- v2
-References: <20100702224912.GC5800@mail.oracle.com> <20100703213219.GB21262@mail.oracle.com> <20100703213343.GC21262@mail.oracle.com> <4C30A4FD.4030900@oracle.com>
-In-Reply-To: <4C30A4FD.4030900@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C3137FE.0078:SCFMA4539814,ss=1,fgs=0
+	Sun, 4 Jul 2010 21:46:29 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Sun, 04 Jul 2010 21:46:27 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Russell King <rmk@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the omap tree with the arm tree
+In-reply-to: <20100705092055.859d31d8.sfr@canb.auug.org.au>
+Message-id: <alpine.LFD.2.00.1007042144410.6020@xanadu.home>
+References: <20100705092055.859d31d8.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joel,
+On Mon, 5 Jul 2010, Stephen Rothwell wrote:
 
-On 07/04/2010 11:13 PM, Tao Ma wrote:
-> Hi Joel,
->
-> On 07/04/2010 05:33 AM, Joel Becker wrote:
->> Here's the second patch, the one that keeps us from zeroing
->> pages past i_size. This should keep ocfs2 and Dave's writeback patch
->> happy.
->>
->> Joel
->>
->> -------------------------------------------------------
->>
->> When ocfs2 fills a hole, it does so by allocating clusters. When a
->> cluster is larger than the write, ocfs2 must zero the portions of the
->> cluster outside of the write. If the clustersize is smaller than a
->> pagecache page, this is handled by the normal pagecache mechanisms, but
->> when the clustersize is larger than a page, ocfs2's write code will zero
->> the pages adjacent to the write. This makes sure the entire cluster is
->> zeroed correctly.
->>
->> Currently ocfs2 behaves exactly the same when writing past i_size.
->> However, this means ocfs2 is writing zeroed pages for portions of a new
->> cluster that are beyond i_size. The page writeback code isn't expecting
->> this. It treats all pages past the one containing i_size as left behind
->> due to a previous truncate operation.
->>
->> Thankfully, ocfs2 calculates the number of pages it will be working on
->> up front. The rest of the write code merely honors the original
->> calculation. We can simply trim the number of pages to only cover the
->> actual file data.
->>
->> Signed-off-by: Joel Becker<joel.becker@oracle.com>
->> ---
->> fs/ocfs2/aops.c | 15 +++++++++++----
->> 1 files changed, 11 insertions(+), 4 deletions(-)
->>
->> diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
->> index 96e6aeb..e90ad74 100644
->> --- a/fs/ocfs2/aops.c
->> +++ b/fs/ocfs2/aops.c
-> <snip>
->> @@ -1142,11 +1143,17 @@ static int ocfs2_grab_pages_for_write(struct
->> address_space *mapping,
->> /*
->> * Figure out how many pages we'll be manipulating here. For
->> * non allocating write, we just change the one
->> - * page. Otherwise, we'll need a whole clusters worth.
->> + * page. Otherwise, we'll need a whole clusters worth. If we're
->> + * writing past i_size, we only need enough pages to cover the
->> + * last page of the write.
-> The comments for the whole function before the function name also needs
-> this change accordingly?
->> */
->> if (new) {
->> wc->w_num_pages = ocfs2_pages_per_cluster(inode->i_sb);
->> start = ocfs2_align_clusters_to_page_index(inode->i_sb, cpos);
->> + /* This is the index *past* the write */
->> + end_index = ((user_pos + user_len)>> PAGE_CACHE_SHIFT) + 1;
-> should it be
-> end_index = ((user_pos + user_len - 1) >> PAGE_CACHE_SHIFT) + 1?
->
->
->> + if ((start + wc->w_num_pages)> end_index)
->> + wc->w_num_pages = end_index - start;
-> I just noticed that the below loop in ocfs2_grab_pages_for_write is
-> for (i = 0; i < wc->w_num_pages; i++)
->
-> I guess w_num_pages should be set to end_index -
-> start_page_of_the_cluster so that we can make sure we grab all the pages
-> in this cluster until i_size?
-oh, start is set to that value, sorry for this bit.
-btw, do we ever have a chance that start + wc->w_num_pages > end_index? 
-I can't find it.
+> Hi all,
+> 
+> Today's linux-next merge of the omap tree got a conflict in
+> arch/arm/kernel/entry-armv.S between commit
+> df0698be14c6683606d5df2d83e3ae40f85ed0d9 ("ARM: stack protector: change
+> the canary value per task") from the arm tree and commit
+> 4481d0c7d25c9de9a3986c8b4c52389ca8bbf929 ("arm: Replace
+> CONFIG_HAS_TLS_REG with HWCAP_TLS and check for it on V6") from the omap
+> tree.
+> 
+> Just context changes (I think).  I fixed it up (see below) and can carry
+> the fix as necessary.
 
-Regards,
-Tao
+Yes, the fix is fine.  If you can carry it until either of those is 
+merged upstream that would be great.
+
+
+
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/kernel/entry-armv.S
+> index 2d14081,a6cfb17..0000000
+> --- a/arch/arm/kernel/entry-armv.S
+> +++ b/arch/arm/kernel/entry-armv.S
+> @@@ -739,17 -740,7 +740,12 @@@ ENTRY(__switch_to
+>   #ifdef CONFIG_MMU
+>   	ldr	r6, [r2, #TI_CPU_DOMAIN]
+>   #endif
+> - #if defined(CONFIG_HAS_TLS_REG)
+> - 	mcr	p15, 0, r3, c13, c0, 3		@ set TLS register
+> - #elif !defined(CONFIG_TLS_REG_EMUL)
+> - 	mov	r4, #0xffff0fff
+> - 	str	r3, [r4, #-15]			@ TLS val at 0xffff0ff0
+> - #endif
+> + 	set_tls	r3, r4, r5
+>  +#if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
+>  +	ldr	r7, [r2, #TI_TASK]
+>  +	ldr	r8, =__stack_chk_guard
+>  +	ldr	r7, [r7, #TSK_STACK_CANARY]
+>  +#endif
+>   #ifdef CONFIG_MMU
+>   	mcr	p15, 0, r6, c3, c0, 0		@ Set domain register
+>   #endif
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
