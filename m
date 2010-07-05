@@ -1,123 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab0GEWMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 18:12:21 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42542 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550Ab0GEWMT (ORCPT
+	id S1754789Ab0GEWld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 18:41:33 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:39631 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754328Ab0GEWlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 18:12:19 -0400
-Message-ID: <4C3258B7.5070900@infradead.org>
-Date: Mon, 05 Jul 2010 19:12:07 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Lightning/1.0b2 Thunderbird/3.1
+	Mon, 5 Jul 2010 18:41:32 -0400
+Date: Tue, 6 Jul 2010 08:41:06 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+       Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 29/52] fs: icache lock i_count
+Message-ID: <20100705224106.GZ24712@dastard>
+References: <20100624030212.676457061@suse.de>
+ <20100624030730.245992858@suse.de>
+ <20100630072702.GF24712@dastard>
+ <20100630120502.GB21358@laptop>
+ <20100702190355.2b3fe6d2.akpm@linux-foundation.org>
+ <20100703034123.GE11732@laptop>
+ <20100702213149.f0ca2f72.akpm@linux-foundation.org>
+ <20100703050652.GF11732@laptop>
 MIME-Version: 1.0
-To: Renzo Dani <arons7@gmail.com>
-CC: adams.xu@azwave.com.cn, rdunlap@xenotime.net, o.endriss@gmx.de,
-       awalls@radix.net, crope@iki.fi, manu@linuxtv.org,
-       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/1] Added Technisat Skystar USB HD CI
-References: <1277719055-14585-1-git-send-email-arons7@gmail.com>
-In-Reply-To: <1277719055-14585-1-git-send-email-arons7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100703050652.GF11732@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 28-06-2010 06:57, Renzo Dani escreveu:
-> From: Renzo Dani <arons7@gmail.com>
-> 
-> 
-> Signed-off-by: Renzo Dani <arons7@gmail.com>
-> ---
->  Documentation/dvb/get_dvb_firmware |   19 ++++++++++++++++++-
->  drivers/media/dvb/dvb-usb/az6027.c |   14 ++++++++++++--
+On Sat, Jul 03, 2010 at 03:06:52PM +1000, Nick Piggin wrote:
+> So it makes a lot of sense to have a lock to rule the inode (as opposed
+> to now we have a lock to rule *all* inodes).
 
-
-Please, re-base your patch against upstream and send the firmware patch on a separate
-email.
+I don't disagree with this approach - I object to the fact that you
+repurpose an existing lock and change it's locking rules to "rule
+the inode". We don't have any one lock that "rules the inode",
+anyway, so adding a new "i_list_lock" for the new VFS level locking
+strategies makes it a lot more self-contained. Fundamentally I'm
+less concerned about the additional memory usage than I am about
+having landmines planted around i_lock...
 
 Cheers,
-Mauro
->  2 files changed, 30 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/dvb/get_dvb_firmware b/Documentation/dvb/get_dvb_firmware
-> index 239cbdb..c203e94 100644
-> --- a/Documentation/dvb/get_dvb_firmware
-> +++ b/Documentation/dvb/get_dvb_firmware
-> @@ -26,7 +26,7 @@ use IO::Handle;
->  		"dec3000s", "vp7041", "dibusb", "nxt2002", "nxt2004",
->  		"or51211", "or51132_qam", "or51132_vsb", "bluebird",
->  		"opera1", "cx231xx", "cx18", "cx23885", "pvrusb2", "mpc718",
-> -		"af9015", "ngene");
-> +		"af9015", "ngene", "az6027");
->  
->  # Check args
->  syntax() if (scalar(@ARGV) != 1);
-> @@ -567,6 +567,23 @@ sub ngene {
->      "$file1, $file2";
->  }
->  
-> +sub az6027{
-> +    my $file = "AZ6027_Linux_Driver.tar.gz";
-> +	my $url = "http://linux.terratec.de/files/$file";
-> +    my $firmware = "dvb-usb-az6027-03.fw";
-> +
-> +	wgetfile($file, $url);
-> +
-> +	#untar
-> +    if( system("tar xzvf $file")){
-> +		die "failed to untar firmware";
-> +	}
-> +	if( system("rm -rf AZ6027_Linux_Driver; rm $file")){
-> +		die ("unable to remove unnecessary files");
-> +    }
-> +
-> +    $firmware;
-> +}
->  # ---------------------------------------------------------------
->  # Utilities
->  
-> diff --git a/drivers/media/dvb/dvb-usb/az6027.c b/drivers/media/dvb/dvb-usb/az6027.c
-> index d7290b2..891ae04 100644
-> --- a/drivers/media/dvb/dvb-usb/az6027.c
-> +++ b/drivers/media/dvb/dvb-usb/az6027.c
-> @@ -1103,13 +1103,23 @@ static struct dvb_usb_device_properties az6027_properties = {
->  	.rc_query         = az6027_rc_query,
->  	.i2c_algo         = &az6027_i2c_algo,
->  
-> -	.num_device_descs = 1,
-> +	.num_device_descs = 2,
->  	.devices = {
->  		{
->  			.name = "AZUREWAVE DVB-S/S2 USB2.0 (AZ6027)",
->  			.cold_ids = { &az6027_usb_table[0], NULL },
->  			.warm_ids = { NULL },
->  		},
-> +		{
-> +		    .name = " Terratec DVB 2 CI",
-> +			.cold_ids = { &az6027_usb_table[1], NULL },
-> +			.warm_ids = { NULL },
-> +		},
-> +		{
-> +		    .name = "TechniSat SkyStar USB 2 HD CI (AZ6027)",
-> +			.cold_ids = { &az6027_usb_table[2], NULL },
-> +			.warm_ids = { NULL },
-> +		},
->  		{ NULL },
->  	}
->  };
-> @@ -1118,7 +1128,7 @@ static struct dvb_usb_device_properties az6027_properties = {
->  static struct usb_driver az6027_usb_driver = {
->  	.name		= "dvb_usb_az6027",
->  	.probe 		= az6027_usb_probe,
-> -	.disconnect 	= az6027_usb_disconnect,
-> +	.disconnect	= az6027_usb_disconnect,
->  	.id_table 	= az6027_usb_table,
->  };
->  
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
