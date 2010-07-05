@@ -1,147 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab0GEOxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 10:53:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:64920 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756476Ab0GEOxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 10:53:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,540,1272870000"; 
-   d="scan'208";a="296679096"
-Date: Mon, 5 Jul 2010 16:53:08 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 22/26] MFD: Add JZ4740 ADC driver
-Message-ID: <20100705145306.GA3850@sortiz-mobl>
-References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
- <1276924111-11158-23-git-send-email-lars@metafoo.de>
+	id S1758184Ab0GEOxV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 10:53:21 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46519 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757782Ab0GEOxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 10:53:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gUy9xZpL30muGneg6m4+jo9B/8JJcm8580oQDqPcsPzG0Q/wlo39QNWe2CZU/q4nuf
+         kaDVb22ICKWVfZzN5EXtoJfkDNCwwLa12vhPzqHV86mna2qoG+SoN5unIf+qeSjW6o1k
+         OER/cYb2uxtKiL+sIVKsTYk0xRlHYuFzh1k9E=
+Date: Mon, 5 Jul 2010 16:53:29 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, Jan Blunck <jblunck@suse.de>
+Subject: Re: [PATCH] nilfs2: remove BKL uses
+Message-ID: <20100705145324.GA5240@nowhere>
+References: <1278220928-28121-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp> <201007051650.23761.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1276924111-11158-23-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201007051650.23761.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars,
+On Mon, Jul 05, 2010 at 04:50:23PM +0200, Arnd Bergmann wrote:
+> On Sunday 04 July 2010, Ryusuke Konishi wrote:
+> > Nilfs has BKL uses in its put_super and remount functions, but none of
+> > them are necessary, just came from earlier push downs.  This
+> > eliminates the BKL uses from nilfs.
+> > 
+> > Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+> 
+> This looks good, but there is a another patch series pushing the BKL
+> into the get_sb and fill_super operations, which should be the final
+> pushdown for file systems. I wonder if there is a way to find a
+> shortcut on this so we don't need to add it first just to have you
+> go through the effort of removing it again.
 
-Sorry for the review delay. This one got lost in my inbox :-/
 
-On Sat, Jun 19, 2010 at 07:08:27AM +0200, Lars-Peter Clausen wrote:
-> This patch adds a MFD driver for the JZ4740 ADC unit. The driver is used to
-> demultiplex IRQs and synchronize access to shared registers between the battery,
-> hwmon and (future) touchscreen driver.
-The driver looks pretty clean. I only have a couple nitpicks:
+I could take his patch in the mount pushdown series.
 
-> +static void jz4740_adc_irq_demux(unsigned int irq, struct irq_desc *desc)
-> +{
-> +	struct jz4740_adc *adc = get_irq_desc_data(desc);
-> +	uint8_t status;
-> +	unsigned int i;
-> +
-> +	status = readb(adc->base + JZ_REG_ADC_STATUS);
-> +
-> +	for (i = 0; i < 5; ++i) {
-> +		if (status & BIT(i))
-> +			generic_handle_irq(adc->irq_base + i);
-for_each_set_bit() could nicely replace your loop here.
-
-> +static inline void jz4740_adc_clk_enable(struct jz4740_adc *adc)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&adc->lock, flags);
-> +	if (adc->clk_ref++ == 0)
-> +		clk_enable(adc->clk);
-> +	spin_unlock_irqrestore(&adc->lock, flags);
-> +}
-I'm not familiar with your platform clock framework, but shouldn't the
-refcounting be handled there instead of spread over all your drivers ?
-
-> +static int __devinit jz4740_adc_probe(struct platform_device *pdev)
-> +{
-> +	int ret;
-> +	struct jz4740_adc *adc;
-> +	struct resource *mem_base;
-> +	int irq;
-> +
-> +	adc = kmalloc(sizeof(*adc), GFP_KERNEL);
-> +
-> +	adc->irq = platform_get_irq(pdev, 0);
-> +	if (adc->irq < 0) {
-> +		ret = adc->irq;
-> +		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
-> +		goto err_free;
-> +	}
-> +
-> +	adc->irq_base = platform_get_irq(pdev, 1);
-> +	if (adc->irq_base < 0) {
-> +		ret = adc->irq_base;
-> +		dev_err(&pdev->dev, "Failed to get irq base: %d\n", ret);
-> +		goto err_free;
-> +	}
-> +
-> +	mem_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!mem_base) {
-> +		ret = -ENOENT;
-> +		dev_err(&pdev->dev, "Failed to get platform mmio resource\n");
-> +		goto err_free;
-> +	}
-> +
-> +	/* Only request the shared registers for the MFD driver */
-> +	adc->mem = request_mem_region(mem_base->start, JZ_REG_ADC_STATUS,
-> +					pdev->name);
-> +	if (!adc->mem) {
-> +		ret = -EBUSY;
-> +		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
-> +		goto err_free;
-> +	}
-> +
-> +	adc->base = ioremap_nocache(adc->mem->start, resource_size(adc->mem));
-> +	if (!adc->base) {
-> +		ret = -EBUSY;
-> +		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
-> +		goto err_release_mem_region;
-> +	}
-> +
-> +	adc->clk = clk_get(&pdev->dev, "adc");
-> +	if (IS_ERR(adc->clk)) {
-> +		ret = PTR_ERR(adc->clk);
-> +		dev_err(&pdev->dev, "Failed to get clock: %d\n", ret);
-> +		goto err_iounmap;
-> +	}
-> +
-> +	spin_lock_init(&adc->lock);
-> +
-> +	adc->clk_ref = 0;
-> +
-> +	platform_set_drvdata(pdev, adc);
-> +
-> +	for (irq = adc->irq_base; irq < adc->irq_base + 5; ++irq) {
-> +		set_irq_chip_data(irq, adc);
-> +		set_irq_chip_and_handler(irq, &jz4740_adc_irq_chip,
-> +		    handle_level_irq);
-> +	}
-> +
-> +	set_irq_data(adc->irq, adc);
-> +	set_irq_chained_handler(adc->irq, jz4740_adc_irq_demux);
-> +
-> +	writeb(0x00, adc->base + JZ_REG_ADC_ENABLE);
-> +	writeb(0xff, adc->base + JZ_REG_ADC_CTRL);
-> +
-> +	mfd_add_devices(&pdev->dev, 0, jz4740_adc_cells,
-> +		ARRAY_SIZE(jz4740_adc_cells), mem_base, adc->irq_base);
-> +
-> +	return 0;
-Please return the mfd_add_devices return value.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
