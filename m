@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab0GEMNS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 08:13:18 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:47228 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755162Ab0GEMNQ (ORCPT
+	id S1758414Ab0GEMNp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 08:13:45 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51488 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758378Ab0GEMNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 08:13:16 -0400
+	Mon, 5 Jul 2010 08:13:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=KwLl+XDGMPSyIEJ7mCLXmT4VJcn/aIsRpdACDsCtupG5jnXxMrR+ciq1c5Yd7bPmuT
-         fi8S72WfiVYLP8DJw+qfePqsq0oNH/QUmokF7bWTWz0f64ixF4tycIlwES5Sug+zKYx0
-         RZRAVBjwpvpnlXAgUeYEOadp4v0Dycs23O9Z8=
+        b=HgACifV5DCHYAm7/bsRjq0xiN/e7IfF8G6jVZmedMxMnBMMBMh2npRWIg3YnUsSTEN
+         7qiq39lpfUhTn+mrEM5c0+pZNqPq9aCYIwLF6rvxpwmTnfTj6rPHISkxbkTY1SilPaNJ
+         cXKpTd8ijdlPDwfTFMPR7KCEUUr9T99ZUSrPQ=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jpirko@redhat.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Patrick McHardy <kaber@trash.net>, Tejun Heo <tj@kernel.org>,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sun3_82586: Use the instance of net_device_stats from net_device.
-Date: Mon,  5 Jul 2010 16:13:10 +0400
-Message-Id: <1278331992-15792-1-git-send-email-segooon@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+       Jiri Pirko <jpirko@redhat.com>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] fealnx: Use the instance of net_device_stats from net_device.
+Date: Mon,  5 Jul 2010 16:13:36 +0400
+Message-Id: <1278332018-16490-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,114 +33,173 @@ we can remove the instance of this from the adapter structure.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/net/sun3_82586.c |   35 +++++++++++++++++------------------
- 1 files changed, 17 insertions(+), 18 deletions(-)
+ drivers/net/fealnx.c |   68 ++++++++++++++++++++++++++-----------------------
+ 1 files changed, 36 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/net/sun3_82586.c b/drivers/net/sun3_82586.c
-index 1513123..b6ae53b 100644
---- a/drivers/net/sun3_82586.c
-+++ b/drivers/net/sun3_82586.c
-@@ -142,7 +142,6 @@ static void    sun3_82586_rnr_int(struct net_device *dev);
+diff --git a/drivers/net/fealnx.c b/drivers/net/fealnx.c
+index 15f4f8d..d7e8f6b 100644
+--- a/drivers/net/fealnx.c
++++ b/drivers/net/fealnx.c
+@@ -382,8 +382,6 @@ struct netdev_private {
  
- struct priv
- {
+ 	spinlock_t lock;
+ 
 -	struct net_device_stats stats;
- 	unsigned long base;
- 	char *memtop;
- 	long int lock;
-@@ -788,10 +787,10 @@ static void sun3_82586_rcv_int(struct net_device *dev)
- 						skb_copy_to_linear_data(skb,(char *) p->base+swab32((unsigned long) rbd->buffer),totlen);
- 						skb->protocol=eth_type_trans(skb,dev);
- 						netif_rx(skb);
--						p->stats.rx_packets++;
-+						dev->stats.rx_packets++;
- 					}
- 					else
--						p->stats.rx_dropped++;
-+						dev->stats.rx_dropped++;
+-
+ 	/* Media monitoring timer. */
+ 	struct timer_list timer;
+ 
+@@ -1234,7 +1232,7 @@ static void fealnx_tx_timeout(struct net_device *dev)
+ 	spin_unlock_irqrestore(&np->lock, flags);
+ 
+ 	dev->trans_start = jiffies; /* prevent tx timeout */
+-	np->stats.tx_errors++;
++	dev->stats.tx_errors++;
+ 	netif_wake_queue(dev); /* or .._start_.. ?? */
+ }
+ 
+@@ -1479,10 +1477,11 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
+ 
+ 		if (intr_status & CNTOVF) {
+ 			/* missed pkts */
+-			np->stats.rx_missed_errors += ioread32(ioaddr + TALLY) & 0x7fff;
++			dev->stats.rx_missed_errors +=
++				ioread32(ioaddr + TALLY) & 0x7fff;
+ 
+ 			/* crc error */
+-			np->stats.rx_crc_errors +=
++			dev->stats.rx_crc_errors +=
+ 			    (ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
+ 		}
+ 
+@@ -1513,30 +1512,30 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
+ 
+ 			if (!(np->crvalue & CR_W_ENH)) {
+ 				if (tx_status & (CSL | LC | EC | UDF | HF)) {
+-					np->stats.tx_errors++;
++					dev->stats.tx_errors++;
+ 					if (tx_status & EC)
+-						np->stats.tx_aborted_errors++;
++						dev->stats.tx_aborted_errors++;
+ 					if (tx_status & CSL)
+-						np->stats.tx_carrier_errors++;
++						dev->stats.tx_carrier_errors++;
+ 					if (tx_status & LC)
+-						np->stats.tx_window_errors++;
++						dev->stats.tx_window_errors++;
+ 					if (tx_status & UDF)
+-						np->stats.tx_fifo_errors++;
++						dev->stats.tx_fifo_errors++;
+ 					if ((tx_status & HF) && np->mii.full_duplex == 0)
+-						np->stats.tx_heartbeat_errors++;
++						dev->stats.tx_heartbeat_errors++;
+ 
+ 				} else {
+-					np->stats.tx_bytes +=
++					dev->stats.tx_bytes +=
+ 					    ((tx_control & PKTSMask) >> PKTSShift);
+ 
+-					np->stats.collisions +=
++					dev->stats.collisions +=
+ 					    ((tx_status & NCRMask) >> NCRShift);
+-					np->stats.tx_packets++;
++					dev->stats.tx_packets++;
  				}
- 				else
- 				{
-@@ -812,13 +811,13 @@ static void sun3_82586_rcv_int(struct net_device *dev)
- 					totlen += rstat & RBD_MASK;
- 					rbd->status = 0;
- 					printk("%s: received oversized frame! length: %d\n",dev->name,totlen);
--					p->stats.rx_dropped++;
-+					dev->stats.rx_dropped++;
- 			 }
+ 			} else {
+-				np->stats.tx_bytes +=
++				dev->stats.tx_bytes +=
+ 				    ((tx_control & PKTSMask) >> PKTSShift);
+-				np->stats.tx_packets++;
++				dev->stats.tx_packets++;
+ 			}
+ 
+ 			/* Free the original skb. */
+@@ -1564,10 +1563,12 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
+ 			long data;
+ 
+ 			data = ioread32(ioaddr + TSR);
+-			np->stats.tx_errors += (data & 0xff000000) >> 24;
+-			np->stats.tx_aborted_errors += (data & 0xff000000) >> 24;
+-			np->stats.tx_window_errors += (data & 0x00ff0000) >> 16;
+-			np->stats.collisions += (data & 0x0000ffff);
++			dev->stats.tx_errors += (data & 0xff000000) >> 24;
++			dev->stats.tx_aborted_errors +=
++				(data & 0xff000000) >> 24;
++			dev->stats.tx_window_errors +=
++				(data & 0x00ff0000) >> 16;
++			dev->stats.collisions += (data & 0x0000ffff);
  		}
- 		else /* frame !(ok), only with 'save-bad-frames' */
- 		{
- 			printk("%s: oops! rfd-error-status: %04x\n",dev->name,status);
--			p->stats.rx_errors++;
-+			dev->stats.rx_errors++;
+ 
+ 		if (--boguscnt < 0) {
+@@ -1593,10 +1594,11 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
+ 
+ 	/* read the tally counters */
+ 	/* missed pkts */
+-	np->stats.rx_missed_errors += ioread32(ioaddr + TALLY) & 0x7fff;
++	dev->stats.rx_missed_errors += ioread32(ioaddr + TALLY) & 0x7fff;
+ 
+ 	/* crc error */
+-	np->stats.rx_crc_errors += (ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
++	dev->stats.rx_crc_errors +=
++		(ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
+ 
+ 	if (debug)
+ 		printk(KERN_DEBUG "%s: exiting interrupt, status=%#4.4x.\n",
+@@ -1635,13 +1637,13 @@ static int netdev_rx(struct net_device *dev)
+ 					       "%s: Receive error, Rx status %8.8x.\n",
+ 					       dev->name, rx_status);
+ 
+-				np->stats.rx_errors++;	/* end of a packet. */
++				dev->stats.rx_errors++;	/* end of a packet. */
+ 				if (rx_status & (LONG | RUNT))
+-					np->stats.rx_length_errors++;
++					dev->stats.rx_length_errors++;
+ 				if (rx_status & RXER)
+-					np->stats.rx_frame_errors++;
++					dev->stats.rx_frame_errors++;
+ 				if (rx_status & CRC)
+-					np->stats.rx_crc_errors++;
++					dev->stats.rx_crc_errors++;
+ 			} else {
+ 				int need_to_reset = 0;
+ 				int desno = 0;
+@@ -1667,7 +1669,7 @@ static int netdev_rx(struct net_device *dev)
+ 				if (need_to_reset == 0) {
+ 					int i;
+ 
+-					np->stats.rx_length_errors++;
++					dev->stats.rx_length_errors++;
+ 
+ 					/* free all rx descriptors related this long pkt */
+ 					for (i = 0; i < desno; ++i) {
+@@ -1733,8 +1735,8 @@ static int netdev_rx(struct net_device *dev)
+ 			}
+ 			skb->protocol = eth_type_trans(skb, dev);
+ 			netif_rx(skb);
+-			np->stats.rx_packets++;
+-			np->stats.rx_bytes += pkt_len;
++			dev->stats.rx_packets++;
++			dev->stats.rx_bytes += pkt_len;
  		}
- 		p->rfd_top->stat_high = 0;
- 		p->rfd_top->last = RFD_SUSP; /* maybe exchange by RFD_LAST */
-@@ -885,7 +884,7 @@ static void sun3_82586_rnr_int(struct net_device *dev)
- {
- 	struct priv *p = netdev_priv(dev);
  
--	p->stats.rx_errors++;
-+	dev->stats.rx_errors++;
+ 		np->cur_rx = np->cur_rx->next_desc_logical;
+@@ -1754,11 +1756,13 @@ static struct net_device_stats *get_stats(struct net_device *dev)
  
- 	WAIT_4_SCB_CMD();		/* wait for the last cmd, WAIT_4_FULLSTAT?? */
- 	p->scb->cmd_ruc = RUC_ABORT; /* usually the RU is in the 'no resource'-state .. abort it now. */
-@@ -918,29 +917,29 @@ static void sun3_82586_xmt_int(struct net_device *dev)
- 
- 	if(status & STAT_OK)
- 	{
--		p->stats.tx_packets++;
--		p->stats.collisions += (status & TCMD_MAXCOLLMASK);
-+		dev->stats.tx_packets++;
-+		dev->stats.collisions += (status & TCMD_MAXCOLLMASK);
+ 	/* The chip only need report frame silently dropped. */
+ 	if (netif_running(dev)) {
+-		np->stats.rx_missed_errors += ioread32(ioaddr + TALLY) & 0x7fff;
+-		np->stats.rx_crc_errors += (ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
++		dev->stats.rx_missed_errors +=
++			ioread32(ioaddr + TALLY) & 0x7fff;
++		dev->stats.rx_crc_errors +=
++			(ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
  	}
- 	else
- 	{
--		p->stats.tx_errors++;
-+		dev->stats.tx_errors++;
- 		if(status & TCMD_LATECOLL) {
- 			printk("%s: late collision detected.\n",dev->name);
--			p->stats.collisions++;
-+			dev->stats.collisions++;
- 		}
- 		else if(status & TCMD_NOCARRIER) {
--			p->stats.tx_carrier_errors++;
-+			dev->stats.tx_carrier_errors++;
- 			printk("%s: no carrier detected.\n",dev->name);
- 		}
- 		else if(status & TCMD_LOSTCTS)
- 			printk("%s: loss of CTS detected.\n",dev->name);
- 		else if(status & TCMD_UNDERRUN) {
--			p->stats.tx_fifo_errors++;
-+			dev->stats.tx_fifo_errors++;
- 			printk("%s: DMA underrun detected.\n",dev->name);
- 		}
- 		else if(status & TCMD_MAXCOLL) {
- 			printk("%s: Max. collisions exceeded.\n",dev->name);
--			p->stats.collisions += 16;
-+			dev->stats.collisions += 16;
- 		}
- 	}
  
-@@ -1129,12 +1128,12 @@ static struct net_device_stats *sun3_82586_get_stats(struct net_device *dev)
- 	ovrn = swab16(p->scb->ovrn_errs);
- 	p->scb->ovrn_errs = 0;
- 
--	p->stats.rx_crc_errors += crc;
--	p->stats.rx_fifo_errors += ovrn;
--	p->stats.rx_frame_errors += aln;
--	p->stats.rx_dropped += rsc;
-+	dev->stats.rx_crc_errors += crc;
-+	dev->stats.rx_fifo_errors += ovrn;
-+	dev->stats.rx_frame_errors += aln;
-+	dev->stats.rx_dropped += rsc;
- 
--	return &p->stats;
+-	return &np->stats;
 +	return &dev->stats;
  }
  
- /********************************************************
+ 
 -- 
 1.7.0.4
 
