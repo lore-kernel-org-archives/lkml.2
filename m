@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758343Ab0GEOow (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 10:44:52 -0400
+	id S1756139Ab0GEOo1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 10:44:27 -0400
 Received: from mga03.intel.com ([143.182.124.21]:60744 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757599Ab0GEOod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 10:44:33 -0400
+	id S1752951Ab0GEOo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 10:44:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,540,1272870000"; 
-   d="scan'208";a="296676696"
+   d="scan'208";a="296676669"
 From: feng.tang@intel.com
 To: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
        hpa@zytor.com, jacob.jun.pan@intel.com, dtor@mail.ru,
        randy.dunlap@oracle.com
 Cc: Feng Tang <feng.tang@intel.com>
-Subject: [PATCH v2 4/5] Revert "Input: fixup X86_MRST selects"
-Date: Mon,  5 Jul 2010 23:03:21 +0800
-Message-Id: <1278342202-10973-5-git-send-email-feng.tang@intel.com>
+Subject: [PATCH v2 0/5] patches to settle i8042 with Intel MID platforms
+Date: Mon,  5 Jul 2010 23:03:17 +0800
+Message-Id: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
-References: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Feng Tang <feng.tang@intel.com>
 
-This reverts commit 0b28bac5aef7bd1ab213723df031e61db9ff151a.
+Hi All,
 
-After adding x86_platform's detection for i8042 controller, we
-don't need the force dependency on !X86_MRST any more
+Some x86 platforms like intel MID platforms don't have i8042 controllers,
+and i8042 driver's probe to some non-exist legacy IO ports may hang
+the MID processor. 
 
-Cc: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- drivers/input/keyboard/Kconfig |    2 +-
- drivers/input/serio/Kconfig    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Current solution for this is add dependency of SERIO_I8042 over
+!X86_MRST, then if we build a x86 kernel image with X86_MRST=y,
+it won't have i8042 driver support over common x86 platforms.
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 917eec3..3525f53 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -69,7 +69,7 @@ config KEYBOARD_ATARI
- 	  module will be called atakbd.
- 
- config KEYBOARD_ATKBD
--	tristate "AT keyboard" if EMBEDDED || !X86 || X86_MRST
-+	tristate "AT keyboard" if EMBEDDED || !X86
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
-diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-index 256b9e9..3bfe8fa 100644
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -22,7 +22,7 @@ config SERIO_I8042
- 	tristate "i8042 PC Keyboard controller" if EMBEDDED || !X86
- 	default y
- 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
--		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN && !X86_MRST
-+		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN
- 	help
- 	  i8042 is the chip over which the standard AT keyboard and PS/2
- 	  mouse are connected to the computer. If you use these devices,
--- 
-1.7.0.4
+So we add a i8042 pre-detect hook into x86_platforms ops, so that
+i8042 driver can use it to run-time judge whether to go on with
+probe process.
+
+Please review these patches.
+
+Thanks,
+Feng
+
+Changelog:
+	v2:
+	   * only call x86_platforms.i8042_detect() for x86 platforms
+
+----------------
+Feng Tang (5):
+  x86: add i8042 pre-detection hook to x86_platform_ops
+  x86, mrst: add i8042_detect API for Moorestwon platform
+  Revert "Input: do not force selecting i8042 on Moorestown"
+  Revert "Input: fixup X86_MRST selects"
+  input: i8042 - add runtime check in x86's i8042_platform_init
+
+ arch/x86/include/asm/x86_init.h       |    2 ++
+ arch/x86/kernel/mrst.c                |    7 +++++++
+ arch/x86/kernel/x86_init.c            |    4 +++-
+ drivers/input/keyboard/Kconfig        |    4 ++--
+ drivers/input/mouse/Kconfig           |    2 +-
+ drivers/input/serio/Kconfig           |    2 +-
+ drivers/input/serio/i8042-x86ia64io.h |    6 ++++++
+ 7 files changed, 22 insertions(+), 5 deletions(-)
 
