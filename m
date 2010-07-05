@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674Ab0GEMQy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 08:16:54 -0400
+	id S1758652Ab0GEMOe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 08:14:34 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:47228 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758286Ab0GEMNb (ORCPT
+	with ESMTP id S1758608Ab0GEMO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 08:13:31 -0400
+	Mon, 5 Jul 2010 08:14:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=CLRAYXkvmXGC9E0XFDZmvg8k522DIZVkzd8niIrhZXK912BPpoD73W+FYFdZ2RbvDr
-         yiQ/e5i2vgic7FL8b302LbEjz7vRhPPQHR1lpQ3bPyYowPTInANEYjCUcKANa74NxjMo
-         26sX8gzwy5pOi2P6usjNOPbCIqUmRe9EMnnzs=
+        b=dxDDHmvGiMI5zpLY9IQUAPTKp1QmTBYiFAa/SHenYNi4DbBD14Oou0P2WNEalCg5HR
+         /ux0msUBc07wY7uLp79WK3lYbWjAlCKDy6W+2gfmawU05vlTtFMFTL3eDmE2wVbma5T1
+         pn21P4JzYlqLomjD69zp+1+VHMNp4ze1hwums=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-       Chaithrika U S <chaithrika@ti.com>, Sriramakrishnan <srk@ti.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Jiri Pirko <jpirko@redhat.com>, netdev@vger.kernel.org,
+Cc: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+       Jiri Pirko <jpirko@redhat.com>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       Jiri Kosina <jkosina@suse.cz>, netdev@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH] davinci_emac: Use the instance of net_device_stats from net_device.
-Date: Mon,  5 Jul 2010 16:13:26 +0400
-Message-Id: <1278332007-16175-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH] ni52: Use the instance of net_device_stats from net_device.
+Date: Mon,  5 Jul 2010 16:14:23 +0400
+Message-Id: <1278332065-17831-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,128 +33,114 @@ we can remove the instance of this from the adapter structure.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/net/davinci_emac.c |   38 +++++++++++++++++++-------------------
- 1 files changed, 19 insertions(+), 19 deletions(-)
+ drivers/net/ni52.c |   37 ++++++++++++++++++-------------------
+ 1 files changed, 18 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/net/davinci_emac.c b/drivers/net/davinci_emac.c
-index 08e82b1..25e14d2 100644
---- a/drivers/net/davinci_emac.c
-+++ b/drivers/net/davinci_emac.c
-@@ -470,7 +470,6 @@ struct emac_priv {
- 	u32 isr_count;
- 	u8 rmii_en;
- 	u8 version;
--	struct net_device_stats net_dev_stats;
- 	u32 mac_hash1;
- 	u32 mac_hash2;
- 	u32 multicast_hash_cnt[EMAC_NUM_MULTICAST_BITS];
-@@ -1180,16 +1179,17 @@ static int emac_net_tx_complete(struct emac_priv *priv,
- 				void **net_data_tokens,
- 				int num_tokens, u32 ch)
- {
-+	struct net_device *ndev = priv->ndev;
- 	u32 cnt;
+diff --git a/drivers/net/ni52.c b/drivers/net/ni52.c
+index 9bddb5f..33618ed 100644
+--- a/drivers/net/ni52.c
++++ b/drivers/net/ni52.c
+@@ -185,7 +185,6 @@ static void    ni52_xmt_int(struct net_device *dev);
+ static void    ni52_rnr_int(struct net_device *dev);
  
--	if (unlikely(num_tokens && netif_queue_stopped(priv->ndev)))
--		netif_start_queue(priv->ndev);
-+	if (unlikely(num_tokens && netif_queue_stopped(dev)))
-+		netif_start_queue(dev);
- 	for (cnt = 0; cnt < num_tokens; cnt++) {
- 		struct sk_buff *skb = (struct sk_buff *)net_data_tokens[cnt];
- 		if (skb == NULL)
- 			continue;
--		priv->net_dev_stats.tx_packets++;
--		priv->net_dev_stats.tx_bytes += skb->len;
-+		ndev->stats.tx_packets++;
-+		ndev->stats.tx_bytes += skb->len;
- 		dev_kfree_skb_any(skb);
- 	}
- 	return 0;
-@@ -1476,7 +1476,7 @@ static int emac_dev_xmit(struct sk_buff *skb, struct net_device *ndev)
- 					" err. Out of TX BD's");
- 			netif_stop_queue(priv->ndev);
+ struct priv {
+-	struct net_device_stats stats;
+ 	char __iomem *base;
+ 	char __iomem *mapped;
+ 	char __iomem *memtop;
+@@ -972,10 +971,10 @@ static void ni52_rcv_int(struct net_device *dev)
+ 					memcpy_fromio(skb->data, p->base + readl(&rbd->buffer), totlen);
+ 					skb->protocol = eth_type_trans(skb, dev);
+ 					netif_rx(skb);
+-					p->stats.rx_packets++;
+-					p->stats.rx_bytes += totlen;
++					dev->stats.rx_packets++;
++					dev->stats.rx_bytes += totlen;
+ 				} else
+-					p->stats.rx_dropped++;
++					dev->stats.rx_dropped++;
+ 			} else {
+ 				int rstat;
+ 				 /* free all RBD's until RBD_LAST is set */
+@@ -993,12 +992,12 @@ static void ni52_rcv_int(struct net_device *dev)
+ 				writew(0, &rbd->status);
+ 				printk(KERN_ERR "%s: received oversized frame! length: %d\n",
+ 					dev->name, totlen);
+-				p->stats.rx_dropped++;
++				dev->stats.rx_dropped++;
+ 			 }
+ 		} else {/* frame !(ok), only with 'save-bad-frames' */
+ 			printk(KERN_ERR "%s: oops! rfd-error-status: %04x\n",
+ 				dev->name, status);
+-			p->stats.rx_errors++;
++			dev->stats.rx_errors++;
  		}
--		priv->net_dev_stats.tx_dropped++;
-+		ndev->stats.tx_dropped++;
- 		return NETDEV_TX_BUSY;
- 	}
- 
-@@ -1501,7 +1501,7 @@ static void emac_dev_tx_timeout(struct net_device *ndev)
- 	if (netif_msg_tx_err(priv))
- 		dev_err(emac_dev, "DaVinci EMAC: xmit timeout, restarting TX");
- 
--	priv->net_dev_stats.tx_errors++;
-+	ndev->stats.tx_errors++;
- 	emac_int_disable(priv);
- 	emac_stop_txch(priv, EMAC_DEF_TX_CH);
- 	emac_cleanup_txch(priv, EMAC_DEF_TX_CH);
-@@ -1926,14 +1926,14 @@ static void emac_addbd_to_rx_queue(struct emac_priv *priv, u32 ch,
- static int emac_net_rx_cb(struct emac_priv *priv,
- 			  struct emac_netpktobj *net_pkt_list)
+ 		writeb(0, &p->rfd_top->stat_high);
+ 		writeb(RFD_SUSP, &p->rfd_top->last); /* maybe exchange by RFD_LAST */
+@@ -1043,7 +1042,7 @@ static void ni52_rnr_int(struct net_device *dev)
  {
--	struct sk_buff *p_skb;
--	p_skb = (struct sk_buff *)net_pkt_list->pkt_token;
-+	struct net_device *ndev = priv->ndev;
-+	struct sk_buff *p_skb = net_pkt_list->pkt_token;
- 	/* set length of packet */
- 	skb_put(p_skb, net_pkt_list->pkt_length);
- 	p_skb->protocol = eth_type_trans(p_skb, priv->ndev);
- 	netif_receive_skb(p_skb);
--	priv->net_dev_stats.rx_bytes += net_pkt_list->pkt_length;
--	priv->net_dev_stats.rx_packets++;
-+	ndev->stats.rx_bytes += net_pkt_list->pkt_length;
-+	ndev->stats.rx_packets++;
- 	return 0;
+ 	struct priv *p = netdev_priv(dev);
+ 
+-	p->stats.rx_errors++;
++	dev->stats.rx_errors++;
+ 
+ 	wait_for_scb_cmd(dev);		/* wait for the last cmd, WAIT_4_FULLSTAT?? */
+ 	writeb(RUC_ABORT, &p->scb->cmd_ruc); /* usually the RU is in the 'no resource'-state .. abort it now. */
+@@ -1076,29 +1075,29 @@ static void ni52_xmt_int(struct net_device *dev)
+ 		printk(KERN_ERR "%s: strange .. xmit-int without a 'COMPLETE'\n", dev->name);
+ 
+ 	if (status & STAT_OK) {
+-		p->stats.tx_packets++;
+-		p->stats.collisions += (status & TCMD_MAXCOLLMASK);
++		dev->stats.tx_packets++;
++		dev->stats.collisions += (status & TCMD_MAXCOLLMASK);
+ 	} else {
+-		p->stats.tx_errors++;
++		dev->stats.tx_errors++;
+ 		if (status & TCMD_LATECOLL) {
+ 			printk(KERN_ERR "%s: late collision detected.\n",
+ 				dev->name);
+-			p->stats.collisions++;
++			dev->stats.collisions++;
+ 		} else if (status & TCMD_NOCARRIER) {
+-			p->stats.tx_carrier_errors++;
++			dev->stats.tx_carrier_errors++;
+ 			printk(KERN_ERR "%s: no carrier detected.\n",
+ 				dev->name);
+ 		} else if (status & TCMD_LOSTCTS)
+ 			printk(KERN_ERR "%s: loss of CTS detected.\n",
+ 				dev->name);
+ 		else if (status & TCMD_UNDERRUN) {
+-			p->stats.tx_fifo_errors++;
++			dev->stats.tx_fifo_errors++;
+ 			printk(KERN_ERR "%s: DMA underrun detected.\n",
+ 				dev->name);
+ 		} else if (status & TCMD_MAXCOLL) {
+ 			printk(KERN_ERR "%s: Max. collisions exceeded.\n",
+ 				dev->name);
+-			p->stats.collisions += 16;
++			dev->stats.collisions += 16;
+ 		}
+ 	}
+ #if (NUM_XMIT_BUFFS > 1)
+@@ -1286,12 +1285,12 @@ static struct net_device_stats *ni52_get_stats(struct net_device *dev)
+ 	ovrn = readw(&p->scb->ovrn_errs);
+ 	writew(0, &p->scb->ovrn_errs);
+ 
+-	p->stats.rx_crc_errors += crc;
+-	p->stats.rx_fifo_errors += ovrn;
+-	p->stats.rx_frame_errors += aln;
+-	p->stats.rx_dropped += rsc;
++	dev->stats.rx_crc_errors += crc;
++	dev->stats.rx_fifo_errors += ovrn;
++	dev->stats.rx_frame_errors += aln;
++	dev->stats.rx_dropped += rsc;
+ 
+-	return &p->stats;
++	return &dev->stats;
  }
  
-@@ -2570,39 +2570,39 @@ static struct net_device_stats *emac_dev_getnetstats(struct net_device *ndev)
- 	else
- 		stats_clear_mask = 0;
- 
--	priv->net_dev_stats.multicast += emac_read(EMAC_RXMCASTFRAMES);
-+	ndev->stats.multicast += emac_read(EMAC_RXMCASTFRAMES);
- 	emac_write(EMAC_RXMCASTFRAMES, stats_clear_mask);
- 
--	priv->net_dev_stats.collisions += (emac_read(EMAC_TXCOLLISION) +
-+	ndev->stats.collisions += (emac_read(EMAC_TXCOLLISION) +
- 					   emac_read(EMAC_TXSINGLECOLL) +
- 					   emac_read(EMAC_TXMULTICOLL));
- 	emac_write(EMAC_TXCOLLISION, stats_clear_mask);
- 	emac_write(EMAC_TXSINGLECOLL, stats_clear_mask);
- 	emac_write(EMAC_TXMULTICOLL, stats_clear_mask);
- 
--	priv->net_dev_stats.rx_length_errors += (emac_read(EMAC_RXOVERSIZED) +
-+	ndev->stats.rx_length_errors += (emac_read(EMAC_RXOVERSIZED) +
- 						emac_read(EMAC_RXJABBER) +
- 						emac_read(EMAC_RXUNDERSIZED));
- 	emac_write(EMAC_RXOVERSIZED, stats_clear_mask);
- 	emac_write(EMAC_RXJABBER, stats_clear_mask);
- 	emac_write(EMAC_RXUNDERSIZED, stats_clear_mask);
- 
--	priv->net_dev_stats.rx_over_errors += (emac_read(EMAC_RXSOFOVERRUNS) +
-+	ndev->stats.rx_over_errors += (emac_read(EMAC_RXSOFOVERRUNS) +
- 					       emac_read(EMAC_RXMOFOVERRUNS));
- 	emac_write(EMAC_RXSOFOVERRUNS, stats_clear_mask);
- 	emac_write(EMAC_RXMOFOVERRUNS, stats_clear_mask);
- 
--	priv->net_dev_stats.rx_fifo_errors += emac_read(EMAC_RXDMAOVERRUNS);
-+	ndev->stats.rx_fifo_errors += emac_read(EMAC_RXDMAOVERRUNS);
- 	emac_write(EMAC_RXDMAOVERRUNS, stats_clear_mask);
- 
--	priv->net_dev_stats.tx_carrier_errors +=
-+	ndev->stats.tx_carrier_errors +=
- 		emac_read(EMAC_TXCARRIERSENSE);
- 	emac_write(EMAC_TXCARRIERSENSE, stats_clear_mask);
- 
--	priv->net_dev_stats.tx_fifo_errors = emac_read(EMAC_TXUNDERRUN);
-+	ndev->stats.tx_fifo_errors = emac_read(EMAC_TXUNDERRUN);
- 	emac_write(EMAC_TXUNDERRUN, stats_clear_mask);
- 
--	return &priv->net_dev_stats;
-+	return &ndev->stats;
- }
- 
- static const struct net_device_ops emac_netdev_ops = {
+ /********************************************************
 -- 
 1.7.0.4
 
