@@ -1,31 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab0GEJ5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 05:57:44 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:50734 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab0GEJ5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 05:57:42 -0400
-Date: Mon, 5 Jul 2010 10:57:28 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Shane McDonald <mcdonald.shane@gmail.com>
-Cc: Christoph Egger <siccegge@cs.fau.de>, Yoichi Yuasa <yuasa@linux-mips.org>,
-       linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 9/9] Removing dead CONFIG_MTD_PMC_MSP_RAMROOT
-Message-ID: <20100705095727.GD4461@linux-mips.org>
-References: <cover.1275925108.git.siccegge@cs.fau.de>
- <2f41f9174bd6ba24b5609e06e87c47d5f44446d1.1275925108.git.siccegge@cs.fau.de>
- <AANLkTilBd1ei3SYtBlpc9KQIz8vgXxa9rpA2wZCxq0qL@mail.gmail.com>
+	id S1753800Ab0GEJ6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 05:58:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41865 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab0GEJ6G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 05:58:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:in-reply-to
+         :user-agent:mime-version:content-type:content-transfer-encoding;
+        b=OOPr9EnRN9qtoKSWqI3tOtSj1FjLgpJmWWCHoj/SnItKblALFUiH+1R/bcsRDJGvDr
+         PHx9VIJkPgC+1ZA2bu9IK8vWahyf0iOU05j6PF7tMzDiQoF0h6k09Npxr17EuX6dBuSq
+         AwgUi3hFqmeqhhZsW2W9eIHtF94dxZQMBXXig=
+Date: Mon, 05 Jul 2010 14:27:15 +0430
+From: Ali Gholami Rudi <ali@rudi.ir>
+To: dfeng@redhat.com
+Cc: x86@kernel.org, venki@google.com, tglx@linutronix.de,
+       suresh.b.siddha@intel.com, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [regression] commit 6a4f3b52 causes invalid memtype
+Message-ID: <4c31ac7b.J+CU0Yt+zKZ9ho1fjKvu6Z1v@tarekhel>
+References: <20100507075128@tarekhel> <4C319D61.5090002@redhat.com>
+ <20100507092842@tarekhel> <4C31A7A0.1020800@redhat.com>
+In-Reply-To: <4C31A7A0.1020800@redhat.com>
+User-Agent: Heirloom mailx 12.4 7/29/08
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilBd1ei3SYtBlpc9KQIz8vgXxa9rpA2wZCxq0qL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, also queued for 2.6.26.
+Xiaotian Feng <dfeng@redhat.com> wrote:
+> On 07/05/2010 05:28 PM, Ali Gholami Rudi wrote:
+> > Xiaotian Feng<dfeng@redhat.com>  wrote:
+> >> Could you please try following commit in -tip tree?
+> >>
+> >> commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+> >> Author: Peter Zijlstra<peterz@infradead.org>
+> >> Date:   Sat May 29 15:31:43 2010 +0200
+> >>
+> >>       rbtree: Undo augmented trees performance damage
+> >
+> > Where can I get it?  I couldn't find it either in
+> > Linus' or x86 repo tip.
+> http://git.kernel.org/tip/2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
 
-  Ralf
+It does fix it.
+
+Thanks,
+Ali
+
