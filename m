@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758414Ab0GEMNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 08:13:45 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51488 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758378Ab0GEMNm (ORCPT
+	id S1757548Ab0GEMN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 08:13:28 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47228 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757013Ab0GEMN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 08:13:42 -0400
+	Mon, 5 Jul 2010 08:13:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=HgACifV5DCHYAm7/bsRjq0xiN/e7IfF8G6jVZmedMxMnBMMBMh2npRWIg3YnUsSTEN
-         7qiq39lpfUhTn+mrEM5c0+pZNqPq9aCYIwLF6rvxpwmTnfTj6rPHISkxbkTY1SilPaNJ
-         cXKpTd8ijdlPDwfTFMPR7KCEUUr9T99ZUSrPQ=
+        b=BKwCpEC7kt3NlfAa8VEJPgl9mNAS7Zvfyid+S5ezudt+lmemcR8dB3ogHD14dC4k83
+         THzai02xc7mtepknoX9vz1aoI1vwWAFOTo1nOSbMD3GR2kt25kOqW8CcoF55JYruWrZU
+         BODW70gOvj0hHgxupr06gnV2hN9QZEkWEbUDA=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: Kernel Janitors <kernel-janitors@vger.kernel.org>
 Cc: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
@@ -20,9 +20,9 @@ Cc: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
        Stephen Hemminger <shemminger@vyatta.com>,
        Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH] fealnx: Use the instance of net_device_stats from net_device.
-Date: Mon,  5 Jul 2010 16:13:36 +0400
-Message-Id: <1278332018-16490-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH] epic100: Use the instance of net_device_stats from net_device.
+Date: Mon,  5 Jul 2010 16:13:20 +0400
+Message-Id: <1278332002-15860-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,173 +33,154 @@ we can remove the instance of this from the adapter structure.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/net/fealnx.c |   68 ++++++++++++++++++++++++++-----------------------
- 1 files changed, 36 insertions(+), 32 deletions(-)
+ drivers/net/epic100.c |   47 ++++++++++++++++++++++-------------------------
+ 1 files changed, 22 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/net/fealnx.c b/drivers/net/fealnx.c
-index 15f4f8d..d7e8f6b 100644
---- a/drivers/net/fealnx.c
-+++ b/drivers/net/fealnx.c
-@@ -382,8 +382,6 @@ struct netdev_private {
- 
- 	spinlock_t lock;
+diff --git a/drivers/net/epic100.c b/drivers/net/epic100.c
+index 4c27465..57c8ac0 100644
+--- a/drivers/net/epic100.c
++++ b/drivers/net/epic100.c
+@@ -278,7 +278,6 @@ struct epic_private {
+ 	struct pci_dev *pci_dev;			/* PCI bus location. */
+ 	int chip_id, chip_flags;
  
 -	struct net_device_stats stats;
--
- 	/* Media monitoring timer. */
- 	struct timer_list timer;
+ 	struct timer_list timer;			/* Media selection timer. */
+ 	int tx_threshold;
+ 	unsigned char mc_filter[8];
+@@ -770,7 +769,6 @@ static int epic_open(struct net_device *dev)
+ static void epic_pause(struct net_device *dev)
+ {
+ 	long ioaddr = dev->base_addr;
+-	struct epic_private *ep = netdev_priv(dev);
  
-@@ -1234,7 +1232,7 @@ static void fealnx_tx_timeout(struct net_device *dev)
- 	spin_unlock_irqrestore(&np->lock, flags);
+ 	netif_stop_queue (dev);
+ 
+@@ -781,9 +779,9 @@ static void epic_pause(struct net_device *dev)
+ 
+ 	/* Update the error counts. */
+ 	if (inw(ioaddr + COMMAND) != 0xffff) {
+-		ep->stats.rx_missed_errors += inb(ioaddr + MPCNT);
+-		ep->stats.rx_frame_errors += inb(ioaddr + ALICNT);
+-		ep->stats.rx_crc_errors += inb(ioaddr + CRCCNT);
++		dev->stats.rx_missed_errors += inb(ioaddr + MPCNT);
++		dev->stats.rx_frame_errors += inb(ioaddr + ALICNT);
++		dev->stats.rx_crc_errors += inb(ioaddr + CRCCNT);
+ 	}
+ 
+ 	/* Remove the packets on the Rx queue. */
+@@ -900,7 +898,7 @@ static void epic_tx_timeout(struct net_device *dev)
+ 		}
+ 	}
+ 	if (inw(ioaddr + TxSTAT) & 0x10) {		/* Tx FIFO underflow. */
+-		ep->stats.tx_fifo_errors++;
++		dev->stats.tx_fifo_errors++;
+ 		outl(RestartTx, ioaddr + COMMAND);
+ 	} else {
+ 		epic_restart(dev);
+@@ -908,7 +906,7 @@ static void epic_tx_timeout(struct net_device *dev)
+ 	}
  
  	dev->trans_start = jiffies; /* prevent tx timeout */
--	np->stats.tx_errors++;
+-	ep->stats.tx_errors++;
 +	dev->stats.tx_errors++;
- 	netif_wake_queue(dev); /* or .._start_.. ?? */
+ 	if (!ep->tx_full)
+ 		netif_wake_queue(dev);
  }
+@@ -1016,7 +1014,7 @@ static netdev_tx_t epic_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ static void epic_tx_error(struct net_device *dev, struct epic_private *ep,
+ 			  int status)
+ {
+-	struct net_device_stats *stats = &ep->stats;
++	struct net_device_stats *stats = &dev->stats;
  
-@@ -1479,10 +1477,11 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
+ #ifndef final_version
+ 	/* There was an major error, log it. */
+@@ -1053,9 +1051,9 @@ static void epic_tx(struct net_device *dev, struct epic_private *ep)
+ 			break;	/* It still hasn't been Txed */
  
- 		if (intr_status & CNTOVF) {
- 			/* missed pkts */
--			np->stats.rx_missed_errors += ioread32(ioaddr + TALLY) & 0x7fff;
-+			dev->stats.rx_missed_errors +=
-+				ioread32(ioaddr + TALLY) & 0x7fff;
+ 		if (likely(txstatus & 0x0001)) {
+-			ep->stats.collisions += (txstatus >> 8) & 15;
+-			ep->stats.tx_packets++;
+-			ep->stats.tx_bytes += ep->tx_skbuff[entry]->len;
++			dev->stats.collisions += (txstatus >> 8) & 15;
++			dev->stats.tx_packets++;
++			dev->stats.tx_bytes += ep->tx_skbuff[entry]->len;
+ 		} else
+ 			epic_tx_error(dev, ep, txstatus);
  
- 			/* crc error */
--			np->stats.rx_crc_errors +=
-+			dev->stats.rx_crc_errors +=
- 			    (ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
- 		}
+@@ -1125,12 +1123,12 @@ static irqreturn_t epic_interrupt(int irq, void *dev_instance)
+ 			goto out;
  
-@@ -1513,30 +1512,30 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
+ 		/* Always update the error counts to avoid overhead later. */
+-		ep->stats.rx_missed_errors += inb(ioaddr + MPCNT);
+-		ep->stats.rx_frame_errors += inb(ioaddr + ALICNT);
+-		ep->stats.rx_crc_errors += inb(ioaddr + CRCCNT);
++		dev->stats.rx_missed_errors += inb(ioaddr + MPCNT);
++		dev->stats.rx_frame_errors += inb(ioaddr + ALICNT);
++		dev->stats.rx_crc_errors += inb(ioaddr + CRCCNT);
  
- 			if (!(np->crvalue & CR_W_ENH)) {
- 				if (tx_status & (CSL | LC | EC | UDF | HF)) {
--					np->stats.tx_errors++;
-+					dev->stats.tx_errors++;
- 					if (tx_status & EC)
--						np->stats.tx_aborted_errors++;
-+						dev->stats.tx_aborted_errors++;
- 					if (tx_status & CSL)
--						np->stats.tx_carrier_errors++;
-+						dev->stats.tx_carrier_errors++;
- 					if (tx_status & LC)
--						np->stats.tx_window_errors++;
-+						dev->stats.tx_window_errors++;
- 					if (tx_status & UDF)
--						np->stats.tx_fifo_errors++;
-+						dev->stats.tx_fifo_errors++;
- 					if ((tx_status & HF) && np->mii.full_duplex == 0)
--						np->stats.tx_heartbeat_errors++;
-+						dev->stats.tx_heartbeat_errors++;
- 
- 				} else {
--					np->stats.tx_bytes +=
-+					dev->stats.tx_bytes +=
- 					    ((tx_control & PKTSMask) >> PKTSShift);
- 
--					np->stats.collisions +=
-+					dev->stats.collisions +=
- 					    ((tx_status & NCRMask) >> NCRShift);
--					np->stats.tx_packets++;
-+					dev->stats.tx_packets++;
- 				}
- 			} else {
--				np->stats.tx_bytes +=
-+				dev->stats.tx_bytes +=
- 				    ((tx_control & PKTSMask) >> PKTSShift);
--				np->stats.tx_packets++;
-+				dev->stats.tx_packets++;
- 			}
- 
- 			/* Free the original skb. */
-@@ -1564,10 +1563,12 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
- 			long data;
- 
- 			data = ioread32(ioaddr + TSR);
--			np->stats.tx_errors += (data & 0xff000000) >> 24;
--			np->stats.tx_aborted_errors += (data & 0xff000000) >> 24;
--			np->stats.tx_window_errors += (data & 0x00ff0000) >> 16;
--			np->stats.collisions += (data & 0x0000ffff);
-+			dev->stats.tx_errors += (data & 0xff000000) >> 24;
-+			dev->stats.tx_aborted_errors +=
-+				(data & 0xff000000) >> 24;
-+			dev->stats.tx_window_errors +=
-+				(data & 0x00ff0000) >> 16;
-+			dev->stats.collisions += (data & 0x0000ffff);
- 		}
- 
- 		if (--boguscnt < 0) {
-@@ -1593,10 +1594,11 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
- 
- 	/* read the tally counters */
- 	/* missed pkts */
--	np->stats.rx_missed_errors += ioread32(ioaddr + TALLY) & 0x7fff;
-+	dev->stats.rx_missed_errors += ioread32(ioaddr + TALLY) & 0x7fff;
- 
- 	/* crc error */
--	np->stats.rx_crc_errors += (ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
-+	dev->stats.rx_crc_errors +=
-+		(ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
- 
- 	if (debug)
- 		printk(KERN_DEBUG "%s: exiting interrupt, status=%#4.4x.\n",
-@@ -1635,13 +1637,13 @@ static int netdev_rx(struct net_device *dev)
- 					       "%s: Receive error, Rx status %8.8x.\n",
- 					       dev->name, rx_status);
- 
--				np->stats.rx_errors++;	/* end of a packet. */
-+				dev->stats.rx_errors++;	/* end of a packet. */
- 				if (rx_status & (LONG | RUNT))
--					np->stats.rx_length_errors++;
-+					dev->stats.rx_length_errors++;
- 				if (rx_status & RXER)
--					np->stats.rx_frame_errors++;
-+					dev->stats.rx_frame_errors++;
- 				if (rx_status & CRC)
--					np->stats.rx_crc_errors++;
-+					dev->stats.rx_crc_errors++;
- 			} else {
- 				int need_to_reset = 0;
- 				int desno = 0;
-@@ -1667,7 +1669,7 @@ static int netdev_rx(struct net_device *dev)
- 				if (need_to_reset == 0) {
- 					int i;
- 
--					np->stats.rx_length_errors++;
-+					dev->stats.rx_length_errors++;
- 
- 					/* free all rx descriptors related this long pkt */
- 					for (i = 0; i < desno; ++i) {
-@@ -1733,8 +1735,8 @@ static int netdev_rx(struct net_device *dev)
+ 		if (status & TxUnderrun) { /* Tx FIFO underflow. */
+-			ep->stats.tx_fifo_errors++;
++			dev->stats.tx_fifo_errors++;
+ 			outl(ep->tx_threshold += 128, ioaddr + TxThresh);
+ 			/* Restart the transmit process. */
+ 			outl(RestartTx, ioaddr + COMMAND);
+@@ -1183,10 +1181,10 @@ static int epic_rx(struct net_device *dev, int budget)
+ 			if (status & 0x2000) {
+ 				printk(KERN_WARNING "%s: Oversized Ethernet frame spanned "
+ 					   "multiple buffers, status %4.4x!\n", dev->name, status);
+-				ep->stats.rx_length_errors++;
++				dev->stats.rx_length_errors++;
+ 			} else if (status & 0x0006)
+ 				/* Rx Frame errors are counted in hardware. */
+-				ep->stats.rx_errors++;
++				dev->stats.rx_errors++;
+ 		} else {
+ 			/* Malloc up new buffer, compatible with net-2e. */
+ 			/* Omit the four octet CRC from the length. */
+@@ -1223,8 +1221,8 @@ static int epic_rx(struct net_device *dev, int budget)
  			}
  			skb->protocol = eth_type_trans(skb, dev);
- 			netif_rx(skb);
--			np->stats.rx_packets++;
--			np->stats.rx_bytes += pkt_len;
+ 			netif_receive_skb(skb);
+-			ep->stats.rx_packets++;
+-			ep->stats.rx_bytes += pkt_len;
 +			dev->stats.rx_packets++;
 +			dev->stats.rx_bytes += pkt_len;
  		}
+ 		work_done++;
+ 		entry = (++ep->cur_rx) % RX_RING_SIZE;
+@@ -1259,7 +1257,7 @@ static void epic_rx_err(struct net_device *dev, struct epic_private *ep)
+ 	if (status == EpicRemoved)
+ 		return;
+ 	if (status & RxOverflow) 	/* Missed a Rx frame. */
+-		ep->stats.rx_errors++;
++		dev->stats.rx_errors++;
+ 	if (status & (RxOverflow | RxFull))
+ 		outw(RxQueued, ioaddr + COMMAND);
+ }
+@@ -1357,17 +1355,16 @@ static int epic_close(struct net_device *dev)
  
- 		np->cur_rx = np->cur_rx->next_desc_logical;
-@@ -1754,11 +1756,13 @@ static struct net_device_stats *get_stats(struct net_device *dev)
+ static struct net_device_stats *epic_get_stats(struct net_device *dev)
+ {
+-	struct epic_private *ep = netdev_priv(dev);
+ 	long ioaddr = dev->base_addr;
  
- 	/* The chip only need report frame silently dropped. */
  	if (netif_running(dev)) {
--		np->stats.rx_missed_errors += ioread32(ioaddr + TALLY) & 0x7fff;
--		np->stats.rx_crc_errors += (ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
-+		dev->stats.rx_missed_errors +=
-+			ioread32(ioaddr + TALLY) & 0x7fff;
-+		dev->stats.rx_crc_errors +=
-+			(ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
+ 		/* Update the error counts. */
+-		ep->stats.rx_missed_errors += inb(ioaddr + MPCNT);
+-		ep->stats.rx_frame_errors += inb(ioaddr + ALICNT);
+-		ep->stats.rx_crc_errors += inb(ioaddr + CRCCNT);
++		dev->stats.rx_missed_errors += inb(ioaddr + MPCNT);
++		dev->stats.rx_frame_errors += inb(ioaddr + ALICNT);
++		dev->stats.rx_crc_errors += inb(ioaddr + CRCCNT);
  	}
  
--	return &np->stats;
+-	return &ep->stats;
 +	return &dev->stats;
  }
  
- 
+ /* Set or clear the multicast filter for this adaptor.
 -- 
 1.7.0.4
 
