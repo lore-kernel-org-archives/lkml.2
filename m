@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab0GEJ02 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 05:26:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63194 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab0GEJ00 (ORCPT
+	id S1756615Ab0GEJ20 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 05:28:26 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35025 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009Ab0GEJ2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 05:26:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition
-         :content-transfer-encoding:in-reply-to:user-agent;
-        b=dyNs196kz6x8DM300fcKp1fFCrxDeZg6Xsd/xTUZBNm6criMekn0L5tx6TW/nX6l5c
-         vP+0xjtx8F2kporn9Rz7WBI/D4RVWXp4I6NnUHUtqHtR8TXXMx3NVv11J5fi+ocXeA2R
-         SjurPbGEMhvqJM4PhepPcJnQ66x6Xg/05DkEo=
-Date: Mon, 5 Jul 2010 11:24:15 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       Marcel Holtmann <marcel@holtmann.org>, Bing Zhao <bzhao@marvell.com>,
-       Ben Hutchings <ben@decadent.org.uk>,
-       =?iso-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
-       Julia Lawall <julia@diku.dk>, linux-bluetooth@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bluetooth: btmrvl_sdio: silence warning
-Message-ID: <20100705092414.GY19184@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Kulikov Vasiliy <segooon@gmail.com>,
-	Kernel Janitors <kernel-janitors@vger.kernel.org>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	Bing Zhao <bzhao@marvell.com>, Ben Hutchings <ben@decadent.org.uk>,
-	=?iso-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
-	Julia Lawall <julia@diku.dk>, linux-bluetooth@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1278316883-29784-1-git-send-email-segooon@gmail.com>
+	Mon, 5 Jul 2010 05:28:22 -0400
+Date: Mon, 5 Jul 2010 11:28:16 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] hugetlb: add allocate function for hugepage
+ migration
+Message-ID: <20100705092816.GA8510@basil.fritz.box>
+References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1278049646-29769-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20100702090854.GD12221@basil.fritz.box>
+ <20100705084629.GC29648@spritzera.linux.bs1.fc.nec.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1278316883-29784-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100705084629.GC29648@spritzera.linux.bs1.fc.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 12:01:22PM +0400, Kulikov Vasiliy wrote:
-> Clone checking of ret to simplify the code.
+On Mon, Jul 05, 2010 at 05:46:29PM +0900, Naoya Horiguchi wrote:
+> On Fri, Jul 02, 2010 at 11:08:54AM +0200, Andi Kleen wrote:
+> > On Fri, Jul 02, 2010 at 02:47:22PM +0900, Naoya Horiguchi wrote:
+> > > We can't use existing hugepage allocation functions to allocate hugepage
+> > > for page migration, because page migration can happen asynchronously with
+> > > the running processes and page migration users should call the allocation
+> > > function with physical addresses (not virtual addresses) as arguments.
+> > 
+> > I looked through this patch and didn't see anything bad. Some more
+> > eyes familiar with hugepages would be good though.
 > 
-> This patch silences a compiler warning:
-> drivers/bluetooth/btmrvl_sdio.c: In function ‘btmrvl_sdio_verify_fw_download’:
-> drivers/bluetooth/btmrvl_sdio.c:80: warning: ‘fws1’ may be used uninitialized in this function
-> drivers/bluetooth/btmrvl_sdio.c:80: note: ‘fws1’ was declared here
+> Yes.
 > 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  drivers/bluetooth/btmrvl_sdio.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+> > Since there are now so many different allocation functions some
+> > comments on when they should be used may be useful too
 > 
-> diff --git a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
-> index df0773e..47f0f91 100644
-> --- a/drivers/bluetooth/btmrvl_sdio.c
-> +++ b/drivers/bluetooth/btmrvl_sdio.c
-> @@ -83,10 +83,10 @@ static int btmrvl_sdio_read_fw_status(struct btmrvl_sdio_card *card, u16 *dat)
->  	*dat = 0;
->  
->  	fws0 = sdio_readb(card->func, CARD_FW_STATUS0_REG, &ret);
-> +	if (ret)
-> +		return -EIO;
+> OK. How about this?
+> 
+> +/*
+> + * This allocation function is useful in the context where vma is irrelevant.
+> + * E.g. soft-offlining uses this function because it only cares physical
+> + * address of error page.
+> + */
 
-Normally it would be better to just "return ret;" here.  But the caller
-doesn't use the return code so it doesn't really matter...
+Looks good thanks.
 
-Reviewed-by: Dan Carpenter <error27@gmail.com>
+> +struct page *alloc_huge_page_node(struct hstate *h, int nid)
+> +{
+> 
+> BTW, I don't like this function name very much.
+> Since the most significant difference of this function to alloc_huge_page()
+> is lack of vma argument, so I'm going to change the name to
+> alloc_huge_page_no_vma_node() in the next version if it is no problem.
+> 
+> Or, since the postfix like "_no_vma" is verbose, I think it might be
+> a good idea to rename present alloc_huge_page() to alloc_huge_page_vma().
+> Is this worthwhile?
 
-regards,
-dan carpenter
+Yes, in a separate patch
 
->  
-> -	if (!ret)
-> -		fws1 = sdio_readb(card->func, CARD_FW_STATUS1_REG, &ret);
-> -
-> +	fws1 = sdio_readb(card->func, CARD_FW_STATUS1_REG, &ret);
->  	if (ret)
->  		return -EIO;
->  
+-Andi
 
+-- 
+ak@linux.intel.com -- Speaking for myself only.
