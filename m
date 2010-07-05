@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750940Ab0GEEAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 00:00:55 -0400
-Received: from sh.osrg.net ([192.16.179.4]:37024 "EHLO sh.osrg.net"
+	id S1750927Ab0GEEMs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 00:12:48 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:45021 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750701Ab0GEEAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 00:00:53 -0400
-Date: Mon, 5 Jul 2010 13:00:21 +0900
-To: snitzer@redhat.com
-Cc: hch@lst.de, fujita.tomonori@lab.ntt.co.jp, James.Bottomley@suse.de,
-       axboe@kernel.dk, linux-scsi@vger.kernel.org, dm-devel@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: scsi: address leak in the error path of discard page allocation
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100702130855.GA6058@redhat.com>
-References: <20100702135300U.fujita.tomonori@lab.ntt.co.jp>
-	<20100702105241.GD26318@lst.de>
-	<20100702130855.GA6058@redhat.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100705130000S.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 05 Jul 2010 13:00:22 +0900 (JST)
+	id S1750739Ab0GEEMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 00:12:46 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>,
+       Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Ira W. Snyder" <iws@ovro.caltech.edu>,
+       "Darrick J. Wong" <djwong@us.ibm.com>,
+       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+       Hans de Goede <hdegoede@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Samuel Ortiz <sameo@linux.intel.com>, Crane Cai <crane.cai@amd.com>,
+       Linus Walleij <linus.walleij@stericsson.com>,
+       Ralf Baechle <ralf@linux-mips.org>
+CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+       linux-i2c@vger.kernel.org, Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH/RFC v2 0/4] hwmon: PMBus device driver
+Date: Sun, 4 Jul 2010 21:10:14 -0700
+Message-ID: <1278303018-22069-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.0.87.g0901d
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Jul 2010 09:08:56 -0400
-Mike Snitzer <snitzer@redhat.com> wrote:
+This patchset adds support for hardware monitoring features of PMBus devices.
 
-> On Fri, Jul 02 2010 at  6:52am -0400,
-> Christoph Hellwig <hch@lst.de> wrote:
-> 
-> > On Fri, Jul 02, 2010 at 01:53:14PM +0900, FUJITA Tomonori wrote:
-> > > Seems that scsi-ml calls scsi_unprep_request() for not-prepped
-> > > requests in scsi_init_io error path. So we could move that
-> > > scsi_unprep_request() to the error path in scsi_prep_return(). Then we
-> > > can free discard page in the single place.
-> > > 
-> > > Applying the rule strictly is fine by me too; we remove
-> > > scsi_unprep_request() in scsi_init_io error path and clean up things
-> > > in each prep function's error path.
-> > 
-> > That would be my preference.  Making sure a function cleans up all
-> > allocations / state changes on errors means code is a lot fragile and
-> > easier to understand.
-> > 
-> > > Btw, blk_clear_request_payload() is necessary?
-> > > 
-> > > Making sure that a request is clean is not a bad idea but if we hit
-> > > BLKPREP_KILL or BLKPREP_DEFER, we call
-> > > blk_end_request(). blk_end_request() can free a request properly even
-> > > if we don't do something like blk_clear_request_payload?
-> > 
-> > For BLKPREP_KILL we do call __blk_end_request_all, but for
-> > BLKPREP_DEFER we don't.  In that case we just leave it on the queue for
-> > a later retry.  So we either have to clean it up, or leave the detect
-> > the case of a partially constructed command in ->prep_fn.  I think
-> > cleaning up properly and having defined state when entering ->prep_fn is
-> > the better variant.
+The driver has not yet been tested with actual hardware. It is submitted for
+early review and to solicit test coverage.
 
-I think that as long as we free an allocated page for discard,
-scsi_setup_discard_cmnd or the block layer don't need to detect the
-case of a partially constructed command.
+A PMBus device emulator is provided for reference, to show the level of testing
+performed. I don't currently plan to submit this emulator in the final patchset.
+If there is interest to have it included, and if someone is willing to review
+the code, I will be happy to clean it up and include it.
 
+I will test the driver with real HW for BMR453 and LTC2978 as soon as I get
+access to it. For other devices, I will add a remark that support is untested,
+unless I get feedback that a specific device was tested and is working. 
 
-> Right, I shared the same opinion earlier in this thread, so please let
-> your ACKs fly now that we seem to all be in agreement.
+---
+Open issues/questions:
+- The driver adds new power monitoring attributes to the hwmon sysfs API.
+  Need to get feedback if those are acceptable.
+- Currently no support for chips with multiple phases (PHASE command).
+  Adding this will require access to a system with a chip supporting
+  multiple phases (e.g., UCD9240/46/48) to determine a feasible implementation.
+- Need to add support for COEFFICIENTS command. Will require system with
+  real chip for testing, or will not add support at this time.
+- Need to add fan support. Will require system with real chip for testing, or
+  will not add support at this time.
+  Datasheets of chips with fan control support indicate that chip specific
+  code may be necessary. See UCD9240 or UCD90124 datasheets.
 
-As I wrote earlier, I think that we need to clean up (and fix) the
-error handling of the prep path. Currently, it's just messy. Some
-errors are handled in the prep functions while some are in
-scsi_prep_return().
-
-- we call scsi_put_command in two places (scsi_init_io and scsi_prep_return).
-
-- scsi_init_io calls scsi_put_command directly for BLKPREP_KILL but
-  calls it indirectly via scsi_unprep_request for BLKPREP_DEFER.
-
-- If scsi_init_io() hits BLKPREP_KILL internally, we hit kernel oops
-  in scsi_prep_return since we call scsi_put_command twice. (luckily,
-  scsi_init_sgtable and scsi_alloc_sgtable in scsi_init_io return only
-  DEFER).
-
-you could add more if you like.
-
-I think that handling all the errors in scsi_prep_return() is
-cleaner. I'll send a patch.
-
-If we prefer to make sure that a request is completely reset (as
-blk_clear_request_payload does), then we can add it on the top of the
-patch.
+---
+v2 changes:
+- Calculate maximum number of attributes / sensors / booleans / labels instead
+  of using defines
+- Increased maximum number of supported pages to the PMBus maximum of 32.
+- Replaced most fixed size arrays with dynamically allocated arrays/structures.
+- Added comments and clarifications
+- Renamed local defines to start with PB_ or PMBUS_ prefix
+- Removed pages module parameter. Replaced with code to auto-detect the number
+  of supported pages.
+- Split probe code into several functions to make it better readable
+- Replaced _fault attributes with _lcrit_alarm and _crit_alarm attributes
+- Several other minor changes to address review feedback
+- PMBus emulator: Fixed fault status detection code. Also use more reasonable
+  power limits (eg 200W instead of 2kW).
