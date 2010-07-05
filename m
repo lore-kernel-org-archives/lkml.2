@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab0GESSE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 14:18:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37719 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043Ab0GESSB (ORCPT
+	id S1756804Ab0GESUQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 14:20:16 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45493 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753699Ab0GESUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 14:18:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=gqVGLKanpe/E2ug7mdFVDZOQiDLoX2LtBu1kNkEkPdMEac7ZnLerLcMsYol9xNDWwp
-         rr73B3JoFbCrYnjN2q4SXdVRksDX2Jm3GwV4/8ocDuOfGR5ll9rTTTNvMotZjtzxjfM9
-         aKrDG/2JCKMEVPliq8IkQ89XR0WVSvCuZd010=
-Message-ID: <4C3221FA.6070507@gmail.com>
-Date: Mon, 05 Jul 2010 11:18:34 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+	Mon, 5 Jul 2010 14:20:14 -0400
+Date: Mon, 5 Jul 2010 14:20:03 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Christoph Hellwig <hch@infradead.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [regression] Crash in wb_clear_pending() (was: Linux 2.6.35-rc4)
+Message-ID: <20100705182003.GA12332@infradead.org>
+References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com>
+ <20100705085550.GA26775@elte.hu>
+ <20100705164022.GA26995@infradead.org>
+ <20100705171125.GB26202@elte.hu>
+ <20100705171420.GA29697@elte.hu>
 MIME-Version: 1.0
-To: Marvin <marvin24@gmx.de>
-CC: linux-kernel@vger.kernel.org, xorg-driver-ati@lists.x.org
-Subject: Re: Radeon KMS doesn't work.
-References: <20100703221056.GA17817@animx.eu.org> <20100704231926.GA1780@animx.eu.org> <201007051927.17001.marvin24@gmx.de>
-In-Reply-To: <201007051927.17001.marvin24@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100705171420.GA29697@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2010 10:27 AM, Marvin wrote:
->
-> Hi Wakko,
->
-> as nobody seems to have answered yet, I think it's better that you file a bug
-> against the radeon driver (bugs.freedesktop.org, one bug for each defect).
-> There may be similar bugs already, so please check this also.
->
-> Thanks
->
-> Marvin
->
-> Am Montag 05 Juli 2010, 01:19:26 schrieb Wakko Warner:
->> Wakko Warner wrote:
->>> I have a Dell Inspiron 5100 with an ATI Radeon Mobility M7 (7500 R100
->>> PCI ID 1002:4c57 sub 1028:0149).
->>>
->>> Immediately when radeon.ko is loaded, the screen goes blank (The
->>> backlight stays on).  I have fbcon compiled into the kernel (I also
->>> tried as module). I am unable to get the screen to work again until I
->>> reboot.  The logs did not appear to have any errors after the module
->>> loaded.  The system was still responsive on the network.
->>>
->>> I tried kernels 2.6.33 and 2.6.34.
->>>
->>> I can provide kernel output if needed.
->>
->> I need to add that if I use modeset=0, the screen does not blank.
->>
->> Also 2.6.34 (with modeset=0) doesn't do 3D very well on this system.  Some
->> objects look ok, some are garbled, some do not appear at all.  The gears
->> from xscreensaver does not show up at all.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+On Mon, Jul 05, 2010 at 07:14:20PM +0200, Ingo Molnar wrote:
+> Nor does it apply to v2.6.35-rc4:
 
+It's indeed missing the two previous patches to the writeback code that
+I thought Jens sent to Linus aswell [1].  The race was initially found using
+a distro kernel with the patches backported, and in the meantime we've
+done a lot of testing with this patch (and the two previous that also
+were backported).  I'd prefer to get this full stack that's been in
+-next for a while and got large machine testing, but if Jens prefers it
+I can aim for a smaller variant.  Jens, what version do you prefer?
 
-I've hit a couple of things with radeon as well.. the first was this:
-http://lkml.org/lkml/2010/6/6/172
-(if your hitting this issue, then the patch should work and/or it should 
-already be in the main tree).
+[1] thee patches are:
 
-then a few days ago hit another:
-https://bugzilla.kernel.org/show_bug.cgi?id=16335
-(keep in mind still uncertain on a fix for this, reverting the commit 
-gets me up and running(I created a patch, but an umsure if it's a right 
-solution)).
-
-if none of these are what your hitting, then maybe(if you can) do a 
-bisect on this!
-
-Justin P. Mattock
+ "writeback: remove writeback_inodes_wbc"	a73dd720f081cd160e3843d531eff2195036e442
+ "writeback: split writeback_inodes_wb"		9f98c0faa41ae334d894762f556195c8a7fb352f
