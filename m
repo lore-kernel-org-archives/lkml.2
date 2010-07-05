@@ -1,30 +1,43 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab0GECut (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 4 Jul 2010 22:50:49 -0400
-Received: from out08.wanadoo.es ([62.36.20.208]:37037 "EHLO out08.wanadoo.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753558Ab0GECus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jul 2010 22:50:48 -0400
-X-Greylist: delayed 1968 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jul 2010 22:50:48 EDT
-To: undisclosed-recipients:;
-Message-Id: <20100705021715.28530@ld.che.vodafone>
-Reply-To: <e_hshung@yahoo.com.hk>
-From: "Shung Hin Hui" <shung_hinhui@yahoo.com.hk>
-Subject: Hello
-Date: Mon, 5 Jul 2010 03:17:16 +0100
+	id S1755025Ab0GEOlq (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 5 Jul 2010 10:41:46 -0400
+Received: from [193.231.33.1] ([193.231.33.1]:51376 "EHLO automation.ro"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752171Ab0GEOlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 10:41:44 -0400
+X-Greylist: delayed 989 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jul 2010 10:41:44 EDT
+Message-ID: <71f5234418f8da1cb6c2c50852c32fbb.squirrel@webmail.automation.ro>
+Date: Mon, 5 Jul 2010 16:17:22 +0200 (CEST)
+Subject: LOAN AID
+From: "GOLD STAR LOANS" <info@loanlender.com>
+Reply-To: samuelmarkloanfirm@ufo.tc
+User-Agent: SquirrelMail/1.4.15
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-login: <baezaja@wanadoo.es>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Day,
- 
-I am Shung Hin Hui, I have a business of $15.5 million for you contact me for details.
+
+
+Hello Sir/Madam,Are you in need of a registered and real loan lender
+ or are you tired of being scammed by lenders that takes away your
+money after sending them money?Then worry no more and contact us for
+fast,reliable,considerate loans with a low interest rate . contact
+us via Email: samuelmarkloanfirm@ufo.tc. Please if you are
+interested in getting a loan,kindly fill out the borrowers
+information`s below.
+THE BORROWER`S INFORMATION: Your Full Name:_____________ Your
+Sex:__________________ Your Address:________ Your
+Occupation:____________ Monthly Income:_____________ Your
+Country:_______________ Loan Amount:_______________ Loan
+Duration:_______________ Your Cell phone Number:_________
+State:______________________ Applied before:_____________
+
+
+
+
