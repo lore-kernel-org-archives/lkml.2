@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab0GENvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 09:51:16 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:48075 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752495Ab0GENvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 09:51:15 -0400
-Date: Mon, 5 Jul 2010 15:53:06 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Dan Kruchinin <dkruchinin@acm.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fixed division by zero bug in kernel/padata.c
-Message-ID: <20100705135306.GP10072@secunet.com>
-References: <AANLkTimVTMsVkSBHWLve8t76-YkoSYposgv9wHir_wPa@mail.gmail.com>
- <20100702125628.GK10072@secunet.com>
- <AANLkTimH9IKkqqLADjUbycKD8bh4oX8oCxSDTCGxv4r1@mail.gmail.com>
- <20100705131835.GN10072@secunet.com>
- <AANLkTimvyUiQqAO_uBxTMTLRWdujDWKSo7WBuI7cPLKc@mail.gmail.com>
- <20100705134357.GC6974@gondor.apana.org.au>
+	id S1755861Ab0GEOAc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 10:00:32 -0400
+Received: from cicero-fbr1.cybercity.dk ([212.242.40.5]:52722 "EHLO
+	cicero-fbr1.cybercity.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab0GEOAb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 10:00:31 -0400
+Reply-To: <jawadjames01@qatar.io>
+From: "Lloyds Tsb Bank" <jwdjms8@mcom.com>
+Subject: Partnership Request
+Date: Mon, 5 Jul 2010 07:58:53 -0600
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100705134357.GC6974@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 05 Jul 2010 13:51:13.0486 (UTC) FILETIME=[21C3C6E0:01CB1C49]
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1081
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
+Message-Id: <20100705140144.33B215868C6@smtp1.cybercity.dk>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 09:43:57PM +0800, Herbert Xu wrote:
-> On Mon, Jul 05, 2010 at 05:35:32PM +0400, Dan Kruchinin wrote:
-> >
-> > > Both cases should be handled in the same way. So we could just
-> > > stop the instance if the cpumasks do not intersect, and enable
-> > > it as soon as they do intersect again. The padata instance would
-> > > refuse to do anything as long as the cpumasks do not intersect,
-> > > but it is still in a consistent state. Let me add the infrastructure
-> > > to handle this, then you can use it with your patches.
-> > 
-> > Ok, get it.
-> 
-> So I should wait for another patch, right?
-> 
+Hello,
 
-Right.
+I am Mr. Jawad James, Credit Accounting officer of Lloyds TSB Bank.
+I am contacting you for a possible business transfer worth 122.5 Million Pounds.
+It will be in my interest to finish this transaction with you hoping that you will not cheat or blackmail me at the conclusion of this goal because i have planned it for long.
+
+If you can be a collaborator to this transaction, please indicate your positive interest immediately for us to proceed. Remember this is absolutely confidential because my Bank does not know about it.
+
+Your contact phone numbers and name will be necessary for this effect.
+Thank you for your time and attention.
+
+Warmest regards,
+
+Mr. Jawad James
+Credit Accounting Officer,
+Lloyds TSB Bank
