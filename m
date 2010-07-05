@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab0GEKky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 06:40:54 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49391 "EHLO mx3.mail.elte.hu"
+	id S1757854Ab0GEKoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 06:44:30 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39014 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755944Ab0GEKkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 06:40:51 -0400
-Date: Mon, 5 Jul 2010 12:40:35 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Ali Gholami Rudi <ali@rudi.ir>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: dfeng@redhat.com, x86@kernel.org, venki@google.com, tglx@linutronix.de,
-       suresh.b.siddha@intel.com, mingo@redhat.com,
-       linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [regression] commit 6a4f3b52 causes invalid memtype
-Message-ID: <20100705104035.GA28190@elte.hu>
-References: <20100507075128@tarekhel>
- <4C319D61.5090002@redhat.com>
- <20100507092842@tarekhel>
- <4C31A7A0.1020800@redhat.com>
- <4c31ac7b.J+CU0Yt+zKZ9ho1fjKvu6Z1v@tarekhel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4c31ac7b.J+CU0Yt+zKZ9ho1fjKvu6Z1v@tarekhel>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752183Ab0GEKo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 06:44:27 -0400
+Date: Mon, 5 Jul 2010 20:44:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jeff Layton <jlayton@redhat.com>
+Subject: Re: linux-next: build warning after merge of the vfs tree
+Message-Id: <20100705204414.2fa0e1d3.sfr@canb.auug.org.au>
+In-Reply-To: <20100705081019.GQ31073@ZenIV.linux.org.uk>
+References: <20100705100121.d089bf12.sfr@canb.auug.org.au>
+	<20100705081019.GQ31073@ZenIV.linux.org.uk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__5_Jul_2010_20_44_14_+1000_mvQqjI4WYNtts_Tn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__5_Jul_2010_20_44_14_+1000_mvQqjI4WYNtts_Tn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-* Ali Gholami Rudi <ali@rudi.ir> wrote:
+Hi Al,
 
-> Xiaotian Feng <dfeng@redhat.com> wrote:
-> > On 07/05/2010 05:28 PM, Ali Gholami Rudi wrote:
-> > > Xiaotian Feng<dfeng@redhat.com>  wrote:
-> > >> Could you please try following commit in -tip tree?
-> > >>
-> > >> commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
-> > >> Author: Peter Zijlstra<peterz@infradead.org>
-> > >> Date:   Sat May 29 15:31:43 2010 +0200
-> > >>
-> > >>       rbtree: Undo augmented trees performance damage
-> > >
-> > > Where can I get it?  I couldn't find it either in
-> > > Linus' or x86 repo tip.
-> > http://git.kernel.org/tip/2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
-> 
-> It does fix it.
+On Mon, 5 Jul 2010 09:10:19 +0100 Al Viro <viro@ZenIV.linux.org.uk> wrote:
+>
+> Fixed.
 
-Hm, interesting. That's a pure performance fix - so why does it fix a 
-regression?
+Thanks.
 
-Does Peter's augmented rbtrees improvements fix a bug too, as a side-effect? 
-If yes then we need to accelerate that commit - right now it's aimed for 
-v2.6.36.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Thanks,
+--Signature=_Mon__5_Jul_2010_20_44_14_+1000_mvQqjI4WYNtts_Tn
+Content-Type: application/pgp-signature
 
-	Ingo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMMbd+AAoJEDMEi1NhKgbsBB4H/Azz2H0lflsuWt8n7Q+v5OJL
+jqqehAWutoabR55ES8/H51ABzGBpBGstYpCZxfdlMnxBpyyaPxmJGzE6ffbEtzA4
+iwJDm3q+cdeFHtFpFqcGLpA3Dg16P025//yeFj/iaRop2Gs0tS0D5Z7cCeocGyfN
+oyy7BilhVV31qvIqePqD4+VxgoWrYobaJNjlze9QBuIWSEkvTv80cXO+Ag42p+iT
+5QPoCtginWPDIih1RZNlhZN756/ZLph5MiDsgp4afg5n5o4eEt+G9RVJy6JouYr2
+4OUANiN3HPl8zxKw9L0a6eOFhDzUqp5dv2Ld7hJrJCFa+bPKatCkWBq3Ns5qkPo=
+=mX/C
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__5_Jul_2010_20_44_14_+1000_mvQqjI4WYNtts_Tn--
