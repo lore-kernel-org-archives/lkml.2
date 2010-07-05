@@ -1,134 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab0GESoP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 14:44:15 -0400
-Received: from kroah.org ([198.145.64.141]:35197 "EHLO coco.kroah.org"
+	id S1756341Ab0GESoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 14:44:22 -0400
+Received: from kroah.org ([198.145.64.141]:35207 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754174Ab0GESoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 14:44:12 -0400
-Date: Mon, 5 Jul 2010 11:35:37 -0700
+	id S1754905Ab0GESoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 14:44:15 -0400
+Date: Mon, 5 Jul 2010 11:38:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       torvalds@linux-foundation.org, stable@kernel.org
-Cc: lwn@lwn.net
-Subject: Linux 2.6.27.48
-Message-ID: <20100705183537.GA31678@kroah.com>
+       torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Subject: Re: Linux 2.6.31.14
+Message-ID: <20100705183825.GD31678@kroah.com>
+References: <20100705183812.GC31678@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100705183812.GC31678@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm announcing the release of the 2.6.27.48 kernel.  All users of the
-2.6.27 kernel series are very strongly encouraged to upgrade.
-
-The updated 2.6.27.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.27.y.git
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.27.y.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                        |    2 
- arch/parisc/math-emu/decode_exc.c               |    1 
- arch/powerpc/lib/string.S                       |    4 
- arch/powerpc/oprofile/op_model_cell.c           |    2 
- arch/powerpc/platforms/pseries/hotplug-cpu.c    |   30 ---
- arch/powerpc/platforms/pseries/plpar_wrappers.h |    8 
- arch/powerpc/platforms/pseries/smp.c            |   28 ++
- drivers/ata/libata-core.c                       |    7 
- drivers/char/ipmi/ipmi_si_intf.c                |   11 -
- drivers/md/md.c                                 |   29 ++
- drivers/md/raid1.c                              |    9 
- drivers/md/raid10.c                             |    2 
- drivers/net/arcnet/com20020-pci.c               |    4 
- fs/ext4/inode.c                                 |  240 +++++++++++++++++++-----
- fs/ext4/resize.c                                |    3 
- fs/namespace.c                                  |    9 
- fs/nfsd/nfssvc.c                                |    2 
- include/linux/fs.h                              |    2 
- include/net/sctp/structs.h                      |    1 
- mm/filemap.c                                    |    6 
- net/sctp/sm_make_chunk.c                        |   62 +++++-
- net/tipc/bearer.c                               |   37 ---
- net/tipc/bearer.h                               |    2 
- net/tipc/net.c                                  |   25 --
- scripts/kconfig/Makefile                        |    2 
- security/keys/keyring.c                         |   18 -
- security/keys/process_keys.c                    |    6 
- 27 files changed, 393 insertions(+), 159 deletions(-)
-
-
-Andreas Bombe (1):
-      ARCNET: Limit com20020 PCI ID matches for SOHARD cards
-
-Aneesh Kumar K.V (2):
-      ext4: Fix file fragmentation during large file write.
-      ext4: Implement range_cyclic in ext4_da_writepages instead of write_cache_pages
-
-Dan Carpenter (1):
-      KEYS: Return more accurate error codes
-
-Dan Williams (1):
-      md: set mddev readonly flag on blkdev BLKROSET ioctl
-
-Denis Kirjanov (1):
-      powerpc/oprofile: fix potential buffer overrun in op_model_cell.c
-
-Eric Sandeen (1):
-      ext4: check s_log_groups_per_flex in online resize code
-
-Greg Kroah-Hartman (1):
-      Linux 2.6.27.48
-
-Helge Deller (1):
-      parisc: clear floating point exception flag on SIGFPE signal
-
-Jeff Mahoney (1):
-      powerpc: Fix handling of strncmp with zero len
-
-Jeff Moyer (1):
-      do_generic_file_read: clear page errors when issuing a fresh read of the page
-
-Jiri Kosina (1):
-      ipmi: handle run_to_completion properly in deliver_recv_msg()
-
-Michael Neuling (2):
-      powerpc/pseries: Only call start-cpu when a CPU is stopped
-      powerpc/pseries: Make query_cpu_stopped callable outside hotplug cpu
-
-Miklos Szeredi (1):
-      vfs: add NOFOLLOW flag to umount(2)
-
-Neil Horman (2):
-      sctp: Fix skb_over_panic resulting from multiple invalid parameter errors (CVE-2010-1173) (v4)
-      tipc: Fix oops on send prior to entering networked mode (v3)
-
-NeilBrown (2):
-      md/raid1: fix counting of write targets.
-      md: Fix read balancing in RAID1 and RAID10 on drives > 2TB
-
-Pavel Emelyanov (1):
-      NFSD: don't report compiled-out versions as present
-
-Richard Kennedy (1):
-      gconfig: fix build failure on fedora 13
-
-Tejun Heo (1):
-      libata: disable ATAPI AN by default
-
-Theodore Ts'o (1):
-      ext4: Use our own write_cache_pages()
-
-Toshiyuki Okajima (1):
-      KEYS: find_keyring_by_name() can gain access to a freed keyring
-
-Wei Yongjun (1):
-      sctp: fix append error cause to ERROR chunk correctly
-
+diff --git a/Makefile b/Makefile
+index ac8ee8e..7b8f2f0 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 31
+-EXTRAVERSION = .13
++EXTRAVERSION = .14
+ NAME = Man-Eating Seals of Antiquity
+ 
+ # *DOCUMENTATION*
+diff --git a/fs/reiserfs/dir.c b/fs/reiserfs/dir.c
+index 6d2668f..d42c30c 100644
+--- a/fs/reiserfs/dir.c
++++ b/fs/reiserfs/dir.c
+@@ -45,8 +45,6 @@ static inline bool is_privroot_deh(struct dentry *dir,
+ 				   struct reiserfs_de_head *deh)
+ {
+ 	struct dentry *privroot = REISERFS_SB(dir->d_sb)->priv_root;
+-	if (reiserfs_expose_privroot(dir->d_sb))
+-		return 0;
+ 	return (dir == dir->d_parent && privroot->d_inode &&
+ 	        deh->deh_objectid == INODE_PKEY(privroot->d_inode)->k_objectid);
+ }
+diff --git a/fs/reiserfs/xattr.c b/fs/reiserfs/xattr.c
+index 6925b83..cc1caa2 100644
+--- a/fs/reiserfs/xattr.c
++++ b/fs/reiserfs/xattr.c
+@@ -536,7 +536,7 @@ reiserfs_xattr_set_handle(struct reiserfs_transaction_handle *th,
+ 	if (!err && new_size < i_size_read(dentry->d_inode)) {
+ 		struct iattr newattrs = {
+ 			.ia_ctime = current_fs_time(inode->i_sb),
+-			.ia_size = buffer_size,
++			.ia_size = new_size,
+ 			.ia_valid = ATTR_SIZE | ATTR_CTIME,
+ 		};
+ 		mutex_lock_nested(&dentry->d_inode->i_mutex, I_MUTEX_XATTR);
+@@ -952,21 +952,13 @@ int reiserfs_permission(struct inode *inode, int mask)
+ 	return generic_permission(inode, mask, NULL);
+ }
+ 
+-/* This will catch lookups from the fs root to .reiserfs_priv */
+-static int
+-xattr_lookup_poison(struct dentry *dentry, struct qstr *q1, struct qstr *name)
++static int xattr_hide_revalidate(struct dentry *dentry, struct nameidata *nd)
+ {
+-	struct dentry *priv_root = REISERFS_SB(dentry->d_sb)->priv_root;
+-	if (container_of(q1, struct dentry, d_name) == priv_root)
+-		return -ENOENT;
+-	if (q1->len == name->len &&
+-		   !memcmp(q1->name, name->name, name->len))
+-		return 0;
+-	return 1;
++	return -EPERM;
+ }
+ 
+ static const struct dentry_operations xattr_lookup_poison_ops = {
+-	.d_compare = xattr_lookup_poison,
++	.d_revalidate = xattr_hide_revalidate,
+ };
+ 
+ int reiserfs_lookup_privroot(struct super_block *s)
+@@ -980,8 +972,7 @@ int reiserfs_lookup_privroot(struct super_block *s)
+ 				strlen(PRIVROOT_NAME));
+ 	if (!IS_ERR(dentry)) {
+ 		REISERFS_SB(s)->priv_root = dentry;
+-		if (!reiserfs_expose_privroot(s))
+-			s->s_root->d_op = &xattr_lookup_poison_ops;
++		dentry->d_op = &xattr_lookup_poison_ops;
+ 		if (dentry->d_inode)
+ 			dentry->d_inode->i_flags |= S_PRIVATE;
+ 	} else
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index d089d05..187d7a6 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -524,14 +524,7 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 	new_timer->it_id = (timer_t) new_timer_id;
+ 	new_timer->it_clock = which_clock;
+ 	new_timer->it_overrun = -1;
+-	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
+-	if (error)
+-		goto out;
+ 
+-	/*
+-	 * return the timer_id now.  The next step is hard to
+-	 * back out if there is an error.
+-	 */
+ 	if (copy_to_user(created_timer_id,
+ 			 &new_timer_id, sizeof (new_timer_id))) {
+ 		error = -EFAULT;
+@@ -562,6 +555,10 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 	new_timer->sigq->info.si_tid   = new_timer->it_id;
+ 	new_timer->sigq->info.si_code  = SI_TIMER;
+ 
++	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
++	if (error)
++		goto out;
++
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	new_timer->it_signal = current->signal;
+ 	list_add(&new_timer->list, &current->signal->posix_timers);
+diff --git a/sound/pci/mixart/mixart.c b/sound/pci/mixart/mixart.c
+index a83d196..32f9853 100644
+--- a/sound/pci/mixart/mixart.c
++++ b/sound/pci/mixart/mixart.c
+@@ -1161,13 +1161,15 @@ static long snd_mixart_BA0_read(struct snd_info_entry *entry, void *file_private
+ 				unsigned long count, unsigned long pos)
+ {
+ 	struct mixart_mgr *mgr = entry->private_data;
++	unsigned long maxsize;
+ 
+-	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+-	if(count <= 0)
++	if (pos >= MIXART_BA0_SIZE)
+ 		return 0;
+-	if(pos + count > MIXART_BA0_SIZE)
+-		count = (long)(MIXART_BA0_SIZE - pos);
+-	if(copy_to_user_fromio(buf, MIXART_MEM( mgr, pos ), count))
++	maxsize = MIXART_BA0_SIZE - pos;
++	if (count > maxsize)
++		count = maxsize;
++	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
++	if (copy_to_user_fromio(buf, MIXART_MEM(mgr, pos), count))
+ 		return -EFAULT;
+ 	return count;
+ }
+@@ -1180,13 +1182,15 @@ static long snd_mixart_BA1_read(struct snd_info_entry *entry, void *file_private
+ 				unsigned long count, unsigned long pos)
+ {
+ 	struct mixart_mgr *mgr = entry->private_data;
++	unsigned long maxsize;
+ 
+-	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+-	if(count <= 0)
++	if (pos > MIXART_BA1_SIZE)
+ 		return 0;
+-	if(pos + count > MIXART_BA1_SIZE)
+-		count = (long)(MIXART_BA1_SIZE - pos);
+-	if(copy_to_user_fromio(buf, MIXART_REG( mgr, pos ), count))
++	maxsize = MIXART_BA1_SIZE - pos;
++	if (count > maxsize)
++		count = maxsize;
++	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
++	if (copy_to_user_fromio(buf, MIXART_REG(mgr, pos), count))
+ 		return -EFAULT;
+ 	return count;
+ }
