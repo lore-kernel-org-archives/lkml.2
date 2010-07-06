@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab0GFWn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 18:43:58 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31869 "EHLO
+	id S1757220Ab0GFWoJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 18:44:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32131 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757031Ab0GFWnu (ORCPT
+	with ESMTP id S1757029Ab0GFWoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 18:43:50 -0400
+	Tue, 6 Jul 2010 18:44:06 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,99 +16,112 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 40/49] memblock: Add find_memory_core_early()
-Date: Tue,  6 Jul 2010 15:39:33 -0700
-Message-Id: <1278455982-24621-41-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 48/49] x86, memblock: Use memblock_memory_size()/memblock_free_memory_size() to get correct dma_reserve
+Date: Tue,  6 Jul 2010 15:39:41 -0700
+Message-Id: <1278455982-24621-49-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
 References: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C33B172.00A7,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090209.4C33B196.001D,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to node range in early_node_map[] with __memblock_find_in_range
-to find free range.
+memblock_memory_size() will return memory size in memblock.memory.region.
+memblock_free_memory_size() will return free memory size in memblock.memory.region.
 
-Will be used by memblock_x86_find_in_range_node()
+So We can get exact reseved size in specified range.
 
-memblock_x86_find_in_range_node will be used to find right buffer for NODE_DATA
+Set the size right after initmem_init(), because later bootmem API will
+get area above 16M. (except some fallback).
+
+Later after we remove the bootmem, We could call that just before paging_init().
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/mm.h |    2 ++
- mm/page_alloc.c    |   36 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/e820.h |    2 ++
+ arch/x86/kernel/e820.c      |   17 +++++++++++++++++
+ arch/x86/kernel/setup.c     |    1 +
+ arch/x86/mm/init_64.c       |    7 -------
+ 4 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 4238a9c..a85bb08 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1164,6 +1164,8 @@ extern void free_bootmem_with_active_regions(int nid,
- 						unsigned long max_low_pfn);
- int add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid);
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit);
- void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
- 				 u64 goal, u64 limit);
- typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 431214b..f67f161 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -21,6 +21,7 @@
- #include <linux/pagemap.h>
- #include <linux/jiffies.h>
- #include <linux/bootmem.h>
-+#include <linux/memblock.h>
- #include <linux/compiler.h>
- #include <linux/kernel.h>
- #include <linux/kmemcheck.h>
-@@ -3612,6 +3613,41 @@ void __init free_bootmem_with_active_regions(int nid,
- 	}
- }
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 7186463..5be1542 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -117,6 +117,8 @@ extern unsigned long e820_end_of_low_ram_pfn(void);
+ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
  
-+#ifdef CONFIG_HAVE_MEMBLOCK
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit)
+ void memblock_x86_fill(void);
++void memblock_find_dma_reserve(void);
++
+ extern void finish_e820_parsing(void);
+ extern void e820_reserve_resources(void);
+ extern void e820_reserve_resources_late(void);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index d5fd894..f0db4c4 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1105,3 +1105,20 @@ void __init memblock_x86_fill(void)
+ 	memblock_analyze();
+ 	memblock_dump_all();
+ }
++
++void __init memblock_find_dma_reserve(void)
 +{
-+	int i;
-+
-+	/* Need to go over early_node_map to find out good range for node */
-+	for_each_active_range_index_in_nid(i, nid) {
-+		u64 addr;
-+		u64 ei_start, ei_last;
-+		u64 final_start, final_end;
-+
-+		ei_last = early_node_map[i].end_pfn;
-+		ei_last <<= PAGE_SHIFT;
-+		ei_start = early_node_map[i].start_pfn;
-+		ei_start <<= PAGE_SHIFT;
-+
-+		final_start = max(ei_start, goal);
-+		final_end = min(ei_last, limit);
-+
-+		if (final_start >= final_end)
-+			continue;
-+
-+		addr = memblock_find_in_range(final_start, final_end, size, align);
-+
-+		if (addr == MEMBLOCK_ERROR)
-+			continue;
-+
-+		return addr;
-+	}
-+
-+	return MEMBLOCK_ERROR;
-+}
++#ifdef CONFIG_X86_64
++	u64 free_size_pfn;
++	u64 mem_size_pfn;
++	/*
++	 * need to find out used area below MAX_DMA_PFN
++	 * need to use memblock to get free size in [0, MAX_DMA_PFN]
++	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
++	 */
++	mem_size_pfn = memblock_x86_memory_in_range(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	free_size_pfn = memblock_x86_free_memory_in_range(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	set_dma_reserve(mem_size_pfn - free_size_pfn);
 +#endif
++}
 +
- int __init add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index cac2c4c..58d7ece 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1019,6 +1019,7 @@ void __init setup_arch(char **cmdline_p)
+ #endif
+ 
+ 	initmem_init(0, max_pfn, acpi, k8);
++	memblock_find_dma_reserve();
+ #ifndef CONFIG_NO_BOOTMEM
+ 	memblock_x86_to_bootmem(0, max_low_pfn<<PAGE_SHIFT);
+ #endif
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 592b236..d6d4084 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -53,8 +53,6 @@
+ #include <asm/init.h>
+ #include <linux/bootmem.h>
+ 
+-static unsigned long dma_reserve __initdata;
+-
+ static int __init parse_direct_gbpages_off(char *arg)
  {
+ 	direct_gbpages = 0;
+@@ -821,11 +819,6 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 
+ 	reserve_bootmem(phys, len, flags);
+ 
+-	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+-		dma_reserve += len / PAGE_SIZE;
+-		set_dma_reserve(dma_reserve);
+-	}
+-
+ 	return 0;
+ }
+ #endif
 -- 
 1.6.4.2
 
