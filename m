@@ -1,131 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab0GFMka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 08:40:30 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:63656 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755598Ab0GFMk2 (ORCPT
+	id S1756234Ab0GFMsb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 08:48:31 -0400
+Received: from ns.store20.com ([212.7.7.16]:40082 "EHLO store20.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754767Ab0GFMsa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 08:40:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Z08UdThxnhyR9aoItFR1wo0YxoPmPIC/OjIxcJd+gom3wNNlcTvWUgB7bBpoTbxvMZ
-         I8/+a0sWFczuhZbAuaQfKa/+YOnZ8Phspkv8V7IhwhDQrWIDnQW9l84C9qAV4mzh/O0D
-         JxCjVSRQ6+Ya1dSU6oGAZQOlkydbfmu0S/I2Q=
-Message-ID: <4C33243D.1070107@gmail.com>
-Date: Tue, 06 Jul 2010 09:40:29 -0300
-From: Mauro Carvalho Chehab <maurochehab@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Lightning/1.0b2 Thunderbird/3.1
-MIME-Version: 1.0
-To: Richard Zidlicky <rz@linux-m68k.org>
-CC: Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH 2.6.34] schedule inside spin_lock_irqsave
-References: <20100530145240.GA21559@linux-m68k.org> <4C028336.8030704@gmail.com> <20100606124302.GA10119@linux-m68k.org> <4C0BE03C.8000709@gmail.com> <20100607130048.GA6857@linux-m68k.org>
-In-Reply-To: <20100607130048.GA6857@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Jul 2010 08:48:30 -0400
+Subject: Re: iwl3945: HARDWARE GONE??
+From: Priit Laes <plaes@plaes.org>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C32766C.4080305@gmail.com>
+References: <1278086575.2889.8.camel@chi>  <4C32766C.4080305@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 06 Jul 2010 15:48:24 +0300
+Message-ID: <1278420504.22593.0.camel@chi>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 07-06-2010 10:00, Richard Zidlicky escreveu:
-> On Sun, Jun 06, 2010 at 07:51:56PM +0200, Jiri Slaby wrote:
->> On 06/06/2010 02:43 PM, Richard Zidlicky wrote:
->>> Hi,
->>>
->>> I have done a minimaly invasive patch for the stable 2.6.34 kernel and stress-tested 
->>> it for many hours, definitely seems to improve the behaviour.
->>>
->>> I have left out your beautification suggestion for now, want to do more playing with
->>> other aspects of the driver. There still seem to be issues when the device is unplugged 
->>> while in use and such.
->>>
->>> --- linux-2.6.34/drivers/media/dvb/siano/smscoreapi.c.rz	2010-06-03 21:58:11.000000000 +0200
->>> +++ linux-2.6.34/drivers/media/dvb/siano/smscoreapi.c	2010-06-04 23:00:35.000000000 +0200
->>> @@ -1100,31 +1100,26 @@
->>>   *
->>>   * @return pointer to descriptor on success, NULL on error.
->>>   */
->>> -struct smscore_buffer_t *smscore_getbuffer(struct smscore_device_t *coredev)
->>> +
->>> +struct smscore_buffer_t *get_entry(void)
->>>  {
->>>  	struct smscore_buffer_t *cb = NULL;
->>>  	unsigned long flags;
->>>  
->>> -	DEFINE_WAIT(wait);
->>> -
->>>  	spin_lock_irqsave(&coredev->bufferslock, flags);
->>
->> Sorry, maybe I'm just blind, but where is 'coredev' defined in this
->> scope? You probably forgot to pass it to get_entry?
->>
->> How could this be compiled? Is there coredev defined globally?
+Ühel kenal päeval, E, 2010-07-05 kell 18:18, kirjutas Robert Hancock:
+> On 07/02/2010 10:02 AM, Priit Laes wrote:
+> > Heya!
+> >
+> > Bumped my kernel to version 2.6.35-rc3-00391-g97e0214 and ran into
+> > HARDWARE GONE error message..
+> >
+> > Hardware is Lenovo x60s and wireless card is intel 3945:
+> >
+> > 03:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG [Golan] Network Connection (rev 02)
+> > 	Subsystem: Intel Corporation ThinkPad R60e/X60s
+> > 	Flags: bus master, fast devsel, latency 0, IRQ 47
+> > 	Memory at edf00000 (32-bit, non-prefetchable) [size=4K]
+> > 	Capabilities: [c8] Power Management version 2
+> > 	Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+> > 	Capabilities: [e0] Express Legacy Endpoint, MSI 00
+> > 	Capabilities: [100] Advanced Error Reporting
+> > 	Capabilities: [140] Device Serial Number 00-xx-xx-xx-xx-xx-xx-xx
+> > 	Kernel driver in use: iwl3945
+> > 	Kernel modules: iwl3945
 > 
-> good catch. I think it failed and despite a different kernel id the old module was
-> loaded.
-> 
-> Here is the new version, this time lightly tested
+> Wonder if somehow an ACPI power resource powering the wireless card got 
+> switched off? What previous kernel version was working, can you try 
+> bisecting?
 
-Could you please fix the indentation and send your SOB for this patch?
-
-Cheers,
-Mauro.
-> 
-> --- linux-2.6.34/drivers/media/dvb/siano/smscoreapi.c.rz	2010-06-03 21:58:11.000000000 +0200
-> +++ linux-2.6.34/drivers/media/dvb/siano/smscoreapi.c	2010-06-07 14:32:06.000000000 +0200
-> @@ -1100,31 +1100,26 @@
->   *
->   * @return pointer to descriptor on success, NULL on error.
->   */
-> -struct smscore_buffer_t *smscore_getbuffer(struct smscore_device_t *coredev)
-> +
-> +struct smscore_buffer_t *get_entry(struct smscore_device_t *coredev)
->  {
->  	struct smscore_buffer_t *cb = NULL;
->  	unsigned long flags;
->  
-> -	DEFINE_WAIT(wait);
-> -
->  	spin_lock_irqsave(&coredev->bufferslock, flags);
-> -
-> -	/* This function must return a valid buffer, since the buffer list is
-> -	 * finite, we check that there is an available buffer, if not, we wait
-> -	 * until such buffer become available.
-> -	 */
-> -
-> -	prepare_to_wait(&coredev->buffer_mng_waitq, &wait, TASK_INTERRUPTIBLE);
-> -
-> -	if (list_empty(&coredev->buffers))
-> -		schedule();
-> -
-> -	finish_wait(&coredev->buffer_mng_waitq, &wait);
-> -
-> +	if (!list_empty(&coredev->buffers)) {
->  	cb = (struct smscore_buffer_t *) coredev->buffers.next;
->  	list_del(&cb->entry);
-> -
-> +	}
->  	spin_unlock_irqrestore(&coredev->bufferslock, flags);
-> +	return cb;
-> +}
-> +
-> +struct smscore_buffer_t *smscore_getbuffer(struct smscore_device_t *coredev)
-> +{
-> +	struct smscore_buffer_t *cb = NULL;
-> +
-> +	wait_event(coredev->buffer_mng_waitq, (cb = get_entry(coredev)));
->  
->  	return cb;
->  }
-> 
-> 
-> Richard
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Bisecting is a bit hard, because I haven't seen this issue anymore :(
