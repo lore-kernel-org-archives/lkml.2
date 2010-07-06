@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab0GFPQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 11:16:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41278 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab0GFPQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 11:16:00 -0400
-Date: Tue, 6 Jul 2010 08:14:54 -0700
-From: Greg KH <gregkh@suse.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Luotao Fu <l.fu@pengutronix.de>, Alan Cox <alan@linux.intel.com>,
-       linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: Problem with tty changes in linux-next
-Message-ID: <20100706151454.GB12444@suse.de>
-References: <20100706130403.GD3991@pengutronix.de>
- <201007061623.48363.arnd@arndb.de>
+	id S1753838Ab0GFPUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 11:20:36 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:60610 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284Ab0GFPUf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 11:20:35 -0400
+Message-ID: <4C3349BF.7030104@austin.ibm.com>
+Date: Tue, 06 Jul 2010 10:20:31 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Greg KH <gregkh@suse.de>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] memory hotplug disable boot option
+References: <20100628154455.GA13918@suse.de>	 <1277769867.8354.531.camel@nimitz>	 <20100629115232.38BC.A69D9226@jp.fujitsu.com>	 <1277827384.8354.3413.camel@nimitz>	<20100629180415.GB1240@suse.de>	 <20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>	 <20100630154755.GB12158@suse.de>	 <20100701093130.c5e2b564.kamezawa.hiroyu@jp.fujitsu.com> <1277990595.8354.10356.camel@nimitz>
+In-Reply-To: <1277990595.8354.10356.camel@nimitz>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007061623.48363.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 06, 2010 at 04:23:48PM +0200, Arnd Bergmann wrote:
-> > 2. A more serious problem is that printing kernel message no more works
-> > after running into userspace.
-> > ....
-> > Freeing init memory: 100K
-> > 3sy||_|_|
-> > phyCORE login:
-> > ....
-> > The boot message between init and login sheel is printed only
-> > partly. The cursor jumps back and forward. It seems that part the
-> > special characters like new line etc. are cutted away so that the
-> > printout is shown in such a funny manner. After a tty is spawned, every
-> > thing works just well. I can log in onto the system and it seems to work
-> > so far. I bisected the kernel and identified eventually
-> > fb11bee14186af87ee6abb833cf1a2a6be59c65b as the
-> > first bad commit. The actual problem should be, however,
-> > 36c621d82b956ff6ff72273f848af53e6c581aba, where tty_port_block_til_ready()
-> > is introduced. Seems to me that there are locking problems. I
-> > unfortunately don't have any insights of tty layer to tell where the
-> > exact problem is.
+On 07/01/2010 08:23 AM, Dave Hansen wrote:
 > 
-> I'm sorry you had to bisect this. I did the same bisect and already
-> submitted a patch for this, which probably got stuck in Greg's inbox
-> while he was preparing the stable releases. I can't find the patch
-> in the archives now, which could also mean that it never left my local
-> machine.
+> I was thinking more along the lines of just taking adjacent sections and
+> merging them.  We'll need a new "end address" or size file.  Maybe
+> "end_phys_index" or something similar.
 > 
-> I have the patch on a different machine, but will resend it to Greg
-> when I get there to make sure it doesn't get lost.
+> Such a beast would not fix all of the pathological cases, like where
+> only every other 16MB section is populated with RAM, but I don't think
+> those are very common at all, especially in cases where there's a lot of
+> RAM.  But, it also has a chance of being relatively backward-compatible.
+> In most cases, we may even be able to calculate a new phys_block_size
+> where everything fits evenly and be fully backward-compatible with the
+> old ABI.
+> 
 
-It's in my todo queue, sorry, I spent last week on the 5 stable kernel
-releases, I should get to this today and push it into the next
-linux-next release.
+Under this scenario were you thinking that all of the memory sections that
+reside under this memory block would then be acted upon as a whole.  For
+example would we allow users to hotplug individual memory sections included
+in th block, or would the memory block be acted upon as a whole?
 
-thanks,
-
-greg k-h
+-Nathan
