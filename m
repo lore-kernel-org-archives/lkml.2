@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab0GFLnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 07:43:46 -0400
-Received: from stinky.trash.net ([213.144.137.162]:65085 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755009Ab0GFLno (ORCPT
+	id S1757017Ab0GFMAE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 08:00:04 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28966 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754806Ab0GFMAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 07:43:44 -0400
-Message-ID: <4C3316F0.2030807@trash.net>
-Date: Tue, 06 Jul 2010 13:43:44 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Tue, 6 Jul 2010 08:00:00 -0400
+Date: Tue, 6 Jul 2010 04:58:28 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH 1/2] ocfs2: Zero the tail cluster when extending past
+ i_size v2
+Message-ID: <20100706115827.GG13023@mail.oracle.com>
+Mail-Followup-To: Tao Ma <tao.ma@oracle.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	ocfs2-devel@oss.oracle.com, Dave Chinner <dchinner@redhat.com>,
+	Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
+References: <20100629005403.GC24343@mail.oracle.com>
+ <20100629015615.GZ6590@dastard>
+ <20100629020420.GE24343@mail.oracle.com>
+ <20100629022757.GA6590@dastard>
+ <20100629071817.GA4150@mail.oracle.com>
+ <20100702224912.GC5800@mail.oracle.com>
+ <20100703213219.GB21262@mail.oracle.com>
+ <4C3156D0.5090001@oracle.com>
+ <20100706071741.GF13023@mail.oracle.com>
+ <4C32E152.1090902@oracle.com>
 MIME-Version: 1.0
-To: Simon Horman <horms@verge.net.au>
-CC: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
-       netfilter-devel@vger.kernel.org,
-       Malcolm Turnbull <malcolm@loadbalancer.org>,
-       Wensong Zhang <wensong@linux-vs.org>,
-       Julius Volz <julius.volz@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
-Subject: Re: [patch v2.3 3/4] IPVS: make FTP work with full NAT support
-References: <20100704113246.562399500@vergenet.net> <20100704114808.932594876@vergenet.net>
-In-Reply-To: <20100704114808.932594876@vergenet.net>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C32E152.1090902@oracle.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C331A96.00FE:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simon Horman wrote:
-> @@ -219,19 +358,23 @@ static int ip_vs_ftp_out(struct ip_vs_ap
->  
->  		buf_len = strlen(buf);
->  
-> +		ct = nf_ct_get(skb, &ctinfo);
-> +		ret = nf_nat_mangle_tcp_packet(skb,
-> +					       ct,
-> +					       ctinfo,
-> +					       start-data,
-> +					       end-start,
-> +					       buf,
-> +					       buf_len);
-> +
-> +		if (ct && ct != &nf_conntrack_untracked)
->   
-This does not make sense, you're already using the conntrack above
-in the call to nf_nat_mangle_tcp_packet(), so the check should
-probably happen before that. You also should be checking the
-return value of nf_nat_mangle_tcp_packet() before setting up the
-expectation.
+On Tue, Jul 06, 2010 at 03:54:58PM +0800, Tao Ma wrote:
+> On 07/06/2010 03:17 PM, Joel Becker wrote:
+> >>>+	/* Is there a cluster to zero? */
+> >>>+	if (!p_cpos)
+> >>>+		goto out;
+> >>For unwritten extent, we also need to clear the pages? If yes, the
+> >>solution doesn't complete if we have 2 unwritten extent, one
+> >>contains i_size while one passes i_size. Here we only clear the
+> >>pages for the 1st unwritten extent and leave the 2nd one untouched.
+> >
+> >	We probably don't need to zero unwritten extents.  We cannot
+> >have an extent past i_size, can we?
+> we can. AFAICS, ocfs2_change_file_space will allocate unwritten
+> extents and does't change i_size.
 
-> +			ip_vs_expect_related(skb, ct, n_cp,
-> +					     IPPROTO_TCP, NULL, 0);
+	Oh, you're right.  We need to walk the entire extent range
+between i_size and pos and figure out what needs CoW.  This needs to
+happen no matter what.
 
+> >	But you dropped the check for pos_blkno alignment.
+> >Unconditionally adding the +1 doesn't seem like a good idea.
+> You can add it as you wish.
+> I just thought that you add one more extra cluster if pos_blkno
+> isn't aligned so as to zero blocks in [pos_cpos_start_block,
+> pos_blkno).
+> But As I said in the comments, you will soon write pos_blkno(it also
+> needs to be CoW since it is within this refcounted extent), so if we
+> can CoW it out now, maybe we have a chance to not call
+> ocfs2_refcount_cow later.
+
+	I'd much rather let the write handle its own contiguousness.  If
+we get lucky, that CoW melds with our CoW.  If we don't get lucky, isn't
+it better to have the newly changed area be fully contiguous rather than
+have the first extent of it not be and then the remaining extents be?
+
+Joel
+
+-- 
+
+Life's Little Instruction Book #3
+
+	"Watch a sunrise at least once a year."
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
