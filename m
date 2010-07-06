@@ -1,158 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab0GFQpc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 12:45:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47123 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751088Ab0GFQpb (ORCPT
+	id S1754031Ab0GFQsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 12:48:46 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58281 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab0GFQso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 12:45:31 -0400
+	Tue, 6 Jul 2010 12:48:44 -0400
+Date: Tue, 6 Jul 2010 13:48:37 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Conny Seidel <conny.seidel@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       borislav.petkov@amd.com
+Subject: Re: [PATCH tip/perf/urgent] perf tools: Fix fallback to
+ cplus_demangle() when bfd_demangle() is not available
+Message-ID: <20100706164837.GE3861@ghostprotocols.net>
+References: <20100706134348.GC26192@ghostprotocols.net>
+ <1278430783-17259-1-git-send-email-conny.seidel@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <20100706004550.GC12517@cynthia.pants.nu>
-References: <20100624131455.GA10441@laptop>
-	<7897.1277531612@jrobl>
-	<20100626093544.GA27715@infradead.org>
-	<13226.1277556884@jrobl>
-	<20100705205806.GA12517@cynthia.pants.nu>
-	<6419.1278372690@jrobl>
-	<20100706004550.GC12517@cynthia.pants.nu>
-Date: Tue, 6 Jul 2010 09:45:26 -0700
-Message-ID: <AANLkTikoD1OPjVcyvAAJ0QO6dGJxv40Np6LgRQ7X4tMM@mail.gmail.com>
-Subject: Re: [rfc] new stat*fs-like syscall?
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Brad Boyer <flar@allandria.com>
-Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-       Christoph Hellwig <hch@infradead.org>, Nick Piggin <npiggin@suse.de>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Al Viro <viro@zeniv.linux.org.uk>, Ulrich Drepper <drepper@redhat.com>
-Content-Type: multipart/mixed; boundary=00151747871cbe7b47048abac7ec
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278430783-17259-1-git-send-email-conny.seidel@amd.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00151747871cbe7b47048abac7ec
-Content-Type: text/plain; charset=ISO-8859-1
+Em Tue, Jul 06, 2010 at 05:39:43PM +0200, Conny Seidel escreveu:
+> make version 3.80 doesn't support "else ifdef" on the same line, also it
+> doesn't support unindented nested constructs.
 
-On Mon, Jul 5, 2010 at 5:45 PM, Brad Boyer <flar@allandria.com> wrote:
-> On Tue, Jul 06, 2010 at 08:31:30AM +0900, J. R. Okajima wrote:
->> For negative dentry, it should be supported as long as some
->> standard/specification doesn't prohibit explicitly. So I still think
->> statfs is the best place to implement _PC_LINK_MAX.
->
-> If we're going to be changing statfs (or adding a new system call)
-> anyway, that does seem like a reasonable place to export this data
-> along with whatever else gets added. With the various things that
-> have been suggested, maybe we need something more like the stat
-> replacement that has been getting discussed with the room for some
-> larger optional fields and a way to request a specific set of fields.
-
-Let's not overdesign things. Just do something like the attached
-patch, which is the obvious and straightforward thing to do.
-
-Overdesigning is a disease. It's fundamentally wrong.
-
-(Yeah, yeah,. the patch is untested, and doesn't actually _fill_ the
-new f_flags value, but that's left as a trivial exercise for the
-reader.)
-
-                                Linus
-
---00151747871cbe7b47048abac7ec
-Content-Type: application/octet-stream; name=diff
-Content-Disposition: attachment; filename=diff
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gbayzxit0
-
-IGFyY2gvaWE2NC9pbmNsdWRlL2FzbS9jb21wYXQuaCB8ICAgIDMgKystCiBhcmNoL21pcHMvaW5j
-bHVkZS9hc20vc3RhdGZzLmggfCAgIDEyICsrKysrKysrLS0tLQogYXJjaC9zMzkwL2luY2x1ZGUv
-YXNtL3N0YXRmcy5oIHwgICAgOSArKysrKystLS0KIGFyY2gveDg2L2luY2x1ZGUvYXNtL2NvbXBh
-dC5oICB8ICAgIDMgKystCiBmcy9jb21wYXQuYyAgICAgICAgICAgICAgICAgICAgfCAgICA1ICsr
-Ky0tCiBpbmNsdWRlL2FzbS1nZW5lcmljL3N0YXRmcy5oICAgfCAgICA5ICsrKysrKy0tLQogaW5j
-bHVkZS9saW51eC9zdGF0ZnMuaCAgICAgICAgIHwgICAgMyArKy0KIDcgZmlsZXMgY2hhbmdlZCwg
-MjkgaW5zZXJ0aW9ucygrKSwgMTUgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvYXJjaC9pYTY0
-L2luY2x1ZGUvYXNtL2NvbXBhdC5oIGIvYXJjaC9pYTY0L2luY2x1ZGUvYXNtL2NvbXBhdC5oCmlu
-ZGV4IGY5MGVkYzguLmFiMTU0NjkgMTAwNjQ0Ci0tLSBhL2FyY2gvaWE2NC9pbmNsdWRlL2FzbS9j
-b21wYXQuaAorKysgYi9hcmNoL2lhNjQvaW5jbHVkZS9hc20vY29tcGF0LmgKQEAgLTEwNSw3ICsx
-MDUsOCBAQCBzdHJ1Y3QgY29tcGF0X3N0YXRmcyB7CiAJY29tcGF0X2ZzaWRfdAlmX2ZzaWQ7CiAJ
-aW50CQlmX25hbWVsZW47CS8qIFN1bk9TIGlnbm9yZXMgdGhpcyBmaWVsZC4gKi8KIAlpbnQJCWZf
-ZnJzaXplOwotCWludAkJZl9zcGFyZVs1XTsKKwlpbnQJCWZfZmxhZ3M7CisJaW50CQlmX3NwYXJl
-WzRdOwogfTsKIAogI2RlZmluZSBDT01QQVRfUkxJTV9PTERfSU5GSU5JVFkgICAgICAgMHg3ZmZm
-ZmZmZgpkaWZmIC0tZ2l0IGEvYXJjaC9taXBzL2luY2x1ZGUvYXNtL3N0YXRmcy5oIGIvYXJjaC9t
-aXBzL2luY2x1ZGUvYXNtL3N0YXRmcy5oCmluZGV4IGMzZGRmOTcuLjBmODA1YzcgMTAwNjQ0Ci0t
-LSBhL2FyY2gvbWlwcy9pbmNsdWRlL2FzbS9zdGF0ZnMuaAorKysgYi9hcmNoL21pcHMvaW5jbHVk
-ZS9hc20vc3RhdGZzLmgKQEAgLTMzLDcgKzMzLDggQEAgc3RydWN0IHN0YXRmcyB7CiAJLyogTGlu
-dXggc3BlY2lhbHMgKi8KIAlfX2tlcm5lbF9mc2lkX3QJZl9mc2lkOwogCWxvbmcJCWZfbmFtZWxl
-bjsKLQlsb25nCQlmX3NwYXJlWzZdOworCWxvbmcJCWZfZmxhZ3M7CisJbG9uZwkJZl9zcGFyZVs1
-XTsKIH07CiAKICNpZiAoX01JUFNfU0lNID09IF9NSVBTX1NJTV9BQkkzMikgfHwgKF9NSVBTX1NJ
-TSA9PSBfTUlQU19TSU1fTkFCSTMyKQpAQCAtNTMsNyArNTQsOCBAQCBzdHJ1Y3Qgc3RhdGZzNjQg
-ewogCV9fdTY0CWZfYmF2YWlsOwogCV9fa2VybmVsX2ZzaWRfdCBmX2ZzaWQ7CiAJX191MzIJZl9u
-YW1lbGVuOwotCV9fdTMyCWZfc3BhcmVbNl07CisJX191MzIJZl9mbGFnczsKKwlfX3UzMglmX3Nw
-YXJlWzVdOwogfTsKIAogI2VuZGlmIC8qIF9NSVBTX1NJTSA9PSBfTUlQU19TSU1fQUJJMzIgKi8K
-QEAgLTczLDcgKzc1LDggQEAgc3RydWN0IHN0YXRmczY0IHsJCQkvKiBTYW1lIGFzIHN0cnVjdCBz
-dGF0ZnMgKi8KIAkvKiBMaW51eCBzcGVjaWFscyAqLwogCV9fa2VybmVsX2ZzaWRfdAlmX2ZzaWQ7
-CiAJbG9uZwkJZl9uYW1lbGVuOwotCWxvbmcJCWZfc3BhcmVbNl07CisJbG9uZwkJZl9mbGFnczsK
-Kwlsb25nCQlmX3NwYXJlWzVdOwogfTsKIAogc3RydWN0IGNvbXBhdF9zdGF0ZnM2NCB7CkBAIC04
-OCw3ICs5MSw4IEBAIHN0cnVjdCBjb21wYXRfc3RhdGZzNjQgewogCV9fdTY0CWZfYmF2YWlsOwog
-CV9fa2VybmVsX2ZzaWRfdCBmX2ZzaWQ7CiAJX191MzIJZl9uYW1lbGVuOwotCV9fdTMyCWZfc3Bh
-cmVbNl07CisJX191MzIJZl9mbGFnczsKKwlfX3UzMglmX3NwYXJlWzVdOwogfTsKIAogI2VuZGlm
-IC8qIF9NSVBTX1NJTSA9PSBfTUlQU19TSU1fQUJJNjQgKi8KZGlmZiAtLWdpdCBhL2FyY2gvczM5
-MC9pbmNsdWRlL2FzbS9zdGF0ZnMuaCBiL2FyY2gvczM5MC9pbmNsdWRlL2FzbS9zdGF0ZnMuaApp
-bmRleCAwNmNjNzAzLi4zYmU3ZmJkIDEwMDY0NAotLS0gYS9hcmNoL3MzOTAvaW5jbHVkZS9hc20v
-c3RhdGZzLmgKKysrIGIvYXJjaC9zMzkwL2luY2x1ZGUvYXNtL3N0YXRmcy5oCkBAIC0zMyw3ICsz
-Myw4IEBAIHN0cnVjdCBzdGF0ZnMgewogCV9fa2VybmVsX2ZzaWRfdCBmX2ZzaWQ7CiAJaW50ICBm
-X25hbWVsZW47CiAJaW50ICBmX2Zyc2l6ZTsKLQlpbnQgIGZfc3BhcmVbNV07CisJaW50ICBmX2Zs
-YWdzOworCWludCAgZl9zcGFyZVs0XTsKIH07CiAKIHN0cnVjdCBzdGF0ZnM2NCB7CkBAIC00Nyw3
-ICs0OCw4IEBAIHN0cnVjdCBzdGF0ZnM2NCB7CiAJX19rZXJuZWxfZnNpZF90IGZfZnNpZDsKIAlp
-bnQgIGZfbmFtZWxlbjsKIAlpbnQgIGZfZnJzaXplOwotCWludCAgZl9zcGFyZVs1XTsKKwlpbnQg
-IGZfZmxhZ3M7CisJaW50ICBmX3NwYXJlWzRdOwogfTsKIAogc3RydWN0IGNvbXBhdF9zdGF0ZnM2
-NCB7CkBAIC02MSw3ICs2Myw4IEBAIHN0cnVjdCBjb21wYXRfc3RhdGZzNjQgewogCV9fa2VybmVs
-X2ZzaWRfdCBmX2ZzaWQ7CiAJX191MzIgZl9uYW1lbGVuOwogCV9fdTMyIGZfZnJzaXplOwotCV9f
-dTMyIGZfc3BhcmVbNV07CisJX191MzIgZl9mbGFnczsKKwlfX3UzMiBmX3NwYXJlWzRdOwogfTsK
-IAogI2VuZGlmIC8qIF9fczM5MHhfXyAqLwpkaWZmIC0tZ2l0IGEvYXJjaC94ODYvaW5jbHVkZS9h
-c20vY29tcGF0LmggYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9jb21wYXQuaAppbmRleCAzMDYxNjBl
-Li45ZjljZGI4IDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9jb21wYXQuaAorKysg
-Yi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9jb21wYXQuaApAQCAtMTA4LDcgKzEwOCw4IEBAIHN0cnVj
-dCBjb21wYXRfc3RhdGZzIHsKIAljb21wYXRfZnNpZF90CWZfZnNpZDsKIAlpbnQJCWZfbmFtZWxl
-bjsJLyogU3VuT1MgaWdub3JlcyB0aGlzIGZpZWxkLiAqLwogCWludAkJZl9mcnNpemU7Ci0JaW50
-CQlmX3NwYXJlWzVdOworCWludAkJZl9mbGFnczsKKwlpbnQJCWZfc3BhcmVbNF07CiB9OwogCiAj
-ZGVmaW5lIENPTVBBVF9STElNX09MRF9JTkZJTklUWQkweDdmZmZmZmZmCmRpZmYgLS1naXQgYS9m
-cy9jb21wYXQuYyBiL2ZzL2NvbXBhdC5jCmluZGV4IDY0OTBkMjEuLmZlOTZlN2QgMTAwNjQ0Ci0t
-LSBhL2ZzL2NvbXBhdC5jCisrKyBiL2ZzL2NvbXBhdC5jCkBAIC0yNDUsNyArMjQ1LDcgQEAgc3Rh
-dGljIGludCBwdXRfY29tcGF0X3N0YXRmcyhzdHJ1Y3QgY29tcGF0X3N0YXRmcyBfX3VzZXIgKnVi
-dWYsIHN0cnVjdCBrc3RhdGZzICoKIAkgICAgX19wdXRfdXNlcihrYnVmLT5mX2ZzaWQudmFsWzBd
-LCAmdWJ1Zi0+Zl9mc2lkLnZhbFswXSkgfHwKIAkgICAgX19wdXRfdXNlcihrYnVmLT5mX2ZzaWQu
-dmFsWzFdLCAmdWJ1Zi0+Zl9mc2lkLnZhbFsxXSkgfHwKIAkgICAgX19wdXRfdXNlcihrYnVmLT5m
-X2Zyc2l6ZSwgJnVidWYtPmZfZnJzaXplKSB8fAotCSAgICBfX3B1dF91c2VyKDAsICZ1YnVmLT5m
-X3NwYXJlWzBdKSB8fCAKKwkgICAgX19wdXRfdXNlcihrYnVmLT5mX2ZsYWdzLCAmdWJ1Zi0+Zl9m
-bGFncykgfHwgCiAJICAgIF9fcHV0X3VzZXIoMCwgJnVidWYtPmZfc3BhcmVbMV0pIHx8IAogCSAg
-ICBfX3B1dF91c2VyKDAsICZ1YnVmLT5mX3NwYXJlWzJdKSB8fCAKIAkgICAgX19wdXRfdXNlcigw
-LCAmdWJ1Zi0+Zl9zcGFyZVszXSkgfHwgCkBAIC0zMTgsNyArMzE4LDggQEAgc3RhdGljIGludCBw
-dXRfY29tcGF0X3N0YXRmczY0KHN0cnVjdCBjb21wYXRfc3RhdGZzNjQgX191c2VyICp1YnVmLCBz
-dHJ1Y3Qga3N0YXQKIAkgICAgX19wdXRfdXNlcihrYnVmLT5mX25hbWVsZW4sICZ1YnVmLT5mX25h
-bWVsZW4pIHx8CiAJICAgIF9fcHV0X3VzZXIoa2J1Zi0+Zl9mc2lkLnZhbFswXSwgJnVidWYtPmZf
-ZnNpZC52YWxbMF0pIHx8CiAJICAgIF9fcHV0X3VzZXIoa2J1Zi0+Zl9mc2lkLnZhbFsxXSwgJnVi
-dWYtPmZfZnNpZC52YWxbMV0pIHx8Ci0JICAgIF9fcHV0X3VzZXIoa2J1Zi0+Zl9mcnNpemUsICZ1
-YnVmLT5mX2Zyc2l6ZSkpCisJICAgIF9fcHV0X3VzZXIoa2J1Zi0+Zl9mcnNpemUsICZ1YnVmLT5m
-X2Zyc2l6ZSkgfHwKKwkgICAgX19wdXRfdXNlcihrYnVmLT5mX2ZsYWdzLCAmdWJ1Zi0+Zl9mbGFn
-cykpCiAJCXJldHVybiAtRUZBVUxUOwogCXJldHVybiAwOwogfQpkaWZmIC0tZ2l0IGEvaW5jbHVk
-ZS9hc20tZ2VuZXJpYy9zdGF0ZnMuaCBiL2luY2x1ZGUvYXNtLWdlbmVyaWMvc3RhdGZzLmgKaW5k
-ZXggM2I0ZmIzZS4uMGZkMjhlMCAxMDA2NDQKLS0tIGEvaW5jbHVkZS9hc20tZ2VuZXJpYy9zdGF0
-ZnMuaAorKysgYi9pbmNsdWRlL2FzbS1nZW5lcmljL3N0YXRmcy5oCkBAIC0zMyw3ICszMyw4IEBA
-IHN0cnVjdCBzdGF0ZnMgewogCV9fa2VybmVsX2ZzaWRfdCBmX2ZzaWQ7CiAJX19zdGF0ZnNfd29y
-ZCBmX25hbWVsZW47CiAJX19zdGF0ZnNfd29yZCBmX2Zyc2l6ZTsKLQlfX3N0YXRmc193b3JkIGZf
-c3BhcmVbNV07CisJX19zdGF0ZnNfd29yZCBmX2ZsYWdzOworCV9fc3RhdGZzX3dvcmQgZl9zcGFy
-ZVs0XTsKIH07CiAKIC8qCkBAIC01NSw3ICs1Niw4IEBAIHN0cnVjdCBzdGF0ZnM2NCB7CiAJX19r
-ZXJuZWxfZnNpZF90IGZfZnNpZDsKIAlfX3N0YXRmc193b3JkIGZfbmFtZWxlbjsKIAlfX3N0YXRm
-c193b3JkIGZfZnJzaXplOwotCV9fc3RhdGZzX3dvcmQgZl9zcGFyZVs1XTsKKwlfX3N0YXRmc193
-b3JkIGZfZmxhZ3M7CisJX19zdGF0ZnNfd29yZCBmX3NwYXJlWzRdOwogfSBBUkNIX1BBQ0tfU1RB
-VEZTNjQ7CiAKIC8qIApAQCAtNzcsNyArNzksOCBAQCBzdHJ1Y3QgY29tcGF0X3N0YXRmczY0IHsK
-IAlfX2tlcm5lbF9mc2lkX3QgZl9mc2lkOwogCV9fdTMyIGZfbmFtZWxlbjsKIAlfX3UzMiBmX2Zy
-c2l6ZTsKLQlfX3UzMiBmX3NwYXJlWzVdOworCV9fdTMyIGZfZmxhZ3M7CisJX191MzIgZl9zcGFy
-ZVs0XTsKIH0gQVJDSF9QQUNLX0NPTVBBVF9TVEFURlM2NDsKIAogI2VuZGlmCmRpZmYgLS1naXQg
-YS9pbmNsdWRlL2xpbnV4L3N0YXRmcy5oIGIvaW5jbHVkZS9saW51eC9zdGF0ZnMuaAppbmRleCBi
-MzRjYzgyLi5kZDhiNGU3IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L3N0YXRmcy5oCisrKyBi
-L2luY2x1ZGUvbGludXgvc3RhdGZzLmgKQEAgLTE2LDcgKzE2LDggQEAgc3RydWN0IGtzdGF0ZnMg
-ewogCV9fa2VybmVsX2ZzaWRfdCBmX2ZzaWQ7CiAJbG9uZyBmX25hbWVsZW47CiAJbG9uZyBmX2Zy
-c2l6ZTsKLQlsb25nIGZfc3BhcmVbNV07CisJbG9uZyBmX2ZsYWdzOworCWxvbmcgZl9zcGFyZVs0
-XTsKIH07CiAKICNlbmRpZgo=
---00151747871cbe7b47048abac7ec--
+Thanks, testing this now.
+ 
+- Arnaldo
