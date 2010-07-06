@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab0GFQsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 12:48:46 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58281 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab0GFQso (ORCPT
+	id S1755170Ab0GFQtk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 12:49:40 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:29175 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab0GFQtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 12:48:44 -0400
-Date: Tue, 6 Jul 2010 13:48:37 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Conny Seidel <conny.seidel@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       borislav.petkov@amd.com
-Subject: Re: [PATCH tip/perf/urgent] perf tools: Fix fallback to
- cplus_demangle() when bfd_demangle() is not available
-Message-ID: <20100706164837.GE3861@ghostprotocols.net>
-References: <20100706134348.GC26192@ghostprotocols.net>
- <1278430783-17259-1-git-send-email-conny.seidel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278430783-17259-1-git-send-email-conny.seidel@amd.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 6 Jul 2010 12:49:39 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6035"; a="46479058"
+Subject: Re: [PATCH v2] msm: gpio: Add set_wake support to msm7200a-gpio's
+ irq_chip.
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Gregory Bean <gbean@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1278185128-29161-1-git-send-email-gbean@codeaurora.org>
+References: <1278185128-29161-1-git-send-email-gbean@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Jul 2010 09:47:37 -0700
+Message-ID: <1278434857.27490.2.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jul 06, 2010 at 05:39:43PM +0200, Conny Seidel escreveu:
-> make version 3.80 doesn't support "else ifdef" on the same line, also it
-> doesn't support unindented nested constructs.
+On Sat, 2010-07-03 at 12:25 -0700, Gregory Bean wrote:
+> Add power-management and irq_chip hooks to allow configuration
+> of msm-gpio irq lines as wakeup sources.
+> 
 
-Thanks, testing this now.
- 
-- Arnaldo
+What level of correlation is there between power management and the wake
+up hooks? Just irq_masks ?
+
+Daniel
+
