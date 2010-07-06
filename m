@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab0GFCGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 22:06:32 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48250
+	id S1757284Ab0GFCGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 22:06:38 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48258
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757174Ab0GFCG3 (ORCPT
+	by vger.kernel.org with ESMTP id S1756810Ab0GFCGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 22:06:29 -0400
-Date: Mon, 05 Jul 2010 19:06:42 -0700 (PDT)
-Message-Id: <20100705.190642.70212655.davem@davemloft.net>
+	Mon, 5 Jul 2010 22:06:35 -0400
+Date: Mon, 05 Jul 2010 19:06:49 -0700 (PDT)
+Message-Id: <20100705.190649.232765900.davem@davemloft.net>
 To: segooon@gmail.com
-Cc: kernel-janitors@vger.kernel.org, chaithrika@ti.com, srk@ti.com,
-       khilman@deeprootsystems.com, jpirko@redhat.com, netdev@vger.kernel.org,
+Cc: kernel-janitors@vger.kernel.org, thomas@wytron.com.tw, jonas@southpole.se,
+       eric.dumazet@gmail.com, julia@diku.dk, netdev@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] davinci_emac: Use the instance of net_device_stats
- from net_device.
+Subject: Re: [PATCH] ethoc: Use the instance of net_device_stats from
+ net_device.
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1278332007-16175-1-git-send-email-segooon@gmail.com>
-References: <1278332007-16175-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1278332012-16456-1-git-send-email-segooon@gmail.com>
+References: <1278332012-16456-1-git-send-email-segooon@gmail.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,7 +27,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kulikov Vasiliy <segooon@gmail.com>
-Date: Mon,  5 Jul 2010 16:13:26 +0400
+Date: Mon,  5 Jul 2010 16:13:31 +0400
 
 > Since net_device has an instance of net_device_stats,
 > we can remove the instance of this from the adapter structure.
