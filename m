@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757407Ab0GFWpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 18:45:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32629 "EHLO
+	id S1757003Ab0GFWoc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 18:44:32 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32500 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756982Ab0GFWoe (ORCPT
+	with ESMTP id S1757362Ab0GFWo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 18:44:34 -0400
+	Tue, 6 Jul 2010 18:44:29 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -17,89 +17,100 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 21/49] memblock: Add arch function to control coalescing of memblock memory regions
-Date: Tue,  6 Jul 2010 15:39:14 -0700
-Message-Id: <1278455982-24621-22-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 12/49] memblock: Remove memblock_type.size and add memblock.memory_size instead
+Date: Tue,  6 Jul 2010 15:39:05 -0700
+Message-Id: <1278455982-24621-13-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
 References: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C33B1A8.0066,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4C33B1A7.00F3,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-Some archs such as ARM want to avoid coalescing accross things such
-as the lowmem/highmem boundary or similar. This provides the option
-to control it via an arch callback for which a weak default is provided
-which always allows coalescing.
+Right now, both the "memory" and "reserved" memblock_type structures have
+a "size" member. It's unused in the later case, and represent the
+calculated memory size in the later case.
+
+This moves it out to the main memblock structure instead
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- include/linux/memblock.h |    2 ++
- mm/memblock.c            |   19 ++++++++++++++++++-
- 2 files changed, 20 insertions(+), 1 deletions(-)
+ arch/powerpc/mm/mem.c    |    2 +-
+ include/linux/memblock.h |    2 +-
+ mm/memblock.c            |    8 ++++----
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 52df542..f661f6c 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -301,7 +301,7 @@ void __init mem_init(void)
+ 		swiotlb_init(1);
+ #endif
+ 
+-	num_physpages = memblock.memory.size >> PAGE_SHIFT;
++	num_physpages = memblock_phys_mem_size() >> PAGE_SHIFT;
+ 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
+ 
+ #ifdef CONFIG_NEED_MULTIPLE_NODES
 diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index b839053..15da7d9 100644
+index 5abb06b..e849d31 100644
 --- a/include/linux/memblock.h
 +++ b/include/linux/memblock.h
-@@ -70,6 +70,8 @@ extern void memblock_dump_all(void);
+@@ -27,12 +27,12 @@ struct memblock_region {
  
- /* Provided by the architecture */
- extern phys_addr_t memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid);
-+extern int memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
-+				   phys_addr_t addr2, phys_addr_t size2);
+ struct memblock_type {
+ 	unsigned long cnt;
+-	phys_addr_t size;
+ 	struct memblock_region regions[MAX_MEMBLOCK_REGIONS+1];
+ };
  
- /**
-  * memblock_set_current_limit - Set the current allocation limit to allow
+ struct memblock {
+ 	phys_addr_t current_limit;
++	phys_addr_t memory_size;	/* Updated by memblock_analyze() */
+ 	struct memblock_type memory;
+ 	struct memblock_type reserved;
+ };
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 82be663..8659e00 100644
+index 0c0f787..78c2394 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -241,6 +241,12 @@ static int memblock_double_array(struct memblock_type *type)
- 	return 0;
+@@ -49,7 +49,7 @@ void memblock_dump_all(void)
+ 		return;
+ 
+ 	pr_info("MEMBLOCK configuration:\n");
+-	pr_info(" memory.size = 0x%llx\n", (unsigned long long)memblock.memory.size);
++	pr_info(" memory size = 0x%llx\n", (unsigned long long)memblock.memory_size);
+ 
+ 	memblock_dump(&memblock.memory, "memory");
+ 	memblock_dump(&memblock.reserved, "reserved");
+@@ -123,10 +123,10 @@ void __init memblock_analyze(void)
+ {
+ 	int i;
+ 
+-	memblock.memory.size = 0;
++	memblock.memory_size = 0;
+ 
+ 	for (i = 0; i < memblock.memory.cnt; i++)
+-		memblock.memory.size += memblock.memory.regions[i].size;
++		memblock.memory_size += memblock.memory.regions[i].size;
  }
  
-+extern int __weak memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
-+					  phys_addr_t addr2, phys_addr_t size2)
-+{
-+	return 1;
-+}
-+
  static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+@@ -423,7 +423,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
+ /* You must call memblock_analyze() before this. */
+ phys_addr_t __init memblock_phys_mem_size(void)
  {
- 	unsigned long coalesced = 0;
-@@ -262,6 +268,10 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
- 			return 0;
+-	return memblock.memory.size;
++	return memblock.memory_size;
+ }
  
- 		adjacent = memblock_addrs_adjacent(base, size, rgnbase, rgnsize);
-+		/* Check if arch allows coalescing */
-+		if (adjacent != 0 && type == &memblock.memory &&
-+		    !memblock_memory_can_coalesce(base, size, rgnbase, rgnsize))
-+			break;
- 		if (adjacent > 0) {
- 			type->regions[i].base -= size;
- 			type->regions[i].size += size;
-@@ -274,7 +284,14 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
- 		}
- 	}
- 
--	if ((i < type->cnt - 1) && memblock_regions_adjacent(type, i, i+1)) {
-+	/* If we plugged a hole, we may want to also coalesce with the
-+	 * next region
-+	 */
-+	if ((i < type->cnt - 1) && memblock_regions_adjacent(type, i, i+1) &&
-+	    ((type != &memblock.memory || memblock_memory_can_coalesce(type->regions[i].base,
-+							     type->regions[i].size,
-+							     type->regions[i+1].base,
-+							     type->regions[i+1].size)))) {
- 		memblock_coalesce_regions(type, i, i+1);
- 		coalesced++;
- 	}
+ phys_addr_t memblock_end_of_DRAM(void)
 -- 
 1.6.4.2
 
