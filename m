@@ -1,68 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab0GFTJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 15:09:23 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51785 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab0GFTJW (ORCPT
+	id S1754338Ab0GFTTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 15:19:39 -0400
+Received: from ironport7-1T.isc.cl ([200.91.27.123]:10375 "EHLO
+	ironport7-1T.isc.cl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab0GFTTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 15:09:22 -0400
-Date: Tue, 6 Jul 2010 12:06:50 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Dave Chinner <david@fromorbit.com>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
-       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [Ocfs2-devel] [PATCH] Revert "writeback: limit
- write_cache_pages integrity scanning to current EOF"
-Message-ID: <20100706190650.GE17961@mail.oracle.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Dave Chinner <david@fromorbit.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	ocfs2-devel@oss.oracle.com, Tao Ma <tao.ma@oracle.com>,
-	Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-	Mark Fasheh <mfasheh@suse.com>
-References: <20100628173529.GA10573@mail.oracle.com>
- <20100629002421.GY6590@dastard>
- <20100629005403.GC24343@mail.oracle.com>
- <AANLkTil1R9I94pVXLE50JAMPIwpiaZuroJAg4wcwyBUb@mail.gmail.com>
- <20100629015822.GD24343@mail.oracle.com>
+	Tue, 6 Jul 2010 15:19:38 -0400
+X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jul 2010 15:19:37 EDT
+Date: Tue, 6 Jul 2010 12:13:10 -0700
+Message-ID: <4C3252E5000008B6@ms2.isc.cl>
+From: "Mrs. Zeng Q. Zhen" <enferconti@adsl.tie.cl>
+Subject: Compliment of the Day
+Reply-To: mrszengqzhene122@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100629015822.GD24343@mail.oracle.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C337F41.012A:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 06:58:23PM -0700, Joel Becker wrote:
-> 	Oh, no, that's not it at all.  This is a disaster.  I can't see
-> for the life of me why we haven't had 100,000 bug reports.  You're going
+Compliment of the day, I am Mrs. Zeng Q. Zhen, a staff of lloyds Group Plc.
+here in Hong Kong attached with Private Banking Services; I have a secured
+business proposal for you. Should you be interested please reach me on my
+private email address(mrszengqzhene122@gmail.com) And after that I shall
+provide you with more details of my proposal. Your earliest response to this
+letter will be appreciated.
 
-	Btw, we've figured out why we don't have 100,000 bug reports.
-Most normal usage will never encounter this.  But it is still a serious
-problem, and the fix is just as high a priority.
-
-Joel
-
-P.S.: Thanks, LWN, for making me look good on the QotW ;-)
-
--- 
-
-"I inject pure kryptonite into my brain.
- It improves my kung fu, and it eases the pain."
-
-
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+Yours Sincerely,
+Zeng Q.Zhen
