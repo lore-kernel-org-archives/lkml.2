@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab0GFHoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 03:44:55 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:38045 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753949Ab0GFHoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 03:44:54 -0400
-Date: Tue, 6 Jul 2010 09:46:41 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dan Kruchinin <dkruchinin@acm.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH 1/3] padata: separate serial and parallel cpumasks
-Message-ID: <20100706074641.GS10072@secunet.com>
-References: <AANLkTikeDE4hvZ3spyTBSHZsdQPc-2wlD5nTfb1aF-VD@mail.gmail.com>
- <20100702085323.GF10072@secunet.com>
- <AANLkTinyPGjXjlvJxB8WYB3EYFBtANXMzpTdUixyBRHW@mail.gmail.com>
- <20100702091726.GH10072@secunet.com>
- <AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
- <20100702111138.GI10072@secunet.com>
- <AANLkTimEgKGJ5pi7GzOnvP42ivJ4GCKX59LdKK0x4fnx@mail.gmail.com>
- <20100706053612.GQ10072@secunet.com>
- <20100706054406.GR10072@secunet.com>
- <AANLkTil4pbOOVvhIKN1_sI8kNdBFFebMVEGEmqrb45YR@mail.gmail.com>
+	id S1754338Ab0GFHrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 03:47:53 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:47064 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753155Ab0GFHrv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 03:47:51 -0400
+X-Sasl-enc: T0D4V5pvLbU0wVuRfH886kFA5ka8pMbY25aI74/XIL5Q 1278402452
+Message-ID: <4C32DF88.8080702@imap.cc>
+Date: Tue, 06 Jul 2010 09:47:20 +0200
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; de; rv:1.9.1.10) Gecko/20100504 SeaMonkey/2.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTil4pbOOVvhIKN1_sI8kNdBFFebMVEGEmqrb45YR@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 06 Jul 2010 07:44:44.0418 (UTC) FILETIME=[19AC0620:01CB1CDF]
+To: David Miller <davem@davemloft.net>
+CC: isdn@linux-pingi.de, hjlipp@web.de, keil@b1-systems.de,
+       i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/11] ISDN patches for 2.6.36
+References: <20100705-patch-gigaset-00.tilman@imap.cc> <20100705.185352.39176355.davem@davemloft.net>
+In-Reply-To: <20100705.185352.39176355.davem@davemloft.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig0C48899CCE24D265C58CF33D"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 06, 2010 at 11:40:11AM +0400, Dan Kruchinin wrote:
-> >> >
-> >>
-> >> I think we can use RCU anyway. For instance we could use a structure
-> >>
-> >> struct pcrypt_cpumask {
-> >>       cpumask_var_t           pmask;
-> >>       cpumask_var_t           smask;
-> >> };
-> >>
-> >> and add a pointer to a structure of that type to the instance context.
-> >> Then we could use this pointer for RCU and replace the whole structure
-> >> if a cpumask changes.
-> 
-> But is pcrypt interested pmask? If it isn't, pmask field will be unused.
-> 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig0C48899CCE24D265C58CF33D
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It's probaply not, in this case the struct could look like
+Am 2010-07-06 03:53 schrieb David Miller:
+> From: Tilman Schmidt <tilman@imap.cc>
+> Date: Tue,  6 Jul 2010 02:18:32 +0200 (CEST)
+>=20
+>> Karsten, David,
+>>
+>> following are a series of patches to the Gigaset driver I'd like
+>> to see included in kernel release 2.6.36.
+>=20
+> Do they have any dependencies on the two patch set of fixes
+> you just sent out for net-2.6?
 
-struct pcrypt_cpumask {
-	cpumask_var_t           smask;
-};
+None. They are completely independent.
+
+I guess your question arose because I gave both series the same
+title by mistake. The second one should have been called:
+"*Gigaset* patches for 2.6.36".
+
+Thanks,
+Tilman
+
+
+--------------enig0C48899CCE24D265C58CF33D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.12 (MingW32)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkwy35IACgkQQ3+did9BuFsRDQCfd3yNkqAglqIYCnLz4kohO3Oa
+w2AAnirKFQMMxQclohUKwBuz5pDp2Cc4
+=efCV
+-----END PGP SIGNATURE-----
+
+--------------enig0C48899CCE24D265C58CF33D--
