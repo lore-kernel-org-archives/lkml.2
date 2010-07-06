@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab0GFPn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 11:43:27 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:51344 "EHLO hernando.osrc.amd.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754767Ab0GFPnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 11:43:24 -0400
-From: Conny Seidel <conny.seidel@amd.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       borislav.petkov@amd.com, Conny Seidel <conny.seidel@amd.com>
-Subject: [PATCH tip/perf/urgent] perf tools: Fix fallback to cplus_demangle() when bfd_demangle() is not available
-Date: Tue,  6 Jul 2010 17:39:43 +0200
-Message-Id: <1278430783-17259-1-git-send-email-conny.seidel@amd.com>
-X-Mailer: git-send-email 1.7.2.rc0.13.gc9eaa
-In-Reply-To: <20100706134348.GC26192@ghostprotocols.net>
-References: <20100706134348.GC26192@ghostprotocols.net>
+	id S1754386Ab0GFPsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 11:48:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45710 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab0GFPsO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 11:48:14 -0400
+Date: Tue, 6 Jul 2010 17:48:12 +0200
+From: Luotao Fu <l.fu@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@suse.de>, Luotao Fu <l.fu@pengutronix.de>,
+       Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+       linux-next@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ilya Dryomov <idryomov@gmail.com>
+Subject: Re: Problem with tty changes in linux-next
+Message-ID: <20100706154812.GA2813@pengutronix.de>
+Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@suse.de>,
+	Luotao Fu <l.fu@pengutronix.de>, Alan Cox <alan@linux.intel.com>,
+	linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Ilya Dryomov <idryomov@gmail.com>
+References: <20100706130403.GD3991@pengutronix.de> <201007061623.48363.arnd@arndb.de> <20100706151454.GB12444@suse.de> <201007061735.02881.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
+Content-Disposition: inline
+In-Reply-To: <201007061735.02881.arnd@arndb.de>
+X-PGP-Key-ID: 0xE5325261
+X-URL: http://www.pengutronix.de/
+X-Sent-From: Pengutronix Hildesheim
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:43:57 up 3 days,  6:54, 61 users,  load average: 1.29, 0.72,
+	0.78
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: l.fu@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-make version 3.80 doesn't support "else ifdef" on the same line, also it
-doesn't support unindented nested constructs.
 
-Build fails with:
-Makefile:608: Extraneous text after `else' directive
-Makefile:611: *** only one `else' per conditional.  Stop.
+--y0ulUmNC+osPPQO6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch fixes the build for make 3.80.
+Hi,
 
-Signed-off-by: Conny Seidel <conny.seidel@amd.com>
----
- 
- This is the version against tip/perf/urgent since my prior patch didn't
- apply against it.
+On Tue, Jul 06, 2010 at 05:35:02PM +0200, Arnd Bergmann wrote:
+> On Tuesday 06 July 2010 17:14:54 Greg KH wrote:
+> > I should get to this today and push it into the next
+> > linux-next release.
+>=20
+> Ok, thanks!
+>=20
+> On Tuesday 06 July 2010 16:40:52 Ilya Dryomov wrote:
+> > I had the same issue. Here is the patch:
+> >=20
+> > https://patchwork.kernel.org/patch/108700/
+>=20
+> Yes, that's the one. It would be good to get another confirmation
+> from Luotao Fu that this fixes all the problems with missing characters.
+> As I mentioned, the boot-time warning will get taken care of by
+> a different patch, but can be safely ignored.
 
+I picked up the patch and did a quick test. The console message printing
+works so far.
 
- tools/perf/Makefile |   42 ++++++++++++++++++++++--------------------
- 1 files changed, 22 insertions(+), 20 deletions(-)
+Thanks
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 3d8f31e..772ad08 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -600,30 +600,32 @@ endif
- 
- ifdef NO_DEMANGLE
- 	BASIC_CFLAGS += -DNO_DEMANGLE
--else ifdef HAVE_CPLUS_DEMANGLE
--	EXTLIBS += -liberty
--	BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
--else
--	has_bfd := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd "$(QUIET_STDERR)" && echo y")
--
--	ifeq ($(has_bfd),y)
--		EXTLIBS += -lbfd
-+else 
-+	ifdef HAVE_CPLUS_DEMANGLE
-+		EXTLIBS += -liberty
-+		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
- 	else
--		has_bfd_iberty := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd -liberty "$(QUIET_STDERR)" && echo y")
--		ifeq ($(has_bfd_iberty),y)
--			EXTLIBS += -lbfd -liberty
-+		has_bfd := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd "$(QUIET_STDERR)" && echo y")
-+	
-+		ifeq ($(has_bfd),y)
-+			EXTLIBS += -lbfd
- 		else
--			has_bfd_iberty_z := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd -liberty -lz "$(QUIET_STDERR)" && echo y")
--			ifeq ($(has_bfd_iberty_z),y)
--				EXTLIBS += -lbfd -liberty -lz
-+			has_bfd_iberty := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd -liberty "$(QUIET_STDERR)" && echo y")
-+			ifeq ($(has_bfd_iberty),y)
-+				EXTLIBS += -lbfd -liberty
- 			else
--				has_cplus_demangle := $(shell sh -c "(echo 'extern char *cplus_demangle(const char *, int);'; echo 'int main(void) { cplus_demangle(0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -liberty "$(QUIET_STDERR)" && echo y")
--				ifeq ($(has_cplus_demangle),y)
--					EXTLIBS += -liberty
--					BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+				has_bfd_iberty_z := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd -liberty -lz "$(QUIET_STDERR)" && echo y")
-+				ifeq ($(has_bfd_iberty_z),y)
-+					EXTLIBS += -lbfd -liberty -lz
- 				else
--					msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
--					BASIC_CFLAGS += -DNO_DEMANGLE
-+					has_cplus_demangle := $(shell sh -c "(echo 'extern char *cplus_demangle(const char *, int);'; echo 'int main(void) { cplus_demangle(0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -liberty "$(QUIET_STDERR)" && echo y")
-+					ifeq ($(has_cplus_demangle),y)
-+						EXTLIBS += -liberty
-+						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+					else
-+						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+						BASIC_CFLAGS += -DNO_DEMANGLE
-+					endif
- 				endif
- 			endif
- 		endif
--- 
-1.7.2.rc0.13.gc9eaa
+Cheers
+Luotao Fu
+--=20
+Pengutronix e.K.                           | Dipl.-Ing. Luotao Fu        |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
+--y0ulUmNC+osPPQO6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkwzUDwACgkQkLuxfMCkDTaFjgCfcx9Rk6p6EnFeDJTWs7San2nn
+C78AnRax1sF2ZJVL9sRQMKDeRPGZi9Ic
+=VE+y
+-----END PGP SIGNATURE-----
+
+--y0ulUmNC+osPPQO6--
