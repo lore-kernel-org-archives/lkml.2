@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab0GFAKj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 20:10:39 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:59950 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753025Ab0GFAKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 20:10:37 -0400
-Date: Tue, 6 Jul 2010 10:10:32 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] Rearrange i_flags to be consistent with FS_IOC_GETFLAGS
-Message-ID: <20100706001032.GA25018@dastard>
-References: <20100705154319.31193.56706.stgit@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100705154319.31193.56706.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755958Ab0GFASo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 20:18:44 -0400
+Received: from mail.pxnet.com ([89.1.7.7]:41922 "EHLO mail.pxnet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752824Ab0GFASl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 20:18:41 -0400
+Subject: [PATCH 1/2] Documentation/isdn: CAPI controller interface amendment
+From: Tilman Schmidt <tilman@imap.cc>
+To: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>
+CC: Hansjoerg Lipp <hjlipp@web.de>, Karsten Keil <keil@b1-systems.de>,
+       i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Message-ID: <20100705-patch-isdn-01.tilman@imap.cc>
+In-Reply-To: <20100705-patch-isdn-00.tilman@imap.cc>
+References: <20100705-patch-isdn-00.tilman@imap.cc>
+Date: Tue,  6 Jul 2010 02:18:22 +0200 (CEST)
+X-Spam-Score: -2.062 () AWL,BAYES_00,RDNS_DYNAMIC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 04:43:19PM +0100, David Howells wrote:
-> Rearrange the constituent bits of i_flags to be consistent with the flag values
-> returned by the FS_IOC_GETFLAGS ioctl where flags with common meanings occur.
-> Otherwise pack the bits of i_flags as low as possible so that RISC CPUs can
-> use small instructions.
-> 
-> This allows those filesystems that use i_flags (Ext2/3/4) to simplify their
-> get/set flags routines.
+Mention that the CAPI controller methods load_firmware() and
+reset_ctr() are asynchronous, and should signal completion.
 
-This seems like a nasty landmine just waiting for someone to step
-on.  The S_* flags are VFS level flags used by all filesytsems, not
-just extN, and have a history of changing values and meaning as uses
-come and go.  This code forces the VFS to use certain flag values
-that *match on-disk values* of ext2/3/4.
+Impact: documentation
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+---
+ Documentation/isdn/INTERFACE.CAPI |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-Further, it opens up the possibility that further down the track
-someone modifies S_* flag values (say when adding some XFS
-functionality) and corrupts extN filesystems all over the place.
-There isn't even compiler guards to catch someone modifying the S_*
-flags in a way that makes it incompatible with the extN on-disk
-definitions.
-
-
-Cheers,
-
-Dave.
+diff --git a/Documentation/isdn/INTERFACE.CAPI b/Documentation/isdn/INTERFACE.CAPI
+index f172091..309eb5e 100644
+--- a/Documentation/isdn/INTERFACE.CAPI
++++ b/Documentation/isdn/INTERFACE.CAPI
+@@ -113,12 +113,16 @@ char *driver_name
+ int (*load_firmware)(struct capi_ctr *ctrlr, capiloaddata *ldata)
+ 	(optional) pointer to a callback function for sending firmware and
+ 	configuration data to the device
++	The function may return before the operation has completed.
++	Completion must be signalled by a call to capi_ctr_ready().
+ 	Return value: 0 on success, error code on error
+ 	Called in process context.
+ 
+ void (*reset_ctr)(struct capi_ctr *ctrlr)
+-	(optional) pointer to a callback function for performing a reset on
+-	the device, releasing all registered applications
++	(optional) pointer to a callback function for stopping the device,
++	releasing all registered applications
++	The function may return before the operation has completed.
++	Completion must be signalled by a call to capi_ctr_down().
+ 	Called in process context.
+ 
+ void (*register_appl)(struct capi_ctr *ctrlr, u16 applid,
 -- 
-Dave Chinner
-david@fromorbit.com
+1.6.5.3.298.g39add
+
