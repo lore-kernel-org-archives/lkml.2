@@ -1,114 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab0GFSsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 14:48:35 -0400
-Received: from king.tilera.com ([72.1.168.226]:50110 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753699Ab0GFSsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 14:48:33 -0400
-Message-Id: <201007061848.o66ImVPc020837@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Tue, 6 Jul 2010 14:03:16 -0400
-Subject: [PATCH] hvc_console: use "*_console" nomenclature to avoid modpost warning.
-To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Cc: Anton Blanchard <anton@au.ibm.com>, Paul Mackerras <paulus@au.ibm.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       "Ryan S. Arnold" <rsa@us.ibm.com>,
-       Hollis Blanchard <hollisb@us.ibm.com>
-X-OriginalArrivalTime: 06 Jul 2010 18:48:32.0703 (UTC) FILETIME=[D52E04F0:01CB1D3B]
+	id S1753556Ab0GFSvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 14:51:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25849 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab0GFSvd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 14:51:33 -0400
+Date: Tue, 6 Jul 2010 11:48:16 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH 1/2] ocfs2: Zero the tail cluster when extending past
+ i_size v2
+Message-ID: <20100706184816.GC17961@mail.oracle.com>
+Mail-Followup-To: Tao Ma <tao.ma@oracle.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	ocfs2-devel@oss.oracle.com, Dave Chinner <dchinner@redhat.com>,
+	Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
+References: <20100628173529.GA10573@mail.oracle.com>
+ <20100629002421.GY6590@dastard>
+ <20100629005403.GC24343@mail.oracle.com>
+ <20100629015615.GZ6590@dastard>
+ <20100629020420.GE24343@mail.oracle.com>
+ <20100629022757.GA6590@dastard>
+ <20100629071817.GA4150@mail.oracle.com>
+ <20100702224912.GC5800@mail.oracle.com>
+ <20100703213219.GB21262@mail.oracle.com>
+ <4C3156D0.5090001@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3156D0.5090001@oracle.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C337AE6.0139:SCFMA4539814,ss=1,pt=DBB_65835,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of "hvc_con_driver" as the name for a file-static "struct
-console" with a ".setup" field pointing to an __init function causes
-a modpost warning, since a non-initdata structure points to init code.
-Using "hvc_console" as the name triggers the hacky "*_console"
-workaround in modpost to silence the warning, and is the same thing
-that most of the other console drivers already do.
+On Mon, Jul 05, 2010 at 11:51:44AM +0800, Tao Ma wrote:
+> On 07/04/2010 05:32 AM, Joel Becker wrote:
+> >+	/*
+> >+	 * If tail_blkno is in the cluster past i_size, we don't need
+> >+	 * to touch the cluster containing i_size at all.
+> >+	 */
+> >+	tail_cpos = i_size_read(inode)>>  osb->s_clustersize_bits;
+> >+	if (ocfs2_blocks_to_clusters(inode->i_sb, tail_blkno)>  tail_cpos)
+> >+		tail_cpos = ocfs2_blocks_to_clusters(inode->i_sb,
+> >+						     tail_blkno);
+> Can we always set tail_cpos in one line?
+> 	tail_cpos = ocfs2_blocks_to_clusters(inode->i_sb, tail_blkno)?
+> tail_cpos is either the same cluster as i_size or the next cluster
+> and both works for tail_blkno I guess?
 
-I made the same change in hvsi.c since I happened to notice it was
-likely to suffer from the same problem.
+	I'm taking this as well.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- drivers/char/hvc_console.c |   12 ++++++------
- drivers/char/hvsi.c        |    4 ++--
- 2 files changed, 8 insertions(+), 8 deletions(-)
+Joel
 
-diff --git a/drivers/char/hvc_console.c b/drivers/char/hvc_console.c
-index 35cca4c..fa27d16 100644
---- a/drivers/char/hvc_console.c
-+++ b/drivers/char/hvc_console.c
-@@ -194,7 +194,7 @@ static int __init hvc_console_setup(struct console *co, char *options)
- 	return 0;
- }
- 
--static struct console hvc_con_driver = {
-+static struct console hvc_console = {
- 	.name		= "hvc",
- 	.write		= hvc_console_print,
- 	.device		= hvc_console_device,
-@@ -220,7 +220,7 @@ static struct console hvc_con_driver = {
-  */
- static int __init hvc_console_init(void)
- {
--	register_console(&hvc_con_driver);
-+	register_console(&hvc_console);
- 	return 0;
- }
- console_initcall(hvc_console_init);
-@@ -276,8 +276,8 @@ int hvc_instantiate(uint32_t vtermno, int index, const struct hv_ops *ops)
- 	 * now (setup won't fail at this point).  It's ok to just
- 	 * call register again if previously .setup failed.
- 	 */
--	if (index == hvc_con_driver.index)
--		register_console(&hvc_con_driver);
-+	if (index == hvc_console.index)
-+		register_console(&hvc_console);
- 
- 	return 0;
- }
-@@ -641,7 +641,7 @@ int hvc_poll(struct hvc_struct *hp)
- 		}
- 		for (i = 0; i < n; ++i) {
- #ifdef CONFIG_MAGIC_SYSRQ
--			if (hp->index == hvc_con_driver.index) {
-+			if (hp->index == hvc_console.index) {
- 				/* Handle the SysRq Hack */
- 				/* XXX should support a sequence */
- 				if (buf[i] == '\x0f') {	/* ^O */
-@@ -909,7 +909,7 @@ static void __exit hvc_exit(void)
- 		tty_unregister_driver(hvc_driver);
- 		/* return tty_struct instances allocated in hvc_init(). */
- 		put_tty_driver(hvc_driver);
--		unregister_console(&hvc_con_driver);
-+		unregister_console(&hvc_console);
- 	}
- }
- module_exit(hvc_exit);
-diff --git a/drivers/char/hvsi.c b/drivers/char/hvsi.c
-index d4b14ff..1f4b6de 100644
---- a/drivers/char/hvsi.c
-+++ b/drivers/char/hvsi.c
-@@ -1255,7 +1255,7 @@ static int __init hvsi_console_setup(struct console *console, char *options)
- 	return 0;
- }
- 
--static struct console hvsi_con_driver = {
-+static struct console hvsi_console = {
- 	.name		= "hvsi",
- 	.write		= hvsi_console_print,
- 	.device		= hvsi_console_device,
-@@ -1308,7 +1308,7 @@ static int __init hvsi_console_init(void)
- 	}
- 
- 	if (hvsi_count)
--		register_console(&hvsi_con_driver);
-+		register_console(&hvsi_console);
- 	return 0;
- }
- console_initcall(hvsi_console_init);
+
 -- 
-1.6.5.2
 
+"Here's something to think about:  How come you never see a headline
+ like ``Psychic Wins Lottery''?"
+	- Jay Leno
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
