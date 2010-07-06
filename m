@@ -1,82 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618Ab0GFE0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 00:26:04 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53225 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933Ab0GFEZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 00:25:55 -0400
-Date: Tue, 6 Jul 2010 14:25:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Christoph Hellwig <hch@lst.de>, Rusty Russell <rusty@rustcorp.com.au>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: linux-next: manual merge of the block tree with the rr tree
-Message-Id: <20100706142553.e1bdd94f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751408Ab0GFE3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 00:29:39 -0400
+Received: from adelphi.physics.adelaide.edu.au ([129.127.102.1]:50512 "EHLO
+	adelphi.physics.adelaide.edu.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751038Ab0GFE3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 00:29:37 -0400
+From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+Message-Id: <201007060428.o664SStV010981@turbo.physics.adelaide.edu.au>
+Subject: Re: [PATCH] compal-laptop/fujitsu-laptop/msi-laptop: make dmi_check_cb
+To: axel.lin@gmail.com (Axel Lin)
+Date: Tue, 6 Jul 2010 13:58:28 +0930 (CST)
+Cc: linux-kernel@vger.kernel.org (linux-kernel),
+       cezary.jackiewicz@gmail.com (Cezary Jackiewicz),
+       mjg@redhat.com (Matthew Garrett),
+       tim.gardner@canonical.com (Tim Gardner),
+       Mario_Limonciello@Dell.com (Mario Limonciello),
+       rpurdie@linux.intel.com (Richard Purdie), mmarek@suse.cz (Michal Marek),
+       jwoithe@physics.adelaide.edu.au (Jonathan Woithe),
+       len.brown@intel.com (Len Brown),
+       akpm@linux-foundation.org (Andrew Morton),
+       stefani@seibold.net (Stefani Seibold), ak@linux.intel.com (Andi Kleen),
+       mzxreary@0pointer.de (Lennart Poettering),
+       jlee@novell.com (Lee Chun-Yi), platform-driver-x86@vger.kernel.org
+In-Reply-To: <1278061453.15256.1.camel@mola> from "Axel Lin" at Jul 02, 2010 05:04:13 PM
+X-Mailer: ELM [version 2.5 PL6]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+Hi Axel
 
-Today's linux-next merge of the block tree got a conflict in
-drivers/block/virtio_blk.c between commit
-0e41b2d3ea0f5bf472a2b163c54305f62ab7b776 ("virtio_blk: support barriers
-without FLUSH feature") from the rr tree and commits
-3789fdefa13bcaa7ad06d952ac6010f0a81bf04e ("virtio_blk: stop using
-q->prepare_flush_fn") and 5e27e27e73b5bff903b3c30ffd5a0e17eb95c087
-("block: remove q->prepare_flush_fn completely") from the block tree.
+> 2010/7/5 Jonathan Woithe <jwoithe@physics.adelaide.edu.au>:
+> > Is there no possibility of some other matching function existing after ours
+> > in the tree which might need to also be called?  If so, this change would
+> > prevent that.
+>      
+> I checked the implementation of dmi_check_system() and the useage cases in
+> compal-laptop/fujitsu-laptop/msi-laptop, it should be no problem with
+> this change.
+> 
+> In compal-laptop and msi-laptop, we call dmi_check_system() to
+> identify the laptop model.
+> (The callback simply print the identified laptop model)
+> It should have zero or exactly one successful match.
+> 
+> In fujitsu-laptop, we call dmi_check_system() to identify the laptop
+> model and set parameters accordingly.
+> The callback print the identified laptop model and set parameters
+> (use_alt_lcd_levels / fujitsu->keycode[1|2|3|4|5] ).
+> It should have zero or exactly one successful match.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Yes, that seems to be the situation.  If that is the case then I'm happy
+with the fujitsu-laptop component of this patch (I can't speak for the
+maintainers of the other drivers touched by this patch).
 
-diff --cc drivers/block/virtio_blk.c
-index 23b7c48,0a3222f..0000000
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@@ -377,32 -364,11 +375,31 @@@ static int __devinit virtblk_probe(stru
-  	vblk->disk->driverfs_dev = &vdev->dev;
-  	index++;
-  
- -	/* If barriers are supported, tell block layer that queue is ordered */
- -	if (virtio_has_feature(vdev, VIRTIO_BLK_F_FLUSH))
- +	if (virtio_has_feature(vdev, VIRTIO_BLK_F_FLUSH)) {
- +		/*
- +		 * If the FLUSH feature is supported we do have support for
- +		 * flushing a volatile write cache on the host.  Use that
- +		 * to implement write barrier support.
- +		 */
-- 		blk_queue_ordered(q, QUEUE_ORDERED_DRAIN_FLUSH,
-- 				  virtblk_prepare_flush);
-+ 		blk_queue_ordered(q, QUEUE_ORDERED_DRAIN_FLUSH);
- -	else if (virtio_has_feature(vdev, VIRTIO_BLK_F_BARRIER))
- +	} else if (virtio_has_feature(vdev, VIRTIO_BLK_F_BARRIER)) {
- +		/*
- +		 * If the BARRIER feature is supported the host expects us
- +		 * to order request by tags.  This implies there is not
- +		 * volatile write cache on the host, and that the host
- +		 * never re-orders outstanding I/O.  This feature is not
- +		 * useful for real life scenarious and deprecated.
- +		 */
-- 		blk_queue_ordered(q, QUEUE_ORDERED_TAG, NULL);
-+ 		blk_queue_ordered(q, QUEUE_ORDERED_TAG);
- +	} else {
- +		/*
- +		 * If the FLUSH feature is not supported we must assume that
- +		 * the host does not perform any kind of volatile write
- +		 * caching. We still need to drain the queue to provider
- +		 * proper barrier semantics.
- +		 */
-- 		blk_queue_ordered(q, QUEUE_ORDERED_DRAIN, NULL);
-++		blk_queue_ordered(q, QUEUE_ORDERED_DRAIN);
- +	}
-  
-  	/* If disk is read-only in the host, the guest should obey */
-  	if (virtio_has_feature(vdev, VIRTIO_BLK_F_RO))
+Acked-by: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+
+Regards
+  jonathan
+
+> dmi_check_system() walks the table running matching functions until someone
+> returns non zero or we hit the end.
+> 
+> This patch makes dmi_check_cb to return 1 so dmi_check_system() return
+> immediately when a match is found.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/platform/x86/compal-laptop.c  |    2 +-
+>  drivers/platform/x86/fujitsu-laptop.c |    6 +++---
+>  drivers/platform/x86/msi-laptop.c     |    2 +-
+>  3 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/compal-laptop.c b/drivers/platform/x86/compal-laptop.c
+> index 71ff154..dc31a08 100644
+> --- a/drivers/platform/x86/compal-laptop.c
+> +++ b/drivers/platform/x86/compal-laptop.c
+> @@ -190,7 +190,7 @@ static int dmi_check_cb(const struct dmi_system_id *id)
+>  	printk(KERN_INFO "compal-laptop: Identified laptop model '%s'.\n",
+>  		id->ident);
+>  
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  static struct dmi_system_id __initdata compal_dmi_table[] = {
+> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
+> index dab1a0e..1859d7f 100644
+> --- a/drivers/platform/x86/fujitsu-laptop.c
+> +++ b/drivers/platform/x86/fujitsu-laptop.c
+> @@ -603,7 +603,7 @@ static int dmi_check_cb_s6410(const struct dmi_system_id *id)
+>  	dmi_check_cb_common(id);
+>  	fujitsu->keycode1 = KEY_SCREENLOCK;	/* "Lock" */
+>  	fujitsu->keycode2 = KEY_HELP;	/* "Mobility Center" */
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  static int dmi_check_cb_s6420(const struct dmi_system_id *id)
+> @@ -611,7 +611,7 @@ static int dmi_check_cb_s6420(const struct dmi_system_id *id)
+>  	dmi_check_cb_common(id);
+>  	fujitsu->keycode1 = KEY_SCREENLOCK;	/* "Lock" */
+>  	fujitsu->keycode2 = KEY_HELP;	/* "Mobility Center" */
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  static int dmi_check_cb_p8010(const struct dmi_system_id *id)
+> @@ -620,7 +620,7 @@ static int dmi_check_cb_p8010(const struct dmi_system_id *id)
+>  	fujitsu->keycode1 = KEY_HELP;	/* "Support" */
+>  	fujitsu->keycode3 = KEY_SWITCHVIDEOMODE;	/* "Presentation" */
+>  	fujitsu->keycode4 = KEY_WWW;	/* "Internet" */
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  static struct dmi_system_id fujitsu_dmi_table[] = {
+> diff --git a/drivers/platform/x86/msi-laptop.c b/drivers/platform/x86/msi-laptop.c
+> index afd762b..c67a74c 100644
+> --- a/drivers/platform/x86/msi-laptop.c
+> +++ b/drivers/platform/x86/msi-laptop.c
+> @@ -434,7 +434,7 @@ static int dmi_check_cb(const struct dmi_system_id *id)
+>  {
+>  	printk(KERN_INFO "msi-laptop: Identified laptop model '%s'.\n",
+>  	       id->ident);
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  static struct dmi_system_id __initdata msi_dmi_table[] = {
+> -- 
+> 1.5.4.3
+> 
+> 
+> 
