@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab0GFBDO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 21:03:14 -0400
-Received: from mail.perches.com ([173.55.12.10]:1432 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab0GFBDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 21:03:12 -0400
-Subject: [PATCH] MAINTAINERS: Fix EDAC-I7CORE file patterns
-From: Joe Perches <joe@perches.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Jul 2010 18:03:08 -0700
-Message-ID: <1278378188.4126.106.camel@Joe-Laptop>
+	id S1755576Ab0GFBDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 21:03:38 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40641
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753056Ab0GFBDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 21:03:36 -0400
+Date: Mon, 05 Jul 2010 18:03:49 -0700 (PDT)
+Message-Id: <20100705.180349.112607097.davem@davemloft.net>
+To: julia@diku.dk
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] drivers/net: correct valid flag
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <Pine.LNX.4.64.1007051706530.15185@ask.diku.dk>
+References: <Pine.LNX.4.64.1007051706530.15185@ask.diku.dk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File patterns are one per line.
-Fixed include file location.
+From: Julia Lawall <julia@diku.dk>
+Date: Mon, 5 Jul 2010 17:07:15 +0200 (CEST)
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a07a49d..5884812 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2121,7 +2121,9 @@ M:	Mauro Carvalho Chehab <mchehab@redhat.com>
- L:	linux-edac@vger.kernel.org
- W:	bluesmoke.sourceforge.net
- S:	Maintained
--F:	drivers/edac/i7core_edac.c linux/edac_mce.h drivers/edac/edac_mce.c
-+F:	drivers/edac/i7core_edac.c
-+F:	drivers/edac/edac_mce.c
-+F:	include/linux/edac_mce.h
- 
- EDAC-I82975X
- M:	Ranganathan Desikan <ravi@jetztechnologies.com>
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Elsewhere in the "optimized" functions, the "2" constants are used.
+> NV_TX_VALID and NV_TX2_VALID have the same value.
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+> diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
+> index 268ea4d..870c18b 100644
+> --- a/drivers/net/forcedeth.c
+> +++ b/drivers/net/forcedeth.c
+> @@ -2468,7 +2468,8 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
+>  	struct ring_desc_ex* orig_get_tx = np->get_tx.ex;
+>  
+>  	while ((np->get_tx.ex != np->put_tx.ex) &&
+> -	       !((flags = le32_to_cpu(np->get_tx.ex->flaglen)) & NV_TX_VALID) &&
+> +	       !((flags = le32_to_cpu(np->get_tx.ex->flaglen)) & NV_TX2_VALID)
+> +	       &&
+>  	       (tx_work < limit)) {
 
-
+Please don't put that "&&" on a line by itself.  I don't care if leaving it
+on the previous line makes it exceed 80 columns, what you're doing here is
+infinitely less pleasant to read.
