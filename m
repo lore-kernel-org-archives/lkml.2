@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab0GFWLo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 18:11:44 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33165 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754510Ab0GFWLn (ORCPT
+	id S1756425Ab0GFWOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 18:14:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:37347 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755271Ab0GFWOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 18:11:43 -0400
-Date: Tue, 6 Jul 2010 23:18:56 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH v4] Add TAINT_HARDWARE_UNSUPPORTED flag
-Message-ID: <20100706231856.0454d76a@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100706203309.GG5381@redhat.com>
-References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
-	<20100617091322.b7d21473.randy.dunlap@oracle.com>
-	<4C1A7D61.8010900@redhat.com>
-	<20100621122145.76ebd7ac.akpm@linux-foundation.org>
-	<20100621194559.GI3217@redhat.com>
-	<20100621130008.d3dc01a8.akpm@linux-foundation.org>
-	<20100622153457.GA5381@redhat.com>
-	<20100622164835.4ddb9432@lxorguk.ukuu.org.uk>
-	<20100622185812.GC5381@redhat.com>
-	<20100706203309.GG5381@redhat.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Tue, 6 Jul 2010 18:14:04 -0400
+X-Authority-Analysis: v=1.1 cv=jfMbZ+4tkgrYlaJBi3iJCtg6TDszHDHJJpQ3TdTfnr0= c=1 sm=0 a=mS1qFslhlkkA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=Z4Rwk6OoAAAA:8 a=omOdbC7AAAAA:8 a=VJBOa9clF3mQgUN0duQA:9 a=O1cW2Pu4KjVT6zuiwQsA:7 a=NNowfNjm8CRdnnoGBWT9AVpIJ9MA:4 a=PUjeQqilurYA:10 a=jbrJJM5MRmoA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 2/2] sched: make sched_param arugment static variables
+ in some sched_setscheduler() caller
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       James Morris <jmorris@namei.org>
+In-Reply-To: <20100706095013.CCD9.A69D9226@jp.fujitsu.com>
+References: <20100702144941.8fa101c3.akpm@linux-foundation.org>
+	 <20100706091607.CCCC.A69D9226@jp.fujitsu.com>
+	 <20100706095013.CCD9.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 06 Jul 2010 18:13:58 -0400
+Message-ID: <1278454438.1537.54.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Jul 2010 16:33:09 -0400
-Don Zickus <dzickus@redhat.com> wrote:
+On Tue, 2010-07-06 at 09:51 +0900, KOSAKI Motohiro wrote:
+> Andrew Morton pointed out almost sched_setscheduler() caller are
+> using fixed parameter and it can be converted static. it reduce
+> runtume memory waste a bit.
 
-> On Tue, Jun 22, 2010 at 02:58:12PM -0400, Don Zickus wrote:
-> > This patch reserves taint bits for distributions to use as they seem fit
-> > without the fear of them being stepped up in future kernels.
-> > 
-> > V4:  just reserve the bits
+We are replacing runtime waste with permanent waste?
+
 > 
-> Any acks or naks on this version of the patch?
+> Reported-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-You can have my ack for it.
+
+
+> --- a/kernel/trace/trace_selftest.c
+> +++ b/kernel/trace/trace_selftest.c
+> @@ -560,7 +560,7 @@ trace_selftest_startup_nop(struct tracer *trace, struct trace_array *tr)
+>  static int trace_wakeup_test_thread(void *data)
+>  {
+>  	/* Make this a RT thread, doesn't need to be too high */
+> -	struct sched_param param = { .sched_priority = 5 };
+> +	static struct sched_param param = { .sched_priority = 5 };
+>  	struct completion *x = data;
+>  
+
+This is a thread that runs on boot up to test the sched_wakeup tracer.
+Then it is deleted and all memory is reclaimed.
+
+Thus, this patch just took memory that was usable at run time and
+removed it permanently.
+
+Please Cc me on all tracing changes.
+
+-- Steve
+
 
