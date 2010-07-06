@@ -1,92 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451Ab0GFEa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 00:30:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47084 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038Ab0GFEa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 00:30:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=P/n3/s9s9/e/5C2xWrhfVzbcRQi2NAX7RotvFJsDcPQleEB9UI9KynHQweWBLqsPWj
-         Y5RZrJO2Ji4zOsSK7WKG8nWdxp/3EFv9X5Af6DAKhA1QoIDm0JgWocpnlKWtUqcHZBKf
-         2rxlJK93GxWYYzSzWaDQYC8snx5SPD+XGXlgE=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: minyard@acm.org
-Cc: akpm@linux-foundation.org, openipmi-developer@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]ipmi:ipmi_si_intf.c Fix warning: variable 'addr_space' set but not used
-Date: Mon,  5 Jul 2010 21:31:02 -0700
-Message-Id: <1278390662-9455-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
+	id S1752106Ab0GFEdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 00:33:16 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40869 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661Ab0GFEdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 00:33:15 -0400
+Date: Tue, 6 Jul 2010 14:33:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alasdair G Kergon <agk@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Jens Axboe <axboe@kernel.dk>, Mike Snitzer <snitzer@redhat.com>
+Subject: linux-next: manual merge of the device-mapper tree with the block
+ tree
+Message-Id: <20100706143313.1d4e2909.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove addr_space in exchange for two symbols that represent 
-mm = IPMI_MEM_ADDR_SPACE;
-io = IPMI_IO_ADDR_SPACE;
-then add a dev_warn printing information so that GCC doesn't give a
-warning when building the kernel.
-the original warning from GCC is this:
+Hi Alasdair,
 
-  CC [M]  drivers/char/ipmi/ipmi_si_intf.o
-drivers/char/ipmi/ipmi_si_intf.c: In function 'try_init_spmi':
-drivers/char/ipmi/ipmi_si_intf.c:2016:8: warning: variable 'addr_space' set but not used
+Today's linux-next merge of the device-mapper tree got a conflict in
+drivers/md/dm.c between commits 9add80db6089272d6bf13ef6b5dc7b3ddda1a887
+("dm: stop using q->prepare_flush_fn") and
+5e27e27e73b5bff903b3c30ffd5a0e17eb95c087 ("block: remove
+q->prepare_flush_fn completely") from the block tree and commit
+90c50ea6a71bcb1bdf1482007932cc7fb0902455
+("dm-do-not-initialise-full-request-queue-when-bio-based") from the
+device-mapper tree.
 
-And also the web address pointing to a *.pdf is no where to be found(or atleast I couldn't
-find it), so just use the web site itself(if somebody has the *.pdf
-let me know I can change this).
-
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-
----
- drivers/char/ipmi/ipmi_si_intf.c |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 094bdc3..969e69a 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -1965,8 +1965,7 @@ static int acpi_gpe_irq_setup(struct smi_info *info)
- 
- /*
-  * Defined at
-- * http://h21007.www2.hp.com/dspp/files/unprotected/devresource/
-- * Docs/TechPapers/IA64/hpspmi.pdf
-+ * http://h21007.www2.hp.com/portal/site/dspp
-  */
- struct SPMITable {
- 	s8	Signature[4];
-@@ -2013,7 +2012,7 @@ struct SPMITable {
- static __devinit int try_init_spmi(struct SPMITable *spmi)
- {
- 	struct smi_info  *info;
--	u8 		 addr_space;
-+	u8		mem, io;
- 
- 	if (spmi->IPMIlegacy != 1) {
- 		printk(KERN_INFO PFX "Bad SPMI legacy %d\n", spmi->IPMIlegacy);
-@@ -2021,9 +2020,14 @@ static __devinit int try_init_spmi(struct SPMITable *spmi)
- 	}
- 
- 	if (spmi->addr.space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY)
--		addr_space = IPMI_MEM_ADDR_SPACE;
-+		mem = IPMI_MEM_ADDR_SPACE;
- 	else
--		addr_space = IPMI_IO_ADDR_SPACE;
-+		io  = IPMI_IO_ADDR_SPACE;
-+
-+	if (mem || io) {
-+		dev_warn(info->dev, "spmi address space %d\n", mem ?: io);
-+		return 0;
-+	}
- 
- 	info = kzalloc(sizeof(*info), GFP_KERNEL);
- 	if (!info) {
+I fixed it up (see below) and can carry the fix as necessary.
 -- 
-1.7.1.rc1.21.gf3bd6
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/md/dm.c
+index d505a96,c49818a..0000000
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@@ -2116,6 -2165,73 +2154,72 @@@ int dm_create(int minor, struct mapped_
+  	return 0;
+  }
+  
++ /*
++  * Functions to manage md->type.
++  * All are required to hold md->type_lock.
++  */
++ void dm_lock_md_type(struct mapped_device *md)
++ {
++ 	mutex_lock(&md->type_lock);
++ }
++ 
++ void dm_unlock_md_type(struct mapped_device *md)
++ {
++ 	mutex_unlock(&md->type_lock);
++ }
++ 
++ void dm_set_md_type(struct mapped_device *md, unsigned type)
++ {
++ 	md->type = type;
++ }
++ 
++ unsigned dm_get_md_type(struct mapped_device *md)
++ {
++ 	return md->type;
++ }
++ 
++ /*
++  * Fully initialize a request-based queue (->elevator, ->request_fn, etc).
++  */
++ static int dm_init_request_based_queue(struct mapped_device *md)
++ {
++ 	struct request_queue *q = NULL;
++ 
++ 	if (md->queue->elevator)
++ 		return 1;
++ 
++ 	/* Fully initialize the queue */
++ 	q = blk_init_allocated_queue(md->queue, dm_request_fn, NULL);
++ 	if (!q)
++ 		return 0;
++ 
++ 	md->queue = q;
++ 	md->saved_make_request_fn = md->queue->make_request_fn;
++ 	dm_init_md_queue(md);
++ 	blk_queue_softirq_done(md->queue, dm_softirq_done);
++ 	blk_queue_prep_rq(md->queue, dm_prep_fn);
++ 	blk_queue_lld_busy(md->queue, dm_lld_busy);
+ -	blk_queue_ordered(md->queue, QUEUE_ORDERED_DRAIN_FLUSH,
+ -			  dm_rq_prepare_flush);
+++	blk_queue_ordered(md->queue, QUEUE_ORDERED_DRAIN_FLUSH);
++ 
++ 	elv_register_queue(md->queue);
++ 
++ 	return 1;
++ }
++ 
++ /*
++  * Setup the DM device's queue based on md's type
++  */
++ int dm_setup_md_queue(struct mapped_device *md)
++ {
++ 	if ((dm_get_md_type(md) == DM_TYPE_REQUEST_BASED) &&
++ 	    !dm_init_request_based_queue(md)) {
++ 		DMWARN("Cannot initialize queue for request-based mapped device");
++ 		return -EINVAL;
++ 	}
++ 
++ 	return 0;
++ }
++ 
+  static struct mapped_device *dm_find_md(dev_t dev)
+  {
+  	struct mapped_device *md;
