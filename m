@@ -1,122 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab0GFD16 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 23:27:58 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59738 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492Ab0GFD15 (ORCPT
+	id S1755880Ab0GFDfv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 23:35:51 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:57868 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab0GFDfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 23:27:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=DDWfSPsAV5X3mdUFhnstyYsWuOZ/2BiXK4vEu0gh8gKrLBwOAyTvONwym/7tVTosjg
-         Uh7WVmWwhDtJXRcx7PsdE8VuoF7CQEF3uoIb8nZDZm8E9TI78SymBLzCrCu38NPa7HLO
-         cVOpXEguQI9hpKFIVuC3ujMDhujTnBlnBQaq8=
-Message-ID: <4C32A2DF.4010500@gmail.com>
-Date: Mon, 05 Jul 2010 20:28:31 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+	Mon, 5 Jul 2010 23:35:50 -0400
+Date: Tue, 6 Jul 2010 12:33:42 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] hugetlb: hugepage migration core
+Message-ID: <20100706033342.GA10626@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1278049646-29769-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20100705095927.GC8510@basil.fritz.box>
 MIME-Version: 1.0
-To: Xiaotian Feng <xtfeng@gmail.com>
-CC: Marvin <marvin24@gmx.de>, linux-kernel@vger.kernel.org,
-       xorg-driver-ati@lists.x.org
-Subject: Re: Radeon KMS doesn't work.
-References: <20100703221056.GA17817@animx.eu.org>	<20100704231926.GA1780@animx.eu.org>	<201007051927.17001.marvin24@gmx.de>	<4C3221FA.6070507@gmail.com> <AANLkTil2pHW4C-g-DPKUy-yvDfB3fedQC270RfqL3Gnt@mail.gmail.com>
-In-Reply-To: <AANLkTil2pHW4C-g-DPKUy-yvDfB3fedQC270RfqL3Gnt@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100705095927.GC8510@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2010 07:34 PM, Xiaotian Feng wrote:
-> On Tue, Jul 6, 2010 at 2:18 AM, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->> On 07/05/2010 10:27 AM, Marvin wrote:
->>>
->>> Hi Wakko,
->>>
->>> as nobody seems to have answered yet, I think it's better that you file a
->>> bug
->>> against the radeon driver (bugs.freedesktop.org, one bug for each defect).
->>> There may be similar bugs already, so please check this also.
->>>
->>> Thanks
->>>
->>> Marvin
->>>
->>> Am Montag 05 Juli 2010, 01:19:26 schrieb Wakko Warner:
->>>>
->>>> Wakko Warner wrote:
->>>>>
->>>>> I have a Dell Inspiron 5100 with an ATI Radeon Mobility M7 (7500 R100
->>>>> PCI ID 1002:4c57 sub 1028:0149).
->>>>>
->>>>> Immediately when radeon.ko is loaded, the screen goes blank (The
->>>>> backlight stays on).  I have fbcon compiled into the kernel (I also
->>>>> tried as module). I am unable to get the screen to work again until I
->>>>> reboot.  The logs did not appear to have any errors after the module
->>>>> loaded.  The system was still responsive on the network.
->>>>>
->>>>> I tried kernels 2.6.33 and 2.6.34.
->>>>>
->>>>> I can provide kernel output if needed.
->>>>
->>>> I need to add that if I use modeset=0, the screen does not blank.
->>>>
->>>> Also 2.6.34 (with modeset=0) doesn't do 3D very well on this system.
->>>>   Some
->>>> objects look ok, some are garbled, some do not appear at all.  The gears
->>>> from xscreensaver does not show up at all.
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->>
->> I've hit a couple of things with radeon as well.. the first was this:
->> http://lkml.org/lkml/2010/6/6/172
->> (if your hitting this issue, then the patch should work and/or it should
->> already be in the main tree).
->>
->> then a few days ago hit another:
->> https://bugzilla.kernel.org/show_bug.cgi?id=16335
->> (keep in mind still uncertain on a fix for this, reverting the commit gets
->> me up and running(I created a patch, but an umsure if it's a right
->> solution)).
->
-> I think this is the same cases with (http://lkml.org/lkml/2010/7/5/44)
-> And the fix for this bug is in -tip tree, commit 2463eb8
->
-> Could you please try following patch?
-> http://git.kernel.org/tip/2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
->
+On Mon, Jul 05, 2010 at 11:59:28AM +0200, Andi Kleen wrote:
+> On Fri, Jul 02, 2010 at 02:47:25PM +0900, Naoya Horiguchi wrote:
+> > diff --git v2.6.35-rc3-hwpoison/mm/migrate.c v2.6.35-rc3-hwpoison/mm/migrate.c
+> > index e4a381c..e7af148 100644
+> > --- v2.6.35-rc3-hwpoison/mm/migrate.c
+> > +++ v2.6.35-rc3-hwpoison/mm/migrate.c
+> > @@ -32,6 +32,7 @@
+> >  #include <linux/security.h>
+> >  #include <linux/memcontrol.h>
+> >  #include <linux/syscalls.h>
+> > +#include <linux/hugetlb.h>
+> >  #include <linux/gfp.h>
+> >  
+> >  #include "internal.h"
+> > @@ -74,6 +75,8 @@ void putback_lru_pages(struct list_head *l)
+> >  	struct page *page2;
+> >  
+> >  	list_for_each_entry_safe(page, page2, l, lru) {
+> > +		if (PageHuge(page))
+> > +			break;
+> 
+> Why is this a break and not a continue? Couldn't you have small and large
+> pages in the same list?
 
-applied.. o.k. system started without hitting the crash I was 
-experiencing!! Thanks for this.. I'll run this and let you know if I 
-experience anything out of the ordinary..
+Hmm, this chunk need to be fixed because I had too specific assumption.
+The list passed to migrate_pages() has only one page or one hugepage in
+page migration kicked by soft offline, but it's not the case in general case.
+Since hugepage is not linked to LRU list, we had better simply skip
+putback_lru_pages().
 
->>
->> if none of these are what your hitting, then maybe(if you can) do a bisect
->> on this!
->>
->> Justin P. Mattock
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
+> There's more code that handles LRU in this file. Do they all handle huge pages
+> correctly?
+> 
+> I also noticed we do not always lock all sub pages in the huge page. Now if
+> IO happens it will lock on subpages, not the head page. But this code
+> handles all subpages as a unit. Could this cause locking problems?
+> Perhaps it would be safer to lock all sub pages always? Or would 
+> need  to audit other page users to make sure they always lock on the head
+> and do the same here.
+> 
+> Hmm page reference counts may have the same issue?
 
-Tested-By: Justin P. Mattock <justinmattock@gmail.com>
+If we try to implement paging out of hugepage in the future, we need to
+solve all these problems straightforwardly. But at least for now we can
+skirt them by not touching LRU code for hugepage extension.
 
-I'll send this info over to the bug report so they know..and if things 
-go good get this thing closed..
+> > @@ -95,6 +98,12 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
+> >  	pte_t *ptep, pte;
+> >   	spinlock_t *ptl;
+> >  
+> > +	if (unlikely(PageHuge(new))) {
+> > +		ptep = huge_pte_offset(mm, addr);
+> > +		ptl = &mm->page_table_lock;
+> > +		goto check;
+> > +	}
+> > +
+> >   	pgd = pgd_offset(mm, addr);
+> >  	if (!pgd_present(*pgd))
+> >  		goto out;
+> > @@ -115,6 +124,7 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
+> >   	}
+> >  
+> >   	ptl = pte_lockptr(mm, pmd);
+> > +check:
+> 
+> I think I would prefer a proper if else over a goto here.
+> 
+> The lookup should probably just call a helper to make this function more readable
+> (like lookup_address(), unfortunately that's x86 specific right now)
 
-Justin P. Mattock
+OK.
+I'll move common code to helper function.
+
+> > @@ -284,7 +308,17 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+> >   */
+> >  static void migrate_page_copy(struct page *newpage, struct page *page)
+> >  {
+> > -	copy_highpage(newpage, page);
+> > +	int i;
+> > +	struct hstate *h;
+> > +	if (!PageHuge(newpage))
+> > +		copy_highpage(newpage, page);
+> > +	else {
+> > +		h = page_hstate(newpage);
+> > +		for (i = 0; i < pages_per_huge_page(h); i++) {
+> > +			cond_resched();
+> > +			copy_highpage(newpage + i, page + i);
+> 
+> Better reuse copy_huge_page() instead of open coding.
+
+Agreed.
+
+Thanks,
+Naoya Horiguchi
