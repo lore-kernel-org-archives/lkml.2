@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab0GFSTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 14:19:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33946 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab0GFSTK (ORCPT
+	id S1752912Ab0GFSWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 14:22:11 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:34278 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176Ab0GFSWJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 14:19:10 -0400
+	Tue, 6 Jul 2010 14:22:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:date:message-id
-         :mime-version:x-mailer:content-transfer-encoding;
-        b=NfjE9js6Wk8lUEdtuNdRYXfi5a+ctWrhIy5sbUSiEmtyD9TPyecrtFpMm9mT14Ye+S
-         Uc243o0L6O2fCr6TlxOl7AeaVyj5W79lBg4wmmdXbaY1szMc3d9d1LDMqaGx3djIu2aA
-         QYN19EBhTKGSVSg5wMYWdcEV4cwu96tkEEAEg=
-Subject: [PATCH] Staging: et131x: fix coding style issues in
- et131x_initpci.c
-From: Joe Eloff <kagen101@gmail.com>
-Reply-To: kagen101@gmail.com
-To: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>
-Cc: devel <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Jul 2010 19:17:08 +0200
-Message-ID: <1278436628.5396.75.camel@dermezel>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GecHGQ4j9zd7UzHHXGHnpyMiOOG9LSnEHhxCnDoP6jW/BRFQfkpLzBdM6nr1WRb0LT
+         T2B/4a+uis9J8r5qS8Jep8DBo4ZRWcoSRnu4/p1ld4ycQK6nHYUb8savorEPBRckXYP4
+         lxpTaEaVi5UniwaMlSDpkuE7GX2ACq4XhO77g=
+MIME-Version: 1.0
+In-Reply-To: <1278419386-8118-1-git-send-email-sjayaraman@suse.de>
+References: <1278419386-8118-1-git-send-email-sjayaraman@suse.de>
+Date: Tue, 6 Jul 2010 13:22:08 -0500
+Message-ID: <AANLkTinmYDtq_eikwgjJSscRxJP9AvK9f2XD_tsFGtXC@mail.gmail.com>
+Subject: Re: [PATCH] cifs: remove unused ip_address field in struct 
+	TCP_Server_Info
+From: Steve French <smfrench@gmail.com>
+To: Suresh Jayaraman <sjayaraman@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e23e19537c4d62bc76ae982859d3c3225a45d9c2 Mon Sep 17 00:00:00 2001
-From: Joe Eloff <kagen101@gmail.com>
-Date: Tue, 6 Jul 2010 19:13:28 +0200
-Subject: [PATCH] Staging: et131x: fix coding style issues in et131x_initpci.c
+Makes sense - plan to merge this and two others of yours into
+cifs-2.6.git today or tomorrow.
 
-This is a patch to the et131x_initpci.c file that fixes up all the
-line lengths over 80 by the checkpatch.pl tool.
-Signed-off-by: Joe Eloff <kagen101@gmail.com>
----
- drivers/staging/et131x/et131x_initpci.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+On Tue, Jul 6, 2010 at 7:29 AM, Suresh Jayaraman <sjayaraman@suse.de> wrote:
+> The ip_address field is not used and seems redundant as there is union addr
+> already and I don't see any future use as well.
+>
+> Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+> ---
+>  fs/cifs/cifsglob.h |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+> index a88479c..f182fe8 100644
+> --- a/fs/cifs/cifsglob.h
+> +++ b/fs/cifs/cifsglob.h
+> @@ -142,7 +142,6 @@ struct TCP_Server_Info {
+>        struct list_head pending_mid_q;
+>        void *Server_NlsInfo;   /* BB - placeholder for future NLS info  */
+>        unsigned short server_codepage; /* codepage for the server    */
+> -       unsigned long ip_address;       /* IP addr for the server if known */
+>        enum protocolEnum protocolType;
+>        char versionMajor;
+>        char versionMinor;
+>
 
-diff --git a/drivers/staging/et131x/et131x_initpci.c b/drivers/staging/et131x/et131x_initpci.c
-index 47baab3..ea93f83 100644
---- a/drivers/staging/et131x/et131x_initpci.c
-+++ b/drivers/staging/et131x/et131x_initpci.c
-@@ -205,7 +205,8 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
- 		if (pci_write_config_word(pdev, ET1310_PCI_REPLAY,
- 					       Replay[max_payload])) {
- 			dev_err(&pdev->dev,
--			  "Could not write PCI config space for Replay Timer\n");
-+			  "Could not write PCI config space for Replay \
-+			   Timer\n");
- 			return -EIO;
- 		}
- 	}
-@@ -246,7 +247,8 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
- 	for (i = 0; i < ETH_ALEN; i++) {
- 		if (pci_read_config_byte(pdev, ET1310_PCI_MAC_ADDRESS + i,
- 					adapter->PermanentAddress + i)) {
--			dev_err(&pdev->dev, "Could not read PCI config space for MAC address\n");
-+			dev_err(&pdev->dev, "Could not read PCI config space \
-+					     for MAC address\n");
- 			return -EIO;
- 		}
- 	}
-@@ -539,10 +541,12 @@ static struct et131x_adapter *et131x_adapter_init(struct net_device *netdev,
- 
- 	struct et131x_adapter *etdev;
- 
--	/* Setup the fundamental net_device and private adapter structure elements  */
-+	/* Setup the fundamental net_device and private
-+	   adapter structure elements  */
- 	SET_NETDEV_DEV(netdev, &pdev->dev);
- 
--	/* Allocate private adapter struct and copy in relevant information */
-+	/* Allocate private adapter struct and copy
-+	   in relevant information */
- 	etdev = netdev_priv(netdev);
- 	etdev->pdev = pci_dev_get(pdev);
- 	etdev->netdev = netdev;
-@@ -655,7 +659,8 @@ static int __devinit et131x_pci_setup(struct pci_dev *pdev,
- 		result = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
- 		if (result != 0) {
- 			dev_err(&pdev->dev,
--				  "Unable to obtain 64 bit DMA for consistent allocations\n");
-+				  "Unable to obtain 64 bit DMA for \
-+				   consistent allocations\n");
- 			goto err_release_res;
- 		}
- 	} else if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
+
+
 -- 
-1.6.3.3
+Thanks,
 
-
-
+Steve
