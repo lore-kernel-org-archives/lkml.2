@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757199Ab0GFWnt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 18:43:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31711 "EHLO
+	id S1757266Ab0GFWnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 18:43:55 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31859 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001Ab0GFWnk (ORCPT
+	with ESMTP id S1757001Ab0GFWnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 18:43:40 -0400
+	Tue, 6 Jul 2010 18:43:50 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -17,103 +17,92 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 23/49] memblock: NUMA allocate can now use early_pfn_map
-Date: Tue,  6 Jul 2010 15:39:16 -0700
-Message-Id: <1278455982-24621-24-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 26/49] memblock: Add debugfs files to dump the arrays content
+Date: Tue,  6 Jul 2010 15:39:19 -0700
+Message-Id: <1278455982-24621-27-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
 References: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C33B172.024B,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090204.4C33B171.023B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-We now provide a default (weak) implementation of memblock_nid_range()
-which uses the early_pfn_map[] if CONFIG_ARCH_POPULATES_NODE_MAP
-is set. Sparc still needs to use its own method due to the way
-the pages can be scattered between nodes.
-
-This implementation is inefficient due to our main algorithm and
-callback construct wanting to work on an ascending addresses bases
-while early_pfn_map[] would rather work with nid's (it's unsorted
-at that stage). But it should work and we can look into improving
-it subsequently, possibly using arch compile options to chose a
-different algorithm alltogether.
-
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- include/linux/memblock.h |    3 +++
- mm/memblock.c            |   28 +++++++++++++++++++++++++++-
- 2 files changed, 30 insertions(+), 1 deletions(-)
+ mm/memblock.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 51 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 15da7d9..b69c243 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -47,6 +47,9 @@ extern long memblock_remove(phys_addr_t base, phys_addr_t size);
- extern long __init memblock_free(phys_addr_t base, phys_addr_t size);
- extern long __init memblock_reserve(phys_addr_t base, phys_addr_t size);
- 
-+/* The numa aware allocator is only available if
-+ * CONFIG_ARCH_POPULATES_NODE_MAP is set
-+ */
- extern phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid);
- extern phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align);
- 
 diff --git a/mm/memblock.c b/mm/memblock.c
-index bb382f2..d701c88 100644
+index 00f62a2..c71b847 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
+@@ -16,6 +16,8 @@
  #include <linux/bitops.h>
  #include <linux/poison.h>
-+#include <linux/pfn.h>
+ #include <linux/pfn.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
  #include <linux/memblock.h>
  
  struct memblock memblock;
-@@ -445,11 +446,36 @@ phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align)
- /*
-  * Additional node-local allocators. Search for node memory is bottom up
-  * and walks memblock regions within that node bottom-up as well, but allocation
-- * within an memblock region is top-down.
-+ * within an memblock region is top-down. XXX I plan to fix that at some stage
-+ *
-+ * WARNING: Only available after early_node_map[] has been populated,
-+ * on some architectures, that is after all the calls to add_active_range()
-+ * have been done to populate it.
-  */
+@@ -705,3 +707,52 @@ static int __init early_memblock(char *p)
+ }
+ early_param("memblock", early_memblock);
  
- phys_addr_t __weak __init memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid)
- {
-+#ifdef CONFIG_ARCH_POPULATES_NODE_MAP
-+	/*
-+	 * This code originates from sparc which really wants use to walk by addresses
-+	 * and returns the nid. This is not very convenient for early_pfn_map[] users
-+	 * as the map isn't sorted yet, and it really wants to be walked by nid.
-+	 *
-+	 * For now, I implement the inefficient method below which walks the early
-+	 * map multiple times. Eventually we may want to use an ARCH config option
-+	 * to implement a completely different method for both case.
-+	 */
-+	unsigned long start_pfn, end_pfn;
++#ifdef CONFIG_DEBUG_FS
++
++static int memblock_debug_show(struct seq_file *m, void *private)
++{
++	struct memblock_type *type = m->private;
++	struct memblock_region *reg;
 +	int i;
 +
-+	for (i = 0; i < MAX_NUMNODES; i++) {
-+		get_pfn_range_for_nid(i, &start_pfn, &end_pfn);
-+		if (start < PFN_PHYS(start_pfn) || start >= PFN_PHYS(end_pfn))
-+			continue;
-+		*nid = i;
-+		return min(end, PFN_PHYS(end_pfn));
++	for (i = 0; i < type->cnt; i++) {
++		reg = &type->regions[i];
++		seq_printf(m, "%4d: ", i);
++		if (sizeof(phys_addr_t) == 4)
++			seq_printf(m, "0x%08lx..0x%08lx\n",
++				   (unsigned long)reg->base,
++				   (unsigned long)(reg->base + reg->size - 1));
++		else
++			seq_printf(m, "0x%016llx..0x%016llx\n",
++				   (unsigned long long)reg->base,
++				   (unsigned long long)(reg->base + reg->size - 1));
++
 +	}
-+#endif
- 	*nid = 0;
- 
- 	return end;
++	return 0;
++}
++
++static int memblock_debug_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, memblock_debug_show, inode->i_private);
++}
++
++static const struct file_operations memblock_debug_fops = {
++	.open = memblock_debug_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static int __init memblock_init_debugfs(void)
++{
++	struct dentry *root = debugfs_create_dir("memblock", NULL);
++	if (!root)
++		return -ENXIO;
++	debugfs_create_file("memory", S_IRUGO, root, &memblock.memory, &memblock_debug_fops);
++	debugfs_create_file("reserved", S_IRUGO, root, &memblock.reserved, &memblock_debug_fops);
++
++	return 0;
++}
++__initcall(memblock_init_debugfs);
++
++#endif /* CONFIG_DEBUG_FS */
 -- 
 1.6.4.2
 
