@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab0GFPwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 11:52:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36965 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914Ab0GFPwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 11:52:40 -0400
-Message-ID: <4C33513C.4090704@ti.com>
-Date: Tue, 6 Jul 2010 10:52:28 -0500
-From: Omar Ramirez Luna <omar.ramirez@ti.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.7) Gecko/20100111 Thunderbird/3.0.1
+	id S1754806Ab0GFPz0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 11:55:26 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:34828 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754307Ab0GFPzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 11:55:24 -0400
+Date: Tue, 6 Jul 2010 10:54:38 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] hugetlb: pin oldpage in page migration
+In-Reply-To: <1278049646-29769-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.DEB.2.00.1007061050320.4938@router.home>
+References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1278049646-29769-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: Greg KH <greg@kroah.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "Hebbar, Shivananda" <x0hebbar@ti.com>,
-       "Ramos Falcon, Ernesto" <ernesto@ti.com>, "Anna, Suman" <s-anna@ti.com>,
-       "Kanigeri, Hari" <h-kanigeri2@ti.com>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Hiroshi DOYU <Hiroshi.DOYU@nokia.com>, "Gupta, Ramesh" <grgupta@ti.com>,
-       "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-       Tony Lindgren <tony@atomide.com>,
-       Ameya Palande <ameya.palande@nokia.com>,
-       "Gomez Castellanos, Ivan" <ivan.gomez@ti.com>,
-       Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-       "Uribe de Leon, Armando" <x0095078@ti.com>,
-       "Chitriki Rudramuni, Deepak" <deepak.chitriki@ti.com>,
-       "Menon, Nishanth" <nm@ti.com>,
-       Phil Carmody <ext-phil.2.carmody@nokia.com>,
-       "Pitney, Gilbert" <gpitney@ti.com>, "Shah, Bhavin" <bshah@ti.com>
-Subject: Re: [PATCH 11/11] staging: ti dspbridge: enable driver building
-References: <1277298125-17991-1-git-send-email-ohad@wizery.com>	<1277298840-18516-1-git-send-email-ohad@wizery.com>	<20100623224150.GA6680@kroah.com> <AANLkTik0rm12w4jplD1vSTZnPbwguDU6xtOdAfs9C-3r@mail.gmail.com>
-In-Reply-To: <AANLkTik0rm12w4jplD1vSTZnPbwguDU6xtOdAfs9C-3r@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/4/2010 5:53 AM, Felipe Contreras wrote:
-> On Thu, Jun 24, 2010 at 1:41 AM, Greg KH<greg@kroah.com>  wrote:
->> The default is always 'n' so you don't need this.
->>
->> Also, this enables the driver to be built on x86, which fails horribly,
->> and I don't think is what you really want to have happen :)
->>
->> So I need some more Kconfig changes here, care to redo just this one
->> patch?  I've applied all the others and they will show up in linux-next
->> tomorrow.
->
-> I fixed all that stuff some time ago:
-> http://article.gmane.org/gmane.linux.ports.arm.omap/36065
->
-> But the patches were ignored.
+On Fri, 2 Jul 2010, Naoya Horiguchi wrote:
 
-Patches were not ignored, discussion was held privately (you and me), 
-patch 13 was not accepted because changing indentation doesn't deserve a 
-copyright assignment (IMHO), at that point *you* wanted your patches not 
-to be included if the last one wasn't merged in.
+> This patch introduces pinning the old page during page migration
+> to avoid freeing it before we complete copying.
 
-- omar
+The old page is already pinned due to the reference count that is taken
+when the page is put onto the list of pages to be migrated. See
+do_move_pages() f.e.
+
+Huge pages use a different scheme?
+
+> This race condition can happen for privately mapped or anonymous hugepage.
+
+It cannot happen unless you come up with your own scheme of managing pages
+to be migrated and bypass migrate_pages(). There you should take the
+refcount.
+
+>  	/*
+> +	 * It's reasonable to pin the old page until unmapping and copying
+> +	 * complete, because when the original page is an anonymous hugepage,
+> +	 * it will be freed in try_to_unmap() due to the fact that
+> +	 * all references of anonymous hugepage come from mapcount.
+> +	 * Although in the other cases no problem comes out without pinning,
+> +	 * it looks logically correct to do it.
+> +	 */
+> +	get_page(page);
+> +
+> +	/*
+
+Its already pinned. Dont do this. migrate_pages() relies on the caller
+having pinned the page already.
 
