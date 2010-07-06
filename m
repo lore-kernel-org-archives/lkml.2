@@ -1,105 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab0GFIb0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 04:31:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63664 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab0GFIbY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 04:31:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ppNvUP5rXCgZXFNQc7xj2PuN4Y+AYj499op3cXsciOM4RI+nZlL9VGjwnxqzfBx5pU
-         CpkOZYaGKBjuXRZmchGr0yWcp7eo4RQljupQaKGGKOj2otJXzy8EQMD1qOSpCTrkgrbL
-         RCHNwtTpGMw6MAMdqPd6MNsONA8rtDJkxTXy8=
+	id S1756526Ab0GFIhG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 04:37:06 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50723 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753778Ab0GFIhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 04:37:04 -0400
+Date: Tue, 6 Jul 2010 08:36:44 GMT
+From: tip-bot for Conny Seidel <conny.seidel@amd.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+       mingo@redhat.com, conny.seidel@amd.com, tglx@linutronix.de,
+       borislav.petkov@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       acme@redhat.com, conny.seidel@amd.com, tglx@linutronix.de,
+       borislav.petkov@amd.com
+In-Reply-To: <1277990366-1462-1-git-send-email-conny.seidel@amd.com>
+References: <1277990366-1462-1-git-send-email-conny.seidel@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Fix fallback to cplus_demangle() when bfd_demangle() is not available
+Message-ID: <tip-167a58f10d9cd1bdf6a911aa1eecbdff596de156@git.kernel.org>
+Git-Commit-ID: 167a58f10d9cd1bdf6a911aa1eecbdff596de156
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-In-Reply-To: <20100706074641.GS10072@secunet.com>
-References: <AANLkTikeDE4hvZ3spyTBSHZsdQPc-2wlD5nTfb1aF-VD@mail.gmail.com>
-	<20100702085323.GF10072@secunet.com>
-	<AANLkTinyPGjXjlvJxB8WYB3EYFBtANXMzpTdUixyBRHW@mail.gmail.com>
-	<20100702091726.GH10072@secunet.com>
-	<AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
-	<20100702111138.GI10072@secunet.com>
-	<AANLkTimEgKGJ5pi7GzOnvP42ivJ4GCKX59LdKK0x4fnx@mail.gmail.com>
-	<20100706053612.GQ10072@secunet.com>
-	<20100706054406.GR10072@secunet.com>
-	<AANLkTil4pbOOVvhIKN1_sI8kNdBFFebMVEGEmqrb45YR@mail.gmail.com>
-	<20100706074641.GS10072@secunet.com>
-Date: Tue, 6 Jul 2010 12:31:21 +0400
-X-Google-Sender-Auth: sFcfhXiBxnlqKlNeVGWSxtLrKAQ
-Message-ID: <AANLkTimYK_4PcVrAniOE3pQjgYNwYNjI6q8p1FMZntEa@mail.gmail.com>
-Subject: Re: [PATCH 1/3] padata: separate serial and parallel cpumasks
-From: Dan Kruchinin <dkruchinin@acm.org>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 06 Jul 2010 08:36:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 6, 2010 at 11:46 AM, Steffen Klassert
-<steffen.klassert@secunet.com> wrote:
-> On Tue, Jul 06, 2010 at 11:40:11AM +0400, Dan Kruchinin wrote:
->> >> >
->> >>
->> >> I think we can use RCU anyway. For instance we could use a structure
->> >>
->> >> struct pcrypt_cpumask {
->> >>       cpumask_var_t           pmask;
->> >>       cpumask_var_t           smask;
->> >> };
->> >>
->> >> and add a pointer to a structure of that type to the instance context.
->> >> Then we could use this pointer for RCU and replace the whole structure
->> >> if a cpumask changes.
->>
->> But is pcrypt interested pmask? If it isn't, pmask field will be unused.
->>
->
-> It's probaply not, in this case the struct could look like
->
-> struct pcrypt_cpumask {
->        cpumask_var_t           smask;
-> };
->
+Commit-ID:  167a58f10d9cd1bdf6a911aa1eecbdff596de156
+Gitweb:     http://git.kernel.org/tip/167a58f10d9cd1bdf6a911aa1eecbdff596de156
+Author:     Conny Seidel <conny.seidel@amd.com>
+AuthorDate: Thu, 1 Jul 2010 15:19:26 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 2 Jul 2010 10:01:58 -0300
 
-Would't it be the same as with a pointer to cpumask_var_t? I mean:
-struct pcrypt {
-  ...
-  struct pcrypt_cpumask *mask;
-  ...
-} pencrypt;
+perf tools: Fix fallback to cplus_demangle() when bfd_demangle() is not available
 
-To assign a pointer via RCU:
+make version 3.80 doesn't support "else ifdef" on the same line, also it
+doesn't support unindented nested constructs.
 
-int cpumask_change_nitify(...) {
-   ...
-  struct pcrypt_cpumask *new_mask = kmalloc(sizeof(*mask), GFP);
-  struct pcrypt_cpumask *old_mask = pencrypt.mask;
+Build fails with:
+Makefile:608: Extraneous text after `else' directive
+Makefile:611: *** only one `else' per conditional.  Stop.
 
-  if (!new_mask)
-     error();
-  if (!alloc_cpumask_var(&new_mask->smask, GFP_KERNEL))
-     error();
+This patch fixes the build for make 3.80.
 
-  get_serial_cpumask_from_padata(new_mask->mask);
-  rcu_assign_pointer(pencrypt.mask, new_mask);
-  synchronize_rcu_bh();
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <1277990366-1462-1-git-send-email-conny.seidel@amd.com>
+Signed-off-by: Conny Seidel <conny.seidel@.amd.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile |   48 +++++++++++++++++++++++++-----------------------
+ 1 files changed, 25 insertions(+), 23 deletions(-)
 
-  free_cpumask_var(old_mask->smask);
-  kfree(old_mask);
-  ...
-}
-
-It's a bit hard to read this code because at the first sight it
-appears unclear and odd why we allocate the structure with only one
-member.
-
--- 
-W.B.R.
-Dan Kruchinin
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 17a3692..26f626d 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -605,33 +605,35 @@ endif
+ 
+ ifdef NO_DEMANGLE
+ 	BASIC_CFLAGS += -DNO_DEMANGLE
+-else ifdef HAVE_CPLUS_DEMANGLE
+-	EXTLIBS += -liberty
+-	BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+ else
+-	FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
+-	has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
+-	ifeq ($(has_bfd),y)
+-		EXTLIBS += -lbfd
+-	else
+-		FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
+-		has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
+-		ifeq ($(has_bfd_iberty),y)
+-			EXTLIBS += -lbfd -liberty
++        ifdef HAVE_CPLUS_DEMANGLE
++		EXTLIBS += -liberty
++		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
++        else
++		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
++		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
++		ifeq ($(has_bfd),y)
++			EXTLIBS += -lbfd
+ 		else
+-			FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
+-			has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
+-			ifeq ($(has_bfd_iberty_z),y)
+-				EXTLIBS += -lbfd -liberty -lz
++			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
++			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
++			ifeq ($(has_bfd_iberty),y)
++				EXTLIBS += -lbfd -liberty
+ 			else
+-				FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
+-				has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
+-				ifeq ($(has_cplus_demangle),y)
+-					EXTLIBS += -liberty
+-					BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
++				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
++				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
++				ifeq ($(has_bfd_iberty_z),y)
++					EXTLIBS += -lbfd -liberty -lz
+ 				else
+-					msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
+-					BASIC_CFLAGS += -DNO_DEMANGLE
++					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
++					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
++					ifeq ($(has_cplus_demangle),y)
++						EXTLIBS += -liberty
++						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
++					else
++						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
++						BASIC_CFLAGS += -DNO_DEMANGLE
++					endif
+ 				endif
+ 			endif
+ 		endif
