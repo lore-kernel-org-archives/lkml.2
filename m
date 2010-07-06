@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab0GFAAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 20:00:07 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55521 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab0GFAAC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 20:00:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=tyU6XBMx+wc80uwrTADTfdrPpdhdQ2JF4y4/2eUsEVX35Q9QPevH/cw1zN4yVaG7Kg
-         CUo1ah+VnG13SzlFQRdYIfKaXCjlX/RaFSaNLu9TIbflM7f6b/dXuf0CJpybEYLHXnnr
-         ZgwYwPJLV4nUUB8y7hn0cT4WgIdamv+/k27/I=
-Message-ID: <4C3271FF.9080308@gmail.com>
-Date: Mon, 05 Jul 2010 17:59:59 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc13 Thunderbird/3.1
+	id S1753976Ab0GFADq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 20:03:46 -0400
+Received: from ozlabs.org ([203.10.76.45]:54412 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751551Ab0GFADo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 20:03:44 -0400
+Date: Tue, 6 Jul 2010 10:03:43 +1000
+From: Tony Breeds <tony@bakeyournoodle.com>
+To: LEROY Christophe <christophe.leroy@c-s.fr>
+Cc: linux-kernel@vger.kernel.org, LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
+       Anton Vorontsov <avorontsov@ru.mvista.com>,
+       Kumar Gala <galak@kernel.crashing.org>
+Subject: Re: 2.6.34: arch/powerpc/sysdev/micropatch.c not compiling
+Message-ID: <20100706000343.GE23985@ozlabs.org>
+Mail-Followup-To: LEROY Christophe <christophe.leroy@c-s.fr>,
+	linux-kernel@vger.kernel.org,
+	LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
+	Anton Vorontsov <avorontsov@ru.mvista.com>,
+	Kumar Gala <galak@kernel.crashing.org>
+References: <4C318D87.1010306@c-s.fr>
 MIME-Version: 1.0
-To: Mark Knecht <markknecht@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, Stan Hoeppner <stan@hardwarefreak.com>,
-       Linux Kernel List <linux-kernel@vger.kernel.org>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: Drives missing at boot
-References: <AANLkTimVkG9TFgyOTTnrztBjqT4JoOzFaP268vWLAAm9@mail.gmail.com>	<4C2F5ECB.1040505@kernel.org>	<AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>	<4C2F87C1.8000701@hardwarefreak.com>	<AANLkTimVJEO-yF3GZ2ghX6DNPuAu-A-MNNO9x8Q1EpRc@mail.gmail.com>	<4C2F9292.708@hardwarefreak.com>	<AANLkTikPsRvvpSZirSygnZqyGKcS-Bz0eVeASZZqvZwH@mail.gmail.com>	<AANLkTintf2mwgBVuk_4GmfHTzyJebP2kyfcNGij_epy-@mail.gmail.com>	<4C31796C.8050209@kernel.org> <AANLkTinvNGha7SfaAWYIjUJwR9ZelCbHAWK0qvvllF9S@mail.gmail.com>
-In-Reply-To: <AANLkTinvNGha7SfaAWYIjUJwR9ZelCbHAWK0qvvllF9S@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C318D87.1010306@c-s.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2010 10:48 AM, Mark Knecht wrote:
-> On Sun, Jul 4, 2010 at 11:19 PM, Tejun Heo<tj@kernel.org>  wrote:
->> Hello,
->>
->> On 07/04/2010 12:31 AM, Mark Knecht wrote:
->>> OK, I don't know if this is related but so far I cannot get the
->>> machine to boot if I set BIOS SATA configuration to AHCI. I believe
->>> that I have AHCI support as well as SATA support built into the kernel
->>> but when I set the BIOS to AHCI the machine just hangs saying it finds
->>> no medium. I assume that means no hard drive. I have to set SATA
->>> support to enhanced and then IDE to get the machine to boot at all.
->>
->> That's odd.  Can you please attach kernel boot log w/ ahci mode?
->> Booting a recent live CD and saving boot log from there should do the
->> trick.
->>
->> Thanks.
->>
->> --
->> tejun
->>
->
-> Hi Tehun,
->     Thanks for the help.
->
->     I tried a Gentoo install CD from last march. It's a 2.6.31 type
-> kernel. Problem is the buffer depths are not big enough to capture the
-> complete dmesg contents and I don't know a command line option to make
-> it larger on the fly. If you know of one that's got a larger buffer -
-> or a command to increase it at boot time - then let me know and I'll
-> try again.
->
->     I'm attaching what I was able to catch for both AHCI and IDE
-> settings in BIOS for the storage configuration option.
->
->     It seems to me that even in AHCI mode the machine does see all the
-> hard drives. Maybe there's something about my boot partition that's
-> having problems in AHCI mode only? If it sees /dev/sda then why
-> wouldn't it find grub and at least show a grub menu?
+On Mon, Jul 05, 2010 at 09:45:11AM +0200, LEROY Christophe wrote:
+> When activating micropatch option, the kernel does not compile.
 
-On some machines changing from IDE to AHCI messes up the boot order 
-selection in the BIOS - you may have to switch to AHCI, save settings, 
-reboot, go back into the BIOS and then make sure the disk boot order 
-settings are correct (whatever drive grub is installed on needs to be 
-first).
+powerpc problems should alos CC linuxppc-dev.
+ 
+> It looks like a spi_t is not defined anywhere.
+> 
+> CC arch/powerpc/sysdev/micropatch.o
+> arch/powerpc/sysdev/micropatch.c: In function ‘cpm_load_patch’:
+> arch/powerpc/sysdev/micropatch.c:629: erreur: expected ‘=’, ‘,’,
+> ‘;’, ‘asm’ or ‘__attribute__’ before ‘*’ token
+> arch/powerpc/sysdev/micropatch.c:629: erreur: ‘spp’ undeclared
+> (first use in this function)
+> arch/powerpc/sysdev/micropatch.c:629: erreur: (Each undeclared
+> identifier is reported only once
+> arch/powerpc/sysdev/micropatch.c:629: erreur: for each function it
+> appears in.)
+> cc1: warnings being treated as errors
+> arch/powerpc/sysdev/micropatch.c:630: erreur: ISO C89 interdit les
+> mélanges de déclarations et de code
+> arch/powerpc/sysdev/micropatch.c:671: erreur: ‘spi_t’ undeclared
+> (first use in this function)
+> arch/powerpc/sysdev/micropatch.c:671: erreur: expected expression
+> before ‘)’ token
+> make[1]: *** [arch/powerpc/sysdev/micropatch.o] Erreur 1
+> make: *** [arch/powerpc/sysdev] Erreur 2
+
+spi_t was removed in commit 644b2a680ccc51a9ec4d6beb12e9d47d2dee98e2
+(powerpc/cpm: Remove SPI defines and spi structs).  Anton, Kumar it looks like
+something along the lines of:
+
+diff --git a/arch/powerpc/sysdev/micropatch.c b/arch/powerpc/sysdev/micropatch.c
+index d8d6028..aa1785e 100644
+--- a/arch/powerpc/sysdev/micropatch.c
++++ b/arch/powerpc/sysdev/micropatch.c
+@@ -626,7 +626,6 @@ cpm_load_patch(cpm8xx_t     *cp)
+        volatile uint           *dp;            /* Dual-ported RAM. */
+        volatile cpm8xx_t       *commproc;
+        volatile iic_t          *iip;
+-       volatile spi_t          *spp;
+        volatile smc_uart_t     *smp;
+        int     i;
+ 
+@@ -668,8 +667,8 @@ cpm_load_patch(cpm8xx_t     *cp)
+        /* Put SPI above the IIC, also 32-byte aligned.
+        */
+        i = (RPBASE + sizeof(iic_t) + 31) & ~31;
+-       spp = (spi_t *)&commproc->cp_dparam[PROFF_SPI];
+-       spp->spi_rpbase = i;
++       smp = (smc_uart_t *)&commproc->cp_dparam[PROFF_SPI];
++       smp->smc_rpbase = i;
+ 
+ # if defined(CONFIG_I2C_SPI_UCODE_PATCH)
+        commproc->cp_cpmcr1 = 0x802a;
+
+
+Would help?
+
+Yours Tony
