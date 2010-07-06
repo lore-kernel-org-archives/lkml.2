@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab0GFXNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 19:13:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59566 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752069Ab0GFXN1 (ORCPT
+	id S1755441Ab0GFXQc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 19:16:32 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:57492 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951Ab0GFXQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 19:13:27 -0400
-Date: Tue, 6 Jul 2010 16:12:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: rostedt@goodmis.org
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       James Morris <jmorris@namei.org>
-Subject: Re: [PATCH 2/2] sched: make sched_param arugment static variables
- in some sched_setscheduler() caller
-Message-Id: <20100706161253.79bfb761.akpm@linux-foundation.org>
-In-Reply-To: <1278454438.1537.54.camel@gandalf.stny.rr.com>
-References: <20100702144941.8fa101c3.akpm@linux-foundation.org>
-	<20100706091607.CCCC.A69D9226@jp.fujitsu.com>
-	<20100706095013.CCD9.A69D9226@jp.fujitsu.com>
-	<1278454438.1537.54.camel@gandalf.stny.rr.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 6 Jul 2010 19:16:27 -0400
+Message-ID: <4C33B883.6010206@kernel.org>
+Date: Tue, 06 Jul 2010 16:13:07 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Ram Pai <linuxram@us.ibm.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+       clemens@ladisch.de
+Subject: Re: [RFC PATCH 1/1] PCI: skip release and reallocation of io port
+ resources
+References: <20100630211516.GA25991@us.ibm.com>	<AANLkTin6_LbGwRZm3GPDnyNb36v8G4DHqGno1mEXjmV0@mail.gmail.com>	<20100630235949.GA5120@us.ibm.com> <20100702143515.2896d728@virtuousgeek.org>
+In-Reply-To: <20100702143515.2896d728@virtuousgeek.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C33B93F.007A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 Jul 2010 18:13:58 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Tue, 2010-07-06 at 09:51 +0900, KOSAKI Motohiro wrote:
-> > Andrew Morton pointed out almost sched_setscheduler() caller are
-> > using fixed parameter and it can be converted static. it reduce
-> > runtume memory waste a bit.
+On 07/02/2010 02:35 PM, Jesse Barnes wrote:
+> On Wed, 30 Jun 2010 16:59:49 -0700
+> Ram Pai <linuxram@us.ibm.com> wrote:
 > 
-> We are replacing runtime waste with permanent waste?
-
-Confused.  kernel/trace/ appears to waste resources by design, so what's
-the issue?
-
-I don't think this change will cause more waste.  It'll consume 4 bytes
-of .data and will save a little more .text.
-
-> > 
-> > Reported-by: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> On Wed, Jun 30, 2010 at 04:10:26PM -0700, Linus Torvalds wrote:
+>>> On Wed, Jun 30, 2010 at 2:15 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+>>>>       PCI: skip release and reallocation of io port resources
+>>>
+>>> Gaah. This still looks like just total ad-hoc hackery. The logic for
+>>> it all seems very fragile, just a random case made up from the one
+>>> failing issue. There's no underlying logic or design to it.
+>>>
+>>> I still think that we should just make people explicitly ask for a
+>>> blank slate if the bios allocations don't work out. 
+>>
+>> and interactively allocate resource?
 > 
+> No I don't think we want to add any prompts to the kernel boot
+> process. :)
 > 
+>>> Rather than trying
+>>> to fix it up automatically, which has been a total rats nest of random
+>>> crud.
+>>
+>> Can Yinghai Lu's patch 'pci=try=' be some temporary middle ground till
+>> a more elaborate patch is found?
+>>
+>> His suggestion partly meets your suggestion. It does not automatically 
+>> reassign unless the user explicitly asks for it. Hence should not
+>> break any working systems, at the same time can handle system like 
+>> mine.
 > 
-> > --- a/kernel/trace/trace_selftest.c
-> > +++ b/kernel/trace/trace_selftest.c
-> > @@ -560,7 +560,7 @@ trace_selftest_startup_nop(struct tracer *trace, struct trace_array *tr)
-> >  static int trace_wakeup_test_thread(void *data)
-> >  {
-> >  	/* Make this a RT thread, doesn't need to be too high */
-> > -	struct sched_param param = { .sched_priority = 5 };
-> > +	static struct sched_param param = { .sched_priority = 5 };
-> >  	struct completion *x = data;
-> >  
+> pci=try just doesn't communicate much, it should be something like
+> pci=override_bios and do as Linus suggests.
+
+So you want to use pci=override_bios to reallocate all bios assigned resource include
+peer root buses resources and pci bridge resource and pci devices BAR?
+
+in that case, we may need to update
+1. io apic related BAR to be consistent with io apic addr from MADT.
+2. other ACPI related tables like return for _CRS...
+
+or just change pci=try to pci=override_bios in my patch?
+
 > 
-> This is a thread that runs on boot up to test the sched_wakeup tracer.
-> Then it is deleted and all memory is reclaimed.
+> But we should continue to shoot for not ever having to use that option
+> on normal systems.
 > 
-> Thus, this patch just took memory that was usable at run time and
-> removed it permanently.
-> 
-> Please Cc me on all tracing changes.
 
-Well if we're so worried about resource wastage then how about making
-all boot-time-only text and data reside in __init and __initdata
-sections rather than hanging around uselessly in memory for ever?
+replacing legacy bios with linuxbios is cleanest way.
 
-Only that's going to be hard because we went and added pointers into
-.init.text from .data due to `struct tracer.selftest', which will cause
-a storm of section mismatch warnings.  Doh, should have invoked the
-selftests from initcalls.  That might open the opportunity of running
-the selftests by modprobing the selftest module, too.
-
-And I _do_ wish the selftest module was modprobeable, rather than this
-monstrosity:
-
-#ifdef CONFIG_FTRACE_SELFTEST
-/* Let selftest have access to static functions in this file */
-#include "trace_selftest.c"
-#endif
-
-Really?  Who had a tastebudectomy over there?  At least call it
-trace_selftest.inc or something, so poor schmucks don't go scrabbling
-around wondering "how the hell does this thing get built oh no they
-didn't really go and #include it did they?"
-
-
+Yinghai
