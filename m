@@ -1,124 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab0GFHzl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 03:55:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62847 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab0GFHzk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 03:55:40 -0400
-Message-ID: <4C32E152.1090902@oracle.com>
-Date: Tue, 06 Jul 2010 15:54:58 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1755628Ab0GFH4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 03:56:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44166 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751194Ab0GFH4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 03:56:49 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Axel Lin <axel.lin@gmail.com>
+Subject: Re: [PATCH] hp-wmi: add return value checking for input_allocate_device()
+Date: Tue, 6 Jul 2010 09:56:45 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+       Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Frans Pop <elendil@planet.nl>, Anisse Astier <anisse@astier.eu>,
+       platform-driver-x86@vger.kernel.org
+References: <1278383426.12801.15.camel@mola>
+In-Reply-To: <1278383426.12801.15.camel@mola>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>
-Subject: Re: [PATCH 1/2] ocfs2: Zero the tail cluster when extending past
- i_size v2
-References: <20100628173529.GA10573@mail.oracle.com> <20100629002421.GY6590@dastard> <20100629005403.GC24343@mail.oracle.com> <20100629015615.GZ6590@dastard> <20100629020420.GE24343@mail.oracle.com> <20100629022757.GA6590@dastard> <20100629071817.GA4150@mail.oracle.com> <20100702224912.GC5800@mail.oracle.com> <20100703213219.GB21262@mail.oracle.com> <4C3156D0.5090001@oracle.com> <20100706071741.GF13023@mail.oracle.com>
-In-Reply-To: <20100706071741.GF13023@mail.oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C32E15B.0006:SCFMA4539814,ss=1,fgs=0
+Message-Id: <201007060956.45726.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joel,
+Hi,
 
-On 07/06/2010 03:17 PM, Joel Becker wrote:
-> On Mon, Jul 05, 2010 at 11:51:44AM +0800, Tao Ma wrote:
->>> +	/*
->>> +	 * If tail_blkno is in the cluster past i_size, we don't need
->>> +	 * to touch the cluster containing i_size at all.
->>> +	 */
->>> +	tail_cpos = i_size_read(inode)>>   osb->s_clustersize_bits;
->>> +	if (ocfs2_blocks_to_clusters(inode->i_sb, tail_blkno)>   tail_cpos)
->>> +		tail_cpos = ocfs2_blocks_to_clusters(inode->i_sb,
->>> +						     tail_blkno);
->> Can we always set tail_cpos in one line?
->> 	tail_cpos = ocfs2_blocks_to_clusters(inode->i_sb, tail_blkno)?
->> tail_cpos is either the same cluster as i_size or the next cluster
->> and both works for tail_blkno I guess?
->
-> 	I had the same thought on Friday, but the current version passes
-> testing and I was wary of changing that.
-ok, so as you wish.
->
->>> +	/* Is there a cluster to zero? */
->>> +	if (!p_cpos)
->>> +		goto out;
->> For unwritten extent, we also need to clear the pages? If yes, the
->> solution doesn't complete if we have 2 unwritten extent, one
->> contains i_size while one passes i_size. Here we only clear the
->> pages for the 1st unwritten extent and leave the 2nd one untouched.
->
-> 	We probably don't need to zero unwritten extents.  We cannot
-> have an extent past i_size, can we?
-we can. AFAICS, ocfs2_change_file_space will allocate unwritten extents 
-and does't change i_size.
->
->>  From here to the call of CoW is a bit hard to understand. In 'if',
->> num_clusters is set for CoW and in 'else', blocks_to_zero is set. So
->> it isn't easy for the reader to tell why these 2 clauses are setting
->> different values. So how about my code below? It looks more
->> straightforward I think.
->>> +	if ((tail_cpos + num_clusters)>   pos_cpos) {
->>> +		num_clusters = pos_cpos - tail_cpos;
->>> +		if (pos_blkno>
->>> +		    ocfs2_clusters_to_blocks(inode->i_sb, pos_cpos))
->>> +			num_clusters += 1;
->>> +	} else {
->>> +		blocks_to_zero =
->>> +			ocfs2_clusters_to_blocks(inode->i_sb,
->>> +						 tail_cpos + num_clusters);
->>> +		blocks_to_zero -= tail_blkno;
->>> +	}
->>> +
->>> +	/* Now CoW the clusters we're about to zero */
->>> +	if (ext_flags&   OCFS2_EXT_REFCOUNTED) {
->>> +		rc = ocfs2_refcount_cow(inode, di_bh, tail_cpos,
->>> +					num_clusters, UINT_MAX);
->>> +		if (rc) {
->>> +			mlog_errno(rc);
->>> +			goto out;
->>> +		}
->>> +	}
->> 	/* Decrease blocks_to_zero if there is some hole after extent */
->> 	if (tail_cpos + num_clusters<= pos_cpos) {
->> 		blocks_to_zero =
->> 			ocfs2_clusters_to_blocks(inode->i_sb,
->> 						 tail_cpos + num_clusters);
->> 		blocks_to_zero -= tail_blkno;
->> 	}
->
-> 	Not a bad split-out here.
->
->> 	/* Now CoW if we have some refcounted clusters. */
->> 	if (ext_flags&  OCFS2_EXT_REFCOUNTED) {
->> 		/*
->> 		 * We add one more cluster here since it will be
->> 		 * written shortly and if the pos_blkno isn't aligned
->> 		 * to the cluster size, we have to zero the blocks
->> 		 * before it.
->> 		 */
->> 		if (tail_cpos + num_clusters>  pos_cpos)
->> 			num_clusters = pos_cpos - tail_cpos + 1;
->
-> 	But you dropped the check for pos_blkno alignment.
-> Unconditionally adding the +1 doesn't seem like a good idea.
-You can add it as you wish.
-I just thought that you add one more extra cluster if pos_blkno isn't 
-aligned so as to zero blocks in [pos_cpos_start_block, pos_blkno).
-But As I said in the comments, you will soon write pos_blkno(it also 
-needs to be CoW since it is within this refcounted extent), so if we can 
-CoW it out now, maybe we have a chance to not call ocfs2_refcount_cow later.
+it's incredible how much cleanups and fixes you find in this
+handful of drivers... It's very much appreciated!
 
-Regards,
-Tao
+On Tuesday 06 July 2010 04:30:26 Axel Lin wrote:
+> Add error checking and return -ENOMEM if input_allocate_device() fail.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/platform/x86/hp-wmi.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/hp-wmi.c b/drivers/platform/x86/hp-wmi.c
+> index 51c07a0..c508e20 100644
+> --- a/drivers/platform/x86/hp-wmi.c
+> +++ b/drivers/platform/x86/hp-wmi.c
+> @@ -402,6 +402,8 @@ static int __init hp_wmi_input_setup(void)
+>  	int err;
+>  
+>  	hp_wmi_input_dev = input_allocate_device();
+> +	if (!hp_wmi_input_dev)
+> +		return -ENOMEM;
+>  
+>  	hp_wmi_input_dev->name = "HP WMI hotkeys";
+>  	hp_wmi_input_dev->phys = "wmi/input0";
+But also hp_wmi_input_setup() call should get checked and if it
+fails, the previous wmi_install_notify_handler() must get uninstalled
+again. Hm, probably the whole driver shouldn't load then and
+the error code from hp_wmi_input_setup() can be returned in
+hp_wmi_init(void).
+
+Do you mind to incorporate above if you agree.
+
+Thanks,
+
+   Thomas
