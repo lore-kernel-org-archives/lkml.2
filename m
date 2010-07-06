@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab0GFLga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 07:36:30 -0400
-Received: from www.humilis.net ([82.95.169.224]:57002 "EHLO attic.humilis.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752794Ab0GFLg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 07:36:29 -0400
-X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jul 2010 07:36:28 EDT
-Date: Tue, 6 Jul 2010 13:26:50 +0200
-From: Sander <sander@humilis.net>
-To: Mark Knecht <markknecht@gmail.com>
-Cc: Robert Hancock <hancockrwd@gmail.com>, Tejun Heo <tj@kernel.org>,
-       Stan Hoeppner <stan@hardwarefreak.com>,
-       Linux Kernel List <linux-kernel@vger.kernel.org>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: Drives missing at boot
-Message-ID: <20100706112650.GA28794@attic.humilis.net>
-Reply-To: sander@humilis.net
-References: <AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>
- <4C2F87C1.8000701@hardwarefreak.com>
- <AANLkTimVJEO-yF3GZ2ghX6DNPuAu-A-MNNO9x8Q1EpRc@mail.gmail.com>
- <4C2F9292.708@hardwarefreak.com>
- <AANLkTikPsRvvpSZirSygnZqyGKcS-Bz0eVeASZZqvZwH@mail.gmail.com>
- <AANLkTintf2mwgBVuk_4GmfHTzyJebP2kyfcNGij_epy-@mail.gmail.com>
- <4C31796C.8050209@kernel.org>
- <AANLkTinvNGha7SfaAWYIjUJwR9ZelCbHAWK0qvvllF9S@mail.gmail.com>
- <4C3271FF.9080308@gmail.com>
- <AANLkTilAvJUthkXM7KL9BhLwEv9kJn31Rs8wDTAe4PlY@mail.gmail.com>
+	id S1757038Ab0GFLgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 07:36:45 -0400
+Received: from stinky.trash.net ([213.144.137.162]:64947 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756904Ab0GFLgn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 07:36:43 -0400
+Message-ID: <4C33154B.7090907@trash.net>
+Date: Tue, 06 Jul 2010 13:36:43 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilAvJUthkXM7KL9BhLwEv9kJn31Rs8wDTAe4PlY@mail.gmail.com>
-X-Uptime: 13:18:50 up 2 days, 22:22, 17 users,  load average: 2.25, 2.17,
- 2.21
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Simon Horman <horms@verge.net.au>
+CC: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+       netfilter-devel@vger.kernel.org,
+       Malcolm Turnbull <malcolm@loadbalancer.org>,
+       Wensong Zhang <wensong@linux-vs.org>,
+       Julius Volz <julius.volz@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
+Subject: Re: [patch v2.3 2/4] IPVS: make friends with nf_conntrack
+References: <20100704113246.562399500@vergenet.net> <20100704114808.668473084@vergenet.net>
+In-Reply-To: <20100704114808.668473084@vergenet.net>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Knecht wrote (ao):
-> On Mon, Jul 5, 2010 at 4:59 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
-> > On some machines changing from IDE to AHCI messes up the boot order
-> > selection in the BIOS - you may have to switch to AHCI, save settings,
-> > reboot, go back into the BIOS and then make sure the disk boot order
-> > settings are correct (whatever drive grub is installed on needs to be
-> > first).
-> 
-> That's a very interesting idea Robert. Thanks.
-> 
-> I'll have to be careful. I have 5 identical drives in the machine so
-> figuring out which is which when I'm in BIOS might be a bit of a
-> trick.
-> 
-> I'll give it a go and report back.
+Simon Horman wrote:
+> +static void
+> +ip_vs_update_conntrack(struct sk_buff *skb, struct ip_vs_conn *cp)
+> +{
+> +	struct nf_conn *ct = (struct nf_conn *)skb->nfct;
+> +	struct nf_conntrack_tuple new_tuple;
+> +
+> +	if (ct == NULL || ct == &nf_conntrack_untracked ||
+> +	    nf_ct_is_confirmed(ct))
+>   
+Similar to the last patch, this needs to use nf_ct_is_untracked().
 
-You can install grub on the mbr of all disks and not worry about the
-order. Especially if you work with UUIDs.
+> +		return;
+> +
 
-	Sander
-
--- 
-Humilis IT Services and Solutions
-http://www.humilis.net
