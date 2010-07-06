@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855Ab0GFRfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 13:35:52 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46121 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab0GFRfu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 13:35:50 -0400
-Date: Tue, 6 Jul 2010 10:34:17 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for July 6 (NET_DSA + PHYLIB kconfig)
-Message-Id: <20100706103417.8923b697.randy.dunlap@oracle.com>
-In-Reply-To: <20100706190519.93d8b785.sfr@canb.auug.org.au>
-References: <20100706190519.93d8b785.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756014Ab0GFRhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 13:37:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22547 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755660Ab0GFRhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 13:37:15 -0400
+Message-ID: <4C3369C3.9010001@redhat.com>
+Date: Tue, 06 Jul 2010 14:37:07 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Lightning/1.0b2 Thunderbird/3.1
+MIME-Version: 1.0
+To: kagen101@gmail.com
+CC: Aldo Cedillo <aldobrett11@gmail.com>, gregkh@suse.de,
+       olimpiu.pascariu@gmail.com, julia@diku.dk, tj@kernel.org,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: cx25821: fix brace coding style issue in  cx25821-audio-upstream.c
+References: <1278238174.17566.4.camel@dermezel>	 <AANLkTil_Pu76aEje-5FP9nmxba--pmmAX3YkqNdzN3xX@mail.gmail.com> <1278437084.5396.81.camel@dermezel>
+In-Reply-To: <1278437084.5396.81.camel@dermezel>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C336970.012A:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Jul 2010 19:05:19 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+Em 06-07-2010 14:24, Joe Eloff escreveu:
+> On Tue, 2010-07-06 at 12:12 -0500, Aldo Cedillo wrote:
+>>> Subject: [PATCH] Staging: cx25821: fix brace coding style issue in cx25821-audio-upstream.c
+>>>  This is a patch to the cx25821.c file that fixes up a brace warning found by the checkpatch.pl tool
+>>>  Signed-off-by: Joe Eloff <kagen101@gmail.com>
+>>>
+>>> ---
+>>>  drivers/staging/cx25821/cx25821-audio-upstream.c |    4 ++--
+>>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
+>>> index eb39d13..e7346ec 100644
+>>> --- a/drivers/staging/cx25821/cx25821-audio-upstream.c
+>>> +++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
+>>> @@ -762,9 +762,9 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+>>>                       str_length + 1);
+>>
+>>
+>> I haven't tried checkpatch.pl over that file, but in the CodingStyle
+>> document you can read this:
+>>
+>> Do not unnecessarily use braces where a single statement will do.
+>>
+>> if (condition)
+>>         action();
+>>
+>> This does not apply if one branch of a conditional statement is a single
+>> statement. Use braces in both branches.
+>>
+>> if (condition) {
+>>         do_this();
+>>         do_that();
+>> } else {
+>>         otherwise();
+>> }
+>>
+>> Which one is the correct style? I ask these because I have seen this
+>> in other parts of the kernel. So maybe I can help to homogenize this.
+>>
+>>>                /* Default if filename is empty string */
+>>> -               if (strcmp(dev->input_audiofilename, "") == 0) {
+>>> +               if (strcmp(dev->input_audiofilename, "") == 0)
+>>>                        dev->_audiofilename = "/root/audioGOOD.wav";
+>>> -               }
+>> I believe only this one has to go.
+>>> +
+>>>        } else {
+>> So the first brace closes the brace of the if line.
+>>>                str_length = strlen(_defaultAudioName);
+>>>                dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+>>
+>> Thanks,
+>> Aldo Brett
 > 
-> Changes since 20100705:
+> Thats good to know thanks for pointing that out, I have picked up a few
+> discrepancies with interpretation and checkpatch.pl.
+> Am noting it and trying to patch checkpatch.pl as I continue :).
 > 
-> My fixes tree contains:
-> 	kbuild: Fix path to scripts/setlocalversion
+> I think checkpatch.pl points this out as the opposite to interpretation
+> thou otherwise I would not have patched it I guess.
 > 
-> ----------------------------------------------------------------------------
+> Current TODO on checkpatch:
+> 
+> 1. type i = 0 ; /* space before ; is not picked up by checkpatch.
+> 2. What you mentioned is interpreted different by checkpatch.pl 
 
-kconfig now detects symbol dependency errors and warns about them.
-E.g.:
+If you intend to submit more patches to cx25821, please generate it against my tree, as
+the driver suffered a major cleanup recently.
+	http://git.linuxtv.org/v4l-dvb.git
+	branch devel/for_v2.6.36
 
-warning: (NET_DSA && NET && EXPERIMENTAL && !S390 || MACB && NETDEVICES && NET_ETHERNET && (AVR32 || ARCH_AT91SAM9260 || ARCH_AT91SAM9263 || ARCH_AT91SAM9G20 || ARCH_AT91SAM9G45 || ARCH_AT91CAP9) || IXP4XX_ETH && NETDEVICES && NET_ETHERNET && ARM && ARCH_IXP4XX && IXP4XX_NPE && IXP4XX_QMGR || W90P910_ETH && NETDEVICES && NET_ETHERNET && ARM && ARCH_W90X900 || MIPS_AU1X00_ENET && NETDEVICES && NET_ETHERNET && SOC_AU1X00 || SH_ETH && NETDEVICES && NET_ETHERNET && SUPERH && (CPU_SUBTYPE_SH7710 {{20 lines deleted}}
-selects PHYLIB which has unmet direct dependencies (!S390 && NET_ETHERNET)
-
-says that NET_DSA & PHYLIB have some kind of problem.
-NET_DSA selects PHYLIB.  PHYLIB depends on NET_ETHERNET, which is not enabled
-in this randconfig.  net/dsa code does need PHYLIB code, so PHYLIB symbol should
-either drop "depends on NET_ETHERNET" or it should be changed to
-	depends on NET_ETHERNET || NET_DSA
-
-Preference?
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Cheers,
+Mauro.
