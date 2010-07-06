@@ -1,77 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab0GFRl5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 13:41:57 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:42289 "EHLO
+	id S1756860Ab0GFRmd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 13:42:33 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:42288 "EHLO
 	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756283Ab0GFRlO (ORCPT
+	with ESMTP id S1756040Ab0GFRlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 13:41:14 -0400
-Message-Id: <20100706174053.520024795@szeredi.hu>
+	Tue, 6 Jul 2010 13:41:10 -0400
+Message-Id: <20100706174057.934049297@szeredi.hu>
 References: <20100706174028.287568350@szeredi.hu>
 User-Agent: quilt/0.46-1
-Date: Tue, 06 Jul 2010 19:40:31 +0200
+Date: Tue, 06 Jul 2010 19:40:33 +0200
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ftp.linux.org.uk, akpm@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH 3/7] ia64: perfmon: add d_dname method
-Content-Disposition: inline; filename=vfs-add-d_dname-method.patch
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/7] vfs: add prepend_path() helper
+Content-Disposition: inline; filename=vfs-add-prepend_path-helper.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch ia64/perfmon to using the d_dname() instead of relying on
-__d_path() to prepend the name of the root dentry to the path.
+Split off prepend_path() from __d_path().  This new helper takes an
+end-of-buffer pointer and buffer-length pointer just like the other
+prepend_* functions.  Move the " (deleted)" postfix out to __d_path().
 
-CC: Tony Luck <tony.luck@intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>
+This patch doesn't change any functionality but paves the way for the
+following patches.
+
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- arch/ia64/kernel/perfmon.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ fs/dcache.c |   94 +++++++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 58 insertions(+), 36 deletions(-)
 
-Index: linux-2.6/arch/ia64/kernel/perfmon.c
+Index: linux-2.6/fs/dcache.c
 ===================================================================
---- linux-2.6.orig/arch/ia64/kernel/perfmon.c	2010-07-06 17:59:04.000000000 +0200
-+++ linux-2.6/arch/ia64/kernel/perfmon.c	2010-07-06 18:08:09.000000000 +0200
-@@ -2191,8 +2191,15 @@ pfmfs_delete_dentry(struct dentry *dentr
- 	return 1;
+--- linux-2.6.orig/fs/dcache.c	2010-07-06 18:08:12.000000000 +0200
++++ linux-2.6/fs/dcache.c	2010-07-06 18:08:16.000000000 +0200
+@@ -1903,48 +1903,30 @@ static int prepend_name(char **buffer, i
  }
  
-+static char *pfmfs_dname(struct dentry *dentry, char *buffer, int buflen)
-+{
-+	return dynamic_dname(dentry, buffer, buflen, "pfm:[%lu]",
-+			     dentry->d_inode->i_ino);
-+}
-+
- static const struct dentry_operations pfmfs_dentry_operations = {
- 	.d_delete = pfmfs_delete_dentry,
-+	.d_dname = pfmfs_dname,
- };
+ /**
+- * __d_path - return the path of a dentry
++ * Prepend path string to a buffer
++ *
+  * @path: the dentry/vfsmount to report
+  * @root: root vfsmnt/dentry (may be modified by this function)
+- * @buffer: buffer to return value in
+- * @buflen: buffer length
++ * @buffer: pointer to the end of the buffer
++ * @buflen: pointer to buffer length
+  *
+- * Convert a dentry into an ASCII path name. If the entry has been deleted
+- * the string " (deleted)" is appended. Note that this is ambiguous.
+- *
+- * Returns a pointer into the buffer or an error code if the
+- * path was too long.
+- *
+- * "buflen" should be positive. Caller holds the dcache_lock.
++ * Caller holds the dcache_lock.
+  *
+  * If path is not reachable from the supplied root, then the value of
+  * root is changed (without modifying refcounts).
+  */
+-char *__d_path(const struct path *path, struct path *root,
+-	       char *buffer, int buflen)
++static int prepend_path(const struct path *path, struct path *root,
++			char **buffer, int *buflen)
+ {
+ 	struct dentry *dentry = path->dentry;
+ 	struct vfsmount *vfsmnt = path->mnt;
+-	char *end = buffer + buflen;
+-	char *retval;
++	bool slash = false;
++	int error = 0;
  
- 
-@@ -2202,8 +2209,7 @@ pfm_alloc_file(pfm_context_t *ctx)
- 	struct file *file;
- 	struct inode *inode;
- 	struct path path;
--	char name[32];
--	struct qstr this;
-+	struct qstr this = { .name = "" };
- 
- 	/*
- 	 * allocate a new inode
-@@ -2218,11 +2224,6 @@ pfm_alloc_file(pfm_context_t *ctx)
- 	inode->i_uid  = current_fsuid();
- 	inode->i_gid  = current_fsgid();
- 
--	sprintf(name, "[%lu]", inode->i_ino);
--	this.name = name;
--	this.len  = strlen(name);
--	this.hash = inode->i_ino;
+ 	spin_lock(&vfsmount_lock);
+-	prepend(&end, &buflen, "\0", 1);
+-	if (d_unlinked(dentry) &&
+-		(prepend(&end, &buflen, " (deleted)", 10) != 0))
+-			goto Elong;
 -
+-	if (buflen < 1)
+-		goto Elong;
+-	/* Get '/' right */
+-	retval = end-1;
+-	*retval = '/';
+-
+-	for (;;) {
++	while (dentry != root->dentry || vfsmnt != root->mnt) {
+ 		struct dentry * parent;
+ 
+-		if (dentry == root->dentry && vfsmnt == root->mnt)
+-			break;
+ 		if (dentry == vfsmnt->mnt_root || IS_ROOT(dentry)) {
+ 			/* Global root? */
+ 			if (vfsmnt->mnt_parent == vfsmnt) {
+@@ -1956,16 +1938,22 @@ char *__d_path(const struct path *path,
+ 		}
+ 		parent = dentry->d_parent;
+ 		prefetch(parent);
+-		if ((prepend_name(&end, &buflen, &dentry->d_name) != 0) ||
+-		    (prepend(&end, &buflen, "/", 1) != 0))
+-			goto Elong;
+-		retval = end;
++		error = prepend_name(buffer, buflen, &dentry->d_name);
++		if (!error)
++			error = prepend(buffer, buflen, "/", 1);
++		if (error)
++			break;
++
++		slash = true;
+ 		dentry = parent;
+ 	}
+ 
+ out:
++	if (!error && !slash)
++		error = prepend(buffer, buflen, "/", 1);
++
+ 	spin_unlock(&vfsmount_lock);
+-	return retval;
++	return error;
+ 
+ global_root:
  	/*
- 	 * allocate a new dcache entry
- 	 */
+@@ -1980,10 +1968,44 @@ global_root:
+ 	root->mnt = vfsmnt;
+ 	root->dentry = dentry;
+ 	goto out;
++}
+ 
+-Elong:
+-	retval = ERR_PTR(-ENAMETOOLONG);
+-	goto out;
++/**
++ * __d_path - return the path of a dentry
++ * @path: the dentry/vfsmount to report
++ * @root: root vfsmnt/dentry (may be modified by this function)
++ * @buffer: buffer to return value in
++ * @buflen: buffer length
++ *
++ * Convert a dentry into an ASCII path name. If the entry has been deleted
++ * the string " (deleted)" is appended. Note that this is ambiguous.
++ *
++ * Returns a pointer into the buffer or an error code if the
++ * path was too long.
++ *
++ * "buflen" should be positive. Caller holds the dcache_lock.
++ *
++ * If path is not reachable from the supplied root, then the value of
++ * root is changed (without modifying refcounts).
++ */
++char *__d_path(const struct path *path, struct path *root,
++	       char *buf, int buflen)
++{
++	char *res = buf + buflen;
++	int error;
++
++	prepend(&res, &buflen, "\0", 1);
++	if (d_unlinked(path->dentry)) {
++		error = prepend(&res, &buflen, " (deleted)", 10);
++		if (error)
++			return ERR_PTR(error);
++	}
++
++	error = prepend_path(path, root, &res, &buflen);
++	if (error)
++		return ERR_PTR(error);
++
++	return res;
+ }
+ 
+ /**
 
 -- 
