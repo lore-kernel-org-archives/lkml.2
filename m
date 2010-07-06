@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab0GFWnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 18:43:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31859 "EHLO
+	id S1757280Ab0GFWn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 18:43:58 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31869 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001Ab0GFWnu (ORCPT
+	with ESMTP id S1757031Ab0GFWnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jul 2010 18:43:50 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -15,94 +15,100 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 26/49] memblock: Add debugfs files to dump the arrays content
-Date: Tue,  6 Jul 2010 15:39:19 -0700
-Message-Id: <1278455982-24621-27-git-send-email-yinghai@kernel.org>
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 40/49] memblock: Add find_memory_core_early()
+Date: Tue,  6 Jul 2010 15:39:33 -0700
+Message-Id: <1278455982-24621-41-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
 References: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C33B171.023B,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4C33B172.00A7,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+According to node range in early_node_map[] with __memblock_find_in_range
+to find free range.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Will be used by memblock_x86_find_in_range_node()
+
+memblock_x86_find_in_range_node will be used to find right buffer for NODE_DATA
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- mm/memblock.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 51 insertions(+), 0 deletions(-)
+ include/linux/mm.h |    2 ++
+ mm/page_alloc.c    |   36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 0 deletions(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 00f62a2..c71b847 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -16,6 +16,8 @@
- #include <linux/bitops.h>
- #include <linux/poison.h>
- #include <linux/pfn.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
- #include <linux/memblock.h>
- 
- struct memblock memblock;
-@@ -705,3 +707,52 @@ static int __init early_memblock(char *p)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 4238a9c..a85bb08 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1164,6 +1164,8 @@ extern void free_bootmem_with_active_regions(int nid,
+ 						unsigned long max_low_pfn);
+ int add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid);
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit);
+ void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
+ 				 u64 goal, u64 limit);
+ typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 431214b..f67f161 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -21,6 +21,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/jiffies.h>
+ #include <linux/bootmem.h>
++#include <linux/memblock.h>
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
+ #include <linux/kmemcheck.h>
+@@ -3612,6 +3613,41 @@ void __init free_bootmem_with_active_regions(int nid,
+ 	}
  }
- early_param("memblock", early_memblock);
  
-+#ifdef CONFIG_DEBUG_FS
-+
-+static int memblock_debug_show(struct seq_file *m, void *private)
++#ifdef CONFIG_HAVE_MEMBLOCK
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit)
 +{
-+	struct memblock_type *type = m->private;
-+	struct memblock_region *reg;
 +	int i;
 +
-+	for (i = 0; i < type->cnt; i++) {
-+		reg = &type->regions[i];
-+		seq_printf(m, "%4d: ", i);
-+		if (sizeof(phys_addr_t) == 4)
-+			seq_printf(m, "0x%08lx..0x%08lx\n",
-+				   (unsigned long)reg->base,
-+				   (unsigned long)(reg->base + reg->size - 1));
-+		else
-+			seq_printf(m, "0x%016llx..0x%016llx\n",
-+				   (unsigned long long)reg->base,
-+				   (unsigned long long)(reg->base + reg->size - 1));
++	/* Need to go over early_node_map to find out good range for node */
++	for_each_active_range_index_in_nid(i, nid) {
++		u64 addr;
++		u64 ei_start, ei_last;
++		u64 final_start, final_end;
 +
++		ei_last = early_node_map[i].end_pfn;
++		ei_last <<= PAGE_SHIFT;
++		ei_start = early_node_map[i].start_pfn;
++		ei_start <<= PAGE_SHIFT;
++
++		final_start = max(ei_start, goal);
++		final_end = min(ei_last, limit);
++
++		if (final_start >= final_end)
++			continue;
++
++		addr = memblock_find_in_range(final_start, final_end, size, align);
++
++		if (addr == MEMBLOCK_ERROR)
++			continue;
++
++		return addr;
 +	}
-+	return 0;
++
++	return MEMBLOCK_ERROR;
 +}
++#endif
 +
-+static int memblock_debug_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, memblock_debug_show, inode->i_private);
-+}
-+
-+static const struct file_operations memblock_debug_fops = {
-+	.open = memblock_debug_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
-+static int __init memblock_init_debugfs(void)
-+{
-+	struct dentry *root = debugfs_create_dir("memblock", NULL);
-+	if (!root)
-+		return -ENXIO;
-+	debugfs_create_file("memory", S_IRUGO, root, &memblock.memory, &memblock_debug_fops);
-+	debugfs_create_file("reserved", S_IRUGO, root, &memblock.reserved, &memblock_debug_fops);
-+
-+	return 0;
-+}
-+__initcall(memblock_init_debugfs);
-+
-+#endif /* CONFIG_DEBUG_FS */
+ int __init add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid)
+ {
 -- 
 1.6.4.2
 
