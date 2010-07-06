@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab0GFISW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 04:18:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44020 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab0GFISU convert rfc822-to-8bit (ORCPT
+	id S1756259Ab0GFIb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 04:31:26 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63664 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab0GFIbY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 04:18:20 -0400
+	Tue, 6 Jul 2010 04:31:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ppNvUP5rXCgZXFNQc7xj2PuN4Y+AYj499op3cXsciOM4RI+nZlL9VGjwnxqzfBx5pU
+         CpkOZYaGKBjuXRZmchGr0yWcp7eo4RQljupQaKGGKOj2otJXzy8EQMD1qOSpCTrkgrbL
+         RCHNwtTpGMw6MAMdqPd6MNsONA8rtDJkxTXy8=
 MIME-Version: 1.0
-In-Reply-To: <20100707040734.05d625af@debxo>
-References: <20100628215407.2017bf2f@debian> <20100628220037.5744c207@debian> 
-	<AANLkTilN3_ntG7AWKi-8LM9X_dZJPPlWM6xRM_V_00xU@mail.gmail.com> 
-	<20100629110324.2756cc02@debian> <AANLkTinPsrqxj5oQirEDRvVOuOeWgWSdljsMRbw8wn8V@mail.gmail.com> 
-	<20100629193618.5a840b8e@dev.queued.net> <AANLkTilme2uAoXjorUEzam9j_xosR8kl70W8PS71d-Th@mail.gmail.com> 
-	<20100707040734.05d625af@debxo>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 6 Jul 2010 02:17:59 -0600
-X-Google-Sender-Auth: _Y5gc6DgBlRZyr3FMsSmHiBC4V0
-Message-ID: <AANLkTinK40AAe-sZKAbkvELo737yfrSlX4HNLoWvHnqN@mail.gmail.com>
-Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building code 
-	out into drivers/of
-To: Andres Salomon <dilinger@queued.net>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
-       linux-kernel@vger.kernel.org, davem@davemloft.net,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+In-Reply-To: <20100706074641.GS10072@secunet.com>
+References: <AANLkTikeDE4hvZ3spyTBSHZsdQPc-2wlD5nTfb1aF-VD@mail.gmail.com>
+	<20100702085323.GF10072@secunet.com>
+	<AANLkTinyPGjXjlvJxB8WYB3EYFBtANXMzpTdUixyBRHW@mail.gmail.com>
+	<20100702091726.GH10072@secunet.com>
+	<AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
+	<20100702111138.GI10072@secunet.com>
+	<AANLkTimEgKGJ5pi7GzOnvP42ivJ4GCKX59LdKK0x4fnx@mail.gmail.com>
+	<20100706053612.GQ10072@secunet.com>
+	<20100706054406.GR10072@secunet.com>
+	<AANLkTil4pbOOVvhIKN1_sI8kNdBFFebMVEGEmqrb45YR@mail.gmail.com>
+	<20100706074641.GS10072@secunet.com>
+Date: Tue, 6 Jul 2010 12:31:21 +0400
+X-Google-Sender-Auth: sFcfhXiBxnlqKlNeVGWSxtLrKAQ
+Message-ID: <AANLkTimYK_4PcVrAniOE3pQjgYNwYNjI6q8p1FMZntEa@mail.gmail.com>
+Subject: Re: [PATCH 1/3] padata: separate serial and parallel cpumasks
+From: Dan Kruchinin <dkruchinin@acm.org>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 6, 2010 at 10:07 PM, Andres Salomon <dilinger@queued.net> wrote:
-> On Wed, 30 Jun 2010 15:52:51 -0600
-> Grant Likely <grant.likely@secretlab.ca> wrote:
->  - For the pdt, calling into the prom twice for each property/node,
->   getting the size of everything during the first tree traversal,
->   allocating memory, and then creating the tree during the second
->   traversal. This is slow and I don't see much point to it.
+On Tue, Jul 6, 2010 at 11:46 AM, Steffen Klassert
+<steffen.klassert@secunet.com> wrote:
+> On Tue, Jul 06, 2010 at 11:40:11AM +0400, Dan Kruchinin wrote:
+>> >> >
+>> >>
+>> >> I think we can use RCU anyway. For instance we could use a structure
+>> >>
+>> >> struct pcrypt_cpumask {
+>> >>       cpumask_var_t           pmask;
+>> >>       cpumask_var_t           smask;
+>> >> };
+>> >>
+>> >> and add a pointer to a structure of that type to the instance context.
+>> >> Then we could use this pointer for RCU and replace the whole structure
+>> >> if a cpumask changes.
+>>
+>> But is pcrypt interested pmask? If it isn't, pmask field will be unused.
+>>
 >
->  - For the pdt, calling into the prom once for each property/node to
->   create a fdt, and then unflattening it.  This is better than the
->   previous option, but I don't think the prom->fdt code will be very
->   nice.
+> It's probaply not, in this case the struct could look like
+>
+> struct pcrypt_cpumask {
+>        cpumask_var_t           smask;
+> };
+>
 
-No, don't do this.  It will be ugly.
+Would't it be the same as with a pointer to cpumask_var_t? I mean:
+struct pcrypt {
+  ...
+  struct pcrypt_cpumask *mask;
+  ...
+} pencrypt;
 
->  - Changing the fdt code to allocate memory more dynamically; rather
->   than a first run through the fdt to determine the unflattened tree
->   size, simply allocate memory chunks as we run through the tree.
->   Memory might still be backed the same way (calling
->   early_init_dt_alloc_memory_arch to grab a chunk of memory, and then
->   allocating chunks of it via unflatten_dt_alloc), but the difference
->   would be that it wouldn't necessarily be contiguous, and in how it's
->   done.  For example, early_init_dt_alloc_memory_arch might be called
->   initially to allocate a 16k chunk, and once unflatten_dt_alloc runs
->   out of memory in that chunk, another 16k chunk might be allocated.
->   This would also translate to sparc's prom_early_alloc being used to
->   allocate the chunk, and then node/property structs being
->   allocated from those chunks.  (The 16k choice
->   is completely arbitrary; people more familiar w/ the early memory
->   setup of ppc/sparc might have a better suggestion)
+To assign a pointer via RCU:
 
-I'm fine with option 3, but it is more complicated and the code for
-option 1 already exists.  In fact, option 1 is almost of a
-pre-requisite for doing option 3.  It makes sense to get the
-double-pass method factored out of powerpc and working before
-attempting the performance enhancement of option 3.
+int cpumask_change_nitify(...) {
+   ...
+  struct pcrypt_cpumask *new_mask = kmalloc(sizeof(*mask), GFP);
+  struct pcrypt_cpumask *old_mask = pencrypt.mask;
 
-Note however, the fdt data format parser expects a single contiguous
-region.  You'll want to copy it into a single region before parsing
-it.
+  if (!new_mask)
+     error();
+  if (!alloc_cpumask_var(&new_mask->smask, GFP_KERNEL))
+     error();
 
-That Being Said....
+  get_serial_cpumask_from_padata(new_mask->mask);
+  rcu_assign_pointer(pencrypt.mask, new_mask);
+  synchronize_rcu_bh();
 
-I just finished talking with Ben about the parser code.  There is no
-immediate imperative to generalizing the powerpc OF->fdt->unflatten
-code (unless David decides it makes sense for sparc too), and the
-possibility of an ARM machine using it is theoretical enough that I'm
-just not going to waste cycles thinking about it.  If the situation
-changes in a couple of year or two, then it can be refactored.
+  free_cpumask_var(old_mask->smask);
+  kfree(old_mask);
+  ...
+}
 
-That clears the way for your original pdt patch.  It will need to be
-respun for Stephen's CONFIG_OF changes, and I have some other
-comments, but I'll reply to the patches directly for those.
+It's a bit hard to read this code because at the first sight it
+appears unclear and odd why we allocate the structure with only one
+member.
 
-Cheers,
-g.
+-- 
+W.B.R.
+Dan Kruchinin
