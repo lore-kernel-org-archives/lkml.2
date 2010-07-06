@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab0GFQao (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 12:30:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56655 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab0GFQam convert rfc822-to-8bit (ORCPT
+	id S1754776Ab0GFQpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 12:45:49 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:44312 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab0GFQpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 12:30:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=GV1kA/RZfSX1d/KLOV9UpQ/kQ9FMJo8VT/d/q0byDROMsDNj06SbN+vD44Ja5coBuw
-         zwYLhUGQYd8deYbgQf4kjhpmjgij6XxHq9kvnP1Hin9vTeHMFcxvKf9K0yQjK/9kYjZJ
-         LOsdR9wfMfU7l5X+9JnwX5/I68KTfTogVgAKM=
+	Tue, 6 Jul 2010 12:45:41 -0400
+Date: Wed, 7 Jul 2010 01:45:39 +0900
+From: Norbert Preining <preining@logic.at>
+To: linux-kernel@vger.kernel.org
+Subject: high power consumption in recent kernels
+Message-ID: <20100706164539.GA14783@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
-In-Reply-To: <20100706132825.GT10072@secunet.com>
-References: <AANLkTinyPGjXjlvJxB8WYB3EYFBtANXMzpTdUixyBRHW@mail.gmail.com>
-	<20100702091726.GH10072@secunet.com>
-	<AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
-	<20100702111138.GI10072@secunet.com>
-	<AANLkTimEgKGJ5pi7GzOnvP42ivJ4GCKX59LdKK0x4fnx@mail.gmail.com>
-	<20100706053612.GQ10072@secunet.com>
-	<20100706054406.GR10072@secunet.com>
-	<AANLkTil4pbOOVvhIKN1_sI8kNdBFFebMVEGEmqrb45YR@mail.gmail.com>
-	<20100706074641.GS10072@secunet.com>
-	<AANLkTimYK_4PcVrAniOE3pQjgYNwYNjI6q8p1FMZntEa@mail.gmail.com>
-	<20100706132825.GT10072@secunet.com>
-Date: Tue, 6 Jul 2010 20:30:40 +0400
-X-Google-Sender-Auth: y53JmrV4EHG7sliKDIUry6ZlUGw
-Message-ID: <AANLkTilNz3YWxTaUSE3TBm-Q-ZCUaV72o6jJCh77bRH0@mail.gmail.com>
-Subject: Re: [PATCH 1/3] padata: separate serial and parallel cpumasks
-From: Dan Kruchinin <dkruchinin@acm.org>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 6, 2010 at 5:28 PM, Steffen Klassert
-<steffen.klassert@secunet.com> wrote:
-> On Tue, Jul 06, 2010 at 12:31:21PM +0400, Dan Kruchinin wrote:
->>
->> Would't it be the same as with a pointer to cpumask_var_t? I mean:
->
-> Using a pointer to cpumask_var_t is a bit problematic because
-> you don't know a priori about the type of cpumask_var_t.
-> The type depends whether the cpumasks are on/off stack.
-> So the easiest thing is to embed it to a struct, then you don't
-> need to care about the type. If you allocate a struct of type
-> pcrypt_cpumask you get what you want to have.
+Dear all,
 
-Oh, I meant pointer to pointer of course. Anyway you're probably right.
-I modified my patches according to the results of our discussion. So
-I'm waiting for your fixes.
+(please CC)
 
->
->> struct pcrypt {
->>   ...
->>   struct pcrypt_cpumask *mask;
->>   ...
->> } pencrypt;
->>
->> To assign a pointer via RCU:
->>
->> int cpumask_change_nitify(...) {
->>    ...
->>   struct pcrypt_cpumask *new_mask = kmalloc(sizeof(*mask), GFP);
->>   struct pcrypt_cpumask *old_mask = pencrypt.mask;
->>
->>   if (!new_mask)
->>      error();
->>   if (!alloc_cpumask_var(&new_mask->smask, GFP_KERNEL))
->>      error();
->>
->>   get_serial_cpumask_from_padata(new_mask->mask);
->>   rcu_assign_pointer(pencrypt.mask, new_mask);
->>   synchronize_rcu_bh();
->>
->>   free_cpumask_var(old_mask->smask);
->>   kfree(old_mask);
->>   ...
->> }
->>
->> It's a bit hard to read this code because at the first sight it
->> appears unclear and odd why we allocate the structure with only one
->> member.
->>
->
-> We can easily add a code comment if this appears to be unclear :)
->
+it seems that some of the (?)recent(?) changes have increased the
+power consumption of my note book considerably.
 
+First of all, running powertop with normal programs started, but 
+doing nothing, I am still at 14W while I could go down to 9W before
+(but the 9W was with dimmed display).
 
+In the list of top causes for wakeup I have
+Top causes for wakeups:
+  34.2% (185.3)   [kernel scheduler] Load balancing tick
+  23.9% (129.6)   [extra timer interrupt]
+  10.8% ( 58.6)   firefox-bin
+   9.2% ( 49.7)   [iwlagn] <interrupt>
+   7.2% ( 39.1)   [kernel core] hrtimer_start (tick_sched_timer)
+   3.9% ( 20.9)   PS/2 keyboard/mouse/touchpad interrupt
+which show one new thing to me I haven't seen before, the Loa balancing tick.
 
--- 
-W.B.R.
-Dan Kruchinin
+Furthermore, I also had the feeling that while being suspend to RAM 
+the battery is also emptied faster then before, but by now I have not
+concise data points for that.
+
+I am running the latest kernel pulled from git.kernel.org, linux-2.6.
+
+I have seen some patches from Venkatesh Pallipadi dealing twith this 
+issue (http://lkml.org/lkml/2010/6/9/109) but it does not apply to
+the current kernel sources at all.
+
+Please let me know if you have any suggestions of if I should test
+something.
+
+Thanks and all the best
+
+Norbert
+
+Please CC
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+HARBOTTLE (n.)
+A particular kind of fly which lives inside double glazing.
+			--- Douglas Adams, The Meaning of Liff
