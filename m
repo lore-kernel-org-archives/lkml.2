@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074Ab0GFKUo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 06:20:44 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56693 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754789Ab0GFKUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 06:20:42 -0400
-Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building
- code out into drivers/of
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Andres Salomon <dilinger@queued.net>
-Cc: David Miller <davem@davemloft.net>, grant.likely@secretlab.ca,
-       devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       cjb@laptop.org, wmb@laptop.org, pgf@laptop.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100707051548.2c44f30c@debxo>
-References: <20100629193618.5a840b8e@dev.queued.net>
-	 <AANLkTilme2uAoXjorUEzam9j_xosR8kl70W8PS71d-Th@mail.gmail.com>
-	 <20100707040734.05d625af@debxo>
-	 <20100705.192221.241453945.davem@davemloft.net>
-	 <20100707051548.2c44f30c@debxo>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Jul 2010 20:17:33 +1000
-Message-ID: <1278411453.1665.273.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756341Ab0GFKXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 06:23:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47399 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754241Ab0GFKXo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 06:23:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IUh5s3UjGo5x4/JBM7Nonq0+aO4ajdYfGOZBllfF79F2GEIVo0uJMqE1jJgqR2aAWk
+         soUu8oLW1BD+cUd88XzBERRCN18TIaNph4Y1B6/wD+fTu6HsclTKhjo3SQhf98Eclp6y
+         tlK4Qfz4827TK/UKhLpU32DkayMPR+kV/iG9c=
+From: Renzo Dani <arons7@gmail.com>
+To: mchehab@infradead.org
+Cc: arons7@gmail.com, rdunlap@xenotime.net, o.endriss@gmx.de, awalls@radix.net,
+       crope@iki.fi, manu@linuxtv.org, linux-media@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: [PATCH 2/2] Retrieve firmware for az6027
+Date: Tue,  6 Jul 2010 12:23:33 +0200
+Message-Id: <1278411813-6464-1-git-send-email-arons7@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Renzo Dani <arons7@gmail.com>
 
-> Sounds like we have a winner.  I'll concentrate on that, thanks for
-> the heads up.
 
-Note that the conversion from OF -> fdt that powerpc does is a bit
-"special". The code isn't quite a "wrapper" but almost. It shared pretty
-much no symbols or variables with the rest of the kernel.
+Signed-off-by: Renzo Dani <arons7@gmail.com>
+---
+ Documentation/dvb/get_dvb_firmware |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
 
-There are various reasons for that. It has to run -very- early, in fact,
-before we do anything else at boot time, since we run off OF existing
-environment (stack etc...) at at whatever address the kernel is loaded,
-ie. before we relocate it down to 0.
-
-To deal with that, we use compile/linker tricks to generate
-pseudo-relocatable code (with limitations) and funny macros when
-accessing global symbols.
-
-In addition, we have various workarounds for powerpc specific
-implementation issues (OF bugs, but also instanciating the IOMMU tables
-on Power4, starting secondary CPUs and parking them in a wait loop,
-etc...).
-
-Thus I'm not sure there's that much benefit in trying to make that code
-common with other archs, and possibly a lot of pain involved.
-
-Cheers,
-Ben.
+diff --git a/Documentation/dvb/get_dvb_firmware b/Documentation/dvb/get_dvb_firmware
+index 239cbdb..9ea94dc 100644
+--- a/Documentation/dvb/get_dvb_firmware
++++ b/Documentation/dvb/get_dvb_firmware
+@@ -26,7 +26,7 @@ use IO::Handle;
+ 		"dec3000s", "vp7041", "dibusb", "nxt2002", "nxt2004",
+ 		"or51211", "or51132_qam", "or51132_vsb", "bluebird",
+ 		"opera1", "cx231xx", "cx18", "cx23885", "pvrusb2", "mpc718",
+-		"af9015", "ngene");
++		"af9015", "ngene", "az6027");
  
+ # Check args
+ syntax() if (scalar(@ARGV) != 1);
+@@ -567,6 +567,23 @@ sub ngene {
+     "$file1, $file2";
+ }
+ 
++sub az6027{
++    my $file = "AZ6027_Linux_Driver.tar.gz";
++    my $url = "http://linux.terratec.de/files/$file";
++    my $firmware = "dvb-usb-az6027-03.fw";
++
++    wgetfile($file, $url);
++
++    #untar
++    if( system("tar xzvf $file $firmware")){
++        die "failed to untar firmware";
++    }
++    if( system("rm $file")){
++        die ("unable to remove unnecessary files");
++    }
++
++    $firmware;
++}
+ # ---------------------------------------------------------------
+ # Utilities
+ 
+-- 
+1.7.1
 
