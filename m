@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab0GFQ1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 12:27:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16192 "EHLO mx1.redhat.com"
+	id S1755946Ab0GFQ14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 12:27:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2418 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753891Ab0GFQZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753568Ab0GFQZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jul 2010 12:25:28 -0400
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
@@ -12,40 +12,88 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
        mtosatti@redhat.com
-Subject: [PATCH v4 12/12] Send async PF when guest is not in userspace too.
-Date: Tue,  6 Jul 2010 19:25:00 +0300
-Message-Id: <1278433500-29884-13-git-send-email-gleb@redhat.com>
+Subject: [PATCH v4 11/12] Let host know whether the guest can handle async PF in non-userspace context.
+Date: Tue,  6 Jul 2010 19:24:59 +0300
+Message-Id: <1278433500-29884-12-git-send-email-gleb@redhat.com>
 In-Reply-To: <1278433500-29884-1-git-send-email-gleb@redhat.com>
 References: <1278433500-29884-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If guest can detect that it runs in non-preemptable context it can
+handle async PFs at any time, so let host know that it can send async
+PF even if guest cpu is not in userspace.
 
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- arch/x86/kvm/mmu.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/include/asm/kvm_para.h |    1 +
+ arch/x86/kernel/kvm.c           |    3 +++
+ arch/x86/kvm/x86.c              |    5 +++--
+ 4 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 95a0a8b..297f399 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2280,7 +2280,13 @@ static bool can_do_async_pf(struct kvm_vcpu *vcpu)
- 	if (!vcpu->arch.apf_data || kvm_event_needs_reinjection(vcpu))
- 		return false;
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 45e6c12..c675d5d 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -367,6 +367,7 @@ struct kvm_vcpu_arch {
+ 	cpumask_var_t wbinvd_dirty_mask;
  
--	return !!kvm_x86_ops->get_cpl(vcpu);
-+	if (vcpu->arch.apf_send_user_only)
-+		return !!kvm_x86_ops->get_cpl(vcpu);
-+
-+	if (!kvm_x86_ops->interrupt_allowed(vcpu))
-+		return false;
-+
-+	return true;
+ 	u32 __user *apf_data;
++	bool apf_send_user_only;
+ 	u32 apf_memslot_ver;
+ 	u64 apf_msr_val;
+ 	u32 async_pf_id;
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index edf07cf..a33372c 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -38,6 +38,7 @@
+ #define KVM_MAX_MMU_OP_BATCH           32
+ 
+ #define KVM_ASYNC_PF_ENABLED			(1 << 0)
++#define KVM_ASYNC_PF_SEND_ALWAYS		(1 << 1)
+ 
+ /* Operations for KVM_HC_MMU_OP */
+ #define KVM_MMU_OP_WRITE_PTE            1
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index f4d87b3..f2063c2 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -488,6 +488,9 @@ void __cpuinit kvm_guest_cpu_init(void)
+ 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF)) {
+ 		u64 pa = __pa(&__get_cpu_var(apf_reason));
+ 
++#ifdef CONFIG_PREEMPT
++		pa |= KVM_ASYNC_PF_SEND_ALWAYS;
++#endif
+ 		if (native_write_msr_safe(MSR_KVM_ASYNC_PF_EN,
+ 					  pa | KVM_ASYNC_PF_ENABLED, pa >> 32))
+ 			return;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index ae7164e..8f2ff7b 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1220,8 +1220,8 @@ static int kvm_pv_enable_async_pf(struct kvm_vcpu *vcpu, u64 data)
+ 	int offset = offset_in_page(gpa);
+ 	unsigned long addr;
+ 
+-	/* Bits 1:5 are resrved, Should be zero */
+-	if (data & 0x3e)
++	/* Bits 2:5 are resrved, Should be zero */
++	if (data & 0x3c)
+ 		return 1;
+ 
+ 	vcpu->arch.apf_msr_val = data;
+@@ -1244,6 +1244,7 @@ static int kvm_pv_enable_async_pf(struct kvm_vcpu *vcpu, u64 data)
+ 		return 1;
+ 	}
+ 	vcpu->arch.apf_memslot_ver = vcpu->kvm->memslot_version;
++	vcpu->arch.apf_send_user_only = !(data & KVM_ASYNC_PF_SEND_ALWAYS);
+ 	kvm_async_pf_wakeup_all(vcpu);
+ 	return 0;
  }
- 
- static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
 -- 
 1.7.1
 
