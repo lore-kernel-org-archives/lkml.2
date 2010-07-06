@@ -1,44 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab0GFLcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 07:32:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61665 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752313Ab0GFLcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 07:32:45 -0400
-Message-ID: <4C331372.30900@cn.fujitsu.com>
-Date: Tue, 06 Jul 2010 19:28:50 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1756639Ab0GFLcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 07:32:52 -0400
+Received: from stinky.trash.net ([213.144.137.162]:64872 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab0GFLcs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 07:32:48 -0400
+Message-ID: <4C331460.7050509@trash.net>
+Date: Tue, 06 Jul 2010 13:32:48 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 4/9] KVM: MMU: introduce gfn_to_pfn_atomic() function
-References: <4C330918.6040709@cn.fujitsu.com> <4C3309D3.6010109@cn.fujitsu.com> <20100706112259.GV4689@redhat.com>
-In-Reply-To: <20100706112259.GV4689@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Simon Horman <horms@verge.net.au>
+CC: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+       netfilter-devel@vger.kernel.org,
+       Malcolm Turnbull <malcolm@loadbalancer.org>,
+       Wensong Zhang <wensong@linux-vs.org>,
+       Julius Volz <julius.volz@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
+Subject: Re: [patch v2.3 1/4] netfilter: xt_ipvs (netfilter matcher for IPVS)
+References: <20100704113246.562399500@vergenet.net> <20100704114808.459045895@vergenet.net>
+In-Reply-To: <20100704114808.459045895@vergenet.net>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Simon Horman wrote:
+> From:	Hannes Eder <heder@google.com>
+>
+> This implements the kernel-space side of the netfilter matcher xt_ipvs.
+>   
+> @@ -0,0 +1,25 @@
+> +#ifndef _XT_IPVS_H
+> +#define _XT_IPVS_H
+> +
+> +#define XT_IPVS_IPVS_PROPERTY	(1 << 0) /* all other options imply this one */
+> +#define XT_IPVS_PROTO		(1 << 1)
+> +#define XT_IPVS_VADDR		(1 << 2)
+> +#define XT_IPVS_VPORT		(1 << 3)
+> +#define XT_IPVS_DIR		(1 << 4)
+> +#define XT_IPVS_METHOD		(1 << 5)
+> +#define XT_IPVS_VPORTCTL	(1 << 6)
+> +#define XT_IPVS_MASK		((1 << 7) - 1)
+> +#define XT_IPVS_ONCE_MASK	(XT_IPVS_MASK & ~XT_IPVS_IPVS_PROPERTY)
+> +
+> +struct xt_ipvs_mtinfo {
+> +	union nf_inet_addr	vaddr, vmask;
+> +	__be16			vport;
+> +	__u16			l4proto;
+> +	__u16			fwd_method;
+>   
+It seems you could use __u8 for both l4proto and fwd_method
+and reduce the match size by 2 bytes.
 
+> +	__be16			vportctl;
+> +
+> +	__u8			invert;
+> +	__u8			bitmask;
+> +};
+> +static bool
+> +ipvs_mt(const struct sk_buff *skb, struct xt_action_param *par)
+> +...
+>   
+> +	if (data->bitmask & XT_IPVS_DIR) {
+> +		enum ip_conntrack_info ctinfo;
+> +		struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+> +
+> +		if (ct == NULL || ct == &nf_conntrack_untracked) {
+>   
+We're using per-cpu structures for nf_conntrack_untracked in the
+current net-next/nf-next tree, so this doesn't work anymore. You
+need to use nf_ct_is_untracked() instead.
 
-Gleb Natapov wrote:
+> +			match = false;
+> +			goto out_put_cp;
+> +		}
 
->> +	}
->>  
->>  	if (unlikely(npages != 1)) {
->>  		struct vm_area_struct *vma;
->>  
->> +		if (atomic)
->> +			goto return_bad_page;
->> +
-> You are skipping hwpoison test and sometimes you will return bad_page
-> for something that returns good pfn now without caller even know.
-> vma->vm_flags & VM_PFNMAP comes to mind. Is this safe?
-
-No matter about it, we not hope the atomic case return good pfn all the time,
-if the page is swapped or it's hwpoison just return bad_page, then we can skip
-it in the speculative path.
