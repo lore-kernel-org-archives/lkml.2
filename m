@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab0GFSIA (ORCPT <rfc822;w@1wt.eu>);
+	id S1756083Ab0GFSIO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 14:08:14 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56385 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752811Ab0GFSIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jul 2010 14:08:00 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35576 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab0GFSH7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 14:07:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=A3sgBghQ44rDkfjJJzWw+GT9hfJEdrsBoaTNiuUqkML3YLk9IY9tVk6atJ4dblQAZB
-         DIdy6+SwNfD7LtjNxL9yJ19iSJUUzCT9roXbw1riYlrwXkAXoztCJ+Yw6tIlRj3ImhW/
-         Wdxsx1mjwY7LOUu8ZzUL/BXZ3R2d9Mx3E/V/I=
-Subject: Re: [PATCH] Staging: dt3155: fix coding style issues in
- dt3155_drv.c
-From: Joe Eloff <kagen101@gmail.com>
-Reply-To: kagen101@gmail.com
-To: Aldo Cedillo <aldobrett11@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       Simon Horman <horms@verge.net.au>, devel <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTingSXbyFclWga9x5aD7MoccCMqhu56PCOVTKHVJ@mail.gmail.com>
-References: <1278435198.5396.73.camel@dermezel>
-	 <AANLkTingSXbyFclWga9x5aD7MoccCMqhu56PCOVTKHVJ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Jul 2010 19:37:30 +0200
-Message-ID: <1278437850.5396.85.camel@dermezel>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Valdis.Kletnieks@vt.edu
+Subject: Re: mmotm 2010-07-01 pm_get_wakeup_count() declaration
+Date: Tue, 6 Jul 2010 20:06:13 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4; KDE/4.4.4; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
+       Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
+       linux-pm@lists.linux-foundation.org
+References: <201007011948.o61JmnT2022795@imap1.linux-foundation.org> <201007052243.55551.rjw@sisk.pl> <2755.1278383075@localhost>
+In-Reply-To: <2755.1278383075@localhost>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007062006.13931.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-06 at 12:25 -0500, Aldo Cedillo wrote:
-> > diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
-> > index 66db878..f6edd66 100644
-> > --- a/drivers/staging/dt3155/dt3155_drv.c
-> > +++ b/drivers/staging/dt3155/dt3155_drv.c
-> > @@ -308,33 +308,42 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-> >  #endif
-> >                        if (fb->nbuffers > 2) {
-> >                                if (!are_empty_buffers(minor)) {
-> > -                                       /* The number of active + locked buffers is
-> > -                                        * at most 2, and since there are none empty, there
-> > -                                        * must be at least nbuffers-2 ready buffers.
-> > -                                        * This is where we 'drop frames', oldest first. */
-> > +                                       /* The number of active +
-> > +                                        * locked buffers is at most 2,
-> > +                                        * and since there are none empty,
-> > +                                        * there must be at least nbuffers-2
-> > +                                        * ready buffers.
-> > +                                        * This is where we 'drop frames',
-> > +                                        * oldest first. */
-> >                                        push_empty(pop_ready(minor),  minor);
-> >                                }
-> >
+On Tuesday, July 06, 2010, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 05 Jul 2010 22:43:55 +0200, "Rafael J. Wysocki" said:
+> > On Monday, July 05, 2010, Valdis.Kletnieks@vt.edu wrote:
+> > > On Thu, 01 Jul 2010 12:19:51 PDT, akpm@linux-foundation.org said:
+> > > > The mm-of-the-moment snapshot 2010-07-01-12-19 has been uploaded to
+> > > 
+> > > Not sure who to blame for the commit, it was in the linux-next.patch and I'm
+> > > too lazy to pull down the git tree and dig it out.
+> > > 
+> > >   CC      kernel/power/main.o
+> > > kernel/power/main.c: In function 'wakeup_count_show':
+> > > kernel/power/main.c:241: error: implicit declaration of function 'pm_get_wakeup_count'
+> > > kernel/power/main.c: In function 'wakeup_count_store':
+> > > kernel/power/main.c:251: error: implicit declaration of function 'pm_save_wakeup_count'
+> > > make[2]: *** [kernel/power/main.o] Error 1
+> > > 
+> > > Problem is that declaration in include/linux/suspend.h is wrapped in
+> > > a #ifdef CONFIG_PM_SLEEP, but the usage in kernel/power/main.c isn't. So
+> > > it dies a horrid death if your config doesn't include PM_SLEEP.
+> > 
+> > Yeah, sorry.  I'm in the process of fixing it up.
 > 
-> In the CodingStyle in the kernel you can read:
+> I threw in some ad-crock #ifdef to get past that one, and hit
+> another one, same basic issue but include/linux/pm.h this time:
 > 
-> The preferred style for long (multi-line) comments is:
-> 
->         /*
->          * This is the preferred style for multi-line
->          * comments in the Linux kernel source code.
->          * Please use it consistently.
->          *
->          * Description:  A column of asterisks on the left side,
->          * with beginning and ending almost-blank lines.
->          */
-> 
-> Again I ask about the coding style because I have seen in many parts of the
-> kernel I've seen discrepancies with what is said in the CodingStyle file. So
-> I want to get it clear maybe I can help to clean those things.
-> 
-> Thanks,
-> Aldo Brett
+>   CC      drivers/base/power/sysfs.o
+> drivers/base/power/sysfs.c: In function 'wakeup_count_show':
+> drivers/base/power/sysfs.c:152: error: 'struct dev_pm_info' has no member named 'wakeup_count'
+> make[3]: *** [drivers/base/power/sysfs.o] Error 1
 
-I presumed all issues would be incorporated into checkpatch.pl. I guess
-it isn't.
-I think the safest be here then would be to fix the script as to then
-have a single point of failure rather than interpretation and reference
-documentation in conjunction to the script.
+This also should be fixed in linux-next now.
 
-Regards,
-
-Joe
-
-
-
+Rafael
