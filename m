@@ -1,46 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab0GFXpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 19:45:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20349 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752012Ab0GFXpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 19:45:44 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100706230312.GB25018@dastard>
-References: <20100706230312.GB25018@dastard> <20100706001032.GA25018@dastard> <20100705154319.31193.56706.stgit@warthog.procyon.org.uk> <29431.1278423623@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] Rearrange i_flags to be consistent with FS_IOC_GETFLAGS
-Date: Wed, 07 Jul 2010 00:45:25 +0100
-Message-ID: <5045.1278459925@redhat.com>
+	id S1754662Ab0GFXtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 19:49:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45878 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545Ab0GFXtv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 19:49:51 -0400
+X-Authority-Analysis: v=1.1 cv=aMplT6I4JJ0P4CS7sRSHqoj9En8aKfIxSsimYOJhsMQ= c=1 sm=0 a=mS1qFslhlkkA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=d20viHe1xTBUM-jf0bQA:9 a=9Uo7S9gMD7KyrWPXhbYA:7 a=AXH0ztLCoY_4phveKfYzc9Ao4UMA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 2/2] sched: make sched_param arugment static variables
+ in some sched_setscheduler() caller
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       James Morris <jmorris@namei.org>
+In-Reply-To: <20100706161253.79bfb761.akpm@linux-foundation.org>
+References: <20100702144941.8fa101c3.akpm@linux-foundation.org>
+	 <20100706091607.CCCC.A69D9226@jp.fujitsu.com>
+	 <20100706095013.CCD9.A69D9226@jp.fujitsu.com>
+	 <1278454438.1537.54.camel@gandalf.stny.rr.com>
+	 <20100706161253.79bfb761.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 06 Jul 2010 19:49:47 -0400
+Message-ID: <1278460187.1537.107.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> wrote:
+On Tue, 2010-07-06 at 16:12 -0700, Andrew Morton wrote:
 
-> I'd prefer generic flags are not dependent on fixed values from a
-> specific filesystem several layers down the storage stack.
+> Well if we're so worried about resource wastage then how about making
+> all boot-time-only text and data reside in __init and __initdata
+> sections rather than hanging around uselessly in memory for ever?
 
-They're not so dependent.  They're based on the FS_IOC_[GS]ETFLAGS ioctl which
-even XFS translates its flags for.  These ioctl flags must now remain
-invariant.  Whilst they might have originated as Ext2/3/4 flags, they're now
-independent of that.
+That would be a patch I would like :-)
 
-> Also, if the problem you are trying to solve is overhead of calculating the
-> flags for stat() on RISC architectures, then I'd argue that XFS is just as
-> important target for such an optimisation because it is widely used in small
-> ARM and MIPS based NAS appliances....
+I could probably do that when I get some time.
 
-This can be argued one way or another, however aligning i_flags with something
-would probably be an improvement somewhere.  Most of what I deal with is Ext3/4
-based, and BTRFS-based is likely to become important too.
+> 
+> Only that's going to be hard because we went and added pointers into
+> .init.text from .data due to `struct tracer.selftest', which will cause
+> a storm of section mismatch warnings.  Doh, should have invoked the
+> selftests from initcalls.  That might open the opportunity of running
+> the selftests by modprobing the selftest module, too.
 
-David
+They are called by initcalls. The initcalls register the tracers and
+that is the time we call the selftest. No other time.
+
+Is there a way that we set up a function pointer to let the section
+checks know that it is only called at bootup?
+
+> 
+> And I _do_ wish the selftest module was modprobeable, rather than this
+> monstrosity:
+
+The selftests are done by individual tracers at boot up. It would be
+hard to modprobe them at that time.
+
+
+> #ifdef CONFIG_FTRACE_SELFTEST
+> /* Let selftest have access to static functions in this file */
+> #include "trace_selftest.c"
+> #endif
+> 
+> Really?  Who had a tastebudectomy over there?  At least call it
+> trace_selftest.inc or something, so poor schmucks don't go scrabbling
+> around wondering "how the hell does this thing get built oh no they
+> didn't really go and #include it did they?"
+
+
+Well this is also the way sched.c adds all its extra code. Making it
+trace_selftest.inc would make it hard to know what the hell it was. And
+also hard for editors to know what type of file it is, or things can be
+missed with a 'find . -name "*.[ch]" | xargs grep blahblah'
+
+Yes, the self tests are ugly and can probably go with an overhaul. Since
+we are trying to get away from the tracer plugins anyway, they will
+start disappearing when the plugins do.
+
+We should have some main selftests anyway. Those are for the TRACE_EVENT
+tests (which are not even in the trace_selftest.c file, and the function
+testing which currently are, as well as the latency testers.
+
+The trace_selftest.c should eventually be replaced with more compact
+tests for the specific types of tracing.
+
+-- Steve
+
+
