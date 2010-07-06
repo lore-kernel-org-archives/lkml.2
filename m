@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab0GFIvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 04:51:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33472 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755039Ab0GFIvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 04:51:37 -0400
-Date: Tue, 6 Jul 2010 18:51:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: linux-next: manual merge of the usb tree with the v4l-dvb tree
-Message-Id: <20100706185132.7dd72993.sfr@canb.auug.org.au>
-In-Reply-To: <201007061018.21674.laurent.pinchart@ideasonboard.com>
-References: <20100706175332.952fec90.sfr@canb.auug.org.au>
-	<201007061018.21674.laurent.pinchart@ideasonboard.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__6_Jul_2010_18_51_32_+1000_vn9kYuvFovc0uO3+"
+	id S1756210Ab0GFI7X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 04:59:23 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41852 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682Ab0GFI7V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 04:59:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=pNCXLqW68pcI+I2XgOnM5iSkT/d+GL+aD8SYS97rKk6yZmOZVo6Wz7kPJxDNp9Nf1B
+         HdyPO/DHxon/uZRHBGpn9IE0lq+Ab2rCYN4fSJqu4lMrLFfZ37GRdvPOTo1KRxeJE6/W
+         wh/jFzY8+hEO/Q5yY2NRCocLJ3LjmkFQkgXt4=
+Message-ID: <4C32F052.6060202@gmail.com>
+Date: Tue, 06 Jul 2010 10:58:58 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+MIME-Version: 1.0
+To: kagen101@gmail.com
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Simon Horman <horms@verge.net.au>, devel <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] Staging: dt3155: fix coding style issues in dt3155_drv.c
+References: <1278367345.5396.64.camel@dermezel>
+In-Reply-To: <1278367345.5396.64.camel@dermezel>
+X-Enigmail-Version: 1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__6_Jul_2010_18_51_32_+1000_vn9kYuvFovc0uO3+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/06/2010 12:02 AM, Joe Eloff wrote:
+> --- a/drivers/staging/dt3155/dt3155_drv.c
+> +++ b/drivers/staging/dt3155/dt3155_drv.c
+> @@ -78,7 +78,7 @@ extern void printques(int);
+>  MODULE_LICENSE("GPL");
+>  
+>  /* Error variable.  Zero means no error. */
+> -int dt3155_errno = 0;
+> +int dt3155_errno ;
 
-Hi Laurent,
+Isn't this a checkpatch error :)?
 
-On Tue, 6 Jul 2010 10:18:20 +0200 Laurent Pinchart <laurent.pinchart@ideaso=
-nboard.com> wrote:
->
-> > diff --cc include/linux/usb/video.h
-> > index 2d5b7fc,429c91a..0000000
-> > --- a/include/linux/usb/video.h
-> > +++ b/include/linux/usb/video.h
-> > @@@ -160,12 -160,402 +160,409 @@@
->=20
-> [snip]
->=20
-> >  +/* 4.1.2. Control Capabilities */
-> >  +#define UVC_CONTROL_CAP_GET                           (1 << 0)
-> >  +#define UVC_CONTROL_CAP_SET                           (1 << 1)
-> >  +#define UVC_CONTROL_CAP_DISABLED                      (1 << 2)
-> >  +#define UVC_CONTROL_CAP_AUTOUPDATE                    (1 << 3)
-> >  +#define UVC_CONTROL_CAP_ASYNCHRONOUS                  (1 << 4)
-> >  +
->=20
-> Can you move those to the first part of the header file, with the other=20
-> constants ?
-
-Sure, I just put it there because of the section numbering in the
-comments.  This, of course, will not influence how the file looks after
-Linus merges it - unless the conflict is fixed up by one of the
-maintainers before Linus gets it.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__6_Jul_2010_18_51_32_+1000_vn9kYuvFovc0uO3+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMMu6UAAoJEDMEi1NhKgbsdy8H/RANeo3MuJ+r1STvY8GVfHjz
-6RENd6wf83wZ1Jk/OTIWezaE2mXMvGj7luJKixGg76OrY9FiDqK92JGlswQj+jTc
-FRv6sZX+uqoPyd6esTIInCN7g6K2Gyle+oK8YJ9ULSLy2j0GnPwWWhGHrMK2H/aA
-G8NVPKWrbfgedOmJWZcFFeoasg4JJ5SvYblskr5O3jFm7fwK2QrgZf+nI7SAJ4fb
-UziSMLeVj7L56EuGJeJLXHtO1JRzI1e3lim7aaYU2SFURpq3gKJLUzL+Vm7eKh5C
-ekLXk0BJOXm+4+a0M2hnyzapy952BEykPcb731WyciSx97oeuF0RlHNx0tCcI/I=
-=nspR
------END PGP SIGNATURE-----
-
---Signature=_Tue__6_Jul_2010_18_51_32_+1000_vn9kYuvFovc0uO3+--
+-- 
+js
