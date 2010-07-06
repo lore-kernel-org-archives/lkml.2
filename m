@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab0GFH3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 03:29:36 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:54178 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab0GFH3f (ORCPT
+	id S1754222Ab0GFHkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 03:40:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35498 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab0GFHkM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 03:29:35 -0400
-Date: Tue, 6 Jul 2010 15:29:28 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Guojun Jin <gjin@ubicom.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>, Sol Kavy <skavy@ubicom.com>,
-       linux-kernel@vger.kernel.org, Greg Ren <gren@ubicom.com>,
-       Murat Sezgin <msezgin@ubicom.com>, Sener Ilgen <silgen@ubicom.com>,
-       "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: Re: Possible bug in net/ipv4/route.c?
-Message-ID: <20100706072928.GB14612@gondor.apana.org.au>
-References: <CB2DD11991B27C4F99935E6229450D3205B28E91@STORK.scenix.com> <20100705120413.GA6219@gondor.apana.org.au> <20100705110328.65702fc1@nehalam> <20100706002813.GA11194@gondor.apana.org.au> <CB2DD11991B27C4F99935E6229450D3203950BE5@STORK.scenix.com>
+	Tue, 6 Jul 2010 03:40:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ZYoHqtamny1yWR5LeleTda7hxH+0JwvbluCdU27Mb1DDR77iFBrbLy/D8M3PM5siMJ
+         8lgxcB+2yM2mQH11NeX30m+Tqq4QNpN1nijhVGuUq+hBMVjohLmW2ZQ4OKKydiE84LLJ
+         jAJT5WEyqXcJfQ1tNPbARFMP9v80JTkEs0qQU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CB2DD11991B27C4F99935E6229450D3203950BE5@STORK.scenix.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100706054406.GR10072@secunet.com>
+References: <AANLkTikeDE4hvZ3spyTBSHZsdQPc-2wlD5nTfb1aF-VD@mail.gmail.com>
+	<20100702085323.GF10072@secunet.com>
+	<AANLkTinyPGjXjlvJxB8WYB3EYFBtANXMzpTdUixyBRHW@mail.gmail.com>
+	<20100702091726.GH10072@secunet.com>
+	<AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
+	<20100702111138.GI10072@secunet.com>
+	<AANLkTimEgKGJ5pi7GzOnvP42ivJ4GCKX59LdKK0x4fnx@mail.gmail.com>
+	<20100706053612.GQ10072@secunet.com>
+	<20100706054406.GR10072@secunet.com>
+Date: Tue, 6 Jul 2010 11:40:11 +0400
+X-Google-Sender-Auth: vZ082nAVh4AotROHtE3yWPjXg8o
+Message-ID: <AANLkTil4pbOOVvhIKN1_sI8kNdBFFebMVEGEmqrb45YR@mail.gmail.com>
+Subject: Re: [PATCH 1/3] padata: separate serial and parallel cpumasks
+From: Dan Kruchinin <dkruchinin@acm.org>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 11:06:30PM -0700, Guojun Jin wrote:
+On Tue, Jul 6, 2010 at 9:44 AM, Steffen Klassert
+<steffen.klassert@secunet.com> wrote:
+> You removed everyone in the Cc, please don't do this unless you have
+> good reason for that. I've added the Cc'ed people again, perhaps
+> somebody has an opinion on this too.
+
+Oh, I'm sorry I didn't notice.
+
 >
-> Would you please point to where is the best place that CB should be cleared for this case?
-> 
-> I also wonder why IP packet is routed through ARP queue for ICMP delievry.
+> On Tue, Jul 06, 2010 at 07:36:12AM +0200, Steffen Klassert wrote:
+>> On Mon, Jul 05, 2010 at 06:09:17PM +0400, Dan Kruchinin wrote:
+>> >
+>> > I tried to implement RCU protection on cpumask, but it appears a bit
+>> > ugly because we can not safely assign cpumask_var_t(that is allocated
+>> > via alloc_cpumask_var) to struct cpumask* via rcu_assign_pointer. The
+>> > root of problem lies in cpumask_var_t definition. Depending on
+>> > CONFIG_CPUMASK_OFFSTACK macro it may be a local variable on the stack
+>> > or a pointer to struct cpumask:
+>> > #ifdef CONFIG_CPUMASK_OFFSTACK
+>> > typedef struct cpumask *cpumask_var_t
+>> > ...
+>> > #else
+>> > typedef struct cpumask cpumask_var_t[1];
+>> > ...
+>> > #endif
+>>
+>> Hm, yes dealing with cpumasks is a bit special these days.
+>>
+>> >
+>> > In this case rcu_assign_pointer may be safely used only if we deal
+>> > with a pointer to cpumask_var_t that must be allocated via kmalloc
+>> > before using alloc_cpumask_var and rcu_assign_pointer. I think it's -
+>> > as I said earlier - a bit ugly and hard to read.
+>> > My be it's better to use rw spinlock instead? In our situation it
+>> > doesn't significantly differ from RCU. Also it'll make code more clear
+>> > and easy to read.
+>> >
+>>
+>> I think we can use RCU anyway. For instance we could use a structure
+>>
+>> struct pcrypt_cpumask {
+>>       cpumask_var_t           pmask;
+>>       cpumask_var_t           smask;
+>> };
+>>
+>> and add a pointer to a structure of that type to the instance context.
+>> Then we could use this pointer for RCU and replace the whole structure
+>> if a cpumask changes.
 
-I was hoping that you guys would figure this out :)
+But is pcrypt interested pmask? If it isn't, pmask field will be unused.
 
-Anyway, this patch should fix the crash.
+>>
+>>
+>
 
-bridge: Clear IPCB before possible entry into IP stack
 
-The bridge protocol lives dangerously by having incestuous relations
-with the IP stack.  In this instance an abomination has been created
-where a bogus IPCB area from a bridged packet leads to a crash in
-the IP stack because it's interpreted as IP options.
 
-This patch papers over the problem by clearing the IPCB area in that
-particular spot.  To fix this properly we'd also need to parse any
-IP options if present but I'm way too lazy for that.
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-index 4442099..8fb75f8 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -591,6 +591,9 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
- 
- 	pskb_trim_rcsum(skb, len);
- 
-+	/* BUG: Should really parse the IP options here. */
-+	memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
-+
- 	nf_bridge_put(skb->nf_bridge);
- 	if (!nf_bridge_alloc(skb))
- 		return NF_DROP;
-
-Cheers,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+W.B.R.
+Dan Kruchinin
