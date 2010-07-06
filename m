@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab0GFCZb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 22:25:31 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:55889 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab0GFCZa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 22:25:30 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-       Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: mmotm 2010-07-01 pm_get_wakeup_count() declaration
-In-Reply-To: Your message of "Mon, 05 Jul 2010 22:43:55 +0200."
-             <201007052243.55551.rjw@sisk.pl>
-From: Valdis.Kletnieks@vt.edu
-References: <201007011948.o61JmnT2022795@imap1.linux-foundation.org> <74766.1278362136@localhost>
-            <201007052243.55551.rjw@sisk.pl>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1278383075_2695P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1756845Ab0GFC07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 22:26:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56561 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754328Ab0GFC05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 22:26:57 -0400
+Message-ID: <4C329450.2010703@redhat.com>
+Date: Tue, 06 Jul 2010 10:26:24 +0800
+From: Xiaotian Feng <dfeng@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Ali Gholami Rudi <ali@rudi.ir>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       x86@kernel.org, venki@google.com, tglx@linutronix.de,
+       suresh.b.siddha@intel.com, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [regression] commit 6a4f3b52 causes invalid memtype
+References: <20100507075128@tarekhel> <4C319D61.5090002@redhat.com> <20100507092842@tarekhel> <4C31A7A0.1020800@redhat.com> <4c31ac7b.J+CU0Yt+zKZ9ho1fjKvu6Z1v@tarekhel>	<20100705104035.GA28190@elte.hu> <20100507113814@tarekhel>
+In-Reply-To: <20100507113814@tarekhel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Mon, 05 Jul 2010 22:24:35 -0400
-Message-ID: <2755.1278383075@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020206.4C3293E4.02E0,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1278383075_2695P
-Content-Type: text/plain; charset=us-ascii
+On 07/05/2010 07:38 PM, Ali Gholami Rudi wrote:
+> Ingo Molnar<mingo@elte.hu>  wrote:
+>>>>>> commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+>>>>>> Author: Peter Zijlstra<peterz@infradead.org>
+>>>>>> Date:   Sat May 29 15:31:43 2010 +0200
+>>>>>>
+>>>>>>        rbtree: Undo augmented trees performance damage
+>>>>>
+>>>>> Where can I get it?  I couldn't find it either in
+>>>>> Linus' or x86 repo tip.
+>>>> http://git.kernel.org/tip/2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+>>>
+>>> It does fix it.
+>>
+>> Hm, interesting. That's a pure performance fix - so why does it fix a
+>> regression?
+>>
+>> Does Peter's augmented rbtrees improvements fix a bug too, as a side-effect?
+>> If yes then we need to accelerate that commit - right now it's aimed for
+>> v2.6.36.
+>
+> Since the bug appears after commit 6a4f3b52, it seems to be
+> related to the value of memtype->subtree_max_end.  Peter's
+> patch seems to change the way memtype->subtree_max_end is
+> updated, which seems to fix the problem too.
 
-On Mon, 05 Jul 2010 22:43:55 +0200, "Rafael J. Wysocki" said:
-> On Monday, July 05, 2010, Valdis.Kletnieks@vt.edu wrote:
-> > On Thu, 01 Jul 2010 12:19:51 PDT, akpm@linux-foundation.org said:
-> > > The mm-of-the-moment snapshot 2010-07-01-12-19 has been uploaded to
-> > 
-> > Not sure who to blame for the commit, it was in the linux-next.patch and I'm
-> > too lazy to pull down the git tree and dig it out.
-> > 
-> >   CC      kernel/power/main.o
-> > kernel/power/main.c: In function 'wakeup_count_show':
-> > kernel/power/main.c:241: error: implicit declaration of function 'pm_get_wakeup_count'
-> > kernel/power/main.c: In function 'wakeup_count_store':
-> > kernel/power/main.c:251: error: implicit declaration of function 'pm_save_wakeup_count'
-> > make[2]: *** [kernel/power/main.o] Error 1
-> > 
-> > Problem is that declaration in include/linux/suspend.h is wrapped in
-> > a #ifdef CONFIG_PM_SLEEP, but the usage in kernel/power/main.c isn't. So
-> > it dies a horrid death if your config doesn't include PM_SLEEP.
-> 
-> Yeah, sorry.  I'm in the process of fixing it up.
+Actually, this exposed a bug in augmented rbtree 
+(http://lkml.org/lkml/2010/6/21/459).
+With commit 6a4f3b52, the bug was easier to trigger :-)
 
-I threw in some ad-crock #ifdef to get past that one, and hit
-another one, same basic issue but include/linux/pm.h this time:
-
-  CC      drivers/base/power/sysfs.o
-drivers/base/power/sysfs.c: In function 'wakeup_count_show':
-drivers/base/power/sysfs.c:152: error: 'struct dev_pm_info' has no member named 'wakeup_count'
-make[3]: *** [drivers/base/power/sysfs.o] Error 1
-
-
-
-
-
---==_Exmh_1278383075_2695P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMMpPjcC3lWbTT17ARAn9iAKCPhhVJOK+6Kfegx1rgtfabw0lrQACeNV9W
-rPHrJDs9D644n/JPKiA2JNw=
-=9kNE
------END PGP SIGNATURE-----
-
---==_Exmh_1278383075_2695P--
+>
+> Thanks,
+> Ali
+>
+>
 
