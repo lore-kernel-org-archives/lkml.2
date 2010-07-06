@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab0GFKMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 06:12:54 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44921 "EHLO gir.skynet.ie"
+	id S1755074Ab0GFKUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 06:20:44 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56693 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754544Ab0GFKMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 06:12:53 -0400
-Date: Tue, 6 Jul 2010 11:12:35 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
-Message-ID: <20100706101235.GE13780@csn.ul.ie>
-References: <20100702125155.69c02f85.akpm@linux-foundation.org> <20100705134949.GC13780@csn.ul.ie> <20100706093529.CCD1.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100706093529.CCD1.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1754789Ab0GFKUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 06:20:42 -0400
+Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building
+ code out into drivers/of
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Andres Salomon <dilinger@queued.net>
+Cc: David Miller <davem@davemloft.net>, grant.likely@secretlab.ca,
+       devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
+       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+       cjb@laptop.org, wmb@laptop.org, pgf@laptop.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100707051548.2c44f30c@debxo>
+References: <20100629193618.5a840b8e@dev.queued.net>
+	 <AANLkTilme2uAoXjorUEzam9j_xosR8kl70W8PS71d-Th@mail.gmail.com>
+	 <20100707040734.05d625af@debxo>
+	 <20100705.192221.241453945.davem@davemloft.net>
+	 <20100707051548.2c44f30c@debxo>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Jul 2010 20:17:33 +1000
+Message-ID: <1278411453.1665.273.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 06, 2010 at 09:36:41AM +0900, KOSAKI Motohiro wrote:
-> Hello,
-> 
-> > Ok, that's reasonable as I'm still working on that patch. For example, the
-> > patch disabled anonymous page writeback which is unnecessary as the stack
-> > usage for anon writeback is less than file writeback. 
-> 
-> How do we examine swap-on-file?
-> 
 
-Anything in particular wrong with the following?
+> Sounds like we have a winner.  I'll concentrate on that, thanks for
+> the heads up.
 
-/*
- * For now, only kswapd can writeback filesystem pages as otherwise
- * there is a stack overflow risk
- */
-static inline bool reclaim_can_writeback(struct scan_control *sc,
-                                        struct page *page)
-{
-        return !page_is_file_cache(page) || current_is_kswapd();
-}
+Note that the conversion from OF -> fdt that powerpc does is a bit
+"special". The code isn't quite a "wrapper" but almost. It shared pretty
+much no symbols or variables with the rest of the kernel.
 
-Even if it is a swapfile, I didn't spot a case where the filesystems
-writepage would be called. Did I miss something?
+There are various reasons for that. It has to run -very- early, in fact,
+before we do anything else at boot time, since we run off OF existing
+environment (stack etc...) at at whatever address the kernel is loaded,
+ie. before we relocate it down to 0.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+To deal with that, we use compile/linker tricks to generate
+pseudo-relocatable code (with limitations) and funny macros when
+accessing global symbols.
+
+In addition, we have various workarounds for powerpc specific
+implementation issues (OF bugs, but also instanciating the IOMMU tables
+on Power4, starting secondary CPUs and parking them in a wait loop,
+etc...).
+
+Thus I'm not sure there's that much benefit in trying to make that code
+common with other archs, and possibly a lot of pain involved.
+
+Cheers,
+Ben.
+ 
+
