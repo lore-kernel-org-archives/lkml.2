@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab0GFWnr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 18:43:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31724 "EHLO
+	id S1757537Ab0GFWtb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 18:49:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24020 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756999Ab0GFWnl (ORCPT
+	with ESMTP id S1756744Ab0GFWt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 18:43:41 -0400
+	Tue, 6 Jul 2010 18:49:28 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -17,92 +17,141 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 13/49] memblock: Move memblock arrays to static storage in memblock.c and make their size a variable
-Date: Tue,  6 Jul 2010 15:39:06 -0700
-Message-Id: <1278455982-24621-14-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 06/49] memblock: Factor the lowest level alloc function
+Date: Tue,  6 Jul 2010 15:38:59 -0700
+Message-Id: <1278455982-24621-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
 References: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C33B171.001C,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4C33B190.018E,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-This is in preparation for having resizable arrays.
-
-Note that we still allocate one more than needed, this is unchanged from
-the previous implementation.
-
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- include/linux/memblock.h |    7 ++++---
- mm/memblock.c            |   10 +++++++++-
- 2 files changed, 13 insertions(+), 4 deletions(-)
+ mm/memblock.c |   59 ++++++++++++++++++++++++++------------------------------
+ 1 files changed, 27 insertions(+), 32 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index e849d31..b839053 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -18,7 +18,7 @@
- 
- #include <asm/memblock.h>
- 
--#define MAX_MEMBLOCK_REGIONS 128
-+#define INIT_MEMBLOCK_REGIONS 128
- 
- struct memblock_region {
- 	phys_addr_t base;
-@@ -26,8 +26,9 @@ struct memblock_region {
- };
- 
- struct memblock_type {
--	unsigned long cnt;
--	struct memblock_region regions[MAX_MEMBLOCK_REGIONS+1];
-+	unsigned long cnt;	/* number of regions */
-+	unsigned long max;	/* size of the allocated array */
-+	struct memblock_region *regions;
- };
- 
- struct memblock {
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 78c2394..e1c5ce3 100644
+index 83643f3..9b71de0 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -18,6 +18,8 @@
- struct memblock memblock;
+@@ -294,8 +294,8 @@ static u64 memblock_align_up(u64 addr, u64 size)
+ 	return (addr + (size - 1)) & ~(size - 1);
+ }
  
- static int memblock_debug;
-+static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
-+static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
- 
- static int __init early_memblock(char *p)
+-static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
+-					   u64 size, u64 align)
++static u64 __init memblock_alloc_region(u64 start, u64 end,
++				   u64 size, u64 align)
  {
-@@ -104,6 +106,12 @@ static void memblock_coalesce_regions(struct memblock_type *type,
+ 	u64 base, res_base;
+ 	long j;
+@@ -318,6 +318,13 @@ static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
+ 	return ~(u64)0;
+ }
  
- void __init memblock_init(void)
- {
-+	/* Hookup the initial arrays */
-+	memblock.memory.regions	= memblock_memory_init_regions;
-+	memblock.memory.max		= INIT_MEMBLOCK_REGIONS;
-+	memblock.reserved.regions	= memblock_reserved_init_regions;
-+	memblock.reserved.max	= INIT_MEMBLOCK_REGIONS;
++u64 __weak __init memblock_nid_range(u64 start, u64 end, int *nid)
++{
++	*nid = 0;
 +
- 	/* Create a dummy zero size MEMBLOCK which will get coalesced away later.
- 	 * This simplifies the memblock_add() code below...
- 	 */
-@@ -169,7 +177,7 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
++	return end;
++}
++
+ static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
+ 				       u64 size, u64 align, int nid)
+ {
+@@ -333,8 +340,7 @@ static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
  
- 	if (coalesced)
- 		return coalesced;
--	if (type->cnt >= MAX_MEMBLOCK_REGIONS)
-+	if (type->cnt >= type->max)
- 		return -1;
+ 		this_end = memblock_nid_range(start, end, &this_nid);
+ 		if (this_nid == nid) {
+-			u64 ret = memblock_alloc_nid_unreserved(start, this_end,
+-							   size, align);
++			u64 ret = memblock_alloc_region(start, this_end, size, align);
+ 			if (ret != ~(u64)0)
+ 				return ret;
+ 		}
+@@ -351,6 +357,10 @@ u64 __init memblock_alloc_nid(u64 size, u64 align, int nid)
  
- 	/* Couldn't coalesce the MEMBLOCK, so add it to the sorted table. */
+ 	BUG_ON(0 == size);
+ 
++	/* We do a bottom-up search for a region with the right
++	 * nid since that's easier considering how memblock_nid_range()
++	 * works
++	 */
+ 	size = memblock_align_up(size, align);
+ 
+ 	for (i = 0; i < mem->cnt; i++) {
+@@ -383,7 +393,7 @@ u64 __init memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ 
+ u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ {
+-	long i, j;
++	long i;
+ 	u64 base = 0;
+ 	u64 res_base;
+ 
+@@ -396,33 +406,24 @@ u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ 	if (max_addr == MEMBLOCK_ALLOC_ANYWHERE)
+ 		max_addr = MEMBLOCK_REAL_LIMIT;
+ 
++	/* Pump up max_addr */
++	if (max_addr == MEMBLOCK_ALLOC_ANYWHERE)
++		max_addr = ~(u64)0;
++
++	/* We do a top-down search, this tends to limit memory
++	 * fragmentation by keeping early boot allocs near the
++	 * top of memory
++	 */
+ 	for (i = memblock.memory.cnt - 1; i >= 0; i--) {
+ 		u64 memblockbase = memblock.memory.regions[i].base;
+ 		u64 memblocksize = memblock.memory.regions[i].size;
+ 
+ 		if (memblocksize < size)
+ 			continue;
+-		if (max_addr == MEMBLOCK_ALLOC_ANYWHERE)
+-			base = memblock_align_down(memblockbase + memblocksize - size, align);
+-		else if (memblockbase < max_addr) {
+-			base = min(memblockbase + memblocksize, max_addr);
+-			base = memblock_align_down(base - size, align);
+-		} else
+-			continue;
+-
+-		while (base && memblockbase <= base) {
+-			j = memblock_overlaps_region(&memblock.reserved, base, size);
+-			if (j < 0) {
+-				/* this area isn't reserved, take it */
+-				if (memblock_add_region(&memblock.reserved, base, size) < 0)
+-					return 0;
+-				return base;
+-			}
+-			res_base = memblock.reserved.regions[j].base;
+-			if (res_base < size)
+-				break;
+-			base = memblock_align_down(res_base - size, align);
+-		}
++		base = min(memblockbase + memblocksize, max_addr);
++		res_base = memblock_alloc_region(memblockbase, base, size, align);
++		if (res_base != ~(u64)0)
++			return res_base;
+ 	}
+ 	return 0;
+ }
+@@ -502,9 +503,3 @@ int memblock_is_region_reserved(u64 base, u64 size)
+ 	return memblock_overlaps_region(&memblock.reserved, base, size);
+ }
+ 
+-u64 __weak memblock_nid_range(u64 start, u64 end, int *nid)
+-{
+-	*nid = 0;
+-
+-	return end;
+-}
 -- 
 1.6.4.2
 
