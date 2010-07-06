@@ -1,84 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab0GFSbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 14:31:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56442 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498Ab0GFSbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 14:31:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Michal Marek <mmarek@suse.cz>
-Subject: Re: Linux 2.6.35-rc4 - CONFIG_LOCALVERSION ignored?
-Date: Tue, 6 Jul 2010 20:29:34 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4; KDE/4.4.4; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>
-References: <20100705214304.GA24291@sepie.suse.cz>
-In-Reply-To: <20100705214304.GA24291@sepie.suse.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754022Ab0GFSbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 14:31:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33674 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab0GFSbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 14:31:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hkMDCjX21XQg74GurFfzFiD3kJdWLEewGRx8nOa13K7LSDOwLT3S4h1doFTi5d/SwZ
+         Bag7Cdyd8zIXBmeSNstWLNCSBABOBRrpkF4zoLC7lJH4RrvzwvKdotppYSo+GNgPH0nl
+         8R26Pcqjy6CgOSYq0pHpDmqg2ZF6LdwmJf8Jk=
+Subject: Re: [PATCH] Staging: cx25821: fix brace coding style issue in 
+ cx25821-audio-upstream.c
+From: Joe Eloff <kagen101@gmail.com>
+Reply-To: kagen101@gmail.com
+To: Aldo Cedillo <aldobrett11@gmail.com>
+Cc: gregkh@suse.de, mchehab@redhat.com, olimpiu.pascariu@gmail.com,
+       julia@diku.dk, tj@kernel.org, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTil_Pu76aEje-5FP9nmxba--pmmAX3YkqNdzN3xX@mail.gmail.com>
+References: <1278238174.17566.4.camel@dermezel>
+	 <AANLkTil_Pu76aEje-5FP9nmxba--pmmAX3YkqNdzN3xX@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Jul 2010 19:24:44 +0200
+Message-ID: <1278437084.5396.81.camel@dermezel>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007062029.34535.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 05, 2010, Michal Marek wrote:
-> On Mon, Jul 05, 2010 at 11:25:56PM +0200, Rafael J. Wysocki wrote:
-> > Hmm.  Am I dong anything particularly wrong, or is CONFIG_LOCALVERSION ignored
-> > now, as it seems?
-> 
-> (also reported by Stephen earlier that day)
-> 
-> On Mon, Jul 05, 2010 at 10:39:41AM +1000, Stephen Rothwell wrote:
-> > After merging the libata tree, today's linux-next build produced this
-> > warning (but it should be a failure ...):
-> > 
-> > /bin/sh: scripts/setlocalversion: No such file or directory
-> > 
-> > Probably introduced by commit 0a564b2645c8766a669c55bde1f1ef5b0518caec
-> > ("kbuild: Propagate LOCALVERSION= down to scripts/setlocalversion").
-> > 
-> > That commit really isn't ready for inclusion in Linus' tree ...
+On Tue, 2010-07-06 at 12:12 -0500, Aldo Cedillo wrote:
+> > Subject: [PATCH] Staging: cx25821: fix brace coding style issue in cx25821-audio-upstream.c
+> >  This is a patch to the cx25821.c file that fixes up a brace warning found by the checkpatch.pl tool
+> >  Signed-off-by: Joe Eloff <kagen101@gmail.com>
+> >
+> > ---
+> >  drivers/staging/cx25821/cx25821-audio-upstream.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
+> > index eb39d13..e7346ec 100644
+> > --- a/drivers/staging/cx25821/cx25821-audio-upstream.c
+> > +++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
+> > @@ -762,9 +762,9 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+> >                       str_length + 1);
 > 
 > 
-> Oops, I'm an idiot. The below patch should fix localversion again:
+> I haven't tried checkpatch.pl over that file, but in the CodingStyle
+> document you can read this:
+> 
+> Do not unnecessarily use braces where a single statement will do.
+> 
+> if (condition)
+>         action();
+> 
+> This does not apply if one branch of a conditional statement is a single
+> statement. Use braces in both branches.
+> 
+> if (condition) {
+>         do_this();
+>         do_that();
+> } else {
+>         otherwise();
+> }
+> 
+> Which one is the correct style? I ask these because I have seen this
+> in other parts of the kernel. So maybe I can help to homogenize this.
+> 
+> >                /* Default if filename is empty string */
+> > -               if (strcmp(dev->input_audiofilename, "") == 0) {
+> > +               if (strcmp(dev->input_audiofilename, "") == 0)
+> >                        dev->_audiofilename = "/root/audioGOOD.wav";
+> > -               }
+> I believe only this one has to go.
+> > +
+> >        } else {
+> So the first brace closes the brace of the if line.
+> >                str_length = strlen(_defaultAudioName);
+> >                dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+> 
+> Thanks,
+> Aldo Brett
 
-Yes, it helps here.
+Thats good to know thanks for pointing that out, I have picked up a few
+discrepancies with interpretation and checkpatch.pl.
+Am noting it and trying to patch checkpatch.pl as I continue :).
 
-Thanks,
-Rafael
+I think checkpatch.pl points this out as the opposite to interpretation
+thou otherwise I would not have patched it I guess.
 
+Current TODO on checkpatch:
 
-> From: Michal Marek <mmarek@suse.cz>
-> Subject: [PATCH] kbuild: Fix path to scripts/setlocalversion
-> 
-> Commit 0a564b2 broke LOCALVERSION for O=... builds. Ouch.
-> 
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> 
-> diff --git a/Makefile b/Makefile
-> index 12ab175..df16c4f 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -886,7 +886,7 @@ $(vmlinux-dirs): prepare scripts
->  # Store (new) KERNELRELASE string in include/config/kernel.release
->  include/config/kernel.release: include/config/auto.conf FORCE
->  	$(Q)rm -f $@
-> -	$(Q)echo "$(KERNELVERSION)$$($(CONFIG_SHELL) scripts/setlocalversion $(srctree))" > $@
-> +	$(Q)echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))" > $@
->  
->  
->  # Things we need to do before we recursively start building the kernel
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+1. type i = 0 ; /* space before ; is not picked up by checkpatch.
+2. What you mentioned is interpreted different by checkpatch.pl 
+
+Regards,
+
+Joe
+
 
