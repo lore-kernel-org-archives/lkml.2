@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab0GFRZO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 13:25:14 -0400
-Received: from [202.81.31.144] ([202.81.31.144]:49190 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab0GFRZL (ORCPT
+	id S1754860Ab0GFRdr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 13:33:47 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37272 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab0GFRdq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 13:25:11 -0400
-X-Greylist: delayed 899 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jul 2010 13:25:11 EDT
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>, hch@infradead.org, viro@zeniv.linux.org.uk,
-       adilger@sun.com, corbet@lwn.net, serue@us.ibm.com,
-       hooanon05@yahoo.co.jp, linux-fsdevel@vger.kernel.org,
-       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle syscalls
-In-Reply-To: <20100706161002.GD7387@fieldses.org>
-References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <871vbn2mk9.fsf@linux.vnet.ibm.com> <20100702064108.64034561@notabene.brown> <87iq4y29a6.fsf@linux.vnet.ibm.com> <20100706161002.GD7387@fieldses.org>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Tue, 06 Jul 2010 22:39:56 +0530
-Message-ID: <87eifgfsez.fsf@linux.vnet.ibm.com>
+	Tue, 6 Jul 2010 13:33:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CWPni8rpKmbpD54fK6sMQ6XzXmLnxOMDNxJ3CoJP+rNS3eJhM7C4+kL0c/h55ppcmk
+         QmB4pTBa8NJof6M5EZ30NscxBsNDaK+vPcKSJLeLEC30pWBfKUJNqZgEKuO2vvbPfqIb
+         8UNJrkDvtxbkILEEyHpQD/Ur9HcLDEV345c20=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1278435198.5396.73.camel@dermezel>
+References: <1278435198.5396.73.camel@dermezel>
+Date: Tue, 6 Jul 2010 12:25:35 -0500
+Message-ID: <AANLkTingSXbyFclWga9x5aD7MoccCMqhu56PCOVTKHVJ@mail.gmail.com>
+Subject: Re: [PATCH] Staging: dt3155: fix coding style issues in dt3155_drv.c
+From: Aldo Cedillo <aldobrett11@gmail.com>
+To: kagen101@gmail.com
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Simon Horman <horms@verge.net.au>, devel <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Jul 2010 12:10:02 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> On Fri, Jul 02, 2010 at 02:45:45AM +0530, Aneesh Kumar K. V wrote:
-> > One use case i had was that if the userspace file server can directly
-> > work with the returned file system UUID,
-> 
-> I agree that the uuid should be split out from the rest of the
-> filehandle, but ...
-> 
-> > the it can build the file
-> > handle for client in a single call.
-> 
-> ... I don't understand why both need to come in the same system call.
-> Is it purely an efficiency question?  If so, why do you expect this to
-> be significant?
+> diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+> index 66db878..f6edd66 100644
+> --- a/drivers/staging/dt3155/dt3155_drv.c
+> +++ b/drivers/staging/dt3155/dt3155_drv.c
+> @@ -308,33 +308,42 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
+>  #endif
+>                        if (fb->nbuffers > 2) {
+>                                if (!are_empty_buffers(minor)) {
+> -                                       /* The number of active + locked buffers is
+> -                                        * at most 2, and since there are none empty, there
+> -                                        * must be at least nbuffers-2 ready buffers.
+> -                                        * This is where we 'drop frames', oldest first. */
+> +                                       /* The number of active +
+> +                                        * locked buffers is at most 2,
+> +                                        * and since there are none empty,
+> +                                        * there must be at least nbuffers-2
+> +                                        * ready buffers.
+> +                                        * This is where we 'drop frames',
+> +                                        * oldest first. */
+>                                        push_empty(pop_ready(minor),  minor);
+>                                }
+>
 
-Since we know that system wide file handle should include a file system
-identifier and a file identifier my plan was to retrieve both in the
-same syscall.
+In the CodingStyle in the kernel you can read:
 
+The preferred style for long (multi-line) comments is:
 
-> 
-> (I would have thought that the system call overhead is so small, and so
-> many calls will already be required to perform the typical rpc, that
-> this would be insignificant.)
-> 
-> A filesystem uuid seems like a generally useful thing (maybe more so
-> than a filehandle), so it'd seem worth figuring out how to export that
-> separately.
-> 
+        /*
+         * This is the preferred style for multi-line
+         * comments in the Linux kernel source code.
+         * Please use it consistently.
+         *
+         * Description:  A column of asterisks on the left side,
+         * with beginning and ending almost-blank lines.
+         */
 
-I can add a new syscall that returns 
+Again I ask about the coding style because I have seen in many parts of the
+kernel I've seen discrepancies with what is said in the CodingStyle file. So
+I want to get it clear maybe I can help to clean those things.
 
-struct fs_uuid {
-       u8 fs_uuid[16];  
-};
-
-long sys_get_fs_uuid(int dfd, char *name, struct fs_uuid *fsid, int flag);
-
--aneesh
+Thanks,
+Aldo Brett
