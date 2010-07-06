@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab0GFCGu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 22:06:50 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48273
+	id S1757570Ab0GFCHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 22:07:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48309
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757200Ab0GFCGr (ORCPT
+	by vger.kernel.org with ESMTP id S1757053Ab0GFCHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 22:06:47 -0400
-Date: Mon, 05 Jul 2010 19:07:01 -0700 (PDT)
-Message-Id: <20100705.190701.35018663.davem@davemloft.net>
+	Mon, 5 Jul 2010 22:07:19 -0400
+Date: Mon, 05 Jul 2010 19:07:32 -0700 (PDT)
+Message-Id: <20100705.190732.212706933.davem@davemloft.net>
 To: segooon@gmail.com
-Cc: kernel-janitors@vger.kernel.org, joe@perches.com, jpirko@redhat.com,
-       adobriyan@gmail.com, shemminger@vyatta.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hamachi: Use the instance of net_device_stats from
+Cc: kernel-janitors@vger.kernel.org, thockin@hockin.org, jpirko@redhat.com,
+       joe@perches.com, bhutchings@solarflare.com, shemminger@vyatta.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] natsemi: Use the instance of net_device_stats from
  net_device.
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1278332023-16524-1-git-send-email-segooon@gmail.com>
-References: <1278332023-16524-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1278332059-17795-1-git-send-email-segooon@gmail.com>
+References: <1278332059-17795-1-git-send-email-segooon@gmail.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,7 +27,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kulikov Vasiliy <segooon@gmail.com>
-Date: Mon,  5 Jul 2010 16:13:41 +0400
+Date: Mon,  5 Jul 2010 16:14:17 +0400
 
 > Since net_device has an instance of net_device_stats,
 > we can remove the instance of this from the adapter structure.
