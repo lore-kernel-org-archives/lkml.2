@@ -1,107 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab0GFSbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 14:31:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33674 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab0GFSbg (ORCPT
+	id S1753869Ab0GFSi3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 14:38:29 -0400
+Received: from [202.81.31.143] ([202.81.31.143]:39359 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab0GFSi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 14:31:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=hkMDCjX21XQg74GurFfzFiD3kJdWLEewGRx8nOa13K7LSDOwLT3S4h1doFTi5d/SwZ
-         Bag7Cdyd8zIXBmeSNstWLNCSBABOBRrpkF4zoLC7lJH4RrvzwvKdotppYSo+GNgPH0nl
-         8R26Pcqjy6CgOSYq0pHpDmqg2ZF6LdwmJf8Jk=
-Subject: Re: [PATCH] Staging: cx25821: fix brace coding style issue in 
- cx25821-audio-upstream.c
-From: Joe Eloff <kagen101@gmail.com>
-Reply-To: kagen101@gmail.com
-To: Aldo Cedillo <aldobrett11@gmail.com>
-Cc: gregkh@suse.de, mchehab@redhat.com, olimpiu.pascariu@gmail.com,
-       julia@diku.dk, tj@kernel.org, devel@driverdev.osuosl.org,
+	Tue, 6 Jul 2010 14:38:28 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, neilb@suse.de, hooanon05@yahoo.co.jp,
+       bfields@fieldses.org
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTil_Pu76aEje-5FP9nmxba--pmmAX3YkqNdzN3xX@mail.gmail.com>
-References: <1278238174.17566.4.camel@dermezel>
-	 <AANLkTil_Pu76aEje-5FP9nmxba--pmmAX3YkqNdzN3xX@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Jul 2010 19:24:44 +0200
-Message-ID: <1278437084.5396.81.camel@dermezel>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH -V15 0/9] Generic name to handle and open by handle syscalls 
+Date: Wed,  7 Jul 2010 00:08:02 +0530
+Message-Id: <1278441491-12785-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.2.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-06 at 12:12 -0500, Aldo Cedillo wrote:
-> > Subject: [PATCH] Staging: cx25821: fix brace coding style issue in cx25821-audio-upstream.c
-> >  This is a patch to the cx25821.c file that fixes up a brace warning found by the checkpatch.pl tool
-> >  Signed-off-by: Joe Eloff <kagen101@gmail.com>
-> >
-> > ---
-> >  drivers/staging/cx25821/cx25821-audio-upstream.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
-> > index eb39d13..e7346ec 100644
-> > --- a/drivers/staging/cx25821/cx25821-audio-upstream.c
-> > +++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
-> > @@ -762,9 +762,9 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
-> >                       str_length + 1);
-> 
-> 
-> I haven't tried checkpatch.pl over that file, but in the CodingStyle
-> document you can read this:
-> 
-> Do not unnecessarily use braces where a single statement will do.
-> 
-> if (condition)
->         action();
-> 
-> This does not apply if one branch of a conditional statement is a single
-> statement. Use braces in both branches.
-> 
-> if (condition) {
->         do_this();
->         do_that();
-> } else {
->         otherwise();
-> }
-> 
-> Which one is the correct style? I ask these because I have seen this
-> in other parts of the kernel. So maybe I can help to homogenize this.
-> 
-> >                /* Default if filename is empty string */
-> > -               if (strcmp(dev->input_audiofilename, "") == 0) {
-> > +               if (strcmp(dev->input_audiofilename, "") == 0)
-> >                        dev->_audiofilename = "/root/audioGOOD.wav";
-> > -               }
-> I believe only this one has to go.
-> > +
-> >        } else {
-> So the first brace closes the brace of the if line.
-> >                str_length = strlen(_defaultAudioName);
-> >                dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
-> 
-> Thanks,
-> Aldo Brett
+Hi,
 
-Thats good to know thanks for pointing that out, I have picked up a few
-discrepancies with interpretation and checkpatch.pl.
-Am noting it and trying to patch checkpatch.pl as I continue :).
+The below set of patches implement open by handle support using exportfs
+operations. This allows user space application to map a file name to file 
+handle and later open the file using handle. This should be usable
+for userspace NFS [1] and 9P server [2]. XFS already support this with the ioctls
+XFS_IOC_PATH_TO_HANDLE and XFS_IOC_OPEN_BY_HANDLE.
 
-I think checkpatch.pl points this out as the opposite to interpretation
-thou otherwise I would not have patched it I guess.
+[1] http://nfs-ganesha.sourceforge.net/
+[2] http://thread.gmane.org/gmane.comp.emulators.qemu/68992
 
-Current TODO on checkpatch:
+git repo for the patchset at:
 
-1. type i = 0 ; /* space before ; is not picked up by checkpatch.
-2. What you mentioned is interpreted different by checkpatch.pl 
+git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-open-handle.git open-by-handle
 
-Regards,
+Changes from V14:
+a) Use fget_light instead of fget in the patches
+b) Drop uuid from struct file_handle as per the last review
 
-Joe
+Changes from V13:
+a) Add support for file descriptor to handle conversion. This is needed
+   so that we find the right file handle for newly created files.
+   
+Changes from V12:
+a) Use CAP_DAC_READ_SEARCH instead of CAP_DAC_OVERRIDE in open_by_handle
+b) Return -ENOTDIR if O_DIRECTORY flag is specified in open_by_handle with
+   handle for non directory
 
+Changes from V11:
+a) Add necessary documentation to different functions
+b) Add null pathname support to faccessat and linkat similar to
+   readlinkat.
+c) compile fix on x86_64
+
+Changes from V10:
+a) Missed an stg refresh before sending out the patchset. Send
+   updated patchset.
+
+Changes from V9:
+a) Fix compile errors with CONFIG_EXPORTFS not defined
+b) Return -EOPNOTSUPP if file system doesn't support fh_to_dentry exportfs callback.
+
+Changes from V8:
+a)  exportfs_decode_fh now returns -ESTALE if export operations is not defined.
+b)  drop get_fsid super_operations. Instead use superblock to store uuid.
+
+Changes from V7:
+a) open_by_handle now use mountdirfd to identify the vfsmount.
+b) We don't validate the UUID passed as a part of file handle in open_by_handle.
+   UUID is provided as a part of file handle as an easy way for userspace to
+   use the kernel returned handle as it is. It also helps in finding the 16 byte
+   filessytem UUID in userspace without using file system specific libraries to
+   read file system superblock. If a particular file system doesn't support UUID
+   or any form of unique id this field in the file handle will be zero filled.
+c) drop freadlink syscall. Instead use readlinkat with NULL pathname to indicate
+   read the link target name of the link pointed by fd. This is similar to
+   sys_utimensat
+d) Instead of opencoding all the open flag related check use helper functions.
+   Did finish_open_by_handle similar to finish_open.
+c) Fix may_open to not return ELOOP for symlink when we are called from handle open.
+   open(2) still returns error as expected. 
+
+Changes from V6:
+a) Add uuid to vfsmount lookup and drop uuid to superblock lookup
+b) Return -EOPNOTSUPP in sys_name_to_handle if the file system returned uuid
+   doesn't give the same vfsmount on lookup. This ensure that we fail
+   sys_name_to_handle when we have multiple file system returning same UUID.
+
+Changes from V5:
+a) added sys_name_to_handle_at syscall which takes AT_SYMLINK_NOFOLLOW flag 
+   instead of two syscalls sys_name_to_handle and sys_lname_to_handle.
+b) addressed review comments from Niel Brown
+c) rebased to b91ce4d14a21fc04d165be30319541e0f9204f15
+d) Add compat_sys_open_by_handle
+
+Chages from V4:
+a) Changed the syscal arguments so that we don't need compat syscalls
+   as suggested by Christoph
+c) Added two new syscall sys_lname_to_handle and sys_freadlink to work with
+   symlinks
+d) Changed open_by_handle to work with all file types
+e) Add ext3 support
+
+Changes from V3:
+a) Code cleanup suggested by Andreas
+b) x86_64 syscall support
+c) add compat syscall
+
+Chages from V2:
+a) Support system wide unique handle.
+
+Changes from v1:
+a) handle size is now specified in bytes
+b) returns -EOVERFLOW if the handle size is small
+c) dropped open_handle syscall and added open_by_handle_at syscall
+   open_by_handle_at takes mount_fd as the directory fd of the mount point
+   containing the file
+e) handle will only be unique in a given file system. So for an NFS server
+   exporting multiple file system, NFS server will have to internally track the
+   mount point to which a file handle belongs to. We should be able to do it much
+   easily than expecting kernel to give a system wide unique file handle. System
+   wide unique file handle would need much larger changes to the exportfs or VFS
+   interface and I was not sure whether we really need to do that in the kernel or
+   in the user space
+f) open_handle_at now only check for DAC_OVERRIDE capability
+
+
+Example program: (x86_32). (x86_64 would need a different syscall number)
+-------
+cc <source.c>
+--------
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+
+struct file_handle {
+        int handle_size;
+        int handle_type;
+        unsigned char handle[0];
+};
+
+#define AT_FDCWD		-100
+#define AT_SYMLINK_FOLLOW	0x400
+
+static int name_to_handle(const char *name, struct file_handle  *fh)
+{
+	return syscall(338, AT_FDCWD, name, fh, AT_SYMLINK_FOLLOW);
+}
+
+static int lname_to_handle(const char *name, struct file_handle  *fh)
+{
+	return syscall(338, AT_FDCWD, name, fh, 0);
+}
+
+static int fd_to_handle(int fd, struct file_handle  *fh)
+{
+	return syscall(338, fd, NULL, fh, AT_SYMLINK_FOLLOW);
+}
+
+static int open_by_handle(int mountfd, struct file_handle *fh,  int flags)
+{
+	return syscall(339, mountfd, fh, flags);
+}
+
+#define BUFSZ 100
+int main(int argc, char *argv[])
+{
+        int fd;
+        int ret, done = 0;
+	int mountfd;
+	int handle_sz;
+	struct stat bufstat;
+        char buf[BUFSZ];
+        struct file_handle *fh = NULL;;
+	if (argc != 3 ) {
+		printf("Usage: %s <filename> <mount-dir-name>\n", argv[0]);
+		exit(1);
+	}
+again:
+	if (fh && fh->handle_size) {
+		handle_sz = fh->handle_size;
+		free(fh);
+		fh = malloc(sizeof(struct file_handle) + handle_sz);
+		fh->handle_size = handle_sz;
+	} else {
+		fh = malloc(sizeof(struct file_handle));
+		fh->handle_size = 0;
+	}
+        errno  = 0;
+        ret = lname_to_handle(argv[1], fh);
+        if (ret && errno == EOVERFLOW) {
+		printf("Found the handle size needed to be %d\n", fh->handle_size);
+		goto again;
+        } else if (ret) {
+                perror("Error:");
+		exit(1);
+	}
+do_again:
+	printf("Waiting for input");
+	getchar();
+	mountfd = open(argv[2], O_RDONLY | O_DIRECTORY);
+	if (mountfd <= 0) {
+                perror("Error:");
+                exit(1);
+        }
+        fd = open_by_handle(mountfd, fh, O_RDONLY);
+        if (fd <= 0 ) {
+                perror("Error:");
+                exit(1);
+        }
+	printf("Reading the content now \n");
+	fstat(fd, &bufstat);
+	ret = S_ISLNK(bufstat.st_mode);
+	if (ret) {
+		memset(buf, 0 , BUFSZ);
+		readlinkat(fd, NULL, buf, BUFSZ);
+		printf("%s is a symlink pointing to %s\n", argv[1], buf);
+	}
+        memset(buf, 0 , BUFSZ);
+	while (1) {
+		ret = read(fd, buf, BUFSZ -1);
+		if (ret <= 0)
+			break;
+		buf[ret] = '\0';
+                printf("%s", buf);
+                memset(buf, 0 , BUFSZ);
+        }
+	/* Now check for faccess */
+	if (faccessat(fd, NULL, W_OK, 0) == 0) {
+		printf("Got write permission on the file \n");
+	} else
+		perror("faccess error");
+	/* now try to create a hardlink */
+	if (linkat(fd, NULL, AT_FDCWD, "test", 0) == 0){
+		printf("created hardlink\n");
+	} else
+		perror("linkat error");
+	if (done)
+		exit(0);
+	printf("Map fd to handle \n");
+        ret = fd_to_handle(fd, fh);
+	if (ret) {
+                perror("Error:");
+		exit(1);
+	}
+	done = 1;
+	goto do_again;
+}
+
+-aneesh
 
