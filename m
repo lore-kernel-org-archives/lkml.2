@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab0GFG7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 02:59:16 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39056 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753181Ab0GFG7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 02:59:15 -0400
-Date: Tue, 6 Jul 2010 08:59:04 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Conny Seidel <conny.seidel@amd.com>,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 1/5] perf tools: Fix fallback to cplus_demangle() when
- bfd_demangle() is not available
-Message-ID: <20100706065904.GC16224@elte.hu>
-References: <1278378276-25872-1-git-send-email-acme@infradead.org>
- <1278378276-25872-2-git-send-email-acme@infradead.org>
+	id S1754046Ab0GFHA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 03:00:29 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62640 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477Ab0GFHA1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 03:00:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278378276-25872-2-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0380]
+In-Reply-To: <20100705.192221.241453945.davem@davemloft.net>
+References: <20100629193618.5a840b8e@dev.queued.net> <AANLkTilme2uAoXjorUEzam9j_xosR8kl70W8PS71d-Th@mail.gmail.com> 
+	<20100707040734.05d625af@debxo> <20100705.192221.241453945.davem@davemloft.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 6 Jul 2010 01:00:06 -0600
+X-Google-Sender-Auth: B2yQxP47JTFvnld-b5w3KHRR-WM
+Message-ID: <AANLkTil3aZ0IF1KEc2h9MLHPZYW23pnWzEy4IiVb3zxT@mail.gmail.com>
+Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building code 
+	out into drivers/of
+To: David Miller <davem@davemloft.net>
+Cc: dilinger@queued.net, devicetree-discuss@lists.ozlabs.org,
+       sparclinux@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+       mingo@redhat.com, hpa@zytor.com, cjb@laptop.org, wmb@laptop.org,
+       pgf@laptop.org, linux-kernel@vger.kernel.org, benh@kernel.crashing.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 5, 2010 at 8:22 PM, David Miller <davem@davemloft.net> wrote:
+> From: Andres Salomon <dilinger@queued.net>
+> Date: Wed, 7 Jul 2010 04:07:34 +0000
+>
+>>  - For the pdt, calling into the prom once for each property/node to
+>>    create a fdt, and then unflattening it.  This is better than the
+>>    previous option, but I don't think the prom->fdt code will be very
+>>    nice.
+>
+> I'll need this on sparc64 at some point to support kexec() anyways.
+>
+> So at least for sparc you can assume that a something-->fdt translator
+> is going to exist at some point in the future regardless of what
+> happens here.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Hi David,
 
-> From: Conny Seidel <conny.seidel@amd.com>
-> 
-> make version 3.80 doesn't support "else ifdef" on the same line, also it
-> doesn't support unindented nested constructs.
-> 
-> Build fails with:
-> Makefile:608: Extraneous text after `else' directive
-> Makefile:611: *** only one `else' per conditional.  Stop.
-> 
-> This patch fixes the build for make 3.80.
+I'm curious... what are your plans here?  Will you be keeping OF alive
+between kexec()?  Will the new kernel get the entire device tree from
+fdt, or will it still be talking to OF?  How will the fdt fragments as
+Andres described above fit into sparc kexec (as opposed to generating
+one big tree as in his first option)?
 
-Since 3.81 is the latest Make version and 3.80 is just one step before that, 
-shouldnt we cherry-pick this into perf/urgent? (or is current upstream 
-unaffected?)
+Cheers,
+g.
 
-Thanks,
-
-	Ingo
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
