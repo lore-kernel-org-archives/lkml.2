@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab0GFWuy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 18:50:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31614 "EHLO
+	id S1756828Ab0GFWna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 18:43:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31516 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756637Ab0GFWnd (ORCPT
+	with ESMTP id S1756613Ab0GFWnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 18:43:33 -0400
+	Tue, 6 Jul 2010 18:43:23 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -17,52 +17,83 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 11/49] memblock: Remove unused memblock.debug struct member
-Date: Tue,  6 Jul 2010 15:39:04 -0700
-Message-Id: <1278455982-24621-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 15/49] memblock: Make memblock_find_region() out of memblock_alloc_region()
+Date: Tue,  6 Jul 2010 15:39:08 -0700
+Message-Id: <1278455982-24621-16-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
 References: <1278455982-24621-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C33B16D.0159,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4C33B16D.01EA,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
+This function will be used to locate a free area to put the new memblock
+arrays when attempting to resize them. memblock_alloc_region() is gone,
+the two callsites now call memblock_add_region().
+
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- include/linux/memblock.h |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ mm/memblock.c |   20 +++++++++-----------
+ 1 files changed, 9 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 3b41f61..5abb06b 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -32,7 +32,6 @@ struct memblock_type {
- };
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 21ba089..6577da6 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -309,8 +309,8 @@ static phys_addr_t memblock_align_up(phys_addr_t addr, phys_addr_t size)
+ 	return (addr + (size - 1)) & ~(size - 1);
+ }
  
- struct memblock {
--	unsigned long debug;
- 	phys_addr_t current_limit;
- 	struct memblock_type memory;
- 	struct memblock_type reserved;
-@@ -55,9 +54,11 @@ extern phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align);
- #define MEMBLOCK_ALLOC_ACCESSIBLE	0
+-static phys_addr_t __init memblock_alloc_region(phys_addr_t start, phys_addr_t end,
+-					   phys_addr_t size, phys_addr_t align)
++static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t end,
++					  phys_addr_t size, phys_addr_t align)
+ {
+ 	phys_addr_t base, res_base;
+ 	long j;
+@@ -318,12 +318,8 @@ static phys_addr_t __init memblock_alloc_region(phys_addr_t start, phys_addr_t e
+ 	base = memblock_align_down((end - size), align);
+ 	while (start <= base) {
+ 		j = memblock_overlaps_region(&memblock.reserved, base, size);
+-		if (j < 0) {
+-			/* this area isn't reserved, take it */
+-			if (memblock_add_region(&memblock.reserved, base, size) < 0)
+-				base = ~(phys_addr_t)0;
++		if (j < 0)
+ 			return base;
+-		}
+ 		res_base = memblock.reserved.regions[j].base;
+ 		if (res_base < size)
+ 			break;
+@@ -356,8 +352,9 @@ static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
  
- extern phys_addr_t __init memblock_alloc_base(phys_addr_t size,
--		phys_addr_t, phys_addr_t max_addr);
-+					 phys_addr_t align,
-+					 phys_addr_t max_addr);
- extern phys_addr_t __init __memblock_alloc_base(phys_addr_t size,
--		phys_addr_t align, phys_addr_t max_addr);
-+					   phys_addr_t align,
-+					   phys_addr_t max_addr);
- extern phys_addr_t __init memblock_phys_mem_size(void);
- extern phys_addr_t memblock_end_of_DRAM(void);
- extern void __init memblock_enforce_memory_limit(phys_addr_t memory_limit);
+ 		this_end = memblock_nid_range(start, end, &this_nid);
+ 		if (this_nid == nid) {
+-			phys_addr_t ret = memblock_alloc_region(start, this_end, size, align);
+-			if (ret != ~(phys_addr_t)0)
++			phys_addr_t ret = memblock_find_region(start, this_end, size, align);
++			if (ret != ~(phys_addr_t)0 &&
++			    memblock_add_region(&memblock.reserved, start, size) >= 0)
+ 				return ret;
+ 		}
+ 		start = this_end;
+@@ -432,8 +429,9 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
+ 		if (memblocksize < size)
+ 			continue;
+ 		base = min(memblockbase + memblocksize, max_addr);
+-		res_base = memblock_alloc_region(memblockbase, base, size, align);
+-		if (res_base != ~(phys_addr_t)0)
++		res_base = memblock_find_region(memblockbase, base, size, align);
++		if (res_base != ~(phys_addr_t)0 &&
++		    memblock_add_region(&memblock.reserved, res_base, size) >= 0)
+ 			return res_base;
+ 	}
+ 	return 0;
 -- 
 1.6.4.2
 
