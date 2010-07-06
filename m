@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab0GFLcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 07:32:52 -0400
-Received: from stinky.trash.net ([213.144.137.162]:64872 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab0GFLcs (ORCPT
+	id S1756153Ab0GFLfm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 07:35:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:60835 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab0GFLfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 07:32:48 -0400
-Message-ID: <4C331460.7050509@trash.net>
-Date: Tue, 06 Jul 2010 13:32:48 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Tue, 6 Jul 2010 07:35:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ian Kent <raven@themaw.net>
+Subject: Re: [PATCH 3/6] autofs/autofs4: move compat_ioctl handling into fs
+Date: Tue, 6 Jul 2010 13:35:00 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, autofs@linux.kernel.org
+References: <1278195310-25590-1-git-send-email-arnd@arndb.de> <20100705195837.GF5240@nowhere> <1278378690.3070.6.camel@localhost>
+In-Reply-To: <1278378690.3070.6.camel@localhost>
 MIME-Version: 1.0
-To: Simon Horman <horms@verge.net.au>
-CC: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
-       netfilter-devel@vger.kernel.org,
-       Malcolm Turnbull <malcolm@loadbalancer.org>,
-       Wensong Zhang <wensong@linux-vs.org>,
-       Julius Volz <julius.volz@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
-Subject: Re: [patch v2.3 1/4] netfilter: xt_ipvs (netfilter matcher for IPVS)
-References: <20100704113246.562399500@vergenet.net> <20100704114808.459045895@vergenet.net>
-In-Reply-To: <20100704114808.459045895@vergenet.net>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007061335.00264.arnd@arndb.de>
+X-Provags-ID: V02:K0:vgTcSf6GOyK7ixcB2PqLHsJeQayeHNjQhd1l3tVMPPs
+ 6NikPSfehaErfDUISAaymREadyu5HX+tHfD9e7/2yxYtofr0Wy
+ IF0epIBIlswvai2dR5CCGS0O79pfQpufZ4GE0Rbx/2X8JcS/jm
+ FKOem1uTEIY3s7TUWXb+hpCs3jrmdO8JyCd0UEpfknzRNLXMfk
+ rc1j23JSg1npAY9jW56KQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simon Horman wrote:
-> From:	Hannes Eder <heder@google.com>
->
-> This implements the kernel-space side of the netfilter matcher xt_ipvs.
->   
-> @@ -0,0 +1,25 @@
-> +#ifndef _XT_IPVS_H
-> +#define _XT_IPVS_H
-> +
-> +#define XT_IPVS_IPVS_PROPERTY	(1 << 0) /* all other options imply this one */
-> +#define XT_IPVS_PROTO		(1 << 1)
-> +#define XT_IPVS_VADDR		(1 << 2)
-> +#define XT_IPVS_VPORT		(1 << 3)
-> +#define XT_IPVS_DIR		(1 << 4)
-> +#define XT_IPVS_METHOD		(1 << 5)
-> +#define XT_IPVS_VPORTCTL	(1 << 6)
-> +#define XT_IPVS_MASK		((1 << 7) - 1)
-> +#define XT_IPVS_ONCE_MASK	(XT_IPVS_MASK & ~XT_IPVS_IPVS_PROPERTY)
-> +
-> +struct xt_ipvs_mtinfo {
-> +	union nf_inet_addr	vaddr, vmask;
-> +	__be16			vport;
-> +	__u16			l4proto;
-> +	__u16			fwd_method;
->   
-It seems you could use __u8 for both l4proto and fwd_method
-and reduce the match size by 2 bytes.
+On Tuesday 06 July 2010, Ian Kent wrote:
+> So it makes no difference whether the patches are combined, if it breaks
+> autofs then it probably won't be fixed but it may cause the replacement
+> to happen sooner.
 
-> +	__be16			vportctl;
-> +
-> +	__u8			invert;
-> +	__u8			bitmask;
-> +};
-> +static bool
-> +ipvs_mt(const struct sk_buff *skb, struct xt_action_param *par)
-> +...
->   
-> +	if (data->bitmask & XT_IPVS_DIR) {
-> +		enum ip_conntrack_info ctinfo;
-> +		struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
-> +
-> +		if (ct == NULL || ct == &nf_conntrack_untracked) {
->   
-We're using per-cpu structures for nf_conntrack_untracked in the
-current net-next/nf-next tree, so this doesn't work anymore. You
-need to use nf_ct_is_untracked() instead.
+Well, the main point of applying the patch now is to avoid breaking the
+autofs module when we remove the .ioctl operation.
 
-> +			match = false;
-> +			goto out_put_cp;
-> +		}
+> As far as the patch goes that should be fine and we should be able to
+> remove the BKL from autofs4 soon after but I'm not brave enough to try
+> just yet.
 
+Well, the only use of the BKL in autofs4 is in the ioctl function. You
+can probably replace that trivially with a global mutex, but from a quick
+inspection, even that should not be needed: The only ioctl command in
+autofs4 that does not already seem to have adequate locking is
+autofs4_get_set_timeout, which is even easier to change and still harmless
+if you don't do it at all.
+
+	Arnd
