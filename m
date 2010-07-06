@@ -1,81 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab0GFUHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 16:07:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1096 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753462Ab0GFUHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 16:07:49 -0400
-Date: Tue, 6 Jul 2010 16:52:54 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 8/9] KVM: MMU: combine guest pte read between fetch
- and pte prefetch
-Message-ID: <20100706195254.GA4311@amt.cnet>
-References: <4C330918.6040709@cn.fujitsu.com>
- <4C330A9A.9030106@cn.fujitsu.com>
+	id S1754907Ab0GFUSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 16:18:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62335 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab0GFUSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 16:18:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=qj6TGffx+NL0Ri0Nb859Kfb4bIj92XWoj3qAPLHFObGONm2K+Mw9wD/BABtTmK1AS8
+         HXBdn38bz+N6/2SvX8WvtIPeJ9hJ5N63L95DWz7rWeyPcqhPWkxNOaUpzI/E/5ZJN2JS
+         xJm7DC+BMbarni1klwtdyJfdQt2GR6OMn8hTA=
+Message-ID: <4C338FA8.7020707@gmail.com>
+Date: Tue, 06 Jul 2010 13:18:48 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C330A9A.9030106@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: "Sergey V." <sftp.mtuci@gmail.com>
+CC: minyard@acm.org, akpm@linux-foundation.org,
+       openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+       jillsmitt@linuxcenter.kz
+Subject: Re: [PATCH v2]ipmi:ipmi_si_intf.c Fix warning: variable 'addr_space'
+ set but not used
+References: <1278436544-6091-1-git-send-email-justinmattock@gmail.com> <201007062205.30616.sftp.mtuci@gmail.com> <4C337628.7080006@gmail.com> <201007070014.36816.sftp.mtuci@gmail.com>
+In-Reply-To: <201007070014.36816.sftp.mtuci@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 06, 2010 at 06:51:06PM +0800, Xiao Guangrong wrote:
-> Combine guest pte read between guest pte check in the fetch path and pte prefetch
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+On 07/06/2010 01:14 PM, Sergey V. wrote:
+> On Tuesday 06 of July 2010 22:30:00 Justin P. Mattock wrote:
+>>
+>>> Hello Justin.
+>>>
+>>> [...]
+>>>> @@ -2021,10 +2020,6 @@ static __devinit int try_init_spmi(struct SPMITable
+>>> *spmi)
+>>>>    	}
+>>>>
+>>>>    	if (spmi->addr.space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY)
+>>>> -		addr_space = IPMI_MEM_ADDR_SPACE;
+>>>> -	else
+>>>> -		addr_space = IPMI_IO_ADDR_SPACE;
+>>>> -
+>>>>    	info = kzalloc(sizeof(*info), GFP_KERNEL);
+>>>>    	if (!info) {
+>>>>    		printk(KERN_ERR PFX "Could not allocate SI data (3)\n");
+>>>
+>>> This looks like after applying this patch 'info = ...' will be part of
+>>> if statement (without indent before 'info = ...')
+>>>
+>>> 	if (spmi->addr.space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY)
+>>> 		info = kzalloc(sizeof(*info), GFP_KERNEL);
+>>>
+>>> It's correct?
+>>>
+>>> Thanks
+>>>
+>>
+>> the original patch I dont think this is correct. a bit confusing with
+>> the if(!info) at the bottom of this.
+>> here's an updated version if it looks to be correct I'll resend if not
+>> I'll redu:
+>>
+>>
+>> ---
+>>    drivers/char/ipmi/ipmi_si_intf.c |    7 -------
+>>    1 files changed, 0 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/char/ipmi/ipmi_si_intf.c
+>> b/drivers/char/ipmi/ipmi_si_intf.c
+>> index 094bdc3..ef03ecd 100644
+>> --- a/drivers/char/ipmi/ipmi_si_intf.c
+>> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+>> @@ -2013,19 +2013,12 @@ struct SPMITable {
+>>    static __devinit int try_init_spmi(struct SPMITable *spmi)
+>>    {
+>>    	struct smi_info  *info;
+>> -	u8 		 addr_space;
+>>
+>>    	if (spmi->IPMIlegacy != 1) {
+>>    		printk(KERN_INFO PFX "Bad SPMI legacy %d\n", spmi->IPMIlegacy);
+>>    		return -ENODEV;
+>>    	}
+>>
+>> -	if (spmi->addr.space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY)
+>> -		addr_space = IPMI_MEM_ADDR_SPACE;
+>> -	else
+>> -		addr_space = IPMI_IO_ADDR_SPACE;
+>> -
+>> -	info = kzalloc(sizeof(*info), GFP_KERNEL);
+>>    	if (!info) {
+>>    		printk(KERN_ERR PFX "Could not allocate SI data (3)\n");
+>>    		return -ENOMEM;
+>> -- 1.7.1.rc1.21.gf3bd6
+>>
+>> Thanks for the info on this..
+>>
+>> Justin P. Mattock
+>>
+>
+> Sorry, but I think that new patch is not correct.
+>
+> Why do you delete this row "info = kzalloc(sizeof(*info), GFP_KERNEL)"?
+> There is the only one unused variable `addr_space`, so I think it should
+> be removed, that's all.
+>
+> The following code is correct and not need to be changed:
+>
+> 	info = kzalloc(sizeof(*info), GFP_KERNEL);
+> 	if (!info) {
+> 		printk(KERN_ERR PFX "Could not allocate SI data (3)\n");
+>
+> Please see below my patch.
+> Thanks.
+>
 > ---
->  arch/x86/kvm/paging_tmpl.h |   69 ++++++++++++++++++++++++++-----------------
->  1 files changed, 42 insertions(+), 27 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index e04c1a4..a1e6d91 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -67,6 +67,7 @@ struct guest_walker {
->  	int level;
->  	gfn_t table_gfn[PT_MAX_FULL_LEVELS];
->  	pt_element_t ptes[PT_MAX_FULL_LEVELS];
-> +	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
->  	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
->  	unsigned pt_access;
->  	unsigned pte_access;
-> @@ -291,12 +292,12 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
->  		     gpte_to_gfn(gpte), pfn, true, true);
->  }
->  
-> -static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, u64 *sptep)
-> +static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
-> +				u64 *sptep)
->  {
->  	struct kvm_mmu_page *sp;
-> -	pt_element_t gptep[PTE_PREFETCH_NUM];
-> -	gpa_t first_pte_gpa;
-> -	int offset = 0, index, i, j, max;
-> +	pt_element_t *gptep;
-> +	int index, i, j, max;
->  
->  	sp = page_header(__pa(sptep));
->  	index = sptep - sp->spt;
-> @@ -311,15 +312,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, u64 *sptep)
->  	i = index & ~(PTE_PREFETCH_NUM - 1);
->  	max = index | (PTE_PREFETCH_NUM - 1);
->  
-> -	if (PTTYPE == 32)
-> -		offset = sp->role.quadrant << PT64_LEVEL_BITS;
+> Fix compile warning
+> drivers/char/ipmi/ipmi_si_intf.c: In function 'try_init_spmi':
+> drivers/char/ipmi/ipmi_si_intf.c:2016:8: warning: variable 'addr_space' set but
+> not used
+>
+> Signed-off-by: Sergey V.<sftp.mtuci@gmail.com>
+> ---
+>   drivers/char/ipmi/ipmi_si_intf.c |    6 ------
+>   1 files changed, 0 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/char/ipmi/ipmi_si_intf.c
+> b/drivers/char/ipmi/ipmi_si_intf.c
+> index 094bdc3..1f5f025 100644
+> --- a/drivers/char/ipmi/ipmi_si_intf.c
+> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+> @@ -2013,18 +2013,12 @@ struct SPMITable {
+>   static __devinit int try_init_spmi(struct SPMITable *spmi)
+>   {
+>   	struct smi_info  *info;
+> -	u8 		 addr_space;
+>
+>   	if (spmi->IPMIlegacy != 1) {
+>   		printk(KERN_INFO PFX "Bad SPMI legacy %d\n", spmi->IPMIlegacy);
+>   		return -ENODEV;
+>   	}
+>
+> -	if (spmi->addr.space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY)
+> -		addr_space = IPMI_MEM_ADDR_SPACE;
+> -	else
+> -		addr_space = IPMI_IO_ADDR_SPACE;
 > -
-> -	first_pte_gpa = gfn_to_gpa(sp->gfn) +
-> -				(offset + i) * sizeof(pt_element_t);
-> -
-> -	if (kvm_read_guest_atomic(vcpu->kvm, first_pte_gpa, gptep,
-> -					sizeof(gptep)) < 0)
-> -		return;
-> +	gptep = gw->prefetch_ptes;
+>   	info = kzalloc(sizeof(*info), GFP_KERNEL);
+>   	if (!info) {
+>   		printk(KERN_ERR PFX "Could not allocate SI data (3)\n");
 
-Where do you reread the gpte in the prefetch path?
 
+well if everybody agrees with your change then all good...
+
+Justin P. Mattock
