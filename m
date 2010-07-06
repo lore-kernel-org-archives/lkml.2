@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab0GFUi7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 16:38:59 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:33392 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752896Ab0GFUi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 16:38:58 -0400
-X-Sasl-enc: 6RCS1sG+1QjBfBCf7Sk3/n4zjohbsHvTULLy6upYCWm2 1278448734
-Message-ID: <4C33945B.1000007@imap.cc>
-Date: Tue, 06 Jul 2010 22:38:51 +0200
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	id S1756021Ab0GFUwx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 16:52:53 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25818 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754651Ab0GFUwv (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 6 Jul 2010 16:52:51 -0400
+Date: Tue, 6 Jul 2010 16:51:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, chris.mason@oracle.com,
+       viro@zeniv.linux.org.uk, akpm@linux-foundation.org, adilger@Sun.COM,
+       tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, ngupta@vflare.org,
+       jeremy@goop.org, JBeulich@novell.com, kurt.hackel@oracle.com,
+       npiggin@suse.de, dave.mccracken@oracle.com, riel@redhat.com,
+       avi@redhat.com
+Subject: Re: [PATCH V3 3/8] Cleancache: core ops functions and configuration
+Message-ID: <20100706205121.GA32627@phenom.dumpdata.com>
+References: <20100621231939.GA19505@ca-server1.us.oracle.com>
+ <1277223988.9782.20.camel@nimitz>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: isdn@linux-pingi.de, hjlipp@web.de, keil@b1-systems.de,
-       i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Documentation/isdn: CAPI controller interface amendment
-References: <20100705-patch-isdn-00.tilman@imap.cc>	<20100705-patch-isdn-01.tilman@imap.cc> <20100705.192426.13754108.davem@davemloft.net>
-In-Reply-To: <20100705.192426.13754108.davem@davemloft.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig455A81FC2CA936D2087E1E86"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277223988.9782.20.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C339783.00CF:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig455A81FC2CA936D2087E1E86
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jun 22, 2010 at 09:26:28AM -0700, Dave Hansen wrote:
+> On Mon, 2010-06-21 at 16:19 -0700, Dan Magenheimer wrote:
+> > --- linux-2.6.35-rc2/include/linux/cleancache.h 1969-12-31 17:00:00.000000000 -0700
+> > +++ linux-2.6.35-rc2-cleancache/include/linux/cleancache.h      2010-06-21 14:45:18.000000000 -0600
+> > @@ -0,0 +1,88 @@
+> > +#ifndef _LINUX_CLEANCACHE_H
+> > +#define _LINUX_CLEANCACHE_H
+> > +
+> > +#include <linux/fs.h>
+> > +#include <linux/mm.h>
+> > +
+> > +struct cleancache_ops {
+> > +       int (*init_fs)(size_t);
+> > +       int (*init_shared_fs)(char *uuid, size_t);
+> > +       int (*get_page)(int, ino_t, pgoff_t, struct page *);
+> > +       void (*put_page)(int, ino_t, pgoff_t, struct page *);
+> > +       void (*flush_page)(int, ino_t, pgoff_t);
+> > +       void (*flush_inode)(int, ino_t);
+> > +       void (*flush_fs)(int);
+> > +};
+> > + 
+> 
+> How would someone go about testing this code?  Is there an example
+> cleancache implementation?
 
-Am 06.07.2010 04:24 schrieb David Miller:
-> Please stop using "Impact: " tags, I just edit them out when
-> I add your changes.
+Dan,
 
-Gladly.
+Can you reference with a link or a git branch the patches that utilize
+this?
 
-Thanks,
-Tilman
-
---=20
-Tilman Schmidt                    E-Mail: tilman@imap.cc
-Bonn, Germany
-Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
-
-
---------------enig455A81FC2CA936D2087E1E86
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.12 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkwzlFsACgkQQ3+did9BuFsg0gCfUJ/JkVMWSxmc7L8OnLPexvHO
-V+gAn21nq6yqaCR+vweCgAktWrCZ79gw
-=rRCo
------END PGP SIGNATURE-----
-
---------------enig455A81FC2CA936D2087E1E86--
+And also mention that in the 0/X patch so that folks can reference your
+cleancache implementation?
