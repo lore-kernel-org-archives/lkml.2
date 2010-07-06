@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab0GFKw0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 06:52:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56738 "EHLO song.cn.fujitsu.com"
+	id S1755880Ab0GFKxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 06:53:21 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55480 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753822Ab0GFKwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 06:52:25 -0400
-Message-ID: <4C330A00.50108@cn.fujitsu.com>
-Date: Tue, 06 Jul 2010 18:48:32 +0800
+	id S1754383Ab0GFKxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 06:53:20 -0400
+Message-ID: <4C330A37.8080709@cn.fujitsu.com>
+Date: Tue, 06 Jul 2010 18:49:27 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
        KVM list <kvm@vger.kernel.org>
-Subject: [PATCH v5 5/9] KVM: MMU: introduce gfn_to_page_many_atomic() function
+Subject: [PATCH v5 6/9] KVM: MMU: introduce pte_prefetch_topup_memory_cache()
 References: <4C330918.6040709@cn.fujitsu.com>
 In-Reply-To: <4C330918.6040709@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -23,83 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function not only return the gfn's page but also the page number
-after @gfn in the slot
+Introduce this function to topup prefetch cache
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- include/linux/kvm_host.h |    2 ++
- virt/kvm/kvm_main.c      |   29 ++++++++++++++++++++++++++++-
- 2 files changed, 30 insertions(+), 1 deletions(-)
+ arch/x86/kvm/mmu.c |   25 +++++++++++++++++++++----
+ 1 files changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index e0fb543..53f663c 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -288,6 +288,8 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
- void kvm_disable_largepages(void);
- void kvm_arch_flush_shadow(struct kvm *kvm);
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 3dcd55d..cda4587 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -89,6 +89,8 @@ module_param(oos_shadow, bool, 0644);
+ 	}
+ #endif
  
-+int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn,
-+			    struct page **pages, int nr_pages, bool *enough);
- struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn);
- unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn);
- void kvm_release_page_clean(struct page *page);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 5467fe5..2cc6a7d 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -923,15 +923,25 @@ static unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn)
- 	return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
++#define PTE_PREFETCH_NUM		16
++
+ #define PT_FIRST_AVAIL_BITS_SHIFT 9
+ #define PT64_SECOND_AVAIL_BITS_SHIFT 52
+ 
+@@ -316,15 +318,16 @@ static void update_spte(u64 *sptep, u64 new_spte)
+ 	}
  }
  
--unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
-+static unsigned long gfn_to_hva_many(struct kvm *kvm, gfn_t gfn, int *entry)
+-static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
+-				  struct kmem_cache *base_cache, int min)
++static int __mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
++				    struct kmem_cache *base_cache, int min,
++				    int max, gfp_t flags)
  {
- 	struct kvm_memory_slot *slot;
+ 	void *obj;
  
- 	slot = gfn_to_memslot(kvm, gfn);
-+
- 	if (!slot || slot->flags & KVM_MEMSLOT_INVALID)
- 		return bad_hva();
-+
-+	if (entry)
-+		*entry = slot->npages - (gfn - slot->base_gfn);
-+
- 	return gfn_to_hva_memslot(slot, gfn);
- }
-+
-+unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
-+{
-+	return gfn_to_hva_many(kvm, gfn, NULL);
-+}
- EXPORT_SYMBOL_GPL(gfn_to_hva);
- 
- static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
-@@ -1011,6 +1021,23 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
- 	return hva_to_pfn(kvm, addr, false);
+ 	if (cache->nobjs >= min)
+ 		return 0;
+-	while (cache->nobjs < ARRAY_SIZE(cache->objects)) {
+-		obj = kmem_cache_zalloc(base_cache, GFP_KERNEL);
++	while (cache->nobjs < max) {
++		obj = kmem_cache_zalloc(base_cache, flags);
+ 		if (!obj)
+ 			return -ENOMEM;
+ 		cache->objects[cache->nobjs++] = obj;
+@@ -332,6 +335,20 @@ static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
+ 	return 0;
  }
  
-+int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn,
-+			    struct page **pages, int nr_pages, bool *enough)
++static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
++				  struct kmem_cache *base_cache, int min)
 +{
-+	unsigned long addr;
-+	int entry, ret;
-+
-+	addr = gfn_to_hva_many(kvm, gfn, &entry);
-+	if (kvm_is_error_hva(addr))
-+		return -1;
-+
-+	entry = min(entry, nr_pages);
-+	*enough = (entry == nr_pages) ? true : false;
-+	ret = __get_user_pages_fast(addr, entry, 1, pages);
-+	return ret;
++	return __mmu_topup_memory_cache(cache, base_cache, min,
++				      ARRAY_SIZE(cache->objects), GFP_KERNEL);
 +}
-+EXPORT_SYMBOL_GPL(gfn_to_page_many_atomic);
 +
- struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
++static int pte_prefetch_topup_memory_cache(struct kvm_vcpu *vcpu)
++{
++	return __mmu_topup_memory_cache(&vcpu->arch.mmu_rmap_desc_cache,
++					rmap_desc_cache, PTE_PREFETCH_NUM,
++					PTE_PREFETCH_NUM, GFP_ATOMIC);
++}
++
+ static void mmu_free_memory_cache(struct kvm_mmu_memory_cache *mc,
+ 				  struct kmem_cache *cache)
  {
- 	pfn_t pfn;
 -- 
 1.6.1.2
 
