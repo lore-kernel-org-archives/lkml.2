@@ -1,55 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100Ab0GFQKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 12:10:22 -0400
-Received: from fieldses.org ([174.143.236.118]:58347 "EHLO fieldses.org"
+	id S1755364Ab0GFQZd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 12:25:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48126 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754907Ab0GFQKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 12:10:20 -0400
-Date: Tue, 6 Jul 2010 12:10:02 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Neil Brown <neilb@suse.de>, hch@infradead.org, viro@zeniv.linux.org.uk,
-       adilger@sun.com, corbet@lwn.net, serue@us.ibm.com,
-       hooanon05@yahoo.co.jp, linux-fsdevel@vger.kernel.org,
-       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
- syscalls
-Message-ID: <20100706161002.GD7387@fieldses.org>
-References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <871vbn2mk9.fsf@linux.vnet.ibm.com>
- <20100702064108.64034561@notabene.brown>
- <87iq4y29a6.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87iq4y29a6.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753550Ab0GFQZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 12:25:28 -0400
+From: Gleb Natapov <gleb@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+       mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+       hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+       mtosatti@redhat.com
+Subject: [PATCH v4 10/12] Handle async PF in non preemptable context
+Date: Tue,  6 Jul 2010 19:24:58 +0300
+Message-Id: <1278433500-29884-11-git-send-email-gleb@redhat.com>
+In-Reply-To: <1278433500-29884-1-git-send-email-gleb@redhat.com>
+References: <1278433500-29884-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 02:45:45AM +0530, Aneesh Kumar K. V wrote:
-> One use case i had was that if the userspace file server can directly
-> work with the returned file system UUID,
+If async page fault is received by idle task or when preemp_count is
+not zero guest cannot reschedule, so do sti; hlt and wait for page to be
+ready. vcpu can still process interrupts while it waits for the page to
+be ready.
 
-I agree that the uuid should be split out from the rest of the
-filehandle, but ...
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+---
+ arch/x86/kernel/kvm.c |   36 ++++++++++++++++++++++++++++++++----
+ 1 files changed, 32 insertions(+), 4 deletions(-)
 
-> the it can build the file
-> handle for client in a single call.
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index fa9f520..f4d87b3 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -37,6 +37,7 @@
+ #include <asm/cpu.h>
+ #include <asm/traps.h>
+ #include <asm/desc.h>
++#include <asm/tlbflush.h>
+ 
+ #define MMU_QUEUE_SIZE 1024
+ 
+@@ -68,6 +69,8 @@ struct kvm_task_sleep_node {
+ 	wait_queue_head_t wq;
+ 	u32 token;
+ 	int cpu;
++	bool halted;
++	struct mm_struct *mm;
+ };
+ 
+ static struct kvm_task_sleep_head {
+@@ -96,6 +99,11 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
+ 	struct kvm_task_sleep_head *b = &async_pf_sleepers[key];
+ 	struct kvm_task_sleep_node n, *e;
+ 	DEFINE_WAIT(wait);
++	int cpu, idle;
++
++	cpu = get_cpu();
++	idle = idle_cpu(cpu);
++	put_cpu();
+ 
+ 	spin_lock(&b->lock);
+ 	e = _find_apf_task(b, token);
+@@ -109,17 +117,31 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
+ 
+ 	n.token = token;
+ 	n.cpu = smp_processor_id();
++	n.mm = percpu_read(cpu_tlbstate.active_mm);
++	n.halted = idle || preempt_count() > 1;
++	atomic_inc(&n.mm->mm_count);
+ 	init_waitqueue_head(&n.wq);
+ 	hlist_add_head(&n.link, &b->list);
+ 	spin_unlock(&b->lock);
+ 
+ 	for (;;) {
+-		prepare_to_wait(&n.wq, &wait, TASK_UNINTERRUPTIBLE);
++		if (!n.halted)
++			prepare_to_wait(&n.wq, &wait, TASK_UNINTERRUPTIBLE);
+ 		if (hlist_unhashed(&n.link))
+ 			break;
+-		schedule();
++
++		if (!n.halted) {
++			schedule();
++		} else {
++			/*
++			 * We cannot reschedule. So halt.
++			 */
++			native_safe_halt();
++			local_irq_disable();
++		}
+ 	}
+-	finish_wait(&n.wq, &wait);
++	if (!n.halted)
++		finish_wait(&n.wq, &wait);
+ 
+ 	return;
+ }
+@@ -127,7 +149,12 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
+ static void apf_task_wake_one(struct kvm_task_sleep_node *n)
+ {
+ 	hlist_del_init(&n->link);
+-	if (waitqueue_active(&n->wq))
++	if (!n->mm)
++		return;
++	mmdrop(n->mm);
++	if (n->halted)
++		smp_send_reschedule(n->cpu);
++	else if (waitqueue_active(&n->wq))
+ 		wake_up(&n->wq);
+ }
+ 
+@@ -157,6 +184,7 @@ again:
+ 		}
+ 		n->token = token;
+ 		n->cpu = smp_processor_id();
++		n->mm = NULL;
+ 		init_waitqueue_head(&n->wq);
+ 		hlist_add_head(&n->link, &b->list);
+ 	} else
+-- 
+1.7.1
 
-... I don't understand why both need to come in the same system call.
-Is it purely an efficiency question?  If so, why do you expect this to
-be significant?
-
-(I would have thought that the system call overhead is so small, and so
-many calls will already be required to perform the typical rpc, that
-this would be insignificant.)
-
-A filesystem uuid seems like a generally useful thing (maybe more so
-than a filehandle), so it'd seem worth figuring out how to export that
-separately.
-
---b.
