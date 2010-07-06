@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab0GFSi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 14:38:56 -0400
-Received: from [202.81.31.146] ([202.81.31.146]:54334 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085Ab0GFSin (ORCPT
+	id S1753130Ab0GFSjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 14:39:05 -0400
+Received: from [202.81.31.142] ([202.81.31.142]:39239 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab0GFSi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 14:38:43 -0400
+	Tue, 6 Jul 2010 14:38:59 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
        corbet@lwn.net, neilb@suse.de, hooanon05@yahoo.co.jp,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org,
        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 4/9] vfs: Allow handle based open on symlinks
-Date: Wed,  7 Jul 2010 00:08:06 +0530
-Message-Id: <1278441491-12785-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 8/9] x86: Add new syscalls for x86_32
+Date: Wed,  7 Jul 2010 00:08:10 +0530
+Message-Id: <1278441491-12785-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.rc1
 In-Reply-To: <1278441491-12785-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1278441491-12785-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,65 +24,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch update may_open to allow handle based open on symlinks.
-The file handle based API use file descritor returned from open_by_handle_at
-to do different file system operations. To find the link target name we
-need to get a file descriptor on symlinks.
+This patch adds sys_name_to_handle_at and sys_open_by_handle_at
+syscalls to x86_32
 
+Acked-by: Serge Hallyn <serue@us.ibm.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/unistd_32.h   |    4 +++-
+ arch/x86/kernel/syscall_table_32.S |    2 ++
+ 2 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index c2d19c7..417bf53 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1422,7 +1422,7 @@ int vfs_create(struct inode *dir, struct dentry *dentry, int mode,
- 	return error;
- }
+diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
+index beb9b5f..06890db 100644
+--- a/arch/x86/include/asm/unistd_32.h
++++ b/arch/x86/include/asm/unistd_32.h
+@@ -343,10 +343,12 @@
+ #define __NR_rt_tgsigqueueinfo	335
+ #define __NR_perf_event_open	336
+ #define __NR_recvmmsg		337
++#define __NR_name_to_handle_at	338
++#define __NR_open_by_handle_at  339
  
--int may_open(struct path *path, int acc_mode, int flag)
-+static int __may_open(struct path *path, int acc_mode, int flag, int handle)
- {
- 	struct dentry *dentry = path->dentry;
- 	struct inode *inode = dentry->d_inode;
-@@ -1433,7 +1433,13 @@ int may_open(struct path *path, int acc_mode, int flag)
+ #ifdef __KERNEL__
  
- 	switch (inode->i_mode & S_IFMT) {
- 	case S_IFLNK:
--		return -ELOOP;
-+		/*
-+		 * For file handle based open we should allow
-+		 * open of symlink.
-+		 */
-+		if (!handle)
-+			return -ELOOP;
-+		break;
- 	case S_IFDIR:
- 		if (acc_mode & MAY_WRITE)
- 			return -EISDIR;
-@@ -1473,6 +1479,11 @@ int may_open(struct path *path, int acc_mode, int flag)
- 	return break_lease(inode, flag);
- }
+-#define NR_syscalls 338
++#define NR_syscalls 340
  
-+int may_open(struct path *path, int acc_mode, int flag)
-+{
-+	return __may_open(path, acc_mode, flag, 0);
-+}
-+
- static int handle_truncate(struct path *path)
- {
- 	struct inode *inode = path->dentry->d_inode;
-@@ -1570,7 +1581,7 @@ struct file *finish_open_handle(struct path *path,
- 		if (error)
- 			goto exit;
- 	}
--	error = may_open(path, acc_mode, open_flag);
-+	error = __may_open(path, acc_mode, open_flag, 1);
- 	if (error) {
- 		if (will_truncate)
- 			mnt_drop_write(path->mnt);
+ #define __ARCH_WANT_IPC_PARSE_VERSION
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
+index 8b37293..646717f 100644
+--- a/arch/x86/kernel/syscall_table_32.S
++++ b/arch/x86/kernel/syscall_table_32.S
+@@ -337,3 +337,5 @@ ENTRY(sys_call_table)
+ 	.long sys_rt_tgsigqueueinfo	/* 335 */
+ 	.long sys_perf_event_open
+ 	.long sys_recvmmsg
++	.long sys_name_to_handle_at
++	.long sys_open_by_handle_at	/* 339 */
 -- 
 1.7.2.rc1
 
