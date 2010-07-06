@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab0GFW6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 18:58:55 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57896 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab0GFW6y (ORCPT
+	id S1753852Ab0GFXDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 19:03:19 -0400
+Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:34036 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752176Ab0GFXDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 18:58:54 -0400
-Date: Tue, 6 Jul 2010 23:58:15 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-       stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Anfei Zhou <anfei.zhou@gmail.com>,
-       Alexander Shishkin <virtuoso@slind.org>,
-       Siarhei Siamashka <siarhei.siamashka@nokia.com>
-Subject: Re: [patch 071/149] ARM: 6166/1: Proper prefetch abort handling on
-	pre-ARMv6
-Message-ID: <20100706225815.GA21834@flint.arm.linux.org.uk>
-References: <20100701175144.GA2116@kroah.com> <20100701173212.785441106@clark.site> <20100701221420.GA10481@shutemov.name> <20100701221728.GA12187@suse.de> <20100701222541.GB10481@shutemov.name> <20100701224837.GA27389@flint.arm.linux.org.uk> <20100701225911.GC10481@shutemov.name> <20100701231207.GB27389@flint.arm.linux.org.uk> <20100706130618.GA14177@shutemov.name>
+	Tue, 6 Jul 2010 19:03:17 -0400
+Date: Wed, 7 Jul 2010 09:03:13 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] Rearrange i_flags to be consistent with FS_IOC_GETFLAGS
+Message-ID: <20100706230312.GB25018@dastard>
+References: <20100706001032.GA25018@dastard>
+ <20100705154319.31193.56706.stgit@warthog.procyon.org.uk>
+ <29431.1278423623@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100706130618.GA14177@shutemov.name>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <29431.1278423623@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 06, 2010 at 04:06:18PM +0300, Kirill A. Shutemov wrote:
-> I've investigated the issue. It's reproducible if you try to jump to
-> the megabyte next to section mapping.
+On Tue, Jul 06, 2010 at 02:40:23PM +0100, David Howells wrote:
+> Dave Chinner <david@fromorbit.com> wrote:
+> 
+> > Further, it opens up the possibility that further down the track
+> > someone modifies S_* flag values (say when adding some XFS
+> > functionality) and corrupts extN filesystems all over the place.
+> > There isn't even compiler guards to catch someone modifying the S_*
+> > flags in a way that makes it incompatible with the extN on-disk
+> > definitions.
+> 
+> That occurred to me after I sent the patch.  I can add some preprocessor guards
+> for this.
 
-Okay, this is specific to the way that OMAP sets up its mappings, which
-is why it doesn't appear everywhere.
+I'd prefer generic flags are not dependent on fixed values from a
+specific filesystem several layers down the storage stack.
 
-> On ARM one Linux PGD entry contains two hardware entry. But there is error
-> in do_translation_fault(). It's always call pmd_none() check for the first
-> entry of two, not for the entry corresponded to address. So in case if we
-> try to jump the megabyte next to section mapping, we will have inifinity
-> loop of translation faults.
+Also, if the problem you are trying to solve is overhead of
+calculating the flags for stat() on RISC architectures, then I'd
+argue that XFS is just as important target for such an optimisation
+because it is widely used in small ARM and MIPS based NAS
+appliances....
 
-Okay, now that we know _why_ it happens, I'm satisfied that the fix
-previously committed will help this situation.
+Cheers,
 
-> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-> index 9634fe1..825b9da 100644
-> --- a/arch/arm/mm/fault.c
-> +++ b/arch/arm/mm/fault.c
-> @@ -406,7 +406,8 @@ do_translation_fault(unsigned long addr, unsigned int fsr,
->         pmd_k = pmd_offset(pgd_k, addr);
->         pmd   = pmd_offset(pgd, addr);
->  
-> -       if (pmd_none(*pmd_k))
-> +       index = (addr >> SECTION_SHIFT) & 1;
-> +       if (pmd_none(pmd_k[index]))
-
-I do think this is extremely obscure, and therefore requires a comment
-to help people understand what is going on here and why.  Leaving it
-in the commit log would be an invitation for this to be needlessly
-cut'n'pasted.
-
+Dave.
 -- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Dave Chinner
+david@fromorbit.com
