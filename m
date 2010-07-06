@@ -1,73 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab0GFEfB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 00:35:01 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59760 "EHLO mx1.suse.de"
+	id S1751442Ab0GFEua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 00:50:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28915 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247Ab0GFEe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 00:34:59 -0400
-Date: Tue, 6 Jul 2010 14:34:39 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-       Frank Mayhar <fmayhar@google.com>
-Subject: Re: [patch 29/52] fs: icache lock i_count
-Message-ID: <20100706043439.GH11732@laptop>
-References: <20100624030212.676457061@suse.de>
- <20100624030730.245992858@suse.de>
- <20100630072702.GF24712@dastard>
- <20100630120502.GB21358@laptop>
- <20100702190355.2b3fe6d2.akpm@linux-foundation.org>
- <20100703034123.GE11732@laptop>
- <20100702213149.f0ca2f72.akpm@linux-foundation.org>
- <20100703050652.GF11732@laptop>
- <20100705224106.GZ24712@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100705224106.GZ24712@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751040Ab0GFEu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 00:50:28 -0400
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Tom Lyon <pugs@cisco.com>
+Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de, mst@redhat.com,
+       avi@redhat.com, gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
+In-Reply-To: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Jul 2010 22:50:05 -0600
+Message-ID: <1278391805.5764.28.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 06, 2010 at 08:41:06AM +1000, Dave Chinner wrote:
-> On Sat, Jul 03, 2010 at 03:06:52PM +1000, Nick Piggin wrote:
-> > So it makes a lot of sense to have a lock to rule the inode (as opposed
-> > to now we have a lock to rule *all* inodes).
-> 
-> I don't disagree with this approach - I object to the fact that you
-> repurpose an existing lock and change it's locking rules to "rule
-> the inode". We don't have any one lock that "rules the inode",
+Hi Tom.
 
-"rule the inode" was in regard to the inode cache / dirty / writeout
-handling; ie. what inode_lock is currently for. The idea is that in
-these code paths, we tend to want to take an inode, lock it, and then
-manipulate it (including putting it on or taking it off data
-structures).
+A few MSI issues below.  Thanks,
 
+Alex
 
-> anyway, so adding a new "i_list_lock" for the new VFS level locking
-> strategies makes it a lot more self-contained. Fundamentally I'm
-> less concerned about the additional memory usage than I am about
-> having landmines planted around i_lock...
+On Tue, 2010-06-08 at 14:21 -0700, Tom Lyon wrote:
+> diff -uprN linux-2.6.34/drivers/vfio/vfio_pci_config.c vfio-linux-2.6.34/drivers/vfio/vfio_pci_config.c
+> --- linux-2.6.34/drivers/vfio/vfio_pci_config.c	1969-12-31 16:00:00.000000000 -0800
+> +++ vfio-linux-2.6.34/drivers/vfio/vfio_pci_config.c	2010-05-28 14:26:47.000000000 -0700
+> +/*
+> + * Lengths of PCI Config Capabilities
+> + * 0 means unknown (but at least 4)
+> + * FF means special/variable
+> + */
+> +static u8 pci_capability_length[] = {
+> +	[PCI_CAP_ID_BASIC]	= 64,		/* pci config header */
+> +	[PCI_CAP_ID_PM]		= PCI_PM_SIZEOF,
+> +	[PCI_CAP_ID_AGP]	= PCI_AGP_SIZEOF,
+> +	[PCI_CAP_ID_VPD]	= 8,
+> +	[PCI_CAP_ID_SLOTID]	= 4,
+> +	[PCI_CAP_ID_MSI]	= 0xFF,		/* 10, 14, or 24 */
 
-(it's not just lists, its refcount and i_state too)
+I think this is actually 10, 14, 20, or 24.
 
-I just don't see a problem. _No_ filesystem takes any of the locks
-that nest inside i_lock. They may call some inode.c functions, but
-shouldn't do so while holding i_lock if they are treating i_lock as
-an innermost lock. So they can keep using i_lock. I did go through
-and attempt to look at all filesystems.
+> +static struct perm_bits pci_cap_msi_perm[] = {
+> +	{ 0,		0, },		/* 0x00 MSI message control */
+> +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x04 MSI message address */
+> +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x08 MSI message addr/data */
+> +	{ 0x0000FFFF,	0x0000FFFF, },	/* 0x0c MSI message data */
+> +	{ 0,		0xFFFFFFFF, },	/* 0x10 MSI mask bits */
+> +	{ 0,		0xFFFFFFFF, },	/* 0x14 MSI pending bits */
+> +};
 
-Within inode.c, lock ordering is 2 levels deep, same as it was when
-we had inode_lock and i_lock.
+Is there any reason for mask bits to have virtualized writes?  I don't
+think we can support all 4 MSI capability sizes with this one table.  We
+probably need a 32bit and 64bit version, then we can drop the mask,
+pending, and reserved fields via the length.
 
-If some filesystem introduces a lock ordering problem from not
-reading the newly added documentation, lockdep should catch it pretty
-quick.
+> +		if (len == 0xFF) {
+> +			switch (cap) {
+> +			case PCI_CAP_ID_MSI:
+> +				ret = pci_read_config_word(pdev,
+> +						pos + PCI_MSI_FLAGS, &flags);
+> +				if (ret < 0)
+> +					return ret;
+> +				if (flags & PCI_MSI_FLAGS_MASKBIT)
+> +					/* per vec masking */
+> +					len = 24;
+> +				else if (flags & PCI_MSI_FLAGS_64BIT)
 
-So I don't see a landmine they don't have (in much larger doses) with
-i_mutex, reentrant reclaim, page lock, buffer lock, mmap_sem etc
-already.
+These aren't mutually exclusive features aiui.
+
+> +					/* 64 bit */
+> +					len = 14;
+> +				else
+> +					len = 10;
+> +				break;
+
+This should probably be something like
+
+len = 10;
+if (flags & PCI_MSI_FLAGS_MASKBIT)
+    len += 10;
+if (flags & PCI_MSI_FLAGS_64BIT) {
+    /* set 64bit permission table */
+    len += 4;
+} else
+    /* set 32bit permission table */
+
+> diff -uprN linux-2.6.34/include/linux/vfio.h vfio-linux-2.6.34/include/linux/vfio.h
+> --- linux-2.6.34/include/linux/vfio.h	1969-12-31 16:00:00.000000000 -0800
+> +++ vfio-linux-2.6.34/include/linux/vfio.h	2010-06-07 12:20:06.000000000 -0700
+
+> +/* request MSI interrupts; use given eventfd */
+> +#define	VFIO_EVENTFD_MSI	_IOW(';', 105, int)
+
+Any intention of supporting MSI multiple message capability?  If so,
+this might turn into the same interface as MSIX.
+
