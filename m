@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab0GFCWJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 22:22:09 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38473
+	id S1756318Ab0GFCXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 22:23:43 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36207
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752839Ab0GFCWH (ORCPT
+	by vger.kernel.org with ESMTP id S1752839Ab0GFCXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 22:22:07 -0400
-Date: Mon, 05 Jul 2010 19:22:21 -0700 (PDT)
-Message-Id: <20100705.192221.241453945.davem@davemloft.net>
-To: dilinger@queued.net
-Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-       sparclinux@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
-       mingo@redhat.com, hpa@zytor.com, cjb@laptop.org, wmb@laptop.org,
-       pgf@laptop.org, linux-kernel@vger.kernel.org, benh@kernel.crashing.org
-Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building
- code out into drivers/of
+	Mon, 5 Jul 2010 22:23:42 -0400
+Date: Mon, 05 Jul 2010 19:23:56 -0700 (PDT)
+Message-Id: <20100705.192356.52184135.davem@davemloft.net>
+To: tilman@imap.cc
+Cc: isdn@linux-pingi.de, hjlipp@web.de, keil@b1-systems.de,
+       i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/11] isdn/gigaset: improve CAPI message debugging
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100707040734.05d625af@debxo>
-References: <20100629193618.5a840b8e@dev.queued.net>
-	<AANLkTilme2uAoXjorUEzam9j_xosR8kl70W8PS71d-Th@mail.gmail.com>
-	<20100707040734.05d625af@debxo>
+In-Reply-To: <20100705-patch-gigaset-05.tilman@imap.cc>
+References: <20100705-patch-gigaset-00.tilman@imap.cc>
+	<20100705-patch-gigaset-05.tilman@imap.cc>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -29,17 +26,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andres Salomon <dilinger@queued.net>
-Date: Wed, 7 Jul 2010 04:07:34 +0000
+From: Tilman Schmidt <tilman@imap.cc>
+Date: Tue,  6 Jul 2010 02:18:59 +0200 (CEST)
 
->  - For the pdt, calling into the prom once for each property/node to
->    create a fdt, and then unflattening it.  This is better than the
->    previous option, but I don't think the prom->fdt code will be very
->    nice.
+> @@ -384,7 +388,7 @@ void gigaset_skb_sent(struct bc_state *bcs, struct sk_buff *dskb)
+>  
+>  	/* don't send further B3 messages if disconnected */
+>  	if (bcs->apconnstate < APCONN_ACTIVE) {
+> -		gig_dbg(DEBUG_LLDATA, "disconnected, discarding ack");
+> +		gig_dbg(DEBUG_MCMD, "disconnected, discarding ack");
+>  		return;
+>  	}
 
-I'll need this on sparc64 at some point to support kexec() anyways.
+This is against something other than net-next-2.6 even with your
+other two ISDN patches applied, because all of these lines read
+"if (ap->connected ..."
 
-So at least for sparc you can assume that a something-->fdt translator
-is going to exist at some point in the future regardless of what
-happens here.
-
+Please tell me what exactly these patches are against so that I
+can apply them to net-next-2.6 cleanly.
