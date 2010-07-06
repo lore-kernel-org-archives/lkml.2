@@ -1,245 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab0GFPI7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 11:08:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44506 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab0GFPI5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 11:08:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=AvZbgieHcixBv+NMYUSk4F0qFeYOUlLjo+pvlF22jgAN+KI3pmyk8K2p3NhcZAY2wL
-         uo0nb6fClkaD4BV7pNudpIVarFacUl8DJXYPnJJekJod1rw6KqWv+m+tcbsnUqS+win5
-         iAfFUQ59NCfuIIqLJQLdl7geFZ/jlOkTxLbT0=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-       Ohad Ben-Cohen <ohad@wizery.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-       linux-omap@vger.kernel.org
-Subject: [PATCH] staging: tidspbridge: gen: simplify and clean up
-Date: Tue,  6 Jul 2010 18:08:52 +0300
-Message-Id: <1278428932-9145-1-git-send-email-andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <AANLkTimdDuce7ZCVGhmMpbY5vKO_2AB7Ew3gTAYW77QW@mail.gmail.com>
-References: <AANLkTimdDuce7ZCVGhmMpbY5vKO_2AB7Ew3gTAYW77QW@mail.gmail.com>
+	id S1753687Ab0GFPQB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 11:16:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41278 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab0GFPQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 11:16:00 -0400
+Date: Tue, 6 Jul 2010 08:14:54 -0700
+From: Greg KH <gregkh@suse.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Luotao Fu <l.fu@pengutronix.de>, Alan Cox <alan@linux.intel.com>,
+       linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: Problem with tty changes in linux-next
+Message-ID: <20100706151454.GB12444@suse.de>
+References: <20100706130403.GD3991@pengutronix.de>
+ <201007061623.48363.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007061623.48363.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is recently added hex_to_bin() kernel's method which we could use
-instead of custom long function.
+On Tue, Jul 06, 2010 at 04:23:48PM +0200, Arnd Bergmann wrote:
+> > 2. A more serious problem is that printing kernel message no more works
+> > after running into userspace.
+> > ....
+> > Freeing init memory: 100K
+> > 3sy||_|_|
+> > phyCORE login:
+> > ....
+> > The boot message between init and login sheel is printed only
+> > partly. The cursor jumps back and forward. It seems that part the
+> > special characters like new line etc. are cutted away so that the
+> > printout is shown in such a funny manner. After a tty is spawned, every
+> > thing works just well. I can log in onto the system and it seems to work
+> > so far. I bisected the kernel and identified eventually
+> > fb11bee14186af87ee6abb833cf1a2a6be59c65b as the
+> > first bad commit. The actual problem should be, however,
+> > 36c621d82b956ff6ff72273f848af53e6c581aba, where tty_port_block_til_ready()
+> > is introduced. Seems to me that there are locking problems. I
+> > unfortunately don't have any insights of tty layer to tell where the
+> > exact problem is.
+> 
+> I'm sorry you had to bisect this. I did the same bisect and already
+> submitted a patch for this, which probably got stuck in Greg's inbox
+> while he was preparing the stable releases. I can't find the patch
+> in the archives now, which could also mean that it never left my local
+> machine.
+> 
+> I have the patch on a different machine, but will resend it to Greg
+> when I get there to make sure it doesn't get lost.
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-omap@vger.kernel.org
----
- drivers/staging/tidspbridge/gen/uuidutil.c |  167 +++++-----------------------
- 1 files changed, 28 insertions(+), 139 deletions(-)
+It's in my todo queue, sorry, I spent last week on the 5 stable kernel
+releases, I should get to this today and push it into the next
+linux-next release.
 
-diff --git a/drivers/staging/tidspbridge/gen/uuidutil.c b/drivers/staging/tidspbridge/gen/uuidutil.c
-index ce9319d..eb09bc3 100644
---- a/drivers/staging/tidspbridge/gen/uuidutil.c
-+++ b/drivers/staging/tidspbridge/gen/uuidutil.c
-@@ -54,61 +54,19 @@ void uuid_uuid_to_string(IN struct dsp_uuid *uuid_obj, OUT char *pszUuid,
- 	DBC_ENSURE(i != -1);
- }
- 
--/*
-- *  ======== htoi ========
-- *  Purpose:
-- *      Converts a hex value to a decimal integer.
-- */
--
--static int htoi(char c)
-+static s32 uuid_hex_to_bin(char *buf, s32 len)
- {
--	switch (c) {
--	case '0':
--		return 0;
--	case '1':
--		return 1;
--	case '2':
--		return 2;
--	case '3':
--		return 3;
--	case '4':
--		return 4;
--	case '5':
--		return 5;
--	case '6':
--		return 6;
--	case '7':
--		return 7;
--	case '8':
--		return 8;
--	case '9':
--		return 9;
--	case 'A':
--		return 10;
--	case 'B':
--		return 11;
--	case 'C':
--		return 12;
--	case 'D':
--		return 13;
--	case 'E':
--		return 14;
--	case 'F':
--		return 15;
--	case 'a':
--		return 10;
--	case 'b':
--		return 11;
--	case 'c':
--		return 12;
--	case 'd':
--		return 13;
--	case 'e':
--		return 14;
--	case 'f':
--		return 15;
-+	s32 i;
-+	s32 result = 0;
-+
-+	for (i = 0; i < len; i++) {
-+		value = hex_to_bin(*buf++);
-+		result *= 16;
-+		if (value > 0)
-+			result += value;
- 	}
--	return 0;
-+
-+	return result;
- }
- 
- /*
-@@ -118,106 +76,37 @@ static int htoi(char c)
-  */
- void uuid_uuid_from_string(IN char *pszUuid, OUT struct dsp_uuid *uuid_obj)
- {
--	char c;
--	s32 i, j;
--	s32 result;
--	char *temp = pszUuid;
-+	s32 j;
- 
--	result = 0;
--	for (i = 0; i < 8; i++) {
--		/* Get first character in string */
--		c = *temp;
--
--		/* Increase the results by new value */
--		result *= 16;
--		result += htoi(c);
--
--		/* Go to next character in string */
--		temp++;
--	}
--	uuid_obj->ul_data1 = result;
-+	uuid_obj->ul_data1 = uuid_hex_to_bin(pszUuid, 8);
-+	pszUuid += 8;
- 
- 	/* Step over underscore */
--	temp++;
-+	pszUuid++;
- 
--	result = 0;
--	for (i = 0; i < 4; i++) {
--		/* Get first character in string */
--		c = *temp;
--
--		/* Increase the results by new value */
--		result *= 16;
--		result += htoi(c);
--
--		/* Go to next character in string */
--		temp++;
--	}
--	uuid_obj->us_data2 = (u16) result;
-+	uuid_obj->us_data2 = (u16) uuid_hex_to_bin(pszUuid, 4);
-+	pszUuid += 4;
- 
- 	/* Step over underscore */
--	temp++;
--
--	result = 0;
--	for (i = 0; i < 4; i++) {
--		/* Get first character in string */
--		c = *temp;
-+	pszUuid++;
- 
--		/* Increase the results by new value */
--		result *= 16;
--		result += htoi(c);
--
--		/* Go to next character in string */
--		temp++;
--	}
--	uuid_obj->us_data3 = (u16) result;
-+	uuid_obj->us_data3 = (u16) uuid_hex_to_bin(pszUuid, 4);
-+	pszUuid += 4;
- 
- 	/* Step over underscore */
--	temp++;
--
--	result = 0;
--	for (i = 0; i < 2; i++) {
--		/* Get first character in string */
--		c = *temp;
-+	pszUuid++;
- 
--		/* Increase the results by new value */
--		result *= 16;
--		result += htoi(c);
-+	uuid_obj->uc_data4 = (u8) uuid_hex_to_bin(pszUuid, 2);
-+	pszUuid += 2;
- 
--		/* Go to next character in string */
--		temp++;
--	}
--	uuid_obj->uc_data4 = (u8) result;
--
--	result = 0;
--	for (i = 0; i < 2; i++) {
--		/* Get first character in string */
--		c = *temp;
--
--		/* Increase the results by new value */
--		result *= 16;
--		result += htoi(c);
--
--		/* Go to next character in string */
--		temp++;
--	}
--	uuid_obj->uc_data5 = (u8) result;
-+	uuid_obj->uc_data5 = (u8) uuid_hex_to_bin(pszUuid, 2);
-+	pszUuid += 2;
- 
- 	/* Step over underscore */
--	temp++;
-+	pszUuid++;
- 
- 	for (j = 0; j < 6; j++) {
--		result = 0;
--		for (i = 0; i < 2; i++) {
--			/* Get first character in string */
--			c = *temp;
--
--			/* Increase the results by new value */
--			result *= 16;
--			result += htoi(c);
--
--			/* Go to next character in string */
--			temp++;
--		}
--		uuid_obj->uc_data6[j] = (u8) result;
-+		uuid_obj->uc_data6[j] = (u8) uuid_hex_to_bin(pszUuid, 2);
-+		pszUuid += 2;
- 	}
- }
--- 
-1.6.6.1
+thanks,
 
+greg k-h
