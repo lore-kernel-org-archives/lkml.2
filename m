@@ -1,345 +1,384 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab0GFSiy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 14:38:54 -0400
-Received: from [202.81.31.142] ([202.81.31.142]:39192 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969Ab0GFSik (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 14:38:40 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, neilb@suse.de, hooanon05@yahoo.co.jp,
-       bfields@fieldses.org
-Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 3/9] vfs: Add open by file handle support
-Date: Wed,  7 Jul 2010 00:08:05 +0530
-Message-Id: <1278441491-12785-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.2.rc1
-In-Reply-To: <1278441491-12785-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1278441491-12785-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1754913Ab0GFSiw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 14:38:52 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43186 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753967Ab0GFSig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 14:38:36 -0400
+Date: Tue, 6 Jul 2010 18:37:42 GMT
+Message-Id: <201007061837.o66IbgRt006590@hera.kernel.org>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Venkatesh Pallipadi <venki@google.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ali Gholami Rudi <ali@rudi.ir>,
+       Fabio Checconi <fabio@gandalf.sssup.it>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Darrick J. Wong" <djwong@us.ibm.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] x86 fixes for 2.6.35-rc5
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 06 Jul 2010 18:37:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Serge Hallyn <serue@us.ibm.com>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/exportfs/expfs.c      |    2 +
- fs/namei.c               |   50 ++++++++++++
- fs/open.c                |  198 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h       |    3 +-
- include/linux/syscalls.h |    2 +
- 5 files changed, 254 insertions(+), 1 deletions(-)
+Hi Linus,
 
-diff --git a/fs/exportfs/expfs.c b/fs/exportfs/expfs.c
-index cfee0f0..05a1179 100644
---- a/fs/exportfs/expfs.c
-+++ b/fs/exportfs/expfs.c
-@@ -373,6 +373,8 @@ struct dentry *exportfs_decode_fh(struct vfsmount *mnt, struct fid *fid,
- 	/*
- 	 * Try to get any dentry for the given file handle from the filesystem.
- 	 */
-+	if (!nop || !nop->fh_to_dentry)
-+		return ERR_PTR(-ESTALE);
- 	result = nop->fh_to_dentry(mnt->mnt_sb, fid, fh_len, fileid_type);
- 	if (!result)
- 		result = ERR_PTR(-ESTALE);
-diff --git a/fs/namei.c b/fs/namei.c
-index 868d0cb..c2d19c7 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1557,6 +1557,56 @@ static int open_will_truncate(int flag, struct inode *inode)
- 	return (flag & O_TRUNC);
- }
+The following changes since commit 980019d74e4b2428362b36a0506519d6d9460800:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../gregkh/staging-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+
+Darrick J. Wong (1):
+      x86, Calgary: Limit the max PHB number to 256
+
+Peter Zijlstra (1):
+      rbtree: Undo augmented trees performance damage and regression
+
+ arch/x86/kernel/pci-calgary_64.c |    4 +-
+ arch/x86/mm/pat_rbtree.c         |   34 ++---------
+ include/linux/rbtree.h           |   13 +++-
+ lib/rbtree.c                     |  116 +++++++++++++++++++++++--------------
+ 4 files changed, 88 insertions(+), 79 deletions(-)
+
+diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+index 0b96b55..078d4ec 100644
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -110,7 +110,7 @@ int use_calgary __read_mostly = 0;
+  * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
+  * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
+  */
+-#define MAX_PHB_BUS_NUM		384
++#define MAX_PHB_BUS_NUM		256
  
-+struct file *finish_open_handle(struct path *path,
-+			int open_flag, int acc_mode)
-+{
-+	int error;
-+	struct file *filp;
-+	int will_truncate;
-+
-+	will_truncate = open_will_truncate(open_flag, path->dentry->d_inode);
-+	if (will_truncate) {
-+		error = mnt_want_write(path->mnt);
-+		if (error)
-+			goto exit;
-+	}
-+	error = may_open(path, acc_mode, open_flag);
-+	if (error) {
-+		if (will_truncate)
-+			mnt_drop_write(path->mnt);
-+		goto exit;
-+	}
-+	filp = dentry_open(path->dentry, path->mnt, open_flag, current_cred());
-+	if (!IS_ERR(filp)) {
-+		error = ima_file_check(filp, acc_mode);
-+		if (error) {
-+			fput(filp);
-+			filp = ERR_PTR(error);
-+		}
-+	}
-+	if (!IS_ERR(filp)) {
-+		if (will_truncate) {
-+			error = handle_truncate(path);
-+			if (error) {
-+				fput(filp);
-+				filp = ERR_PTR(error);
-+			}
-+		}
-+	}
-+	/*
-+	 * It is now safe to drop the mnt write
-+	 * because the filp has had a write taken
-+	 * on its behalf.
-+	 */
-+	if (will_truncate)
-+		mnt_drop_write(path->mnt);
-+	return filp;
-+
-+exit:
-+	path_put(path);
-+	return ERR_PTR(error);
-+}
-+
- static struct file *finish_open(struct nameidata *nd,
- 				int open_flag, int acc_mode)
+ #define PHBS_PER_CALGARY	  4
+ 
+@@ -1056,8 +1056,6 @@ static int __init calgary_init_one(struct pci_dev *dev)
+ 	struct iommu_table *tbl;
+ 	int ret;
+ 
+-	BUG_ON(dev->bus->number >= MAX_PHB_BUS_NUM);
+-
+ 	bbar = busno_to_bbar(dev->bus->number);
+ 	ret = calgary_setup_tar(dev, bbar);
+ 	if (ret)
+diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
+index f20eeec..8acaddd 100644
+--- a/arch/x86/mm/pat_rbtree.c
++++ b/arch/x86/mm/pat_rbtree.c
+@@ -34,8 +34,7 @@
+  * memtype_lock protects the rbtree.
+  */
+ 
+-static void memtype_rb_augment_cb(struct rb_node *node);
+-static struct rb_root memtype_rbroot = RB_AUGMENT_ROOT(&memtype_rb_augment_cb);
++static struct rb_root memtype_rbroot = RB_ROOT;
+ 
+ static int is_node_overlap(struct memtype *node, u64 start, u64 end)
  {
-diff --git a/fs/open.c b/fs/open.c
-index 657f9e7..fdf832c 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -1161,3 +1161,201 @@ SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
- 	return -ENOSYS;
+@@ -56,7 +55,7 @@ static u64 get_subtree_max_end(struct rb_node *node)
  }
- #endif
+ 
+ /* Update 'subtree_max_end' for a node, based on node and its children */
+-static void update_node_max_end(struct rb_node *node)
++static void memtype_rb_augment_cb(struct rb_node *node, void *__unused)
+ {
+ 	struct memtype *data;
+ 	u64 max_end, child_max_end;
+@@ -78,25 +77,6 @@ static void update_node_max_end(struct rb_node *node)
+ 	data->subtree_max_end = max_end;
+ }
+ 
+-/* Update 'subtree_max_end' for a node and all its ancestors */
+-static void update_path_max_end(struct rb_node *node)
+-{
+-	u64 old_max_end, new_max_end;
+-
+-	while (node) {
+-		struct memtype *data = container_of(node, struct memtype, rb);
+-
+-		old_max_end = data->subtree_max_end;
+-		update_node_max_end(node);
+-		new_max_end = data->subtree_max_end;
+-
+-		if (new_max_end == old_max_end)
+-			break;
+-
+-		node = rb_parent(node);
+-	}
+-}
+-
+ /* Find the first (lowest start addr) overlapping range from rb tree */
+ static struct memtype *memtype_rb_lowest_match(struct rb_root *root,
+ 				u64 start, u64 end)
+@@ -190,12 +170,6 @@ failure:
+ 	return -EBUSY;
+ }
+ 
+-static void memtype_rb_augment_cb(struct rb_node *node)
+-{
+-	if (node)
+-		update_path_max_end(node);
+-}
+-
+ static void memtype_rb_insert(struct rb_root *root, struct memtype *newdata)
+ {
+ 	struct rb_node **node = &(root->rb_node);
+@@ -213,6 +187,7 @@ static void memtype_rb_insert(struct rb_root *root, struct memtype *newdata)
+ 
+ 	rb_link_node(&newdata->rb, parent, node);
+ 	rb_insert_color(&newdata->rb, root);
++	rb_augment_insert(&newdata->rb, memtype_rb_augment_cb, NULL);
+ }
+ 
+ int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
+@@ -234,13 +209,16 @@ int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
+ 
+ struct memtype *rbt_memtype_erase(u64 start, u64 end)
+ {
++	struct rb_node *deepest;
+ 	struct memtype *data;
+ 
+ 	data = memtype_rb_exact_match(&memtype_rbroot, start, end);
+ 	if (!data)
+ 		goto out;
+ 
++	deepest = rb_augment_erase_begin(&data->rb);
+ 	rb_erase(&data->rb, &memtype_rbroot);
++	rb_augment_erase_end(deepest, memtype_rb_augment_cb, NULL);
+ out:
+ 	return data;
+ }
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index fe1872e..7066acb 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -110,7 +110,6 @@ struct rb_node
+ struct rb_root
+ {
+ 	struct rb_node *rb_node;
+-	void (*augment_cb)(struct rb_node *node);
+ };
+ 
+ 
+@@ -130,9 +129,7 @@ static inline void rb_set_color(struct rb_node *rb, int color)
+ 	rb->rb_parent_color = (rb->rb_parent_color & ~1) | color;
+ }
+ 
+-#define RB_ROOT	(struct rb_root) { NULL, NULL, }
+-#define RB_AUGMENT_ROOT(x)	(struct rb_root) { NULL, x}
+-
++#define RB_ROOT	(struct rb_root) { NULL, }
+ #define	rb_entry(ptr, type, member) container_of(ptr, type, member)
+ 
+ #define RB_EMPTY_ROOT(root)	((root)->rb_node == NULL)
+@@ -142,6 +139,14 @@ static inline void rb_set_color(struct rb_node *rb, int color)
+ extern void rb_insert_color(struct rb_node *, struct rb_root *);
+ extern void rb_erase(struct rb_node *, struct rb_root *);
+ 
++typedef void (*rb_augment_f)(struct rb_node *node, void *data);
 +
-+#ifdef CONFIG_EXPORTFS
-+static struct vfsmount *get_vfsmount_from_fd(int fd)
++extern void rb_augment_insert(struct rb_node *node,
++			      rb_augment_f func, void *data);
++extern struct rb_node *rb_augment_erase_begin(struct rb_node *node);
++extern void rb_augment_erase_end(struct rb_node *node,
++				 rb_augment_f func, void *data);
++
+ /* Find logical next and previous nodes in a tree */
+ extern struct rb_node *rb_next(const struct rb_node *);
+ extern struct rb_node *rb_prev(const struct rb_node *);
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index 15e10b1..4693f79 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -44,11 +44,6 @@ static void __rb_rotate_left(struct rb_node *node, struct rb_root *root)
+ 	else
+ 		root->rb_node = right;
+ 	rb_set_parent(node, right);
+-
+-	if (root->augment_cb) {
+-		root->augment_cb(node);
+-		root->augment_cb(right);
+-	}
+ }
+ 
+ static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
+@@ -72,20 +67,12 @@ static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
+ 	else
+ 		root->rb_node = left;
+ 	rb_set_parent(node, left);
+-
+-	if (root->augment_cb) {
+-		root->augment_cb(node);
+-		root->augment_cb(left);
+-	}
+ }
+ 
+ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ {
+ 	struct rb_node *parent, *gparent;
+ 
+-	if (root->augment_cb)
+-		root->augment_cb(node);
+-
+ 	while ((parent = rb_parent(node)) && rb_is_red(parent))
+ 	{
+ 		gparent = rb_parent(parent);
+@@ -240,15 +227,12 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 	else
+ 	{
+ 		struct rb_node *old = node, *left;
+-		int old_parent_cb = 0;
+-		int successor_parent_cb = 0;
+ 
+ 		node = node->rb_right;
+ 		while ((left = node->rb_left) != NULL)
+ 			node = left;
+ 
+ 		if (rb_parent(old)) {
+-			old_parent_cb = 1;
+ 			if (rb_parent(old)->rb_left == old)
+ 				rb_parent(old)->rb_left = node;
+ 			else
+@@ -263,10 +247,8 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 		if (parent == old) {
+ 			parent = node;
+ 		} else {
+-			successor_parent_cb = 1;
+ 			if (child)
+ 				rb_set_parent(child, parent);
+-
+ 			parent->rb_left = child;
+ 
+ 			node->rb_right = old->rb_right;
+@@ -277,24 +259,6 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 		node->rb_left = old->rb_left;
+ 		rb_set_parent(old->rb_left, node);
+ 
+-		if (root->augment_cb) {
+-			/*
+-			 * Here, three different nodes can have new children.
+-			 * The parent of the successor node that was selected
+-			 * to replace the node to be erased.
+-			 * The node that is getting erased and is now replaced
+-			 * by its successor.
+-			 * The parent of the node getting erased-replaced.
+-			 */
+-			if (successor_parent_cb)
+-				root->augment_cb(parent);
+-
+-			root->augment_cb(node);
+-
+-			if (old_parent_cb)
+-				root->augment_cb(rb_parent(old));
+-		}
+-
+ 		goto color;
+ 	}
+ 
+@@ -303,19 +267,15 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 
+ 	if (child)
+ 		rb_set_parent(child, parent);
+-
+-	if (parent) {
++	if (parent)
++	{
+ 		if (parent->rb_left == node)
+ 			parent->rb_left = child;
+ 		else
+ 			parent->rb_right = child;
+-
+-		if (root->augment_cb)
+-			root->augment_cb(parent);
+-
+-	} else {
+-		root->rb_node = child;
+ 	}
++	else
++		root->rb_node = child;
+ 
+  color:
+ 	if (color == RB_BLACK)
+@@ -323,6 +283,74 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ }
+ EXPORT_SYMBOL(rb_erase);
+ 
++static void rb_augment_path(struct rb_node *node, rb_augment_f func, void *data)
 +{
-+	int fput_needed;
-+	struct path *path;
-+	struct file *filep;
++	struct rb_node *parent;
 +
-+	if (fd == AT_FDCWD) {
-+		struct fs_struct *fs = current->fs;
-+		read_lock(&fs->lock);
-+		path = &fs->pwd;
-+		mntget(path->mnt);
-+		read_unlock(&fs->lock);
-+	} else {
-+		filep = fget_light(fd, &fput_needed);
-+		if (!filep)
-+			return ERR_PTR(-EBADF);
-+		path = &filep->f_path;
-+		mntget(path->mnt);
-+		fput_light(filep, fput_needed);
-+	}
-+	return path->mnt;
++up:
++	func(node, data);
++	parent = rb_parent(node);
++	if (!parent)
++		return;
++
++	if (node == parent->rb_left && parent->rb_right)
++		func(parent->rb_right, data);
++	else if (parent->rb_left)
++		func(parent->rb_left, data);
++
++	node = parent;
++	goto up;
 +}
 +
-+static int vfs_dentry_acceptable(void *context, struct dentry *dentry)
-+{
-+	return 1;
-+}
-+
-+static struct path *handle_to_path(int mountdirfd, struct file_handle *handle)
-+{
-+	int retval;
-+	int handle_size;
-+	struct path *path;
-+
-+	path = kmalloc(sizeof(struct path), GFP_KERNEL);
-+	if (!path)
-+		return ERR_PTR(-ENOMEM);
-+
-+	path->mnt = get_vfsmount_from_fd(mountdirfd);
-+	if (IS_ERR(path->mnt)) {
-+		retval = PTR_ERR(path->mnt);
-+		goto out_err;
-+	}
-+	/* change the handle size to multiple of sizeof(u32) */
-+	handle_size = handle->handle_size >> 2;
-+	path->dentry = exportfs_decode_fh(path->mnt,
-+					(struct fid *)handle->f_handle,
-+					handle_size, handle->handle_type,
-+					vfs_dentry_acceptable, NULL);
-+	if (IS_ERR(path->dentry)) {
-+		retval = PTR_ERR(path->dentry);
-+		goto out_mnt;
-+	}
-+	return path;
-+out_mnt:
-+	mntput(path->mnt);
-+out_err:
-+	kfree(path);
-+	return ERR_PTR(retval);
-+}
-+
-+static long do_sys_open_by_handle(int mountdirfd,
-+				struct file_handle __user *ufh, int open_flag)
-+{
-+	long retval = 0;
-+	int fd, acc_mode;
-+	struct file *filp;
-+	struct path *path;
-+	struct file_handle f_handle;
-+	struct file_handle *handle = NULL;
-+
-+	/*
-+	 * With handle we don't look at the execute bit on the
-+	 * the directory. Ideally we would like CAP_DAC_SEARCH.
-+	 * But we don't have that
-+	 */
-+	if (!capable(CAP_DAC_READ_SEARCH)) {
-+		retval = -EPERM;
-+		goto out_err;
-+	}
-+	/* can't use O_CREATE with open_by_handle */
-+	if (open_flag & O_CREAT) {
-+		retval = -EINVAL;
-+		goto out_err;
-+	}
-+	if (copy_from_user(&f_handle, ufh, sizeof(struct file_handle))) {
-+		retval = -EFAULT;
-+		goto out_err;
-+	}
-+	if ((f_handle.handle_size > MAX_HANDLE_SZ) ||
-+		(f_handle.handle_size <= 0)) {
-+		retval =  -EINVAL;
-+		goto out_err;
-+	}
-+	handle = kmalloc(sizeof(struct file_handle) + f_handle.handle_size,
-+			GFP_KERNEL);
-+	if (!handle) {
-+		retval =  -ENOMEM;
-+		goto out_err;
-+	}
-+	/* copy the full handle */
-+	if (copy_from_user(handle, ufh,
-+				sizeof(struct file_handle) +
-+				f_handle.handle_size)) {
-+		retval = -EFAULT;
-+		goto out_handle;
-+	}
-+	path = handle_to_path(mountdirfd, handle);
-+	if (IS_ERR(path)) {
-+		retval = PTR_ERR(path);
-+		goto out_handle;
-+	}
-+	if ((open_flag & O_DIRECTORY) &&
-+		!S_ISDIR(path->dentry->d_inode->i_mode)) {
-+		retval = -ENOTDIR;
-+		goto out_path;
-+	}
-+	/*
-+	 * O_SYNC is implemented as __O_SYNC|O_DSYNC.  As many places only
-+	 * check for O_DSYNC if the need any syncing at all we enforce it's
-+	 * always set instead of having to deal with possibly weird behaviour
-+	 * for malicious applications setting only __O_SYNC.
-+	 */
-+	if (open_flag & __O_SYNC)
-+		open_flag |= O_DSYNC;
-+
-+	acc_mode = MAY_OPEN | ACC_MODE(open_flag);
-+
-+	/* O_TRUNC implies we need access checks for write permissions */
-+	if (open_flag & O_TRUNC)
-+		acc_mode |= MAY_WRITE;
-+	/*
-+	 * Allow the LSM permission hook to distinguish append
-+	 * access from general write access.
-+	 */
-+	if (open_flag & O_APPEND)
-+		acc_mode |= MAY_APPEND;
-+
-+	fd = get_unused_fd_flags(open_flag);
-+	if (fd < 0) {
-+		retval = fd;
-+		goto out_path;
-+	}
-+	filp = finish_open_handle(path, open_flag, acc_mode);
-+	if (IS_ERR(filp)) {
-+		put_unused_fd(fd);
-+		retval =  PTR_ERR(filp);
-+	} else {
-+		retval = fd;
-+		fsnotify_open(filp->f_path.dentry);
-+		fd_install(fd, filp);
-+	}
-+	kfree(path);
-+	kfree(handle);
-+	return retval;
-+
-+out_path:
-+	path_put(path);
-+	kfree(path);
-+out_handle:
-+	kfree(handle);
-+out_err:
-+	return retval;
-+}
-+
-+/**
-+ * sys_open_by_handle_at: Open the file handle
-+ * @mountdirfd: directory file descriptor
-+ * @handle: file handle to be opened
-+ * @flag: open flags.
-+ *
-+ * @mountdirfd indicate the directory file descriptor
-+ * of the mount point. file handle is decoded relative
-+ * to the vfsmount pointed by the @mountdirfd. @flags
-+ * value is same as the open(2) flags.
++/*
++ * after inserting @node into the tree, update the tree to account for
++ * both the new entry and any damage done by rebalance
 + */
-+SYSCALL_DEFINE3(open_by_handle_at, int, mountdirfd,
-+		struct file_handle __user *, handle,
-+		int, flags)
++void rb_augment_insert(struct rb_node *node, rb_augment_f func, void *data)
 +{
-+	long ret;
++	if (node->rb_left)
++		node = node->rb_left;
++	else if (node->rb_right)
++		node = node->rb_right;
 +
-+	if (force_o_largefile())
-+		flags |= O_LARGEFILE;
-+
-+	ret = do_sys_open_by_handle(mountdirfd, handle, flags);
-+	return ret;
++	rb_augment_path(node, func, data);
 +}
-+#else
-+SYSCALL_DEFINE3(open_by_handle_at, int, mountdirfd,
-+		struct file_handle __user *, handle,
-+		int, flags)
++
++/*
++ * before removing the node, find the deepest node on the rebalance path
++ * that will still be there after @node gets removed
++ */
++struct rb_node *rb_augment_erase_begin(struct rb_node *node)
 +{
-+	return -ENOSYS;
-+}
-+#endif
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index adfb5b8..cbff4ca 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2138,7 +2138,8 @@ extern int may_open(struct path *, int, int);
- 
- extern int kernel_read(struct file *, loff_t, char *, unsigned long);
- extern struct file * open_exec(const char *);
-- 
-+extern struct file *finish_open_handle(struct path *, int, int);
++	struct rb_node *deepest;
 +
- /* fs/dcache.c -- generic fs support functions */
- extern int is_subdir(struct dentry *, struct dentry *);
- extern int path_is_under(struct path *, struct path *);
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 4d4e922..37c629d 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -826,5 +826,7 @@ asmlinkage long sys_mmap_pgoff(unsigned long addr, unsigned long len,
- asmlinkage long sys_old_mmap(struct mmap_arg_struct __user *arg);
- asmlinkage long sys_name_to_handle_at(int dfd, const char __user *name,
- 				struct file_handle __user *handle, int flag);
-+asmlinkage long sys_open_by_handle_at(int mountdirfd,
-+				struct file_handle __user *handle, int flags);
- 
- #endif
--- 
-1.7.2.rc1
-
++	if (!node->rb_right && !node->rb_left)
++		deepest = rb_parent(node);
++	else if (!node->rb_right)
++		deepest = node->rb_left;
++	else if (!node->rb_left)
++		deepest = node->rb_right;
++	else {
++		deepest = rb_next(node);
++		if (deepest->rb_right)
++			deepest = deepest->rb_right;
++		else if (rb_parent(deepest) != node)
++			deepest = rb_parent(deepest);
++	}
++
++	return deepest;
++}
++
++/*
++ * after removal, update the tree to account for the removed entry
++ * and any rebalance damage.
++ */
++void rb_augment_erase_end(struct rb_node *node, rb_augment_f func, void *data)
++{
++	if (node)
++		rb_augment_path(node, func, data);
++}
++
+ /*
+  * This function returns the first node (in sort order) of the tree.
+  */
