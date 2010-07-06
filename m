@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab0GFSku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 14:40:50 -0400
-Received: from [202.81.31.148] ([202.81.31.148]:52313 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220Ab0GFSis (ORCPT
+	id S1755607Ab0GFSla (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 14:41:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21803 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754250Ab0GFSl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 14:38:48 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, neilb@suse.de, hooanon05@yahoo.co.jp,
-       bfields@fieldses.org
-Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 5/9] vfs: Support null pathname in readlink
-Date: Wed,  7 Jul 2010 00:08:07 +0530
-Message-Id: <1278441491-12785-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.2.rc1
-In-Reply-To: <1278441491-12785-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1278441491-12785-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Tue, 6 Jul 2010 14:41:28 -0400
+Date: Tue, 6 Jul 2010 11:39:46 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Tao Ma <tao.ma@oracle.com>, Dave Chinner <david@fromorbit.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [Ocfs2-devel] [PATCH 2/2] ocfs2: No need to zero pages past
+ i_size. i_size v2
+Message-ID: <20100706183946.GB17961@mail.oracle.com>
+Mail-Followup-To: Tao Ma <tao.ma@oracle.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	ocfs2-devel@oss.oracle.com, Dave Chinner <dchinner@redhat.com>,
+	Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
+References: <20100702224912.GC5800@mail.oracle.com>
+ <20100703213219.GB21262@mail.oracle.com>
+ <20100703213343.GC21262@mail.oracle.com>
+ <4C30A4FD.4030900@oracle.com>
+ <20100706070918.GD13023@mail.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100706070918.GD13023@mail.oracle.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B020B.4C3378B4.00F1:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+On Tue, Jul 06, 2010 at 12:09:19AM -0700, Joel Becker wrote:
+> On Sun, Jul 04, 2010 at 11:13:01PM +0800, Tao Ma wrote:
+> > >  	if (new) {
+> > >  		wc->w_num_pages = ocfs2_pages_per_cluster(inode->i_sb);
+> > >  		start = ocfs2_align_clusters_to_page_index(inode->i_sb, cpos);
+> > >+		/* This is the index *past* the write */
+> > >+		end_index = ((user_pos + user_len)>>  PAGE_CACHE_SHIFT) + 1;
+> > should it be
+> > 		end_index = ((user_pos + user_len - 1) >> PAGE_CACHE_SHIFT) + 1?
+> 
+> 	Maybe.  Gotta think about it and test.
 
-This enables to use readlink to get the link target name
-from a file descriptor point to the link. This can be used
-with open_by_handle syscall that returns a file descriptor for a link.
-We can then use this file descriptor to get the target name.
+	I think you're right.  Since there are other changes too, I'm
+going to add this in and test it.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/stat.c |   30 ++++++++++++++++++++++--------
- 1 files changed, 22 insertions(+), 8 deletions(-)
+Joel
 
-diff --git a/fs/stat.c b/fs/stat.c
-index c4ecd52..a66a0ef 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
- SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- 		char __user *, buf, int, bufsiz)
- {
--	struct path path;
--	int error;
-+	int error = 0, fput_needed;
-+	struct path path, *pp;
-+	struct file *file = NULL;
- 
- 	if (bufsiz <= 0)
- 		return -EINVAL;
- 
--	error = user_path_at(dfd, pathname, 0, &path);
-+	if (pathname == NULL && dfd != AT_FDCWD) {
-+		file = fget_light(dfd, &fput_needed);
-+
-+		if (file)
-+			pp = &file->f_path;
-+		else
-+			error = -EBADF;
-+	} else {
-+		error = user_path_at(dfd, pathname, 0, &path);
-+		pp = &path;
-+	}
- 	if (!error) {
--		struct inode *inode = path.dentry->d_inode;
-+		struct inode *inode = pp->dentry->d_inode;
- 
- 		error = -EINVAL;
- 		if (inode->i_op->readlink) {
--			error = security_inode_readlink(path.dentry);
-+			error = security_inode_readlink(pp->dentry);
- 			if (!error) {
--				touch_atime(path.mnt, path.dentry);
--				error = inode->i_op->readlink(path.dentry,
-+				touch_atime(pp->mnt, pp->dentry);
-+				error = inode->i_op->readlink(pp->dentry,
- 							      buf, bufsiz);
- 			}
- 		}
--		path_put(&path);
-+		if (file)
-+			fput_light(file, fput_needed);
-+		else
-+			path_put(&path);
- 	}
- 	return error;
- }
 -- 
-1.7.2.rc1
 
+"I'm drifting and drifting
+ Just like a ship out on the sea.
+ Cause I ain't got nobody, baby,
+ In this world to care for me."
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
