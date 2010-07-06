@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab0GFHLo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 03:11:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59301 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab0GFHLn (ORCPT
+	id S1755056Ab0GFHNo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 03:13:44 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57576 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911Ab0GFHNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 03:11:43 -0400
-Date: Tue, 6 Jul 2010 00:10:31 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Tao Ma <tao.ma@oracle.com>
-Cc: Dave Chinner <david@fromorbit.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [PATCH 2/2] ocfs2: No need to zero pages past i_size. i_size v2
-Message-ID: <20100706071031.GE13023@mail.oracle.com>
-Mail-Followup-To: Tao Ma <tao.ma@oracle.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	ocfs2-devel@oss.oracle.com, Dave Chinner <dchinner@redhat.com>,
-	Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
-References: <20100702224912.GC5800@mail.oracle.com>
- <20100703213219.GB21262@mail.oracle.com>
- <20100703213343.GC21262@mail.oracle.com>
- <4C30A4FD.4030900@oracle.com>
- <4C3137A2.8040409@oracle.com>
+	Tue, 6 Jul 2010 03:13:42 -0400
+Date: Tue, 6 Jul 2010 09:13:37 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] hugetlb: hugepage migration core
+Message-ID: <20100706071337.GA20403@basil.fritz.box>
+References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1278049646-29769-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20100705095927.GC8510@basil.fritz.box>
+ <20100706033342.GA10626@spritzera.linux.bs1.fc.nec.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C3137A2.8040409@oracle.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
+In-Reply-To: <20100706033342.GA10626@spritzera.linux.bs1.fc.nec.co.jp>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C32D710.01F2:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 05, 2010 at 09:38:42AM +0800, Tao Ma wrote:
-> btw, do we ever have a chance that start + wc->w_num_pages >
-> end_index? I can't find it.
+On Tue, Jul 06, 2010 at 12:33:42PM +0900, Naoya Horiguchi wrote:
+> > There's more code that handles LRU in this file. Do they all handle huge pages
+> > correctly?
+> > 
+> > I also noticed we do not always lock all sub pages in the huge page. Now if
+> > IO happens it will lock on subpages, not the head page. But this code
+> > handles all subpages as a unit. Could this cause locking problems?
+> > Perhaps it would be safer to lock all sub pages always? Or would 
+> > need  to audit other page users to make sure they always lock on the head
+> > and do the same here.
+> > 
+> > Hmm page reference counts may have the same issue?
+> 
+> If we try to implement paging out of hugepage in the future, we need to
+> solve all these problems straightforwardly. But at least for now we can
+> skirt them by not touching LRU code for hugepage extension.
 
-	Of course.  If you have a 1MB clustersize, w_num_pages will be
-256.  But if you are only writing the first page of the cluster,
-end_index is only 1.
+We need the page lock to avoid migrating pages that are currently
+under IO. This can happen even without swapping when the process 
+manually starts IO. 
 
-Joel
-
+-Andi
 -- 
-
-"If you took all of the grains of sand in the world, and lined
- them up end to end in a row, you'd be working for the government!"
-	- Mr. Interesting
-
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+ak@linux.intel.com -- Speaking for myself only.
