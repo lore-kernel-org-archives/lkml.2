@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab0GFFmE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 01:42:04 -0400
-Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:52212 "EHLO
-	homiemail-a6.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751684Ab0GFFmD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 01:42:03 -0400
-Subject: [PATCH reiserfs] trivial typo fix
-From: Davidlohr Bueso <dave.bueso@gmail.com>
-Reply-To: dave.bueso@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: reiserfs-devel@vger.kernel.org, trivial@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Jul 2010 01:41:57 -0400
-Message-ID: <1278394917.30082.13.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753220Ab0GFFmZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 01:42:25 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:47055 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752897Ab0GFFmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 01:42:17 -0400
+Date: Tue, 6 Jul 2010 07:44:06 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Dan Kruchinin <dkruchinin@acm.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH 1/3] padata: separate serial and parallel cpumasks
+Message-ID: <20100706054406.GR10072@secunet.com>
+References: <AANLkTikeDE4hvZ3spyTBSHZsdQPc-2wlD5nTfb1aF-VD@mail.gmail.com>
+ <20100702085323.GF10072@secunet.com>
+ <AANLkTinyPGjXjlvJxB8WYB3EYFBtANXMzpTdUixyBRHW@mail.gmail.com>
+ <20100702091726.GH10072@secunet.com>
+ <AANLkTiltuZTkG5ZoG4TG9fA0anwRLFa__lHLnZpY2n4U@mail.gmail.com>
+ <20100702111138.GI10072@secunet.com>
+ <AANLkTimEgKGJ5pi7GzOnvP42ivJ4GCKX59LdKK0x4fnx@mail.gmail.com>
+ <20100706053612.GQ10072@secunet.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100706053612.GQ10072@secunet.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 06 Jul 2010 05:42:10.0697 (UTC) FILETIME=[FA833F90:01CB1CCD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix trivial typo in code comment (change adn for and), also change comment style for proper coding style.
+You removed everyone in the Cc, please don't do this unless you have
+good reason for that. I've added the Cc'ed people again, perhaps
+somebody has an opinion on this too.
 
-Thanks,
-Davidlohr
-
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- include/linux/reiserfs_fs.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/reiserfs_fs.h b/include/linux/reiserfs_fs.h
-index 3b603f4..ba39416 100644
---- a/include/linux/reiserfs_fs.h
-+++ b/include/linux/reiserfs_fs.h
-@@ -360,7 +360,7 @@ int is_reiserfs_jr(struct reiserfs_super_block *rs);
- /* the spot for the super in versions 3.5 - 3.5.10 (inclusive) */
- #define REISERFS_OLD_DISK_OFFSET_IN_BYTES (8 * 1024)
- 
--// reiserfs internal error code (used by search_by_key adn fix_nodes))
-+/* reiserfs internal error code (used by search_by_key and fix_nodes)) */
- #define CARRY_ON      0
- #define REPEAT_SEARCH -1
- #define IO_ERROR      -2
--- 
-1.7.0.4
-
-
-
+On Tue, Jul 06, 2010 at 07:36:12AM +0200, Steffen Klassert wrote:
+> On Mon, Jul 05, 2010 at 06:09:17PM +0400, Dan Kruchinin wrote:
+> > 
+> > I tried to implement RCU protection on cpumask, but it appears a bit
+> > ugly because we can not safely assign cpumask_var_t(that is allocated
+> > via alloc_cpumask_var) to struct cpumask* via rcu_assign_pointer. The
+> > root of problem lies in cpumask_var_t definition. Depending on
+> > CONFIG_CPUMASK_OFFSTACK macro it may be a local variable on the stack
+> > or a pointer to struct cpumask:
+> > #ifdef CONFIG_CPUMASK_OFFSTACK
+> > typedef struct cpumask *cpumask_var_t
+> > ...
+> > #else
+> > typedef struct cpumask cpumask_var_t[1];
+> > ...
+> > #endif
+> 
+> Hm, yes dealing with cpumasks is a bit special these days.
+> 
+> > 
+> > In this case rcu_assign_pointer may be safely used only if we deal
+> > with a pointer to cpumask_var_t that must be allocated via kmalloc
+> > before using alloc_cpumask_var and rcu_assign_pointer. I think it's -
+> > as I said earlier - a bit ugly and hard to read.
+> > My be it's better to use rw spinlock instead? In our situation it
+> > doesn't significantly differ from RCU. Also it'll make code more clear
+> > and easy to read.
+> > 
+> 
+> I think we can use RCU anyway. For instance we could use a structure
+> 
+> struct pcrypt_cpumask {
+> 	cpumask_var_t           pmask;
+> 	cpumask_var_t           smask;
+> };
+> 
+> and add a pointer to a structure of that type to the instance context.
+> Then we could use this pointer for RCU and replace the whole structure
+> if a cpumask changes.
+> 
+> 
