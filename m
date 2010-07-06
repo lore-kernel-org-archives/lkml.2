@@ -1,315 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab0GFJFb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 05:05:31 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45492 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752069Ab0GFJF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 05:05:29 -0400
-Date: Tue, 6 Jul 2010 19:05:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for July 6
-Message-Id: <20100706190519.93d8b785.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__6_Jul_2010_19_05_19_+1000_DZ/aON3NjhHgxKZQ"
+	id S1753284Ab0GFJJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 05:09:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61052 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab0GFJJb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 05:09:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=jbbfPVE254zSeMoeEabIWS/numu1XW11SzPSuMyW/VDS0Fs3O7++6xgeEvHiYY9fuk
+         Sn7DKcxJ6ZBx4zIjzFG650ZLca3/N15keHRATkAThQ1+8ngzXLdTD32YuM0ya1ciKg1/
+         wYbKoX0KaviFRqJMvPyzRmBJ+j1/nCeaoAHhY=
+From: Raffaele Recalcati <lamiaposta71@gmail.com>
+To: davinci-linux-open-source@linux.davincidsp.com
+Cc: sudhakar.raj@ti.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Raffaele Recalcati <raffaele.recalcati@bticino.it>,
+       Davide Bonfanti <davide.bonfanti@bticino.it>,
+       Russell King <linux@arm.linux.org.uk>,
+       Chaithrika U S <chaithrika@ti.com>,
+       Troy Kisky <troy.kisky@boundarydevices.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+       Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: [PATCH 2/3] ASoC: DaVinci: Added selection of clk input pin for McBSP
+Date: Tue,  6 Jul 2010 10:39:03 +0200
+Message-Id: <1278405544-3852-3-git-send-email-lamiaposta71@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1278405544-3852-1-git-send-email-lamiaposta71@gmail.com>
+References: <1278405544-3852-1-git-send-email-lamiaposta71@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__6_Jul_2010_19_05_19_+1000_DZ/aON3NjhHgxKZQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Raffaele Recalcati <raffaele.recalcati@bticino.it>
 
-Hi all,
+    When McBSP peripheral gets the clock from an external pin,
+    there are three possible chooses, MCBSP_CLKX, MCBSP_CLKR
+    and MCBSP_CLKS.
+    evm-dm365 uses MCBSP_CLKR, instead in bmx board I have a different
+    hardware connection and I use MCBSP_CLKS, so I have added
+    this possibility.
 
-Changes since 20100705:
+    This patch has been developed against the:
+        http://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git
+    git tree and has been tested on bmx board (similar to dm365 evm)
 
-My fixes tree contains:
-	kbuild: Fix path to scripts/setlocalversion
+Signed-off-by: Raffaele Recalcati <raffaele.recalcati@bticino.it>
+Signed-off-by: Davide Bonfanti <davide.bonfanti@bticino.it>
+---
+ arch/arm/mach-davinci/include/mach/asp.h |   15 +++++++++++++++
+ sound/soc/davinci/davinci-i2s.c          |   29 ++++++++++++++++++++++++-----
+ 2 files changed, 39 insertions(+), 5 deletions(-)
 
-The omap tree lost its conflict.
+diff --git a/arch/arm/mach-davinci/include/mach/asp.h b/arch/arm/mach-davinci/include/mach/asp.h
+index 834725f..0847d21 100644
+--- a/arch/arm/mach-davinci/include/mach/asp.h
++++ b/arch/arm/mach-davinci/include/mach/asp.h
+@@ -63,6 +63,16 @@ struct snd_platform_data {
+ 	unsigned sram_size_playback;
+ 	unsigned sram_size_capture;
+ 
++	/*
++	 * If McBSP peripheral gets the clock from an external pin,
++	 * there are three chooses, that are MCBSP_CLKX, MCBSP_CLKR
++	 * and MCBSP_CLKS.
++	 * Depending on different hardware connections it is possible
++	 * to use this setting to change the behaviour of McBSP
++	 * driver. The dm365_clk_input_pin enum is available for dm365
++	 */
++	int clk_input_pin;
++
+ 	/* McASP specific fields */
+ 	int tdm_slots;
+ 	u8 op_mode;
+@@ -78,6 +88,11 @@ enum {
+ 	MCASP_VERSION_2,	/* DA8xx/OMAPL1x */
+ };
+ 
++enum dm365_clk_input_pin {
++	MCBSP_CLKR = 0,		/* DM365 */
++	MCBSP_CLKS,
++};
++
+ #define INACTIVE_MODE	0
+ #define TX_MODE		1
+ #define RX_MODE		2
+diff --git a/sound/soc/davinci/davinci-i2s.c b/sound/soc/davinci/davinci-i2s.c
+index c8f038c..ba5644b 100644
+--- a/sound/soc/davinci/davinci-i2s.c
++++ b/sound/soc/davinci/davinci-i2s.c
+@@ -122,6 +122,7 @@ static const unsigned char double_fmt[SNDRV_PCM_FORMAT_S32_LE + 1] = {
+ };
+ 
+ struct davinci_mcbsp_dev {
++	struct device *dev;
+ 	struct davinci_pcm_dma_params	dma_params[2];
+ 	void __iomem			*base;
+ #define MOD_DSP_A	0
+@@ -153,6 +154,7 @@ struct davinci_mcbsp_dev {
+ 
+ 	unsigned int fmt;
+ 	int clk_div;
++	int clk_input_pin;
+ };
+ 
+ static inline void davinci_mcbsp_write_reg(struct davinci_mcbsp_dev *dev,
+@@ -279,11 +281,26 @@ static int davinci_i2s_set_dai_fmt(struct snd_soc_dai *cpu_dai,
+ 			DAVINCI_MCBSP_PCR_CLKRM;
+ 		break;
+ 	case SND_SOC_DAIFMT_CBM_CFS:
+-		/* McBSP CLKR pin is the input for the Sample Rate Generator.
+-		 * McBSP FSR and FSX are driven by the Sample Rate Generator. */
+-		pcr = DAVINCI_MCBSP_PCR_SCLKME |
+-			DAVINCI_MCBSP_PCR_FSXM |
+-			DAVINCI_MCBSP_PCR_FSRM;
++		pcr = DAVINCI_MCBSP_PCR_FSRM | DAVINCI_MCBSP_PCR_FSXM;
++		/*
++		 * Selection of the clock input pin that is the
++		 * input for the Sample Rate Generator.
++		 * McBSP FSR and FSX are driven by the Sample Rate
++		 * Generator.
++		 */
++		switch (dev->clk_input_pin) {
++		case MCBSP_CLKS:
++			pcr |= DAVINCI_MCBSP_PCR_CLKXM |
++				DAVINCI_MCBSP_PCR_CLKRM;
++			break;
++		case MCBSP_CLKR:
++			pcr |= DAVINCI_MCBSP_PCR_SCLKME;
++			break;
++		default:
++			dev_err(dev->dev, "bad clk_input_pin\n");
++			return -EINVAL;
++		}
++
+ 		break;
+ 	case SND_SOC_DAIFMT_CBM_CFM:
+ 		/* codec is master */
+@@ -644,6 +661,7 @@ static int davinci_i2s_probe(struct platform_device *pdev)
+ 			pdata->sram_size_playback;
+ 		dev->dma_params[SNDRV_PCM_STREAM_CAPTURE].sram_size =
+ 			pdata->sram_size_capture;
++		dev->clk_input_pin = pdata->clk_input_pin;
+ 	}
+ 	dev->clk = clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(dev->clk)) {
+@@ -676,6 +694,7 @@ static int davinci_i2s_probe(struct platform_device *pdev)
+ 		goto err_free_mem;
+ 	}
+ 	dev->dma_params[SNDRV_PCM_STREAM_CAPTURE].channel = res->start;
++	dev->dev = &pdev->dev;
+ 
+ 	davinci_i2s_dai.private_data = dev;
+ 	davinci_i2s_dai.capture.dma_data = dev->dma_params;
+-- 
+1.7.0.4
 
-The genesis tree lost its conflict.
-
-The v4l-dvb tree gained a conflict against Linus' tree.
-
-The block tree gained a conflict against the rr tree.
-
-The device-mapper tree gained a conflict against the block tree.
-
-The trivial tree gained a conflict against the v4l-dvb tree.
-
-The usb tree gained a conflict against the v4l-dvb tree.
-
-The staging-next tree gained a conflict against the v4l-dvb tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 164 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-CONFLICT (content): Merge conflict in fs/nilfs2/super.c
-CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
-Applying: v9fs: fixup for inode_setattr being removed
-Applying: xfs: update tracing for clear_inode to evit_inode transition
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
-Merging quilt/jdelvare-hwmon
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-CONFLICT (content): Merge conflict in drivers/staging/tm6000/tm6000-alsa.c
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging ibft/master
-Merging swiotlb/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-CONFLICT (content): Merge conflict in Documentation/kernel-parameters.txt
-Merging cpufreq/next
-Merging quilt/rr
-CONFLICT (content): Merge conflict in kernel/module.c
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-CONFLICT (content): Merge conflict in drivers/block/virtio_blk.c
-Merging quilt/device-mapper
-CONFLICT (content): Merge conflict in drivers/md/dm.c
-Applying: device-mapper: fix for bio API change
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (delete/modify): drivers/media/video/ov511.c deleted in HEAD and m=
-odified in trivial/for-next. Version trivial/for-next of drivers/media/vide=
-o/ov511.c left in tree.
-$ git rm -f drivers/media/video/ov511.c
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
-or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
-eft in tree.
-$ git rm -f fs/notify/inotify/inotify.c
-Applying: fsnotify: update gfp/slab.h includes
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging catalin/for-next
-Merging alacrity/linux-next
-Merging i7core_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in Makefile
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-CONFLICT (content): Merge conflict in mm/memory-failure.c
-Merging sysctl/master
-Merging bkl-core/bkl/core
-Merging bkl-procfs/bkl/procfs
-Merging bkl-ioctl/bkl/ioctl
-Merging quilt/driver-core
-Merging quilt/tty
-Merging quilt/usb
-CONFLICT (content): Merge conflict in drivers/media/video/uvc/uvcvideo.h
-CONFLICT (content): Merge conflict in include/linux/usb/video.h
-Merging staging-next/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/batman-adv/bat_sysfs.c
-CONFLICT (delete/modify): drivers/staging/batman-adv/device.c deleted in st=
-aging-next/staging-next and modified in HEAD. Version HEAD of drivers/stagi=
-ng/batman-adv/device.c left in tree.
-CONFLICT (delete/modify): drivers/staging/cx25821/cx25821-audups11.c delete=
-d in HEAD and modified in staging-next/staging-next. Version staging-next/s=
-taging-next of drivers/staging/cx25821/cx25821-audups11.c left in tree.
-$ git rm -f drivers/staging/batman-adv/device.c
-$ git rm -f drivers/staging/cx25821/cx25821-audups11.c
-Merging slabh/slabh
-Merging scsi-post-merge/master
-
---Signature=_Tue__6_Jul_2010_19_05_19_+1000_DZ/aON3NjhHgxKZQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMMvHPAAoJEDMEi1NhKgbsN4wH/03szVSh1qUN6dW+MVpWia73
-zxu5ecMFNIJZ96FATD1w6GH4+FSsC9bnA8+doIkBOMXMB/VGxrIHYk0aFZ+ZAsIY
-OVVTqh3GnpDL8/JJ0iuIokZ0X/zK6k8CH144Z3qhNAKZrEoy4ETX3BehworMgo7e
-2zms2tfmihRfA/yA46RO+nAwhjBQaiJTYdvrNFC6nRARhK3Ee54OLLG5ZLR2zIk/
-NG1QtFQS3xNAX1arFUYrNCCy8suG5680DljL0IITassSDlbZAf8KetPnDBcm76LF
-Zo8ZRGn3e+9LnJqGtlQhbj5rgEWTp9QUrRwCC7qx5BjthUJEDYnL37iUXY7Fnqw=
-=02i/
------END PGP SIGNATURE-----
-
---Signature=_Tue__6_Jul_2010_19_05_19_+1000_DZ/aON3NjhHgxKZQ--
