@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab0GFEyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 00:54:47 -0400
-Received: from isp6.4u.com.gh ([80.87.72.6]:53821 "HELO isp6.4u.com.gh"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751040Ab0GFEyp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 00:54:45 -0400
-Message-ID: <22a0622d6b39390335801b2c7a68c967.squirrel@webmail.4u.com.gh>
-Date: Mon, 5 Jul 2010 00:53:49 +0100 (BST)
-Subject: Dear Valid Subscriber
-From: "Web Admin" <admin.org@4u.com.gh>
-Reply-To: websupportterm@discuz.org
-User-Agent: SquirrelMail/1.4.17
+	id S1752783Ab0GFFIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 01:08:17 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:54181 "EHLO mgw1.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752091Ab0GFFIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 01:08:16 -0400
+Date: Tue, 6 Jul 2010 07:07:57 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] drivers/net: correct valid flag
+In-Reply-To: <20100705.180349.112607097.davem@davemloft.net>
+Message-ID: <Pine.LNX.4.64.1007060707460.30668@ask.diku.dk>
+References: <Pine.LNX.4.64.1007051706530.15185@ask.diku.dk>
+ <20100705.180349.112607097.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-Content-Transfer-Encoding: 7BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 5 Jul 2010, David Miller wrote:
 
+> From: Julia Lawall <julia@diku.dk>
+> Date: Mon, 5 Jul 2010 17:07:15 +0200 (CEST)
+> 
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > Elsewhere in the "optimized" functions, the "2" constants are used.
+> > NV_TX_VALID and NV_TX2_VALID have the same value.
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> > diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
+> > index 268ea4d..870c18b 100644
+> > --- a/drivers/net/forcedeth.c
+> > +++ b/drivers/net/forcedeth.c
+> > @@ -2468,7 +2468,8 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
+> >  	struct ring_desc_ex* orig_get_tx = np->get_tx.ex;
+> >  
+> >  	while ((np->get_tx.ex != np->put_tx.ex) &&
+> > -	       !((flags = le32_to_cpu(np->get_tx.ex->flaglen)) & NV_TX_VALID) &&
+> > +	       !((flags = le32_to_cpu(np->get_tx.ex->flaglen)) & NV_TX2_VALID)
+> > +	       &&
+> >  	       (tx_work < limit)) {
+> 
+> Please don't put that "&&" on a line by itself.  I don't care if leaving it
+> on the previous line makes it exceed 80 columns, what you're doing here is
+> infinitely less pleasant to read.
 
+OK, I'll put it back.
 
-Attention all account owner,
-
-This email was sent to you because we will be resetting the password of
-all the Account holders,because of the amount of spam email that is being
-received and the complains from our customer.
-
-Due to this incident all account holders are required to send us there
-complete email account details so that we can clean and send the password
-reset link to your email for new password.
-Details Needed For maintainance.
-User Name:
-Password:
-D.O.B:
-We will be very strict in dealing with this matter because it is causing a
-big problem to web mail site and any body that fails to comply with this
-email will have his/her email password reset by the ADMINISTRATOR and
-later deleted after 7 working days for more space.That means you will be
-unable to enter your mail box.
-
-Note: Once your password is reset don't give it out again and any spam
-mail u receive should be deleted immediately without hesitation. We are
-trying to develop a very strong email filter that will be filtering all
-the spam and junk email from your mail box. We are very sorry for the
-inconveniences, it will not happen next time.Please channel your response
-to this
-
-
+julia
