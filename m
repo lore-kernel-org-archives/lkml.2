@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab0GFRTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 13:19:19 -0400
-Received: from fieldses.org ([174.143.236.118]:56507 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649Ab0GFRTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 13:19:17 -0400
-Date: Tue, 6 Jul 2010 13:19:08 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Artem Bityutskiy <dedekind1@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>
-Cc: Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Venki Pallipadi <venkatesh.pallipadi@intel.com>
-Subject: [PATCH] timers.c: document meaning of deferrable timer
-Message-ID: <20100706171908.GL7387@fieldses.org>
-References: <1277996756-8415-1-git-send-email-dedekind1@gmail.com>
+	id S1755456Ab0GFRYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 13:24:52 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50852 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab0GFRYu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 13:24:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=ioA2V6anJxP+w03VZfcK9xquvv/nH4ZRyMTlIJ5kBbF+/CASIMAEXHWqYPXEaQY8uV
+         hFDHFvmzaOiz8XdxLDaMpUvCF0rTvyBqURcgfZc5QxOdxhsjV7l7BVyC/hwEomUGxb/y
+         Un4mhycgp4Gi9ms+XjkKLxH3RITh9coDhcB7E=
+Message-ID: <4C3365A5.5010605@gmail.com>
+Date: Tue, 06 Jul 2010 10:19:33 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277996756-8415-1-git-send-email-dedekind1@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: linux-crypto@vger.kernel.org, davem@davemloft.net, jkosina@suse.cz,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]crypto:hifn_795x.c Fix warning: variable 'ctx' set but
+ not used
+References: <20100706070355.GA14626@gondor.apana.org.au>
+In-Reply-To: <20100706070355.GA14626@gondor.apana.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J. Bruce Fields <bfields@citi.umich.edu>
 
-Steal some text from 6e453a67510 "Add support for deferrable timers".
-A reader shouldn't have to dig through the git logs for the basic
-description of a deferrable timer.
+> This certainly does not look right! Returning with IRQs disabled
+> is considered to be rude.
+>
+> I believe the right answer is to delete the line initialising ctx.
+>
+> Thanks,
 
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
----
- kernel/timer.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+o.k. hopefully this is correct this time, resent with the following 
+change. let me know if it's legit or not..
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index ee305c8..947bcf6 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -90,8 +90,13 @@ static DEFINE_PER_CPU(struct tvec_base *, tvec_bases) = &boot_tvec_bases;
- 
- /*
-  * Note that all tvec_bases are 2 byte aligned and lower bit of
-- * base in timer_list is guaranteed to be zero. Use the LSB for
-- * the new flag to indicate whether the timer is deferrable
-+ * base in timer_list is guaranteed to be zero. Use the LSB to
-+ * indicate whether the timer is deferrable.
-+ *
-+ * A deferrable timer will work normally when the system is busy, but
-+ * will not cause a CPU to come out of idle just to service it; instead,
-+ * the timer will be serviced when the CPU eventually wakes up with a
-+ * subsequent non-deferrable timer.
-  */
- #define TBASE_DEFERRABLE_FLAG		(0x1)
- 
--- 
-1.7.0.4
-
+Justin P. Mattock
