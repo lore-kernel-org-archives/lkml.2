@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab0GFPsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 11:48:24 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:46663 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab0GFPsV (ORCPT
+	id S1754932Ab0GFPsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 11:48:30 -0400
+Received: from mail.deathmatch.net ([72.66.92.28]:1758 "EHLO
+	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754861Ab0GFPs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 11:48:21 -0400
-Message-ID: <4C335024.3090609@austin.ibm.com>
-Date: Tue, 06 Jul 2010 10:47:48 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	Tue, 6 Jul 2010 11:48:28 -0400
+Date: Tue, 6 Jul 2010 11:45:58 -0400
+From: me@bobcopeland.com
+To: Davidlohr Bueso <dave.bueso@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-karma-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org
+Subject: Re: [linux-karma-devel] [PATCH] omfs: fix memory leak
+Message-ID: <20100706154558.GA20924@hash.localnet>
+References: <1278210828.27014.2.camel@cowboy> <20100704113711.GA15067@hash.localnet> <1278306759.3811.24.camel@cowboy> <20100705140008.GA3378@hash.localnet> <1278391858.30082.3.camel@cowboy>
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Greg KH <gregkh@suse.de>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] memory hotplug disable boot option
-References: <20100628154455.GA13918@suse.de>	 <1277769867.8354.531.camel@nimitz>	 <20100629115232.38BC.A69D9226@jp.fujitsu.com>	 <1277827384.8354.3413.camel@nimitz>	<20100629180415.GB1240@suse.de>	 <20100630093251.a30ed1e0.kamezawa.hiroyu@jp.fujitsu.com>	 <20100630154755.GB12158@suse.de>	 <20100701093130.c5e2b564.kamezawa.hiroyu@jp.fujitsu.com>	 <1277990595.8354.10356.camel@nimitz>  <4C3349BF.7030104@austin.ibm.com> <1278430385.8354.23957.camel@nimitz>
-In-Reply-To: <1278430385.8354.23957.camel@nimitz>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1278391858.30082.3.camel@cowboy>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2010 10:33 AM, Dave Hansen wrote:
-> On Tue, 2010-07-06 at 10:20 -0500, Nathan Fontenot wrote:
->> On 07/01/2010 08:23 AM, Dave Hansen wrote:
->>>
->>> I was thinking more along the lines of just taking adjacent sections and
->>> merging them.  We'll need a new "end address" or size file.  Maybe
->>> "end_phys_index" or something similar.
->>>
->>> Such a beast would not fix all of the pathological cases, like where
->>> only every other 16MB section is populated with RAM, but I don't think
->>> those are very common at all, especially in cases where there's a lot of
->>> RAM.  But, it also has a chance of being relatively backward-compatible.
->>> In most cases, we may even be able to calculate a new phys_block_size
->>> where everything fits evenly and be fully backward-compatible with the
->>> old ABI.
->>
->> Under this scenario were you thinking that all of the memory sections that
->> reside under this memory block would then be acted upon as a whole.  For
->> example would we allow users to hotplug individual memory sections included
->> in th block, or would the memory block be acted upon as a whole?
+On Tue, Jul 06, 2010 at 12:50:58AM -0400, Davidlohr Bueso wrote:
+> Ok, resending that patch with the corrections. Thanks.
 > 
-> I think we would need a mechanism that allowed the sysfs directories to
-> be broken down somehow.  If the merging is very successful, it could
-> lead to a case where no existing sysfs dir is a reasonable size to
-> remove.  That's what we'd have to avoid, so I think we'd _need_
-> splitting of some kind.
-> 
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 
-Agreed.
+Great, applied to the fixes branch of
 
-Perhaps something along the following lines.  We create a sysfs directory
-for each memory block, where each memory block can contain multiple memory
-sections.  The default being one memory section per memory block.  All of
-the existing files that are currently under each memoryXXX directory in sysfs
-still appear along with a new file as Dave suggested to indicate the
-number of memory sections contained in that memory block.  Additionally,
-a new file named 'split' would allow users to split the memory block in
-half, thus creating a new directory for the split-off half of the block.
+git://git.kernel.org/pub/scm/linux/kernel/git/bcopeland/omfs.git
 
-A slight change in the state file behavior would also need to occur, in that
-writing 'online' or 'offline' to the file would perform the appropriate
-operation on all of the memory sections contained in the memory block.
+Thanks!
 
-Thoughts?  I can start working on this if no one has any objections.
-
--Nathan
+-- 
+Bob Copeland %% www.bobcopeland.com
 
