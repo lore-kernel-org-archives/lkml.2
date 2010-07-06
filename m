@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab0GFLfm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 07:35:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60835 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab0GFLfk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 07:35:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ian Kent <raven@themaw.net>
-Subject: Re: [PATCH 3/6] autofs/autofs4: move compat_ioctl handling into fs
-Date: Tue, 6 Jul 2010 13:35:00 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, autofs@linux.kernel.org
-References: <1278195310-25590-1-git-send-email-arnd@arndb.de> <20100705195837.GF5240@nowhere> <1278378690.3070.6.camel@localhost>
-In-Reply-To: <1278378690.3070.6.camel@localhost>
+	id S1756852Ab0GFLga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 07:36:30 -0400
+Received: from www.humilis.net ([82.95.169.224]:57002 "EHLO attic.humilis.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752794Ab0GFLg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 07:36:29 -0400
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jul 2010 07:36:28 EDT
+Date: Tue, 6 Jul 2010 13:26:50 +0200
+From: Sander <sander@humilis.net>
+To: Mark Knecht <markknecht@gmail.com>
+Cc: Robert Hancock <hancockrwd@gmail.com>, Tejun Heo <tj@kernel.org>,
+       Stan Hoeppner <stan@hardwarefreak.com>,
+       Linux Kernel List <linux-kernel@vger.kernel.org>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: Drives missing at boot
+Message-ID: <20100706112650.GA28794@attic.humilis.net>
+Reply-To: sander@humilis.net
+References: <AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>
+ <4C2F87C1.8000701@hardwarefreak.com>
+ <AANLkTimVJEO-yF3GZ2ghX6DNPuAu-A-MNNO9x8Q1EpRc@mail.gmail.com>
+ <4C2F9292.708@hardwarefreak.com>
+ <AANLkTikPsRvvpSZirSygnZqyGKcS-Bz0eVeASZZqvZwH@mail.gmail.com>
+ <AANLkTintf2mwgBVuk_4GmfHTzyJebP2kyfcNGij_epy-@mail.gmail.com>
+ <4C31796C.8050209@kernel.org>
+ <AANLkTinvNGha7SfaAWYIjUJwR9ZelCbHAWK0qvvllF9S@mail.gmail.com>
+ <4C3271FF.9080308@gmail.com>
+ <AANLkTilAvJUthkXM7KL9BhLwEv9kJn31Rs8wDTAe4PlY@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007061335.00264.arnd@arndb.de>
-X-Provags-ID: V02:K0:vgTcSf6GOyK7ixcB2PqLHsJeQayeHNjQhd1l3tVMPPs
- 6NikPSfehaErfDUISAaymREadyu5HX+tHfD9e7/2yxYtofr0Wy
- IF0epIBIlswvai2dR5CCGS0O79pfQpufZ4GE0Rbx/2X8JcS/jm
- FKOem1uTEIY3s7TUWXb+hpCs3jrmdO8JyCd0UEpfknzRNLXMfk
- rc1j23JSg1npAY9jW56KQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTilAvJUthkXM7KL9BhLwEv9kJn31Rs8wDTAe4PlY@mail.gmail.com>
+X-Uptime: 13:18:50 up 2 days, 22:22, 17 users,  load average: 2.25, 2.17,
+ 2.21
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 06 July 2010, Ian Kent wrote:
-> So it makes no difference whether the patches are combined, if it breaks
-> autofs then it probably won't be fixed but it may cause the replacement
-> to happen sooner.
+Mark Knecht wrote (ao):
+> On Mon, Jul 5, 2010 at 4:59 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
+> > On some machines changing from IDE to AHCI messes up the boot order
+> > selection in the BIOS - you may have to switch to AHCI, save settings,
+> > reboot, go back into the BIOS and then make sure the disk boot order
+> > settings are correct (whatever drive grub is installed on needs to be
+> > first).
+> 
+> That's a very interesting idea Robert. Thanks.
+> 
+> I'll have to be careful. I have 5 identical drives in the machine so
+> figuring out which is which when I'm in BIOS might be a bit of a
+> trick.
+> 
+> I'll give it a go and report back.
 
-Well, the main point of applying the patch now is to avoid breaking the
-autofs module when we remove the .ioctl operation.
+You can install grub on the mbr of all disks and not worry about the
+order. Especially if you work with UUIDs.
 
-> As far as the patch goes that should be fine and we should be able to
-> remove the BKL from autofs4 soon after but I'm not brave enough to try
-> just yet.
+	Sander
 
-Well, the only use of the BKL in autofs4 is in the ioctl function. You
-can probably replace that trivially with a global mutex, but from a quick
-inspection, even that should not be needed: The only ioctl command in
-autofs4 that does not already seem to have adequate locking is
-autofs4_get_set_timeout, which is even easier to change and still harmless
-if you don't do it at all.
-
-	Arnd
+-- 
+Humilis IT Services and Solutions
+http://www.humilis.net
