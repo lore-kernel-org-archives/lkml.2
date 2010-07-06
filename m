@@ -1,32 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab0GFTTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 15:19:39 -0400
-Received: from ironport7-1T.isc.cl ([200.91.27.123]:10375 "EHLO
-	ironport7-1T.isc.cl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab0GFTTi (ORCPT
+	id S1755300Ab0GFTYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 15:24:25 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:39553 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847Ab0GFTYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 15:19:38 -0400
-X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jul 2010 15:19:37 EDT
-Date: Tue, 6 Jul 2010 12:13:10 -0700
-Message-ID: <4C3252E5000008B6@ms2.isc.cl>
-From: "Mrs. Zeng Q. Zhen" <enferconti@adsl.tie.cl>
-Subject: Compliment of the Day
-Reply-To: mrszengqzhene122@gmail.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 6 Jul 2010 15:24:24 -0400
+To: David Howells <dhowells@redhat.com>
+Cc: viro@ftp.linux.org.uk, akpm@linux-foundation.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-reply-to: <26200.1278439363@redhat.com> (message from David Howells on Tue,
+	06 Jul 2010 19:02:43 +0100)
+Subject: Re: [PATCH 1/7] cachefiles: use path_get instead of lone dget
+References: <20100706172926.065118640@szeredi.hu> <20100706172913.165416302@szeredi.hu> <26200.1278439363@redhat.com>
+Message-Id: <E1OWDkX-0002mT-0t@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Tue, 06 Jul 2010 21:24:09 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compliment of the day, I am Mrs. Zeng Q. Zhen, a staff of lloyds Group Plc.
-here in Hong Kong attached with Private Banking Services; I have a secured
-business proposal for you. Should you be interested please reach me on my
-private email address(mrszengqzhene122@gmail.com) And after that I shall
-provide you with more details of my proposal. Your earliest response to this
-letter will be appreciated.
+On Tue, 06 Jul 2010, David Howells wrote:
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
+> 
+> > Dentry references should not be acquired without a corresponding
+> > vfsmount ref.
+> 
+> Which we have: current->fs holds one.  Or is this unsafe due to CLONE_FS?
 
-Yours Sincerely,
-Zeng Q.Zhen
+current->fs doesn't change, but the contents can (e.g. another thread
+does chdir()).
+
+Thanks,
+Miklos
