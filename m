@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab0GFIiL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 04:38:11 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50785 "EHLO hera.kernel.org"
+	id S1757126Ab0GFIie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 04:38:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50797 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756907Ab0GFIiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 04:38:07 -0400
-Date: Tue, 6 Jul 2010 08:37:43 GMT
+	id S1756698Ab0GFIic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 04:38:32 -0400
+Date: Tue, 6 Jul 2010 08:38:02 GMT
 From: tip-bot for Masami Hiramatsu <mhiramat@redhat.com>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
        hpa@zytor.com, mingo@redhat.com, efault@gmx.de, peterz@infradead.org,
@@ -16,284 +16,229 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
        linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
        peterz@infradead.org, efault@gmx.de, tglx@linutronix.de,
        mhiramat@redhat.com, mingo@elte.hu
-In-Reply-To: <20100519195742.2885.5344.stgit@localhost6.localdomain6>
-References: <20100519195742.2885.5344.stgit@localhost6.localdomain6>
+In-Reply-To: <20100519195749.2885.17451.stgit@localhost6.localdomain6>
+References: <20100519195749.2885.17451.stgit@localhost6.localdomain6>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Support tracing an entry of array
-Message-ID: <tip-b2a3c12b7442247c440f7083d48ef05716753ec1@git.kernel.org>
-Git-Commit-ID: b2a3c12b7442247c440f7083d48ef05716753ec1
+Subject: [tip:perf/core] perf probe: Support static and global variables
+Message-ID: <tip-b7dcb857cc3eb89136111fefe89780129c1af1d7@git.kernel.org>
+Git-Commit-ID: b7dcb857cc3eb89136111fefe89780129c1af1d7
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 06 Jul 2010 08:37:44 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 06 Jul 2010 08:38:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b2a3c12b7442247c440f7083d48ef05716753ec1
-Gitweb:     http://git.kernel.org/tip/b2a3c12b7442247c440f7083d48ef05716753ec1
+Commit-ID:  b7dcb857cc3eb89136111fefe89780129c1af1d7
+Gitweb:     http://git.kernel.org/tip/b7dcb857cc3eb89136111fefe89780129c1af1d7
 Author:     Masami Hiramatsu <mhiramat@redhat.com>
-AuthorDate: Wed, 19 May 2010 15:57:42 -0400
+AuthorDate: Wed, 19 May 2010 15:57:49 -0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 5 Jul 2010 18:50:27 -0300
+CommitDate: Mon, 5 Jul 2010 18:51:33 -0300
 
-perf probe: Support tracing an entry of array
+perf probe: Support static and global variables
 
-Add array-entry tracing support to perf probe. This enables to trace an entry
-of array which is indexed by constant value, e.g. array[0].
+Add static and global variables support to perf probe.
+This allows user to trace non-local variables (and
+structure members) at probe points.
 
-For example:
-
-  $ perf probe -a 'bio_split bi->bi_io_vec[0]'
-
-Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <20100519195742.2885.5344.stgit@localhost6.localdomain6>
+LKML-Reference: <20100519195749.2885.17451.stgit@localhost6.localdomain6>
 Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-probe.txt |    2 +-
- tools/perf/util/probe-event.c           |   56 +++++++++++++++++++++---------
- tools/perf/util/probe-event.h           |    1 +
- tools/perf/util/probe-finder.c          |   48 +++++++++++++++++++++++---
- 4 files changed, 83 insertions(+), 24 deletions(-)
+ tools/perf/util/probe-event.c  |   15 ++++++-
+ tools/perf/util/probe-finder.c |   85 ++++++++++++++++++++++++++++-----------
+ 2 files changed, 73 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 394016d..27d52da 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -94,7 +94,7 @@ Each probe argument follows below syntax.
- 
-  [NAME=]LOCALVAR|$retval|%REG|@SYMBOL[:TYPE]
- 
--'NAME' specifies the name of this argument (optional). You can use the name of local variable, local data structure member (e.g. var->field, var.field2), or kprobe-tracer argument format (e.g. $retval, %ax, etc). Note that the name of this argument will be set as the last member name if you specify a local data structure member (e.g. field2 for 'var->field1.field2'.)
-+'NAME' specifies the name of this argument (optional). You can use the name of local variable, local data structure member (e.g. var->field, var.field2), local array with fixed index (e.g. array[1], var->array[0], var->pointer[2]), or kprobe-tracer argument format (e.g. $retval, %ax, etc). Note that the name of this argument will be set as the last member name if you specify a local data structure member (e.g. field2 for 'var->field1.field2'.)
- 'TYPE' casts the type of this argument (optional). If omitted, perf probe automatically set the type based on debuginfo. You can specify 'string' type only for the local variable or structure member which is an array of or a pointer to 'char' or 'unsigned char' type.
- 
- LINE SYNTAX
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 914c670..351baa9 100644
+index 351baa9..09cf546 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -557,7 +557,7 @@ static int parse_perf_probe_point(char *arg, struct perf_probe_event *pev)
- /* Parse perf-probe event argument */
- static int parse_perf_probe_arg(char *str, struct perf_probe_arg *arg)
+@@ -926,6 +926,7 @@ out:
+ static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
+ 				       char *buf, size_t buflen)
  {
--	char *tmp;
-+	char *tmp, *goodname;
- 	struct perf_probe_arg_field **fieldp;
++	struct kprobe_trace_arg_ref *ref = arg->ref;
+ 	int ret, depth = 0;
+ 	char *tmp = buf;
  
- 	pr_debug("parsing arg: %s into ", str);
-@@ -580,7 +580,7 @@ static int parse_perf_probe_arg(char *str, struct perf_probe_arg *arg)
- 		pr_debug("type:%s ", arg->type);
+@@ -939,16 +940,24 @@ static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
+ 	buf += ret;
+ 	buflen -= ret;
+ 
++	/* Special case: @XXX */
++	if (arg->value[0] == '@' && arg->ref)
++			ref = ref->next;
++
+ 	/* Dereferencing arguments */
+-	if (arg->ref) {
+-		depth = __synthesize_kprobe_trace_arg_ref(arg->ref, &buf,
++	if (ref) {
++		depth = __synthesize_kprobe_trace_arg_ref(ref, &buf,
+ 							  &buflen, 1);
+ 		if (depth < 0)
+ 			return depth;
  	}
  
--	tmp = strpbrk(str, "-.");
-+	tmp = strpbrk(str, "-.[");
- 	if (!is_c_varname(str) || !tmp) {
- 		/* A variable, register, symbol or special value */
- 		arg->var = strdup(str);
-@@ -590,10 +590,11 @@ static int parse_perf_probe_arg(char *str, struct perf_probe_arg *arg)
- 		return 0;
- 	}
- 
--	/* Structure fields */
-+	/* Structure fields or array element */
- 	arg->var = strndup(str, tmp - str);
- 	if (arg->var == NULL)
- 		return -ENOMEM;
-+	goodname = arg->var;
- 	pr_debug("%s, ", arg->var);
- 	fieldp = &arg->field;
- 
-@@ -601,22 +602,38 @@ static int parse_perf_probe_arg(char *str, struct perf_probe_arg *arg)
- 		*fieldp = zalloc(sizeof(struct perf_probe_arg_field));
- 		if (*fieldp == NULL)
- 			return -ENOMEM;
--		if (*tmp == '.') {
--			str = tmp + 1;
--			(*fieldp)->ref = false;
--		} else if (tmp[1] == '>') {
--			str = tmp + 2;
-+		if (*tmp == '[') {	/* Array */
-+			str = tmp;
-+			(*fieldp)->index = strtol(str + 1, &tmp, 0);
- 			(*fieldp)->ref = true;
--		} else {
--			semantic_error("Argument parse error: %s\n", str);
--			return -EINVAL;
-+			if (*tmp != ']' || tmp == str + 1) {
-+				semantic_error("Array index must be a"
-+						" number.\n");
-+				return -EINVAL;
-+			}
-+			tmp++;
-+			if (*tmp == '\0')
-+				tmp = NULL;
-+		} else {		/* Structure */
-+			if (*tmp == '.') {
-+				str = tmp + 1;
-+				(*fieldp)->ref = false;
-+			} else if (tmp[1] == '>') {
-+				str = tmp + 2;
-+				(*fieldp)->ref = true;
-+			} else {
-+				semantic_error("Argument parse error: %s\n",
-+					       str);
-+				return -EINVAL;
-+			}
-+			tmp = strpbrk(str, "-.[");
- 		}
--
--		tmp = strpbrk(str, "-.");
- 		if (tmp) {
- 			(*fieldp)->name = strndup(str, tmp - str);
- 			if ((*fieldp)->name == NULL)
- 				return -ENOMEM;
-+			if (*str != '[')
-+				goodname = (*fieldp)->name;
- 			pr_debug("%s(%d), ", (*fieldp)->name, (*fieldp)->ref);
- 			fieldp = &(*fieldp)->next;
- 		}
-@@ -624,11 +641,13 @@ static int parse_perf_probe_arg(char *str, struct perf_probe_arg *arg)
- 	(*fieldp)->name = strdup(str);
- 	if ((*fieldp)->name == NULL)
- 		return -ENOMEM;
-+	if (*str != '[')
-+		goodname = (*fieldp)->name;
- 	pr_debug("%s(%d)\n", (*fieldp)->name, (*fieldp)->ref);
- 
--	/* If no name is specified, set the last field name */
-+	/* If no name is specified, set the last field name (not array index)*/
- 	if (!arg->name) {
--		arg->name = strdup((*fieldp)->name);
-+		arg->name = strdup(goodname);
- 		if (arg->name == NULL)
- 			return -ENOMEM;
- 	}
-@@ -776,8 +795,11 @@ int synthesize_perf_probe_arg(struct perf_probe_arg *pa, char *buf, size_t len)
- 	len -= ret;
- 
- 	while (field) {
--		ret = e_snprintf(tmp, len, "%s%s", field->ref ? "->" : ".",
--				 field->name);
-+		if (field->name[0] == '[')
-+			ret = e_snprintf(tmp, len, "%s", field->name);
-+		else
-+			ret = e_snprintf(tmp, len, "%s%s",
-+					 field->ref ? "->" : ".", field->name);
- 		if (ret <= 0)
- 			goto error;
- 		tmp += ret;
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index e9db1a2..bc06d3e 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -50,6 +50,7 @@ struct perf_probe_point {
- struct perf_probe_arg_field {
- 	struct perf_probe_arg_field	*next;	/* Next field */
- 	char				*name;	/* Name of the field */
-+	long				index;	/* Array index number */
- 	bool				ref;	/* Referencing flag */
- };
- 
+ 	/* Print argument value */
+-	ret = e_snprintf(buf, buflen, "%s", arg->value);
++	if (arg->value[0] == '@' && arg->ref)
++		ret = e_snprintf(buf, buflen, "%s%+ld", arg->value,
++				 arg->ref->offset);
++	else
++		ret = e_snprintf(buf, buflen, "%s", arg->value);
+ 	if (ret < 0)
+ 		return ret;
+ 	buf += ret;
 diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index aaea16b..308664d 100644
+index 308664d..3e64e1f 100644
 --- a/tools/perf/util/probe-finder.c
 +++ b/tools/perf/util/probe-finder.c
-@@ -485,6 +485,9 @@ static int convert_variable_type(Dwarf_Die *vr_die,
- 		return -ENOENT;
- 	}
+@@ -406,14 +406,50 @@ static Dwarf_Die *die_find_member(Dwarf_Die *st_die, const char *name,
+  * Probe finder related functions
+  */
  
-+	pr_debug("%s type is %s.\n",
-+		 dwarf_diename(vr_die), dwarf_diename(&type));
++static struct kprobe_trace_arg_ref *alloc_trace_arg_ref(long offs)
++{
++	struct kprobe_trace_arg_ref *ref;
++	ref = zalloc(sizeof(struct kprobe_trace_arg_ref));
++	if (ref != NULL)
++		ref->offset = offs;
++	return ref;
++}
 +
- 	if (cast && strcmp(cast, "string") == 0) {	/* String type */
- 		ret = dwarf_tag(&type);
- 		if (ret != DW_TAG_pointer_type &&
-@@ -553,16 +556,44 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 	struct kprobe_trace_arg_ref *ref = *ref_ptr;
- 	Dwarf_Die type;
- 	Dwarf_Word offs;
--	int ret;
-+	int ret, tag;
- 
- 	pr_debug("converting %s in %s\n", field->name, varname);
- 	if (die_get_real_type(vr_die, &type) == NULL) {
- 		pr_warning("Failed to get the type of %s.\n", varname);
- 		return -ENOENT;
- 	}
--
--	/* Check the pointer and dereference */
--	if (dwarf_tag(&type) == DW_TAG_pointer_type) {
-+	pr_debug2("Var real type: (%x)\n", (unsigned)dwarf_dieoffset(&type));
-+	tag = dwarf_tag(&type);
+ /* Show a location */
+-static int convert_location(Dwarf_Op *op, struct probe_finder *pf)
++static int convert_variable_location(Dwarf_Die *vr_die, struct probe_finder *pf)
+ {
++	Dwarf_Attribute attr;
++	Dwarf_Op *op;
++	size_t nops;
+ 	unsigned int regn;
+ 	Dwarf_Word offs = 0;
+ 	bool ref = false;
+ 	const char *regs;
+ 	struct kprobe_trace_arg *tvar = pf->tvar;
++	int ret;
 +
-+	if (field->name[0] == '[' &&
-+	    (tag == DW_TAG_array_type || tag == DW_TAG_pointer_type)) {
-+		if (field->next)
-+			/* Save original type for next field */
-+			memcpy(die_mem, &type, sizeof(*die_mem));
-+		/* Get the type of this array */
-+		if (die_get_real_type(&type, &type) == NULL) {
-+			pr_warning("Failed to get the type of %s.\n", varname);
-+			return -ENOENT;
-+		}
-+		pr_debug2("Array real type: (%x)\n",
-+			 (unsigned)dwarf_dieoffset(&type));
-+		if (tag == DW_TAG_pointer_type) {
-+			ref = zalloc(sizeof(struct kprobe_trace_arg_ref));
-+			if (ref == NULL)
-+				return -ENOMEM;
-+			if (*ref_ptr)
-+				(*ref_ptr)->next = ref;
-+			else
-+				*ref_ptr = ref;
-+		}
-+		ref->offset += die_get_byte_size(&type) * field->index;
-+		if (!field->next)
-+			/* Save vr_die for converting types */
-+			memcpy(die_mem, vr_die, sizeof(*die_mem));
-+		goto next;
-+	} else if (tag == DW_TAG_pointer_type) {
-+		/* Check the pointer and dereference */
- 		if (!field->ref) {
- 			pr_err("Semantic error: %s must be referred by '->'\n",
- 			       field->name);
-@@ -588,10 +619,15 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 			*ref_ptr = ref;
- 	} else {
- 		/* Verify it is a data structure  */
--		if (dwarf_tag(&type) != DW_TAG_structure_type) {
-+		if (tag != DW_TAG_structure_type) {
- 			pr_warning("%s is not a data structure.\n", varname);
- 			return -EINVAL;
- 		}
-+		if (field->name[0] == '[') {
-+			pr_err("Semantic error: %s is not a pointor nor array.",
-+			       varname);
-+			return -EINVAL;
-+		}
- 		if (field->ref) {
- 			pr_err("Semantic error: %s must be referred by '.'\n",
- 			       field->name);
-@@ -618,6 +654,7 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 	}
- 	ref->offset += (long)offs;
++	/* TODO: handle more than 1 exprs */
++	if (dwarf_attr(vr_die, DW_AT_location, &attr) == NULL ||
++	    dwarf_getlocation_addr(&attr, pf->addr, &op, &nops, 1) <= 0 ||
++	    nops == 0) {
++		/* TODO: Support const_value */
++		pr_err("Failed to find the location of %s at this address.\n"
++		       " Perhaps, it has been optimized out.\n", pf->pvar->var);
++		return -ENOENT;
++	}
++
++	if (op->atom == DW_OP_addr) {
++		/* Static variables on memory (not stack), make @varname */
++		ret = strlen(dwarf_diename(vr_die));
++		tvar->value = zalloc(ret + 2);
++		if (tvar->value == NULL)
++			return -ENOMEM;
++		snprintf(tvar->value, ret + 2, "@%s", dwarf_diename(vr_die));
++		tvar->ref = alloc_trace_arg_ref((long)offs);
++		if (tvar->ref == NULL)
++			return -ENOMEM;
++		return 0;
++	}
  
-+next:
- 	/* Converting next field */
- 	if (field->next)
- 		return convert_variable_fields(die_mem, field->name,
-@@ -667,7 +704,6 @@ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
- 	char buf[32], *ptr;
+ 	/* If this is based on frame buffer, set the offset */
+ 	if (op->atom == DW_OP_fbreg) {
+@@ -455,10 +491,9 @@ static int convert_location(Dwarf_Op *op, struct probe_finder *pf)
+ 		return -ENOMEM;
+ 
+ 	if (ref) {
+-		tvar->ref = zalloc(sizeof(struct kprobe_trace_arg_ref));
++		tvar->ref = alloc_trace_arg_ref((long)offs);
+ 		if (tvar->ref == NULL)
+ 			return -ENOMEM;
+-		tvar->ref->offset = (long)offs;
+ 	}
+ 	return 0;
+ }
+@@ -666,20 +701,13 @@ next:
+ /* Show a variables in kprobe event format */
+ static int convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
+ {
+-	Dwarf_Attribute attr;
+ 	Dwarf_Die die_mem;
+-	Dwarf_Op *expr;
+-	size_t nexpr;
  	int ret;
  
--	/* TODO: Support arrays */
+-	if (dwarf_attr(vr_die, DW_AT_location, &attr) == NULL)
+-		goto error;
+-	/* TODO: handle more than 1 exprs */
+-	ret = dwarf_getlocation_addr(&attr, pf->addr, &expr, &nexpr, 1);
+-	if (ret <= 0 || nexpr == 0)
+-		goto error;
++	pr_debug("Converting variable %s into trace event.\n",
++		 dwarf_diename(vr_die));
+ 
+-	ret = convert_location(expr, pf);
++	ret = convert_variable_location(vr_die, pf);
+ 	if (ret == 0 && pf->pvar->field) {
+ 		ret = convert_variable_fields(vr_die, pf->pvar->var,
+ 					      pf->pvar->field, &pf->tvar->ref,
+@@ -690,19 +718,14 @@ static int convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
+ 		ret = convert_variable_type(vr_die, pf->tvar, pf->pvar->type);
+ 	/* *expr will be cached in libdw. Don't free it. */
+ 	return ret;
+-error:
+-	/* TODO: Support const_value */
+-	pr_err("Failed to find the location of %s at this address.\n"
+-	       " Perhaps, it has been optimized out.\n", pf->pvar->var);
+-	return -ENOENT;
+ }
+ 
+ /* Find a variable in a subprogram die */
+ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
+ {
+-	Dwarf_Die vr_die;
++	Dwarf_Die vr_die, *scopes;
+ 	char buf[32], *ptr;
+-	int ret;
++	int ret, nscopes;
+ 
  	if (pf->pvar->name)
  		pf->tvar->name = strdup(pf->pvar->name);
- 	else {
+@@ -730,12 +753,26 @@ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 	pr_debug("Searching '%s' variable in context.\n",
+ 		 pf->pvar->var);
+ 	/* Search child die for local variables and parameters. */
+-	if (!die_find_variable(sp_die, pf->pvar->var, &vr_die)) {
++	if (die_find_variable(sp_die, pf->pvar->var, &vr_die))
++		ret = convert_variable(&vr_die, pf);
++	else {
++		/* Search upper class */
++		nscopes = dwarf_getscopes_die(sp_die, &scopes);
++		if (nscopes > 0) {
++			ret = dwarf_getscopevar(scopes, nscopes, pf->pvar->var,
++						0, NULL, 0, 0, &vr_die);
++			if (ret >= 0)
++				ret = convert_variable(&vr_die, pf);
++			else
++				ret = -ENOENT;
++			free(scopes);
++		} else
++			ret = -ENOENT;
++	}
++	if (ret < 0)
+ 		pr_warning("Failed to find '%s' in this function.\n",
+ 			   pf->pvar->var);
+-		return -ENOENT;
+-	}
+-	return convert_variable(&vr_die, pf);
++	return ret;
+ }
+ 
+ /* Show a probe point to output buffer */
