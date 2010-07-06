@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab0GFSiu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 14:38:50 -0400
-Received: from [202.81.31.142] ([202.81.31.142]:39182 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953Ab0GFSif (ORCPT
+	id S1755747Ab0GFSku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 14:40:50 -0400
+Received: from [202.81.31.148] ([202.81.31.148]:52313 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220Ab0GFSis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 14:38:35 -0400
+	Tue, 6 Jul 2010 14:38:48 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
        corbet@lwn.net, neilb@suse.de, hooanon05@yahoo.co.jp,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org,
        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 2/9] vfs: Add name to file handle conversion support
-Date: Wed,  7 Jul 2010 00:08:04 +0530
-Message-Id: <1278441491-12785-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 5/9] vfs: Support null pathname in readlink
+Date: Wed,  7 Jul 2010 00:08:07 +0530
+Message-Id: <1278441491-12785-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.rc1
 In-Reply-To: <1278441491-12785-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1278441491-12785-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,193 +24,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add a new superblock field unsigned char s_uuid[16]
-to store UUID mapping for the file system. The s_uuid[16] is used to
-identify the file system apart of file_handle
+From: NeilBrown <neilb@suse.de>
 
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+This enables to use readlink to get the link target name
+from a file descriptor point to the link. This can be used
+with open_by_handle syscall that returns a file descriptor for a link.
+We can then use this file descriptor to get the target name.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/open.c                |  121 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h       |    8 +++
- include/linux/syscalls.h |    3 +
- 3 files changed, 132 insertions(+), 0 deletions(-)
+ fs/stat.c |   30 ++++++++++++++++++++++--------
+ 1 files changed, 22 insertions(+), 8 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 5463266..657f9e7 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -29,6 +29,7 @@
- #include <linux/falloc.h>
- #include <linux/fs_struct.h>
- #include <linux/ima.h>
-+#include <linux/exportfs.h>
- 
- #include "internal.h"
- 
-@@ -1040,3 +1041,123 @@ int nonseekable_open(struct inode *inode, struct file *filp)
- }
- 
- EXPORT_SYMBOL(nonseekable_open);
-+
-+#ifdef CONFIG_EXPORTFS
-+/* limit the handle size to some value */
-+#define MAX_HANDLE_SZ 4096
-+static long do_sys_name_to_handle(struct path *path,
-+			struct file_handle __user *ufh)
-+{
-+	long retval;
-+	int handle_size;
-+	struct file_handle f_handle;
-+	struct file_handle *handle = NULL;
-+
-+	if (copy_from_user(&f_handle, ufh, sizeof(struct file_handle))) {
-+		retval = -EFAULT;
-+		goto err_out;
-+	}
-+	if (f_handle.handle_size > MAX_HANDLE_SZ) {
-+		retval = -EINVAL;
-+		goto err_out;
-+	}
-+	handle = kmalloc(sizeof(struct file_handle) + f_handle.handle_size,
-+			GFP_KERNEL);
-+	if (!handle) {
-+		retval = -ENOMEM;
-+		goto err_out;
-+	}
-+
-+	/* convert handle size to  multiple of sizeof(u32) */
-+	handle_size = f_handle.handle_size >> 2;
-+
-+	/* we ask for a non connected handle */
-+	retval = exportfs_encode_fh(path->dentry,
-+				(struct fid *)handle->f_handle,
-+				&handle_size,  0);
-+	/* convert handle size to bytes */
-+	handle_size *= sizeof(u32);
-+	handle->handle_type = retval;
-+	handle->handle_size = handle_size;
-+	if (handle_size > f_handle.handle_size) {
-+		/*
-+		 * set the handle_size to zero so we copy only
-+		 * non variable part of the file_handle
-+		 */
-+		handle_size = 0;
-+		retval = -EOVERFLOW;
-+	} else
-+		retval = 0;
-+	if (copy_to_user(ufh, handle,
-+				sizeof(struct file_handle) + handle_size))
-+		retval = -EFAULT;
-+
-+	kfree(handle);
-+err_out:
-+	return retval;
-+}
-+
-+/**
-+ * sys_name_to_handle_at: convert name to handle
-+ * @dfd: directory relative to which name is interpreted if not absolute
-+ * @name: name that should be converted to handle.
-+ * @handle: resulting file handle
-+ * @flag: flag value to indicate whether to follow symlink or not
-+ *
-+ * @handle->handle_size indicate the space available to store the
-+ * variable part of the file handle in bytes. If there is not
-+ * enough space, the field is updated to return the minimum
-+ * value required.
-+ */
-+SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
-+		struct file_handle __user *, handle, int, flag)
-+{
-+
-+	int follow;
-+	long ret = -EINVAL;
+diff --git a/fs/stat.c b/fs/stat.c
+index c4ecd52..a66a0ef 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 		char __user *, buf, int, bufsiz)
+ {
+-	struct path path;
+-	int error;
++	int error = 0, fput_needed;
 +	struct path path, *pp;
 +	struct file *file = NULL;
+ 
+ 	if (bufsiz <= 0)
+ 		return -EINVAL;
+ 
+-	error = user_path_at(dfd, pathname, 0, &path);
++	if (pathname == NULL && dfd != AT_FDCWD) {
++		file = fget_light(dfd, &fput_needed);
 +
-+	if ((flag & ~AT_SYMLINK_FOLLOW) != 0)
-+		goto err_out;
-+
-+	if (name == NULL && dfd != AT_FDCWD) {
-+		file = fget(dfd);
-+		if (file) {
++		if (file)
 +			pp = &file->f_path;
-+			ret = 0;
-+		} else
-+			ret = -EBADF;
++		else
++			error = -EBADF;
 +	} else {
-+		follow = (flag & AT_SYMLINK_FOLLOW) ? LOOKUP_FOLLOW : 0;
-+		ret = user_path_at(dfd, name, follow, &path);
++		error = user_path_at(dfd, pathname, 0, &path);
 +		pp = &path;
 +	}
-+	if (ret)
-+		goto err_out;
-+	/*
-+	 * We need t make sure wether the file system
-+	 * support decoding of the file handle
-+	 */
-+	if (!pp->mnt->mnt_sb->s_export_op ||
-+		!pp->mnt->mnt_sb->s_export_op->fh_to_dentry) {
-+		ret = -EOPNOTSUPP;
-+		goto out_path;
-+	}
-+	ret = do_sys_name_to_handle(pp, handle);
-+
-+out_path:
-+	if (file)
-+		fput(file);
-+	else
-+		path_put(&path);
-+err_out:
-+	return ret;
-+}
-+#else
-+SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
-+		struct file_handle __user *, handle, int, flag)
-+{
-+	return -ENOSYS;
-+}
-+#endif
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 471e1ff..adfb5b8 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -949,6 +949,14 @@ struct file {
- 	unsigned long f_mnt_write_state;
- #endif
- };
-+
-+struct file_handle {
-+	int handle_size;
-+	int handle_type;
-+	/* file identifier */
-+	unsigned char f_handle[0];
-+};
-+
- extern spinlock_t files_lock;
- #define file_list_lock() spin_lock(&files_lock);
- #define file_list_unlock() spin_unlock(&files_lock);
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 7f614ce..4d4e922 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -61,6 +61,7 @@ struct robust_list_head;
- struct getcpu_cache;
- struct old_linux_dirent;
- struct perf_event_attr;
-+struct file_handle;
+ 	if (!error) {
+-		struct inode *inode = path.dentry->d_inode;
++		struct inode *inode = pp->dentry->d_inode;
  
- #include <linux/types.h>
- #include <linux/aio_abi.h>
-@@ -823,5 +824,7 @@ asmlinkage long sys_mmap_pgoff(unsigned long addr, unsigned long len,
- 			unsigned long prot, unsigned long flags,
- 			unsigned long fd, unsigned long pgoff);
- asmlinkage long sys_old_mmap(struct mmap_arg_struct __user *arg);
-+asmlinkage long sys_name_to_handle_at(int dfd, const char __user *name,
-+				struct file_handle __user *handle, int flag);
- 
- #endif
+ 		error = -EINVAL;
+ 		if (inode->i_op->readlink) {
+-			error = security_inode_readlink(path.dentry);
++			error = security_inode_readlink(pp->dentry);
+ 			if (!error) {
+-				touch_atime(path.mnt, path.dentry);
+-				error = inode->i_op->readlink(path.dentry,
++				touch_atime(pp->mnt, pp->dentry);
++				error = inode->i_op->readlink(pp->dentry,
+ 							      buf, bufsiz);
+ 			}
+ 		}
+-		path_put(&path);
++		if (file)
++			fput_light(file, fput_needed);
++		else
++			path_put(&path);
+ 	}
+ 	return error;
+ }
 -- 
 1.7.2.rc1
 
