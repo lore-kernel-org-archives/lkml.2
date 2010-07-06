@@ -1,84 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab0GFAyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 20:54:22 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51547 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab0GFAyV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 20:54:21 -0400
-Date: Mon, 5 Jul 2010 21:54:09 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Chase Douglas <chase.douglas@canonical.com>, Ingo Molnar <mingo@elte.hu>,
-       lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>
-Subject: Re: [PATCH -tip 0/4] perf-probe updates: string support, etc.
-Message-ID: <20100706005409.GC23506@ghostprotocols.net>
-References: <20100519195717.2885.90799.stgit@localhost6.localdomain6> <56FC4434-EA6C-4A0C-A95B-3D7BE818774B@canonical.com> <20100705174450.GB23506@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100705174450.GB23506@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754212Ab0GFBDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 21:03:14 -0400
+Received: from mail.perches.com ([173.55.12.10]:1432 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751446Ab0GFBDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 21:03:12 -0400
+Subject: [PATCH] MAINTAINERS: Fix EDAC-I7CORE file patterns
+From: Joe Perches <joe@perches.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Jul 2010 18:03:08 -0700
+Message-ID: <1278378188.4126.106.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 05, 2010 at 02:44:50PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Mon, Jul 05, 2010 at 10:30:47AM -0400, Chase Douglas escreveu:
-> > On May 19, 2010, at 3:57 PM, Masami Hiramatsu wrote:
-> > > Here is a series of patches which improves perf probe to
-> > > add below features. I cleared some coding style issues.
+File patterns are one per line.
+Fixed include file location.
 
-> > > - String support, which enables dynamic events to trace string
-> > >  variables instead of its address.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+diff --git a/MAINTAINERS b/MAINTAINERS
+index a07a49d..5884812 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2121,7 +2121,9 @@ M:	Mauro Carvalho Chehab <mchehab@redhat.com>
+ L:	linux-edac@vger.kernel.org
+ W:	bluesmoke.sourceforge.net
+ S:	Maintained
+-F:	drivers/edac/i7core_edac.c linux/edac_mce.h drivers/edac/edac_mce.c
++F:	drivers/edac/i7core_edac.c
++F:	drivers/edac/edac_mce.c
++F:	include/linux/edac_mce.h
+ 
+ EDAC-I82975X
+ M:	Ranganathan Desikan <ravi@jetztechnologies.com>
 
-> > > - Fixed-index array entry support, which allows user to trace
-> > >  an array entry with digit index, e.g. array[0].
 
-> > > - Global/static variable support, which allows user to trace
-> > >  global or static variables, as same as local one.
-
-> > What's the status of these patches? They seem very useful to me, but I
-> > don't see them in Arnaldo's tree at git.kernel.org.
-
-> Thanks for reminding me about these ones, will look at them to get them
-> in perf/core.
-
-Masami, I fixed up a minor conflict and while trying it this happened:
-
-[root@emilia ~]# perf probe -a 'bio_split bi->bi_io_vec[0]'
-kprobe_events file does not exist - please rebuild kernel with CONFIG_KPROBE_EVENT.
-  Error: Failed to add events. (-1)
-
-But on a second try:
-
-[root@emilia ~]# l /sys/kernel/debug/tracing/kprobe_events 
--rw-r--r-- 1 root root 0 Jul  5 18:37 /sys/kernel/debug/tracing/kprobe_events
-[root@emilia ~]# cat /sys/kernel/debug/tracing/kprobe_events 
-[root@emilia ~]#
-[root@emilia ~]# perf probe -a 'bio_split bi->bi_io_vec[0]'
-Add new event:
-  probe:bio_split      (on bio_split with bi_io_vec=bi->bi_io_vec[0])
-
-You can now use it on all perf tools, such as:
-
-	perf record -e probe:bio_split -aR sleep 1
-
-[root@emilia ~]# cat /sys/kernel/debug/tracing/kprobe_events 
-p:probe/bio_split bio_split bi_io_vec=+0(+72(%di)):u64
-[root@emilia ~]# 
-
-I'll push it as is, posting the pull request with the patches today,
-please check if everything is ok and send fixups if needed,
-
-Thanks,
-
-- Arnaldo
