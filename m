@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab0GFBzx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 21:55:53 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36458
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753699Ab0GFBzw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 21:55:52 -0400
-Date: Mon, 05 Jul 2010 18:56:06 -0700 (PDT)
-Message-Id: <20100705.185606.115922440.davem@davemloft.net>
-To: ralf@linux-mips.org
-Cc: segooon@gmail.com, kernel-janitors@vger.kernel.org, jpirko@redhat.com,
-       eric.dumazet@gmail.com, kaber@trash.net, adobriyan@gmail.com,
-       linux-mips@linux-mips.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [NET] ioc3-eth: Use the instance of net_device_stats from
- net_device.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100705125938.GB28849@linux-mips.org>
-References: <20100705125938.GB28849@linux-mips.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1756263Ab0GFCBT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 22:01:19 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41339 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752354Ab0GFCBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 22:01:18 -0400
+Date: Tue, 6 Jul 2010 12:01:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>
+Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
+Message-Id: <20100706120113.407d588c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ralf Baechle <ralf@linux-mips.org>
-Date: Mon, 5 Jul 2010 13:59:38 +0100
+Hi Mauro,
 
-> Since net_device has an instance of net_device_stats, we can remove the
-> instance of this from the adapter structure.
-> 
-> Based on original patch by Kulikov Vasiliy.
-> 
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+Today's linux-next merge of the v4l-dvb tree got a conflict in
+drivers/staging/tm6000/tm6000-alsa.c between commit
+4ef09889d7b4c7be2aa3e132efb77029f51c95b7 ("v4l-dvb: update gfp/slab.h
+includes") from Linus' tree and commit
+813605a98db924123530784d29964e99a705482d ("tm6000-alsa: rework audio
+buffer allocation/deallocation") from the v4l-dvb tree.
 
-Applied.
+Just overlapping additions.  I fixed ti up (see below) and can carry the
+fix for a while.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/staging/tm6000/tm6000-alsa.c
+index 273e26e,aa38577..0000000
+--- a/drivers/staging/tm6000/tm6000-alsa.c
++++ b/drivers/staging/tm6000/tm6000-alsa.c
+@@@ -15,7 -15,7 +15,8 @@@
+  #include <linux/device.h>
+  #include <linux/interrupt.h>
+  #include <linux/usb.h>
+ +#include <linux/slab.h>
++ #include <linux/vmalloc.h>
+  
+  #include <asm/delay.h>
+  #include <sound/core.h>
