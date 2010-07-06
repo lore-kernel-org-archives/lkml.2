@@ -1,141 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408Ab0GFE3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 00:29:39 -0400
-Received: from adelphi.physics.adelaide.edu.au ([129.127.102.1]:50512 "EHLO
-	adelphi.physics.adelaide.edu.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751038Ab0GFE3h (ORCPT
+	id S1751451Ab0GFEa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 00:30:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47084 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab0GFEa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 00:29:37 -0400
-From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-Message-Id: <201007060428.o664SStV010981@turbo.physics.adelaide.edu.au>
-Subject: Re: [PATCH] compal-laptop/fujitsu-laptop/msi-laptop: make dmi_check_cb
-To: axel.lin@gmail.com (Axel Lin)
-Date: Tue, 6 Jul 2010 13:58:28 +0930 (CST)
-Cc: linux-kernel@vger.kernel.org (linux-kernel),
-       cezary.jackiewicz@gmail.com (Cezary Jackiewicz),
-       mjg@redhat.com (Matthew Garrett),
-       tim.gardner@canonical.com (Tim Gardner),
-       Mario_Limonciello@Dell.com (Mario Limonciello),
-       rpurdie@linux.intel.com (Richard Purdie), mmarek@suse.cz (Michal Marek),
-       jwoithe@physics.adelaide.edu.au (Jonathan Woithe),
-       len.brown@intel.com (Len Brown),
-       akpm@linux-foundation.org (Andrew Morton),
-       stefani@seibold.net (Stefani Seibold), ak@linux.intel.com (Andi Kleen),
-       mzxreary@0pointer.de (Lennart Poettering),
-       jlee@novell.com (Lee Chun-Yi), platform-driver-x86@vger.kernel.org
-In-Reply-To: <1278061453.15256.1.camel@mola> from "Axel Lin" at Jul 02, 2010 05:04:13 PM
-X-Mailer: ELM [version 2.5 PL6]
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Jul 2010 00:30:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=P/n3/s9s9/e/5C2xWrhfVzbcRQi2NAX7RotvFJsDcPQleEB9UI9KynHQweWBLqsPWj
+         Y5RZrJO2Ji4zOsSK7WKG8nWdxp/3EFv9X5Af6DAKhA1QoIDm0JgWocpnlKWtUqcHZBKf
+         2rxlJK93GxWYYzSzWaDQYC8snx5SPD+XGXlgE=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: minyard@acm.org
+Cc: akpm@linux-foundation.org, openipmi-developer@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]ipmi:ipmi_si_intf.c Fix warning: variable 'addr_space' set but not used
+Date: Mon,  5 Jul 2010 21:31:02 -0700
+Message-Id: <1278390662-9455-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel
+Remove addr_space in exchange for two symbols that represent 
+mm = IPMI_MEM_ADDR_SPACE;
+io = IPMI_IO_ADDR_SPACE;
+then add a dev_warn printing information so that GCC doesn't give a
+warning when building the kernel.
+the original warning from GCC is this:
 
-> 2010/7/5 Jonathan Woithe <jwoithe@physics.adelaide.edu.au>:
-> > Is there no possibility of some other matching function existing after ours
-> > in the tree which might need to also be called?  If so, this change would
-> > prevent that.
->      
-> I checked the implementation of dmi_check_system() and the useage cases in
-> compal-laptop/fujitsu-laptop/msi-laptop, it should be no problem with
-> this change.
-> 
-> In compal-laptop and msi-laptop, we call dmi_check_system() to
-> identify the laptop model.
-> (The callback simply print the identified laptop model)
-> It should have zero or exactly one successful match.
-> 
-> In fujitsu-laptop, we call dmi_check_system() to identify the laptop
-> model and set parameters accordingly.
-> The callback print the identified laptop model and set parameters
-> (use_alt_lcd_levels / fujitsu->keycode[1|2|3|4|5] ).
-> It should have zero or exactly one successful match.
+  CC [M]  drivers/char/ipmi/ipmi_si_intf.o
+drivers/char/ipmi/ipmi_si_intf.c: In function 'try_init_spmi':
+drivers/char/ipmi/ipmi_si_intf.c:2016:8: warning: variable 'addr_space' set but not used
 
-Yes, that seems to be the situation.  If that is the case then I'm happy
-with the fujitsu-laptop component of this patch (I can't speak for the
-maintainers of the other drivers touched by this patch).
+And also the web address pointing to a *.pdf is no where to be found(or atleast I couldn't
+find it), so just use the web site itself(if somebody has the *.pdf
+let me know I can change this).
 
-Acked-by: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Regards
-  jonathan
+---
+ drivers/char/ipmi/ipmi_si_intf.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
 
-> dmi_check_system() walks the table running matching functions until someone
-> returns non zero or we hit the end.
-> 
-> This patch makes dmi_check_cb to return 1 so dmi_check_system() return
-> immediately when a match is found.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/platform/x86/compal-laptop.c  |    2 +-
->  drivers/platform/x86/fujitsu-laptop.c |    6 +++---
->  drivers/platform/x86/msi-laptop.c     |    2 +-
->  3 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/compal-laptop.c b/drivers/platform/x86/compal-laptop.c
-> index 71ff154..dc31a08 100644
-> --- a/drivers/platform/x86/compal-laptop.c
-> +++ b/drivers/platform/x86/compal-laptop.c
-> @@ -190,7 +190,7 @@ static int dmi_check_cb(const struct dmi_system_id *id)
->  	printk(KERN_INFO "compal-laptop: Identified laptop model '%s'.\n",
->  		id->ident);
->  
-> -	return 0;
-> +	return 1;
->  }
->  
->  static struct dmi_system_id __initdata compal_dmi_table[] = {
-> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
-> index dab1a0e..1859d7f 100644
-> --- a/drivers/platform/x86/fujitsu-laptop.c
-> +++ b/drivers/platform/x86/fujitsu-laptop.c
-> @@ -603,7 +603,7 @@ static int dmi_check_cb_s6410(const struct dmi_system_id *id)
->  	dmi_check_cb_common(id);
->  	fujitsu->keycode1 = KEY_SCREENLOCK;	/* "Lock" */
->  	fujitsu->keycode2 = KEY_HELP;	/* "Mobility Center" */
-> -	return 0;
-> +	return 1;
->  }
->  
->  static int dmi_check_cb_s6420(const struct dmi_system_id *id)
-> @@ -611,7 +611,7 @@ static int dmi_check_cb_s6420(const struct dmi_system_id *id)
->  	dmi_check_cb_common(id);
->  	fujitsu->keycode1 = KEY_SCREENLOCK;	/* "Lock" */
->  	fujitsu->keycode2 = KEY_HELP;	/* "Mobility Center" */
-> -	return 0;
-> +	return 1;
->  }
->  
->  static int dmi_check_cb_p8010(const struct dmi_system_id *id)
-> @@ -620,7 +620,7 @@ static int dmi_check_cb_p8010(const struct dmi_system_id *id)
->  	fujitsu->keycode1 = KEY_HELP;	/* "Support" */
->  	fujitsu->keycode3 = KEY_SWITCHVIDEOMODE;	/* "Presentation" */
->  	fujitsu->keycode4 = KEY_WWW;	/* "Internet" */
-> -	return 0;
-> +	return 1;
->  }
->  
->  static struct dmi_system_id fujitsu_dmi_table[] = {
-> diff --git a/drivers/platform/x86/msi-laptop.c b/drivers/platform/x86/msi-laptop.c
-> index afd762b..c67a74c 100644
-> --- a/drivers/platform/x86/msi-laptop.c
-> +++ b/drivers/platform/x86/msi-laptop.c
-> @@ -434,7 +434,7 @@ static int dmi_check_cb(const struct dmi_system_id *id)
->  {
->  	printk(KERN_INFO "msi-laptop: Identified laptop model '%s'.\n",
->  	       id->ident);
-> -	return 0;
-> +	return 1;
->  }
->  
->  static struct dmi_system_id __initdata msi_dmi_table[] = {
-> -- 
-> 1.5.4.3
-> 
-> 
-> 
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 094bdc3..969e69a 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -1965,8 +1965,7 @@ static int acpi_gpe_irq_setup(struct smi_info *info)
+ 
+ /*
+  * Defined at
+- * http://h21007.www2.hp.com/dspp/files/unprotected/devresource/
+- * Docs/TechPapers/IA64/hpspmi.pdf
++ * http://h21007.www2.hp.com/portal/site/dspp
+  */
+ struct SPMITable {
+ 	s8	Signature[4];
+@@ -2013,7 +2012,7 @@ struct SPMITable {
+ static __devinit int try_init_spmi(struct SPMITable *spmi)
+ {
+ 	struct smi_info  *info;
+-	u8 		 addr_space;
++	u8		mem, io;
+ 
+ 	if (spmi->IPMIlegacy != 1) {
+ 		printk(KERN_INFO PFX "Bad SPMI legacy %d\n", spmi->IPMIlegacy);
+@@ -2021,9 +2020,14 @@ static __devinit int try_init_spmi(struct SPMITable *spmi)
+ 	}
+ 
+ 	if (spmi->addr.space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY)
+-		addr_space = IPMI_MEM_ADDR_SPACE;
++		mem = IPMI_MEM_ADDR_SPACE;
+ 	else
+-		addr_space = IPMI_IO_ADDR_SPACE;
++		io  = IPMI_IO_ADDR_SPACE;
++
++	if (mem || io) {
++		dev_warn(info->dev, "spmi address space %d\n", mem ?: io);
++		return 0;
++	}
+ 
+ 	info = kzalloc(sizeof(*info), GFP_KERNEL);
+ 	if (!info) {
+-- 
+1.7.1.rc1.21.gf3bd6
+
