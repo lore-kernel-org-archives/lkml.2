@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab0GFA1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 20:27:13 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:46161 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755777Ab0GFA1M (ORCPT
+	id S1757034Ab0GFA2W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 20:28:22 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:59073 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252Ab0GFA2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 20:27:12 -0400
-X-AuditID: b753bd60-a6a3dba000006d9b-51-4c32785cfbd6
-Message-ID: <4C327858.809@hitachi.com>
-Date: Tue, 06 Jul 2010 09:27:04 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Mon, 5 Jul 2010 20:28:20 -0400
+Date: Tue, 6 Jul 2010 08:28:13 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Sol Kavy <skavy@ubicom.com>, linux-kernel@vger.kernel.org, gren@ubicom.com,
+       gjin@ubicom.com, msezgin@ubicom.com, silgen@ubicom.com,
+       "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: Possible bug in net/ipv4/route.c?
+Message-ID: <20100706002813.GA11194@gondor.apana.org.au>
+References: <CB2DD11991B27C4F99935E6229450D3205B28E91@STORK.scenix.com> <20100705120413.GA6219@gondor.apana.org.au> <20100705110328.65702fc1@nehalam>
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv7 2.6.35-rc3-tip 11/11]  perf: perf interface for uprobes
-References: <20100629183454.32537.63582.sendpatchset@localhost6.localdomain6> <20100629183704.32537.28871.sendpatchset@localhost6.localdomain6> <4C2C2ECC.5060700@hitachi.com> <4C2DCC9D.1020001@hitachi.com> <20100702112836.GC20680@linux.vnet.ibm.com>
-In-Reply-To: <20100702112836.GC20680@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100705110328.65702fc1@nehalam>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srikar Dronamraju wrote:
->> Masami Hiramatsu wrote:
->>> Srikar Dronamraju wrote:
->>>> perf: perf interface for uprobes
->>>>
->>>> Changelog from v4: Merged to 2.6.35-rc3-tip.
->>>>
->>>> Changelog from v3: (addressed comments from Masami Hiramatsu)
->>>> 	* Every process id has a different group name.
->>>> 	* event name starts with function name.
->>>> 	* If vaddr is specified, event name has vaddr appended
->>>> 	  along with function name, (this is to avoid subsequent probes
->>>> 	  using same event name.)
->>>> 	* warning if -p and --list options are used together.
->>>>
->>>> 	Also dso can either be a short name or absolute path.
->>>>
->>>> Enhances perf probe to accept pid and user vaddr.
->>>> Provides very basic support for uprobes.
->>> It's unsure what will happen if user sets a probe by line number...
->>> I'd like to suggest you if need_dwarf && uid, it should show an error message.
->>> But other parts are OK for me.
->> I've checked that perf probe was stopped by SEGV in convert_name_to_addr() with
->> below options.
->>
->> # perf probe -u 2403 hoge.c:100
+On Mon, Jul 05, 2010 at 11:03:28AM -0700, Stephen Hemminger wrote:
+>
+> The problem is that br_dev_xmit is looking at flags in the CB[] that
+> are uninitialized.
 > 
-> It should have been perf probe -p 2403 hode.c:100 
+> if br_dev_xmit cleared the CB at [A] the mrouters_only would always be zero
+> at [B].
 > 
-> However I have taken your comment and fixed that part of the code.
-> So if it uprobe based probes and need_dwarf is set, it errors out.
+> Where should the mrouters and igmp_only fields in skb be initialized?
 
-Ah, that's great:)
+They are initialised in br_multicast_rcv.
 
-Thank you,
+Anyway, this isn't the problem here.  The problem is that before
+bridge netfilter passes a packet through IPv4 through ARP, it must
+ensure that the cb used by IPv4 is cleared.
 
-> 
->> because pp->function == NULL.
->>
->> Thank you,
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
