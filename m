@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab0GGNVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 09:21:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10218 "EHLO mx1.redhat.com"
+	id S1755498Ab0GGN12 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 09:27:28 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:47277 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755222Ab0GGNVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 09:21:48 -0400
-Message-ID: <4C347F3C.2010704@redhat.com>
-Date: Wed, 07 Jul 2010 16:21:00 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1754312Ab0GGN1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 09:27:25 -0400
+Date: Wed, 7 Jul 2010 15:29:15 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Dan Kruchinin <dkruchinin@acm.org>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-crypto@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 0/6] padata: updates
+Message-ID: <20100707132915.GV10072@secunet.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jirislaby@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Gleb Natapov <gleb@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-       Gregory Haskins <ghaskins@novell.com>, kvm@vger.kernel.org
-Subject: Re: [PATCH] x86: KVM, fix lock imbalance
-References: <1278507745-32746-1-git-send-email-jirislaby@gmail.com> <20100707130545.GA14934@elte.hu> <4C347C0E.6020107@gmail.com>
-In-Reply-To: <4C347C0E.6020107@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 07 Jul 2010 13:27:13.0276 (UTC) FILETIME=[1C28ABC0:01CB1DD8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2010 04:07 PM, Jiri Slaby wrote:
->
->> A cleanliness comment: why is that tear-down/dealloc sequence open-coded? It
->> should be at the end of the function, with goto labels, like we do it in
->> similar cases.
->>      
-> Because the lock is around a block only. I usually don't create a goto
-> fail-paths in these cases. Do you want one?
->    
+This patchset contains the following changes:
 
-In any case, the patch is a minimal fix, so I'll apply it.  Any clean 
-ups can go on top.
+1. Add a flag to mark the padata instance as invalid.
+We will use this to mark the padata instace as invalid
+if the padata cpumask contains no active cpu.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+2. Make padata_stop to block until the padata instance is
+unused. So it's save to change the cpumask after a call to
+padata_stop.
+
+3. Add a possibility to handle empty padata cpumasks.
+The first three patches address a bug, found by Dan Kruchinin.
+When the padata cpumask does not intersect with the active
+cpumask we get a division by zero in padata_alloc_pd and we
+end up with a useless padata instance. It's not possible to
+trigger this bug by now, but Dan has patches that let the
+cpumask change from userspace. So this bug has to be fixed
+before these patches can go in.
+
+4. Make padata_do_parallel to return zero on success.
+To return -EINPROGRESS on success was considered to be odd,
+so we change the API to return zero instead. Users are updated
+accordingly.
+
+5. Simplify the serialization mechanism.
+As it is, we go through all the percpu reorder queues to calculate
+the sequence number of the next object that needs serialization. 
+This patch avoids this and minimalizes the accesses of foreign
+memory. This gives some performance inprovements, in particular
+on machines with many cpus.
+
+6. Update the padata documentation.
+
+Steffen
 
