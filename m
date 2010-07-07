@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab0GGPGI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:06:08 -0400
-Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:58261 "EHLO
+	id S1757226Ab0GGPHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:07:53 -0400
+Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:58260 "EHLO
 	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756630Ab0GGPGA (ORCPT
+	with ESMTP id S1756613Ab0GGPF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 11:06:00 -0400
+	Wed, 7 Jul 2010 11:05:59 -0400
 From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
        sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
        bfields@fieldses.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org, "David P. Quigley" <dpquigl@tycho.nsa.gov>,
-       "Matthew N. Dodd" <Matthew.Dodd@sparta.com>
-Subject: [PATCH 04/10] SELinux: Add new labeling type native labels
-Date: Wed,  7 Jul 2010 10:31:20 -0400
-Message-Id: <1278513086-23964-5-git-send-email-dpquigl@tycho.nsa.gov>
+       linux-nfs@vger.kernel.org, "David P. Quigley" <dpquigl@tycho.nsa.gov>
+Subject: [PATCH 03/10] LSM: Add flags field to security_sb_set_mnt_opts for in kernel mount data.
+Date: Wed,  7 Jul 2010 10:31:19 -0400
+Message-Id: <1278513086-23964-4-git-send-email-dpquigl@tycho.nsa.gov>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
 References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
@@ -25,148 +24,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There currently doesn't exist a labeling type that is adequate for use with
-labeled NFS. Since NFS doesn't really support xattrs we can't use the use xattr
-labeling behavior. For this we developed a new labeling type. The native
-labeling type is used solely by NFS to ensure NFS inodes are labeled at runtime
-by the NFS code instead of relying on the SELinux security server on the client
-end.
+There is no way to differentiate if a text mount option is passed from user
+space or the kernel. A flags field is being added to the
+security_sb_set_mnt_opts hook to allow for in kernel security flags to be sent
+to the LSM for processing in addition to the text options received from mount.
+This patch also updated existing code to fix compilation errors.
 
-Signed-off-by: Matthew N. Dodd <Matthew.Dodd@sparta.com>
 Signed-off-by: David P. Quigley <dpquigl@tycho.nsa.gov>
 ---
- include/linux/security.h            |    3 +++
- security/selinux/hooks.c            |   30 +++++++++++++++++++++---------
- security/selinux/include/security.h |    2 ++
- security/selinux/ss/policydb.c      |    5 ++++-
- 4 files changed, 30 insertions(+), 10 deletions(-)
+ fs/nfs/super.c           |    4 ++--
+ include/linux/security.h |   11 ++++++++---
+ security/capability.c    |    5 ++++-
+ security/security.c      |    6 ++++--
+ security/selinux/hooks.c |   12 ++++++++++--
+ 5 files changed, 28 insertions(+), 10 deletions(-)
 
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index b4148fc..054bcaa 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2232,7 +2232,7 @@ static int nfs_get_sb(struct file_system_type *fs_type,
+ 		goto error_splat_super;
+ 	}
+ 
+-	error = security_sb_set_mnt_opts(s, &data->lsm_opts);
++	error = security_sb_set_mnt_opts(s, &data->lsm_opts, 0, NULL);
+ 	if (error)
+ 		goto error_splat_root;
+ 
+@@ -2602,7 +2602,7 @@ static int nfs4_remote_get_sb(struct file_system_type *fs_type,
+ 		goto error_splat_super;
+ 	}
+ 
+-	error = security_sb_set_mnt_opts(s, &data->lsm_opts);
++	error = security_sb_set_mnt_opts(s, &data->lsm_opts, 0, NULL);
+ 	if (error)
+ 		goto error_splat_root;
+ 
 diff --git a/include/linux/security.h b/include/linux/security.h
-index 4bb5db7..d67c5d6 100644
+index 9597620..4bb5db7 100644
 --- a/include/linux/security.h
 +++ b/include/linux/security.h
-@@ -43,6 +43,9 @@
- #define SECURITY_CAP_NOAUDIT 0
- #define SECURITY_CAP_AUDIT 1
+@@ -1509,7 +1509,9 @@ struct security_operations {
+ 	void (*sb_post_pivotroot) (struct path *old_path,
+ 				   struct path *new_path);
+ 	int (*sb_set_mnt_opts) (struct super_block *sb,
+-				struct security_mnt_opts *opts);
++				struct security_mnt_opts *opts,
++				unsigned long kern_flags,
++				unsigned long *set_kern_flags);
+ 	void (*sb_clone_mnt_opts) (const struct super_block *oldsb,
+ 				   struct super_block *newsb);
+ 	int (*sb_parse_opts_str) (char *options, struct security_mnt_opts *opts);
+@@ -1807,7 +1809,8 @@ void security_sb_post_remount(struct vfsmount *mnt, unsigned long flags, void *d
+ void security_sb_post_addmount(struct vfsmount *mnt, struct path *mountpoint);
+ int security_sb_pivotroot(struct path *old_path, struct path *new_path);
+ void security_sb_post_pivotroot(struct path *old_path, struct path *new_path);
+-int security_sb_set_mnt_opts(struct super_block *sb, struct security_mnt_opts *opts);
++int security_sb_set_mnt_opts(struct super_block *sb, struct security_mnt_opts *opts, 
++				unsigned long kern_flags, unsigned long *set_kern_flags);
+ void security_sb_clone_mnt_opts(const struct super_block *oldsb,
+ 				struct super_block *newsb);
+ int security_sb_parse_opts_str(char *options, struct security_mnt_opts *opts);
+@@ -2154,7 +2157,9 @@ static inline void security_sb_post_pivotroot(struct path *old_path,
+ { }
  
-+/* LSM Agnostic defines for sb_set_mnt_opts */
-+#define SECURITY_LSM_NATIVE_LABELS	1
+ static inline int security_sb_set_mnt_opts(struct super_block *sb,
+-					   struct security_mnt_opts *opts)
++					   struct security_mnt_opts *opts,
++					   unsigned long kern_flags,
++					   unsigned long *set_kern_flags)
+ {
+ 	return 0;
+ }
+diff --git a/security/capability.c b/security/capability.c
+index 0d8f7e9..46f5e78 100644
+--- a/security/capability.c
++++ b/security/capability.c
+@@ -117,7 +117,10 @@ static void cap_sb_post_pivotroot(struct path *old_path, struct path *new_path)
+ }
+ 
+ static int cap_sb_set_mnt_opts(struct super_block *sb,
+-			       struct security_mnt_opts *opts)
++			       struct security_mnt_opts *opts,
++			       unsigned long kern_flags,
++			       unsigned long *set_kern_flags)
 +
- struct ctl_table;
- struct audit_krule;
+ {
+ 	if (unlikely(opts->num_mnt_opts))
+ 		return -EOPNOTSUPP;
+diff --git a/security/security.c b/security/security.c
+index 1f0765c..2246b5a 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -347,9 +347,11 @@ void security_sb_post_pivotroot(struct path *old_path, struct path *new_path)
+ }
+ 
+ int security_sb_set_mnt_opts(struct super_block *sb,
+-				struct security_mnt_opts *opts)
++				struct security_mnt_opts *opts,
++				unsigned long kern_flags,
++				unsigned long *set_kern_flags)
+ {
+-	return security_ops->sb_set_mnt_opts(sb, opts);
++	return security_ops->sb_set_mnt_opts(sb, opts, kern_flags, set_kern_flags);
+ }
+ EXPORT_SYMBOL(security_sb_set_mnt_opts);
  
 diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index d150fb4..01edf80 100644
+index 8239f5c..d150fb4 100644
 --- a/security/selinux/hooks.c
 +++ b/security/selinux/hooks.c
-@@ -77,6 +77,7 @@
- #include <linux/mutex.h>
- #include <linux/posix-timers.h>
- #include <linux/syslog.h>
-+#include <linux/security.h>
- 
- #include "avc.h"
- #include "objsec.h"
-@@ -323,13 +324,14 @@ extern int ss_initialized;
- 
- /* The file system's label must be initialized prior to use. */
- 
--static char *labeling_behaviors[6] = {
-+static char *labeling_behaviors[7] = {
- 	"uses xattr",
- 	"uses transition SIDs",
- 	"uses task SIDs",
- 	"uses genfs_contexts",
- 	"not configured for labeling",
- 	"uses mountpoint labeling",
-+	"uses native labeling",
- };
- 
- static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dentry);
-@@ -721,14 +723,16 @@ static int selinux_set_mnt_opts(struct super_block *sb,
- 	if (strcmp(sb->s_type->name, "proc") == 0)
- 		sbsec->flags |= SE_SBPROC;
- 
--	/* Determine the labeling behavior to use for this filesystem type. */
--	rc = security_fs_use((sbsec->flags & SE_SBPROC) ? "proc" : sb->s_type->name, &sbsec->behavior, &sbsec->sid);
--	if (rc) {
--		printk(KERN_WARNING "%s: security_fs_use(%s) returned %d\n",
--		       __func__, sb->s_type->name, rc);
--		goto out;
-+	if (!sbsec->behavior) {
-+		/* Determine the labeling behavior to use for this filesystem type. */
-+		rc = security_fs_use((sbsec->flags & SE_SBPROC) ? "proc" : sb->s_type->name, 
-+					&sbsec->behavior, &sbsec->sid);
-+		if (rc) {
-+			printk(KERN_WARNING "%s: security_fs_use(%s) returned %d\n",
-+					__func__, sb->s_type->name, rc);
-+			goto out;
-+		}
+@@ -591,7 +591,9 @@ static int bad_option(struct superblock_security_struct *sbsec, char flag,
+  * labeling information.
+  */
+ static int selinux_set_mnt_opts(struct super_block *sb,
+-				struct security_mnt_opts *opts)
++				struct security_mnt_opts *opts,
++				unsigned long kern_flags,
++				unsigned long *set_kern_flags)
+ {
+ 	const struct cred *cred = current_cred();
+ 	int rc = 0, i;
+@@ -623,6 +625,12 @@ static int selinux_set_mnt_opts(struct super_block *sb,
+ 			"before the security server is initialized\n");
+ 		goto out;
  	}
--
- 	/* sets the context of the superblock for the fs being mounted. */
- 	if (fscontext_sid) {
- 		rc = may_context_mount_sb_relabel(fscontext_sid, sbsec, cred);
-@@ -743,6 +747,11 @@ static int selinux_set_mnt_opts(struct super_block *sb,
- 	 * sets the label used on all file below the mountpoint, and will set
- 	 * the superblock context if not already set.
- 	 */
-+	if (kern_flags & SECURITY_LSM_NATIVE_LABELS && !context_sid) {
-+		sbsec->behavior = SECURITY_FS_USE_NATIVE;
-+		*set_kern_flags |= SECURITY_LSM_NATIVE_LABELS;
++	if (kern_flags && !set_kern_flags) {
++		/* Specifying internal flags without providing a place to 
++		 * place the results is not allowed */
++		rc = -EINVAL;
++		goto out;
 +	}
-+
- 	if (context_sid) {
- 		if (!fscontext_sid) {
- 			rc = may_context_mount_sb_relabel(context_sid, sbsec,
-@@ -774,7 +783,8 @@ static int selinux_set_mnt_opts(struct super_block *sb,
- 	}
  
- 	if (defcontext_sid) {
--		if (sbsec->behavior != SECURITY_FS_USE_XATTR) {
-+		if (sbsec->behavior != SECURITY_FS_USE_XATTR &&
-+			sbsec->behavior != SECURITY_FS_USE_NATIVE) {
- 			rc = -EINVAL;
- 			printk(KERN_WARNING "SELinux: defcontext option is "
- 			       "invalid for this filesystem type\n");
-@@ -1251,6 +1261,8 @@ static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dent
- 	}
+ 	/*
+ 	 * Binary mount data FS will come through this function twice.  Once
+@@ -998,7 +1006,7 @@ static int superblock_doinit(struct super_block *sb, void *data)
+ 		goto out_err;
  
- 	switch (sbsec->behavior) {
-+	case SECURITY_FS_USE_NATIVE:
-+		break;
- 	case SECURITY_FS_USE_XATTR:
- 		if (!inode->i_op->getxattr) {
- 			isec->sid = sbsec->def_sid;
-diff --git a/security/selinux/include/security.h b/security/selinux/include/security.h
-index 1f7c249..e4c5bd0 100644
---- a/security/selinux/include/security.h
-+++ b/security/selinux/include/security.h
-@@ -161,6 +161,8 @@ int security_get_allow_unknown(void);
- #define SECURITY_FS_USE_GENFS		4 /* use the genfs support */
- #define SECURITY_FS_USE_NONE		5 /* no labeling support */
- #define SECURITY_FS_USE_MNTPOINT	6 /* use mountpoint labeling */
-+#define SECURITY_FS_USE_NATIVE		7 /* use native label support */
-+#define SECURITY_FS_USE_MAX		7 /* Highest SECURITY_FS_USE_XXX */
+ out:
+-	rc = selinux_set_mnt_opts(sb, &opts);
++	rc = selinux_set_mnt_opts(sb, &opts, 0, NULL);
  
- int security_fs_use(const char *fstype, unsigned int *behavior,
- 	u32 *sid);
-diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
-index 23c6e53..35e2b47 100644
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -1996,7 +1996,10 @@ int policydb_read(struct policydb *p, void *fp)
- 				if (rc < 0)
- 					goto bad;
- 				c->v.behavior = le32_to_cpu(buf[0]);
--				if (c->v.behavior > SECURITY_FS_USE_NONE)
-+				/* Determined at runtime, not in policy DB. */
-+				if (c->v.behavior == SECURITY_FS_USE_MNTPOINT)
-+					goto bad;
-+				if (c->v.behavior > SECURITY_FS_USE_MAX)
- 					goto bad;
- 				len = le32_to_cpu(buf[1]);
- 				c->u.name = kmalloc(len + 1, GFP_KERNEL);
+ out_err:
+ 	security_free_mnt_opts(&opts);
 -- 
 1.6.2.5
 
