@@ -1,162 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab0GGOvz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 10:51:55 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:58303 "EHLO
+	id S1756622Ab0GGOw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 10:52:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:65458 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756243Ab0GGOvv (ORCPT
+	with ESMTP id S1756370Ab0GGOv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 10:51:51 -0400
+	Wed, 7 Jul 2010 10:51:56 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: Christoph Hellwig <hch@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        John Kacur <jkacur@redhat.com>,
        Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org,
-       Arnd Bergmann <arnd@arndb.de>,
-       "James E.J. Bottomley" <James.Bottomley@suse.de>
-Subject: [PATCH 7/7] scsi/sd: remove big kernel lock
-Date: Wed,  7 Jul 2010 16:51:29 +0200
-Message-Id: <1278514289-21054-8-git-send-email-arnd@arndb.de>
+       Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 6/7] block: remove BKL from partition ioctls
+Date: Wed,  7 Jul 2010 16:51:28 +0200
+Message-Id: <1278514289-21054-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1278514289-21054-1-git-send-email-arnd@arndb.de>
 References: <1278514289-21054-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:tGGzLAyIFGGEDdf5RnZX2OYo0mCjt0XMianOImB7qXS
- PEfHgQzNAFAnCp8+w0UgKZj1liN9CbnddqtvP6iFjUtw2UimfO
- hivSS5zBs2JG9OYG7IKxGjdl6ax81tW40u0YdpdvVDG0BsFvWF
- PZmYhXkVKGEGro3ao+5UgGltUZYiSRCOGDWhocrkCfJEOazhYh
- x47q/IpyNiGG95MRW0DqQ==
+X-Provags-ID: V02:K0:9EzgxELnM5TBCs9Qitzd8co+lO+m1HuH8tQ6hU9QVZA
+ 55m2SGQWolZvYHnTH+Bs4H8Ecy6ucA00ATSAlNV06xAX4hPuH7
+ Ox95/2nUmS/BnP2Fw9eIskOkrH+ql9Wm2AUFzQxdLMvrF7E0yl
+ RossbDW5mfauE6HeSm1apTi0aFUI5Mal7jp4IeqTJz7E63B+gH
+ py9VLhZOEQbu9LDX1vKdA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every user of the BKL in the sd driver is the
-result of the pushdown from the block layer
-into the open/close/ioctl functions.
-
-The only place that used to rely on the BKL is
-the sdkp->openers variable, which gets converted
-into an atomic_t.
-
-Nothing else seems to rely on the BKL, since the
-functions do not touch global data without holding
-another lock, and the open/close functions are
-still protected from concurrent execution using
-the bdev->bd_mutex.
+The blkpg_ioctl and blkdev_reread_part access fields of
+the bdev and gendisk structures, yet they always do so
+under the protection of bdev->bd_mutex, which seems
+sufficient.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-scsi@vger.kernel.org
-Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
 ---
- drivers/scsi/sd.c |   17 +++++++----------
- drivers/scsi/sd.h |    2 +-
- 2 files changed, 8 insertions(+), 11 deletions(-)
+ block/ioctl.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index cf1441f..a0142a7 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -746,6 +746,8 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
-  *	or from within the kernel (e.g. as a result of a mount(1) ).
-  *	In the latter case @inode and @filp carry an abridged amount
-  *	of information as noted above.
-+ *
-+ *	Locking: called with bdev->bd_mutex held.
-  **/
- static int sd_open(struct block_device *bdev, fmode_t mode)
- {
-@@ -758,7 +760,6 @@ static int sd_open(struct block_device *bdev, fmode_t mode)
- 
- 	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp, "sd_open\n"));
- 
--	lock_kernel();
- 	sdev = sdkp->device;
- 
- 	/*
-@@ -797,17 +798,15 @@ static int sd_open(struct block_device *bdev, fmode_t mode)
- 	if (!scsi_device_online(sdev))
- 		goto error_out;
- 
--	if (!sdkp->openers++ && sdev->removable) {
-+	if ((atomic_inc_return(&sdkp->openers) == 1) && sdev->removable) {
- 		if (scsi_block_when_processing_errors(sdev))
- 			scsi_set_medium_removal(sdev, SCSI_REMOVAL_PREVENT);
- 	}
- 
--	unlock_kernel();
- 	return 0;
- 
- error_out:
- 	scsi_disk_put(sdkp);
--	unlock_kernel();
- 	return retval;	
- }
- 
-@@ -821,6 +820,8 @@ error_out:
-  *
-  *	Note: may block (uninterruptible) if error recovery is underway
-  *	on this disk.
-+ *
-+ *	Locking: called with bdev->bd_mutex held.
-  **/
- static int sd_release(struct gendisk *disk, fmode_t mode)
- {
-@@ -829,8 +830,7 @@ static int sd_release(struct gendisk *disk, fmode_t mode)
- 
- 	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp, "sd_release\n"));
- 
--	lock_kernel();
--	if (!--sdkp->openers && sdev->removable) {
-+	if (atomic_dec_return(&sdkp->openers) && sdev->removable) {
- 		if (scsi_block_when_processing_errors(sdev))
- 			scsi_set_medium_removal(sdev, SCSI_REMOVAL_ALLOW);
- 	}
-@@ -840,7 +840,6 @@ static int sd_release(struct gendisk *disk, fmode_t mode)
- 	 * XXX is followed by a "rmmod sd_mod"?
- 	 */
- 	scsi_disk_put(sdkp);
--	unlock_kernel();
- 	return 0;
- }
- 
-@@ -893,7 +892,6 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
- 	SCSI_LOG_IOCTL(1, printk("sd_ioctl: disk=%s, cmd=0x%x\n",
- 						disk->disk_name, cmd));
- 
--	lock_kernel();
- 	/*
- 	 * If we are in the middle of error recovery, don't let anyone
- 	 * else try and use this device.  Also, if error recovery fails, it
-@@ -923,7 +921,6 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
- 			break;
- 	}
- out:
--	unlock_kernel();
- 	return error;
- }
- 
-@@ -2317,7 +2314,7 @@ static int sd_probe(struct device *dev)
- 	sdkp->driver = &sd_template;
- 	sdkp->disk = gd;
- 	sdkp->index = index;
--	sdkp->openers = 0;
-+	atomic_set(&sdkp->openers, 0);
- 	sdkp->previous_state = 1;
- 
- 	if (!sdp->request_queue->rq_timeout) {
-diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
-index 43d3caf..f81a930 100644
---- a/drivers/scsi/sd.h
-+++ b/drivers/scsi/sd.h
-@@ -47,7 +47,7 @@ struct scsi_disk {
- 	struct scsi_device *device;
- 	struct device	dev;
- 	struct gendisk	*disk;
--	unsigned int	openers;	/* protected by BKL for now, yuck */
-+	atomic_t	openers;
- 	sector_t	capacity;	/* size in 512-byte sectors */
- 	u32		index;
- 	unsigned short	hw_sector_size;
+diff --git a/block/ioctl.c b/block/ioctl.c
+index 60f477c..09fd7f1 100644
+--- a/block/ioctl.c
++++ b/block/ioctl.c
+@@ -296,14 +296,10 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+ 			bd_release(bdev);
+ 		return ret;
+ 	case BLKPG:
+-		lock_kernel();
+ 		ret = blkpg_ioctl(bdev, (struct blkpg_ioctl_arg __user *) arg);
+-		unlock_kernel();
+ 		break;
+ 	case BLKRRPART:
+-		lock_kernel();
+ 		ret = blkdev_reread_part(bdev);
+-		unlock_kernel();
+ 		break;
+ 	case BLKGETSIZE:
+ 		size = bdev->bd_inode->i_size;
 -- 
 1.7.0.4
 
