@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab0GGMxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 08:53:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48069 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754920Ab0GGMxO (ORCPT
+	id S1755348Ab0GGMyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 08:54:44 -0400
+Received: from anguilla.debian.or.at ([86.59.21.37]:51115 "EHLO
+	anguilla.debian.or.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab0GGMym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 08:53:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :x-enigmail-version:content-type:content-transfer-encoding;
-        b=U1X08JdnAk24fH+ImIAA/liFuWT0nDPWIolua9fQOvTL7E/ZDo1nkFlefvKUwGH6x4
-         ON3zfdENEzX58dwpnQZ4IyQUY7U3CMPGoUAhjzceQO+gUw+66OOX37VsnshH2Hxr/EJC
-         rp3BmsOZv6QYUXF+BYDs+Nnydxdt7pQpebHlM=
-Message-ID: <4C3478AA.7070805@gmail.com>
-Date: Wed, 07 Jul 2010 14:52:58 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+	Wed, 7 Jul 2010 08:54:42 -0400
+X-Greylist: delayed 430 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jul 2010 08:54:42 EDT
+Date: Wed, 7 Jul 2010 14:47:31 +0200
+From: Peter Palfrader <peter@palfrader.org>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization
+	point for pvclock
+Message-ID: <20100707124731.GJ15122@anguilla.noreply.org>
+Mail-Followup-To: Peter Palfrader <peter@palfrader.org>,
+	Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+	stable@kernel.org, stable-review@kernel.org,
+	torvalds@linux-foundation.org, akpm@linux-foundation.org,
+	alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
+	Zachary Amsden <zamsden@redhat.com>,
+	Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
+	Marcelo Tosatti <mtosatti@redhat.com>
+References: <20100701175144.GA2116@kroah.com> <20100701173218.125822294@clark.site>
 MIME-Version: 1.0
-To: Jarod Wilson <jarod@redhat.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-media@vger.kernel.org,
-       Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: MEDIA: lirc, improper locking
-X-Enigmail-Version: 1.1
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100701173218.125822294@clark.site>
+X-PGP: 1024D/94C09C7F 5B00 C96D 5D54 AEE1 206B  AF84 DE7A AF6E 94C0 9C7F
+X-Request-PGP: http://www.palfrader.org/keys/94C09C7F.asc
+X-Accept-Language: de, en
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hey,
 
-stanse found a locking error in lirc_dev_fop_read:
-if (mutex_lock_interruptible(&ir->irctl_lock))
-  return -ERESTARTSYS;
-...
-while (written < length && ret == 0) {
-  if (mutex_lock_interruptible(&ir->irctl_lock)) {    #1
-    ret = -ERESTARTSYS;
-    break;
-  }
-  ...
-}
+Greg KH schrieb am Donnerstag, dem 01. Juli 2010:
 
-remove_wait_queue(&ir->buf->wait_poll, &wait);
-set_current_state(TASK_RUNNING);
-mutex_unlock(&ir->irctl_lock);                        #2
+> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-If lock at #1 fails, it beaks out of the loop, with the lock unlocked,
-but there is another "unlock" at #2.
+2.6.32.16 fails to boot on my KVM domains using qemu-kvm 0.11.1.
 
-regards,
+Bisecting between 2.6.32.14 which worked and .16 turned up this commit
+as the first culprit[0].
+
+The host is still running 2.6.32.14 and has 8 cores on 2 CPUs.  The
+single-cpu KVM domain hangs just after printing 'Write protecting the
+kernel read-only data: 9492k'[1].   On a successful boot this line would
+usually be followed by 'INIT: version 2.86 booting'.
+
+A 2.6.32.16 with this patch reverted boots fine.
+
+If there's any info you need please just ask.
+
+Cheers,
+Peter
+
+0.  http://asteria.noreply.org/~weasel/volatile/2010-07-07-x9KxN34l17c/fileztnjyZ
+1.  http://asteria.noreply.org/~weasel/volatile/2010-07-07-VTRuAQGOKlY/zoe-2.6.32.16.png
+2.  http://asteria.noreply.org/~weasel/volatile/2010-07-07-Fq0PVc1ecsc/config-2.6.32.16-dsa-amd64
 -- 
-js
+                           |  .''`.  ** Debian GNU/Linux **
+      Peter Palfrader      | : :' :      The  universal
+ http://www.palfrader.org/ | `. `'      Operating System
+                           |   `-    http://www.debian.org/
