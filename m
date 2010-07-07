@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991Ab0GGVoj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 17:44:39 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52080
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757607Ab0GGVke (ORCPT
+	id S1757750Ab0GGVpo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 17:45:44 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58213 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756819Ab0GGVpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 17:40:34 -0400
-Date: Wed, 07 Jul 2010 14:40:48 -0700 (PDT)
-Message-Id: <20100707.144048.25140070.davem@davemloft.net>
-To: sbhatewara@vmware.com
-Cc: netdev-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       pv-drivers@vmware.com, stolarchuk@vmware.com
-Subject: Re: [PATCH 2.6.35-rc1] net: vmxnet3 fixes [0/5] Spare skb to avoid
- starvation
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain>
-References: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 7 Jul 2010 17:45:43 -0400
+Date: Wed, 7 Jul 2010 14:45:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anton Vorontsov <avorontsov@mvista.com>
+Cc: Doug Thompson <dougthompson@xmission.com>,
+       Peter Tyser <ptyser@xes-inc.com>, Dave Jiang <djiang@mvista.com>,
+       Kumar Gala <galak@kernel.crashing.org>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 1/2] edac: mpc85xx: Fix MPC85xx dependency
+Message-Id: <20100707144502.22b91374.akpm@linux-foundation.org>
+In-Reply-To: <20100702124111.GA23320@oksana.dev.rtsoft.ru>
+References: <20100702124111.GA23320@oksana.dev.rtsoft.ru>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2 Jul 2010 16:41:11 +0400
+Anton Vorontsov <avorontsov@mvista.com> wrote:
 
-A couple problems remaining in this patch set:
+> Since commit 5753c082f66eca5be81f6bda85c1718c5eea6ada ("powerpc/85xx:
+> Kconfig cleanup"), there is no MPC85xx Kconfig symbol anymore, so the
+> driver became non-selectable.
 
-1) Too many bug fixes for this late in the -rc series of 2.6.35
-   Pick a smaller number of fixes, the most critical ones, perhaps
-   2 or 3, and re-submit those for net-2.6
+hm.  5753c082f66eca5be81f6bda85c1718c5eea6ada got merged into mainline
+six months ago.  How come nobody noticed?
 
-   Pick the ones that produce easily triggers crashes or documented
-   regressions present on the official lkml regression list.
+> This patch fixes the issue by switching to PPC_85xx symbol.
+> 
+> Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+> ---
+>  drivers/edac/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+> index aedef79..0d2f9db 100644
+> --- a/drivers/edac/Kconfig
+> +++ b/drivers/edac/Kconfig
+> @@ -209,7 +209,7 @@ config EDAC_I5100
+>  
+>  config EDAC_MPC85XX
+>  	tristate "Freescale MPC83xx / MPC85xx"
+> -	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || MPC85xx)
+> +	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || PPC_85xx)
+>  	help
+>  	  Support for error detection and correction on the Freescale
+>  	  MPC8349, MPC8560, MPC8540, MPC8548
 
-   Send the rest in for net-next-2.6
+I suppose we shold scoot this into 2.6.35 and mark it for -stable
+backporting.  All very odd.
 
-2) Bumping the driver version every patch in a patch series is pointless.
-   Do the bump once, at the end of the series.
-
-Thanks.
