@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab0GGA6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 20:58:14 -0400
-Received: from mga03.intel.com ([143.182.124.21]:13164 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753535Ab0GGA6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 20:58:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,549,1272870000"; 
-   d="scan'208";a="297267014"
-Message-ID: <4C33D123.4080209@intel.com>
-Date: Tue, 06 Jul 2010 17:58:11 -0700
-From: Dan Williams <dan.j.williams@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1755548Ab0GGBCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 21:02:38 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:45276 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab0GGBCh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 21:02:37 -0400
+Message-ID: <4C33D240.80102@vflare.org>
+Date: Wed, 07 Jul 2010 06:32:56 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc13 Thunderbird/3.1
 MIME-Version: 1.0
-To: Chris Li <lkml@chrisli.org>
-CC: David Woodhouse <dwmw2@infradead.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Matthew Wilcox <willy@linux.intel.com>
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	<AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	<4C2A8879.8010000@intel.com>	<AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	<4C2AC55E.3040303@intel.com>	<AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	<1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>	<1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>	<1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>	<1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>	<1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>	<AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>	<AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>	<1278324973.16975.68.camel@localhost>	<AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>	<1278463901.20082.34.camel@dwillia2-linux> <AANLkTilnrdghkK1y7vc2Zi0C7KMXHYXpI_whecRxTD_8@mail.gmail.com>
-In-Reply-To: <AANLkTilnrdghkK1y7vc2Zi0C7KMXHYXpI_whecRxTD_8@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Dave Hansen <dave@sr71.net>, Dan Magenheimer <dan.magenheimer@oracle.com>,
+       chris.mason@oracle.com, viro@zeniv.linux.org.uk,
+       akpm@linux-foundation.org, adilger@Sun.COM, tytso@mit.edu,
+       mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com
+Subject: Re: [PATCH V3 3/8] Cleancache: core ops functions and configuration
+References: <20100621231939.GA19505@ca-server1.us.oracle.com> <1277223988.9782.20.camel@nimitz> <20100706205121.GA32627@phenom.dumpdata.com>
+In-Reply-To: <20100706205121.GA32627@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/6/2010 5:51 PM, Chris Li wrote:
-> On Tue, Jul 6, 2010 at 5:51 PM, Dan Williams<dan.j.williams@intel.com>  wrote:
->> No, it should be PCI_DEVICE_ID_INTEL_IOAT_SNB (0x402f) for the dma
->> engine at 00:0f.0 .  PCI_DEVICE_ID_INTEL_ESB2_0 is the LPC controller at
->> 00:1f.0,
+On 07/07/2010 02:21 AM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jun 22, 2010 at 09:26:28AM -0700, Dave Hansen wrote:
+>> On Mon, 2010-06-21 at 16:19 -0700, Dan Magenheimer wrote:
+>>> --- linux-2.6.35-rc2/include/linux/cleancache.h 1969-12-31 17:00:00.000000000 -0700
+>>> +++ linux-2.6.35-rc2-cleancache/include/linux/cleancache.h      2010-06-21 14:45:18.000000000 -0600
+>>> @@ -0,0 +1,88 @@
+>>> +#ifndef _LINUX_CLEANCACHE_H
+>>> +#define _LINUX_CLEANCACHE_H
+>>> +
+>>> +#include <linux/fs.h>
+>>> +#include <linux/mm.h>
+>>> +
+>>> +struct cleancache_ops {
+>>> +       int (*init_fs)(size_t);
+>>> +       int (*init_shared_fs)(char *uuid, size_t);
+>>> +       int (*get_page)(int, ino_t, pgoff_t, struct page *);
+>>> +       void (*put_page)(int, ino_t, pgoff_t, struct page *);
+>>> +       void (*flush_page)(int, ino_t, pgoff_t);
+>>> +       void (*flush_inode)(int, ino_t);
+>>> +       void (*flush_fs)(int);
+>>> +};
+>>> + 
 >>
->>> That seems to be the reason preventing the warning to be print out. I am not
->>> sure the warning should be always print out. Just curious why it did
->>> not trigger.
->>
->> It should always trigger, and I have verified as much with the attached
->> replacement patch (by forcing the error on a working system), but we run
->> into a new problem.  dma_pool_alloc() assumes that any dma_mapping error
->> is transient.  Do we need a new type of dma_mapping_error() that
->> indicates permanent failure versus ENOMEM?  The driver can handle the
->> allocation failure, but it never gets the chance.
+>> How would someone go about testing this code?  Is there an example
+>> cleancache implementation?
+> 
+> Dan,
+> 
+> Can you reference with a link or a git branch the patches that utilize
+> this?
+> 
+> And also mention that in the 0/X patch so that folks can reference your
+> cleancache implementation?
+> 
 >
-> Should I test your V2 patch instead?
->
 
-It would confirm that we are catching the BIOS misconfiguration, but 
-your system will get stuck in this loop.  So just make sure you can get 
-back to a working config, which it sounds like you can.
+FYI.
 
---
-Dan
+I am working on 'zcache' which uses cleancache_ops to provide page cache
+compression support. I will be posting it to LKML before end of next week.
 
-
-
+Thanks,
+Nitin
