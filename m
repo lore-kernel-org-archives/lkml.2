@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab0GGSUH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 14:20:07 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48735 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756242Ab0GGSUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 14:20:04 -0400
-Date: Thu, 8 Jul 2010 04:20:01 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
-       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 04/11] vfs: Allow handle based open on symlinks
-Message-ID: <20100707182001.GG9263@laptop>
-References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1276621981-2774-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20100707152303.GS11732@laptop>
- <87d3uzfeej.fsf@linux.vnet.ibm.com>
- <20100707165719.GC9263@laptop>
- <874ogbfaas.fsf@linux.vnet.ibm.com>
+	id S1756626Ab0GGSeV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 14:34:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58088 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980Ab0GGSeS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 14:34:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=vvfJIue1TupcXEPDaZWAKHx0FDUPAFeHDX3x1RaElfdvVrZH1saNR+ueB3wlORLJa1
+         Koj8HTNJjumjGem4TnSOKiK5EvZlJETUXOy11g3eiK9m2k4NAYjfn8WTLcMNijAS5Xvl
+         5a+eZOBUcif6tbz4WmZd+ZP2gd5rgyKFFWODA=
+Date: Wed, 7 Jul 2010 19:30:15 +0100
+From: Luis Henriques <luis.henrix@gmail.com>
+To: lenb@kernel.org
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] ACPI: fan: Fix more unbalanced code block
+Message-ID: <20100707183015.GA27757@hades>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <874ogbfaas.fsf@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 11:23:31PM +0530, Aneesh Kumar K. V wrote:
-> On Thu, 8 Jul 2010 02:57:19 +1000, Nick Piggin <npiggin@suse.de> wrote:
-> > I haven't followed this thread closely, so can you just go back
-> > and explain to me why you need this? Ie. that you can't achieve with
-> > a path-to-handle follow/nofollow option.
-> 
-> 
-> We need to be able to read the link target using file handle. The exact
-> usecase i have is with respect to implementing READLINK operation on a
-> userspace NFS server. The request contain the file handle and the
-> response include target name.
+commit 934231de706d2579fae14f5857fcd8de991009ff fixes an unbalanced
+CONFIG_ACPI_PROCFS code block during module initialisation.  This
+patch fixes similar issue but for the module exit.
 
-Fair point, could you include this stuff in your changelog? It may
-help with other people reviewing it too who have not followed closely.
+Signed-off-by: Luis Henriques <luis.henrix@gmail.com>
+---
+ drivers/acpi/fan.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
+index 8a3b840..d94d295 100644
+--- a/drivers/acpi/fan.c
++++ b/drivers/acpi/fan.c
+@@ -369,7 +369,9 @@ static void __exit acpi_fan_exit(void)
  
-> Similarly we need to able to get file attribute based on file handle.
-> I was using readlinkat and fstat to obtain both the above information
-> using the descriptor returned by open_by_handle on a file handle
-> representing symlink
-> 
-> -aneesh
+ 	acpi_bus_unregister_driver(&acpi_fan_driver);
+ 
++#ifdef CONFIG_ACPI_PROCFS
+ 	remove_proc_entry(ACPI_FAN_CLASS, acpi_root_dir);
++#endif
+ 
+ 	return;
+ }
+-- 
+1.7.1
+
