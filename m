@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487Ab0GGP1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:27:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44006 "EHLO mx1.suse.de"
+	id S1756928Ab0GGP2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:28:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35168 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756126Ab0GGP1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 11:27:09 -0400
-Date: Thu, 8 Jul 2010 01:27:06 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
-       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 05/11] vfs: Support null pathname in readlink
-Message-ID: <20100707152706.GT11732@laptop>
-References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1276621981-2774-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276621981-2774-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756301Ab0GGP2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 11:28:44 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <9A36AB6B-7EC3-4789-89CD-D00715BEF34C@dilger.ca>
+References: <9A36AB6B-7EC3-4789-89CD-D00715BEF34C@dilger.ca> <AANLkTinms69HPgZF4blqr962Ami3oS9FC-txQj9P37SC@mail.gmail.com> <20100630233614.32422.97038.stgit@warthog.procyon.org.uk> <4859.1278341989@redhat.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: dhowells@redhat.com, Michael Kerrisk <mtk.manpages@gmail.com>,
+       linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+       linux-ext4@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH] Add a pair of system calls to make extended file stats available [ver #3]
+Date: Wed, 07 Jul 2010 16:28:35 +0100
+Message-ID: <17709.1278516515@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 10:42:55PM +0530, Aneesh Kumar K.V wrote:
-> From: NeilBrown <neilb@suse.de>
-> 
-> This enables to use readlink to get the link target name
-> from a file descriptor point to the link. This can be used
-> with open_by_handle syscall that returns a file descriptor for a link.
-> We can then use this file descriptor to get the target name.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  fs/stat.c |   30 ++++++++++++++++++++++--------
->  1 files changed, 22 insertions(+), 8 deletions(-)
-> 
-> diff --git a/fs/stat.c b/fs/stat.c
-> index c4ecd52..49b95a7 100644
-> --- a/fs/stat.c
-> +++ b/fs/stat.c
-> @@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
->  SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
->  		char __user *, buf, int, bufsiz)
->  {
-> -	struct path path;
-> -	int error;
-> +	int error = 0;
-> +	struct path path, *pp;
-> +	struct file *file = NULL;
->  
->  	if (bufsiz <= 0)
->  		return -EINVAL;
->  
-> -	error = user_path_at(dfd, pathname, 0, &path);
-> +	if (pathname == NULL && dfd != AT_FDCWD) {
-> +		file = fget(dfd);
-> +
-> +		if (file)
-> +			pp = &file->f_path;
-> +		else
-> +			error = -EBADF;
-> +	} else {
-> +		error = user_path_at(dfd, pathname, 0, &path);
-> +		pp = &path;
-> +	}
+Andreas Dilger <adilger@dilger.ca> wrote:
 
-This (and all the others) is really ugly overloading of syscall
-arguments IMO, and the changelog is seriously lacking for such changes.
+> I saw your patch to that effect.  I'm of mixed feelings about this, since
+> the S_* flags have traditionally been changed on an ad-hoc basis and I don't
+> necessarily want to let this leak into the on-disk format of these flags for
+> ext*.
+> 
+> One way to ensure that this holds true is to have a compile-time assertion
+> that the respective S_* flags match FS_*_FL and EXT_*_FL.
 
-This also changes the the syscall API of existing calls; from reading
-the path at NULL, to switching to a completely different syscall.
-Perhaps you're assuming nobody relies on SIGSEGV / mmapped NULL address
-there, but even then you surely need to document the changed semantics
-somewhere (and document the new syscall semantics properly).
+Something like this:
+
+	#if S_SYNC != FS_SYNC_FL               ||      \
+	       S_IMMUTABLE != FS_IMMUTABLE_FL  ||      \
+	       S_APPEND != FS_APPEND_FL        ||      \
+	       S_NOATIME != FS_NOATIME_FL      ||      \
+	       S_DIRSYNC != FS_DIRSYNC_FL
+	#error Ext2/3/4 assumes these equivalences
+	#endif
+
+would do the trick.
+
+> > (5) How often are these flags required?  E.g. does it make more sense to
+> >   keep them as an additional result, or does it make sense to stick them
+> >   in the kstat and xstat structs, knowing that these are allocated on the
+> >   kernel stack maybe as three times if an ecryptfs file?
+> 
+> If they aren't requested by userspace, the cost is mostly irrelevant.  I
+> think on OSX these flags are returned for every "ls" call, to mark the
+> inodes with xattrs every time.
+
+I suppose.  I was thinking that they may have to be retrieved from the server.
+
+More concerning to me is the effect of adding more fields to the kstat struct.
+
+Nonetheless, having these flags around may be useful to CIFS, Samba, NFS and
+NFSD as various of them may appear in those protocols.  Certainly, SMB passes
+a bit indicating compression around (ATTR_COMPRESSED).
+
+David
