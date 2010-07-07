@@ -1,56 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab0GGBPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 21:15:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58744 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab0GGBPk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 21:15:40 -0400
-Date: Tue, 6 Jul 2010 21:15:33 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
-Message-ID: <20100707011533.GB3630@infradead.org>
-References: <20100702125155.69c02f85.akpm@linux-foundation.org>
- <20100705134949.GC13780@csn.ul.ie>
- <20100706093529.CCD1.A69D9226@jp.fujitsu.com>
- <20100706101235.GE13780@csn.ul.ie>
- <AANLkTin8FotAC1GvjuoYU9XA2eiSr6FWWh6bwypTdhq3@mail.gmail.com>
- <20100706152539.GG13780@csn.ul.ie>
- <20100706202758.GC18210@cmpxchg.org>
- <AANLkTimOkI95ZkJecE3jxRDDGbHvP9tRUluIoJuhqqMz@mail.gmail.com>
- <20100707002458.GI13780@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100707002458.GI13780@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755257Ab0GGBPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 21:15:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:62110 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751814Ab0GGBPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 21:15:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,549,1272870000"; 
+   d="c'?scan'208";a="297271957"
+Subject: [PATCH]shmem: reduce one time of locking in pagefault
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       "Zhang, Yanmin" <yanmin.zhang@intel.com>
+Content-Type: multipart/mixed; boundary="=-cyJ/P2kZGKSKnIpmMnTl"
+Date: Wed, 07 Jul 2010 09:15:46 +0800
+Message-ID: <1278465346.11107.8.camel@sli10-desk.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 01:24:58AM +0100, Mel Gorman wrote:
-> What I have now is direct writeback for anon files. For files be it from
-> kswapd or direct reclaim, I kick writeback pre-emptively by an amount based
-> on the dirty pages encountered because monitoring from systemtap indicated
-> that we were getting a large percentage of the dirty file pages at the end
-> of the LRU lists (bad). Initial tests show that page reclaim writeback is
-> reduced from kswapd by 97% with this sort of pre-emptive kicking of flusher
-> threads based on these figures from sysbench.
 
-That sounds like yet another bad aid to me.  Instead it would be much
-better to not have so many file pages at the end of LRU by tuning the
-flusher threads and VM better.
+--=-cyJ/P2kZGKSKnIpmMnTl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+I'm running a shmem pagefault test case (see attached file) under a 64 CPU
+system. Profile shows shmem_inode_info->lock is heavily contented and 100%
+CPUs time are trying to get the lock. In the pagefault (no swap) case,
+shmem_getpage gets the lock twice, the last one is avoidable if we prealloc a
+page so we could reduce one time of locking. This is what below patch does.
+
+The result of the test case:
+2.6.35-rc3: ~20s
+2.6.35-rc3 + patch: ~12s
+so this is 40% improvement.
+
+One might argue if we could have better locking for shmem. But even shmem is lockless,
+the pagefault will soon have pagecache lock heavily contented because shmem must add
+new page to pagecache. So before we have better locking for pagecache, improving shmem
+locking doesn't have too much improvement. I did a similar pagefault test against
+a ramfs file, the test result is ~10.5s.
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+
+diff --git a/mm/shmem.c b/mm/shmem.c
+index f65f840..c5f2939 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1223,6 +1223,7 @@ static int shmem_getpage(struct inode *inode, unsigned long idx,
+ 	struct shmem_sb_info *sbinfo;
+ 	struct page *filepage = *pagep;
+ 	struct page *swappage;
++	struct page *prealloc_page = NULL;
+ 	swp_entry_t *entry;
+ 	swp_entry_t swap;
+ 	gfp_t gfp;
+@@ -1247,7 +1248,6 @@ repeat:
+ 		filepage = find_lock_page(mapping, idx);
+ 	if (filepage && PageUptodate(filepage))
+ 		goto done;
+-	error = 0;
+ 	gfp = mapping_gfp_mask(mapping);
+ 	if (!filepage) {
+ 		/*
+@@ -1258,7 +1258,19 @@ repeat:
+ 		if (error)
+ 			goto failed;
+ 		radix_tree_preload_end();
++		if (sgp != SGP_READ) {
++			/* don't care if this successes */
++			prealloc_page = shmem_alloc_page(gfp, info, idx);
++			if (prealloc_page) {
++				if (mem_cgroup_cache_charge(prealloc_page,
++				    current->mm, GFP_KERNEL)) {
++					page_cache_release(prealloc_page);
++					prealloc_page = NULL;
++				}
++			}
++		}
+ 	}
++	error = 0;
+ 
+ 	spin_lock(&info->lock);
+ 	shmem_recalc_inode(inode);
+@@ -1407,28 +1419,37 @@ repeat:
+ 		if (!filepage) {
+ 			int ret;
+ 
+-			spin_unlock(&info->lock);
+-			filepage = shmem_alloc_page(gfp, info, idx);
+-			if (!filepage) {
+-				shmem_unacct_blocks(info->flags, 1);
+-				shmem_free_blocks(inode, 1);
+-				error = -ENOMEM;
+-				goto failed;
+-			}
+-			SetPageSwapBacked(filepage);
++			if (!prealloc_page) {
++				spin_unlock(&info->lock);
++				filepage = shmem_alloc_page(gfp, info, idx);
++				if (!filepage) {
++					shmem_unacct_blocks(info->flags, 1);
++					shmem_free_blocks(inode, 1);
++					error = -ENOMEM;
++					goto failed;
++				}
++				SetPageSwapBacked(filepage);
+ 
+-			/* Precharge page while we can wait, compensate after */
+-			error = mem_cgroup_cache_charge(filepage, current->mm,
+-					GFP_KERNEL);
+-			if (error) {
+-				page_cache_release(filepage);
+-				shmem_unacct_blocks(info->flags, 1);
+-				shmem_free_blocks(inode, 1);
+-				filepage = NULL;
+-				goto failed;
++				/* Precharge page while we can wait, compensate
++				 * after
++				 */
++				error = mem_cgroup_cache_charge(filepage,
++					current->mm, GFP_KERNEL);
++				if (error) {
++					page_cache_release(filepage);
++					shmem_unacct_blocks(info->flags, 1);
++					shmem_free_blocks(inode, 1);
++					filepage = NULL;
++					goto failed;
++				}
++
++				spin_lock(&info->lock);
++			} else {
++				filepage = prealloc_page;
++				prealloc_page = NULL;
++				SetPageSwapBacked(filepage);
+ 			}
+ 
+-			spin_lock(&info->lock);
+ 			entry = shmem_swp_alloc(info, idx, sgp);
+ 			if (IS_ERR(entry))
+ 				error = PTR_ERR(entry);
+@@ -1469,6 +1490,10 @@ repeat:
+ 	}
+ done:
+ 	*pagep = filepage;
++	if (prealloc_page) {
++		mem_cgroup_uncharge_cache_page(prealloc_page);
++		page_cache_release(prealloc_page);
++	}
+ 	return 0;
+ 
+ failed:
+@@ -1476,6 +1501,10 @@ failed:
+ 		unlock_page(filepage);
+ 		page_cache_release(filepage);
+ 	}
++	if (prealloc_page) {
++		mem_cgroup_uncharge_cache_page(prealloc_page);
++		page_cache_release(prealloc_page);
++	}
+ 	return error;
+ }
+ 
+
+
+--=-cyJ/P2kZGKSKnIpmMnTl
+Content-Disposition: attachment; filename="shmem-test.c"
+Content-Type: text/x-csrc; name="shmem-test.c"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+#include <sys/mman.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#define THREAD_NUM (64L)
+#define MEM_SIZE (1024*1024*1024*16L)
+#define PER_TH_SIZE (MEM_SIZE/THREAD_NUM)
+
+void *thread_func(void *data)
+{
+	char *addr = data;
+	unsigned long size = PER_TH_SIZE, index = 0;
+	int t;
+
+	while (index < size) {
+		t = *(addr + index);
+		index += 4096;
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	int i;
+	pthread_t threads[THREAD_NUM];
+	pthread_attr_t attr;
+	struct timeval start, stop, diff;
+	char *mem;
+
+	mem = mmap(NULL, MEM_SIZE, PROT_READ|PROT_WRITE,
+		MAP_SHARED|MAP_ANON, 0, 0);
+	if (!mem) {
+		perror("mmap error");
+		exit(1);
+	}
+	
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	gettimeofday(&start, NULL);
+	for (i = 0; i < THREAD_NUM; i++)
+		if (pthread_create(&threads[i], &attr, thread_func,
+			mem + PER_TH_SIZE * i)) {
+			perror("thread create error");
+			exit(1);
+		}
+
+	for (i=0; i< THREAD_NUM; i++)
+		pthread_join(threads[i], NULL);
+
+	gettimeofday(&stop, NULL);
+	timersub(&stop, &start, &diff);
+	printf("Thread %ld Mem %dG time %lu.%03lusec\n",
+		THREAD_NUM, MEM_SIZE/1024/1024/1024,
+		diff.tv_sec, diff.tv_usec/1000);
+
+	pthread_attr_destroy(&attr);
+	return 0;
+}
+
+--=-cyJ/P2kZGKSKnIpmMnTl--
 
