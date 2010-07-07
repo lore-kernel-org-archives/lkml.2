@@ -1,61 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab0GGJ1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 05:27:30 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57216 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab0GGJ12 (ORCPT
+	id S1753836Ab0GGJ2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 05:28:39 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:7174 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752706Ab0GGJ2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 05:27:28 -0400
-Date: Wed, 7 Jul 2010 11:27:19 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/7] hugetlb: hugepage migration core
-Message-ID: <20100707092719.GA3900@basil.fritz.box>
-References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1278049646-29769-7-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20100705095927.GC8510@basil.fritz.box>
- <20100706033342.GA10626@spritzera.linux.bs1.fc.nec.co.jp>
- <20100706071337.GA20403@basil.fritz.box>
- <20100707060513.GA20221@spritzera.linux.bs1.fc.nec.co.jp>
+	Wed, 7 Jul 2010 05:28:37 -0400
+Date: Wed, 7 Jul 2010 02:28:37 -0700 (PDT)
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+X-X-Sender: sbhatewara@localhost.localdomain
+To: netdev@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com
+Subject: [PATCH 2.6.35-rc1] net: vmxnet3 fixes [3/5] Initialize link state
+ at probe time
+In-Reply-To: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain>
+Message-ID: <alpine.LRH.2.00.1007070202080.5939@localhost.localdomain>
+References: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100707060513.GA20221@spritzera.linux.bs1.fc.nec.co.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I see.  I understood we should work on locking problem in now.
-> I digged and learned hugepage IO can happen in direct IO from/to
-> hugepage or coredump of hugepage user.
-> 
-> We can resolve race between memory failure and IO by checking
-> page lock and writeback flag, right?
 
-Yes, but we have to make sure it's in the same page.
+Author: Shreyas Bhatewara <sbhatewara@vmware.com>
 
-As I understand the IO locking does not use the head page, that
-means migration may need to lock all the sub pages.
+Initialize vmxnet3 link state at probe time
+    
+This change initializes the state of link at the time when driver is
+loaded. The ethtool output for 'link detected' and 'link speed'
+is thus valid even before the interface is brought up.
+    
+Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
 
-Or fix IO locking to use head pages? 
+---
 
-> 
-> BTW I surveyed direct IO code, but page lock seems not to be taken.
-> Am I missing something?
-
-That's expected I believe because applications are supposed to coordinate
-for direct IO (but then direct IO also drops page cache). 
-
-But page lock is used to coordinate in the page cache for buffered IO.
-
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 29db294..31a838f 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -130,7 +130,7 @@ vmxnet3_tq_stop(struct vmxnet3_tx_queue *tq, struct vmxnet3_adapter *adapter)
+  * Check the link state. This may start or stop the tx queue.
+  */
+ static void
+-vmxnet3_check_link(struct vmxnet3_adapter *adapter)
++vmxnet3_check_link(struct vmxnet3_adapter *adapter, bool affectTxQueue)
+ {
+ 	u32 ret;
+ 
+@@ -143,14 +143,16 @@ vmxnet3_check_link(struct vmxnet3_adapter *adapter)
+ 		if (!netif_carrier_ok(adapter->netdev))
+ 			netif_carrier_on(adapter->netdev);
+ 
+-		vmxnet3_tq_start(&adapter->tx_queue, adapter);
++		if (affectTxQueue)
++			vmxnet3_tq_start(&adapter->tx_queue, adapter);
+ 	} else {
+ 		printk(KERN_INFO "%s: NIC Link is Down\n",
+ 		       adapter->netdev->name);
+ 		if (netif_carrier_ok(adapter->netdev))
+ 			netif_carrier_off(adapter->netdev);
+ 
+-		vmxnet3_tq_stop(&adapter->tx_queue, adapter);
++		if (affectTxQueue)
++			vmxnet3_tq_stop(&adapter->tx_queue, adapter);
+ 	}
+ }
+ 
+@@ -165,7 +167,7 @@ vmxnet3_process_events(struct vmxnet3_adapter *adapter)
+ 
+ 	/* Check if link state has changed */
+ 	if (events & VMXNET3_ECR_LINK)
+-		vmxnet3_check_link(adapter);
++		vmxnet3_check_link(adapter, true);
+ 
+ 	/* Check if there is an error on xmit/recv queues */
+ 	if (events & (VMXNET3_ECR_TQERR | VMXNET3_ECR_RQERR)) {
+@@ -1947,7 +1949,7 @@ vmxnet3_activate_dev(struct vmxnet3_adapter *adapter)
+ 	 * Check link state when first activating device. It will start the
+ 	 * tx queue if the link is up.
+ 	 */
+-	vmxnet3_check_link(adapter);
++	vmxnet3_check_link(adapter, true);
+ 
+ 	napi_enable(&adapter->napi);
+ 	vmxnet3_enable_all_intrs(adapter);
+@@ -2549,6 +2551,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
+ 	}
+ 
+ 	set_bit(VMXNET3_STATE_BIT_QUIESCED, &adapter->state);
++	vmxnet3_check_link(adapter, false);
+ 	atomic_inc(&devices_found);
+ 	return 0;
+ 
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 0ddfe3c..5c94afa 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -68,10 +68,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.0.9.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.0.10.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01000900
++#define VMXNET3_DRIVER_VERSION_NUM      0x01000A00
+ 
+ 
+ /*
