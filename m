@@ -1,180 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757546Ab0GGXFp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:05:45 -0400
-Received: from tpa-qmail.dyxnet.com ([152.104.96.30]:33136 "HELO
-	tpa-qmailr1.dyxnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756169Ab0GGXFn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:05:43 -0400
-X-DYX-POP3-Checked-Auth: 114.32.100.136:kernel@takeo.idv.tw
-Message-ID: <1AEF19B8648844C983F583EEBE9C46F4@TAKEOW7NB1>
-From: "Takeo Tung" <kernel@takeo.idv.tw>
-To: "Christoph Hellwig" <hch@lst.de>
-Cc: "Michal Marek" <mmarek@suse.cz>, <linux-kernel@vger.kernel.org>,
-       <viro@zeniv.linux.org.uk>, <sfr@canb.auug.org.au>,
-       "Takeo Tung" <kernel@takeo.idv.tw>
-References: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1> <4C129778.7040409@suse.cz> <F8C0125B8F424A279E9679EAC24AC983@TAKEOW7NB1> <20100612094937.GA12455@lst.de> <F2CA952B7B5A41259C5F950CA3454C3A@TAKEOW7NB1>
-In-Reply-To: <F2CA952B7B5A41259C5F950CA3454C3A@TAKEOW7NB1>
-Subject: [PATCH] struct io panic on raid1 - Re: block: unify flags for struct bio and struct request will kernel panic
-Date: Thu, 8 Jul 2010 07:05:39 +0800
+	id S1757675Ab0GGXFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 19:05:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5637 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756169Ab0GGXFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 19:05:46 -0400
+Date: Wed, 7 Jul 2010 19:05:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+       Jens Axboe <axboe@kernel.dk>
+Cc: Corrado Zoccolo <czoccolo@gmail.com>, Nauman Rafique <nauman@google.com>,
+       Divyesh Shah <dpshah@google.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Moyer Jeff Moyer <jmoyer@redhat.com>
+Subject: [RFC/RFT PATCH] cfq-iosched: Implement cfq group idling
+Message-ID: <20100707230521.GB7842@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=response
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8089.726
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8089.726
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Christoph,
+Currently we idle on sequential queues and allow dispatch from a single
+queue and that can become a bottleneck on higher end storage. For example
+on my HP EVA, I can run multiple sequential streams and achieve top BW
+of around 350 MB/s. But with CFQ, dispatching from single queue does not
+keep the array busy (limits to 150-180 MB/s with 4 or 8 processes).
 
-I was check the patch again. I found the panic status haapen on Soft RAID 1. 
-I review it. found some define using bool, so some like ( x & REQ_SYNC) only 
-0 or 1.
-so if bi_rw = rw | sync will bi_rw = rw | 0 or rw | 1. not rw | ( 1 << 
-__REQ_SYNC).
+One approach to solve this issue is simply use slice_idle = 0. But this
+also takes away the any service differentiation between groups.
 
-So I write a patch is fix it. seems normal now. could you review the patch 
-or any comment?
+This patch implements a new tunable "group_idle". This is similar to
+slice_idle but it forces idling at cfq group level and not at cfq queue
+level. So the idea is that one can run with slice_idle = 0 and group_idle
+= 8, so that we don't idle on individual queues in the group but idle
+on the group and still keep the IO controller working.
 
-Thanks
-Takeo Tung
+Not idling on individual queues in the group will dispatch requests from
+multiple queues in the group at the same time and achieve higher throughput
+on higher end storage.
 
-Signed-off-by: Takeo Tung <kernel@takeo.idv.tw>
---------
-diff -urNp ./drivers/md/raid10.c.orig ./drivers/md/raid10.c
---- ./drivers/md/raid10.c.orig  2010-07-07 19:24:12.000000000 +0800
-+++ ./drivers/md/raid10.c       2010-07-07 19:24:36.000000000 +0800
-@@ -799,7 +799,7 @@ static int make_request(mddev_t *mddev,
-        int i;
-        int chunk_sects = conf->chunk_mask + 1;
-        const int rw = bio_data_dir(bio);
--       const bool do_sync = (bio->bi_rw & REQ_SYNC);
-+       const unsigned long do_sync = (bio->bi_rw & REQ_SYNC);
-        struct bio_list bl;
-        unsigned long flags;
-        mdk_rdev_t *blocked_rdev;
-@@ -1716,7 +1716,7 @@ static void raid10d(mddev_t *mddev)
-                                raid_end_bio_io(r10_bio);
-                                bio_put(bio);
-                        } else {
--                               const bool do_sync = 
-(r10_bio->master_bio->bi_rw & REQ_SYNC);
-+                               const unsigned long do_sync = 
-(r10_bio->master_bio->bi_rw & REQ_SYNC);
-                                bio_put(bio);
-                                rdev = conf->mirrors[mirror].rdev;
-                                if (printk_ratelimit())
-diff -urNp ./drivers/md/raid1.c.orig ./drivers/md/raid1.c
---- ./drivers/md/raid1.c.orig   2010-07-07 19:21:45.000000000 +0800
-+++ ./drivers/md/raid1.c        2010-07-07 19:24:10.000000000 +0800
-@@ -787,8 +787,8 @@ static int make_request(mddev_t *mddev,
-        struct bio_list bl;
-        struct page **behind_pages = NULL;
-        const int rw = bio_data_dir(bio);
--       const bool do_sync = (bio->bi_rw & REQ_SYNC);
--       bool do_barriers;
-+       const unsigned long do_sync = (bio->bi_rw & REQ_SYNC);
-+       unsigned long do_barriers;
-        mdk_rdev_t *blocked_rdev;
+I have done some testing with multiple sequential readers using fio in two
+groups of weights 100 and 200. I run 1, 2, 4, 8 sequential readers in two
+groups.  Group names are test1 and test2 and throughputs are in KB/s.
 
-        /*
-@@ -1640,7 +1640,7 @@ static void raid1d(mddev_t *mddev)
-                         * We already have a nr_pending reference on these 
-rdevs.
-                         */
-                        int i;
--                       const bool do_sync = (r1_bio->master_bio->bi_rw & 
-REQ_SYNC);
-+                       const unsigned long do_sync = 
-(r1_bio->master_bio->bi_rw & REQ_SYNC);
-                        clear_bit(R1BIO_BarrierRetry, &r1_bio->state);
-                        clear_bit(R1BIO_Barrier, &r1_bio->state);
-                        for (i=0; i < conf->raid_disks; i++)
-@@ -1696,7 +1696,7 @@ static void raid1d(mddev_t *mddev)
-                                       (unsigned long long)r1_bio->sector);
-                                raid_end_bio_io(r1_bio);
-                        } else {
--                               const bool do_sync = 
-r1_bio->master_bio->bi_rw & REQ_SYNC;
-+                               const unsigned long do_sync = 
-r1_bio->master_bio->bi_rw & REQ_SYNC;
-                                r1_bio->bios[r1_bio->read_disk] =
-                                        mddev->ro ? IO_BLOCKED : NULL;
-                                r1_bio->read_disk = disk;
-diff -urNp ./drivers/block/loop.c.orig ./drivers/block/loop.c
---- ./drivers/block/loop.c.orig 2010-07-07 19:21:12.000000000 +0800
-+++ ./drivers/block/loop.c      2010-07-07 19:21:23.000000000 +0800
-@@ -476,7 +476,7 @@ static int do_bio_filebacked(struct loop
-        pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
+Default CFQ
+===========
+Kernel=2.6.35-rc4-ioc+        
+DIR=/mnt/iostestmnt/fio        DEV=/dev/sdf1
+Workload=bsr      iosched=cfq     Filesz=512M bs=4K 
+group_isolation=1 slice_idle=8    group_idle=8    quantum=8    
+=============================================================
+job     Set NR  test1  test2  
+---     --- --  --------------
+bsr     1   1   61629  135182 
+bsr     1   2   62073  121222 
+bsr     1   4   51386  105694 
+bsr     1   8   50883  82450  
 
-        if (bio_rw(bio) == WRITE) {
--               bool barrier = (bio->bi_rw & REQ_HARDBARRIER);
-+               unsigned long barrier = (bio->bi_rw & REQ_HARDBARRIER);
-                struct file *file = lo->lo_backing_file;
+Note how total BW is really low (around 150 - 180 MB/s) while array can
+support up to 350MB/s
 
-                if (barrier) {
-diff -urNp ./block/blk-core.c.orig ./block/blk-core.c
---- ./block/blk-core.c.orig     2010-07-07 19:14:55.000000000 +0800
-+++ ./block/blk-core.c  2010-07-07 19:27:20.000000000 +0800
-@@ -1198,9 +1198,9 @@ static int __make_request(struct request
-        int el_ret;
-        unsigned int bytes = bio->bi_size;
-        const unsigned short prio = bio_prio(bio);
--       const bool sync = (bio->bi_rw & REQ_SYNC);
--       const bool unplug = (bio->bi_rw & REQ_UNPLUG);
--       const unsigned int ff = bio->bi_rw & REQ_FAILFAST_MASK;
-+       const unsigned long sync = (bio->bi_rw & REQ_SYNC);
-+       const unsigned long unplug = (bio->bi_rw & REQ_UNPLUG);
-+       const unsigned long ff = bio->bi_rw & REQ_FAILFAST_MASK;
-        int rw_flags;
+CFQ (slice_idle = 0)
+====================
+Kernel=2.6.35-rc4-ioc+        
+DIR=/mnt/iostestmnt/fio        DEV=/dev/sdf1                 
+Workload=bsr      iosched=cfq     Filesz=512M bs=4K   
+group_isolation=1 slice_idle=0    group_idle=8    quantum=8    
+=========================================================================
+job     Set NR  test1  test2  
+---     --- --  --------------
+bsr     1   1   62952  139499 
+bsr     1   2   95775  186426 
+bsr     1   4   115410 235632 
+bsr     1   8   125036 227859 
 
-        if ((bio->bi_rw & REQ_HARDBARRIER) &&
-@@ -1719,7 +1719,7 @@ EXPORT_SYMBOL_GPL(blk_insert_cloned_requ
-  */
- unsigned int blk_rq_err_bytes(const struct request *rq)
+With slice_idle=0, we can almost touch 350MB/s and still get the service
+differentiation.
+
+CFQ (slice_idle = 0, group_idle = 0)
+===================================
+Kernel=2.6.35-rc4-ioc+        
+DIR=/mnt/iostestmnt/fio        DEV=/dev/sdf1                 
+Workload=bsr      iosched=cfq     Filesz=512M bs=4K   
+group_isolation=1 slice_idle=0    group_idle=0    quantum=8    
+=========================================================================
+job     Set NR  test1  test2  
+---     --- --  --------------
+bsr     1   1   155274 153544 
+bsr     1   2   173448 174263 
+bsr     1   4   177629 178458 
+bsr     1   8   179846 179226 
+
+With both slice_idle = 0 and group_idle = 0, it is alsmost like deadline.
+We lose service differentation but achieve high throughput.
+
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+
+---
+ block/cfq-iosched.c |   46 ++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 40 insertions(+), 6 deletions(-)
+
+Index: linux-2.6/block/cfq-iosched.c
+===================================================================
+--- linux-2.6.orig/block/cfq-iosched.c
++++ linux-2.6/block/cfq-iosched.c
+@@ -30,6 +30,7 @@ static const int cfq_slice_sync = HZ / 1
+ static int cfq_slice_async = HZ / 25;
+ static const int cfq_slice_async_rq = 2;
+ static int cfq_slice_idle = HZ / 125;
++static int cfq_group_idle = HZ / 125;
+ static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
+ static const int cfq_hist_divisor = 4;
+ 
+@@ -198,6 +199,8 @@ struct cfq_group {
+ 	struct hlist_node cfqd_node;
+ 	atomic_t ref;
+ #endif
++	/* number of requests that are on the dispatch list or inside driver */
++	int dispatched;
+ };
+ 
+ /*
+@@ -271,6 +274,7 @@ struct cfq_data {
+ 	unsigned int cfq_slice[2];
+ 	unsigned int cfq_slice_async_rq;
+ 	unsigned int cfq_slice_idle;
++	unsigned int cfq_group_idle;
+ 	unsigned int cfq_latency;
+ 	unsigned int cfq_group_isolation;
+ 
+@@ -1838,6 +1842,9 @@ static bool cfq_should_idle(struct cfq_d
+ 	BUG_ON(!service_tree);
+ 	BUG_ON(!service_tree->count);
+ 
++	if (!cfqd->cfq_slice_idle)
++		return false;
++
+ 	/* We never do for idle class queues. */
+ 	if (prio == IDLE_WORKLOAD)
+ 		return false;
+@@ -1862,7 +1869,7 @@ static void cfq_arm_slice_timer(struct c
  {
--       unsigned int ff = rq->cmd_flags & REQ_FAILFAST_MASK;
-+       unsigned long ff = rq->cmd_flags & REQ_FAILFAST_MASK;
-        unsigned int bytes = 0;
-        struct bio *bio;
-
---------------------------- 
-
---------------------------------------------------
-From: "Takeo Tung" <kernel@takeo.idv.tw>
-Sent: Monday, June 28, 2010 6:52 PM
-To: "Christoph Hellwig" <hch@lst.de>
-Cc: "Michal Marek" <mmarek@suse.cz>; <linux-kernel@vger.kernel.org>; 
-<viro@zeniv.linux.org.uk>; <sfr@canb.auug.org.au>; "Takeo Tung" 
-<kernel@takeo.idv.tw>
-Subject: block: unify flags for struct bio and struct request will kernel 
-panic
-
-> Dear Christoph,
->
-> As subject, I revert the patch, seems boot is normal, but apply the patch,
-> kernel will panic on scsi_setup_fs_cmnd, could you can check this? bcoz I 
-> check long time,
-> no found why kernel will panic.
->
-> http://git.kernel.org/?p=linux%2Fkernel%2Fgit%2Fnext%2Flinux-next.git;a=commitdiff_plain;h=74450be123b6f3cb480c358a056be398cce6aa6e
->
-> Thanks,
-> Takeo Tung
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-> 
+ 	struct cfq_queue *cfqq = cfqd->active_queue;
+ 	struct cfq_io_context *cic;
+-	unsigned long sl;
++	unsigned long sl, group_idle = 0;
+ 
+ 	/*
+ 	 * SSD device without seek penalty, disable idling. But only do so
+@@ -1878,15 +1885,19 @@ static void cfq_arm_slice_timer(struct c
+ 	/*
+ 	 * idle is disabled, either manually or by past process history
+ 	 */
+-	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq))
+-		return;
++	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq)) {
++		/* no queue idling. Check for group idling */
++		if (cfqd->cfq_group_idle)
++			group_idle = cfqd->cfq_group_idle;
++		else
++			return;
++	}
+ 
+ 	/*
+ 	 * still active requests from this queue, don't idle
+ 	 */
+ 	if (cfqq->dispatched)
+ 		return;
+-
+ 	/*
+ 	 * task has exited, don't wait
+ 	 */
+@@ -1899,7 +1910,7 @@ static void cfq_arm_slice_timer(struct c
+ 	 * slice, then don't idle. This avoids overrunning the allotted
+ 	 * time slice.
+ 	 */
+-	if (sample_valid(cic->ttime_samples) &&
++	if (!group_idle && sample_valid(cic->ttime_samples) &&
+ 	    (cfqq->slice_end - jiffies < cic->ttime_mean)) {
+ 		cfq_log_cfqq(cfqd, cfqq, "Not idling. think_time:%d",
+ 				cic->ttime_mean);
+@@ -1908,11 +1919,15 @@ static void cfq_arm_slice_timer(struct c
+ 
+ 	cfq_mark_cfqq_wait_request(cfqq);
+ 
+-	sl = cfqd->cfq_slice_idle;
++	if (group_idle)
++		sl = cfqd->cfq_group_idle;
++	else
++		sl = cfqd->cfq_slice_idle;
+ 
+ 	mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
+ 	cfq_blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
+-	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
++	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu group_idle: %d", sl,
++			group_idle ? 1 : 0);
+ }
+ 
+ /*
+@@ -1928,6 +1943,7 @@ static void cfq_dispatch_insert(struct r
+ 	cfqq->next_rq = cfq_find_next_rq(cfqd, cfqq, rq);
+ 	cfq_remove_request(rq);
+ 	cfqq->dispatched++;
++	(RQ_CFQG(rq))->dispatched++;
+ 	elv_dispatch_sort(q, rq);
+ 
+ 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+@@ -2231,6 +2247,16 @@ static struct cfq_queue *cfq_select_queu
+ 		goto keep_queue;
+ 	}
+ 
++	/*
++	 * If group idle is enabled and there are requests dispatched from
++	 * this group, wait for requests to complete.
++	 */
++	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
++	    && cfqq->cfqg->dispatched) {
++		cfqq = NULL;
++		goto keep_queue;
++	}
++
+ expire:
+ 	cfq_slice_expired(cfqd, 0);
+ new_queue:
+@@ -3373,6 +3399,7 @@ static void cfq_completed_request(struct
+ 	WARN_ON(!cfqq->dispatched);
+ 	cfqd->rq_in_driver--;
+ 	cfqq->dispatched--;
++	(RQ_CFQG(rq))->dispatched--;
+ 	cfq_blkiocg_update_completion_stats(&cfqq->cfqg->blkg,
+ 			rq_start_time_ns(rq), rq_io_start_time_ns(rq),
+ 			rq_data_dir(rq), rq_is_sync(rq));
+@@ -3847,6 +3874,7 @@ static void *cfq_init_queue(struct reque
+ 	cfqd->cfq_slice[1] = cfq_slice_sync;
+ 	cfqd->cfq_slice_async_rq = cfq_slice_async_rq;
+ 	cfqd->cfq_slice_idle = cfq_slice_idle;
++	cfqd->cfq_group_idle = cfq_group_idle;
+ 	cfqd->cfq_latency = 1;
+ 	cfqd->cfq_group_isolation = 0;
+ 	cfqd->hw_tag = -1;
+@@ -3919,6 +3947,7 @@ SHOW_FUNCTION(cfq_fifo_expire_async_show
+ SHOW_FUNCTION(cfq_back_seek_max_show, cfqd->cfq_back_max, 0);
+ SHOW_FUNCTION(cfq_back_seek_penalty_show, cfqd->cfq_back_penalty, 0);
+ SHOW_FUNCTION(cfq_slice_idle_show, cfqd->cfq_slice_idle, 1);
++SHOW_FUNCTION(cfq_group_idle_show, cfqd->cfq_group_idle, 1);
+ SHOW_FUNCTION(cfq_slice_sync_show, cfqd->cfq_slice[1], 1);
+ SHOW_FUNCTION(cfq_slice_async_show, cfqd->cfq_slice[0], 1);
+ SHOW_FUNCTION(cfq_slice_async_rq_show, cfqd->cfq_slice_async_rq, 0);
+@@ -3951,6 +3980,7 @@ STORE_FUNCTION(cfq_back_seek_max_store, 
+ STORE_FUNCTION(cfq_back_seek_penalty_store, &cfqd->cfq_back_penalty, 1,
+ 		UINT_MAX, 0);
+ STORE_FUNCTION(cfq_slice_idle_store, &cfqd->cfq_slice_idle, 0, UINT_MAX, 1);
++STORE_FUNCTION(cfq_group_idle_store, &cfqd->cfq_group_idle, 0, UINT_MAX, 1);
+ STORE_FUNCTION(cfq_slice_sync_store, &cfqd->cfq_slice[1], 1, UINT_MAX, 1);
+ STORE_FUNCTION(cfq_slice_async_store, &cfqd->cfq_slice[0], 1, UINT_MAX, 1);
+ STORE_FUNCTION(cfq_slice_async_rq_store, &cfqd->cfq_slice_async_rq, 1,
+@@ -3972,6 +4002,7 @@ static struct elv_fs_entry cfq_attrs[] =
+ 	CFQ_ATTR(slice_async),
+ 	CFQ_ATTR(slice_async_rq),
+ 	CFQ_ATTR(slice_idle),
++	CFQ_ATTR(group_idle),
+ 	CFQ_ATTR(low_latency),
+ 	CFQ_ATTR(group_isolation),
+ 	__ATTR_NULL
+@@ -4025,6 +4056,12 @@ static int __init cfq_init(void)
+ 	if (!cfq_slice_idle)
+ 		cfq_slice_idle = 1;
+ 
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
++	if (!cfq_group_idle)
++		cfq_group_idle = 1;
++#else
++		cfq_group_idle = 0;
++#endif
+ 	if (cfq_slab_setup())
+ 		return -ENOMEM;
+ 
