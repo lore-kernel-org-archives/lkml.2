@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab0GGXa0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:30:26 -0400
-Received: from tundra.namei.org ([65.99.196.166]:60349 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab0GGXaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:30:24 -0400
-Date: Thu, 8 Jul 2010 09:30:08 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-cc: "David P. Quigley" <dpquigl@tycho.nsa.gov>, hch@infradead.org,
-       viro@zeniv.linux.org.uk, casey@schaufler-ca.com, sds@tycho.nsa.gov,
-       matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 06/10] NFSv4: Add label recommended attribute and NFSv4
- flags
-In-Reply-To: <20100707170058.GD28815@fieldses.org>
-Message-ID: <alpine.LRH.2.00.1007080928180.14102@tundra.namei.org>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov> <1278513086-23964-7-git-send-email-dpquigl@tycho.nsa.gov> <20100707170058.GD28815@fieldses.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758132Ab0GGXmc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 19:42:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45367 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756281Ab0GGXma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 19:42:30 -0400
+Date: Wed, 7 Jul 2010 16:41:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+       Ralf Baechle <ralf@linux-mips.org>, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v2 16/26] fbdev: Add JZ4740 framebuffer driver
+Message-Id: <20100707164148.d2a1f8c4.akpm@linux-foundation.org>
+In-Reply-To: <4C310ACD.6040604@metafoo.de>
+References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
+	<1276924111-11158-17-git-send-email-lars@metafoo.de>
+	<4C310ACD.6040604@metafoo.de>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Jul 2010, J. Bruce Fields wrote:
+On Mon, 05 Jul 2010 00:27:25 +0200
+Lars-Peter Clausen <lars@metafoo.de> wrote:
 
-> On Wed, Jul 07, 2010 at 10:31:22AM -0400, David P. Quigley wrote:
+> Hi Andrew
 > 
-> > +#define NFS4_MAXLABELLEN	4096
-> 
-> Idle curiosity--why 4096?  (Why couldn't it be 16?  And how do we know
-> people will never want 8192?)
+> v2 of this patch has been around for two weeks without any comments. I've fixed all
+> the issues you had with v1. If you this version is ok, an Acked-By would be nice :)
 
-I think I raised this a while back, too.
+I don't do acks - I already have enough to be blamed for.  I'd merge it
+if asked to though.  Although I might whine about inappropriate use of
+ENOENT, which means "No such file or directory".
 
-The maximum security label size on Linux is:
-
-#define XATTR_SIZE_MAX 65536
-
-Why arbitrarily limit this over the network?
-
-Someone could have a valid local security label which can't be conveyed 
-via NFS.
-
-
-
-- James
--- 
-James Morris
-<jmorris@namei.org>
