@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab0GGGZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 02:25:06 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:41935 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab0GGGZE (ORCPT
+	id S1752669Ab0GGGlY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 02:41:24 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41287 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab0GGGlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 02:25:04 -0400
-Date: Wed, 7 Jul 2010 08:25:52 +0200
-From: Nico Schottelius <nico-linux-2010-07-01@schottelius.org>
+	Wed, 7 Jul 2010 02:41:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=QPiGZV3YMcBxn15FrdkrmNjor71AdWEdkB4T5g/7RxJYoyLBGtLUfYyfHV4cDj0b2R
+         7pOaGB1nqrAprC7CeeoMOqZ9Zh8MvsXUDHAm/H/W2aVQTC/eIudJVDKodXPedaN3xUDY
+         o5Xd0ONlmq0Kxdr9F42LNdwpY1Q7Ea1M2v1VY=
+Date: Wed, 7 Jul 2010 09:41:13 +0300
+From: =?UTF-8?B?VMO2csO2aw==?= Edwin <edwintorok@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Nico Schottelius <nico-linux-2010-07-01@schottelius.org>,
-       LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       dri-devel@lists.freedesktop.org, netdev@vger.kernel.org
-Subject: Re: Report for 2.6.35-rc3-00262-g984bc96
-Message-ID: <20100707062552.GA4421@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-2010-07-01@schottelius.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Maciej Rutecki <maciej.rutecki@gmail.com>,
-	dri-devel@lists.freedesktop.org, netdev@vger.kernel.org
-References: <20100701074052.GA3501@schottelius.org>
- <20100706194222.fcf16e13.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
-Content-Disposition: inline
-In-Reply-To: <20100706194222.fcf16e13.akpm@linux-foundation.org>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.35-rc4 x86_64)
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.35-rc3: Load average climbing to 3+ with no apparent
+ reason: CPU 98% idle, with hardly no I/O
+Message-ID: <20100707094113.62f1c509@debian>
+In-Reply-To: <20100706194017.a543dfb9.akpm@linux-foundation.org>
+References: <20100701104022.404410d6@debian>
+	<20100706194017.a543dfb9.akpm@linux-foundation.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 6 Jul 2010 19:40:17 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Thu, 1 Jul 2010 10:40:22 +0300 T__r__k Edwin
+> <edwintorok@gmail.com> wrote:
+> 
+> > Hi,
+> > 
+> > I just noticed that my load average is 2.99 and climbing (it is 3.11
+> > right now).
+> > CPU is 98% idle, with hardly any I/O at all so I don't know what is
+> > causing this:
+> >  10:32:55 up  1:01,  5 users,  load average: 3.28, 3.31, 3.09
+> > 
+> > $ vmstat 5
+> > procs -----------memory---------- ---swap-- -----io---- -system--
+> > ----cpu---- r  b   swpd   free   buff  cache   si   so    bi
+> > bo   in   cs us sy id wa 0  0      0 492412 490320 1716264    0
+> > 0   122    79  331  419  2  1 93  4 0  0      0 492388 490320
+> > 1716264    0    0     0    13  755  983  0  1 99  0 0  0      0
+> > 492632 490324 1716040    0    0     1    71 1013 1455  1  1 98  0
+> > 1  0      0 492132 490340 1716264    0    0     4  1651  947 1223
+> > 2  1 96  1 0  0      0 491972 490340 1716272    0    0     0    69
+> > 1122 1586  2  2 96  0 0  0      0 491788 490340 1716272    0
+> > 0     0    41 1527 2517  3  2 95  0 0  0      0 491884 490340
+> > 1716272    0    0     0   107 1419 2193  2 1 97  0
+> > 
+> > This happens with 2.6.35-rc3-00001-g6bdebf9 (where the -00001 patch
+> > is this bugfix required for networking to work at all: "net: fix
+> > deliver_no_wcard regression on loopback device")
+> > 
+> > I have attached the output of cfs-debug-info.sh:
+> > cfs-debug-info-2010.07.01-10.29.57.gz
+> > 
+> > I don't see anything special in dmesg, just the continous reset of
+> > ata9 (CDROM) that I reported about already:
+> > http://lkml.org/lkml/2010/6/27/83 Could this cause load average
+> > calculation to go wrong?
+> 
 
-Andrew Morton [Tue, Jul 06, 2010 at 07:42:22PM -0700]:
-> On Thu, 1 Jul 2010 09:40:52 +0200 Nico Schottelius <nico-linux-2010-07-01=
-@schottelius.org> wrote:
->=20
-> > Good morning!
-> >=20
-> > A short report on what's broken in 2.6.35-rc3-00262-g984bc96 with
-> > the Lenovo X201:
->=20
-> So you see two post-2.6.34 regressions?
+> 
+> Robert thinks that your hardware might be busted.  Did you investigate
+> that further?
 
-I'm not 100% sure whether the netdev issue was not already part of 2.6.34.
+I will do that in the weekend (swap components to see which one fails).
+For now I just unplugged the CDROMs.
 
-Just changed to 2.6.35-rc4, but noticed another issue on 2.6.35-rc3-00262-g=
-984bc96:
+>  Have you rechecked earlier kernel versions to see if
+> they work OK?
+> 
 
-After several (>=3D3) resumes, the system completly freezes. Used to happen=
- with
-2.6.33 very often (always?), vanished with 2.6.34-something
+2.6.34 showed the ATA errors too, so it is likely a HW issue
+(2.6.34 never showed these errors before).
 
-Cheers,
+> Could be.  Run `ps aux' and see which tasks are stuck in "D" state (if
+> any).  Use sysrq-W or `echo w > /proc/sysrq-trigger' (do `dmesg -n 8'
+> first) to get stack traces of any stuck tasks.  Try to prevent email
+> client wordwrapping when sending that info out, please.
 
-Nico
+Thanks I'll do that the next time I see this issue.
+Now with the CDROMs unplugged I don't see a load of 3+ anymore
+(currently 0.36 and decreasing), I'll see in the weekend if replugging
+the CDROMs brings back the load issue.
 
---=20
-New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-Please resign, if you signed 9885188C or 8D0E27A4.
-
-Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
-
---sdtB3X0nJg68CQEu
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkw0HfAACgkQ19zI5DGHffAecgCgyoCZ7rW3KrpWCKkl2ibmRLwM
-rDsAoIXudwXz3YZOuVaMge0nbGUQ9rh4
-=7KsB
------END PGP SIGNATURE-----
-
---sdtB3X0nJg68CQEu--
+Best regards,
+--Edwin
