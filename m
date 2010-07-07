@@ -1,88 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab0GGSTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 14:19:10 -0400
-Received: from [202.81.31.141] ([202.81.31.141]:33951 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab0GGSTI (ORCPT
+	id S1756874Ab0GGSTw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 14:19:52 -0400
+Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:38006 "EHLO
+	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab0GGSTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 14:19:08 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andreas Dilger <andreas.dilger@oracle.com>,
-       "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>, hch@infradead.org, viro@zeniv.linux.org.uk,
-       adilger@Sun.COM, corbet@lwn.net, serue@us.ibm.com,
-       hooanon05@yahoo.co.jp, linux-fsdevel@vger.kernel.org,
-       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle syscalls
-In-Reply-To: <5920F408-E923-4467-A6A9-6C0923C00927@oracle.com>
-References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <871vbn2mk9.fsf@linux.vnet.ibm.com> <20100702064108.64034561@notabene.brown> <87iq4y29a6.fsf@linux.vnet.ibm.com> <20100706161002.GD7387@fieldses.org> <87eifgfsez.fsf@linux.vnet.ibm.com> <2DC68584-15A8-4C48-8E65-E7EF1DCEEAD0@oracle.com> <20100707150535.GB24360@fieldses.org> <5920F408-E923-4467-A6A9-6C0923C00927@oracle.com>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Wed, 07 Jul 2010 23:48:51 +0530
-Message-ID: <87zky3duk4.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 7 Jul 2010 14:19:50 -0400
+Subject: Re: [PATCH 07/10] NFSv4: Introduce new label structure
+From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
+       bfields@fieldses.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       selinux@tycho.nsa.gov, linux-nfs@vger.kernel.org
+In-Reply-To: <4C34BE3A.3050806@oracle.com>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
+	 <1278513086-23964-8-git-send-email-dpquigl@tycho.nsa.gov>
+	 <4C34A4F1.3060708@oracle.com>
+	 <1278519727.2494.92.camel@moss-terrapins.epoch.ncsc.mil>
+	 <4C34BE3A.3050806@oracle.com>
+Content-Type: text/plain
+Organization: National Security Agency
+Date: Wed, 07 Jul 2010 14:11:54 -0400
+Message-Id: <1278526314.2494.170.camel@moss-terrapins.epoch.ncsc.mil>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Jul 2010 11:02:47 -0600, Andreas Dilger <andreas.dilger@oracle.com> wrote:
-> On 2010-07-07, at 09:05, J. Bruce Fields wrote:
-> > On Wed, Jul 07, 2010 at 01:40:53AM -0600, Andreas Dilger wrote:
-> >> On 2010-07-06, at 11:09, Aneesh Kumar K. V wrote:
-> >>> Since we know that system wide file handle should include a file system
-> >>> identifier and a file identifier my plan was to retrieve both in the
-> >>> same syscall.
-> >> 
-> >> Won't having it be in a separate system call be racy w.r.t. doing the pathname lookup twice?
-> > 
-> > It'll be rare that a server will want to *just* get a filehandle;
-> > normally it will at least want to get some attributes at the same time.
-> > So I think it will always need to open the file first and then do the
-> > rest of the operations on the returned filehandle.
+On Wed, 2010-07-07 at 13:49 -0400, Chuck Lever wrote:
+> On 07/ 7/10 12:22 PM, David P. Quigley wrote:
+> > Hello Chuck,
+> >     Thank you for the comments. I'll go through and address them inline
+> > (Sorry for the top post).
+> >
+> > On Wed, 2010-07-07 at 12:01 -0400, Chuck Lever wrote:
+> >> My comments below apply to the other NFS client patches as well.  This
+> >> seemed like the right one to use for code examples.
+> >>
+> >> On 07/ 7/10 10:31 AM, David P. Quigley wrote:
 > 
-> I think you are assuming too much about the use of the file handle.
-> What I'm interested in is not a userspace file server, but rather a
-> more efficient way to have 10000's to millions of clients to be able
-> to open the same regular file, without having to do full path
-> traversal for each one.
+>    [ ... snipped ... ]
+> 
+> >> It seems to me you want something more generic, just like nfs_fh or
+> >> nfs_fattr, to represent these.  Over time, I'm guessing label support
+> >> won't be tied to a specific NFS version.  And, you are passing these
+> >> around in the generic NFS functions (for post-op updates and inode
+> >> revalidation, and what not).
+> >>
+> >> Can I recommend "struct nfs_seclabel" instead?  Then have
+> >> nfs_seclabel_alloc() and nfs_seclabel_free().
+> >
+> > I can definitely rename them to be more generic. I don't see anything
+> > else besides NFSv4 using them but its fine with me to rename them. The
+> > reason we call them nfs4_label is because we modeled it after the NFSv4
+> > acl support code. I spoke with Christoph a long time ago and he
+> > suggested that it should be handled the same way that the NFSv4 ACLs are
+> > handled as opposed to the iattr thing we were trying.
+> >
+> >>
+> >> Does it make sense to deduplicate these in the client's memory?  It
+> >> seems to me that you could have hundreds or thousands that all contain
+> >> the same label information.
+> >
+> > I don't think it is worth the effort. We are only using these structures
+> > until the security label is crammed into the inode. Once that happens
+> > they get freed. You shouldn't have them sitting around for very long.
+> 
+> OK, the lifetime of these things wasn't clear.
+> 
+> > They will be pulled again when the inode attributes expire and need to
+> > be revalidated. For things like SELinux you could argue that the LSM
+> > might benefit from this (and it might already do it but I'm not sure)
+> > but I think that is something to be handled by the LSM itself or the
+> > credentials code (since it already supports COW credentials it should be
+> > possible).
+> 
+> I think the lifetime of the label structure then is about the same as 
+> the lifetime of an nfs_attr, and not at all the same as an ACL.  I'm 
+> just guessing here.
 
-
-With the suggested syscall approach we can do on the client that does
-the path traversal.
-
-fd = open(name)
-file_identifier = fd_to_handle(fd);
-fs_identifier  = fd_to_fshandle(fd);
-close(fd);
-
+Intersting I figured that the ACL structure was just to get it to a
+point where you could convert the NFS ACL into a posixacl and set it in
+the inode. I didn't realize they were hanging around for a while.
 
 > 
-> >>> That still leaves the problem that there isn't always an underlying
-> >>> block device, and/or when there is it doesn't always uniquely specify
-> >>> the filesystem.
-> >> 
-> >> And for this reason we would need this as a syscall right ?
-> > 
-> > That's the only solution I see.  (Or use an xattr?)
-> 
-> Or... return the UUID as part of the file handle in the first place.
-> That avoids races, avoids adding more syscalls that have to be called
-> for each file handle, or IMNSHO the worst proposal that requires
-> applications to parse a text file in some obscure path for each file
-> handle (requiring a stat() to find the major/minor device of the file,
-> walking through /proc or /sys, and other nastiness).
+> Would it then make sense to add a field that refers to the security 
+> label to struct nfs_fattr instead?  That might simplify or eliminate all 
+> of the internal API changes.
 
-I would also like to get both file system identifier and file identifier 
-in a single call.
+I want to say that we had it in there at one point and then we endedup
+running into a problem and having to change it. I'll ask Matt about what
+problems we had sticking it in the nfs_fattr initially.
 
-That would also imply instead of the above sequence of 4 calls, we can
-do
-
-file_handle = name_to_handle(name);
-
--aneesh
-
-
+Dave
 
