@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab0GGUOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 16:14:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50490 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755466Ab0GGUOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 16:14:05 -0400
-Message-ID: <4C34DF8E.7090501@redhat.com>
-Date: Wed, 07 Jul 2010 10:11:58 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757581Ab0GGUSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 16:18:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64816 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755120Ab0GGUSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 16:18:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 0/7] block: BKL removal, version 4
+Date: Wed, 7 Jul 2010 22:18:23 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3+; KDE/4.4.90; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       John Kacur <jkacur@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org
+References: <1278514289-21054-1-git-send-email-arnd@arndb.de> <4C34D74A.4060308@kernel.dk>
+In-Reply-To: <4C34D74A.4060308@kernel.dk>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: Peter Palfrader <peter@palfrader.org>, Greg KH <gregkh@suse.de>,
-       linux-kernel@vger.kernel.org, stable@kernel.org,
-       stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
- for pvclock
-References: <20100701175144.GA2116@kroah.com> <20100701173218.125822294@clark.site> <20100707124731.GJ15122@anguilla.noreply.org> <20100707135140.GI2707@mothafucka.localdomain> <20100707143338.GK15122@anguilla.noreply.org> <20100707181511.GL2707@mothafucka.localdomain>
-In-Reply-To: <20100707181511.GL2707@mothafucka.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007072218.24013.arnd@arndb.de>
+X-Provags-ID: V02:K0:fvT2oQ5GFlSs35OmWkkZREDhpZVkckFkJ1fKjjs4kdF
+ kpYCSBp7FFsIHyVsO0qajIEj923NIkT0nB3XXd+kYGSWOoN/oo
+ OIE80XEHg2Xv5xcbGk0JoKzLK/HZ8QlO6bEWu3vZNz9amBbXkk
+ rUfnYGSfIpVlpZWMbRQcEqEX7heS9dHtl0ZJ8it2vCT/+xeKx1
+ 9YneUfP6Yy35pTsbrbk2w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2010 08:15 AM, Glauber Costa wrote:
-> On Wed, Jul 07, 2010 at 04:33:39PM +0200, Peter Palfrader wrote:
->    
->> On Wed, 07 Jul 2010, Glauber Costa wrote:
->>
->>      
->>>> 2.6.32.16 fails to boot on my KVM domains using qemu-kvm 0.11.1.
->>>>
->>>> Bisecting between 2.6.32.14 which worked and .16 turned up this commit
->>>> as the first culprit[0].
->>>>
->>>> The host is still running 2.6.32.14 and has 8 cores on 2 CPUs.  The
->>>> single-cpu KVM domain hangs just after printing 'Write protecting the
->>>> kernel read-only data: 9492k'[1].   On a successful boot this line would
->>>> usually be followed by 'INIT: version 2.86 booting'.
->>>>
->>>> A 2.6.32.16 with this patch reverted boots fine.
->>>>
->>>> If there's any info you need please just ask.
->>>>          
->>      
->>> if you boot with another clocksource, and then switch to kvmclock with the machine already
->>> running, do you see anything strange or suspicious?
->>>        
->> Booting with various clocksource=xxx kernel parameters does not change
->> the behaviour at all, i.e. the boot still hangs.
->>      
-> wow, it is really weird then.
->
-> that patch shouldn't affect anything outside the pvclock realm.
->    
+On Wednesday 07 July 2010 21:36:42 Jens Axboe wrote:
+> I'll go over each one tomorrow and add the series.
 
-Unless you added data which is mistakenly in read-only section, I can't 
-see how it would affect anything either.  Of course, you have changed 
-the data and text size, it is possible this triggered another bug.
+Ok, thanks!
 
-What exact section does the per-cpu pvclock data fall into?  It's 
-read-only in the kernel, but writeable from the hypervisor.
+If it makes your life easier, feel free to get this series from
 
-Also, did this patch arrive before or after the pvclock reboot bugfix?  
-Because if the hypervisor is still writing the pvclock page, 
-clocksource=xxx would not change that behavior without that fix.
+git pull git://git.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git block
 
-Zach
+	Arnd
