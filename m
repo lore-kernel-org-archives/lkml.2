@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab0GGCwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 22:52:21 -0400
-Received: from mail.gmx.net ([213.165.64.20]:48863 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752247Ab0GGCwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 22:52:20 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19NRmhsqeZN1nKbwwxj+D0ED0oiMHpYeW2PiR2Xbw
-	GZgC3Ijr3SB731
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: "Greg Kroah-Hartman" <gregkh@suse.de>
-Subject: [PATCH] staging/panel: Prevent double-calling of parport_release - fix oops.
-Date: Wed, 7 Jul 2010 04:52:16 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-Cc: Willy Tarreau <w@1wt.eu>, Julia Lawall <julia@diku.dk>,
-       Sudhakar Rajashekhara <sudhakar.raj@ti.com>, devel@driverdev.osuosl.org,
+	id S1753534Ab0GGC5t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 22:57:49 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48962 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab0GGC5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 22:57:48 -0400
+Date: Wed, 7 Jul 2010 12:57:26 +1000
+From: Neil Brown <neilb@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+       "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
+       viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
+       serue@us.ibm.com, hooanon05@yahoo.co.jp, linux-fsdevel@vger.kernel.org,
+       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
+ syscalls
+Message-ID: <20100707125726.3695587a@notabene.brown>
+In-Reply-To: <20100707021150.GF25018@dastard>
+References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<871vbn2mk9.fsf@linux.vnet.ibm.com>
+	<20100702064108.64034561@notabene.brown>
+	<87iq4y29a6.fsf@linux.vnet.ibm.com>
+	<20100706161002.GD7387@fieldses.org>
+	<87eifgfsez.fsf@linux.vnet.ibm.com>
+	<20100706232351.GD25018@dastard>
+	<20100707093629.10c2feab@notabene.brown>
+	<20100707021150.GF25018@dastard>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007070452.16860.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+On Wed, 7 Jul 2010 12:11:50 +1000
+Dave Chinner <david@fromorbit.com> wrote:
 
-This patch prevents the code from calling parport_release and
-parport_unregister_device twice with the same arguments - and thus fixes an oops.
+> On Wed, Jul 07, 2010 at 09:36:29AM +1000, Neil Brown wrote:
+> > On Wed, 7 Jul 2010 09:23:51 +1000
+> > Dave Chinner <david@fromorbit.com> wrote:
+> > 
+> > > > I can add a new syscall that returns 
+> > > > 
+> > > > struct fs_uuid {
+> > > >        u8 fs_uuid[16];  
+> > > > };
+> > > > 
+> > > > long sys_get_fs_uuid(int dfd, char *name, struct fs_uuid *fsid, int flag);  
+> > > 
+> > > libblkid already provides the UUID to userspace applications, doesn't it?
+> > 
+> > Yes and no.
+> > 
+> > libblkid provides the uuid of the thing that uses a block device.  That
+> > doesn't directly map to "UUID of a filesystem".
+> 
+> True.
+> 
+> > There are two types of filesystem that I can think of for which libblkid
+> > cannot give a uuid.
+> >   - network filesystems (or virtual filesystems, or fuse )
+> 
+> How would you guarantee persistent uniqueness for such filesystems?
 
-Rationale:
-After the first call the parport is already released and the
-handle isn't valid anymore and calling parport_release and
-parport_unregister_device twice isn't a good idea.
+Persistent shouldn't be too hard in many cases.
+What uniqueness guarantees do we have anyway?  Mostly stochastic I expect.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-KernelVersion: linux-next-20100607
 
- drivers/staging/panel/panel.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> >   - filesystems which share a block device, such as btrfs.
+> >     btrfs can have 'subvols' - multiple "filesystems" within
+> >     the one (set of) block device(s).  libblkid cannot be asked about these
+> >     different subvols.
+> > 
+> > libblkid is useful, but not a real solution.
+> 
+> So libblkid doesn't cover everything, but I think my question is
+> still valid - if we want per-filesystem UUIDs, why a syscall and not
+> just publishing it somewhere where we already publish per-mount
+> information?  e.g. in /proc/mounts?
 
-diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index 3154ffe..6fa57be 100644
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -2277,6 +2277,7 @@ int panel_init(void)
- 		if (pprt) {
- 			parport_release(pprt);
- 			parport_unregister_device(pprt);
-+			pprt = NULL;
- 		}
- 		parport_unregister_driver(&panel_driver);
- 		printk(KERN_ERR "Panel driver version " PANEL_VERSION
-@@ -2327,6 +2328,7 @@ static void __exit panel_cleanup_module(void)
- 		/* TODO: free all input signals */
- 		parport_release(pprt);
- 		parport_unregister_device(pprt);
-+		pprt = NULL;
- 	}
- 	parport_unregister_driver(&panel_driver);
- }
--- 
-1.7.1
+The trouble with /proc/mounts is that it is somewhat clumsy to parse
+(remember to handle \0ctal escapes) and doesn't include major/minor number
+which is the primary key for identifying filesystems in Linux
+(see /sys/class/bdi/MAJOR:MINOR which is e.g. the best place to configure
+read-ahead for a filesystem).
+
+So /proc/mounts could work (and would probably be better than a new syscall)
+but I would really rather see something sane in /sys for
+inspecting/configuring filesystems (rather than each filesystem doing their
+own independent thing in /sys/fs).
+
+NeilBrown
 
