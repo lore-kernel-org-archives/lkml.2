@@ -1,107 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487Ab0GGOwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 10:52:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62640 "EHLO
+	id S1756349Ab0GGOvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 10:51:55 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58303 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756248Ab0GGOvx (ORCPT
+	with ESMTP id S1756243Ab0GGOvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 10:51:53 -0400
+	Wed, 7 Jul 2010 10:51:51 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: Christoph Hellwig <hch@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        John Kacur <jkacur@redhat.com>,
        Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org,
-       Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 0/7] block: BKL removal, version 4
-Date: Wed,  7 Jul 2010 16:51:22 +0200
-Message-Id: <1278514289-21054-1-git-send-email-arnd@arndb.de>
+       Arnd Bergmann <arnd@arndb.de>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>
+Subject: [PATCH 7/7] scsi/sd: remove big kernel lock
+Date: Wed,  7 Jul 2010 16:51:29 +0200
+Message-Id: <1278514289-21054-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.6.3.3
-X-Provags-ID: V02:K0:Z5nMDBbbDoSUMO/2awxazH8Rl2Mpdw2KACWLkiN1h8J
- 5qvfDkWvpcg3pjTbyYb+qhUbgZxjJG1XgMhC8oRze1M+MUlTR7
- 3elpKZ9Nfqqjul3pUgGpqsCyWbdWWtEqXuSeNwxr7As/PpgOXM
- sbnYvd4unTsfJhyZl6GC0T3G8bM3dKTamUCVMpIRMQoXe0zX1M
- LkPjqyimgmEsj57WLBYjQ==
+In-Reply-To: <1278514289-21054-1-git-send-email-arnd@arndb.de>
+References: <1278514289-21054-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:tGGzLAyIFGGEDdf5RnZX2OYo0mCjt0XMianOImB7qXS
+ PEfHgQzNAFAnCp8+w0UgKZj1liN9CbnddqtvP6iFjUtw2UimfO
+ hivSS5zBs2JG9OYG7IKxGjdl6ax81tW40u0YdpdvVDG0BsFvWF
+ PZmYhXkVKGEGro3ao+5UgGltUZYiSRCOGDWhocrkCfJEOazhYh
+ x47q/IpyNiGG95MRW0DqQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series removes the big kernel lock from the common
-block layer code by pushing it into the individual
-device drivers.
+Every user of the BKL in the sd driver is the
+result of the pushdown from the block layer
+into the open/close/ioctl functions.
 
-This version incorporates further changes to address
-comments from Christoph Hellwig and Sam Ravnborg,
-many thanks for the valuable feedback!
+The only place that used to rely on the BKL is
+the sdkp->openers variable, which gets converted
+into an atomic_t.
 
-I'd like to get this into 2.6.36 in order to remove
-the BKL from all the core kernel code.
+Nothing else seems to rely on the BKL, since the
+functions do not touch global data without holding
+another lock, and the open/close functions are
+still protected from concurrent execution using
+the bdev->bd_mutex.
 
-Once Christoph is happy with the series, in particular
-the third patch, I'd like to add it to linux-next
-for broader testing, preferrably though Jens Axboe's
-linux-2.6-block.git tree.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-scsi@vger.kernel.org
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
+---
+ drivers/scsi/sd.c |   17 +++++++----------
+ drivers/scsi/sd.h |    2 +-
+ 2 files changed, 8 insertions(+), 11 deletions(-)
 
-Arnd Bergmann (7):
-  scsi/i2o_block: cleanup ioctl handling
-  block: push down BKL into .locked_ioctl
-  block: push down BKL into .open and .release
-  block: push BKL into blktrace ioctls
-  block: remove BKL from BLKROSET and BLKFLSBUF
-  block: remove BKL from partition ioctls
-  scsi/sd: remove big kernel lock
-
- arch/um/drivers/ubd_kern.c          |    7 ++++-
- block/compat_ioctl.c                |   56 -----------------------------------
- block/ioctl.c                       |   21 +------------
- drivers/block/DAC960.c              |   13 +++++--
- drivers/block/amiflop.c             |   29 +++++++++++++++--
- drivers/block/aoe/aoeblk.c          |    4 ++
- drivers/block/ataflop.c             |   32 +++++++++++++++++--
- drivers/block/brd.c                 |    5 ++-
- drivers/block/cciss.c               |   31 +++++++++++++++----
- drivers/block/cpqarray.c            |   40 ++++++++++++++++++++++---
- drivers/block/drbd/drbd_main.c      |    4 ++
- drivers/block/floppy.c              |   22 ++++++++++++-
- drivers/block/loop.c                |    5 +++
- drivers/block/nbd.c                 |    5 ++-
- drivers/block/paride/pcd.c          |   21 +++++++++++--
- drivers/block/paride/pd.c           |    9 +++++-
- drivers/block/paride/pf.c           |   26 ++++++++++++----
- drivers/block/pktcdvd.c             |   18 +++++++++--
- drivers/block/swim.c                |   20 +++++++++++-
- drivers/block/swim3.c               |   32 ++++++++++++++++++--
- drivers/block/ub.c                  |   27 +++++++++++++++--
- drivers/block/viodasd.c             |   19 +++++++++++-
- drivers/block/virtio_blk.c          |   17 +++++++++-
- drivers/block/xd.c                  |   17 +++++++++-
- drivers/block/xen-blkfront.c        |    9 +++++-
- drivers/block/xsysace.c             |    6 ++++
- drivers/block/z2ram.c               |   13 ++++++--
- drivers/cdrom/gdrom.c               |   19 ++++++++++--
- drivers/cdrom/viocd.c               |   21 +++++++++++--
- drivers/ide/ide-cd.c                |   32 +++++++++++++++----
- drivers/ide/ide-disk_ioctl.c        |    9 ++++-
- drivers/ide/ide-floppy_ioctl.c      |   12 +++++--
- drivers/ide/ide-gd.c                |   19 ++++++++++-
- drivers/ide/ide-tape.c              |   19 ++++++++++--
- drivers/md/dm.c                     |    7 ++++
- drivers/md/md.c                     |    6 ++++
- drivers/memstick/core/mspro_block.c |    9 +++++-
- drivers/message/i2o/i2o_block.c     |    4 ++
- drivers/mmc/card/block.c            |    5 +++
- drivers/mtd/mtd_blkdevs.c           |   11 +++++-
- drivers/s390/block/dasd.c           |    6 ++++
- drivers/s390/block/dcssblk.c        |    5 +++
- drivers/s390/char/tape_block.c      |    8 ++++-
- drivers/scsi/sd.c                   |   25 ++++++++++-----
- drivers/scsi/sd.h                   |    2 +-
- drivers/scsi/sr.c                   |   25 ++++++++++++----
- drivers/staging/hv/blkvsc_drv.c     |    5 +++
- fs/block_dev.c                      |   10 +-----
- include/linux/blkdev.h              |    1 -
- include/linux/blktrace_api.h        |   12 +++++++
- kernel/trace/blktrace.c             |   43 ++++++++++++++++++++++++++
- 51 files changed, 637 insertions(+), 186 deletions(-)
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index cf1441f..a0142a7 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -746,6 +746,8 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
+  *	or from within the kernel (e.g. as a result of a mount(1) ).
+  *	In the latter case @inode and @filp carry an abridged amount
+  *	of information as noted above.
++ *
++ *	Locking: called with bdev->bd_mutex held.
+  **/
+ static int sd_open(struct block_device *bdev, fmode_t mode)
+ {
+@@ -758,7 +760,6 @@ static int sd_open(struct block_device *bdev, fmode_t mode)
+ 
+ 	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp, "sd_open\n"));
+ 
+-	lock_kernel();
+ 	sdev = sdkp->device;
+ 
+ 	/*
+@@ -797,17 +798,15 @@ static int sd_open(struct block_device *bdev, fmode_t mode)
+ 	if (!scsi_device_online(sdev))
+ 		goto error_out;
+ 
+-	if (!sdkp->openers++ && sdev->removable) {
++	if ((atomic_inc_return(&sdkp->openers) == 1) && sdev->removable) {
+ 		if (scsi_block_when_processing_errors(sdev))
+ 			scsi_set_medium_removal(sdev, SCSI_REMOVAL_PREVENT);
+ 	}
+ 
+-	unlock_kernel();
+ 	return 0;
+ 
+ error_out:
+ 	scsi_disk_put(sdkp);
+-	unlock_kernel();
+ 	return retval;	
+ }
+ 
+@@ -821,6 +820,8 @@ error_out:
+  *
+  *	Note: may block (uninterruptible) if error recovery is underway
+  *	on this disk.
++ *
++ *	Locking: called with bdev->bd_mutex held.
+  **/
+ static int sd_release(struct gendisk *disk, fmode_t mode)
+ {
+@@ -829,8 +830,7 @@ static int sd_release(struct gendisk *disk, fmode_t mode)
+ 
+ 	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp, "sd_release\n"));
+ 
+-	lock_kernel();
+-	if (!--sdkp->openers && sdev->removable) {
++	if (atomic_dec_return(&sdkp->openers) && sdev->removable) {
+ 		if (scsi_block_when_processing_errors(sdev))
+ 			scsi_set_medium_removal(sdev, SCSI_REMOVAL_ALLOW);
+ 	}
+@@ -840,7 +840,6 @@ static int sd_release(struct gendisk *disk, fmode_t mode)
+ 	 * XXX is followed by a "rmmod sd_mod"?
+ 	 */
+ 	scsi_disk_put(sdkp);
+-	unlock_kernel();
+ 	return 0;
+ }
+ 
+@@ -893,7 +892,6 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
+ 	SCSI_LOG_IOCTL(1, printk("sd_ioctl: disk=%s, cmd=0x%x\n",
+ 						disk->disk_name, cmd));
+ 
+-	lock_kernel();
+ 	/*
+ 	 * If we are in the middle of error recovery, don't let anyone
+ 	 * else try and use this device.  Also, if error recovery fails, it
+@@ -923,7 +921,6 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
+ 			break;
+ 	}
+ out:
+-	unlock_kernel();
+ 	return error;
+ }
+ 
+@@ -2317,7 +2314,7 @@ static int sd_probe(struct device *dev)
+ 	sdkp->driver = &sd_template;
+ 	sdkp->disk = gd;
+ 	sdkp->index = index;
+-	sdkp->openers = 0;
++	atomic_set(&sdkp->openers, 0);
+ 	sdkp->previous_state = 1;
+ 
+ 	if (!sdp->request_queue->rq_timeout) {
+diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
+index 43d3caf..f81a930 100644
+--- a/drivers/scsi/sd.h
++++ b/drivers/scsi/sd.h
+@@ -47,7 +47,7 @@ struct scsi_disk {
+ 	struct scsi_device *device;
+ 	struct device	dev;
+ 	struct gendisk	*disk;
+-	unsigned int	openers;	/* protected by BKL for now, yuck */
++	atomic_t	openers;
+ 	sector_t	capacity;	/* size in 512-byte sectors */
+ 	u32		index;
+ 	unsigned short	hw_sector_size;
+-- 
+1.7.0.4
 
