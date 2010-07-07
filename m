@@ -1,189 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757127Ab0GGPHs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:07:48 -0400
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:63064 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756614Ab0GGPF7 (ORCPT
+	id S1756506Ab0GGPHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:07:42 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62608 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756657Ab0GGPGE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 11:05:59 -0400
-From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-To: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
-       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
-       bfields@fieldses.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org, "David P. Quigley" <dpquigl@tycho.nsa.gov>,
-       "Matthew N. Dodd" <Matthew.Dodd@sparta.com>
-Subject: [PATCH 01/10] Security: Add hook to calculate context based on a negative dentry.
-Date: Wed,  7 Jul 2010 10:31:17 -0400
-Message-Id: <1278513086-23964-2-git-send-email-dpquigl@tycho.nsa.gov>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
+	Wed, 7 Jul 2010 11:06:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100707111723.24979.32020.sendpatchset@ahunter-work.research.nokia.com>
+References: <20100707111716.24979.68940.sendpatchset@ahunter-work.research.nokia.com>
+	<20100707111723.24979.32020.sendpatchset@ahunter-work.research.nokia.com>
+Date: Wed, 7 Jul 2010 11:06:01 -0400
+Message-ID: <AANLkTinfDOlL7iKP4Qmb0J4xq_I_nNEnSbokCOkYmCSn@mail.gmail.com>
+Subject: Re: [PATCH V4 1/5] mmc: Add erase, secure erase, trim and secure trim 
+	operations
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       linux-kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kyungmin Park <kmpark@infradead.org>,
+       Madhusudhan Chikkature <madhu.cr@ti.com>,
+       linux-mmc Mailing List <linux-mmc@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a time where we need to calculate a context without the
-inode having been created yet. To do this we take the negative dentry and
-calculate a context based on the process and the parent directory contexts.
+On Wed, Jul 7, 2010 at 7:17 AM, Adrian Hunter <adrian.hunter@nokia.com> wrote:
+> From 7f01ad3c4be6ec09318176db12db66f353b526e0 Mon Sep 17 00:00:00 2001
 
-Signed-off-by: Matthew N. Dodd <Matthew.Dodd@sparta.com>
-Signed-off-by: David P. Quigley <dpquigl@tycho.nsa.gov>
+> SD/MMC cards tend to support an erase operation.  In addition,
+> eMMC v4.4 cards can support secure erase, trim and secure trim
+> operations that are all variants of the basic erase command.
+
+This is great. I am interested primarily in SD media.
+
+Please forgive my naive perspective: it seems that with the features
+enabled by this patchset and a filesystem that is capable of issuing
+erase block commands, the wear-leveling on SD media will be improved
+-- much like with CF TRIM commands. Do you also think that is the
+case? I would be very interested in hearing your expert opinion on
+this.
+
+I have a couple comments regarding mostly the SD support introduced in
+this patch. Patches 2..5 of 5 seem fine to me but I'm not sure I'm
+qualified to add acks or reviewed-by's.
+
+> +int mmc_erase(struct mmc_card *card, unsigned int from, unsigned int nr,
+> +             unsigned int arg)
+> +{
+> +       unsigned int rem, to = from + nr;
+> +
+> +       if (!(card->host->caps & MMC_CAP_ERASE) ||
+> +           !(card->csd.cmdclass & CCC_ERASE))
+> +               return -EOPNOTSUPP;
+> +
+> +       if (!card->erase_size)
+> +               return -EOPNOTSUPP;
+> +
+> +       if (mmc_card_sd(card) && arg != MMC_ERASE_ARG)
+> +               return -EOPNOTSUPP;
+> +
+> +       if ((arg & MMC_SECURE_ARGS) &&
+> +           !(card->ext_csd.sec_feature_support & EXT_CSD_SEC_ER_EN))
+> +               return -EOPNOTSUPP;
+> +
+> +       if ((arg & MMC_TRIM_ARGS) &&
+> +           !(card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN))
+> +               return -EOPNOTSUPP;
+> +
+
+> +int mmc_can_trim(struct mmc_card *card)
+> +{
+> +       if (card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN)
+> +               return 1;
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL(mmc_can_trim);
+
+It looks like mmc_can_trim(card) would return true when
+mmc_card_sd(card) is true; but the mmc_erase function will return
+-EOPNOTSUPP in such a case. I think that this results in the
+mmc_blk_issue_discard_rq function (from 2/5) also returning
+-EOPNOTSUPP whenever mmc_card_sd(card) is true:
+
+>From 2/5:
++       if (mmc_can_trim(card))
++               arg = MMC_TRIM_ARG;
++       else
++               arg = MMC_ERASE_ARG;
++
++       err = mmc_erase(card, from, nr, arg);
+
+Also, there is some duplication between the sec_feature_support
+checking in mmc_erase and in the mmc_can* functions; If mmc_erase
+could call the mmc_can_* functions then the the bit-checking logic
+could be centralized.
+
+
+> /*
+> + * Fetch and process SD Status register.
+> + */
+> +static int mmc_read_ssr(struct mmc_card *card)
+> +{
+
+It looks like the conventional function prefix for SD-specific
+functions in the rest of this file is mmc_sd_ ; 'mmc_read_ssr' ->
+'mmc_sd_read_ssr'  or -> 'mmc_read_sd_sr' perhaps?
+
+> +       ssr = kmalloc(64, GFP_KERNEL);
+
+Why '64' instead of 'sizeof(*ssr)' ?
+
+Best Regards,
+Ben Gardiner
+
 ---
- include/linux/security.h |   22 ++++++++++++++++++++++
- security/capability.c    |    6 ++++++
- security/security.c      |    7 +++++++
- security/selinux/hooks.c |   32 ++++++++++++++++++++++++++++++++
- 4 files changed, 67 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 3158dd9..4d01784 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -322,6 +322,14 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	Parse a string of security data filling in the opts structure
-  *	@options string containing all mount options known by the LSM
-  *	@opts binary data structure usable by the LSM
-+ * @dentry_init_security:
-+ *	Compute a context for a dentry as the inode is not yet available
-+ * 	since NFSv4 has no label backed by an EA anyway.
-+ * 	@dentry dentry to use in calculating the context.
-+ * 	@mode mode used to determine resource type.
-+ * 	@ctx pointer to place the pointer to the resulting context in.
-+ * 	@ctxlen point to place the length of the resulting context.
-+ *
-  *
-  * Security hooks for inode operations.
-  *
-@@ -1501,6 +1509,9 @@ struct security_operations {
- 	void (*sb_clone_mnt_opts) (const struct super_block *oldsb,
- 				   struct super_block *newsb);
- 	int (*sb_parse_opts_str) (char *options, struct security_mnt_opts *opts);
-+	int (*dentry_init_security) (struct dentry *dentry, int mode,
-+				     void **ctx, u32 *ctxlen);
-+
- 
- #ifdef CONFIG_SECURITY_PATH
- 	int (*path_unlink) (struct path *dir, struct dentry *dentry);
-@@ -1795,6 +1806,8 @@ int security_sb_set_mnt_opts(struct super_block *sb, struct security_mnt_opts *o
- void security_sb_clone_mnt_opts(const struct super_block *oldsb,
- 				struct super_block *newsb);
- int security_sb_parse_opts_str(char *options, struct security_mnt_opts *opts);
-+int security_dentry_init_security (struct dentry *dentry, int mode,
-+				   void **ctx, u32 *ctxlen);
- 
- int security_inode_alloc(struct inode *inode);
- void security_inode_free(struct inode *inode);
-@@ -2157,6 +2170,15 @@ static inline int security_inode_alloc(struct inode *inode)
- static inline void security_inode_free(struct inode *inode)
- { }
- 
-+static inline int security_dentry_init_security (struct dentry *dentry,
-+						 int mode,
-+						 void **ctx,
-+						 u32 *ctxlen)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
-+
- static inline int security_inode_init_security(struct inode *inode,
- 						struct inode *dir,
- 						char **name,
-diff --git a/security/capability.c b/security/capability.c
-index 4875142..9ce1c2f 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -134,6 +134,11 @@ static int cap_sb_parse_opts_str(char *options, struct security_mnt_opts *opts)
- 	return 0;
- }
- 
-+static int cap_dentry_init_security(struct dentry *dentry, int mode, void **ctx, u32 *ctxlen)
-+{
-+	return 0;
-+}
-+
- static int cap_inode_alloc_security(struct inode *inode)
- {
- 	return 0;
-@@ -952,6 +957,7 @@ void security_fixup_ops(struct security_operations *ops)
- 	set_to_cap_if_null(ops, sb_set_mnt_opts);
- 	set_to_cap_if_null(ops, sb_clone_mnt_opts);
- 	set_to_cap_if_null(ops, sb_parse_opts_str);
-+	set_to_cap_if_null(ops, dentry_init_security);
- 	set_to_cap_if_null(ops, inode_alloc_security);
- 	set_to_cap_if_null(ops, inode_free_security);
- 	set_to_cap_if_null(ops, inode_init_security);
-diff --git a/security/security.c b/security/security.c
-index 687c6fd..c1b6847 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -386,6 +386,13 @@ void security_inode_free(struct inode *inode)
- 	security_ops->inode_free_security(inode);
- }
- 
-+int security_dentry_init_security (struct dentry *dentry, int mode,
-+				   void **ctx, u32 *ctxlen)
-+{
-+	return security_ops->dentry_init_security (dentry, mode, ctx, ctxlen);
-+}
-+EXPORT_SYMBOL(security_dentry_init_security);
-+
- int security_inode_init_security(struct inode *inode, struct inode *dir,
- 				  char **name, void **value, size_t *len)
- {
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 5feecb4..435c51f 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -2577,6 +2577,37 @@ static void selinux_inode_free_security(struct inode *inode)
- 	inode_free_security(inode);
- }
- 
-+static int selinux_dentry_init_security(struct dentry *dentry, int mode, void **ctx, u32 *ctxlen)
-+{
-+	struct cred *cred = current_cred();
-+	struct task_security_struct *tsec;
-+	struct inode_security_struct *dsec;
-+	struct superblock_security_struct *sbsec;
-+	struct inode *dir = dentry->d_parent->d_inode;
-+	u32 newsid;
-+	int rc;
-+
-+	tsec = cred->security;
-+	dsec = dir->i_security;
-+	sbsec = dir->i_sb->s_security;
-+
-+	if (tsec->create_sid && sbsec->behavior != SECURITY_FS_USE_MNTPOINT) {
-+		newsid = tsec->create_sid;
-+	} else {
-+		rc = security_transition_sid(tsec->sid, dsec->sid,
-+					     inode_mode_to_security_class(mode),
-+					     &newsid);
-+		if (rc) {
-+			printk(KERN_WARNING "%s:  "
-+			       "security_transition_sid failed, rc=%d\n",
-+			       __FUNCTION__, -rc);
-+			return rc;
-+		}
-+	}
-+
-+	return security_sid_to_context(newsid, (char **)ctx, ctxlen);
-+}
-+
- static int selinux_inode_init_security(struct inode *inode, struct inode *dir,
- 				       char **name, void **value,
- 				       size_t *len)
-@@ -5484,6 +5515,7 @@ static struct security_operations selinux_ops = {
- 	.sb_clone_mnt_opts =		selinux_sb_clone_mnt_opts,
- 	.sb_parse_opts_str = 		selinux_parse_opts_str,
- 
-+	.dentry_init_security =		selinux_dentry_init_security,
- 
- 	.inode_alloc_security =		selinux_inode_alloc_security,
- 	.inode_free_security =		selinux_inode_free_security,
--- 
-1.6.2.5
-
+Nanometrics Inc.
+http://www.nanometrics.ca
