@@ -1,34 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab0GFDIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 23:08:06 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37160
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755039Ab0GFDIC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 23:08:02 -0400
-Date: Mon, 05 Jul 2010 20:08:16 -0700 (PDT)
-Message-Id: <20100705.200816.57450933.davem@davemloft.net>
-To: segooon@gmail.com
-Cc: kernel-janitors@vger.kernel.org, joe@perches.com, anemo@mba.ocn.ne.jp,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/ne: fix memory leak in ne_drv_probe()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1278170444-8170-1-git-send-email-segooon@gmail.com>
-References: <1278170444-8170-1-git-send-email-segooon@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1756756Ab0GFDYr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 23:24:47 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:38242 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752954Ab0GFDYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jul 2010 23:24:46 -0400
+Date: Wed, 7 Jul 2010 05:15:48 +0000
+From: Andres Salomon <dilinger@queued.net>
+To: David Miller <davem@davemloft.net>
+Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+       sparclinux@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+       mingo@redhat.com, hpa@zytor.com, cjb@laptop.org, wmb@laptop.org,
+       pgf@laptop.org, linux-kernel@vger.kernel.org, benh@kernel.crashing.org
+Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building
+ code out into drivers/of
+Message-ID: <20100707051548.2c44f30c@debxo>
+In-Reply-To: <20100705.192221.241453945.davem@davemloft.net>
+References: <20100629193618.5a840b8e@dev.queued.net>
+	<AANLkTilme2uAoXjorUEzam9j_xosR8kl70W8PS71d-Th@mail.gmail.com>
+	<20100707040734.05d625af@debxo>
+	<20100705.192221.241453945.davem@davemloft.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kulikov Vasiliy <segooon@gmail.com>
-Date: Sat,  3 Jul 2010 19:20:42 +0400
+On Mon, 05 Jul 2010 19:22:21 -0700 (PDT)
+David Miller <davem@davemloft.net> wrote:
 
-> net_device allocated with alloc_eip_netdev() must be freed.
+> From: Andres Salomon <dilinger@queued.net>
+> Date: Wed, 7 Jul 2010 04:07:34 +0000
 > 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> >  - For the pdt, calling into the prom once for each property/node to
+> >    create a fdt, and then unflattening it.  This is better than the
+> >    previous option, but I don't think the prom->fdt code will be
+> > very nice.
+> 
+> I'll need this on sparc64 at some point to support kexec() anyways.
+> 
+> So at least for sparc you can assume that a something-->fdt translator
+> is going to exist at some point in the future regardless of what
+> happens here.
+> 
 
-Applied, thanks.
+
+Sounds like we have a winner.  I'll concentrate on that, thanks for
+the heads up.
