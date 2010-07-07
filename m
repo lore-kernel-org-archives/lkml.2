@@ -1,114 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab0GGJ2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 05:28:39 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:7174 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752706Ab0GGJ2h (ORCPT
+	id S1754148Ab0GGJbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 05:31:13 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54584 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004Ab0GGJbM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 05:28:37 -0400
-Date: Wed, 7 Jul 2010 02:28:37 -0700 (PDT)
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-X-X-Sender: sbhatewara@localhost.localdomain
-To: netdev@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com
-Subject: [PATCH 2.6.35-rc1] net: vmxnet3 fixes [3/5] Initialize link state
- at probe time
-In-Reply-To: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain>
-Message-ID: <alpine.LRH.2.00.1007070202080.5939@localhost.localdomain>
-References: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	Wed, 7 Jul 2010 05:31:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SNSHevHsNTxJbQBp5CbL5M7Szm1hqOs6K17muBEEy6GyhwY58Wq1mtVdLJmGiGgf3Q
+         XXjN0Oxf8bd5aLQs8Z94zz0oDrjOfVLZDqyYLpnN/PfWpFITt3GC3FosWk58qo1uEuO+
+         qvzoBKAzJGD1XBIjBvGXRLqB/84g/8YxxEhe8=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4C33513C.4090704@ti.com>
+References: <1277298125-17991-1-git-send-email-ohad@wizery.com>
+	<1277298840-18516-1-git-send-email-ohad@wizery.com>
+	<20100623224150.GA6680@kroah.com>
+	<AANLkTik0rm12w4jplD1vSTZnPbwguDU6xtOdAfs9C-3r@mail.gmail.com>
+	<4C33513C.4090704@ti.com>
+Date: Wed, 7 Jul 2010 12:31:07 +0300
+Message-ID: <AANLkTikAZCAj4mljYbJcppuIL2quYz8AK0AkTFCZO3bG@mail.gmail.com>
+Subject: Re: [PATCH 11/11] staging: ti dspbridge: enable driver building
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Greg KH <greg@kroah.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>, "Menon, Nishanth" <nm@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I'm removing many people from the Cc which I think don't care about
+this. Is this even the right place for discussing about it?
 
-Author: Shreyas Bhatewara <sbhatewara@vmware.com>
+On Tue, Jul 6, 2010 at 6:52 PM, Omar Ramirez Luna <omar.ramirez@ti.com> wrote:
+> On 7/4/2010 5:53 AM, Felipe Contreras wrote:
+>> On Thu, Jun 24, 2010 at 1:41 AM, Greg KH<greg@kroah.com>  wrote:
+>>> So I need some more Kconfig changes here, care to redo just this one
+>>> patch?  I've applied all the others and they will show up in linux-next
+>>> tomorrow.
+>>
+>> I fixed all that stuff some time ago:
+>> http://article.gmane.org/gmane.linux.ports.arm.omap/36065
+>>
+>> But the patches were ignored.
+>
+> Patches were not ignored, discussion was held privately (you and me),
 
-Initialize vmxnet3 link state at probe time
-    
-This change initializes the state of link at the time when driver is
-loaded. The ethtool output for 'link detected' and 'link speed'
-is thus valid even before the interface is brought up.
-    
-Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+That was for the deh reorganization. Not the Kconfig ones.
 
----
+Regarding the deh reorganization...
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 29db294..31a838f 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -130,7 +130,7 @@ vmxnet3_tq_stop(struct vmxnet3_tx_queue *tq, struct vmxnet3_adapter *adapter)
-  * Check the link state. This may start or stop the tx queue.
-  */
- static void
--vmxnet3_check_link(struct vmxnet3_adapter *adapter)
-+vmxnet3_check_link(struct vmxnet3_adapter *adapter, bool affectTxQueue)
- {
- 	u32 ret;
- 
-@@ -143,14 +143,16 @@ vmxnet3_check_link(struct vmxnet3_adapter *adapter)
- 		if (!netif_carrier_ok(adapter->netdev))
- 			netif_carrier_on(adapter->netdev);
- 
--		vmxnet3_tq_start(&adapter->tx_queue, adapter);
-+		if (affectTxQueue)
-+			vmxnet3_tq_start(&adapter->tx_queue, adapter);
- 	} else {
- 		printk(KERN_INFO "%s: NIC Link is Down\n",
- 		       adapter->netdev->name);
- 		if (netif_carrier_ok(adapter->netdev))
- 			netif_carrier_off(adapter->netdev);
- 
--		vmxnet3_tq_stop(&adapter->tx_queue, adapter);
-+		if (affectTxQueue)
-+			vmxnet3_tq_stop(&adapter->tx_queue, adapter);
- 	}
- }
- 
-@@ -165,7 +167,7 @@ vmxnet3_process_events(struct vmxnet3_adapter *adapter)
- 
- 	/* Check if link state has changed */
- 	if (events & VMXNET3_ECR_LINK)
--		vmxnet3_check_link(adapter);
-+		vmxnet3_check_link(adapter, true);
- 
- 	/* Check if there is an error on xmit/recv queues */
- 	if (events & (VMXNET3_ECR_TQERR | VMXNET3_ECR_RQERR)) {
-@@ -1947,7 +1949,7 @@ vmxnet3_activate_dev(struct vmxnet3_adapter *adapter)
- 	 * Check link state when first activating device. It will start the
- 	 * tx queue if the link is up.
- 	 */
--	vmxnet3_check_link(adapter);
-+	vmxnet3_check_link(adapter, true);
- 
- 	napi_enable(&adapter->napi);
- 	vmxnet3_enable_all_intrs(adapter);
-@@ -2549,6 +2551,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
- 	}
- 
- 	set_bit(VMXNET3_STATE_BIT_QUIESCED, &adapter->state);
-+	vmxnet3_check_link(adapter, false);
- 	atomic_inc(&devices_found);
- 	return 0;
- 
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index 0ddfe3c..5c94afa 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -68,10 +68,10 @@
- /*
-  * Version numbers
-  */
--#define VMXNET3_DRIVER_VERSION_STRING   "1.0.9.0-k"
-+#define VMXNET3_DRIVER_VERSION_STRING   "1.0.10.0-k"
- 
- /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
--#define VMXNET3_DRIVER_VERSION_NUM      0x01000900
-+#define VMXNET3_DRIVER_VERSION_NUM      0x01000A00
- 
- 
- /*
+> patch
+> 13 was not accepted because changing indentation doesn't deserve a copyright
+> assignment (IMHO),
+
+You didn't want to add a copyright without giving any valid reason, so
+you started a private thread. You never mentioned any rejection of the
+patches on any grounds, neither publicly, nor privately.
+
+If the patch series is only changing indentation then the lines
+removed would match the lines added, which is not the case. Take a
+look:
+15 files changed, 184 insertions(+), 509 deletions(-)
+
+In my book removing 300 lines of code while keeping all the
+functionality is a good thing. Without even considering that the rest
+of the insertions are cleaning up the code.
+
+> at that point *you* wanted your patches not to be
+> included if the last one wasn't merged in.
+
+Not without the copyright update patch.
+
+Maybe you are forgetting that I made many changes before those
+patches. Here are some stats for ue_deh and mmu_fault:
+
+Me:
+ 22 commits, 487 insertions(+), 742 deletions(-)
+
+Others:
+ 60 commits, 394 insertions(+), 617 deletions(-)
+
+(I didn't count the automated camel case removal)
+ 218 insertions(+), 209 deletions(-)
+
+And 'git blame' shows me on 70% of ue_deh (which doesn't take into
+consideration code removals which is the main thing I did).
+
+While the vast majority of the changes are cleanups (much needed);
+there are also functional changes, mostly fixing memory corruptions,
+both reproduced and theoretical.
+
+If somebody writes a piece of code that's 10,000 lines, and another
+person reorganizes the code to make it 1,000 lines; IMO the usefulness
+of the code relies on both person's contributions. Depending on
+whether you care about having something functional, or
+maintainability/readability; you might assign more value to one, or
+the other, but I think both are important.
+
+So. Would you care to give a reason why my contributions don't deserve
+a copyright?
+
+-- 
+Felipe Contreras
