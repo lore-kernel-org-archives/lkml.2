@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757493Ab0GGRBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 13:01:24 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:52538 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754109Ab0GGRBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 13:01:08 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:from:to:cc:in-reply-to:references:content-type:
-	organization:date:message-id:mime-version:x-mailer:
-	content-transfer-encoding:x-system-of-record;
-	b=YMyuO5wWVtgUgbW40we4A4icmYb2pAg3heHddY66U9rZIIOb1f7so0xKIXlUBKBKt
-	0Vr8PYoN2YY3HFDwjRzPQ==
-Subject: Re: [patch 29/52] fs: icache lock i_count
-From: Frank Mayhar <fmayhar@google.com>
-To: Theodore Tso <tytso@mit.edu>
-Cc: Nick Piggin <npiggin@suse.de>, Dave Chinner <david@fromorbit.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       John Stultz <johnstul@us.ibm.com>
-In-Reply-To: <48F48148-9909-47D0-A850-04B22403C006@mit.edu>
-References: <20100624030212.676457061@suse.de>
-	 <20100624030730.245992858@suse.de> <20100630072702.GF24712@dastard>
-	 <20100630120502.GB21358@laptop>
-	 <20100702190355.2b3fe6d2.akpm@linux-foundation.org>
-	 <20100703034123.GE11732@laptop>
-	 <20100702213149.f0ca2f72.akpm@linux-foundation.org>
-	 <20100703050652.GF11732@laptop> <20100705224106.GZ24712@dastard>
-	 <20100706043439.GH11732@laptop>
-	 <48F48148-9909-47D0-A850-04B22403C006@mit.edu>
-Content-Type: text/plain
-Organization: Google, Inc.
-Date: Wed, 07 Jul 2010 10:00:15 -0700
-Message-Id: <1278522015.28816.6.camel@bobble.smo.corp.google.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+	id S1757480Ab0GGRDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 13:03:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59184 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755744Ab0GGRDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 13:03:07 -0400
+Date: Thu, 8 Jul 2010 03:03:03 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
+       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V14 05/11] vfs: Support null pathname in readlink
+Message-ID: <20100707170303.GD9263@laptop>
+References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1276621981-2774-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20100707152706.GT11732@laptop>
+ <87aaq3fe2b.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87aaq3fe2b.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-06 at 06:38 -0400, Theodore Tso wrote:
-> A lot of the text in this mail thread, including your discussion of the new
-> locking hierarchy, and why things are the way they are, would be good
-> fodder for a new documentation file.   And if you don't want to rename
-> i_lock, because no better name can be found, we should at least
-> document that starting as of 2.6.35/36 the meaning of i_lock changed.
+On Wed, Jul 07, 2010 at 10:02:12PM +0530, Aneesh Kumar K. V wrote:
+> On Thu, 8 Jul 2010 01:27:06 +1000, Nick Piggin <npiggin@suse.de> wrote:
+> > This (and all the others) is really ugly overloading of syscall
+> > arguments IMO, and the changelog is seriously lacking for such
+> > changes.
+> 
+> Initially we had  freadlink
+> 
+> http://lkml.org/lkml/2010/5/12/222
+> 
+> We updated the patches to use the existing readlinkat interface because
+> utimensat(2) already exposed a similar interface. So it should be ok to
+> expect that other *at call behaved in a similar way ?
 
-Actually I like the idea of renaming i_lock.  It adds a bit of code
-churn but renaming it to more clearly reflect its function makes sense
-to me and might catch uses of it that might have been missed earlier.
--- 
-Frank Mayhar <fmayhar@google.com>
-Google, Inc.
+I'm not sure whether it's OK or not. Probably is, it is a slight API
+change though, that should at least be noted in the changelog.
+
+
+> > This also changes the the syscall API of existing calls; from reading
+> > the path at NULL, to switching to a completely different syscall.
+> > Perhaps you're assuming nobody relies on SIGSEGV / mmapped NULL address
+> > there, but even then you surely need to document the changed semantics
+> > somewhere (and document the new syscall semantics properly).
+> 
+> 
+> Yes this would need a documentation update. But i guess since we already
+> have utimensat(2) behaving similarly we are ok to extent readlinkat,
+> linkat and faccessat on similar lines ?
+
+At least there is precedent. Pretty ugly though :( Well if others
+(Christoph and Al, primarily) think it's OK then fine by me. But
+please put comments or changelog for API changes such that a man page
+writer could easily update it.
+
 
