@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab0GGNgT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 09:36:19 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:55652 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755290Ab0GGNgS (ORCPT
+	id S1755930Ab0GGNgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 09:36:24 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:43335 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755762Ab0GGNgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 09:36:18 -0400
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: miklos@szeredi.hu, neilb@suse.de, david@fromorbit.com,
-       aneesh.kumar@linux.vnet.ibm.com, hch@infradead.org,
-       viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
-       serue@us.ibm.com, hooanon05@yahoo.co.jp, linux-fsdevel@vger.kernel.org,
-       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-In-reply-to: <20100707131721.GB19872@fieldses.org> (bfields@fieldses.org)
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
- syscalls
-References: <20100702064108.64034561@notabene.brown>
- <87iq4y29a6.fsf@linux.vnet.ibm.com>
- <20100706161002.GD7387@fieldses.org>
- <87eifgfsez.fsf@linux.vnet.ibm.com>
- <20100706232351.GD25018@dastard>
- <20100707093629.10c2feab@notabene.brown>
- <20100707021150.GF25018@dastard>
- <20100707125726.3695587a@notabene.brown>
- <20100707125701.GA19872@fieldses.org>
- <E1OWUOL-0004DM-Ul@pomaz-ex.szeredi.hu> <20100707131721.GB19872@fieldses.org>
-Message-Id: <E1OWUn0-0004JI-7F@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 07 Jul 2010 15:35:50 +0200
+	Wed, 7 Jul 2010 09:36:21 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 7 Jul 2010 15:36:07 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH] firewire: cdev: fix fw_cdev_event_bus_reset emission after
+ local config ROM changes
+To: Jay Fenlason <fenlason@redhat.com>
+cc: Clemens Ladisch <clemens@ladisch.de>,
+       linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <4C347D4A.9000309@s5r6.in-berlin.de>
+Message-ID: <tkrat.46dd12a3a66c6dd7@s5r6.in-berlin.de>
+References: <20100511154924.GA11700@redhat.com> <4BEA56D2.8030902@ladisch.de>
+ <4BEA5B50.6090701@s5r6.in-berlin.de> <4C347B28.4040204@s5r6.in-berlin.de>
+ <4C347D4A.9000309@s5r6.in-berlin.de>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Jul 2010, J. Bruce Fields wrote:
-> > > If you use sys or proc, is it possible to get the uuid from a file
-> > > descriptor or pathname without races?
-> > 
-> > You can do stat/fstat to find out the device number (which is unique,
-> > but not persistent)
-> 
-> Is it really unique over time? (Can't a given st_dev value map to one
-> filesystem now, and another later?) 
+When a descriptor was added or removed to the local node's config ROM,
+userspace clients which had a local node's /dev/fw* open did not receive
+any fw_cdev_event_bus_reset for poll()/read() consumption.
 
-It's unique at a single point in time.  But if you have a reference
-(e.g. open file descriptor) on the mount then that's not a problem.
+The cause was that the core-device.c facility which re-reads the config
+ROM of the bus reset initiator node missed to call the fw_device update
+function.  The fw_units are destroyed and newly added, but their parent
+stays and needs to be updated.
 
-   fd = open(path, ...);
-   fstat(fd, &st);
-   search st.st_dev in mountinfo
-   close(fd)
+Reported-by: Jay Fenlason <fenlason@redhat.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ drivers/firewire/core-device.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-is effectively the same as an getuuid(path) syscall (lazy unmounted
-filesystems will not be found in mountinfo, but the reference is still
-there so st_dev will not be reused for other filesystems).
+Index: b/drivers/firewire/core-device.c
+===================================================================
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -1136,6 +1136,7 @@ static void fw_device_refresh(struct wor
+ 		goto give_up;
+ 	}
+ 
++	fw_device_cdev_update(device);
+ 	create_units(device);
+ 
+ 	/* Userspace may want to re-read attributes. */
 
-Thanks,
-Miklos
+-- 
+Stefan Richter
+-=====-==-=- -=== --===
+http://arcgraph.de/sr/
+
