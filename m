@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758193Ab0GGWsb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 18:48:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39436 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758062Ab0GGWsa (ORCPT
+	id S1757144Ab0GGWyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 18:54:14 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:37818 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab0GGWyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 18:48:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=cQya7uncU60mqOyts9Pa5xe0oclO1MNMyHzGoly1nBfAGO5YtjNWVAOiIky52uhY0n
-         XSm/uTGX6GutnCFTbBBaXIXWLYUyISmVzr18qyLKtvCfEb1YYmwKqckWjUzJMjpUqNwG
-         WD+Z/tsOQUkEmLHEaZH7HcTw33jVY4lmeHLf8=
+	Wed, 7 Jul 2010 18:54:13 -0400
+Date: Thu, 8 Jul 2010 00:17:17 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/7] hugetlb: add missing unlock in avoidcopy path in
+ hugetlb_cow()
+Message-ID: <20100707221717.GD3900@basil.fritz.box>
+References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1278049646-29769-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Date: Thu, 8 Jul 2010 02:48:28 +0400
-Message-ID: <AANLkTikkwvxiN1gnYtF5rhR5vW4ZZLcwneIbYGrqRTwU@mail.gmail.com>
-Subject: Kernel changelog view by categories (web-script)
-From: Igor Zhbanov <izh1979@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278049646-29769-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Fri, Jul 02, 2010 at 02:47:20PM +0900, Naoya Horiguchi wrote:
+> This patch fixes possible deadlock in hugepage lock_page()
+> by adding missing unlock_page().
+> 
+> libhugetlbfs test will hit this bug when the next patch in this
+> patchset ("hugetlb, HWPOISON: move PG_HWPoison bit check") is applied.
 
-I have written a small program that displays the Linux Kernel changelog
-in a categorized way allowing to inspect only the changes under
-the categories you are interested in. This makes reading
-a big changelog for a new kernel less difficult.
+I merged this patch into the hwpoison tree now.
 
-The program is written in PHP. You can test it here:
-http://i.clusteron.ru/clv.php
+For the other patches in the series waiting until the open issues
+are fixed.
 
-In the URL field of the form you should enter the URL of the changelog
-you want to view. E.g.
-http://www.kernel.org/pub/linux/kernel/v2.6/ChangeLog-2.6.34.1
+-Andi
 
-After the page is loaded you can fold/unfold categories by clicking
-[+] or category name.
-You need to have JavaScript enabled in your browser.
-
-The program is under GPLv2 license. So you can install it on your site.
-
-You can download the source from http://i.clusteron.ru/clv.php.txt
-ReadMe: http://i.clusteron.ru/clv_install.txt
-
-Perhaps the program could be integrated in kernel.org site.
-I think that viewing changelog by categories of changes is useful.
-
-Probably some guidelines for changelog categories naming should be implemented.
+-- 
+ak@linux.intel.com -- Speaking for myself only.
