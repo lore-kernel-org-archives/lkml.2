@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab0GGXVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:21:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59543 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756683Ab0GGXVM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:21:12 -0400
-Date: Wed, 7 Jul 2010 16:20:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: linux-next: Tree for July 7
-Message-Id: <20100707162054.c7c6b0ab.akpm@linux-foundation.org>
-In-Reply-To: <20100707165539.957e7d1c.sfr@canb.auug.org.au>
-References: <20100707165539.957e7d1c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758067Ab0GGXXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 19:23:42 -0400
+Received: from tundra.namei.org ([65.99.196.166]:50370 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756870Ab0GGXXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 19:23:41 -0400
+Date: Thu, 8 Jul 2010 09:23:23 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, "Matthew N. Dodd" <matthew.dodd@sparta.com>,
+       trond.myklebust@fys.uio.no, bfields@fieldses.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+       linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 04/10] SELinux: Add new labeling type native labels
+In-Reply-To: <1278513086-23964-5-git-send-email-dpquigl@tycho.nsa.gov>
+Message-ID: <alpine.LRH.2.00.1007080921200.14102@tundra.namei.org>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov> <1278513086-23964-5-git-send-email-dpquigl@tycho.nsa.gov>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Jul 2010 16:55:39 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Wed, 7 Jul 2010, David P. Quigley wrote:
 
-> I have created today's linux-next tree at
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).
+> There currently doesn't exist a labeling type that is adequate for use with
+> labeled NFS. Since NFS doesn't really support xattrs we can't use the use xattr
+> labeling behavior. For this we developed a new labeling type. The native
+> labeling type is used solely by NFS to ensure NFS inodes are labeled at runtime
+> by the NFS code instead of relying on the SELinux security server on the client
+> end.
 
-I'm getting a vast stream of BUG()s from the
+It would be useful to have the ability to specify labeling behavior on a 
+per-mount basis, with the default remaining as genfs.
 
-	BUG_ON(inode->i_state != (I_FREEING | I_CLEAR));
+Otherwise, this is a global policy decision which affects all NFSv4 
+mounts, right?
 
-in iput_final().
 
-After turning it into a WARN_ON():
-
-[   49.780786] inode->i_state=0x67
-[   49.780945] ------------[ cut here ]------------
-[   49.781113] WARNING: at fs/inode.c:1246 iput+0x232/0x23f()
-[   49.781279] Modules linked in: dm_mirror dm_region_hash dm_log dm_multipath dm_mod video output sbs sbshc battery ac lp parport sg ide_cd_mod cdrom option usb_wwan usbserial serio_raw floppy snd_hda_intel snd_hda_codec snd_seq_oss snd_seq_midi_event snd_seq button snd_seq_device snd_pcm_oss snd_mixer_oss snd_pcm snd_timer i2c_i801 i2c_core snd soundcore snd_page_alloc pcspkr shpchp ehci_hcd ohci_hcd uhci_hcd
-[   49.783960] Pid: 2418, comm: mount Tainted: G        W   2.6.35-rc4 #3
-[   49.784127] Call Trace:
-[   49.784288]  [<ffffffff810cec31>] ? iput+0x1fe/0x23f
-[   49.784454]  [<ffffffff810cec65>] ? iput+0x232/0x23f
-[   49.784623]  [<ffffffff81036283>] warn_slowpath_common+0x7e/0x97
-[   49.784790]  [<ffffffff810362b1>] warn_slowpath_null+0x15/0x17
-[   49.784958]  [<ffffffff810cec65>] iput+0x232/0x23f
-[   49.785134]  [<ffffffff810c59a5>] do_unlinkat+0x104/0x15a
-[   49.785301]  [<ffffffff81002a1c>] ? sysret_check+0x27/0x62
-[   49.785470]  [<ffffffff8137518b>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   49.785639]  [<ffffffff810c5a0c>] sys_unlink+0x11/0x13
-[   49.785806]  [<ffffffff810029eb>] system_call_fastpath+0x16/0x1b
-[   49.785973] ---[ end trace 6458c1d95dac3fde ]---
-
-So I_DIRTY_SYNC, I_DIRTY_DATASYNC and I_DIRTY_PAGES are set.
-
-Config: http://userweb.kernel.org/~akpm/stuff/config-akpm2.txt
+-- 
+James Morris
+<jmorris@namei.org>
