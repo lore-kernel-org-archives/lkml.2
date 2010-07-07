@@ -1,122 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab0GGGrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 02:47:08 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:37365 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab0GGGrG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 02:47:06 -0400
-Date: Wed, 7 Jul 2010 15:45:39 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/7] hugetlb: hugepage migration core
-Message-ID: <20100707064538.GC21962@spritzera.linux.bs1.fc.nec.co.jp>
-References: <1278049646-29769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1278049646-29769-7-git-send-email-n-horiguchi@ah.jp.nec.com>
- <alpine.DEB.2.00.1007061057230.4938@router.home>
+	id S1753148Ab0GGGx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 02:53:29 -0400
+Received: from koto.vergenet.net ([210.128.90.7]:50245 "EHLO koto.vergenet.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752173Ab0GGGx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 02:53:27 -0400
+Date: Wed, 7 Jul 2010 15:53:24 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Patrick McHardy <kaber@trash.net>
+Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+       netfilter-devel@vger.kernel.org,
+       Malcolm Turnbull <malcolm@loadbalancer.org>,
+       Wensong Zhang <wensong@linux-vs.org>,
+       Julius Volz <julius.volz@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
+Subject: Re: [patch v2.3 3/4] IPVS: make FTP work with full NAT support
+Message-ID: <20100707065324.GC20424@verge.net.au>
+References: <20100704113246.562399500@vergenet.net>
+ <20100704114808.932594876@vergenet.net>
+ <4C3316F0.2030807@trash.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1007061057230.4938@router.home>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4C3316F0.2030807@trash.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 06, 2010 at 11:00:27AM -0500, Christoph Lameter wrote:
-> On Fri, 2 Jul 2010, Naoya Horiguchi wrote:
+On Tue, Jul 06, 2010 at 01:43:44PM +0200, Patrick McHardy wrote:
+> Simon Horman wrote:
+> >@@ -219,19 +358,23 @@ static int ip_vs_ftp_out(struct ip_vs_ap
+> > 		buf_len = strlen(buf);
+> >+		ct = nf_ct_get(skb, &ctinfo);
+> >+		ret = nf_nat_mangle_tcp_packet(skb,
+> >+					       ct,
+> >+					       ctinfo,
+> >+					       start-data,
+> >+					       end-start,
+> >+					       buf,
+> >+					       buf_len);
+> >+
+> >+		if (ct && ct != &nf_conntrack_untracked)
+> This does not make sense, you're already using the conntrack above
+> in the call to nf_nat_mangle_tcp_packet(), so the check should
+> probably happen before that. You also should be checking the
+> return value of nf_nat_mangle_tcp_packet() before setting up the
+> expectation.
 > 
-> > --- v2.6.35-rc3-hwpoison/mm/migrate.c
-> > +++ v2.6.35-rc3-hwpoison/mm/migrate.c
-> > @@ -32,6 +32,7 @@
-> >  #include <linux/security.h>
-> >  #include <linux/memcontrol.h>
-> >  #include <linux/syscalls.h>
-> > +#include <linux/hugetlb.h>
-> >  #include <linux/gfp.h>
-> >
-> >  #include "internal.h"
-> > @@ -74,6 +75,8 @@ void putback_lru_pages(struct list_head *l)
-> >  	struct page *page2;
-> >
-> >  	list_for_each_entry_safe(page, page2, l, lru) {
-> > +		if (PageHuge(page))
-> > +			break;
-> >  		list_del(&page->lru);
-> 
-> Argh. Hugepages in putpack_lru_pages()? Huge pages are not on the lru.
-> Come up with something cleaner here.
+> >+			ip_vs_expect_related(skb, ct, n_cp,
+> >+					     IPPROTO_TCP, NULL, 0);
 
-OK.
+Good point. Is this better?
 
-> > @@ -267,7 +284,14 @@ static int migrate_page_move_mapping(struct address_space *mapping,
-> >  	 * Note that anonymous pages are accounted for
-> >  	 * via NR_FILE_PAGES and NR_ANON_PAGES if they
-> >  	 * are mapped to swap space.
-> > +	 *
-> > +	 * Not account hugepage here for now because hugepage has
-> > +	 * separate accounting rule.
-> >  	 */
-> > +	if (PageHuge(newpage)) {
-> > +		spin_unlock_irq(&mapping->tree_lock);
-> > +		return 0;
-> > +	}
-> >  	__dec_zone_page_state(page, NR_FILE_PAGES);
-> >  	__inc_zone_page_state(newpage, NR_FILE_PAGES);
-> >  	if (PageSwapBacked(page)) {
-> 
-> This looks wrong here. Too many special casing added to basic migration
-> functionality.
+		ct = nf_ct_get(skb, &ctinfo);
+		if (ct && !nf_ct_is_untracked()) {
+			ret = nf_nat_mangle_tcp_packet(skb, ct, ctinfo,
+						       start-data, end-start,
+						       buf, buf_len);
+			if (ret)
+				ip_vs_expect_related(skb, ct, n_cp,
+						     IPPROTO_TCP, NULL, 0);
+		}
 
-Agreed.
-As I replied in another email, I'll move to migrate_huge_page() and
-avoid adding ugly changes like this.
-
-> > @@ -284,7 +308,17 @@ static int migrate_page_move_mapping(struct address_space *mapping,
-> >   */
-> >  static void migrate_page_copy(struct page *newpage, struct page *page)
-> >  {
-> > -	copy_highpage(newpage, page);
-> > +	int i;
-> > +	struct hstate *h;
-> > +	if (!PageHuge(newpage))
-> > +		copy_highpage(newpage, page);
-> > +	else {
-> > +		h = page_hstate(newpage);
-> > +		for (i = 0; i < pages_per_huge_page(h); i++) {
-> > +			cond_resched();
-> > +			copy_highpage(newpage + i, page + i);
-> > +		}
-> > +	}
-> >
-> >  	if (PageError(page))
-> >  		SetPageError(newpage);
-> 
-> Could you generalize this for migrating an order N page?
-
-Yes.
-I'll define a helper function to handle order N case.
-
-> > @@ -718,6 +752,11 @@ unlock:
-> >  	put_page(page);
-> >
-> >  	if (rc != -EAGAIN) {
-> > +		if (PageHuge(newpage)) {
-> > +			put_page(newpage);
-> > +			goto out;
-> > +		}
-> > +
-> 
-> I dont like this kind of inconsistency with the refcounting. Page
-> migration is complicated enough already.
-
-OK.
-
-Thanks,
-Naoya Horiguchi
