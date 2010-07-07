@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758156Ab0GGXnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:43:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64323 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756281Ab0GGXnK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:43:10 -0400
-Date: Wed, 7 Jul 2010 16:41:15 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Jarod Wilson <jarod@redhat.com>,
-       David =?ISO-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       linux-media@vger.kernel.org
-Subject: [PATCH -next] IR: jvc-decoder needs BITREVERSE
-Message-Id: <20100707164115.1682b172.randy.dunlap@oracle.com>
-In-Reply-To: <20100707165539.957e7d1c.sfr@canb.auug.org.au>
-References: <20100707165539.957e7d1c.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1758166Ab0GGXtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 19:49:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40868 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753392Ab0GGXtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 19:49:02 -0400
+Date: Thu, 8 Jul 2010 09:48:51 +1000
+From: Neil Brown <neilb@suse.de>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Takeo Tung <kernel@takeo.idv.tw>, Michal Marek <mmarek@suse.cz>,
+       linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+       sfr@canb.auug.org.au
+Subject: Re: [PATCH] struct io panic on raid1 - Re: block: unify flags for
+ struct bio and struct request will kernel panic
+Message-ID: <20100708094851.6dc6199d@notabene.brown>
+In-Reply-To: <20100707231732.GA30007@lst.de>
+References: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1>
+	<4C129778.7040409@suse.cz>
+	<F8C0125B8F424A279E9679EAC24AC983@TAKEOW7NB1>
+	<20100612094937.GA12455@lst.de>
+	<F2CA952B7B5A41259C5F950CA3454C3A@TAKEOW7NB1>
+	<1AEF19B8648844C983F583EEBE9C46F4@TAKEOW7NB1>
+	<20100707231732.GA30007@lst.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C3510F2.003A:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, 8 Jul 2010 01:17:32 +0200
+Christoph Hellwig <hch@lst.de> wrote:
 
-ir-jvc-decoder uses bitreverse interfaces, so it should select
-BITREVERSE.
+> On Thu, Jul 08, 2010 at 07:05:39AM +0800, Takeo Tung wrote:
+> > Dear Christoph,
+> > 
+> > I was check the patch again. I found the panic status haapen on Soft RAID 
+> > 1. I review it. found some define using bool, so some like ( x & REQ_SYNC) 
+> > only 0 or 1.
+> > so if bi_rw = rw | sync will bi_rw = rw | 0 or rw | 1. not rw | ( 1 << 
+> > __REQ_SYNC).
+> > 
+> > So I write a patch is fix it. seems normal now. could you review the patch 
+> > or any comment?
+> 
+> The patch looks correct to me, although your mailer mangled the
+> whitespace badly.  If Neil wants to keep the flag as bool we could
+> also add a !! around the bit flag checks.
 
-ir-jvc-decoder.c:(.text+0x550bc): undefined reference to `byte_rev_table'
-ir-jvc-decoder.c:(.text+0x550c6): undefined reference to `byte_rev_table'
+I think it is best to make them "unsigned long" holding the actual but.
+They were only made 'bool' because that is was bio_rw_flagged() returned.
+Converting to a bool then back to a bit-flag is unnecessary.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Jarod Wilson <jarod@redhat.com>
-Cc: David Härdeman <david@hardeman.nu>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
----
- drivers/media/IR/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-next-20100707.orig/drivers/media/IR/Kconfig
-+++ linux-next-20100707/drivers/media/IR/Kconfig
-@@ -53,6 +53,7 @@ config IR_RC6_DECODER
- config IR_JVC_DECODER
- 	tristate "Enable IR raw decoder for the JVC protocol"
- 	depends on IR_CORE
-+	select BITREVERSE
- 	default y
- 
- 	---help---
+Thanks,
+NeilBrown
