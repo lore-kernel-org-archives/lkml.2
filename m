@@ -1,282 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757675Ab0GGXFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:05:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5637 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab0GGXFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:05:46 -0400
-Date: Wed, 7 Jul 2010 19:05:21 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Jens Axboe <axboe@kernel.dk>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, Nauman Rafique <nauman@google.com>,
-       Divyesh Shah <dpshah@google.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Moyer Jeff Moyer <jmoyer@redhat.com>
-Subject: [RFC/RFT PATCH] cfq-iosched: Implement cfq group idling
-Message-ID: <20100707230521.GB7842@redhat.com>
+	id S1757615Ab0GGXIU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 19:08:20 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33442 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab0GGXIS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 19:08:18 -0400
+Date: Thu, 8 Jul 2010 00:07:10 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-arch@vger.kernel.org,
+       dwalker@codeaurora.org, mel@csn.ul.ie, linux-arm-msm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
+       linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+	memory management
+Message-ID: <20100707230710.GA31792@n2100.arm.linux.org.uk>
+References: <1278135507-20294-1-git-send-email-zpfeffer@codeaurora.org> <m14oggpepx.fsf@fess.ebiederm.org> <4C35034B.6040906@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4C35034B.6040906@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we idle on sequential queues and allow dispatch from a single
-queue and that can become a bottleneck on higher end storage. For example
-on my HP EVA, I can run multiple sequential streams and achieve top BW
-of around 350 MB/s. But with CFQ, dispatching from single queue does not
-keep the array busy (limits to 150-180 MB/s with 4 or 8 processes).
+On Wed, Jul 07, 2010 at 03:44:27PM -0700, Zach Pfeffer wrote:
+> The DMA API handles the allocation and use of DMA channels. It can
+> configure physical transfer settings, manage scatter-gather lists,
+> etc. 
 
-One approach to solve this issue is simply use slice_idle = 0. But this
-also takes away the any service differentiation between groups.
+You're confused about what the DMA API is.  You're talking about
+the DMA engine subsystem (drivers/dma) not the DMA API (see
+Documentation/DMA-API.txt, include/linux/dma-mapping.h, and
+arch/arm/include/asm/dma-mapping.h)
 
-This patch implements a new tunable "group_idle". This is similar to
-slice_idle but it forces idling at cfq group level and not at cfq queue
-level. So the idea is that one can run with slice_idle = 0 and group_idle
-= 8, so that we don't idle on individual queues in the group but idle
-on the group and still keep the IO controller working.
+> The VCM allows all device buffers to be passed between all devices in
+> the system without passing those buffers through each domain's
+> API. This means that instead of writing code to interoperate between
+> DMA engines, IOMMU mapped spaces, CPUs and physically addressed
+> devices the user can simply target a device with a buffer using the
+> same API regardless of how that device maps or otherwise accesses the
+> buffer.
 
-Not idling on individual queues in the group will dispatch requests from
-multiple queues in the group at the same time and achieve higher throughput
-on higher end storage.
+With the DMA API, if we have a SG list which refers to the physical
+pages (as a struct page, offset, length tuple), the DMA API takes
+care of dealing with CPU caches and IOMMUs to make the data in the
+buffer visible to the target device.  It provides you with a set of
+cookies referring to the SG lists, which may be coalesced if the
+IOMMU can do so.
 
-I have done some testing with multiple sequential readers using fio in two
-groups of weights 100 and 200. I run 1, 2, 4, 8 sequential readers in two
-groups.  Group names are test1 and test2 and throughputs are in KB/s.
+If you have a kernel virtual address, the DMA API has single buffer
+mapping/unmapping functions to do the same thing, and provide you
+with a cookie to pass to the device to refer to that buffer.
 
-Default CFQ
-===========
-Kernel=2.6.35-rc4-ioc+        
-DIR=/mnt/iostestmnt/fio        DEV=/dev/sdf1
-Workload=bsr      iosched=cfq     Filesz=512M bs=4K 
-group_isolation=1 slice_idle=8    group_idle=8    quantum=8    
-=============================================================
-job     Set NR  test1  test2  
----     --- --  --------------
-bsr     1   1   61629  135182 
-bsr     1   2   62073  121222 
-bsr     1   4   51386  105694 
-bsr     1   8   50883  82450  
-
-Note how total BW is really low (around 150 - 180 MB/s) while array can
-support up to 350MB/s
-
-CFQ (slice_idle = 0)
-====================
-Kernel=2.6.35-rc4-ioc+        
-DIR=/mnt/iostestmnt/fio        DEV=/dev/sdf1                 
-Workload=bsr      iosched=cfq     Filesz=512M bs=4K   
-group_isolation=1 slice_idle=0    group_idle=8    quantum=8    
-=========================================================================
-job     Set NR  test1  test2  
----     --- --  --------------
-bsr     1   1   62952  139499 
-bsr     1   2   95775  186426 
-bsr     1   4   115410 235632 
-bsr     1   8   125036 227859 
-
-With slice_idle=0, we can almost touch 350MB/s and still get the service
-differentiation.
-
-CFQ (slice_idle = 0, group_idle = 0)
-===================================
-Kernel=2.6.35-rc4-ioc+        
-DIR=/mnt/iostestmnt/fio        DEV=/dev/sdf1                 
-Workload=bsr      iosched=cfq     Filesz=512M bs=4K   
-group_isolation=1 slice_idle=0    group_idle=0    quantum=8    
-=========================================================================
-job     Set NR  test1  test2  
----     --- --  --------------
-bsr     1   1   155274 153544 
-bsr     1   2   173448 174263 
-bsr     1   4   177629 178458 
-bsr     1   8   179846 179226 
-
-With both slice_idle = 0 and group_idle = 0, it is alsmost like deadline.
-We lose service differentation but achieve high throughput.
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-
----
- block/cfq-iosched.c |   46 ++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 40 insertions(+), 6 deletions(-)
-
-Index: linux-2.6/block/cfq-iosched.c
-===================================================================
---- linux-2.6.orig/block/cfq-iosched.c
-+++ linux-2.6/block/cfq-iosched.c
-@@ -30,6 +30,7 @@ static const int cfq_slice_sync = HZ / 1
- static int cfq_slice_async = HZ / 25;
- static const int cfq_slice_async_rq = 2;
- static int cfq_slice_idle = HZ / 125;
-+static int cfq_group_idle = HZ / 125;
- static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
- static const int cfq_hist_divisor = 4;
- 
-@@ -198,6 +199,8 @@ struct cfq_group {
- 	struct hlist_node cfqd_node;
- 	atomic_t ref;
- #endif
-+	/* number of requests that are on the dispatch list or inside driver */
-+	int dispatched;
- };
- 
- /*
-@@ -271,6 +274,7 @@ struct cfq_data {
- 	unsigned int cfq_slice[2];
- 	unsigned int cfq_slice_async_rq;
- 	unsigned int cfq_slice_idle;
-+	unsigned int cfq_group_idle;
- 	unsigned int cfq_latency;
- 	unsigned int cfq_group_isolation;
- 
-@@ -1838,6 +1842,9 @@ static bool cfq_should_idle(struct cfq_d
- 	BUG_ON(!service_tree);
- 	BUG_ON(!service_tree->count);
- 
-+	if (!cfqd->cfq_slice_idle)
-+		return false;
-+
- 	/* We never do for idle class queues. */
- 	if (prio == IDLE_WORKLOAD)
- 		return false;
-@@ -1862,7 +1869,7 @@ static void cfq_arm_slice_timer(struct c
- {
- 	struct cfq_queue *cfqq = cfqd->active_queue;
- 	struct cfq_io_context *cic;
--	unsigned long sl;
-+	unsigned long sl, group_idle = 0;
- 
- 	/*
- 	 * SSD device without seek penalty, disable idling. But only do so
-@@ -1878,15 +1885,19 @@ static void cfq_arm_slice_timer(struct c
- 	/*
- 	 * idle is disabled, either manually or by past process history
- 	 */
--	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq))
--		return;
-+	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq)) {
-+		/* no queue idling. Check for group idling */
-+		if (cfqd->cfq_group_idle)
-+			group_idle = cfqd->cfq_group_idle;
-+		else
-+			return;
-+	}
- 
- 	/*
- 	 * still active requests from this queue, don't idle
- 	 */
- 	if (cfqq->dispatched)
- 		return;
--
- 	/*
- 	 * task has exited, don't wait
- 	 */
-@@ -1899,7 +1910,7 @@ static void cfq_arm_slice_timer(struct c
- 	 * slice, then don't idle. This avoids overrunning the allotted
- 	 * time slice.
- 	 */
--	if (sample_valid(cic->ttime_samples) &&
-+	if (!group_idle && sample_valid(cic->ttime_samples) &&
- 	    (cfqq->slice_end - jiffies < cic->ttime_mean)) {
- 		cfq_log_cfqq(cfqd, cfqq, "Not idling. think_time:%d",
- 				cic->ttime_mean);
-@@ -1908,11 +1919,15 @@ static void cfq_arm_slice_timer(struct c
- 
- 	cfq_mark_cfqq_wait_request(cfqq);
- 
--	sl = cfqd->cfq_slice_idle;
-+	if (group_idle)
-+		sl = cfqd->cfq_group_idle;
-+	else
-+		sl = cfqd->cfq_slice_idle;
- 
- 	mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
- 	cfq_blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
--	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
-+	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu group_idle: %d", sl,
-+			group_idle ? 1 : 0);
- }
- 
- /*
-@@ -1928,6 +1943,7 @@ static void cfq_dispatch_insert(struct r
- 	cfqq->next_rq = cfq_find_next_rq(cfqd, cfqq, rq);
- 	cfq_remove_request(rq);
- 	cfqq->dispatched++;
-+	(RQ_CFQG(rq))->dispatched++;
- 	elv_dispatch_sort(q, rq);
- 
- 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
-@@ -2231,6 +2247,16 @@ static struct cfq_queue *cfq_select_queu
- 		goto keep_queue;
- 	}
- 
-+	/*
-+	 * If group idle is enabled and there are requests dispatched from
-+	 * this group, wait for requests to complete.
-+	 */
-+	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
-+	    && cfqq->cfqg->dispatched) {
-+		cfqq = NULL;
-+		goto keep_queue;
-+	}
-+
- expire:
- 	cfq_slice_expired(cfqd, 0);
- new_queue:
-@@ -3373,6 +3399,7 @@ static void cfq_completed_request(struct
- 	WARN_ON(!cfqq->dispatched);
- 	cfqd->rq_in_driver--;
- 	cfqq->dispatched--;
-+	(RQ_CFQG(rq))->dispatched--;
- 	cfq_blkiocg_update_completion_stats(&cfqq->cfqg->blkg,
- 			rq_start_time_ns(rq), rq_io_start_time_ns(rq),
- 			rq_data_dir(rq), rq_is_sync(rq));
-@@ -3847,6 +3874,7 @@ static void *cfq_init_queue(struct reque
- 	cfqd->cfq_slice[1] = cfq_slice_sync;
- 	cfqd->cfq_slice_async_rq = cfq_slice_async_rq;
- 	cfqd->cfq_slice_idle = cfq_slice_idle;
-+	cfqd->cfq_group_idle = cfq_group_idle;
- 	cfqd->cfq_latency = 1;
- 	cfqd->cfq_group_isolation = 0;
- 	cfqd->hw_tag = -1;
-@@ -3919,6 +3947,7 @@ SHOW_FUNCTION(cfq_fifo_expire_async_show
- SHOW_FUNCTION(cfq_back_seek_max_show, cfqd->cfq_back_max, 0);
- SHOW_FUNCTION(cfq_back_seek_penalty_show, cfqd->cfq_back_penalty, 0);
- SHOW_FUNCTION(cfq_slice_idle_show, cfqd->cfq_slice_idle, 1);
-+SHOW_FUNCTION(cfq_group_idle_show, cfqd->cfq_group_idle, 1);
- SHOW_FUNCTION(cfq_slice_sync_show, cfqd->cfq_slice[1], 1);
- SHOW_FUNCTION(cfq_slice_async_show, cfqd->cfq_slice[0], 1);
- SHOW_FUNCTION(cfq_slice_async_rq_show, cfqd->cfq_slice_async_rq, 0);
-@@ -3951,6 +3980,7 @@ STORE_FUNCTION(cfq_back_seek_max_store, 
- STORE_FUNCTION(cfq_back_seek_penalty_store, &cfqd->cfq_back_penalty, 1,
- 		UINT_MAX, 0);
- STORE_FUNCTION(cfq_slice_idle_store, &cfqd->cfq_slice_idle, 0, UINT_MAX, 1);
-+STORE_FUNCTION(cfq_group_idle_store, &cfqd->cfq_group_idle, 0, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_sync_store, &cfqd->cfq_slice[1], 1, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_async_store, &cfqd->cfq_slice[0], 1, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_async_rq_store, &cfqd->cfq_slice_async_rq, 1,
-@@ -3972,6 +4002,7 @@ static struct elv_fs_entry cfq_attrs[] =
- 	CFQ_ATTR(slice_async),
- 	CFQ_ATTR(slice_async_rq),
- 	CFQ_ATTR(slice_idle),
-+	CFQ_ATTR(group_idle),
- 	CFQ_ATTR(low_latency),
- 	CFQ_ATTR(group_isolation),
- 	__ATTR_NULL
-@@ -4025,6 +4056,12 @@ static int __init cfq_init(void)
- 	if (!cfq_slice_idle)
- 		cfq_slice_idle = 1;
- 
-+#ifdef CONFIG_CFQ_GROUP_IOSCHED
-+	if (!cfq_group_idle)
-+		cfq_group_idle = 1;
-+#else
-+		cfq_group_idle = 0;
-+#endif
- 	if (cfq_slab_setup())
- 		return -ENOMEM;
- 
+These cookies are whatever the device needs to be able to access
+the buffer - for instance, if system SDRAM is located at 0xc0000000
+virtual, 0x80000000 physical and 0x40000000 as far as the DMA device
+is concerned, then the cookie for a buffer at 0xc0000000 virtual will
+be 0x40000000 and not 0x80000000.
