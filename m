@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757759Ab0GGWZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 18:25:33 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55054
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756653Ab0GGWZc (ORCPT
+	id S1757819Ab0GGWZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 18:25:55 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36663 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757169Ab0GGWZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 18:25:32 -0400
-Date: Wed, 07 Jul 2010 15:25:45 -0700 (PDT)
-Message-Id: <20100707.152545.22034265.davem@davemloft.net>
-To: sbhatewara@vmware.com
-Cc: netdev-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       pv-drivers@vmware.com, stolarchuk@vmware.com
-Subject: Re: [PATCH 2.6.35-rc1] net: vmxnet3 fixes [0/5] Spare skb to avoid
- starvation
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <89E2752CFA8EC044846EB8499819134102BD8D444B@EXCH-MBX-4.vmware.com>
-References: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain>
-	<20100707.144048.25140070.davem@davemloft.net>
-	<89E2752CFA8EC044846EB8499819134102BD8D444B@EXCH-MBX-4.vmware.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Jul 2010 18:25:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=VZOgOZhWmr53ZJPusZd2VTWjhJTDL7Fvcu5MBFo4/3vLIex8kBHByC32LTJcEMnXgH
+         5XrZOIJIOdmXl2ZIE0iros0Kw3pPM8Jphw+9wkValahRx1BUoDQxkjZD2fu3G6PqukKm
+         OwQcjvaoiVff2RMW2GIiyfFlTzywnbdAN551s=
+MIME-Version: 1.0
+Date: Wed, 7 Jul 2010 18:25:53 -0400
+Message-ID: <AANLkTimvsaoOm_QEUnvlZf2EKuiMpOr9PdQt_Ga0Z97D@mail.gmail.com>
+Subject: nic enumeration
+From: Michael Di Domenico <mdidomenico4@gmail.com>
+To: linux-net@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-Date: Wed, 7 Jul 2010 15:19:08 -0700
+I have an issue where I have an onboard NIC with effectively three
+ports, no other NIC ports/chips are in the system
 
-> The version numbers bumps although seemingly pointless (and
-> harmless), make my life easy to track and maintain the bug#-to-fix
-> mapping.
+Nic0: xx:xx:xx:00:00:02
+Nic1: xx:xx:xx:00:00:01
+IPMI: xx:xx:xx:00:00:03
 
-But in an upstream context, they make no sense at all.
+When I boot RedHat Linux, Nic1 becomes Eth0 and Nic0 becomes Eth1.
 
-Anyone running upstream, is going to run at the last version bump you
-make in the driver, so what users report to you as the driver version
-will be correct.
+I understand there is a disconnect between BIOS and linux on which
+device should get which Eth, as well as, what ensues when you have PCI
+cards along side onboard ports.
 
-Please fix this.
+What I'm curious about is how/why Linux actually decides Nic1 should be Eth0?
+
+My theory is it starts on the lowest MAC address and works up,
+depending partly on driver load order.
+
+Given the above scenario, swapping the MAC addresses between Nic1 and
+Nic0 would clear this issue.
+
+Can anyone confirm or deny this?  Or explain/point me to, how it actually works.
