@@ -1,187 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab0GGJHe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 05:07:34 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:53466 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752016Ab0GGJHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 05:07:32 -0400
-X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jul 2010 05:07:32 EDT
-Date: Wed, 7 Jul 2010 02:00:49 -0700 (PDT)
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-X-X-Sender: sbhatewara@localhost.localdomain
-To: netdev-devel@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com, stolarchuk@vmware.com
-Subject: [PATCH 2.6.35-rc1] net: vmxnet3 fixes [0/5] Spare skb to avoid
- starvation
-Message-ID: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753225Ab0GGJIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 05:08:12 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57337 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752206Ab0GGJIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 05:08:11 -0400
+Date: Wed, 7 Jul 2010 11:08:08 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild
+Message-ID: <20100707090808.GA23006@sepie.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
+my last pull request broke LOCALVERSION for O=... builds, sorry about
+that. The following commit fixes that (verified by Rafael and Stephen
+who reported it. I really hope this is the _last_ kbuild thing for
+2.6.35.
 
-skb_alloc() failure can cause the recv ring to loose all packet reception.
-Avoid this by introducing a spare buffer.
+Michal
 
-Signed-off-by: Michael Stolarchuk <stolarchuk@vmware.com>
-Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+The following changes since commit 62052be3a797f26f6f0fe30fc8d7f40ab54e08fd:
 
----
+  Merge branch 'setlocalversion-speedup' into kbuild/rc-fixes (2010-07-02 11:56:52 +0200)
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 989b742..5a50d10 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -541,7 +541,12 @@ vmxnet3_rq_alloc_rx_buf(struct vmxnet3_rx_queue *rq, u32 ring_idx,
- 							 NET_IP_ALIGN);
- 				if (unlikely(rbi->skb == NULL)) {
- 					rq->stats.rx_buf_alloc_failure++;
--					break;
-+					/* starvation prevention */
-+					if (vmxnet3_cmd_ring_desc_empty(
-+							rq->rx_ring + ring_idx))
-+						rbi->skb = rq->spare_skb;
-+					else
-+						break;
- 				}
- 				rbi->skb->dev = adapter->netdev;
- 
-@@ -611,6 +616,29 @@ vmxnet3_append_frag(struct sk_buff *skb, struct Vmxnet3_RxCompDesc *rcd,
- }
- 
- 
-+/*
-+ * Free any pages which were attached to the frags of the spare skb.  This can
-+ * happen when the spare skb is attached to the rx ring to prevent starvation,
-+ * but there was no issue with page allocation.
-+ */
-+
-+static void
-+vmxnet3_rx_spare_skb_free_frags(struct vmxnet3_adapter *adapter)
-+{
-+	struct sk_buff *skb = adapter->rx_queue.spare_skb;
-+	int i;
-+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-+		struct skb_frag_struct *frag = &skb_shinfo(skb)->frags[i];
-+		BUG_ON(frag->page != 0);
-+		put_page(frag->page);
-+		frag->page = 0;
-+		frag->size = 0;
-+	}
-+	skb_shinfo(skb)->nr_frags = 0;
-+	skb->data_len = 0;
-+}
-+
-+
- static void
- vmxnet3_map_pkt(struct sk_buff *skb, struct vmxnet3_tx_ctx *ctx,
- 		struct vmxnet3_tx_queue *tq, struct pci_dev *pdev,
-@@ -1060,8 +1088,12 @@ vmxnet3_rx_error(struct vmxnet3_rx_queue *rq, struct Vmxnet3_RxCompDesc *rcd,
- 	 * ctx->skb may be NULL if this is the first and the only one
- 	 * desc for the pkt
- 	 */
--	if (ctx->skb)
--		dev_kfree_skb_irq(ctx->skb);
-+	if (ctx->skb) {
-+		if (ctx->skb == rq->spare_skb)
-+			vmxnet3_rx_spare_skb_free_frags(adapter);
-+		else
-+			dev_kfree_skb_irq(ctx->skb);
-+	}
- 
- 	ctx->skb = NULL;
- }
-@@ -1159,6 +1191,12 @@ vmxnet3_rq_rx_complete(struct vmxnet3_rx_queue *rq,
- 
- 		skb = ctx->skb;
- 		if (rcd->eop) {
-+			if (skb == rq->spare_skb) {
-+				rq->stats.drop_total++;
-+				vmxnet3_rx_spare_skb_free_frags(adapter);
-+				ctx->skb = NULL;
-+				goto rcd_done;
-+			}
- 			skb->len += skb->data_len;
- 			skb->truesize += skb->data_len;
- 
-@@ -1244,6 +1282,14 @@ vmxnet3_rq_cleanup(struct vmxnet3_rx_queue *rq,
- 		rq->uncommitted[ring_idx] = 0;
- 	}
- 
-+	/* free starvation prevention skb if allocated */
-+	if (rq->spare_skb) {
-+		vmxnet3_rx_spare_skb_free_frags(adapter);
-+		dev_kfree_skb(rq->spare_skb);
-+		rq->spare_skb = NULL;
-+	}
-+
-+
- 	rq->comp_ring.gen = VMXNET3_INIT_GEN;
- 	rq->comp_ring.next2proc = 0;
- }
-@@ -1325,6 +1371,15 @@ vmxnet3_rq_init(struct vmxnet3_rx_queue *rq,
- 	}
- 	vmxnet3_rq_alloc_rx_buf(rq, 1, rq->rx_ring[1].size - 1, adapter);
- 
-+	/* allocate ring starvation protection */
-+	rq->spare_skb = dev_alloc_skb(PAGE_SIZE);
-+	if (rq->spare_skb == NULL) {
-+		vmxnet3_rq_cleanup(rq, adapter);
-+		return -ENOMEM;
-+	}
-+
-+
-+
- 	/* reset the comp ring */
- 	rq->comp_ring.next2proc = 0;
- 	memset(rq->comp_ring.base, 0, rq->comp_ring.size *
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index 34f392f..7985ba4 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -68,10 +68,10 @@
- /*
-  * Version numbers
-  */
--#define VMXNET3_DRIVER_VERSION_STRING   "1.0.5.0-k"
-+#define VMXNET3_DRIVER_VERSION_STRING   "1.0.6.0-k"
- 
- /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
--#define VMXNET3_DRIVER_VERSION_NUM      0x01000500
-+#define VMXNET3_DRIVER_VERSION_NUM      0x01000600
- 
- 
- /*
-@@ -149,6 +149,13 @@ vmxnet3_cmd_ring_desc_avail(struct vmxnet3_cmd_ring *ring)
- 		ring->next2comp - ring->next2fill - 1;
- }
- 
-+static inline bool
-+vmxnet3_cmd_ring_desc_empty(struct vmxnet3_cmd_ring *ring)
-+{
-+	return (ring->next2comp == ring->next2fill);
-+}
-+
-+
- struct vmxnet3_comp_ring {
- 	union Vmxnet3_GenericDesc *base;
- 	u32               size;
-@@ -266,9 +273,10 @@ struct vmxnet3_rx_queue {
- 	u32 qid2;           /* rqID in RCD for buffer from 2nd ring */
- 	u32 uncommitted[2]; /* # of buffers allocated since last RXPROD
- 				* update */
--	struct vmxnet3_rx_buf_info     *buf_info[2];
--	struct Vmxnet3_RxQueueCtrl            *shared;
-+	struct vmxnet3_rx_buf_info	*buf_info[2];
-+	struct Vmxnet3_RxQueueCtrl	*shared;
- 	struct vmxnet3_rq_driver_stats  stats;
-+	struct sk_buff			*spare_skb;      /* starvation skb */
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
- 
- #define VMXNET3_LINUX_MAX_MSIX_VECT     1
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git rc-fixes
+
+Michal Marek (1):
+      kbuild: Fix path to scripts/setlocalversion
+
+ Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
