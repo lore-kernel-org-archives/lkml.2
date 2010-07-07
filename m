@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab0GGW0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 18:26:17 -0400
-Received: from fieldses.org ([174.143.236.118]:48114 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757144Ab0GGW0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 18:26:15 -0400
-Date: Wed, 7 Jul 2010 18:25:51 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Neil Brown <neilb@suse.de>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, david@fromorbit.com,
-       aneesh.kumar@linux.vnet.ibm.com, hch@infradead.org,
-       viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
-       serue@us.ibm.com, hooanon05@yahoo.co.jp, linux-fsdevel@vger.kernel.org,
-       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
- syscalls
-Message-ID: <20100707222551.GA9878@fieldses.org>
-References: <20100706232351.GD25018@dastard>
- <20100707093629.10c2feab@notabene.brown>
- <20100707021150.GF25018@dastard>
- <20100707125726.3695587a@notabene.brown>
- <20100707125701.GA19872@fieldses.org>
- <E1OWUOL-0004DM-Ul@pomaz-ex.szeredi.hu>
- <20100707131721.GB19872@fieldses.org>
- <E1OWUn0-0004JI-7F@pomaz-ex.szeredi.hu>
- <20100707144511.GA24360@fieldses.org>
- <20100708082143.3701bfc7@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100708082143.3701bfc7@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757991Ab0GGW0s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 18:26:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58879 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757089Ab0GGW0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 18:26:47 -0400
+Date: Wed, 7 Jul 2010 15:26:40 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kevin Winchester <kjwinchester@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix uninitialized variable warning in do_one_initcall
+Message-Id: <20100707152640.586442f3.akpm@linux-foundation.org>
+In-Reply-To: <1278199588-3273-1-git-send-email-kjwinchester@gmail.com>
+References: <1278199588-3273-1-git-send-email-kjwinchester@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 08:21:43AM +1000, Neil Brown wrote:
-> On Wed, 7 Jul 2010 10:45:11 -0400
-> "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> 
-> > On Wed, Jul 07, 2010 at 03:35:50PM +0200, Miklos Szeredi wrote:
-> > > It's unique at a single point in time.  But if you have a reference
-> > > (e.g. open file descriptor) on the mount then that's not a problem.
-> > > 
-> > >    fd = open(path, ...);
-> > >    fstat(fd, &st);
-> > >    search st.st_dev in mountinfo
-> > >    close(fd)
-> > > 
-> > > is effectively the same as an getuuid(path) syscall (lazy unmounted
-> > > filesystems will not be found in mountinfo, but the reference is still
-> > > there so st_dev will not be reused for other filesystems).
-> > 
-> > OK, cool.
-> > 
-> > That still leaves the problem that there isn't always an underlying
-> > block device, and/or when there is it doesn't always uniquely specify
-> > the filesystem.
-> 
-> It doesn't matter if there is an underlying block device, or if it is shared
-> among subvolmes.
-> st_dev is *the* primary key for filesystems.  Every "struct super_block" has a
-> unquie s_dev and that is returned in st_dev.
-> 
-> For "traditional" filesystem, this is the major/minor number of the block
-> device.
-> For NFS and btrfs and other filesystems which don't have exclusive use of a
-> block device, 'set_anon_super' is used to get a unique s_dev based on a major
-> number of '0'.
+On Sat,  3 Jul 2010 20:26:28 -0300
+Kevin Winchester <kjwinchester@gmail.com> wrote:
 
-Whoops, OK, thanks for the explanation.
+> The warning is corrected by extracting the debug path out into
+> its own function.  This does en up duplicating one line of code
+> between the debug and regular code paths (i.e. the actual call
+> of the initcall function), but it seems worthwhile for the
+> cleaner build.
+> 
 
---b.
+I assume the warning was for `calltime'?  Maybe other things?  Please,
+remove all doubt and always quote the compiler output in the changelog.
 
-> So you can *always* use st_dev as an identifier for the filesystem which is
-> stable and unique as long as you hold an active reference to the filesystem
-> (open file descriptor, cwd in fs, etc).
-> 
-> If you poll(2) /proc/mounts to get notifications of changes to the mount
-> table, then it should be quite easy to cache st-dev -> uuid mappings in a
-> race-free way.
-> 
-> There might be value in getting name_to_handle to return the st_dev of the
-> target file to ensure that you haven't unexepected crossed into a different
-> filesystem.  I would prefer that to returning a uuid:  st_dev is guaranteed
-> to be unique, a uuid is only supposed to be unique (i.e. that is not
-> enforced).
-> 
-> NeilBrown
+Also please mention the compiler version - it looks like this is a new
+warning.  It's not a false positive either - the compiler doesn't know
+that initcall_debug's value never changes.
+
+The patch doesn't apply to linux-next because someone went on a great
+tromp through do_one_initcall() so could you please redo the patch
+against linux-next?
+
+I suggest that you not inline do_one_initcall_debug() - the compiler
+will do that anwyay.
+
+And if you're feeling keen, please do a separate patch which marks
+do_one_initcall() and do_one_initcall_debug() with __init_or_module -
+we don't need to leave that code in memory after bootup if
+CONFIG_MODULES=n.
+
+Thanks.
+
