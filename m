@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab0GGPR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:17:57 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43751 "EHLO mx1.suse.de"
+	id S1757000Ab0GGPSy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:18:54 -0400
+Received: from kroah.org ([198.145.64.141]:60693 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752438Ab0GGPR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 11:17:56 -0400
-Date: Thu, 8 Jul 2010 01:17:38 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
-       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 03/11] vfs: Add open by file handle support
-Message-ID: <20100707151738.GR11732@laptop>
-References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1276621981-2774-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1752438Ab0GGPSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 11:18:50 -0400
+Date: Wed, 7 Jul 2010 08:14:19 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Palash Bandyopadhyay <Palash.Bandyopadhyay@conexant.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Scott Kidder <scott.kidder11@gmail.com>
+Subject: Re: linux-next: manual merge of the staging-next tree with the
+ v4l-dvb tree
+Message-ID: <20100707151419.GC2121@kroah.com>
+References: <20100706175337.bec9305a.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1276621981-2774-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <20100706175337.bec9305a.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 10:42:53PM +0530, Aneesh Kumar K.V wrote:
-> diff --git a/fs/open.c b/fs/open.c
-> index 43ac798..1c5daa3 100644
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -1168,3 +1168,201 @@ SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
->  	return -ENOSYS;
->  }
->  #endif
-> +
-> +#ifdef CONFIG_EXPORTFS
-> +static struct vfsmount *get_vfsmount_from_fd(int fd)
-> +{
-> +	int fput_needed;
-> +	struct path *path;
-> +	struct file *filep;
-> +
-> +	if (fd == AT_FDCWD) {
-> +		struct fs_struct *fs = current->fs;
-> +		read_lock(&fs->lock);
-> +		path = &fs->pwd;
-> +		mntget(path->mnt);
-> +		read_unlock(&fs->lock);
-> +	} else {
-> +		filep = fget_light(fd, &fput_needed);
-> +		if (!filep)
-> +			return ERR_PTR(-EBADF);
-> +		path = &filep->f_path;
-> +		mntget(path->mnt);
-> +		fput_light(filep, fput_needed);
-> +	}
-> +	return path->mnt;
-> +}
+On Tue, Jul 06, 2010 at 05:53:37PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging-next tree got a conflict in
+> drivers/staging/cx25821/cx25821-audups11.c between commit
+> e302c8255a198a567dab3a4ace7bd0222a6dc037 ("V4L/DVB: cx25821: Removed
+> duplicate code and cleaned up") from the v4l-dvb tree and commit
+> 231ded903f2f30b2bcdbf6672c7197187e3bb1ee ("Staging: cx25821: added KERN_
+> facility levels") from the staging-next tree.
+> 
+> The former moved all te code in this file into other files, so I
+> effectively just dropped the usb patch by deleting this file.
 
-The bulk of this this should probably be in fs/namei.c, factored with
-path_init stuff if possible please.
+That sounds correct to me, thanks for doing this.
 
+greg k-h
