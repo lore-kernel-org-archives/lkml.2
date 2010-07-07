@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab0GGNPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 09:15:21 -0400
-Received: from fb2.tech.numericable.fr ([82.216.111.50]:41314 "EHLO
+	id S1755769Ab0GGNPl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 09:15:41 -0400
+Received: from fb2.tech.numericable.fr ([82.216.111.50]:46925 "EHLO
 	fb2.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755571Ab0GGNPN (ORCPT
+	with ESMTP id S1755711Ab0GGNPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 09:15:13 -0400
+	Wed, 7 Jul 2010 09:15:38 -0400
 From: Thibaut Girka <thib@sitedethib.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, Thibaut Girka <thib@sitedethib.com>,
-       linux-mmc@vger.kernel.org
-Subject: [PATCH 2/4] Smedia Glamo 3362 MMC/SD Card Interface driver
-Date: Wed,  7 Jul 2010 15:12:04 +0200
-Message-Id: <1278508326-7109-3-git-send-email-thib@sitedethib.com>
+       linux-fbdev@vger.kernel.org
+Subject: [PATCH 4/4] Smedia Glamo 3362 Framebuffer driver
+Date: Wed,  7 Jul 2010 15:12:06 +0200
+Message-Id: <1278508326-7109-5-git-send-email-thib@sitedethib.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1278508326-7109-1-git-send-email-thib@sitedethib.com>
 References: <1278508326-7109-1-git-send-email-thib@sitedethib.com>
@@ -24,1037 +24,1043 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thibaut Girka <thib@sitedethib.com>
 ---
- drivers/mmc/host/Kconfig     |   11 +
- drivers/mmc/host/Makefile    |    1 +
- drivers/mmc/host/glamo-mci.c |  985 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 997 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mmc/host/glamo-mci.c
+ drivers/video/Kconfig    |   17 +
+ drivers/video/Makefile   |    1 +
+ drivers/video/glamo-fb.c |  943 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fb.h       |    1 +
+ include/linux/glamofb.h  |   21 +
+ 5 files changed, 983 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/video/glamo-fb.c
+ create mode 100644 include/linux/glamofb.h
 
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index f06d06e..b28bf7c 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -365,6 +365,17 @@ config MMC_S3C_PIODMA
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 3d94a14..8f9e4e4 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -2229,6 +2229,23 @@ config FB_BROADSHEET
+ 	  and could also have been called by other names when coupled with
+ 	  a bridge adapter.
  
- endchoice
- 
-+config MMC_GLAMO
-+	tristate "Glamo S3C SD/MMC Card Interface support"
-+	depends on MFD_GLAMO && MMC && REGULATOR
-+	select CRC7
++config FB_GLAMO
++	tristate "Smedia Glamo 336x/337x framebuffer support"
++	depends on FB && MFD_GLAMO
++	select FB_CFB_FILLRECT
++	select FB_CFB_COPYAREA
++	select FB_CFB_IMAGEBLIT
 +	help
-+	  This selects a driver for the MCI interface found in
-+	  the S-Media GLAMO chip, as used in Openmoko
-+	  neo1973 GTA-02.
++	  Frame buffer driver for the LCD controller in the Smedia Glamo
++	  336x/337x.
++
++	  This driver is also available as a module ( = code which can be
++	  inserted and removed from the running kernel whenever you want). The
++	  module will be called glamofb. If you want to compile it as a module,
++	  say M here and read <file:Documentation/modules.txt>.
 +
 +	  If unsure, say N.
 +
- config MMC_SDRICOH_CS
- 	tristate "MMC/SD driver for Ricoh Bay1Controllers (EXPERIMENTAL)"
- 	depends on EXPERIMENTAL && PCI && PCMCIA
-diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index e30c2ee..9d03382 100644
---- a/drivers/mmc/host/Makefile
-+++ b/drivers/mmc/host/Makefile
-@@ -30,6 +30,7 @@ ifeq ($(CONFIG_OF),y)
- obj-$(CONFIG_MMC_SPI)		+= of_mmc_spi.o
- endif
- obj-$(CONFIG_MMC_S3C)   	+= s3cmci.o
-+obj-$(CONFIG_MMC_GLAMO)		+= glamo-mci.o
- obj-$(CONFIG_MMC_SDRICOH_CS)	+= sdricoh_cs.o
- obj-$(CONFIG_MMC_TMIO)		+= tmio_mmc.o
- obj-$(CONFIG_MMC_CB710)	+= cb710-mmc.o
-diff --git a/drivers/mmc/host/glamo-mci.c b/drivers/mmc/host/glamo-mci.c
+ source "drivers/video/omap/Kconfig"
+ source "drivers/video/omap2/Kconfig"
+ 
+diff --git a/drivers/video/Makefile b/drivers/video/Makefile
+index ddc2af2..90d949b 100644
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -131,6 +131,7 @@ obj-$(CONFIG_FB_CARMINE)          += carminefb.o
+ obj-$(CONFIG_FB_MB862XX)	  += mb862xx/
+ obj-$(CONFIG_FB_MSM)              += msm/
+ obj-$(CONFIG_FB_NUC900)           += nuc900fb.o
++obj-$(CONFIG_FB_GLAMO)            += glamo-fb.o
+ 
+ # Platform or fallback drivers go here
+ obj-$(CONFIG_FB_UVESA)            += uvesafb.o
+diff --git a/drivers/video/glamo-fb.c b/drivers/video/glamo-fb.c
 new file mode 100644
-index 0000000..f07ad09
+index 0000000..3f8ec8d
 --- /dev/null
-+++ b/drivers/mmc/host/glamo-mci.c
-@@ -0,0 +1,985 @@
-+/*
-+ *  linux/drivers/mmc/host/glamo-mmc.c - Glamo MMC driver
++++ b/drivers/video/glamo-fb.c
+@@ -0,0 +1,943 @@
++/* Smedia Glamo 336x/337x driver
 + *
-+ *  Copyright (C) 2007 Openmoko, Inc,  Andy Green <andy@openmoko.com>
-+ *  Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
-+ *  Based on S3C MMC driver that was:
-+ *  Copyright (C) 2004-2006 maintech GmbH, Thomas Kleffel <tk@maintech.de>
++ * (C) 2007-2008 by Openmoko, Inc.
++ * Author: Harald Welte <laforge@openmoko.org>
++ * All rights reserved.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
 + */
 +
 +#include <linux/module.h>
-+#include <linux/mmc/mmc.h>
-+#include <linux/mmc/sd.h>
-+#include <linux/mmc/host.h>
-+#include <linux/platform_device.h>
-+#include <linux/irq.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/mm.h>
 +#include <linux/delay.h>
-+#include <linux/interrupt.h>
-+#include <linux/workqueue.h>
-+#include <linux/crc7.h>
-+#include <linux/scatterlist.h>
++#include <linux/fb.h>
++#include <linux/console.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/spinlock.h>
 +#include <linux/io.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/err.h>
 +#include <linux/mfd/glamo.h>
 +#include <linux/mfd/glamo-core.h>
 +#include <linux/mfd/glamo-regs.h>
 +
-+struct glamo_mci_host {
-+	struct glamo_mmc_platform_data *pdata;
-+	struct platform_device	*pdev;
-+	struct glamo_core	*core;
-+	struct mmc_host		*mmc;
-+	struct resource		*mmio_mem;
-+	struct resource		*data_mem;
-+	void __iomem		*mmio_base;
-+	uint16_t __iomem	*data_base;
++#include <asm/div64.h>
 +
-+	unsigned int irq;
++#ifdef CONFIG_PM
++#include <linux/pm.h>
++#endif
 +
-+	struct regulator *regulator;
-+	struct mmc_request *mrq;
++#include <linux/glamofb.h>
 +
-+	unsigned int clk_rate;
++struct glamofb_handle {
++	struct glamo_core *core;
++	struct fb_info *fb;
++	struct device *dev;
 +
-+	unsigned short vdd;
-+	char power_mode;
++	struct resource *reg;
++	struct resource *fb_res;
++	void __iomem *base;
++	void __iomem *cursor_addr;
 +
-+	unsigned char request_counter;
++	struct glamo_fb_platform_data *mach_info;
 +
-+	struct workqueue_struct *workqueue;
-+	struct work_struct read_work;
++	int cursor_on;
++	int blank_mode;
++	int mode_set; /* 0 if the current display mode hasn't been set on the glamo */
++	int output_enabled; /* 0 if the video output is disabled */
++
++	spinlock_t lock_cmd;
++	uint32_t pseudo_pal[16];
 +};
 +
-+static void glamo_mci_send_request(struct mmc_host *mmc,
-+				   struct mmc_request *mrq);
-+static void glamo_mci_send_command(struct glamo_mci_host *host,
-+				   struct mmc_command *cmd);
++static void glamofb_program_mode(struct glamofb_handle *glamo);
 +
-+/*
-+ * Max SD clock rate
-+ *
-+ * held at /(3 + 1) due to concerns of 100R recommended series resistor
-+ * allows 16MHz @ 4-bit --> 8MBytes/sec raw
-+ *
-+ * you can override this on kernel commandline using
-+ *
-+ *   glamo_mci.sd_max_clk=10000000
-+ *
-+ * for example
-+ */
-+
-+static int sd_max_clk = 21000000;
-+module_param(sd_max_clk, int, 0644);
-+
-+/*
-+ * Slow SD clock rate
-+ *
-+ * you can override this on kernel commandline using
-+ *
-+ *   glamo_mci.sd_slow_ratio=8
-+ *
-+ * for example
-+ *
-+ * platform callback is used to decide effective clock rate, if not
-+ * defined then max is used, if defined and returns nonzero, rate is
-+ * divided by this factor
-+ */
-+
-+static int sd_slow_ratio = 8;
-+module_param(sd_slow_ratio, int, 0644);
-+
-+/*
-+ * Post-power SD clock rate
-+ *
-+ * you can override this on kernel commandline using
-+ *
-+ *   glamo_mci.sd_post_power_clock=1000000
-+ *
-+ * for example
-+ *
-+ * After changing power to card, clock is held at this rate until first bulk
-+ * transfer completes
-+ */
-+
-+static int sd_post_power_clock = 1000000;
-+module_param(sd_post_power_clock, int, 0644);
-+
-+
-+static inline void glamomci_reg_write(struct glamo_mci_host *glamo,
-+				uint16_t reg, uint16_t val)
++static void glamo_output_enable(struct glamofb_handle *gfb)
 +{
-+	writew(val, glamo->mmio_base + reg);
++	struct glamo_core *gcore = gfb->core;
++
++	if (gfb->output_enabled)
++		return;
++
++	/* enable the pixel clock if off */
++	glamo_engine_enable(gcore, GLAMO_ENGINE_LCD);
++
++	gfb->output_enabled = 1;
++	if (!gfb->mode_set)
++		glamofb_program_mode(gfb);
 +}
 +
-+static inline uint16_t glamomci_reg_read(struct glamo_mci_host *glamo,
-+				      uint16_t reg)
++static void glamo_output_disable(struct glamofb_handle *gfb)
 +{
-+	return readw(glamo->mmio_base + reg);
++	struct glamo_core *gcore = gfb->core;
++
++	if (!gfb->output_enabled)
++		return;
++
++	/* enable the pixel clock if off */
++	glamo_engine_suspend(gcore, GLAMO_ENGINE_LCD);
++
++	gfb->output_enabled = 0;
 +}
 +
-+static void glamomci_reg_set_bit_mask(struct glamo_mci_host *glamo,
-+				   uint16_t reg, uint16_t mask,
-+				   uint16_t val)
++
++static inline int glamofb_reg_read(struct glamofb_handle *glamo, uint16_t reg)
++{
++	return readw(glamo->base + reg);
++}
++
++static inline void glamofb_reg_write(struct glamofb_handle *glamo, uint16_t reg,
++	uint16_t val)
++{
++	writew(val, glamo->base + reg);
++}
++
++static const struct glamo_script glamo_regs[] = {
++	{ GLAMO_REG_LCD_MODE1, 0x0020 },
++	/* no display rotation, no hardware cursor, no dither, no gamma,
++	 * no retrace flip, vsync low-active, hsync low active,
++	 * no TVCLK, no partial display, hw dest color from fb,
++	 * no partial display mode, LCD1, software flip,  */
++	{ GLAMO_REG_LCD_MODE2, 0x9020 },
++	  /* video flip, no ptr, no ptr, dhclk off,
++	   * normal mode,  no cpuif,
++	   * res, serial msb first, single fb, no fr ctrl,
++	   * cpu if bits all zero, no crc
++	   * 0000 0000 0010  0000 */
++	{ GLAMO_REG_LCD_MODE3, 0x0b40 },
++	  /* src data rgb565, res, 18bit rgb666
++	   * 000 01 011 0100 0000 */
++	{ GLAMO_REG_LCD_POLARITY, 0x440c },
++	  /* DE high active, no cpu/lcd if, cs0 force low, a0 low active,
++	   * np cpu if, 9bit serial data, sclk rising edge latch data
++	   * 01 00 0 100 0 000 01 0 0 */
++	/* The following values assume 640*480@16bpp */
++	{ GLAMO_REG_LCD_A_BASE1, 0x0000 }, /* display A base address 15:0 */
++	{ GLAMO_REG_LCD_A_BASE2, 0x4000 }, /* display A base address 22:16 */
++	{ GLAMO_REG_LCD_CURSOR_BASE1, 0xC000 }, /* cursor base address 15:0 */
++	{ GLAMO_REG_LCD_CURSOR_BASE2, 0x0012 }, /* cursor base address 22:16 */
++	{ GLAMO_REG_LCD_COMMAND2, 0x0000 }, /* display page A */
++};
++
++static int glamofb_run_script(struct glamofb_handle *glamo,
++	const struct glamo_script *script, size_t len)
++{
++	size_t i;
++
++	for (i = 0; i < len; i++) {
++		const struct glamo_script *line = &script[i];
++
++		if (line->reg == 0xffff)
++			return 0;
++		else if (line->reg == 0xfffe)
++			msleep(line->val);
++		else
++			glamofb_reg_write(glamo, script[i].reg, script[i].val);
++	}
++
++	return 0;
++}
++
++static int glamofb_check_var(struct fb_var_screeninfo *var,
++	struct fb_info *info)
++{
++	struct glamofb_handle *glamo = info->par;
++
++	if (var->bits_per_pixel != 16)
++		var->bits_per_pixel = 16;
++
++	var->height = glamo->mach_info->height;
++	var->width = glamo->mach_info->width;
++
++	/* FIXME: set rgb positions */
++	switch (var->bits_per_pixel) {
++	case 16:
++		switch (glamofb_reg_read(glamo, GLAMO_REG_LCD_MODE3) & 0xc000) {
++		case GLAMO_LCD_SRC_RGB565:
++			var->red.offset		= 11;
++			var->green.offset	= 5;
++			var->blue.offset	= 0;
++			var->red.length		= 5;
++			var->green.length	= 6;
++			var->blue.length	= 5;
++			var->transp.length	= 0;
++			break;
++		case GLAMO_LCD_SRC_ARGB1555:
++			var->transp.offset	= 15;
++			var->red.offset		= 10;
++			var->green.offset	= 5;
++			var->blue.offset	= 0;
++			var->transp.length	= 1;
++			var->red.length		= 5;
++			var->green.length	= 5;
++			var->blue.length	= 5;
++			break;
++		case GLAMO_LCD_SRC_ARGB4444:
++			var->transp.offset	= 12;
++			var->red.offset		= 8;
++			var->green.offset	= 4;
++			var->blue.offset	= 0;
++			var->transp.length	= 4;
++			var->red.length		= 4;
++			var->green.length	= 4;
++			var->blue.length	= 4;
++			break;
++		}
++		break;
++	case 24:
++	case 32:
++	default:
++		/* The Smedia Glamo doesn't support anything but 16bit color */
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static void glamofb_reg_set_bit_mask(struct glamofb_handle *glamo, uint16_t reg,
++	uint16_t mask, uint16_t val)
 +{
 +	uint16_t tmp;
 +
 +	val &= mask;
 +
-+	tmp = glamomci_reg_read(glamo, reg);
++	tmp = glamofb_reg_read(glamo, reg);
 +	tmp &= ~mask;
 +	tmp |= val;
-+	glamomci_reg_write(glamo, reg, tmp);
++	glamofb_reg_write(glamo, reg, tmp);
 +}
 +
-+static void glamo_mci_reset(struct glamo_mci_host *host)
++#define GLAMO_LCD_WIDTH_MASK 0x03FF
++#define GLAMO_LCD_HEIGHT_MASK 0x03FF
++#define GLAMO_LCD_PITCH_MASK 0x07FE
++#define GLAMO_LCD_HV_TOTAL_MASK 0x03FF
++#define GLAMO_LCD_HV_RETR_START_MASK 0x03FF
++#define GLAMO_LCD_HV_RETR_END_MASK 0x03FF
++#define GLAMO_LCD_HV_RETR_DISP_START_MASK 0x03FF
++#define GLAMO_LCD_HV_RETR_DISP_END_MASK 0x03FF
++
++/* the caller has to ensure lock_cmd is held and we are in cmd mode */
++static void __rotate_lcd(struct glamofb_handle *glamo, uint32_t rotation)
 +{
-+	glamo_engine_reset(host->core, GLAMO_ENGINE_MMC);
++	uint32_t glamo_rot;
 +
-+	glamomci_reg_write(host, GLAMO_REG_MMC_WDATADS1,
-+			(uint16_t)(host->data_mem->start));
-+	glamomci_reg_write(host, GLAMO_REG_MMC_WDATADS2,
-+			(uint16_t)(host->data_mem->start >> 16));
-+
-+	glamomci_reg_write(host, GLAMO_REG_MMC_RDATADS1,
-+			(uint16_t)(host->data_mem->start));
-+	glamomci_reg_write(host, GLAMO_REG_MMC_RDATADS2,
-+			(uint16_t)(host->data_mem->start >> 16));
-+
-+}
-+
-+static int glamo_mci_clock_disable(struct mmc_host *mmc, int lazy)
-+{
-+	struct glamo_mci_host *host = mmc_priv(mmc);
-+	glamo_engine_suspend(host->core, GLAMO_ENGINE_MMC);
-+	return 0;
-+}
-+
-+static int glamo_mci_clock_enable(struct mmc_host *mmc)
-+{
-+	struct glamo_mci_host *host = mmc_priv(mmc);
-+	glamo_engine_enable(host->core, GLAMO_ENGINE_MMC);
-+	return 0;
-+}
-+
-+
-+#ifndef GLAMO_MCI_WORKER
-+static void do_pio_read(struct glamo_mci_host *host, struct mmc_data *data)
-+{
-+	struct sg_mapping_iter miter;
-+	uint16_t __iomem *from_ptr = host->data_base;
-+
-+	dev_dbg(&host->pdev->dev, "pio_read():\n");
-+
-+	sg_miter_start(&miter, data->sg, data->sg_len, SG_MITER_TO_SG);
-+
-+	while (sg_miter_next(&miter)) {
-+		memcpy(miter.addr, from_ptr, miter.length);
-+		from_ptr += miter.length >> 1;
-+
-+		data->bytes_xfered += miter.length;
-+	}
-+
-+	sg_miter_stop(&miter);
-+
-+	dev_dbg(&host->pdev->dev, "pio_read(): "
-+			"complete (no more data).\n");
-+}
-+#endif
-+
-+static void do_pio_write(struct glamo_mci_host *host, struct mmc_data *data)
-+{
-+	struct sg_mapping_iter miter;
-+	uint16_t __iomem *to_ptr = host->data_base;
-+
-+	dev_dbg(&host->pdev->dev, "pio_write():\n");
-+	sg_miter_start(&miter, data->sg, data->sg_len, SG_MITER_FROM_SG);
-+
-+	while (sg_miter_next(&miter)) {
-+		memcpy(to_ptr, miter.addr, miter.length);
-+		to_ptr += miter.length >> 1;
-+
-+		data->bytes_xfered += miter.length;
-+	}
-+
-+	sg_miter_stop(&miter);
-+	dev_dbg(&host->pdev->dev, "pio_write(): complete\n");
-+}
-+
-+static int glamo_mci_set_card_clock(struct glamo_mci_host *host, int freq)
-+{
-+	int real_rate = 0;
-+
-+	if (freq)
-+		real_rate = glamo_engine_reclock(host->core, GLAMO_ENGINE_MMC,
-+						 freq);
-+
-+	return real_rate;
-+}
-+
-+static int glamo_mci_wait_idle(struct glamo_mci_host *host,
-+			       unsigned long timeout)
-+{
-+	uint16_t status;
-+	do {
-+		status = glamomci_reg_read(host, GLAMO_REG_MMC_RB_STAT1);
-+	} while (!(status & GLAMO_STAT1_MMC_IDLE) &&
-+		  time_is_after_jiffies(timeout));
-+
-+	if (time_is_before_eq_jiffies(timeout)) {
-+		glamo_mci_reset(host);
-+		return -ETIMEDOUT;
-+	}
-+
-+	return 0;
-+}
-+
-+static void glamo_mci_request_done(struct glamo_mci_host *host,
-+				   struct mmc_request *mrq)
-+{
-+	mmc_request_done(host->mmc, mrq);
-+}
-+
-+static irqreturn_t glamo_mci_irq(int irq, void *data)
-+{
-+	struct glamo_mci_host *host = data;
-+	struct mmc_request *mrq;
-+	struct mmc_command *cmd;
-+	uint16_t status;
-+
-+	if (!host->mrq || !host->mrq->cmd)
-+		return IRQ_HANDLED;
-+
-+	mrq = host->mrq;
-+	cmd = mrq->cmd;
-+
-+	status = glamomci_reg_read(host, GLAMO_REG_MMC_RB_STAT1);
-+	dev_dbg(&host->pdev->dev, "status = 0x%04x\n", status);
-+
-+	/* we ignore a data timeout report if we are also told the data came */
-+	if (status & GLAMO_STAT1_MMC_RB_DRDY)
-+		status &= ~GLAMO_STAT1_MMC_DTOUT;
-+
-+	if (status & (GLAMO_STAT1_MMC_RTOUT | GLAMO_STAT1_MMC_DTOUT))
-+		cmd->error = -ETIMEDOUT;
-+	else if (status & (GLAMO_STAT1_MMC_BWERR | GLAMO_STAT1_MMC_BRERR))
-+		cmd->error = -EILSEQ;
-+
-+	if (cmd->error) {
-+		dev_info(&host->pdev->dev, "Error after cmd: 0x%x\n", status);
-+		goto done;
-+	}
-+
-+	/* issue STOP if we have been given one to use */
-+	if (mrq->stop)
-+		glamo_mci_send_command(host, mrq->stop);
-+
-+	if (cmd->data->flags & MMC_DATA_READ)
-+#ifndef GLAMO_MCI_WORKER
-+		do_pio_read(host, cmd->data);
-+#else
-+		flush_workqueue(host->workqueue);
-+#endif
-+
-+	if (mrq->stop)
-+		mrq->stop->error = glamo_mci_wait_idle(host, jiffies + HZ);
-+
-+done:
-+	host->mrq = NULL;
-+	glamo_mci_request_done(host, cmd->mrq);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+#ifdef GLAMO_MCI_WORKER
-+static void glamo_mci_read_worker(struct work_struct *work)
-+{
-+	struct glamo_mci_host *host = container_of(work, struct glamo_mci_host,
-+							read_work);
-+	struct mmc_command *cmd;
-+	uint16_t status;
-+	uint16_t blocks_ready;
-+	size_t data_read = 0;
-+	size_t data_ready;
-+	struct scatterlist *sg;
-+	uint16_t __iomem *from_ptr = host->data_base;
-+	void *sg_pointer;
-+
-+
-+	cmd = host->mrq->cmd;
-+	sg = cmd->data->sg;
-+	do {
-+		/*
-+		 * TODO: How to get rid of that?
-+		 * Maybe just drop it... In fact, it is already handled in
-+		 * the IRQ handler, maybe we should only check cmd->error.
-+		 * But the question is: what happens between the moment
-+		 * the error occurs, and the moment the IRQ handler handles it?
-+		 */
-+		status = glamomci_reg_read(host, GLAMO_REG_MMC_RB_STAT1);
-+
-+		if (status & (GLAMO_STAT1_MMC_RTOUT | GLAMO_STAT1_MMC_DTOUT))
-+			cmd->error = -ETIMEDOUT;
-+		if (status & (GLAMO_STAT1_MMC_BWERR | GLAMO_STAT1_MMC_BRERR))
-+			cmd->error = -EILSEQ;
-+		if (cmd->error) {
-+			dev_info(&host->pdev->dev, "Error after cmd: 0x%x\n",
-+				status);
-+			return;
-+		}
-+
-+		blocks_ready = glamomci_reg_read(host, GLAMO_REG_MMC_RB_BLKCNT);
-+		data_ready = blocks_ready * cmd->data->blksz;
-+
-+		if (data_ready == data_read)
-+			yield();
-+
-+		while (sg && data_read + sg->length <= data_ready) {
-+			sg_pointer = page_address(sg_page(sg)) + sg->offset;
-+			memcpy(sg_pointer, from_ptr, sg->length);
-+			from_ptr += sg->length >> 1;
-+
-+			data_read += sg->length;
-+
-+			sg = sg_next(sg);
-+		}
-+
-+	} while (sg);
-+	cmd->data->bytes_xfered = data_read;
-+}
-+#endif
-+
-+static void glamo_mci_send_command(struct glamo_mci_host *host,
-+				   struct mmc_command *cmd)
-+{
-+	uint8_t u8a[6];
-+	uint16_t fire = 0;
-+	unsigned int timeout = 1000000;
-+	uint16_t *reg_resp = (uint16_t *)(host->mmio_base + GLAMO_REG_MMC_CMD_RSP1);
-+	uint16_t status;
-+	int triggers_int = 1;
-+
-+	/* if we can't do it, reject as busy */
-+	if (!(glamomci_reg_read(host, GLAMO_REG_MMC_RB_STAT1) &
-+		 GLAMO_STAT1_MMC_IDLE)) {
-+		cmd->error = -EBUSY;
-+		return;
-+	}
-+
-+	/* create an array in wire order for CRC computation */
-+	u8a[0] = 0x40 | (cmd->opcode & 0x3f);
-+	u8a[1] = (uint8_t)(cmd->arg >> 24);
-+	u8a[2] = (uint8_t)(cmd->arg >> 16);
-+	u8a[3] = (uint8_t)(cmd->arg >> 8);
-+	u8a[4] = (uint8_t)cmd->arg;
-+	u8a[5] = (crc7(0, u8a, 5) << 1) | 0x01;
-+
-+	/* issue the wire-order array including CRC in register order */
-+	glamomci_reg_write(host, GLAMO_REG_MMC_CMD_REG1, ((u8a[4] << 8) | u8a[5]));
-+	glamomci_reg_write(host, GLAMO_REG_MMC_CMD_REG2, ((u8a[2] << 8) | u8a[3]));
-+	glamomci_reg_write(host, GLAMO_REG_MMC_CMD_REG3, ((u8a[0] << 8) | u8a[1]));
-+
-+	/* command index toggle */
-+	fire |= (host->request_counter & 1) << 12;
-+
-+	/* set type of command */
-+	switch (mmc_cmd_type(cmd)) {
-+	case MMC_CMD_BC:
-+		fire |= GLAMO_FIRE_MMC_CMDT_BNR;
++	switch (rotation) {
++	case FB_ROTATE_CW:
++		glamo_rot = GLAMO_LCD_ROT_MODE_90;
 +		break;
-+	case MMC_CMD_BCR:
-+		fire |= GLAMO_FIRE_MMC_CMDT_BR;
++	case FB_ROTATE_UD:
++		glamo_rot = GLAMO_LCD_ROT_MODE_180;
 +		break;
-+	case MMC_CMD_AC:
-+		fire |= GLAMO_FIRE_MMC_CMDT_AND;
-+		break;
-+	case MMC_CMD_ADTC:
-+		fire |= GLAMO_FIRE_MMC_CMDT_AD;
-+		break;
-+	}
-+	/*
-+	 * if it expects a response, set the type expected
-+	 *
-+	 * R1, Length  : 48bit, Normal response
-+	 * R1b, Length : 48bit, same R1, but added card busy status
-+	 * R2, Length  : 136bit (really 128 bits with CRC snipped)
-+	 * R3, Length  : 48bit (OCR register value)
-+	 * R4, Length  : 48bit, SDIO_OP_CONDITION, Reverse SDIO Card
-+	 * R5, Length  : 48bit, IO_RW_DIRECTION, Reverse SDIO Card
-+	 * R6, Length  : 48bit (RCA register)
-+	 * R7, Length  : 48bit (interface condition, VHS(voltage supplied),
-+	 *                     check pattern, CRC7)
-+	 */
-+	switch (mmc_resp_type(cmd)) {
-+	case MMC_RSP_R1: /* same index as R6 and R7 */
-+		fire |= GLAMO_FIRE_MMC_RSPT_R1;
-+		break;
-+	case MMC_RSP_R1B:
-+		fire |= GLAMO_FIRE_MMC_RSPT_R1b;
-+		break;
-+	case MMC_RSP_R2:
-+		fire |= GLAMO_FIRE_MMC_RSPT_R2;
-+		break;
-+	case MMC_RSP_R3:
-+		fire |= GLAMO_FIRE_MMC_RSPT_R3;
-+		break;
-+	/* R4 and R5 supported by chip not defined in linux/mmc/core.h (sdio) */
-+	}
-+	/*
-+	 * From the command index, set up the command class in the host ctrllr
-+	 *
-+	 * missing guys present on chip but couldn't figure out how to use yet:
-+	 *     0x0 "stream read"
-+	 *     0x9 "cancel running command"
-+	 */
-+	switch (cmd->opcode) {
-+	case MMC_READ_SINGLE_BLOCK:
-+		fire |= GLAMO_FIRE_MMC_CC_SBR; /* single block read */
-+		break;
-+	case MMC_SWITCH: /* 64 byte payload */
-+	case SD_APP_SEND_SCR:
-+	case MMC_READ_MULTIPLE_BLOCK:
-+		/* we will get an interrupt off this */
-+		if (!cmd->mrq->stop) {
-+			/* multiblock no stop */
-+			fire |= GLAMO_FIRE_MMC_CC_MBRNS;
-+		} else {
-+			/* multiblock with stop */
-+			fire |= GLAMO_FIRE_MMC_CC_MBRS;
-+		}
-+		break;
-+	case MMC_WRITE_BLOCK:
-+		fire |= GLAMO_FIRE_MMC_CC_SBW; /* single block write */
-+		break;
-+	case MMC_WRITE_MULTIPLE_BLOCK:
-+		if (cmd->mrq->stop) {
-+			/* multiblock with stop */
-+			fire |= GLAMO_FIRE_MMC_CC_MBWS;
-+		} else {
-+			/* multiblock NO stop-- 'RESERVED'? */
-+			fire |= GLAMO_FIRE_MMC_CC_MBWNS;
-+		}
-+		break;
-+	case MMC_STOP_TRANSMISSION:
-+		fire |= GLAMO_FIRE_MMC_CC_STOP; /* STOP */
-+		triggers_int = 0;
++	case FB_ROTATE_CCW:
++		glamo_rot = GLAMO_LCD_ROT_MODE_270;
 +		break;
 +	default:
-+		fire |= GLAMO_FIRE_MMC_CC_BASIC; /* "basic command" */
-+		triggers_int = 0;
++		glamo_rot = GLAMO_LCD_ROT_MODE_0;
 +		break;
 +	}
 +
-+	if (cmd->data)
-+		host->mrq = cmd->mrq;
++	glamofb_reg_set_bit_mask(glamo,
++			 GLAMO_REG_LCD_WIDTH,
++			 GLAMO_LCD_ROT_MODE_MASK,
++			 glamo_rot);
++	glamofb_reg_set_bit_mask(glamo,
++			 GLAMO_REG_LCD_MODE1,
++			 GLAMO_LCD_MODE1_ROTATE_EN,
++			 (glamo_rot != GLAMO_LCD_ROT_MODE_0) ?
++				 GLAMO_LCD_MODE1_ROTATE_EN : 0);
++}
 +
-+	/* always largest timeout */
-+	glamomci_reg_write(host, GLAMO_REG_MMC_TIMEOUT, 0xfff);
++static inline int glamofb_cmdq_empty(struct glamofb_handle *gfb)
++{
++	/* DGCMdQempty -- 1 == command queue is empty */
++	return glamofb_reg_read(gfb, GLAMO_REG_LCD_STATUS1) & (1 << 15);
++}
 +
-+	/* Generate interrupt on txfer */
-+	glamomci_reg_set_bit_mask(host, GLAMO_REG_MMC_BASIC, 0xff36,
-+			0x0800 |
-+			GLAMO_BASIC_MMC_NO_CLK_RD_WAIT |
-+			GLAMO_BASIC_MMC_EN_COMPL_INT |
-+			GLAMO_BASIC_MMC_EN_DATA_PUPS |
-+			GLAMO_BASIC_MMC_EN_CMD_PUP);
++/* call holding gfb->lock_cmd  when locking, until you unlock */
++static int glamofb_cmd_mode(struct glamofb_handle *gfb, int on)
++{
++	int timeout = 2000000;
 +
-+	/* send the command out on the wire */
-+	/* dev_info(&host->pdev->dev, "Using FIRE %04X\n", fire); */
-+	glamomci_reg_write(host, GLAMO_REG_MMC_CMD_FIRE, fire);
-+
-+	/* we are deselecting card?  because it isn't going to ack then... */
-+	if ((cmd->opcode == 7) && (cmd->arg == 0))
-+		return;
-+
-+	/*
-+	 * we must spin until response is ready or timed out
-+	 * -- we don't get interrupts unless there is a bulk rx
-+	 */
-+	do
-+		status = glamomci_reg_read(host, GLAMO_REG_MMC_RB_STAT1);
-+	while (((((status >> 15) & 1) != (host->request_counter & 1)) ||
-+		(!(status & (GLAMO_STAT1_MMC_RB_RRDY |
-+			     GLAMO_STAT1_MMC_RTOUT |
-+			     GLAMO_STAT1_MMC_DTOUT |
-+			     GLAMO_STAT1_MMC_BWERR |
-+			     GLAMO_STAT1_MMC_BRERR)))) && (timeout--));
-+
-+	if ((status & (GLAMO_STAT1_MMC_RTOUT | GLAMO_STAT1_MMC_DTOUT)) ||
-+	    (timeout == 0)) {
-+		cmd->error = -ETIMEDOUT;
-+	} else if (status & (GLAMO_STAT1_MMC_BWERR | GLAMO_STAT1_MMC_BRERR)) {
-+		cmd->error = -EILSEQ;
-+	}
-+
-+	if (cmd->flags & MMC_RSP_PRESENT) {
-+		if (cmd->flags & MMC_RSP_136) {
-+			cmd->resp[3] = readw(&reg_resp[0]) |
-+						   (readw(&reg_resp[1]) << 16);
-+			cmd->resp[2] = readw(&reg_resp[2]) |
-+						   (readw(&reg_resp[3]) << 16);
-+			cmd->resp[1] = readw(&reg_resp[4]) |
-+						   (readw(&reg_resp[5]) << 16);
-+			cmd->resp[0] = readw(&reg_resp[6]) |
-+						   (readw(&reg_resp[7]) << 16);
-+		} else {
-+			cmd->resp[0] = (readw(&reg_resp[0]) >> 8) |
-+					   (readw(&reg_resp[1]) << 8) |
-+					   (readw(&reg_resp[2]) << 24);
++	dev_dbg(gfb->dev, "glamofb_cmd_mode(gfb=%p, on=%d)\n", gfb, on);
++	if (on) {
++		dev_dbg(gfb->dev, "%s: waiting for cmdq empty: ",
++			__func__);
++		while (!glamofb_cmdq_empty(gfb) && (timeout--))
++			cpu_relax();
++		if (timeout < 0) {
++			printk(KERN_ERR "glamofb cmd_queue never got empty\n");
++			return -EIO;
 +		}
-+	}
++		dev_dbg(gfb->dev, "empty!\n");
 +
-+#ifdef GLAMO_MCI_WORKER
-+	/* We'll only get an interrupt when all data has been transfered.
-+	   By starting to copy data when it's avaiable we can increase
-+	   throughput by up to 30%. */
-+	if (cmd->data && (cmd->data->flags & MMC_DATA_READ))
-+		queue_work(host->workqueue, &host->read_work);
-+#endif
++		/* display the entire frame then switch to command */
++		glamofb_reg_write(gfb, GLAMO_REG_LCD_COMMAND1,
++			  GLAMO_LCD_CMD_TYPE_DISP |
++			  GLAMO_LCD_CMD_DATA_FIRE_VSYNC);
 +
-+}
-+
-+static int glamo_mci_prepare_pio(struct glamo_mci_host *host,
-+				 struct mmc_data *data)
-+{
-+	/* set up the block info */
-+	glamomci_reg_write(host, GLAMO_REG_MMC_DATBLKLEN, data->blksz);
-+	glamomci_reg_write(host, GLAMO_REG_MMC_DATBLKCNT, data->blocks);
-+
-+	data->bytes_xfered = 0;
-+
-+	/* if write, prep the write into the shared RAM before the command */
-+	if (data->flags & MMC_DATA_WRITE)
-+		do_pio_write(host, data);
-+
-+	dev_dbg(&host->pdev->dev, "(blksz=%d, count=%d)\n",
-+				   data->blksz, data->blocks);
-+	return 0;
-+}
-+
-+static void glamo_mci_send_request(struct mmc_host *mmc,
-+				   struct mmc_request *mrq)
-+{
-+	struct glamo_mci_host *host = mmc_priv(mmc);
-+	struct mmc_command *cmd = mrq->cmd;
-+
-+	host->request_counter++;
-+	if (cmd->data) {
-+		if (glamo_mci_prepare_pio(host, cmd->data)) {
-+			cmd->error = -EIO;
-+			cmd->data->error = -EIO;
-+			goto done;
++		/* wait until lcd idle */
++		dev_dbg(gfb->dev, "waiting for lcd idle: ");
++		timeout = 2000000;
++		while (!(glamofb_reg_read(gfb, GLAMO_REG_LCD_STATUS2) & (1 << 12)) &&
++		      (timeout--))
++			cpu_relax();
++		if (timeout < 0) {
++			printk(KERN_ERR"*************"
++				       "glamofb lcd never idle"
++				       "*************\n");
++			return -EIO;
 +		}
-+	}
 +
-+	dev_dbg(&host->pdev->dev, "cmd 0x%x, "
-+		 "arg 0x%x data=%p mrq->stop=%p flags 0x%x\n",
-+		 cmd->opcode, cmd->arg, cmd->data, cmd->mrq->stop,
-+		 cmd->flags);
++		mdelay(100);
 +
-+	glamo_mci_send_command(host, cmd);
++		dev_dbg(gfb->dev, "cmd mode entered\n");
 +
-+	/*
-+	 * if we don't have bulk data to take care of, we're done
-+	 */
-+	if (!cmd->data || cmd->error)
-+		goto done;
-+
-+	/*
-+	 * Otherwise can can use the interrupt as async completion --
-+	 * if there is read data coming, or we wait for write data to complete,
-+	 * exit without mmc_request_done() as the payload interrupt
-+	 * will service it
-+	 */
-+	dev_dbg(&host->pdev->dev, "Waiting for payload data\n");
-+	return;
-+done:
-+	if (!cmd->error)
-+		cmd->error = glamo_mci_wait_idle(host, jiffies + 2 * HZ);
-+	glamo_mci_request_done(host, mrq);
-+}
-+
-+static void glamo_mci_set_power_mode(struct glamo_mci_host *host,
-+				     unsigned char power_mode)
-+{
-+	int ret;
-+
-+	if (power_mode == host->power_mode)
-+		return;
-+
-+	switch (power_mode) {
-+	case MMC_POWER_UP:
-+		if (host->power_mode == MMC_POWER_OFF) {
-+			ret = regulator_enable(host->regulator);
-+			if (ret)
-+				dev_err(&host->pdev->dev,
-+					"Failed to enable regulator: %d\n",
-+					ret);
-+		}
-+		break;
-+	case MMC_POWER_ON:
-+		break;
-+	case MMC_POWER_OFF:
-+	default:
-+		ret = regulator_disable(host->regulator);
-+		if (ret)
-+			dev_warn(&host->pdev->dev,
-+				"Failed to disable regulator: %d\n",
-+				ret);
-+		break;
-+	}
-+	host->power_mode = power_mode;
-+}
-+
-+static void glamo_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
-+{
-+	struct glamo_mci_host *host = mmc_priv(mmc);
-+	int bus_width = 0;
-+	int rate;
-+	int sd_drive;
-+	int ret;
-+
-+	mmc_host_enable(mmc);
-+
-+	/* Set power */
-+	glamo_mci_set_power_mode(host, ios->power_mode);
-+
-+	if (host->vdd != ios->vdd) {
-+		ret = mmc_regulator_set_ocr(host->regulator, ios->vdd);
-+		if (ret)
-+			dev_err(&host->pdev->dev,
-+				"Failed to set regulator voltage: %d\n", ret);
-+		else
-+			host->vdd = ios->vdd;
-+	}
-+
-+	rate = glamo_mci_set_card_clock(host, ios->clock);
-+
-+	if ((ios->power_mode == MMC_POWER_ON) ||
-+		(ios->power_mode == MMC_POWER_UP)) {
-+		dev_info(&host->pdev->dev,
-+			"powered (vdd = %hu) clk: %dkHz div=%hu (req: %ukHz). "
-+			"Bus width=%d\n", ios->vdd,
-+			rate / 1000, 0,
-+			ios->clock / 1000, (int)ios->bus_width);
 +	} else {
-+		dev_info(&host->pdev->dev, "glamo_mci_set_ios: power down.\n");
++		/* RGB interface needs vsync/hsync */
++		if (glamofb_reg_read(gfb, GLAMO_REG_LCD_MODE3) & GLAMO_LCD_MODE3_RGB)
++			glamofb_reg_write(gfb, GLAMO_REG_LCD_COMMAND1,
++				  GLAMO_LCD_CMD_TYPE_DISP |
++				  GLAMO_LCD_CMD_DATA_DISP_SYNC);
++
++		glamofb_reg_write(gfb, GLAMO_REG_LCD_COMMAND1,
++			  GLAMO_LCD_CMD_TYPE_DISP |
++			  GLAMO_LCD_CMD_DATA_DISP_FIRE);
 +	}
 +
-+	/* set bus width */
-+	if (ios->bus_width == MMC_BUS_WIDTH_4)
-+		bus_width = GLAMO_BASIC_MMC_EN_4BIT_DATA;
-+
-+	sd_drive = (rate * 4) / host->clk_rate;
-+	if (sd_drive > 3)
-+		sd_drive = 3;
-+
-+	glamomci_reg_set_bit_mask(host, GLAMO_REG_MMC_BASIC,
-+				GLAMO_BASIC_MMC_EN_4BIT_DATA | 0xc0,
-+						   bus_width | sd_drive << 6);
-+
-+	if (host->power_mode == MMC_POWER_OFF)
-+		mmc_host_disable(host->mmc);
-+	else
-+		mmc_host_lazy_disable(host->mmc);
++	return 0;
 +}
 +
++static void glamofb_program_mode(struct glamofb_handle *gfb)
++{
++	unsigned int sync, bp, disp, fp, total;
++	unsigned long flags;
++	struct glamo_core *gcore = gfb->core;
++	struct fb_var_screeninfo *var = &gfb->fb->var;
++
++	dev_dbg(&gcore->pdev->dev,
++			  "glamofb_program_mode spin_lock_irqsave\n");
++	spin_lock_irqsave(&gfb->lock_cmd, flags);
++
++	if (glamofb_cmd_mode(gfb, 1))
++		goto out_unlock;
++
++	if (var->pixclock)
++		glamo_engine_reclock(gcore, GLAMO_ENGINE_LCD,
++				 (1000000000UL / gfb->fb->var.pixclock) * 1000);
++
++	glamofb_reg_set_bit_mask(gfb,
++			 GLAMO_REG_LCD_WIDTH,
++			 GLAMO_LCD_WIDTH_MASK,
++			 var->xres);
++	glamofb_reg_set_bit_mask(gfb,
++			 GLAMO_REG_LCD_HEIGHT,
++			 GLAMO_LCD_HEIGHT_MASK,
++			 var->yres);
++	glamofb_reg_set_bit_mask(gfb,
++			 GLAMO_REG_LCD_PITCH,
++			 GLAMO_LCD_PITCH_MASK,
++			 gfb->fb->fix.line_length);
++
++	/* honour the rotation request */
++	__rotate_lcd(gfb, var->rotate);
++
++	/* update scannout timings */
++	sync = 0;
++	bp = sync + var->hsync_len;
++	disp = bp + var->left_margin;
++	fp = disp + var->xres;
++	total = fp + var->right_margin;
++
++	glamofb_reg_set_bit_mask(gfb, GLAMO_REG_LCD_HORIZ_TOTAL,
++			 GLAMO_LCD_HV_TOTAL_MASK, total);
++	glamofb_reg_set_bit_mask(gfb, GLAMO_REG_LCD_HORIZ_RETR_START,
++			 GLAMO_LCD_HV_RETR_START_MASK, sync);
++	glamofb_reg_set_bit_mask(gfb, GLAMO_REG_LCD_HORIZ_RETR_END,
++			 GLAMO_LCD_HV_RETR_END_MASK, bp);
++	glamofb_reg_set_bit_mask(gfb, GLAMO_REG_LCD_HORIZ_DISP_START,
++			  GLAMO_LCD_HV_RETR_DISP_START_MASK, disp);
++	glamofb_reg_set_bit_mask(gfb, GLAMO_REG_LCD_HORIZ_DISP_END,
++			 GLAMO_LCD_HV_RETR_DISP_END_MASK, fp);
++
++	sync = 0;
++	bp = sync + var->vsync_len;
++	disp = bp + var->upper_margin;
++	fp = disp + var->yres;
++	total = fp + var->lower_margin;
++
++	glamofb_reg_set_bit_mask(gfb, GLAMO_REG_LCD_VERT_TOTAL,
++			 GLAMO_LCD_HV_TOTAL_MASK, total);
++	glamofb_reg_set_bit_mask(gfb, GLAMO_REG_LCD_VERT_RETR_START,
++			  GLAMO_LCD_HV_RETR_START_MASK, sync);
++	glamofb_reg_set_bit_mask(gfb, GLAMO_REG_LCD_VERT_RETR_END,
++			 GLAMO_LCD_HV_RETR_END_MASK, bp);
++	glamofb_reg_set_bit_mask(gfb, GLAMO_REG_LCD_VERT_DISP_START,
++			 GLAMO_LCD_HV_RETR_DISP_START_MASK, disp);
++	glamofb_reg_set_bit_mask(gfb, GLAMO_REG_LCD_VERT_DISP_END,
++			 GLAMO_LCD_HV_RETR_DISP_END_MASK, fp);
++
++	glamofb_cmd_mode(gfb, 0);
++
++	gfb->mode_set = 1;
++
++out_unlock:
++	dev_dbg(&gcore->pdev->dev,
++		  "glamofb_program_mode spin_unlock_irqrestore\n");
++	spin_unlock_irqrestore(&gfb->lock_cmd, flags);
++}
++
++static struct fb_videomode *glamofb_find_mode(struct fb_info *info,
++	struct fb_var_screeninfo *var)
++{
++	struct glamofb_handle *glamo = info->par;
++	struct glamo_fb_platform_data *pdata = glamo->mach_info;
++	struct fb_videomode *mode;
++	int i;
++
++	for (i = pdata->num_modes, mode = pdata->modes; i; --i, ++mode) {
++		if (mode->xres == var->xres &&
++			mode->yres == var->yres)
++			return mode;
++	}
++
++	return NULL;
++}
++
++static int glamofb_set_par(struct fb_info *info)
++{
++	struct glamofb_handle *glamo = info->par;
++	struct fb_var_screeninfo *var = &info->var;
++	struct fb_videomode *mode;
++
++	mode = glamofb_find_mode(info, var);
++	if (!mode)
++		return -EINVAL;
++
++	fb_videomode_to_var(var, mode);
++
++	info->mode = mode;
++
++	glamo->mode_set = 0;
++
++	switch (var->rotate) {
++	case FB_ROTATE_CW:
++	case FB_ROTATE_CCW:
++		info->fix.line_length = (var->yres * var->bits_per_pixel) / 8;
++		/* FIXME: Limit pixelclock */
++		var->pixclock *= 2;
++		break;
++	default:
++		info->fix.line_length = (var->xres * var->bits_per_pixel) / 8;
++		break;
++	}
++
++	if (glamo->output_enabled)
++		glamofb_program_mode(glamo);
++
++	return 0;
++}
++
++static int glamofb_blank(int blank_mode, struct fb_info *info)
++{
++	struct glamofb_handle *gfb = info->par;
++
++	dev_dbg(gfb->dev, "glamofb_blank(%u)\n", blank_mode);
++
++	switch (blank_mode) {
++	case FB_BLANK_VSYNC_SUSPEND:
++	case FB_BLANK_HSYNC_SUSPEND:
++		/* FIXME: add pdata hook/flag to indicate whether
++		 * we should already switch off pixel clock here */
++		break;
++	case FB_BLANK_POWERDOWN:
++		/* disable the pixel clock */
++		glamo_output_disable(gfb);
++		gfb->blank_mode = blank_mode;
++		break;
++	case FB_BLANK_UNBLANK:
++	case FB_BLANK_NORMAL:
++		glamo_output_enable(gfb);
++		gfb->blank_mode = blank_mode;
++		break;
++	}
++
++	/* FIXME: once we have proper clock management in glamo-core,
++	 * we can determine if other units need MCLK1 or the PLL, and
++	 * disable it if not used. */
++	return 0;
++}
++
++static inline unsigned int chan_to_field(unsigned int chan,
++	struct fb_bitfield *bf)
++{
++	chan &= 0xffff;
++	chan >>= 16 - bf->length;
++	return chan << bf->offset;
++}
++
++static int glamofb_setcolreg(unsigned regno, unsigned red, unsigned green,
++	unsigned blue, unsigned transp, struct fb_info *info)
++{
++	struct glamofb_handle *glamo = info->par;
++	unsigned int val;
++
++	switch (glamo->fb->fix.visual) {
++	case FB_VISUAL_TRUECOLOR:
++	case FB_VISUAL_DIRECTCOLOR:
++		/* true-colour, use pseuo-palette */
++
++		if (regno < 16) {
++			u32 *pal = glamo->fb->pseudo_palette;
++
++			val  = chan_to_field(red, &glamo->fb->var.red);
++			val |= chan_to_field(green, &glamo->fb->var.green);
++			val |= chan_to_field(blue, &glamo->fb->var.blue);
++
++			pal[regno] = val;
++		};
++		break;
++	default:
++		return 1; /* unknown type */
++	}
++
++	return 0;
++}
++
++static int glamofb_ioctl(struct fb_info *info, unsigned int cmd,
++	unsigned long arg)
++{
++	struct glamofb_handle *gfb = (struct glamofb_handle *)info->par;
++	struct glamo_core *gcore = gfb->core;
++	int retval = -ENOTTY;
++
++	switch (cmd) {
++	case GLAMOFB_ENGINE_ENABLE:
++		retval = glamo_engine_enable(gcore, arg);
++		break;
++	case GLAMOFB_ENGINE_DISABLE:
++		retval = glamo_engine_disable(gcore, arg);
++		break;
++	case GLAMOFB_ENGINE_RESET:
++		glamo_engine_reset(gcore, arg);
++		retval = 0;
++		break;
++	default:
++		break;
++	}
++
++	return retval;
++}
++
++
++#ifdef CONFIG_MFD_GLAMO_HWACCEL
++static inline void glamofb_vsync_wait(struct glamofb_handle *glamo, int line,
++	int size, int range)
++{
++	int count[2];
++
++	do {
++		count[0] = glamofb_reg_read(glamo, GLAMO_REG_LCD_STATUS2) & 0x3ff;
++		count[1] = glamofb_reg_read(glamo, GLAMO_REG_LCD_STATUS2) & 0x3ff;
++	} while (count[0] != count[1] ||
++			(line < count[0] + range &&
++			 size > count[0] - range) ||
++			count[0] < range * 2);
++}
 +
 +/*
-+ * no physical write protect supported by us
++ * Enable/disable the hardware cursor mode altogether
++ * (for blinking and such, use glamofb_cursor()).
 + */
-+static int glamo_mci_get_ro(struct mmc_host *mmc)
++static void glamofb_cursor_onoff(struct glamofb_handle *glamo, int on)
 +{
-+	return 0;
++	int y, size;
++
++	if (glamo->cursor_on) {
++		y = glamofb_reg_read(glamo, GLAMO_REG_LCD_CURSOR_Y_POS);
++		size = glamofb_reg_read(glamo, GLAMO_REG_LCD_CURSOR_Y_SIZE);
++
++		glamofb_vsync_wait(glamo, y, size, 30);
++	}
++
++	glamofb_reg_set_bit_mask(glamo, GLAMO_REG_LCD_MODE1,
++			GLAMO_LCD_MODE1_CURSOR_EN,
++			on ? GLAMO_LCD_MODE1_CURSOR_EN : 0);
++	glamo->cursor_on = on;
++
++	/* Hide the cursor by default */
++	glamofb_reg_write(glamo, GLAMO_REG_LCD_CURSOR_X_SIZE, 0);
 +}
 +
-+static struct mmc_host_ops glamo_mci_ops = {
-+	.enable		= glamo_mci_clock_enable,
-+	.disable	= glamo_mci_clock_disable,
-+	.request	= glamo_mci_send_request,
-+	.set_ios	= glamo_mci_set_ios,
-+	.get_ro		= glamo_mci_get_ro,
++static int glamofb_cursor(struct fb_info *info, struct fb_cursor *cursor)
++{
++	struct glamofb_handle *glamo = info->par;
++	unsigned long flags;
++
++	spin_lock_irqsave(&glamo->lock_cmd, flags);
++
++	glamofb_reg_write(glamo, GLAMO_REG_LCD_CURSOR_X_SIZE,
++			cursor->enable ? cursor->image.width : 0);
++
++	if (cursor->set & FB_CUR_SETPOS) {
++		glamofb_reg_write(glamo, GLAMO_REG_LCD_CURSOR_X_POS,
++			  cursor->image.dx);
++		glamofb_reg_write(glamo, GLAMO_REG_LCD_CURSOR_Y_POS,
++			  cursor->image.dy);
++	}
++
++	if (cursor->set & FB_CUR_SETCMAP) {
++		uint16_t fg = glamo->pseudo_pal[cursor->image.fg_color];
++		uint16_t bg = glamo->pseudo_pal[cursor->image.bg_color];
++
++		glamofb_reg_write(glamo, GLAMO_REG_LCD_CURSOR_FG_COLOR, fg);
++		glamofb_reg_write(glamo, GLAMO_REG_LCD_CURSOR_BG_COLOR, bg);
++		glamofb_reg_write(glamo, GLAMO_REG_LCD_CURSOR_DST_COLOR, fg);
++	}
++
++	if (cursor->set & FB_CUR_SETHOT)
++		glamofb_reg_write(glamo, GLAMO_REG_LCD_CURSOR_PRESET,
++				(cursor->hot.x << 8) | cursor->hot.y);
++
++	if ((cursor->set & FB_CUR_SETSIZE) ||
++	    (cursor->set & (FB_CUR_SETIMAGE | FB_CUR_SETSHAPE))) {
++		int x, y, pitch, op;
++		const uint8_t *pcol = cursor->image.data;
++		const uint8_t *pmsk = cursor->mask;
++		uint8_t __iomem *dst = glamo->cursor_addr;
++		uint8_t dcol = 0;
++		uint8_t dmsk = 0;
++		uint8_t byte = 0;
++
++		if (cursor->image.depth > 1) {
++			spin_unlock_irqrestore(&glamo->lock_cmd, flags);
++			return -EINVAL;
++		}
++
++		pitch = ((cursor->image.width + 7) >> 2) & ~1;
++		glamofb_reg_write(glamo, GLAMO_REG_LCD_CURSOR_PITCH,
++			pitch);
++		glamofb_reg_write(glamo, GLAMO_REG_LCD_CURSOR_Y_SIZE,
++			cursor->image.height);
++
++		for (y = 0; y < cursor->image.height; y++) {
++			byte = 0;
++			for (x = 0; x < cursor->image.width; x++) {
++				if ((x % 8) == 0) {
++					dcol = *pcol++;
++					dmsk = *pmsk++;
++				} else {
++					dcol >>= 1;
++					dmsk >>= 1;
++				}
++
++				if (cursor->rop == ROP_COPY)
++					op = (dmsk & 1) ?
++						(dcol & 1) ? 1 : 3 : 0;
++				else
++					op = ((dmsk & 1) << 1) |
++						((dcol & 1) << 0);
++				byte |= op << ((x & 3) << 1);
++
++				if (x % 4 == 3) {
++					writeb(byte, dst + x / 4);
++					byte = 0;
++				}
++			}
++			if (x % 4) {
++				writeb(byte, dst + x / 4);
++				byte = 0;
++			}
++
++			dst += pitch;
++		}
++	}
++
++	spin_unlock_irqrestore(&glamo->lock_cmd, flags);
++
++	return 0;
++}
++#endif
++
++static struct fb_ops glamofb_ops = {
++	.owner		= THIS_MODULE,
++	.fb_check_var	= glamofb_check_var,
++	.fb_set_par	= glamofb_set_par,
++	.fb_blank	= glamofb_blank,
++	.fb_setcolreg	= glamofb_setcolreg,
++	.fb_ioctl = glamofb_ioctl,
++#ifdef CONFIG_MFD_GLAMO_HWACCEL
++	.fb_cursor	= glamofb_cursor,
++#endif
++	.fb_fillrect	= cfb_fillrect,
++	.fb_copyarea	= cfb_copyarea,
++	.fb_imageblit	= cfb_imageblit,
 +};
 +
-+static int glamo_mci_probe(struct platform_device *pdev)
++static int glamofb_init_regs(struct glamofb_handle *glamo)
 +{
-+	struct mmc_host *mmc;
-+	struct glamo_mci_host *host;
++	struct fb_info *info = glamo->fb;
++
++	glamofb_check_var(&info->var, info);
++	glamofb_run_script(glamo, glamo_regs, ARRAY_SIZE(glamo_regs));
++	glamofb_set_par(info);
++
++	return 0;
++}
++
++static int __devinit glamofb_probe(struct platform_device *pdev)
++{
++	int rc = -EIO;
++	struct fb_info *fbinfo;
++	struct glamofb_handle *glamofb;
 +	struct glamo_core *core = dev_get_drvdata(pdev->dev.parent);
-+	int ret;
++	struct glamo_fb_platform_data *mach_info;
 +
-+	dev_info(&pdev->dev, "glamo_mci driver (C)2007 Openmoko, Inc\n");
++	printk(KERN_INFO "SMEDIA Glamo frame buffer driver (C) 2007 "
++		"Openmoko, Inc.\n");
 +
-+	mmc = mmc_alloc_host(sizeof(struct glamo_mci_host), &pdev->dev);
-+	if (!mmc) {
-+		ret = -ENOMEM;
-+		goto probe_out;
++	if (!core->pdata || !core->pdata->fb_data)
++		return -ENOENT;
++
++
++	fbinfo = framebuffer_alloc(sizeof(struct glamofb_handle), &pdev->dev);
++	if (!fbinfo)
++		return -ENOMEM;
++
++
++	glamofb = fbinfo->par;
++	glamofb->fb = fbinfo;
++	glamofb->dev = &pdev->dev;
++
++	glamofb->blank_mode = FB_BLANK_POWERDOWN;
++
++	strcpy(fbinfo->fix.id, "SMedia Glamo");
++
++	glamofb->reg = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++						    "glamo-fb-regs");
++	if (!glamofb->reg) {
++		dev_err(&pdev->dev, "platform device with no registers?\n");
++		rc = -ENOENT;
++		goto out_free;
 +	}
 +
-+	host = mmc_priv(mmc);
-+	host->mmc = mmc;
-+	host->pdev = pdev;
-+	if (core->pdata)
-+		host->pdata = core->pdata->mmc_data;
-+	host->power_mode = MMC_POWER_OFF;
-+	host->core = core;
-+	host->irq = platform_get_irq(pdev, 0);
++	glamofb->fb_res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++							"glamo-fb-mem");
++	if (!glamofb->fb_res) {
++		dev_err(&pdev->dev, "platform device with no memory ?\n");
++		rc = -ENOENT;
++		goto out_free;
++	}
 +
-+#ifdef GLAMO_MCI_WORKER
-+	INIT_WORK(&host->read_work, glamo_mci_read_worker);
-+	host->workqueue = create_singlethread_workqueue("glamo-mci-read");
++	glamofb->reg = request_mem_region(glamofb->reg->start,
++					      resource_size(glamofb->reg),
++					      pdev->name);
++	if (!glamofb->reg) {
++		dev_err(&pdev->dev, "failed to request mmio region\n");
++		goto out_free;
++	}
++
++	glamofb->fb_res = request_mem_region(glamofb->fb_res->start,
++						 resource_size(glamofb->fb_res),
++						 pdev->name);
++	if (!glamofb->fb_res) {
++		dev_err(&pdev->dev, "failed to request vram region\n");
++		goto out_release_reg;
++	}
++
++	/* we want to remap only the registers required for this core
++	 * driver. */
++	glamofb->base = ioremap_nocache(glamofb->reg->start,
++					resource_size(glamofb->reg));
++	if (!glamofb->base) {
++		dev_err(&pdev->dev, "failed to ioremap() mmio memory\n");
++		goto out_release_fb;
++	}
++
++	fbinfo->fix.smem_start = (unsigned long)glamofb->fb_res->start;
++	fbinfo->fix.smem_len = (__u32)resource_size(glamofb->fb_res);
++
++	fbinfo->screen_base = ioremap(glamofb->fb_res->start,
++					   resource_size(glamofb->fb_res));
++	if (!fbinfo->screen_base) {
++		dev_err(&pdev->dev, "failed to ioremap() vram memory\n");
++		goto out_release_fb;
++	}
++	glamofb->cursor_addr = fbinfo->screen_base + 0x12C000;
++
++	platform_set_drvdata(pdev, glamofb);
++
++	mach_info = core->pdata->fb_data;
++	glamofb->core = core;
++	glamofb->mach_info = mach_info;
++
++	fbinfo->fix.visual = FB_VISUAL_TRUECOLOR;
++	fbinfo->fix.type = FB_TYPE_PACKED_PIXELS;
++	fbinfo->fix.type_aux = 0;
++	fbinfo->fix.xpanstep = 0;
++	fbinfo->fix.ypanstep = 0;
++	fbinfo->fix.ywrapstep = 0;
++	fbinfo->fix.accel = FB_ACCEL_GLAMO;
++
++
++	fbinfo->fbops = &glamofb_ops;
++	fbinfo->flags = FBINFO_FLAG_DEFAULT;
++	fbinfo->pseudo_palette = &glamofb->pseudo_pal;
++
++	fbinfo->mode = mach_info->modes;
++	fb_videomode_to_var(&fbinfo->var, fbinfo->mode);
++	fbinfo->var.bits_per_pixel = 16;
++	fbinfo->var.nonstd = 0;
++	fbinfo->var.activate = FB_ACTIVATE_NOW;
++	fbinfo->var.height = mach_info->height;
++	fbinfo->var.width = mach_info->width;
++	fbinfo->var.accel_flags = 0;
++	fbinfo->var.vmode = FB_VMODE_NONINTERLACED;
++
++	glamo_engine_enable(core, GLAMO_ENGINE_LCD);
++	glamo_engine_reset(core, GLAMO_ENGINE_LCD);
++	glamofb->output_enabled = 1;
++	glamofb->mode_set = 1;
++
++	dev_info(&pdev->dev, "spin_lock_init\n");
++	spin_lock_init(&glamofb->lock_cmd);
++	glamofb_init_regs(glamofb);
++#ifdef CONFIG_MFD_GLAMO_HWACCEL
++	glamofb_cursor_onoff(glamofb, 1);
 +#endif
 +
-+	host->regulator = regulator_get(pdev->dev.parent, "SD_3V3");
-+	if (IS_ERR(host->regulator)) {
-+		dev_err(&pdev->dev, "Cannot proceed without regulator.\n");
-+		ret = PTR_ERR(host->regulator);
-+		goto probe_free_host;
++	fb_videomode_to_modelist(mach_info->modes, mach_info->num_modes,
++				 &fbinfo->modelist);
++
++	rc = register_framebuffer(fbinfo);
++	if (rc < 0) {
++		dev_err(&pdev->dev, "failed to register framebuffer\n");
++		goto out_unmap_fb;
 +	}
 +
-+	host->mmio_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!host->mmio_mem) {
-+		dev_err(&pdev->dev,
-+			"failed to get io memory region resouce.\n");
-+		ret = -ENOENT;
-+		goto probe_regulator_put;
-+	}
-+
-+	host->mmio_mem = request_mem_region(host->mmio_mem->start,
-+					    resource_size(host->mmio_mem),
-+					    pdev->name);
-+
-+	if (!host->mmio_mem) {
-+		dev_err(&pdev->dev, "failed to request io memory region.\n");
-+		ret = -ENOENT;
-+		goto probe_regulator_put;
-+	}
-+
-+	host->mmio_base = ioremap(host->mmio_mem->start,
-+				  resource_size(host->mmio_mem));
-+	if (!host->mmio_base) {
-+		dev_err(&pdev->dev, "failed to ioremap() io memory region.\n");
-+		ret = -EINVAL;
-+		goto probe_free_mem_region_mmio;
-+	}
-+
-+
-+	/* Get ahold of our data buffer we use for data in and out on MMC */
-+	host->data_mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	if (!host->data_mem) {
-+		dev_err(&pdev->dev,
-+			"failed to get io memory region resource.\n");
-+		ret = -ENOENT;
-+		goto probe_iounmap_mmio;
-+	}
-+
-+	host->data_mem = request_mem_region(host->data_mem->start,
-+					    resource_size(host->data_mem),
-+					    pdev->name);
-+
-+	if (!host->data_mem) {
-+		dev_err(&pdev->dev, "failed to request io memory region.\n");
-+		ret = -ENOENT;
-+		goto probe_iounmap_mmio;
-+	}
-+	host->data_base = ioremap(host->data_mem->start,
-+				  resource_size(host->data_mem));
-+
-+	if (host->data_base == 0) {
-+		dev_err(&pdev->dev, "failed to ioremap() io memory region.\n");
-+		ret = -EINVAL;
-+		goto probe_free_mem_region_data;
-+	}
-+
-+	ret = request_threaded_irq(host->irq, NULL, glamo_mci_irq, IRQF_SHARED,
-+				   pdev->name, host);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to register irq.\n");
-+		goto probe_iounmap_data;
-+	}
-+
-+
-+	host->vdd = 0;
-+	host->clk_rate = glamo_pll_rate(host->core, GLAMO_PLL1);
-+
-+	/* explain our host controller capabilities */
-+	mmc->ops	= &glamo_mci_ops;
-+	mmc->ocr_avail	= mmc_regulator_get_ocrmask(host->regulator);
-+	mmc->caps	= MMC_CAP_4_BIT_DATA |
-+			    MMC_CAP_MMC_HIGHSPEED |
-+			    MMC_CAP_SD_HIGHSPEED;
-+
-+	if (host->pdata->nonremovable)
-+		mmc->caps |= MMC_CAP_NONREMOVABLE;
-+
-+	mmc->f_min	= host->clk_rate / 256;
-+	mmc->f_max	= sd_max_clk;
-+
-+	mmc->max_blk_count = (1 << 16) - 1; /* GLAMO_REG_MMC_RB_BLKCNT */
-+	mmc->max_blk_size  = (1 << 12) - 1; /* GLAMO_REG_MMC_RB_BLKLEN */
-+	mmc->max_req_size  = resource_size(host->data_mem);
-+	mmc->max_seg_size  = mmc->max_req_size;
-+	mmc->max_phys_segs = 128;
-+	mmc->max_hw_segs   = 128;
-+
-+	if (mmc->ocr_avail < 0) {
-+		dev_warn(&pdev->dev,
-+			"Failed to get ocr list for regulator: %d.\n",
-+			mmc->ocr_avail);
-+		mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-+	}
-+
-+	platform_set_drvdata(pdev, mmc);
-+
-+	mmc->caps |= MMC_CAP_DISABLE;
-+	mmc_set_disable_delay(mmc, 1000 / 16);
-+
-+	mmc_host_enable(mmc);
-+	glamo_mci_reset(host);
-+
-+	ret = mmc_add_host(mmc);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to add mmc host.\n");
-+		goto probe_mmc_host_disable;
-+	}
-+
-+	mmc_host_lazy_disable(mmc);
++	printk(KERN_INFO "fb%d: %s frame buffer device\n",
++		fbinfo->node, fbinfo->fix.id);
 +
 +	return 0;
 +
-+probe_mmc_host_disable:
-+	mmc_host_disable(mmc);
-+	free_irq(host->irq, host);
-+probe_iounmap_data:
-+	iounmap(host->data_base);
-+probe_free_mem_region_data:
-+	release_mem_region(host->data_mem->start,
-+			   resource_size(host->data_mem));
-+probe_iounmap_mmio:
-+	iounmap(host->mmio_base);
-+probe_free_mem_region_mmio:
-+	release_mem_region(host->mmio_mem->start,
-+			   resource_size(host->mmio_mem));
-+probe_regulator_put:
-+	regulator_put(host->regulator);
-+probe_free_host:
-+#ifdef GLAMO_MCI_WORKER
-+	destroy_workqueue(host->workqueue);
-+#endif
-+	mmc_free_host(mmc);
-+probe_out:
-+	return ret;
++out_unmap_fb:
++	iounmap(fbinfo->screen_base);
++	iounmap(glamofb->base);
++out_release_fb:
++	release_mem_region(glamofb->fb_res->start,
++				resource_size(glamofb->fb_res));
++out_release_reg:
++	release_mem_region(glamofb->reg->start,
++				resource_size(glamofb->reg));
++out_free:
++	framebuffer_release(fbinfo);
++	return rc;
 +}
 +
-+static int glamo_mci_remove(struct platform_device *pdev)
++static int __devexit glamofb_remove(struct platform_device *pdev)
 +{
-+	struct mmc_host	*mmc = platform_get_drvdata(pdev);
-+	struct glamo_mci_host *host = mmc_priv(mmc);
++	struct glamofb_handle *glamofb = platform_get_drvdata(pdev);
 +
-+#ifdef GLAMO_MCI_WORKER
-+	flush_workqueue(host->workqueue);
-+	destroy_workqueue(host->workqueue);
-+#endif
++	iounmap(glamofb->fb->screen_base);
++	iounmap(glamofb->base);
 +
-+	mmc_host_enable(mmc);
-+	mmc_remove_host(mmc);
-+	mmc_host_disable(mmc);
++	release_mem_region(glamofb->fb_res->start,
++				resource_size(glamofb->fb_res));
++	release_mem_region(glamofb->reg->start, resource_size(glamofb->reg));
 +
-+	synchronize_irq(host->irq);
-+	free_irq(host->irq, host);
-+
-+	iounmap(host->mmio_base);
-+	iounmap(host->data_base);
-+	release_mem_region(host->mmio_mem->start,
-+				resource_size(host->mmio_mem));
-+	release_mem_region(host->data_mem->start,
-+				resource_size(host->data_mem));
-+
-+	regulator_put(host->regulator);
-+
-+	mmc_free_host(mmc);
++	platform_set_drvdata(pdev, NULL);
++	framebuffer_release(glamofb->fb);
 +
 +	return 0;
 +}
-+
 +
 +#ifdef CONFIG_PM
 +
-+static int glamo_mci_suspend(struct device *dev)
++static int glamofb_suspend(struct device *dev)
 +{
-+	struct mmc_host *mmc = dev_get_drvdata(dev);
-+	struct glamo_mci_host *host = mmc_priv(mmc);
-+	int ret;
++	struct glamofb_handle *gfb = dev_get_drvdata(dev);
 +
-+	disable_irq(host->irq);
++	acquire_console_sem();
++	fb_set_suspend(gfb->fb, 1);
++	release_console_sem();
 +
-+	mmc_host_enable(mmc);
-+	ret = mmc_suspend_host(mmc, PMSG_SUSPEND);
-+	mmc_host_disable(mmc);
++	/* seriously -- nobody is allowed to touch glamo memory when we
++	 * are suspended or we lock on nWAIT
++	 */
++	/* iounmap(gfb->fb->screen_base); */
 +
-+	return ret;
++	return 0;
 +}
 +
-+static int glamo_mci_resume(struct device *dev)
++static int glamofb_resume(struct device *dev)
 +{
-+	struct mmc_host *mmc = dev_get_drvdata(dev);
-+	struct glamo_mci_host *host = mmc_priv(mmc);
-+	int ret;
++	struct glamofb_handle *gfb = dev_get_drvdata(dev);
 +
-+	mmc_host_enable(mmc);
-+	glamo_mci_reset(host);
-+	mdelay(10);
++	/* OK let's allow framebuffer ops again */
++	/* gfb->fb->screen_base = ioremap(gfb->fb_res->start,
++					   resource_size(gfb->fb_res)); */
++	glamo_engine_enable(gfb->core, GLAMO_ENGINE_LCD);
++	glamo_engine_reset(gfb->core, GLAMO_ENGINE_LCD);
 +
-+	enable_irq(host->irq);
++	glamofb_init_regs(gfb);
++#ifdef CONFIG_MFD_GLAMO_HWACCEL
++	glamofb_cursor_onoff(gfb, 1);
++#endif
 +
-+	ret = mmc_resume_host(host->mmc);
++	acquire_console_sem();
++	fb_set_suspend(gfb->fb, 0);
++	release_console_sem();
 +
-+	mmc_host_lazy_disable(host->mmc);
-+
-+	return ret;
++	return 0;
 +}
 +
-+static const struct dev_pm_ops glamo_mci_pm_ops = {
-+	.suspend    = glamo_mci_suspend,
-+	.resume     = glamo_mci_resume,
-+	.freeze     = glamo_mci_suspend,
-+	.thaw       = glamo_mci_resume,
++static const struct dev_pm_ops glamofb_pm_ops = {
++	.suspend = glamofb_suspend,
++	.resume = glamofb_resume,
 +};
-+#define GLAMO_MCI_PM_OPS (&glamo_mci_pm_ops)
 +
-+#else /* CONFIG_PM */
-+#define GLAMO_MCI_PM_OPS NULL
-+#endif /* CONFIG_PM */
++#define GLAMOFB_PM_OPS (&glamofb_pm_ops)
 +
++#else
++#define GLAMOFB_PM_OPS NULL
++#endif
 +
-+static struct platform_driver glamo_mci_driver = {
-+	.probe  = glamo_mci_probe,
-+	.remove = glamo_mci_remove,
-+	.driver = {
-+		.name	= "glamo-mci",
++static struct platform_driver glamofb_driver = {
++	.probe		= glamofb_probe,
++	.remove		= __devexit_p(glamofb_remove),
++	.driver		= {
++		.name	= "glamo-fb",
 +		.owner	= THIS_MODULE,
-+		.pm	= GLAMO_MCI_PM_OPS,
++		.pm	= GLAMOFB_PM_OPS
 +	},
 +};
 +
-+static int __init glamo_mci_init(void)
++static int __init glamofb_init(void)
 +{
-+	platform_driver_register(&glamo_mci_driver);
-+	return 0;
++	return platform_driver_register(&glamofb_driver);
 +}
-+module_init(glamo_mci_init);
++module_init(glamofb_init);
 +
-+static void __exit glamo_mci_exit(void)
++static void __exit glamofb_cleanup(void)
 +{
-+	platform_driver_unregister(&glamo_mci_driver);
++	platform_driver_unregister(&glamofb_driver);
 +}
-+module_exit(glamo_mci_exit);
++module_exit(glamofb_cleanup);
 +
-+MODULE_DESCRIPTION("Glamo MMC/SD Card Interface driver");
++MODULE_AUTHOR("Harald Welte <laforge@openmoko.org>");
++MODULE_DESCRIPTION("Smedia Glamo 336x/337x framebuffer driver");
 +MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Andy Green <andy@openmoko.com>");
-+MODULE_ALIAS("platform:glamo-mci");
++MODULE_ALIAS("platform:glamo-fb");
+diff --git a/include/linux/fb.h b/include/linux/fb.h
+index 907ace3..d6a03c2 100644
+--- a/include/linux/fb.h
++++ b/include/linux/fb.h
+@@ -132,6 +132,7 @@
+ #define FB_ACCEL_NEOMAGIC_NM2360 97	/* NeoMagic NM2360              */
+ #define FB_ACCEL_NEOMAGIC_NM2380 98	/* NeoMagic NM2380              */
+ #define FB_ACCEL_PXA3XX		 99	/* PXA3xx			*/
++#define FB_ACCEL_GLAMO		100	/* Smedia Glamo 3362            */
+ 
+ #define FB_ACCEL_SAVAGE4        0x80	/* S3 Savage4                   */
+ #define FB_ACCEL_SAVAGE3D       0x81	/* S3 Savage3D                  */
+diff --git a/include/linux/glamofb.h b/include/linux/glamofb.h
+new file mode 100644
+index 0000000..896579b
+--- /dev/null
++++ b/include/linux/glamofb.h
+@@ -0,0 +1,21 @@
++#ifndef _LINUX_GLAMOFB_H
++#define _LINUX_GLAMOFB_H
++
++#ifdef __KERNEL__
++
++#include <linux/fb.h>
++
++struct glamo_fb_platform_data {
++    int width, height;
++
++    int num_modes;
++    struct fb_videomode *modes;
++};
++
++#endif
++
++#define GLAMOFB_ENGINE_ENABLE _IOW('F', 0x1, __u32)
++#define GLAMOFB_ENGINE_DISABLE _IOW('F', 0x2, __u32)
++#define GLAMOFB_ENGINE_RESET _IOW('F', 0x3, __u32)
++
++#endif
 -- 
 1.7.1
 
