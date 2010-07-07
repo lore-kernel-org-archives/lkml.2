@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab0GGO7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 10:59:14 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:48811 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756104Ab0GGO7M convert rfc822-to-8bit (ORCPT
+	id S1756339Ab0GGPBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:01:24 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19854 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142Ab0GGPBX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 10:59:12 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.0 c=1 a=oACb-Ty_HC0A:10 a=ygRHs6EKU7oA:10 a=VphdPIyG4kEA:10
- a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=pGLkceISAAAA:8
- a=q5w7pDEZZBJ0lJ9crBkA:9 a=3SjviPVbt9FhZMJEd9RsTZTuPi0A:4 a=CjuIK1q_8ugA:10
- a=MSl-tDqOz04A:10
-Subject: Re: [PATCH] Add a pair of system calls to make extended file stats available [ver #3]
+	Wed, 7 Jul 2010 11:01:23 -0400
+Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle syscalls
 Mime-Version: 1.0 (Apple Message framework v1078)
 Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <4859.1278341989@redhat.com>
-Date: Wed, 7 Jul 2010 08:57:54 -0600
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>, linux-fsdevel@vger.kernel.org,
-       linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       samba-technical@lists.samba.org, linux-ext4@vger.kernel.org,
-       linux-api@vger.kernel.org
+From: Andreas Dilger <andreas.dilger@oracle.com>
+In-Reply-To: <87eifgfsez.fsf@linux.vnet.ibm.com>
+Date: Wed, 7 Jul 2010 01:40:53 -0600
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+       hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, hooanon05@yahoo.co.jp,
+       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-Message-Id: <9A36AB6B-7EC3-4789-89CD-D00715BEF34C@dilger.ca>
-References: <AANLkTinms69HPgZF4blqr962Ami3oS9FC-txQj9P37SC@mail.gmail.com> <20100630233614.32422.97038.stgit@warthog.procyon.org.uk> <4859.1278341989@redhat.com>
-To: David Howells <dhowells@redhat.com>
+Message-Id: <2DC68584-15A8-4C48-8E65-E7EF1DCEEAD0@oracle.com>
+References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <871vbn2mk9.fsf@linux.vnet.ibm.com> <20100702064108.64034561@notabene.brown> <87iq4y29a6.fsf@linux.vnet.ibm.com> <20100706161002.GD7387@fieldses.org> <87eifgfsez.fsf@linux.vnet.ibm.com>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: Apple Mail (2.1078)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C3496A9.0084:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-07-05, at 08:59, David Howells wrote:
-> Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+On 2010-07-06, at 11:09, Aneesh Kumar K. V wrote:
+> On Tue, 6 Jul 2010 12:10:02 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+>> ... I don't understand why both need to come in the same system call.
+>> Is it purely an efficiency question?  If so, why do you expect this to
+>> be significant?
 > 
->> * Include information from the "inode_info" structure, most notably
->> i_flags, but perhaps other info as well.
+> Since we know that system wide file handle should include a file system
+> identifier and a file identifier my plan was to retrieve both in the
+> same syscall.
+
+Won't having it be in a separate system call be racy w.r.t. doing the pathname lookup twice?
+
+>> A filesystem uuid seems like a generally useful thing (maybe more so
+>> than a filehandle), so it'd seem worth figuring out how to export that
+>> separately.
+>> 
 > 
-> This thought has occurred to me, but are the contents of i_flags identical for
-> all filesystems?  Certainly, i_flags doesn't seem to match the FS_IOC_GETFLAGS
-> mask.  For example:
+> I can add a new syscall that returns 
 > 
-> 	#define	FS_SECRM_FL			0x00000001
+> struct fs_uuid {
+>       u8 fs_uuid[16];  
+> };
 > 
-> vs:
-> 
-> 	#define S_SYNC		1	/* Writes are synced at once */
-> 
-> (1) Does it make sense to rearrange the S_xxxx flags to match the numbers for
->   FS_xxxx_FL?
+> long sys_get_fs_uuid(int dfd, char *name, struct fs_uuid *fsid, int flag);
 
-I saw your patch to that effect.  I'm of mixed feelings about this, since the S_* flags have traditionally been changed on an ad-hoc basis and I don't necessarily want to let this leak into the on-disk format of these flags for ext*.
-
-One way to ensure that this holds true is to have a compile-time assertion that the respective S_* flags match FS_*_FL and EXT_*_FL.
-
-We use a macro in Lustre for compile-time assertions that depends on the detection of duplicate values in a switch() statement:
-
-/** Compile-time assertion.
-* Check an invariant described by a constant expression at compile time by
-* forcing a compiler error if it does not hold.  @cond must be a constant
-* expression as defined by the ISO C Standard:
-*
-*       6.8.4.2  The switch statement
-*       ....
-*       [#3] The expression of each case label shall be  an  integer
-*       constant   expression  and  no  two  of  the  case  constant
-*       expressions in the same switch statement shall have the same
-*       value after conversion...
-*
-*/
-#define CLASSERT(cond) do {switch(42) {case (cond): case 0: break;}} while (0)
-
-> (2) Does it make sense to do the BSD st_flags compatibility in userspace?
-> 
-> (3) Can we add a couple more flags to make Samba's life easier?  Say an
->   archived bit and a hidden bit?
-
-I wouldn't object to that.  The BSD flags indicate that the hidden bit should only affect GUI display managers, not "ls".
-
-> (4) Do I actually need to provide a mask saying what st_flags are applicable
->   to the file you've just queried?
-
-Hmm, good question.
-
-> (5) How often are these flags required?  E.g. does it make more sense to keep
->   them as an additional result, or does it make sense to stick them in the
->   kstat and xstat structs, knowing that these are allocated on the kernel
->   stack maybe as three times if an ecryptfs file?
-
-If they aren't requested by userspace, the cost is mostly irrelevant.  I think on OSX these flags are returned for every "ls" call, to mark the inodes with xattrs every time.
+While this might be useful, I think the file handle should identify the filesystem itself.
 
 Cheers, Andreas
-
-
-
-
+--
+Andreas Dilger
+Lustre Technical Lead
+Oracle Corporation Canada Inc.
 
