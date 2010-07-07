@@ -1,204 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab0GGRp6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 13:45:58 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47156 "EHLO hera.kernel.org"
+	id S1755628Ab0GGRsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 13:48:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55635 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754553Ab0GGRp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 13:45:57 -0400
-Date: Wed, 7 Jul 2010 17:45:41 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org>
-References: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/alternatives] x86, alternatives: Use 16-bit numbers for cpufeature index
-Message-ID: <tip-83a7a2ad2a9173dcabc05df0f01d1d85b7ba1c2c@git.kernel.org>
-Git-Commit-ID: 83a7a2ad2a9173dcabc05df0f01d1d85b7ba1c2c
-X-Mailer: tip-git-log-daemon
+	id S1753537Ab0GGRr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 13:47:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,554,1272870000"; 
+   d="scan'208";a="533308535"
+Message-ID: <4C34BDCD.9080607@intel.com>
+Date: Wed, 07 Jul 2010 10:47:57 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 07 Jul 2010 17:45:42 +0000 (UTC)
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	 <4C2A8879.8010000@intel.com>	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	 <4C2AC55E.3040303@intel.com>	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	 <1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>	 <1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>	 <1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>	 <1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>	 <1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>	 <AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>	 <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>	 <1278324973.16975.68.camel@localhost>	 <AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>	 <1278463901.20082.34.camel@dwillia2-linux> <1278474039.31393.8.camel@localhost>
+In-Reply-To: <1278474039.31393.8.camel@localhost>
+Content-Type: multipart/mixed;
+ boundary="------------020807060301020608080900"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  83a7a2ad2a9173dcabc05df0f01d1d85b7ba1c2c
-Gitweb:     http://git.kernel.org/tip/83a7a2ad2a9173dcabc05df0f01d1d85b7ba1c2c
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 10 Jun 2010 00:10:43 +0000
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 7 Jul 2010 10:36:28 -0700
+This is a multi-part message in MIME format.
+--------------020807060301020608080900
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-x86, alternatives: Use 16-bit numbers for cpufeature index
+On 7/6/2010 8:40 PM, David Woodhouse wrote:
+> On Tue, 2010-07-06 at 17:51 -0700, Dan Williams wrote:
+>> It should always trigger, and I have verified as much with the attached
+>> replacement patch (by forcing the error on a working system), but we run
+>> into a new problem.
+>>
+>> IOMMU: can't find DMAR for device 0000:00:0f.0
+>> Allocating domain for 0000:00:0f.0 failed
+>
+> Yeah, we're actually doing the check in the wrong place. This should
+> work better, I think.
+>
 
-We already have cpufeature indicies above 255, so use a 16-bit number
-for the alternatives index.  This consumes a padding field and so
-doesn't add any size, but it means that abusing the padding field to
-create assembly errors on overflow no longer works.  We can retain the
-test simply by redirecting it to the .discard section, however.
+Ok.
 
-[ v3: updated to include open-coded locations ]
+Chris this change will make the driver's dma mapping calls succeed which 
+means we once again need to be prepared for the case where the engine's 
+iommu is not configured correctly.  Attached is David's latest combined 
+with the driver error handling from v1.  The expectation is that this 
+reports the BIOS misconfiguration each boot and the driver fails cleanly 
+if its transactions are blocked.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-LKML-Reference: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/include/asm/alternative.h |    7 ++++---
- arch/x86/include/asm/cpufeature.h  |   14 ++++++++------
- arch/x86/kernel/entry_32.S         |    2 +-
- arch/x86/lib/clear_page_64.S       |    2 +-
- arch/x86/lib/copy_page_64.S        |    2 +-
- arch/x86/lib/memcpy_64.S           |    2 +-
- arch/x86/lib/memset_64.S           |    2 +-
- 7 files changed, 17 insertions(+), 14 deletions(-)
+Thanks for going through these iterations.
 
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index 03b6bb5..bc6abb7 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -45,10 +45,9 @@
- struct alt_instr {
- 	u8 *instr;		/* original instruction */
- 	u8 *replacement;
--	u8  cpuid;		/* cpuid bit set for replacement */
-+	u16 cpuid;		/* cpuid bit set for replacement */
- 	u8  instrlen;		/* length of original instruction */
- 	u8  replacementlen;	/* length of new instruction, <= instrlen */
--	u8  pad1;
- #ifdef CONFIG_X86_64
- 	u32 pad2;
- #endif
-@@ -86,9 +85,11 @@ static inline int alternatives_text_reserved(void *start, void *end)
-       _ASM_ALIGN "\n"							\
-       _ASM_PTR "661b\n"				/* label           */	\
-       _ASM_PTR "663f\n"				/* new instruction */	\
--      "	 .byte " __stringify(feature) "\n"	/* feature bit     */	\
-+      "	 .word " __stringify(feature) "\n"	/* feature bit     */	\
-       "	 .byte 662b-661b\n"			/* sourcelen       */	\
-       "	 .byte 664f-663f\n"			/* replacementlen  */	\
-+      ".previous\n"							\
-+      ".section .discard,\"aw\",@progbits\n"				\
-       "	 .byte 0xff + (664f-663f) - (662b-661b)\n" /* rlen <= slen */	\
-       ".previous\n"							\
-       ".section .altinstr_replacement, \"ax\"\n"			\
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 4681459..e8b8896 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -291,7 +291,7 @@ extern const char * const x86_power_flags[32];
-  * patch the target code for additional performance.
-  *
-  */
--static __always_inline __pure bool __static_cpu_has(u8 bit)
-+static __always_inline __pure bool __static_cpu_has(u16 bit)
- {
- #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
- 		asm goto("1: jmp %l[t_no]\n"
-@@ -300,11 +300,11 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
- 			 _ASM_ALIGN "\n"
- 			 _ASM_PTR "1b\n"
- 			 _ASM_PTR "0\n" 	/* no replacement */
--			 " .byte %P0\n"		/* feature bit */
-+			 " .word %P0\n"		/* feature bit */
- 			 " .byte 2b - 1b\n"	/* source len */
- 			 " .byte 0\n"		/* replacement len */
--			 " .byte 0xff + 0 - (2b-1b)\n"	/* padding */
- 			 ".previous\n"
-+			 /* skipping size check since replacement size = 0 */
- 			 : : "i" (bit) : : t_no);
- 		return true;
- 	t_no:
-@@ -318,10 +318,12 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
- 			     _ASM_ALIGN "\n"
- 			     _ASM_PTR "1b\n"
- 			     _ASM_PTR "3f\n"
--			     " .byte %P1\n"		/* feature bit */
-+			     " .word %P1\n"		/* feature bit */
- 			     " .byte 2b - 1b\n"		/* source len */
- 			     " .byte 4f - 3f\n"		/* replacement len */
--			     " .byte 0xff + (4f-3f) - (2b-1b)\n" /* padding */
-+			     ".previous\n"
-+			     ".section .discard,\"aw\",@progbits\n"
-+			     " .byte 0xff + (4f-3f) - (2b-1b)\n" /* size check */
- 			     ".previous\n"
- 			     ".section .altinstr_replacement,\"ax\"\n"
- 			     "3: movb $1,%0\n"
-@@ -337,7 +339,7 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
- (								\
- 	__builtin_constant_p(boot_cpu_has(bit)) ?		\
- 		boot_cpu_has(bit) :				\
--	(__builtin_constant_p(bit) && !((bit) & ~0xff)) ?	\
-+	__builtin_constant_p(bit) ?				\
- 		__static_cpu_has(bit) :				\
- 		boot_cpu_has(bit)				\
- )
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index cd49141..7862cf5 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -914,7 +914,7 @@ ENTRY(simd_coprocessor_error)
- 	.balign 4
- 	.long 661b
- 	.long 663f
--	.byte X86_FEATURE_XMM
-+	.word X86_FEATURE_XMM
- 	.byte 662b-661b
- 	.byte 664f-663f
- .previous
-diff --git a/arch/x86/lib/clear_page_64.S b/arch/x86/lib/clear_page_64.S
-index ebeafcc..aa4326b 100644
---- a/arch/x86/lib/clear_page_64.S
-+++ b/arch/x86/lib/clear_page_64.S
-@@ -52,7 +52,7 @@ ENDPROC(clear_page)
- 	.align 8
- 	.quad clear_page
- 	.quad 1b
--	.byte X86_FEATURE_REP_GOOD
-+	.word X86_FEATURE_REP_GOOD
- 	.byte .Lclear_page_end - clear_page
- 	.byte 2b - 1b
- 	.previous
-diff --git a/arch/x86/lib/copy_page_64.S b/arch/x86/lib/copy_page_64.S
-index 727a5d4..6fec2d1 100644
---- a/arch/x86/lib/copy_page_64.S
-+++ b/arch/x86/lib/copy_page_64.S
-@@ -113,7 +113,7 @@ ENDPROC(copy_page)
- 	.align 8
- 	.quad copy_page
- 	.quad 1b
--	.byte X86_FEATURE_REP_GOOD
-+	.word X86_FEATURE_REP_GOOD
- 	.byte .Lcopy_page_end - copy_page
- 	.byte 2b - 1b
- 	.previous
-diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
-index f82e884..bcbcd1e 100644
---- a/arch/x86/lib/memcpy_64.S
-+++ b/arch/x86/lib/memcpy_64.S
-@@ -131,7 +131,7 @@ ENDPROC(__memcpy)
- 	.align 8
- 	.quad memcpy
- 	.quad .Lmemcpy_c
--	.byte X86_FEATURE_REP_GOOD
-+	.word X86_FEATURE_REP_GOOD
- 
- 	/*
- 	 * Replace only beginning, memcpy is used to apply alternatives,
-diff --git a/arch/x86/lib/memset_64.S b/arch/x86/lib/memset_64.S
-index e88d3b8..09d3442 100644
---- a/arch/x86/lib/memset_64.S
-+++ b/arch/x86/lib/memset_64.S
-@@ -121,7 +121,7 @@ ENDPROC(__memset)
- 	.align 8
- 	.quad memset
- 	.quad .Lmemset_c
--	.byte X86_FEATURE_REP_GOOD
-+	.word X86_FEATURE_REP_GOOD
- 	.byte .Lfinal - memset
- 	.byte .Lmemset_e - .Lmemset_c
- 	.previous
+--
+Dan
+
+--------------020807060301020608080900
+Content-Type: text/plain;
+ name="ioat-catch-broken-vtd-v3.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="ioat-catch-broken-vtd-v3.patch"
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvZG1hL2lvYXQvZG1hLmggYi9kcml2ZXJzL2RtYS9pb2F0
+L2RtYS5oCmluZGV4IDZkM2E3M2IuLjUyMTZjOGEgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZG1h
+L2lvYXQvZG1hLmgKKysrIGIvZHJpdmVycy9kbWEvaW9hdC9kbWEuaApAQCAtOTcsNiArOTcs
+NyBAQCBzdHJ1Y3QgaW9hdF9jaGFuX2NvbW1vbiB7CiAJI2RlZmluZSBJT0FUX1JFU0VUX1BF
+TkRJTkcgMgogCSNkZWZpbmUgSU9BVF9LT0JKX0lOSVRfRkFJTCAzCiAJI2RlZmluZSBJT0FU
+X1JFU0hBUEVfUEVORElORyA0CisJI2RlZmluZSBJT0FUX1JVTiA1CiAJc3RydWN0IHRpbWVy
+X2xpc3QgdGltZXI7CiAJI2RlZmluZSBDT01QTEVUSU9OX1RJTUVPVVQgbXNlY3NfdG9famlm
+ZmllcygxMDApCiAJI2RlZmluZSBJRExFX1RJTUVPVVQgbXNlY3NfdG9famlmZmllcygyMDAw
+KQpkaWZmIC0tZ2l0IGEvZHJpdmVycy9kbWEvaW9hdC9kbWFfdjIuYyBiL2RyaXZlcnMvZG1h
+L2lvYXQvZG1hX3YyLmMKaW5kZXggM2M4YjMyYS4uNzc5ZjRkYSAxMDA2NDQKLS0tIGEvZHJp
+dmVycy9kbWEvaW9hdC9kbWFfdjIuYworKysgYi9kcml2ZXJzL2RtYS9pb2F0L2RtYV92Mi5j
+CkBAIC0yODcsNyArMjg3LDEwIEBAIHZvaWQgaW9hdDJfdGltZXJfZXZlbnQodW5zaWduZWQg
+bG9uZyBkYXRhKQogCQkJY2hhbmVyciA9IHJlYWRsKGNoYW4tPnJlZ19iYXNlICsgSU9BVF9D
+SEFORVJSX09GRlNFVCk7CiAJCQlkZXZfZXJyKHRvX2RldihjaGFuKSwgIiVzOiBDaGFubmVs
+IGhhbHRlZCAoJXgpXG4iLAogCQkJCV9fZnVuY19fLCBjaGFuZXJyKTsKLQkJCUJVR19PTihp
+c19pb2F0X2J1ZyhjaGFuZXJyKSk7CisJCQlpZiAodGVzdF9iaXQoSU9BVF9SVU4sICZjaGFu
+LT5zdGF0ZSkpCisJCQkJQlVHX09OKGlzX2lvYXRfYnVnKGNoYW5lcnIpKTsKKwkJCWVsc2Ug
+Lyogd2UgbmV2ZXIgZ290IG9mZiB0aGUgZ3JvdW5kICovCisJCQkJcmV0dXJuOwogCQl9CiAK
+IAkJLyogaWYgd2UgaGF2ZW4ndCBtYWRlIHByb2dyZXNzIGFuZCB3ZSBoYXZlIGFscmVhZHkK
+QEAgLTQ5Miw2ICs0OTUsOCBAQCBzdGF0aWMgc3RydWN0IGlvYXRfcmluZ19lbnQgKippb2F0
+Ml9hbGxvY19yaW5nKHN0cnVjdCBkbWFfY2hhbiAqYywgaW50IG9yZGVyLCBnZgogCXJldHVy
+biByaW5nOwogfQogCit2b2lkIGlvYXQyX2ZyZWVfY2hhbl9yZXNvdXJjZXMoc3RydWN0IGRt
+YV9jaGFuICpjKTsKKwogLyogaW9hdDJfYWxsb2NfY2hhbl9yZXNvdXJjZXMgLSBhbGxvY2F0
+ZS9pbml0aWFsaXplIGlvYXQyIGRlc2NyaXB0b3IgcmluZwogICogQGNoYW46IGNoYW5uZWwg
+dG8gYmUgaW5pdGlhbGl6ZWQKICAqLwpAQCAtNTAwLDYgKzUwNSw3IEBAIGludCBpb2F0Ml9h
+bGxvY19jaGFuX3Jlc291cmNlcyhzdHJ1Y3QgZG1hX2NoYW4gKmMpCiAJc3RydWN0IGlvYXQy
+X2RtYV9jaGFuICppb2F0ID0gdG9faW9hdDJfY2hhbihjKTsKIAlzdHJ1Y3QgaW9hdF9jaGFu
+X2NvbW1vbiAqY2hhbiA9ICZpb2F0LT5iYXNlOwogCXN0cnVjdCBpb2F0X3JpbmdfZW50ICoq
+cmluZzsKKwl1NjQgc3RhdHVzOwogCWludCBvcmRlcjsKIAogCS8qIGhhdmUgd2UgYWxyZWFk
+eSBiZWVuIHNldCB1cD8gKi8KQEAgLTU0MCw3ICs1NDYsMjAgQEAgaW50IGlvYXQyX2FsbG9j
+X2NoYW5fcmVzb3VyY2VzKHN0cnVjdCBkbWFfY2hhbiAqYykKIAl0YXNrbGV0X2VuYWJsZSgm
+Y2hhbi0+Y2xlYW51cF90YXNrKTsKIAlpb2F0Ml9zdGFydF9udWxsX2Rlc2MoaW9hdCk7CiAK
+LQlyZXR1cm4gMSA8PCBpb2F0LT5hbGxvY19vcmRlcjsKKwkvKiBjaGVjayB0aGF0IHdlIGdv
+dCBvZmYgdGhlIGdyb3VuZCAqLworCXVkZWxheSg1KTsKKwlzdGF0dXMgPSBpb2F0X2NoYW5z
+dHMoY2hhbik7CisJaWYgKGlzX2lvYXRfYWN0aXZlKHN0YXR1cykgfHwgaXNfaW9hdF9pZGxl
+KHN0YXR1cykpIHsKKwkJc2V0X2JpdChJT0FUX1JVTiwgJmNoYW4tPnN0YXRlKTsKKwkJcmV0
+dXJuIDEgPDwgaW9hdC0+YWxsb2Nfb3JkZXI7CisJfSBlbHNlIHsKKwkJdTMyIGNoYW5lcnIg
+PSByZWFkbChjaGFuLT5yZWdfYmFzZSArIElPQVRfQ0hBTkVSUl9PRkZTRVQpOworCisJCWRl
+dl9lcnIodG9fZGV2KGNoYW4pLCAiZmFpbGVkIHRvIHN0YXJ0IGNoYW5uZWwgY2hhbmVycjog
+JSN4XG4iLAorCQkJY2hhbmVycik7CisJCWlvYXQyX2ZyZWVfY2hhbl9yZXNvdXJjZXMoYyk7
+CisJCXJldHVybiAtRUZBVUxUOworCX0KIH0KIAogYm9vbCByZXNoYXBlX3Jpbmcoc3RydWN0
+IGlvYXQyX2RtYV9jaGFuICppb2F0LCBpbnQgb3JkZXIpCkBAIC03NzgsNiArNzk3LDcgQEAg
+dm9pZCBpb2F0Ml9mcmVlX2NoYW5fcmVzb3VyY2VzKHN0cnVjdCBkbWFfY2hhbiAqYykKIAlk
+ZWxfdGltZXJfc3luYygmY2hhbi0+dGltZXIpOwogCWRldmljZS0+Y2xlYW51cF9mbigodW5z
+aWduZWQgbG9uZykgYyk7CiAJZGV2aWNlLT5yZXNldF9odyhjaGFuKTsKKwljbGVhcl9iaXQo
+SU9BVF9SVU4sICZjaGFuLT5zdGF0ZSk7CiAKIAlzcGluX2xvY2tfYmgoJmNoYW4tPmNsZWFu
+dXBfbG9jayk7CiAJc3Bpbl9sb2NrX2JoKCZpb2F0LT5wcmVwX2xvY2spOwpkaWZmIC0tZ2l0
+IGEvZHJpdmVycy9kbWEvaW9hdC9kbWFfdjMuYyBiL2RyaXZlcnMvZG1hL2lvYXQvZG1hX3Yz
+LmMKaW5kZXggMWNkZDIyZS4uZDBmNDk5MCAxMDA2NDQKLS0tIGEvZHJpdmVycy9kbWEvaW9h
+dC9kbWFfdjMuYworKysgYi9kcml2ZXJzL2RtYS9pb2F0L2RtYV92My5jCkBAIC0zNjEsNyAr
+MzYxLDEwIEBAIHN0YXRpYyB2b2lkIGlvYXQzX3RpbWVyX2V2ZW50KHVuc2lnbmVkIGxvbmcg
+ZGF0YSkKIAkJCWNoYW5lcnIgPSByZWFkbChjaGFuLT5yZWdfYmFzZSArIElPQVRfQ0hBTkVS
+Ul9PRkZTRVQpOwogCQkJZGV2X2Vycih0b19kZXYoY2hhbiksICIlczogQ2hhbm5lbCBoYWx0
+ZWQgKCV4KVxuIiwKIAkJCQlfX2Z1bmNfXywgY2hhbmVycik7Ci0JCQlCVUdfT04oaXNfaW9h
+dF9idWcoY2hhbmVycikpOworCQkJaWYgKHRlc3RfYml0KElPQVRfUlVOLCAmY2hhbi0+c3Rh
+dGUpKQorCQkJCUJVR19PTihpc19pb2F0X2J1ZyhjaGFuZXJyKSk7CisJCQllbHNlIC8qIHdl
+IG5ldmVyIGdvdCBvZmYgdGhlIGdyb3VuZCAqLworCQkJCXJldHVybjsKIAkJfQogCiAJCS8q
+IGlmIHdlIGhhdmVuJ3QgbWFkZSBwcm9ncmVzcyBhbmQgd2UgaGF2ZSBhbHJlYWR5CmRpZmYg
+LS1naXQgYS9kcml2ZXJzL3BjaS9pbnRlbC1pb21tdS5jIGIvZHJpdmVycy9wY2kvaW50ZWwt
+aW9tbXUuYwppbmRleCA3OTY4MjhmLi4zMzNkZmRmIDEwMDY0NAotLS0gYS9kcml2ZXJzL3Bj
+aS9pbnRlbC1pb21tdS5jCisrKyBiL2RyaXZlcnMvcGNpL2ludGVsLWlvbW11LmMKQEAgLTMw
+MjksNiArMzAyOSwzMiBAQCBzdGF0aWMgdm9pZCBfX2luaXQgaW9tbXVfZXhpdF9tZW1wb29s
+KHZvaWQpCiAKIH0KIAorc3RhdGljIHZvaWQgcXVpcmtfaW9hdF9zbmJfbm9fY2F0Y2hhbGwo
+c3RydWN0IHBjaV9kZXYgKnBkZXYpCit7CisJc3RydWN0IGRtYXJfZHJoZF91bml0ICpkcmhk
+OworCWludCBpOworCisJLyogV2Uga25vdyB0aGF0IHRoaXMgZGV2aWNlIG9uIHRoaXMgY2hp
+cHNldCBoYXMgaXRzIG93bgorCSAgIElPTU1VLiBJZiB3ZSBmaW5kIGl0IHVuZGVyIHRoZSBj
+YXRjaC1hbGwgSU9NTVUsIHRoZW4KKwkgICB0aGUgQklPUyBpcyBseWluZyB0byB1cy4gSG9w
+ZSB0aGF0IHRoZSBJT01NVSBmb3IKKwkgICB0aGlzIGRldmljZSBpcyBhY3R1YWxseSBkaXNh
+YmxlZCwgYW5kIGl0IG5lZWRzIG5vCisJICAgdHJhbnNsYXRpb24uLi4gKi8KKworCWZvcl9l
+YWNoX2RyaGRfdW5pdChkcmhkKSB7CisJCWlmICghZHJoZC0+aW5jbHVkZV9hbGwpCisJCQlj
+b250aW51ZTsKKwkJZm9yIChpID0gMDsgaSA8IGRyaGQtPmRldmljZXNfY250OyBpKyspIHsK
+KwkJCWlmIChkcmhkLT5kZXZpY2VzW2ldID09IHBkZXYpIHsKKwkJCQlXQVJOX1RBSU5UX09O
+Q0UoMSwgVEFJTlRfRklSTVdBUkVfV09SS0FST1VORCwKKwkJCQkJCSJCSU9TIHdyb25nbHkg
+aW5jbHVkZWQgSS9PQVQgZGV2aWNlIHVuZGVyIGNhdGNoLWFsbCBWVC1kIHVuaXRcbiIpOwor
+CQkJCXBkZXYtPmRldi5hcmNoZGF0YS5pb21tdSA9IERVTU1ZX0RFVklDRV9ET01BSU5fSU5G
+TzsKKwkJCQlyZXR1cm47CisJCQl9CisJCX0KKwl9Cit9CitERUNMQVJFX1BDSV9GSVhVUF9F
+TkFCTEUoUENJX1ZFTkRPUl9JRF9JTlRFTCwgUENJX0RFVklDRV9JRF9JTlRFTF9JT0FUX1NO
+QiwgcXVpcmtfaW9hdF9zbmJfbm9fY2F0Y2hhbGwpOworCiBzdGF0aWMgdm9pZCBfX2luaXQg
+aW5pdF9ub19yZW1hcHBpbmdfZGV2aWNlcyh2b2lkKQogewogCXN0cnVjdCBkbWFyX2RyaGRf
+dW5pdCAqZHJoZDsK
+--------------020807060301020608080900--
