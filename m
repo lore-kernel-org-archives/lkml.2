@@ -1,240 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0GGBPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 21:15:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:62110 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814Ab0GGBPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 21:15:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,549,1272870000"; 
-   d="c'?scan'208";a="297271957"
-Subject: [PATCH]shmem: reduce one time of locking in pagefault
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <andi@firstfloor.org>,
-       "Zhang, Yanmin" <yanmin.zhang@intel.com>
-Content-Type: multipart/mixed; boundary="=-cyJ/P2kZGKSKnIpmMnTl"
-Date: Wed, 07 Jul 2010 09:15:46 +0800
-Message-ID: <1278465346.11107.8.camel@sli10-desk.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752048Ab0GGB1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 21:27:10 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49254 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750795Ab0GGB1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 21:27:08 -0400
+Message-ID: <4C33D703.4090208@cn.fujitsu.com>
+Date: Wed, 07 Jul 2010 09:23:15 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 8/9] KVM: MMU: combine guest pte read between fetch
+ and pte prefetch
+References: <4C330918.6040709@cn.fujitsu.com> <4C330A9A.9030106@cn.fujitsu.com> <20100706195254.GA4311@amt.cnet>
+In-Reply-To: <20100706195254.GA4311@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-cyJ/P2kZGKSKnIpmMnTl
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
 
-I'm running a shmem pagefault test case (see attached file) under a 64 CPU
-system. Profile shows shmem_inode_info->lock is heavily contented and 100%
-CPUs time are trying to get the lock. In the pagefault (no swap) case,
-shmem_getpage gets the lock twice, the last one is avoidable if we prealloc a
-page so we could reduce one time of locking. This is what below patch does.
+Marcelo Tosatti wrote:
 
-The result of the test case:
-2.6.35-rc3: ~20s
-2.6.35-rc3 + patch: ~12s
-so this is 40% improvement.
+>> -
+>> -	first_pte_gpa = gfn_to_gpa(sp->gfn) +
+>> -				(offset + i) * sizeof(pt_element_t);
+>> -
+>> -	if (kvm_read_guest_atomic(vcpu->kvm, first_pte_gpa, gptep,
+>> -					sizeof(gptep)) < 0)
+>> -		return;
+>> +	gptep = gw->prefetch_ptes;
+> 
+> Where do you reread the gpte in the prefetch path?
+> 
 
-One might argue if we could have better locking for shmem. But even shmem is lockless,
-the pagefault will soon have pagecache lock heavily contented because shmem must add
-new page to pagecache. So before we have better locking for pagecache, improving shmem
-locking doesn't have too much improvement. I did a similar pagefault test against
-a ramfs file, the test result is ~10.5s.
+Marcelo,
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Thanks for your review.
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index f65f840..c5f2939 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1223,6 +1223,7 @@ static int shmem_getpage(struct inode *inode, unsigned long idx,
- 	struct shmem_sb_info *sbinfo;
- 	struct page *filepage = *pagep;
- 	struct page *swappage;
-+	struct page *prealloc_page = NULL;
- 	swp_entry_t *entry;
- 	swp_entry_t swap;
- 	gfp_t gfp;
-@@ -1247,7 +1248,6 @@ repeat:
- 		filepage = find_lock_page(mapping, idx);
- 	if (filepage && PageUptodate(filepage))
- 		goto done;
--	error = 0;
- 	gfp = mapping_gfp_mask(mapping);
- 	if (!filepage) {
- 		/*
-@@ -1258,7 +1258,19 @@ repeat:
- 		if (error)
- 			goto failed;
- 		radix_tree_preload_end();
-+		if (sgp != SGP_READ) {
-+			/* don't care if this successes */
-+			prealloc_page = shmem_alloc_page(gfp, info, idx);
-+			if (prealloc_page) {
-+				if (mem_cgroup_cache_charge(prealloc_page,
-+				    current->mm, GFP_KERNEL)) {
-+					page_cache_release(prealloc_page);
-+					prealloc_page = NULL;
-+				}
-+			}
-+		}
- 	}
-+	error = 0;
- 
- 	spin_lock(&info->lock);
- 	shmem_recalc_inode(inode);
-@@ -1407,28 +1419,37 @@ repeat:
- 		if (!filepage) {
- 			int ret;
- 
--			spin_unlock(&info->lock);
--			filepage = shmem_alloc_page(gfp, info, idx);
--			if (!filepage) {
--				shmem_unacct_blocks(info->flags, 1);
--				shmem_free_blocks(inode, 1);
--				error = -ENOMEM;
--				goto failed;
--			}
--			SetPageSwapBacked(filepage);
-+			if (!prealloc_page) {
-+				spin_unlock(&info->lock);
-+				filepage = shmem_alloc_page(gfp, info, idx);
-+				if (!filepage) {
-+					shmem_unacct_blocks(info->flags, 1);
-+					shmem_free_blocks(inode, 1);
-+					error = -ENOMEM;
-+					goto failed;
-+				}
-+				SetPageSwapBacked(filepage);
- 
--			/* Precharge page while we can wait, compensate after */
--			error = mem_cgroup_cache_charge(filepage, current->mm,
--					GFP_KERNEL);
--			if (error) {
--				page_cache_release(filepage);
--				shmem_unacct_blocks(info->flags, 1);
--				shmem_free_blocks(inode, 1);
--				filepage = NULL;
--				goto failed;
-+				/* Precharge page while we can wait, compensate
-+				 * after
-+				 */
-+				error = mem_cgroup_cache_charge(filepage,
-+					current->mm, GFP_KERNEL);
-+				if (error) {
-+					page_cache_release(filepage);
-+					shmem_unacct_blocks(info->flags, 1);
-+					shmem_free_blocks(inode, 1);
-+					filepage = NULL;
-+					goto failed;
-+				}
-+
-+				spin_lock(&info->lock);
-+			} else {
-+				filepage = prealloc_page;
-+				prealloc_page = NULL;
-+				SetPageSwapBacked(filepage);
- 			}
- 
--			spin_lock(&info->lock);
- 			entry = shmem_swp_alloc(info, idx, sgp);
- 			if (IS_ERR(entry))
- 				error = PTR_ERR(entry);
-@@ -1469,6 +1490,10 @@ repeat:
- 	}
- done:
- 	*pagep = filepage;
-+	if (prealloc_page) {
-+		mem_cgroup_uncharge_cache_page(prealloc_page);
-+		page_cache_release(prealloc_page);
-+	}
- 	return 0;
- 
- failed:
-@@ -1476,6 +1501,10 @@ failed:
- 		unlock_page(filepage);
- 		page_cache_release(filepage);
- 	}
-+	if (prealloc_page) {
-+		mem_cgroup_uncharge_cache_page(prealloc_page);
-+		page_cache_release(prealloc_page);
-+	}
- 	return error;
- }
- 
+Below codes read gptes in the prefetch path:
 
+	index = sptep - sp->spt;
+	i = index & ~(PTE_PREFETCH_NUM - 1);
+	max = index | (PTE_PREFETCH_NUM - 1);
 
---=-cyJ/P2kZGKSKnIpmMnTl
-Content-Disposition: attachment; filename="shmem-test.c"
-Content-Type: text/x-csrc; name="shmem-test.c"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	if (PTTYPE == 32)
+		offset = sp->role.quadrant << PT64_LEVEL_BITS;
 
-#include <sys/mman.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+	first_pte_gpa = gfn_to_gpa(sp->gfn) +
+				(offset + i) * sizeof(pt_element_t);
 
-#define THREAD_NUM (64L)
-#define MEM_SIZE (1024*1024*1024*16L)
-#define PER_TH_SIZE (MEM_SIZE/THREAD_NUM)
+	if (kvm_read_guest_atomic(vcpu->kvm, first_pte_gpa, gptep,
+					sizeof(gptep)) < 0)
+		return;
 
-void *thread_func(void *data)
-{
-	char *addr = data;
-	unsigned long size = PER_TH_SIZE, index = 0;
-	int t;
-
-	while (index < size) {
-		t = *(addr + index);
-		index += 4096;
-	}
-}
-
-int main(int argc, char *argv[])
-{
-	int i;
-	pthread_t threads[THREAD_NUM];
-	pthread_attr_t attr;
-	struct timeval start, stop, diff;
-	char *mem;
-
-	mem = mmap(NULL, MEM_SIZE, PROT_READ|PROT_WRITE,
-		MAP_SHARED|MAP_ANON, 0, 0);
-	if (!mem) {
-		perror("mmap error");
-		exit(1);
-	}
-	
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-	gettimeofday(&start, NULL);
-	for (i = 0; i < THREAD_NUM; i++)
-		if (pthread_create(&threads[i], &attr, thread_func,
-			mem + PER_TH_SIZE * i)) {
-			perror("thread create error");
-			exit(1);
-		}
-
-	for (i=0; i< THREAD_NUM; i++)
-		pthread_join(threads[i], NULL);
-
-	gettimeofday(&stop, NULL);
-	timersub(&stop, &start, &diff);
-	printf("Thread %ld Mem %dG time %lu.%03lusec\n",
-		THREAD_NUM, MEM_SIZE/1024/1024/1024,
-		diff.tv_sec, diff.tv_usec/1000);
-
-	pthread_attr_destroy(&attr);
-	return 0;
-}
-
---=-cyJ/P2kZGKSKnIpmMnTl--
-
+It reads the 16 aligned items around sptep's corresponding gpte and this gpte
+is also in this area. :-)
