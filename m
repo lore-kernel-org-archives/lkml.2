@@ -1,119 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953Ab0GGPVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:21:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54215 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab0GGPVj (ORCPT
+	id S1756973Ab0GGPW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:22:57 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45468 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab0GGPWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 11:21:39 -0400
-Message-ID: <4C349AFF.9040301@oracle.com>
-Date: Wed, 07 Jul 2010 23:19:27 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+	Wed, 7 Jul 2010 11:22:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=m4kDh7pH68FKSZGzPomVkQ+sKORMEJBUT9o5hY6nZnER1bsj1GFAj97LQ+l7wQfhye
+         FnUOoTjfG/126Y9MYgxf56idnXWmICzF7WRh7DY1yVYB+1D3C2wK7RE/qcOJb2gAhHQM
+         Dn8AXRFQA37vaqdTkb6H2azE3UrPvMGGGWiEs=
 MIME-Version: 1.0
-To: Joel Becker <joel.becker@oracle.com>
-CC: Dave Chinner <david@fromorbit.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-       Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [PATCH 1/3] ocfs2: When zero extending, do it by page.
-References: <20100703213219.GB21262@mail.oracle.com> <1278501367-7710-2-git-send-email-joel.becker@oracle.com>
-In-Reply-To: <1278501367-7710-2-git-send-email-joel.becker@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C349B43.01FA:SCFMA4539814,ss=1,fgs=0
+Date: Wed, 7 Jul 2010 17:22:54 +0200
+Message-ID: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
+Subject: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
+From: Corrado Zoccolo <czoccolo@gmail.com>
+To: Jens Axboe <jens.axboe@oracle.com>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joel,
-Joel Becker wrote:
-> ocfs2_zero_extend() does its zeroing block by block, but it calls a
-> function named ocfs2_write_zero_page().  Let's have
-> ocfs2_write_zero_page() handle the page level.  From
-> ocfs2_zero_extend()'s perspective, it is now page-at-a-time.
->
-> Signed-off-by: Joel Becker <joel.becker@oracle.com>
-> ---
->  fs/ocfs2/aops.c |   30 --------------
->  fs/ocfs2/file.c |  119 +++++++++++++++++++++++++++++++++++++++----------------
->  2 files changed, 85 insertions(+), 64 deletions(-)
->
-> diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-> index 3623ca2..9a5c931 100644
-> --- a/fs/ocfs2/aops.c
-> +++ b/fs/ocfs2/aops.c
-> @@ -459,36 +459,6 @@ int walk_page_buffers(	handle_t *handle,
->  	return ret;
->  }
->  
-> -handle_t *ocfs2_start_walk_page_trans(struct inode *inode,
-> -							 struct page *page,
-> -							 unsigned from,
-> -							 unsigned to)
-> -{
-> -	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
-> -	handle_t *handle;
-> -	int ret = 0;
-> -
-> -	handle = ocfs2_start_trans(osb, OCFS2_INODE_UPDATE_CREDITS);
-> -	if (IS_ERR(handle)) {
-> -		ret = -ENOMEM;
-> -		mlog_errno(ret);
-> -		goto out;
-> -	}
-> -
-> -	if (ocfs2_should_order_data(inode)) {
-> -		ret = ocfs2_jbd2_file_inode(handle, inode);
-> -		if (ret < 0)
-> -			mlog_errno(ret);
-> -	}
-> -out:
-> -	if (ret) {
-> -		if (!IS_ERR(handle))
-> -			ocfs2_commit_trans(osb, handle);
-> -		handle = ERR_PTR(ret);
-> -	}
-> -	return handle;
-> -}
-> -
->  static sector_t ocfs2_bmap(struct address_space *mapping, sector_t block)
->  {
->  	sector_t status;
-> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-> index 6a13ea6..a6e0eb6 100644
-> --- a/fs/ocfs2/file.c
-> +++ b/fs/ocfs2/file.c
-> @@ -724,28 +724,55 @@ leave:
->  	return status;
->  }
->  
-> +/*
-> + * While a write will already be ordering the data, a truncate will not.
-> + * Thus, we need to explicitly order the zeroed pages.
-> + */
-> +static handle_t *ocfs2_zero_start_ordered_transaction(struct inode *inode)
-> +{
-> +	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
-> +	handle_t *handle = NULL;
-> +	int ret = 0;
-> +
-> +	if (ocfs2_should_order_data(inode))
->   
-This should be if (!ocfs2_should_order_data(inode)) I guess? ;)
-> +		goto out;
-> +
-> +	handle = ocfs2_start_trans(osb, OCFS2_INODE_UPDATE_CREDITS);
-> +	if (IS_ERR(handle)) {
-> +		ret = -ENOMEM;
-> +		mlog_errno(ret);
-> +		goto out;
-> +	}
-> +
->   
-Regards,
-Tao
+Hi Jens,
+patch 8e55063 "cfq-iosched: fix corner cases in idling logic", is
+suspected for some regressions on high end hardware.
+The two patches from this series:
+- [PATCH 1/2] cfq-iosched: fix tree-wide handling of rq_noidle
+- [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
+fix two issues that I have identified, related to how RQ_NOIDLE is
+used by the upper layers.
+First patch makes sure that a RQ_NOIDLE coming after a sequence of
+possibly idling requests from the same queue on the no-idle tree will
+clear the noidle_tree_requires_idle flag.
+Second patch enables RQ_NOIDLE for queues in the idling tree,
+restoring the behaviour pre-8e55063 patch.
+
+An other option to consider is the partial revert of 8e55063, if the
+corner cases we are trying to handle are not frequent enough to
+justify this added complexity.
+
+Thanks,
+Corrado
