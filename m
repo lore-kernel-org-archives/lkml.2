@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750980Ab0GGEOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 00:14:11 -0400
-Received: from 1wt.eu ([62.212.114.60]:39076 "EHLO 1wt.eu"
+	id S1750996Ab0GGEYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 00:24:22 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:60646 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750731Ab0GGEOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 00:14:09 -0400
-Date: Wed, 7 Jul 2010 06:13:57 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Peter Huewe <PeterHuewe@gmx.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Julia Lawall <julia@diku.dk>,
-       Sudhakar Rajashekhara <sudhakar.raj@ti.com>, devel@driverdev.osuosl.org,
+	id S1750741Ab0GGEYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 00:24:21 -0400
+Date: Wed, 7 Jul 2010 05:24:04 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/panel: Prevent double-calling of
- parport_release - fix oops.
-Message-ID: <20100707041357.GE12126@1wt.eu>
-References: <201007070452.16860.PeterHuewe@gmx.de>
+Subject: Re: [git pull] drm fixes
+In-Reply-To: <alpine.DEB.2.00.1007070421460.22955@skynet.skynet.ie>
+Message-ID: <alpine.DEB.2.00.1007070523370.25777@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1007070421460.22955@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007070452.16860.PeterHuewe@gmx.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 04:52:16AM +0200, Peter Huewe wrote:
-> From: Peter Huewe <peterhuewe@gmx.de>
-> 
-> This patch prevents the code from calling parport_release and
-> parport_unregister_device twice with the same arguments - and thus fixes an oops.
-> 
-> Rationale:
-> After the first call the parport is already released and the
-> handle isn't valid anymore and calling parport_release and
-> parport_unregister_device twice isn't a good idea.
-> 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
-> KernelVersion: linux-next-20100607
-> 
->  drivers/staging/panel/panel.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-> index 3154ffe..6fa57be 100644
-> --- a/drivers/staging/panel/panel.c
-> +++ b/drivers/staging/panel/panel.c
-> @@ -2277,6 +2277,7 @@ int panel_init(void)
->  		if (pprt) {
->  			parport_release(pprt);
->  			parport_unregister_device(pprt);
-> +			pprt = NULL;
->  		}
->  		parport_unregister_driver(&panel_driver);
->  		printk(KERN_ERR "Panel driver version " PANEL_VERSION
-> @@ -2327,6 +2328,7 @@ static void __exit panel_cleanup_module(void)
->  		/* TODO: free all input signals */
->  		parport_release(pprt);
->  		parport_unregister_device(pprt);
-> +		pprt = NULL;
->  	}
->  	parport_unregister_driver(&panel_driver);
->  }
-> -- 
-> 1.7.1
 
-look fine, ACK by me !
+Ignore this one, picked up a problem in the ioports patch, so its gone.
 
-Willy
+new pull req sent.
 
+Dave.
+
+> 
+> The following changes since commit 123f94f22e3d283dfe68742b269c245b0501ad82:
+> 
+>   Merge branch 'sched-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-07-02 09:52:58 -0700)
+> 
+> are available in the git repository at:
+> 
+>   ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+> 
+> Alex Deucher (2):
+>       drm/radeon/kms: add ioport register access
+>       drm/radeon/kms: fix shared ddc handling
+> 
+> Francisco Jerez (1):
+>       drm/ttm: Allocate the page pool manager in the heap.
+> 
+> Jesse Barnes (1):
+>       drm: correctly update connector DPMS status in drm_fb_helper
+> 
+>  drivers/gpu/drm/drm_fb_helper.c            |   23 ++++++++-
+>  drivers/gpu/drm/radeon/atom.c              |    5 +-
+>  drivers/gpu/drm/radeon/atom.h              |    2 +
+>  drivers/gpu/drm/radeon/radeon.h            |   25 ++++++++++
+>  drivers/gpu/drm/radeon/radeon_connectors.c |    4 +-
+>  drivers/gpu/drm/radeon/radeon_device.c     |   34 ++++++++++++++
+>  drivers/gpu/drm/ttm/ttm_page_alloc.c       |   68 +++++++++++++--------------
+>  include/drm/ttm/ttm_page_alloc.h           |    4 --
+>  8 files changed, 119 insertions(+), 46 deletions(-)
+> 
