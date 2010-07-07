@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968Ab0GGXSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:18:23 -0400
-Received: from verein.lst.de ([213.95.11.210]:50890 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756870Ab0GGXSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:18:22 -0400
-Date: Thu, 8 Jul 2010 01:17:32 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Takeo Tung <kernel@takeo.idv.tw>
-Cc: Christoph Hellwig <hch@lst.de>, Michal Marek <mmarek@suse.cz>,
-       linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-       sfr@canb.auug.org.au
-Subject: Re: [PATCH] struct io panic on raid1 - Re: block: unify flags for struct bio and struct request will kernel panic
-Message-ID: <20100707231732.GA30007@lst.de>
-References: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1> <4C129778.7040409@suse.cz> <F8C0125B8F424A279E9679EAC24AC983@TAKEOW7NB1> <20100612094937.GA12455@lst.de> <F2CA952B7B5A41259C5F950CA3454C3A@TAKEOW7NB1> <1AEF19B8648844C983F583EEBE9C46F4@TAKEOW7NB1>
+	id S1758009Ab0GGXVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 19:21:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59543 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756683Ab0GGXVM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 19:21:12 -0400
+Date: Wed, 7 Jul 2010 16:20:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: linux-next: Tree for July 7
+Message-Id: <20100707162054.c7c6b0ab.akpm@linux-foundation.org>
+In-Reply-To: <20100707165539.957e7d1c.sfr@canb.auug.org.au>
+References: <20100707165539.957e7d1c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1AEF19B8648844C983F583EEBE9C46F4@TAKEOW7NB1>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 07:05:39AM +0800, Takeo Tung wrote:
-> Dear Christoph,
-> 
-> I was check the patch again. I found the panic status haapen on Soft RAID 
-> 1. I review it. found some define using bool, so some like ( x & REQ_SYNC) 
-> only 0 or 1.
-> so if bi_rw = rw | sync will bi_rw = rw | 0 or rw | 1. not rw | ( 1 << 
-> __REQ_SYNC).
-> 
-> So I write a patch is fix it. seems normal now. could you review the patch 
-> or any comment?
+On Wed, 7 Jul 2010 16:55:39 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-The patch looks correct to me, although your mailer mangled the
-whitespace badly.  If Neil wants to keep the flag as bool we could
-also add a !! around the bit flag checks.
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).
 
+I'm getting a vast stream of BUG()s from the
+
+	BUG_ON(inode->i_state != (I_FREEING | I_CLEAR));
+
+in iput_final().
+
+After turning it into a WARN_ON():
+
+[   49.780786] inode->i_state=0x67
+[   49.780945] ------------[ cut here ]------------
+[   49.781113] WARNING: at fs/inode.c:1246 iput+0x232/0x23f()
+[   49.781279] Modules linked in: dm_mirror dm_region_hash dm_log dm_multipath dm_mod video output sbs sbshc battery ac lp parport sg ide_cd_mod cdrom option usb_wwan usbserial serio_raw floppy snd_hda_intel snd_hda_codec snd_seq_oss snd_seq_midi_event snd_seq button snd_seq_device snd_pcm_oss snd_mixer_oss snd_pcm snd_timer i2c_i801 i2c_core snd soundcore snd_page_alloc pcspkr shpchp ehci_hcd ohci_hcd uhci_hcd
+[   49.783960] Pid: 2418, comm: mount Tainted: G        W   2.6.35-rc4 #3
+[   49.784127] Call Trace:
+[   49.784288]  [<ffffffff810cec31>] ? iput+0x1fe/0x23f
+[   49.784454]  [<ffffffff810cec65>] ? iput+0x232/0x23f
+[   49.784623]  [<ffffffff81036283>] warn_slowpath_common+0x7e/0x97
+[   49.784790]  [<ffffffff810362b1>] warn_slowpath_null+0x15/0x17
+[   49.784958]  [<ffffffff810cec65>] iput+0x232/0x23f
+[   49.785134]  [<ffffffff810c59a5>] do_unlinkat+0x104/0x15a
+[   49.785301]  [<ffffffff81002a1c>] ? sysret_check+0x27/0x62
+[   49.785470]  [<ffffffff8137518b>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[   49.785639]  [<ffffffff810c5a0c>] sys_unlink+0x11/0x13
+[   49.785806]  [<ffffffff810029eb>] system_call_fastpath+0x16/0x1b
+[   49.785973] ---[ end trace 6458c1d95dac3fde ]---
+
+So I_DIRTY_SYNC, I_DIRTY_DATASYNC and I_DIRTY_PAGES are set.
+
+Config: http://userweb.kernel.org/~akpm/stuff/config-akpm2.txt
