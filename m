@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab0GGSTw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 14:19:52 -0400
-Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:38006 "EHLO
-	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab0GGSTu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 14:19:50 -0400
-Subject: Re: [PATCH 07/10] NFSv4: Introduce new label structure
-From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
-       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
-       bfields@fieldses.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       selinux@tycho.nsa.gov, linux-nfs@vger.kernel.org
-In-Reply-To: <4C34BE3A.3050806@oracle.com>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
-	 <1278513086-23964-8-git-send-email-dpquigl@tycho.nsa.gov>
-	 <4C34A4F1.3060708@oracle.com>
-	 <1278519727.2494.92.camel@moss-terrapins.epoch.ncsc.mil>
-	 <4C34BE3A.3050806@oracle.com>
-Content-Type: text/plain
-Organization: National Security Agency
-Date: Wed, 07 Jul 2010 14:11:54 -0400
-Message-Id: <1278526314.2494.170.camel@moss-terrapins.epoch.ncsc.mil>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1755372Ab0GGSUH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 14:20:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48735 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756242Ab0GGSUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 14:20:04 -0400
+Date: Thu, 8 Jul 2010 04:20:01 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
+       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V14 04/11] vfs: Allow handle based open on symlinks
+Message-ID: <20100707182001.GG9263@laptop>
+References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1276621981-2774-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20100707152303.GS11732@laptop>
+ <87d3uzfeej.fsf@linux.vnet.ibm.com>
+ <20100707165719.GC9263@laptop>
+ <874ogbfaas.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <874ogbfaas.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-07 at 13:49 -0400, Chuck Lever wrote:
-> On 07/ 7/10 12:22 PM, David P. Quigley wrote:
-> > Hello Chuck,
-> >     Thank you for the comments. I'll go through and address them inline
-> > (Sorry for the top post).
-> >
-> > On Wed, 2010-07-07 at 12:01 -0400, Chuck Lever wrote:
-> >> My comments below apply to the other NFS client patches as well.  This
-> >> seemed like the right one to use for code examples.
-> >>
-> >> On 07/ 7/10 10:31 AM, David P. Quigley wrote:
+On Wed, Jul 07, 2010 at 11:23:31PM +0530, Aneesh Kumar K. V wrote:
+> On Thu, 8 Jul 2010 02:57:19 +1000, Nick Piggin <npiggin@suse.de> wrote:
+> > I haven't followed this thread closely, so can you just go back
+> > and explain to me why you need this? Ie. that you can't achieve with
+> > a path-to-handle follow/nofollow option.
 > 
->    [ ... snipped ... ]
 > 
-> >> It seems to me you want something more generic, just like nfs_fh or
-> >> nfs_fattr, to represent these.  Over time, I'm guessing label support
-> >> won't be tied to a specific NFS version.  And, you are passing these
-> >> around in the generic NFS functions (for post-op updates and inode
-> >> revalidation, and what not).
-> >>
-> >> Can I recommend "struct nfs_seclabel" instead?  Then have
-> >> nfs_seclabel_alloc() and nfs_seclabel_free().
-> >
-> > I can definitely rename them to be more generic. I don't see anything
-> > else besides NFSv4 using them but its fine with me to rename them. The
-> > reason we call them nfs4_label is because we modeled it after the NFSv4
-> > acl support code. I spoke with Christoph a long time ago and he
-> > suggested that it should be handled the same way that the NFSv4 ACLs are
-> > handled as opposed to the iattr thing we were trying.
-> >
-> >>
-> >> Does it make sense to deduplicate these in the client's memory?  It
-> >> seems to me that you could have hundreds or thousands that all contain
-> >> the same label information.
-> >
-> > I don't think it is worth the effort. We are only using these structures
-> > until the security label is crammed into the inode. Once that happens
-> > they get freed. You shouldn't have them sitting around for very long.
-> 
-> OK, the lifetime of these things wasn't clear.
-> 
-> > They will be pulled again when the inode attributes expire and need to
-> > be revalidated. For things like SELinux you could argue that the LSM
-> > might benefit from this (and it might already do it but I'm not sure)
-> > but I think that is something to be handled by the LSM itself or the
-> > credentials code (since it already supports COW credentials it should be
-> > possible).
-> 
-> I think the lifetime of the label structure then is about the same as 
-> the lifetime of an nfs_attr, and not at all the same as an ACL.  I'm 
-> just guessing here.
+> We need to be able to read the link target using file handle. The exact
+> usecase i have is with respect to implementing READLINK operation on a
+> userspace NFS server. The request contain the file handle and the
+> response include target name.
 
-Intersting I figured that the ACL structure was just to get it to a
-point where you could convert the NFS ACL into a posixacl and set it in
-the inode. I didn't realize they were hanging around for a while.
+Fair point, could you include this stuff in your changelog? It may
+help with other people reviewing it too who have not followed closely.
 
+ 
+> Similarly we need to able to get file attribute based on file handle.
+> I was using readlinkat and fstat to obtain both the above information
+> using the descriptor returned by open_by_handle on a file handle
+> representing symlink
 > 
-> Would it then make sense to add a field that refers to the security 
-> label to struct nfs_fattr instead?  That might simplify or eliminate all 
-> of the internal API changes.
-
-I want to say that we had it in there at one point and then we endedup
-running into a problem and having to change it. I'll ask Matt about what
-problems we had sticking it in the nfs_fattr initially.
-
-Dave
-
+> -aneesh
