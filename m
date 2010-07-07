@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611Ab0GGUGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 16:06:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48897 "EHLO mx1.redhat.com"
+	id S1757533Ab0GGUOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 16:14:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50490 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab0GGUGK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 16:06:10 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
-References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
-	<x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 07 Jul 2010 16:06:04 -0400
-In-Reply-To: <AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
-	(Corrado Zoccolo's message of "Wed, 7 Jul 2010 19:39:49 +0200")
-Message-ID: <x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1755466Ab0GGUOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 16:14:05 -0400
+Message-ID: <4C34DF8E.7090501@redhat.com>
+Date: Wed, 07 Jul 2010 10:11:58 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Glauber Costa <glommer@redhat.com>
+CC: Peter Palfrader <peter@palfrader.org>, Greg KH <gregkh@suse.de>,
+       linux-kernel@vger.kernel.org, stable@kernel.org,
+       stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
+ for pvclock
+References: <20100701175144.GA2116@kroah.com> <20100701173218.125822294@clark.site> <20100707124731.GJ15122@anguilla.noreply.org> <20100707135140.GI2707@mothafucka.localdomain> <20100707143338.GK15122@anguilla.noreply.org> <20100707181511.GL2707@mothafucka.localdomain>
+In-Reply-To: <20100707181511.GL2707@mothafucka.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrado Zoccolo <czoccolo@gmail.com> writes:
-
-> On Wed, Jul 7, 2010 at 7:03 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
->> Corrado Zoccolo <czoccolo@gmail.com> writes:
+On 07/07/2010 08:15 AM, Glauber Costa wrote:
+> On Wed, Jul 07, 2010 at 04:33:39PM +0200, Peter Palfrader wrote:
+>    
+>> On Wed, 07 Jul 2010, Glauber Costa wrote:
 >>
->>> Hi Jens,
->>> patch 8e55063 "cfq-iosched: fix corner cases in idling logic", is
->>> suspected for some regressions on high end hardware.
->>> The two patches from this series:
->>> - [PATCH 1/2] cfq-iosched: fix tree-wide handling of rq_noidle
->>> - [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
->>> fix two issues that I have identified, related to how RQ_NOIDLE is
->>> used by the upper layers.
->>> First patch makes sure that a RQ_NOIDLE coming after a sequence of
->>> possibly idling requests from the same queue on the no-idle tree will
->>> clear the noidle_tree_requires_idle flag.
->>> Second patch enables RQ_NOIDLE for queues in the idling tree,
->>> restoring the behaviour pre-8e55063 patch.
->>
->> Hi, Corrado,
->>
->> I ran your kernel through my tests.  Here are the results, up against
->> vanilla, deadline, and the blk_yield patch set:
->>
-> Hi Jeff,
-> can you also add cfq with 8e55063 reverted to the testing mix?
+>>      
+>>>> 2.6.32.16 fails to boot on my KVM domains using qemu-kvm 0.11.1.
+>>>>
+>>>> Bisecting between 2.6.32.14 which worked and .16 turned up this commit
+>>>> as the first culprit[0].
+>>>>
+>>>> The host is still running 2.6.32.14 and has 8 cores on 2 CPUs.  The
+>>>> single-cpu KVM domain hangs just after printing 'Write protecting the
+>>>> kernel read-only data: 9492k'[1].   On a successful boot this line would
+>>>> usually be followed by 'INIT: version 2.86 booting'.
+>>>>
+>>>> A 2.6.32.16 with this patch reverted boots fine.
+>>>>
+>>>> If there's any info you need please just ask.
+>>>>          
+>>      
+>>> if you boot with another clocksource, and then switch to kvmclock with the machine already
+>>> running, do you see anything strange or suspicious?
+>>>        
+>> Booting with various clocksource=xxx kernel parameters does not change
+>> the behaviour at all, i.e. the boot still hangs.
+>>      
+> wow, it is really weird then.
+>
+> that patch shouldn't affect anything outside the pvclock realm.
+>    
 
-Sure, the results now look like this:
+Unless you added data which is mistakenly in read-only section, I can't 
+see how it would affect anything either.  Of course, you have changed 
+the data and text size, it is possible this triggered another bug.
 
-                 just    just
-                fs_mark  fio        mixed	
--------------------------------+--------------
-deadline        529.44   151.4 | 450.0    78.2
-vanilla cfq     107.88   164.4 |   6.6   137.2
-blk_yield cfq   530.82   158.7 | 113.2    78.6
-corrado cfq     110.16   220.6 |   7.0   159.8
-8e55063 revert  559.66   198.9 |  16.1   153.3
+What exact section does the per-cpu pvclock data fall into?  It's 
+read-only in the kernel, but writeable from the hypervisor.
 
-I had accidentally run your patch set (corrado cfq) on ext3, so the
-numbers were a bit off (everything else was run against ext4).  The
-corrected numbers above reflect the performance on ext4, which is much
-better for the sequential reader, but still not great for the fs_mark
-run.  Reverting 8e55063 definitely gets us into better shape.  However,
-if we care about the mixed workload, then it won't be enough.
+Also, did this patch arrive before or after the pvclock reboot bugfix?  
+Because if the hypervisor is still writing the pvclock page, 
+clocksource=xxx would not change that behavior without that fix.
 
-It's worth noting that I can't explain that jump from 151MB/s for
-deadline vs 220MB/s for corrado cfq.  I'm not sure how you can vary
-driving a single queue depth sequential read at all.  Those are the
-averages of 5 runs and this storage should be solely accessible by me,
-so I am at a loss.
-
-Cheers,
-Jeff
+Zach
