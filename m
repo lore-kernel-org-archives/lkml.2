@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab0GGMyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 08:54:44 -0400
-Received: from anguilla.debian.or.at ([86.59.21.37]:51115 "EHLO
-	anguilla.debian.or.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab0GGMym (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 08:54:42 -0400
-X-Greylist: delayed 430 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jul 2010 08:54:42 EDT
-Date: Wed, 7 Jul 2010 14:47:31 +0200
-From: Peter Palfrader <peter@palfrader.org>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization
-	point for pvclock
-Message-ID: <20100707124731.GJ15122@anguilla.noreply.org>
-Mail-Followup-To: Peter Palfrader <peter@palfrader.org>,
-	Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-	stable@kernel.org, stable-review@kernel.org,
-	torvalds@linux-foundation.org, akpm@linux-foundation.org,
-	alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
-	Zachary Amsden <zamsden@redhat.com>,
-	Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
-	Marcelo Tosatti <mtosatti@redhat.com>
-References: <20100701175144.GA2116@kroah.com> <20100701173218.125822294@clark.site>
+	id S1754839Ab0GGM5e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 08:57:34 -0400
+Received: from fieldses.org ([174.143.236.118]:33067 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751179Ab0GGM5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 08:57:33 -0400
+Date: Wed, 7 Jul 2010 08:57:01 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Neil Brown <neilb@suse.de>
+Cc: Dave Chinner <david@fromorbit.com>,
+       "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+       hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, hooanon05@yahoo.co.jp,
+       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
+ syscalls
+Message-ID: <20100707125701.GA19872@fieldses.org>
+References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <871vbn2mk9.fsf@linux.vnet.ibm.com>
+ <20100702064108.64034561@notabene.brown>
+ <87iq4y29a6.fsf@linux.vnet.ibm.com>
+ <20100706161002.GD7387@fieldses.org>
+ <87eifgfsez.fsf@linux.vnet.ibm.com>
+ <20100706232351.GD25018@dastard>
+ <20100707093629.10c2feab@notabene.brown>
+ <20100707021150.GF25018@dastard>
+ <20100707125726.3695587a@notabene.brown>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100701173218.125822294@clark.site>
-X-PGP: 1024D/94C09C7F 5B00 C96D 5D54 AEE1 206B  AF84 DE7A AF6E 94C0 9C7F
-X-Request-PGP: http://www.palfrader.org/keys/94C09C7F.asc
-X-Accept-Language: de, en
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100707125726.3695587a@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Wed, Jul 07, 2010 at 12:57:26PM +1000, Neil Brown wrote:
+> The trouble with /proc/mounts is that it is somewhat clumsy to parse
+> (remember to handle \0ctal escapes) and doesn't include major/minor number
+> which is the primary key for identifying filesystems in Linux
+> (see /sys/class/bdi/MAJOR:MINOR which is e.g. the best place to configure
+> read-ahead for a filesystem).
+> 
+> So /proc/mounts could work (and would probably be better than a new syscall)
+> but I would really rather see something sane in /sys for
+> inspecting/configuring filesystems (rather than each filesystem doing their
+> own independent thing in /sys/fs).
 
-Greg KH schrieb am Donnerstag, dem 01. Juli 2010:
+If you use sys or proc, is it possible to get the uuid from a file
+descriptor or pathname without races?
 
-> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
-
-2.6.32.16 fails to boot on my KVM domains using qemu-kvm 0.11.1.
-
-Bisecting between 2.6.32.14 which worked and .16 turned up this commit
-as the first culprit[0].
-
-The host is still running 2.6.32.14 and has 8 cores on 2 CPUs.  The
-single-cpu KVM domain hangs just after printing 'Write protecting the
-kernel read-only data: 9492k'[1].   On a successful boot this line would
-usually be followed by 'INIT: version 2.86 booting'.
-
-A 2.6.32.16 with this patch reverted boots fine.
-
-If there's any info you need please just ask.
-
-Cheers,
-Peter
-
-0.  http://asteria.noreply.org/~weasel/volatile/2010-07-07-x9KxN34l17c/fileztnjyZ
-1.  http://asteria.noreply.org/~weasel/volatile/2010-07-07-VTRuAQGOKlY/zoe-2.6.32.16.png
-2.  http://asteria.noreply.org/~weasel/volatile/2010-07-07-Fq0PVc1ecsc/config-2.6.32.16-dsa-amd64
--- 
-                           |  .''`.  ** Debian GNU/Linux **
-      Peter Palfrader      | : :' :      The  universal
- http://www.palfrader.org/ | `. `'      Operating System
-                           |   `-    http://www.debian.org/
+--b.
