@@ -1,77 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab0GGIEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 04:04:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59208 "EHLO hera.kernel.org"
+	id S1753534Ab0GGITX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 04:19:23 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59150 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752749Ab0GGIEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 04:04:20 -0400
-Date: Wed, 7 Jul 2010 08:03:40 GMT
-From: tip-bot for Kulikov Vasiliy <segooon@gmail.com>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
-       fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-       mingo@elte.hu, segooon@gmail.com, dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-       fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-       dzickus@redhat.com, segooon@gmail.com, mingo@elte.hu
-In-Reply-To: <1278316854-28442-1-git-send-email-segooon@gmail.com>
-References: <1278316854-28442-1-git-send-email-segooon@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/nmi] kernel/watchdog: Initialize 'result'
-Message-ID: <tip-eb703f98191a505f78d0066712ad67d5dedc4c90@git.kernel.org>
-Git-Commit-ID: eb703f98191a505f78d0066712ad67d5dedc4c90
-X-Mailer: tip-git-log-daemon
+	id S1752749Ab0GGITV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 04:19:21 -0400
+Date: Wed, 7 Jul 2010 10:19:00 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Peter Feuerer <peter@piie.net>, Matthew Garrett <mjg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Len Brown <len.brown@intel.com>, Alexey Dobriyan <adobriyan@gmail.com>,
+       platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] acerhdf: fix resource reclaim in error path
+Message-ID: <20100707081900.GA5308@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Axel Lin <axel.lin@gmail.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Peter Feuerer <peter@piie.net>, Matthew Garrett <mjg@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Len Brown <len.brown@intel.com>,
+	Alexey Dobriyan <adobriyan@gmail.com>,
+	platform-driver-x86@vger.kernel.org
+References: <1278469339.12801.27.camel@mola>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 07 Jul 2010 08:03:42 +0000 (UTC)
+In-Reply-To: <1278469339.12801.27.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eb703f98191a505f78d0066712ad67d5dedc4c90
-Gitweb:     http://git.kernel.org/tip/eb703f98191a505f78d0066712ad67d5dedc4c90
-Author:     Kulikov Vasiliy <segooon@gmail.com>
-AuthorDate: Mon, 5 Jul 2010 12:00:54 +0400
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 7 Jul 2010 08:46:42 +0200
+From: Axel Lin <axel.lin@gmail.com>
+Date: Wed, Jul 07, 2010 at 10:22:19AM +0800
 
-kernel/watchdog: Initialize 'result'
+Good, I like it. Go down for comments :)
 
-Variable on the stack is not initialized to zero, do it
-explicitly.
+> This patch fix resource reclaim in below cases:
+> 1. acerhdf_register_platform() does not properly handle
+>    platform_device_alloc() failure and platform_device_add() failure.
+>    This patch adds error handling for acerhdf_register_platform().
+> 2. acerhdf_register_platform() return err with acerhdf_dev == NULL.
+>    as a result, acerhdf_unregister_platform() does not do resource
+>    reclaim in acerhdf_init() error path.
+>    This patch adds error handing for acerhdf_register_platform(),
+>    thus correct the error handing path in acerhdf_init().
+>    goto out_err instead of err_unreg if acerhdf_register_platform() fail.
+> 3. platform_device_del() should be only used in error handling.
+>    Current implementation missed a platform_device_put() in acerhdf_exit.
+>    This patch fixes it by using platform_device_unregister() instead of
+>    platform_device_del() in acerhdf_unregister_platform().
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/platform/x86/acerhdf.c |   20 ++++++++++++++++----
+>  1 files changed, 16 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+> index 7b2384d..e938a86 100644
+> --- a/drivers/platform/x86/acerhdf.c
+> +++ b/drivers/platform/x86/acerhdf.c
+> @@ -579,9 +579,21 @@ static int acerhdf_register_platform(void)
+>  		return err;
+>  
+>  	acerhdf_dev = platform_device_alloc("acerhdf", -1);
+> -	platform_device_add(acerhdf_dev);
+> +	if (!acerhdf_dev) {
+> +		err = -ENOMEM;
+> +		goto err_device_alloc;
+> +	}
+> +	err = platform_device_add(acerhdf_dev);
+> +	if (err)
+> +		goto err_device_add;
+>  
+>  	return 0;
+> +
+> +err_device_add:
+> +	platform_device_put(acerhdf_dev);
+> +err_device_alloc:
+> +	platform_driver_unregister(&acerhdf_driver);
+> +	return err;
+>  }
+>  
+>  static void acerhdf_unregister_platform(void)
+> @@ -589,7 +601,7 @@ static void acerhdf_unregister_platform(void)
+>  	if (!acerhdf_dev)
+>  		return;
 
-This bug was found by a compiler warning:
+while you're at it, you can remove the above check since
+platform_device_del() does that anyway and with your error checking,
+acerhdf_dev won't be unitialized in this path.
 
- kernel/watchdog.c:463: warning: 'result' may be used uninitialized in this function
+>  
+> -	platform_device_del(acerhdf_dev);
+> +	platform_device_unregister(acerhdf_dev);
+>  	platform_driver_unregister(&acerhdf_driver);
+>  }
+>  
+> @@ -633,7 +645,7 @@ static int __init acerhdf_init(void)
+>  
+>  	err = acerhdf_register_platform();
+>  	if (err)
+> -		goto err_unreg;
+> +		goto out_err;
+>  
+>  	err = acerhdf_register_thermal();
+>  	if (err)
+> @@ -646,7 +658,7 @@ err_unreg:
+>  	acerhdf_unregister_platform();
+>  
+>  out_err:
+> -	return -ENODEV;
+> +	return err;
+>  }
+>  
+>  static void __exit acerhdf_exit(void)
+> -- 
+> 1.5.4.3
+> 
+> 
+> 
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-LKML-Reference: <1278316854-28442-1-git-send-email-segooon@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/watchdog.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 91b0b26..613bc1f 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -460,7 +460,7 @@ static void watchdog_disable(int cpu)
- static void watchdog_enable_all_cpus(void)
- {
- 	int cpu;
--	int result;
-+	int result = 0;
- 
- 	for_each_online_cpu(cpu)
- 		result += watchdog_enable(cpu);
+-- 
+Regards/Gruss,
+    Boris.
