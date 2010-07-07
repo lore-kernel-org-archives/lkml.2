@@ -1,252 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab0GGLSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 07:18:25 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58985 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754007Ab0GGLSW (ORCPT
+	id S1754917Ab0GGLSu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 07:18:50 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:40691 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754726Ab0GGLSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 07:18:22 -0400
-From: Joel Becker <joel.becker@oracle.com>
-To: Dave Chinner <david@fromorbit.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
-       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
-Subject: [PATCH 1/3] ocfs2: When zero extending, do it by page.
-Date: Wed,  7 Jul 2010 04:16:05 -0700
-Message-Id: <1278501367-7710-2-git-send-email-joel.becker@oracle.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <20100703213219.GB21262@mail.oracle.com>
-References: <20100703213219.GB21262@mail.oracle.com>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C346242.0290:SCFMA4539814,ss=1,fgs=0
+	Wed, 7 Jul 2010 07:18:37 -0400
+From: Adrian Hunter <adrian.hunter@nokia.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Adrian Hunter <adrian.hunter@nokia.com>,
+       linux-kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kyungmin Park <kmpark@infradead.org>,
+       Madhusudhan Chikkature <madhu.cr@ti.com>,
+       linux-mmc Mailing List <linux-mmc@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
+Date: Wed, 07 Jul 2010 14:17:41 +0300
+Message-Id: <20100707111741.24979.38696.sendpatchset@ahunter-work.research.nokia.com>
+In-Reply-To: <20100707111716.24979.68940.sendpatchset@ahunter-work.research.nokia.com>
+References: <20100707111716.24979.68940.sendpatchset@ahunter-work.research.nokia.com>
+Subject: [PATCH V4 3/5] omap_hsmmc: Add erase capability
+X-OriginalArrivalTime: 07 Jul 2010 11:17:47.0408 (UTC) FILETIME=[07574100:01CB1DC6]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ocfs2_zero_extend() does its zeroing block by block, but it calls a
-function named ocfs2_write_zero_page().  Let's have
-ocfs2_write_zero_page() handle the page level.  From
-ocfs2_zero_extend()'s perspective, it is now page-at-a-time.
+>From db31a11109e7f0c89a7a9ca70ad03beff354aa8e Mon Sep 17 00:00:00 2001
+From: Adrian Hunter <adrian.hunter@nokia.com>
+Date: Tue, 18 May 2010 17:33:13 +0300
+Subject: [PATCH 3/5] omap_hsmmc: Add erase capability
 
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
+Disable the data (busy) timeout for erases and set the
+MMC_CAP_ERASE capability.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@nokia.com>
 ---
- fs/ocfs2/aops.c |   30 --------------
- fs/ocfs2/file.c |  119 +++++++++++++++++++++++++++++++++++++++----------------
- 2 files changed, 85 insertions(+), 64 deletions(-)
+ drivers/mmc/host/omap_hsmmc.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index 3623ca2..9a5c931 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -459,36 +459,6 @@ int walk_page_buffers(	handle_t *handle,
- 	return ret;
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index a0c8515..868498d 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -28,6 +28,7 @@
+ #include <linux/clk.h>
+ #include <linux/mmc/host.h>
+ #include <linux/mmc/core.h>
++#include <linux/mmc/mmc.h>
+ #include <linux/io.h>
+ #include <linux/semaphore.h>
+ #include <linux/gpio.h>
+@@ -78,6 +79,7 @@
+ #define INT_EN_MASK		0x307F0033
+ #define BWR_ENABLE		(1 << 4)
+ #define BRR_ENABLE		(1 << 5)
++#define DTO_ENABLE		(1 << 20)
+ #define INIT_STREAM		(1 << 1)
+ #define DP_SELECT		(1 << 21)
+ #define DDIR			(1 << 4)
+@@ -523,7 +525,8 @@ static void omap_hsmmc_stop_clock(struct omap_hsmmc_host *host)
+ 		dev_dbg(mmc_dev(host->mmc), "MMC Clock is not stoped\n");
  }
  
--handle_t *ocfs2_start_walk_page_trans(struct inode *inode,
--							 struct page *page,
--							 unsigned from,
--							 unsigned to)
--{
--	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
--	handle_t *handle;
--	int ret = 0;
--
--	handle = ocfs2_start_trans(osb, OCFS2_INODE_UPDATE_CREDITS);
--	if (IS_ERR(handle)) {
--		ret = -ENOMEM;
--		mlog_errno(ret);
--		goto out;
--	}
--
--	if (ocfs2_should_order_data(inode)) {
--		ret = ocfs2_jbd2_file_inode(handle, inode);
--		if (ret < 0)
--			mlog_errno(ret);
--	}
--out:
--	if (ret) {
--		if (!IS_ERR(handle))
--			ocfs2_commit_trans(osb, handle);
--		handle = ERR_PTR(ret);
--	}
--	return handle;
--}
--
- static sector_t ocfs2_bmap(struct address_space *mapping, sector_t block)
+-static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host)
++static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host,
++				  struct mmc_command *cmd)
  {
- 	sector_t status;
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 6a13ea6..a6e0eb6 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -724,28 +724,55 @@ leave:
- 	return status;
- }
+ 	unsigned int irq_mask;
  
-+/*
-+ * While a write will already be ordering the data, a truncate will not.
-+ * Thus, we need to explicitly order the zeroed pages.
-+ */
-+static handle_t *ocfs2_zero_start_ordered_transaction(struct inode *inode)
-+{
-+	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
-+	handle_t *handle = NULL;
-+	int ret = 0;
+@@ -532,6 +535,10 @@ static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host)
+ 	else
+ 		irq_mask = INT_EN_MASK;
+ 
++	/* Disable timeout for erases */
++	if (cmd->opcode == MMC_ERASE)
++		irq_mask &= ~DTO_ENABLE;
 +
-+	if (ocfs2_should_order_data(inode))
-+		goto out;
-+
-+	handle = ocfs2_start_trans(osb, OCFS2_INODE_UPDATE_CREDITS);
-+	if (IS_ERR(handle)) {
-+		ret = -ENOMEM;
-+		mlog_errno(ret);
-+		goto out;
-+	}
-+
-+	ret = ocfs2_jbd2_file_inode(handle, inode);
-+	if (ret < 0)
-+		mlog_errno(ret);
-+
-+out:
-+	if (ret) {
-+		if (!IS_ERR(handle))
-+			ocfs2_commit_trans(osb, handle);
-+		handle = ERR_PTR(ret);
-+	}
-+	return handle;
-+}
-+
- /* Some parts of this taken from generic_cont_expand, which turned out
-  * to be too fragile to do exactly what we need without us having to
-  * worry about recursive locking in ->write_begin() and ->write_end(). */
--static int ocfs2_write_zero_page(struct inode *inode,
--				 u64 size)
-+static int ocfs2_write_zero_page(struct inode *inode, u64 abs_from,
-+				 u64 abs_to)
- {
- 	struct address_space *mapping = inode->i_mapping;
- 	struct page *page;
--	unsigned long index;
--	unsigned int offset;
-+	unsigned long index = abs_from >> PAGE_CACHE_SHIFT;
- 	handle_t *handle = NULL;
- 	int ret;
-+	unsigned zero_from, zero_to, block_start, block_end;
+ 	OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
+ 	OMAP_HSMMC_WRITE(host->base, ISE, irq_mask);
+ 	OMAP_HSMMC_WRITE(host->base, IE, irq_mask);
+@@ -782,7 +789,7 @@ omap_hsmmc_start_command(struct omap_hsmmc_host *host, struct mmc_command *cmd,
+ 		mmc_hostname(host->mmc), cmd->opcode, cmd->arg);
+ 	host->cmd = cmd;
  
--	offset = (size & (PAGE_CACHE_SIZE-1)); /* Within page */
--	/* ugh.  in prepare/commit_write, if from==to==start of block, we
--	** skip the prepare.  make sure we never send an offset for the start
--	** of a block
--	*/
--	if ((offset & (inode->i_sb->s_blocksize - 1)) == 0) {
--		offset++;
--	}
--	index = size >> PAGE_CACHE_SHIFT;
-+	BUG_ON(abs_from >= abs_to);
-+	BUG_ON(abs_to > ((index + 1) << PAGE_CACHE_SHIFT));
-+	BUG_ON(abs_from & (inode->i_blkbits - 1));
+-	omap_hsmmc_enable_irq(host);
++	omap_hsmmc_enable_irq(host, cmd);
  
- 	page = grab_cache_page(mapping, index);
- 	if (!page) {
-@@ -754,31 +781,52 @@ static int ocfs2_write_zero_page(struct inode *inode,
- 		goto out;
- 	}
+ 	host->response_busy = 0;
+ 	if (cmd->flags & MMC_RSP_PRESENT) {
+@@ -2094,7 +2101,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
+ 	mmc->max_seg_size = mmc->max_req_size;
  
--	ret = ocfs2_prepare_write_nolock(inode, page, offset, offset);
--	if (ret < 0) {
--		mlog_errno(ret);
--		goto out_unlock;
--	}
-+	/* Get the offsets within the page that we want to zero */
-+	zero_from = abs_from & (PAGE_CACHE_SIZE - 1);
-+	zero_to = abs_to & (PAGE_CACHE_SIZE - 1);
-+	if (!zero_to)
-+		zero_to = PAGE_CACHE_SIZE;
+ 	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
+-		     MMC_CAP_WAIT_WHILE_BUSY;
++		     MMC_CAP_WAIT_WHILE_BUSY | MMC_CAP_ERASE;
  
--	if (ocfs2_should_order_data(inode)) {
--		handle = ocfs2_start_walk_page_trans(inode, page, offset,
--						     offset);
--		if (IS_ERR(handle)) {
--			ret = PTR_ERR(handle);
--			handle = NULL;
-+	/* We know that zero_from is block aligned */
-+	for (block_start = zero_from;
-+	     (block_start < PAGE_CACHE_SIZE) && (block_start < zero_to);
-+	     block_start = block_end) {
-+		block_end = block_start + (1 << inode->i_blkbits);
-+
-+		/*
-+		 * block_start is block-aligned.  Bump it by one to
-+		 * force ocfs2_{prepare,commit}_write() to zero the
-+		 * whole block.
-+		 */
-+		ret = ocfs2_prepare_write_nolock(inode, page,
-+						 block_start + 1,
-+						 block_start + 1);
-+		if (ret < 0) {
-+			mlog_errno(ret);
- 			goto out_unlock;
- 		}
--	}
- 
--	/* must not update i_size! */
--	ret = block_commit_write(page, offset, offset);
--	if (ret < 0)
--		mlog_errno(ret);
--	else
--		ret = 0;
-+		if (!handle) {
-+			handle = ocfs2_zero_start_ordered_transaction(inode);
-+			if (IS_ERR(handle)) {
-+				ret = PTR_ERR(handle);
-+				handle = NULL;
-+				break;
-+			}
-+		}
-+
-+		/* must not update i_size! */
-+		ret = block_commit_write(page, block_start + 1,
-+					 block_start + 1);
-+		if (ret < 0)
-+			mlog_errno(ret);
-+		else
-+			ret = 0;
-+	}
- 
- 	if (handle)
- 		ocfs2_commit_trans(OCFS2_SB(inode->i_sb), handle);
-+
- out_unlock:
- 	unlock_page(page);
- 	page_cache_release(page);
-@@ -790,18 +838,21 @@ static int ocfs2_zero_extend(struct inode *inode,
- 			     u64 zero_to_size)
- {
- 	int ret = 0;
--	u64 start_off;
-+	u64 start_off, next_off;
- 	struct super_block *sb = inode->i_sb;
- 
- 	start_off = ocfs2_align_bytes_to_blocks(sb, i_size_read(inode));
- 	while (start_off < zero_to_size) {
--		ret = ocfs2_write_zero_page(inode, start_off);
-+		next_off = (start_off & PAGE_CACHE_MASK) + PAGE_CACHE_SIZE;
-+		if (next_off > zero_to_size)
-+			next_off = zero_to_size;
-+		ret = ocfs2_write_zero_page(inode, start_off, next_off);
- 		if (ret < 0) {
- 			mlog_errno(ret);
- 			goto out;
- 		}
- 
--		start_off += sb->s_blocksize;
-+		start_off = next_off;
- 
- 		/*
- 		 * Very large extends have the potential to lock up
+ 	switch (mmc_slot(host).wires) {
+ 	case 8:
 -- 
-1.7.1
+1.6.3.3
 
