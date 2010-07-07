@@ -1,122 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab0GGVjg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 17:39:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16566 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756169Ab0GGVje (ORCPT
+	id S1757656Ab0GGVkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 17:40:35 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53446 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757389Ab0GGVkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 17:39:34 -0400
-Message-ID: <4C34F305.3070403@kernel.org>
-Date: Wed, 07 Jul 2010 14:35:01 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-CC: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-       Denys Vlasenko <vda.linux@googlemail.com>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] x86, numa: fix boot without RAM on node0 again
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B020A.4C34F3C8.004E,ss=1,fgs=0
+	Wed, 7 Jul 2010 17:40:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 03/18] lkdtm: use generic_file_llseek in debugfs
+Date: Wed,  7 Jul 2010 23:40:05 +0200
+Message-Id: <1278538820-1392-4-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1278538820-1392-1-git-send-email-arnd@arndb.de>
+References: <1278538820-1392-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:zDdVEvnx5xsdyMi+z7c7tcRRV7I4RVmCCSJm4PlAzyK
+ 9FLOcI7pjy19kofrE4OIaqytBI+uyNaWnfnmJ+/aKb08KS7707
+ Yo6qJAfMa8dFFx0y9O0IYobcixcsEozve85oPDArbtCrVvTR3/
+ MqNnwxcP4kkzFzKd0KEw9mh/YHqhEi3vnlab/P45Y2ypydnIa+
+ 8VdrgXh5uwgCFU7cBXK7Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When the default llseek behavior gets changed to
+not allowing seek, all file operations that rely
+on the current behaviour need to use an explicit
+.llseek operation.
 
-|commit e534c7c5f8d6e9fc46f57fab067c7e48d8ceb172
-|Author: Lee Schermerhorn <lee.schermerhorn@hp.com>
-|Date:   Wed May 26 14:44:58 2010 -0700
-|
-|    numa: x86_64: use generic percpu var numa_node_id() implementation
-|
-|    x86 arch specific changes to use generic numa_node_id() based on generic
-|    percpu variable infrastructure.  Back out x86's custom version of
-|    numa_node_id()
+The files that lkdtm uses in debugfs are regular
+files and they get read using simple_read_from_buffer,
+so generic_file_llseek is the right operation.
 
-broke numa system that doesn't have ram on node0 when MEMORY_HOTPLUG is enabled.
-
-because cpu_up() will call cpu_to_node() before per_cpu(numa_node) is setup for
-APs.
-
-When Node0 doesn't have RAM, on x86, cpus already round it to nearest node with
-RAM in x86_cpu_to_node_map. and per_cpu(numa_node) is not set up until in c_init for APs.
-
-when later cpu_up() calling cpu_to_node() will get 0 again, and make it online
-even there is no RAM on node0. so later all APs can not booted up, and later
-will have panic.
-
-[    1.611101] On node 0 totalpages: 0
-.........
-[    2.608558] On node 0 totalpages: 0
-[    2.612065] Brought up 1 CPUs
-[    2.615199] Total of 1 processors activated (3990.31 BogoMIPS).
-...
-   93.225341] calling  loop_init+0x0/0x1a4 @ 1
-[   93.229314] PERCPU: allocation failed, size=80 align=8, failed to populate
-[   93.246539] Pid: 1, comm: swapper Tainted: G        W   2.6.35-rc4-tip-yh-04371-gd64e6c4-dirty #354
-[   93.264621] Call Trace:
-[   93.266533]  [<ffffffff81125e43>] pcpu_alloc+0x83a/0x8e7
-[   93.270710]  [<ffffffff81125f15>] __alloc_percpu+0x10/0x12
-[   93.285849]  [<ffffffff8140786c>] alloc_disk_node+0x94/0x16d
-[   93.291811]  [<ffffffff81407956>] alloc_disk+0x11/0x13
-[   93.306157]  [<ffffffff81503e51>] loop_alloc+0xa7/0x180
-[   93.310538]  [<ffffffff8277ef48>] loop_init+0x9b/0x1a4
-[   93.324909]  [<ffffffff8277eead>] ? loop_init+0x0/0x1a4
-[   93.329650]  [<ffffffff810001f2>] do_one_initcall+0x57/0x136
-[   93.345197]  [<ffffffff827486d0>] kernel_init+0x184/0x20e
-[   93.348146]  [<ffffffff81034954>] kernel_thread_helper+0x4/0x10
-[   93.365194]  [<ffffffff81c7cc3c>] ? restore_args+0x0/0x30
-[   93.369305]  [<ffffffff8274854c>] ? kernel_init+0x0/0x20e
-[   93.386011]  [<ffffffff81034950>] ? kernel_thread_helper+0x0/0x10
-[   93.392047] loop: out of memory
-...
-
-Try to assign per_cpu(numa_node) early
-
-Signed-off-by: Yinghai <yinghai@kernel.org>
-
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/x86/kernel/setup_percpu.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/misc/lkdtm.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/setup_percpu.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup_percpu.c
-+++ linux-2.6/arch/x86/kernel/setup_percpu.c
-@@ -238,6 +238,15 @@ void __init setup_per_cpu_areas(void)
- #ifdef CONFIG_NUMA
- 		per_cpu(x86_cpu_to_node_map, cpu) =
- 			early_per_cpu_map(x86_cpu_to_node_map, cpu);
-+		/*
-+		 * make sure boot cpu numa_node is right, when boot cpu is on
-+		 *  the node that doesn't have mem installed
-+		 * also cpu_up() will call cpu_to_node() for APs when
-+		 *  MEMORY_HOTPLUG is defined, before per_cpu(numa_node) is set
-+		 *  up later with c_init aka intel_init/amd_init
-+		 * So set them all (boot cpu and all APs)
-+		 */
-+		set_cpu_numa_node(cpu, early_cpu_to_node(cpu));
- #endif
- #endif
- 		/*
-@@ -257,14 +266,6 @@ void __init setup_per_cpu_areas(void)
- 	early_per_cpu_ptr(x86_cpu_to_node_map) = NULL;
- #endif
+diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
+index 5bfb2a2..7d7ce0e 100644
+--- a/drivers/misc/lkdtm.c
++++ b/drivers/misc/lkdtm.c
+@@ -575,30 +575,39 @@ struct crash_entry {
  
--#if defined(CONFIG_X86_64) && defined(CONFIG_NUMA)
--	/*
--	 * make sure boot cpu numa_node is right, when boot cpu is on the
--	 * node that doesn't have mem installed
--	 */
--	set_cpu_numa_node(boot_cpu_id, early_cpu_to_node(boot_cpu_id));
--#endif
--
- 	/* Setup node to cpumask map */
- 	setup_node_to_cpumask_map();
- 
+ static const struct crash_entry crash_entries[] = {
+ 	{"DIRECT", {.read = lkdtm_debugfs_read,
++			.llseek = generic_file_llseek,
+ 			.open = lkdtm_debugfs_open,
+ 			.write = direct_entry} },
+ 	{"INT_HARDWARE_ENTRY", {.read = lkdtm_debugfs_read,
++			.llseek = generic_file_llseek,
+ 			.open = lkdtm_debugfs_open,
+ 			.write = int_hardware_entry} },
+ 	{"INT_HW_IRQ_EN", {.read = lkdtm_debugfs_read,
++			.llseek = generic_file_llseek,
+ 			.open = lkdtm_debugfs_open,
+ 			.write = int_hw_irq_en} },
+ 	{"INT_TASKLET_ENTRY", {.read = lkdtm_debugfs_read,
++			.llseek = generic_file_llseek,
+ 			.open = lkdtm_debugfs_open,
+ 			.write = int_tasklet_entry} },
+ 	{"FS_DEVRW", {.read = lkdtm_debugfs_read,
++			.llseek = generic_file_llseek,
+ 			.open = lkdtm_debugfs_open,
+ 			.write = fs_devrw_entry} },
+ 	{"MEM_SWAPOUT", {.read = lkdtm_debugfs_read,
++			.llseek = generic_file_llseek,
+ 			.open = lkdtm_debugfs_open,
+ 			.write = mem_swapout_entry} },
+ 	{"TIMERADD", {.read = lkdtm_debugfs_read,
++			.llseek = generic_file_llseek,
+ 			.open = lkdtm_debugfs_open,
+ 			.write = timeradd_entry} },
+ 	{"SCSI_DISPATCH_CMD", {.read = lkdtm_debugfs_read,
++			.llseek = generic_file_llseek,
+ 			.open = lkdtm_debugfs_open,
+ 			.write = scsi_dispatch_cmd_entry} },
+ 	{"IDE_CORE_CP",	{.read = lkdtm_debugfs_read,
++			.llseek = generic_file_llseek,
+ 			.open = lkdtm_debugfs_open,
+ 			.write = ide_core_cp_entry} },
+ };
+-- 
+1.7.1
+
