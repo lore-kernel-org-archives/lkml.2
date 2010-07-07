@@ -1,126 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab0GGADw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 20:03:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54568 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752052Ab0GGADu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 20:03:50 -0400
-Date: Tue, 6 Jul 2010 17:02:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: rostedt@goodmis.org
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       James Morris <jmorris@namei.org>
-Subject: Re: [PATCH 2/2] sched: make sched_param arugment static variables
- in some sched_setscheduler() caller
-Message-Id: <20100706170220.f3219001.akpm@linux-foundation.org>
-In-Reply-To: <1278460187.1537.107.camel@gandalf.stny.rr.com>
-References: <20100702144941.8fa101c3.akpm@linux-foundation.org>
-	<20100706091607.CCCC.A69D9226@jp.fujitsu.com>
-	<20100706095013.CCD9.A69D9226@jp.fujitsu.com>
-	<1278454438.1537.54.camel@gandalf.stny.rr.com>
-	<20100706161253.79bfb761.akpm@linux-foundation.org>
-	<1278460187.1537.107.camel@gandalf.stny.rr.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755257Ab0GGAHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 20:07:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50664 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661Ab0GGAHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 20:07:46 -0400
+Message-ID: <4C33C54B.2070804@zytor.com>
+Date: Tue, 06 Jul 2010 17:07:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Michal Marek <mmarek@suse.cz>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+       dmitry.torokhov@gmail.com
+Subject: Re: [GIT] kbuild setlocalversion fix
+References: <20100702121021.GA10458@sepie.suse.cz>
+In-Reply-To: <20100702121021.GA10458@sepie.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 Jul 2010 19:49:47 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Tue, 2010-07-06 at 16:12 -0700, Andrew Morton wrote:
+On 07/02/2010 05:10 AM, Michal Marek wrote:
+> Hi Linus,
 > 
-> > Well if we're so worried about resource wastage then how about making
-> > all boot-time-only text and data reside in __init and __initdata
-> > sections rather than hanging around uselessly in memory for ever?
+> There is a fix to the Makefile not to run scripts/setlocalversion and
+> various git commands on every invocation. This was also the case
+> previously with CONFIG_LOCALVERSION_AUTO=y, but after 85a256d (kbuild:
+> improve version string logic) it happens during every build. Dmitry
+> Torokhov complained that make install in a sshfs-mounted tree takes
+> extremely long, it also goes against the idea that root should only run
+> the necessary minimum of commands. The first patch has been in
+> linux-next for a couple of days and I got no complaints, the second one
+> is just a minor fix over it and should be safe.
 > 
-> That would be a patch I would like :-)
-> 
-> I could probably do that when I get some time.
-> 
-> > 
-> > Only that's going to be hard because we went and added pointers into
-> > .init.text from .data due to `struct tracer.selftest', which will cause
-> > a storm of section mismatch warnings.  Doh, should have invoked the
-> > selftests from initcalls.  That might open the opportunity of running
-> > the selftests by modprobing the selftest module, too.
-> 
-> They are called by initcalls. The initcalls register the tracers and
-> that is the time we call the selftest. No other time.
 
-It should all be __init!
+Building 2.6.35-rc4 with O= I get a bunch of:
 
-> Is there a way that we set up a function pointer to let the section
-> checks know that it is only called at bootup?
+/bin/sh: scripts/setlocalversion: No such file or directory
 
-<sticks his nose in modpost.c for the first time>
-
-There are various whitelisting hacks in there based on the name of the
-offending symbol.  Search term: DEFAULT_SYMBOL_WHITE_LIST.
-
-It'd be cleaner to just zap the tracer.selftest field altogether and
-run the tests from initcalls if possible?
-
-> > 
-> > And I _do_ wish the selftest module was modprobeable, rather than this
-> > monstrosity:
-> 
-> The selftests are done by individual tracers at boot up. It would be
-> hard to modprobe them at that time.
-
-No, if tracer_selftest.o was linked into vmlinux then the tests get run
-within do_initcalls().  If tracer_selftest.o is a module, then the tests
-get run at modprobe-time.  The latter option may not be terribly useful
-but it comes basically for free as a reward for doing stuff correctly.
-
-> 
-> > #ifdef CONFIG_FTRACE_SELFTEST
-> > /* Let selftest have access to static functions in this file */
-> > #include "trace_selftest.c"
-> > #endif
-> > 
-> > Really?  Who had a tastebudectomy over there?  At least call it
-> > trace_selftest.inc or something, so poor schmucks don't go scrabbling
-> > around wondering "how the hell does this thing get built oh no they
-> > didn't really go and #include it did they?"
-> 
-> 
-> Well this is also the way sched.c adds all its extra code.
-
-The sched.c hack sucks too.
-
-> Making it
-> trace_selftest.inc would make it hard to know what the hell it was.
-
-trace_selftest.i_really_suck?
-
-> And
-> also hard for editors to know what type of file it is, or things can be
-> missed with a 'find . -name "*.[ch]" | xargs grep blahblah'
-
-Well bad luck.  Of _course_ it makes a mess.  It's already a mess.
-
-How's about just removing the `static' from whichever symbols
-tracer_selftest needs?  That'd surely be better than #including a .c
-file.
-
-> Yes, the self tests are ugly and can probably go with an overhaul. Since
-> we are trying to get away from the tracer plugins anyway, they will
-> start disappearing when the plugins do.
-> 
-> We should have some main selftests anyway. Those are for the TRACE_EVENT
-> tests (which are not even in the trace_selftest.c file, and the function
-> testing which currently are, as well as the latency testers.
-> 
-> The trace_selftest.c should eventually be replaced with more compact
-> tests for the specific types of tracing.
-
+	-hpa
