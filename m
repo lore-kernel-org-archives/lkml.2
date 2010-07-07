@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab0GGPGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:06:38 -0400
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:63372 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756506Ab0GGPGd (ORCPT
+	id S1756793Ab0GGPGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:06:10 -0400
+Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:58263 "EHLO
+	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756626Ab0GGPGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 11:06:33 -0400
+	Wed, 7 Jul 2010 11:06:00 -0400
 From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
        sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
        linux-nfs@vger.kernel.org, "David P. Quigley" <dpquigl@tycho.nsa.gov>,
        "Matthew N. Dodd" <Matthew.Dodd@sparta.com>
-Subject: [PATCH 02/10] Security: Add Hook to test if the particular xattr is part of a MAC model.
-Date: Wed,  7 Jul 2010 10:31:18 -0400
-Message-Id: <1278513086-23964-3-git-send-email-dpquigl@tycho.nsa.gov>
+Subject: [PATCH 10/10] NFSD: Server implementation of MAC Labeling
+Date: Wed,  7 Jul 2010 10:31:26 -0400
+Message-Id: <1278513086-23964-11-git-send-email-dpquigl@tycho.nsa.gov>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
 References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
@@ -25,158 +25,373 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are areas in the Labeled NFS code where where we need to test if the
-attribute being requested exhibits the semantics of a MAC model. This allows us
-to make sure that we get the desired semantics from the attribute instead of
-something else such as capabilities or a time based LSM.
+This patch adds the ability to encode and decode file labels on the server for
+the purpose of sending them to the client and also to process label change
+requests from the client.
 
 Signed-off-by: Matthew N. Dodd <Matthew.Dodd@sparta.com>
 Signed-off-by: David P. Quigley <dpquigl@tycho.nsa.gov>
 ---
- include/linux/security.h   |   11 +++++++++++
- security/capability.c      |    6 ++++++
- security/security.c        |    6 ++++++
- security/selinux/hooks.c   |    6 ++++++
- security/smack/smack_lsm.c |   11 +++++++++++
- 5 files changed, 40 insertions(+), 0 deletions(-)
+ fs/nfsd/export.c   |    3 +
+ fs/nfsd/nfs4proc.c |   33 ++++++++++++++
+ fs/nfsd/nfs4xdr.c  |  125 +++++++++++++++++++++++++++++++++++++++++++++++++---
+ fs/nfsd/vfs.c      |   30 ++++++++++++
+ fs/nfsd/vfs.h      |    2 +
+ 5 files changed, 187 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 4d01784..9597620 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1373,6 +1373,10 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	@pages contains the number of pages.
-  *	Return 0 if permission is granted.
-  *
-+ * @ismaclabel:
-+ * 	Check if the extended attribute specified by @name represents a MAC label.
-+ * 	@name full extended attribute name to check against LSM as a MAC label.
-+ *
-  * @secid_to_secctx:
-  *	Convert secid to security context.
-  *	@secid contains the security ID.
-@@ -1664,6 +1668,7 @@ struct security_operations {
+diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+index 872a5ef..39cd1f7 100644
+--- a/fs/nfsd/export.c
++++ b/fs/nfsd/export.c
+@@ -1422,6 +1422,9 @@ static struct flags {
+ 	{ NFSEXP_ALLSQUASH, {"all_squash", ""}},
+ 	{ NFSEXP_ASYNC, {"async", "sync"}},
+ 	{ NFSEXP_GATHERED_WRITES, {"wdelay", "no_wdelay"}},
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++	{ NFSEXP_SECURITY_LABEL, {"security_label", ""}},
++#endif
+ 	{ NFSEXP_NOHIDE, {"nohide", ""}},
+ 	{ NFSEXP_CROSSMOUNT, {"crossmnt", ""}},
+ 	{ NFSEXP_NOSUBTREECHECK, {"no_subtree_check", ""}},
+diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
+index 2ab9e85..8ce1704 100644
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -39,6 +39,10 @@
+ #include "xdr4.h"
+ #include "vfs.h"
  
- 	int (*getprocattr) (struct task_struct *p, char *name, char **value);
- 	int (*setprocattr) (struct task_struct *p, char *name, void *value, size_t size);
-+	int (*ismaclabel) (const char * name);
- 	int (*secid_to_secctx) (u32 secid, char **secdata, u32 *seclen);
- 	int (*secctx_to_secid) (const char *secdata, u32 seclen, u32 *secid);
- 	void (*release_secctx) (char *secdata, u32 seclen);
-@@ -1919,6 +1924,7 @@ int security_getprocattr(struct task_struct *p, char *name, char **value);
- int security_setprocattr(struct task_struct *p, char *name, void *value, size_t size);
- int security_netlink_send(struct sock *sk, struct sk_buff *skb);
- int security_netlink_recv(struct sk_buff *skb, int cap);
-+int security_ismaclabel(const char *name);
- int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen);
- int security_secctx_to_secid(const char *secdata, u32 seclen, u32 *secid);
- void security_release_secctx(char *secdata, u32 seclen);
-@@ -2676,6 +2682,11 @@ static inline int security_netlink_recv(struct sk_buff *skb, int cap)
- 	return cap_netlink_recv(skb, cap);
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++#include <linux/security.h>
++#endif
++
+ #define NFSDDBG_FACILITY		NFSDDBG_PROC
+ 
+ static u32 nfsd_attrmask[] = {
+@@ -204,6 +208,18 @@ do_open_lookup(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_o
+ 					(u32 *)open->op_verf.data,
+ 					&open->op_truncate, &created);
+ 
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++		if (!status && open->op_label != NULL) {
++			struct inode *inode = resfh.fh_dentry->d_inode;
++
++			mutex_lock(&inode->i_mutex);
++			/* Is it appropriate to just kick back an error? */
++			status = security_inode_setsecctx(resfh.fh_dentry,
++					open->op_label->label, open->op_label->len);
++			mutex_unlock(&inode->i_mutex);
++		}
++#endif
++
+ 		/*
+ 		 * Following rfc 3530 14.2.16, use the returned bitmask
+ 		 * to indicate which attributes we used to store the
+@@ -553,6 +569,18 @@ nfsd4_create(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 		status = nfserr_badtype;
+ 	}
+ 
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++	if (!status && create->cr_label != NULL) {
++		struct inode *inode = resfh.fh_dentry->d_inode;
++
++		mutex_lock(&inode->i_mutex);
++		/* Is it appropriate to just kick back an error? */
++		status = security_inode_setsecctx(resfh.fh_dentry,
++				create->cr_label->label, create->cr_label->len);
++		mutex_unlock(&inode->i_mutex);
++	}
++#endif
++
+ 	if (status)
+ 		goto out;
+ 
+@@ -803,6 +831,11 @@ nfsd4_setattr(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 					    setattr->sa_acl);
+ 	if (status)
+ 		goto out;
++	if (setattr->sa_label != NULL)
++		status = nfsd4_set_nfs4_label(rqstp, &cstate->current_fh,
++					    setattr->sa_label);
++	if (status)
++		goto out;
+ 	status = nfsd_setattr(rqstp, &cstate->current_fh, &setattr->sa_iattr,
+ 				0, (time_t)0);
+ out:
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 34ccf81..7e16b41 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -51,6 +51,10 @@
+ #include "xdr4.h"
+ #include "vfs.h"
+ 
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++#include <linux/security.h>
++#endif
++
+ #define NFSDDBG_FACILITY		NFSDDBG_XDR
+ 
+ /*
+@@ -239,7 +243,8 @@ nfsd4_decode_bitmap(struct nfsd4_compoundargs *argp, u32 *bmval)
+ 
+ static __be32
+ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
+-		   struct iattr *iattr, struct nfs4_acl **acl)
++		   struct iattr *iattr, struct nfs4_acl **acl,
++		   struct nfs4_label **label)
+ {
+ 	int expected_len, len = 0;
+ 	u32 dummy32;
+@@ -383,6 +388,45 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
+ 			goto xdr_error;
+ 		}
+ 	}
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++	if (bmval[1] & FATTR4_WORD1_SECURITY_LABEL) {
++		uint32_t lfs;
++
++		READ_BUF(4);
++		len += 4;
++		READ32(lfs);
++		READ_BUF(4);
++		len += 4;
++		READ32(dummy32);
++		READ_BUF(dummy32);
++		len += (XDR_QUADLEN(dummy32) << 2);
++		READMEM(buf, dummy32);
++
++		if (dummy32 > NFS4_MAXLABELLEN)
++			return nfserr_resource;
++
++		*label = kzalloc(sizeof(struct nfs4_label), GFP_KERNEL);
++		if (*label == NULL) {
++			host_err = -ENOMEM;
++			goto out_nfserr;
++		}
++
++		(*label)->label = kmalloc(dummy32 + 1, GFP_KERNEL);
++		if ((*label)->label == NULL) {
++			host_err = -ENOMEM;
++			kfree(*label);
++			goto out_nfserr;
++		}
++
++		(*label)->len = dummy32;
++		memcpy((*label)->label, buf, dummy32);
++		((char *)(*label)->label)[dummy32] = '\0';
++		(*label)->lfs = lfs;
++
++		defer_free(argp, kfree, (*label)->label);
++		defer_free(argp, kfree, *label);
++	}
++#endif
+ 	if (bmval[0] & ~NFSD_WRITEABLE_ATTRS_WORD0
+ 	    || bmval[1] & ~NFSD_WRITEABLE_ATTRS_WORD1
+ 	    || bmval[2] & ~NFSD_WRITEABLE_ATTRS_WORD2)
+@@ -481,7 +525,7 @@ nfsd4_decode_create(struct nfsd4_compoundargs *argp, struct nfsd4_create *create
+ 		return status;
+ 
+ 	status = nfsd4_decode_fattr(argp, create->cr_bmval, &create->cr_iattr,
+-				    &create->cr_acl);
++				    &create->cr_acl, &create->cr_label);
+ 	if (status)
+ 		goto out;
+ 
+@@ -644,7 +688,8 @@ nfsd4_decode_open(struct nfsd4_compoundargs *argp, struct nfsd4_open *open)
+ 		case NFS4_CREATE_UNCHECKED:
+ 		case NFS4_CREATE_GUARDED:
+ 			status = nfsd4_decode_fattr(argp, open->op_bmval,
+-				&open->op_iattr, &open->op_acl);
++				&open->op_iattr, &open->op_acl,
++				&open->op_label);
+ 			if (status)
+ 				goto out;
+ 			break;
+@@ -658,7 +703,7 @@ nfsd4_decode_open(struct nfsd4_compoundargs *argp, struct nfsd4_open *open)
+ 			READ_BUF(8);
+ 			COPYMEM(open->op_verf.data, 8);
+ 			status = nfsd4_decode_fattr(argp, open->op_bmval,
+-				&open->op_iattr, &open->op_acl);
++				&open->op_iattr, &open->op_acl, &open->op_label);
+ 			if (status)
+ 				goto out;
+ 			break;
+@@ -855,7 +900,7 @@ nfsd4_decode_setattr(struct nfsd4_compoundargs *argp, struct nfsd4_setattr *seta
+ 	if (status)
+ 		return status;
+ 	return nfsd4_decode_fattr(argp, setattr->sa_bmval, &setattr->sa_iattr,
+-				  &setattr->sa_acl);
++				  &setattr->sa_acl, &setattr->sa_label);
  }
  
-+static inline int security_ismaclabel(const char *name)
-+{
-+	return 0;
-+}
-+
- static inline int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
- {
- 	return -EOPNOTSUPP;
-diff --git a/security/capability.c b/security/capability.c
-index 9ce1c2f..0d8f7e9 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -829,6 +829,11 @@ static int cap_setprocattr(struct task_struct *p, char *name, void *value,
- 	return -EINVAL;
+ static __be32
+@@ -918,7 +963,7 @@ nfsd4_decode_verify(struct nfsd4_compoundargs *argp, struct nfsd4_verify *verify
+ 	 * nfsd4_proc_verify; however we still decode here just to return
+ 	 * correct error in case of bad xdr. */
+ #if 0
+-	status = nfsd4_decode_fattr(ve_bmval, &ve_iattr, &ve_acl);
++	status = nfsd4_decode_fattr(ve_bmval, &ve_iattr, &ve_acl, &ve_label);
+ 	if (status == nfserr_inval) {
+ 		status = nfserrno(status);
+ 		goto out;
+@@ -1696,6 +1741,44 @@ nfsd4_encode_aclname(struct svc_rqst *rqstp, int whotype, uid_t id, int group,
+ 	return nfsd4_encode_name(rqstp, whotype, id, group, p, buflen);
  }
  
-+static int cap_ismaclabel(const char *name)
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++static inline __be32
++nfsd4_encode_security_label(struct svc_rqst *rqstp, struct dentry *dentry, __be32 **pp, int *buflen)
 +{
-+	return 0;
-+}
++	void *context;
++	int err;
++	int len;
++	uint32_t lfs = 0;
++	__be32 *p = *pp;
 +
- static int cap_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
- {
- 	return -EOPNOTSUPP;
-@@ -1064,6 +1069,7 @@ void security_fixup_ops(struct security_operations *ops)
- 	set_to_cap_if_null(ops, d_instantiate);
- 	set_to_cap_if_null(ops, getprocattr);
- 	set_to_cap_if_null(ops, setprocattr);
-+	set_to_cap_if_null(ops, ismaclabel);
- 	set_to_cap_if_null(ops, secid_to_secctx);
- 	set_to_cap_if_null(ops, secctx_to_secid);
- 	set_to_cap_if_null(ops, release_secctx);
-diff --git a/security/security.c b/security/security.c
-index c1b6847..1f0765c 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1013,6 +1013,12 @@ int security_netlink_recv(struct sk_buff *skb, int cap)
- }
- EXPORT_SYMBOL(security_netlink_recv);
++	err = 0;
++	(void)security_inode_getsecctx(dentry->d_inode, &context, &len);
++	if (len < 0)
++		return nfserrno(len);
++
++	if (*buflen < ((XDR_QUADLEN(len) << 2) + 4 +4)) {
++		err = nfserr_resource;
++		goto out;
++	}
++
++	/* XXX: A call to the translation code should be placed here
++	 * for now send 0  until we have that to indicate the null
++	 * translation */ 
++
++	if ((*buflen -= 4) < 0)
++                return nfserr_resource;
++	WRITE32(lfs);
++	p = xdr_encode_opaque(p, context, len);
++	*buflen -= (XDR_QUADLEN(len) << 2) + 4;
++	BUG_ON(*buflen < 0);
++	
++	*pp = p;
++out:
++	security_release_secctx(context, len);
++	return err;
++}
++#endif
++
+ #define WORD0_ABSENT_FS_ATTRS (FATTR4_WORD0_FS_LOCATIONS | FATTR4_WORD0_FSID | \
+ 			      FATTR4_WORD0_RDATTR_ERROR)
+ #define WORD1_ABSENT_FS_ATTRS FATTR4_WORD1_MOUNTED_ON_FILEID
+@@ -1791,6 +1874,18 @@ nfsd4_encode_fattr(struct svc_fh *fhp, struct svc_export *exp,
+ 				goto out_nfserr;
+ 		}
+ 	}
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++	if (bmval1 & FATTR4_WORD1_SECURITY_LABEL) {
++		/* XXX: This is not a good way to handle this. We need
++		 * a better way to determine if the system has labeling support
++		 * turned on here.
++		 */
++		if (/* XXX !selinux_enabled */ 0)
++			bmval1 &= ~FATTR4_WORD1_SECURITY_LABEL;
++	}
++#else
++	bmval1 &= ~FATTR4_WORD1_SECURITY_LABEL;
++#endif
+ 	if ((buflen -= 16) < 0)
+ 		goto out_resource;
  
-+int security_ismaclabel(const char *name)
-+{
-+	return security_ops->ismaclabel(name);
-+}
-+EXPORT_SYMBOL(security_ismaclabel);
-+
- int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
- {
- 	return security_ops->secid_to_secctx(secid, secdata, seclen);
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 435c51f..8239f5c 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -5372,6 +5372,11 @@ abort_change:
+@@ -1818,6 +1913,14 @@ nfsd4_encode_fattr(struct svc_fh *fhp, struct svc_export *exp,
+ 			goto out_resource;
+ 		if (!aclsupport)
+ 			word0 &= ~FATTR4_WORD0_ACL;
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++		if (exp->ex_flags & NFSEXP_SECURITY_LABEL)
++			word1 |= FATTR4_WORD1_SECURITY_LABEL;
++		else
++			word1 &= ~FATTR4_WORD1_SECURITY_LABEL;
++#else
++		word1 &= ~FATTR4_WORD1_SECURITY_LABEL;
++#endif
+ 		if (!word2) {
+ 			WRITE32(2);
+ 			WRITE32(word0);
+@@ -2136,6 +2239,16 @@ out_acl:
+ 		}
+ 		WRITE64(stat.ino);
+ 	}
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++	if (bmval1 & FATTR4_WORD1_SECURITY_LABEL) {
++		status = nfsd4_encode_security_label(rqstp, dentry,
++				&p, &buflen);
++		if (status == nfserr_resource)
++			goto out_resource;
++		if (status)
++			goto out;
++	}
++#endif
+ 	if (bmval2 & FATTR4_WORD2_SUPPATTR_EXCLCREAT) {
+ 		WRITE32(3);
+ 		WRITE32(NFSD_SUPPATTR_EXCLCREAT_WORD0);
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index 6dd5f19..f08ed68 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -29,6 +29,7 @@
+ #include <asm/uaccess.h>
+ #include <linux/exportfs.h>
+ #include <linux/writeback.h>
++#include <linux/security.h>
+ 
+ #ifdef CONFIG_NFSD_V3
+ #include "xdr3.h"
+@@ -605,6 +606,35 @@ nfsd4_get_nfs4_acl(struct svc_rqst *rqstp, struct dentry *dentry, struct nfs4_ac
  	return error;
  }
  
-+static int selinux_ismaclabel(const char *name)
++#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
++__be32 nfsd4_set_nfs4_label(struct svc_rqst *rqstp, struct svc_fh *fhp,
++    struct nfs4_label *label)
 +{
-+	return (strcmp(name,XATTR_NAME_SELINUX) == 0);
-+}
++	__be32 error;
++	int host_error;
++	struct dentry *dentry;
 +
- static int selinux_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
- {
- 	return security_sid_to_context(secid, secdata, seclen);
-@@ -5610,6 +5615,7 @@ static struct security_operations selinux_ops = {
- 	.getprocattr =			selinux_getprocattr,
- 	.setprocattr =			selinux_setprocattr,
- 
-+	.ismaclabel =			selinux_ismaclabel,
- 	.secid_to_secctx =		selinux_secid_to_secctx,
- 	.secctx_to_secid =		selinux_secctx_to_secid,
- 	.release_secctx =		selinux_release_secctx,
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index fdfeaa2..449e223 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -3012,6 +3012,16 @@ static void smack_audit_rule_free(void *vrule)
- #endif /* CONFIG_AUDIT */
- 
- /**
-+ * smack_ismaclabel - check if xattr @name references a smack MAC label
-+ * @name: Full xattr name to check.
-+ */
-+static int smack_ismaclabel(const char *name)
++	/* Get inode */
++	/* XXX: should we have a MAY_SSECCTX? */
++	error = fh_verify(rqstp, fhp, 0 /* S_IFREG */, NFSD_MAY_SATTR);
++	if (error)
++		return error;
++
++	dentry = fhp->fh_dentry;
++
++	mutex_lock(&dentry->d_inode->i_mutex);
++	host_error = security_inode_setsecctx(dentry, label->label, label->len);
++	mutex_unlock(&dentry->d_inode->i_mutex);
++	return nfserrno(host_error);
++}
++#else
++__be32 nfsd4_set_nfs4_label(struct svc_rqst *rqstp, struct svc_fh *fhp,
++    struct nfs4_label *label)
 +{
-+	return (strcmp(name, XATTR_NAME_SMACK) == 0);
++	return -EOPNOTSUPP;
 +}
++#endif
 +
-+
-+/**
-  * smack_secid_to_secctx - return the smack label for a secid
-  * @secid: incoming integer
-  * @secdata: destination
-@@ -3199,6 +3209,7 @@ struct security_operations smack_ops = {
- 	.audit_rule_free =		smack_audit_rule_free,
- #endif /* CONFIG_AUDIT */
+ #endif /* defined(CONFIG_NFS_V4) */
  
-+	.ismaclabel =			smack_ismaclabel,
- 	.secid_to_secctx = 		smack_secid_to_secctx,
- 	.secctx_to_secid = 		smack_secctx_to_secid,
- 	.release_secctx = 		smack_release_secctx,
+ #ifdef CONFIG_NFSD_V3
+diff --git a/fs/nfsd/vfs.h b/fs/nfsd/vfs.h
+index 4b1de0a..a20814f 100644
+--- a/fs/nfsd/vfs.h
++++ b/fs/nfsd/vfs.h
+@@ -47,6 +47,8 @@ int nfsd_mountpoint(struct dentry *, struct svc_export *);
+ __be32          nfsd4_set_nfs4_acl(struct svc_rqst *, struct svc_fh *,
+                     struct nfs4_acl *);
+ int             nfsd4_get_nfs4_acl(struct svc_rqst *, struct dentry *, struct nfs4_acl **);
++__be32          nfsd4_set_nfs4_label(struct svc_rqst *, struct svc_fh *,
++		    struct nfs4_label *);
+ #endif /* CONFIG_NFSD_V4 */
+ __be32		nfsd_create(struct svc_rqst *, struct svc_fh *,
+ 				char *name, int len, struct iattr *attrs,
 -- 
 1.6.2.5
 
