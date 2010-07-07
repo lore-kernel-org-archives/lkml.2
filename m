@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab0GGBOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 21:14:49 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58683 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907Ab0GGBOs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 21:14:48 -0400
-Date: Tue, 6 Jul 2010 21:14:28 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
-Message-ID: <20100707011428.GA3630@infradead.org>
-References: <20100702125155.69c02f85.akpm@linux-foundation.org>
- <20100705134949.GC13780@csn.ul.ie>
- <20100706093529.CCD1.A69D9226@jp.fujitsu.com>
- <20100706101235.GE13780@csn.ul.ie>
- <AANLkTin8FotAC1GvjuoYU9XA2eiSr6FWWh6bwypTdhq3@mail.gmail.com>
- <20100706152539.GG13780@csn.ul.ie>
- <20100706202758.GC18210@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100706202758.GC18210@cmpxchg.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1753721Ab0GGBPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 21:15:35 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:33513 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab0GGBPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 21:15:33 -0400
+Date: Tue, 6 Jul 2010 18:15:09 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
+       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
+       linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building
+ code  out into drivers/of
+Message-ID: <20100706181509.51b37ebf@Nokia-N900-42-11>
+In-Reply-To: <AANLkTilt0cdnCt5EI3adWNAxpNR4jmLL87sMpGVXP03Y@mail.gmail.com>
+References: <20100628215407.2017bf2f@debian>
+	<20100628220037.5744c207@debian>
+	<AANLkTikDdAuDOxBVgV_QDY-YZOOZCyl1O5aYzDXCjW10@mail.gmail.com>
+	<20100706145446.5e8540aa@Nokia-N900-42-11>
+	<AANLkTilt0cdnCt5EI3adWNAxpNR4jmLL87sMpGVXP03Y@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.3 (GTK+ 2.14.7; arm-unknown-linux-gnueabi)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 06, 2010 at 10:27:58PM +0200, Johannes Weiner wrote:
-> It bypasses the fs.  On swapon, the blocks are resolved
-> (mm/swapfile.c::setup_swap_extents) and then the writeout path uses
-> bios directly (mm/page_io.c::swap_writepage).
+On Tue, 6 Jul 2010 16:06:54 -0600
+Grant Likely <grant.likely@secretlab.ca> wrote:
+[...] 
+> Okay, so it is only the userspace interface that you're interested in,
+> correct?  You have no needs/plans (as of yet) to register devices out
+> of the device tree?
 > 
-> (GFP_NOFS still includes __GFP_IO, so allows swapping)
 
-Exactly.  Note that while the stack problems for swap writeout aren't
-as bad as for filesystems as the whole allocator / extent map footprint
-is missing it might still be an issue.  We still splice the whole block
-I/O stack footprint over a random stack that might be filled up a lot.
+Correct.
+
