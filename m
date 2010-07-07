@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab0GGMVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 08:21:16 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:45626 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab0GGMVO (ORCPT
+	id S1754881Ab0GGMWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 08:22:52 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:42725 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192Ab0GGMWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 08:21:14 -0400
-Date: Wed, 7 Jul 2010 21:21:11 +0900
-From: Simon Horman <horms@verge.net.au>
-To: xiaoyu Du <tingsrain@gmail.com>
-Cc: lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: IPVS: Incorrect helper use for SCTP [was:
- wensong@linux-vs.org, horms@verge.net.au]
-Message-ID: <20100707122110.GF17967@verge.net.au>
-References: <AANLkTinEKn_UBpjf3k2DZn1euMM6z2UM_yeDPvdEQkav@mail.gmail.com>
+	Wed, 7 Jul 2010 08:22:51 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 7 Jul 2010 14:20:52 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [PATCH v3] firewire: cdev: check write quadlet request length to
+ avoid buffer overflow
+To: Clemens Ladisch <clemens@ladisch.de>
+cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <4C346B44.2020407@ladisch.de>
+Message-ID: <tkrat.d41b80d60ff7d2cc@s5r6.in-berlin.de>
+References: <4C29C1CA.1050705@ladisch.de>
+ <tkrat.cb22c58cc57838c0@s5r6.in-berlin.de>
+ <tkrat.e922615a6f88a33e@s5r6.in-berlin.de>
+ <tkrat.b2582c62a3eaf0ab@s5r6.in-berlin.de> <4C346B44.2020407@ladisch.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinEKn_UBpjf3k2DZn1euMM6z2UM_yeDPvdEQkav@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CCed netdev]
+On  7 Jul, Clemens Ladisch wrote:
+> Stefan Richter wrote:
+>> [...] Thus the only problem is that a bogus write quadlet
+>> request with user-specified length of < 3 will put 1...4 random bytes
+>> into the packet payload.  But this is the user's problem then, not the
+>> kernel's.
+> 
+> But not being initialized, these are the kernel's bytes that get
+> disclosed.
 
-Thanks,
+Yes.  In which way can this be exploited though?  For all practical
+purposes, the signal-to-noise ratio of these 1...4 bytes seems to be 0.
+-- 
+Stefan Richter
+-=====-==-=- -=== --===
+http://arcgraph.de/sr/
 
-that looks correct to me. Have you tested this change?
-If so could you provided a Signed-off-by line
-as per section 12 of Documentation/SubmittingPatches?
-
-On Wed, Jul 07, 2010 at 05:19:06PM +0800, xiaoyu Du wrote:
-> Hi，all
-> 
-> After I compared the sctp with tcp and udp, I thinkt his a bug that
-> sctp_dnat_handler Incorrectly invoked ip_vs_app_pkt_out.
-> below is the patch.
-> 
-> ---
->  net/netfilter/ipvs/ip_vs_proto_sctp.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c
-> b/net/netfilter/ipvs/ip_vs_proto_sctp.c
-> index c9a3f7a..db55759 100644
-> --- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
-> +++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
-> @@ -173,7 +173,7 @@ sctp_dnat_handler(struct sk_buff *skb,
->                        return 0;
-> 
->                /* Call application helper if needed */
-> -               if (!ip_vs_app_pkt_out(cp, skb))
-> +               if (!ip_vs_app_pkt_in(cp, skb))
->                        return 0;
->        }
-> 
-> --
-> --
-> To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
