@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab0GGANd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 20:13:33 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51396 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008Ab0GGAN2 convert rfc822-to-8bit (ORCPT
+	id S1755696Ab0GGAVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 20:21:41 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49881 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755345Ab0GGAVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 20:13:28 -0400
+	Tue, 6 Jul 2010 20:21:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=sfi64BrY4FnNpkgQTQAZeK4kkqvTZ2wM7AZWBKxzaNDpvgRtdPdoIJQ5QkDEugGSnc
-         qjFMs1EBKBCb8xJj6ZBvZZkUh25uz54Cb2hfecWMIWyVV5MCsPseNKsxVvb2umYCCvn+
-         dF95POnITwhfc5OdrE3P0cXUHyhWGx5morQFY=
-MIME-Version: 1.0
-In-Reply-To: <20100706200438.GF17961@mail.oracle.com>
-References: <87mxud74tw.fsf@gmail.com>
-	<20100706200438.GF17961@mail.oracle.com>
-Date: Tue, 6 Jul 2010 17:13:27 -0700
-Message-ID: <AANLkTilgO6V0ugvm3vvI5sHNC3zNxYa1zu_VxjCSoVIg@mail.gmail.com>
-Subject: Re: [Ocfs2-devel] [PATCH] OCFS2: Allow huge (> 16 TiB) volumes to 
-	mount
-From: "Patrick J. LoPresti" <lopresti@gmail.com>
-To: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
-       Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=YdH4sSx/GsFE2qRuFi9JXS/eXqj2uy+LuShtXpY+Jmw8kSQclzeXbkpzdl4uTknbZw
+         mBQUdCxK53V7b3yJ2nS4xWGLWhHxuMOBjpmBbhHXDLaDFwQHdpzWA7Uy2a400WQynVd8
+         reRilrnve6mA5EiMsu9OfbhXCUvJhNb+3AeF0=
+Subject: [PATCH v2] panasonic-laptop: fix acpi_pcc_write_sset return value
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Harald Welte <laforge@gnumonks.org>, Matthew Garrett <mjg@redhat.com>,
+       Richard Purdie <rpurdie@linux.intel.com>,
+       =?ISO-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
+       Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
+       platform-driver-x86@vger.kernel.org
+Content-Type: text/plain
+Date: Wed, 07 Jul 2010 08:21:48 +0800
+Message-Id: <1278462108.12801.23.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 6, 2010 at 1:04 PM, Joel Becker <Joel.Becker@oracle.com> wrote:
->
-> Thus, I propose the following jbd2 patch.  jbd2 people, what do you
-> think:
->
-> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-> index bc2ff59..7922d87 100644
-> --- a/fs/jbd2/journal.c
-> +++ b/fs/jbd2/journal.c
-> @@ -1365,6 +1365,8 @@ int jbd2_journal_check_used_features (journal_t
-> *journal,
->
->        if (!compat && !ro && !incompat)
->                return 1;
-> +       if (journal_get_superblock(journal))
-> +               return 0
->        if (journal->j_format_version == 1)
->                return 0;
+In current implementation, acpi_pcc_write_sset return 1
+if write is successful, 0 if write is failed.
+But all the callers consider acpi_pcc_write_sset return 0
+if write is successful and return negtive if write is failed.
 
-As an alternative, could jbd2_journal_init_inode() just call
-journal_get_superblock() itself?  That would naturally make the
-feature bits valid as soon as the journal is initialized.  It would
-also preserve all error checking, instead of converting superblock
-read errors into "this journal has no features".
+This patch changes the implementation of acpi_pcc_write_sset to
+return 0 if write is successful, -EIO if write is failed.
 
-JBD2 developers, please advise.  OCFS2 needs to examine JBD2 journal
-feature bits *before* the journal is recovered, which is not possible
-at present.  What is the best approach to fixing this?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/panasonic-laptop.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-Thanks.
+diff --git a/drivers/platform/x86/panasonic-laptop.c b/drivers/platform/x86/panasonic-laptop.c
+index 2fb9a32..ec01c3d 100644
+--- a/drivers/platform/x86/panasonic-laptop.c
++++ b/drivers/platform/x86/panasonic-laptop.c
+@@ -248,7 +248,7 @@ static int acpi_pcc_write_sset(struct pcc_acpi *pcc, int func, int val)
+ 	status = acpi_evaluate_object(pcc->handle, METHOD_HKEY_SSET,
+ 				      &params, NULL);
+ 
+-	return status == AE_OK;
++	return (status == AE_OK) ? 0 : -EIO;
+ }
+ 
+ static inline int acpi_pcc_get_sqty(struct acpi_device *device)
+@@ -586,7 +586,6 @@ static int acpi_pcc_init_input(struct pcc_acpi *pcc)
+ static int acpi_pcc_hotkey_resume(struct acpi_device *device)
+ {
+ 	struct pcc_acpi *pcc = acpi_driver_data(device);
+-	acpi_status status = AE_OK;
+ 
+ 	if (device == NULL || pcc == NULL)
+ 		return -EINVAL;
+@@ -594,9 +593,7 @@ static int acpi_pcc_hotkey_resume(struct acpi_device *device)
+ 	ACPI_DEBUG_PRINT((ACPI_DB_ERROR, "Sticky mode restore: %d\n",
+ 			  pcc->sticky_mode));
+ 
+-	status = acpi_pcc_write_sset(pcc, SINF_STICKY_KEY, pcc->sticky_mode);
+-
+-	return status == AE_OK ? 0 : -EINVAL;
++	return acpi_pcc_write_sset(pcc, SINF_STICKY_KEY, pcc->sticky_mode);
+ }
+ 
+ static int acpi_pcc_hotkey_add(struct acpi_device *device)
+-- 
+1.5.4.3
 
- - Pat
+
+
