@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab0GGLEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 07:04:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45028 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121Ab0GGLEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 07:04:39 -0400
-Message-ID: <4C345F44.4070800@suse.cz>
-Date: Wed, 07 Jul 2010 13:04:36 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1754553Ab0GGLI5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 07:08:57 -0400
+Received: from n5-vm0.bullet.mail.gq1.yahoo.com ([67.195.8.62]:48792 "HELO
+	n5-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753867Ab0GGLI4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 07:08:56 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 169281.15684.bm@omp119.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=6UZy/9E34L24Amei6BiAoUNqXRxNyB+sHMGMQGvl+sH/vpLBLEEsblrvC1yw/ekX/UO627ji6mS3Z8iF6oTQOS/UwAHOX1VfszSXS2GJt/8xkuy62KVVAIrQD7HtoF35ldwA3002OQAyyRbR9ybrgo3jY2CpQXs6tKCA49nrHhE=;
+Message-ID: <54038.80733.qm@web180305.mail.gq1.yahoo.com>
+X-YMail-OSG: KCjV2JsVM1miAxtv4dpbD5JuvSA3PR5Fue6N0yn91kgRJ9X
+ l9qtNItx3RpkkE6y7bRXkf6qT7BlqtC5DJQbv_KVZsxeLOhxeWdDZZ1tCxaU
+ iEkStPK_fwqBUjZ3df0HBAHvo6gaWIOxMdQy2ytkHaWCTAcW0KqeFOC.imTF
+ ckNEUW2zMNzyVNSXHoZhwn5fhDl0wAYEF8h3cychMlxypCf5m.mIiDzSFB8C
+ nD.7iQdhdaSJGIUu217RvP2_fXHE27YsNMkQDzGT0CGYcR.CIbtT5NRFVg9g
+ A4Ecuhw6NEgUnnvjSC24-
+X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.104.274457
+Date: Wed, 7 Jul 2010 04:08:54 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: RE: [PATCH 1/2] mtdpart: memory accessor interface for MTD layer
+To: "'David Woodhouse'" <dwmw2@infradead.org>,
+       "'Kevin Hilman'" <khilman@deeprootsystems.com>,
+       Sudhakar Rajashekhara <sudhakar.raj@ti.com>
+Cc: "'Bernd Schmidt'" <bernd.schmidt@analog.com>,
+       "'Nicolas Pitre'" <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+       "'David Howells'" <dhowells@redhat.com>,
+       "'David Brownell'" <dbrownell@users.sourceforge.net>,
+       linux-mtd@lists.infradead.org,
+       "'Andrew Morton'" <akpm@linux-foundation.org>
+In-Reply-To: <012f01cb1dc3$09584880$1c08d980$@raj@ti.com>
 MIME-Version: 1.0
-To: Nicolas Palix <npalix@diku.dk>
-Cc: Kulikov Vasiliy <segooon@gmail.com>,
-       Kernel Janitors <kernel-janitors@vger.kernel.org>,
-       Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-       Sam Ravnborg <sam@ravnborg.org>, Joerg Roedel <joerg.roedel@amd.com>,
-       cocci@diku.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coccicheck: use $KBUILD_EXTMOD when available
-References: <1278170438-8136-1-git-send-email-segooon@gmail.com> <201007032149.30704.npalix@diku.dk>
-In-Reply-To: <201007032149.30704.npalix@diku.dk>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3.7.2010 21:49, Nicolas Palix wrote:
-> Hi,
-> 
-> On Saturday 03 July 2010 17:20:34 Kulikov Vasiliy wrote:
->> Use $KBUILD_EXTMOD instead of $srctree when the latter is not null
->> to use make M=somedir.
->>
->> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
->> ---
->>  scripts/coccicheck |    8 +++++++-
->>  1 files changed, 7 insertions(+), 1 deletions(-)
->>
->> diff --git a/scripts/coccicheck b/scripts/coccicheck
->> index b8bcf1f..7d66a55 100755
->> --- a/scripts/coccicheck
->> +++ b/scripts/coccicheck
->> @@ -1,5 +1,11 @@
->>  #!/bin/sh
->>  
->> +if [ -n "$KBUILD_EXTMOD" ]; then
->> +	CHECK_DIR="$KBUILD_EXTMOD"
->> +else
->> +	CHECK_DIR="$srctree"
->> +fi
->> +
->>  SPATCH="`which ${SPATCH:=spatch}`"
->>  
->>  if [ "$C" = "1" -o "$C" = "2" ]; then
->> @@ -64,7 +70,7 @@ coccinelle () {
->>  	echo ' http://coccinelle.lip6.fr/'
->>  	echo ''
->>  
->> -	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT -dir $srctree || exit 1
->> +	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT -dir $CHECK_DIR || exit 1
->>      else
->>  	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
->>      fi
->>
-> 
-> In doing so, the output of the patch mode will produce patches relative to $KBUILD_EXTMOD.
-> I am not sure of what most of developers want but if the patches must be relative to
-> the Linux kernel root, the following patch must be used.
 
-If you are checking your out-of-tree module, then you're probably not
-going to send the resulting patch to lkml.
+> > > This patch adds two new members to the
+> mtd_partition structure,
+> > > a function handler which will be
+> > > called during setup of the
+> > > partition and an argument to be passed to this
+> setup function.
+> > 
+> > Ick.
+> > 
+> > I don't mind providing the mtd_macc_{read,write}
+> helper functions,
+> > although they should work on generic MTD
+> > >devices not just on partitions.
+> > But do we really have to do the callout to
+> > arbitrary functions from
+> > _within_ the core MTD code... why can't we
+> > do that in the board driver?
 
-Michal
+I think the short answer is that the callout is
+what provides the board drivers enough information
+to make the correct calls.
+
+
