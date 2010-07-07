@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab0GGBcQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 21:32:16 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45724 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114Ab0GGBcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 21:32:15 -0400
-Date: Wed, 7 Jul 2010 11:32:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 2.6.35-rc4 - CONFIG_LOCALVERSION ignored?
-Message-Id: <20100707113208.02e49474.sfr@canb.auug.org.au>
-In-Reply-To: <201007062029.34535.rjw@sisk.pl>
-References: <20100705214304.GA24291@sepie.suse.cz>
-	<201007062029.34535.rjw@sisk.pl>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752733Ab0GGBdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 21:33:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40534 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751274Ab0GGBdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 21:33:08 -0400
+Date: Tue, 6 Jul 2010 18:32:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+       Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH]shmem: reduce one time of locking in pagefault
+Message-Id: <20100706183254.cf67e29e.akpm@linux-foundation.org>
+In-Reply-To: <1278465346.11107.8.camel@sli10-desk.sh.intel.com>
+References: <1278465346.11107.8.camel@sli10-desk.sh.intel.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__7_Jul_2010_11_32_08_+1000_CssBD.s7oT2CjEtV"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__7_Jul_2010_11_32_08_+1000_CssBD.s7oT2CjEtV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 07 Jul 2010 09:15:46 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
 
-Hi Michal,
+> I'm running a shmem pagefault test case (see attached file) under a 64 CPU
+> system. Profile shows shmem_inode_info->lock is heavily contented and 100%
+> CPUs time are trying to get the lock.
 
-On Tue, 6 Jul 2010 20:29:34 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->
-> On Monday, July 05, 2010, Michal Marek wrote:
-> > On Mon, Jul 05, 2010 at 11:25:56PM +0200, Rafael J. Wysocki wrote:
-> > > Hmm.  Am I dong anything particularly wrong, or is CONFIG_LOCALVERSIO=
-N ignored
-> > > now, as it seems?
-> >=20
-> > (also reported by Stephen earlier that day)
-> >=20
-> > On Mon, Jul 05, 2010 at 10:39:41AM +1000, Stephen Rothwell wrote:
-> > > After merging the libata tree, today's linux-next build produced this
-> > > warning (but it should be a failure ...):
-> > >=20
-> > > /bin/sh: scripts/setlocalversion: No such file or directory
-> > >=20
-> > > Probably introduced by commit 0a564b2645c8766a669c55bde1f1ef5b0518caec
-> > > ("kbuild: Propagate LOCALVERSION=3D down to scripts/setlocalversion").
-> > >=20
-> > > That commit really isn't ready for inclusion in Linus' tree ...
-> >=20
-> >=20
-> > Oops, I'm an idiot. The below patch should fix localversion again:
->=20
-> Yes, it helps here.
+I seem to remember complaining about that in 2002 ;) Faulting in a
+mapping of /dev/zero is just awful on a 4-way(!).
 
-I also applied it to linux-next yesterday (in my fixes tree) and it
-solves the problem.
+> In the pagefault (no swap) case,
+> shmem_getpage gets the lock twice, the last one is avoidable if we prealloc a
+> page so we could reduce one time of locking. This is what below patch does.
+> 
+> The result of the test case:
+> 2.6.35-rc3: ~20s
+> 2.6.35-rc3 + patch: ~12s
+> so this is 40% improvement.
+> 
+> One might argue if we could have better locking for shmem. But even shmem is lockless,
+> the pagefault will soon have pagecache lock heavily contented because shmem must add
+> new page to pagecache. So before we have better locking for pagecache, improving shmem
+> locking doesn't have too much improvement. I did a similar pagefault test against
+> a ramfs file, the test result is ~10.5s.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index f65f840..c5f2939 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+The patch doesn't make shmem_getpage() any clearer :(
 
---Signature=_Wed__7_Jul_2010_11_32_08_+1000_CssBD.s7oT2CjEtV
-Content-Type: application/pgp-signature
+shmem_inode_info.lock appears to be held too much.  Surely
+lookup_swap_cache() didn't need it (for example).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+What data does shmem_inode_info.lock actually protect?
 
-iQEcBAEBAgAGBQJMM9kYAAoJEDMEi1NhKgbsKfQH/051xVC8jaz0Zy5vJC4v4K0a
-RSHEMEjCEtOyUdgOewFUdxpCCnpEKfKisOwpg1o5kugpZy20G5u3odqumFStWrUV
-OqQgUYdt+myJmf2DBtTqXEdIibq+jFVFMGEngNzCZottWWiJgTe6hN7BfRjPG01Z
-UTuc3Gv4ra1vsMqGw3rE0VG5pRn6tRCWe2/tUiQz1oWinM0tXt24SeKdmVCLSqlU
-X6ATzO1Md5aUxHhi3qJg9cjYbZtgySYr0X2+SiDfD/onk8aLeqV7H/8XWZ+ImNez
-5jpKLyKptq+NwtiVVzLO2B+ndLOSLSGsXf6KQ5+R5rZJ0BfNIyeyKMRZ+8VDDrs=
-=PP92
------END PGP SIGNATURE-----
 
---Signature=_Wed__7_Jul_2010_11_32_08_+1000_CssBD.s7oT2CjEtV--
