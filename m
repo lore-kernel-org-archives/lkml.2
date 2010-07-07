@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab0GGUCV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 16:02:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47123 "EHLO mga02.intel.com"
+	id S1757567Ab0GGUCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 16:02:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2533 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755848Ab0GGUCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 16:02:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,554,1272870000"; 
-   d="scan'208";a="533342709"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: feng.tang@intel.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-       mingo@elte.hu, hpa@zytor.com, jacob.jun.pan@intel.com, dtor@mail.ru,
-       randy.dunlap@oracle.com
-Cc: Feng Tang <feng.tang@intel.com>
-Subject: Re: [PATCH v2 5/5] input: i8042 - add runtime check in x86's i8042_platform_init
-In-Reply-To: <1278342202-10973-6-git-send-email-feng.tang@intel.com>
-References: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
-Date: Wed, 07 Jul 2010 13:02:16 -0700
-Message-Id: <4c34dd482753bb8f1@agluck-desktop.sc.intel.com>
+	id S1755848Ab0GGUCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 16:02:46 -0400
+Message-ID: <4C34DD1B.3010601@redhat.com>
+Date: Wed, 07 Jul 2010 16:01:31 -0400
+From: Don Dutile <ddutile@redhat.com>
+Reply-To: ddutile@redhat.com
+User-Agent: Thunderbird 2.0.0.18 (X11/20081113)
+MIME-Version: 1.0
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "stefano@stabellini.net" <stefano@stabellini.net>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       "sheng@linux.intel.com" <sheng@linux.intel.com>,
+       "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [PATCH 12/13] Unplug emulated disks and nics
+References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop> <1277136847-13266-12-git-send-email-stefano@stabellini.net> <4C2CEF56.4050008@redhat.com> <alpine.DEB.2.00.1007051255310.29110@kaball-desktop>
+In-Reply-To: <alpine.DEB.2.00.1007051255310.29110@kaball-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Feng Tang <feng.tang@intel.com>
+Stefano Stabellini wrote:
+> On Thu, 1 Jul 2010, Don Dutile wrote:
+>> The problem with this check/enable is that if you run
+>> this on an older qemu-xen that doesn't have unplug support,
+>> it fails pv-hvm configuration.
+>>
+>> But, all that means is that you can't use an xvd as the boot device,
+>> and you have to use an emulated IDE device as boot device.
+>> There are a couple ways to configure the vnif correctly (in guest
+>> or in xen guest config file).
+>>
+>> So, on an older (say, rhel5) xen, I don't have this check;
+>> the boot device is required to be spec'd as hda, not vda, and
+>> xen-blkfront is not allowed to configure blk major nums
+>> for IDE (& SCSI) (to avoid 2 drivers twiddling w/same phys backend... not good!).
+>>
+> 
+> Who is requiring that the boot device is spec'd as hda and not xvda?
+> I don't think there is such limitation in xend or libxl at the moment.
+> 
 
-Then it will first check x86_platforms's i8042 detection result,
-then go on with normal probe.
+If you take a previous xen HVM guest spec & just run it on a guest
+that has pv-hvm added to it, then one has hda spec'd as boot device (by default,
+by not editing the guest config spec/file).
 
-Cc: Dmitry Torokhov <dtor@mail.ru>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
+Ideally, both config specs should/would work.
 
-Added #ifdef around #include <asm/x86_init.h> -- Tony
+- Don
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index 6168469..81003c4 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -7,6 +7,10 @@
-  * the Free Software Foundation.
-  */
- 
-+#ifdef CONFIG_X86
-+#include <asm/x86_init.h>
-+#endif
-+
- /*
-  * Names.
-  */
-@@ -840,6 +844,12 @@ static int __init i8042_platform_init(void)
- {
- 	int retval;
- 
-+#ifdef CONFIG_X86
-+	/* Just return if pre-detection shows no i8042 controller exist */
-+	if (!x86_platform.i8042_detect())
-+		return -ENODEV;
-+#endif
-+
- /*
-  * On ix86 platforms touching the i8042 data register region can do really
-  * bad things. Because of this the region is always reserved on ix86 boxes.
