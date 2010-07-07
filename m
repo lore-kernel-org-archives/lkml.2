@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab0GGQth (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 12:49:37 -0400
-Received: from fieldses.org ([174.143.236.118]:38214 "EHLO fieldses.org"
+	id S1757150Ab0GGQ4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 12:56:14 -0400
+Received: from fieldses.org ([174.143.236.118]:60314 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757376Ab0GGQt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 12:49:28 -0400
-Date: Wed, 7 Jul 2010 12:49:19 -0400
+	id S1755364Ab0GGQ4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 12:56:12 -0400
+Date: Wed, 7 Jul 2010 12:56:02 -0400
 From: "J. Bruce Fields" <bfields@fieldses.org>
 To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
 Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
@@ -14,29 +14,90 @@ Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 02/10] Security: Add Hook to test if the particular
- xattr is part of a MAC model.
-Message-ID: <20100707164919.GB28815@fieldses.org>
+Subject: Re: [PATCH 05/10] KConfig: Add KConfig entries for Labeled NFS
+Message-ID: <20100707165602.GC28815@fieldses.org>
 References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
- <1278513086-23964-3-git-send-email-dpquigl@tycho.nsa.gov>
+ <1278513086-23964-6-git-send-email-dpquigl@tycho.nsa.gov>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1278513086-23964-3-git-send-email-dpquigl@tycho.nsa.gov>
+In-Reply-To: <1278513086-23964-6-git-send-email-dpquigl@tycho.nsa.gov>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 10:31:18AM -0400, David P. Quigley wrote:
-> There are areas in the Labeled NFS code where where we need to test if the
-> attribute being requested exhibits the semantics of a MAC model.
+On Wed, Jul 07, 2010 at 10:31:21AM -0400, David P. Quigley wrote:
+> This patch adds two entries into the fs/KConfig file. The first entry
+> NFS_V4_SECURITY_LABEL enables security label support for the NFSv4 client while
+> the second entry NFSD_V4_SECURITY_LABEL enables security labeling support on
+> the server side.
 
-I have no idea what that means....
+Will there also be some way to turn these on and off at run-time (maybe
+for particular exports or filesystems?)
 
-> + * @ismaclabel:
-> + * 	Check if the extended attribute specified by @name represents a MAC label.
-
-Is this what you mean to say?
+And if so, will there be any reason not to have this on all the time?  I
+don't think we'll want a config option for every future possible NFSv4.x
+feature.
 
 --b.
+
+> 
+> Signed-off-by: Matthew N. Dodd <Matthew.Dodd@sparta.com>
+> Signed-off-by: David P. Quigley <dpquigl@tycho.nsa.gov>
+> ---
+>  fs/nfs/Kconfig  |   16 ++++++++++++++++
+>  fs/nfsd/Kconfig |   13 +++++++++++++
+>  2 files changed, 29 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+> index a43d07e..67b158c 100644
+> --- a/fs/nfs/Kconfig
+> +++ b/fs/nfs/Kconfig
+> @@ -83,6 +83,22 @@ config NFS_V4_1
+>  
+>  	  Unless you're an NFS developer, say N.
+>  
+> +config NFS_V4_SECURITY_LABEL
+> +	bool "Provide Security Label support for NFSv4 client"
+> +	depends on NFS_V4 && SECURITY
+> +	help
+> +
+> +	Say Y here if you want enable fine-grained security label attribute
+> +	support for NFS version 4.  Security labels allow security modules like
+> +	SELinux and Smack to label files to facilitate enforcement of their policies.
+> +	Without this an NFSv4 mount will have the same label on each file.
+> +
+> +	If you do not wish to enable fine-grained security labels SELinux or
+> +	Smack policies on NFSv4 files, say N.
+> +
+> +
+> +	  If unsure, say N.
+> +
+>  config ROOT_NFS
+>  	bool "Root file system on NFS"
+>  	depends on NFS_FS=y && IP_PNP
+> diff --git a/fs/nfsd/Kconfig b/fs/nfsd/Kconfig
+> index 503b9da..3a282f8 100644
+> --- a/fs/nfsd/Kconfig
+> +++ b/fs/nfsd/Kconfig
+> @@ -79,3 +79,16 @@ config NFSD_V4
+>  	  available from http://linux-nfs.org/.
+>  
+>  	  If unsure, say N.
+> +
+> +config NFSD_V4_SECURITY_LABEL
+> +	bool "Provide Security Label support for NFSv4 server"
+> +	depends on NFSD_V4 && SECURITY
+> +	help
+> +
+> +	Say Y here if you want enable fine-grained security label attribute
+> +	support for NFS version 4.  Security labels allow security modules like
+> +	SELinux and Smack to label files to facilitate enforcement of their policies.
+> +	Without this an NFSv4 mount will have the same label on each file.
+> +
+> +	If you do not wish to enable fine-grained security labels SELinux or
+> +	Smack policies on NFSv4 files, say N.
+> -- 
+> 1.6.2.5
+> 
