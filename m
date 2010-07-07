@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab0GGAZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 20:25:59 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50819 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755977Ab0GGAZ5 (ORCPT
+	id S1756455Ab0GGAaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 20:30:06 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:47150 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755953Ab0GGAaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 20:25:57 -0400
+	Tue, 6 Jul 2010 20:30:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=xVpCOVfoj+XkUQ9+CjyvGWQp1hmNEc/lv+c8V34z/6p50uAHGBp0tsi4334P3ebQ+c
-         17iaB3m4GnuLc884MheEEwoN+pP8W4jYj7PeP3d8TnQNIPiKTcKKrGF3Q8jD7ipQ+NXi
-         FOfTDiYios5BiNooI7XG6gw4+7AYo/FcydY0E=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lAyalk0a7/z0Ws/hvburQTNsp36Q+88tGaKa6n6bj6OwEQ0a9hfqSrQQy1Fge25bRa
+         qJISzS06LpYitFdVwxnGxZLtrquVVLhFFpnicpJw8CBhpDMVFKpxs27/wzfvYISDvWIZ
+         NC5oWltyBFnwYEjIcq8uH+S+Ghfskf9RAalKk=
+Date: Tue, 6 Jul 2010 17:29:52 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Harald Welte <laforge@gnumonks.org>, Matthew Garrett <mjg@redhat.com>,
+       Richard Purdie <rpurdie@linux.intel.com>,
+       =?iso-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
+       Jiri Kosina <jkosina@suse.cz>, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH v2] panasonic-laptop: fix acpi_pcc_write_sset return value
+Message-ID: <20100707002952.GA7035@core.coreip.homeip.net>
+References: <1278462108.12801.23.camel@mola>
 MIME-Version: 1.0
-Date: Tue, 6 Jul 2010 20:25:56 -0400
-Message-ID: <AANLkTinDWl1qJzK-H9Qw3jjKs9zdUYE1Hh3hTaDw8asd@mail.gmail.com>
-Subject: 2.6.35-rc4 - include/linux/fdtable.h:85 invoked rcu_dereference_check() 
-	without protection!
-From: Miles Lane <miles.lane@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278462108.12801.23.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- [ INFO: suspicious rcu_dereference_check() usage. ]
- ---------------------------------------------------
- include/linux/fdtable.h:85 invoked rcu_dereference_check() without protection!
+On Wed, Jul 07, 2010 at 08:21:48AM +0800, Axel Lin wrote:
+> In current implementation, acpi_pcc_write_sset return 1
+> if write is successful, 0 if write is failed.
+> But all the callers consider acpi_pcc_write_sset return 0
+> if write is successful and return negtive if write is failed.
+> 
+> This patch changes the implementation of acpi_pcc_write_sset to
+> return 0 if write is successful, -EIO if write is failed.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/platform/x86/panasonic-laptop.c |    7 ++-----
+>  1 files changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/panasonic-laptop.c b/drivers/platform/x86/panasonic-laptop.c
+> index 2fb9a32..ec01c3d 100644
+> --- a/drivers/platform/x86/panasonic-laptop.c
+> +++ b/drivers/platform/x86/panasonic-laptop.c
+> @@ -248,7 +248,7 @@ static int acpi_pcc_write_sset(struct pcc_acpi *pcc, int func, int val)
+>  	status = acpi_evaluate_object(pcc->handle, METHOD_HKEY_SSET,
+>  				      &params, NULL);
+>  
+> -	return status == AE_OK;
+> +	return (status == AE_OK) ? 0 : -EIO;
+>  }
+>  
+>  static inline int acpi_pcc_get_sqty(struct acpi_device *device)
+> @@ -586,7 +586,6 @@ static int acpi_pcc_init_input(struct pcc_acpi *pcc)
+>  static int acpi_pcc_hotkey_resume(struct acpi_device *device)
+>  {
+>  	struct pcc_acpi *pcc = acpi_driver_data(device);
+> -	acpi_status status = AE_OK;
+>  
+>  	if (device == NULL || pcc == NULL)
+>  		return -EINVAL;
 
- other info that might help us debug this:
+Looks good, but why don't you also kill these useless checks while you
+are at it?  Otherwise:
 
- rcu_scheduler_active = 1, debug_locks = 1
- no locks held by compiz/4286.
+Acked-by: Dmitry Torokhov <dtor@mail.ru>
 
- stack backtrace:
- Pid: 4286, comm: compiz Not tainted 2.6.35-rc4 #6
- Call Trace:
-  [<ffffffff8106714e>] lockdep_rcu_dereference+0x9d/0xa6
-  [<ffffffff810d3bdd>] fcheck_files+0x5c/0xca
-  [<ffffffff810d3ca3>] fget_light+0x35/0x96
-  [<ffffffff810e1b02>] do_sys_poll+0x1ff/0x3e5
-  [<ffffffff810e1316>] ? __pollwait+0x0/0xc7
-  [<ffffffff810e13dd>] ? pollwake+0x0/0x4f
-  [<ffffffff8125b785>] ? __sock_sendmsg+0x66/0x72
-  [<ffffffff8125da9e>] ? sock_aio_write+0x0/0xf6
-  [<ffffffff8125db7f>] ? sock_aio_write+0xe1/0xf6
-  [<ffffffff810d295f>] ? do_sync_readv_writev+0xbc/0xfb
-  [<ffffffff810d284f>] ? fsnotify_modify+0x67/0x6f
-  [<ffffffff810d35eb>] ? do_readv_writev+0x109/0x122
-  [<ffffffff81009cba>] ? sysret_check+0x2e/0x69
-  [<ffffffff810e1e7c>] sys_poll+0x50/0xba
-  [<ffffffff81009c82>] system_call_fastpath+0x16/0x1b
+Thanks.
 
-===============================================================================
-
- [ INFO: suspicious rcu_dereference_check() usage. ]
- ---------------------------------------------------
- include/linux/fdtable.h:88 invoked rcu_dereference_check() without protection!
-
- other info that might help us debug this:
-
- rcu_scheduler_active = 1, debug_locks = 1
- no locks held by gnome-panel/4293.
-
- stack backtrace:
- Pid: 4293, comm: gnome-panel Not tainted 2.6.35-rc4 #6
- Call Trace:
-  [<ffffffff8106714e>] lockdep_rcu_dereference+0x9d/0xa6
-  [<ffffffff810d3c32>] fcheck_files+0xb1/0xca
-  [<ffffffff810ab263>] ? might_fault+0x63/0xb3
-  [<ffffffff810d3ca3>] fget_light+0x35/0x96
-  [<ffffffff810e1b02>] do_sys_poll+0x1ff/0x3e5
-  [<ffffffff810e1316>] ? __pollwait+0x0/0xc7
-  [<ffffffff8125a2ae>] ? __sock_recvmsg_nosec+0x65/0x6e
-  [<ffffffff8125b7da>] ? __sock_recvmsg+0x49/0x54
-  [<ffffffff8125da8a>] ? sock_aio_read+0xe8/0xfc
-  [<ffffffff810d2b67>] ? do_sync_read+0xc6/0x103
-  [<ffffffff81009cba>] ? sysret_check+0x2e/0x69
-  [<ffffffff810e1e7c>] sys_poll+0x50/0xba
-  [<ffffffff81009c82>] system_call_fastpath+0x16/0x1b
+-- 
+Dmitry
