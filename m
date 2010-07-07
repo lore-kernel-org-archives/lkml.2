@@ -1,48 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab0GGSKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 14:10:07 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55139 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754435Ab0GGSKF (ORCPT
+	id S1756373Ab0GGSLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 14:11:20 -0400
+Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:33770 "EHLO
+	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab0GGSLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 14:10:05 -0400
-Date: Wed, 7 Jul 2010 14:09:30 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+	Wed, 7 Jul 2010 14:11:18 -0400
+Subject: Re: [PATCH 10/10] NFSD: Server implementation of MAC Labeling
+From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
-Message-ID: <20100707180930.GA15616@infradead.org>
-References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
- <1277811288-5195-13-git-send-email-mel@csn.ul.ie>
- <20100702125155.69c02f85.akpm@linux-foundation.org>
- <20100705134949.GC13780@csn.ul.ie>
- <20100707050338.GA5039@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100707050338.GA5039@localhost>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+       linux-nfs@vger.kernel.org
+In-Reply-To: <20100707172100.GE28815@fieldses.org>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
+	 <1278513086-23964-11-git-send-email-dpquigl@tycho.nsa.gov>
+	 <20100707172100.GE28815@fieldses.org>
+Content-Type: text/plain
+Organization: National Security Agency
+Date: Wed, 07 Jul 2010 14:03:21 -0400
+Message-Id: <1278525801.2494.162.camel@moss-terrapins.epoch.ncsc.mil>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 01:03:38PM +0800, Wu Fengguang wrote:
-> Here is an old patch for fixing this. Sorry for being late. I'll
-> pick up and refresh the patch series ASAP.  (I made a mistake last
-> year to post too many patches at one time. I'll break them up into
-> more manageable pieces.)
+Comments inline
 
-Yes, that would be very welcome.  There's a lot of important work
-in that series.
+On Wed, 2010-07-07 at 13:21 -0400, J. Bruce Fields wrote:
+> On Wed, Jul 07, 2010 at 10:31:26AM -0400, David P. Quigley wrote:
+> > This patch adds the ability to encode and decode file labels on the server for
+> >  static __be32
+> >  nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
+> > -		   struct iattr *iattr, struct nfs4_acl **acl)
+> > +		   struct iattr *iattr, struct nfs4_acl **acl,
+> > +		   struct nfs4_label **label)
+> 
+> As we add more arguments, I wonder if at some point it becomes worth
+> creating something like
+> 
+> 	struct nfsd4_attrs {
+> 		struct iattr iattr;
+> 		struct nfs4_acl *acl;
+> 		...
+> 	}
+> 
+> and passing that instead?
+
+I can definitely submit something like that as a stand alone patch and
+then add our nfs4_label stuff to that instead.
+
+> 
+> > +#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
+> > +	if (bmval[1] & FATTR4_WORD1_SECURITY_LABEL) {
+> > +		uint32_t lfs;
+> > +
+> > +		READ_BUF(4);
+> > +		len += 4;
+> > +		READ32(lfs);
+> > +		READ_BUF(4);
+> > +		len += 4;
+> > +		READ32(dummy32);
+> > +		READ_BUF(dummy32);
+> > +		len += (XDR_QUADLEN(dummy32) << 2);
+> > +		READMEM(buf, dummy32);
+> > +
+> > +		if (dummy32 > NFS4_MAXLABELLEN)
+> > +			return nfserr_resource;
+> > +
+> > +		*label = kzalloc(sizeof(struct nfs4_label), GFP_KERNEL);
+> 
+> Could we allocate this some toher way (it's small, right?) and avoid the
+> extra dynamic allocation here, just for simplicity's sake?
+
+How would you suggest going about doing that?
+
+> 
+> > +		if (*label == NULL) {
+> > +			host_err = -ENOMEM;
+> > +			goto out_nfserr;
+> > +		}
+> > +
+> > +		(*label)->label = kmalloc(dummy32 + 1, GFP_KERNEL);
+> 
+> Might be nice to arrange NFS4_MAXLABELLEN to ensure this is never a
+> higher-order allocation.
+
+This should never be more than 4096. Under what circumstances would this
+become a higher-order allocation?
+> 
+> > +#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
+> > +static inline __be32
+> > +nfsd4_encode_security_label(struct svc_rqst *rqstp, struct dentry *dentry, __be32 **pp, int *buflen)
+> > +{
+> > +	void *context;
+> > +	int err;
+> > +	int len;
+> > +	uint32_t lfs = 0;
+> > +	__be32 *p = *pp;
+> > +
+> > +	err = 0;
+> > +	(void)security_inode_getsecctx(dentry->d_inode, &context, &len);
+> > +	if (len < 0)
+> > +		return nfserrno(len);
+> > +
+> > +	if (*buflen < ((XDR_QUADLEN(len) << 2) + 4 +4)) {
+> 
+> We could use better helpers for this; it's kind of lame to have to do
+> this by hand.
+
+Give me an idea of what you'd like it to look like and I can try to code
+it up.
+
+> 
+> > +		err = nfserr_resource;
+> > +		goto out;
+> > +	}
+> > +
+> > +	/* XXX: A call to the translation code should be placed here
+> > +	 * for now send 0  until we have that to indicate the null
+> > +	 * translation */ 
+> 
+> I guess I should try to understand what that is some day.
+
+Ahh. Sorry that was a place holder for me. The idea is that in order to
+allow for multiple models and policies we will have a deamon similar to
+idmapd except to handle label translations. An example of this would be
+if we have an SELinux box with an MLS policy and a FreeBSD box with
+their MLS MAC module. If we want to ensure that they can both talk to
+each other we have them agree ahead of time to a label format which is
+just MLS label information. The translation daemon on the SELinux side
+would take the label strip out the SELinux specific stuff and encode it
+into the MLS label (probably a CALIPSO label) to send across the wire.
+Then when the BSD box receives it they have their translation daemon
+take the label convert it into something that makes sense to them
+locally filling in whatever information they need outside of the MLS
+label.
+
+
+> 
+> > +
+> > +	if ((*buflen -= 4) < 0)
+> 
+> Redundant?
+
+I don't think so. I'll go back and double check just to be safe.
+
+> 
+> --b.
 
