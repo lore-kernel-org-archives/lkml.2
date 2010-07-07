@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab0GGN2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 09:28:36 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52211 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755672Ab0GGN2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 09:28:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 1/6] block: push down BKL into .locked_ioctl
-Date: Wed, 7 Jul 2010 15:28:30 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org
-References: <1278193640-24223-1-git-send-email-arnd@arndb.de> <1278193640-24223-2-git-send-email-arnd@arndb.de> <20100707015207.GE2950@infradead.org>
-In-Reply-To: <20100707015207.GE2950@infradead.org>
+	id S1755905Ab0GGN2s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 09:28:48 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:47320 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755849Ab0GGN2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 09:28:46 -0400
+Date: Wed, 7 Jul 2010 15:30:47 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Dan Kruchinin <dkruchinin@acm.org>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-crypto@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 2/6] padata: Block until the instance is unused on stop
+Message-ID: <20100707133047.GX10072@secunet.com>
+References: <20100707132915.GV10072@secunet.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007071528.30333.arnd@arndb.de>
-X-Provags-ID: V02:K0:JNZij8VLx4Ehci2TD2bxSpBstjWv5HhdGukOaRKK2Cs
- Z8qn7Joacu+6gBN1nOLgHaEryB5vWdbUOSLfyJwLzX8O0h5Iov
- YnoqvNml0pNbdZ6BTTclnf4gwLNCTw0RLIF/VUsXS7I5iPsWOc
- rAd1sSElBZ/yLq6QESx+8uz/IlQSKloPiQhJFQMG/Rnf0aUFLq
- ingKtvlTymsW97OTrV7pg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100707132915.GV10072@secunet.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 07 Jul 2010 13:28:45.0043 (UTC) FILETIME=[52DB3430:01CB1DD8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 July 2010, Christoph Hellwig wrote:
-> 
-> Looking at this again I don't like the foo_unlock_ioctl naming you're
-> adding.  Just rename the existing ioctl routines to foo_locked_ioctl
-> or move the lock_kernel/unlock_kernel calls into the function, which
-> would be even better.
+This patch makes padata_stop to block until the padata
+instance is unused. Also we split padata_stop to a locked
+and a unlocked version. This is in preparation to be able
+to change the cpumask after a call to patata stop.
 
-Good point. I followed the naming that I used for the file_operations
-conversion, but since the block_device_operations don't use .unlocked_ioctl,
-the naming you suggested is better.
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+---
+ kernel/padata.c |   24 ++++++++++++++++--------
+ 1 files changed, 16 insertions(+), 8 deletions(-)
 
-I've now changed the sr.c and sd.c to use include the lock_kernel() call
-directly in their ioctl functions. For the various floppy drivers, I'd
-prefer using separate wrappers because these drivers are mostly legacy
-and any subtle bugs introduced could probably go unnoticed for years.
+diff --git a/kernel/padata.c b/kernel/padata.c
+index e7d723a..9e18dfa 100644
+--- a/kernel/padata.c
++++ b/kernel/padata.c
+@@ -490,6 +490,20 @@ static void __padata_start(struct padata_instance *pinst)
+ 	pinst->flags |= PADATA_INIT;
+ }
+ 
++static void __padata_stop(struct padata_instance *pinst)
++{
++	if (!(pinst->flags & PADATA_INIT))
++		return;
++
++	pinst->flags &= ~PADATA_INIT;
++
++	synchronize_rcu();
++
++	get_online_cpus();
++	padata_flush_queues(pinst->pd);
++	put_online_cpus();
++}
++
+ /* Replace the internal control stucture with a new one. */
+ static void padata_replace(struct padata_instance *pinst,
+ 			   struct parallel_data *pd_new)
+@@ -649,7 +663,7 @@ EXPORT_SYMBOL(padata_start);
+ void padata_stop(struct padata_instance *pinst)
+ {
+ 	mutex_lock(&pinst->lock);
+-	pinst->flags &= ~PADATA_INIT;
++	__padata_stop(pinst);
+ 	mutex_unlock(&pinst->lock);
+ }
+ EXPORT_SYMBOL(padata_stop);
+@@ -770,17 +784,11 @@ EXPORT_SYMBOL(padata_alloc);
+  */
+ void padata_free(struct padata_instance *pinst)
+ {
+-	padata_stop(pinst);
+-
+-	synchronize_rcu();
+-
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	unregister_hotcpu_notifier(&pinst->cpu_notifier);
+ #endif
+-	get_online_cpus();
+-	padata_flush_queues(pinst->pd);
+-	put_online_cpus();
+ 
++	padata_stop(pinst);
+ 	padata_free_pd(pinst->pd);
+ 	free_cpumask_var(pinst->cpumask);
+ 	kfree(pinst);
+-- 
+1.5.6.5
 
-As I mentioned to Sam, I'm more confident with the wrapper than rewriting
-a longish function that I can't test.
-
-I also now changed the i2o_block driver ioctl function but split that out
-into a separate patch, since I found two more existing issues with
-that function that I'm addressing at the same time.
-
-	Arnd
