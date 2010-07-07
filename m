@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab0GGFDr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 01:03:47 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18853 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750923Ab0GGFDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 01:03:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,550,1272870000"; 
-   d="scan'208";a="583635187"
-Date: Wed, 7 Jul 2010 13:03:38 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
-Message-ID: <20100707050338.GA5039@localhost>
-References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
- <1277811288-5195-13-git-send-email-mel@csn.ul.ie>
- <20100702125155.69c02f85.akpm@linux-foundation.org>
- <20100705134949.GC13780@csn.ul.ie>
+	id S1752328Ab0GGFly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 01:41:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38427 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab0GGFlw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 01:41:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=ipYrMasdxodUUPMECP7qcv7V8fZ9WaEc/TywkabD16A1/VOSCqse2/FYLoUlsYFwHn
+         UWfJNMHW5yQ4ffs1TwFbNy+t17ONy0ssjGufd+nvMcR/kBwtRa5Xnfr405SwYZIYZR/g
+         2wK9uWQOqmFlTH2eeifYHNv7nwfJ7C0x/KOW4=
+Message-ID: <4C34139B.6090204@gmail.com>
+Date: Wed, 07 Jul 2010 07:41:47 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100705134949.GC13780@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Howells <dhowells@redhat.com>,
+       Arjan van de Ven <arjan@linux.intel.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
+       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
+       akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+       dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+       andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
+References: <4C2A2688.1020206@kernel.org> <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <25085.1277847455@redhat.com> <4C2DAEBB.7090607@kernel.org>
+In-Reply-To: <4C2DAEBB.7090607@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+On 07/02/2010 11:17 AM, Tejun Heo wrote:
+> Arjan, I still think we'll be better off using bound workqueues for
+> async but let's first convert without causing behavior difference.
+> Either way isn't gonna result in any noticeable difference anyway.  If
+> you're okay with the conversion, please ack it.
 
-> Second, using systemtap, I was able to see that file-backed dirty
-> pages have a tendency to be near the end of the LRU even though they
-> are a small percentage of the overall pages in the LRU. I'm hoping
-> to figure out why this is as it would make avoiding writeback a lot
-> less controversial.
+Ping, Arjan.
 
-Your intuitions are correct -- the current background writeback logic
-fails to write elder inodes first. Under heavy loads the background
-writeback job may run for ever, totally ignoring the time order of
-inode->dirtied_when. This is probably why you see lots of dirty pages
-near the end of LRU.
+Thanks.
 
-Here is an old patch for fixing this. Sorry for being late. I'll
-pick up and refresh the patch series ASAP.  (I made a mistake last
-year to post too many patches at one time. I'll break them up into
-more manageable pieces.)
-
-[PATCH 31/45] writeback: sync old inodes first in background writeback
-<https://kerneltrap.org/mailarchive/linux-fsdevel/2009/10/7/6476313>
-
-Thanks,
-Fengguang
+--
+tejun
