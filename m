@@ -1,83 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab0GGCL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 22:11:57 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:42112 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751814Ab0GGCL4 (ORCPT
+	id S1754101Ab0GGCWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 22:22:12 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34094 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab0GGCWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 22:11:56 -0400
-Date: Wed, 7 Jul 2010 12:11:50 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Neil Brown <neilb@suse.de>
-Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-       "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
-       viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
-       serue@us.ibm.com, hooanon05@yahoo.co.jp, linux-fsdevel@vger.kernel.org,
-       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
- syscalls
-Message-ID: <20100707021150.GF25018@dastard>
-References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <871vbn2mk9.fsf@linux.vnet.ibm.com>
- <20100702064108.64034561@notabene.brown>
- <87iq4y29a6.fsf@linux.vnet.ibm.com>
- <20100706161002.GD7387@fieldses.org>
- <87eifgfsez.fsf@linux.vnet.ibm.com>
- <20100706232351.GD25018@dastard>
- <20100707093629.10c2feab@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100707093629.10c2feab@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 6 Jul 2010 22:22:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Zz3sQyPF3GSUaDjAOLdfMJKeFy9t/kkFEMXs+JfKb0xfvcU4DTun4I4auqunUm7b0U
+         IHP+5zfO7bZfNA8S1WVAXCt80FCfrQ0k3KrkZNmp1rWUqpV1LSVRQipWILYWq38EmuIG
+         uNiIR4fbvWmUR9Fg9voQ8aNBbY4SeGmpuoALY=
+Subject: [PATCH] acerhdf: fix resource reclaim in error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Peter Feuerer <peter@piie.net>, Matthew Garrett <mjg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Len Brown <len.brown@intel.com>, Borislav Petkov <petkovbb@gmail.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       platform-driver-x86@vger.kernel.org
+Content-Type: text/plain
+Date: Wed, 07 Jul 2010 10:22:19 +0800
+Message-Id: <1278469339.12801.27.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 09:36:29AM +1000, Neil Brown wrote:
-> On Wed, 7 Jul 2010 09:23:51 +1000
-> Dave Chinner <david@fromorbit.com> wrote:
-> 
-> > > I can add a new syscall that returns 
-> > > 
-> > > struct fs_uuid {
-> > >        u8 fs_uuid[16];  
-> > > };
-> > > 
-> > > long sys_get_fs_uuid(int dfd, char *name, struct fs_uuid *fsid, int flag);  
-> > 
-> > libblkid already provides the UUID to userspace applications, doesn't it?
-> 
-> Yes and no.
-> 
-> libblkid provides the uuid of the thing that uses a block device.  That
-> doesn't directly map to "UUID of a filesystem".
+This patch fix resource reclaim in below cases:
+1. acerhdf_register_platform() does not properly handle
+   platform_device_alloc() failure and platform_device_add() failure.
+   This patch adds error handling for acerhdf_register_platform().
+2. acerhdf_register_platform() return err with acerhdf_dev == NULL.
+   as a result, acerhdf_unregister_platform() does not do resource
+   reclaim in acerhdf_init() error path.
+   This patch adds error handing for acerhdf_register_platform(),
+   thus correct the error handing path in acerhdf_init().
+   goto out_err instead of err_unreg if acerhdf_register_platform() fail.
+3. platform_device_del() should be only used in error handling.
+   Current implementation missed a platform_device_put() in acerhdf_exit.
+   This patch fixes it by using platform_device_unregister() instead of
+   platform_device_del() in acerhdf_unregister_platform().
 
-True.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/acerhdf.c |   20 ++++++++++++++++----
+ 1 files changed, 16 insertions(+), 4 deletions(-)
 
-> There are two types of filesystem that I can think of for which libblkid
-> cannot give a uuid.
->   - network filesystems (or virtual filesystems, or fuse )
-
-How would you guarantee persistent uniqueness for such filesystems?
-
->   - filesystems which share a block device, such as btrfs.
->     btrfs can have 'subvols' - multiple "filesystems" within
->     the one (set of) block device(s).  libblkid cannot be asked about these
->     different subvols.
-> 
-> libblkid is useful, but not a real solution.
-
-So libblkid doesn't cover everything, but I think my question is
-still valid - if we want per-filesystem UUIDs, why a syscall and not
-just publishing it somewhere where we already publish per-mount
-information?  e.g. in /proc/mounts?
-
-Cheers,
-
-Dave.
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index 7b2384d..e938a86 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -579,9 +579,21 @@ static int acerhdf_register_platform(void)
+ 		return err;
+ 
+ 	acerhdf_dev = platform_device_alloc("acerhdf", -1);
+-	platform_device_add(acerhdf_dev);
++	if (!acerhdf_dev) {
++		err = -ENOMEM;
++		goto err_device_alloc;
++	}
++	err = platform_device_add(acerhdf_dev);
++	if (err)
++		goto err_device_add;
+ 
+ 	return 0;
++
++err_device_add:
++	platform_device_put(acerhdf_dev);
++err_device_alloc:
++	platform_driver_unregister(&acerhdf_driver);
++	return err;
+ }
+ 
+ static void acerhdf_unregister_platform(void)
+@@ -589,7 +601,7 @@ static void acerhdf_unregister_platform(void)
+ 	if (!acerhdf_dev)
+ 		return;
+ 
+-	platform_device_del(acerhdf_dev);
++	platform_device_unregister(acerhdf_dev);
+ 	platform_driver_unregister(&acerhdf_driver);
+ }
+ 
+@@ -633,7 +645,7 @@ static int __init acerhdf_init(void)
+ 
+ 	err = acerhdf_register_platform();
+ 	if (err)
+-		goto err_unreg;
++		goto out_err;
+ 
+ 	err = acerhdf_register_thermal();
+ 	if (err)
+@@ -646,7 +658,7 @@ err_unreg:
+ 	acerhdf_unregister_platform();
+ 
+ out_err:
+-	return -ENODEV;
++	return err;
+ }
+ 
+ static void __exit acerhdf_exit(void)
 -- 
-Dave Chinner
-david@fromorbit.com
+1.5.4.3
+
+
+
