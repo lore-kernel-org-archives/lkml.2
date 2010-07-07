@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab0GGAZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 20:25:18 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:49879 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755619Ab0GGAZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 20:25:16 -0400
-Date: Wed, 7 Jul 2010 01:24:58 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
-Message-ID: <20100707002458.GI13780@csn.ul.ie>
-References: <20100702125155.69c02f85.akpm@linux-foundation.org> <20100705134949.GC13780@csn.ul.ie> <20100706093529.CCD1.A69D9226@jp.fujitsu.com> <20100706101235.GE13780@csn.ul.ie> <AANLkTin8FotAC1GvjuoYU9XA2eiSr6FWWh6bwypTdhq3@mail.gmail.com> <20100706152539.GG13780@csn.ul.ie> <20100706202758.GC18210@cmpxchg.org> <AANLkTimOkI95ZkJecE3jxRDDGbHvP9tRUluIoJuhqqMz@mail.gmail.com>
+	id S1756497Ab0GGAZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 20:25:59 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50819 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755977Ab0GGAZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 20:25:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=xVpCOVfoj+XkUQ9+CjyvGWQp1hmNEc/lv+c8V34z/6p50uAHGBp0tsi4334P3ebQ+c
+         17iaB3m4GnuLc884MheEEwoN+pP8W4jYj7PeP3d8TnQNIPiKTcKKrGF3Q8jD7ipQ+NXi
+         FOfTDiYios5BiNooI7XG6gw4+7AYo/FcydY0E=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimOkI95ZkJecE3jxRDDGbHvP9tRUluIoJuhqqMz@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Date: Tue, 6 Jul 2010 20:25:56 -0400
+Message-ID: <AANLkTinDWl1qJzK-H9Qw3jjKs9zdUYE1Hh3hTaDw8asd@mail.gmail.com>
+Subject: 2.6.35-rc4 - include/linux/fdtable.h:85 invoked rcu_dereference_check() 
+	without protection!
+From: Miles Lane <miles.lane@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 07:28:14AM +0900, Minchan Kim wrote:
-> On Wed, Jul 7, 2010 at 5:27 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > On Tue, Jul 06, 2010 at 04:25:39PM +0100, Mel Gorman wrote:
-> >> On Tue, Jul 06, 2010 at 08:24:57PM +0900, Minchan Kim wrote:
-> >> > but it is still problem in case of swap file.
-> >> > That's because swapout on swapfile cause file system writepage which
-> >> > makes kernel stack overflow.
-> >>
-> >> I don't *think* this is a problem unless I missed where writing out to
-> >> swap enters teh filesystem code. I'll double check.
-> >
-> > It bypasses the fs.  On swapon, the blocks are resolved
-> > (mm/swapfile.c::setup_swap_extents) and then the writeout path uses
-> > bios directly (mm/page_io.c::swap_writepage).
-> >
-> > (GFP_NOFS still includes __GFP_IO, so allows swapping)
-> >
-> >        Hannes
-> 
-> Thanks, Hannes. You're right.
-> Extents would be resolved by setup_swap_extents.
-> Sorry for confusing, Mel.
-> 
+ [ INFO: suspicious rcu_dereference_check() usage. ]
+ ---------------------------------------------------
+ include/linux/fdtable.h:85 invoked rcu_dereference_check() without protection!
 
-No confusion. I was 99.99999% certain this was the case and had tested with
-a few bug_on's just in case but confirmation is helpful. Thanks both.
+ other info that might help us debug this:
 
-What I have now is direct writeback for anon files. For files be it from
-kswapd or direct reclaim, I kick writeback pre-emptively by an amount based
-on the dirty pages encountered because monitoring from systemtap indicated
-that we were getting a large percentage of the dirty file pages at the end
-of the LRU lists (bad). Initial tests show that page reclaim writeback is
-reduced from kswapd by 97% with this sort of pre-emptive kicking of flusher
-threads based on these figures from sysbench.
+ rcu_scheduler_active = 1, debug_locks = 1
+ no locks held by compiz/4286.
 
-                traceonly-v4r1  stackreduce-v4r1    flushforward-v4r4
-Direct reclaims                                621        710         30928 
-Direct reclaim pages scanned                141316     141184       1912093 
-Direct reclaim write file async I/O          23904      28714             0 
-Direct reclaim write anon async I/O            716        918            88 
-Direct reclaim write file sync I/O               0          0             0 
-Direct reclaim write anon sync I/O               0          0             0 
-Wake kswapd requests                        713250     735588       5626413 
-Kswapd wakeups                                1805       1498           641 
-Kswapd pages scanned                      17065538   15605327       9524623 
-Kswapd reclaim write file async I/O         715768     617225         23938  <-- Wooo
-Kswapd reclaim write anon async I/O         218003     214051        198746 
-Kswapd reclaim write file sync I/O               0          0             0 
-Kswapd reclaim write anon sync I/O               0          0             0 
-Time stalled direct reclaim (ms)              9.87      11.63        315.30 
-Time kswapd awake (ms)                     1884.91    2088.23       3542.92 
+ stack backtrace:
+ Pid: 4286, comm: compiz Not tainted 2.6.35-rc4 #6
+ Call Trace:
+  [<ffffffff8106714e>] lockdep_rcu_dereference+0x9d/0xa6
+  [<ffffffff810d3bdd>] fcheck_files+0x5c/0xca
+  [<ffffffff810d3ca3>] fget_light+0x35/0x96
+  [<ffffffff810e1b02>] do_sys_poll+0x1ff/0x3e5
+  [<ffffffff810e1316>] ? __pollwait+0x0/0xc7
+  [<ffffffff810e13dd>] ? pollwake+0x0/0x4f
+  [<ffffffff8125b785>] ? __sock_sendmsg+0x66/0x72
+  [<ffffffff8125da9e>] ? sock_aio_write+0x0/0xf6
+  [<ffffffff8125db7f>] ? sock_aio_write+0xe1/0xf6
+  [<ffffffff810d295f>] ? do_sync_readv_writev+0xbc/0xfb
+  [<ffffffff810d284f>] ? fsnotify_modify+0x67/0x6f
+  [<ffffffff810d35eb>] ? do_readv_writev+0x109/0x122
+  [<ffffffff81009cba>] ? sysret_check+0x2e/0x69
+  [<ffffffff810e1e7c>] sys_poll+0x50/0xba
+  [<ffffffff81009c82>] system_call_fastpath+0x16/0x1b
 
-This is "good" IMO because file IO from page reclaim is frowned upon because
-of poor IO patterns. There isn't a launder process I can kick for anon pages
-to get overall reclaim IO down but it's not clear it's worth it at this
-juncture because AFAIK, IO to swap blows anyway. The biggest plus is that
-direct reclaim still not call into the filesystem with my current series so
-stack overflows are less of a heartache. As the number of pages encountered
-for filesystem writeback are reduced, it's also less of a problem for memcg.
+===============================================================================
 
-The direct reclaim stall latency increases because of congestion_wait
-throttling but the overall tests completes 602 seconds faster or by 8% (figures
-not included). Scanning rates go up but with reduced-time-to-completion,
-on balance I think it works out.
+ [ INFO: suspicious rcu_dereference_check() usage. ]
+ ---------------------------------------------------
+ include/linux/fdtable.h:88 invoked rcu_dereference_check() without protection!
 
-Andrew has picked up some of the series but I have another modification
-to the tracepoints to differenciate between anon and file IO which I now
-think is a very important distinction as flushers work on one but not the
-other. I also must rebase upon a mmotm based on 2.6.35-rc4 before re-posting
-the series but broadly speaking, I think we are going the right direction
-without needing stack-switching tricks.
+ other info that might help us debug this:
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+ rcu_scheduler_active = 1, debug_locks = 1
+ no locks held by gnome-panel/4293.
+
+ stack backtrace:
+ Pid: 4293, comm: gnome-panel Not tainted 2.6.35-rc4 #6
+ Call Trace:
+  [<ffffffff8106714e>] lockdep_rcu_dereference+0x9d/0xa6
+  [<ffffffff810d3c32>] fcheck_files+0xb1/0xca
+  [<ffffffff810ab263>] ? might_fault+0x63/0xb3
+  [<ffffffff810d3ca3>] fget_light+0x35/0x96
+  [<ffffffff810e1b02>] do_sys_poll+0x1ff/0x3e5
+  [<ffffffff810e1316>] ? __pollwait+0x0/0xc7
+  [<ffffffff8125a2ae>] ? __sock_recvmsg_nosec+0x65/0x6e
+  [<ffffffff8125b7da>] ? __sock_recvmsg+0x49/0x54
+  [<ffffffff8125da8a>] ? sock_aio_read+0xe8/0xfc
+  [<ffffffff810d2b67>] ? do_sync_read+0xc6/0x103
+  [<ffffffff81009cba>] ? sysret_check+0x2e/0x69
+  [<ffffffff810e1e7c>] sys_poll+0x50/0xba
+  [<ffffffff81009c82>] system_call_fastpath+0x16/0x1b
