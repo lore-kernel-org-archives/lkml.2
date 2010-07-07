@@ -1,113 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab0GGCWM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 22:22:12 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34094 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab0GGCWK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 22:22:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Zz3sQyPF3GSUaDjAOLdfMJKeFy9t/kkFEMXs+JfKb0xfvcU4DTun4I4auqunUm7b0U
-         IHP+5zfO7bZfNA8S1WVAXCt80FCfrQ0k3KrkZNmp1rWUqpV1LSVRQipWILYWq38EmuIG
-         uNiIR4fbvWmUR9Fg9voQ8aNBbY4SeGmpuoALY=
-Subject: [PATCH] acerhdf: fix resource reclaim in error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Peter Feuerer <peter@piie.net>, Matthew Garrett <mjg@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Len Brown <len.brown@intel.com>, Borislav Petkov <petkovbb@gmail.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       platform-driver-x86@vger.kernel.org
-Content-Type: text/plain
-Date: Wed, 07 Jul 2010 10:22:19 +0800
-Message-Id: <1278469339.12801.27.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1753910Ab0GGC3S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 22:29:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47513 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751114Ab0GGC3Q convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 22:29:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100707014437.GA1851@infradead.org>
+References: <20100624131455.GA10441@laptop>
+	<7897.1277531612@jrobl>
+	<20100626093544.GA27715@infradead.org>
+	<13226.1277556884@jrobl>
+	<20100705205806.GA12517@cynthia.pants.nu>
+	<6419.1278372690@jrobl>
+	<20100706004550.GC12517@cynthia.pants.nu>
+	<AANLkTikoD1OPjVcyvAAJ0QO6dGJxv40Np6LgRQ7X4tMM@mail.gmail.com>
+	<20100707014437.GA1851@infradead.org>
+Date: Tue, 6 Jul 2010 19:28:12 -0700
+Message-ID: <AANLkTikWredB5kF3iPhxIyGlyTDBM0DoMzn_eSc6rd6x@mail.gmail.com>
+Subject: Re: [rfc] new stat*fs-like syscall?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Brad Boyer <flar@allandria.com>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+       Nick Piggin <npiggin@suse.de>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+       Ulrich Drepper <drepper@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix resource reclaim in below cases:
-1. acerhdf_register_platform() does not properly handle
-   platform_device_alloc() failure and platform_device_add() failure.
-   This patch adds error handling for acerhdf_register_platform().
-2. acerhdf_register_platform() return err with acerhdf_dev == NULL.
-   as a result, acerhdf_unregister_platform() does not do resource
-   reclaim in acerhdf_init() error path.
-   This patch adds error handing for acerhdf_register_platform(),
-   thus correct the error handing path in acerhdf_init().
-   goto out_err instead of err_unreg if acerhdf_register_platform() fail.
-3. platform_device_del() should be only used in error handling.
-   Current implementation missed a platform_device_put() in acerhdf_exit.
-   This patch fixes it by using platform_device_unregister() instead of
-   platform_device_del() in acerhdf_unregister_platform().
+On Tue, Jul 6, 2010 at 6:44 PM, Christoph Hellwig <hch@infradead.org> wrote:
+>
+> I'm still waiting for Uli if he really insists on new syscall vectors
+> for the same structure.  Using that one ST_VALID bit seems a lot easier
+> to me.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/acerhdf.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
+Umm. Uli doesn't get to choose kernel system call conventions. It
+matters not one whit whether he insists on new system calls or not,
+it's not going to happen.
 
-diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-index 7b2384d..e938a86 100644
---- a/drivers/platform/x86/acerhdf.c
-+++ b/drivers/platform/x86/acerhdf.c
-@@ -579,9 +579,21 @@ static int acerhdf_register_platform(void)
- 		return err;
- 
- 	acerhdf_dev = platform_device_alloc("acerhdf", -1);
--	platform_device_add(acerhdf_dev);
-+	if (!acerhdf_dev) {
-+		err = -ENOMEM;
-+		goto err_device_alloc;
-+	}
-+	err = platform_device_add(acerhdf_dev);
-+	if (err)
-+		goto err_device_add;
- 
- 	return 0;
-+
-+err_device_add:
-+	platform_device_put(acerhdf_dev);
-+err_device_alloc:
-+	platform_driver_unregister(&acerhdf_driver);
-+	return err;
- }
- 
- static void acerhdf_unregister_platform(void)
-@@ -589,7 +601,7 @@ static void acerhdf_unregister_platform(void)
- 	if (!acerhdf_dev)
- 		return;
- 
--	platform_device_del(acerhdf_dev);
-+	platform_device_unregister(acerhdf_dev);
- 	platform_driver_unregister(&acerhdf_driver);
- }
- 
-@@ -633,7 +645,7 @@ static int __init acerhdf_init(void)
- 
- 	err = acerhdf_register_platform();
- 	if (err)
--		goto err_unreg;
-+		goto out_err;
- 
- 	err = acerhdf_register_thermal();
- 	if (err)
-@@ -646,7 +658,7 @@ err_unreg:
- 	acerhdf_unregister_platform();
- 
- out_err:
--	return -ENODEV;
-+	return err;
- }
- 
- static void __exit acerhdf_exit(void)
--- 
-1.5.4.3
-
-
-
+             Linus
