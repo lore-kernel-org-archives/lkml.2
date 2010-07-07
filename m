@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab0GGPRV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:17:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28680 "EHLO mx1.redhat.com"
+	id S1756826Ab0GGPR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:17:57 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43751 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755191Ab0GGPRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 11:17:20 -0400
-Date: Wed, 7 Jul 2010 18:15:40 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Peter Palfrader <peter@palfrader.org>, Glauber Costa <glommer@redhat.com>,
-       Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Zachary Amsden <zamsden@redhat.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization
- point for pvclock
-Message-ID: <20100707151540.GH4689@redhat.com>
-References: <20100701175144.GA2116@kroah.com>
- <20100701173218.125822294@clark.site>
- <20100707124731.GJ15122@anguilla.noreply.org>
- <20100707135140.GI2707@mothafucka.localdomain>
- <20100707143338.GK15122@anguilla.noreply.org>
+	id S1752438Ab0GGPR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 11:17:56 -0400
+Date: Thu, 8 Jul 2010 01:17:38 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
+       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V14 03/11] vfs: Add open by file handle support
+Message-ID: <20100707151738.GR11732@laptop>
+References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1276621981-2774-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100707143338.GK15122@anguilla.noreply.org>
+In-Reply-To: <1276621981-2774-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 04:33:39PM +0200, Peter Palfrader wrote:
-> On Wed, 07 Jul 2010, Glauber Costa wrote:
-> 
-> > > 2.6.32.16 fails to boot on my KVM domains using qemu-kvm 0.11.1.
-> > > 
-> > > Bisecting between 2.6.32.14 which worked and .16 turned up this commit
-> > > as the first culprit[0].
-> > > 
-> > > The host is still running 2.6.32.14 and has 8 cores on 2 CPUs.  The
-> > > single-cpu KVM domain hangs just after printing 'Write protecting the
-> > > kernel read-only data: 9492k'[1].   On a successful boot this line would
-> > > usually be followed by 'INIT: version 2.86 booting'.
-> > > 
-> > > A 2.6.32.16 with this patch reverted boots fine.
-> > > 
-> > > If there's any info you need please just ask.
-> 
-> > if you boot with another clocksource, and then switch to kvmclock with the machine already
-> > running, do you see anything strange or suspicious?
-> 
-> Booting with various clocksource=xxx kernel parameters does not change
-> the behaviour at all, i.e. the boot still hangs.
-> 
-And what if you provide -cpu qemu64,-kvmclock to qemu command line?
+On Tue, Jun 15, 2010 at 10:42:53PM +0530, Aneesh Kumar K.V wrote:
+> diff --git a/fs/open.c b/fs/open.c
+> index 43ac798..1c5daa3 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -1168,3 +1168,201 @@ SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
+>  	return -ENOSYS;
+>  }
+>  #endif
+> +
+> +#ifdef CONFIG_EXPORTFS
+> +static struct vfsmount *get_vfsmount_from_fd(int fd)
+> +{
+> +	int fput_needed;
+> +	struct path *path;
+> +	struct file *filep;
+> +
+> +	if (fd == AT_FDCWD) {
+> +		struct fs_struct *fs = current->fs;
+> +		read_lock(&fs->lock);
+> +		path = &fs->pwd;
+> +		mntget(path->mnt);
+> +		read_unlock(&fs->lock);
+> +	} else {
+> +		filep = fget_light(fd, &fput_needed);
+> +		if (!filep)
+> +			return ERR_PTR(-EBADF);
+> +		path = &filep->f_path;
+> +		mntget(path->mnt);
+> +		fput_light(filep, fput_needed);
+> +	}
+> +	return path->mnt;
+> +}
 
---
-			Gleb.
+The bulk of this this should probably be in fs/namei.c, factored with
+path_init stuff if possible please.
+
