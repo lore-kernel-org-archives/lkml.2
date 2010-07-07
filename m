@@ -1,162 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab0GFCKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jul 2010 22:10:10 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40406 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757276Ab0GFCKH convert rfc822-to-8bit (ORCPT
+	id S1755928Ab0GFCRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jul 2010 22:17:39 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:52233 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752379Ab0GFCRi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jul 2010 22:10:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=C1Oy0lDt2HCp8MSIBaDPptcZwERtNO7vNMTc14Xko4SrCLlRe/SAWuSJ3BYsUj3Wii
-         cWp67AbzafKGhSxFpuEaJQHCu2DDF0EeeFUZpXAp6wgwxuXGvNtHGDJtWHzfoIFI1OTf
-         Qr4udRmGMgrCPZ3o1Q9NCjMDlKz3qPFdolJWg=
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <201007050712.o657CpjO028121@turbo.physics.adelaide.edu.au>
-References: <1278061453.15256.1.camel@mola> <201007050712.o657CpjO028121@turbo.physics.adelaide.edu.au>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 6 Jul 2010 10:09:45 +0800
-Message-ID: <AANLkTikVhgjsUrC472itOVlyZuBNXlpkJR5ATu4Eh6AV@mail.gmail.com>
-Subject: Re: [PATCH] compal-laptop/fujitsu-laptop/msi-laptop: make 
-	dmi_check_cb
-To: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Cezary Jackiewicz <cezary.jackiewicz@gmail.com>,
-       Matthew Garrett <mjg@redhat.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       Mario Limonciello <Mario_Limonciello@dell.com>,
-       Richard Purdie <rpurdie@linux.intel.com>, Michal Marek <mmarek@suse.cz>,
-       Len Brown <len.brown@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Stefani Seibold <stefani@seibold.net>, Andi Kleen <ak@linux.intel.com>,
-       Lennart Poettering <mzxreary@0pointer.de>,
-       Lee Chun-Yi <jlee@novell.com>, platform-driver-x86@vger.kernel.org
+	Mon, 5 Jul 2010 22:17:38 -0400
+Date: Wed, 7 Jul 2010 04:07:34 +0000
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
+       x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+       cjb@laptop.org, Mitch Bradley <wmb@laptop.org>, pgf@laptop.org,
+       linux-kernel@vger.kernel.org, davem@davemloft.net,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 2/4] sparc: break out some prom device-tree building
+ code  out into drivers/of
+Message-ID: <20100707040734.05d625af@debxo>
+In-Reply-To: <AANLkTilme2uAoXjorUEzam9j_xosR8kl70W8PS71d-Th@mail.gmail.com>
+References: <20100628215407.2017bf2f@debian>
+	<20100628220037.5744c207@debian>
+	<AANLkTilN3_ntG7AWKi-8LM9X_dZJPPlWM6xRM_V_00xU@mail.gmail.com>
+	<20100629110324.2756cc02@debian>
+	<AANLkTinPsrqxj5oQirEDRvVOuOeWgWSdljsMRbw8wn8V@mail.gmail.com>
+	<20100629193618.5a840b8e@dev.queued.net>
+	<AANLkTilme2uAoXjorUEzam9j_xosR8kl70W8PS71d-Th@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/5 Jonathan Woithe <jwoithe@physics.adelaide.edu.au>:
-> Is there no possibility of some other matching function existing after ours
-> in the tree which might need to also be called?  If so, this change would
-> prevent that.
+On Wed, 30 Jun 2010 15:52:51 -0600
+Grant Likely <grant.likely@secretlab.ca> wrote:
 
-hi Jonathan,
+> On Tue, Jun 29, 2010 at 5:36 PM, Andres Salomon <dilinger@queued.net>
+> wrote:
+> > On Tue, 29 Jun 2010 15:42:54 -0600
+> > Grant Likely <grant.likely@secretlab.ca> wrote:
+> >
+> >> On Tue, Jun 29, 2010 at 9:03 AM, Andres Salomon
+> >> <dilinger@queued.net> wrote:
+> > [...]
+> >>
+> >> >  Sparc and OLPC have very similar
+> >> > mechanisms for getting device tree info from OFW, so it makes
+> >> > sense to share code between them.
+> >>
+> >> Other than the flattened tree step; is the powerpc method
+> >> dissimilar from the Sparc and OLPC method for talking to OFW?
+> >>  (This is not a rhetorical question, I'm want to know if I'm
+> >> missing some details). The main difference I know about is that
+> >> OFW can still kept alive at runtime for sparc, which powerpc does
+> >> not do.  However, keeping OFW callable is a separate issue from
+> >> how to extract the device tree.
+> >>
+> >
+> > After having a look at powerpc's flatten_device_tree, I don't see
+> > any obvious reason why OLPC couldn't use this
+> 
+> Okay.
+> 
+> >(though it still strikes me
+> > as weird to go from prom->fdt->dt when the option of prom->dt is
+> > available and less complex).
+> 
+> Which is why I didn't simply NACK it out of hand.  It is a valid
+> point.
+> 
+> I'd probably be happier if both fdt and pdt used a shared set of
+> utility functions for allocating and tying together the device_node
+> data structures.  Then at least there would be only one instance of
+> code to deal with the fiddly data structure interconnections.
 
-I checked the implementation of dmi_check_system() and the useage cases in
-compal-laptop/fujitsu-laptop/msi-laptop, it should be no problem with
-this change.
+The problem with unifying it is that both methods have different
+assumptions; the fdt determines the size of the unflattened dt in
+advance, and allocates a contiguous block of memory up front (the
+memory block being smaller than the pdt memory usage because various
+strings are already present in the fdt, so the unflattened tree simply
+points at those strings).  The pdt, otoh, allocates more memory as the
+tree is discovered (by calling into the prom).
 
-In compal-laptop and msi-laptop, we call dmi_check_system() to
-identify the laptop model.
-(The callback simply print the identified laptop model)
-It should have zero or exactly one successful match.
+Possible options include:
 
-In fujitsu-laptop, we call dmi_check_system() to identify the laptop
-model and set parameters accordingly.
-The callback print the identified laptop model and set parameters
-(use_alt_lcd_levels / fujitsu->keycode[1|2|3|4|5] ).
-It should have zero or exactly one successful match.
-If it has some other matching function with successful match, then
-current implementation
-is buggy anyway because new successful matches will override the
-fujitsu->keycode[1|2|3|4|5]
-parameters.
+ - For the pdt, calling into the prom twice for each property/node,
+   getting the size of everything during the first tree traversal,
+   allocating memory, and then creating the tree during the second
+   traversal. This is slow and I don't see much point to it.
 
-Regards,
-Axel
+ - For the pdt, calling into the prom once for each property/node to
+   create a fdt, and then unflattening it.  This is better than the
+   previous option, but I don't think the prom->fdt code will be very
+   nice.
 
->
-> Regards
->  jonathan
->
->> dmi_check_system() walks the table running matching functions until someone
->> returns non zero or we hit the end.
->>
->> This patch makes dmi_check_cb to return 1 so dmi_check_system() return
->> immediately when a match is found.
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->> ---
->>  drivers/platform/x86/compal-laptop.c  |    2 +-
->>  drivers/platform/x86/fujitsu-laptop.c |    6 +++---
->>  drivers/platform/x86/msi-laptop.c     |    2 +-
->>  3 files changed, 5 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/platform/x86/compal-laptop.c b/drivers/platform/x86/compal-laptop.c
->> index 71ff154..dc31a08 100644
->> --- a/drivers/platform/x86/compal-laptop.c
->> +++ b/drivers/platform/x86/compal-laptop.c
->> @@ -190,7 +190,7 @@ static int dmi_check_cb(const struct dmi_system_id *id)
->>       printk(KERN_INFO "compal-laptop: Identified laptop model '%s'.\n",
->>               id->ident);
->>
->> -     return 0;
->> +     return 1;
->>  }
->>
->>  static struct dmi_system_id __initdata compal_dmi_table[] = {
->> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
->> index dab1a0e..1859d7f 100644
->> --- a/drivers/platform/x86/fujitsu-laptop.c
->> +++ b/drivers/platform/x86/fujitsu-laptop.c
->> @@ -603,7 +603,7 @@ static int dmi_check_cb_s6410(const struct dmi_system_id *id)
->>       dmi_check_cb_common(id);
->>       fujitsu->keycode1 = KEY_SCREENLOCK;     /* "Lock" */
->>       fujitsu->keycode2 = KEY_HELP;   /* "Mobility Center" */
->> -     return 0;
->> +     return 1;
->>  }
->>
->>  static int dmi_check_cb_s6420(const struct dmi_system_id *id)
->> @@ -611,7 +611,7 @@ static int dmi_check_cb_s6420(const struct dmi_system_id *id)
->>       dmi_check_cb_common(id);
->>       fujitsu->keycode1 = KEY_SCREENLOCK;     /* "Lock" */
->>       fujitsu->keycode2 = KEY_HELP;   /* "Mobility Center" */
->> -     return 0;
->> +     return 1;
->>  }
->>
->>  static int dmi_check_cb_p8010(const struct dmi_system_id *id)
->> @@ -620,7 +620,7 @@ static int dmi_check_cb_p8010(const struct dmi_system_id *id)
->>       fujitsu->keycode1 = KEY_HELP;   /* "Support" */
->>       fujitsu->keycode3 = KEY_SWITCHVIDEOMODE;        /* "Presentation" */
->>       fujitsu->keycode4 = KEY_WWW;    /* "Internet" */
->> -     return 0;
->> +     return 1;
->>  }
->>
->>  static struct dmi_system_id fujitsu_dmi_table[] = {
->> diff --git a/drivers/platform/x86/msi-laptop.c b/drivers/platform/x86/msi-laptop.c
->> index afd762b..c67a74c 100644
->> --- a/drivers/platform/x86/msi-laptop.c
->> +++ b/drivers/platform/x86/msi-laptop.c
->> @@ -434,7 +434,7 @@ static int dmi_check_cb(const struct dmi_system_id *id)
->>  {
->>       printk(KERN_INFO "msi-laptop: Identified laptop model '%s'.\n",
->>              id->ident);
->> -     return 0;
->> +     return 1;
->>  }
->>
->>  static struct dmi_system_id __initdata msi_dmi_table[] = {
->> --
->> 1.5.4.3
->>
->>
->>
->
->
-> --
-> * Jonathan Woithe    jwoithe@physics.adelaide.edu.au                        *
-> *                    http://www.physics.adelaide.edu.au/~jwoithe            *
-> ***-----------------------------------------------------------------------***
-> ** "Time is an illusion; lunchtime doubly so"                              **
-> *  "...you wouldn't recognize a subtle plan if it painted itself purple and *
-> *   danced naked on a harpsichord singing 'subtle plans are here again'"    *
->
+ - Changing the fdt code to allocate memory more dynamically; rather
+   than a first run through the fdt to determine the unflattened tree
+   size, simply allocate memory chunks as we run through the tree.
+   Memory might still be backed the same way (calling
+   early_init_dt_alloc_memory_arch to grab a chunk of memory, and then
+   allocating chunks of it via unflatten_dt_alloc), but the difference
+   would be that it wouldn't necessarily be contiguous, and in how it's
+   done.  For example, early_init_dt_alloc_memory_arch might be called
+   initially to allocate a 16k chunk, and once unflatten_dt_alloc runs
+   out of memory in that chunk, another 16k chunk might be allocated.
+   This would also translate to sparc's prom_early_alloc being used to
+   allocate the chunk, and then node/property structs being
+   allocated from those chunks.  (The 16k choice
+   is completely arbitrary; people more familiar w/ the early memory
+   setup of ppc/sparc might have a better suggestion)
+
+That last option is what I think makes the most sense; however, are
+there technical reasons (other than how unflatten_device_tree is
+written) that the unflattened dt must be in a contiguous memory
+region?  The chunk allocation code would be backed by things like
+__alloc_bootmem and lmb_alloc, and the dt_alloc code would be new code
+that simply tracks the amount remaining in a list of chunks, and
+allocates a new chunk if necessary.
+
+
+> 
+> The nice thing about the powerpc version is that the tree can be
+> extracted really early in the boot process, before any of the core
+> kernel infrastructure or memory management is initialized.
+> 
