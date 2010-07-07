@@ -1,147 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab0GGRsA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 13:48:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55635 "EHLO mga09.intel.com"
+	id S1755539Ab0GGRuS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 13:50:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab0GGRr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 13:47:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,554,1272870000"; 
-   d="scan'208";a="533308535"
-Message-ID: <4C34BDCD.9080607@intel.com>
-Date: Wed, 07 Jul 2010 10:47:57 -0700
-From: Dan Williams <dan.j.williams@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1754241Ab0GGRuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 13:50:16 -0400
+Date: Wed, 7 Jul 2010 13:50:11 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Corrado Zoccolo <czoccolo@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
+Message-ID: <20100707175010.GA7842@redhat.com>
+References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
+ <x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>
-CC: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	 <4C2A8879.8010000@intel.com>	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	 <4C2AC55E.3040303@intel.com>	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	 <1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>	 <1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>	 <1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>	 <1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>	 <1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>	 <AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>	 <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>	 <1278324973.16975.68.camel@localhost>	 <AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>	 <1278463901.20082.34.camel@dwillia2-linux> <1278474039.31393.8.camel@localhost>
-In-Reply-To: <1278474039.31393.8.camel@localhost>
-Content-Type: multipart/mixed;
- boundary="------------020807060301020608080900"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020807060301020608080900
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+On Wed, Jul 07, 2010 at 01:03:08PM -0400, Jeff Moyer wrote:
+> Corrado Zoccolo <czoccolo@gmail.com> writes:
+> 
+> > Hi Jens,
+> > patch 8e55063 "cfq-iosched: fix corner cases in idling logic", is
+> > suspected for some regressions on high end hardware.
+> > The two patches from this series:
+> > - [PATCH 1/2] cfq-iosched: fix tree-wide handling of rq_noidle
+> > - [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
+> > fix two issues that I have identified, related to how RQ_NOIDLE is
+> > used by the upper layers.
+> > First patch makes sure that a RQ_NOIDLE coming after a sequence of
+> > possibly idling requests from the same queue on the no-idle tree will
+> > clear the noidle_tree_requires_idle flag.
+> > Second patch enables RQ_NOIDLE for queues in the idling tree,
+> > restoring the behaviour pre-8e55063 patch.
+> 
+> Hi, Corrado,
+> 
+> I ran your kernel through my tests.  Here are the results, up against
+> vanilla, deadline, and the blk_yield patch set:
+> 
+>                  just    just
+>                 fs_mark  fio        mixed	
+> -------------------------------+--------------
+> deadline        529.44   151.4 | 450.0    78.2
+> vanilla cfq     107.88   164.4 |   6.6   137.2
+> blk_yield cfq   530.82   158.7 | 113.2    78.6
+> corrado cfq      80.82   138.1 |   4.5   130.7
+> 
+> fs_mark results are in files/second, fio results are in MB/s.  All
+> results are the average of 5 runs.  In order to get results for the
+> mixed workload for both vanilla and Corrado's kernels, I had to extend
+> the runtime from 30s to 300s.
+> 
+> So, the changes proposed in this thread actually make performance worse
+> across the board.
 
-On 7/6/2010 8:40 PM, David Woodhouse wrote:
-> On Tue, 2010-07-06 at 17:51 -0700, Dan Williams wrote:
->> It should always trigger, and I have verified as much with the attached
->> replacement patch (by forcing the error on a working system), but we run
->> into a new problem.
->>
->> IOMMU: can't find DMAR for device 0000:00:0f.0
->> Allocating domain for 0000:00:0f.0 failed
->
-> Yeah, we're actually doing the check in the wrong place. This should
-> work better, I think.
->
+This is really surprising. It should have atleast helped in just fs_mark
+case.
 
-Ok.
+I think what is happening is that we are idling on the fsync queue
+(because it is last queue in the group). After some time jbd thread will
+submit some IO and we will not preempt the fsync thread. That's why
+I had also implemented the logic of allowing preemption in case of group
+idle and that had helped.
 
-Chris this change will make the driver's dma mapping calls succeed which 
-means we once again need to be prepared for the case where the engine's 
-iommu is not configured correctly.  Attached is David's latest combined 
-with the driver error handling from v1.  The expectation is that this 
-reports the BIOS misconfiguration each boot and the driver fails cleanly 
-if its transactions are blocked.
+> 
+> I re-ran my tests against a RHEL 5 kernel (which is based on 2.6.18),
+> and it shows that fs_mark performance is much better than stock CFQ in
+> 2.6.35-rc3, and the mixed workload results are much the same as they are
+> now (which is to say, the fs_mark process is completely starved by the
+> sequential reader).  So, that problem has existed for a long time.
 
-Thanks for going through these iterations.
+If we just stop idling on WRITE_SYNC, we will should be back to almost
+2.6.18 CFQ behavior.
 
---
-Dan
+> 
+> I'm still in the process of collecting data from production servers and
+> will report back with my findings there.
 
---------------020807060301020608080900
-Content-Type: text/plain;
- name="ioat-catch-broken-vtd-v3.patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="ioat-catch-broken-vtd-v3.patch"
+That would be great.
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvZG1hL2lvYXQvZG1hLmggYi9kcml2ZXJzL2RtYS9pb2F0
-L2RtYS5oCmluZGV4IDZkM2E3M2IuLjUyMTZjOGEgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZG1h
-L2lvYXQvZG1hLmgKKysrIGIvZHJpdmVycy9kbWEvaW9hdC9kbWEuaApAQCAtOTcsNiArOTcs
-NyBAQCBzdHJ1Y3QgaW9hdF9jaGFuX2NvbW1vbiB7CiAJI2RlZmluZSBJT0FUX1JFU0VUX1BF
-TkRJTkcgMgogCSNkZWZpbmUgSU9BVF9LT0JKX0lOSVRfRkFJTCAzCiAJI2RlZmluZSBJT0FU
-X1JFU0hBUEVfUEVORElORyA0CisJI2RlZmluZSBJT0FUX1JVTiA1CiAJc3RydWN0IHRpbWVy
-X2xpc3QgdGltZXI7CiAJI2RlZmluZSBDT01QTEVUSU9OX1RJTUVPVVQgbXNlY3NfdG9famlm
-ZmllcygxMDApCiAJI2RlZmluZSBJRExFX1RJTUVPVVQgbXNlY3NfdG9famlmZmllcygyMDAw
-KQpkaWZmIC0tZ2l0IGEvZHJpdmVycy9kbWEvaW9hdC9kbWFfdjIuYyBiL2RyaXZlcnMvZG1h
-L2lvYXQvZG1hX3YyLmMKaW5kZXggM2M4YjMyYS4uNzc5ZjRkYSAxMDA2NDQKLS0tIGEvZHJp
-dmVycy9kbWEvaW9hdC9kbWFfdjIuYworKysgYi9kcml2ZXJzL2RtYS9pb2F0L2RtYV92Mi5j
-CkBAIC0yODcsNyArMjg3LDEwIEBAIHZvaWQgaW9hdDJfdGltZXJfZXZlbnQodW5zaWduZWQg
-bG9uZyBkYXRhKQogCQkJY2hhbmVyciA9IHJlYWRsKGNoYW4tPnJlZ19iYXNlICsgSU9BVF9D
-SEFORVJSX09GRlNFVCk7CiAJCQlkZXZfZXJyKHRvX2RldihjaGFuKSwgIiVzOiBDaGFubmVs
-IGhhbHRlZCAoJXgpXG4iLAogCQkJCV9fZnVuY19fLCBjaGFuZXJyKTsKLQkJCUJVR19PTihp
-c19pb2F0X2J1ZyhjaGFuZXJyKSk7CisJCQlpZiAodGVzdF9iaXQoSU9BVF9SVU4sICZjaGFu
-LT5zdGF0ZSkpCisJCQkJQlVHX09OKGlzX2lvYXRfYnVnKGNoYW5lcnIpKTsKKwkJCWVsc2Ug
-Lyogd2UgbmV2ZXIgZ290IG9mZiB0aGUgZ3JvdW5kICovCisJCQkJcmV0dXJuOwogCQl9CiAK
-IAkJLyogaWYgd2UgaGF2ZW4ndCBtYWRlIHByb2dyZXNzIGFuZCB3ZSBoYXZlIGFscmVhZHkK
-QEAgLTQ5Miw2ICs0OTUsOCBAQCBzdGF0aWMgc3RydWN0IGlvYXRfcmluZ19lbnQgKippb2F0
-Ml9hbGxvY19yaW5nKHN0cnVjdCBkbWFfY2hhbiAqYywgaW50IG9yZGVyLCBnZgogCXJldHVy
-biByaW5nOwogfQogCit2b2lkIGlvYXQyX2ZyZWVfY2hhbl9yZXNvdXJjZXMoc3RydWN0IGRt
-YV9jaGFuICpjKTsKKwogLyogaW9hdDJfYWxsb2NfY2hhbl9yZXNvdXJjZXMgLSBhbGxvY2F0
-ZS9pbml0aWFsaXplIGlvYXQyIGRlc2NyaXB0b3IgcmluZwogICogQGNoYW46IGNoYW5uZWwg
-dG8gYmUgaW5pdGlhbGl6ZWQKICAqLwpAQCAtNTAwLDYgKzUwNSw3IEBAIGludCBpb2F0Ml9h
-bGxvY19jaGFuX3Jlc291cmNlcyhzdHJ1Y3QgZG1hX2NoYW4gKmMpCiAJc3RydWN0IGlvYXQy
-X2RtYV9jaGFuICppb2F0ID0gdG9faW9hdDJfY2hhbihjKTsKIAlzdHJ1Y3QgaW9hdF9jaGFu
-X2NvbW1vbiAqY2hhbiA9ICZpb2F0LT5iYXNlOwogCXN0cnVjdCBpb2F0X3JpbmdfZW50ICoq
-cmluZzsKKwl1NjQgc3RhdHVzOwogCWludCBvcmRlcjsKIAogCS8qIGhhdmUgd2UgYWxyZWFk
-eSBiZWVuIHNldCB1cD8gKi8KQEAgLTU0MCw3ICs1NDYsMjAgQEAgaW50IGlvYXQyX2FsbG9j
-X2NoYW5fcmVzb3VyY2VzKHN0cnVjdCBkbWFfY2hhbiAqYykKIAl0YXNrbGV0X2VuYWJsZSgm
-Y2hhbi0+Y2xlYW51cF90YXNrKTsKIAlpb2F0Ml9zdGFydF9udWxsX2Rlc2MoaW9hdCk7CiAK
-LQlyZXR1cm4gMSA8PCBpb2F0LT5hbGxvY19vcmRlcjsKKwkvKiBjaGVjayB0aGF0IHdlIGdv
-dCBvZmYgdGhlIGdyb3VuZCAqLworCXVkZWxheSg1KTsKKwlzdGF0dXMgPSBpb2F0X2NoYW5z
-dHMoY2hhbik7CisJaWYgKGlzX2lvYXRfYWN0aXZlKHN0YXR1cykgfHwgaXNfaW9hdF9pZGxl
-KHN0YXR1cykpIHsKKwkJc2V0X2JpdChJT0FUX1JVTiwgJmNoYW4tPnN0YXRlKTsKKwkJcmV0
-dXJuIDEgPDwgaW9hdC0+YWxsb2Nfb3JkZXI7CisJfSBlbHNlIHsKKwkJdTMyIGNoYW5lcnIg
-PSByZWFkbChjaGFuLT5yZWdfYmFzZSArIElPQVRfQ0hBTkVSUl9PRkZTRVQpOworCisJCWRl
-dl9lcnIodG9fZGV2KGNoYW4pLCAiZmFpbGVkIHRvIHN0YXJ0IGNoYW5uZWwgY2hhbmVycjog
-JSN4XG4iLAorCQkJY2hhbmVycik7CisJCWlvYXQyX2ZyZWVfY2hhbl9yZXNvdXJjZXMoYyk7
-CisJCXJldHVybiAtRUZBVUxUOworCX0KIH0KIAogYm9vbCByZXNoYXBlX3Jpbmcoc3RydWN0
-IGlvYXQyX2RtYV9jaGFuICppb2F0LCBpbnQgb3JkZXIpCkBAIC03NzgsNiArNzk3LDcgQEAg
-dm9pZCBpb2F0Ml9mcmVlX2NoYW5fcmVzb3VyY2VzKHN0cnVjdCBkbWFfY2hhbiAqYykKIAlk
-ZWxfdGltZXJfc3luYygmY2hhbi0+dGltZXIpOwogCWRldmljZS0+Y2xlYW51cF9mbigodW5z
-aWduZWQgbG9uZykgYyk7CiAJZGV2aWNlLT5yZXNldF9odyhjaGFuKTsKKwljbGVhcl9iaXQo
-SU9BVF9SVU4sICZjaGFuLT5zdGF0ZSk7CiAKIAlzcGluX2xvY2tfYmgoJmNoYW4tPmNsZWFu
-dXBfbG9jayk7CiAJc3Bpbl9sb2NrX2JoKCZpb2F0LT5wcmVwX2xvY2spOwpkaWZmIC0tZ2l0
-IGEvZHJpdmVycy9kbWEvaW9hdC9kbWFfdjMuYyBiL2RyaXZlcnMvZG1hL2lvYXQvZG1hX3Yz
-LmMKaW5kZXggMWNkZDIyZS4uZDBmNDk5MCAxMDA2NDQKLS0tIGEvZHJpdmVycy9kbWEvaW9h
-dC9kbWFfdjMuYworKysgYi9kcml2ZXJzL2RtYS9pb2F0L2RtYV92My5jCkBAIC0zNjEsNyAr
-MzYxLDEwIEBAIHN0YXRpYyB2b2lkIGlvYXQzX3RpbWVyX2V2ZW50KHVuc2lnbmVkIGxvbmcg
-ZGF0YSkKIAkJCWNoYW5lcnIgPSByZWFkbChjaGFuLT5yZWdfYmFzZSArIElPQVRfQ0hBTkVS
-Ul9PRkZTRVQpOwogCQkJZGV2X2Vycih0b19kZXYoY2hhbiksICIlczogQ2hhbm5lbCBoYWx0
-ZWQgKCV4KVxuIiwKIAkJCQlfX2Z1bmNfXywgY2hhbmVycik7Ci0JCQlCVUdfT04oaXNfaW9h
-dF9idWcoY2hhbmVycikpOworCQkJaWYgKHRlc3RfYml0KElPQVRfUlVOLCAmY2hhbi0+c3Rh
-dGUpKQorCQkJCUJVR19PTihpc19pb2F0X2J1ZyhjaGFuZXJyKSk7CisJCQllbHNlIC8qIHdl
-IG5ldmVyIGdvdCBvZmYgdGhlIGdyb3VuZCAqLworCQkJCXJldHVybjsKIAkJfQogCiAJCS8q
-IGlmIHdlIGhhdmVuJ3QgbWFkZSBwcm9ncmVzcyBhbmQgd2UgaGF2ZSBhbHJlYWR5CmRpZmYg
-LS1naXQgYS9kcml2ZXJzL3BjaS9pbnRlbC1pb21tdS5jIGIvZHJpdmVycy9wY2kvaW50ZWwt
-aW9tbXUuYwppbmRleCA3OTY4MjhmLi4zMzNkZmRmIDEwMDY0NAotLS0gYS9kcml2ZXJzL3Bj
-aS9pbnRlbC1pb21tdS5jCisrKyBiL2RyaXZlcnMvcGNpL2ludGVsLWlvbW11LmMKQEAgLTMw
-MjksNiArMzAyOSwzMiBAQCBzdGF0aWMgdm9pZCBfX2luaXQgaW9tbXVfZXhpdF9tZW1wb29s
-KHZvaWQpCiAKIH0KIAorc3RhdGljIHZvaWQgcXVpcmtfaW9hdF9zbmJfbm9fY2F0Y2hhbGwo
-c3RydWN0IHBjaV9kZXYgKnBkZXYpCit7CisJc3RydWN0IGRtYXJfZHJoZF91bml0ICpkcmhk
-OworCWludCBpOworCisJLyogV2Uga25vdyB0aGF0IHRoaXMgZGV2aWNlIG9uIHRoaXMgY2hp
-cHNldCBoYXMgaXRzIG93bgorCSAgIElPTU1VLiBJZiB3ZSBmaW5kIGl0IHVuZGVyIHRoZSBj
-YXRjaC1hbGwgSU9NTVUsIHRoZW4KKwkgICB0aGUgQklPUyBpcyBseWluZyB0byB1cy4gSG9w
-ZSB0aGF0IHRoZSBJT01NVSBmb3IKKwkgICB0aGlzIGRldmljZSBpcyBhY3R1YWxseSBkaXNh
-YmxlZCwgYW5kIGl0IG5lZWRzIG5vCisJICAgdHJhbnNsYXRpb24uLi4gKi8KKworCWZvcl9l
-YWNoX2RyaGRfdW5pdChkcmhkKSB7CisJCWlmICghZHJoZC0+aW5jbHVkZV9hbGwpCisJCQlj
-b250aW51ZTsKKwkJZm9yIChpID0gMDsgaSA8IGRyaGQtPmRldmljZXNfY250OyBpKyspIHsK
-KwkJCWlmIChkcmhkLT5kZXZpY2VzW2ldID09IHBkZXYpIHsKKwkJCQlXQVJOX1RBSU5UX09O
-Q0UoMSwgVEFJTlRfRklSTVdBUkVfV09SS0FST1VORCwKKwkJCQkJCSJCSU9TIHdyb25nbHkg
-aW5jbHVkZWQgSS9PQVQgZGV2aWNlIHVuZGVyIGNhdGNoLWFsbCBWVC1kIHVuaXRcbiIpOwor
-CQkJCXBkZXYtPmRldi5hcmNoZGF0YS5pb21tdSA9IERVTU1ZX0RFVklDRV9ET01BSU5fSU5G
-TzsKKwkJCQlyZXR1cm47CisJCQl9CisJCX0KKwl9Cit9CitERUNMQVJFX1BDSV9GSVhVUF9F
-TkFCTEUoUENJX1ZFTkRPUl9JRF9JTlRFTCwgUENJX0RFVklDRV9JRF9JTlRFTF9JT0FUX1NO
-QiwgcXVpcmtfaW9hdF9zbmJfbm9fY2F0Y2hhbGwpOworCiBzdGF0aWMgdm9pZCBfX2luaXQg
-aW5pdF9ub19yZW1hcHBpbmdfZGV2aWNlcyh2b2lkKQogewogCXN0cnVjdCBkbWFyX2RyaGRf
-dW5pdCAqZHJoZDsK
---------------020807060301020608080900--
+Vivek
