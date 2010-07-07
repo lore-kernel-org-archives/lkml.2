@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab0GGSIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 14:08:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48631 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669Ab0GGSIF (ORCPT
+	id S1756165Ab0GGSKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 14:10:07 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55139 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435Ab0GGSKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 14:08:05 -0400
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-From: David Woodhouse <dwmw2@infradead.org>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C34BDCD.9080607@intel.com>
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
-	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>
-	 <4C2A8879.8010000@intel.com>
-	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>
-	 <4C2AC55E.3040303@intel.com>
-	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
-	 <1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>
-	 <1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>
-	 <1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>
-	 <1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>
-	 <1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>
-	 <AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>
-	 <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>
-	 <1278324973.16975.68.camel@localhost>
-	 <AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>
-	 <1278463901.20082.34.camel@dwillia2-linux>
-	 <1278474039.31393.8.camel@localhost>  <4C34BDCD.9080607@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Jul 2010 19:07:56 +0100
-Message-ID: <1278526076.5008.28.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.4 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	Wed, 7 Jul 2010 14:10:05 -0400
+Date: Wed, 7 Jul 2010 14:09:30 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
+Message-ID: <20100707180930.GA15616@infradead.org>
+References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
+ <1277811288-5195-13-git-send-email-mel@csn.ul.ie>
+ <20100702125155.69c02f85.akpm@linux-foundation.org>
+ <20100705134949.GC13780@csn.ul.ie>
+ <20100707050338.GA5039@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100707050338.GA5039@localhost>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-07 at 10:47 -0700, Dan Williams wrote:
-> Chris this change will make the driver's dma mapping calls succeed which 
-> means we once again need to be prepared for the case where the engine's 
-> iommu is not configured correctly. 
+On Wed, Jul 07, 2010 at 01:03:38PM +0800, Wu Fengguang wrote:
+> Here is an old patch for fixing this. Sorry for being late. I'll
+> pick up and refresh the patch series ASAP.  (I made a mistake last
+> year to post too many patches at one time. I'll break them up into
+> more manageable pieces.)
 
-It ought to succeed but do nothing -- just return the physical address
-as if you have no IOMMU (which for this device you don't).
-
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+Yes, that would be very welcome.  There's a lot of important work
+in that series.
 
