@@ -1,171 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab0GGIrN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 04:47:13 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:40286 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762Ab0GGIrL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 04:47:11 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 7 Jul 2010 10:46:57 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: [PATCH] firewire: cdev: check write quadlet request length to
- avoid buffer overflow
-To: Clemens Ladisch <clemens@ladisch.de>
-cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-In-Reply-To: <4C29C1CA.1050705@ladisch.de>
-Message-ID: <tkrat.cb22c58cc57838c0@s5r6.in-berlin.de>
-References: <4C29C1CA.1050705@ladisch.de>
+	id S1753721Ab0GGI4F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 04:56:05 -0400
+Received: from shutemov.name ([188.40.19.243]:51307 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751762Ab0GGI4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 04:56:02 -0400
+Date: Wed, 7 Jul 2010 11:56:01 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+       Anfei Zhou <anfei.zhou@gmail.com>,
+       Alexander Shishkin <virtuoso@slind.org>,
+       Siarhei Siamashka <siarhei.siamashka@nokia.com>,
+       linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org
+Subject: Re: [patch 071/149] ARM: 6166/1: Proper prefetch abort handling on
+ pre-ARMv6
+Message-ID: <20100707085601.GA18732@shutemov.name>
+References: <20100701175144.GA2116@kroah.com>
+ <20100701173212.785441106@clark.site>
+ <20100701221420.GA10481@shutemov.name>
+ <20100701221728.GA12187@suse.de>
+ <20100701222541.GB10481@shutemov.name>
+ <20100701224837.GA27389@flint.arm.linux.org.uk>
+ <20100701225911.GC10481@shutemov.name>
+ <20100701231207.GB27389@flint.arm.linux.org.uk>
+ <20100706130618.GA14177@shutemov.name>
+ <20100706225815.GA21834@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: INLINE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100706225815.GA21834@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 Jun, Clemens Ladisch wrote at linux1394-devel:
-> Check that the data length of a write quadlet request actually is large
-> enough for a quadlet.  Otherwise, fw_fill_request could access the four
-> bytes after the end of the outbound_transaction_event structure.
+On Tue, Jul 06, 2010 at 11:58:15PM +0100, Russell King wrote:
+> On Tue, Jul 06, 2010 at 04:06:18PM +0300, Kirill A. Shutemov wrote:
+> > I've investigated the issue. It's reproducible if you try to jump to
+> > the megabyte next to section mapping.
 > 
-> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-> ---
->  drivers/firewire/core-cdev.c |    6 ++++++
->  1 file changed, 6 insertions(+)
+> Okay, this is specific to the way that OMAP sets up its mappings, which
+> is why it doesn't appear everywhere.
 > 
-> --- a/drivers/firewire/core-cdev.c
-> +++ b/drivers/firewire/core-cdev.c
-> @@ -593,6 +593,9 @@ static int ioctl_send_request(struct cli
->  {
->  	switch (arg->send_request.tcode) {
->  	case TCODE_WRITE_QUADLET_REQUEST:
-> +		if (arg->send_request.length < 4)
-> +			return -EINVAL;
-> +		break;
->  	case TCODE_WRITE_BLOCK_REQUEST:
->  	case TCODE_READ_QUADLET_REQUEST:
->  	case TCODE_READ_BLOCK_REQUEST:
-> @@ -1293,6 +1296,9 @@ static int ioctl_send_broadcast_request(
->  
->  	switch (a->tcode) {
->  	case TCODE_WRITE_QUADLET_REQUEST:
-> +		if (a->length < 4)
-> +			return -EINVAL;
-> +		break;
->  	case TCODE_WRITE_BLOCK_REQUEST:
->  		break;
->  	default:
+> > On ARM one Linux PGD entry contains two hardware entry. But there is error
+> > in do_translation_fault(). It's always call pmd_none() check for the first
+> > entry of two, not for the entry corresponded to address. So in case if we
+> > try to jump the megabyte next to section mapping, we will have inifinity
+> > loop of translation faults.
+> 
+> Okay, now that we know _why_ it happens, I'm satisfied that the fix
+> previously committed will help this situation.
+> 
+> > diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+> > index 9634fe1..825b9da 100644
+> > --- a/arch/arm/mm/fault.c
+> > +++ b/arch/arm/mm/fault.c
+> > @@ -406,7 +406,8 @@ do_translation_fault(unsigned long addr, unsigned int fsr,
+> >         pmd_k = pmd_offset(pgd_k, addr);
+> >         pmd   = pmd_offset(pgd, addr);
+> >  
+> > -       if (pmd_none(*pmd_k))
+> > +       index = (addr >> SECTION_SHIFT) & 1;
+> > +       if (pmd_none(pmd_k[index]))
+> 
+> I do think this is extremely obscure, and therefore requires a comment
+> to help people understand what is going on here and why.  Leaving it
+> in the commit log would be an invitation for this to be needlessly
+> cut'n'pasted.
 
-The fix is correct but apparently not urgent.
+Ok, I'll fix it.
 
-Here is a listing of struct outbound_transaction_event's definition,
-with member sizes in bytes prepended.  First column is on a 32bit
-architecture, second column on a 64bit architecture.  Type definitions
-are as per 2.6.34.
+But it seems that the problem is more global. Potentially, any of
+pmd_none() check may produce false results. I don't see an easy way to fix
+it.
 
-	struct outbound_transaction_event {
-	    struct event {
-16  32	        struct { void *data; size_t size; } v[2];
-	        struct list_head {
- 8  16	            struct list_head *next, *prev;
-	        } link;
-	    } event;
- 4   8	    struct client *client;
-	    struct outbound_transaction_resource {
-	        struct client_resource {
- 4   8	            client_resource_release_fn_t release;
- 4   4	            int handle;
-	        } resource;
-	        struct fw_transaction {
- 4   4	            int node_id;
- 4   4	            int tlabel;
- 4   4	            int timestamp;
-	            struct list_head {
- 8  16	                struct list_head *next, *prev;
-	            } link;
- 4   8	            struct fw_card *card;
-	            struct timer_list {
-	                struct list_head {
- 8  16	                    struct list_head *next, *prev;
-	                } entry;
- 4   8	                unsigned long expires;
- 4   8	                void (*function)(unsigned long);
- 4   8	                unsigned long data;
- 4   8	                struct tvec_base *base;
-	            #ifdef CONFIG_TIMER_STATS
- 4*  8*	                void *start_site;
-16* 16*	                char start_comm[16];
- 4*  4*	                int start_pid;
-	            #endif
-	            #ifdef CONFIG_LOCKDEP
-	                struct lockdep_map {
- 4* 12*°                    struct lock_class_key *key;
- 4*  8*	                    struct lock_class *class_cache;
- 4*  8*	                    const char *name;
-	                #ifdef CONFIG_LOCK_STAT
- 4*  4*	                    int cpu;
- 4*  8*	                    unsigned long ip;
-	                #endif
-	                } lockdep_map;
-	            #endif
-	            } split_timeout_timer;
-	            struct fw_packet {
- 4   4	                int speed;
- 4   4	                int generation;
-16  16	                u32 header[4];
- 4   8	                size_t header_length;
- 4   8	                void *payload;
- 4   8	                size_t payload_length;
- 4^  8	                dma_addr_t payload_bus;
- 4   4	                bool payload_mapped;
- 4   4	                u32 timestamp;
- 4   8	                fw_packet_callback_t callback;
- 4   4	                int ack;
-	                struct list_head {
- 8  20°	                    struct list_head *next, *prev;
-	                } link;
- 4   8	                void *driver_data;
-	            } packet;
- 4   8	            fw_transaction_callback_t callback;
- 4   8	            void *callback_data;
-	        } transaction;
-	    } r;
-	    struct fw_cdev_event_response {
- 8   8	        __u64 closure;
- 4   4	        __u32 type;
- 4   4	        __u32 rcode;
- 4   4	        __u32 length;
-	        __u32 data[0];
-	    } response;
-	};
+It's not so big problem since we don't have [super]section in userspace,
+but I guess, we want to have huge pages support in the future.
 
-*) =0 if respective debug options are off
-°) -4 if the compiler aligns 64bit types at 32bit boundaries
-^) =8 if CONFIG_HIGHMEM64G
+Any ideas how to fix it in the right way?
 
+Does Linux VM still expect one PTE table per page?
 
-The total size is therefore
-  180 bytes on 32bit without debug options and HIGHMEM64G off
-  228 bytes on 32bit with TIMER_STATS, LOCKDEP, LOCK_STAT, and HIGHMEM64G
-  292 bytes on 64bit without debug options
-  360 bytes on 64bit with TIMER_STATS, LOCKDEP, and LOCK_STAT
+CC list modified. Removed persons who unlikely interested in ARM-specific
+stuff. linux-arm-kernel and linux-mm added.
 
-Therefore the slab allocator gives us 256 bytes on 32bit and 512 bytes
-on 64bit, right?  Or more if the user-requested size of response.data[]
-raises the total size above that.  (struct outbound_transaction_event
-instances are always kmalloc'ed, never stack-allocated or
-kmem_cache-allocated.)  Which in turn means that an access past the
-requested size still lands in allocated (though uninitialized) memory.
-
-I.e. nothing bad happens except that random bytes are included into the
-quadlet write request packet payload.
-
-(I only ask because I wonder about how to submit this patch or a variant
-of it.  Me thinks the post 2.6.35 merge is OK.)
 -- 
-Stefan Richter
--=====-==-=- -=== --===
-http://arcgraph.de/sr/
-
+ Kirill A. Shutemov
