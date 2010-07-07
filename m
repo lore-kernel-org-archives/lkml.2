@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476Ab0GGVOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 17:14:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39128 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756215Ab0GGVOv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 17:14:51 -0400
-Date: Wed, 7 Jul 2010 14:14:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-       Dmitry Monakhov <dmonakhov@openvz.org>,
-       Frantisek Hanzlik <franta@hanzlici.cz>, linux-kernel@vger.kernel.org,
-       Jens Axboe <axboe@kernel.dk>, Kyle McMartin <kyle@mcmartin.ca>
-Subject: Re: fs/fs-writeback oopses in kernel 2.6.33.4-95.fc13.i686.PAE
-Message-Id: <20100707141431.079a46b0.akpm@linux-foundation.org>
-In-Reply-To: <20100707210209.GA24063@lst.de>
-References: <4BFA730C.1010906@hanzlici.cz>
-	<20100524230512.8cc7dfc1.akpm@linux-foundation.org>
-	<87vdacl15j.fsf@openvz.org>
-	<AANLkTimPwbOga_gEMajfciD8ZokBaz99c2ty9R6q_cs5@mail.gmail.com>
-	<20100614125716.b04fcd28.akpm@linux-foundation.org>
-	<AANLkTik3PuXz0nkOl8Fik7oqPt4xqXxQiuUo_8so0f87@mail.gmail.com>
-	<AANLkTiniwK7gdYAze3fZ7MSi1Wm8tvYWC5LYG_5chER1@mail.gmail.com>
-	<20100707135118.b9fbe0b2.akpm@linux-foundation.org>
-	<20100707210209.GA24063@lst.de>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756653Ab0GGVTT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 17:19:19 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:48478 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756272Ab0GGVTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 17:19:18 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <johnstul@us.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH] x86: Fix vtime/file timestamp inconsistencies
+Date: Wed,  7 Jul 2010 14:19:14 -0700
+Message-Id: <1278537554-12013-1-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Jul 2010 23:02:09 +0200
-Christoph Hellwig <hch@lst.de> wrote:
+Due to vtime calling vgettimeofday(), its possible that an application
+could call  time();create("stuff",O_RDRW);  only to see the file's
+creation timestamp to be before the value returned by time.
 
-> On Wed, Jul 07, 2010 at 01:51:18PM -0700, Andrew Morton wrote:
-> > There have been various dramas in the writeback code recently. 
-> > Christoph has been working on it.
-> > 
-> > Christoph, is this oops known about, and are those patches expected to
-> > fix it?
-> 
-> I have no idea what oops you mean.
+A similar way to reproduce the issue is to compare the vsyscall time()
+with the syscall time(), and observe ordering issues.
 
-http://lmgtfy.com/?q=fs%2Ffs-writeback+oopses+in+kernel+2.6.33.4-95.fc13.i686.PAE
+The modified test case from Oleg Nesterov below can illustrate this:
 
->  But the writeback code is very
-> different now compared to 2.6.33, and with the latest fixes in Jens'
-> tree there are no known issues left. (know to me anyway)
+int main(void)
+{
+	time_t sec1,sec2;
+	do {
+		sec1 = time(&sec2);
+		sec2 = syscall(__NR_time, NULL);
+	} while (sec1 <= sec2);
 
-Well the issue is that 2.6.33.x goes oops and we'd like to fix that. 
-if it's fixed in current mainline then which patch did it?
+	printf("vtime: %d.000000\n", sec1);
+	printf("time: %d.000000\n", sec2);
+	return 0;
+}
+
+The proper fix is to make vtime use the same time value as
+current_kernel_time() (which is exported via update_vsyscall) instead of
+vgettime().
+
+Thanks to Jiri Olsa for bringing up the issue and catching bugs in
+earlier verisons of this fix.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+
+CC: Jiri Olsa <jolsa@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/vsyscall_64.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 1c0c6ab..dce0c3c 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -169,13 +169,18 @@ int __vsyscall(0) vgettimeofday(struct timeval * tv, struct timezone * tz)
+  * unlikely */
+ time_t __vsyscall(1) vtime(time_t *t)
+ {
+-	struct timeval tv;
++	unsigned seq;
+ 	time_t result;
+ 	if (unlikely(!__vsyscall_gtod_data.sysctl_enabled))
+ 		return time_syscall(t);
+ 
+-	vgettimeofday(&tv, NULL);
+-	result = tv.tv_sec;
++	do {
++		seq = read_seqbegin(&__vsyscall_gtod_data.lock);
++
++		result = __vsyscall_gtod_data.wall_time_sec;
++
++	} while (read_seqretry(&__vsyscall_gtod_data.lock, seq));
++
+ 	if (t)
+ 		*t = result;
+ 	return result;
+-- 
+1.6.0.4
 
