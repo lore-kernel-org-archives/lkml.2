@@ -1,90 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab0GGI4F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 04:56:05 -0400
-Received: from shutemov.name ([188.40.19.243]:51307 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762Ab0GGI4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 04:56:02 -0400
-Date: Wed, 7 Jul 2010 11:56:01 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-       Anfei Zhou <anfei.zhou@gmail.com>,
-       Alexander Shishkin <virtuoso@slind.org>,
-       Siarhei Siamashka <siarhei.siamashka@nokia.com>,
-       linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org
-Subject: Re: [patch 071/149] ARM: 6166/1: Proper prefetch abort handling on
- pre-ARMv6
-Message-ID: <20100707085601.GA18732@shutemov.name>
-References: <20100701175144.GA2116@kroah.com>
- <20100701173212.785441106@clark.site>
- <20100701221420.GA10481@shutemov.name>
- <20100701221728.GA12187@suse.de>
- <20100701222541.GB10481@shutemov.name>
- <20100701224837.GA27389@flint.arm.linux.org.uk>
- <20100701225911.GC10481@shutemov.name>
- <20100701231207.GB27389@flint.arm.linux.org.uk>
- <20100706130618.GA14177@shutemov.name>
- <20100706225815.GA21834@flint.arm.linux.org.uk>
+	id S1752882Ab0GGJHe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 05:07:34 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:53466 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752016Ab0GGJHc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 05:07:32 -0400
+X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jul 2010 05:07:32 EDT
+Date: Wed, 7 Jul 2010 02:00:49 -0700 (PDT)
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+X-X-Sender: sbhatewara@localhost.localdomain
+To: netdev-devel@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com, stolarchuk@vmware.com
+Subject: [PATCH 2.6.35-rc1] net: vmxnet3 fixes [0/5] Spare skb to avoid
+ starvation
+Message-ID: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100706225815.GA21834@flint.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 06, 2010 at 11:58:15PM +0100, Russell King wrote:
-> On Tue, Jul 06, 2010 at 04:06:18PM +0300, Kirill A. Shutemov wrote:
-> > I've investigated the issue. It's reproducible if you try to jump to
-> > the megabyte next to section mapping.
-> 
-> Okay, this is specific to the way that OMAP sets up its mappings, which
-> is why it doesn't appear everywhere.
-> 
-> > On ARM one Linux PGD entry contains two hardware entry. But there is error
-> > in do_translation_fault(). It's always call pmd_none() check for the first
-> > entry of two, not for the entry corresponded to address. So in case if we
-> > try to jump the megabyte next to section mapping, we will have inifinity
-> > loop of translation faults.
-> 
-> Okay, now that we know _why_ it happens, I'm satisfied that the fix
-> previously committed will help this situation.
-> 
-> > diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-> > index 9634fe1..825b9da 100644
-> > --- a/arch/arm/mm/fault.c
-> > +++ b/arch/arm/mm/fault.c
-> > @@ -406,7 +406,8 @@ do_translation_fault(unsigned long addr, unsigned int fsr,
-> >         pmd_k = pmd_offset(pgd_k, addr);
-> >         pmd   = pmd_offset(pgd, addr);
-> >  
-> > -       if (pmd_none(*pmd_k))
-> > +       index = (addr >> SECTION_SHIFT) & 1;
-> > +       if (pmd_none(pmd_k[index]))
-> 
-> I do think this is extremely obscure, and therefore requires a comment
-> to help people understand what is going on here and why.  Leaving it
-> in the commit log would be an invitation for this to be needlessly
-> cut'n'pasted.
 
-Ok, I'll fix it.
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
 
-But it seems that the problem is more global. Potentially, any of
-pmd_none() check may produce false results. I don't see an easy way to fix
-it.
+skb_alloc() failure can cause the recv ring to loose all packet reception.
+Avoid this by introducing a spare buffer.
 
-It's not so big problem since we don't have [super]section in userspace,
-but I guess, we want to have huge pages support in the future.
+Signed-off-by: Michael Stolarchuk <stolarchuk@vmware.com>
+Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
 
-Any ideas how to fix it in the right way?
+---
 
-Does Linux VM still expect one PTE table per page?
-
-CC list modified. Removed persons who unlikely interested in ARM-specific
-stuff. linux-arm-kernel and linux-mm added.
-
--- 
- Kirill A. Shutemov
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 989b742..5a50d10 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -541,7 +541,12 @@ vmxnet3_rq_alloc_rx_buf(struct vmxnet3_rx_queue *rq, u32 ring_idx,
+ 							 NET_IP_ALIGN);
+ 				if (unlikely(rbi->skb == NULL)) {
+ 					rq->stats.rx_buf_alloc_failure++;
+-					break;
++					/* starvation prevention */
++					if (vmxnet3_cmd_ring_desc_empty(
++							rq->rx_ring + ring_idx))
++						rbi->skb = rq->spare_skb;
++					else
++						break;
+ 				}
+ 				rbi->skb->dev = adapter->netdev;
+ 
+@@ -611,6 +616,29 @@ vmxnet3_append_frag(struct sk_buff *skb, struct Vmxnet3_RxCompDesc *rcd,
+ }
+ 
+ 
++/*
++ * Free any pages which were attached to the frags of the spare skb.  This can
++ * happen when the spare skb is attached to the rx ring to prevent starvation,
++ * but there was no issue with page allocation.
++ */
++
++static void
++vmxnet3_rx_spare_skb_free_frags(struct vmxnet3_adapter *adapter)
++{
++	struct sk_buff *skb = adapter->rx_queue.spare_skb;
++	int i;
++	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
++		struct skb_frag_struct *frag = &skb_shinfo(skb)->frags[i];
++		BUG_ON(frag->page != 0);
++		put_page(frag->page);
++		frag->page = 0;
++		frag->size = 0;
++	}
++	skb_shinfo(skb)->nr_frags = 0;
++	skb->data_len = 0;
++}
++
++
+ static void
+ vmxnet3_map_pkt(struct sk_buff *skb, struct vmxnet3_tx_ctx *ctx,
+ 		struct vmxnet3_tx_queue *tq, struct pci_dev *pdev,
+@@ -1060,8 +1088,12 @@ vmxnet3_rx_error(struct vmxnet3_rx_queue *rq, struct Vmxnet3_RxCompDesc *rcd,
+ 	 * ctx->skb may be NULL if this is the first and the only one
+ 	 * desc for the pkt
+ 	 */
+-	if (ctx->skb)
+-		dev_kfree_skb_irq(ctx->skb);
++	if (ctx->skb) {
++		if (ctx->skb == rq->spare_skb)
++			vmxnet3_rx_spare_skb_free_frags(adapter);
++		else
++			dev_kfree_skb_irq(ctx->skb);
++	}
+ 
+ 	ctx->skb = NULL;
+ }
+@@ -1159,6 +1191,12 @@ vmxnet3_rq_rx_complete(struct vmxnet3_rx_queue *rq,
+ 
+ 		skb = ctx->skb;
+ 		if (rcd->eop) {
++			if (skb == rq->spare_skb) {
++				rq->stats.drop_total++;
++				vmxnet3_rx_spare_skb_free_frags(adapter);
++				ctx->skb = NULL;
++				goto rcd_done;
++			}
+ 			skb->len += skb->data_len;
+ 			skb->truesize += skb->data_len;
+ 
+@@ -1244,6 +1282,14 @@ vmxnet3_rq_cleanup(struct vmxnet3_rx_queue *rq,
+ 		rq->uncommitted[ring_idx] = 0;
+ 	}
+ 
++	/* free starvation prevention skb if allocated */
++	if (rq->spare_skb) {
++		vmxnet3_rx_spare_skb_free_frags(adapter);
++		dev_kfree_skb(rq->spare_skb);
++		rq->spare_skb = NULL;
++	}
++
++
+ 	rq->comp_ring.gen = VMXNET3_INIT_GEN;
+ 	rq->comp_ring.next2proc = 0;
+ }
+@@ -1325,6 +1371,15 @@ vmxnet3_rq_init(struct vmxnet3_rx_queue *rq,
+ 	}
+ 	vmxnet3_rq_alloc_rx_buf(rq, 1, rq->rx_ring[1].size - 1, adapter);
+ 
++	/* allocate ring starvation protection */
++	rq->spare_skb = dev_alloc_skb(PAGE_SIZE);
++	if (rq->spare_skb == NULL) {
++		vmxnet3_rq_cleanup(rq, adapter);
++		return -ENOMEM;
++	}
++
++
++
+ 	/* reset the comp ring */
+ 	rq->comp_ring.next2proc = 0;
+ 	memset(rq->comp_ring.base, 0, rq->comp_ring.size *
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 34f392f..7985ba4 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -68,10 +68,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.0.5.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.0.6.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01000500
++#define VMXNET3_DRIVER_VERSION_NUM      0x01000600
+ 
+ 
+ /*
+@@ -149,6 +149,13 @@ vmxnet3_cmd_ring_desc_avail(struct vmxnet3_cmd_ring *ring)
+ 		ring->next2comp - ring->next2fill - 1;
+ }
+ 
++static inline bool
++vmxnet3_cmd_ring_desc_empty(struct vmxnet3_cmd_ring *ring)
++{
++	return (ring->next2comp == ring->next2fill);
++}
++
++
+ struct vmxnet3_comp_ring {
+ 	union Vmxnet3_GenericDesc *base;
+ 	u32               size;
+@@ -266,9 +273,10 @@ struct vmxnet3_rx_queue {
+ 	u32 qid2;           /* rqID in RCD for buffer from 2nd ring */
+ 	u32 uncommitted[2]; /* # of buffers allocated since last RXPROD
+ 				* update */
+-	struct vmxnet3_rx_buf_info     *buf_info[2];
+-	struct Vmxnet3_RxQueueCtrl            *shared;
++	struct vmxnet3_rx_buf_info	*buf_info[2];
++	struct Vmxnet3_RxQueueCtrl	*shared;
+ 	struct vmxnet3_rq_driver_stats  stats;
++	struct sk_buff			*spare_skb;      /* starvation skb */
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+ 
+ #define VMXNET3_LINUX_MAX_MSIX_VECT     1
