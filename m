@@ -1,69 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab0GGNRo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 09:17:44 -0400
-Received: from fieldses.org ([174.143.236.118]:37556 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179Ab0GGNRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 09:17:43 -0400
-Date: Wed, 7 Jul 2010 09:17:21 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: neilb@suse.de, david@fromorbit.com, aneesh.kumar@linux.vnet.ibm.com,
-       hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, hooanon05@yahoo.co.jp,
-       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
- syscalls
-Message-ID: <20100707131721.GB19872@fieldses.org>
-References: <20100702064108.64034561@notabene.brown>
- <87iq4y29a6.fsf@linux.vnet.ibm.com>
- <20100706161002.GD7387@fieldses.org>
- <87eifgfsez.fsf@linux.vnet.ibm.com>
- <20100706232351.GD25018@dastard>
- <20100707093629.10c2feab@notabene.brown>
- <20100707021150.GF25018@dastard>
- <20100707125726.3695587a@notabene.brown>
- <20100707125701.GA19872@fieldses.org>
- <E1OWUOL-0004DM-Ul@pomaz-ex.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1OWUOL-0004DM-Ul@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755571Ab0GGNVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 09:21:08 -0400
+Received: from fb1.tech.numericable.fr ([82.216.111.51]:46449 "EHLO
+	fb1.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754966Ab0GGNVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 09:21:05 -0400
+X-Greylist: delayed 462 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jul 2010 09:21:05 EDT
+From: Thibaut Girka <thib@sitedethib.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Thibaut Girka <thib@sitedethib.com>
+Subject: [PATCH 3/4] Smedia Glamo 3362 GPIO interface driver
+Date: Wed,  7 Jul 2010 15:12:05 +0200
+Message-Id: <1278508326-7109-4-git-send-email-thib@sitedethib.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1278508326-7109-1-git-send-email-thib@sitedethib.com>
+References: <1278508326-7109-1-git-send-email-thib@sitedethib.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 03:10:21PM +0200, Miklos Szeredi wrote:
-> On Wed, 7 Jul 2010, J. Bruce Fields wrote:
-> > On Wed, Jul 07, 2010 at 12:57:26PM +1000, Neil Brown wrote:
-> > > The trouble with /proc/mounts is that it is somewhat clumsy to parse
-> > > (remember to handle \0ctal escapes) and doesn't include major/minor number
-> > > which is the primary key for identifying filesystems in Linux
-> > > (see /sys/class/bdi/MAJOR:MINOR which is e.g. the best place to configure
-> > > read-ahead for a filesystem).
-> > > 
-> > > So /proc/mounts could work (and would probably be better than a new syscall)
-> > > but I would really rather see something sane in /sys for
-> > > inspecting/configuring filesystems (rather than each filesystem doing their
-> > > own independent thing in /sys/fs).
-> > 
-> > If you use sys or proc, is it possible to get the uuid from a file
-> > descriptor or pathname without races?
-> 
-> You can do stat/fstat to find out the device number (which is unique,
-> but not persistent)
+Signed-off-by: Thibaut Girka <thib@sitedethib.com>
+---
+ drivers/gpio/Kconfig      |    6 +
+ drivers/gpio/Makefile     |    1 +
+ drivers/gpio/glamo-gpio.c |  284 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 291 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/gpio/glamo-gpio.c
 
-Is it really unique over time? (Can't a given st_dev value map to one
-filesystem now, and another later?)  And it must also have the same
-problems as libblkid (e.g. btrfs subvolumes share the same st_dev).
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 724038d..cc82f42 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -70,6 +70,12 @@ config GPIO_MAX730X
+ 
+ comment "Memory mapped GPIO expanders:"
+ 
++config GPIO_GLAMO
++	tristate "Glamo GPIO support"
++	depends on MFD_GLAMO
++	help
++	  Say yes here to support GPIO functionality of the Smedia Glamo.
++
+ config GPIO_IT8761E
+ 	tristate "IT8761E GPIO support"
+ 	depends on GPIOLIB
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 51c3cdd..0de1cf9 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -6,6 +6,7 @@ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
+ 
+ obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
+ obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
++obj-$(CONFIG_GPIO_GLAMO)	+= glamo-gpio.o
+ obj-$(CONFIG_GPIO_LANGWELL)	+= langwell_gpio.o
+ obj-$(CONFIG_GPIO_MAX730X)	+= max730x.o
+ obj-$(CONFIG_GPIO_MAX7300)	+= max7300.o
+diff --git a/drivers/gpio/glamo-gpio.c b/drivers/gpio/glamo-gpio.c
+new file mode 100644
+index 0000000..dff60eb
+--- /dev/null
++++ b/drivers/gpio/glamo-gpio.c
+@@ -0,0 +1,284 @@
++/* Smedia Glamo 336x/337x gpio driver
++ *
++ * (C) 2009 Lars-Peter Clausen
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#include <linux/io.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++
++#include <linux/gpio.h>
++#include <linux/mfd/glamo.h>
++#include <linux/mfd/glamo-core.h>
++#include <linux/mfd/glamo-regs.h>
++
++#define GLAMO_NR_GPIO 21
++#define GLAMO_NR_GPIO_REGS DIV_ROUND_UP(GLAMO_NR_GPIO, 4)
++
++#define GLAMO_GPIO_REG(x) (((x) * 2) + GLAMO_REG_GPIO_GEN1)
++
++struct glamo_gpio {
++	struct glamo_core *glamo;
++	struct gpio_chip chip;
++	uint16_t saved_regs[GLAMO_NR_GPIO_REGS];
++};
++
++#define GLAMO_GPIO_REG_GPIO(gpio)	GLAMO_GPIO_REG(gpio >> 2)
++#define GLAMO_GPIO_BIT(gpio, offset)	BIT(((gpio) & 0x3) + (offset))
++#define GLAMO_GPIO_DIRECTION_BIT(gpio)	GLAMO_GPIO_BIT(gpio, 0)
++#define GLAMO_GPIO_OUTPUT_BIT(gpio)	GLAMO_GPIO_BIT(gpio, 4)
++#define GLAMO_GPIO_INPUT_BIT(gpio)	GLAMO_GPIO_BIT(gpio, 8)
++#define GLAMO_GPIO_FUNC_BIT(gpio)	GLAMO_GPIO_BIT(gpio, 12)
++
++
++static inline struct glamo_core *chip_to_glamo(struct gpio_chip *chip)
++{
++	return container_of(chip, struct glamo_gpio, chip)->glamo;
++}
++
++static void glamo_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct glamo_core *glamo = chip_to_glamo(chip);
++	unsigned int reg = GLAMO_GPIO_REG_GPIO(offset);
++	uint16_t tmp;
++
++	spin_lock(&glamo->lock);
++	tmp = readw(glamo->base + reg);
++	if (value)
++		tmp |= GLAMO_GPIO_OUTPUT_BIT(offset);
++	else
++		tmp &= ~GLAMO_GPIO_OUTPUT_BIT(offset);
++	writew(tmp, glamo->base + reg);
++	spin_unlock(&glamo->lock);
++}
++
++static int glamo_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct glamo_core *glamo = chip_to_glamo(chip);
++	return !!(readw(glamo->base + GLAMO_GPIO_REG_GPIO(offset)) & GLAMO_GPIO_INPUT_BIT(offset));
++}
++
++static int glamo_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	struct glamo_core *glamo = chip_to_glamo(chip);
++	unsigned int reg = GLAMO_GPIO_REG_GPIO(offset);
++	uint16_t tmp;
++
++	spin_lock(&glamo->lock);
++	tmp = readw(glamo->base + reg);
++	if ((tmp & GLAMO_GPIO_FUNC_BIT(offset)) == 0) {
++		tmp |= GLAMO_GPIO_FUNC_BIT(offset);
++		writew(tmp, glamo->base + reg);
++	}
++	spin_unlock(&glamo->lock);
++
++	return 0;
++}
++
++static void glamo_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++	struct glamo_core *glamo = chip_to_glamo(chip);
++	unsigned int reg = GLAMO_GPIO_REG_GPIO(offset);
++	uint16_t tmp;
++
++	spin_lock(&glamo->lock);
++	tmp = readw(glamo->base + reg);
++	if ((tmp & GLAMO_GPIO_FUNC_BIT(offset)) == 1) {
++		tmp &= ~GLAMO_GPIO_FUNC_BIT(offset);
++		writew(tmp, glamo->base + reg);
++	}
++	spin_unlock(&glamo->lock);
++}
++
++static int glamo_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
++				       int value)
++{
++	struct glamo_core *glamo = chip_to_glamo(chip);
++	unsigned int reg = GLAMO_GPIO_REG_GPIO(offset);
++	uint16_t tmp;
++
++	spin_lock(&glamo->lock);
++	tmp = readw(glamo->base + reg);
++	tmp &= ~GLAMO_GPIO_DIRECTION_BIT(offset);
++
++	if (value)
++		tmp |= GLAMO_GPIO_OUTPUT_BIT(offset);
++	else
++		tmp &= ~GLAMO_GPIO_OUTPUT_BIT(offset);
++
++	writew(tmp, glamo->base + reg);
++	spin_unlock(&glamo->lock);
++
++	return 0;
++}
++
++static int glamo_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	struct glamo_core *glamo = chip_to_glamo(chip);
++	unsigned int reg = GLAMO_GPIO_REG_GPIO(offset);
++	uint16_t tmp;
++
++	spin_lock(&glamo->lock);
++	tmp = readw(glamo->base + reg);
++	if ((tmp & GLAMO_GPIO_DIRECTION_BIT(offset)) == 0) {
++		tmp |= GLAMO_GPIO_DIRECTION_BIT(offset);
++		writew(tmp, glamo->base + reg);
++	}
++	spin_unlock(&glamo->lock);
++
++	return 0;
++}
++
++static const struct __devinit gpio_chip glamo_gpio_chip = {
++	.label			= "glamo",
++	.request		= glamo_gpio_request,
++	.free			= glamo_gpio_free,
++	.direction_input	= glamo_gpio_direction_input,
++	.get			= glamo_gpio_get,
++	.direction_output	= glamo_gpio_direction_output,
++	.set			= glamo_gpio_set,
++	.base			= -1,
++	.ngpio			= GLAMO_NR_GPIO,
++	.can_sleep		= 0,
++	.owner			= THIS_MODULE,
++};
++
++static int __devinit glamo_gpio_probe(struct platform_device *pdev)
++{
++	struct glamo_platform_data *pdata = pdev->dev.parent->platform_data;
++	struct glamo_gpio *glamo_gpio;
++	int ret;
++
++	glamo_gpio = kzalloc(sizeof(*glamo_gpio), GFP_KERNEL);
++	if (!glamo_gpio)
++		return -ENOMEM;
++
++	glamo_gpio->glamo = dev_get_drvdata(pdev->dev.parent);
++	glamo_gpio->chip = glamo_gpio_chip;
++	glamo_gpio->chip.dev = &pdev->dev;
++	if (pdata && pdata->gpio_data)
++		glamo_gpio->chip.base = pdata->gpio_data->base;
++
++	ret = gpiochip_add(&glamo_gpio->chip);
++
++	if (ret) {
++		dev_err(&pdev->dev, "Could not register gpio chip: %d\n", ret);
++		goto err;
++	}
++
++	platform_set_drvdata(pdev, glamo_gpio);
++
++	if (pdata && pdata->gpio_data && pdata->gpio_data->registered)
++		pdata->gpio_data->registered(&pdev->dev);
++
++	return 0;
++err:
++	kfree(glamo_gpio);
++	return ret;
++}
++
++static int __devexit glamo_gpio_remove(struct platform_device *pdev)
++{
++	struct glamo_gpio *glamo_gpio = platform_get_drvdata(pdev);
++	int ret;
++
++	ret = gpiochip_remove(&glamo_gpio->chip);
++	if (!ret)
++		goto done;
++
++	platform_set_drvdata(pdev, NULL);
++	kfree(glamo_gpio);
++
++done:
++	return ret;
++}
++
++#ifdef CONFIG_PM
++
++static int glamo_gpio_suspend(struct device *dev)
++{
++	struct glamo_gpio *glamo_gpio = dev_get_drvdata(dev);
++	struct glamo_core *glamo = glamo_gpio->glamo;
++	uint16_t *saved_regs = glamo_gpio->saved_regs;
++	int i;
++
++	spin_lock(&glamo->lock);
++	for (i = 0; i < GLAMO_NR_GPIO / 4; ++i)
++		saved_regs[i] = readw(glamo->base + GLAMO_GPIO_REG(i));
++	spin_unlock(&glamo->lock);
++
++	return 0;
++}
++
++static int glamo_gpio_resume(struct device *dev)
++{
++	struct glamo_gpio *glamo_gpio = dev_get_drvdata(dev);
++	struct glamo_core *glamo = glamo_gpio->glamo;
++	uint16_t *saved_regs = glamo_gpio->saved_regs;
++	int i;
++
++	spin_lock(&glamo->lock);
++	for (i = 0; i < GLAMO_NR_GPIO_REGS; ++i)
++		writew(saved_regs[i], glamo->base + GLAMO_GPIO_REG(i));
++	spin_unlock(&glamo->lock);
++	return 0;
++}
++
++static const struct dev_pm_ops glamo_pm_ops = {
++	.suspend = glamo_gpio_suspend,
++	.resume  = glamo_gpio_resume,
++	.freeze  = glamo_gpio_suspend,
++	.thaw    = glamo_gpio_resume,
++};
++
++#define GLAMO_GPIO_PM_OPS (&glamo_pm_ops)
++
++#else
++#define GLAMO_GPIO_PM_OPS NULL
++#endif
++
++static struct platform_driver glamo_gpio_driver = {
++	.driver = {
++		.name  = "glamo-gpio",
++		.owner = THIS_MODULE,
++		.pm    = GLAMO_GPIO_PM_OPS,
++	},
++	.probe = glamo_gpio_probe,
++	.remove = __devexit_p(glamo_gpio_remove),
++};
++
++static int __devinit glamo_gpio_init(void)
++{
++	return platform_driver_register(&glamo_gpio_driver);
++}
++module_init(glamo_gpio_init);
++
++static void __exit glamo_gpio_exit(void)
++{
++	platform_driver_unregister(&glamo_gpio_driver);
++}
++module_exit(glamo_gpio_exit);
++
++MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
++MODULE_DESCRIPTION("GPIO interface for the Glamo multimedia device");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:glamo-gpio");
+-- 
+1.7.1
 
---b.
-
-> then look for the major:minor calculated from
-> st_dev in /proc/self/mountinfo.
-> 
-> Thanks,
-> Miklos
