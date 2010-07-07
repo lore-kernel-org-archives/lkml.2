@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab0GGQI5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 12:08:57 -0400
-Received: from verein.lst.de ([213.95.11.210]:56003 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756088Ab0GGQIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 12:08:55 -0400
-Date: Wed, 7 Jul 2010 18:08:35 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Nick Piggin <npiggin@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
-       Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>,
-       Andi Kleen <ak@linux.intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [patch 2/2] tty fix fu_list abuse
-Message-ID: <20100707160835.GA9681@lst.de>
-References: <20100707122406.GL11732@laptop> <20100707122510.GM11732@laptop>
-Mime-Version: 1.0
+	id S1757095Ab0GGQNQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 12:13:16 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50470 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756702Ab0GGQNP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 12:13:15 -0400
+Date: Wed, 7 Jul 2010 12:13:08 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Corrado Zoccolo <czoccolo@gmail.com>, Jens Axboe <jens.axboe@oracle.com>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>,
+       Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Subject: Re: [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
+Message-ID: <20100707161308.GA12991@infradead.org>
+References: <1278516227-1643-1-git-send-email-czoccolo@gmail.com>
+ <1278516227-1643-2-git-send-email-czoccolo@gmail.com>
+ <20100707154631.GG2474@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100707122510.GM11732@laptop>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+In-Reply-To: <20100707154631.GG2474@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 10:25:10PM +1000, Nick Piggin wrote:
-> tty: fix fu_list abuse
-> 
-> tty code abuses fu_list, which causes a bug in remount,ro handling.
-> 
-> If a tty device node is opened on a filesystem, then the name unlinked, the
-> filesystem will be allowed to be remounted readonly. This is because
-> fs_may_remount_ro does not find the 0 link tty inode on the file sb list
-> (because the tty code incorrectly removed it to use for its own purpose). This
-> can result in a filesystem with errors after it is marked "clean".  So add a
-> new private list for ttys and leave tty files on the sb list so they are caught
-> by this check. This makes tty nodes behave the same way as other device nodes.
-> 
-> The next step is to allocate a tty private structure at private_data and get
-> rid of f_ttyonly_list, but the error handling is not trivial in the tty code.
-> Hence this intermediate step.
+On Wed, Jul 07, 2010 at 11:46:31AM -0400, Vivek Goyal wrote:
+> Whether to idle on WRITE_SYNC or not, I will leave it to Jens (I just
+> don't know the answer to that question. :-)). But in general I want to
+> get rid of idling as much as possible otherwise it becomes a serious
+> bottleneck in any kind of performance testing on higher end storage.
 
-Growing struct file by two pointers for the tty special case simply
-isn't acceptable.  
+After I've been thinking about this for a while I think the major
+problems is that we use WRITE_SYNC for two very different I/O patterns.
 
+One is synchronous data I/O (O_SYNC/O_DIRECT/fsync).  While this is a
+high-level synchronous workload in the sense that someone waits for the
+I/O to finish, the I/O can still be batched as we're doing relatively
+large amounts of bios.
+
+The other one is synchronous writeout of metadata or the journal.  Here
+we typically wait on that single I/O we're just submitting (or at most a
+handfull), and there is absolutely no point in idling.
+
+We already have the REQ_NOIDLE flag to distinguish between the two, so
+instead of second guessing we should actually make use of it.
