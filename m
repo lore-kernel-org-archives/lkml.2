@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab0GGAsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 20:48:46 -0400
-Received: from koto.vergenet.net ([210.128.90.7]:49947 "EHLO koto.vergenet.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753259Ab0GGAsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 20:48:45 -0400
-Date: Wed, 7 Jul 2010 09:48:42 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Aldo Cedillo <aldobrett11@gmail.com>
-Cc: kagen101@gmail.com, Greg Kroah-Hartman <gregkh@suse.de>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       devel <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Staging: dt3155: fix coding style issues in
- dt3155_drv.c
-Message-ID: <20100707004841.GA28188@verge.net.au>
-References: <1278435198.5396.73.camel@dermezel>
- <AANLkTingSXbyFclWga9x5aD7MoccCMqhu56PCOVTKHVJ@mail.gmail.com>
+	id S1755074Ab0GGAvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 20:51:22 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42166 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab0GGAvV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 20:51:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=lKsz7nhM/X3H4R9k2wCpctXp6otlB5CXusy2VuQYmdQWIea7PQQ1ihoWix5B9MFp1E
+         T/k4qzRKDI9aPsXWCK0SxVvfEv8KL/sYg/k33BPZxfv7fN5qZsQRVg2ZBrM5dMfk2mri
+         q3Nsefyk5gLlTUymW0igEvahfd47KqLhmMgGQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTingSXbyFclWga9x5aD7MoccCMqhu56PCOVTKHVJ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1278463901.20082.34.camel@dwillia2-linux>
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
+	<4C29420D.2010406@intel.com>
+	<AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>
+	<4C2A8879.8010000@intel.com>
+	<AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>
+	<4C2AC55E.3040303@intel.com>
+	<AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
+	<1277923422.16256.8.camel@localhost>
+	<4C2B9DAC.1030806@intel.com>
+	<1277928125.18854.0.camel@localhost>
+	<4C2BBACF.3080405@intel.com>
+	<1277965264.18854.16.camel@localhost>
+	<4C2C3B07.7050200@intel.com>
+	<1277968336.4945.3.camel@localhost>
+	<4C2C4319.6090906@intel.com>
+	<1277972137.12558.2.camel@localhost>
+	<4C2CCE67.6070600@intel.com>
+	<AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>
+	<AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>
+	<1278324973.16975.68.camel@localhost>
+	<AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>
+	<1278463901.20082.34.camel@dwillia2-linux>
+Date: Tue, 6 Jul 2010 17:51:19 -0700
+X-Google-Sender-Auth: GbPoM2Vt0LPagv3oX8sB_5ONeKo
+Message-ID: <AANLkTilnrdghkK1y7vc2Zi0C7KMXHYXpI_whecRxTD_8@mail.gmail.com>
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+From: Chris Li <lkml@chrisli.org>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Matthew Wilcox <willy@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 06, 2010 at 12:25:35PM -0500, Aldo Cedillo wrote:
-> > diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
-> > index 66db878..f6edd66 100644
-> > --- a/drivers/staging/dt3155/dt3155_drv.c
-> > +++ b/drivers/staging/dt3155/dt3155_drv.c
-> > @@ -308,33 +308,42 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-> >  #endif
-> >                        if (fb->nbuffers > 2) {
-> >                                if (!are_empty_buffers(minor)) {
-> > -                                       /* The number of active + locked buffers is
-> > -                                        * at most 2, and since there are none empty, there
-> > -                                        * must be at least nbuffers-2 ready buffers.
-> > -                                        * This is where we 'drop frames', oldest first. */
-> > +                                       /* The number of active +
-> > +                                        * locked buffers is at most 2,
-> > +                                        * and since there are none empty,
-> > +                                        * there must be at least nbuffers-2
-> > +                                        * ready buffers.
-> > +                                        * This is where we 'drop frames',
-> > +                                        * oldest first. */
-> >                                        push_empty(pop_ready(minor),  minor);
-> >                                }
-> >
-> 
-> In the CodingStyle in the kernel you can read:
-> 
-> The preferred style for long (multi-line) comments is:
-> 
->         /*
->          * This is the preferred style for multi-line
->          * comments in the Linux kernel source code.
->          * Please use it consistently.
->          *
->          * Description:  A column of asterisks on the left side,
->          * with beginning and ending almost-blank lines.
->          */
-> 
-> Again I ask about the coding style because I have seen in many parts of the
-> kernel I've seen discrepancies with what is said in the CodingStyle file. So
-> I want to get it clear maybe I can help to clean those things.
+On Tue, Jul 6, 2010 at 5:51 PM, Dan Williams <dan.j.williams@intel.com> wrote:
+> No, it should be PCI_DEVICE_ID_INTEL_IOAT_SNB (0x402f) for the dma
+> engine at 00:0f.0 . �PCI_DEVICE_ID_INTEL_ESB2_0 is the LPC controller at
+> 00:1f.0,
+>
+>> That seems to be the reason preventing the warning to be print out. I am not
+>> sure the warning should be always print out. Just curious why it did
+>> not trigger.
+>
+> It should always trigger, and I have verified as much with the attached
+> replacement patch (by forcing the error on a working system), but we run
+> into a new problem. �dma_pool_alloc() assumes that any dma_mapping error
+> is transient. �Do we need a new type of dma_mapping_error() that
+> indicates permanent failure versus ENOMEM? �The driver can handle the
+> allocation failure, but it never gets the chance.
 
-I believe that you will find both of the following styles in abundance
-and that both are acceptable.
+Should I test your V2 patch instead?
 
-   /*
-    * This
-    * is a multi-line comment
-    */
-
-And
-
-   /* This
-    * is a also multi-line comment
-    */
-
-Though one may be more acceptable to a given maintainer than the other.
-Other variants may also be common and acceptable to some maintainers,
-which I suspect is why checkpatch.pl is lenient.
-
+Chris
