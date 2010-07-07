@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab0GGAyD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 20:54:03 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24197 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab0GGAx7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 20:53:59 -0400
-Message-ID: <4C33CF1C.7020803@kernel.org>
-Date: Tue, 06 Jul 2010 17:49:32 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	id S1755134Ab0GGA6O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 20:58:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:13164 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753535Ab0GGA6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 20:58:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,549,1272870000"; 
+   d="scan'208";a="297267014"
+Message-ID: <4C33D123.4080209@intel.com>
+Date: Tue, 06 Jul 2010 17:58:11 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Ram Pai <linuxram@us.ibm.com>,
-       linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       clemens@ladisch.de
-Subject: Re: [RFC PATCH 1/1] PCI: skip release and reallocation of io port
- 	resources
-References: <20100630211516.GA25991@us.ibm.com>	<AANLkTin6_LbGwRZm3GPDnyNb36v8G4DHqGno1mEXjmV0@mail.gmail.com>	<20100630235949.GA5120@us.ibm.com>	<20100702143515.2896d728@virtuousgeek.org>	<4C33B883.6010206@kernel.org> <AANLkTiknAtUipCr64qwJXakD9VgqhHNp35KPq5x9_x8V@mail.gmail.com>
-In-Reply-To: <AANLkTiknAtUipCr64qwJXakD9VgqhHNp35KPq5x9_x8V@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chris Li <lkml@chrisli.org>
+CC: David Woodhouse <dwmw2@infradead.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	<AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>	<4C2A8879.8010000@intel.com>	<AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>	<4C2AC55E.3040303@intel.com>	<AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	<1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>	<1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>	<1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>	<1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>	<1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>	<AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>	<AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>	<1278324973.16975.68.camel@localhost>	<AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>	<1278463901.20082.34.camel@dwillia2-linux> <AANLkTilnrdghkK1y7vc2Zi0C7KMXHYXpI_whecRxTD_8@mail.gmail.com>
+In-Reply-To: <AANLkTilnrdghkK1y7vc2Zi0C7KMXHYXpI_whecRxTD_8@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0201.4C33CFE9.0031,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2010 04:58 PM, Linus Torvalds wrote:
-> On Tue, Jul 6, 2010 at 4:13 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+On 7/6/2010 5:51 PM, Chris Li wrote:
+> On Tue, Jul 6, 2010 at 5:51 PM, Dan Williams<dan.j.williams@intel.com>  wrote:
+>> No, it should be PCI_DEVICE_ID_INTEL_IOAT_SNB (0x402f) for the dma
+>> engine at 00:0f.0 .  PCI_DEVICE_ID_INTEL_ESB2_0 is the LPC controller at
+>> 00:1f.0,
 >>
->> So you want to use pci=override_bios to reallocate all bios assigned resource include
->> peer root buses resources and pci bridge resource and pci devices BAR?
-> 
-> In a perfect world, we'd never need this at all, but sicne that's not
-> an option, the second-best alternative might be something like the
-> following:
-> 
->   pci=override=off # default
->   pci=override=conflict # override only on conflicts
->   pci=override=<device> # clear BIOS allocations for <device> (and any
-> children, if it's a bus)
+>>> That seems to be the reason preventing the warning to be print out. I am not
+>>> sure the warning should be always print out. Just curious why it did
+>>> not trigger.
+>>
+>> It should always trigger, and I have verified as much with the attached
+>> replacement patch (by forcing the error on a working system), but we run
+>> into a new problem.  dma_pool_alloc() assumes that any dma_mapping error
+>> is transient.  Do we need a new type of dma_mapping_error() that
+>> indicates permanent failure versus ENOMEM?  The driver can handle the
+>> allocation failure, but it never gets the chance.
+>
+> Should I test your V2 patch instead?
+>
 
-current:
-if there is conflict, like pci bridge resources or pci devices resources is not in the scope of peer root bus resource range.
-or pci devices is not in pci bridge resources range.
-kernel would reject the resource and try to get new range in parent resource for the children.
+It would confirm that we are catching the BIOS misconfiguration, but 
+your system will get stuck in this loop.  So just make sure you can get 
+back to a working config, which it sounds like you can.
 
-so current default is overriding the conflicts already.
+--
+Dan
 
-Maybe your conflicts have other meaning? like pci bridge resource size is not big enough?
 
-or we can have use
 
-pci=override=small_bridge
-
-or 
-
-pci=override=bridges
-
-instead?
-
-Thanks
-
-Yinghai
