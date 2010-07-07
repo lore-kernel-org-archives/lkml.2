@@ -1,37 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757886Ab0GGXMi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:12:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46078 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756942Ab0GGXMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:12:37 -0400
-Message-ID: <4C3509C7.40203@zytor.com>
-Date: Wed, 07 Jul 2010 16:12:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757947Ab0GGXP5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 19:15:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59652 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757799Ab0GGXP4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 19:15:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=WRHfY5RrY7DO4riL4Y6PeiBHpp0QJAK2xksCLr99FSuhaPvXBeTQbUVI3+uoZmzoo9
+         lqMbZz3aym0C1aBeQZKihWuJg2saLsv+KQvlsBJZ6u9CWb7cIVLn59MLfyogCefBgiHA
+         NsrUkrmgU05vL9ruakVAcSskwokDWr7kfGd3M=
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: feng.tang@intel.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-       mingo@elte.hu, jacob.jun.pan@intel.com, randy.dunlap@oracle.com
-Subject: Re: [PATCH v2 0/5] patches to settle i8042 with Intel MID platforms
-References: <1278342202-10973-1-git-send-email-feng.tang@intel.com> <4C32364D.2040705@zytor.com> <20100705202221.GA16978@core.coreip.homeip.net>
-In-Reply-To: <20100705202221.GA16978@core.coreip.homeip.net>
+In-Reply-To: <AANLkTimvsaoOm_QEUnvlZf2EKuiMpOr9PdQt_Ga0Z97D@mail.gmail.com>
+References: <AANLkTimvsaoOm_QEUnvlZf2EKuiMpOr9PdQt_Ga0Z97D@mail.gmail.com>
+Date: Wed, 7 Jul 2010 16:15:55 -0700
+Message-ID: <AANLkTikaM7O-pCW2CaHDRKzycVoWvzpM-9zA9creAtcV@mail.gmail.com>
+Subject: Re: nic enumeration
+From: Steve Fink <sphink@gmail.com>
+To: Michael Di Domenico <mdidomenico4@gmail.com>
+Cc: linux-net@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2010 01:22 PM, Dmitry Torokhov wrote:
-> 
-> Looks hood to me as well. We can either merge it through my tree or x86
-> tree, I don't have a preference.
-> 
+On Wed, Jul 7, 2010 at 3:25 PM, Michael Di Domenico
+<mdidomenico4@gmail.com> wrote:
+> What I'm curious about is how/why Linux actually decides Nic1 should be Eth0?
+>
+> My theory is it starts on the lowest MAC address and works up,
+> depending partly on driver load order.
 
-OK, I found that this series breaks allmodconfig, because i8042 can be a
-module.  The obvious solution is to export x86_platform to modules, I
-presume that is okay with everyone (especially tglx)?  If so I'll push
-this tree out tomorrow morning.
+I may be spewing misinformation here, but my understanding of how this
+works is that the specific ordering is pretty much random. It's rather
+unlikely to be based on MAC address value, except accidentally; it's
+probably just whatever comes up first when it enumerates the
+interfaces, which could easily be timing-dependent. (From personal
+experience, two identical but physically separate NICs will come up in
+a different order on every boot. Your case may be more consistent.)
 
-	-hpa
+The first time it does this, though, it records the MAC address into
+the appropriate ifcfg-* script. From then on, at boot time it checks
+the MAC address of each interface as it comes up. If it mismatches
+with what is recorded in the ifcfg-* script, then it skips that name
+and tries using the next.
+
+In other words, all you should have to do is set HWADDR appropriately
+in the the ifcfg-* scripts and it should do the right thing.
