@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430Ab0GGQ1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 12:27:19 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:39211 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756998Ab0GGQ1R (ORCPT
+	id S1757392Ab0GGQc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 12:32:29 -0400
+Received: from [202.81.31.142] ([202.81.31.142]:56234 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1756982Ab0GGQc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 12:27:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=tK3ieFG+UbniNnahhZMf2PHaGc2vCyWLE1w2AmXFPUxUl2SMWKRHI1+rFn1V09y38I
-         AsmOdr4mMRAPoR+kijgTzPbBpg5KHl6+UBD7vDIFeehDabmGBdFP6z6iOAyP1wdZ5aio
-         RybY7i0aXOJlPCP7jR4lUPwb9CpMKyaonEYdc=
+	Wed, 7 Jul 2010 12:32:27 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
+       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V14 05/11] vfs: Support null pathname in readlink
+In-Reply-To: <20100707152706.GT11732@laptop>
+References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1276621981-2774-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100707152706.GT11732@laptop>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Wed, 07 Jul 2010 22:02:12 +0530
+Message-ID: <87aaq3fe2b.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <4C34A922.6090705@kernel.org>
-References: <AANLkTimVkG9TFgyOTTnrztBjqT4JoOzFaP268vWLAAm9@mail.gmail.com>
-	<4C2F5ECB.1040505@kernel.org>
-	<AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>
-	<4C2F61AB.9030806@kernel.org>
-	<AANLkTilYOT45q8OUJ-_V61_fnYy9HIk6GAv5ZPiomCaT@mail.gmail.com>
-	<4C317C04.20500@kernel.org>
-	<AANLkTilupyieml9yaWO9BUNPmQQ0g2w1HLWj6R9MwDZf@mail.gmail.com>
-	<4C32CE50.6010501@kernel.org>
-	<AANLkTikehTO1j6Gd7Y_g32_P6Yg9KB8Z8qwbNJh10aOU@mail.gmail.com>
-	<4C341598.6040004@kernel.org>
-	<AANLkTik4zkcIyVxwtX8GA1BsQSZaAeODpPlY3mRVBc-4@mail.gmail.com>
-	<4C34A1D5.1090202@kernel.org>
-	<AANLkTikAENeTTHGiRO_tj3r0_rqXdFZ7KJDLYuIRpM-i@mail.gmail.com>
-	<4C34A922.6090705@kernel.org>
-Date: Wed, 7 Jul 2010 09:27:13 -0700
-Message-ID: <AANLkTikYBjMgu4YMVzDX3w6KOmloEHoq1Dq1b4hZerfR@mail.gmail.com>
-Subject: Re: Drives missing at boot
-From: Mark Knecht <markknecht@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 7, 2010 at 9:19 AM, Tejun Heo <tj@kernel.org> wrote:
-> On 07/07/2010 06:15 PM, Mark Knecht wrote:
->> Certainly. Is there a way to reverse the previous patch?
->>
->> c2stable linux # patch -p1 --dry-run <~mark/Downloads/resume-dbg-1.patch
->> patching file drivers/ata/libata-core.c
->> Hunk #1 succeeded at 3798 (offset 86 lines).
->> Hunk #2 succeeded at 3833 with fuzz 2 (offset 94 lines).
->> Hunk #3 FAILED at 6109.
->> 1 out of 3 hunks FAILED -- saving rejects to file drivers/ata/libata-core.c.rej
->> c2stable linux #
->>
->> I assume this is failing because your patch is over the plain kernel,
->> not the one I've patched?
->
-> $ patch -R -p1 < ~mark/Downloads/resume-dbg.patch
-> $ patch -p1 < ~mark/Downloads/resume-dbg-1.patch
->
-> --
-> tejun
->
-Thanks. Building the new kernel now. I'll start trying to save the
-data you're looking for.
+On Thu, 8 Jul 2010 01:27:06 +1000, Nick Piggin <npiggin@suse.de> wrote:
+> On Tue, Jun 15, 2010 at 10:42:55PM +0530, Aneesh Kumar K.V wrote:
+> > From: NeilBrown <neilb@suse.de>
+> > 
+> > This enables to use readlink to get the link target name
+> > from a file descriptor point to the link. This can be used
+> > with open_by_handle syscall that returns a file descriptor for a link.
+> > We can then use this file descriptor to get the target name.
+> > 
+> > Signed-off-by: NeilBrown <neilb@suse.de>
+> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> > ---
+> >  fs/stat.c |   30 ++++++++++++++++++++++--------
+> >  1 files changed, 22 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/fs/stat.c b/fs/stat.c
+> > index c4ecd52..49b95a7 100644
+> > --- a/fs/stat.c
+> > +++ b/fs/stat.c
+> > @@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+> >  SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+> >  		char __user *, buf, int, bufsiz)
+> >  {
+> > -	struct path path;
+> > -	int error;
+> > +	int error = 0;
+> > +	struct path path, *pp;
+> > +	struct file *file = NULL;
+> >  
+> >  	if (bufsiz <= 0)
+> >  		return -EINVAL;
+> >  
+> > -	error = user_path_at(dfd, pathname, 0, &path);
+> > +	if (pathname == NULL && dfd != AT_FDCWD) {
+> > +		file = fget(dfd);
+> > +
+> > +		if (file)
+> > +			pp = &file->f_path;
+> > +		else
+> > +			error = -EBADF;
+> > +	} else {
+> > +		error = user_path_at(dfd, pathname, 0, &path);
+> > +		pp = &path;
+> > +	}
+> 
+> This (and all the others) is really ugly overloading of syscall
+> arguments IMO, and the changelog is seriously lacking for such
+> changes.
 
-Cheers,
-Mark
+Initially we had  freadlink
+
+http://lkml.org/lkml/2010/5/12/222
+
+We updated the patches to use the existing readlinkat interface because
+utimensat(2) already exposed a similar interface. So it should be ok to
+expect that other *at call behaved in a similar way ?
+
+> 
+> This also changes the the syscall API of existing calls; from reading
+> the path at NULL, to switching to a completely different syscall.
+> Perhaps you're assuming nobody relies on SIGSEGV / mmapped NULL address
+> there, but even then you surely need to document the changed semantics
+> somewhere (and document the new syscall semantics properly).
+
+
+Yes this would need a documentation update. But i guess since we already
+have utimensat(2) behaving similarly we are ok to extent readlinkat,
+linkat and faccessat on similar lines ?
+
+-aneesh
