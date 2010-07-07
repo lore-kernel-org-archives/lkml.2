@@ -1,116 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab0GGRVN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 13:21:13 -0400
-Received: from fieldses.org ([174.143.236.118]:55595 "EHLO fieldses.org"
+	id S1755539Ab0GGR0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 13:26:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45832 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755400Ab0GGRVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 13:21:09 -0400
-Date: Wed, 7 Jul 2010 13:21:00 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
-       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 10/10] NFSD: Server implementation of MAC Labeling
-Message-ID: <20100707172100.GE28815@fieldses.org>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
- <1278513086-23964-11-git-send-email-dpquigl@tycho.nsa.gov>
+	id S1754615Ab0GGR0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 13:26:24 -0400
+Message-ID: <4C34B8BE.5080504@kernel.org>
+Date: Wed, 07 Jul 2010 19:26:22 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278513086-23964-11-git-send-email-dpquigl@tycho.nsa.gov>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Knecht <markknecht@gmail.com>
+CC: Linux Kernel List <linux-kernel@vger.kernel.org>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: Drives missing at boot
+References: <AANLkTimVkG9TFgyOTTnrztBjqT4JoOzFaP268vWLAAm9@mail.gmail.com>	<4C2F5ECB.1040505@kernel.org>	<AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>	<4C2F61AB.9030806@kernel.org>	<AANLkTilYOT45q8OUJ-_V61_fnYy9HIk6GAv5ZPiomCaT@mail.gmail.com>	<4C317C04.20500@kernel.org>	<AANLkTilupyieml9yaWO9BUNPmQQ0g2w1HLWj6R9MwDZf@mail.gmail.com>	<4C32CE50.6010501@kernel.org>	<AANLkTikehTO1j6Gd7Y_g32_P6Yg9KB8Z8qwbNJh10aOU@mail.gmail.com>	<4C341598.6040004@kernel.org>	<AANLkTik4zkcIyVxwtX8GA1BsQSZaAeODpPlY3mRVBc-4@mail.gmail.com>	<4C34A1D5.1090202@kernel.org> <AANLkTilgQSu3qi7qoTtjnV22r-8Sh1hbDAB_nlPImWNt@mail.gmail.com>
+In-Reply-To: <AANLkTilgQSu3qi7qoTtjnV22r-8Sh1hbDAB_nlPImWNt@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 07 Jul 2010 17:26:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 10:31:26AM -0400, David P. Quigley wrote:
-> This patch adds the ability to encode and decode file labels on the server for
->  static __be32
->  nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
-> -		   struct iattr *iattr, struct nfs4_acl **acl)
-> +		   struct iattr *iattr, struct nfs4_acl **acl,
-> +		   struct nfs4_label **label)
+Hello,
 
-As we add more arguments, I wonder if at some point it becomes worth
-creating something like
+On 07/07/2010 07:06 PM, Mark Knecht wrote:
+> 4 warm reboots. All 4 said 300 300. However the 4th one only showed an
+> extra attempt at running the patch code with and also showed Tries =
+> 2. I'm attaching boot #1 and boot #4 for now. I've saved them all if
+> you need or just want them.
+> 
+> Please note that in all 4 cases all drives were found. Nothing is
+> missing in any test yet after adding these either of these patches.
+> 
+> I've not tried cold boots yet. That's next.
 
-	struct nfsd4_attrs {
-		struct iattr iattr;
-		struct nfs4_acl *acl;
-		...
-	}
+Hmm... just in case you're being lucky, please keep an eye on it over
+several days and report the result.  I think all that's necessary is
+slight modification to the resume logic but let's watch a bit first.
 
-and passing that instead?
+Thanks.
 
-> +#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
-> +	if (bmval[1] & FATTR4_WORD1_SECURITY_LABEL) {
-> +		uint32_t lfs;
-> +
-> +		READ_BUF(4);
-> +		len += 4;
-> +		READ32(lfs);
-> +		READ_BUF(4);
-> +		len += 4;
-> +		READ32(dummy32);
-> +		READ_BUF(dummy32);
-> +		len += (XDR_QUADLEN(dummy32) << 2);
-> +		READMEM(buf, dummy32);
-> +
-> +		if (dummy32 > NFS4_MAXLABELLEN)
-> +			return nfserr_resource;
-> +
-> +		*label = kzalloc(sizeof(struct nfs4_label), GFP_KERNEL);
-
-Could we allocate this some toher way (it's small, right?) and avoid the
-extra dynamic allocation here, just for simplicity's sake?
-
-> +		if (*label == NULL) {
-> +			host_err = -ENOMEM;
-> +			goto out_nfserr;
-> +		}
-> +
-> +		(*label)->label = kmalloc(dummy32 + 1, GFP_KERNEL);
-
-Might be nice to arrange NFS4_MAXLABELLEN to ensure this is never a
-higher-order allocation.
-
-> +#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
-> +static inline __be32
-> +nfsd4_encode_security_label(struct svc_rqst *rqstp, struct dentry *dentry, __be32 **pp, int *buflen)
-> +{
-> +	void *context;
-> +	int err;
-> +	int len;
-> +	uint32_t lfs = 0;
-> +	__be32 *p = *pp;
-> +
-> +	err = 0;
-> +	(void)security_inode_getsecctx(dentry->d_inode, &context, &len);
-> +	if (len < 0)
-> +		return nfserrno(len);
-> +
-> +	if (*buflen < ((XDR_QUADLEN(len) << 2) + 4 +4)) {
-
-We could use better helpers for this; it's kind of lame to have to do
-this by hand.
-
-> +		err = nfserr_resource;
-> +		goto out;
-> +	}
-> +
-> +	/* XXX: A call to the translation code should be placed here
-> +	 * for now send 0  until we have that to indicate the null
-> +	 * translation */ 
-
-I guess I should try to understand what that is some day.
-
-> +
-> +	if ((*buflen -= 4) < 0)
-
-Redundant?
-
---b.
+-- 
+tejun
