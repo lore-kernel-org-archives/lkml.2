@@ -1,37 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758162Ab0GGWqR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 18:46:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46377 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756482Ab0GGWqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 18:46:16 -0400
-Message-ID: <4C350398.5070504@redhat.com>
-Date: Wed, 07 Jul 2010 18:45:44 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1758193Ab0GGWsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 18:48:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39436 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758062Ab0GGWsa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 18:48:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=cQya7uncU60mqOyts9Pa5xe0oclO1MNMyHzGoly1nBfAGO5YtjNWVAOiIky52uhY0n
+         XSm/uTGX6GutnCFTbBBaXIXWLYUyISmVzr18qyLKtvCfEb1YYmwKqckWjUzJMjpUqNwG
+         WD+Z/tsOQUkEmLHEaZH7HcTw33jVY4lmeHLf8=
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-       tglx@linutronix.de, hpa@zytor.com, cl@linux-foundation.org,
-       mtosatti@redhat.com
-Subject: Re: [PATCH v4 05/12] Export __get_user_pages_fast.
-References: <1278433500-29884-1-git-send-email-gleb@redhat.com> <1278433500-29884-6-git-send-email-gleb@redhat.com>
-In-Reply-To: <1278433500-29884-6-git-send-email-gleb@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Thu, 8 Jul 2010 02:48:28 +0400
+Message-ID: <AANLkTikkwvxiN1gnYtF5rhR5vW4ZZLcwneIbYGrqRTwU@mail.gmail.com>
+Subject: Kernel changelog view by categories (web-script)
+From: Igor Zhbanov <izh1979@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2010 12:24 PM, Gleb Natapov wrote:
-> KVM will use it to try and find a page without falling back to slow
-> gup. That is why get_user_pages_fast() is not enough.
->
-> Signed-off-by: Gleb Natapov<gleb@redhat.com>
+Hello!
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+I have written a small program that displays the Linux Kernel changelog
+in a categorized way allowing to inspect only the changes under
+the categories you are interested in. This makes reading
+a big changelog for a new kernel less difficult.
 
--- 
-All rights reversed
+The program is written in PHP. You can test it here:
+http://i.clusteron.ru/clv.php
+
+In the URL field of the form you should enter the URL of the changelog
+you want to view. E.g.
+http://www.kernel.org/pub/linux/kernel/v2.6/ChangeLog-2.6.34.1
+
+After the page is loaded you can fold/unfold categories by clicking
+[+] or category name.
+You need to have JavaScript enabled in your browser.
+
+The program is under GPLv2 license. So you can install it on your site.
+
+You can download the source from http://i.clusteron.ru/clv.php.txt
+ReadMe: http://i.clusteron.ru/clv_install.txt
+
+Perhaps the program could be integrated in kernel.org site.
+I think that viewing changelog by categories of changes is useful.
+
+Probably some guidelines for changelog categories naming should be implemented.
