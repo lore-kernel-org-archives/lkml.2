@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757199Ab0GGPXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:23:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45468 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756833Ab0GGPXR (ORCPT
+	id S1757268Ab0GGPX2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:23:28 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55320 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757220Ab0GGPXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 11:23:17 -0400
+	Wed, 7 Jul 2010 11:23:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=W0J7c4NXMnDDBFhFEeLl2dMA8dlMCheav92cNDYnbfUCTDwwsHy85+2UCcbhCQfe2O
-         KqHzWhBZsNlDbbINHRjbgrrMOGDv33OfiPBvNv5dtdLp0KifjoFPbTc8h0ktTeEuVucB
-         oiqfyONOvpvYfZmJuXYvCOrtCxladDV3FjhSo=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=TQnWaBSIl9EAQP0pFvpxwDKOvyIREVeoBpB8o4cSbK/WdJUef5sFbDOOMFC/bgQ3zC
+         j1sBnGD4r41ZG3pC8QM7NHxT17cB/u2leD38dTPzve3szKXJ2fKFuoigkUgIl7D/Xc+l
+         6Domj1fNFLmYEiPftv4iE+ga14+eHZKehBf9o=
 From: Corrado Zoccolo <czoccolo@gmail.com>
 To: Jens Axboe <jens.axboe@oracle.com>
 Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
@@ -20,65 +20,59 @@ Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
        Shaohua Li <shaohua.li@intel.com>,
        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
        Corrado Zoccolo <czoccolo@gmail.com>
-Subject: [PATCH 1/2] cfq-iosched: fix tree-wide handling of rq_noidle
-Date: Wed,  7 Jul 2010 17:23:46 +0200
-Message-Id: <1278516227-1643-1-git-send-email-czoccolo@gmail.com>
+Subject: [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
+Date: Wed,  7 Jul 2010 17:23:47 +0200
+Message-Id: <1278516227-1643-2-git-send-email-czoccolo@gmail.com>
 X-Mailer: git-send-email 1.6.4.4
+In-Reply-To: <1278516227-1643-1-git-send-email-czoccolo@gmail.com>
+References: <1278516227-1643-1-git-send-email-czoccolo@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch: 8e55063 cfq-iosched: fix corner cases in idling logic
-introduced the possibility of iding even on no-idle requests
-in the no_idle tree, if any previous request in the current slice
-could idle. The implementation had a problem, though:
-- if a queue sent several possibly idling requests and a noidle
-  request as last one in the same time slice, the tree was still
-  marked as idle.
-This patch fixes this misbehaviour, by using a 31-bucket hash to
-keep idling/non-idling status for queues in the noidle tree.
+RQ_NOIDLE flag is meaningful and should be honored for SYNC_WORKLOAD,
+without further checks.
+RQ_NOIDLE can be used to mark the last request of a sequence for which
+- we want to idle between the requests of the sequence, to keep locality
+- we don't want to idle after the sequence, because we know that no new
+  nearby requests will follow, so we should switch servicing other
+  queues.
+This patch fixes this behaviour, making it similar to how it behaved
+before 8e55063, but still fixing the corner cases that were the
+motivation for it.
 
 Signed-off-by: Corrado Zoccolo <czoccolo@gmail.com>
 ---
- block/cfq-iosched.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ block/cfq-iosched.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
 
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index d1ad066..5ef9a5d 100644
+index 5ef9a5d..cac3afb 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -214,7 +214,7 @@ struct cfq_data {
- 	enum wl_type_t serving_type;
- 	unsigned long workload_expires;
- 	struct cfq_group *serving_group;
--	bool noidle_tree_requires_idle;
-+	u32 noidle_tree_requires_idle;
+@@ -3356,12 +3356,17 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+ 				cfqd->noidle_tree_requires_idle |= bitmask;
  
- 	/*
- 	 * Each priority tree is sorted by next_request position.  These
-@@ -2066,7 +2066,7 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	slice = max_t(unsigned, slice, CFQ_MIN_TT);
- 	cfq_log(cfqd, "workload slice:%d", slice);
- 	cfqd->workload_expires = jiffies + slice;
--	cfqd->noidle_tree_requires_idle = false;
-+	cfqd->noidle_tree_requires_idle = 0U;
- }
- 
- static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd)
-@@ -3349,7 +3349,12 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
- 			cfq_slice_expired(cfqd, 1);
- 		else if (sync && cfqq_empty &&
- 			 !cfq_close_cooperator(cfqd, cfqq)) {
--			cfqd->noidle_tree_requires_idle |= !rq_noidle(rq);
-+			u32 bitmask = 1U << (((int)cfqq) % 31);
-+			if (rq_noidle(rq))
-+				cfqd->noidle_tree_requires_idle &= ~bitmask;
-+			else
-+				cfqd->noidle_tree_requires_idle |= bitmask;
-+
  			/*
- 			 * Idling is enabled for SYNC_WORKLOAD.
- 			 * SYNC_NOIDLE_WORKLOAD idles at the end of the tree
+-			 * Idling is enabled for SYNC_WORKLOAD.
+-			 * SYNC_NOIDLE_WORKLOAD idles at the end of the tree
+-			 * only if we processed at least one !rq_noidle request
++			 * Idling is enabled for:
++			 * - the last sync queue of a group
++			 * - SYNC_WORKLOAD queues, for !rq_noidle requests
++			 * - SYNC_NOIDLE_WORKLOAD "at the end of the tree"
++			 *   if at least one queue sent !rq_noidle requests
++			 *   not followed by at least one rq_noidle request.
+ 			 */
+-			if (cfqd->serving_type == SYNC_WORKLOAD
+-			    || cfqd->noidle_tree_requires_idle
++			if ((cfqd->serving_type == SYNC_WORKLOAD
++			     && !rq_noidle(rq))
++			    || (cfqd->serving_type == SYNC_NOIDLE_WORKLOAD
++				&& cfqd->noidle_tree_requires_idle)
+ 			    || cfqq->cfqg->nr_cfqq == 1)
+ 				cfq_arm_slice_timer(cfqd);
+ 		}
 -- 
 1.6.4.4
 
