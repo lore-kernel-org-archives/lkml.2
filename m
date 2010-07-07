@@ -1,133 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab0GGAeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 20:34:11 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43127 "EHLO hera.kernel.org"
+	id S1754506Ab0GGAkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 20:40:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37137 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755953Ab0GGAeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 20:34:08 -0400
-Date: Wed, 7 Jul 2010 00:33:45 GMT
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1277249017.2847.85.camel@sbs-t61.sc.intel.com>
-References: <1277249017.2847.85.camel@sbs-t61.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fpu] x86: Avoid unnecessary __clear_user() and xrstor in signal handling
-Message-ID: <tip-8e221b6db4477643fefc885a97ea9889ac733140@git.kernel.org>
-Git-Commit-ID: 8e221b6db4477643fefc885a97ea9889ac733140
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 07 Jul 2010 00:33:46 +0000 (UTC)
+	id S1751377Ab0GGAkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 20:40:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,549,1272870000"; 
+   d="scan'208";a="533096927"
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+From: Dan Williams <dan.j.williams@intel.com>
+To: Chris Li <lkml@chrisli.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Matthew Wilcox <willy@linux.intel.com>
+In-Reply-To: <AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
+	 <4C29420D.2010406@intel.com>
+	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>
+	 <4C2A8879.8010000@intel.com>
+	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>
+	 <4C2AC55E.3040303@intel.com>
+	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
+	 <1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>
+	 <1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>
+	 <1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>
+	 <1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>
+	 <1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>
+	 <AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>
+	 <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>
+	 <1278324973.16975.68.camel@localhost>
+	 <AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>
+Content-Type: multipart/mixed; boundary="=-w8pcJFKcFTrb25lYELra"
+Date: Tue, 06 Jul 2010 17:51:41 -0700
+Message-ID: <1278463901.20082.34.camel@dwillia2-linux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8e221b6db4477643fefc885a97ea9889ac733140
-Gitweb:     http://git.kernel.org/tip/8e221b6db4477643fefc885a97ea9889ac733140
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Tue, 22 Jun 2010 16:23:37 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 6 Jul 2010 16:31:04 -0700
 
-x86: Avoid unnecessary __clear_user() and xrstor in signal handling
+--=-w8pcJFKcFTrb25lYELra
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-fxsave/xsave doesn't touch all the bytes in the memory layout used by
-these instructions. Specifically SW reserved (bytes 464..511) fields
-in the fxsave frame and the reserved fields in the xsave header.
+[ adding Matthew as one of last people to touch mm/dmapool.c ]
 
-To present a clean context for the signal handling, just clear these fields
-instead of clearing the complete fxsave/xsave memory layout, when we dump these
-registers directly to the user signal frame.
+On Tue, 2010-07-06 at 16:40 -0700, Chris Li wrote:
+> On Mon, Jul 5, 2010 at 3:16 AM, David Woodhouse <dwmw2@infradead.org> wrote:
+> > On Fri, 2010-07-02 at 20:00 +0100, Chris Li wrote:
+> >> But I don't see the line that print out BIOS is lying.
+> >
+> > Hrm. Want to augment the dmar_find_matched_drhd_unit() function to
+> > _always_ print the DRHD returned for the offending PCI device? And if
+> > that still doesn't show, make it print pdev->vendor, pdev->device and
+> > the returned DRHD pointer for _every_ call?
+> 
+> I just did some experiment, my PCI device ID is  PCI_DEVICE_ID_INTEL_ESB2_0
+> (0x2670) instead of PCI_DEVICE_ID_INTEL_IOAT_SNB.
 
-Also avoid the call to second xrstor (which inits the state not passed
-in the signal frame) in restore_user_xstate() if all the state has already
-been restored by the first xrstor.
+No, it should be PCI_DEVICE_ID_INTEL_IOAT_SNB (0x402f) for the dma
+engine at 00:0f.0 .  PCI_DEVICE_ID_INTEL_ESB2_0 is the LPC controller at
+00:1f.0,
 
-These changes improve the performance of signal handling(by ~3-5% as measured
-by the lat_sig).
+> That seems to be the reason preventing the warning to be print out. I am not
+> sure the warning should be always print out. Just curious why it did
+> not trigger.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <1277249017.2847.85.camel@sbs-t61.sc.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/i387.h  |    9 +++++++++
- arch/x86/include/asm/xsave.h |   10 ++++++++++
- arch/x86/kernel/xsave.c      |   12 ++----------
- 3 files changed, 21 insertions(+), 10 deletions(-)
+It should always trigger, and I have verified as much with the attached
+replacement patch (by forcing the error on a working system), but we run
+into a new problem.  dma_pool_alloc() assumes that any dma_mapping error
+is transient.  Do we need a new type of dma_mapping_error() that
+indicates permanent failure versus ENOMEM?  The driver can handle the
+allocation failure, but it never gets the chance.
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index c991b3a..0f1cf5d 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -127,6 +127,15 @@ static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
+------------[ cut here ]------------
+WARNING: at drivers/pci/dmar.c:574 dmar_find_matched_drhd_unit+0xe4/0xfa()
+Hardware name: [redacted to protect the innocent]
+BIOS wrongly assigned I/OAT IOMMU 5: reg_base_addr fe71a000 cap 4900800c2f0462 ecap e01
+Modules linked in: ioatdma(+) dca ipv6 snd_pcsp snd_pcm snd_timer snd soundcore i2c_i801 snd_page_alloc serio_raw i2c_core joydev
+Pid: 1166, comm: modprobe Not tainted 2.6.35-rc3+ #2
+Call Trace:
+ [<ffffffff8104bfd0>] warn_slowpath_common+0x85/0x9d
+ [<ffffffff8104c043>] warn_slowpath_fmt_taint+0x3f/0x41
+ [<ffffffff8125dd4b>] dmar_find_matched_drhd_unit+0xe4/0xfa
+ [<ffffffff8126179d>] get_domain_for_dev.clone.3+0x111/0x471
+ [<ffffffff81261cbb>] get_valid_domain_for_dev+0x26/0x9a
+ [<ffffffff81261f51>] __intel_map_single+0x4c/0x175
+ [<ffffffff81262184>] intel_alloc_coherent+0xc7/0xef
+ [<ffffffff810edcd2>] dma_pool_alloc+0x179/0x2ab
+ [<ffffffffa00ed606>] ? kzalloc+0x14/0x16 [ioatdma]
+ [<ffffffffa00efe58>] ioat2_alloc_chan_resources+0x4f/0x219 [ioatdma]
+ [<ffffffffa00f33b9>] ioat_dma_self_test+0x94/0x2af [ioatdma]
+ [<ffffffff8109bff2>] ? devm_request_threaded_irq+0x98/0xaa
+ [<ffffffffa00f31cd>] ioat_probe+0x338/0x3aa [ioatdma]
+ [<ffffffffa00f3657>] ioat2_dma_probe+0x83/0x106 [ioatdma]
+ [<ffffffffa00f2ded>] ioat_pci_probe+0x133/0x195 [ioatdma]
+ [<ffffffff8124b539>] local_pci_probe+0x17/0x1b
+ [<ffffffff8124c2f5>] pci_device_probe+0xcd/0xfd
+ [<ffffffff812ee5f5>] ? driver_sysfs_add+0x4c/0x71
+ [<ffffffff812ee81a>] driver_probe_device+0x12f/0x240
+ [<ffffffff812ee97a>] __driver_attach+0x4f/0x6b
+ [<ffffffff812ee92b>] ? __driver_attach+0x0/0x6b
+ [<ffffffff812edc66>] bus_for_each_dev+0x53/0x88
+ [<ffffffff812ee554>] driver_attach+0x1e/0x20
+ [<ffffffff812ee19a>] bus_add_driver+0xd5/0x23b
+ [<ffffffff812eec54>] driver_register+0x9d/0x10e
+ [<ffffffff8124c521>] __pci_register_driver+0x58/0xc8
+ [<ffffffffa00fc000>] ? ioat_init_module+0x0/0x85 [ioatdma]
+ [<ffffffffa00fc000>] ? ioat_init_module+0x0/0x85 [ioatdma]
+ [<ffffffffa00fc06d>] ioat_init_module+0x6d/0x85 [ioatdma]
+ [<ffffffff81002069>] do_one_initcall+0x5e/0x159
+ [<ffffffff8107bd01>] sys_init_module+0xa1/0x1e0
+ [<ffffffff81009c32>] system_call_fastpath+0x16/0x1b
+---[ end trace 02c1ac1f56dc9544 ]---
+Disabling lock debugging due to kernel taint
+IOMMU: can't find DMAR for device 0000:00:0f.0
+Allocating domain for 0000:00:0f.0 failed
+IOMMU: can't find DMAR for device 0000:00:0f.0
+Allocating domain for 0000:00:0f.0 failed
+[...ad infinitum...]
+
+--
+Dan
+
+
+--=-w8pcJFKcFTrb25lYELra
+Content-Disposition: attachment; filename="ioat-catch-broken-vtd-v2.patch"
+Content-Type: text/x-patch; name="ioat-catch-broken-vtd-v2.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
+index 0a19708..f183ac9 100644
+--- a/drivers/pci/dmar.c
++++ b/drivers/pci/dmar.c
+@@ -532,7 +532,7 @@ static int dmar_pci_device_match(struct pci_dev *devices[], int cnt,
+ struct dmar_drhd_unit *
+ dmar_find_matched_drhd_unit(struct pci_dev *dev)
  {
- 	int err;
+-	struct dmar_drhd_unit *dmaru = NULL;
++	struct dmar_drhd_unit *dmaru, *found = NULL;
+ 	struct acpi_dmar_hardware_unit *drhd;
  
-+	/*
-+	 * Clear the bytes not touched by the fxsave and reserved
-+	 * for the SW usage.
-+	 */
-+	err = __clear_user(&fx->sw_reserved,
-+			   sizeof(struct _fpx_sw_bytes));
-+	if (unlikely(err))
-+		return -EFAULT;
-+
- 	asm volatile("1:  rex64/fxsave (%[fx])\n\t"
- 		     "2:\n"
- 		     ".section .fixup,\"ax\"\n"
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 2c4390c..30dfc81 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -59,6 +59,16 @@ static inline int fpu_xrstor_checking(struct fpu *fpu)
- static inline int xsave_user(struct xsave_struct __user *buf)
- {
- 	int err;
-+
-+	/*
-+	 * Clear the xsave header first, so that reserved fields are
-+	 * initialized to zero.
-+	 */
-+	err = __clear_user(&buf->xsave_hdr,
-+			   sizeof(struct xsave_hdr_struct));
-+	if (unlikely(err))
-+		return -EFAULT;
-+
- 	__asm__ __volatile__("1: .byte " REX_PREFIX "0x0f,0xae,0x27\n"
- 			     "2:\n"
- 			     ".section .fixup,\"ax\"\n"
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 37e68fc..6e73db1 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -91,14 +91,6 @@ int save_i387_xstate(void __user *buf)
- 		return 0;
+ 	dev = pci_physfn(dev);
+@@ -544,14 +544,38 @@ dmar_find_matched_drhd_unit(struct pci_dev *dev)
  
- 	if (task_thread_info(tsk)->status & TS_USEDFPU) {
--		/*
--	 	 * Start with clearing the user buffer. This will present a
--	 	 * clean context for the bytes not touched by the fxsave/xsave.
--		 */
--		err = __clear_user(buf, sig_xstate_size);
--		if (err)
--			return err;
+ 		if (dmaru->include_all &&
+ 		    drhd->segment == pci_domain_nr(dev->bus))
+-			return dmaru;
 -
- 		if (use_xsave())
- 			err = xsave_user(buf);
- 		else
-@@ -184,8 +176,8 @@ static int restore_user_xstate(void __user *buf)
- 	 * init the state skipped by the user.
- 	 */
- 	mask = pcntxt_mask & ~mask;
--
--	xrstor_state(init_xstate_buf, mask);
-+	if (unlikely(mask))
-+		xrstor_state(init_xstate_buf, mask);
+-		if (dmar_pci_device_match(dmaru->devices,
++			found = dmaru;
++		else if (dmar_pci_device_match(dmaru->devices,
+ 					  dmaru->devices_cnt, dev))
+-			return dmaru;
++			found = dmaru;
++
++
++		if (found)
++			break;
++	}
++
++	/* We know that this device only exists on this chipset, has its
++	 * own IOMMU, and is uniquely identified by bit 54 being set in
++	 * its capability mask.  Catch BIOSes that specify the incorrect
++	 * IOMMU unit.
++	 */
++	if (found &&
++	    dev->vendor == PCI_VENDOR_ID_INTEL &&
++	    dev->device == PCI_DEVICE_ID_INTEL_IOAT_SNB &&
++	    !test_bit(54, (unsigned long *) &found->iommu->cap)) {
++		struct intel_iommu *iommu = found->iommu;
++
++		WARN_TAINT_ONCE(1, TAINT_FIRMWARE_WORKAROUND,
++				"BIOS wrongly assigned I/OAT IOMMU "
++				"%d: reg_base_addr %llx cap %llx ecap %llx\n",
++				iommu->seq_id,
++				(unsigned long long)found->reg_base_addr,
++				(unsigned long long)iommu->cap,
++				(unsigned long long)iommu->ecap);
++		found = NULL;
+ 	}
  
- 	return 0;
+-	return NULL;
++	return found;
+ }
  
+ int __init dmar_dev_scope_init(void)
+
+--=-w8pcJFKcFTrb25lYELra--
+
