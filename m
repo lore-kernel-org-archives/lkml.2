@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab0GGQTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 12:19:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41075 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756793Ab0GGQTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 12:19:49 -0400
-Message-ID: <4C34A922.6090705@kernel.org>
-Date: Wed, 07 Jul 2010 18:19:46 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
-MIME-Version: 1.0
-To: Mark Knecht <markknecht@gmail.com>
-CC: Linux Kernel List <linux-kernel@vger.kernel.org>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: Drives missing at boot
-References: <AANLkTimVkG9TFgyOTTnrztBjqT4JoOzFaP268vWLAAm9@mail.gmail.com>	<4C2F5ECB.1040505@kernel.org>	<AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>	<4C2F61AB.9030806@kernel.org>	<AANLkTilYOT45q8OUJ-_V61_fnYy9HIk6GAv5ZPiomCaT@mail.gmail.com>	<4C317C04.20500@kernel.org>	<AANLkTilupyieml9yaWO9BUNPmQQ0g2w1HLWj6R9MwDZf@mail.gmail.com>	<4C32CE50.6010501@kernel.org>	<AANLkTikehTO1j6Gd7Y_g32_P6Yg9KB8Z8qwbNJh10aOU@mail.gmail.com>	<4C341598.6040004@kernel.org>	<AANLkTik4zkcIyVxwtX8GA1BsQSZaAeODpPlY3mRVBc-4@mail.gmail.com>	<4C34A1D5.1090202@kernel.org> <AANLkTikAENeTTHGiRO_tj3r0_rqXdFZ7KJDLYuIRpM-i@mail.gmail.com>
-In-Reply-To: <AANLkTikAENeTTHGiRO_tj3r0_rqXdFZ7KJDLYuIRpM-i@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
+	id S1757208Ab0GGQVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 12:21:15 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:56259 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756487Ab0GGQVN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 12:21:13 -0400
+Subject: Re: [PATCH] time/fs - file's time race with vgettimeofday
+From: john stultz <johnstul@us.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, eric.dumazet@gmail.com,
+       oleg@redhat.com
+In-Reply-To: <20100707104709.GA2710@jolsa.brq.redhat.com>
+References: <1278056519-5008-1-git-send-email-jolsa@redhat.com>
+	 <AANLkTilE3sd7SSLVCN87rpJ5iSm-sYd-n6nJnzlByfRK@mail.gmail.com>
+	 <1278457900.1715.9.camel@localhost>
+	 <20100707104709.GA2710@jolsa.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Jul 2010 09:20:38 -0700
+Message-ID: <1278519638.1774.19.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 07 Jul 2010 16:19:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2010 06:15 PM, Mark Knecht wrote:
-> Certainly. Is there a way to reverse the previous patch?
+On Wed, 2010-07-07 at 12:47 +0200, Jiri Olsa wrote:
+> On Tue, Jul 06, 2010 at 04:11:40PM -0700, john stultz wrote:
+> > [PATCH] x86: Fix vtime/file timestamp inconsistencies
+> > 
+> > Due to vtime calling vgettimeofday(), its possible that an application
+> > could call  time();create("stuff",O_RDRW);  only to see the file's
+> > creation timestamp to be before the value returned by time.
+> > 
+> > The proper fix is to make vtime use the same time value as
+> > current_kernel_time() (which is exported via update_vsyscall) instead of
+> > vgettime().
 > 
-> c2stable linux # patch -p1 --dry-run <~mark/Downloads/resume-dbg-1.patch
-> patching file drivers/ata/libata-core.c
-> Hunk #1 succeeded at 3798 (offset 86 lines).
-> Hunk #2 succeeded at 3833 with fuzz 2 (offset 94 lines).
-> Hunk #3 FAILED at 6109.
-> 1 out of 3 hunks FAILED -- saving rejects to file drivers/ata/libata-core.c.rej
-> c2stable linux #
+> hm, this would be solution for the time() call.
 > 
-> I assume this is failing because your patch is over the plain kernel,
-> not the one I've patched?
+> But I think the issue still stays for gettimeofday and clock_gettime
+> (CLOCK_REALTIME/CLOCK_MONOTONIC) because they call vread from
+> clocksource to get the real time.
+> 
+> Thats where I'm not sure if this race is that "bad", compared either
+> to performance hit or inaccuracy of user time calls.. which are possible
+> solutions..
 
-$ patch -R -p1 < ~mark/Downloads/resume-dbg.patch
-$ patch -p1 < ~mark/Downloads/resume-dbg-1.patch
+Right, so as long as the file timestamps are tick-granular (like other
+tick-granular interfaces: current_kernel_time(), time(),
+CLOCK_REALTIME_COARSE) you will have the possibility of inconsistencies
+against the clocksource resolution interfaces (gettimeofday(),
+CLOCK_REALTIME, etc).
 
--- 
-tejun
+But that is to be expected as a constraint of the granularity. So I
+don't really see this as an issue.
+
+Folks may want to increase the granularity of filesystem timestamps, but
+that will come at the possibly very expensive cost of reading the
+clocksource hardware (which can have different access latencies between
+architectures and even machines of the same arch). I suspect its not
+worth it.
+
+The concerning issue here that you pointed out are the inconsistencies
+could be seen between vsyscall time() and time() (or filesystem
+timestamps). That is a problem, and my patch should resolve that one.
+
+thanks
+-john
+
+
+
+
+
+
