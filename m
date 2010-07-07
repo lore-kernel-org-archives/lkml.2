@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab0GGUCr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 16:02:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2533 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755848Ab0GGUCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 16:02:46 -0400
-Message-ID: <4C34DD1B.3010601@redhat.com>
-Date: Wed, 07 Jul 2010 16:01:31 -0400
-From: Don Dutile <ddutile@redhat.com>
-Reply-To: ddutile@redhat.com
-User-Agent: Thunderbird 2.0.0.18 (X11/20081113)
+	id S1757594Ab0GGUFn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 16:05:43 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59380 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757493Ab0GGUFl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 16:05:41 -0400
+Date: Wed, 7 Jul 2010 13:04:18 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH 1/3] ocfs2: When zero extending, do it by page.
+Message-ID: <20100707200418.GB22311@mail.oracle.com>
+Mail-Followup-To: Tao Ma <tao.ma@oracle.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	ocfs2-devel@oss.oracle.com, Dave Chinner <dchinner@redhat.com>,
+	Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
+References: <20100703213219.GB21262@mail.oracle.com>
+ <1278501367-7710-2-git-send-email-joel.becker@oracle.com>
+ <4C349AFF.9040301@oracle.com>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "stefano@stabellini.net" <stefano@stabellini.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       "sheng@linux.intel.com" <sheng@linux.intel.com>,
-       "jeremy@goop.org" <jeremy@goop.org>
-Subject: Re: [PATCH 12/13] Unplug emulated disks and nics
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop> <1277136847-13266-12-git-send-email-stefano@stabellini.net> <4C2CEF56.4050008@redhat.com> <alpine.DEB.2.00.1007051255310.29110@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1007051255310.29110@kaball-desktop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C349AFF.9040301@oracle.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C34DDEB.01C1:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefano Stabellini wrote:
-> On Thu, 1 Jul 2010, Don Dutile wrote:
->> The problem with this check/enable is that if you run
->> this on an older qemu-xen that doesn't have unplug support,
->> it fails pv-hvm configuration.
->>
->> But, all that means is that you can't use an xvd as the boot device,
->> and you have to use an emulated IDE device as boot device.
->> There are a couple ways to configure the vnif correctly (in guest
->> or in xen guest config file).
->>
->> So, on an older (say, rhel5) xen, I don't have this check;
->> the boot device is required to be spec'd as hda, not vda, and
->> xen-blkfront is not allowed to configure blk major nums
->> for IDE (& SCSI) (to avoid 2 drivers twiddling w/same phys backend... not good!).
->>
-> 
-> Who is requiring that the boot device is spec'd as hda and not xvda?
-> I don't think there is such limitation in xend or libxl at the moment.
-> 
+On Wed, Jul 07, 2010 at 11:19:27PM +0800, Tao Ma wrote:
+> >+static handle_t *ocfs2_zero_start_ordered_transaction(struct inode *inode)
+> >+{
+> >+	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+> >+	handle_t *handle = NULL;
+> >+	int ret = 0;
+> >+
+> >+	if (ocfs2_should_order_data(inode))
+> This should be if (!ocfs2_should_order_data(inode)) I guess? ;)
 
-If you take a previous xen HVM guest spec & just run it on a guest
-that has pv-hvm added to it, then one has hda spec'd as boot device (by default,
-by not editing the guest config spec/file).
+	Of course it should.  Fixed ;-)
 
-Ideally, both config specs should/would work.
+Joel
 
-- Don
 
+-- 
+
+"Too much walking shoes worn thin.
+ Too much trippin' and my soul's worn thin.
+ Time to catch a ride it leaves today
+ Her name is what it means.
+ Too much walking shoes worn thin."
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
