@@ -1,53 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab0GGN3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 09:29:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47425 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755628Ab0GGN3e (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 7 Jul 2010 09:29:34 -0400
-Date: Wed, 7 Jul 2010 09:27:44 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Dave Hansen <dave@sr71.net>, Dan Magenheimer <dan.magenheimer@oracle.com>,
-       chris.mason@oracle.com, viro@zeniv.linux.org.uk,
-       akpm@linux-foundation.org, adilger@Sun.COM, tytso@mit.edu,
-       mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
-       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com
-Subject: Re: [PATCH V3 3/8] Cleancache: core ops functions and configuration
-Message-ID: <20100707132744.GB4823@phenom.dumpdata.com>
-References: <20100621231939.GA19505@ca-server1.us.oracle.com>
- <1277223988.9782.20.camel@nimitz>
- <20100706205121.GA32627@phenom.dumpdata.com>
- <4C33D240.80102@vflare.org>
+	id S1756020Ab0GGNaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 09:30:06 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:47343 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755222Ab0GGNaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 09:30:03 -0400
+Date: Wed, 7 Jul 2010 15:32:02 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Dan Kruchinin <dkruchinin@acm.org>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-crypto@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 4/6] padata: make padata_do_parallel to return zero on
+ success
+Message-ID: <20100707133202.GZ10072@secunet.com>
+References: <20100707132915.GV10072@secunet.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C33D240.80102@vflare.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C34811E.00CC:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <20100707132915.GV10072@secunet.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 07 Jul 2010 13:30:00.0372 (UTC) FILETIME=[7FC17F40:01CB1DD8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Can you reference with a link or a git branch the patches that utilize
-> > this?
-> > 
-> > And also mention that in the 0/X patch so that folks can reference your
-> > cleancache implementation?
-> > 
-> >
-> 
-> FYI.
-> 
-> I am working on 'zcache' which uses cleancache_ops to provide page cache
-> compression support. I will be posting it to LKML before end of next week.
+To return -EINPROGRESS on success in padata_do_parallel was
+considered to be odd. This patch changes this to return zero
+on success. Also the only user of padata, pcrypt is adapted to
+convert a return of zero to -EINPROGRESS within the crypto layer.
+This also removes the pcrypt fallback if padata_do_parallel
+was called on a not running padata instance as we can't handle it
+anymore. This fallback was unused, so it's save to remove it.
 
-Yes! That too, please. Thanks for pointing this out.
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+---
+ crypto/pcrypt.c |   18 ++++++------------
+ kernel/padata.c |   11 +++++------
+ 2 files changed, 11 insertions(+), 18 deletions(-)
+
+diff --git a/crypto/pcrypt.c b/crypto/pcrypt.c
+index 71ae2b2..6036b6d 100644
+--- a/crypto/pcrypt.c
++++ b/crypto/pcrypt.c
+@@ -143,10 +143,8 @@ static int pcrypt_aead_encrypt(struct aead_request *req)
+ 	aead_request_set_assoc(creq, req->assoc, req->assoclen);
+ 
+ 	err = pcrypt_do_parallel(padata, &ctx->cb_cpu, pcrypt_enc_padata);
+-	if (err)
+-		return err;
+-	else
+-		err = crypto_aead_encrypt(creq);
++	if (!err)
++		return -EINPROGRESS;
+ 
+ 	return err;
+ }
+@@ -187,10 +185,8 @@ static int pcrypt_aead_decrypt(struct aead_request *req)
+ 	aead_request_set_assoc(creq, req->assoc, req->assoclen);
+ 
+ 	err = pcrypt_do_parallel(padata, &ctx->cb_cpu, pcrypt_dec_padata);
+-	if (err)
+-		return err;
+-	else
+-		err = crypto_aead_decrypt(creq);
++	if (!err)
++		return -EINPROGRESS;
+ 
+ 	return err;
+ }
+@@ -233,10 +229,8 @@ static int pcrypt_aead_givencrypt(struct aead_givcrypt_request *req)
+ 	aead_givcrypt_set_giv(creq, req->giv, req->seq);
+ 
+ 	err = pcrypt_do_parallel(padata, &ctx->cb_cpu, pcrypt_enc_padata);
+-	if (err)
+-		return err;
+-	else
+-		err = crypto_aead_givencrypt(creq);
++	if (!err)
++		return -EINPROGRESS;
+ 
+ 	return err;
+ }
+diff --git a/kernel/padata.c b/kernel/padata.c
+index 57ec4eb..ae8defc 100644
+--- a/kernel/padata.c
++++ b/kernel/padata.c
+@@ -111,10 +111,13 @@ int padata_do_parallel(struct padata_instance *pinst,
+ 
+ 	pd = rcu_dereference(pinst->pd);
+ 
+-	err = 0;
++	err = -EINVAL;
+ 	if (!(pinst->flags & PADATA_INIT))
+ 		goto out;
+ 
++	if (!cpumask_test_cpu(cb_cpu, pd->cpumask))
++		goto out;
++
+ 	err =  -EBUSY;
+ 	if ((pinst->flags & PADATA_RESET))
+ 		goto out;
+@@ -122,11 +125,7 @@ int padata_do_parallel(struct padata_instance *pinst,
+ 	if (atomic_read(&pd->refcnt) >= MAX_OBJ_NUM)
+ 		goto out;
+ 
+-	err = -EINVAL;
+-	if (!cpumask_test_cpu(cb_cpu, pd->cpumask))
+-		goto out;
+-
+-	err = -EINPROGRESS;
++	err = 0;
+ 	atomic_inc(&pd->refcnt);
+ 	padata->pd = pd;
+ 	padata->cb_cpu = cb_cpu;
+-- 
+1.5.6.5
+
