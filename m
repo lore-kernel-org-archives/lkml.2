@@ -1,36 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab0GGWp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 18:45:27 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47617
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756482Ab0GGWp0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 18:45:26 -0400
-Date: Wed, 07 Jul 2010 15:45:40 -0700 (PDT)
-Message-Id: <20100707.154540.84370657.davem@davemloft.net>
-To: desnacked@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/ipv4/ip_output.c: Removal of unused variable in
- ip_fragment()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <874ogctheb.fsf@gmail.com>
-References: <874ogctheb.fsf@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1758162Ab0GGWqR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 18:46:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46377 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756482Ab0GGWqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 18:46:16 -0400
+Message-ID: <4C350398.5070504@redhat.com>
+Date: Wed, 07 Jul 2010 18:45:44 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+       tglx@linutronix.de, hpa@zytor.com, cl@linux-foundation.org,
+       mtosatti@redhat.com
+Subject: Re: [PATCH v4 05/12] Export __get_user_pages_fast.
+References: <1278433500-29884-1-git-send-email-gleb@redhat.com> <1278433500-29884-6-git-send-email-gleb@redhat.com>
+In-Reply-To: <1278433500-29884-6-git-send-email-gleb@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: George Kadianakis <desnacked@gmail.com>
-Date: Wed, 07 Jul 2010 00:44:12 +0300
+On 07/06/2010 12:24 PM, Gleb Natapov wrote:
+> KVM will use it to try and find a page without falling back to slow
+> gup. That is why get_user_pages_fast() is not enough.
+>
+> Signed-off-by: Gleb Natapov<gleb@redhat.com>
 
-> From: George Kadianakis <desnacked@gmail.com>
-> 
-> Removal of unused integer variable in ip_fragment().
-> 
-> Signed-off-by: George Kadianakis <desnacked@gmail.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Applied.
+-- 
+All rights reversed
