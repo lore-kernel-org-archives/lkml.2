@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab0GGLSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 07:18:46 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:40675 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663Ab0GGLSZ (ORCPT
+	id S1754752Ab0GGLVq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 07:21:46 -0400
+Received: from [200.129.142.254] ([200.129.142.254]:59961 "EHLO mail.unir.br"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752706Ab0GGLVo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 07:18:25 -0400
-From: Adrian Hunter <adrian.hunter@nokia.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Adrian Hunter <adrian.hunter@nokia.com>, Jens Axboe <axboe@kernel.dk>,
-       Kyungmin Park <kmpark@infradead.org>,
-       Madhusudhan Chikkature <madhu.cr@ti.com>,
-       linux-mmc Mailing List <linux-mmc@vger.kernel.org>,
-       Christoph Hellwig <hch@lst.de>,
-       linux-kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 07 Jul 2010 14:17:16 +0300
-Message-Id: <20100707111716.24979.68940.sendpatchset@ahunter-work.research.nokia.com>
-Subject: [PATCH V4 0/5] Add MMC erase and secure erase V4
-X-OriginalArrivalTime: 07 Jul 2010 11:17:18.0127 (UTC) FILETIME=[F5E353F0:01CB1DC5]
-X-Nokia-AV: Clean
+	Wed, 7 Jul 2010 07:21:44 -0400
+Message-ID: <20100707064732.16455iiyxlo4tw04@mail.unir.br>
+Date: Wed, 07 Jul 2010 06:47:32 -0400
+From: "Mrs. Rebecca Ault" <ault.rebecca@gmail.com>
+To: undisclosed-recipients:;
+Subject: Your Well Deserved Compensation
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Dynamic Internet Messaging Program (DIMP) H3 (1.1.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
 
-Add ability to do MMC erase and secure erase operations from userspace,
-using the BLKDISCARD ioctl and a newly created BLKSECDISCARD ioctl.
+Dear Friend,
 
-This is version 4 of these patches.
+I did not forgot your past efforts and attempts to assist me, now I?m  
+happy to inform you that I have succeeded in getting those funds  
+transferred into my new partner's account.  Now Contact my secretary  
+ask him for US$2.700, 000.00 (In Certified Draft) being your  
+compensation. His Name is : Mr. Paul Flink. his contact information is  
+as given below.
 
-Changes from V3
+E-mail:  mr_paulflink@ufo.tc
+Phone:     +229 93816266
 
-- rebased on mmotm
-- added SD/MMC device attribute documentation to 'mmc: Add erase,
-  secure erase, trim and secure trim operations' patch
+Also proceed to reconfirm your personal information as below:
 
-Changes from V2
-
-- move the addition of BLKSECDISCARD to a separate patch and implement it
-using I/O requests
-- move the MMC support of secure discard to a separate patch and support
-the secure discard I/O request
-
-Changes from V1
-
-- use discard I/O requests instead of implementing BLKDISCARD in mmc_block
-- do not validate erase size for MMC erases, instead round to erase size
-- rename MMC max_erase to pref_erase and expose it through sysfs as
-preferred_erase_size
-
-
-Adrian Hunter (5):
-      mmc: Add erase, secure erase, trim and secure trim operations
-      mmc_block: Add discard support
-      omap_hsmmc: Add erase capability
-      block: Add secure discard
-      mmc_block: Add support for secure discard
-
- Documentation/00-INDEX              |    2 +
- Documentation/mmc/00-INDEX          |    4 +
- Documentation/mmc/mmc-dev-attrs.txt |   56 ++++++
- block/blk-core.c                    |    5 +-
- block/blk-lib.c                     |    6 +
- block/compat_ioctl.c                |    1 +
- block/elevator.c                    |    6 +
- block/ioctl.c                       |   15 +-
- drivers/mmc/card/block.c            |   82 ++++++++-
- drivers/mmc/card/queue.c            |   19 ++-
- drivers/mmc/core/core.c             |  346 +++++++++++++++++++++++++++++++++++
- drivers/mmc/core/core.h             |    2 +
- drivers/mmc/core/mmc.c              |   47 +++++-
- drivers/mmc/core/sd.c               |   82 ++++++++
- drivers/mmc/core/sd_ops.c           |   48 +++++
- drivers/mmc/core/sd_ops.h           |    1 +
- drivers/mmc/host/omap_hsmmc.c       |   13 +-
- include/linux/bio.h                 |    2 +
- include/linux/blkdev.h              |    7 +-
- include/linux/fs.h                  |    2 +
- include/linux/mmc/card.h            |   19 ++
- include/linux/mmc/core.h            |   19 ++
- include/linux/mmc/host.h            |    1 +
- include/linux/mmc/mmc.h             |   26 ++-
- include/linux/mmc/sd.h              |    5 +
- kernel/trace/blktrace.c             |    8 +
- 26 files changed, 803 insertions(+), 21 deletions(-)
- create mode 100644 Documentation/mmc/00-INDEX
- create mode 100644 Documentation/mmc/mmc-dev-attrs.txt
+You?re full Name: __________________
+Delivery address: __________________
+Mobile Telephone __________________
+Age: _____________________________
+Sex: ______________________________
+Occupation: ________________________
 
 
 Regards
-Adrian
-
+Mrs.Rebecca Ault
+----------------------------------------------------------------
+          Fundação Universidade Federal de Rondônia
