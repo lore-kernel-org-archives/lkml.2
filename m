@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab0GGC5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 22:57:49 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48962 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab0GGC5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 22:57:48 -0400
-Date: Wed, 7 Jul 2010 12:57:26 +1000
-From: Neil Brown <neilb@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-       "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
-       viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
-       serue@us.ibm.com, hooanon05@yahoo.co.jp, linux-fsdevel@vger.kernel.org,
-       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
- syscalls
-Message-ID: <20100707125726.3695587a@notabene.brown>
-In-Reply-To: <20100707021150.GF25018@dastard>
-References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<871vbn2mk9.fsf@linux.vnet.ibm.com>
-	<20100702064108.64034561@notabene.brown>
-	<87iq4y29a6.fsf@linux.vnet.ibm.com>
-	<20100706161002.GD7387@fieldses.org>
-	<87eifgfsez.fsf@linux.vnet.ibm.com>
-	<20100706232351.GD25018@dastard>
-	<20100707093629.10c2feab@notabene.brown>
-	<20100707021150.GF25018@dastard>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1754101Ab0GGDWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 23:22:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58996 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208Ab0GGDWw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 23:22:52 -0400
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+From: David Woodhouse <dwmw2@infradead.org>
+To: Chris Li <lkml@chrisli.org>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Matthew Wilcox <willy@linux.intel.com>
+In-Reply-To: <AANLkTikFo4wExHd3vF7biL3NDvHOekm-PuNV_-BeOVPS@mail.gmail.com>
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
+	 <AANLkTikJvUIcx744weazBmOfyZzEu8NgYZ4oaLP2TbZ0@mail.gmail.com>
+	 <4C2A8879.8010000@intel.com>
+	 <AANLkTinhbjuyDNYQ_meDpewacApahDoY2z6h956JE2Xj@mail.gmail.com>
+	 <4C2AC55E.3040303@intel.com>
+	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
+	 <1277923422.16256.8.camel@localhost> <4C2B9DAC.1030806@intel.com>
+	 <1277928125.18854.0.camel@localhost> <4C2BBACF.3080405@intel.com>
+	 <1277965264.18854.16.camel@localhost> <4C2C3B07.7050200@intel.com>
+	 <1277968336.4945.3.camel@localhost> <4C2C4319.6090906@intel.com>
+	 <1277972137.12558.2.camel@localhost> <4C2CCE67.6070600@intel.com>
+	 <AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>
+	 <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>
+	 <1278324973.16975.68.camel@localhost>
+	 <AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>
+	 <1278463901.20082.34.camel@dwillia2-linux>
+	 <AANLkTilnrdghkK1y7vc2Zi0C7KMXHYXpI_whecRxTD_8@mail.gmail.com>
+	 <4C33D123.4080209@intel.com>
+	 <AANLkTikFo4wExHd3vF7biL3NDvHOekm-PuNV_-BeOVPS@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Jul 2010 04:22:43 +0100
+Message-ID: <1278472963.31393.3.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.31.4 
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Jul 2010 12:11:50 +1000
-Dave Chinner <david@fromorbit.com> wrote:
-
-> On Wed, Jul 07, 2010 at 09:36:29AM +1000, Neil Brown wrote:
-> > On Wed, 7 Jul 2010 09:23:51 +1000
-> > Dave Chinner <david@fromorbit.com> wrote:
-> > 
-> > > > I can add a new syscall that returns 
-> > > > 
-> > > > struct fs_uuid {
-> > > >        u8 fs_uuid[16];  
-> > > > };
-> > > > 
-> > > > long sys_get_fs_uuid(int dfd, char *name, struct fs_uuid *fsid, int flag);  
-> > > 
-> > > libblkid already provides the UUID to userspace applications, doesn't it?
-> > 
-> > Yes and no.
-> > 
-> > libblkid provides the uuid of the thing that uses a block device.  That
-> > doesn't directly map to "UUID of a filesystem".
+On Tue, 2010-07-06 at 18:03 -0700, Chris Li wrote:
 > 
-> True.
+> Here is the new dmesg.
 > 
-> > There are two types of filesystem that I can think of for which libblkid
-> > cannot give a uuid.
-> >   - network filesystems (or virtual filesystems, or fuse )
+> Chris
 > 
-> How would you guarantee persistent uniqueness for such filesystems?
+> --00163646dc2e3280f2048ac1bd39
+> Content-Type: application/octet-stream; name=dmesg
+> Content-Disposition: attachment; filename=dmesg 
 
-Persistent shouldn't be too hard in many cases.
-What uniqueness guarantees do we have anyway?  Mostly stochastic I expect.
+Btw, it'd be really helpful if you could attach those as text files and
+inline so that they can just be read in the mailer rather than saved.
 
-
-> 
-> >   - filesystems which share a block device, such as btrfs.
-> >     btrfs can have 'subvols' - multiple "filesystems" within
-> >     the one (set of) block device(s).  libblkid cannot be asked about these
-> >     different subvols.
-> > 
-> > libblkid is useful, but not a real solution.
-> 
-> So libblkid doesn't cover everything, but I think my question is
-> still valid - if we want per-filesystem UUIDs, why a syscall and not
-> just publishing it somewhere where we already publish per-mount
-> information?  e.g. in /proc/mounts?
-
-The trouble with /proc/mounts is that it is somewhat clumsy to parse
-(remember to handle \0ctal escapes) and doesn't include major/minor number
-which is the primary key for identifying filesystems in Linux
-(see /sys/class/bdi/MAJOR:MINOR which is e.g. the best place to configure
-read-ahead for a filesystem).
-
-So /proc/mounts could work (and would probably be better than a new syscall)
-but I would really rather see something sane in /sys for
-inspecting/configuring filesystems (rather than each filesystem doing their
-own independent thing in /sys/fs).
-
-NeilBrown
+-- 
+dwmw2
 
