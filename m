@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067Ab0GGXXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:23:42 -0400
-Received: from tundra.namei.org ([65.99.196.166]:50370 "EHLO tundra.namei.org"
+	id S1758080Ab0GGXa0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 19:30:26 -0400
+Received: from tundra.namei.org ([65.99.196.166]:60349 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756870Ab0GGXXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:23:41 -0400
-Date: Thu, 8 Jul 2010 09:23:23 +1000 (EST)
+	id S1751446Ab0GGXaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 19:30:24 -0400
+Date: Thu, 8 Jul 2010 09:30:08 +1000 (EST)
 From: James Morris <jmorris@namei.org>
-To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
-       sds@tycho.nsa.gov, "Matthew N. Dodd" <matthew.dodd@sparta.com>,
-       trond.myklebust@fys.uio.no, bfields@fieldses.org,
+To: "J. Bruce Fields" <bfields@fieldses.org>
+cc: "David P. Quigley" <dpquigl@tycho.nsa.gov>, hch@infradead.org,
+       viro@zeniv.linux.org.uk, casey@schaufler-ca.com, sds@tycho.nsa.gov,
+       matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 04/10] SELinux: Add new labeling type native labels
-In-Reply-To: <1278513086-23964-5-git-send-email-dpquigl@tycho.nsa.gov>
-Message-ID: <alpine.LRH.2.00.1007080921200.14102@tundra.namei.org>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov> <1278513086-23964-5-git-send-email-dpquigl@tycho.nsa.gov>
+Subject: Re: [PATCH 06/10] NFSv4: Add label recommended attribute and NFSv4
+ flags
+In-Reply-To: <20100707170058.GD28815@fieldses.org>
+Message-ID: <alpine.LRH.2.00.1007080928180.14102@tundra.namei.org>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov> <1278513086-23964-7-git-send-email-dpquigl@tycho.nsa.gov> <20100707170058.GD28815@fieldses.org>
 User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,22 +27,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Jul 2010, David P. Quigley wrote:
+On Wed, 7 Jul 2010, J. Bruce Fields wrote:
 
-> There currently doesn't exist a labeling type that is adequate for use with
-> labeled NFS. Since NFS doesn't really support xattrs we can't use the use xattr
-> labeling behavior. For this we developed a new labeling type. The native
-> labeling type is used solely by NFS to ensure NFS inodes are labeled at runtime
-> by the NFS code instead of relying on the SELinux security server on the client
-> end.
+> On Wed, Jul 07, 2010 at 10:31:22AM -0400, David P. Quigley wrote:
+> 
+> > +#define NFS4_MAXLABELLEN	4096
+> 
+> Idle curiosity--why 4096?  (Why couldn't it be 16?  And how do we know
+> people will never want 8192?)
 
-It would be useful to have the ability to specify labeling behavior on a 
-per-mount basis, with the default remaining as genfs.
+I think I raised this a while back, too.
 
-Otherwise, this is a global policy decision which affects all NFSv4 
-mounts, right?
+The maximum security label size on Linux is:
+
+#define XATTR_SIZE_MAX 65536
+
+Why arbitrarily limit this over the network?
+
+Someone could have a valid local security label which can't be conveyed 
+via NFS.
 
 
+
+- James
 -- 
 James Morris
 <jmorris@namei.org>
