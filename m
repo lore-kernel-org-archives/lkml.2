@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab0GGVgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 17:36:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41244 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754452Ab0GGVgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 17:36:09 -0400
-Date: Wed, 7 Jul 2010 14:36:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2010-07-01-12-19 uploaded (mmc)
-Message-Id: <20100707143601.b6cf13f4.akpm@linux-foundation.org>
-In-Reply-To: <20100701162842.2ecafbbb.randy.dunlap@oracle.com>
-References: <201007011948.o61JmnT2022795@imap1.linux-foundation.org>
-	<20100701162842.2ecafbbb.randy.dunlap@oracle.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757545Ab0GGVid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 17:38:33 -0400
+Received: from kroah.org ([198.145.64.141]:48909 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757292Ab0GGVic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 17:38:32 -0400
+Date: Wed, 7 Jul 2010 14:38:24 -0700
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH] serial: fix termios settings in open
+Message-ID: <20100707213824.GA3966@kroah.com>
+References: <1277843500-14680-1-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277843500-14680-1-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Jul 2010 16:28:42 -0700
-Randy Dunlap <randy.dunlap@oracle.com> wrote:
+On Tue, Jun 29, 2010 at 10:31:40PM +0200, Arnd Bergmann wrote:
+> Move termios initialization in open into uart_dtr_rts to make sure
+> it always gets called when necessary. Based on a suggestion from
+> Alan Cox.
+> 
+> Alan writes:
+> Ok this sort of makes sense. Something isn't getting initialised and both
+> getty and minicom will do a termios set which is sorting it out.
+> This is occurring because the generic block_til_ready sets
+> ASYNCB_NORMAL_ACTIVE so the termios updating gets skipped.
+> 
+> This patch should cure it and then we can think about doing it more
+> elegantly by getting the serial layer to use tty_port_open, kfifo and
+> the like and removing the tons of repeated crap in all the drivers.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Reported-by: Tony Luck <tony.luck@intel.com>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Tony Luck <tony.luck@intel.com>
+> ---
+> 
+> Greg, please apply to you tty series. I thought there was a bug
+> in this patch but it turns out that this was incorrect. There
+> is still something fishy on my system with hardware flow control,
+> but it seems to be a preexisting condition, so this patch is actually
+> good, unlike what I said before. Please apply next to "serial: Use
+> block_til_ready helper", which introduces the ploblem.
 
-> On Thu, 01 Jul 2010 12:19:51 -0700 akpm@linux-foundation.org wrote:
-> 
-> > The mm-of-the-moment snapshot 2010-07-01-12-19 has been uploaded to
-> > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
-> > 
-> > and will soon be available at
-> > 
-> >    git://zen-kernel.org/kernel/mmotm.git
-> > 
-> > It contains the following patches against 2.6.35-rc3:
-> 
-> 
-> mmc-fix-all-hangs-related-to-mmc-sd-card-insert-removal-during-suspend-resume.patch:
-> 
-> if CONFIG_PM is not enabled:
-> 
-> (.text+0xc380c4): undefined reference to `mmc_pm_notify'
-> 
+Now applied, thanks.
 
-Thanks.  This, I guess:
-
---- a/include/linux/mmc/host.h~mmc-fix-all-hangs-related-to-mmc-sd-card-insert-removal-during-suspend-resume-fix
-+++ a/include/linux/mmc/host.h
-@@ -258,8 +258,12 @@ int mmc_card_can_sleep(struct mmc_host *
- int mmc_host_enable(struct mmc_host *host);
- int mmc_host_disable(struct mmc_host *host);
- int mmc_host_lazy_disable(struct mmc_host *host);
-+#ifdef CONFIG_PM
- int mmc_pm_notify(struct notifier_block *notify_block, unsigned long mode,
- 		  void *unused);
-+#else
-+#define mmc_pm_notify NULL
-+#endif
- 
- static inline void mmc_set_disable_delay(struct mmc_host *host,
- 					 unsigned int disable_delay)
-_
-
+greg k-h
