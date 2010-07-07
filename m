@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab0GGTgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 15:36:48 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:57253 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754297Ab0GGTgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 15:36:47 -0400
-Message-ID: <4C34D74A.4060308@kernel.dk>
-Date: Wed, 07 Jul 2010 21:36:42 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Christoph Hellwig <hch@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       John Kacur <jkacur@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 0/7] block: BKL removal, version 4
-References: <1278514289-21054-1-git-send-email-arnd@arndb.de>
-In-Reply-To: <1278514289-21054-1-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757466Ab0GGToK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 15:44:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47950 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754578Ab0GGToI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 15:44:08 -0400
+Subject: Re: [PATCH 2/2] sched: make sched_param arugment static variables
+ in some sched_setscheduler() caller
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: rostedt@goodmis.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>, Minchan Kim <minchan.kim@gmail.com>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       James Morris <jmorris@namei.org>
+In-Reply-To: <20100706170220.f3219001.akpm@linux-foundation.org>
+References: <20100702144941.8fa101c3.akpm@linux-foundation.org>
+	 <20100706091607.CCCC.A69D9226@jp.fujitsu.com>
+	 <20100706095013.CCD9.A69D9226@jp.fujitsu.com>
+	 <1278454438.1537.54.camel@gandalf.stny.rr.com>
+	 <20100706161253.79bfb761.akpm@linux-foundation.org>
+	 <1278460187.1537.107.camel@gandalf.stny.rr.com>
+	 <20100706170220.f3219001.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 07 Jul 2010 21:43:46 +0200
+Message-ID: <1278531826.1946.117.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/10 16.51, Arnd Bergmann wrote:
-> This series removes the big kernel lock from the common
-> block layer code by pushing it into the individual
-> device drivers.
+On Tue, 2010-07-06 at 17:02 -0700, Andrew Morton wrote:
+> > Well this is also the way sched.c adds all its extra code.
 > 
-> This version incorporates further changes to address
-> comments from Christoph Hellwig and Sam Ravnborg,
-> many thanks for the valuable feedback!
-> 
-> I'd like to get this into 2.6.36 in order to remove
-> the BKL from all the core kernel code.
-> 
-> Once Christoph is happy with the series, in particular
-> the third patch, I'd like to add it to linux-next
-> for broader testing, preferrably though Jens Axboe's
-> linux-2.6-block.git tree.
+> The sched.c hack sucks too. 
 
-I'll go over each one tomorrow and add the series. Thanks
-a lot for getting this done!
-
--- 
-Jens Axboe
-
+Agreed, moving things to kernel/sched/ and adding some internal.h thing
+could cure that, but I simply haven't gotten around to cleaning that
+up..
