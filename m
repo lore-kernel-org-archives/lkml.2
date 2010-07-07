@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab0GGOdm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 10:33:42 -0400
-Received: from anguilla.debian.or.at ([86.59.21.37]:32799 "EHLO
-	anguilla.debian.or.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178Ab0GGOdk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 10:33:40 -0400
-Date: Wed, 7 Jul 2010 16:33:39 +0200
-From: Peter Palfrader <peter@palfrader.org>
-To: Glauber Costa <glommer@redhat.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-       stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Zachary Amsden <zamsden@redhat.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization
-	point for pvclock
-Message-ID: <20100707143338.GK15122@anguilla.noreply.org>
-Mail-Followup-To: Peter Palfrader <peter@palfrader.org>,
-	Glauber Costa <glommer@redhat.com>, Greg KH <gregkh@suse.de>,
-	linux-kernel@vger.kernel.org, stable@kernel.org,
-	stable-review@kernel.org, torvalds@linux-foundation.org,
-	akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-	Zachary Amsden <zamsden@redhat.com>,
-	Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
-	Marcelo Tosatti <mtosatti@redhat.com>
-References: <20100701175144.GA2116@kroah.com> <20100701173218.125822294@clark.site> <20100707124731.GJ15122@anguilla.noreply.org> <20100707135140.GI2707@mothafucka.localdomain>
+	id S1756126Ab0GGOgN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 10:36:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55097 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754936Ab0GGOgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 10:36:12 -0400
+Date: Thu, 8 Jul 2010 00:35:56 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       John Stultz <johnstul@us.ibm.com>, Frank Mayhar <fmayhar@google.com>
+Subject: Re: [patch 24/52] fs: dcache reduce d_parent locking
+Message-ID: <20100707143556.GQ11732@laptop>
+References: <20100624030212.676457061@suse.de>
+ <20100624030729.395195069@suse.de>
+ <20100628215013.GG2357@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100707135140.GI2707@mothafucka.localdomain>
-X-PGP: 1024D/94C09C7F 5B00 C96D 5D54 AEE1 206B  AF84 DE7A AF6E 94C0 9C7F
-X-Request-PGP: http://www.palfrader.org/keys/94C09C7F.asc
-X-Accept-Language: de, en
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100628215013.GG2357@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Jul 2010, Glauber Costa wrote:
+Hi Paul,
 
-> > 2.6.32.16 fails to boot on my KVM domains using qemu-kvm 0.11.1.
-> > 
-> > Bisecting between 2.6.32.14 which worked and .16 turned up this commit
-> > as the first culprit[0].
-> > 
-> > The host is still running 2.6.32.14 and has 8 cores on 2 CPUs.  The
-> > single-cpu KVM domain hangs just after printing 'Write protecting the
-> > kernel read-only data: 9492k'[1].   On a successful boot this line would
-> > usually be followed by 'INIT: version 2.86 booting'.
-> > 
-> > A 2.6.32.16 with this patch reverted boots fine.
-> > 
-> > If there's any info you need please just ask.
+Sorry I had left this in my postponed folder while rechecking your
+questions and forgot about it :P
 
-> if you boot with another clocksource, and then switch to kvmclock with the machine already
-> running, do you see anything strange or suspicious?
 
-Booting with various clocksource=xxx kernel parameters does not change
-the behaviour at all, i.e. the boot still hangs.
+On Mon, Jun 28, 2010 at 02:50:13PM -0700, Paul E. McKenney wrote:
+> On Thu, Jun 24, 2010 at 01:02:36PM +1000, npiggin@suse.de wrote:
+> > Use RCU property of dcache to simplify locking in some places where we
+> > take d_parent and d_lock.
+> > 
+> > Comment: don't need rcu_deref because we take the spinlock and recheck it.
+> 
+> Looks good other than one question below.
+> 
+> 							Thanx, Paul
+> 
+> > Signed-off-by: Nick Piggin <npiggin@suse.de>
+> > --
+> > 
+> > Index: linux-2.6/fs/dcache.c
+> > ===================================================================
+> > --- linux-2.6.orig/fs/dcache.c
+> > +++ linux-2.6/fs/dcache.c
+> > @@ -311,23 +311,18 @@ struct dentry *dget_parent(struct dentry
+> >  	struct dentry *ret;
+> > 
+> >  repeat:
+> > -	spin_lock(&dentry->d_lock);
+> > +	rcu_read_lock();
+> >  	ret = dentry->d_parent;
+> 
+> Doesn't this need to be as follows?
+> 
+> 	ret = rcu_dereference(dentry)->d_parent;
+> 
+> Otherwise, couldn't we end up seeing pre-initialization value for
+> ->d_parent for a newly inserted dentry?
 
-Cheers,
-Peter
--- 
-                           |  .''`.  ** Debian GNU/Linux **
-      Peter Palfrader      | : :' :      The  universal
- http://www.palfrader.org/ | `. `'      Operating System
-                           |   `-    http://www.debian.org/
+I don't think so. The child's dentry memory should be guaranteed to be
+post-initialized at the point it is passed to dget_parent, becase we've
+to have a stable refcount on it at that point. Ie. if it was pulled from
+an RCU list, it should already have been rcu dereferenced by now.
+
+So ->d_parent should be a valid pointer with lifetime guarantee provided
+by RCU -- so enough to take the spinlock and recheck.
+
+> 
+> > -	if (!ret)
+> > -		goto out;
+> > -	if (dentry == ret) {
+> > -		ret->d_count++;
+> > -		goto out;
+> > -	}
+> > -	if (!spin_trylock(&ret->d_lock)) {
+> > -		spin_unlock(&dentry->d_lock);
+> > +	spin_lock(&ret->d_lock);
+> 
+> Once we do this, however, we are golden, at least for all dentry
+> fields protected by ->lock.  This does assume that the compiler does not
+> speculate the fetch that initialized the argument dentry into the critical
+> section, which I would sure hope would be a reasonable assumption.
+
+Yes I think the above fact that we have a "good" ref on the dentry
+should prevent this.
+ 
+Thanks,
+Nick
+
