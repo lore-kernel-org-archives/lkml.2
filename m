@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab0GGRuS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 13:50:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241Ab0GGRuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 13:50:16 -0400
-Date: Wed, 7 Jul 2010 13:50:11 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-       Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
-Message-ID: <20100707175010.GA7842@redhat.com>
-References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
- <x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
+	id S1755985Ab0GGRwA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 13:52:00 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48836 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab0GGRv4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 13:51:56 -0400
+Message-ID: <4C34BE3A.3050806@oracle.com>
+Date: Wed, 07 Jul 2010 13:49:46 -0400
+From: Chuck Lever <chuck.lever@oracle.com>
+Organization: Oracle USA
+User-Agent: Mozilla/5.0 (X11; U; SunOS i86pc; en-US; rv:1.9.1.9) Gecko/20100607 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+CC: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
+       bfields@fieldses.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       selinux@tycho.nsa.gov, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 07/10] NFSv4: Introduce new label structure
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>	 <1278513086-23964-8-git-send-email-dpquigl@tycho.nsa.gov>	 <4C34A4F1.3060708@oracle.com> <1278519727.2494.92.camel@moss-terrapins.epoch.ncsc.mil>
+In-Reply-To: <1278519727.2494.92.camel@moss-terrapins.epoch.ncsc.mil>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4C34BEA8.02A2:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 01:03:08PM -0400, Jeff Moyer wrote:
-> Corrado Zoccolo <czoccolo@gmail.com> writes:
-> 
-> > Hi Jens,
-> > patch 8e55063 "cfq-iosched: fix corner cases in idling logic", is
-> > suspected for some regressions on high end hardware.
-> > The two patches from this series:
-> > - [PATCH 1/2] cfq-iosched: fix tree-wide handling of rq_noidle
-> > - [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
-> > fix two issues that I have identified, related to how RQ_NOIDLE is
-> > used by the upper layers.
-> > First patch makes sure that a RQ_NOIDLE coming after a sequence of
-> > possibly idling requests from the same queue on the no-idle tree will
-> > clear the noidle_tree_requires_idle flag.
-> > Second patch enables RQ_NOIDLE for queues in the idling tree,
-> > restoring the behaviour pre-8e55063 patch.
-> 
-> Hi, Corrado,
-> 
-> I ran your kernel through my tests.  Here are the results, up against
-> vanilla, deadline, and the blk_yield patch set:
-> 
->                  just    just
->                 fs_mark  fio        mixed	
-> -------------------------------+--------------
-> deadline        529.44   151.4 | 450.0    78.2
-> vanilla cfq     107.88   164.4 |   6.6   137.2
-> blk_yield cfq   530.82   158.7 | 113.2    78.6
-> corrado cfq      80.82   138.1 |   4.5   130.7
-> 
-> fs_mark results are in files/second, fio results are in MB/s.  All
-> results are the average of 5 runs.  In order to get results for the
-> mixed workload for both vanilla and Corrado's kernels, I had to extend
-> the runtime from 30s to 300s.
-> 
-> So, the changes proposed in this thread actually make performance worse
-> across the board.
+On 07/ 7/10 12:22 PM, David P. Quigley wrote:
+> Hello Chuck,
+>     Thank you for the comments. I'll go through and address them inline
+> (Sorry for the top post).
+>
+> On Wed, 2010-07-07 at 12:01 -0400, Chuck Lever wrote:
+>> My comments below apply to the other NFS client patches as well.  This
+>> seemed like the right one to use for code examples.
+>>
+>> On 07/ 7/10 10:31 AM, David P. Quigley wrote:
 
-This is really surprising. It should have atleast helped in just fs_mark
-case.
+   [ ... snipped ... ]
 
-I think what is happening is that we are idling on the fsync queue
-(because it is last queue in the group). After some time jbd thread will
-submit some IO and we will not preempt the fsync thread. That's why
-I had also implemented the logic of allowing preemption in case of group
-idle and that had helped.
+>> It seems to me you want something more generic, just like nfs_fh or
+>> nfs_fattr, to represent these.  Over time, I'm guessing label support
+>> won't be tied to a specific NFS version.  And, you are passing these
+>> around in the generic NFS functions (for post-op updates and inode
+>> revalidation, and what not).
+>>
+>> Can I recommend "struct nfs_seclabel" instead?  Then have
+>> nfs_seclabel_alloc() and nfs_seclabel_free().
+>
+> I can definitely rename them to be more generic. I don't see anything
+> else besides NFSv4 using them but its fine with me to rename them. The
+> reason we call them nfs4_label is because we modeled it after the NFSv4
+> acl support code. I spoke with Christoph a long time ago and he
+> suggested that it should be handled the same way that the NFSv4 ACLs are
+> handled as opposed to the iattr thing we were trying.
+>
+>>
+>> Does it make sense to deduplicate these in the client's memory?  It
+>> seems to me that you could have hundreds or thousands that all contain
+>> the same label information.
+>
+> I don't think it is worth the effort. We are only using these structures
+> until the security label is crammed into the inode. Once that happens
+> they get freed. You shouldn't have them sitting around for very long.
 
-> 
-> I re-ran my tests against a RHEL 5 kernel (which is based on 2.6.18),
-> and it shows that fs_mark performance is much better than stock CFQ in
-> 2.6.35-rc3, and the mixed workload results are much the same as they are
-> now (which is to say, the fs_mark process is completely starved by the
-> sequential reader).  So, that problem has existed for a long time.
+OK, the lifetime of these things wasn't clear.
 
-If we just stop idling on WRITE_SYNC, we will should be back to almost
-2.6.18 CFQ behavior.
+> They will be pulled again when the inode attributes expire and need to
+> be revalidated. For things like SELinux you could argue that the LSM
+> might benefit from this (and it might already do it but I'm not sure)
+> but I think that is something to be handled by the LSM itself or the
+> credentials code (since it already supports COW credentials it should be
+> possible).
 
-> 
-> I'm still in the process of collecting data from production servers and
-> will report back with my findings there.
+I think the lifetime of the label structure then is about the same as 
+the lifetime of an nfs_attr, and not at all the same as an ACL.  I'm 
+just guessing here.
 
-That would be great.
-
-Vivek
+Would it then make sense to add a field that refers to the security 
+label to struct nfs_fattr instead?  That might simplify or eliminate all 
+of the internal API changes.
