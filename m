@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab0GGRzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 13:55:05 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52109 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab0GGRzB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 13:55:01 -0400
-Message-ID: <4C34BF35.4060802@oracle.com>
-Date: Wed, 07 Jul 2010 13:53:57 -0400
-From: Chuck Lever <chuck.lever@oracle.com>
-Organization: Oracle USA
-User-Agent: Mozilla/5.0 (X11; U; SunOS i86pc; en-US; rv:1.9.1.9) Gecko/20100607 Lightning/1.0b1 Thunderbird/3.0.4
+	id S1755096Ab0GGSFR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 14:05:17 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48303 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753537Ab0GGSFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 14:05:15 -0400
+Date: Thu, 8 Jul 2010 04:05:07 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Andreas Dilger <andreas.dilger@oracle.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+       "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Neil Brown <neilb@suse.de>, hch@infradead.org, viro@zeniv.linux.org.uk,
+       adilger@Sun.COM, corbet@lwn.net, serue@us.ibm.com,
+       hooanon05@yahoo.co.jp, linux-fsdevel@vger.kernel.org,
+       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
+ syscalls
+Message-ID: <20100707180507.GE9263@laptop>
+References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <871vbn2mk9.fsf@linux.vnet.ibm.com>
+ <20100702064108.64034561@notabene.brown>
+ <87iq4y29a6.fsf@linux.vnet.ibm.com>
+ <20100706161002.GD7387@fieldses.org>
+ <87eifgfsez.fsf@linux.vnet.ibm.com>
+ <2DC68584-15A8-4C48-8E65-E7EF1DCEEAD0@oracle.com>
+ <20100707150535.GB24360@fieldses.org>
+ <5920F408-E923-4467-A6A9-6C0923C00927@oracle.com>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "David P. Quigley" <dpquigl@tycho.nsa.gov>, hch@infradead.org,
-       viro@zeniv.linux.org.uk, casey@schaufler-ca.com, sds@tycho.nsa.gov,
-       matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 05/10] KConfig: Add KConfig entries for Labeled NFS
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov> <1278513086-23964-6-git-send-email-dpquigl@tycho.nsa.gov> <20100707165602.GC28815@fieldses.org>
-In-Reply-To: <20100707165602.GC28815@fieldses.org>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C34BF62.01F5:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5920F408-E923-4467-A6A9-6C0923C00927@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/ 7/10 12:56 PM, J. Bruce Fields wrote:
-> On Wed, Jul 07, 2010 at 10:31:21AM -0400, David P. Quigley wrote:
->> This patch adds two entries into the fs/KConfig file. The first entry
->> NFS_V4_SECURITY_LABEL enables security label support for the NFSv4 client while
->> the second entry NFSD_V4_SECURITY_LABEL enables security labeling support on
->> the server side.
->
-> Will there also be some way to turn these on and off at run-time (maybe
-> for particular exports or filesystems?)
->
-> And if so, will there be any reason not to have this on all the time?  I
-> don't think we'll want a config option for every future possible NFSv4.x
-> feature.
+On Wed, Jul 07, 2010 at 11:02:47AM -0600, Andreas Dilger wrote:
+> On 2010-07-07, at 09:05, J. Bruce Fields wrote:
+> > On Wed, Jul 07, 2010 at 01:40:53AM -0600, Andreas Dilger wrote:
+> >> On 2010-07-06, at 11:09, Aneesh Kumar K. V wrote:
+> >>> Since we know that system wide file handle should include a file system
+> >>> identifier and a file identifier my plan was to retrieve both in the
+> >>> same syscall.
+> >> 
+> >> Won't having it be in a separate system call be racy w.r.t. doing the pathname lookup twice?
+> > 
+> > It'll be rare that a server will want to *just* get a filehandle;
+> > normally it will at least want to get some attributes at the same time.
+> > So I think it will always need to open the file first and then do the
+> > rest of the operations on the returned filehandle.
+> 
+> I think you are assuming too much about the use of the file handle.  What I'm interested in is not a userspace file server, but rather a more efficient way to have 10000's to millions of clients to be able to open the same regular file, without having to do full path traversal for each one.
 
-I would guess that the ability to build without this feature would be 
-desirable if it added significant bulk to the object code.  If it 
-doesn't, then I agree with you that having it adds unneeded clutter to 
-the code, and additional complexity to kernel configuration that most 
-people will ignore and/or get wrong.
+Really? What kind of clients? What sort of speedups do you hope to see?
+Path traversal can get vastly cheaper in both single threaded and parallel
+cases with my locking changes.
 
->>
->> Signed-off-by: Matthew N. Dodd<Matthew.Dodd@sparta.com>
->> Signed-off-by: David P. Quigley<dpquigl@tycho.nsa.gov>
->> ---
->>   fs/nfs/Kconfig  |   16 ++++++++++++++++
->>   fs/nfsd/Kconfig |   13 +++++++++++++
->>   2 files changed, 29 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
->> index a43d07e..67b158c 100644
->> --- a/fs/nfs/Kconfig
->> +++ b/fs/nfs/Kconfig
->> @@ -83,6 +83,22 @@ config NFS_V4_1
->>
->>   	  Unless you're an NFS developer, say N.
->>
->> +config NFS_V4_SECURITY_LABEL
->> +	bool "Provide Security Label support for NFSv4 client"
->> +	depends on NFS_V4&&  SECURITY
->> +	help
->> +
->> +	Say Y here if you want enable fine-grained security label attribute
->> +	support for NFS version 4.  Security labels allow security modules like
->> +	SELinux and Smack to label files to facilitate enforcement of their policies.
->> +	Without this an NFSv4 mount will have the same label on each file.
->> +
->> +	If you do not wish to enable fine-grained security labels SELinux or
->> +	Smack policies on NFSv4 files, say N.
->> +
->> +
->> +	  If unsure, say N.
->> +
->>   config ROOT_NFS
->>   	bool "Root file system on NFS"
->>   	depends on NFS_FS=y&&  IP_PNP
->> diff --git a/fs/nfsd/Kconfig b/fs/nfsd/Kconfig
->> index 503b9da..3a282f8 100644
->> --- a/fs/nfsd/Kconfig
->> +++ b/fs/nfsd/Kconfig
->> @@ -79,3 +79,16 @@ config NFSD_V4
->>   	  available from http://linux-nfs.org/.
->>
->>   	  If unsure, say N.
->> +
->> +config NFSD_V4_SECURITY_LABEL
->> +	bool "Provide Security Label support for NFSv4 server"
->> +	depends on NFSD_V4&&  SECURITY
->> +	help
->> +
->> +	Say Y here if you want enable fine-grained security label attribute
->> +	support for NFS version 4.  Security labels allow security modules like
->> +	SELinux and Smack to label files to facilitate enforcement of their policies.
->> +	Without this an NFSv4 mount will have the same label on each file.
->> +
->> +	If you do not wish to enable fine-grained security labels SELinux or
->> +	Smack policies on NFSv4 files, say N.
->> --
->> 1.6.2.5
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+It is not acceptable to work around fixable deficiencies in our critical
+infrastructure like path walking with hacks like this. If path walking
+is still much too expensive, that's another story...
 
