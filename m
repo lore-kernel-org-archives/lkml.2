@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab0GGPHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:07:53 -0400
-Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:58260 "EHLO
-	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756613Ab0GGPF7 (ORCPT
+	id S1757181Ab0GGPHv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:07:51 -0400
+Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:63063 "EHLO
+	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756605Ab0GGPF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Jul 2010 11:05:59 -0400
 From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
@@ -13,10 +13,11 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
        bfields@fieldses.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org, "David P. Quigley" <dpquigl@tycho.nsa.gov>
-Subject: [PATCH 03/10] LSM: Add flags field to security_sb_set_mnt_opts for in kernel mount data.
-Date: Wed,  7 Jul 2010 10:31:19 -0400
-Message-Id: <1278513086-23964-4-git-send-email-dpquigl@tycho.nsa.gov>
+       linux-nfs@vger.kernel.org, "David P. Quigley" <dpquigl@tycho.nsa.gov>,
+       "Matthew N. Dodd" <Matthew.Dodd@sparta.com>
+Subject: [PATCH 05/10] KConfig: Add KConfig entries for Labeled NFS
+Date: Wed,  7 Jul 2010 10:31:21 -0400
+Message-Id: <1278513086-23964-6-git-send-email-dpquigl@tycho.nsa.gov>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
 References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
@@ -24,150 +25,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no way to differentiate if a text mount option is passed from user
-space or the kernel. A flags field is being added to the
-security_sb_set_mnt_opts hook to allow for in kernel security flags to be sent
-to the LSM for processing in addition to the text options received from mount.
-This patch also updated existing code to fix compilation errors.
+This patch adds two entries into the fs/KConfig file. The first entry
+NFS_V4_SECURITY_LABEL enables security label support for the NFSv4 client while
+the second entry NFSD_V4_SECURITY_LABEL enables security labeling support on
+the server side.
 
+Signed-off-by: Matthew N. Dodd <Matthew.Dodd@sparta.com>
 Signed-off-by: David P. Quigley <dpquigl@tycho.nsa.gov>
 ---
- fs/nfs/super.c           |    4 ++--
- include/linux/security.h |   11 ++++++++---
- security/capability.c    |    5 ++++-
- security/security.c      |    6 ++++--
- security/selinux/hooks.c |   12 ++++++++++--
- 5 files changed, 28 insertions(+), 10 deletions(-)
+ fs/nfs/Kconfig  |   16 ++++++++++++++++
+ fs/nfsd/Kconfig |   13 +++++++++++++
+ 2 files changed, 29 insertions(+), 0 deletions(-)
 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index b4148fc..054bcaa 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2232,7 +2232,7 @@ static int nfs_get_sb(struct file_system_type *fs_type,
- 		goto error_splat_super;
- 	}
+diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+index a43d07e..67b158c 100644
+--- a/fs/nfs/Kconfig
++++ b/fs/nfs/Kconfig
+@@ -83,6 +83,22 @@ config NFS_V4_1
  
--	error = security_sb_set_mnt_opts(s, &data->lsm_opts);
-+	error = security_sb_set_mnt_opts(s, &data->lsm_opts, 0, NULL);
- 	if (error)
- 		goto error_splat_root;
+ 	  Unless you're an NFS developer, say N.
  
-@@ -2602,7 +2602,7 @@ static int nfs4_remote_get_sb(struct file_system_type *fs_type,
- 		goto error_splat_super;
- 	}
- 
--	error = security_sb_set_mnt_opts(s, &data->lsm_opts);
-+	error = security_sb_set_mnt_opts(s, &data->lsm_opts, 0, NULL);
- 	if (error)
- 		goto error_splat_root;
- 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 9597620..4bb5db7 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1509,7 +1509,9 @@ struct security_operations {
- 	void (*sb_post_pivotroot) (struct path *old_path,
- 				   struct path *new_path);
- 	int (*sb_set_mnt_opts) (struct super_block *sb,
--				struct security_mnt_opts *opts);
-+				struct security_mnt_opts *opts,
-+				unsigned long kern_flags,
-+				unsigned long *set_kern_flags);
- 	void (*sb_clone_mnt_opts) (const struct super_block *oldsb,
- 				   struct super_block *newsb);
- 	int (*sb_parse_opts_str) (char *options, struct security_mnt_opts *opts);
-@@ -1807,7 +1809,8 @@ void security_sb_post_remount(struct vfsmount *mnt, unsigned long flags, void *d
- void security_sb_post_addmount(struct vfsmount *mnt, struct path *mountpoint);
- int security_sb_pivotroot(struct path *old_path, struct path *new_path);
- void security_sb_post_pivotroot(struct path *old_path, struct path *new_path);
--int security_sb_set_mnt_opts(struct super_block *sb, struct security_mnt_opts *opts);
-+int security_sb_set_mnt_opts(struct super_block *sb, struct security_mnt_opts *opts, 
-+				unsigned long kern_flags, unsigned long *set_kern_flags);
- void security_sb_clone_mnt_opts(const struct super_block *oldsb,
- 				struct super_block *newsb);
- int security_sb_parse_opts_str(char *options, struct security_mnt_opts *opts);
-@@ -2154,7 +2157,9 @@ static inline void security_sb_post_pivotroot(struct path *old_path,
- { }
- 
- static inline int security_sb_set_mnt_opts(struct super_block *sb,
--					   struct security_mnt_opts *opts)
-+					   struct security_mnt_opts *opts,
-+					   unsigned long kern_flags,
-+					   unsigned long *set_kern_flags)
- {
- 	return 0;
- }
-diff --git a/security/capability.c b/security/capability.c
-index 0d8f7e9..46f5e78 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -117,7 +117,10 @@ static void cap_sb_post_pivotroot(struct path *old_path, struct path *new_path)
- }
- 
- static int cap_sb_set_mnt_opts(struct super_block *sb,
--			       struct security_mnt_opts *opts)
-+			       struct security_mnt_opts *opts,
-+			       unsigned long kern_flags,
-+			       unsigned long *set_kern_flags)
++config NFS_V4_SECURITY_LABEL
++	bool "Provide Security Label support for NFSv4 client"
++	depends on NFS_V4 && SECURITY
++	help
 +
- {
- 	if (unlikely(opts->num_mnt_opts))
- 		return -EOPNOTSUPP;
-diff --git a/security/security.c b/security/security.c
-index 1f0765c..2246b5a 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -347,9 +347,11 @@ void security_sb_post_pivotroot(struct path *old_path, struct path *new_path)
- }
++	Say Y here if you want enable fine-grained security label attribute
++	support for NFS version 4.  Security labels allow security modules like
++	SELinux and Smack to label files to facilitate enforcement of their policies.
++	Without this an NFSv4 mount will have the same label on each file.
++
++	If you do not wish to enable fine-grained security labels SELinux or
++	Smack policies on NFSv4 files, say N.
++
++
++	  If unsure, say N.
++
+ config ROOT_NFS
+ 	bool "Root file system on NFS"
+ 	depends on NFS_FS=y && IP_PNP
+diff --git a/fs/nfsd/Kconfig b/fs/nfsd/Kconfig
+index 503b9da..3a282f8 100644
+--- a/fs/nfsd/Kconfig
++++ b/fs/nfsd/Kconfig
+@@ -79,3 +79,16 @@ config NFSD_V4
+ 	  available from http://linux-nfs.org/.
  
- int security_sb_set_mnt_opts(struct super_block *sb,
--				struct security_mnt_opts *opts)
-+				struct security_mnt_opts *opts,
-+				unsigned long kern_flags,
-+				unsigned long *set_kern_flags)
- {
--	return security_ops->sb_set_mnt_opts(sb, opts);
-+	return security_ops->sb_set_mnt_opts(sb, opts, kern_flags, set_kern_flags);
- }
- EXPORT_SYMBOL(security_sb_set_mnt_opts);
- 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 8239f5c..d150fb4 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -591,7 +591,9 @@ static int bad_option(struct superblock_security_struct *sbsec, char flag,
-  * labeling information.
-  */
- static int selinux_set_mnt_opts(struct super_block *sb,
--				struct security_mnt_opts *opts)
-+				struct security_mnt_opts *opts,
-+				unsigned long kern_flags,
-+				unsigned long *set_kern_flags)
- {
- 	const struct cred *cred = current_cred();
- 	int rc = 0, i;
-@@ -623,6 +625,12 @@ static int selinux_set_mnt_opts(struct super_block *sb,
- 			"before the security server is initialized\n");
- 		goto out;
- 	}
-+	if (kern_flags && !set_kern_flags) {
-+		/* Specifying internal flags without providing a place to 
-+		 * place the results is not allowed */
-+		rc = -EINVAL;
-+		goto out;
-+	}
- 
- 	/*
- 	 * Binary mount data FS will come through this function twice.  Once
-@@ -998,7 +1006,7 @@ static int superblock_doinit(struct super_block *sb, void *data)
- 		goto out_err;
- 
- out:
--	rc = selinux_set_mnt_opts(sb, &opts);
-+	rc = selinux_set_mnt_opts(sb, &opts, 0, NULL);
- 
- out_err:
- 	security_free_mnt_opts(&opts);
+ 	  If unsure, say N.
++
++config NFSD_V4_SECURITY_LABEL
++	bool "Provide Security Label support for NFSv4 server"
++	depends on NFSD_V4 && SECURITY
++	help
++
++	Say Y here if you want enable fine-grained security label attribute
++	support for NFS version 4.  Security labels allow security modules like
++	SELinux and Smack to label files to facilitate enforcement of their policies.
++	Without this an NFSv4 mount will have the same label on each file.
++
++	If you do not wish to enable fine-grained security labels SELinux or
++	Smack policies on NFSv4 files, say N.
 -- 
 1.6.2.5
 
