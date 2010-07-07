@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab0GGPwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:52:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61276 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756462Ab0GGPwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 11:52:07 -0400
-Date: Wed, 7 Jul 2010 11:52:00 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Subject: Re: [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
-Message-ID: <20100707155200.GH2474@redhat.com>
-References: <1278516227-1643-1-git-send-email-czoccolo@gmail.com>
- <1278516227-1643-2-git-send-email-czoccolo@gmail.com>
- <20100707154631.GG2474@redhat.com>
+	id S1756888Ab0GGP4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:56:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50265 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab0GGP4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 11:56:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=RNUnjvl7AMn36f3tssyGhqAuL2fHn6JcEyAOu5ZjuO3oLwC4ufHv5eOa28S82mykKi
+         d6UHBaUbHX8Rr2o8p6HsaTs4V0Ga7CD7JkbEJY8+M26UyVk6CBIBRq4vf5EPjIVHm+bu
+         8jRVRAYJYLsu8b3x6t1EPVXCjoKYoGg3oPauo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100707154631.GG2474@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
+References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
+Date: Wed, 7 Jul 2010 17:56:05 +0200
+Message-ID: <AANLkTinp8IG3t_A71DBqJYiRdIla6JDU6lyRjLR8zcWG@mail.gmail.com>
+Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
+From: Corrado Zoccolo <czoccolo@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>, Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 11:46:31AM -0400, Vivek Goyal wrote:
-> On Wed, Jul 07, 2010 at 05:23:47PM +0200, Corrado Zoccolo wrote:
-> > RQ_NOIDLE flag is meaningful and should be honored for SYNC_WORKLOAD,
-> > without further checks.
-> > RQ_NOIDLE can be used to mark the last request of a sequence for which
-> > - we want to idle between the requests of the sequence, to keep locality
-> > - we don't want to idle after the sequence, because we know that no new
-> >   nearby requests will follow, so we should switch servicing other
-> >   queues.
-> 
-> Corrado, in higher layers any WRITE_SYNC request currently is marked
-> as RQ_NOIDLE. At that point it is just not known whether there will be
-> another request after this or not. So I would not think of RQ_NOIDLE
-> as being conclusively telling us that this is last request in the
-> sequence.
-> 
-> I think requst being WRITE_SYNC, we just don't know if the application
-> is going to write more or not immediately. fsync, O_SYNC etc fall in
-> this category.
-> 
-> But in general I like the idea of getting rid of idling on as many cases
-> as possiblle. Jeff's recent posting to fix fsync issue depends on idling
-> even on WRITE_SYNC queues so your patch and his patchsets are
-> fundamentally incompatible.
-> 
-> Whether to idle on WRITE_SYNC or not, I will leave it to Jens (I just
-> don't know the answer to that question. :-)). But in general I want to
-> get rid of idling as much as possible otherwise it becomes a serious
-> bottleneck in any kind of performance testing on higher end storage.
-> 
-> At the same time not idling runs the risk of process doing WRITE_SYNC
-> not getting fair share in presence of sequential readers if writer does
-> not keep the queue busy.
-> 
-> I will do some testing with this patchset little later.
+Fixed Jens' mail address, and resending the patches based on for-2.6.36 tree.
+On Wed, Jul 7, 2010 at 5:22 PM, Corrado Zoccolo <czoccolo@gmail.com> wrote:
+> Hi Jens,
+> patch 8e55063 "cfq-iosched: fix corner cases in idling logic", is
+> suspected for some regressions on high end hardware.
+> The two patches from this series:
+> - [PATCH 1/2] cfq-iosched: fix tree-wide handling of rq_noidle
+> - [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
+> fix two issues that I have identified, related to how RQ_NOIDLE is
+> used by the upper layers.
+> First patch makes sure that a RQ_NOIDLE coming after a sequence of
+> possibly idling requests from the same queue on the no-idle tree will
+> clear the noidle_tree_requires_idle flag.
+> Second patch enables RQ_NOIDLE for queues in the idling tree,
+> restoring the behaviour pre-8e55063 patch.
+>
+> An other option to consider is the partial revert of 8e55063, if the
+> corner cases we are trying to handle are not frequent enough to
+> justify this added complexity.
+>
+> Thanks,
+> Corrado
+>
 
-Hmm..., noticed that you are still using Jens's old mail id. Fixing it.
 
-Thanks
-Vivek
-> 
-> > This patch fixes this behaviour, making it similar to how it behaved
-> > before 8e55063, but still fixing the corner cases that were the
-> > motivation for it.
-> > 
-> > Signed-off-by: Corrado Zoccolo <czoccolo@gmail.com>
-> > ---
-> >  block/cfq-iosched.c |   15 ++++++++++-----
-> >  1 files changed, 10 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> > index 5ef9a5d..cac3afb 100644
-> > --- a/block/cfq-iosched.c
-> > +++ b/block/cfq-iosched.c
-> > @@ -3356,12 +3356,17 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
-> >  				cfqd->noidle_tree_requires_idle |= bitmask;
-> >  
-> >  			/*
-> > -			 * Idling is enabled for SYNC_WORKLOAD.
-> > -			 * SYNC_NOIDLE_WORKLOAD idles at the end of the tree
-> > -			 * only if we processed at least one !rq_noidle request
-> > +			 * Idling is enabled for:
-> > +			 * - the last sync queue of a group
-> > +			 * - SYNC_WORKLOAD queues, for !rq_noidle requests
-> > +			 * - SYNC_NOIDLE_WORKLOAD "at the end of the tree"
-> > +			 *   if at least one queue sent !rq_noidle requests
-> > +			 *   not followed by at least one rq_noidle request.
-> >  			 */
-> > -			if (cfqd->serving_type == SYNC_WORKLOAD
-> > -			    || cfqd->noidle_tree_requires_idle
-> > +			if ((cfqd->serving_type == SYNC_WORKLOAD
-> > +			     && !rq_noidle(rq))
-> > +			    || (cfqd->serving_type == SYNC_NOIDLE_WORKLOAD
-> > +				&& cfqd->noidle_tree_requires_idle)
-> >  			    || cfqq->cfqg->nr_cfqq == 1)
-> >  				cfq_arm_slice_timer(cfqd);
-> >  		}
-> > -- 
-> > 1.6.4.4
+
+-- 
+__________________________________________________________________________
+
+dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
+PhD - Department of Computer Science - University of Pisa, Italy
+--------------------------------------------------------------------------
+The self-confidence of a warrior is not the self-confidence of the average
+man. The average man seeks certainty in the eyes of the onlooker and calls
+that self-confidence. The warrior seeks impeccability in his own eyes and
+calls that humbleness.
+                               Tales of Power - C. Castaneda
