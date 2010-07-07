@@ -1,84 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab0GGAVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 20:21:41 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49881 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755345Ab0GGAVj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 20:21:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=YdH4sSx/GsFE2qRuFi9JXS/eXqj2uy+LuShtXpY+Jmw8kSQclzeXbkpzdl4uTknbZw
-         mBQUdCxK53V7b3yJ2nS4xWGLWhHxuMOBjpmBbhHXDLaDFwQHdpzWA7Uy2a400WQynVd8
-         reRilrnve6mA5EiMsu9OfbhXCUvJhNb+3AeF0=
-Subject: [PATCH v2] panasonic-laptop: fix acpi_pcc_write_sset return value
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Harald Welte <laforge@gnumonks.org>, Matthew Garrett <mjg@redhat.com>,
-       Richard Purdie <rpurdie@linux.intel.com>,
-       =?ISO-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
-       Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
-       platform-driver-x86@vger.kernel.org
-Content-Type: text/plain
-Date: Wed, 07 Jul 2010 08:21:48 +0800
-Message-Id: <1278462108.12801.23.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1756248Ab0GGAZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 20:25:18 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49879 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755619Ab0GGAZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 20:25:16 -0400
+Date: Wed, 7 Jul 2010 01:24:58 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
+Message-ID: <20100707002458.GI13780@csn.ul.ie>
+References: <20100702125155.69c02f85.akpm@linux-foundation.org> <20100705134949.GC13780@csn.ul.ie> <20100706093529.CCD1.A69D9226@jp.fujitsu.com> <20100706101235.GE13780@csn.ul.ie> <AANLkTin8FotAC1GvjuoYU9XA2eiSr6FWWh6bwypTdhq3@mail.gmail.com> <20100706152539.GG13780@csn.ul.ie> <20100706202758.GC18210@cmpxchg.org> <AANLkTimOkI95ZkJecE3jxRDDGbHvP9tRUluIoJuhqqMz@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimOkI95ZkJecE3jxRDDGbHvP9tRUluIoJuhqqMz@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current implementation, acpi_pcc_write_sset return 1
-if write is successful, 0 if write is failed.
-But all the callers consider acpi_pcc_write_sset return 0
-if write is successful and return negtive if write is failed.
+On Wed, Jul 07, 2010 at 07:28:14AM +0900, Minchan Kim wrote:
+> On Wed, Jul 7, 2010 at 5:27 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > On Tue, Jul 06, 2010 at 04:25:39PM +0100, Mel Gorman wrote:
+> >> On Tue, Jul 06, 2010 at 08:24:57PM +0900, Minchan Kim wrote:
+> >> > but it is still problem in case of swap file.
+> >> > That's because swapout on swapfile cause file system writepage which
+> >> > makes kernel stack overflow.
+> >>
+> >> I don't *think* this is a problem unless I missed where writing out to
+> >> swap enters teh filesystem code. I'll double check.
+> >
+> > It bypasses the fs.  On swapon, the blocks are resolved
+> > (mm/swapfile.c::setup_swap_extents) and then the writeout path uses
+> > bios directly (mm/page_io.c::swap_writepage).
+> >
+> > (GFP_NOFS still includes __GFP_IO, so allows swapping)
+> >
+> >        Hannes
+> 
+> Thanks, Hannes. You're right.
+> Extents would be resolved by setup_swap_extents.
+> Sorry for confusing, Mel.
+> 
 
-This patch changes the implementation of acpi_pcc_write_sset to
-return 0 if write is successful, -EIO if write is failed.
+No confusion. I was 99.99999% certain this was the case and had tested with
+a few bug_on's just in case but confirmation is helpful. Thanks both.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/panasonic-laptop.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+What I have now is direct writeback for anon files. For files be it from
+kswapd or direct reclaim, I kick writeback pre-emptively by an amount based
+on the dirty pages encountered because monitoring from systemtap indicated
+that we were getting a large percentage of the dirty file pages at the end
+of the LRU lists (bad). Initial tests show that page reclaim writeback is
+reduced from kswapd by 97% with this sort of pre-emptive kicking of flusher
+threads based on these figures from sysbench.
 
-diff --git a/drivers/platform/x86/panasonic-laptop.c b/drivers/platform/x86/panasonic-laptop.c
-index 2fb9a32..ec01c3d 100644
---- a/drivers/platform/x86/panasonic-laptop.c
-+++ b/drivers/platform/x86/panasonic-laptop.c
-@@ -248,7 +248,7 @@ static int acpi_pcc_write_sset(struct pcc_acpi *pcc, int func, int val)
- 	status = acpi_evaluate_object(pcc->handle, METHOD_HKEY_SSET,
- 				      &params, NULL);
- 
--	return status == AE_OK;
-+	return (status == AE_OK) ? 0 : -EIO;
- }
- 
- static inline int acpi_pcc_get_sqty(struct acpi_device *device)
-@@ -586,7 +586,6 @@ static int acpi_pcc_init_input(struct pcc_acpi *pcc)
- static int acpi_pcc_hotkey_resume(struct acpi_device *device)
- {
- 	struct pcc_acpi *pcc = acpi_driver_data(device);
--	acpi_status status = AE_OK;
- 
- 	if (device == NULL || pcc == NULL)
- 		return -EINVAL;
-@@ -594,9 +593,7 @@ static int acpi_pcc_hotkey_resume(struct acpi_device *device)
- 	ACPI_DEBUG_PRINT((ACPI_DB_ERROR, "Sticky mode restore: %d\n",
- 			  pcc->sticky_mode));
- 
--	status = acpi_pcc_write_sset(pcc, SINF_STICKY_KEY, pcc->sticky_mode);
--
--	return status == AE_OK ? 0 : -EINVAL;
-+	return acpi_pcc_write_sset(pcc, SINF_STICKY_KEY, pcc->sticky_mode);
- }
- 
- static int acpi_pcc_hotkey_add(struct acpi_device *device)
+                traceonly-v4r1  stackreduce-v4r1    flushforward-v4r4
+Direct reclaims                                621        710         30928 
+Direct reclaim pages scanned                141316     141184       1912093 
+Direct reclaim write file async I/O          23904      28714             0 
+Direct reclaim write anon async I/O            716        918            88 
+Direct reclaim write file sync I/O               0          0             0 
+Direct reclaim write anon sync I/O               0          0             0 
+Wake kswapd requests                        713250     735588       5626413 
+Kswapd wakeups                                1805       1498           641 
+Kswapd pages scanned                      17065538   15605327       9524623 
+Kswapd reclaim write file async I/O         715768     617225         23938  <-- Wooo
+Kswapd reclaim write anon async I/O         218003     214051        198746 
+Kswapd reclaim write file sync I/O               0          0             0 
+Kswapd reclaim write anon sync I/O               0          0             0 
+Time stalled direct reclaim (ms)              9.87      11.63        315.30 
+Time kswapd awake (ms)                     1884.91    2088.23       3542.92 
+
+This is "good" IMO because file IO from page reclaim is frowned upon because
+of poor IO patterns. There isn't a launder process I can kick for anon pages
+to get overall reclaim IO down but it's not clear it's worth it at this
+juncture because AFAIK, IO to swap blows anyway. The biggest plus is that
+direct reclaim still not call into the filesystem with my current series so
+stack overflows are less of a heartache. As the number of pages encountered
+for filesystem writeback are reduced, it's also less of a problem for memcg.
+
+The direct reclaim stall latency increases because of congestion_wait
+throttling but the overall tests completes 602 seconds faster or by 8% (figures
+not included). Scanning rates go up but with reduced-time-to-completion,
+on balance I think it works out.
+
+Andrew has picked up some of the series but I have another modification
+to the tracepoints to differenciate between anon and file IO which I now
+think is a very important distinction as flushers work on one but not the
+other. I also must rebase upon a mmotm based on 2.6.35-rc4 before re-posting
+the series but broadly speaking, I think we are going the right direction
+without needing stack-switching tricks.
+
 -- 
-1.5.4.3
-
-
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
