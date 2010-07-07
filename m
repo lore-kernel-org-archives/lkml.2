@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab0GGLI5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 07:08:57 -0400
-Received: from n5-vm0.bullet.mail.gq1.yahoo.com ([67.195.8.62]:48792 "HELO
-	n5-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753867Ab0GGLI4 (ORCPT
+	id S1754615Ab0GGLSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 07:18:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58981 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab0GGLSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 07:08:56 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 169281.15684.bm@omp119.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=6UZy/9E34L24Amei6BiAoUNqXRxNyB+sHMGMQGvl+sH/vpLBLEEsblrvC1yw/ekX/UO627ji6mS3Z8iF6oTQOS/UwAHOX1VfszSXS2GJt/8xkuy62KVVAIrQD7HtoF35ldwA3002OQAyyRbR9ybrgo3jY2CpQXs6tKCA49nrHhE=;
-Message-ID: <54038.80733.qm@web180305.mail.gq1.yahoo.com>
-X-YMail-OSG: KCjV2JsVM1miAxtv4dpbD5JuvSA3PR5Fue6N0yn91kgRJ9X
- l9qtNItx3RpkkE6y7bRXkf6qT7BlqtC5DJQbv_KVZsxeLOhxeWdDZZ1tCxaU
- iEkStPK_fwqBUjZ3df0HBAHvo6gaWIOxMdQy2ytkHaWCTAcW0KqeFOC.imTF
- ckNEUW2zMNzyVNSXHoZhwn5fhDl0wAYEF8h3cychMlxypCf5m.mIiDzSFB8C
- nD.7iQdhdaSJGIUu217RvP2_fXHE27YsNMkQDzGT0CGYcR.CIbtT5NRFVg9g
- A4Ecuhw6NEgUnnvjSC24-
-X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.104.274457
-Date: Wed, 7 Jul 2010 04:08:54 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: RE: [PATCH 1/2] mtdpart: memory accessor interface for MTD layer
-To: "'David Woodhouse'" <dwmw2@infradead.org>,
-       "'Kevin Hilman'" <khilman@deeprootsystems.com>,
-       Sudhakar Rajashekhara <sudhakar.raj@ti.com>
-Cc: "'Bernd Schmidt'" <bernd.schmidt@analog.com>,
-       "'Nicolas Pitre'" <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-       "'David Howells'" <dhowells@redhat.com>,
-       "'David Brownell'" <dbrownell@users.sourceforge.net>,
-       linux-mtd@lists.infradead.org,
-       "'Andrew Morton'" <akpm@linux-foundation.org>
-In-Reply-To: <012f01cb1dc3$09584880$1c08d980$@raj@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 7 Jul 2010 07:18:22 -0400
+From: Joel Becker <joel.becker@oracle.com>
+To: Dave Chinner <david@fromorbit.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+       Tao Ma <tao.ma@oracle.com>, Dave Chinner <dchinner@redhat.com>,
+       Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
+Subject: [PATCH 3/3] ocfs2: No need to zero pages past i_size.
+Date: Wed,  7 Jul 2010 04:16:07 -0700
+Message-Id: <1278501367-7710-4-git-send-email-joel.becker@oracle.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <20100703213219.GB21262@mail.oracle.com>
+References: <20100703213219.GB21262@mail.oracle.com>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C346243.00B5:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When ocfs2 fills a hole, it does so by allocating clusters.  When a
+cluster is larger than the write, ocfs2 must zero the portions of the
+cluster outside of the write.  If the clustersize is smaller than a
+pagecache page, this is handled by the normal pagecache mechanisms, but
+when the clustersize is larger than a page, ocfs2's write code will zero
+the pages adjacent to the write.  This makes sure the entire cluster is
+zeroed correctly.
 
-> > > This patch adds two new members to the
-> mtd_partition structure,
-> > > a function handler which will be
-> > > called during setup of the
-> > > partition and an argument to be passed to this
-> setup function.
-> > 
-> > Ick.
-> > 
-> > I don't mind providing the mtd_macc_{read,write}
-> helper functions,
-> > although they should work on generic MTD
-> > >devices not just on partitions.
-> > But do we really have to do the callout to
-> > arbitrary functions from
-> > _within_ the core MTD code... why can't we
-> > do that in the board driver?
+Currently ocfs2 behaves exactly the same when writing past i_size.
+However, this means ocfs2 is writing zeroed pages for portions of a new
+cluster that are beyond i_size.  The page writeback code isn't expecting
+this.  It treats all pages past the one containing i_size as left behind
+due to a previous truncate operation.
 
-I think the short answer is that the callout is
-what provides the board drivers enough information
-to make the correct calls.
+Thankfully, ocfs2 calculates the number of pages it will be working on
+up front.  The rest of the write code merely honors the original
+calculation.  We can simply trim the number of pages to only cover the
+actual file data.
 
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
+---
+ fs/ocfs2/aops.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 8d6dc3f..9b3381a 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -1100,11 +1100,12 @@ out:
+  */
+ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
+ 				      struct ocfs2_write_ctxt *wc,
+-				      u32 cpos, loff_t user_pos, int new,
++				      u32 cpos, loff_t user_pos,
++				      unsigned user_len, int new,
+ 				      struct page *mmap_page)
+ {
+ 	int ret = 0, i;
+-	unsigned long start, target_index, index;
++	unsigned long start, target_index, end_index, index;
+ 	struct inode *inode = mapping->host;
+ 
+ 	target_index = user_pos >> PAGE_CACHE_SHIFT;
+@@ -1112,11 +1113,17 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
+ 	/*
+ 	 * Figure out how many pages we'll be manipulating here. For
+ 	 * non allocating write, we just change the one
+-	 * page. Otherwise, we'll need a whole clusters worth.
++	 * page. Otherwise, we'll need a whole clusters worth.  If we're
++	 * writing past i_size, we only need enough pages to cover the
++	 * last page of the write.
+ 	 */
+ 	if (new) {
+ 		wc->w_num_pages = ocfs2_pages_per_cluster(inode->i_sb);
+ 		start = ocfs2_align_clusters_to_page_index(inode->i_sb, cpos);
++		/* This is the index *past* the write */
++		end_index = ((user_pos + user_len - 1) >> PAGE_CACHE_SHIFT) + 1;
++		if ((start + wc->w_num_pages) > end_index)
++			wc->w_num_pages = end_index - start;
+ 	} else {
+ 		wc->w_num_pages = 1;
+ 		start = target_index;
+@@ -1761,7 +1768,7 @@ int ocfs2_write_begin_nolock(struct address_space *mapping,
+ 	 * that we can zero and flush if we error after adding the
+ 	 * extent.
+ 	 */
+-	ret = ocfs2_grab_pages_for_write(mapping, wc, wc->w_cpos, pos,
++	ret = ocfs2_grab_pages_for_write(mapping, wc, wc->w_cpos, pos, len,
+ 					 cluster_of_pages, mmap_page);
+ 	if (ret) {
+ 		mlog_errno(ret);
+-- 
+1.7.1
 
