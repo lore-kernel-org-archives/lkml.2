@@ -1,68 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab0GGOpg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 10:45:36 -0400
-Received: from fieldses.org ([174.143.236.118]:40025 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755169Ab0GGOpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 10:45:35 -0400
-Date: Wed, 7 Jul 2010 10:45:11 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: neilb@suse.de, david@fromorbit.com, aneesh.kumar@linux.vnet.ibm.com,
-       hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, hooanon05@yahoo.co.jp,
-       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle
- syscalls
-Message-ID: <20100707144511.GA24360@fieldses.org>
-References: <20100706161002.GD7387@fieldses.org>
- <87eifgfsez.fsf@linux.vnet.ibm.com>
- <20100706232351.GD25018@dastard>
- <20100707093629.10c2feab@notabene.brown>
- <20100707021150.GF25018@dastard>
- <20100707125726.3695587a@notabene.brown>
- <20100707125701.GA19872@fieldses.org>
- <E1OWUOL-0004DM-Ul@pomaz-ex.szeredi.hu>
- <20100707131721.GB19872@fieldses.org>
- <E1OWUn0-0004JI-7F@pomaz-ex.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1OWUn0-0004JI-7F@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756153Ab0GGOvi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 10:51:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:65110 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab0GGOvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 10:51:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       John Kacur <jkacur@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org,
+       Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 1/7] scsi/i2o_block: cleanup ioctl handling
+Date: Wed,  7 Jul 2010 16:51:23 +0200
+Message-Id: <1278514289-21054-2-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1278514289-21054-1-git-send-email-arnd@arndb.de>
+References: <1278514289-21054-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:q+8PF1FD7UDFTgwEHlSoo7MRH3hPzgmp5nWhuVLVhpq
+ tdxOzzs55M1RlPox6OMH+chv6H4Yr9pyANoFMq54KQFr0cHyOj
+ 4B3YXJ0CnAbd9Pu1bKKmjPoKGqDrp5L8jE+nydBIxBFlIGc+3y
+ 1v22JWwuevmW4vYF61HrDGkjPnbXevNPVEDRbmN2d1pIgA/RoU
+ s18x3ODp5zgA5Z2VsPqKw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 03:35:50PM +0200, Miklos Szeredi wrote:
-> On Wed, 7 Jul 2010, J. Bruce Fields wrote:
-> > > > If you use sys or proc, is it possible to get the uuid from a file
-> > > > descriptor or pathname without races?
-> > > 
-> > > You can do stat/fstat to find out the device number (which is unique,
-> > > but not persistent)
-> > 
-> > Is it really unique over time? (Can't a given st_dev value map to one
-> > filesystem now, and another later?) 
-> 
-> It's unique at a single point in time.  But if you have a reference
-> (e.g. open file descriptor) on the mount then that's not a problem.
-> 
->    fd = open(path, ...);
->    fstat(fd, &st);
->    search st.st_dev in mountinfo
->    close(fd)
-> 
-> is effectively the same as an getuuid(path) syscall (lazy unmounted
-> filesystems will not be found in mountinfo, but the reference is still
-> there so st_dev will not be reused for other filesystems).
+This fixes the ioctl function of the i2o_block driver, which
+has multiple problems:
 
-OK, cool.
+* The BLKI2OSRSTRAT and BLKI2OSWSTRAT commands always return
+  -ENOTTY on success, where they should return 0.
+* Support for 32 bit compat is missing
+* The driver should use the .ioctl function and because
+  .locked_ioctl is going away.
 
-That still leaves the problem that there isn't always an underlying
-block device, and/or when there is it doesn't always uniquely specify
-the filesystem.
+The use of the big kernel lock remains for now, but gets
+made explictit in the ioctl function.
 
---b.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/message/i2o/i2o_block.c |   24 ++++++++++++++++++------
+ 1 files changed, 18 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/message/i2o/i2o_block.c b/drivers/message/i2o/i2o_block.c
+index fc593fb..ad3ddef 100644
+--- a/drivers/message/i2o/i2o_block.c
++++ b/drivers/message/i2o/i2o_block.c
+@@ -53,6 +53,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/i2o.h>
++#include <linux/smp_lock.h>
+ 
+ #include <linux/mempool.h>
+ 
+@@ -652,30 +653,40 @@ static int i2o_block_ioctl(struct block_device *bdev, fmode_t mode,
+ {
+ 	struct gendisk *disk = bdev->bd_disk;
+ 	struct i2o_block_device *dev = disk->private_data;
++	int ret = -ENOTTY;
+ 
+ 	/* Anyone capable of this syscall can do *real bad* things */
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
++	lock_kernel();
+ 	switch (cmd) {
+ 	case BLKI2OGRSTRAT:
+-		return put_user(dev->rcache, (int __user *)arg);
++		ret = put_user(dev->rcache, (int __user *)arg);
++		break;
+ 	case BLKI2OGWSTRAT:
+-		return put_user(dev->wcache, (int __user *)arg);
++		ret = put_user(dev->wcache, (int __user *)arg);
++		break;
+ 	case BLKI2OSRSTRAT:
++		ret = -EINVAL;
+ 		if (arg < 0 || arg > CACHE_SMARTFETCH)
+-			return -EINVAL;
++			break;
+ 		dev->rcache = arg;
++		ret = 0;
+ 		break;
+ 	case BLKI2OSWSTRAT:
++		ret = -EINVAL;
+ 		if (arg != 0
+ 		    && (arg < CACHE_WRITETHROUGH || arg > CACHE_SMARTBACK))
+-			return -EINVAL;
++			break;
+ 		dev->wcache = arg;
++		ret = 0;
+ 		break;
+ 	}
+-	return -ENOTTY;
++	unlock_kernel();
++
++	return ret;
+ };
+ 
+ /**
+@@ -930,7 +941,8 @@ static const struct block_device_operations i2o_block_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = i2o_block_open,
+ 	.release = i2o_block_release,
+-	.locked_ioctl = i2o_block_ioctl,
++	.ioctl = i2o_block_ioctl,
++	.compat_ioctl = i2o_block_ioctl,
+ 	.getgeo = i2o_block_getgeo,
+ 	.media_changed = i2o_block_media_changed
+ };
+-- 
+1.7.0.4
+
