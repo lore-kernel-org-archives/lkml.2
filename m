@@ -1,128 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330Ab0GGEhe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 00:37:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56683 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab0GGEhd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 00:37:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=aUHww73Rlhv0s0l8Zuo/F+JROJTU/U9NjkS/JR/0JM4X6sUy2dIJC/Pi3pRxg+sUny
-         yD88pg0W5EI20GX5gGhNA5ZYgYKyULb8ahUl0HzamcbDDj3bG2k1aLN1pblg2S24V3Mp
-         8JJdMASGi7ivTKZXIOXHNg2bgxZSf2eIHgWjM=
-Subject: Re: 2.6.35-rc4 - include/linux/fdtable.h:85 invoked
- rcu_dereference_check()  without protection!
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1278477257.2445.2.camel@edumazet-laptop>
-References: <AANLkTinDWl1qJzK-H9Qw3jjKs9zdUYE1Hh3hTaDw8asd@mail.gmail.com>
-	 <1278477257.2445.2.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Jul 2010 06:37:28 +0200
-Message-ID: <1278477448.2445.4.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1751539Ab0GGFDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 01:03:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18853 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750923Ab0GGFDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 01:03:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,550,1272870000"; 
+   d="scan'208";a="583635187"
+Date: Wed, 7 Jul 2010 13:03:38 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
+Message-ID: <20100707050338.GA5039@localhost>
+References: <1277811288-5195-1-git-send-email-mel@csn.ul.ie>
+ <1277811288-5195-13-git-send-email-mel@csn.ul.ie>
+ <20100702125155.69c02f85.akpm@linux-foundation.org>
+ <20100705134949.GC13780@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100705134949.GC13780@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 07 juillet 2010 à 06:34 +0200, Eric Dumazet a écrit :
+Hi Mel,
 
-> Miles, you already posted this three times, and a fix is known.
-> 
-> BTW, I dont know why it's not already in, Paul submitted it several
-> times, but nobody cares.
-> 
-> http://kerneltrap.org/mailarchive/linux-kernel/2010/6/17/4584014
-> 
-> I am going to Ack it, maybe some other guys can help to.
-> 
+> Second, using systemtap, I was able to see that file-backed dirty
+> pages have a tendency to be near the end of the LRU even though they
+> are a small percentage of the overall pages in the LRU. I'm hoping
+> to figure out why this is as it would make avoiding writeback a lot
+> less controversial.
 
-Ah, its in Andrew tree since 6 days, it should be sent to Linus promptly
-now...
+Your intuitions are correct -- the current background writeback logic
+fails to write elder inodes first. Under heavy loads the background
+writeback job may run for ever, totally ignoring the time order of
+inode->dirtied_when. This is probably why you see lots of dirty pages
+near the end of LRU.
 
-The patch titled
-     vfs: fix RCU-lockdep false positive due to /proc
-has been added to the -mm tree.  Its filename is
-     vfs-fix-rcu-lockdep-false-positive-due-to-proc.patch
+Here is an old patch for fixing this. Sorry for being late. I'll
+pick up and refresh the patch series ASAP.  (I made a mistake last
+year to post too many patches at one time. I'll break them up into
+more manageable pieces.)
 
-Before you just go and hit "reply", please:
-   a) Consider who else should be cc'ed
-   b) Prefer to cc a suitable mailing list as well
-   c) Ideally: find the original patch on the mailing list and do a
-      reply-to-all to that, adding suitable additional cc's
+[PATCH 31/45] writeback: sync old inodes first in background writeback
+<https://kerneltrap.org/mailarchive/linux-fsdevel/2009/10/7/6476313>
 
-*** Remember to use Documentation/SubmitChecklist when testing your code
-***
-
-See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
-out what to do about this
-
-The current -mm tree may be found at
-http://userweb.kernel.org/~akpm/mmotm/
-
-------------------------------------------------------
-Subject: vfs: fix RCU-lockdep false positive due to /proc
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-
-If a single-threaded process does a file-descriptor operation, and some
-other process accesses that same file descriptor via /proc, the current
-rcu_dereference_check_fdtable() can give a false-positive RCU-lockdep
-splat due to the reference count being increased by the /proc access
-after
-the reference-count check in fget_light() but before the check in
-rcu_dereference_check_fdtable().
-
-This commit prevents this false positive by checking for a
-single-threaded
-process.  To avoid #include hell, this commit uses the wrapper for
-thread_group_empty(current) defined by rcu_my_thread_group_empty()
-provided in a separate commit.
-
-Located-by: Miles Lane <miles.lane@gmail.com>
-Located-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- include/linux/fdtable.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff -puN
-include/linux/fdtable.h~vfs-fix-rcu-lockdep-false-positive-due-to-proc
-include/linux/fdtable.h
----
-a/include/linux/fdtable.h~vfs-fix-rcu-lockdep-false-positive-due-to-proc
-+++ a/include/linux/fdtable.h
-@@ -62,7 +62,8 @@ struct files_struct {
-        (rcu_dereference_check((fdtfd), \
-                               rcu_read_lock_held() || \
-                               lockdep_is_held(&(files)->file_lock) || \
--                              atomic_read(&(files)->count) == 1))
-+                              atomic_read(&(files)->count) == 1 || \
-+                              rcu_my_thread_group_empty()))
- 
- #define files_fdtable(files) \
-                (rcu_dereference_check_fdtable((files), (files)->fdt))
-_
-
-Patches currently in -mm which might be from
-paulmck@linux.vnet.ibm.com are
-
-origin.patch
-fs-fcntlc-kill_fasync_rcu-fa_lock-must-be-irq-safe.patch
-linux-next.patch
-vfs-fix-rcu-lockdep-false-positive-due-to-proc.patch
-vfs-use-kmalloc-to-allocate-fdmem-if-possible.patch
-
-
-
-
+Thanks,
+Fengguang
