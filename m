@@ -1,294 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab0GGVkh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 17:40:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61103 "EHLO
+	id S1758018Ab0GGVnt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 17:43:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62319 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757378Ab0GGVkd (ORCPT
+	with ESMTP id S1757705Ab0GGVkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 17:40:33 -0400
+	Wed, 7 Jul 2010 17:40:40 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@lst.de>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 02/18] net/wireless: use generic_file_llseek in debugfs
-Date: Wed,  7 Jul 2010 23:40:04 +0200
-Message-Id: <1278538820-1392-3-git-send-email-arnd@arndb.de>
+       devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 07/18] staging: use llseek in all file operations
+Date: Wed,  7 Jul 2010 23:40:09 +0200
+Message-Id: <1278538820-1392-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1278538820-1392-1-git-send-email-arnd@arndb.de>
 References: <1278538820-1392-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:ZkoZ3o4IAAKg4lMblfb12eoFcCvmcTz3BH/5oLRQgBu
- t1vOzZZfMms/acMS/0/oGAFK7CYR+aFdNcrHnFYfvcRfbYlHbi
- TXFm3Noh2EmDube7/hYajakiN+LOuW2i2NfAp0Z4SLBFP5/IG0
- tRj9PxPBT1E7MDC2lgyLwmi6ICcxlVP7d3kWvH4mCL2iLsmQpk
- Kj+3UGwsqOt8z/xPW06uA==
+X-Provags-ID: V02:K0:ZN3oJIct9rdq50LfqQx6cUQdAXEepW4hCmyTDFqqHFR
+ IB9T2aAhjDJivPkNAjT1wYzcQAccjYPW0dp/Dn5V8luLkEkaCz
+ XoH++PWj1IN2KBy5G2VPlAA6GGaQ4T9HF2M2SoJwUNOyYDA3Hv
+ 5Y2hYHqElmgGCQPJLCtnxRQOjilGzgHBb5Yk3umTp4sfgAu+Pq
+ +2VoNgwKpUnbrP6KPkI1A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default llseek operation is changing from
-default_llseek to no_llseek, so all code relying on
-the current behaviour needs to make that explicit.
-
-The wireless driver infrastructure and some of the drivers
-make use of generated debugfs files, so they cannot
-be converted by our script that automatically determines
-the right operation.
-
-All these files use debugfs and they typically rely
-on simple_read_from_buffer, so the best llseek operation
-here is generic_file_llseek.
+These could not be detected by the semantic patch.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org
+Cc: devel@driverdev.osuosl.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/misc/iwmc3200top/debugfs.c           |    3 +++
- drivers/net/wireless/b43/debugfs.c           |    1 +
- drivers/net/wireless/b43legacy/debugfs.c     |    1 +
- drivers/net/wireless/iwlwifi/iwl-debugfs.c   |    3 +++
- drivers/net/wireless/libertas/debugfs.c      |    1 +
- drivers/net/wireless/rt2x00/rt2x00debug.c    |    1 +
- drivers/net/wireless/wl12xx/wl1251_debugfs.c |    2 ++
- drivers/net/wireless/wl12xx/wl1271_debugfs.c |    2 ++
- net/mac80211/debugfs.c                       |    2 ++
- net/mac80211/debugfs_key.c                   |    2 ++
- net/mac80211/debugfs_netdev.c                |    1 +
- net/mac80211/debugfs_sta.c                   |    2 ++
- net/wireless/debugfs.c                       |    1 +
- 13 files changed, 22 insertions(+), 0 deletions(-)
+ drivers/staging/msm/mdp4_debugfs.c |   10 ++--------
+ drivers/staging/panel/panel.c      |    3 ++-
+ 2 files changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/misc/iwmc3200top/debugfs.c b/drivers/misc/iwmc3200top/debugfs.c
-index e9eda47..62fbaec 100644
---- a/drivers/misc/iwmc3200top/debugfs.c
-+++ b/drivers/misc/iwmc3200top/debugfs.c
-@@ -71,6 +71,7 @@ ssize_t iwmct_dbgfs_##name##_write(struct file *file,			\
- 	static const struct file_operations iwmct_dbgfs_##name##_ops = {  \
- 		.read = iwmct_dbgfs_##name##_read,			\
- 		.open = iwmct_dbgfs_open_file_generic,			\
-+		.llseek = generic_file_llseek,				\
- 	};
- 
- #define DEBUGFS_WRITE_FILE_OPS(name)					\
-@@ -78,6 +79,7 @@ ssize_t iwmct_dbgfs_##name##_write(struct file *file,			\
- 	static const struct file_operations iwmct_dbgfs_##name##_ops = {  \
- 		.write = iwmct_dbgfs_##name##_write,			\
- 		.open = iwmct_dbgfs_open_file_generic,			\
-+		.llseek = generic_file_llseek,				\
- 	};
- 
- #define DEBUGFS_READ_WRITE_FILE_OPS(name)				\
-@@ -87,6 +89,7 @@ ssize_t iwmct_dbgfs_##name##_write(struct file *file,			\
- 		.write = iwmct_dbgfs_##name##_write,			\
- 		.read = iwmct_dbgfs_##name##_read,			\
- 		.open = iwmct_dbgfs_open_file_generic,			\
-+		.llseek = generic_file_llseek,				\
- 	};
+diff --git a/drivers/staging/msm/mdp4_debugfs.c b/drivers/staging/msm/mdp4_debugfs.c
+index 844d467..36954e8 100644
+--- a/drivers/staging/msm/mdp4_debugfs.c
++++ b/drivers/staging/msm/mdp4_debugfs.c
+@@ -63,13 +63,6 @@ DEFINE_SIMPLE_ATTRIBUTE(
+ 			"%llx\n");
  
  
-diff --git a/drivers/net/wireless/b43/debugfs.c b/drivers/net/wireless/b43/debugfs.c
-index 80b19a4..59f59fa 100644
---- a/drivers/net/wireless/b43/debugfs.c
-+++ b/drivers/net/wireless/b43/debugfs.c
-@@ -627,6 +627,7 @@ out_unlock:
- 			.open	= b43_debugfs_open,		\
- 			.read	= b43_debugfs_read,		\
- 			.write	= b43_debugfs_write,		\
-+			.llseek = generic_file_llseek,		\
- 		},						\
- 		.file_struct_offset = offsetof(struct b43_dfsentry, \
- 					       file_##name),	\
-diff --git a/drivers/net/wireless/b43legacy/debugfs.c b/drivers/net/wireless/b43legacy/debugfs.c
-index 1f85ac5..f232618 100644
---- a/drivers/net/wireless/b43legacy/debugfs.c
-+++ b/drivers/net/wireless/b43legacy/debugfs.c
-@@ -334,6 +334,7 @@ out_unlock:
- 			.open	= b43legacy_debugfs_open,		\
- 			.read	= b43legacy_debugfs_read,		\
- 			.write	= b43legacy_debugfs_write,		\
-+			.llseek = generic_file_llseek,			\
- 		},						\
- 		.file_struct_offset = offsetof(struct b43legacy_dfsentry, \
- 					       file_##name),	\
-diff --git a/drivers/net/wireless/iwlwifi/iwl-debugfs.c b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-index 9659c5d..0d03cf2 100644
---- a/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-@@ -87,6 +87,7 @@ static int iwl_dbgfs_open_file_generic(struct inode *inode, struct file *file)
- static const struct file_operations iwl_dbgfs_##name##_ops = {          \
- 	.read = iwl_dbgfs_##name##_read,                       		\
- 	.open = iwl_dbgfs_open_file_generic,                    	\
-+	.llseek = generic_file_llseek,					\
- };
- 
- #define DEBUGFS_WRITE_FILE_OPS(name)                                    \
-@@ -94,6 +95,7 @@ static const struct file_operations iwl_dbgfs_##name##_ops = {          \
- static const struct file_operations iwl_dbgfs_##name##_ops = {          \
- 	.write = iwl_dbgfs_##name##_write,                              \
- 	.open = iwl_dbgfs_open_file_generic,                    	\
-+	.llseek = generic_file_llseek,					\
- };
- 
- 
-@@ -104,6 +106,7 @@ static const struct file_operations iwl_dbgfs_##name##_ops = {          \
- 	.write = iwl_dbgfs_##name##_write,                              \
- 	.read = iwl_dbgfs_##name##_read,                                \
- 	.open = iwl_dbgfs_open_file_generic,                            \
-+	.llseek = generic_file_llseek,					\
- };
- 
- int iwl_dbgfs_statistics_flag(struct iwl_priv *priv, char *buf, int bufsz)
-diff --git a/drivers/net/wireless/libertas/debugfs.c b/drivers/net/wireless/libertas/debugfs.c
-index de2caac..94f8f99 100644
---- a/drivers/net/wireless/libertas/debugfs.c
-+++ b/drivers/net/wireless/libertas/debugfs.c
-@@ -713,6 +713,7 @@ out_unlock:
- 	.open = open_file_generic, \
- 	.read = (fread), \
- 	.write = (fwrite), \
-+	.llseek = generic_file_llseek, \
+-static int mdp4_debugfs_open(struct inode *inode, struct file *file)
+-{
+-	/* non-seekable */
+-	file->f_mode &= ~(FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE);
+-	return 0;
+-}
+-
+ static int mdp4_debugfs_release(struct inode *inode, struct file *file)
+ {
+ 	return 0;
+@@ -144,10 +137,11 @@ static ssize_t mdp4_debugfs_read(
  }
  
- struct lbs_debugfs_files {
-diff --git a/drivers/net/wireless/rt2x00/rt2x00debug.c b/drivers/net/wireless/rt2x00/rt2x00debug.c
-index e9fe93f..fe92500 100644
---- a/drivers/net/wireless/rt2x00/rt2x00debug.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00debug.c
-@@ -508,6 +508,7 @@ static const struct file_operations rt2x00debug_fop_##__name = {\
- 	.write		= rt2x00debug_write_##__name,		\
- 	.open		= rt2x00debug_file_open,		\
- 	.release	= rt2x00debug_file_release,		\
-+	.llseek		= generic_file_llseek,			\
+ static const struct file_operations mdp4_debugfs_fops = {
+-	.open = mdp4_debugfs_open,
++	.open = nonseekable_open,
+ 	.release = mdp4_debugfs_release,
+ 	.read = mdp4_debugfs_read,
+ 	.write = mdp4_debugfs_write,
++	.llseek = no_llseek,
  };
  
- RT2X00DEBUGFS_OPS(csr, "0x%.8x\n", u32);
-diff --git a/drivers/net/wireless/wl12xx/wl1251_debugfs.c b/drivers/net/wireless/wl12xx/wl1251_debugfs.c
-index 5e4465a..a4ae7c4 100644
---- a/drivers/net/wireless/wl12xx/wl1251_debugfs.c
-+++ b/drivers/net/wireless/wl12xx/wl1251_debugfs.c
-@@ -50,6 +50,7 @@ static ssize_t name## _read(struct file *file, char __user *userbuf,	\
- static const struct file_operations name## _ops = {			\
- 	.read = name## _read,						\
- 	.open = wl1251_open_file_generic,				\
-+	.llseek	= generic_file_llseek,					\
- };
- 
- #define DEBUGFS_ADD(name, parent)					\
-@@ -86,6 +87,7 @@ static ssize_t sub## _ ##name## _read(struct file *file,		\
- static const struct file_operations sub## _ ##name## _ops = {		\
- 	.read = sub## _ ##name## _read,					\
- 	.open = wl1251_open_file_generic,				\
-+	.llseek	= generic_file_llseek,					\
- };
- 
- #define DEBUGFS_FWSTATS_ADD(sub, name)				\
-diff --git a/drivers/net/wireless/wl12xx/wl1271_debugfs.c b/drivers/net/wireless/wl12xx/wl1271_debugfs.c
-index c239ef4..6e25303 100644
---- a/drivers/net/wireless/wl12xx/wl1271_debugfs.c
-+++ b/drivers/net/wireless/wl12xx/wl1271_debugfs.c
-@@ -51,6 +51,7 @@ static ssize_t name## _read(struct file *file, char __user *userbuf,	\
- static const struct file_operations name## _ops = {			\
- 	.read = name## _read,						\
- 	.open = wl1271_open_file_generic,				\
-+	.llseek	= generic_file_llseek,					\
- };
- 
- #define DEBUGFS_ADD(name, parent)					\
-@@ -87,6 +88,7 @@ static ssize_t sub## _ ##name## _read(struct file *file,		\
- static const struct file_operations sub## _ ##name## _ops = {		\
- 	.read = sub## _ ##name## _read,					\
- 	.open = wl1271_open_file_generic,				\
-+	.llseek	= generic_file_llseek,					\
- };
- 
- #define DEBUGFS_FWSTATS_ADD(sub, name)				\
-diff --git a/net/mac80211/debugfs.c b/net/mac80211/debugfs.c
-index 637929b..31b6b89 100644
---- a/net/mac80211/debugfs.c
-+++ b/net/mac80211/debugfs.c
-@@ -36,6 +36,7 @@ static ssize_t name## _read(struct file *file, char __user *userbuf,	\
- static const struct file_operations name## _ops = {			\
- 	.read = name## _read,						\
- 	.open = mac80211_open_file_generic,				\
-+	.llseek = generic_file_llseek,					\
- };
- 
- #define DEBUGFS_ADD(name)						\
-@@ -349,6 +350,7 @@ static ssize_t stats_ ##name## _read(struct file *file,			\
- static const struct file_operations stats_ ##name## _ops = {		\
- 	.read = stats_ ##name## _read,					\
- 	.open = mac80211_open_file_generic,				\
-+	.llseek = generic_file_llseek,					\
- };
- 
- #define DEBUGFS_STATS_ADD(name)						\
-diff --git a/net/mac80211/debugfs_key.c b/net/mac80211/debugfs_key.c
-index 97c9e46..1bc39ac 100644
---- a/net/mac80211/debugfs_key.c
-+++ b/net/mac80211/debugfs_key.c
-@@ -32,6 +32,7 @@ static ssize_t key_##name##_read(struct file *file,			\
- static const struct file_operations key_ ##name## _ops = {		\
- 	.read = key_##name##_read,					\
- 	.open = mac80211_open_file_generic,				\
-+	.llseek = generic_file_llseek,					\
+ int mdp4_debugfs_init(void)
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index 9ca0e9e..be05b98 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -1295,7 +1295,7 @@ static int lcd_open(struct inode *inode, struct file *file)
+ 		lcd_must_clear = 0;
+ 	}
+ 	lcd_open_cnt++;
+-	return 0;
++	return nonseekable_open(inode, file);
  }
  
- #define KEY_FILE(name, format)						\
-@@ -46,6 +47,7 @@ static const struct file_operations key_ ##name## _ops = {		\
- static const struct file_operations key_ ##name## _ops = {		\
- 	.read = key_conf_##name##_read,					\
- 	.open = mac80211_open_file_generic,				\
-+	.llseek = generic_file_llseek,					\
- }
- 
- #define KEY_CONF_FILE(name, format)					\
-diff --git a/net/mac80211/debugfs_netdev.c b/net/mac80211/debugfs_netdev.c
-index 20b2998..8ad33ee 100644
---- a/net/mac80211/debugfs_netdev.c
-+++ b/net/mac80211/debugfs_netdev.c
-@@ -121,6 +121,7 @@ static const struct file_operations name##_ops = {			\
- 	.read = ieee80211_if_read_##name,				\
- 	.write = (_write),						\
- 	.open = mac80211_open_file_generic,				\
-+	.llseek = generic_file_llseek,					\
- }
- 
- #define __IEEE80211_IF_FILE_W(name)					\
-diff --git a/net/mac80211/debugfs_sta.c b/net/mac80211/debugfs_sta.c
-index e763f15..73f8f36 100644
---- a/net/mac80211/debugfs_sta.c
-+++ b/net/mac80211/debugfs_sta.c
-@@ -37,6 +37,7 @@ static ssize_t sta_ ##name## _read(struct file *file,			\
- static const struct file_operations sta_ ##name## _ops = {		\
- 	.read = sta_##name##_read,					\
- 	.open = mac80211_open_file_generic,				\
-+	.llseek = generic_file_llseek,					\
- }
- 
- #define STA_OPS_RW(name)						\
-@@ -44,6 +45,7 @@ static const struct file_operations sta_ ##name## _ops = {		\
- 	.read = sta_##name##_read,					\
- 	.write = sta_##name##_write,					\
- 	.open = mac80211_open_file_generic,				\
-+	.llseek = generic_file_llseek,					\
- }
- 
- #define STA_FILE(name, field, format)					\
-diff --git a/net/wireless/debugfs.c b/net/wireless/debugfs.c
-index a4991a3..3f9a57e 100644
---- a/net/wireless/debugfs.c
-+++ b/net/wireless/debugfs.c
-@@ -34,6 +34,7 @@ static ssize_t name## _read(struct file *file, char __user *userbuf,	\
- static const struct file_operations name## _ops = {			\
- 	.read = name## _read,						\
- 	.open = cfg80211_open_file_generic,				\
-+	.llseek = generic_file_llseek,					\
+ static int lcd_release(struct inode *inode, struct file *file)
+@@ -1308,6 +1308,7 @@ static struct file_operations lcd_fops = {
+ 	.write   = lcd_write,
+ 	.open    = lcd_open,
+ 	.release = lcd_release,
++	.llseek  = no_llseek,
  };
  
- DEBUGFS_READONLY_FILE(rts_threshold, 20, "%d",
+ static struct miscdevice lcd_dev = {
 -- 
 1.7.1
 
