@@ -1,70 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab0GGUjz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 16:39:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36857 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755544Ab0GGUjx (ORCPT
+	id S1757471Ab0GGUlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 16:41:20 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59984 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755945Ab0GGUlQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 16:39:53 -0400
-Date: Wed, 7 Jul 2010 13:38:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, xiaosuo@gmail.com,
-       tim.gardner@canonical.com, torvalds@linux-foundation.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       stable@kernel.org
-Subject: Re: [PATCH 0/3] splice fixes
-Message-Id: <20100707133851.7c805c2d.akpm@linux-foundation.org>
-In-Reply-To: <4C29E1A0.7070601@kernel.dk>
-References: <E1OTYfk-0008GY-PJ@pomaz-ex.szeredi.hu>
-	<4C29D5B9.9040401@kernel.dk>
-	<E1OTZYn-0008Qk-El@pomaz-ex.szeredi.hu>
-	<4C29E1A0.7070601@kernel.dk>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Jul 2010 16:41:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <4C34CFDD.5030900@nokia.com>
+References: <20100707111716.24979.68940.sendpatchset@ahunter-work.research.nokia.com>
+	<20100707111723.24979.32020.sendpatchset@ahunter-work.research.nokia.com>
+	<AANLkTinfDOlL7iKP4Qmb0J4xq_I_nNEnSbokCOkYmCSn@mail.gmail.com>
+	<4C34CFDD.5030900@nokia.com>
+Date: Wed, 7 Jul 2010 16:41:14 -0400
+Message-ID: <AANLkTikWNzuAOQlQkixgX4ARcjVSxaKDN77LTeE0isC-@mail.gmail.com>
+Subject: Re: [PATCH V4 1/5] mmc: Add erase, secure erase, trim and secure trim 
+	operations
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       linux-kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kyungmin Park <kmpark@infradead.org>,
+       Madhusudhan Chikkature <madhu.cr@ti.com>,
+       linux-mmc Mailing List <linux-mmc@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010 14:05:52 +0200
-Jens Axboe <axboe@kernel.dk> wrote:
+On Wed, Jul 7, 2010 at 3:05 PM, Adrian Hunter <adrian.hunter@nokia.com> wrote:
+> Ben Gardiner wrote:
+>>
+>> On Wed, Jul 7, 2010 at 7:17 AM, Adrian Hunter <adrian.hunter@nokia.com>
+>> wrote:
+>>>
+>>> From 7f01ad3c4be6ec09318176db12db66f353b526e0 Mon Sep 17 00:00:00 2001
+>>
+>>> SD/MMC cards tend to support an erase operation.  In addition,
+>>> eMMC v4.4 cards can support secure erase, trim and secure trim
+>>> operations that are all variants of the basic erase command.
+>>
+>> This is great. I am interested primarily in SD media.
+>>
+>> Please forgive my naive perspective: it seems that with the features
+>> enabled by this patchset and a filesystem that is capable of issuing
+>> erase block commands, the wear-leveling on SD media will be improved
+>> -- much like with CF TRIM commands. Do you also think that is the
+>> case? I would be very interested in hearing your expert opinion on
+>> this.
+>
+> I am sorry but I don't know.  Wear-levelling in cards tends to be kept
+> secret by the manufacturers.  However, it is not clear to me that cards
+> bother to record whether or not anything has been erased.   For example,
+> erase a card twice - it takes the same amount of time the second time
+> as the first time, whereas if the card knew it was already erased, why
+> wasn't the second time much quicker?
 
-> On 2010-06-29 14:05, Miklos Szeredi wrote:
-> > On Tue, 29 Jun 2010, Jens Axboe wrote:
-> >> On 2010-06-29 13:08, Miklos Szeredi wrote:
-> >>> These patches fix bugs that affect real-world users of splice(2) and
-> >>> sendfile(2) interfaces.
-> >>>
-> >>> Not sure if some or all of them are appropriate for 2.6.35 and/or
-> >>> -stable?
-> >>
-> >> I think that 1-2 should go into 2.6.35 directly, and 3 for .36 with
-> >> a stable backport as well. Agree?
-> > 
-> > Yes, sounds good.
-> 
-> Good, that is what I queued up. I haven't pushed out the updated
-> for-linus yet, since I asked Linus to pull it this morning.
-> 
+No worries. I'm happy to hear your opinion anyways.
 
-According to Tim's report on lkml
-(http://lkml.org/lkml/2010/6/25/280),
-cc56f7de7f00d188c7c4da1e9861581853b9e92f caused a regression. 
-cc56f7de7f00d188c7c4da1e9861581853b9e92f is present in 2.6.33 and in
-2.6.34 hence the fix should be backported into -stable.
+Interesting observation re: erase time of cards, I assume that is
+"erase" as in the SD erase operations as proposed in this patch as
+opposed to erase as in 'mkfs'.
 
-According to http://bugs.launchpad.net/bugs/588861, the patch "splice:
-direct_splice_actor() should not use pos in sd" fixes the regression.
+>>
+>> I have a couple comments regarding mostly the SD support introduced in
+>> this patch. Patches 2..5 of 5 seem fine to me but I'm not sure I'm
+>> qualified to add acks or reviewed-by's.
+>>
+>>> +int mmc_erase(struct mmc_card *card, unsigned int from, unsigned int nr,
+>>> +             unsigned int arg)
+>>> +{
+>>> +       unsigned int rem, to = from + nr;
+>>> +
+>>> +       if (!(card->host->caps & MMC_CAP_ERASE) ||
+>>> +           !(card->csd.cmdclass & CCC_ERASE))
+>>> +               return -EOPNOTSUPP;
+>>> +
+>>> +       if (!card->erase_size)
+>>> +               return -EOPNOTSUPP;
+>>> +
+>>> +       if (mmc_card_sd(card) && arg != MMC_ERASE_ARG)
+>>> +               return -EOPNOTSUPP;
+>>> +
+>>> +       if ((arg & MMC_SECURE_ARGS) &&
+>>> +           !(card->ext_csd.sec_feature_support & EXT_CSD_SEC_ER_EN))
+>>> +               return -EOPNOTSUPP;
+>>> +
+>>> +       if ((arg & MMC_TRIM_ARGS) &&
+>>> +           !(card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN))
+>>> +               return -EOPNOTSUPP;
+>>> +
+>>
+>>> +int mmc_can_trim(struct mmc_card *card)
+>>> +{
+>>> +       if (card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN)
+>>> +               return 1;
+>>> +       return 0;
+>>> +}
+>>> +EXPORT_SYMBOL(mmc_can_trim);
+>>
+>> It looks like mmc_can_trim(card) would return true when
+>> mmc_card_sd(card) is true;
+>
+> It will return false for SD.  card->ext_csd.sec_feature_support
+> is only used by MMC.
 
-However this:
+Makes sense now, thanks.
 
-commit 4f9078afb4e083e033aafbbfabe729cb3832aa42
-Author: Changli Gao <xiaosuo@gmail.com>
-Date:   Tue Jun 29 13:09:18 2010 +0200
+>>> /*
+>>> + * Fetch and process SD Status register.
+>>> + */
+>>> +static int mmc_read_ssr(struct mmc_card *card)
+>>> +{
+>>
+>> It looks like the conventional function prefix for SD-specific
+>> functions in the rest of this file is mmc_sd_ ; 'mmc_read_ssr' ->
+>> 'mmc_sd_read_ssr'  or -> 'mmc_read_sd_sr' perhaps?
+>
+> Well there is also mmc_decode_*, and mmc_read_switch so the other
+> functions that do smilar things also do not follow that convention.
 
-    splice: direct_splice_actor() should not use pos in sd
+Good point.
 
-went into mainline without a cc:stable tag.
+>>
+>>> +       ssr = kmalloc(64, GFP_KERNEL);
+>>
+>> Why '64' instead of 'sizeof(*ssr)' ?
+>
+> sizeof(*ssr) is 4
+
+Right -- my mistake :)
+
+I guess I was _thinking_ 16*sizeof(*ssr)  or SSR_SIZE*sizeof(*ssr)
+instead of a magic number '64'. I see now that this wouldn't be the
+only kmalloc of a magic number in sd.c -- so I'll stop being so picky.
+
+Reviewed-by: Ben Gardiner <bengardiner@nanometrics.ca>
+
+---
+Ben Gardiner
+Nanometrics Inc.
+http://www.nanometrics.ca
