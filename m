@@ -1,78 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab0GGPX2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 11:23:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55320 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757220Ab0GGPXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 11:23:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=TQnWaBSIl9EAQP0pFvpxwDKOvyIREVeoBpB8o4cSbK/WdJUef5sFbDOOMFC/bgQ3zC
-         j1sBnGD4r41ZG3pC8QM7NHxT17cB/u2leD38dTPzve3szKXJ2fKFuoigkUgIl7D/Xc+l
-         6Domj1fNFLmYEiPftv4iE+ga14+eHZKehBf9o=
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Jeff Moyer <jmoyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Shaohua Li <shaohua.li@intel.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Corrado Zoccolo <czoccolo@gmail.com>
-Subject: [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
-Date: Wed,  7 Jul 2010 17:23:47 +0200
-Message-Id: <1278516227-1643-2-git-send-email-czoccolo@gmail.com>
-X-Mailer: git-send-email 1.6.4.4
-In-Reply-To: <1278516227-1643-1-git-send-email-czoccolo@gmail.com>
-References: <1278516227-1643-1-git-send-email-czoccolo@gmail.com>
+	id S1757112Ab0GGPXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 11:23:19 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43872 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756863Ab0GGPXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 11:23:17 -0400
+Date: Thu, 8 Jul 2010 01:23:03 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
+       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V14 04/11] vfs: Allow handle based open on symlinks
+Message-ID: <20100707152303.GS11732@laptop>
+References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1276621981-2774-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276621981-2774-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RQ_NOIDLE flag is meaningful and should be honored for SYNC_WORKLOAD,
-without further checks.
-RQ_NOIDLE can be used to mark the last request of a sequence for which
-- we want to idle between the requests of the sequence, to keep locality
-- we don't want to idle after the sequence, because we know that no new
-  nearby requests will follow, so we should switch servicing other
-  queues.
-This patch fixes this behaviour, making it similar to how it behaved
-before 8e55063, but still fixing the corner cases that were the
-motivation for it.
+On Tue, Jun 15, 2010 at 10:42:54PM +0530, Aneesh Kumar K.V wrote:
+> The patch update may_open to allow handle based open on symlinks.
+> The file handle based API use file descritor returned from open_by_handle_at
+> to do different file system operations. To find the link target name we
+> need to get a file descriptor on symlinks.
 
-Signed-off-by: Corrado Zoccolo <czoccolo@gmail.com>
----
- block/cfq-iosched.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+This is a pretty big change, isn't it? Have you looked through vfs to
+ensure this is actually OK? I was just looking at remount,ro code, for
+example, and it seems to assume only writable open files on ISREG
+files.
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 5ef9a5d..cac3afb 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -3356,12 +3356,17 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
- 				cfqd->noidle_tree_requires_idle |= bitmask;
- 
- 			/*
--			 * Idling is enabled for SYNC_WORKLOAD.
--			 * SYNC_NOIDLE_WORKLOAD idles at the end of the tree
--			 * only if we processed at least one !rq_noidle request
-+			 * Idling is enabled for:
-+			 * - the last sync queue of a group
-+			 * - SYNC_WORKLOAD queues, for !rq_noidle requests
-+			 * - SYNC_NOIDLE_WORKLOAD "at the end of the tree"
-+			 *   if at least one queue sent !rq_noidle requests
-+			 *   not followed by at least one rq_noidle request.
- 			 */
--			if (cfqd->serving_type == SYNC_WORKLOAD
--			    || cfqd->noidle_tree_requires_idle
-+			if ((cfqd->serving_type == SYNC_WORKLOAD
-+			     && !rq_noidle(rq))
-+			    || (cfqd->serving_type == SYNC_NOIDLE_WORKLOAD
-+				&& cfqd->noidle_tree_requires_idle)
- 			    || cfqq->cfqg->nr_cfqq == 1)
- 				cfq_arm_slice_timer(cfqd);
- 		}
--- 
-1.6.4.4
+Is this restricted to RDONLY? Really, it should be O_NONE...
+
 
