@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab0GGQQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 12:16:26 -0400
-Received: from [202.81.31.143] ([202.81.31.143]:51807 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab0GGQQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 12:16:25 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
-       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V14 03/11] vfs: Add open by file handle support
-In-Reply-To: <20100707151738.GR11732@laptop>
-References: <1276621981-2774-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1276621981-2774-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100707151738.GR11732@laptop>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Wed, 07 Jul 2010 21:46:08 +0530
-Message-ID: <87fwzvfet3.fsf@linux.vnet.ibm.com>
+	id S1757362Ab0GGQR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 12:17:26 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45185 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756815Ab0GGQRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 12:17:24 -0400
+Date: Thu, 8 Jul 2010 02:17:20 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Christoph Hellwig <hch@lst.de>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       Al Viro <viro@ZenIV.linux.org.uk>, Frank Mayhar <fmayhar@google.com>,
+       John Stultz <johnstul@us.ibm.com>, Andi Kleen <ak@linux.intel.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [patch 2/2] tty fix fu_list abuse
+Message-ID: <20100707161720.GA9263@laptop>
+References: <20100707122406.GL11732@laptop>
+ <20100707122510.GM11732@laptop>
+ <20100707160835.GA9681@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100707160835.GA9681@lst.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jul 2010 01:17:38 +1000, Nick Piggin <npiggin@suse.de> wrote:
-> On Tue, Jun 15, 2010 at 10:42:53PM +0530, Aneesh Kumar K.V wrote:
-> > diff --git a/fs/open.c b/fs/open.c
-> > index 43ac798..1c5daa3 100644
-> > --- a/fs/open.c
-> > +++ b/fs/open.c
-> > @@ -1168,3 +1168,201 @@ SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
-> >  	return -ENOSYS;
-> >  }
-> >  #endif
-> > +
-> > +#ifdef CONFIG_EXPORTFS
-> > +static struct vfsmount *get_vfsmount_from_fd(int fd)
-> > +{
-> > +	int fput_needed;
-> > +	struct path *path;
-> > +	struct file *filep;
-> > +
-> > +	if (fd == AT_FDCWD) {
-> > +		struct fs_struct *fs = current->fs;
-> > +		read_lock(&fs->lock);
-> > +		path = &fs->pwd;
-> > +		mntget(path->mnt);
-> > +		read_unlock(&fs->lock);
-> > +	} else {
-> > +		filep = fget_light(fd, &fput_needed);
-> > +		if (!filep)
-> > +			return ERR_PTR(-EBADF);
-> > +		path = &filep->f_path;
-> > +		mntget(path->mnt);
-> > +		fput_light(filep, fput_needed);
-> > +	}
-> > +	return path->mnt;
-> > +}
+On Wed, Jul 07, 2010 at 06:08:35PM +0200, Christoph Hellwig wrote:
+> On Wed, Jul 07, 2010 at 10:25:10PM +1000, Nick Piggin wrote:
+> > tty: fix fu_list abuse
+> > 
+> > tty code abuses fu_list, which causes a bug in remount,ro handling.
+> > 
+> > If a tty device node is opened on a filesystem, then the name unlinked, the
+> > filesystem will be allowed to be remounted readonly. This is because
+> > fs_may_remount_ro does not find the 0 link tty inode on the file sb list
+> > (because the tty code incorrectly removed it to use for its own purpose). This
+> > can result in a filesystem with errors after it is marked "clean".  So add a
+> > new private list for ttys and leave tty files on the sb list so they are caught
+> > by this check. This makes tty nodes behave the same way as other device nodes.
+> > 
+> > The next step is to allocate a tty private structure at private_data and get
+> > rid of f_ttyonly_list, but the error handling is not trivial in the tty code.
+> > Hence this intermediate step.
 > 
-> The bulk of this this should probably be in fs/namei.c, factored with
-> path_init stuff if possible please.
-> 
+> Growing struct file by two pointers for the tty special case simply
+> isn't acceptable.  
 
-Will move this to fs/namei.c. I guess we can also remove #ifdef
-CONFIG_EXPORTFS around the code ?
+I agree, so it can be removed when tty gets its act together. But tty
+breaks the s_files list right now which is not acceptable either. So I
+think it is better to take the simple fix that can be easily applied. I
+liked your patch, but error handling was totally broken in it so that
+indicates it is going to require some maturing in the tty tree.
 
--aneesh
