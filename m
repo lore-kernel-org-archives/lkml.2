@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab0GGRMb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 13:12:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40748 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016Ab0GGRM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 13:12:28 -0400
-Date: Wed, 7 Jul 2010 13:12:20 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>,
-       Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
-Message-ID: <20100707171219.GL2474@redhat.com>
-References: <1278516227-1643-1-git-send-email-czoccolo@gmail.com>
- <1278516227-1643-2-git-send-email-czoccolo@gmail.com>
- <20100707154631.GG2474@redhat.com>
- <20100707161308.GA12991@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100707161308.GA12991@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754882Ab0GGRNS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 13:13:18 -0400
+Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:45279 "EHLO
+	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099Ab0GGRNO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 13:13:14 -0400
+Subject: Re: [PATCH 05/10] KConfig: Add KConfig entries for Labeled NFS
+From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+       linux-nfs@vger.kernel.org
+In-Reply-To: <20100707165602.GC28815@fieldses.org>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
+	 <1278513086-23964-6-git-send-email-dpquigl@tycho.nsa.gov>
+	 <20100707165602.GC28815@fieldses.org>
+Content-Type: text/plain
+Organization: National Security Agency
+Date: Wed, 07 Jul 2010 13:05:21 -0400
+Message-Id: <1278522321.2494.104.camel@moss-terrapins.epoch.ncsc.mil>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 12:13:08PM -0400, Christoph Hellwig wrote:
-> On Wed, Jul 07, 2010 at 11:46:31AM -0400, Vivek Goyal wrote:
-> > Whether to idle on WRITE_SYNC or not, I will leave it to Jens (I just
-> > don't know the answer to that question. :-)). But in general I want to
-> > get rid of idling as much as possible otherwise it becomes a serious
-> > bottleneck in any kind of performance testing on higher end storage.
+On Wed, 2010-07-07 at 12:56 -0400, J. Bruce Fields wrote:
+> On Wed, Jul 07, 2010 at 10:31:21AM -0400, David P. Quigley wrote:
+> > This patch adds two entries into the fs/KConfig file. The first entry
+> > NFS_V4_SECURITY_LABEL enables security label support for the NFSv4 client while
+> > the second entry NFSD_V4_SECURITY_LABEL enables security labeling support on
+> > the server side.
 > 
-> After I've been thinking about this for a while I think the major
-> problems is that we use WRITE_SYNC for two very different I/O patterns.
+> Will there also be some way to turn these on and off at run-time (maybe
+> for particular exports or filesystems?)
 > 
-> One is synchronous data I/O (O_SYNC/O_DIRECT/fsync).  While this is a
-> high-level synchronous workload in the sense that someone waits for the
-> I/O to finish, the I/O can still be batched as we're doing relatively
-> large amounts of bios.
-> 
-> The other one is synchronous writeout of metadata or the journal.
+> And if so, will there be any reason not to have this on all the time?  I
+> don't think we'll want a config option for every future possible NFSv4.x
+> feature.
 
-Jeff Moyer had mentioned that in his testing journal writes from jbd
-threads were appearing as asynchronous (WRITES) in CFQ and we don't do any
-kind of idling in CFQ on asynchronous WRITES. So this is probably already
-a non issue.
+The way the code currently works is if you want security labeling on an
+export you need to put the sec_label option on your export line (we have
+a modified nfs-utils to accept that option). This will set the
+particular capability flag for security labeling support on the server.
+After that it works like any other capability. I don't think there is a
+need to turn it on/off without reexporting the file system especially
+since I'm not sure if there is a way to regrab the server capabilities
+after the initial mount. I don't see why we couldn't not have this on at
+all times from a kconfig perspective. I can make sure that the code is
+prepared to always be there and handle when there is no need for it to
+be used.
 
-Thanks
-Vivek
- 
-> Here
-> we typically wait on that single I/O we're just submitting (or at most a
-> handfull), and there is absolutely no point in idling.
-> 
-> We already have the REQ_NOIDLE flag to distinguish between the two, so
-> instead of second guessing we should actually make use of it.
+A little bit of a background on how SELinux will handle this (other LSMs
+are welcome to do what they like).
+
+If you want to turn security labeling on/off on a per export basis we
+have the sec_label export option for that. If you have a file system
+that is exported with sec_label and you don't want to use security
+labels from the server SELinux provides a capability called context
+mounts. It allows us to set the label for every file on that mount point
+regardless of whether the file system provides other labeling
+capabilities. So if we have a server exporting /www with security labels
+and we don't want to trust it I would use a mount command like the one
+below to set the security label for the entire mount
+
+mount -t nfs4 -o context="system_u:object_r:httpd_sys_content_t:s0"
+localhost:/www /mnt/www
+
+Dave
+
+
+
