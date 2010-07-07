@@ -1,112 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab0GGJbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 05:31:13 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54584 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004Ab0GGJbM convert rfc822-to-8bit (ORCPT
+	id S1754492Ab0GGJbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 05:31:41 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:54798 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753004Ab0GGJbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 05:31:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=SNSHevHsNTxJbQBp5CbL5M7Szm1hqOs6K17muBEEy6GyhwY58Wq1mtVdLJmGiGgf3Q
-         XXjN0Oxf8bd5aLQs8Z94zz0oDrjOfVLZDqyYLpnN/PfWpFITt3GC3FosWk58qo1uEuO+
-         qvzoBKAzJGD1XBIjBvGXRLqB/84g/8YxxEhe8=
+	Wed, 7 Jul 2010 05:31:40 -0400
+Date: Wed, 7 Jul 2010 02:31:39 -0700 (PDT)
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+X-X-Sender: sbhatewara@localhost.localdomain
+To: netdev@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com, ronghua@vmware.com,
+       matthieu@vmware.com
+Subject: [PATCH 2.6.35-rc1] net: vmxnet3 fixes [4/5] Do not reset when the
+ device is not opened
+In-Reply-To: <alpine.LRH.2.00.1007070202080.5939@localhost.localdomain>
+Message-ID: <alpine.LRH.2.00.1007070229030.5939@localhost.localdomain>
+References: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain> <alpine.LRH.2.00.1007070202080.5939@localhost.localdomain>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4C33513C.4090704@ti.com>
-References: <1277298125-17991-1-git-send-email-ohad@wizery.com>
-	<1277298840-18516-1-git-send-email-ohad@wizery.com>
-	<20100623224150.GA6680@kroah.com>
-	<AANLkTik0rm12w4jplD1vSTZnPbwguDU6xtOdAfs9C-3r@mail.gmail.com>
-	<4C33513C.4090704@ti.com>
-Date: Wed, 7 Jul 2010 12:31:07 +0300
-Message-ID: <AANLkTikAZCAj4mljYbJcppuIL2quYz8AK0AkTFCZO3bG@mail.gmail.com>
-Subject: Re: [PATCH 11/11] staging: ti dspbridge: enable driver building
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Omar Ramirez Luna <omar.ramirez@ti.com>
-Cc: Greg KH <greg@kroah.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       Tony Lindgren <tony@atomide.com>, "Menon, Nishanth" <nm@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm removing many people from the Cc which I think don't care about
-this. Is this even the right place for discussing about it?
 
-On Tue, Jul 6, 2010 at 6:52 PM, Omar Ramirez Luna <omar.ramirez@ti.com> wrote:
-> On 7/4/2010 5:53 AM, Felipe Contreras wrote:
->> On Thu, Jun 24, 2010 at 1:41 AM, Greg KH<greg@kroah.com>  wrote:
->>> So I need some more Kconfig changes here, care to redo just this one
->>> patch?  I've applied all the others and they will show up in linux-next
->>> tomorrow.
->>
->> I fixed all that stuff some time ago:
->> http://article.gmane.org/gmane.linux.ports.arm.omap/36065
->>
->> But the patches were ignored.
->
-> Patches were not ignored, discussion was held privately (you and me),
 
-That was for the deh reorganization. Not the Kconfig ones.
+commit bc8b3f0b3978d3c0a201926b2e2bd5c732e0352e
+Author: Shreyas Bhatewara <sbhatewara@vmware.com>
+Date:   Tue Jul 6 17:00:48 2010 -0700
 
-Regarding the deh reorganization...
+No reset when the device is not opened
+    
+If a reset is scheduled, and the device goes thru close and open, it
+may happen that reset and open may run in parallel.  
+The reset code now bails out if the device is not opened.
+ 
+Signed-off-by: Ronghua Zang <ronghua@vmware.com>
+Signed-off-by: Matthieu Bucchianeri <matthieu@vmware.com>
+Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
 
-> patch
-> 13 was not accepted because changing indentation doesn't deserve a copyright
-> assignment (IMHO),
+---
 
-You didn't want to add a copyright without giving any valid reason, so
-you started a private thread. You never mentioned any rejection of the
-patches on any grounds, neither publicly, nor privately.
-
-If the patch series is only changing indentation then the lines
-removed would match the lines added, which is not the case. Take a
-look:
-15 files changed, 184 insertions(+), 509 deletions(-)
-
-In my book removing 300 lines of code while keeping all the
-functionality is a good thing. Without even considering that the rest
-of the insertions are cleaning up the code.
-
-> at that point *you* wanted your patches not to be
-> included if the last one wasn't merged in.
-
-Not without the copyright update patch.
-
-Maybe you are forgetting that I made many changes before those
-patches. Here are some stats for ue_deh and mmu_fault:
-
-Me:
- 22 commits, 487 insertions(+), 742 deletions(-)
-
-Others:
- 60 commits, 394 insertions(+), 617 deletions(-)
-
-(I didn't count the automated camel case removal)
- 218 insertions(+), 209 deletions(-)
-
-And 'git blame' shows me on 70% of ue_deh (which doesn't take into
-consideration code removals which is the main thing I did).
-
-While the vast majority of the changes are cleanups (much needed);
-there are also functional changes, mostly fixing memory corruptions,
-both reproduced and theoretical.
-
-If somebody writes a piece of code that's 10,000 lines, and another
-person reorganizes the code to make it 1,000 lines; IMO the usefulness
-of the code relies on both person's contributions. Depending on
-whether you care about having something functional, or
-maintainability/readability; you might assign more value to one, or
-the other, but I think both are important.
-
-So. Would you care to give a reason why my contributions don't deserve
-a copyright?
-
--- 
-Felipe Contreras
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 31a838f..01a5bb7 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2417,8 +2417,9 @@ vmxnet3_reset_work(struct work_struct *data)
+ 	if (test_and_set_bit(VMXNET3_STATE_BIT_RESETTING, &adapter->state))
+ 		return;
+ 
+-	/* if the device is closed, we must leave it alone */
+-	if (netif_running(adapter->netdev)) {
++	/* if the device is closed or is being opened, we must leave it alone */
++	if (netif_running(adapter->netdev) &&
++	    (adapter->netdev->flags & IFF_UP)) {
+ 		printk(KERN_INFO "%s: resetting\n", adapter->netdev->name);
+ 		vmxnet3_quiesce_dev(adapter);
+ 		vmxnet3_reset_dev(adapter);
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 5c94afa..8e1f704 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -68,10 +68,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.0.10.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.0.11.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01000A00
++#define VMXNET3_DRIVER_VERSION_NUM      0x01000B00
+ 
+ 
+ /*
