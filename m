@@ -1,58 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab0GGXtF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:49:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40868 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753392Ab0GGXtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:49:02 -0400
-Date: Thu, 8 Jul 2010 09:48:51 +1000
-From: Neil Brown <neilb@suse.de>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Takeo Tung <kernel@takeo.idv.tw>, Michal Marek <mmarek@suse.cz>,
-       linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-       sfr@canb.auug.org.au
-Subject: Re: [PATCH] struct io panic on raid1 - Re: block: unify flags for
- struct bio and struct request will kernel panic
-Message-ID: <20100708094851.6dc6199d@notabene.brown>
-In-Reply-To: <20100707231732.GA30007@lst.de>
-References: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1>
-	<4C129778.7040409@suse.cz>
-	<F8C0125B8F424A279E9679EAC24AC983@TAKEOW7NB1>
-	<20100612094937.GA12455@lst.de>
-	<F2CA952B7B5A41259C5F950CA3454C3A@TAKEOW7NB1>
-	<1AEF19B8648844C983F583EEBE9C46F4@TAKEOW7NB1>
-	<20100707231732.GA30007@lst.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757967Ab0GGXww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 19:52:52 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:38594 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757089Ab0GGXwu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 19:52:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=kxtuIZxHwXfcnQTb/pi
+	rr2ZzZThF9SLg9JCJ8QBcvgGcDx6FzsqmUSXG8/sVDENWNIdFlDSwwdYiQQxcp2X
+	pD5tD5ZeKo7+aWkJQ1IJW6/IDqR/oc8AMU7G1XRYRxJ9e1taNboT+G7HmiYogBOm
+	cTVVLZ+8jAY8VfilxjPqmpKc=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.2-rc2
+From: Junio C Hamano <gitster@pobox.com>
+Date: Wed, 07 Jul 2010 16:52:40 -0700
+Message-ID: <7vhbkasvcn.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: BDED9EBE-8A22-11DF-BAE4-9056EE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jul 2010 01:17:32 +0200
-Christoph Hellwig <hch@lst.de> wrote:
+A release candidate Git 1.7.2-rc2 is available at the usual places
+for testing:
 
-> On Thu, Jul 08, 2010 at 07:05:39AM +0800, Takeo Tung wrote:
-> > Dear Christoph,
-> > 
-> > I was check the patch again. I found the panic status haapen on Soft RAID 
-> > 1. I review it. found some define using bool, so some like ( x & REQ_SYNC) 
-> > only 0 or 1.
-> > so if bi_rw = rw | sync will bi_rw = rw | 0 or rw | 1. not rw | ( 1 << 
-> > __REQ_SYNC).
-> > 
-> > So I write a patch is fix it. seems normal now. could you review the patch 
-> > or any comment?
-> 
-> The patch looks correct to me, although your mailer mangled the
-> whitespace badly.  If Neil wants to keep the flag as bool we could
-> also add a !! around the bit flag checks.
+  http://www.kernel.org/pub/software/scm/git/
 
-I think it is best to make them "unsigned long" holding the actual but.
-They were only made 'bool' because that is was bio_rw_flagged() returned.
-Converting to a bool then back to a bit-flag is unnecessary.
+  git-1.7.2.rc2.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.2.rc2.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.2.rc2.tar.{gz,bz2}		(preformatted docs)
 
-Thanks,
-NeilBrown
+The RPM binary packages for a few architectures are found in:
+
+  testing/git-*-1.7.2.rc2-1.fc11.$arch.rpm	(RPM)
+
+
+Git v1.7.2 Release Notes (draft)
+================================
+
+Updates since v1.7.1
+--------------------
+
+ * core.eol configuration and text/eol attributes are the new way to control
+   the end of line conventions for files in the working tree.
+
+ * core.autocrlf has been made safer - it will now only handle line
+   endings for new files and files that are LF-only in the
+   repository. To normalize content that has been checked in with
+   CRLF, use the new eol/text attributes.
+
+ * The whitespace rules used in "git apply --whitespace" and "git diff"
+   gained a new member in the family (tab-in-indent) to help projects with
+   policy to indent only with spaces.
+
+ * When working from a subdirectory, by default, git does not look for its
+   metadirectory ".git" across filesystems, primarily to help people who
+   have invocations of git in their custom PS1 prompts, as being outside
+   of a git repository would look for ".git" all the way up to the root
+   directory, and NFS mounts are often slow.  DISCOVERY_ACROSS_FILESYSTEM
+   environment variable can be used to tell git not to stop at a
+   filesystem boundary.
+
+ * Usage help messages generated by parse-options library (i.e. most
+   of the Porcelain commands) are sent to the standard output now.
+
+ * ':/<string>' notation to look for a commit now takes regular expression
+   and it is not anchored at the beginning of the commit log message
+   anymore (this is a backward incompatible change).
+
+ * "git" wrapper learned "-c name=value" option to override configuration
+   variable from the command line.
+
+ * Improved portability for various platforms including older SunOS,
+   HP-UX 10/11, AIX, Tru64, etc. and platforms with Python 2.4.
+
+ * The message from "git am -3" has been improved when conflict
+   resolution ended up making the patch a no-op.
+
+ * "git blame" applies the textconv filter to the contents it works
+   on, when available.
+
+ * "git checkout --orphan newbranch" is similar to "-b newbranch" but
+   prepares to create a root commit that is not connected to any existing
+   commit.
+
+ * "git cherry-pick" learned to pick a range of commits
+   (e.g. "cherry-pick A..B" and "cherry-pick --stdin"), so did "git
+   revert"; these do not support the nicer sequencing control "rebase
+   [-i]" has, though.
+
+ * "git cherry-pick" and "git revert" learned --strategy option to specify
+   the merge strategy to be used when performing three-way merges.
+
+ * "git cvsserver" can be told to use pserver; its password file can be
+   stored outside the repository.
+
+ * The output from the textconv filter used by "git diff" can be cached to
+   speed up their reuse.
+
+ * "git diff --word-diff=<mode>" extends the existing "--color-words"
+   option, making it more useful in color-challenged environments.
+
+ * The regexp to detect function headers used by "git diff" for PHP has
+   been enhanced for visibility modifiers (public, protected, etc.) to
+   better support PHP5.
+
+ * "diff.noprefix" configuration variable can be used to implicitly
+   ask for "diff --no-prefix" behaviour.
+
+ * "git for-each-ref" learned "%(objectname:short)" that gives the object
+   name abbreviated.
+
+ * "git format-patch" learned --signature option and format.signature
+   configuration variable to customize the e-mail signature used in the
+   output.
+
+ * Various options to "git grep" (e.g. --count, --name-only) work better
+   with binary files.
+
+ * "git grep" learned "-Ovi" to open the files with hits in your editor.
+
+ * "git help -w" learned "chrome" and "chromium" browsers.
+
+ * "git log --decorate" shows commit decorations in various colours.
+
+ * "git log --follow <path>" follows across copies (it used to only follow
+   renames).  This may make the processing more expensive.
+
+ * "git log --pretty=format:<template>" specifier learned "% <something>"
+   magic that inserts a space only when %<something> expands to a
+   non-empty string; this is similar to "%+<something>" magic, but is
+   useful in a context to generate a single line output.
+
+ * "git notes prune" learned "-n" (dry-run) and "-v" options, similar to
+   what "git prune" has.
+
+ * "git patch-id" can be fed a mbox without getting confused by the
+   signature line in the format-patch output.
+
+ * "git remote" learned "set-branches" subcommand.
+
+ * "git rev-list A..B" learned --ancestry-path option to further limit
+   the result to the commits that are on the ancestry chain between A and
+   B (i.e. commits that are not descendants of A are excluded).
+
+ * "git show -5" is equivalent to "git show --do-walk 5"; this is similar
+   to the update to make "git show master..next" walk the history,
+   introduced in 1.6.4.
+
+ * "git status [-s] --ignored" can be used to list ignored paths.
+
+ * "git status -s -b" shows the current branch in the output.
+
+ * "git status" learned "--ignore-submodules" option.
+
+ * Various "gitweb" enhancements and clean-ups, including syntax
+   highlighting, "plackup" support for instaweb, .fcgi suffix to run
+   it as FastCGI script, etc.
+
+ * The test harness has been updated to produce TAP-friendly output.
+
+
+Fixes since v1.7.1
+------------------
+
+All of the fixes in v1.7.1.X maintenance series are included in this
+release, unless otherwise noted.
+
+ * We didn't URL decode "file:///path/to/repo" correctly when path/to/repo
+   had percent-encoded characters (638794c, 9d2e942, ce83eda, 3c73a1d).
+
+ * "git clone" did not configure remote.origin.url correctly for bare
+   clones (df61c889).
+
+ * "git diff --graph" works better with "--color-words" and other options
+   (81fa024..4297c0a).
+
+ * "git diff" could show ambiguous abbreviation of blob object names on
+   its "index" line (3e5a188).
+
+ * "git reset --hard" started from a wrong directory and a working tree in
+   a nonstandard location is in use got confused (560fb6a1).
+
+----------------------------------------------------------------
+
+Changes since v1.7.2-rc1 are as follows:
+
+Brandon Casey (2):
+      t/t9700/test.pl: don't access private object members, use public access methods
+      t/t0006: specify timezone as EST5 not EST to comply with POSIX
+
+Chris Packham (1):
+      Documentation/git-gc.txt: add reference to githooks
+
+Dylan Reid (1):
+      xdiff: optimise for no whitespace difference when ignoring whitespace.
+
+Heiko Voigt (1):
+      add missing && to submodule-merge testcase
+
+Jakub Narebski (1):
+      gitweb: Move evaluate_gitweb_config out of run_request
+
+Jeff King (3):
+      t0006: test timezone parsing
+      parse_date: fix signedness in timezone calculation
+      test-date: fix sscanf type conversion
+
+Jonathan Nieder (1):
+      t/README: document more test helpers
+
+Junio C Hamano (4):
+      Updates from the list to 1.7.2 Release Notes
+      t/README: proposed rewording...
+      backmerge a few more fixes to 1.7.1.X series
+      Git 1.7.2-rc2
+
+Michael J Gruber (1):
+      rerere.txt: Document forget subcommand
+
+Pierre Habouzit (1):
+      fix git branch -m in presence of cross devices
+
+Uwe Kleine-König (1):
+      rev-parse: fix --parse-opt --keep-dashdash --stop-at-non-option
+
+Ævar Arnfjörð Bjarmason (13):
+      test-lib: Adjust output to be valid TAP format
+      test-lib: Make the test_external_* functions TAP-aware
+      test-lib: output a newline before "ok" under a TAP harness
+      tests: Skip tests in a way that makes sense under TAP
+      tests: Say "pass" rather than "ok" on empty lines for TAP
+      t9700: Use Test::More->builder, not $Test::Builder::Test
+      t/README: The trash is in 't/trash directory.$name'
+      t/README: Typo: paralell -> parallel
+      t/README: Document the prereq functions, and 3-arg test_*
+      t/README: Document test_external*
+      t/README: Document test_expect_code
+      t/README: Add a section about skipping tests
+      t/README: Document the do's and don'ts of tests
+
