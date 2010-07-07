@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab0GGJei (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 05:34:38 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:54941 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753671Ab0GGJeh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 05:34:37 -0400
-Date: Wed, 7 Jul 2010 02:34:37 -0700 (PDT)
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-X-X-Sender: sbhatewara@localhost.localdomain
-To: netdev@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com
-Subject: [PATCH 2.6.35-rc1] net: vmxnet3 fixes [5/5] Respect the interrupt
- type in VM configuration
-In-Reply-To: <alpine.LRH.2.00.1007070202080.5939@localhost.localdomain>
-Message-ID: <alpine.LRH.2.00.1007070232300.5939@localhost.localdomain>
-References: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain> <alpine.LRH.2.00.1007070202080.5939@localhost.localdomain>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753910Ab0GGJnb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 05:43:31 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47534 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751768Ab0GGJna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 05:43:30 -0400
+Date: Wed, 7 Jul 2010 10:43:11 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
+Message-ID: <20100707094310.GJ13780@csn.ul.ie>
+References: <20100702125155.69c02f85.akpm@linux-foundation.org> <20100705134949.GC13780@csn.ul.ie> <20100706093529.CCD1.A69D9226@jp.fujitsu.com> <20100706101235.GE13780@csn.ul.ie> <AANLkTin8FotAC1GvjuoYU9XA2eiSr6FWWh6bwypTdhq3@mail.gmail.com> <20100706152539.GG13780@csn.ul.ie> <20100706202758.GC18210@cmpxchg.org> <AANLkTimOkI95ZkJecE3jxRDDGbHvP9tRUluIoJuhqqMz@mail.gmail.com> <20100707002458.GI13780@csn.ul.ie> <20100707011533.GB3630@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100707011533.GB3630@infradead.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 06, 2010 at 09:15:33PM -0400, Christoph Hellwig wrote:
+> On Wed, Jul 07, 2010 at 01:24:58AM +0100, Mel Gorman wrote:
+> > What I have now is direct writeback for anon files. For files be it from
+> > kswapd or direct reclaim, I kick writeback pre-emptively by an amount based
+> > on the dirty pages encountered because monitoring from systemtap indicated
+> > that we were getting a large percentage of the dirty file pages at the end
+> > of the LRU lists (bad). Initial tests show that page reclaim writeback is
+> > reduced from kswapd by 97% with this sort of pre-emptive kicking of flusher
+> > threads based on these figures from sysbench.
+> 
+> That sounds like yet another bad aid to me.  Instead it would be much
+> better to not have so many file pages at the end of LRU by tuning the
+> flusher threads and VM better.
+> 
 
-Respect the interrupt type set in VM configuration.
-   
-When interrupt type is not auto, do not ignore the interrupt type set from
-VM configuration.
+Do you mean "so many dirty file pages"? I'm going to assume you do.
 
-Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+How do you suggest tuning this? The modification I tried was "if N dirty
+pages are found during a SWAP_CLUSTER_MAX scan of pages, assume an average
+dirtying density of at least that during the time those pages were inserted on
+the LRU. In response, ask the flushers to flush 1.5X". This roughly responds
+to the conditions it finds as they are encountered and is based on scanning
+rates instead of time. It seemed like a reasonable option.
 
----
+Based on what I've seen, we are generally below the dirty_ratio and the
+flushers are behaving as expected so there is little tuning available there. As
+new dirty pages are added to the inactive list, they are allowed to reach the
+bottom of the LRU before the periodic sync kicks in. From what I can tell,
+it's already the case that flusher threads are cleaning the oldest inodes
+first and I'd expect there to be a rough correlation between oldest inode
+and oldest pages.
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 01a5bb7..c6d756f 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -2355,9 +2355,13 @@ vmxnet3_alloc_intr_resources(struct vmxnet3_adapter *adapter)
- 	adapter->intr.mask_mode = (cfg >> 2) & 0x3;
- 
- 	if (adapter->intr.type == VMXNET3_IT_AUTO) {
--		int err;
-+		adapter->intr.type = VMXNET3_IT_MSIX;
-+	}
- 
- #ifdef CONFIG_PCI_MSI
-+	if (adapter->intr.type == VMXNET3_IT_MSIX) {
-+		int err;
-+
- 		adapter->intr.msix_entries[0].entry = 0;
- 		err = pci_enable_msix(adapter->pdev, adapter->intr.msix_entries,
- 				      VMXNET3_LINUX_MAX_MSIX_VECT);
-@@ -2366,15 +2370,18 @@ vmxnet3_alloc_intr_resources(struct vmxnet3_adapter *adapter)
- 			adapter->intr.type = VMXNET3_IT_MSIX;
- 			return;
- 		}
--#endif
-+		adapter->intr.type = VMXNET3_IT_MSI;
-+	}
- 
-+	if (adapter->intr.type == VMXNET3_IT_MSI) {
-+		int err;
- 		err = pci_enable_msi(adapter->pdev);
- 		if (!err) {
- 			adapter->intr.num_intrs = 1;
--			adapter->intr.type = VMXNET3_IT_MSI;
- 			return;
- 		}
- 	}
-+#endif /* CONFIG_PCI_MSI */
- 
- 	adapter->intr.type = VMXNET3_IT_INTX;
- 
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index 8e1f704..6bab6ff 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -68,10 +68,10 @@
- /*
-  * Version numbers
-  */
--#define VMXNET3_DRIVER_VERSION_STRING   "1.0.11.0-k"
-+#define VMXNET3_DRIVER_VERSION_STRING   "1.0.12.0-k"
- 
- /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
--#define VMXNET3_DRIVER_VERSION_NUM      0x01000B00
-+#define VMXNET3_DRIVER_VERSION_NUM      0x01000C00
- 
- 
- /*
+We could reduce the dirty_ratio but people already complain about workloads
+that do not allow enough pages to be dirtied. We could decrease the sync
+time for flusher threads but then it might be starting IO sooner than it
+should and it might be unnecessary if the system is under no memory pressure.
+
+Alternatives?
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
