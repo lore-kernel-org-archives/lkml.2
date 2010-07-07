@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947Ab0GGXP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:15:57 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59652 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757799Ab0GGXP4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:15:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WRHfY5RrY7DO4riL4Y6PeiBHpp0QJAK2xksCLr99FSuhaPvXBeTQbUVI3+uoZmzoo9
-         lqMbZz3aym0C1aBeQZKihWuJg2saLsv+KQvlsBJZ6u9CWb7cIVLn59MLfyogCefBgiHA
-         NsrUkrmgU05vL9ruakVAcSskwokDWr7kfGd3M=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimvsaoOm_QEUnvlZf2EKuiMpOr9PdQt_Ga0Z97D@mail.gmail.com>
-References: <AANLkTimvsaoOm_QEUnvlZf2EKuiMpOr9PdQt_Ga0Z97D@mail.gmail.com>
-Date: Wed, 7 Jul 2010 16:15:55 -0700
-Message-ID: <AANLkTikaM7O-pCW2CaHDRKzycVoWvzpM-9zA9creAtcV@mail.gmail.com>
-Subject: Re: nic enumeration
-From: Steve Fink <sphink@gmail.com>
-To: Michael Di Domenico <mdidomenico4@gmail.com>
-Cc: linux-net@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757968Ab0GGXSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 19:18:23 -0400
+Received: from verein.lst.de ([213.95.11.210]:50890 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756870Ab0GGXSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 19:18:22 -0400
+Date: Thu, 8 Jul 2010 01:17:32 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Takeo Tung <kernel@takeo.idv.tw>
+Cc: Christoph Hellwig <hch@lst.de>, Michal Marek <mmarek@suse.cz>,
+       linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+       sfr@canb.auug.org.au
+Subject: Re: [PATCH] struct io panic on raid1 - Re: block: unify flags for struct bio and struct request will kernel panic
+Message-ID: <20100707231732.GA30007@lst.de>
+References: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1> <4C129778.7040409@suse.cz> <F8C0125B8F424A279E9679EAC24AC983@TAKEOW7NB1> <20100612094937.GA12455@lst.de> <F2CA952B7B5A41259C5F950CA3454C3A@TAKEOW7NB1> <1AEF19B8648844C983F583EEBE9C46F4@TAKEOW7NB1>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1AEF19B8648844C983F583EEBE9C46F4@TAKEOW7NB1>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 7, 2010 at 3:25 PM, Michael Di Domenico
-<mdidomenico4@gmail.com> wrote:
-> What I'm curious about is how/why Linux actually decides Nic1 should be Eth0?
->
-> My theory is it starts on the lowest MAC address and works up,
-> depending partly on driver load order.
+On Thu, Jul 08, 2010 at 07:05:39AM +0800, Takeo Tung wrote:
+> Dear Christoph,
+> 
+> I was check the patch again. I found the panic status haapen on Soft RAID 
+> 1. I review it. found some define using bool, so some like ( x & REQ_SYNC) 
+> only 0 or 1.
+> so if bi_rw = rw | sync will bi_rw = rw | 0 or rw | 1. not rw | ( 1 << 
+> __REQ_SYNC).
+> 
+> So I write a patch is fix it. seems normal now. could you review the patch 
+> or any comment?
 
-I may be spewing misinformation here, but my understanding of how this
-works is that the specific ordering is pretty much random. It's rather
-unlikely to be based on MAC address value, except accidentally; it's
-probably just whatever comes up first when it enumerates the
-interfaces, which could easily be timing-dependent. (From personal
-experience, two identical but physically separate NICs will come up in
-a different order on every boot. Your case may be more consistent.)
+The patch looks correct to me, although your mailer mangled the
+whitespace badly.  If Neil wants to keep the flag as bool we could
+also add a !! around the bit flag checks.
 
-The first time it does this, though, it records the MAC address into
-the appropriate ifcfg-* script. From then on, at boot time it checks
-the MAC address of each interface as it comes up. If it mismatches
-with what is recorded in the ifcfg-* script, then it skips that name
-and tries using the next.
-
-In other words, all you should have to do is set HWADDR appropriately
-in the the ifcfg-* scripts and it should do the right thing.
