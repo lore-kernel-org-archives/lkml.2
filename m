@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab0GGCnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 22:43:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43363 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752907Ab0GGCnL (ORCPT
+	id S1753699Ab0GGCuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 22:50:54 -0400
+Received: from mail.gmx.net ([213.165.64.20]:58223 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751769Ab0GGCuw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 22:43:11 -0400
-Date: Tue, 6 Jul 2010 19:42:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nico Schottelius <nico-linux-2010-07-01@schottelius.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       dri-devel@lists.freedesktop.org, netdev@vger.kernel.org
-Subject: Re: Report for 2.6.35-rc3-00262-g984bc96
-Message-Id: <20100706194222.fcf16e13.akpm@linux-foundation.org>
-In-Reply-To: <20100701074052.GA3501@schottelius.org>
-References: <20100701074052.GA3501@schottelius.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Jul 2010 22:50:52 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX18Vs7gpcQgVq8qIiP9d2OWOAjBSBSC8s76u18/fSN
+	l553wU3bjMVRcy
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: devel@driverdev.osuosl.org
+Subject: Re: Oops after unloading staging/panel/panel.ko
+Date: Wed, 7 Jul 2010 04:50:49 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org,
+       "Greg Kroah-Hartman" <gregkh@suse.de>, Willy Tarreau <w@1wt.eu>
+References: <201007070313.38814.PeterHuewe@gmx.de> <201007070338.50023.PeterHuewe@gmx.de>
+In-Reply-To: <201007070338.50023.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201007070450.49479.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Jul 2010 09:40:52 +0200 Nico Schottelius <nico-linux-2010-07-01@schottelius.org> wrote:
+Am Mittwoch 07 Juli 2010 03:38:49 schrieb Peter Hüwe:
+> Here is another oops trace caused by the same problem.
 
-> Good morning!
-> 
-> A short report on what's broken in 2.6.35-rc3-00262-g984bc96 with
-> the Lenovo X201:
+I think I've tracked it down.
 
-So you see two post-2.6.34 regressions?
+parport_release and parport_unregister_device get called twice while unloading 
+the module - after the first call the handle isn't valid anymore and thus 
+causes the oops.
 
-> == xrandr ==
-> 
-> After using xrandr several times in xorg, the screen gets
-> "fancy": blue/white/black changing patterns.
-> Getting even more weired when changing to a conosle.
-> 
-> The only thing that keeps on working is the mouse cursor
-> in xorg. This did not happen with 2.6.34-rcsomething, neither
-> with 2.6.33 iirc.
-> 
-> This is a Intel Corporation Core Processor Integrated Graphics Controller (rev 02),
-> attached xorg.log.
+I'll send a patch soon.
 
-(cc dri-devel)
-
-> == netlink/carrier messag ==
-> 
-> dhcpcd does not get updated when the link is established,
-> need to restart it. 
-
-(cc netdev)
-
-> == suspend/resume (to ram) ==
-> 
-> So far no real crash! Only xorg is sometimes not coming up
-> again, but this may be related to the first issue.
-> 
-> == wifi / intel 6000 ==
-> 
-> Works! Works! (Besides the netlink issue, which is annoying,
-> but for all devices).
-
+Peter
