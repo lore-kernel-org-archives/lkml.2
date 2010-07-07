@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab0GGBdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jul 2010 21:33:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40534 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751274Ab0GGBdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jul 2010 21:33:08 -0400
-Date: Tue, 6 Jul 2010 18:32:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andi Kleen <andi@firstfloor.org>,
-       "Zhang, Yanmin" <yanmin.zhang@intel.com>,
-       Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH]shmem: reduce one time of locking in pagefault
-Message-Id: <20100706183254.cf67e29e.akpm@linux-foundation.org>
-In-Reply-To: <1278465346.11107.8.camel@sli10-desk.sh.intel.com>
-References: <1278465346.11107.8.camel@sli10-desk.sh.intel.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752247Ab0GGBen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jul 2010 21:34:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62329 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab0GGBem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jul 2010 21:34:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,549,1272870000"; 
+   d="scan'208";a="583597285"
+Date: Wed, 7 Jul 2010 09:19:40 +0800
+From: Yong Wang <yong.y.wang@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Masayuki Ohtak <masa-korg@dsn.okisemi.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>, qi.wang@intel.com,
+       joel.clark@intel.com, andrew.chih.howe.khor@intel.com,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Packet hub driver of Topcliff PCH
+Message-ID: <20100707011940.GA32559@ywang-moblin2.bj.intel.com>
+References: <4C204B0D.2030201@dsn.okisemi.com> <4C32CB44.9010908@dsn.okisemi.com> <201007060830.02879.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007060830.02879.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Jul 2010 09:15:46 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
-
-> I'm running a shmem pagefault test case (see attached file) under a 64 CPU
-> system. Profile shows shmem_inode_info->lock is heavily contented and 100%
-> CPUs time are trying to get the lock.
-
-I seem to remember complaining about that in 2002 ;) Faulting in a
-mapping of /dev/zero is just awful on a 4-way(!).
-
-> In the pagefault (no swap) case,
-> shmem_getpage gets the lock twice, the last one is avoidable if we prealloc a
-> page so we could reduce one time of locking. This is what below patch does.
+On Tue, Jul 06, 2010 at 08:30:02AM +0200, Arnd Bergmann wrote:
+> On Tuesday 06 July 2010 08:20:52 Masayuki Ohtak wrote:
+> > Hi Arnd
+> > 
+> > I have modified for your comments.
+> > Please confirm below.
+> > 
 > 
-> The result of the test case:
-> 2.6.35-rc3: ~20s
-> 2.6.35-rc3 + patch: ~12s
-> so this is 40% improvement.
+> Yes, looks good. Thanks for the quick reply.
 > 
-> One might argue if we could have better locking for shmem. But even shmem is lockless,
-> the pagefault will soon have pagecache lock heavily contented because shmem must add
-> new page to pagecache. So before we have better locking for pagecache, improving shmem
-> locking doesn't have too much improvement. I did a similar pagefault test against
-> a ramfs file, the test result is ~10.5s.
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> 
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index f65f840..c5f2939 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
+> 	Arnd
 
-The patch doesn't make shmem_getpage() any clearer :(
+Hi Andrew,
 
-shmem_inode_info.lock appears to be held too much.  Surely
-lookup_swap_cache() didn't need it (for example).
+Do you have any further comments on this patch? If so, please let us
+know.
 
-What data does shmem_inode_info.lock actually protect?
-
+Thanks
+-Yong
 
