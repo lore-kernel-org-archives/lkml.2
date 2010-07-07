@@ -1,127 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757759Ab0GGVko (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 17:40:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60763 "EHLO
+	id S1757962Ab0GGVm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 17:42:58 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:49482 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757679Ab0GGVkh (ORCPT
+	with ESMTP id S1757740Ab0GGVkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 17:40:37 -0400
+	Wed, 7 Jul 2010 17:40:43 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 00/18] VFS: turn no_llseek into the default
-Date: Wed,  7 Jul 2010 23:40:02 +0200
-Message-Id: <1278538820-1392-1-git-send-email-arnd@arndb.de>
+       Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@lst.de>,
+       Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+       Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org
+Subject: [PATCH 04/18] ib/qib: use generic_file_llseek
+Date: Wed,  7 Jul 2010 23:40:06 +0200
+Message-Id: <1278538820-1392-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
-X-Provags-ID: V02:K0:1HZyHmU6j9bwEMImUCrNQsd8cQpuwr1GXaR7FRz93e6
- Af8dATefqvDJlWSLdRPQH+RUdq0YT9ChYNDjk4i07cPltpjNVO
- j4l5q6EYLwuiHgHaxnVX9Ad1KxnFyNxG9Dt21SjMlGIileWmUg
- XBQjsMwYvtYxCprmF2+m9RsMa5bxKSJv9ZZcYofYV00ynkyIFW
- PD5Yb85KD7DIqqqbGitSw==
+In-Reply-To: <1278538820-1392-1-git-send-email-arnd@arndb.de>
+References: <1278538820-1392-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:WvI2VKG8hklYke4clEl/3dDw33XgbEvKKO5W8UkupbP
+ 2JvWnw2qOLMTEByqmVm66sQ/FbIEFyL77E7JCyHb+FEl59CksZ
+ /vt7RWRxPeu6rMx3SGbw7jnPlXwxWkB7fHETBIibmsOFRnXjBB
+ 5Q7QjHJPsAMbaOstQaP0MRNRha+64KKqduGoEUqs6VFa5OvOCL
+ RVzMxZQDI4Q77CnyCIOoQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As I promised to Christoph Hellwig, this series
-changes the default action for sys_llseek from
-the traditional default_llseek to no_llseek,
-disallowing users to seek files without a seek
-operation, which is much more logical.
+When the default llseek action gets changed to
+no_llseek, all file systems relying on the
+current behaviour need to set explicit .llseek
+operations.
 
-At the same time, this series makes it obvious
-that the remaining users of the now explicitly
-used default_llseek function do not require
-the big kernel lock and we can consequently
-replace it with i_mutex.
+In case of qib_fs, we want the files to be
+seekable, so generic_file_llseek fits best.
 
-The bulk of the necessary changes is adding
-a .llseek pointer to each and every
-file_operation in the kernel using a coccinelle
-semantic patch (patch 16 here). The semantic
-patch only changes those cases that it can
-prove to have an obviously correct replacement
-operation, see the patch description for the
-detailed rules it uses.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Roland Dreier <rolandd@cisco.com>
+Cc: Sean Hefty <sean.hefty@intel.com>
+Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org
+---
+ drivers/infiniband/hw/qib/qib_fs.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-The remaining patches here are for the cases
-that the semantic patch did not have an answer
-for or that it did not find because it was
-hidden in macros or in unexpected coding style.
-
-I am confident that I have covered all users
-in the current mainline kernel, but new
-file_operations are already part of linux-next,
-so the same semantic patch needs to be applied
-to those.
-
-The diffstat below intentionally covers only
-the changes I did manually, leaving out patch
-16.
-
-	Arnd
-
-Arnd Bergmann (18):
-  drm: use noop_llseek
-  net/wireless: use generic_file_llseek in debugfs
-  lkdtm: use generic_file_llseek in debugfs
-  ib/qib: use generic_file_llseek
-  arm/omap: use generic_file_llseek in iommu_debug
-  spufs: use llseek in all file operations
-  staging: use llseek in all file operations
-  selinux: use generic_file_llseek
-  tracing: use generic_file_llseek for debugfs
-  ibmasmfs: use generic_file_llseek
-  oprofile: make event buffer nonseekable
-  raw: use explicit llseek file operations
-  ima: use generic_file_llseek for securityfs
-  irda/irnet: use noop_llseek
-  viotape: use noop_llseek
-  llseek: automatically add .llseek fop
-  vfs: don't use BKL in default_llseek
-  vfs: make no_llseek the default
-
- Documentation/DocBook/drm.tmpl               |    1 
- arch/arm/plat-omap/iommu-debug.c             |    2 
- arch/powerpc/platforms/cell/spufs/file.c     |   24 ++++++++--
- drivers/char/raw.c                           |    2 
- drivers/char/viotape.c                       |    1 
- drivers/gpu/drm/i810/i810_drv.c              |    1 
- drivers/gpu/drm/i830/i830_drv.c              |    1 
- drivers/gpu/drm/i915/i915_drv.c              |    1 
- drivers/gpu/drm/mga/mga_drv.c                |    1 
- drivers/gpu/drm/nouveau/nouveau_drv.c        |    1 
- drivers/gpu/drm/r128/r128_drv.c              |    1 
- drivers/gpu/drm/radeon/radeon_drv.c          |    1 
- drivers/gpu/drm/savage/savage_drv.c          |    1 
- drivers/gpu/drm/sis/sis_drv.c                |    1 
- drivers/gpu/drm/tdfx/tdfx_drv.c              |    1 
- drivers/gpu/drm/via/via_drv.c                |    1 
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c          |    1 
- drivers/infiniband/hw/qib/qib_fs.c           |   18 +++----
- drivers/misc/ibmasm/ibmasmfs.c               |    4 +
- drivers/misc/iwmc3200top/debugfs.c           |    3 +
- drivers/misc/lkdtm.c                         |    9 +++
- drivers/net/wireless/b43/debugfs.c           |    1 
- drivers/net/wireless/b43legacy/debugfs.c     |    1 
- drivers/net/wireless/iwlwifi/iwl-debugfs.c   |    3 +
- drivers/net/wireless/libertas/debugfs.c      |    1 
- drivers/net/wireless/rt2x00/rt2x00debug.c    |    1 
- drivers/net/wireless/wl12xx/wl1251_debugfs.c |    2 
- drivers/net/wireless/wl12xx/wl1271_debugfs.c |    2 
- drivers/oprofile/event_buffer.c              |    3 -
- drivers/staging/msm/mdp4_debugfs.c           |   10 ----
- drivers/staging/panel/panel.c                |    3 -
- fs/read_write.c                              |    5 --
- kernel/trace/trace.c                         |   15 ++++++
- net/irda/irnet/irnet_ppp.h                   |    1 
- net/mac80211/debugfs.c                       |    2 
- net/mac80211/debugfs_key.c                   |    2 
- net/mac80211/debugfs_netdev.c                |    1 
- net/mac80211/debugfs_sta.c                   |    2 
- net/wireless/debugfs.c                       |    1 
- security/integrity/ima/ima_fs.c              |    9 ++-
- security/selinux/selinuxfs.c                 |   16 ++++++
- 41 files changed, 129 insertions(+), 28 deletions(-)
+diff --git a/drivers/infiniband/hw/qib/qib_fs.c b/drivers/infiniband/hw/qib/qib_fs.c
+index 844954b..9f989c0 100644
+--- a/drivers/infiniband/hw/qib/qib_fs.c
++++ b/drivers/infiniband/hw/qib/qib_fs.c
+@@ -135,8 +135,8 @@ static ssize_t driver_names_read(struct file *file, char __user *buf,
+ }
+ 
+ static const struct file_operations driver_ops[] = {
+-	{ .read = driver_stats_read, },
+-	{ .read = driver_names_read, },
++	{ .read = driver_stats_read, .llseek = generic_file_llseek, },
++	{ .read = driver_names_read, .llseek = generic_file_llseek, },
+ };
+ 
+ /* read the per-device counters */
+@@ -164,8 +164,8 @@ static ssize_t dev_names_read(struct file *file, char __user *buf,
+ }
+ 
+ static const struct file_operations cntr_ops[] = {
+-	{ .read = dev_counters_read, },
+-	{ .read = dev_names_read, },
++	{ .read = dev_counters_read, .llseek = generic_file_llseek, },
++	{ .read = dev_names_read, .llseek = generic_file_llseek, },
+ };
+ 
+ /*
+@@ -210,9 +210,9 @@ static ssize_t portcntrs_2_read(struct file *file, char __user *buf,
+ }
+ 
+ static const struct file_operations portcntr_ops[] = {
+-	{ .read = portnames_read, },
+-	{ .read = portcntrs_1_read, },
+-	{ .read = portcntrs_2_read, },
++	{ .read = portnames_read, .llseek = generic_file_llseek, },
++	{ .read = portcntrs_1_read, .llseek = generic_file_llseek, },
++	{ .read = portcntrs_2_read, .llseek = generic_file_llseek, },
+ };
+ 
+ /*
+@@ -261,8 +261,8 @@ static ssize_t qsfp_2_read(struct file *file, char __user *buf,
+ }
+ 
+ static const struct file_operations qsfp_ops[] = {
+-	{ .read = qsfp_1_read, },
+-	{ .read = qsfp_2_read, },
++	{ .read = qsfp_1_read, .llseek = generic_file_llseek, },
++	{ .read = qsfp_2_read, .llseek = generic_file_llseek, },
+ };
+ 
+ static ssize_t flash_read(struct file *file, char __user *buf,
+-- 
+1.7.1
 
