@@ -1,32 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab0GHEl1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 00:41:27 -0400
-Received: from bd2.citechco.net ([203.191.33.53]:36619 "EHLO bd2.citechco.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805Ab0GHElZ convert rfc822-to-8bit (ORCPT
+	id S1752880Ab0GHEmB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 00:42:01 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54444 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab0GHEl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 00:41:25 -0400
-X-Greylist: delayed 1282 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jul 2010 00:41:25 EDT
-Date: Thu, 8 Jul 2010 11:06:51 +0700 (BDST)
-From: "Mr. John Galvan " <krish@citechco.net>
-Reply-To: "Mr. John Galvan " <johngalvin102@yahoo.com>
-Message-ID: <19318100.83386.1278562011980.JavaMail.root@pop3>
-Subject: Business Proposal!!!
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.220.68.1]
-X-Mailer: Zimbra 6.0.6_GA_2330.DEBIAN4.0 (zclient/6.0.6_GA_2330.DEBIAN4.0)
-To: undisclosed-recipients:;
-X-MailScanner: Found to be clean
+	Thu, 8 Jul 2010 00:41:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=fBAWHkYVS4SSFZxR30f+7Ms8RvzjPsdnjxMQLm45UWSoRIh/4QtMNF7Jjae4h1ttYi
+         08fQ3/qTATRvTvF4sFKDo+8YNB3zH4fHESQ2tv13FKH9uE7JOOCZzQwMMJrr2/UFHR3o
+         zSljuKftNFw04mKHL4h0Ta2Icli4Z2pLX4PW0=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: jack@suse.cz
+Cc: hch@lst.de, linux-kernel@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]udf:super.c Fix warning: variable 'sbi' set but not used
+Date: Wed,  7 Jul 2010 21:42:13 -0700
+Message-Id: <1278564133-19682-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This fixes this warning when building the kernel:
+  CC      fs/udf/super.o
+fs/udf/super.c: In function 'udf_load_sequence':
+fs/udf/super.c:1582:22: warning: variable 'sbi' set but not used
+Please have a look, when you have time and let me know.
 
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-I wish to introduce myself to you, Am Mr. John Galvan a staff of a private offshore bank (AIG Private Bank) United Kingdom office,I have a proposal of (£15,500,000.00 Million Pounds) Which I intend to give 40% of the total funds as compensation for your assistance and 60% for me, send your response by reply to this mail to indicate your interest I shall provide you with full details of the transaction.
+---
+ fs/udf/super.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Regards,
-Mr. John Galvan
+diff --git a/fs/udf/super.c b/fs/udf/super.c
+index 612d1e2..12bb651 100644
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -1579,9 +1579,7 @@ static int udf_load_sequence(struct super_block *sb, struct buffer_head *bh,
+ {
+ 	struct anchorVolDescPtr *anchor;
+ 	long main_s, main_e, reserve_s, reserve_e;
+-	struct udf_sb_info *sbi;
+ 
+-	sbi = UDF_SB(sb);
+ 	anchor = (struct anchorVolDescPtr *)bh->b_data;
+ 
+ 	/* Locate the main sequence */
+-- 
+1.7.1.rc1.21.gf3bd6
+
