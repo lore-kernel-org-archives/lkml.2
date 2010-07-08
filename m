@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab0GHGhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 02:37:11 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60124 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094Ab0GHGhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 02:37:09 -0400
-Date: Thu, 8 Jul 2010 08:36:44 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "2 . 6 . 31 . x-2 . 6 . 34 . x" <stable@kernel.org>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20100708063644.GA26474@elte.hu>
-References: <1278563811-21818-1-git-send-regression-fweisbec@gmail.com>
+	id S1753905Ab0GHGjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 02:39:12 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39217 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094Ab0GHGjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 02:39:10 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 12/14] vmscan: Do not writeback pages in direct reclaim
+Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Arcangeli <aarcange@redhat.com>
+In-Reply-To: <20100706202758.GC18210@cmpxchg.org>
+References: <20100706152539.GG13780@csn.ul.ie> <20100706202758.GC18210@cmpxchg.org>
+Message-Id: <20100708153811.CD30.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278563811-21818-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.0562]
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  8 Jul 2010 15:39:03 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> On Tue, Jul 06, 2010 at 04:25:39PM +0100, Mel Gorman wrote:
+> > On Tue, Jul 06, 2010 at 08:24:57PM +0900, Minchan Kim wrote:
+> > > but it is still problem in case of swap file.
+> > > That's because swapout on swapfile cause file system writepage which
+> > > makes kernel stack overflow.
+> > 
+> > I don't *think* this is a problem unless I missed where writing out to
+> > swap enters teh filesystem code. I'll double check.
+> 
+> It bypasses the fs.  On swapon, the blocks are resolved
+> (mm/swapfile.c::setup_swap_extents) and then the writeout path uses
+> bios directly (mm/page_io.c::swap_writepage).
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Yeah, my fault. I did misunderstand this.
 
-> Ingo,
-> 
-> Please pull the perf/urgent branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	perf/urgent
-> 
-> This resurrects flat and graph (absolute fractals) callchains.
-> All tested with and without newt.
-> 
-> As you know there are still things to fix: filtering by parents (probably a
-> regression) and dso multiple callchains (not a regression).
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (2):
->       perf: Resurrect flat callchains
->       perf: Sync callchains with period based hits
-> 
-> 
->  tools/perf/builtin-report.c |    2 +-
->  tools/perf/util/callchain.c |   35 ++++++++++++++++++-----------------
->  tools/perf/util/callchain.h |    5 ++++-
->  3 files changed, 23 insertions(+), 19 deletions(-)
+Thank you.
 
-Pulled, thanks Frederic!
 
-	Ingo
+
+> 
+> (GFP_NOFS still includes __GFP_IO, so allows swapping)
+> 
+> 	Hannes
+
+
+
