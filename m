@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab0GHVyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 17:54:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20044 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758623Ab0GHVyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 17:54:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,560,1272870000"; 
-   d="scan'208";a="533695634"
-Subject: Re: [PATCH] sched: Call update_group_power only for local_group
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-       LKML <linux-kernel@vger.kernel.org>, Gautham R Shenoy <ego@in.ibm.com>,
-       Joel Schopp <jschopp@austin.ibm.com>,
-       Michael Neuling <mikey@neuling.org>
-In-Reply-To: <1278612989.1900.176.camel@laptop>
-References: <1278088816.1917.279.camel@laptop>
-	 <1278089799-11949-1-git-send-email-venki@google.com>
-	 <1278598336.1900.150.camel@laptop>
-	 <1278611133.2834.10.camel@sbs-t61.sc.intel.com>
-	 <1278612989.1900.176.camel@laptop>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Thu, 08 Jul 2010 14:53:34 -0700
-Message-Id: <1278626014.2834.74.camel@sbs-t61.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1758650Ab0GHVyi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 17:54:38 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42466 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756923Ab0GHVyg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 17:54:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=djLIEnDTaNEMmtdFzW8k3dQVIIMtSCjRpxO4OmBiBIJSKe/Z79TVX4a2Cz4HHJKo6E
+         naZk4Fbl9pi5MUNxKWSCGXmJ1F0S+uwPCbgD7ypCalxd36g0HpHDmArDtNQJT4HJ1Gg7
+         uNj2hRdwBgGOK3g+u1S2WR+VbD2b7amul7w7s=
+From: Gene Heskett <gene.heskett@gmail.com>
+Organization: Organization? very little
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: missing post?
+Date: Thu, 8 Jul 2010 17:54:32 -0400
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-server-1mnb; KDE/4.3.5; x86_64; ; )
+References: <201007081322.33063.gene.heskett@gmail.com> <20100708174359.GA10747@elliptictech.com>
+In-Reply-To: <20100708174359.GA10747@elliptictech.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201007081754.32794.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 11:16 -0700, Peter Zijlstra wrote:
-> On Thu, 2010-07-08 at 10:45 -0700, Suresh Siddha wrote:
-> > > @@ -2433,7 +2433,8 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
-> > >               return;
-> > >       }
-> > >  
-> > > -     update_group_power(sd, this_cpu);
-> > > +     if (local_group)
-> > > +             update_group_power(sd, this_cpu);
-> > 
-> > if IDLE == CPU_NEWLY_IDLE, then all the cpu's in the local group will do
-> > this. Also update_group_power() can be done on only on the local cpu,
-> > i.e., when this_cpu == smp_processor_id() right?
-> 
-> It might make sense to only update_group_power on !CPU_NEWLY_IDLE and
-> rely on the tick driven cpu_power updates.
-> 
-> No sense in updating them in finer slices I guess.
-> 
-> So how about something like:
-> 
-> ---
->  kernel/sched_fair.c |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 9910e1b..2f05679 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -2427,14 +2427,14 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
->  	 * domains. In the newly idle case, we will allow all the cpu's
->  	 * to do the newly idle load balance.
->  	 */
-> -	if (idle != CPU_NEWLY_IDLE && local_group &&
-> -	    balance_cpu != this_cpu) {
-> -		*balance = 0;
-> -		return;
-> +	if (idle != CPU_NEWLY_IDLE && local_group) {
-> +		if (balance_cpu != this_cpu) {
-> +			*balance = 0;
-> +			return;
-> +		}
-> +		update_group_power(sd, this_cpu);
->  	}
->  
-> -	update_group_power(sd, this_cpu);
-> -
->  	/* Adjust by relative CPU power of the group */
->  	sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
->  
+On Thursday 08 July 2010, Nick Bowler wrote:
+>On 13:22 Thu 08 Jul     , Gene Heskett wrote:
+>> Greetings, I am on a gmail account, so I have no way of determining if a
+>> post of mine actually cleared and made it to the list.  Its subject line
+>> was:
+>>
+>> 2.6.35-rc4, no boot
+>
+>[...]
+>
+>> Can anyone tell me if that post was received?
+>
+>Yes, your post made it to the list.  A good way to check this for
+>yourself is to look on the list archives, for example:
+>
+>  http://thread.gmane.org/gmane.linux.kernel/1006582
+>
+Mmm, WTF?  This is being translated to a file:// access somewhere, and of 
+course fails.  But a copy/paste works.
 
-I am ok with this patch (barring the currently broken aperf/mperf part).
+Should this link show all replies too?
 
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-
-Also, looking at all this, don't we need to do something like this in
-the nohz load balance?
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 9910e1b..ae750e9 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3598,6 +3598,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
- 		}
- 
- 		raw_spin_lock_irq(&this_rq->lock);
-+		update_rq_clock(this_rq);
- 		update_cpu_load(this_rq);
- 		raw_spin_unlock_irq(&this_rq->lock);
- 
-
-
+-- 
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+All-weather close air support doesn't work in bad weather
+		-- Murphy's Military Laws n�21
