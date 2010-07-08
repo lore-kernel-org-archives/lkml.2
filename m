@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757812Ab0GHBPD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 21:15:03 -0400
-Received: from THUNK.ORG ([69.25.196.29]:45087 "EHLO thunker.thunk.org"
+	id S1758235Ab0GHBPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 21:15:34 -0400
+Received: from ozlabs.org ([203.10.76.45]:47188 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753951Ab0GHBPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 21:15:01 -0400
-Date: Wed, 07 Jul 2010 21:14:58 -0400
-Message-Id: <E1OWfha-0002CB-Fa@closure.thunk.org>
-To: linux-kernel@vger.kernel.org
-Subject: Linux Plumber's Conference: Call for Working Session Submissions
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1753951Ab0GHBPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 21:15:33 -0400
+Subject: Re: [PATCH 06/18] spufs: use llseek in all file operations
+From: Jeremy Kerr <jk@ozlabs.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Christoph Hellwig <hch@lst.de>, linuxppc-dev@ozlabs.org
+In-Reply-To: <1278538820-1392-7-git-send-email-arnd@arndb.de>
+References: <1278538820-1392-1-git-send-email-arnd@arndb.de>
+	 <1278538820-1392-7-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Jul 2010 09:15:28 +0800
+Message-ID: <1278551728.28333.55.camel@pororo.lan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnd,
 
-The Planning Committee for the Linux Plumbers Conference (LPC) is happy
-to announce that submissions to the "micro-conferences" portion of the
-conference is now open.  The micro-conferences are working session
-focused on specific infrastructural "plumbing" in the Linux system --
-kernel subsystems, core libraries, windowing system, etc. -- which are
-half-day in length.
+> The default for llseek is changing, so we need
+> explicit operations everywhere.
 
-The potential topics for the working sessions can be found at the Topics
-page[1] of the LPC wiki and include:
+Looks good, but:
 
-	* Power Management
-	* Virtualization
-	* Mono
-	* Desktop
-	* Tracing
-	* Real-time response for full FOSS/Linux stack
-	* User-visible Problems in Networking
-	* Media Infrastructure
-	* Audio
-	* HA Clustering
-	* Legal Hygiene
-	* Embedded Topics
-	* Boot/init
+> @@ -2151,7 +2166,7 @@ static ssize_t spufs_ibox_info_read(struct file *file, char __user *buf,
+>  static const struct file_operations spufs_ibox_info_fops = {
+>  	.open = spufs_info_open,
+>  	.read = spufs_ibox_info_read,
+> -	.llseek  = generic_file_llseek,
+> +	.llseek = no_llseek,
+>  };
+> 
+>  static ssize_t __spufs_wbox_info_read(struct spu_context *ctx,
+> @@ -2194,7 +2209,7 @@ static ssize_t spufs_wbox_info_read(struct file *file, char __user *buf,
+>  static const struct file_operations spufs_wbox_info_fops = {
+>  	.open = spufs_info_open,
+>  	.read = spufs_wbox_info_read,
+> -	.llseek  = generic_file_llseek,
+> +	.llseek = no_llseek,
+>  };
+> 
 
-[1] http://wiki.linuxplumbersconf.org/2010:topics
+Why the change in behaviour for the mbox info files?
 
-The topics that will actually have working sessions scheduled at the LPC
-will depend on the submissions to the microconference and on the ability
-of its respective community to organize a successful working session;
-see "Responsibility of a working session leader"[2] page on the LPC
-wiki for more details.
+Cheers,
 
-[2] http://wiki.linuxplumbersconf.org/2010:responsibilities_of_a_working_session_leader
 
-Microconference submissions do not have to reflect finished work.  In
-fact, proposals or proof-of-concepts of potential solutions to important
-problems are encouraged, so they can be discussed and debated during the
-microconference.  Proposals for presentations at a microconference may
-be submitted here [3]:
-
-[3] http://www.linuxplumbersconf.org/2010/ocw/events/LPC2010MC/proposals
-
-In addition to the micro conference, the Linux Plumbers Conference has
-open calls for papers[4] and BOF's[5].
-
-[4] http://www.linuxplumbersconf.org/2010/ocw/events/LPC2010/proposals
-[5] http://www.linuxplumbersconf.org/2010/ocw/events/LPC2010BOFS/proposals
-
-For further announcements about LPC, please watch our blog[6] or
-subscribe to our LPC announcements mailing list[7].
-
-[6] http://www.linuxplumbersconf.org/2010/feed/rss
-[7] http://lists.linuxplumbersconf.org/mailman/listinfo/lpc-announce
+Jeremy
 
