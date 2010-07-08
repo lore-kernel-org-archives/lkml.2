@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab0GHHRT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 03:17:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51533 "EHLO hera.kernel.org"
+	id S1754979Ab0GHHRh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 03:17:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51549 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753858Ab0GHHRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 03:17:16 -0400
-Date: Thu, 8 Jul 2010 07:16:56 GMT
+	id S1753858Ab0GHHRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 03:17:35 -0400
+Date: Thu, 8 Jul 2010 07:17:15 GMT
 From: tip-bot for Feng Tang <feng.tang@intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       randy.dunlap@oracle.com, dtor@mail.ru, tglx@linutronix.de,
+       tony.luck@intel.com, dtor@mail.ru, tglx@linutronix.de,
        feng.tang@intel.com, hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       randy.dunlap@oracle.com, dtor@mail.ru, tglx@linutronix.de,
+       tony.luck@intel.com, dtor@mail.ru, tglx@linutronix.de,
        feng.tang@intel.com, hpa@linux.intel.com
-In-Reply-To: <1278342202-10973-5-git-send-email-feng.tang@intel.com>
-References: <1278342202-10973-5-git-send-email-feng.tang@intel.com>
+In-Reply-To: <4c34dd482753bb8f1@agluck-desktop.sc.intel.com>
+References: <4c34dd482753bb8f1@agluck-desktop.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] Revert "Input: fixup X86_MRST selects"
-Message-ID: <tip-c9d46f63f8e89fd70f97b83fdc4e5d2e37d92aeb@git.kernel.org>
-Git-Commit-ID: c9d46f63f8e89fd70f97b83fdc4e5d2e37d92aeb
+Subject: [tip:x86/urgent] input: i8042 - add runtime check in x86's i8042_platform_init
+Message-ID: <tip-5cdfa1c3bbabb809ef3134f741a63e13373a8cad@git.kernel.org>
+Git-Commit-ID: 5cdfa1c3bbabb809ef3134f741a63e13373a8cad
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 08 Jul 2010 07:16:57 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 08 Jul 2010 07:17:15 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c9d46f63f8e89fd70f97b83fdc4e5d2e37d92aeb
-Gitweb:     http://git.kernel.org/tip/c9d46f63f8e89fd70f97b83fdc4e5d2e37d92aeb
+Commit-ID:  5cdfa1c3bbabb809ef3134f741a63e13373a8cad
+Gitweb:     http://git.kernel.org/tip/5cdfa1c3bbabb809ef3134f741a63e13373a8cad
 Author:     Feng Tang <feng.tang@intel.com>
-AuthorDate: Mon, 5 Jul 2010 23:03:21 +0800
+AuthorDate: Wed, 7 Jul 2010 13:02:16 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
 CommitDate: Wed, 7 Jul 2010 17:05:07 -0700
 
-Revert "Input: fixup X86_MRST selects"
+input: i8042 - add runtime check in x86's i8042_platform_init
 
-This reverts commit 0b28bac5aef7bd1ab213723df031e61db9ff151a.
+Then it will first check x86_platforms's i8042 detection result,
+then go on with normal probe.
 
-After adding x86_platform's detection for i8042 controller, we
-don't need the force dependency on !X86_MRST any more
-
-Cc: Randy Dunlap <randy.dunlap@oracle.com>
 Signed-off-by: Feng Tang <feng.tang@intel.com>
-LKML-Reference: <1278342202-10973-5-git-send-email-feng.tang@intel.com>
+LKML-Reference: <4c34dd482753bb8f1@agluck-desktop.sc.intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Acked-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- drivers/input/keyboard/Kconfig |    2 +-
- drivers/input/serio/Kconfig    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/input/serio/i8042-x86ia64io.h |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 917eec3..3525f53 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -69,7 +69,7 @@ config KEYBOARD_ATARI
- 	  module will be called atakbd.
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index 6168469..81003c4 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -7,6 +7,10 @@
+  * the Free Software Foundation.
+  */
  
- config KEYBOARD_ATKBD
--	tristate "AT keyboard" if EMBEDDED || !X86 || X86_MRST
-+	tristate "AT keyboard" if EMBEDDED || !X86
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
-diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-index 256b9e9..3bfe8fa 100644
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -22,7 +22,7 @@ config SERIO_I8042
- 	tristate "i8042 PC Keyboard controller" if EMBEDDED || !X86
- 	default y
- 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
--		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN && !X86_MRST
-+		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN
- 	help
- 	  i8042 is the chip over which the standard AT keyboard and PS/2
- 	  mouse are connected to the computer. If you use these devices,
++#ifdef CONFIG_X86
++#include <asm/x86_init.h>
++#endif
++
+ /*
+  * Names.
+  */
+@@ -840,6 +844,12 @@ static int __init i8042_platform_init(void)
+ {
+ 	int retval;
+ 
++#ifdef CONFIG_X86
++	/* Just return if pre-detection shows no i8042 controller exist */
++	if (!x86_platform.i8042_detect())
++		return -ENODEV;
++#endif
++
+ /*
+  * On ix86 platforms touching the i8042 data register region can do really
+  * bad things. Because of this the region is always reserved on ix86 boxes.
