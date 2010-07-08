@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab0GHWok (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 18:44:40 -0400
-Received: from smtp1.Stanford.EDU ([171.67.219.81]:58586 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755966Ab0GHWoi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 18:44:38 -0400
-Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-To: john stultz <johnstul@us.ibm.com>
-Cc: nando@ccrma.Stanford.EDU, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-In-Reply-To: <1278628386.3008.11.camel@localhost.localdomain>
-References: <1278609590.7527.11.camel@localhost.localdomain>
-	 <1278628386.3008.11.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Jul 2010 15:44:04 -0700
-Message-ID: <1278629044.12059.6.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1758703Ab0GHWs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 18:48:58 -0400
+Received: from tundra.namei.org ([65.99.196.166]:47031 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755969Ab0GHWsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 18:48:55 -0400
+Date: Fri, 9 Jul 2010 08:48:34 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+cc: "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
+       viro@zeniv.linux.org.uk, casey@schaufler-ca.com, sds@tycho.nsa.gov,
+       matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+       linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 06/10] NFSv4: Add label recommended attribute and NFSv4
+ flags
+In-Reply-To: <1278596363.2494.194.camel@moss-terrapins.epoch.ncsc.mil>
+Message-ID: <alpine.LRH.2.00.1007090834190.23354@tundra.namei.org>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>  <1278513086-23964-7-git-send-email-dpquigl@tycho.nsa.gov>  <20100707170058.GD28815@fieldses.org>  <alpine.LRH.2.00.1007080928180.14102@tundra.namei.org>
+ <1278596363.2494.194.camel@moss-terrapins.epoch.ncsc.mil>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
+Content-ID: <alpine.LRH.2.00.1007090837411.23354@tundra.namei.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 15:33 -0700, john stultz wrote:
-> On Thu, 2010-07-08 at 10:19 -0700, Fernando Lopez-Lezcano wrote:
-> > We are having problems with 2.6.33.5+rt23, at least in our configuration
-> > while accessing an nfs automounted directory. This causes a complete
-> > machine lockup (press reset to exit as the only option). 
+On Thu, 8 Jul 2010, David P. Quigley wrote:
+
+> > The maximum security label size on Linux is:
 > > 
-> > I simply use the Nautilus file manager (in Fedora 12) to navigate to an
-> > autofs mounted directory and the process monitor goes to 100% on one
-> > core (or maybe two), the mouse jerks a bit and the whole thing goes
-> > catatonic almost immediately. 
+> > #define XATTR_SIZE_MAX 65536
 > > 
-> > I get this in any open terminal at the time of the crash:
-> > 
-> > --------
-> > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> >  kernel:------------[ cut here ]------------
-> > 
-> > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> >  kernel:invalid opcode: 0000 [#1] PREEMPT SMP 
-> > 
-> > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> >  kernel:last sysfs
-> > file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
-> > 
-> > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> >  kernel:Process nautilus (pid: 2874, ti=f0204000 task=f17dd1f0
-> > task.ti=f0204000)
-> > 
-> > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> >  kernel:Stack:
-> > 
-> > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> >  kernel:Call Trace:
-> > 
-> > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> >  kernel:Code: 7b 08 00 89 45 b8 75 12 8d 43 04 89 43 04 89 43 08 8d 43
-> > 0c 89 43 0c 89 43 10 8b 43 14 64 8b 15 2c d1 a5 c0 83 e0 fc 39 c2 75 04
-> > <0f> 0b eb fe 8b 3a 81 ff 08 01 00 00 74 0a 83 ff 02 b8 04 00 00 
-> > 
-> > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> >  kernel:EIP: [<c0792c0f>] rt_spin_lock_slowlock+0x43/0x1bb SS:ESP
-> > 0068:f0205cbc
-> > --------
-> > 
-> > And that's it... nothing else in the logs. 
+> > Why arbitrarily limit this over the network?
 > 
-> Hrm. Not too much to go on there, but thanks for the report.
-> 
-> 
-> > For now we are booting into the normal Fedora kernel (this is on Fedora
-> > 12) as this makes the rt kernel not usable in our setup. 
-> > 
-> > Let me know if there is anything else I can do to help debug this...
-> 
-> Had you done any testing with earlier 2.6.33-rt kernels where this
-> didn't occur? If so what version?
+> Because there is no easy way not to. The specification doesn't specify a
+> limit to label size in the IETF draft. However there is no way to do
+> allocation of the memory needed to store the label where we first get
+> access to its size. We tried this before and it failed. When I asked
+> trond about it he said doing memory allocation in the rpc context isn't
+> allowed.
 
-I have been working with the whole series but my main usage case does
-not use nfs/autofs (see next paragraphs). 
+In the NFSv3 code, the workaround I've been using is to always allocate 
+64k, but the correct way of doing this apparently is to use the page 
+cache, as is used for ACLs and symlinks.
 
-I have noticed that the problem does not appear to happen when I cd into
-an nfs automounted directory directly. It appears to happen only when
-listing the contents of a mount point (ie: when "/whatever/" is an
-autofs mount point where several directories are mounted, not
-necessarily from the same server). 
+> For the most part what would make this label size inadequate would be 
+> the MLS component. There are some cases where people want every other 
+> compartment or something crazy like that. In terms of a normal label 
+> though 4096 should be more than enough.
 
-Before switching to Fedora 12 users were normally running 2.6.29 rt and
-I had been running 2.6.31.x and 2.6.33.x rt, but I don't think it ever
-happened to me personally (I'm always using the command line - this is
-completely reproducible with nautilus). After the switch it started
-happening almost immediately to regular users (using nautilus mostly). 
+Yes, but we should not unnecessarily limit the network protocol when 
+something is valid and possible in the local implementation (which is ~64k 
+under Linux).
 
-How could I try to get more debugging information?
--- Fernando
+> Just to put this in perspective the string below is 4096 a's.
+
+A security label include just about anything, e.g. an x509 certificate, or 
+a base64 encoded image.
+
+In the Linux implementation, if we can store a local label up to 64k, then 
+we should try and ensure that it can be conveyed via NFS.
 
 
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
