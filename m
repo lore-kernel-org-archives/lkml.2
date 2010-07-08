@@ -1,37 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab0GHPkP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 11:40:15 -0400
-Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:58353 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969Ab0GHPkN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 11:40:13 -0400
-From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-To: Chris Mason <chris.mason@oracle.com>
-Subject: Re: kernel BUG at fs/btrfs/extent-tree.c:1353
-Date: Thu, 8 Jul 2010 17:40:32 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc4; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-       zheng.yan@oracle.com
-References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <20100708143109.GR15984@think>
-In-Reply-To: <20100708143109.GR15984@think>
+	id S1757430Ab0GHPrE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 11:47:04 -0400
+Received: from kroah.org ([198.145.64.141]:59348 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754694Ab0GHPrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 11:47:02 -0400
+Date: Thu, 8 Jul 2010 08:46:48 -0700
+From: Greg KH <greg@kroah.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: BUG: Securityfs and bind mounts (2.6.34)
+Message-ID: <20100708154648.GA13923@kroah.com>
+References: <201007081112.41252.tvrtko.ursulin@sophos.com>
+ <201007081555.01242.tvrtko.ursulin@sophos.com>
+ <20100708152059.GA12932@kroah.com>
+ <201007081632.42069.tvrtko.ursulin@sophos.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007081740.34000.johannes.hirte@fem.tu-ilmenau.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007081632.42069.tvrtko.ursulin@sophos.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 08 Juli 2010, 16:31:09 schrieb Chris Mason:
-> Neither Yan nor I have been able to reproduce this locally, but a few
-> people have now hit it.  Johannes, are you available to try out a
-> debugging kernel to try and track this down?
+On Thu, Jul 08, 2010 at 04:32:42PM +0100, Tvrtko Ursulin wrote:
+> On Thursday 08 Jul 2010 16:20:59 Greg KH wrote:
+> > > :) Well I do not know, but, it kind of smelled like a bug in the
+> > > : vfs/mount
+> > >
+> > > handling/securityfs area so I thought to let experts know. I _think_ I
+> > > did nothing that much wrong. Just used the exposed API
+> > > (securityfs_remove) and some bind mount shuffling from userspace.
+> >
+> > securitfs just uses libfs underneath it, and really doesn't have any
+> > bindings for module ownerships, so I wouldn't recommend doing what you
+> > just did.
+> 
+> Just do double check what you are saying, securityfs is not safe for use from
+> modules? If so I would then recommend removing the exports otherwise it is an
+> invitation to shoot yourself into the foot.
 
-Sure, just tell me what to do. Is it enough to recompile the kernel with debug 
-options enabled or are special debug patches necessary?
+Hm, did you properly set the module owner of the file_operations that
+you passed to securityfs?  That should protect if you have an open file,
+but I doubt anyone thought you would do crazy things like bind mounts on
+top of a ramfs and then think it was safe to unload a lower module :)
 
-regards,
-  Johannes
+> Also, in-three TPM driver can be built as a module so how does that
+> work?
+
+You have to be root to unload modules, and if you are that, you can do
+worse things than this.
+
+thanks,
+
+greg k-h
