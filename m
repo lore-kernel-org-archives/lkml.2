@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430Ab0GHPrE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 11:47:04 -0400
-Received: from kroah.org ([198.145.64.141]:59348 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754694Ab0GHPrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 11:47:02 -0400
-Date: Thu, 8 Jul 2010 08:46:48 -0700
-From: Greg KH <greg@kroah.com>
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: BUG: Securityfs and bind mounts (2.6.34)
-Message-ID: <20100708154648.GA13923@kroah.com>
-References: <201007081112.41252.tvrtko.ursulin@sophos.com>
- <201007081555.01242.tvrtko.ursulin@sophos.com>
- <20100708152059.GA12932@kroah.com>
- <201007081632.42069.tvrtko.ursulin@sophos.com>
+	id S1757546Ab0GHPz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 11:55:26 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:20472 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827Ab0GHPzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 11:55:24 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zz936eMzz1202hzz15d4Rz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L58XK3-02-JHW-02
+X-M-MSG: 
+Date: Thu, 8 Jul 2010 17:55:30 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Dave Jones <davej@redhat.com>
+CC: Mark Langsdorf <Mark.Langsdorf@amd.com>, Thomas Renninger <trenn@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>, <cpufreq@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] powernow-k8: Limit Pstate transition latency check
+Message-ID: <20100708155530.GA5301@aftab>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <201007081632.42069.tvrtko.ursulin@sophos.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 04:32:42PM +0100, Tvrtko Ursulin wrote:
-> On Thursday 08 Jul 2010 16:20:59 Greg KH wrote:
-> > > :) Well I do not know, but, it kind of smelled like a bug in the
-> > > : vfs/mount
-> > >
-> > > handling/securityfs area so I thought to let experts know. I _think_ I
-> > > did nothing that much wrong. Just used the exposed API
-> > > (securityfs_remove) and some bind mount shuffling from userspace.
-> >
-> > securitfs just uses libfs underneath it, and really doesn't have any
-> > bindings for module ownerships, so I wouldn't recommend doing what you
-> > just did.
-> 
-> Just do double check what you are saying, securityfs is not safe for use from
-> modules? If so I would then recommend removing the exports otherwise it is an
-> invitation to shoot yourself into the foot.
+The Pstate transition latency check was added for broken F10h BIOSen
+which wrongly contain a value of 0 for transition and bus master
+latency. Fam11h and later, however, (will) have similar transition
+latency so extend that behavior for them too.
 
-Hm, did you properly set the module owner of the file_operations that
-you passed to securityfs?  That should protect if you have an open file,
-but I doubt anyone thought you would do crazy things like bind mounts on
-top of a ramfs and then think it was safe to unload a lower module :)
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/cpufreq/powernow-k8.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-> Also, in-three TPM driver can be built as a module so how does that
-> work?
+diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+index 7ec2123..3e90cce 100644
+--- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
++++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+@@ -1023,13 +1023,12 @@ static int get_transition_latency(struct powernow_k8_data *data)
+ 	}
+ 	if (max_latency == 0) {
+ 		/*
+-		 * Fam 11h always returns 0 as transition latency.
+-		 * This is intended and means "very fast". While cpufreq core
+-		 * and governors currently can handle that gracefully, better
+-		 * set it to 1 to avoid problems in the future.
+-		 * For all others it's a BIOS bug.
++		 * Fam 11h and later may return 0 as transition latency. This
++		 * is intended and means "very fast". While cpufreq core and
++		 * governors currently can handle that gracefully, better set it
++		 * to 1 to avoid problems in the future.
+ 		 */
+-		if (boot_cpu_data.x86 != 0x11)
++		if (boot_cpu_data.x86 < 0x11)
+ 			printk(KERN_ERR FW_WARN PFX "Invalid zero transition "
+ 				"latency\n");
+ 		max_latency = 1;
+-- 
+1.7.1
 
-You have to be root to unload modules, and if you are that, you can do
-worse things than this.
 
-thanks,
+-- 
+Regards/Gruss,
+Boris.
 
-greg k-h
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
+
