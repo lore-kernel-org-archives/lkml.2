@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758626Ab0GHVuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 17:50:44 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61589 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756004Ab0GHVum (ORCPT
+	id S1758586Ab0GHVyD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 17:54:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35545 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753621Ab0GHVyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 17:50:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=ZWhQre45DZqglh+ZJQa3r27tT5BUTMp9zPVx8lWdWTwgGHVyQl+TwZrsP1bi+MyLjp
-         J57PLVm1YJvi9PvXQNCSmOOwRXZDcGHW/XfxbyD/nNlAYvfCMHRRxypx7hCcRS9C6ieU
-         jDNoNchSDWv7BL4FMM1de7EGugYC/dAnsMFMA=
-From: Gene Heskett <gene.heskett@gmail.com>
-Organization: Organization? very little
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: missing post?
-Date: Thu, 8 Jul 2010 17:50:38 -0400
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-server-1mnb; KDE/4.3.5; x86_64; ; )
-References: <201007081322.33063.gene.heskett@gmail.com> <201007082029.32444.mihai.dontu@gmail.com>
-In-Reply-To: <201007082029.32444.mihai.dontu@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201007081750.38442.gene.heskett@gmail.com>
+	Thu, 8 Jul 2010 17:54:00 -0400
+Date: Thu, 8 Jul 2010 14:53:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Thomas Renninger <trenn@suse.de>, Andi Kleen <andi@firstfloor.org>,
+       LKML <linux-kernel@vger.kernel.org>, Hannes Reinecke <hare@suse.de>
+Subject: Re: Dynamic Debug broken on 2.6.35-rc3?
+Message-Id: <20100708145300.d36cf006.akpm@linux-foundation.org>
+In-Reply-To: <20100708213927.GB2934@redhat.com>
+References: <201007011744.19564.trenn@suse.de>
+	<20100701162601.GC2829@redhat.com>
+	<201007021856.00139.trenn@suse.de>
+	<20100708213927.GB2934@redhat.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 July 2010, Mihai Donțu wrote:
->On Thursday 08 July 2010 20:22:33 Gene Heskett wrote:
->> Greetings, I am on a gmail account, so I have no way of determining if a
->> post of mine actually cleared and made it to the list.  Its subject line
->> was:
->>
->> 2.6.35-rc4, no boot
->>
->> and included my .config and a .jpg of the screen showing how far it got,
->> total attachment size of 240k, and that was the maximum amount of
->> smunching I could apply to that image in a gimp save as function.  It
->> was several megabytes from my Nikon D100 camera.
->>
->> Can anyone tell me if that post was received?
->
->It was received:
->http://article.gmane.org/gmane.linux.kernel/1006582/match=2.6.35+rc4+no+bo
->ot
->
-Thank you Mihai.
+On Thu, 8 Jul 2010 17:39:28 -0400
+Jason Baron <jbaron@redhat.com> wrote:
 
-Can I post any more followup since this generated no reply?
+> Make sure we properly call ddebug_remove_module() when a module fails to
+> load. In addition, pass the pointer to the "debug table", to both
+> ddebug_add_module(), and ddebug_remove_module() so that we can uniquely
+> identify each set of debug statements. In this way even modules with the
+> same name can be properly identified and removed.
+> 
+> 
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
 
-I got the same error 5 times, rebuilt each time.
+It'd be nice to track the Reported-by:s.  And the Tested-by:s if/when
+they arrive.  SighIllDoIt.
 
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Often statistics are used as a drunken man uses lampposts -- for support
-rather than illumination.
+The patch (almost) applies to 2.6.34.  So are we missing a Cc:stable tag
+as well?
+
+Also, this patch's title is now "Re: Dynamic Debug broken on
+2.6.35-rc3?" which isn't very good.  I can invent a new title for it,
+but that means we don't have a well-understood handle to refer to this
+patch, and to perform searches with, etc.
+
+Maybe a resend would be best..
