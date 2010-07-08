@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab0GHU6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 16:58:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49493 "EHLO mx1.redhat.com"
+	id S1758595Ab0GHU6V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 16:58:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1886 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756437Ab0GHU6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 16:58:14 -0400
-Date: Thu, 8 Jul 2010 17:57:54 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Thavidu Ranatunga <tharan@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Ian Munsie <imunsie@au1.ibm.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 2/2] perf: Version String fix, for fallback if not from
-	git
-Message-ID: <20100708205754.GH25306@ghostprotocols.net>
+	id S1758179Ab0GHU6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 16:58:18 -0400
+From: Eric Paris <eparis@redhat.com>
+Subject: [PATCH 2/2] inotify: send IN_UNMOUNT events
+To: linux-kernel@vger.kernel.org
+Cc: viro@zeniv.linux.org.uk
+Date: Thu, 08 Jul 2010 16:58:17 -0400
+Message-ID: <20100708205817.21351.80159.stgit@paris.rdu.redhat.com>
+In-Reply-To: <20100708205811.21351.60266.stgit@paris.rdu.redhat.com>
+References: <20100708205811.21351.60266.stgit@paris.rdu.redhat.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278316815-6099-2-git-send-email-tharan@au1.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 05, 2010 at 06:00:15PM +1000, Thavidu Ranatunga escreveu:
-> This gets rid of the default version fallback for Perf and changes it so that it
-> returns the version of the kernel from it's Makefile (if sources were not from
-> git, ie. if it was downloaded from a tarball)
-> 
-> Signed-off-by: Thavidu Ranatunga <tharan@au1.ibm.com>
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+Since the .31 or so notify rewrite inotify has not sent events about
+inodes which are unmounted.  This patch restores those events.
 
->  	VN=$(git describe --abbrev=4 HEAD 2>/dev/null) &&
->  	case "$VN" in
->  	*$LF*) (exit 1) ;;
-> @@ -27,7 +23,12 @@ elif test -d ../../.git -o -f ../../.git &&
->  then
->  	VN=$(echo "$VN" | sed -e 's/-/./g');
->  else
-> -	VN="$DEF_VER"
-> +	eval `grep '^VERSION\s*=' ../../Makefile|tr -d ' '`
-> +	eval `grep '^PATCHLEVEL\s*=' ../../Makefile|tr -d ' '`
-> +	eval `grep '^SUBLEVEL\s*=' ../../Makefile|tr -d ' '`
-> +	eval `grep '^EXTRAVERSION\s*=' ../../Makefile|tr -d ' '`
-> +
-> +	VN="${VERSION}.${PATCHLEVEL}.${SUBLEVEL}${EXTRAVERSION}"
+Signed-off-by: Eric Paris <eparis@redhat.com>
+---
 
-This makes 'make perf-tarbz2-src-pkg':
+ fs/notify/inotify/inotify_user.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-[acme@emilia linux-2.6-tip]$ make perf-tarbz2-src-pkg
-  TAR
-[acme@emilia linux-2.6-tip]$ mv perf-2.6.35-rc4.tar.bz2 /tmp
-[acme@emilia linux-2.6-tip]$ cd /tmp
-[acme@emilia tmp]$ tar xf perf-2.6.35-rc4.tar.bz2
-[acme@emilia tmp]$ cd perf-2.6.35-rc4/tools/perf
-[acme@emilia perf]$ make
-grep: ../../Makefile: No such file or directory
-grep: ../../Makefile: No such file or directory
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index 44aeb0f..f381daf 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -90,8 +90,11 @@ static inline __u32 inotify_arg_to_mask(u32 arg)
+ {
+ 	__u32 mask;
+ 
+-	/* everything should accept their own ignored and cares about children */
+-	mask = (FS_IN_IGNORED | FS_EVENT_ON_CHILD);
++	/*
++	 * everything should accept their own ignored, cares about children,
++	 * and should receive events when the inode is unmounted
++	 */
++	mask = (FS_IN_IGNORED | FS_EVENT_ON_CHILD | FS_UNMOUNT);
+ 
+ 	/* mask off the flags used to open the fd */
+ 	mask |= (arg & (IN_ALL_EVENTS | IN_ONESHOT));
 
-- Arnaldo
