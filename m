@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab0GHKOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 06:14:40 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54507 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755812Ab0GHKOh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 06:14:37 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+BVMlbemo7fgnl9OKH0e1G
-Date: Thu, 8 Jul 2010 13:14:23 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-omap@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Russell King <rmk@arm.linux.org.uk>,
-       Mike Rapoport <mike@compulab.co.il>
-Subject: Re: linux-next: manual merge of the omap tree with the arm tree
-Message-ID: <20100708101422.GD1920@atomide.com>
-References: <20100708113730.c2683125.sfr@canb.auug.org.au>
+	id S1755453Ab0GHKSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 06:18:07 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48601 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753480Ab0GHKSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 06:18:04 -0400
+Date: Thu, 8 Jul 2010 12:17:53 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Lin Ming <ming.m.lin@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+Cc: a.p.zijlstra@chello.nl, ling.ma@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: -tip tree panic
+Message-ID: <20100708101753.GA32462@elte.hu>
+References: <1278612020.2164.11.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100708113730.c2683125.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1278612020.2164.11.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Rothwell <sfr@canb.auug.org.au> [100708 04:31]:
-> Hi all,
-> 
-> Today's linux-next merge of the omap tree got conflicts in
-> arch/arm/mach-omap2/board-3430sdp.c,
-> arch/arm/mach-omap2/board-3630sdp.c,
-> arch/arm/mach-omap2/board-am3517evm.c,
-> arch/arm/mach-omap2/board-cm-t35.c,
-> arch/arm/mach-omap2/board-devkit8000.c,
-> arch/arm/mach-omap2/board-igep0020.c,
-> arch/arm/mach-omap2/board-ldp.c,
-> arch/arm/mach-omap2/board-omap3beagle.c,
-> arch/arm/mach-omap2/board-omap3evm.c,
-> arch/arm/mach-omap2/board-omap3pandora.c,
-> arch/arm/mach-omap2/board-omap3touchbook.c,
-> arch/arm/mach-omap2/board-overo.c,
-> arch/arm/mach-omap2/board-zoom2.c and
-> arch/arm/mach-omap2/board-zoom3.c
-> between commit 1e6d923b4e5729b73518d241edf87a3ab2d5688c ("ARM: OMAP:
-> Convert to use ->reserve method to reserve boot time memory") from the
-> arm tree and commit c752ab9d5a5b6899f14fe1c6643c0fe0b499a4ba ("omap3:
-> introduce omap3_map_io") from the omap tree.
-> 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
 
-Thanks, I'll merge with Russell's lmb branch when I
-have confirmation that it will stay static.
- 
-> P.S. Tony, that omap tree commit has a fairly unuseful changelog and no
-> SOB from its purported author ...
+* Lin Ming <ming.m.lin@intel.com> wrote:
 
-Oops, I'll check that.
+> I just tried latest -tip tree(commit 25fe86a), but it panics.
 
-Regards,
+These commits might be relevant:
 
-Tony
+ bdc802d: x86, cpu: Support the features flags in new CPUID leaf 7
+ 83a7a2a: x86, alternatives: Use 16-bit numbers for cpufeature index
+ 24da9c2: x86, cpu: Add CPU flags for F16C and RDRND
+
+So you could try reverting them. If that doesnt work out please try to bisect 
+it.
+
+Thanks,
+
+	Ingo
