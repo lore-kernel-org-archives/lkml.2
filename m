@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab0GHUCR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 16:02:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54478 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751578Ab0GHUCP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 16:02:15 -0400
-Date: Thu, 8 Jul 2010 13:00:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v2 1/2] vmscan: don't subtraction of unsined
-Message-Id: <20100708130048.fccfcdad.akpm@linux-foundation.org>
-In-Reply-To: <20100708163401.CD34.A69D9226@jp.fujitsu.com>
-References: <20100708163401.CD34.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754179Ab0GHUEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 16:04:12 -0400
+Received: from kroah.org ([198.145.64.141]:34420 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752153Ab0GHUEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 16:04:09 -0400
+Date: Thu, 8 Jul 2010 12:30:13 -0700
+From: Greg KH <greg@kroah.com>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: Gustavo Silva <silvagustavosilva@gmail.com>, devel@driverdev.osuosl.org,
+       gregkh@suse.de, linux-kernel@vger.kernel.org,
+       Gustavo Silva <silvagustavo@users.sourceforge.net>
+Subject: Re: [PATCH 4/4] Staging: vme: devices: fix coding style issues in
+ vme_user.c
+Message-ID: <20100708193013.GA3464@kroah.com>
+References: <1277594847-19171-1-git-send-email-silvagustavo@users.sourceforge.net>
+ <4C29CF3F.4070500@ge.com>
+ <4C31A352.10807@ge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C31A352.10807@ge.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  8 Jul 2010 16:38:10 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On Mon, Jul 05, 2010 at 10:18:10AM +0100, Martyn Welch wrote:
+> Martyn Welch wrote:
+> > Gustavo Silva wrote:
+> >   
+> >> This is a patch to the vme_user.c file that fixes up the following
+> >> issues:
+> >>
+> >> WARNING: please, no space before tabs						x 12
+> >> ERROR: code indent should use tabs where possible				x 15
+> >> WARNING: braces {} are not necessary for single statement blocks		x  2
+> >> WARNING: printk() should include KERN_ facility level				x  3
+> >> ERROR: "foo * bar" should be "foo *bar"						x  1
+> >> ERROR: space required before the open brace '{'					x  3
+> >> WARNING: space prohibited between function name and open parenthesis '('	x  1
+> >> ERROR: spaces required around that '=' (ctx:VxV)				x  2
+> >> ERROR: spaces required around that '<' (ctx:VxV)				x  2
+> >> ERROR: space required after that ',' (ctx:VxV)					x  3
+> >> ERROR: spaces required around that '?' (ctx:VxW)				x  1
+> >> ERROR: space required before the open parenthesis '('				x  1
+> >> WARNING: braces {} are not necessary for single statement blocks		x  2
+> >>
+> >>   
+> >>     
+> >
+> > This looks very familiar - I'm sure there was a patch already on the
+> > mailing list doing this, but it has some issues which I don't think were
+> > ever addressed. This one looks good though.
+> >
+> >   
+> Hmm, seems the earlier patch was fixed up and is now in linux-next, sorry.
 
-> 'slab_reclaimable' and 'nr_pages' are unsigned. so, subtraction is
-> unsafe.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Acked-by: Christoph Lameter <cl@linux-foundation.org>
-> ---
->  mm/vmscan.c |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 9c7e57c..8715da1 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2588,7 +2588,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  		.swappiness = vm_swappiness,
->  		.order = order,
->  	};
-> -	unsigned long slab_reclaimable;
-> +	unsigned long n, m;
+Yeah, this doesn't apply :(
 
-Please use better identifiers.
+thanks,
 
->  	disable_swap_token();
->  	cond_resched();
-> @@ -2615,8 +2615,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  		} while (priority >= 0 && sc.nr_reclaimed < nr_pages);
->  	}
->  
-> -	slab_reclaimable = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
-> -	if (slab_reclaimable > zone->min_slab_pages) {
-> +	n = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
-> +	if (n > zone->min_slab_pages) {
->  		/*
->  		 * shrink_slab() does not currently allow us to determine how
->  		 * many pages were freed in this zone. So we take the current
-> @@ -2628,16 +2628,16 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  		 * take a long time.
->  		 */
->  		while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
-> -			zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
-> -				slab_reclaimable - nr_pages)
-> +		       (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages > n))
->  			;
->  
->  		/*
->  		 * Update nr_reclaimed by the number of slab pages we
->  		 * reclaimed from this zone.
->  		 */
-> -		sc.nr_reclaimed += slab_reclaimable -
-> -			zone_page_state(zone, NR_SLAB_RECLAIMABLE);
-> +		m = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
-> +		if (m < n)
-> +			sc.nr_reclaimed += n - m;
-
-And it's not a completly trivial objection.  Your patch made the above
-code snippet quite a lot harder to read (and hence harder to maintain).
-
+greg k-h
