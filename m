@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758374Ab0GHRrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 13:47:52 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:49314 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756636Ab0GHRrv (ORCPT
+	id S1758395Ab0GHRsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 13:48:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56608 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756636Ab0GHRs2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 13:47:51 -0400
-Message-ID: <4C360F08.9060304@ru.mvista.com>
-Date: Thu, 08 Jul 2010 21:46:48 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>,
-       Patrick Pannuto <ppannuto@codeaurora.org>,
-       dbrownell@users.sourceforge.net, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org, sboyd@codeaurora.org
-Subject: Re: [PATCH] usb: gadget: #include device.h in gadget.h
-References: <4C35200C.2040209@codeaurora.org> <20100708033420.GA24135@suse.de> <4C35945F.9050502@ru.mvista.com> <20100708151345.GB12452@suse.de>
-In-Reply-To: <20100708151345.GB12452@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Jul 2010 13:48:28 -0400
+Subject: Re: [PATCH] Add trace event for munmap
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Eric B Munson <ebmunson@us.ibm.com>, Eric B Munson <emunson@mgebm.net>,
+       akpm@linux-foundation.org, mingo@redhat.com, hugh.dickins@tiscali.co.uk,
+       riel@redhat.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       anton@samba.org
+In-Reply-To: <20100708173515.GA11652@infradead.org>
+References: <1278597931-26855-1-git-send-email-emunson@mgebm.net>
+	 <1278598955.1900.152.camel@laptop> <20100708144407.GA8141@us.ibm.com>
+	 <20100708173515.GA11652@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 08 Jul 2010 19:48:08 +0200
+Message-ID: <1278611288.1900.164.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
+On Thu, 2010-07-08 at 13:35 -0400, Christoph Hellwig wrote:
 
->>>> gadget.h uses structures defined in device.h, it must include it. In
->>>> most cases, gadget.h is preceded by linux/platform_device.h, but if
->>>> you are grouping headers sanely, device.h may not be pulled in until
->>>> *after* gadget (e.g. mach/msm_device.h), thus gadget.h should not
->>>> rely on something else #including device.h
+> What kind of infrastructure is perf using for recording
+> mmap()/mremap()/brk() information?
 
->>    As well as a number of other headers.
+A direct hook into mmap_region(), see perf_event_mmap().
 
-    Totally six, to be precise.
+We used to only track VM_EXEC regions, but these days we can also track
+data regions (although it wouldn't track mremap and brk I think).
 
->> I have postaed a patch
->> addressing the missing #include's already.
+We need the VM_EXEC maps to make sense of the instruction pointer
+samples.
 
-> Yes I know,
+Eric recently added support for !VM_EXEC mmap() in order to interpret
+linear addresses provided by things like the software pagefault events
+and certain powerpc hardware events.
 
-    That was mostly for Patrick.
 
-> and my same statment stands.
-
-    :-/
-
->>>> include/linux/usb/gadget.h:488: error: field 'dev' has incomplete type
->>> Why not just provide an "empty" prototype for whatever is needed.
-
->>    Empty prototype of what, 'struct device'? Have you looked at the code at all?
-
-> Nope, I try not to :)
-
-    Right, that file has been "stained" by one #include already (which seems 
-to be useless though).
-
->> 	struct device			dev;
-
-> Ok, that wouldn't work.
-
-    Then let's just leave it as it is. :-)
-
->>> How about just fixing up the .c file that the problem happens in, to
->>> include device.h first?  Is this an issue in the current tree somehow?
-
->>    In my opinion, this is just insane approach.
-
-> Sorry, but that seems to go against what the rest of the kernel is
-> doing.
-
-    Thus far, I've seen headers satisfying their own dependencies, and people 
-accepting patches to add missing #include's to headers. This list was the 
-first place where I've learned that the problems should be addressed not where 
-they exist but left to be dealt with at every place where a defective header 
-is used (and the time wasted on that). I haven't heard any convincing 
-arguments for this cause so far...
-
-> thanks,
-> greg k-h
-
-WBR, Sergei
