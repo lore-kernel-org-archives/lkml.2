@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab0GHX7v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 19:59:51 -0400
-Received: from sh.osrg.net ([192.16.179.4]:36344 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758995Ab0GHX7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 19:59:37 -0400
-Date: Fri, 9 Jul 2010 08:59:19 +0900
-To: axboe@kernel.dk, arnd@arndb.de
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] fix BLKTRACESETUP32 compile error
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1759027Ab0GHX76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 19:59:58 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:26790 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932223Ab0GHX7x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 19:59:53 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6037"; a="46915312"
+Message-ID: <4C366678.60605@codeaurora.org>
+Date: Thu, 08 Jul 2010 16:59:52 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-arch@vger.kernel.org,
+       dwalker@codeaurora.org, mel@csn.ul.ie, linux-arm-msm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
+       linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+ memory management
+References: <1278135507-20294-1-git-send-email-zpfeffer@codeaurora.org> <m14oggpepx.fsf@fess.ebiederm.org> <4C35034B.6040906@codeaurora.org> <20100707230710.GA31792@n2100.arm.linux.org.uk>
+In-Reply-To: <20100707230710.GA31792@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100709085858U.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 09 Jul 2010 08:59:19 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got the following compile error with block's for-2.6.36 tree:
+Russell King - ARM Linux wrote:
+> On Wed, Jul 07, 2010 at 03:44:27PM -0700, Zach Pfeffer wrote:
+>> The DMA API handles the allocation and use of DMA channels. It can
+>> configure physical transfer settings, manage scatter-gather lists,
+>> etc. 
+> 
+> You're confused about what the DMA API is.  You're talking about
+> the DMA engine subsystem (drivers/dma) not the DMA API (see
+> Documentation/DMA-API.txt, include/linux/dma-mapping.h, and
+> arch/arm/include/asm/dma-mapping.h)
 
-block/compat_ioctl.c: In function compat_blkdev_ioctl:
-block/compat_ioctl.c:754: error: BLKTRACESETUP32 undeclared (first use in this function)
-block/compat_ioctl.c:754: error: (Each undeclared identifier is reported only once
-block/compat_ioctl.c:754: error: for each function it appears in.)
+Thanks for the clarification. 
 
+> 
+>> The VCM allows all device buffers to be passed between all devices in
+>> the system without passing those buffers through each domain's
+>> API. This means that instead of writing code to interoperate between
+>> DMA engines, IOMMU mapped spaces, CPUs and physically addressed
+>> devices the user can simply target a device with a buffer using the
+>> same API regardless of how that device maps or otherwise accesses the
+>> buffer.
+> 
+> With the DMA API, if we have a SG list which refers to the physical
+> pages (as a struct page, offset, length tuple), the DMA API takes
+> care of dealing with CPU caches and IOMMUs to make the data in the
+> buffer visible to the target device.  It provides you with a set of
+> cookies referring to the SG lists, which may be coalesced if the
+> IOMMU can do so.
+> 
+> If you have a kernel virtual address, the DMA API has single buffer
+> mapping/unmapping functions to do the same thing, and provide you
+> with a cookie to pass to the device to refer to that buffer.
+> 
+> These cookies are whatever the device needs to be able to access
+> the buffer - for instance, if system SDRAM is located at 0xc0000000
+> virtual, 0x80000000 physical and 0x40000000 as far as the DMA device
+> is concerned, then the cookie for a buffer at 0xc0000000 virtual will
+> be 0x40000000 and not 0x80000000.
 
-This is due to "block: push BKL into blktrace ioctls" patch.
+It sounds like I've got some work to do. I appreciate the feedback.
 
-=
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH] fix BLKTRACESETUP32 compile error
+The problem I'm trying to solve boils down to this: map a set of
+contiguous physical buffers to an aligned IOMMU address. I need to
+allocate the set of physical buffers in a particular way: use 1 MB
+contiguous physical memory, then 64 KB, then 4 KB, etc. and I need to
+align the IOMMU address in a particular way. I also need to swap out the
+IOMMU address spaces and map the buffers into the kernel.
 
-We need BLKTRACESETUP32 even with CONFIG_BLK_DEV_IO_TRACE disabled.
+I have this all solved, but it sounds like I'll need to migrate to the DMA
+API to upstream it.
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- include/linux/blktrace_api.h |   22 +++++++++++-----------
- 1 files changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/blktrace_api.h b/include/linux/blktrace_api.h
-index 07c6986..a19b85f 100644
---- a/include/linux/blktrace_api.h
-+++ b/include/linux/blktrace_api.h
-@@ -204,17 +204,6 @@ extern int blk_trace_init_sysfs(struct device *dev);
- 
- extern struct attribute_group blk_trace_attr_group;
- 
--struct compat_blk_user_trace_setup {
--	char name[32];
--	u16 act_mask;
--	u32 buf_size;
--	u32 buf_nr;
--	compat_u64 start_lba;
--	compat_u64 end_lba;
--	u32 pid;
--};
--#define BLKTRACESETUP32 _IOWR(0x12, 115, struct compat_blk_user_trace_setup)
--
- #else /* !CONFIG_BLK_DEV_IO_TRACE */
- # define blk_trace_ioctl(bdev, cmd, arg)		(-ENOTTY)
- # define blk_trace_shutdown(q)				do { } while (0)
-@@ -232,6 +221,17 @@ static inline int blk_trace_init_sysfs(struct device *dev)
- 
- #endif /* CONFIG_BLK_DEV_IO_TRACE */
- 
-+struct compat_blk_user_trace_setup {
-+	char name[32];
-+	u16 act_mask;
-+	u32 buf_size;
-+	u32 buf_nr;
-+	compat_u64 start_lba;
-+	compat_u64 end_lba;
-+	u32 pid;
-+};
-+#define BLKTRACESETUP32 _IOWR(0x12, 115, struct compat_blk_user_trace_setup)
-+
- #if defined(CONFIG_EVENT_TRACING) && defined(CONFIG_BLOCK)
- 
- static inline int blk_cmd_buf_len(struct request *rq)
 -- 
-1.6.5
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
