@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758963Ab0GHX61 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 19:58:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37879 "EHLO ogre.sisk.pl"
+	id S1759069Ab0GIAGc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 20:06:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37889 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758944Ab0GHX6Q convert rfc822-to-8bit (ORCPT
+	id S932089Ab0GHX6T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 19:58:16 -0400
+	Thu, 8 Jul 2010 19:58:19 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       "Janusz Krzysztofik" <jkrzyszt@tis.icnet.pl>
+       "Bjorn Helgaas" <bjorn.helgaas@hp.com>,
+       "Brian Bloniarz" <phunge0@hotmail.com>,
+       "Yinghai Lu" <yinghai@kernel.org>
 References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
 In-Reply-To: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +19,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <TXb9XdQzJoD.A.mGD.bNmNMB@chimera>
-Subject: [Bug #16215] sysfs: cannot create duplicate filename '/class/net/bnep0'
+Message-ID: <TXb9XdQzJoD.A.J8C.PNmNMB@chimera>
+Subject: [Bug #16228] BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri,  9 Jul 2010 01:41:34 +0200 (CEST)
+Date: Fri,  9 Jul 2010 01:41:35 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,11 +35,10 @@ from 2.6.34.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16215
-Subject		: sysfs: cannot create duplicate filename '/class/net/bnep0'
-Submitter	: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Date		: 2010-06-15 14:55 (24 days old)
-Handled-By	: Eric W. Biederman <ebiederm@xmission.com>
-Patch		: https://bugzilla.kernel.org/show_bug.cgi?id=16215#c10
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16228
+Subject		: BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
+Submitter	: Brian Bloniarz <phunge0@hotmail.com>
+Date		: 2010-06-16 17:57 (23 days old)
+Handled-By	: Bjorn Helgaas <bjorn.helgaas@hp.com>
 
 
