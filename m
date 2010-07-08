@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab0GHJvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 05:51:25 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44650 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab0GHJvX (ORCPT
+	id S1755939Ab0GHJxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 05:53:42 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19385 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755852Ab0GHJxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 05:51:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: FYI: mmap_sem OOM patch
-Cc: kosaki.motohiro@jp.fujitsu.com, Michel Lespinasse <walken@google.com>,
-       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Divyesh Shah <dpshah@google.com>
-In-Reply-To: <1278581717.1900.20.camel@laptop>
-References: <20100708182134.CD3F.A69D9226@jp.fujitsu.com> <1278581717.1900.20.camel@laptop>
-Message-Id: <20100708184341.CD42.A69D9226@jp.fujitsu.com>
+	Thu, 8 Jul 2010 05:53:41 -0400
+Date: Thu, 8 Jul 2010 02:51:56 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+       Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH 1/3] ocfs2: When zero extending, do it by page.
+Message-ID: <20100708095156.GB23392@mail.oracle.com>
+Mail-Followup-To: Tao Ma <tao.ma@oracle.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	ocfs2-devel@oss.oracle.com, Dave Chinner <dchinner@redhat.com>,
+	Christoph Hellwig <hch@lst.de>, Mark Fasheh <mfasheh@suse.com>
+References: <20100703213219.GB21262@mail.oracle.com>
+ <1278501367-7710-2-git-send-email-joel.becker@oracle.com>
+ <4C3549BB.2000906@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  8 Jul 2010 18:51:20 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3549BB.2000906@oracle.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4C359FF8.0100:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 2010-07-08 at 18:24 +0900, KOSAKI Motohiro wrote:
-> > > On Wed, 2010-07-07 at 16:11 -0700, Michel Lespinasse wrote:
-> > > 
-> > > > diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> > > > index f627779..4b3a1c7 100644
-> > > > --- a/arch/x86/mm/fault.c
-> > > > +++ b/arch/x86/mm/fault.c
-> > > > @@ -1062,7 +1062,10 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
-> > > >  			bad_area_nosemaphore(regs, error_code, address);
-> > > >  			return;
-> > > >  		}
-> > > > -		down_read(&mm->mmap_sem);
-> > > > +		if (test_thread_flag(TIF_MEMDIE))
-> > > > +			down_read_unfair(&mm->mmap_sem);
-> > > > +		else
-> > > > +			down_read(&mm->mmap_sem);
-> > > >  	} else {
-> > > >  		/*
-> > > >  		 * The above down_read_trylock() might have succeeded in
-> > > 
-> > > I still think adding that _unfair interface is asking for trouble.
-> > 
-> > Can you please explain trouble that you worry? Why do we need to keep
-> > thread fairness when OOM case?
+On Thu, Jul 08, 2010 at 11:44:59AM +0800, Tao Ma wrote:
+> On 07/07/2010 07:16 PM, Joel Becker wrote:
+> >+	BUG_ON(abs_to>  ((index + 1)<<  PAGE_CACHE_SHIFT));
+> Sorry for not noticing this yesterday night. This can't work and
+> will overflow and bug out. I met with a similar bug in reflink test.
+> See commit d622b89.
+
+	Good catch.  It's obvious, now that you mention it.
+
+> >+	/* We know that zero_from is block aligned */
+> >+	for (block_start = zero_from;
+> >+	     (block_start<  PAGE_CACHE_SIZE)&&  (block_start<  zero_to);
+> >+	     block_start = block_end) {
+> Do we really need to check block_start < PAGE_CACHE_SIZE? I think
+> just check block_start < zero_to is enough since you have limit
+> zero_to with PAGE_CACHE_SIZE. What's more, it looks more natural(see
+> below), does it?
 > 
-> Just the whole concept of the unfair thing offends me ;-) I didn't
-> really look at the particular application in this case.
+> 	for (block_start = zero_form; block_start < zero_to; block_start =
+> block_end) {
 
-I see. 
-Yup, I agree unfair thing concept is a bit ugly. If anyone have 
-alternative idea, I agree to choose that thing.
+	Yup.  The code looked different halfway through, so I didn't
+realize I was checking the same thing twice.
 
+Joel
 
+-- 
 
+"Depend on the rabbit's foot if you will, but remember, it didn't
+ help the rabbit."
+	- R. E. Shay
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
