@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab0GHQV0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 12:21:26 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:29833
-	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753534Ab0GHQVY (ORCPT
+	id S1754841Ab0GHQbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 12:31:40 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33055 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab0GHQbj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 12:21:24 -0400
-X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jul 2010 12:21:24 EDT
-X-SpamScore: -14
-X-BigFish: VPS-14(zz936eMzz1202hzz15d4Rz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L58Y0A-02-K8U-02
-X-M-MSG: 
-Date: Thu, 8 Jul 2010 18:05:14 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Dave Jones <davej@redhat.com>
-CC: "Langsdorf, Mark" <mark.langsdorf@amd.com>,
-       Thomas Renninger <trenn@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] powernow-k8: Fix misleading variable naming
-Message-ID: <20100708160514.GB3958@aftab>
+	Thu, 8 Jul 2010 12:31:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ngWtciliKC8er0MVmBdjrpH3zhwyjw1WjiWKuQ+wEnd4gAWQ4ijvfFu6WrMbBo2qwN
+         9dkFKMa4Z/mQmHfrrlmJIYQTt2LbGd4ak3VsIsoygeidQ4dTzkgybPu87VevCgPm+8m/
+         3NjCtz2eRI5x/NL9SIiCBQJtHDmA6AW4SLmiU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-user-agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <20100707004841.GA28188@verge.net.au>
+References: <1278435198.5396.73.camel@dermezel>
+	<AANLkTingSXbyFclWga9x5aD7MoccCMqhu56PCOVTKHVJ@mail.gmail.com>
+	<20100707004841.GA28188@verge.net.au>
+Date: Thu, 8 Jul 2010 11:31:37 -0500
+Message-ID: <AANLkTink0wl6OcOf0fWO87q6-3qS2R3e_cQ2bclRpGg-@mail.gmail.com>
+Subject: Re: [PATCH] Staging: dt3155: fix coding style issues in dt3155_drv.c
+From: Aldo Cedillo <aldobrett11@gmail.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: kagen101@gmail.com, Greg Kroah-Hartman <gregkh@suse.de>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       devel <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rdmsr() takes the lower 32 bits as a second argument and the high 32 as
-a third. Fix the names accordingly since they were swapped.
+>
+> I believe that you will find both of the following styles in abundance
+> and that both are acceptable.
+>
+>   /*
+>    * This
+>    * is a multi-line comment
+>    */
+>
+> And
+>
+>   /* This
+>    * is a also multi-line comment
+>    */
+>
+> Though one may be more acceptable to a given maintainer than the other.
+> Other variants may also be common and acceptable to some maintainers,
+> which I suspect is why checkpatch.pl is lenient.
 
-There should be no functionality change resulting from this patch.
+:S , so I believe both are correct... as you stated this doesn't help
+to make a single
+tool to check. Well thanks for the comment.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-index 3e90cce..2258202 100644
---- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-+++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-@@ -910,8 +910,8 @@ static int fill_powernow_table_pstate(struct powernow_k8_data *data,
- {
- 	int i;
- 	u32 hi = 0, lo = 0;
--	rdmsr(MSR_PSTATE_CUR_LIMIT, hi, lo);
--	data->max_hw_pstate = (hi & HW_PSTATE_MAX_MASK) >> HW_PSTATE_MAX_SHIFT;
-+	rdmsr(MSR_PSTATE_CUR_LIMIT, lo, hi);
-+	data->max_hw_pstate = (lo & HW_PSTATE_MAX_MASK) >> HW_PSTATE_MAX_SHIFT;
- 
- 	for (i = 0; i < data->acpi_data.state_count; i++) {
- 		u32 index;
--- 
-1.7.1
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
-
+Aldo Brett
