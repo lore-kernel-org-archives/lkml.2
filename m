@@ -1,38 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab0GHS3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 14:29:15 -0400
-Received: from vms173001pub.verizon.net ([206.46.173.1]:33705 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757085Ab0GHS3O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 14:29:14 -0400
-Message-id: <4C3618E3.5060307@acm.org>
-Date: Thu, 08 Jul 2010 13:28:51 -0500
-From: Corey Minyard <minyard@acm.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9)
- Gecko/20100423 Thunderbird/3.0.4
-MIME-version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: "Sergey V." <sftp.mtuci@gmail.com>, akpm@linux-foundation.org,
-       openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-       jillsmitt@linuxcenter.kz
-Subject: Re: [PATCH v2]ipmi:ipmi_si_intf.c Fix warning: variable 'addr_space'
- set but not used
-References: <1278436544-6091-1-git-send-email-justinmattock@gmail.com>
- <201007062205.30616.sftp.mtuci@gmail.com> <4C354EA7.1010802@gmail.com>
-In-reply-to: <4C354EA7.1010802@gmail.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
+	id S1757619Ab0GHSnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 14:43:00 -0400
+Received: from kroah.org ([198.145.64.141]:54305 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755165Ab0GHSmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 14:42:55 -0400
+Date: Thu, 8 Jul 2010 11:39:03 -0700
+From: Greg KH <greg@kroah.com>
+To: Joey Lee <jlee@novell.com>
+Cc: axel.lin@gmail.com, mzxreary@0pointer.de, rpurdie@linux.intel.com,
+       mjg@redhat.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] msi-laptop: make struct rfkill_ops const
+Message-ID: <20100708183903.GD31823@kroah.com>
+References: <4C369D2B020000230001CA27@novprvlin0050.provo.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C369D2B020000230001CA27@novprvlin0050.provo.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2010 11:05 PM, Justin P. Mattock wrote:
-> what ever came about with this?
->
-> Justin P. Mattock
-Well, Sergey sent a patch, but I don't think it was quite in a form that 
-can be taken.  Do you want to resend per the standard rules?
+On Thu, Jul 08, 2010 at 11:53:15AM -0600, Joey Lee wrote:
+> Hi Axel, 
+> 
+> 於 四，2010-07-08 於 10:08 +0800，Axel Lin 提到：
+> > rfkill uses a const struct rfkill_ops pointer.
+> > 
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > ---
+> >  drivers/platform/x86/msi-laptop.c |    6 +++---
+> >  1 files changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/platform/x86/msi-laptop.c b/drivers/platform/x86/msi-laptop.c
+> > index afd762b..05634f8 100644
+> > --- a/drivers/platform/x86/msi-laptop.c
+> > +++ b/drivers/platform/x86/msi-laptop.c
+> > @@ -562,15 +562,15 @@ static int rfkill_threeg_set(void *data, bool blocked)
+> >  	return 0;
+> >  }
+> >  
+> > -static struct rfkill_ops rfkill_bluetooth_ops = {
+> > +static const struct rfkill_ops rfkill_bluetooth_ops = {
+> >  	.set_block = rfkill_bluetooth_set
+> >  };
+> >  
+> > -static struct rfkill_ops rfkill_wlan_ops = {
+> > +static const struct rfkill_ops rfkill_wlan_ops = {
+> >  	.set_block = rfkill_wlan_set
+> >  };
+> >  
+> > -static struct rfkill_ops rfkill_threeg_ops = {
+> > +static const struct rfkill_ops rfkill_threeg_ops = {
+> >  	.set_block = rfkill_threeg_set
+> >  };
+> >  
+> 
+> The patch good to me, do I need Signed-off it?
+> How can I signed off a patch?
 
--corey
+You can say:
+	Signed-off-by: your name <your_email>
+
+and then Matthew will add it.
+
+Or you can take the original patch, add your signed-off-by, and resend
+it to Matthew keeping the correct authorship information there by making
+sure the first line in the body of the email has:
+	From: Original author <email>
+
+so git will get it right.
+
+hope this helps,
+
+greg k-h
