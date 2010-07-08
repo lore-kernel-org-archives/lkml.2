@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab0GHUZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 16:25:56 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:34980 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318Ab0GHUZz convert rfc822-to-8bit (ORCPT
+	id S1758565Ab0GHU1S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 16:27:18 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45997 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754997Ab0GHU1R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 16:25:55 -0400
-Date: Thu, 08 Jul 2010 22:27:07 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv2 1/2] USB: gadget: mass/file storage: set serial number
-In-reply-to: <425855.73532.qm@web180314.mail.gq1.yahoo.com>
-To: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>
-Cc: linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org,
-       Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-       mina86@mina86.com
-Message-id: <op.vfjkfho27p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <425855.73532.qm@web180314.mail.gq1.yahoo.com>
+	Thu, 8 Jul 2010 16:27:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=f7C428B4vqsP1WRa7c4vgJ8lF/9rfdv7wgjmab+3aivr8/qnkxLioHgLNzx03XJlQg
+         85AvxSvMbPHDZ8us2wnipZFbEFRD0Y7IOZh3oVle0lYBeVEYPUBDx6bgxYUHa3Ox1sPH
+         GTJfMoJ64yVb16jUIdbs+t7eqHYKd3wsN7+Yk=
+MIME-Version: 1.0
+In-Reply-To: <alpine.SOC.1.00.1007081644200.15817@math.ut.ee>
+References: <alpine.SOC.1.00.1007081644200.15817@math.ut.ee>
+Date: Thu, 8 Jul 2010 13:27:16 -0700
+X-Google-Sender-Auth: do82xeXDfYPezBItwiyKVz3gr84
+Message-ID: <AANLkTinwbPAsCAwrbYVj7_K-YsgKAPyjXlUlQNDZ7eqa@mail.gmail.com>
+Subject: Re: 2.6.35-rc* regression: ERROR: Unable to locate IOAPIC for GSI *
+From: Yinghai Lu <yinghai@kernel.org>
+To: Meelis Roos <mroos@linux.ee>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Jul 2010 22:20:11 +0200, David Brownell <david-b@pacbell.net> wrote:
-
->> > Can it be made to do so only when the gadget
->> > hasn't been provided with one already?  Serial
->> > number module options are standard parts of the
->> > composite gadget framework...
->>
->> I don't see a way for the gadget to know whether user gave
->> the iSerialNumber
->> parameter (other then reading the iSerialNumber variable
->> but I consider that  ugly).
+On Thu, Jul 8, 2010 at 6:53 AM, Meelis Roos <mroos@linux.ee> wrote:
+> Just tried 2.6.35-rc4-00086-g2aa72f6 on Celeron 900 + i815 chipset PC.
+> I get these errors during bootup, and all interrupts become XT-PIC:
 >
-> Uglier still is the current patch overriding
-> that explicitly-given parameter.
+> [ † †0.087302] pnp: PnP ACPI init
+> [ † †0.087482] ACPI: bus type pnp registered
+> [ † †0.087999] ERROR: Unable to locate IOAPIC for GSI 8
+> [ † †0.087999] ERROR: Unable to locate IOAPIC for GSI 13
+> [ † †0.087999] ERROR: Unable to locate IOAPIC for GSI 12
+> [ † †0.088091] ERROR: Unable to locate IOAPIC for GSI 1
+> [ † †0.089013] ERROR: Unable to locate IOAPIC for GSI 6
+> [ † †0.090612] ERROR: Unable to locate IOAPIC for GSI 4
+> [ † †0.092235] ERROR: Unable to locate IOAPIC for GSI 3
+> [ † †0.094382] ERROR: Unable to locate IOAPIC for GSI 7
+> [ † †0.097470] pnp: PnP ACPI: found 13 devices
+> [ † †0.097625] ACPI: ACPI bus type pnp unregistered
+>
+> 2.6.35-rc2-00001-g386f40c behaves the same.
+>
+> 2.6.34 worked fine, it reports just
+> [ † †0.104513] pnp: PnP ACPI init
+> [ † †0.104683] ACPI: bus type pnp registered
+> [ † †0.116002] pnp: PnP ACPI: found 13 devices
+> [ † †0.116158] ACPI: ACPI bus type pnp unregistered
 
-How does it override explicitly-given parameter?  I don't follow...
+Do you have bootlog for 2.6.34 with "debug apic=debug"?
 
-All it does is add a iSerialNumber.  Without this patch the
-explicitly-given parameter won't even work:
+>
+> Will bisect but it takes some time.
+>
+> Full dmesg:
+> [ † †0.000000] ACPI: RSDP 000ff980 00014 (v00 AMI † )
+> [ † †0.000000] ACPI: RSDT 1fff0000 0002C (v01 D815EA D815EEA2 20021106 MSFT 00001011)
+> [ † †0.000000] ACPI: FACP 1fff1000 00074 (v01 D815EA EA81510A 20021106 MSFT 00001011)
+> [ † †0.000000] ACPI: DSDT 1ffe0000 030E4 (v01 D815E2 EA81520A 00000023 MSFT 0100000B)
+> [ † †0.000000] ACPI: FACS 1fff8000 00040
+> [ † †0.000000] ACPI: SSDT 1ffe30e4 00035 (v01 D815EA EA81510A 00000015 MSFT 0100000B)
 
-	if (cdev->desc.iSerialNumber && iSerialNumber)
-		string_override(composite->strings,
-			cdev->desc.iSerialNumber, iSerialNumber);
+no MADT
 
-Composite checks if iSerialNumber is allocated and overrides the
-string only if it is.  Without my patch, the string ID is never
-allocated.
+> [ † †0.000000] ACPI: PM-Timer IO Port: 0x408
+> [ † †0.000000] Found and enabled local APIC!
+> [ † †0.000000] nr_irqs_gsi: 16
 
-Also, the overriding is performed *after* composite device's bind
-callback is called so there is no way for the bind callback to
-override explicitly-given parameter.
+> [ † †0.021087] Enabling APIC mode: †Flat. †Using 0 I/O APICs
+no io apic.
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Micha≈Ç "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+YH
