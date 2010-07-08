@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab0GHUBq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 16:01:46 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:34222 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab0GHUBo convert rfc822-to-8bit (ORCPT
+	id S1753075Ab0GHUCR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 16:02:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54478 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751578Ab0GHUCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 16:01:44 -0400
-Date: Thu, 08 Jul 2010 22:02:56 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv2 1/2] USB: gadget: mass/file storage: set serial number
-In-reply-to: <752897.66667.qm@web180316.mail.gq1.yahoo.com>
-To: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>
-Cc: linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org,
-       Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-       mina86@mina86.com
-Message-id: <op.vfjja62m7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <752897.66667.qm@web180316.mail.gq1.yahoo.com>
+	Thu, 8 Jul 2010 16:02:15 -0400
+Date: Thu, 8 Jul 2010 13:00:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v2 1/2] vmscan: don't subtraction of unsined
+Message-Id: <20100708130048.fccfcdad.akpm@linux-foundation.org>
+In-Reply-To: <20100708163401.CD34.A69D9226@jp.fujitsu.com>
+References: <20100708163401.CD34.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> >> This commit adds iSerialNumber to all gadgets that
->> use the Mass Storage Function.
+On Thu,  8 Jul 2010 16:38:10 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-On Thu, 08 Jul 2010 21:31:23 +0200, David Brownell <david-b@pacbell.net> wrote:
-> Can it be made to do so only when the gadget
-> hasn't been provided with one already?  Serial
-> number module options are standard parts of the
-> composite gadget framework...
+> 'slab_reclaimable' and 'nr_pages' are unsigned. so, subtraction is
+> unsafe.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Acked-by: Christoph Lameter <cl@linux-foundation.org>
+> ---
+>  mm/vmscan.c |   14 +++++++-------
+>  1 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 9c7e57c..8715da1 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2588,7 +2588,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  		.swappiness = vm_swappiness,
+>  		.order = order,
+>  	};
+> -	unsigned long slab_reclaimable;
+> +	unsigned long n, m;
 
-I don't see a way for the gadget to know whether user gave the iSerialNumber
-parameter (other then reading the iSerialNumber variable but I consider that
-ugly).
+Please use better identifiers.
 
-Plus, in any event, gadget has to reserve a string ID for serial number
-anyway.  Otherwise composite won't override the string.
+>  	disable_swap_token();
+>  	cond_resched();
+> @@ -2615,8 +2615,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  		} while (priority >= 0 && sc.nr_reclaimed < nr_pages);
+>  	}
+>  
+> -	slab_reclaimable = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+> -	if (slab_reclaimable > zone->min_slab_pages) {
+> +	n = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+> +	if (n > zone->min_slab_pages) {
+>  		/*
+>  		 * shrink_slab() does not currently allow us to determine how
+>  		 * many pages were freed in this zone. So we take the current
+> @@ -2628,16 +2628,16 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  		 * take a long time.
+>  		 */
+>  		while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
+> -			zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
+> -				slab_reclaimable - nr_pages)
+> +		       (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages > n))
+>  			;
+>  
+>  		/*
+>  		 * Update nr_reclaimed by the number of slab pages we
+>  		 * reclaimed from this zone.
+>  		 */
+> -		sc.nr_reclaimed += slab_reclaimable -
+> -			zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+> +		m = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+> +		if (m < n)
+> +			sc.nr_reclaimed += n - m;
 
+And it's not a completly trivial objection.  Your patch made the above
+code snippet quite a lot harder to read (and hence harder to maintain).
 
-PS. I've just spotted a bug in Yann's patch (string is not filled if
-CONFIG_USB_FILE_STORAGE_TEST is undefined).  It's a trivial issue so
-I'll fix it with updated version.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
