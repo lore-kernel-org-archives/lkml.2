@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab0GHNja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 09:39:30 -0400
-Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:59381 "EHLO
-	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189Ab0GHNj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 09:39:27 -0400
-Subject: Re: [PATCH 04/10] SELinux: Add new labeling type native labels
-From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-To: James Morris <jmorris@namei.org>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
-       sds@tycho.nsa.gov, "Matthew N. Dodd" <matthew.dodd@sparta.com>,
-       trond.myklebust@fys.uio.no, bfields@fieldses.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org
-In-Reply-To: <alpine.LRH.2.00.1007080921200.14102@tundra.namei.org>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
-	 <1278513086-23964-5-git-send-email-dpquigl@tycho.nsa.gov>
-	 <alpine.LRH.2.00.1007080921200.14102@tundra.namei.org>
-Content-Type: text/plain
-Organization: National Security Agency
-Date: Thu, 08 Jul 2010 09:31:18 -0400
-Message-Id: <1278595878.2494.186.camel@moss-terrapins.epoch.ncsc.mil>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1757812Ab0GHNkD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 09:40:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1038 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755461Ab0GHNj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 09:39:59 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+       Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
+       Nauman Rafique <nauman@google.com>, Divyesh Shah <dpshah@google.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Subject: Re: [RFC/RFT PATCH] cfq-iosched: Implement cfq group idling
+References: <20100707230521.GB7842@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 08 Jul 2010 09:39:45 -0400
+In-Reply-To: <20100707230521.GB7842@redhat.com> (Vivek Goyal's message of
+	"Wed, 7 Jul 2010 19:05:21 -0400")
+Message-ID: <x4939vuf5y6.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 09:23 +1000, James Morris wrote:
-> On Wed, 7 Jul 2010, David P. Quigley wrote:
-> 
-> > There currently doesn't exist a labeling type that is adequate for use with
-> > labeled NFS. Since NFS doesn't really support xattrs we can't use the use xattr
-> > labeling behavior. For this we developed a new labeling type. The native
-> > labeling type is used solely by NFS to ensure NFS inodes are labeled at runtime
-> > by the NFS code instead of relying on the SELinux security server on the client
-> > end.
-> 
-> It would be useful to have the ability to specify labeling behavior on a 
-> per-mount basis, with the default remaining as genfs.
-> 
-> Otherwise, this is a global policy decision which affects all NFSv4 
-> mounts, right?
-> 
-> 
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-I don't believe we have that ability in any other file system. If you
-want to decide that you want to use genfs style labels on NFSv4 just use
-a context mount. That way you can have the default behavior be use
-security label support unless you don't want to and then you can have a
-context mount.
+> Currently we idle on sequential queues and allow dispatch from a single
+> queue and that can become a bottleneck on higher end storage. For example
+> on my HP EVA, I can run multiple sequential streams and achieve top BW
+> of around 350 MB/s. But with CFQ, dispatching from single queue does not
+> keep the array busy (limits to 150-180 MB/s with 4 or 8 processes).
+>
+> One approach to solve this issue is simply use slice_idle = 0. But this
+> also takes away the any service differentiation between groups.
 
+That also takes away service differentiation between queues.  If you
+want to maintain that at all, then this is really just pushing the
+problem to another layer.
 
+This is the crux of my issues with CFQ.  It works really well for SATA
+disks.  Once you try running it on enterprise storage, it falls flat.
+Is it a design goal of CFQ to get it to run well on enterprise storage?
+
+Jens?
+
+Cheers,
+Jeff
