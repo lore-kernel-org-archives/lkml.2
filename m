@@ -1,67 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab0GHLbY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 07:31:24 -0400
-Received: from shutemov.name ([188.40.19.243]:37551 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754849Ab0GHLbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 07:31:23 -0400
-Date: Thu, 8 Jul 2010 14:31:22 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-       Anfei Zhou <anfei.zhou@gmail.com>,
-       Alexander Shishkin <virtuoso@slind.org>,
-       Siarhei Siamashka <siarhei.siamashka@nokia.com>,
-       linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org
-Subject: Re: [patch 071/149] ARM: 6166/1: Proper prefetch abort handling on
- pre-ARMv6
-Message-ID: <20100708113122.GA23854@shutemov.name>
-References: <20100701221420.GA10481@shutemov.name>
- <20100701221728.GA12187@suse.de>
- <20100701222541.GB10481@shutemov.name>
- <20100701224837.GA27389@flint.arm.linux.org.uk>
- <20100701225911.GC10481@shutemov.name>
- <20100701231207.GB27389@flint.arm.linux.org.uk>
- <20100706130618.GA14177@shutemov.name>
- <20100706225815.GA21834@flint.arm.linux.org.uk>
- <20100707085601.GA18732@shutemov.name>
- <20100707223417.GA22673@n2100.arm.linux.org.uk>
+	id S1755148Ab0GHLv7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 07:51:59 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:37644 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752376Ab0GHLv6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 07:51:58 -0400
+Date: Thu, 8 Jul 2010 07:51:55 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@lynx
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: why can't i use gdb to dump module variables anymore?
+Message-ID: <alpine.DEB.2.00.1007080744180.7016@lynx>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100707223417.GA22673@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 11:34:18PM +0100, Russell King - ARM Linux wrote:
-> On Wed, Jul 07, 2010 at 11:56:01AM +0300, Kirill A. Shutemov wrote:
-> > But it seems that the problem is more global. Potentially, any of
-> > pmd_none() check may produce false results. I don't see an easy way to fix
-> > it.
-> 
-> It isn't.  We normally guarantee that we always fill on both L1 entries.
-> The only exception is for the mappings specified via create_mapping()
-> which is used for the static platform mappings.
- 
-Why do not to change create_mapping() to follow the same rules?
-I mean, create sections only if it asked for 2*SECTION_SIZE with
-appropriate alignment. It reduces number of section mappings, but,
-probably, will be a bit cleaner and less error-prune.
 
-> > Does Linux VM still expect one PTE table per page?
-> 
-> Yes, and as far as I can see probably always will.  Hence why we need
-> to put two L1 entries in one page and lie to the kernel about the sizes
-> of the hardware entries.
+  trying very hard to make a long story short, documenting how to use
+gdb to poke around in a loaded module.  the important part of the
+module (to demonstrate the visibility of different types of
+variables):
 
-Another option is leave half of page with PTE table free. Is it very bad
-idea?
+static int rpjday_1;
+int rpjday_2 = 20;
+int rpjday_3 = 30;
 
-How other architectures handle it? Or only on ARM PTL table size is less
-than page size?
+EXPORT_SYMBOL(rpjday_3);
+
+
+  once i load that module, i can see the good stuff in /proc/kallsyms:
+
+$ grep rpjday /proc/kallsyms
+ffffffffa007c090 r __ksymtab_rpjday_3	[crash_gdb]
+ffffffffa007c0a8 r __kstrtab_rpjday_3	[crash_gdb]
+ffffffffa007c0a0 r __kcrctab_rpjday_3	[crash_gdb]
+ffffffffa007c0b4 d rpjday_2	[crash_gdb]
+ffffffffa007c0b8 D rpjday_3	[crash_gdb]
+$
+
+  i can examine the salient files under
+/sys/module/crash_gdb/sections/, like .data
+
+0xffffffffa007c0b4
+
+so here's a couple questions.
+
+  if i want to add that module's symbol table info to my running gdb
+session, i would use "add-symbol-file" but the first arg *must* be the
+address of the text section and this module has *no* .text section.
+so what do i use for that value?  the address of the .exit.text
+section?
+
+  and if i try to load:
+
+(gdb) add-symbol-file /tmp/crash_gdb.ko 0xffffffffa007c000 \
+-s .data 0xffffffffa007c0b4
+add symbol table from file "/tmp/crash_gdb.ko" at
+	.text_addr = 0xffffffffa007c000
+	.data_addr = 0xffffffffa007c0b4
+(y or n) y
+Reading symbols from /tmp/crash_gdb.ko...done.
+(gdb)
+
+  it certainly *looks* like that worked, and:
+
+(gdb) whatis rpjday_2
+type = int
+(gdb) whatis rpjday_3
+type = int
+
+  looks good, but here's where things go wrong:
+
+(gdb) p rpjday_2
+Cannot access memory at address 0xffffffffa007c0b4
+(gdb) p rpjday_3
+Cannot access memory at address 0xffffffffa007c0b8
+
+  that sort of thing used to work when i was testing this on a 32-bit
+fedora system, but i'm now on 64-but ubuntu and i don't see why those
+last couple commands no longer work.  the addresses certainly match
+what's in /proc/kallsyms, and i don't recall having to do anything
+special last time.  have i omitted a critical compile-time option for
+this?  thanks.
+
+rday
 
 -- 
- Kirill A. Shutemov
+
+========================================================================
+Robert P. J. Day                               Waterloo, Ontario, CANADA
+
+        Top-notch, inexpensive online Linux/OSS/kernel courses
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
