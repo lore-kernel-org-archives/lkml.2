@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586Ab0GHUV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 16:21:58 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33254 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755598Ab0GHUV5 (ORCPT
+	id S1755899Ab0GHUZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 16:25:56 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:34980 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab0GHUZz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 16:21:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=yGQIntNtiMGpEjEpCeQS1SMz1X8LrFj88BMbInTmiqRpYQ93mv8hlk7DX4zfG6ikTs
-         DVk+2exRHZrC2E432FbOd5mG37ZD+ITNOmJasfo/E5QY5PJEd+w0Zli6Tc0jK8/Y9z+k
-         ocEyjeHKFDngNsmw02npcsFFK7xXAbtoSFrN0=
-MIME-Version: 1.0
-Reply-To: dkirjanov@kernel.org
-In-Reply-To: <20100708201224.GA2387@kroah.com>
-References: <20100629085216.GA6391@hera.kernel.org>
-	<20100708201224.GA2387@kroah.com>
-Date: Fri, 9 Jul 2010 00:21:54 +0400
-Message-ID: <AANLkTilhsDILQNZJXxs8o4XFmlueOLTvG-h_b67XOOJj@mail.gmail.com>
-Subject: Re: [PATCH -staging] slicoss: kill functions prototypes and reorder 
-	functions
-From: Denis Kirjanov <kirjanov@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Denis Kirjanov <dkirjanov@hera.kernel.org>, devel@driverdev.osuosl.org,
-       gregkh@suse.de, davem@davemloft.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 8 Jul 2010 16:25:55 -0400
+Date: Thu, 08 Jul 2010 22:27:07 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv2 1/2] USB: gadget: mass/file storage: set serial number
+In-reply-to: <425855.73532.qm@web180314.mail.gq1.yahoo.com>
+To: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>
+Cc: linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org,
+       Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+       mina86@mina86.com
+Message-id: <op.vfjkfho27p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <425855.73532.qm@web180314.mail.gq1.yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 9, 2010 at 12:12 AM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Jun 29, 2010 at 08:52:16AM +0000, Denis Kirjanov wrote:
->> Reorder functions to kill their prototypes.
+On Thu, 08 Jul 2010 22:20:11 +0200, David Brownell <david-b@pacbell.net> wrote:
+
+>> > Can it be made to do so only when the gadget
+>> > hasn't been provided with one already?  Serial
+>> > number module options are standard parts of the
+>> > composite gadget framework...
 >>
->> Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
+>> I don't see a way for the gadget to know whether user gave
+>> the iSerialNumber
+>> parameter (other then reading the iSerialNumber variable
+>> but I consider that  ugly).
 >
-> This doesn't apply to the latest linux-next tree, care to respin it, and
-> the 2 other patches after this as well?
+> Uglier still is the current patch overriding
+> that explicitly-given parameter.
 
-Sure.
+How does it override explicitly-given parameter?  I don't follow...
 
-> thanks,
->
-> greg k-h
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
->
+All it does is add a iSerialNumber.  Without this patch the
+explicitly-given parameter won't even work:
 
+	if (cdev->desc.iSerialNumber && iSerialNumber)
+		string_override(composite->strings,
+			cdev->desc.iSerialNumber, iSerialNumber);
 
+Composite checks if iSerialNumber is allocated and overrides the
+string only if it is.  Without my patch, the string ID is never
+allocated.
+
+Also, the overriding is performed *after* composite device's bind
+callback is called so there is no way for the bind callback to
+override explicitly-given parameter.
 
 -- 
-Regards,
-Denis
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
