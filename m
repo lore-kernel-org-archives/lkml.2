@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab0GHPTF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 11:19:05 -0400
-Received: from mail.lippert-at.com ([62.80.22.186]:22859 "EHLO
-	domex.lippertembedded.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752865Ab0GHPTD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 11:19:03 -0400
-X-Greylist: delayed 914 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jul 2010 11:19:03 EDT
-Message-ID: <4C35E906.6000804@LiPPERTEmbedded.de>
-Date: Thu, 08 Jul 2010 17:04:38 +0200
-From: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
-User-Agent: Thunderbird 1.5.0.14 (Windows/20071210)
+	id S1756331Ab0GHPXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 11:23:25 -0400
+Received: from kroah.org ([198.145.64.141]:49586 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753116Ab0GHPXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 11:23:24 -0400
+Date: Thu, 8 Jul 2010 08:20:59 -0700
+From: Greg KH <greg@kroah.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: BUG: Securityfs and bind mounts (2.6.34)
+Message-ID: <20100708152059.GA12932@kroah.com>
+References: <201007081112.41252.tvrtko.ursulin@sophos.com>
+ <20100708144317.GA2364@kroah.com>
+ <201007081555.01242.tvrtko.ursulin@sophos.com>
 MIME-Version: 1.0
-To: Andres Salomon <dilinger@collabora.co.uk>
-CC: Jordan Crouse <jordan@cosmicpenguin.net>, linux-geode@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] cs5535-mfgpt: reuse timers that have never been set up
-References: <4B4C4B86.7090509@LiPPERTEmbedded.de> <20100118103430.6480d1a8@mycelium.queued.net> <4B5D98ED.6090301@LiPPERTEmbedded.de>
-In-Reply-To: <4B5D98ED.6090301@LiPPERTEmbedded.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Jul 2010 15:04:39.0730 (UTC) FILETIME=[E3548120:01CB1EAE]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007081555.01242.tvrtko.ursulin@sophos.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cs5535-mfgpt: reuse timers that have never been set up
+On Thu, Jul 08, 2010 at 03:55:01PM +0100, Tvrtko Ursulin wrote:
+> On Thursday 08 Jul 2010 15:43:17 Greg KH wrote:
+> > On Thu, Jul 08, 2010 at 11:12:41AM +0100, Tvrtko Ursulin wrote:
+> > > Hi guys,
+> > >
+> > > If I overlay a file in securityfs using mount --bind with a file from
+> > > a regular filesystem, should I be allowed to rmmod the module which
+> > > registered the overlaid securityfs file?
+> >
+> > Why would you want to overlay securityfs in the first place?
+> 
+> For testing, more precisely faking some data exposed in securityfs module in
+> order to provoke userspace reaction. It was convenient to leave the majority
+> of real data and just overlay one file.
+> 
+> > And you might be able to rmmod the module, but I didn't think that
+> > security modules were able to be unloaded anymore.
+> 
+> Perhaps it is not a security module in the way you think about it, just a
+> module which happens to register some directories and files under securityfs.
 
-The MFGPT hardware may be set up only once, therefore cs5535_mfgpt_free_timer()
-didn't re-set the timer's "avail" bit.  However if a timer is freed before it
-has actually been in use then it may be made available again.
+Ick, don't do that then :)
 
-Signed-off-by: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
----
+> > > I was able to do that, then I
+> > > unmounted the bind mount, and then when attempting to unmount
+> > > securityfs hit a BUG at
+> > > fs/dcache.c:676 (see below). It would have made more sense to first
+> > > umount the overlay file and then remove the module which registered
+> > > with securityfs, nevertheless should kernel crash in this case?
+> >
+> > Probably not, but then again, you did something that you shouldn't have,
+> > so perhaps it is telling you not to do such a thing in the future :)
+> 
+> :) Well I do not know, but, it kind of smelled like a bug in the vfs/mount
+> handling/securityfs area so I thought to let experts know. I _think_ I did
+> nothing that much wrong. Just used the exposed API (securityfs_remove) and
+> some bind mount shuffling from userspace.
 
-Hi Andres,
+securitfs just uses libfs underneath it, and really doesn't have any
+bindings for module ownerships, so I wouldn't recommend doing what you
+just did.
 
-Jens wrote:
-> Andres wrote:
->> Jens wrote:
->>> cs5535_mfgpt_init() doesn't free up the timer in the error path
->>
->> Yeah, we can't really free the timer, unfortunately.
->> It actually might not be a bad idea to reverse the code so that the
->> IRQ allocation happens first, since we can clean that up if mfgpt
->> allocation fails.
->
-> [...] I guess for reversing the order we'd have to split both
-> cs5535_mfgpt_alloc_timer() and cs5535_mfgpt_setup_irq() into two parts [...]
-> Maybe cs5535_mfgpt_free_timer() can be made more intelligent to set
-> mfgpt->avail again if the hardware isn't actually in a non-reversible state
-> yet [...]
+thanks,
 
-As you can see I did just that. What do you think?
-
-Cheers,
-Jens
-
---- linux-2.6.35-rc4/drivers/misc/cs5535-mfgpt.c
-+++ mfgpt_reuse_timers/drivers/misc/cs5535-mfgpt.c
-@@ -211,6 +211,17 @@
-  */
- void cs5535_mfgpt_free_timer(struct cs5535_mfgpt_timer *timer)
- {
-+	unsigned long flags;
-+	uint16_t val;
-+
-+	/* timer can be made available again only if never set up */
-+	val = cs5535_mfgpt_read(timer, MFGPT_REG_SETUP);
-+	if (!(val & MFGPT_SETUP_SETUP)) {
-+		spin_lock_irqsave(&timer->chip->lock, flags);
-+		__set_bit(timer->nr, timer->chip->avail);
-+		spin_unlock_irqrestore(&timer->chip->lock, flags);
-+	}
-+
- 	kfree(timer);
- }
- EXPORT_SYMBOL_GPL(cs5535_mfgpt_free_timer);
-_
-
+greg k-h
