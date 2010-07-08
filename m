@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758531Ab0GHTb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 15:31:26 -0400
-Received: from n1c.bullet.mail.ac4.yahoo.com ([76.13.13.78]:45181 "HELO
-	n1c.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758507Ab0GHTbZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 15:31:25 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 847599.49770.bm@omp126.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=GI7RyaMj0yHkgkC+vytl/6PeQ6Prdu+xMtloMP0QTWr19ehTgi+07drbfNY8SCbo/OqzZBxRJaqexnIh/ly51y5zryUjrxdj7Jna7jLWCQFW/7RXjEtUlRZmf6y4Wb+gmCgTTZC6B+7Wb92C5aS4kslC1hcqK8cOw7itu94Ftoc=;
-Message-ID: <752897.66667.qm@web180316.mail.gq1.yahoo.com>
-X-YMail-OSG: qXqNiMIVM1l_AWFTZYZCSTGHTn9qSVR5p2itpAPE5S_L_cs
- C6pCoI3Ei6LSMd8KgixAvsB_JnjjyaAhYKjfcPc6i9yK1cSyZA0gD.kQHuT5
- pqiY3P8inUfQEQ_Ubg2NSWBhwn4nx9bkN0hyJrYQ_O6aWtxHATg8aPW8El1t
- mU_dSua8GEH32.k8duYQcqRKbJmfITlcPeqzbsK5xiCx6gV8yUMlnV0yKAr2
- VFU3vPNGSH.nHjnDzz0wMeECrcqVtXYp9ZMp9F6orY7r96qris82cpDLkI5K
- rXfR2_gwxdwSNK9x6oobnpyqemAwSv7eJqe3symkvpPx59GdcQ79HqUI-
-X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.104.274457
-Date: Thu, 8 Jul 2010 12:31:23 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCHv2 1/2] USB: gadget: mass/file storage: set serial number
-To: Greg KH <greg@kroah.com>,
-       =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org,
-       Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-       stable <stable@kernel.org>
-In-Reply-To: <op.vfjga9ie7p4s8u@pikus>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1758465Ab0GHThK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 15:37:10 -0400
+Received: from mail.gmx.net ([213.165.64.20]:58739 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755920Ab0GHThJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 15:37:09 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+vuQZFqQevReqjV/RsYLYbI9QJFvezlzNOxqsPcj
+	el2Y46Jb2uC+Qz
+Subject: Re: high power consumption in recent kernels
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Norbert Preining <preining@logic.at>,
+       Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, akpm <akpm@linux-foundation.org>,
+       tglx <tglx@linutronix.de>
+In-Reply-To: <1278595426.1900.130.camel@laptop>
+References: <20100706164539.GA14783@gamma.logic.tuwien.ac.at>
+	 <1278579992.1900.17.camel@laptop> <20100708045711.398d4e26@infradead.org>
+	 <1278590303.1900.91.camel@laptop>
+	 <20100708120421.GF20841@gamma.logic.tuwien.ac.at>
+	 <1278591779.1900.97.camel@laptop>
+	 <20100708124627.GA7754@gamma.logic.tuwien.ac.at>
+	 <1278595426.1900.130.camel@laptop>
+Content-Type: text/plain
+Date: Thu, 08 Jul 2010 21:37:12 +0200
+Message-Id: <1278617832.7498.18.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-07-08 at 15:23 +0200, Peter Zijlstra wrote:
+> On Thu, 2010-07-08 at 21:46 +0900, Norbert Preining wrote:
+> > Looks promising, reverting the old patch, adding that one, building,
+> > running, unplugging ppower, powertop runs now since some time,
+> > it seems that we are back to better situation: 
+> 
+> Hrmm, Mike seems you wrecked power usage.. 
+> 
+> So nohz_ratelimit() prevents us from entering NOHZ when the last attempt
+> was less than 1/2 a jiffy ago (fwiw: NSEC_PER_SEC/HZ == TICK_NSEC).
+> 
+> Its either entering idle or irq_exit trying to enter nohz state, if we
+> keep skipping it it means that we get enough interrupt activity to
+> render nohz useless anyway.. so not quite sure how this wrecks things.
 
-> >> This commit adds iSerialNumber to all gadgets that
-> use the Mass Storage Function.
+You can't win at this game.
 
-Can it be made to do so only when the gadget
-hasn't been provided with one already?  Serial
-number module options are standard parts of the
-composite gadget framework...
+I really don't like giving up anything, but thinking about it, if I were
+the maintainer, I'd just revert the damn thing as being more trouble
+than it's worth.
 
+It makes a large difference at the extreme end of the spectrum when
+scheduling cross cpu (which we now actively try to do to maximize ramp
+throughput), but ever less as frequency diminishes.  I've yet to see a
+load I can respect at close to max ctx frequency, where optimization
+earns it's beans and biscuits.
+
+Ego: If thine eye offends thee, pluck it out.
+
+	-Mike
 
