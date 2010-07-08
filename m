@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758338Ab0GHRfj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 13:35:39 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34543 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756333Ab0GHRfi (ORCPT
+	id S1758362Ab0GHRgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 13:36:17 -0400
+Received: from mail.bitdefender.com ([91.199.104.2]:60715 "EHLO
+	mail.bitdefender.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758219Ab0GHRgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 13:35:38 -0400
-Date: Thu, 8 Jul 2010 13:35:15 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Eric B Munson <ebmunson@us.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Eric B Munson <emunson@mgebm.net>,
-       akpm@linux-foundation.org, mingo@redhat.com, hugh.dickins@tiscali.co.uk,
-       riel@redhat.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       anton@samba.org
-Subject: Re: [PATCH] Add trace event for munmap
-Message-ID: <20100708173515.GA11652@infradead.org>
-References: <1278597931-26855-1-git-send-email-emunson@mgebm.net>
- <1278598955.1900.152.camel@laptop>
- <20100708144407.GA8141@us.ibm.com>
+	Thu, 8 Jul 2010 13:36:16 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jul 2010 13:36:15 EDT
+From: Mihai =?utf-8?q?Don=C8=9Bu?= <mihai.dontu@gmail.com>
+Organization: Home
+To: Gene Heskett <gene.heskett@gmail.com>
+Subject: Re: missing post?
+Date: Thu, 8 Jul 2010 20:29:31 +0300
+Cc: linux-kernel@vger.kernel.org
+References: <201007081322.33063.gene.heskett@gmail.com>
+In-Reply-To: <201007081322.33063.gene.heskett@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100708144407.GA8141@us.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201007082029.32444.mihai.dontu@gmail.com>
+X-BitDefender-Spam: No (0)
+X-BitDefender-SpamStamp: v1, build 2.8.85.99079, SQMD Hits: none, rbl
+ score: 0(0), bayes score: 500(0), pbayes score: 500(0), neunet score:
+ 0(0), flags: [NN_VALID_REPLY], SQMD:
+ 98192d32f60130608698751f8d226fc9.fuzzy.fzrbl.org, total: 0(775)
+X-BitDefender-Scanner: Clean, Agent: BitDefender qmail 3.1.0 on
+ elfie.dsd.hq, sigver: 7.32679
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 03:44:07PM +0100, Eric B Munson wrote:
-> On Thu, 08 Jul 2010, Peter Zijlstra wrote:
+On Thursday 08 July 2010 20:22:33 Gene Heskett wrote:
+> Greetings, I am on a gmail account, so I have no way of determining if a
+> post of mine actually cleared and made it to the list.  Its subject line
+> was:
 > 
-> > On Thu, 2010-07-08 at 15:05 +0100, Eric B Munson wrote:
-> > > This patch adds a trace event for munmap which will record the starting
-> > > address of the unmapped area and the length of the umapped area.  This
-> > > event will be used for modeling memory usage.
-> > 
-> > Does it make sense to couple this with a mmap()/mremap()/brk()
-> > tracepoint?
-> > 
+> 2.6.35-rc4, no boot
 > 
-> We were using the mmap information collected by perf, but I think
-> those might also be useful so I will send a followup patch to add
-> them.
+> and included my .config and a .jpg of the screen showing how far it got,
+> total attachment size of 240k, and that was the maximum amount of smunching
+> I could apply to that image in a gimp save as function.  It was several
+> megabytes from my Nikon D100 camera.
+> 
+> Can anyone tell me if that post was received?
 
-What kind of infrastructure is perf using for recording
-mmap()/mremap()/brk() information?
+It was received:
+http://article.gmane.org/gmane.linux.kernel/1006582/match=2.6.35+rc4+no+boot
+
+-- 
+Mihai Donțu
