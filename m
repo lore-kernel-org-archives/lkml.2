@@ -1,116 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab0GHHhp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 03:37:45 -0400
-Received: from t03.superonline.com ([92.45.6.169]:3588 "EHLO
-	smtpout1.superonline.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751614Ab0GHHho (ORCPT
+	id S1753976Ab0GHHiE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 03:38:04 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44417 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab0GHHhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 03:37:44 -0400
-Message-ID: <4C35803E.4080003@superonline.com>
-Date: Thu, 08 Jul 2010 10:37:34 +0300
-From: "M. Vefa Bicakci" <bicave@superonline.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100619 Icedove/3.0.5
+	Thu, 8 Jul 2010 03:37:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=svkjYHv4bht9M1jDKNG48u7DW0WEZlotc3H8myKTMlEl2ZPlkiYaoi3xQAU8traqmA
+         VNpcZahoXgdjeZIUFC3f3KW6x8DcXQD4aYNCZxBDit4DZj3GE7UtFT8ezEEAtiuEoZwZ
+         nImSl4c6/CmSfQ4s3+jrviAzuTWLoXB5z5B3k=
+Message-ID: <4C358076.1040302@gmail.com>
+Date: Thu, 08 Jul 2010 00:38:30 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [Possible regression] i915 GEM related oops since 2.6.34.1
-Content-Type: text/plain; charset=UTF-8
+To: Ingo Molnar <mingo@elte.hu>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, airlied@linux.ie,
+       dri-devel@lists.freedesktop.org, venki@google.com, hpa@linux.intel.com,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [bisected]X:2252 conflicting memory types 40000000-48000000 uncached-minus<->write-combining
+References: <4C2E464A.8090900@gmail.com> <4C2EBE99.4030706@gmail.com> <20100708064448.GA3803@elte.hu>
+In-Reply-To: <20100708064448.GA3803@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
-X-SurGATE-Result: Clean (Content eval: 0.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 07/07/2010 11:44 PM, Ingo Molnar wrote:
+>
+> * Justin P. Mattock<justinmattock@gmail.com>  wrote:
+>
+>> On 07/02/10 13:04, Justin P. Mattock wrote:
+>>> this is new(below) has anybody reported/bisected hit this yet
+>>> (if not I'll bisect it)
+>>>
+>>> [drm] Num pipes: 1
+>>> [   29.742432] [drm] writeback test succeeded in 1 usecs
+>>> [   30.089717] X:2252 conflicting memory types 40000000-48000000
+>>> uncached-minus<->write-combining
+>>> [   30.089721] reserve_memtype failed 0x40000000-0x48000000, track
+>>> uncached-minus, req uncached-minus
+>>> [   30.123517] [drm] Num pipes: 1
+>>> [   30.351017] X:2252 freeing invalid memtype 40000000-48000000
+>>> [   30.354255] CPU 0
+>>> [   30.354255] Modules linked in: radeon ttm drm_kms_helper drm
+>>> sco xcbc bnep rmd160 sha512_generic xt_tcpudp ipt_LOG iptable_nat
+>>> nf_nat xt_state nf_conntrack_ftp nf_conntrack_ipv4 nf_conntrack
+>>> nf_defrag_ipv4 iptable_filter ip_tables x_tables firewire_ohci
+>>> firewire_core video battery ath9k ac ath9k_common joydev sky2
+>>> ath9k_hw ohci1394 ath thermal evdev button i2c_i801 hid_magicmouse
+>>> aes_x86_64 lzo lzo_compress zlib ipcomp xfrm_ipcomp crypto_null
+>>> sha256_generic cbc des_generic cast5 blowfish serpent camellia
+>>> twofish twofish_common ctr ah4 esp4 authenc raw1394 ieee1394
+>>> uhci_hcd ehci_hcd hci_uart rfcomm btusb hidp l2cap bluetooth
+>>> coretemp acpi_cpufreq processor mperf appletouch applesmc
+>>> uvcvideo[   30.354255]
+>>> [   30.354255] Pid: 2252, comm: X Not tainted
+>>> 2.6.35-rc3-00397-g123f94f #3 Mac-F42187C8/MacBookPro2,2
+>>> [   30.354255] RIP: 0010:[<ffffffffa035811b>]
+>>> [<ffffffffa035811b>] radeon_read_ring_rptr+0x2b/0x2f [radeon]
+>>> [   30.354255] RSP: 0018:ffff8800360dfc80  EFLAGS: 00010202
+>>> [   30.354255] RAX: ffff88003e0085d8 RBX: ffff8800385e8848 RCX:
+>>> ffffc90000cf8000
+>>> [   30.354255] RDX: 0000000000000028 RSI: 6b6b6b6b6b6b6b6b RDI:
+>>> ffff8800385e8848
+>>> [   30.354255] RBP: ffff8800360dfc80 R08: ffff8800385e8a28 R09:
+>>> 0000000000000010
+>>> [   30.354255] R10: ffffffffffffffff R11: ffffea0000930af0 R12:
+>>> 0000000000000010
+>>> [   30.354255] R13: ffff8800385e8000 R14: ffff8800385e89c8 R15:
+>>> ffff8800385e8178
+>>> [   30.354255] FS:  00007f0aaa823840(0000)
+>>> GS:ffff880001a00000(0000) knlGS:0000000000000000
+>>> [   30.354255] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>>> [   30.354255] CR2: 00007f0a9ad67118 CR3: 000000000166d000 CR4:
+>>> 00000000000006f0
+>>> [   30.354255] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+>>> 0000000000000000
+>>> [   30.354255] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+>>> 0000000000000400
+>>> [   30.354255] Process X (pid: 2252, threadinfo ffff8800360de000,
+>>> task ffff880033dc5c40)
+>>> [   30.354255]  ffff8800360dfc90 ffffffffa0358130 ffff8800360dfca8
+>>> ffffffffa035881c
+>>> [   30.354255]<0>  ffff8800385e8848 ffff8800360dfcc8
+>>> ffffffffa0359ac7 0000000000000000
+>>> [   30.354255]<0>  ffff8800385e8848 ffff8800360dfce8
+>>> ffffffffa035c961 ffff8800385e8848
+>>> [   30.354255]  [<ffffffffa0358130>]
+>>> radeon_get_ring_head+0x11/0x3c [radeon]
+>>> [   30.354255]  [<ffffffffa035881c>] radeon_commit_ring+0x48/0x97
+>>> [radeon]
+>>> [   30.354255]  [<ffffffffa0359ac7>] radeon_do_cp_idle+0x140/0x14d
+>>> [radeon]
+>>> [   30.354255]  [<ffffffffa035c961>]
+>>> radeon_apply_surface_regs+0x22/0x138 [radeon]
+>>> [   30.354255]  [<ffffffffa035cb4f>] free_surface+0xd8/0xee [radeon]
+>>> [   30.354255]  [<ffffffffa0365036>]
+>>> radeon_driver_lastclose+0x3c/0x56 [radeon]
+>>> [   30.354255]  [<ffffffffa031440b>] drm_lastclose+0x44/0x2ad [drm]
+>>> [   30.354255]  [<ffffffffa0314eda>] drm_release+0x656/0x6a3 [drm]
+>>> [   30.354255]  [<ffffffff8105abaf>] put_files_struct+0x65/0xb3
+>>> [   30.354255]  [<ffffffff8105ac43>] exit_files+0x46/0x4e
+>>> [   30.354255]  [<ffffffff8105c2e6>] do_exit+0x214/0x69f
+>>> [   30.354255]  [<ffffffff810ebc2e>] ? fput+0x1e2/0x1f1
+>>> [   30.354255]  [<ffffffff8105c7e3>] do_group_exit+0x72/0x9a
+>>> [   30.354255]  [<ffffffff8105c81d>] sys_exit_group+0x12/0x16
+>>> [   30.354255]  [<ffffffff81026442>] system_call_fastpath+0x16/0x1b
+>>> [   30.354255]  RSP<ffff8800360dfc80>
+>>> [   31.312879] ---[ end trace 9a7b92300d4121f6 ]---
+>>> [   30.354255]  [<ffffffff810ebb6e>] fput+0x122/0x1f1
+>>> [   30.354255]  [<ffffffff810e9181>] filp_close+0x63/0x6d
+>>>
+>>> Justin P. Mattock
+>>
+>> o.k. finished bisecting.. the results point to this: 6a4f3b523 doing
+>> a git revert gets me to startx without crashing and burning.
+>> the problem code is this:
+>> new->subtree_max_end = new->end;
+>>
+>> which sends me to: (if im reading correctly)
+>> if (match->type != found_type&&  newtype == NULL)
+>>          goto failure;
+>>
+>> so how/what might be happening here?!
+>
+> Could you please check latest upstream, which has this fix:
+>
+>    b945d6b: rbtree: Undo augmented trees performance damage and regression
+>
+> Does it fix your X too?
+>
+> Thanks,
+>
+> 	Ingo
+>
 
-I am using an up-to-date Debian Sid installation on a Toshiba
-Satellite A100 laptop with an Intel graphics card.
 
-Since upgrading to 2.6.34.1, I have gotten the oops below twice,
-each on different days. In both instances, the oops occurred at
-an unexpected moment, when I was just moving the mouse. The oops
-causes X to be unusable - whatever is on the display simply freezes
-- and I have to use the magic Sys-Rq key to switch the keyboard mode
-and blindly use the virtual terminal to reboot.
+yep.. just pulled, everything looks good...
 
-I haven't had this problem with 2.6.34, and after seeing the same
-oops twice, I thought I should report it.
-
-The only modification I made to the vanilla 2.6.34.1 source is the
-following commit. (I had this modification applied to 2.6.34 as
-well, and haven't had this oops before.)
-
-=== 8< ===
-commit 985b823b919273fe1327d56d2196b4f92e5d0fae
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Fri Jul 2 10:04:42 2010 +1000
-
-    drm/i915: fix hibernation since i915 self-reclaim fixes
-    
-    Since commit 4bdadb9785696439c6e2b3efe34aa76df1149c83 ("drm/i915:
-    Selectively enable self-reclaim"), we've been passing GFP_MOVABLE to the
-    i915 page allocator where we weren't before due to some over-eager
-    removal of the page mapping gfp_flags games the code used to play.
-    
-    This caused hibernate on Intel hardware to result in a lot of memory
-    corruptions on resume.  See for example
-    
-      http://bugzilla.kernel.org/show_bug.cgi?id=13811
-=== >8 ===
-
-
-Here's the oops itself:
-
-=== 8< ===
-BUG: unable to handle kernel paging request at 00aaaaaa
-IP: [<f844a4f2>] drm_ht_insert_item+0x22/0xa0 [drm]
-*pde = 00000000 
-Oops: 0000 [#1] PREEMPT SMP 
-last sysfs file: /sys/devices/virtual/net/vboxnet0/statistics/collisions
-Modules linked in: ext4 jbd2 ecryptfs vboxnetadp vboxnetflt vboxdrv cpufreq_powersave cpufreq_performance kvm_intel cpufreq_conservative kvm cpufreq_ondemand cpufreq_stats parport_pc ppdev lp parport sco bridge stp bnep rfcomm l2cap crc16 af_packet binfmt_misc uinput fuse ip6table_filter ip6_tables nf_conntrack_irc nf_conntrack_ftp ipt_addrtype xt_tcpudp ipt_ULOG xt_limit xt_state nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter ip_tables x_tables acpi_cpufreq freq_table snd_hda_codec_si3054 snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event arc4 ecb snd_seq snd_timer iwl3945 snd_seq_device iwlcore pcmcia btusb snd soundcore bluetooth snd_page_alloc joydev yenta_socket mac80211 rsrc_nonstatic tifm_7xx1 tifm_core i2c_i801 pcmcia_core cfg80211 rng_core tpm_tis rtc_cmos rfkill ac battery container tpm psmouse rtc_core rtc_lib tpm_bios processor pc
-uetooth evdev serio_raw ext3 jbd mbcache cbc sha256_generic serpent aes_i586 aes_generic dm_crypt dm_mod sg sd_mod sr_mod cdrom ata_generic pata_acpi i915 drm_kms_helper ata_piix sdhci_pci sdhci drm i2c_algo_bit firewire_ohci fan mmc_core i2c_core uhci_hcd libata firewire_core led_class crc_itu_t e100 mii ehci_hcd button usbcore nls_base video output scsi_mod thermal intel_agp [last unloaded: scsi_wait_scan]
-
-Pid: 26809, comm: Xorg Not tainted 2.6.34.1-1a #1 CAPELL VALLEY(NAPA) CRB/Satellite A100
-EIP: 0060:[<f844a4f2>] EFLAGS: 00213206 CPU: 1
-EIP is at drm_ht_insert_item+0x22/0xa0 [drm]
-EAX: f6a18aa0 EBX: 001092d0 ECX: 0000000d EDX: f63f8bb8
-ESI: f8738810 EDI: 00aaaaaa EBP: f6901000 ESP: f6003e04
- DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-Process Xorg (pid: 26809, ti=f6002000 task=f5cd4000 task.ti=f6002000)
-Stack:
- f5c35300 f6003e74 f6a18a80 f851f2cd 00000000 f851c9a9 00000000 f63f8ba0
-<0> f69e1c14 f65f4400 f69e1c00 c0106464 00000064 f8443166 00000001 f8452f54
-<0> f84524f6 f8453f3c 000068b9 c0106464 00000064 0000e200 00000001 f6003e74
-Call Trace:
- [<f851f2cd>] ? i915_gem_mmap_gtt_ioctl+0x15d/0x270 [i915]
- [<f851c9a9>] ? i915_gem_busy_ioctl+0x59/0xa0 [i915]
- [<c0106464>] ? flush_ldt+0x34/0x60
- [<f8443166>] ? drm_ioctl+0x166/0x370 [drm]
- [<c0106464>] ? flush_ldt+0x34/0x60
- [<f851f170>] ? i915_gem_mmap_gtt_ioctl+0x0/0x270 [i915]
- [<c01c9045>] ? do_sync_read+0xb5/0xf0
- [<c01aa725>] ? handle_mm_fault+0x235/0xaf0
- [<c0106464>] ? flush_ldt+0x34/0x60
- [<f8443000>] ? drm_ioctl+0x0/0x370 [drm]
- [<c01d662b>] ? vfs_ioctl+0x2b/0xa0
- [<c01d680b>] ? do_vfs_ioctl+0x7b/0x5d0
- [<c01c90e6>] ? rw_verify_area+0x66/0xe0
- [<c01c9dae>] ? vfs_read+0x11e/0x190
- [<c0106464>] ? flush_ldt+0x34/0x60
- [<c01d6dd6>] ? sys_ioctl+0x76/0x90
- [<c0103758>] ? sysenter_do_call+0x12/0x28
- [<c0106464>] ? flush_ldt+0x34/0x60
-Code: 90 90 90 90 90 90 90 90 90 57 b9 20 00 00 00 56 53 8b 5a 08 2b 48 04 69 f3 01 00 37 9e d3 ee c1 e6 02 03 70 0c 8b 3e 85 ff 74 57 <8b> 07 0f 18 00 90 8b 4f 08 39 d9 74 41 39 cb 73 1a eb 55 8d 76 
-EIP: [<f844a4f2>] drm_ht_insert_item+0x22/0xa0 [drm] SS:ESP 0068:f6003e04
-CR2: 0000000000aaaaaa
----[ end trace 72d1054f02893a7f ]---
-
-=== >8 ===
-
-Regards,
-
-M. Vefa Bicakci
-
-Note: As I am not subscribed to the mailing list, I would appreciate it
-if you could include me in the CC list.
+Justin P. Mattock
