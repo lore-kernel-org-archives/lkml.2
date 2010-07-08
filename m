@@ -1,292 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab0GHGmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 02:42:05 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:53835 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab0GHGmD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 02:42:03 -0400
-Subject: Re: [PATCH] Mtd: fixed coding style issues in afs.c ar7part.c
- cmdlinepart.c inftlcore.c This is a patch to the files afs.c ar7part.c
- cmdlinepart.c inftlcore.c that fixes up warnings found by the checkpatch.pl
- tool Signed-off-by: Neal Buckendahl <nealb001@gmail.com>
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reply-To: Artem.Bityutskiy@nokia.com
-To: Neal Buckendahl <nealb001@gmail.com>
-Cc: dwmw2@infradead.org, rmk+kernel@arm.linux.org.uk, cascardo@holoscopio.com,
-       mohanlaljangir@gmail.com, maximlevitsky@gmail.com, julia@diku.dk,
-       jkosina@suse.cz, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Neal Buckendahl <nealb@tbcnet.com>
-In-Reply-To: <1277020914-10984-1-git-send-email-nealb001@gmail.com>
-References: <1277020914-10984-1-git-send-email-nealb001@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Thu, 08 Jul 2010 09:37:01 +0300
-Message-ID: <1278571021.12733.47.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 08 Jul 2010 06:41:01.0589 (UTC) FILETIME=[87EA1C50:01CB1E68]
-X-Nokia-AV: Clean
+	id S1754055Ab0GHGpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 02:45:13 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:40384 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753851Ab0GHGpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 02:45:10 -0400
+Date: Thu, 8 Jul 2010 08:44:48 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, airlied@linux.ie,
+       dri-devel@lists.freedesktop.org, venki@google.com, hpa@linux.intel.com,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [bisected]X:2252 conflicting memory types 40000000-48000000
+ uncached-minus<->write-combining
+Message-ID: <20100708064448.GA3803@elte.hu>
+References: <4C2E464A.8090900@gmail.com>
+ <4C2EBE99.4030706@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C2EBE99.4030706@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-06-20 at 03:01 -0500, Neal Buckendahl wrote:
-> From: Neal Buckendahl <nealb@tbcnet.com>
+
+* Justin P. Mattock <justinmattock@gmail.com> wrote:
+
+> On 07/02/10 13:04, Justin P. Mattock wrote:
+> >this is new(below) has anybody reported/bisected hit this yet
+> >(if not I'll bisect it)
+> >
+> >[drm] Num pipes: 1
+> >[   29.742432] [drm] writeback test succeeded in 1 usecs
+> >[   30.089717] X:2252 conflicting memory types 40000000-48000000
+> >uncached-minus<->write-combining
+> >[   30.089721] reserve_memtype failed 0x40000000-0x48000000, track
+> >uncached-minus, req uncached-minus
+> >[   30.123517] [drm] Num pipes: 1
+> >[   30.351017] X:2252 freeing invalid memtype 40000000-48000000
+> >[   30.354255] CPU 0
+> >[   30.354255] Modules linked in: radeon ttm drm_kms_helper drm
+> >sco xcbc bnep rmd160 sha512_generic xt_tcpudp ipt_LOG iptable_nat
+> >nf_nat xt_state nf_conntrack_ftp nf_conntrack_ipv4 nf_conntrack
+> >nf_defrag_ipv4 iptable_filter ip_tables x_tables firewire_ohci
+> >firewire_core video battery ath9k ac ath9k_common joydev sky2
+> >ath9k_hw ohci1394 ath thermal evdev button i2c_i801 hid_magicmouse
+> >aes_x86_64 lzo lzo_compress zlib ipcomp xfrm_ipcomp crypto_null
+> >sha256_generic cbc des_generic cast5 blowfish serpent camellia
+> >twofish twofish_common ctr ah4 esp4 authenc raw1394 ieee1394
+> >uhci_hcd ehci_hcd hci_uart rfcomm btusb hidp l2cap bluetooth
+> >coretemp acpi_cpufreq processor mperf appletouch applesmc
+> >uvcvideo[   30.354255]
+> >[   30.354255] Pid: 2252, comm: X Not tainted
+> >2.6.35-rc3-00397-g123f94f #3 Mac-F42187C8/MacBookPro2,2
+> >[   30.354255] RIP: 0010:[<ffffffffa035811b>]
+> >[<ffffffffa035811b>] radeon_read_ring_rptr+0x2b/0x2f [radeon]
+> >[   30.354255] RSP: 0018:ffff8800360dfc80  EFLAGS: 00010202
+> >[   30.354255] RAX: ffff88003e0085d8 RBX: ffff8800385e8848 RCX:
+> >ffffc90000cf8000
+> >[   30.354255] RDX: 0000000000000028 RSI: 6b6b6b6b6b6b6b6b RDI:
+> >ffff8800385e8848
+> >[   30.354255] RBP: ffff8800360dfc80 R08: ffff8800385e8a28 R09:
+> >0000000000000010
+> >[   30.354255] R10: ffffffffffffffff R11: ffffea0000930af0 R12:
+> >0000000000000010
+> >[   30.354255] R13: ffff8800385e8000 R14: ffff8800385e89c8 R15:
+> >ffff8800385e8178
+> >[   30.354255] FS:  00007f0aaa823840(0000)
+> >GS:ffff880001a00000(0000) knlGS:0000000000000000
+> >[   30.354255] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> >[   30.354255] CR2: 00007f0a9ad67118 CR3: 000000000166d000 CR4:
+> >00000000000006f0
+> >[   30.354255] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+> >0000000000000000
+> >[   30.354255] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+> >0000000000000400
+> >[   30.354255] Process X (pid: 2252, threadinfo ffff8800360de000,
+> >task ffff880033dc5c40)
+> >[   30.354255]  ffff8800360dfc90 ffffffffa0358130 ffff8800360dfca8
+> >ffffffffa035881c
+> >[   30.354255] <0> ffff8800385e8848 ffff8800360dfcc8
+> >ffffffffa0359ac7 0000000000000000
+> >[   30.354255] <0> ffff8800385e8848 ffff8800360dfce8
+> >ffffffffa035c961 ffff8800385e8848
+> >[   30.354255]  [<ffffffffa0358130>]
+> >radeon_get_ring_head+0x11/0x3c [radeon]
+> >[   30.354255]  [<ffffffffa035881c>] radeon_commit_ring+0x48/0x97
+> >[radeon]
+> >[   30.354255]  [<ffffffffa0359ac7>] radeon_do_cp_idle+0x140/0x14d
+> >[radeon]
+> >[   30.354255]  [<ffffffffa035c961>]
+> >radeon_apply_surface_regs+0x22/0x138 [radeon]
+> >[   30.354255]  [<ffffffffa035cb4f>] free_surface+0xd8/0xee [radeon]
+> >[   30.354255]  [<ffffffffa0365036>]
+> >radeon_driver_lastclose+0x3c/0x56 [radeon]
+> >[   30.354255]  [<ffffffffa031440b>] drm_lastclose+0x44/0x2ad [drm]
+> >[   30.354255]  [<ffffffffa0314eda>] drm_release+0x656/0x6a3 [drm]
+> >[   30.354255]  [<ffffffff8105abaf>] put_files_struct+0x65/0xb3
+> >[   30.354255]  [<ffffffff8105ac43>] exit_files+0x46/0x4e
+> >[   30.354255]  [<ffffffff8105c2e6>] do_exit+0x214/0x69f
+> >[   30.354255]  [<ffffffff810ebc2e>] ? fput+0x1e2/0x1f1
+> >[   30.354255]  [<ffffffff8105c7e3>] do_group_exit+0x72/0x9a
+> >[   30.354255]  [<ffffffff8105c81d>] sys_exit_group+0x12/0x16
+> >[   30.354255]  [<ffffffff81026442>] system_call_fastpath+0x16/0x1b
+> >[   30.354255]  RSP <ffff8800360dfc80>
+> >[   31.312879] ---[ end trace 9a7b92300d4121f6 ]---
+> >[   30.354255]  [<ffffffff810ebb6e>] fput+0x122/0x1f1
+> >[   30.354255]  [<ffffffff810e9181>] filp_close+0x63/0x6d
+> >
+> >Justin P. Mattock
 > 
-> ---
->  drivers/mtd/afs.c         |    9 ++-
->  drivers/mtd/ar7part.c     |    2 +-
->  drivers/mtd/cmdlinepart.c |  167 ++++++++++++++++++++-------------------------
->  drivers/mtd/inftlcore.c   |   47 ++++++++-----
->  4 files changed, 109 insertions(+), 116 deletions(-)
+> o.k. finished bisecting.. the results point to this: 6a4f3b523 doing
+> a git revert gets me to startx without crashing and burning.
+> the problem code is this:
+> new->subtree_max_end = new->end;
+> 
+> which sends me to: (if im reading correctly)
+> if (match->type != found_type && newtype == NULL)
+>         goto failure;
+> 
+> so how/what might be happening here?!
 
-Many fixes are debatable. Could you please split your patch on smaller
-patches, at least per-file basis, but also better on per-change-type
-basis.
+Could you please check latest upstream, which has this fix:
 
-Additionally, please, do not put so much crap into the subject line.
+  b945d6b: rbtree: Undo augmented trees performance damage and regression
 
-Thanks!
+Does it fix your X too?
 
-Some comments below.
+Thanks,
 
-> diff --git a/drivers/mtd/afs.c b/drivers/mtd/afs.c
-> index cec7ab9..d127171 100644
-> --- a/drivers/mtd/afs.c
-> +++ b/drivers/mtd/afs.c
-> @@ -162,8 +162,8 @@ afs_read_iis(struct mtd_info *mtd, struct image_info_struct *iis, u_int ptr)
->  }
->  
->  static int parse_afs_partitions(struct mtd_info *mtd,
-> -                         struct mtd_partition **pparts,
-> -                         unsigned long origin)
-> +			struct mtd_partition **pparts,
-> +			unsigned long origin)
->  {
->  	struct mtd_partition *parts;
->  	u_int mask, off, idx, sz;
-> @@ -235,11 +235,12 @@ static int parse_afs_partitions(struct mtd_info *mtd,
->  		strcpy(str, iis.name);
->  
->  		parts[idx].name		= str;
-> -		parts[idx].size		= (iis.length + mtd->erasesize - 1) & ~(mtd->erasesize - 1);
-> +		parts[idx].size		= (iis.length + mtd->erasesize - 1)&
-> +						~(mtd->erasesize - 1);
-
-Use ALIGN()
-
->  		parts[idx].offset	= img_ptr;
->  		parts[idx].mask_flags	= 0;
->  
-> -		printk("  mtd%d: at 0x%08x, %5lluKiB, %8u, %s\n",
-> +		printk(KERN_INFO "  mtd%d: at 0x%08x, %5lluKiB, %8u, %s\n",
->  			idx, img_ptr, parts[idx].size / 1024,
->  			iis.imageNumber, str);
->  
-> diff --git a/drivers/mtd/ar7part.c b/drivers/mtd/ar7part.c
-> index 6697a1e..7ccfdca 100644
-> --- a/drivers/mtd/ar7part.c
-> +++ b/drivers/mtd/ar7part.c
-> @@ -148,6 +148,6 @@ static int __init ar7_parser_init(void)
->  module_init(ar7_parser_init);
->  
->  MODULE_LICENSE("GPL");
-> -MODULE_AUTHOR(	"Felix Fietkau <nbd@openwrt.org>, "
-> +MODULE_AUTHOR("Felix Fietkau <nbd@openwrt.org>, "
->  		"Eugene Konev <ejka@openwrt.org>");
->  MODULE_DESCRIPTION("MTD partitioning for TI AR7");
-> diff --git a/drivers/mtd/cmdlinepart.c b/drivers/mtd/cmdlinepart.c
-> index 1479da6..ef5ea7e 100644
-> --- a/drivers/mtd/cmdlinepart.c
-> +++ b/drivers/mtd/cmdlinepart.c
-> @@ -34,7 +34,8 @@
->  
->  /* debug macro */
->  #if 0
-> -#define dbg(x) do { printk("DEBUG-CMDLINE-PART: "); printk x; } while(0)
-> +#define dbg(x) do { printk(KERN_DEBUG "DEBUG-CMDLINE-PART: "); printk x;
-> +		} while (0)
->  #else
->  #define dbg(x)
->  #endif
-
-Can you just kill this whole dbg() stuff - I t is useless nowadays.
-
-> @@ -56,7 +57,7 @@ static struct cmdline_mtd_partition *partitions;
->  
->  /* the command line passed to mtdpart_setupd() */
->  static char *cmdline;
-> -static int cmdline_parsed = 0;
-> +static int cmdline_parsed = 1;
-
-1 ?
- 
->  /*
->   * Parse one partition definition for an MTD. Since there can be many
-> @@ -66,12 +67,12 @@ static int cmdline_parsed = 0;
->   * is allocated upon the last definition being found. At that point the
->   * syntax has been verified ok.
->   */
-> -static struct mtd_partition * newpart(char *s,
-> -                                      char **retptr,
-> -                                      int *num_parts,
-> -                                      int this_part,
-> -                                      unsigned char **extra_mem_ptr,
-> -                                      int extra_mem_size)
-> +static struct mtd_partition *newpart(char *s,
-> +					char **retptr,
-> +					int *num_parts,
-> +					int this_part,
-> +					unsigned char **extra_mem_ptr,
-> +					int extra_mem_size)
-
-Merge some lines
-
->  {
->  	struct mtd_partition *parts;
->  	unsigned long size;
-> @@ -83,17 +84,15 @@ static struct mtd_partition * newpart(char *s,
->  	unsigned int mask_flags;
->  
->  	/* fetch the partition size */
-> -	if (*s == '-')
-> -	{	/* assign all remaining space to this partition */
-> +	if (*s == '-') {
-> +		/* assign all remaining space to this partition */
->  		size = SIZE_REMAINING;
->  		s++;
-> -	}
-> -	else
-> -	{
-> +	} else {
->  		size = memparse(s, &s);
-> -		if (size < PAGE_SIZE)
-> -		{
-> -			printk(KERN_ERR ERRP "partition size too small (%lx)\n", size);
-> +		if (size < PAGE_SIZE) {
-> +			printk(KERN_ERR ERRP "partition size too small (%lx)\n"
-> +			, size);
->  			return NULL;
->  		}
->  	}
-> @@ -101,61 +100,51 @@ static struct mtd_partition * newpart(char *s,
->  	/* fetch partition name and flags */
->  	mask_flags = 0; /* this is going to be a regular partition */
->  	delim = 0;
-> -        /* check for offset */
-> -        if (*s == '@')
-> -	{
-> -                s++;
-> -                offset = memparse(s, &s);
-> -        }
-> -        /* now look for name */
-> +	/* check for offset */
-> +	if (*s == '@') {
-> +		s++;
-> +		offset = memparse(s, &s);
-> +	}
-> +	/* now look for name */
->  	if (*s == '(')
-> -	{
->  		delim = ')';
-> -	}
->  
-> -	if (delim)
-> -	{
-> +	if (delim) {
->  		char *p;
-> -
-> -	    	name = ++s;
-> +		name = ++s;
->  		p = strchr(name, delim);
-> -		if (!p)
-> -		{
-> -			printk(KERN_ERR ERRP "no closing %c found in partition name\n", delim);
-> +		if (!p) {
-> +			printk(KERN_ERR ERRP
-> +			"no closing %c found in partition name\n", delim);
->  			return NULL;
->  		}
->  		name_len = p - name;
->  		s = p + 1;
-> -	}
-> -	else
-> -	{
-> -	    	name = NULL;
-> +	} else {
-> +		name = NULL;
->  		name_len = 13; /* Partition_000 */
->  	}
->  
->  	/* record name length for memory allocation later */
->  	extra_mem_size += name_len + 1;
->  
-> -        /* test for options */
-> -        if (strncmp(s, "ro", 2) == 0)
-> -	{
-> +	/* test for options */
-> +	if (strncmp(s, "ro", 2) == 0) {
->  		mask_flags |= MTD_WRITEABLE;
->  		s += 2;
-> -        }
-> +	}
->  
-> -        /* if lk is found do NOT unlock the MTD partition*/
-> -        if (strncmp(s, "lk", 2) == 0)
-> -	{
-> +	/* if lk is found do NOT unlock the MTD partition*/
-> +	if (strncmp(s, "lk", 2) == 0) {
->  		mask_flags |= MTD_POWERUP_LOCK;
->  		s += 2;
-> -        }
-> +	}
->  
->  	/* test if more partitions are following */
-> -	if (*s == ',')
-> -	{
-> -		if (size == SIZE_REMAINING)
-> -		{
-> -			printk(KERN_ERR ERRP "no partitions allowed after a fill-up partition\n");
-> +	if (*s == ',') {
-> +		if (size == SIZE_REMAINING) {
-> +			printk(KERN_ERR ERRP
-> +			"no partitions allowed after a fill-up partition\n");
->  			return NULL;
->  		}
->  		/* more partitions follow, parse them */
-> @@ -163,34 +152,29 @@ static struct mtd_partition * newpart(char *s,
->  				&extra_mem, extra_mem_size);
->  		if (!parts)
->  			return NULL;
-> -	}
-> -	else
-> -	{	/* this is the last partition: allocate space for all */
-> +	} else {
-> +		/* this is the last partition: allocate space for all */
->  		int alloc_size;
->  
->  		*num_parts = this_part + 1;
->  		alloc_size = *num_parts * sizeof(struct mtd_partition) +
->  			     extra_mem_size;
->  		parts = kzalloc(alloc_size, GFP_KERNEL);
-> -		if (!parts)
-> -		{
-> +		if (!parts) {
->  			printk(KERN_ERR ERRP "out of memory\n");
->  			return NULL;
->  		}
->  		extra_mem = (unsigned char *)(parts + *num_parts);
->  	}
-
-All the { } stuff should be in a separate patch.
-
-The patch is too large, no one is going to merge it because it is
-difficult to get confident it is doing a good thing. Split it.
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+	Ingo
