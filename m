@@ -1,150 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab0GHHiE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 03:38:04 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:44417 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab0GHHhv (ORCPT
+	id S1754091Ab0GHHiT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 03:38:19 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41469 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094Ab0GHHiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 03:37:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=svkjYHv4bht9M1jDKNG48u7DW0WEZlotc3H8myKTMlEl2ZPlkiYaoi3xQAU8traqmA
-         VNpcZahoXgdjeZIUFC3f3KW6x8DcXQD4aYNCZxBDit4DZj3GE7UtFT8ezEEAtiuEoZwZ
-         nImSl4c6/CmSfQ4s3+jrviAzuTWLoXB5z5B3k=
-Message-ID: <4C358076.1040302@gmail.com>
-Date: Thu, 08 Jul 2010 00:38:30 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+	Thu, 8 Jul 2010 03:38:16 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH v2 1/2] vmscan: don't subtraction of unsined
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100708163401.CD34.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, airlied@linux.ie,
-       dri-devel@lists.freedesktop.org, venki@google.com, hpa@linux.intel.com,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [bisected]X:2252 conflicting memory types 40000000-48000000 uncached-minus<->write-combining
-References: <4C2E464A.8090900@gmail.com> <4C2EBE99.4030706@gmail.com> <20100708064448.GA3803@elte.hu>
-In-Reply-To: <20100708064448.GA3803@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  8 Jul 2010 16:38:10 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2010 11:44 PM, Ingo Molnar wrote:
->
-> * Justin P. Mattock<justinmattock@gmail.com>  wrote:
->
->> On 07/02/10 13:04, Justin P. Mattock wrote:
->>> this is new(below) has anybody reported/bisected hit this yet
->>> (if not I'll bisect it)
->>>
->>> [drm] Num pipes: 1
->>> [   29.742432] [drm] writeback test succeeded in 1 usecs
->>> [   30.089717] X:2252 conflicting memory types 40000000-48000000
->>> uncached-minus<->write-combining
->>> [   30.089721] reserve_memtype failed 0x40000000-0x48000000, track
->>> uncached-minus, req uncached-minus
->>> [   30.123517] [drm] Num pipes: 1
->>> [   30.351017] X:2252 freeing invalid memtype 40000000-48000000
->>> [   30.354255] CPU 0
->>> [   30.354255] Modules linked in: radeon ttm drm_kms_helper drm
->>> sco xcbc bnep rmd160 sha512_generic xt_tcpudp ipt_LOG iptable_nat
->>> nf_nat xt_state nf_conntrack_ftp nf_conntrack_ipv4 nf_conntrack
->>> nf_defrag_ipv4 iptable_filter ip_tables x_tables firewire_ohci
->>> firewire_core video battery ath9k ac ath9k_common joydev sky2
->>> ath9k_hw ohci1394 ath thermal evdev button i2c_i801 hid_magicmouse
->>> aes_x86_64 lzo lzo_compress zlib ipcomp xfrm_ipcomp crypto_null
->>> sha256_generic cbc des_generic cast5 blowfish serpent camellia
->>> twofish twofish_common ctr ah4 esp4 authenc raw1394 ieee1394
->>> uhci_hcd ehci_hcd hci_uart rfcomm btusb hidp l2cap bluetooth
->>> coretemp acpi_cpufreq processor mperf appletouch applesmc
->>> uvcvideo[   30.354255]
->>> [   30.354255] Pid: 2252, comm: X Not tainted
->>> 2.6.35-rc3-00397-g123f94f #3 Mac-F42187C8/MacBookPro2,2
->>> [   30.354255] RIP: 0010:[<ffffffffa035811b>]
->>> [<ffffffffa035811b>] radeon_read_ring_rptr+0x2b/0x2f [radeon]
->>> [   30.354255] RSP: 0018:ffff8800360dfc80  EFLAGS: 00010202
->>> [   30.354255] RAX: ffff88003e0085d8 RBX: ffff8800385e8848 RCX:
->>> ffffc90000cf8000
->>> [   30.354255] RDX: 0000000000000028 RSI: 6b6b6b6b6b6b6b6b RDI:
->>> ffff8800385e8848
->>> [   30.354255] RBP: ffff8800360dfc80 R08: ffff8800385e8a28 R09:
->>> 0000000000000010
->>> [   30.354255] R10: ffffffffffffffff R11: ffffea0000930af0 R12:
->>> 0000000000000010
->>> [   30.354255] R13: ffff8800385e8000 R14: ffff8800385e89c8 R15:
->>> ffff8800385e8178
->>> [   30.354255] FS:  00007f0aaa823840(0000)
->>> GS:ffff880001a00000(0000) knlGS:0000000000000000
->>> [   30.354255] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>> [   30.354255] CR2: 00007f0a9ad67118 CR3: 000000000166d000 CR4:
->>> 00000000000006f0
->>> [   30.354255] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
->>> 0000000000000000
->>> [   30.354255] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
->>> 0000000000000400
->>> [   30.354255] Process X (pid: 2252, threadinfo ffff8800360de000,
->>> task ffff880033dc5c40)
->>> [   30.354255]  ffff8800360dfc90 ffffffffa0358130 ffff8800360dfca8
->>> ffffffffa035881c
->>> [   30.354255]<0>  ffff8800385e8848 ffff8800360dfcc8
->>> ffffffffa0359ac7 0000000000000000
->>> [   30.354255]<0>  ffff8800385e8848 ffff8800360dfce8
->>> ffffffffa035c961 ffff8800385e8848
->>> [   30.354255]  [<ffffffffa0358130>]
->>> radeon_get_ring_head+0x11/0x3c [radeon]
->>> [   30.354255]  [<ffffffffa035881c>] radeon_commit_ring+0x48/0x97
->>> [radeon]
->>> [   30.354255]  [<ffffffffa0359ac7>] radeon_do_cp_idle+0x140/0x14d
->>> [radeon]
->>> [   30.354255]  [<ffffffffa035c961>]
->>> radeon_apply_surface_regs+0x22/0x138 [radeon]
->>> [   30.354255]  [<ffffffffa035cb4f>] free_surface+0xd8/0xee [radeon]
->>> [   30.354255]  [<ffffffffa0365036>]
->>> radeon_driver_lastclose+0x3c/0x56 [radeon]
->>> [   30.354255]  [<ffffffffa031440b>] drm_lastclose+0x44/0x2ad [drm]
->>> [   30.354255]  [<ffffffffa0314eda>] drm_release+0x656/0x6a3 [drm]
->>> [   30.354255]  [<ffffffff8105abaf>] put_files_struct+0x65/0xb3
->>> [   30.354255]  [<ffffffff8105ac43>] exit_files+0x46/0x4e
->>> [   30.354255]  [<ffffffff8105c2e6>] do_exit+0x214/0x69f
->>> [   30.354255]  [<ffffffff810ebc2e>] ? fput+0x1e2/0x1f1
->>> [   30.354255]  [<ffffffff8105c7e3>] do_group_exit+0x72/0x9a
->>> [   30.354255]  [<ffffffff8105c81d>] sys_exit_group+0x12/0x16
->>> [   30.354255]  [<ffffffff81026442>] system_call_fastpath+0x16/0x1b
->>> [   30.354255]  RSP<ffff8800360dfc80>
->>> [   31.312879] ---[ end trace 9a7b92300d4121f6 ]---
->>> [   30.354255]  [<ffffffff810ebb6e>] fput+0x122/0x1f1
->>> [   30.354255]  [<ffffffff810e9181>] filp_close+0x63/0x6d
->>>
->>> Justin P. Mattock
->>
->> o.k. finished bisecting.. the results point to this: 6a4f3b523 doing
->> a git revert gets me to startx without crashing and burning.
->> the problem code is this:
->> new->subtree_max_end = new->end;
->>
->> which sends me to: (if im reading correctly)
->> if (match->type != found_type&&  newtype == NULL)
->>          goto failure;
->>
->> so how/what might be happening here?!
->
-> Could you please check latest upstream, which has this fix:
->
->    b945d6b: rbtree: Undo augmented trees performance damage and regression
->
-> Does it fix your X too?
->
-> Thanks,
->
-> 	Ingo
->
+'slab_reclaimable' and 'nr_pages' are unsigned. so, subtraction is
+unsafe.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Christoph Lameter <cl@linux-foundation.org>
+---
+ mm/vmscan.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 9c7e57c..8715da1 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2588,7 +2588,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 		.swappiness = vm_swappiness,
+ 		.order = order,
+ 	};
+-	unsigned long slab_reclaimable;
++	unsigned long n, m;
+ 
+ 	disable_swap_token();
+ 	cond_resched();
+@@ -2615,8 +2615,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 		} while (priority >= 0 && sc.nr_reclaimed < nr_pages);
+ 	}
+ 
+-	slab_reclaimable = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+-	if (slab_reclaimable > zone->min_slab_pages) {
++	n = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
++	if (n > zone->min_slab_pages) {
+ 		/*
+ 		 * shrink_slab() does not currently allow us to determine how
+ 		 * many pages were freed in this zone. So we take the current
+@@ -2628,16 +2628,16 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 		 * take a long time.
+ 		 */
+ 		while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
+-			zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
+-				slab_reclaimable - nr_pages)
++		       (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages > n))
+ 			;
+ 
+ 		/*
+ 		 * Update nr_reclaimed by the number of slab pages we
+ 		 * reclaimed from this zone.
+ 		 */
+-		sc.nr_reclaimed += slab_reclaimable -
+-			zone_page_state(zone, NR_SLAB_RECLAIMABLE);
++		m = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
++		if (m < n)
++			sc.nr_reclaimed += n - m;
+ 	}
+ 
+ 	p->reclaim_state = NULL;
+-- 
+1.6.5.2
 
 
-yep.. just pulled, everything looks good...
 
-Justin P. Mattock
