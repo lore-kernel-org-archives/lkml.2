@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040Ab0GIAD5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 20:03:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37985 "EHLO ogre.sisk.pl"
+	id S932214Ab0GHX7p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 19:59:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37936 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932226Ab0GHX7z convert rfc822-to-8bit (ORCPT
+	id S932173Ab0GHX65 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 19:59:55 -0400
+	Thu, 8 Jul 2010 19:58:57 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Enrico Bandiello" <enban@postal.uv.es>
+       "Eric Sandeen" <sandeen@redhat.com>, "Phillip Susi" <psusi@cfl.rr.com>
 References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
 In-Reply-To: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <TXb9XdQzJoD.A.5iB.UMmNMB@chimera>
-Subject: [Bug #16304] i915 - high number of wakeups
+Message-ID: <TXb9XdQzJoD.A.C2B.mMmNMB@chimera>
+Subject: [Bug #16278] lvm snapshot causes deadlock in 2.6.35
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri,  9 Jul 2010 01:41:39 +0200 (CEST)
+Date: Fri,  9 Jul 2010 01:41:38 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,9 +33,11 @@ from 2.6.34.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16304
-Subject		: i915 - high number of wakeups
-Submitter	: Enrico Bandiello <enban@postal.uv.es>
-Date		: 2010-06-27 09:52 (12 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16278
+Subject		: lvm snapshot causes deadlock in 2.6.35
+Submitter	: Phillip Susi <psusi@cfl.rr.com>
+Date		: 2010-06-23 16:55 (16 days old)
+Handled-By	: Eric Sandeen <sandeen@redhat.com>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=26933
 
 
