@@ -1,41 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab0GHOCm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 10:02:42 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62682 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754434Ab0GHOCl (ORCPT
+	id S1756852Ab0GHODH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 10:03:07 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:37018 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab0GHODF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 10:02:41 -0400
-Message-ID: <4C35DA6C.2060405@metafoo.de>
-Date: Thu, 08 Jul 2010 16:02:20 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Thu, 8 Jul 2010 10:03:05 -0400
+Date: Thu, 8 Jul 2010 09:01:29 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v2 1/2] vmscan: don't subtraction of unsined
+In-Reply-To: <20100708164050.CD3A.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1007080901150.9707@router.home>
+References: <20100708163401.CD34.A69D9226@jp.fujitsu.com> <20100708164050.CD3A.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-mtd@lists.infradead.org
-Subject: Re: [PATCH v2 17/26] MTD: Nand: Add JZ4740 NAND driver
-References: <1276924111-11158-1-git-send-email-lars@metafoo.de>	 <1276924111-11158-18-git-send-email-lars@metafoo.de>	 <1278569214.12733.38.camel@localhost>  <4C35D084.7050605@metafoo.de> <1278595142.20321.26.camel@localhost>
-In-Reply-To: <1278595142.20321.26.camel@localhost>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Artem Bityutskiy wrote:
-> On Thu, 2010-07-08 at 15:20 +0200, Lars-Peter Clausen wrote:
->> On the other hand I'm wondering where on would put headers for non platform specific
->> drivers?
-> 
-> If we are talking about MTD, then drivers/mtd ?
-> 
-No, what I meant was header defining platform data structs and such.
-And what I wanted to get at is an answer to why driver header files are put in
-different directories while the driver files themselves are all keep in the same
-directory. (drivers of the same subsystem that is)
 
-- Lars
+Reviewed-by: Christoph Lameter <cl@linux-foundation.org>
+
+
