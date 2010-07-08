@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759126Ab0GIAFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 20:05:08 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37933 "EHLO ogre.sisk.pl"
+	id S932162Ab0GHX6y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 19:58:54 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37912 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932170Ab0GHX64 convert rfc822-to-8bit (ORCPT
+	id S932154Ab0GHX6v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 19:58:56 -0400
+	Thu, 8 Jul 2010 19:58:51 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "James Bottomley" <James.Bottomley@hansenpartnership.com>,
-       "Len Brown" <len.brown@intel.com>
+       "Daniel J Blueman" <daniel.blueman@gmail.com>
 References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
 In-Reply-To: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <TXb9XdQzJoD.A.X-B.oMmNMB@chimera>
-Subject: [Bug #16271] 2.6.35-rc3 regression: IBM Maia system is unbootable [ACPI related?]
+Message-ID: <TXb9XdQzJoD.A._mC.CNmNMB@chimera>
+Subject: [Bug #16234] [2.6.35-rc3] reboot mutex 'bug'...
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri,  9 Jul 2010 01:41:38 +0200 (CEST)
+Date: Fri,  9 Jul 2010 01:41:36 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,13 +33,11 @@ from 2.6.34.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16271
-Subject		: 2.6.35-rc3 regression: IBM Maia system is unbootable [ACPI related?]
-Submitter	: James Bottomley <James.Bottomley@hansenpartnership.com>
-Date		: 2010-06-21 16:03 (18 days old)
-Message-ID	: <1277136189.10998.63.camel@mulgrave.site>
-References	: http://marc.info/?l=linux-kernel&m=127713622821166&w=2
-Handled-By	: Len Brown <len.brown@intel.com>
-Patch		: https://patchwork.kernel.org/patch/108497/
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16234
+Subject		: [2.6.35-rc3] reboot mutex 'bug'...
+Submitter	: Daniel J Blueman <daniel.blueman@gmail.com>
+Date		: 2010-06-14 15:16 (25 days old)
+Message-ID	: <AANLkTimDcTnyEPmt2ZcCM1UWtn4AYKotiqyjobJApkO7@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127652861118933&w=2
 
 
