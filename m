@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab0GHSm5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 14:42:57 -0400
-Received: from kroah.org ([198.145.64.141]:54291 "EHLO coco.kroah.org"
+	id S1757182Ab0GHSm6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 14:42:58 -0400
+Received: from kroah.org ([198.145.64.141]:54297 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754970Ab0GHSmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 14:42:53 -0400
-Date: Thu, 8 Jul 2010 11:34:25 -0700
+	id S1755033Ab0GHSmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 14:42:54 -0400
+Date: Thu, 8 Jul 2010 11:37:10 -0700
 From: Greg KH <greg@kroah.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org,
-       Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-       stable <stable@kernel.org>
-Subject: Re: [PATCHv2 1/2] USB: gadget: mass/file storage: set serial number
-Message-ID: <20100708183425.GB31823@kroah.com>
-References: <c73431dbedd41f94c5f471fb5e466943cee870c1.1277974263.git.m.nazarewicz@samsung.com>
- <624a27be8a9a4492976afaa8df78c07051cc6e25.1277987700.git.m.nazarewicz@samsung.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Samium Gromoff <_deepfire@feelingofgreen.ru>
+Subject: Re: [PATCH -mmotm] 8250_early: fix printk format warnings
+Message-ID: <20100708183710.GC31823@kroah.com>
+References: <201007011948.o61JmnT2022795@imap1.linux-foundation.org>
+ <20100702182437.977c8ef8.randy.dunlap@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <624a27be8a9a4492976afaa8df78c07051cc6e25.1277987700.git.m.nazarewicz@samsung.com>
+In-Reply-To: <20100702182437.977c8ef8.randy.dunlap@oracle.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 03:42:19PM +0200, Michal Nazarewicz wrote:
-> This commit adds iSerialNumber to all gadgets that use the Mass
-> Storage Function.  It appears that Windows has problems when
-> it is not set.
+On Fri, Jul 02, 2010 at 06:24:37PM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> Not to copy the same code all over again, a fsg_string_serial_fill()
-> macro has been added to the storage_common.c file which is now also
-> used in the File Storage Gadget.
+> Fix printk format warnings in serial-mmio32-support-for-8250_earlyc.patch:
+> 
+> drivers/serial/8250_early.c:207: warning: format '%p' expects type 'void *', but argument 3 has type 'long long unsigned int'
+> drivers/serial/8250_early.c:210: warning: format '%p' expects type 'void *', but argument 2 has type 'long long unsigned int'
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: Samium Gromoff <_deepfire@feelingofgreen.ru>
+> Cc: Greg KH <greg@kroah.com>
+> ---
+>  drivers/serial/8250_early.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- mmotm-2010-0701-1219.orig/drivers/serial/8250_early.c
+> +++ mmotm-2010-0701-1219/drivers/serial/8250_early.c
+> @@ -202,12 +202,12 @@ static int __init parse_options(struct e
+>  	}
+>  
+>  	if (mmio || mmio32)
+> -		printk(KERN_INFO "Early serial console at MMIO%s 0x%p (options '%s')\n",
+> +		printk(KERN_INFO "Early serial console at MMIO%s 0x%llu (options '%s')\n",
 
-This patch conflicts with the patch in my tree:
-	Subject: USB: Add a serial number parameter to g_file_storage module
-
-So, could you fix the above patch up to play nice with your change so
-that I can accept it?
+Odd, my tree doesn't have this change in it, where is it coming from?
 
 thanks,
 
