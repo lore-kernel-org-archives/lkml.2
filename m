@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab0GHHUB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 03:20:01 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59940 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152Ab0GHHUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 03:20:00 -0400
-Date: Thu, 8 Jul 2010 09:19:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Tom Zanussi <tzanussi@gmail.com>, Mike Galbraith <efault@gmx.de>,
-       Venkatesh Pallipadi <venki@google.com>, Pierre Tardy <tardyp@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] perf migration
-Message-ID: <20100708071942.GA26454@elte.hu>
-References: <20100707151318.GA5984@nowhere>
+	id S1755225Ab0GHHUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 03:20:24 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41433 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754381Ab0GHHUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 03:20:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Oz0cyoxbT0YD2oISXGknbCHfRtPUwmPSqrJTBUu+Rak8KNATPVVKvgp9H8Yg4J8484
+         D1yXYPSpSTl0NnAKgZAPaBQW82lSlxp1bHxuZVJdep1PQ2Ju86bJ7M+cqCZseD3rfrnS
+         sNwpJHQqiuYeMrWFPHy2DJlyQjx5SVbDpzJZk=
+Message-ID: <4C357C5C.8010602@gmail.com>
+Date: Thu, 08 Jul 2010 00:21:00 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100707151318.GA5984@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 1.0
-X-ELTE-SpamLevel: s
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
-	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
-	[score: 0.4602]
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: linux-media@vger.kernel.org, mchehab@infradead.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]video:gspca.c Fix  warning: case value '7' not in enumerated
+ type 'enum v4l2_memory'
+References: <1278564378-19855-1-git-send-email-justinmattock@gmail.com> <20100708084010.6a15f8c3@tele>
+In-Reply-To: <20100708084010.6a15f8c3@tele>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/07/2010 11:40 PM, Jean-Francois Moine wrote:
+> On Wed,  7 Jul 2010 21:46:18 -0700
+> "Justin P. Mattock"<justinmattock@gmail.com>  wrote:
+>
+>> This fixes a warning I'm seeing when building:
+>>    CC [M]  drivers/media/video/gspca/gspca.o
+>> drivers/media/video/gspca/gspca.c: In function 'vidioc_reqbufs':
+>> drivers/media/video/gspca/gspca.c:1508:2: warning: case value '7' not
+>> in enumerated type 'enum v4l2_memory'
+>
+> Hi Justin,
+>
+> I don't agree with your patch: the value GSPCA_MEMORY_READ must not be
+> seen by user applications.
+>
+> The warning may be simply fixed by (change the line numbers):
+>
+> --- gspca.c~	2010-07-08 08:15:14.000000000 +0200
+> +++ gspca.c	2010-07-08 08:28:52.000000000 +0200
+> @@ -1467,7 +1467,8 @@ static int vidioc_reqbufs(struct file *f
+>   	struct gspca_dev *gspca_dev = priv;
+>   	int i, ret = 0, streaming;
+>
+> -	switch (rb->memory) {
+> +	i = rb->memory;			/* (avoid compilation warning) */
+> +	switch (i) {
+>   	case GSPCA_MEMORY_READ:			/* (internal call) */
+>   	case V4L2_MEMORY_MMAP:
+>   	case V4L2_MEMORY_USERPTR:
+>
+> Cheers.
+>
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> Hi,
-> 
-> To begin with, the name is a bit pompous. It's not a strong cpu task 
-> migration observer as it's only based on the number of tasks living in a cpu 
-> runqueue. This is the only basis for the cpu load: it doesn't handle the 
-> nice level, scheduler classes, of each tasks (except idle ones that don't 
-> count on the load).
-> 
-> At least not yet.
-> 
-> But still I think it's a cool toy, I've been playing with it for the last 
-> weeks and it can give you a nice overview of what happens wrt migration 
-> decisions for each migration opportunities: wake up, fork and exec, sleep 
-> (sleep doesn't involve migration decision, but it's still an rq detach), and 
-> load balancing. In fact it's more about "runqueue events".
+o.k. buddy.. make sense with the userspace etc..
+Anyways looks good, builds without a warning..
 
-Cool, looks really nice!
+Tested-By: Justin P. Mattock <justinmattock@gmail.com>
 
-> == How to use ==
-> 
-> 
-> I suggest you to use latest tip:/perf/core
-> 
-> Run the following command (followed by a command if you want):
-> 
-> $ sudo ./perf record -m 16384 -a -e sched:sched_wakeup -e sched:sched_wakeup_new -e sched:sched_switch -e sched:sched_migrate_task
+cheers as well,
 
-Does 'perf sched record' include these events?
-
-> Now ensure you have no lost events:
-> 
-> 
-> $ sudo ./perf trace -d
-> Misordered timestamps: 0
-> Lost events: 0 <----
-
-We need some warning for this in the GUI i guess?
-
-> If so you need to increase the buffer size (-m nr_pages option in perf record).
-> 
-> Then put the script in the tools/perf directory and run it:
-> 
-> $ ./perf trace -s migration.py
-> 
-> You'll need wxpython.
-
-Looks like this could be turned into 'perf sched view' or 'perf sched 
-migration'?
-
-How tasks schedule/migrate is basically how scheduler developers look at 
-sched-trace data, so it would be nice if your GUI became the gui for perf 
-sched.
-
-	Ingo
+Justin P. Mattock
