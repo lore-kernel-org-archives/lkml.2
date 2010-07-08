@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab0GHHMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 03:12:05 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54979 "EHLO mx2.mail.elte.hu"
+	id S1753663Ab0GHHQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 03:16:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51470 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751060Ab0GHHMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 03:12:02 -0400
-Date: Thu, 8 Jul 2010 09:11:53 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: "Ma, Ling" <ling.ma@intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH -tip] Revert x86, mem: Optimize memcpy by avoiding memory
- false dependece
-Message-ID: <20100708071153.GH4414@elte.hu>
-References: <20100708062733.GA24740@Krystal>
+	id S1752581Ab0GHHQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 03:16:05 -0400
+Date: Thu, 8 Jul 2010 07:15:41 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       dtor@mail.ru, tglx@linutronix.de, feng.tang@intel.com,
+       hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       dtor@mail.ru, tglx@linutronix.de, hpa@linux.intel.com,
+       feng.tang@intel.com
+In-Reply-To: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
+References: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, platform: Export x86_platform to modules
+Message-ID: <tip-72550b3ae545c75897c769d43d62d4be3f3d48fe@git.kernel.org>
+Git-Commit-ID: 72550b3ae545c75897c769d43d62d4be3f3d48fe
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100708062733.GA24740@Krystal>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.2522]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 08 Jul 2010 07:15:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  72550b3ae545c75897c769d43d62d4be3f3d48fe
+Gitweb:     http://git.kernel.org/tip/72550b3ae545c75897c769d43d62d4be3f3d48fe
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Wed, 7 Jul 2010 16:57:46 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 7 Jul 2010 17:05:05 -0700
 
-* Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+x86, platform: Export x86_platform to modules
 
-> * Ma, Ling (ling.ma@intel.com) wrote:
-> > Hi Mathieu
-> > 
-> > I did git revert as bellow
-> >     Revert "x86, mem: Optimize memcpy by avoiding memory false dependece"
-> > 
-> >     This reverts commit 77ff5e49c20bb72a99a12bfb00dbf90b2302f087.
-> > And I found the machine will crash with your config file
-> > 
-> > Could you revert the patch : 77ff5e49c20bb72a99a12bfb00dbf90b2302f087 on your
-> > machine, and check it again ?
-> 
-> Hi Ling,
-> 
-> I just successfully booted my machine 3 times in a row with a revert of 
-> commit a1e5278e40f16a4611264f8da9e557c16cb6f6ed from -tip. This is actually 
-> the same as reverting commit 77ff5e49c20bb72a99a12bfb00dbf90b2302f087, as 
-> a1e5278e40f16a4611264f8da9e557c16cb6f6ed is simply a merge of that commit 
-> (the diffs are exactly the same).
-> 
-> Without this revert, the machine gets to:
+Export x86_platform to modules in preparation of using it for i8042
+discovery control.
 
-Please check latest -tip (2a74852 or later), the commit should be gone now.
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+LKML-Reference: <1278342202-10973-1-git-send-email-feng.tang@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Feng Tang <feng.tang@intel.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>
+---
+ arch/x86/kernel/x86_init.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-There's clearly some (boundary-condition?) bug in the assembly code of 
-77ff5e49c2.
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 61a1e8c..ebfb8e4 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -5,6 +5,7 @@
+  */
+ #include <linux/init.h>
+ #include <linux/ioport.h>
++#include <linux/module.h>
+ 
+ #include <asm/bios_ebda.h>
+ #include <asm/paravirt.h>
+@@ -94,3 +95,5 @@ struct x86_platform_ops x86_platform = {
+ 	.is_untracked_pat_range		= is_ISA_range,
+ 	.nmi_init			= default_nmi_init
+ };
++
++EXPORT_SYMBOL_GPL(x86_platform);
