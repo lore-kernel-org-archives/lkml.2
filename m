@@ -1,116 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758740Ab0GHXBJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 19:01:09 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:42494 "EHLO e6.ny.us.ibm.com"
+	id S1758725Ab0GHXGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 19:06:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50709 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755645Ab0GHXBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 19:01:07 -0400
-Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
-From: john stultz <johnstul@us.ibm.com>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-In-Reply-To: <1278629044.12059.6.camel@localhost.localdomain>
-References: <1278609590.7527.11.camel@localhost.localdomain>
-	 <1278628386.3008.11.camel@localhost.localdomain>
-	 <1278629044.12059.6.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Jul 2010 16:00:50 -0700
-Message-ID: <1278630050.3008.18.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757723Ab0GHXGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 19:06:54 -0400
+Message-ID: <4C3659BC.4030603@redhat.com>
+Date: Thu, 08 Jul 2010 19:05:32 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+       "jens.axboe@oracle.com" <jens.axboe@oracle.com>,
+       the arch/x86 maintainers <x86@kernel.org>,
+       Don Zickus <dzickus@redhat.com>
+Subject: Re: cpu softplug kernel hang
+References: <4C361E6C.2080107@redhat.com> <1278627466.2834.86.camel@sbs-t61.sc.intel.com>
+In-Reply-To: <1278627466.2834.86.camel@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 15:44 -0700, Fernando Lopez-Lezcano wrote:
-> On Thu, 2010-07-08 at 15:33 -0700, john stultz wrote:
-> > On Thu, 2010-07-08 at 10:19 -0700, Fernando Lopez-Lezcano wrote:
-> > > We are having problems with 2.6.33.5+rt23, at least in our configuration
-> > > while accessing an nfs automounted directory. This causes a complete
-> > > machine lockup (press reset to exit as the only option). 
-> > > 
-> > > I simply use the Nautilus file manager (in Fedora 12) to navigate to an
-> > > autofs mounted directory and the process monitor goes to 100% on one
-> > > core (or maybe two), the mouse jerks a bit and the whole thing goes
-> > > catatonic almost immediately. 
-> > > 
-> > > I get this in any open terminal at the time of the crash:
-> > > 
-> > > --------
-> > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > >  kernel:------------[ cut here ]------------
-> > > 
-> > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > >  kernel:invalid opcode: 0000 [#1] PREEMPT SMP 
-> > > 
-> > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > >  kernel:last sysfs
-> > > file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
-> > > 
-> > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > >  kernel:Process nautilus (pid: 2874, ti=f0204000 task=f17dd1f0
-> > > task.ti=f0204000)
-> > > 
-> > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > >  kernel:Stack:
-> > > 
-> > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > >  kernel:Call Trace:
-> > > 
-> > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > >  kernel:Code: 7b 08 00 89 45 b8 75 12 8d 43 04 89 43 04 89 43 08 8d 43
-> > > 0c 89 43 0c 89 43 10 8b 43 14 64 8b 15 2c d1 a5 c0 83 e0 fc 39 c2 75 04
-> > > <0f> 0b eb fe 8b 3a 81 ff 08 01 00 00 74 0a 83 ff 02 b8 04 00 00 
-> > > 
-> > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > >  kernel:EIP: [<c0792c0f>] rt_spin_lock_slowlock+0x43/0x1bb SS:ESP
-> > > 0068:f0205cbc
-> > > --------
-> > > 
-> > > And that's it... nothing else in the logs. 
-> > 
-> > Hrm. Not too much to go on there, but thanks for the report.
-> > 
-> > 
-> > > For now we are booting into the normal Fedora kernel (this is on Fedora
-> > > 12) as this makes the rt kernel not usable in our setup. 
-> > > 
-> > > Let me know if there is anything else I can do to help debug this...
-> > 
-> > Had you done any testing with earlier 2.6.33-rt kernels where this
-> > didn't occur? If so what version?
-> 
-> I have been working with the whole series but my main usage case does
-> not use nfs/autofs (see next paragraphs). 
-> 
-> I have noticed that the problem does not appear to happen when I cd into
-> an nfs automounted directory directly. It appears to happen only when
-> listing the contents of a mount point (ie: when "/whatever/" is an
-> autofs mount point where several directories are mounted, not
-> necessarily from the same server). 
-> 
-> Before switching to Fedora 12 users were normally running 2.6.29 rt and
-> I had been running 2.6.31.x and 2.6.33.x rt, but I don't think it ever
-> happened to me personally (I'm always using the command line - this is
-> completely reproducible with nautilus). After the switch it started
-> happening almost immediately to regular users (using nautilus mostly). 
-> 
-> How could I try to get more debugging information?
-
-Any chance you have a serial port on the machine in question? If so its
-likely any oops messages could be collected over that.
-
-If not, you can look at the netconsole documentation
-(Documentation/networking/netconsole.txt) to try to configure that to
-collect any panic info.
-
-thanks
--john
 
 
+On 07/08/2010 06:17 PM, Suresh Siddha wrote:
+> On Thu, 2010-07-08 at 11:52 -0700, Prarit Bhargava wrote:
+>   
+>> The panic below is from an 2.6.32-based kernel, however, AFAICT the same
+>> issue exists with the latest 2.6.35-rc3+ kernel.
+>>
+>> I have diagnosed the issue as being identical to the issue that I fixed
+>> with the Intel rngd
+>> driver sometime ago:
+>>
+>> http://marc.info/?l=linux-kernel&m=117275119001289&w=2
+>>
+>> When doing the following,
+>>
+>> while true; do
+>>         for i in `seq 12 23`; do echo 0 >
+>> /sys/devices/system/cpu/cpu$i/online; done
+>>         sleep 5
+>>         for i in `seq 12 23`; do echo 1 >
+>> /sys/devices/system/cpu/cpu$i/online; done
+>>         sleep 5
+>> done
+>>
+>> I see (with the nmi_watchdog enabled)
+>>
+>> BUG: NMI Watchdog detected LOCKUP on CPU11, ip ffffffff81029e72, registers:
+>> CPU 11 
+>> Modules linked in: nfs lockd fscache nfs_acl auth_rpcgss autofs4 sunrpc
+>> cpufreq_ondemand acpi_cpufreq freq_table ipv6 dm_mirror dm_region_hash dm_log
+>> uinput sg serio_raw i2c_i801 iTCO_wdt iTCO_vendor_support ioatdma i7core_edac
+>> edac_core shpchp igb dca ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif ahci
+>> pata_acpi ata_generic pata_jmicron radeon ttm drm_kms_helper drm i2c_algo_bit
+>> i2c_core dm_mod [last unloaded: microcode]
+>>
+>> Modules linked in: nfs lockd fscache nfs_acl auth_rpcgss autofs4 sunrpc
+>> cpufreq_ondemand acpi_cpufreq freq_table ipv6 dm_mirror dm_region_hash dm_log
+>> uinput sg serio_raw i2c_i801 iTCO_wdt iTCO_vendor_support ioatdma i7core_edac
+>> edac_core shpchp igb dca ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif ahci
+>> pata_acpi ata_generic pata_jmicron radeon ttm drm_kms_helper drm i2c_algo_bit
+>> i2c_core dm_mod [last unloaded: microcode]
+>> Pid: 704, comm: kexec Not tainted 2.6.32 #1 X8DTN
+>> RIP: 0010:[<ffffffff81029e72>]  [<ffffffff81029e72>] ipi_handler+0x32/0xa0
+>> RSP: 0000:ffff8801474a3f58  EFLAGS: 00000046
+>> RAX: 0000000000000000 RBX: ffff880337393ea8 RCX: ffff88013ae41580
+>> RDX: 00000000ffffffff RSI: 0000000000000000 RDI: ffff880337393ea8
+>> RBP: ffff8801474a3f68 R08: 0000000061c941a6 R09: 00000000578070b9
+>> R10: 0000000080507210 R11: 0000000025410601 R12: 0000000000000086
+>> R13: 00000000ffffffff R14: ffffffff817491d0 R15: 0000000090793245
+>> FS:  00007fefd5f3d700(0000) GS:ffff8801474a0000(0000) knlGS:0000000000000000
+>> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> CR2: 000000000040d000 CR3: 0000000316a8e000 CR4: 00000000000006e0
+>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> Process kexec (pid: 704, threadinfo ffff880314caa000, task ffff880335a0b500)
+>> Stack:
+>>  ffff880147571f40 000000000000000b ffff8801474a3f98 ffffffff810a6d28
+>> <0> 00000000aa149910 00000000f21570f0 000000000008b495 00000000521ebd53
+>> <0> ffff8801474a3fa8 ffffffff8102ea57 ffff880314cabf80 ffffffff81013e53
+>> Call Trace:
+>>  <IRQ> 
+>>  [<ffffffff810a6d28>] generic_smp_call_function_interrupt+0x78/0x130
+>>  [<ffffffff8102ea57>] smp_call_function_interrupt+0x27/0x40
+>>  [<ffffffff81013e53>] call_function_interrupt+0x13/0x20
+>>  <EOI> 
+>> Code: 0f 1f 44 00 00 48 89 fb 9c 58 0f 1f 44 00 00 49 89 c4 fa 66 0f 1f 44 00
+>> 00 f0 ff 0f 8b 47 04 85 c0 75 0f 66 0f 1f 44 00 00 f3 90 <8b> 43 04 85 c0 74 f7
+>> 8b 7b 18 83 ff ff 74 47 48 8b 05 08 25 a1 
+>>
+>> Since this is a panic, I get traces from all other cpus.
+>>
+>> CPU 14 is in _write_lock_irq
+>> CPU  2 is in _read_lock
+>>     
+> which is this lock?
+>   
+
+Suresh,
+
+I didn't keep a core :( because the stack trace was obvious.  But it
+doesn't matter which lock it is as much as it matters that one cpu has
+acquired the lock under non-irq, and the other is requesting it under
+irq.  Then if a third cpu does an IPI ... we're deadlocked. 
+
+smp_call_function comes with this note on the function passed into it
+
+ "@func: The function to run. This must be fast and non-blocking."
+
+ipi_handler is clearly blocking.
+
+IIRC, that was added shortly after I hit the Intel rngd issue.
+
+I'm hitting this condition anywhere from lt 2 mins to 5 hours after
+running the test, and other HW vendors have reported the same NMI backtrace.
+
+
+>   
+>> CPU  6 has called smp_call_function() with the ipi_handler to sync mtrr's on
+>> the new cpu
+>>     
+> Either we need to take that lock at all the places with interrupts
+> disabled or we need to implement the rendezvous logic using stop
+> machine.
+>   
+
+The first suggestion isn't an option because that would effectively kill
+any read_lock/write_lock_irq combination in the kernel, and
+stop_machine() schedules on all online cpus.  Since the cpu that is
+currently being brought online is one of those cpus and it is in the
+idle() state, it cannot schedule. 
+
+I'm going to play with the code a bit and see if I can figure out something.
+
+I'm leaning towards (sorry for the horrible pseudo code)
+
+    cpu X = cpu being brought up
  
+    run mtrr code on cpu X
+    use some variant of stop_machine to run on all cpus except CPU X
 
+P.
