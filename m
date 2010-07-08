@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758257Ab0GHBXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 21:23:31 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43159
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758006Ab0GHBXa (ORCPT
+	id S1758249Ab0GHBba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 21:31:30 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:47109 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab0GHBb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 21:23:30 -0400
-Date: Wed, 07 Jul 2010 18:23:44 -0700 (PDT)
-Message-Id: <20100707.182344.73667250.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, jonas@southpole.se
-Subject: Re: linux-next: build warning after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100707143045.0c472f5d.sfr@canb.auug.org.au>
-References: <20100707143045.0c472f5d.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Jul 2010 21:31:28 -0400
+MIME-Version: 1.0
+Date: Thu, 8 Jul 2010 11:31:26 +1000
+Message-ID: <AANLkTimeFKvKs5fpzBXqz0PypS0YJVq6mzI0nRqo7tHg@mail.gmail.com>
+Subject: IDEA: inotify - extend to be able to report changes in the past
+From: Bonne Eggleston <bonne@ixum.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 7 Jul 2010 14:30:45 +1000
+Hi,
+I have an idea for an improvement to inotify, which may interest a
+keen kernel developer.
 
-> Hi Dave,
-> 
-> After merging the net tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
-> 
-> drivers/net/ethoc.c: In function 'ethoc_init_ring':
-> drivers/net/ethoc.c:302: warning: assignment makes integer from pointer without a cast
-> 
-> Introduced by commit f8555ad0cfb0ba6cbc8729f337341fb11c82db89 ("ethoc:
-> Write bus addresses to registers").
+The problem:
+The inotify feature of the linux kernel is a great way for programs
+which need to know about file changes to track them without having to
+scan the drive. Unfortunately if a system is rebooted often (like
+desktop and laptop machines) then the program must run a scan at
+startup to check for changes since the last time it was running. This
+can use a considerable amount of resources and be a deterrent from the
+use of otherwise very useful programs (such as desktop search or
+online backup etc.)
 
-I'll fix this as follows:
+Potential solution:
+Some modern filesystems should be able to quickly retrieve a list of
+files which have changed since a certain time using the journal or
+equivalent. If this was implemented within the inotify framework then
+programs which use inotify could specify the timestamp when they last
+ran and retrieve all the changes since that date. Inotify could then
+return those change events in the usual way and possibly also a
+timestamp to confirm the oldest time it was able to check back to.
+This would remove the need for a scan at startup.
 
---------------------
-ethoc: Fix warning in ethoc_init_ring().
+At this stage this is nothing more than an idea, and may well be
+impossible or already implemented or already under development. In any
+case I thought it worthwhile to share.
 
-Get rid of the pointless back-and-forth casting of dev->mem_start
-from long to pointer back to long again.
+Please cc me in any responses.
 
-Also fixes a warning reported by Stephen Rothwell:
-
-drivers/net/ethoc.c: In function 'ethoc_init_ring':
-drivers/net/ethoc.c:302: warning: assignment makes integer from pointer without a cast
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/ethoc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethoc.c b/drivers/net/ethoc.c
-index db519a8..5bb6bb7 100644
---- a/drivers/net/ethoc.c
-+++ b/drivers/net/ethoc.c
-@@ -286,7 +286,7 @@ static inline void ethoc_disable_rx_and_tx(struct ethoc *dev)
- 	ethoc_write(dev, MODER, mode);
- }
- 
--static int ethoc_init_ring(struct ethoc *dev, void* mem_start)
-+static int ethoc_init_ring(struct ethoc *dev, unsigned long mem_start)
- {
- 	struct ethoc_bd bd;
- 	int i;
-@@ -670,7 +670,7 @@ static int ethoc_open(struct net_device *dev)
- 	if (ret)
- 		return ret;
- 
--	ethoc_init_ring(priv, (void*)dev->mem_start);
-+	ethoc_init_ring(priv, dev->mem_start);
- 	ethoc_reset(priv);
- 
- 	if (netif_queue_stopped(dev)) {
--- 
-1.7.1.1
-
+Regards,
+Bonne Eggleston
