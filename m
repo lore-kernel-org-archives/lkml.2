@@ -1,80 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab0GHJGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 05:06:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33524 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302Ab0GHJGq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 05:06:46 -0400
-Subject: Re: high power consumption in recent kernels
-From: Peter Zijlstra <peterz@infradead.org>
-To: Norbert Preining <preining@logic.at>
-Cc: linux-kernel@vger.kernel.org, Arjan Van De Ven <arjan@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, akpm <akpm@linux-foundation.org>
-In-Reply-To: <20100706164539.GA14783@gamma.logic.tuwien.ac.at>
-References: <20100706164539.GA14783@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 08 Jul 2010 11:06:32 +0200
-Message-ID: <1278579992.1900.17.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755441Ab0GHJIo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 05:08:44 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43995 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752613Ab0GHJIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 05:08:42 -0400
+Date: Thu, 8 Jul 2010 11:08:36 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Peter Feuerer <peter@piie.net>, Matthew Garrett <mjg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Borislav Petkov <petkovbb@gmail.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] acerhdf: make needlessly global symbols static
+Message-ID: <20100708090836.GA14580@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Axel Lin <axel.lin@gmail.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Peter Feuerer <peter@piie.net>, Matthew Garrett <mjg@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Borislav Petkov <petkovbb@gmail.com>,
+	Alexey Dobriyan <adobriyan@gmail.com>,
+	platform-driver-x86@vger.kernel.org
+References: <1278553580.7162.1.camel@mola>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1278553580.7162.1.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-07 at 01:45 +0900, Norbert Preining wrote:
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, Jul 08, 2010 at 09:46:20AM +0800
 
-> it seems that some of the (?)recent(?) changes have increased the
-> power consumption of my note book considerably.
+> The following symbols are needlessly defined global:
 > 
-> First of all, running powertop with normal programs started, but 
-> doing nothing, I am still at 14W while I could go down to 9W before
-> (but the 9W was with dimmed display).
+> thz_dev
+> cl_dev
+> acerhdf_dev
+> acerhdf_dev_ops
+> acerhdf_cooling_ops
 > 
-> In the list of top causes for wakeup I have
-> Top causes for wakeups:
->   34.2% (185.3)   [kernel scheduler] Load balancing tick
->   23.9% (129.6)   [extra timer interrupt]
->   10.8% ( 58.6)   firefox-bin
->    9.2% ( 49.7)   [iwlagn] <interrupt>
->    7.2% ( 39.1)   [kernel core] hrtimer_start (tick_sched_timer)
->    3.9% ( 20.9)   PS/2 keyboard/mouse/touchpad interrupt
-> which show one new thing to me I haven't seen before, the Loa balancing tick.
-
-I think that is what powertop calls our regular tick (Arjan?), and as
-long as you're not idle nohz can't kick in, I'd be looking at what keeps
-nohz from happening,.. those extra timer interrupts could be
-responsible..
-
-> Furthermore, I also had the feeling that while being suspend to RAM 
-> the battery is also emptied faster then before, but by now I have not
-> concise data points for that.
+> This patch makes the symbols static.
 > 
-> I am running the latest kernel pulled from git.kernel.org, linux-2.6.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Right, I'm quite puzzled by that, looking through the result of:
-  git log v2.6.34..origin/master kernel/sched*
+Acked-by: Borislav Petkov <bp@alien8.de>
 
-Nothing really shouts me, me, me :-)
+> ---
+>  drivers/platform/x86/acerhdf.c |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+> index 7b2384d..5caaaf0 100644
+> --- a/drivers/platform/x86/acerhdf.c
+> +++ b/drivers/platform/x86/acerhdf.c
+> @@ -92,9 +92,9 @@ static unsigned int fanstate = ACERHDF_FAN_AUTO;
+>  static char force_bios[16];
+>  static char force_product[16];
+>  static unsigned int prev_interval;
+> -struct thermal_zone_device *thz_dev;
+> -struct thermal_cooling_device *cl_dev;
+> -struct platform_device *acerhdf_dev;
+> +static struct thermal_zone_device *thz_dev;
+> +static struct thermal_cooling_device *cl_dev;
+> +static struct platform_device *acerhdf_dev;
+>  
+>  module_param(kernelmode, uint, 0);
+>  MODULE_PARM_DESC(kernelmode, "Kernel mode fan control on / off");
+> @@ -374,7 +374,7 @@ static int acerhdf_get_crit_temp(struct thermal_zone_device *thermal,
+>  }
+>  
+>  /* bind callback functions to thermalzone */
+> -struct thermal_zone_device_ops acerhdf_dev_ops = {
+> +static struct thermal_zone_device_ops acerhdf_dev_ops = {
+>  	.bind = acerhdf_bind,
+>  	.unbind = acerhdf_unbind,
+>  	.get_temp = acerhdf_get_ec_temp,
+> @@ -449,7 +449,7 @@ err_out:
+>  }
+>  
+>  /* bind fan callbacks to fan device */
+> -struct thermal_cooling_device_ops acerhdf_cooling_ops = {
+> +static struct thermal_cooling_device_ops acerhdf_cooling_ops = {
+>  	.get_max_state = acerhdf_get_max_state,
+>  	.get_cur_state = acerhdf_get_cur_state,
+>  	.set_cur_state = acerhdf_set_cur_state,
+> -- 
+> 1.5.4.3
+> 
+> 
+> 
 
-You could try and look at:
-
-99bd5e2f245d8 (sched: Fix select_idle_sibling() logic in select_task_rq_fair())
-3c93717cfa513 (sched: Fix over-scheduling bug)
-
-And that latter only if you actually have group scheduling enabled.
-
-Other than that, I'm afraid I'll have to ask you to bisect this.
-
-> I have seen some patches from Venkatesh Pallipadi dealing twith this 
-> issue (http://lkml.org/lkml/2010/6/9/109) but it does not apply to
-> the current kernel sources at all.
-
-Those patches are merged and waiting for the .36 merge window, try a
--tip kernel
-(git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git) if
-you want to give them a go.
-
-
+-- 
+Regards/Gruss,
+Boris.
