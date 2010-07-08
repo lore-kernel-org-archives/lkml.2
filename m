@@ -1,44 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142Ab0GGX6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 19:58:32 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:44317 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692Ab0GGX6b (ORCPT
+	id S1757750Ab0GHAJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 20:09:25 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45518 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656Ab0GHAJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 19:58:31 -0400
-Date: Wed, 7 Jul 2010 19:58:29 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: hch@infradead.org, axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] remove q->prepare_flush_fn hook
-Message-ID: <20100707235829.GA6390@infradead.org>
-References: <1278146740-8731-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
- <20100707195209.GA25635@infradead.org>
- <20100708085404K.fujita.tomonori@lab.ntt.co.jp>
+	Wed, 7 Jul 2010 20:09:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
+         :mime-version:content-type:content-transfer-encoding;
+        b=W0kisTVq/Ac8jrArQZ4bhrUJxh4UhPXE/5+GtbPVu7ooZ7FXcX4M5anvqJkixkgzDQ
+         ARctBZXnoXHrPKip+cJhykLP+tf8y6zNDyo8Xb8W0baJB+hbEdGF6DhMivfLochQupH0
+         QI50G0ypIs29GhhpdDaVVoP2fwQSdEOTBLuJI=
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Kevin Winchester <kjwinchester@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] Fix warning: 'calltime.tv64' may be used uninitialized in this function in init/main.c
+Date: Wed,  7 Jul 2010 21:09:10 -0300
+Message-Id: <1278547751-2237-1-git-send-email-kjwinchester@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100707152640.586442f3.akpm@linux-foundation.org>
+References: <20100707152640.586442f3.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100708085404K.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: Ingo Molnar <mingo@elte.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 08:54:59AM +0900, FUJITA Tomonori wrote:
-> On Wed, 7 Jul 2010 15:52:09 -0400
-> Christoph Hellwig <hch@infradead.org> wrote:
-> 
-> > One weird thing after this set is that the flush commands don't have any
-> > cmd_type.  I think it should be set to REQ_TYPE_FS, even if we might be
-> > resetting it inside the driver for now.
-> 
-> I think even before this patchset, the block layer doesn't set
-> rq->cmd_type on flush requests (scsi and Ode sets it in
-> prepare_flush_fn).
+Using:
 
-Indeed it didn't.  But before that it matters less because
-prepare_flush_fn set it before the command entered prep_fn.
+	gcc (GCC) 4.5.0 20100610 (prerelease)
+
+The following warning appears:
+
+	init/main.c: In function ‘do_one_initcall’:
+	init/main.c:730:10: warning: ‘calltime.tv64’ may be used uninitialized in this function
+
+This warning is actually correct, as the global initcall_debug
+could arguably be changed by the initcall.
+
+Correct this warning by extracting a new function,
+do_one_initcall_debug, that performs the initcall for the debug
+case.
+
+Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+---
+ init/main.c |   34 ++++++++++++++++++++--------------
+ 1 files changed, 20 insertions(+), 14 deletions(-)
+
+diff --git a/init/main.c b/init/main.c
+index 3e0f4b5..828ffac 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -724,27 +724,33 @@ core_param(initcall_debug, initcall_debug, bool, 0644);
+ 
+ static char msgbuf[64];
+ 
+-int do_one_initcall(initcall_t fn)
++static int do_one_initcall_debug(initcall_t fn)
+ {
+-	int count = preempt_count();
+ 	ktime_t calltime, delta, rettime;
+ 	unsigned long long duration;
+ 	int ret;
+ 
+-	if (initcall_debug) {
+-		printk("calling  %pF @ %i\n", fn, task_pid_nr(current));
+-		calltime = ktime_get();
+-	}
+-
++	printk(KERN_DEBUG "calling  %pF @ %i\n", fn, task_pid_nr(current));
++	calltime = ktime_get();
+ 	ret = fn();
++	rettime = ktime_get();
++	delta = ktime_sub(rettime, calltime);
++	duration = (unsigned long long) ktime_to_ns(delta) >> 10;
++	printk(KERN_DEBUG "initcall %pF returned %d after %lld usecs\n", fn,
++		ret, duration);
+ 
+-	if (initcall_debug) {
+-		rettime = ktime_get();
+-		delta = ktime_sub(rettime, calltime);
+-		duration = (unsigned long long) ktime_to_ns(delta) >> 10;
+-		printk("initcall %pF returned %d after %lld usecs\n", fn,
+-			ret, duration);
+-	}
++	return ret;
++}
++
++int do_one_initcall(initcall_t fn)
++{
++	int count = preempt_count();
++	int ret;
++
++	if (initcall_debug)
++		ret = do_one_initcall_debug(fn);
++	else
++		ret = fn();
+ 
+ 	msgbuf[0] = 0;
+ 
+-- 
+1.7.1
 
