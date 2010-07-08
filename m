@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab0GHX63 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 19:58:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37883 "EHLO ogre.sisk.pl"
+	id S932151Ab0GHX6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 19:58:36 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37889 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758920Ab0GHX6Q convert rfc822-to-8bit (ORCPT
+	id S1758948Ab0GHX6R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 19:58:16 -0400
+	Thu, 8 Jul 2010 19:58:17 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Dominik Brodowski" <linux@dominikbrodowski.net>
+       "Jean-Marc Pigeon" <jmp@safe.ca>, "Patrick McHardy" <kaber@trash.net>
 References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
 In-Reply-To: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <TXb9XdQzJoD.A.c1C.INmNMB@chimera>
-Subject: [Bug #16230] inconsistent IN-HARDIRQ-W -> HARDIRQ-ON-W usage: fasync, 2.6.35-rc3
+Message-ID: <TXb9XdQzJoD.A.MqD.xNmNMB@chimera>
+Subject: [Bug #16184] Container, X86-64, i386, iptables rule
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri,  9 Jul 2010 01:41:35 +0200 (CEST)
+Date: Fri,  9 Jul 2010 01:41:33 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,11 +33,10 @@ from 2.6.34.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16230
-Subject		: inconsistent IN-HARDIRQ-W -> HARDIRQ-ON-W usage: fasync, 2.6.35-rc3
-Submitter	: Dominik Brodowski <linux@dominikbrodowski.net>
-Date		: 2010-06-13 9:53 (26 days old)
-Message-ID	: <20100613095305.GA13231@comet.dominikbrodowski.net>
-References	: http://marc.info/?l=linux-kernel&m=127642282208277&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16184
+Subject		: Container, X86-64, i386, iptables rule
+Submitter	: Jean-Marc Pigeon <jmp@safe.ca>
+Date		: 2010-06-12 04:17 (27 days old)
+Handled-By	: Patrick McHardy <kaber@trash.net>
 
 
