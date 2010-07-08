@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab0GHQOh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 12:14:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56906 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757130Ab0GHQOg (ORCPT
+	id S1758140Ab0GHQOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 12:14:47 -0400
+Received: from mx4.sophos.com ([74.202.89.161]:58070 "EHLO mx4.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758112Ab0GHQOo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 12:14:36 -0400
-Date: Thu, 8 Jul 2010 09:13:30 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Mike Thomas <rmthomas@sciolus.org>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/easycap: Add dependencies to Kconfig
-Message-Id: <20100708091330.e23a5ea1.randy.dunlap@oracle.com>
-In-Reply-To: <1277580059.5924.9.camel@E7500.sciolus.org>
-References: <1277580059.5924.9.camel@E7500.sciolus.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
+	Thu, 8 Jul 2010 12:14:44 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Greg KH <greg@kroah.com>
+Subject: Re: BUG: Securityfs and bind mounts (2.6.34)
+Date: Thu, 8 Jul 2010 17:14:40 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Al Viro <viro@zeniv.linux.org.uk>
+References: <201007081112.41252.tvrtko.ursulin@sophos.com> <201007081632.42069.tvrtko.ursulin@sophos.com> <20100708154648.GA13923@kroah.com>
+In-Reply-To: <20100708154648.GA13923@kroah.com>
+MIME-Version: 1.0
+Message-ID: <201007081714.40724.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 08/07/2010 17:14:41,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 08/07/2010 17:14:41,
+	Serialize complete at 08/07/2010 17:14:41
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C35F962.01CE:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Jun 2010 20:20:59 +0100 Mike Thomas wrote:
+On Thursday 08 Jul 2010 16:46:48 Greg KH wrote:
+> On Thu, Jul 08, 2010 at 04:32:42PM +0100, Tvrtko Ursulin wrote:
+> > On Thursday 08 Jul 2010 16:20:59 Greg KH wrote:
+> > > > :) Well I do not know, but, it kind of smelled like a bug in the
+> > > > : vfs/mount
+> > > >
+> > > > handling/securityfs area so I thought to let experts know. I _think_
+> > > > I did nothing that much wrong. Just used the exposed API
+> > > > (securityfs_remove) and some bind mount shuffling from userspace.
+> > >
+> > > securitfs just uses libfs underneath it, and really doesn't have any
+> > > bindings for module ownerships, so I wouldn't recommend doing what you
+> > > just did.
+> >
+> > Just do double check what you are saying, securityfs is not safe for use
+> > from modules? If so I would then recommend removing the exports otherwise
+> > it is an invitation to shoot yourself into the foot.
+>
+> Hm, did you properly set the module owner of the file_operations that
+> you passed to securityfs?  That should protect if you have an open file,
 
-> The "depends on" line was inadvertently omitted from the inaugural patch.
-> 
-> Signed-off-by: Mike Thomas <rmthomas@sciolus.org>
-> ---
->  drivers/staging/easycap/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/staging/easycap/Kconfig b/drivers/staging/easycap/Kconfig
-> index 9bff7cf..bd96f39 100644
-> --- a/drivers/staging/easycap/Kconfig
-> +++ b/drivers/staging/easycap/Kconfig
-> @@ -1,5 +1,6 @@
->  config EASYCAP
->  	tristate "EasyCAP USB ID 05e1:0408 support"
-> +	depends on USB && VIDEO_DEV
->  
->  	---help---
->  	  This is an integrated audio/video driver for EasyCAP cards with
-> -- 
+I do not have it set (did not think it is strictly needed for filesystems
+(before mention TPM also does not set it)), but I am also pretty sure no one
+had a file open there at the time. I will try to repeat the test with it set
+and get back to you.
 
-Thanks for the patch.
+> but I doubt anyone thought you would do crazy things like bind mounts on
+> top of a ramfs and then think it was safe to unload a lower module :)
+>
+> > Also, in-three TPM driver can be built as a module so how does that
+> > work?
+>
+> You have to be root to unload modules, and if you are that, you can do
+> worse things than this.
 
-Greg, please merge...
+That is beside the point, but I will let you off hook :) until I test the
+situation with the owner field set. Thanks for the discussion so far!
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Tvrtko
+
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
