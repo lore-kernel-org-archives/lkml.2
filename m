@@ -1,191 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab0GHN3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 09:29:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:59619 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab0GHN3s (ORCPT
+	id S1756450Ab0GHNf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 09:35:57 -0400
+Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:36168 "EHLO
+	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399Ab0GHNfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 09:29:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jeremy Kerr <jk@ozlabs.org>
-Subject: [PATCH v2] spufs: use llseek in all file operations
-Date: Thu, 8 Jul 2010 15:29:44 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Christoph Hellwig <hch@lst.de>, linuxppc-dev@ozlabs.org
-References: <1278538820-1392-1-git-send-email-arnd@arndb.de> <1278551728.28333.55.camel@pororo.lan> <201007081502.37133.arnd@arndb.de>
-In-Reply-To: <201007081502.37133.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Thu, 8 Jul 2010 09:35:55 -0400
+Subject: Re: [PATCH 10/10] NFSD: Server implementation of MAC Labeling
+From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+       linux-nfs@vger.kernel.org
+In-Reply-To: <20100707192431.GK28815@fieldses.org>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
+	 <1278513086-23964-11-git-send-email-dpquigl@tycho.nsa.gov>
+	 <20100707172100.GE28815@fieldses.org>
+	 <1278525801.2494.162.camel@moss-terrapins.epoch.ncsc.mil>
+	 <20100707192431.GK28815@fieldses.org>
+Content-Type: text/plain
+Organization: National Security Agency
+Date: Thu, 08 Jul 2010 09:27:37 -0400
+Message-Id: <1278595657.2494.182.camel@moss-terrapins.epoch.ncsc.mil>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007081529.44274.arnd@arndb.de>
-X-Provags-ID: V02:K0:Z4V6awIUTr7JEULR5MaIsmXLPKlGwZwZSI9x/7s2GUQ
- agPBSlmRDJnTYIn0sLffMhlO/VJWhYJXxpCXHVEqswYqyHf035
- Xx5rhjIp09kZ7n3D08tZj+59eWsHexwWp805czMfVVbRzad5NN
- qFx7CqZZdlOHDv+vB96H7rdqsK17NI5F0bkg3epUPIN1IGKU0T
- tVfnSJxV/+hQC8dTTqr1Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default for llseek is changing, so we need
-explicit operations everywhere.
+On Wed, 2010-07-07 at 15:24 -0400, J. Bruce Fields wrote:
+> On Wed, Jul 07, 2010 at 02:03:21PM -0400, David P. Quigley wrote:
+> > Comments inline
+> > 
+> > On Wed, 2010-07-07 at 13:21 -0400, J. Bruce Fields wrote:
+> > > On Wed, Jul 07, 2010 at 10:31:26AM -0400, David P. Quigley wrote:
+> > > > This patch adds the ability to encode and decode file labels on the server for
+> > > >  static __be32
+> > > >  nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
+> > > > -		   struct iattr *iattr, struct nfs4_acl **acl)
+> > > > +		   struct iattr *iattr, struct nfs4_acl **acl,
+> > > > +		   struct nfs4_label **label)
+> > > 
+> > > As we add more arguments, I wonder if at some point it becomes worth
+> > > creating something like
+> > > 
+> > > 	struct nfsd4_attrs {
+> > > 		struct iattr iattr;
+> > > 		struct nfs4_acl *acl;
+> > > 		...
+> > > 	}
+> > > 
+> > > and passing that instead?
+> > 
+> > I can definitely submit something like that as a stand alone patch and
+> > then add our nfs4_label stuff to that instead.
+> 
+> Not a big deal, but welcome if such a thing looks more generally useful
+> (say, if the same arguments are passed elsewhere).
+> 
+> > > > +#ifdef CONFIG_NFSD_V4_SECURITY_LABEL
+> > > > +	if (bmval[1] & FATTR4_WORD1_SECURITY_LABEL) {
+> > > > +		uint32_t lfs;
+> > > > +
+> > > > +		READ_BUF(4);
+> > > > +		len += 4;
+> > > > +		READ32(lfs);
+> > > > +		READ_BUF(4);
+> > > > +		len += 4;
+> > > > +		READ32(dummy32);
+> > > > +		READ_BUF(dummy32);
+> > > > +		len += (XDR_QUADLEN(dummy32) << 2);
+> > > > +		READMEM(buf, dummy32);
+> > > > +
+> > > > +		if (dummy32 > NFS4_MAXLABELLEN)
+> > > > +			return nfserr_resource;
+> > > > +
+> > > > +		*label = kzalloc(sizeof(struct nfs4_label), GFP_KERNEL);
+> > > 
+> > > Could we allocate this some toher way (it's small, right?) and avoid the
+> > > extra dynamic allocation here, just for simplicity's sake?
+> > 
+> > How would you suggest going about doing that?
+> 
+> Maybe make op_label, cr_label, etc., a struct nfs4_label instead of a
+> struct nfs4_label *?
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jeremy Kerr <jk@ozlabs.org>
-Cc: linuxppc-dev@ozlabs.org
----
-Same as previous version, but no longer breaking the existing llseek
-operation in spufs_*box_info_fops. Pushed out to my bkl/llseek branch.
+I'll look into this. Since the structure contains a void * for the label
+data it might not be necessary to have to allocate the label structure
+itself just make sure its zeroed out so we can check to see if its
+initialized with anything.
 
-diff --git a/arch/powerpc/platforms/cell/spufs/file.c b/arch/powerpc/platforms/cell/spufs/file.c
-index 1a40da9..02f7b11 100644
---- a/arch/powerpc/platforms/cell/spufs/file.c
-+++ b/arch/powerpc/platforms/cell/spufs/file.c
-@@ -154,6 +154,7 @@ static const struct file_operations __fops = {				\
- 	.release = spufs_attr_release,					\
- 	.read	 = spufs_attr_read,					\
- 	.write	 = spufs_attr_write,					\
-+	.llseek  = generic_file_llseek,					\
- };
- 
- 
-@@ -521,6 +522,7 @@ static const struct file_operations spufs_cntl_fops = {
- 	.release = spufs_cntl_release,
- 	.read = simple_attr_read,
- 	.write = simple_attr_write,
-+	.llseek	= generic_file_llseek,
- 	.mmap = spufs_cntl_mmap,
- };
- 
-@@ -714,6 +716,7 @@ static ssize_t spufs_mbox_read(struct file *file, char __user *buf,
- static const struct file_operations spufs_mbox_fops = {
- 	.open	= spufs_pipe_open,
- 	.read	= spufs_mbox_read,
-+	.llseek	= no_llseek,
- };
- 
- static ssize_t spufs_mbox_stat_read(struct file *file, char __user *buf,
-@@ -743,6 +746,7 @@ static ssize_t spufs_mbox_stat_read(struct file *file, char __user *buf,
- static const struct file_operations spufs_mbox_stat_fops = {
- 	.open	= spufs_pipe_open,
- 	.read	= spufs_mbox_stat_read,
-+	.llseek = no_llseek,
- };
- 
- /* low-level ibox access function */
-@@ -863,6 +867,7 @@ static const struct file_operations spufs_ibox_fops = {
- 	.read	= spufs_ibox_read,
- 	.poll	= spufs_ibox_poll,
- 	.fasync	= spufs_ibox_fasync,
-+	.llseek = no_llseek,
- };
- 
- static ssize_t spufs_ibox_stat_read(struct file *file, char __user *buf,
-@@ -890,6 +895,7 @@ static ssize_t spufs_ibox_stat_read(struct file *file, char __user *buf,
- static const struct file_operations spufs_ibox_stat_fops = {
- 	.open	= spufs_pipe_open,
- 	.read	= spufs_ibox_stat_read,
-+	.llseek = no_llseek,
- };
- 
- /* low-level mailbox write */
-@@ -1011,6 +1017,7 @@ static const struct file_operations spufs_wbox_fops = {
- 	.write	= spufs_wbox_write,
- 	.poll	= spufs_wbox_poll,
- 	.fasync	= spufs_wbox_fasync,
-+	.llseek = no_llseek,
- };
- 
- static ssize_t spufs_wbox_stat_read(struct file *file, char __user *buf,
-@@ -1038,6 +1045,7 @@ static ssize_t spufs_wbox_stat_read(struct file *file, char __user *buf,
- static const struct file_operations spufs_wbox_stat_fops = {
- 	.open	= spufs_pipe_open,
- 	.read	= spufs_wbox_stat_read,
-+	.llseek = no_llseek,
- };
- 
- static int spufs_signal1_open(struct inode *inode, struct file *file)
-@@ -1166,6 +1174,7 @@ static const struct file_operations spufs_signal1_fops = {
- 	.read = spufs_signal1_read,
- 	.write = spufs_signal1_write,
- 	.mmap = spufs_signal1_mmap,
-+	.llseek = no_llseek,
- };
- 
- static const struct file_operations spufs_signal1_nosched_fops = {
-@@ -1173,6 +1182,7 @@ static const struct file_operations spufs_signal1_nosched_fops = {
- 	.release = spufs_signal1_release,
- 	.write = spufs_signal1_write,
- 	.mmap = spufs_signal1_mmap,
-+	.llseek = no_llseek,
- };
- 
- static int spufs_signal2_open(struct inode *inode, struct file *file)
-@@ -1305,6 +1315,7 @@ static const struct file_operations spufs_signal2_fops = {
- 	.read = spufs_signal2_read,
- 	.write = spufs_signal2_write,
- 	.mmap = spufs_signal2_mmap,
-+	.llseek = no_llseek,
- };
- 
- static const struct file_operations spufs_signal2_nosched_fops = {
-@@ -1312,6 +1323,7 @@ static const struct file_operations spufs_signal2_nosched_fops = {
- 	.release = spufs_signal2_release,
- 	.write = spufs_signal2_write,
- 	.mmap = spufs_signal2_mmap,
-+	.llseek = no_llseek,
- };
- 
- /*
-@@ -1451,6 +1463,7 @@ static const struct file_operations spufs_mss_fops = {
- 	.open	 = spufs_mss_open,
- 	.release = spufs_mss_release,
- 	.mmap	 = spufs_mss_mmap,
-+	.llseek  = no_llseek,
- };
- 
- static int
-@@ -1508,6 +1521,7 @@ static const struct file_operations spufs_psmap_fops = {
- 	.open	 = spufs_psmap_open,
- 	.release = spufs_psmap_release,
- 	.mmap	 = spufs_psmap_mmap,
-+	.llseek  = no_llseek,
- };
- 
- 
-@@ -1871,6 +1885,7 @@ static const struct file_operations spufs_mfc_fops = {
- 	.fsync	 = spufs_mfc_fsync,
- 	.fasync	 = spufs_mfc_fasync,
- 	.mmap	 = spufs_mfc_mmap,
-+	.llseek  = no_llseek,
- };
- 
- static int spufs_npc_set(void *data, u64 val)
-@@ -2246,6 +2261,7 @@ static ssize_t spufs_dma_info_read(struct file *file, char __user *buf,
- static const struct file_operations spufs_dma_info_fops = {
- 	.open = spufs_info_open,
- 	.read = spufs_dma_info_read,
-+	.llseek = no_llseek,
- };
- 
- static ssize_t __spufs_proxydma_info_read(struct spu_context *ctx,
-@@ -2299,6 +2315,7 @@ static ssize_t spufs_proxydma_info_read(struct file *file, char __user *buf,
- static const struct file_operations spufs_proxydma_info_fops = {
- 	.open = spufs_info_open,
- 	.read = spufs_proxydma_info_read,
-+	.llseek = no_llseek,
- };
- 
- static int spufs_show_tid(struct seq_file *s, void *private)
-@@ -2585,6 +2602,7 @@ static const struct file_operations spufs_switch_log_fops = {
- 	.read		= spufs_switch_log_read,
- 	.poll		= spufs_switch_log_poll,
- 	.release	= spufs_switch_log_release,
-+	.llseek		= no_llseek,
- };
- 
- /**
+> 
+> > 
+> > > 
+> > > > +		if (*label == NULL) {
+> > > > +			host_err = -ENOMEM;
+> > > > +			goto out_nfserr;
+> > > > +		}
+> > > > +
+> > > > +		(*label)->label = kmalloc(dummy32 + 1, GFP_KERNEL);
+> > > 
+> > > Might be nice to arrange NFS4_MAXLABELLEN to ensure this is never a
+> > > higher-order allocation.
+> > 
+> > This should never be more than 4096. Under what circumstances would this
+> > become a higher-order allocation?
+> 
+> Can't dummy32+1 be 4097?
+
+You're right. My mistake. NFS4_MAXLABELLEN is supposed to include the
+null termination. I'll fix this. I wonder if its better to just redefine
+NFS4_MAXLABELLEN to be 4095 so when we use the extra null terminator it
+will be a page size max.
+> 
+> --b.
+
