@@ -1,53 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586Ab0GHVyD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 17:54:03 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35545 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753621Ab0GHVyA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 17:54:00 -0400
-Date: Thu, 8 Jul 2010 14:53:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Thomas Renninger <trenn@suse.de>, Andi Kleen <andi@firstfloor.org>,
-       LKML <linux-kernel@vger.kernel.org>, Hannes Reinecke <hare@suse.de>
-Subject: Re: Dynamic Debug broken on 2.6.35-rc3?
-Message-Id: <20100708145300.d36cf006.akpm@linux-foundation.org>
-In-Reply-To: <20100708213927.GB2934@redhat.com>
-References: <201007011744.19564.trenn@suse.de>
-	<20100701162601.GC2829@redhat.com>
-	<201007021856.00139.trenn@suse.de>
-	<20100708213927.GB2934@redhat.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	id S932079Ab0GHVyT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 17:54:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20044 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758623Ab0GHVyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 17:54:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,560,1272870000"; 
+   d="scan'208";a="533695634"
+Subject: Re: [PATCH] sched: Call update_group_power only for local_group
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+       LKML <linux-kernel@vger.kernel.org>, Gautham R Shenoy <ego@in.ibm.com>,
+       Joel Schopp <jschopp@austin.ibm.com>,
+       Michael Neuling <mikey@neuling.org>
+In-Reply-To: <1278612989.1900.176.camel@laptop>
+References: <1278088816.1917.279.camel@laptop>
+	 <1278089799-11949-1-git-send-email-venki@google.com>
+	 <1278598336.1900.150.camel@laptop>
+	 <1278611133.2834.10.camel@sbs-t61.sc.intel.com>
+	 <1278612989.1900.176.camel@laptop>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Thu, 08 Jul 2010 14:53:34 -0700
+Message-Id: <1278626014.2834.74.camel@sbs-t61.sc.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jul 2010 17:39:28 -0400
-Jason Baron <jbaron@redhat.com> wrote:
-
-> Make sure we properly call ddebug_remove_module() when a module fails to
-> load. In addition, pass the pointer to the "debug table", to both
-> ddebug_add_module(), and ddebug_remove_module() so that we can uniquely
-> identify each set of debug statements. In this way even modules with the
-> same name can be properly identified and removed.
+On Thu, 2010-07-08 at 11:16 -0700, Peter Zijlstra wrote:
+> On Thu, 2010-07-08 at 10:45 -0700, Suresh Siddha wrote:
+> > > @@ -2433,7 +2433,8 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+> > >               return;
+> > >       }
+> > >  
+> > > -     update_group_power(sd, this_cpu);
+> > > +     if (local_group)
+> > > +             update_group_power(sd, this_cpu);
+> > 
+> > if IDLE == CPU_NEWLY_IDLE, then all the cpu's in the local group will do
+> > this. Also update_group_power() can be done on only on the local cpu,
+> > i.e., when this_cpu == smp_processor_id() right?
 > 
+> It might make sense to only update_group_power on !CPU_NEWLY_IDLE and
+> rely on the tick driven cpu_power updates.
 > 
-> Signed-off-by: Jason Baron <jbaron@redhat.com>
+> No sense in updating them in finer slices I guess.
+> 
+> So how about something like:
+> 
+> ---
+>  kernel/sched_fair.c |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 9910e1b..2f05679 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -2427,14 +2427,14 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+>  	 * domains. In the newly idle case, we will allow all the cpu's
+>  	 * to do the newly idle load balance.
+>  	 */
+> -	if (idle != CPU_NEWLY_IDLE && local_group &&
+> -	    balance_cpu != this_cpu) {
+> -		*balance = 0;
+> -		return;
+> +	if (idle != CPU_NEWLY_IDLE && local_group) {
+> +		if (balance_cpu != this_cpu) {
+> +			*balance = 0;
+> +			return;
+> +		}
+> +		update_group_power(sd, this_cpu);
+>  	}
+>  
+> -	update_group_power(sd, this_cpu);
+> -
+>  	/* Adjust by relative CPU power of the group */
+>  	sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
+>  
 
-It'd be nice to track the Reported-by:s.  And the Tested-by:s if/when
-they arrive.  SighIllDoIt.
+I am ok with this patch (barring the currently broken aperf/mperf part).
 
-The patch (almost) applies to 2.6.34.  So are we missing a Cc:stable tag
-as well?
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-Also, this patch's title is now "Re: Dynamic Debug broken on
-2.6.35-rc3?" which isn't very good.  I can invent a new title for it,
-but that means we don't have a well-understood handle to refer to this
-patch, and to perform searches with, etc.
+Also, looking at all this, don't we need to do something like this in
+the nohz load balance?
 
-Maybe a resend would be best..
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 9910e1b..ae750e9 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3598,6 +3598,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
+ 		}
+ 
+ 		raw_spin_lock_irq(&this_rq->lock);
++		update_rq_clock(this_rq);
+ 		update_cpu_load(this_rq);
+ 		raw_spin_unlock_irq(&this_rq->lock);
+ 
+
+
