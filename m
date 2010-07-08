@@ -1,120 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab0GHOiZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 10:38:25 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44716 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab0GHOiY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 10:38:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kBtvMblJ1ptNKWUrTrhu0O3pjlcYJ+h67omCjJu18mivi7MHKL5AnbxxbqHrAnJ2Bm
-         09pXQCq6OHLUywzRv+JgNfwSKzV1nuFsdyREfTEI4AUxSKykqIXIXsaprR9QWCRH6q44
-         AhWJYEgaB/s3FaROFMuLs/hOkRGvDhRtshNN4=
-MIME-Version: 1.0
-In-Reply-To: <x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
+	id S1755498Ab0GHOit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 10:38:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24664 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754434Ab0GHOis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 10:38:48 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Corrado Zoccolo <czoccolo@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
 References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
 	<x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
-	<x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
-Date: Thu, 8 Jul 2010 16:38:22 +0200
-Message-ID: <AANLkTilFG_nG-JHmfHK-f_9DXb7IHCbshswjHtDq9I4I@mail.gmail.com>
-Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	<20100708143512.GE5093@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 08 Jul 2010 10:38:25 -0400
+In-Reply-To: <20100708143512.GE5093@redhat.com> (Vivek Goyal's message of
+	"Thu, 8 Jul 2010 10:35:12 -0400")
+Message-ID: <x49mxu2dony.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 7, 2010 at 10:06 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Corrado Zoccolo <czoccolo@gmail.com> writes:
+Vivek Goyal <vgoyal@redhat.com> writes:
+
+> On Wed, Jul 07, 2010 at 01:03:08PM -0400, Jeff Moyer wrote:
+>> Corrado Zoccolo <czoccolo@gmail.com> writes:
+>> 
+>> > Hi Jens,
+>> > patch 8e55063 "cfq-iosched: fix corner cases in idling logic", is
+>> > suspected for some regressions on high end hardware.
+>> > The two patches from this series:
+>> > - [PATCH 1/2] cfq-iosched: fix tree-wide handling of rq_noidle
+>> > - [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
+>> > fix two issues that I have identified, related to how RQ_NOIDLE is
+>> > used by the upper layers.
+>> > First patch makes sure that a RQ_NOIDLE coming after a sequence of
+>> > possibly idling requests from the same queue on the no-idle tree will
+>> > clear the noidle_tree_requires_idle flag.
+>> > Second patch enables RQ_NOIDLE for queues in the idling tree,
+>> > restoring the behaviour pre-8e55063 patch.
+>> 
+>> Hi, Corrado,
+>> 
+>> I ran your kernel through my tests.  Here are the results, up against
+>> vanilla, deadline, and the blk_yield patch set:
+>> 
+>>                  just    just
+>>                 fs_mark  fio        mixed	
+>> -------------------------------+--------------
+>> deadline        529.44   151.4 | 450.0    78.2
+>> vanilla cfq     107.88   164.4 |   6.6   137.2
+>> blk_yield cfq   530.82   158.7 | 113.2    78.6
+>> corrado cfq      80.82   138.1 |   4.5   130.7
+>> 
+>> fs_mark results are in files/second, fio results are in MB/s.  All
+>> results are the average of 5 runs.  In order to get results for the
+>> mixed workload for both vanilla and Corrado's kernels, I had to extend
+>> the runtime from 30s to 300s.
+>> 
+>> So, the changes proposed in this thread actually make performance worse
+>> across the board.
+>> 
+>> I re-ran my tests against a RHEL 5 kernel (which is based on 2.6.18),
+>> and it shows that fs_mark performance is much better than stock CFQ in
+>> 2.6.35-rc3, and the mixed workload results are much the same as they are
+>> now (which is to say, the fs_mark process is completely starved by the
+>> sequential reader).  So, that problem has existed for a long time.
+>> 
+>> I'm still in the process of collecting data from production servers and
+>> will report back with my findings there.
 >
->> On Wed, Jul 7, 2010 at 7:03 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
->>> Corrado Zoccolo <czoccolo@gmail.com> writes:
->>>
->>>> Hi Jens,
->>>> patch 8e55063 "cfq-iosched: fix corner cases in idling logic", is
->>>> suspected for some regressions on high end hardware.
->>>> The two patches from this series:
->>>> - [PATCH 1/2] cfq-iosched: fix tree-wide handling of rq_noidle
->>>> - [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
->>>> fix two issues that I have identified, related to how RQ_NOIDLE is
->>>> used by the upper layers.
->>>> First patch makes sure that a RQ_NOIDLE coming after a sequence of
->>>> possibly idling requests from the same queue on the no-idle tree will
->>>> clear the noidle_tree_requires_idle flag.
->>>> Second patch enables RQ_NOIDLE for queues in the idling tree,
->>>> restoring the behaviour pre-8e55063 patch.
->>>
->>> Hi, Corrado,
->>>
->>> I ran your kernel through my tests.  Here are the results, up against
->>> vanilla, deadline, and the blk_yield patch set:
->>>
->> Hi Jeff,
->> can you also add cfq with 8e55063 reverted to the testing mix?
+> Hi Jeff and all,
 >
-> Sure, the results now look like this:
->
->                 just    just
->                fs_mark  fio        mixed
-> -------------------------------+--------------
-> deadline        529.44   151.4 | 450.0    78.2
-> vanilla cfq     107.88   164.4 |   6.6   137.2
-> blk_yield cfq   530.82   158.7 | 113.2    78.6
-> corrado cfq     110.16   220.6 |   7.0   159.8
-> 8e55063 revert  559.66   198.9 |  16.1   153.3
->
-> I had accidentally run your patch set (corrado cfq) on ext3, so the
-> numbers were a bit off (everything else was run against ext4).  The
-> corrected numbers above reflect the performance on ext4, which is much
-> better for the sequential reader, but still not great for the fs_mark
-> run.  Reverting 8e55063 definitely gets us into better shape.  However,
-> if we care about the mixed workload, then it won't be enough.
+> How about if we simply get rid of idling on RQ_NOIDLE threads (as
+> corrado's patch series does) and not try to solve the problem of fsync
+> being starved in the presence of sequential readers. I mean it might just
+> be a theoritical problem and not many people are running into it. That's
+> how CFQ has been behaving for long-2 time and if nobody is complaining
+> then we probably don't have to fix it.
 
-I wonder why 8e55063 revert gives such a big improvement on fsync ops.
-Maybe, before 8e55063, we ended up not idling even if
-cfq_arm_slice_timer was called, due to other requests still pending?
-I think your patch that allows both async and sync requests to be in
-flight at the same time could help here.
+I would instead suggest we just revert that one commit, if this is the
+route we're going to go.  Please keep in mind, though, that folks who
+may have experienced this issue may also have just switched to deadline.
 
->
-> It's worth noting that I can't explain that jump from 151MB/s for
-> deadline vs 220MB/s for corrado cfq.  I'm not sure how you can vary
-> driving a single queue depth sequential read at all.  Those are the
-> averages of 5 runs and this storage should be solely accessible by me,
-> so I am at a loss.
-
-I guess ext4 tries to be smart, and issues some background reads of fs
-data structures needed to keep reading the sequential file without
-interruption.
-Those reads will be far from the current head, so if you service them
-immediately (as deadline would), they can cause a degradation, while
-delaying them to when you are servicing other random requests (as cfq
-would) can help.
-
->
-> Cheers,
-> Jeff
->
-
-
-
--- 
-__________________________________________________________________________
-
-dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
-PhD - Department of Computer Science - University of Pisa, Italy
---------------------------------------------------------------------------
-The self-confidence of a warrior is not the self-confidence of the average
-man. The average man seeks certainty in the eyes of the onlooker and calls
-that self-confidence. The warrior seeks impeccability in his own eyes and
-calls that humbleness.
-                               Tales of Power - C. Castaneda
+Cheers,
+Jeff
