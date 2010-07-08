@@ -1,166 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620Ab0GHVLh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 17:11:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19856 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375Ab0GHVLe (ORCPT
+	id S1758646Ab0GHVLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 17:11:45 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:51234 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758626Ab0GHVLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 17:11:34 -0400
-Message-ID: <4C363E58.5060006@kernel.org>
-Date: Thu, 08 Jul 2010 14:08:40 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Meelis Roos <mroos@linux.ee>,
-       Linux Kernel list <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: 2.6.35-rc* regression: ERROR: Unable to locate IOAPIC for GSI
- *
-References: <alpine.SOC.1.00.1007081644200.15817@math.ut.ee>	<AANLkTinwbPAsCAwrbYVj7_K-YsgKAPyjXlUlQNDZ7eqa@mail.gmail.com>	<AANLkTikYc5N5ihRBJI_n3yGfcRxjplxbYGtGzJZ1ufzc@mail.gmail.com> <m1k4p5d702.fsf@fess.ebiederm.org>
-In-Reply-To: <m1k4p5d702.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 8 Jul 2010 17:11:41 -0400
+Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw 
+ HIDIOCGFEATURE and HIDIOCSFEATURE
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+Cc: David Miller <davem@davemloft.net>, ospite@studenti.unina.it,
+       alan@signal11.us, jkosina@suse.cz, mdpoole@troilus.org,
+       hadess@hadess.net, eric.dumazet@gmail.com,
+       linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org
+In-Reply-To: <AANLkTiktvYWdZmpQs_k7mJRqMCqgfhy1b0T8tX8emmtU@mail.gmail.com>
+References: <1276467601-9066-1-git-send-email-alan@signal11.us>
+	 <20100628131437.bde782b6.ospite@studenti.unina.it>
+	 <20100629.001216.91341775.davem@davemloft.net>
+	 <AANLkTiktvYWdZmpQs_k7mJRqMCqgfhy1b0T8tX8emmtU@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Jul 2010 18:08:52 -0300
+Message-ID: <1278623332.10421.71.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C363EF4.0153,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2010 01:59 PM, Eric W. Biederman wrote:
-> Yinghai Lu <yinghai@kernel.org> writes:
-> 
->> On Thu, Jul 8, 2010 at 1:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> On Thu, Jul 8, 2010 at 6:53 AM, Meelis Roos <mroos@linux.ee> wrote:
->>>> Just tried 2.6.35-rc4-00086-g2aa72f6 on Celeron 900 + i815 chipset PC.
->>>> I get these errors during bootup, and all interrupts become XT-PIC:
->>>>
->>>> [    0.087302] pnp: PnP ACPI init
->>>> [    0.087482] ACPI: bus type pnp registered
->>>> [    0.087999] ERROR: Unable to locate IOAPIC for GSI 8
->>>> [    0.087999] ERROR: Unable to locate IOAPIC for GSI 13
->>>> [    0.087999] ERROR: Unable to locate IOAPIC for GSI 12
->>>> [    0.088091] ERROR: Unable to locate IOAPIC for GSI 1
->>>> [    0.089013] ERROR: Unable to locate IOAPIC for GSI 6
->>>> [    0.090612] ERROR: Unable to locate IOAPIC for GSI 4
->>>> [    0.092235] ERROR: Unable to locate IOAPIC for GSI 3
->>>> [    0.094382] ERROR: Unable to locate IOAPIC for GSI 7
->>>> [    0.097470] pnp: PnP ACPI: found 13 devices
->>>> [    0.097625] ACPI: ACPI bus type pnp unregistered
->>>>
->>>> 2.6.35-rc2-00001-g386f40c behaves the same.
->>>>
->>>> 2.6.34 worked fine, it reports just
->>>> [    0.104513] pnp: PnP ACPI init
->>>> [    0.104683] ACPI: bus type pnp registered
->>>> [    0.116002] pnp: PnP ACPI: found 13 devices
->>>> [    0.116158] ACPI: ACPI bus type pnp unregistered
->>>
->>> Do you have bootlog for 2.6.34 with "debug apic=debug"?
->>>
->>>>
->>>> Will bisect but it takes some time.
->>>>
->>>> Full dmesg:
->>>> [    0.000000] ACPI: RSDP 000ff980 00014 (v00 AMI   )
->>>> [    0.000000] ACPI: RSDT 1fff0000 0002C (v01 D815EA D815EEA2 20021106 MSFT 00001011)
->>>> [    0.000000] ACPI: FACP 1fff1000 00074 (v01 D815EA EA81510A 20021106 MSFT 00001011)
->>>> [    0.000000] ACPI: DSDT 1ffe0000 030E4 (v01 D815E2 EA81520A 00000023 MSFT 0100000B)
->>>> [    0.000000] ACPI: FACS 1fff8000 00040
->>>> [    0.000000] ACPI: SSDT 1ffe30e4 00035 (v01 D815EA EA81510A 00000015 MSFT 0100000B)
->>>
->>> no MADT
->>>
->>>> [    0.000000] ACPI: PM-Timer IO Port: 0x408
->>>> [    0.000000] Found and enabled local APIC!
->>>> [    0.000000] nr_irqs_gsi: 16
->>>
->>>> [    0.021087] Enabling APIC mode:  Flat.  Using 0 I/O APICs
->>> no io apic.
->>
->> related commit:
->>
->> commit 9a0a91bb56d2915cdb8585717de38376ad20fef9
->> Author: Eric W. Biederman <ebiederm@xmission.com>
->> Date:   Tue Mar 30 01:07:03 2010 -0700
->>
->>     x86, acpi/irq: Teach acpi_get_override_irq to take a gsi not an isa_irq
->>
->>     In perverse acpi implementations the isa irqs are not identity mapped
->>     to the first 16 gsi.  Furthermore at least the extended interrupt
->>     resource capability may return gsi's and not isa irqs.  So since
->>     what we get from acpi is a gsi teach acpi_get_overrride_irq to
->>     operate on a gsi instead of an isa_irq.
->>
->>     Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->>     LKML-Reference: <1269936436-7039-2-git-send-email-ebiederm@xmission.com>
->>     Signed-off-by: H. Peter Anvin <hpa@zytor.com>
->>
->> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
->> index 127b871..73ec928 100644
->> --- a/arch/x86/kernel/apic/io_apic.c
->> +++ b/arch/x86/kernel/apic/io_apic.c
->> @@ -4082,22 +4082,27 @@ int __init io_apic_get_version(int ioapic)
->>         return reg_01.bits.version;
->>  }
->>
->> -int acpi_get_override_irq(int bus_irq, int *trigger, int *polarity)
->> +int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
->>  {
->> -       int i;
->> +       int ioapic, pin, idx;
->>
->>         if (skip_ioapic_setup)
->>                 return -1;
->>
->> -       for (i = 0; i < mp_irq_entries; i++)
->> -               if (mp_irqs[i].irqtype == mp_INT &&
->> -                   mp_irqs[i].srcbusirq == bus_irq)
->> -                       break;
->> -       if (i >= mp_irq_entries)
->> +       ioapic = mp_find_ioapic(gsi);
->> +       if (ioapic < 0)
->> +               return -1;
->> +
->> +       pin = mp_find_ioapic_pin(ioapic, gsi);
->> +       if (pin < 0)
->> +               return -1;
->> +
->> +       idx = find_irq_entry(ioapic, pin, mp_INT);
->> +       if (idx < 0)
->>                 return -1;
->>
->> -       *trigger = irq_trigger(i);
->> -       *polarity = irq_polarity(i);
->> +       *trigger = irq_trigger(idx);
->> +       *polarity = irq_polarity(idx);
->>         return 0;
->>  }
->>
->>
->> Meelis' system doesn't have madt and mptable.
->>
->> and eric patch change to call mp_find_ioapic, and mp_find_ioapic_pin.
->>
->> so could just check
->>
->> if (nr_ioapics < 1)
->>      return -1;
->>
->> in acpi_get_override_irq()
-> 
-> But we should check:
-> 
-> 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
-> 		return -1;
-> 
-> As I posted several weeks ago.  We want to complain if we have
-> no io_apics and we are in ioapic_mode.  We don't want to do anything
-> if we aren't in io_apic mode.
+Hi Andrei,
 
-sure. maybe you need to resubmit again to Ingo/hpa.
+> >> On Sun, 13 Jun 2010 18:20:01 -0400
+> >> Alan Ott <alan@signal11.us> wrote:
+> >>
+> >>> This patch adds support or getting and setting feature reports for bluetooth
+> >>> HID devices from HIDRAW.
+> >>>
+> >>> Signed-off-by: Alan Ott <alan@signal11.us>
+> >>> ---
+> >>
+> >> Ping.
+> >
+> > We effectively don't have a bluetooth maintainer at the current point
+> > in time.  I've tried to let patches sit for a while hoping the listed
+> > maintainer would do something, at least occaisionally, but that simply
+> > isn't happening.
+> > So I'll just pick patches up directly as I find time to review them,
+> > but I have to warn that for me it's going to be done in a very low
+> > priority way because I really don't find bluetooth all that exciting. :-)
+> 
+> This would be good. We have a backlog of bluetooth kernel patches
+> waiting for several months.
+> This takes too much time to return to them again and again...
+> 
+> Please keep this ML informed.
 
-YH
+as soon as Ville is back from vacation, he should be helping out with
+patch review and maintenance.
+
+Regards
+
+Marcel
+
+
