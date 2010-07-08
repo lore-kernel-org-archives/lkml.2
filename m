@@ -1,144 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab0GHGpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 02:45:13 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40384 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753851Ab0GHGpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 02:45:10 -0400
-Date: Thu, 8 Jul 2010 08:44:48 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, airlied@linux.ie,
-       dri-devel@lists.freedesktop.org, venki@google.com, hpa@linux.intel.com,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [bisected]X:2252 conflicting memory types 40000000-48000000
- uncached-minus<->write-combining
-Message-ID: <20100708064448.GA3803@elte.hu>
-References: <4C2E464A.8090900@gmail.com>
- <4C2EBE99.4030706@gmail.com>
+	id S1754007Ab0GHG7N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 02:59:13 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:36542 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874Ab0GHG7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 02:59:12 -0400
+Date: Thu, 8 Jul 2010 08:49:51 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] hugetlb: hugepage migration core
+Message-ID: <20100708064951.GA15950@basil.fritz.box>
+References: <20100707092719.GA3900@basil.fritz.box>
+ <20100708054426.GA19906@spritzera.linux.bs1.fc.nec.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C2EBE99.4030706@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100708054426.GA19906@spritzera.linux.bs1.fc.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> This page cache is located on non-hugepage, isn't it?
 
-* Justin P. Mattock <justinmattock@gmail.com> wrote:
+Yes.
 
-> On 07/02/10 13:04, Justin P. Mattock wrote:
-> >this is new(below) has anybody reported/bisected hit this yet
-> >(if not I'll bisect it)
-> >
-> >[drm] Num pipes: 1
-> >[   29.742432] [drm] writeback test succeeded in 1 usecs
-> >[   30.089717] X:2252 conflicting memory types 40000000-48000000
-> >uncached-minus<->write-combining
-> >[   30.089721] reserve_memtype failed 0x40000000-0x48000000, track
-> >uncached-minus, req uncached-minus
-> >[   30.123517] [drm] Num pipes: 1
-> >[   30.351017] X:2252 freeing invalid memtype 40000000-48000000
-> >[   30.354255] CPU 0
-> >[   30.354255] Modules linked in: radeon ttm drm_kms_helper drm
-> >sco xcbc bnep rmd160 sha512_generic xt_tcpudp ipt_LOG iptable_nat
-> >nf_nat xt_state nf_conntrack_ftp nf_conntrack_ipv4 nf_conntrack
-> >nf_defrag_ipv4 iptable_filter ip_tables x_tables firewire_ohci
-> >firewire_core video battery ath9k ac ath9k_common joydev sky2
-> >ath9k_hw ohci1394 ath thermal evdev button i2c_i801 hid_magicmouse
-> >aes_x86_64 lzo lzo_compress zlib ipcomp xfrm_ipcomp crypto_null
-> >sha256_generic cbc des_generic cast5 blowfish serpent camellia
-> >twofish twofish_common ctr ah4 esp4 authenc raw1394 ieee1394
-> >uhci_hcd ehci_hcd hci_uart rfcomm btusb hidp l2cap bluetooth
-> >coretemp acpi_cpufreq processor mperf appletouch applesmc
-> >uvcvideo[   30.354255]
-> >[   30.354255] Pid: 2252, comm: X Not tainted
-> >2.6.35-rc3-00397-g123f94f #3 Mac-F42187C8/MacBookPro2,2
-> >[   30.354255] RIP: 0010:[<ffffffffa035811b>]
-> >[<ffffffffa035811b>] radeon_read_ring_rptr+0x2b/0x2f [radeon]
-> >[   30.354255] RSP: 0018:ffff8800360dfc80  EFLAGS: 00010202
-> >[   30.354255] RAX: ffff88003e0085d8 RBX: ffff8800385e8848 RCX:
-> >ffffc90000cf8000
-> >[   30.354255] RDX: 0000000000000028 RSI: 6b6b6b6b6b6b6b6b RDI:
-> >ffff8800385e8848
-> >[   30.354255] RBP: ffff8800360dfc80 R08: ffff8800385e8a28 R09:
-> >0000000000000010
-> >[   30.354255] R10: ffffffffffffffff R11: ffffea0000930af0 R12:
-> >0000000000000010
-> >[   30.354255] R13: ffff8800385e8000 R14: ffff8800385e89c8 R15:
-> >ffff8800385e8178
-> >[   30.354255] FS:  00007f0aaa823840(0000)
-> >GS:ffff880001a00000(0000) knlGS:0000000000000000
-> >[   30.354255] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> >[   30.354255] CR2: 00007f0a9ad67118 CR3: 000000000166d000 CR4:
-> >00000000000006f0
-> >[   30.354255] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> >0000000000000000
-> >[   30.354255] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> >0000000000000400
-> >[   30.354255] Process X (pid: 2252, threadinfo ffff8800360de000,
-> >task ffff880033dc5c40)
-> >[   30.354255]  ffff8800360dfc90 ffffffffa0358130 ffff8800360dfca8
-> >ffffffffa035881c
-> >[   30.354255] <0> ffff8800385e8848 ffff8800360dfcc8
-> >ffffffffa0359ac7 0000000000000000
-> >[   30.354255] <0> ffff8800385e8848 ffff8800360dfce8
-> >ffffffffa035c961 ffff8800385e8848
-> >[   30.354255]  [<ffffffffa0358130>]
-> >radeon_get_ring_head+0x11/0x3c [radeon]
-> >[   30.354255]  [<ffffffffa035881c>] radeon_commit_ring+0x48/0x97
-> >[radeon]
-> >[   30.354255]  [<ffffffffa0359ac7>] radeon_do_cp_idle+0x140/0x14d
-> >[radeon]
-> >[   30.354255]  [<ffffffffa035c961>]
-> >radeon_apply_surface_regs+0x22/0x138 [radeon]
-> >[   30.354255]  [<ffffffffa035cb4f>] free_surface+0xd8/0xee [radeon]
-> >[   30.354255]  [<ffffffffa0365036>]
-> >radeon_driver_lastclose+0x3c/0x56 [radeon]
-> >[   30.354255]  [<ffffffffa031440b>] drm_lastclose+0x44/0x2ad [drm]
-> >[   30.354255]  [<ffffffffa0314eda>] drm_release+0x656/0x6a3 [drm]
-> >[   30.354255]  [<ffffffff8105abaf>] put_files_struct+0x65/0xb3
-> >[   30.354255]  [<ffffffff8105ac43>] exit_files+0x46/0x4e
-> >[   30.354255]  [<ffffffff8105c2e6>] do_exit+0x214/0x69f
-> >[   30.354255]  [<ffffffff810ebc2e>] ? fput+0x1e2/0x1f1
-> >[   30.354255]  [<ffffffff8105c7e3>] do_group_exit+0x72/0x9a
-> >[   30.354255]  [<ffffffff8105c81d>] sys_exit_group+0x12/0x16
-> >[   30.354255]  [<ffffffff81026442>] system_call_fastpath+0x16/0x1b
-> >[   30.354255]  RSP <ffff8800360dfc80>
-> >[   31.312879] ---[ end trace 9a7b92300d4121f6 ]---
-> >[   30.354255]  [<ffffffff810ebb6e>] fput+0x122/0x1f1
-> >[   30.354255]  [<ffffffff810e9181>] filp_close+0x63/0x6d
-> >
-> >Justin P. Mattock
+> If so, buffered IO is handled in the same manner as done for non-hugepage.
+> I think "hugepage under IO" is realized only in direct IO for now.
 > 
-> o.k. finished bisecting.. the results point to this: 6a4f3b523 doing
-> a git revert gets me to startx without crashing and burning.
-> the problem code is this:
-> new->subtree_max_end = new->end;
-> 
-> which sends me to: (if im reading correctly)
-> if (match->type != found_type && newtype == NULL)
->         goto failure;
-> 
-> so how/what might be happening here?!
+> Direct IO is issued in page unit even if the target page is in hugepage,
+> so locking each subpages separately looks natural for me than auditing
+> head page.
 
-Could you please check latest upstream, which has this fix:
+Ok. Would need to make sure lock ordering is correctly handled all the time.
 
-  b945d6b: rbtree: Undo augmented trees performance damage and regression
+If there's any code that locks multiple pages "backwards" and the migration
+code locks it forward there might be a problem. Maybe it's not a problem
+though.
 
-Does it fix your X too?
-
-Thanks,
-
-	Ingo
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
