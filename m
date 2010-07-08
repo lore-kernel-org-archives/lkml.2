@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab0GHTAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 15:00:45 -0400
-Received: from kroah.org ([198.145.64.141]:53888 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755532Ab0GHTAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 15:00:44 -0400
-Date: Thu, 8 Jul 2010 11:55:29 -0700
-From: Greg KH <greg@kroah.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Samium Gromoff <_deepfire@feelingofgreen.ru>
-Subject: Re: [PATCH -mmotm] 8250_early: fix printk format warnings
-Message-ID: <20100708185529.GA6291@kroah.com>
-References: <201007011948.o61JmnT2022795@imap1.linux-foundation.org>
- <20100702182437.977c8ef8.randy.dunlap@oracle.com>
- <20100708183710.GC31823@kroah.com>
- <4C361CD7.1050007@oracle.com>
+	id S1758450Ab0GHTDW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 15:03:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:32857 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758383Ab0GHTDU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 15:03:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=s/Xry8C00K2qN1k+F+wPlKiGscFr+lAEGfw+pa84Q6eXi9i4jUd/88CQkk6vUESkut
+         Bbvd42nH6KzR6nwENv5H50vm8nC/AICHZ+JLUiUPQHXD0pJOw/IiHwMZvIFoMMmg7RQM
+         4LBqRgXYDDGavOKHH+/1O0Me3ESfylrweyiqI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C361CD7.1050007@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Thu, 8 Jul 2010 16:03:19 -0300
+Message-ID: <AANLkTimn8A0cYZmwNZYitRkBHKKFe4HQ5GU626DLugkk@mail.gmail.com>
+Subject: Squid hang up on 2.6.34
+From: Felipe W Damasio <felipewd@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 11:45:43AM -0700, Randy Dunlap wrote:
-> On 07/08/10 11:37, Greg KH wrote:
-> > On Fri, Jul 02, 2010 at 06:24:37PM -0700, Randy Dunlap wrote:
-> >> From: Randy Dunlap <randy.dunlap@oracle.com>
-> >>
-> >> Fix printk format warnings in serial-mmio32-support-for-8250_earlyc.patch:
-> >>
-> >> drivers/serial/8250_early.c:207: warning: format '%p' expects type 'void *', but argument 3 has type 'long long unsigned int'
-> >> drivers/serial/8250_early.c:210: warning: format '%p' expects type 'void *', but argument 2 has type 'long long unsigned int'
-> >>
-> >> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> >> Cc: Samium Gromoff <_deepfire@feelingofgreen.ru>
-> >> Cc: Greg KH <greg@kroah.com>
-> >> ---
-> >>  drivers/serial/8250_early.c |    4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >> --- mmotm-2010-0701-1219.orig/drivers/serial/8250_early.c
-> >> +++ mmotm-2010-0701-1219/drivers/serial/8250_early.c
-> >> @@ -202,12 +202,12 @@ static int __init parse_options(struct e
-> >>  	}
-> >>  
-> >>  	if (mmio || mmio32)
-> >> -		printk(KERN_INFO "Early serial console at MMIO%s 0x%p (options '%s')\n",
-> >> +		printk(KERN_INFO "Early serial console at MMIO%s 0x%llu (options '%s')\n",
-> > 
-> > Odd, my tree doesn't have this change in it, where is it coming from?
-> 
-> A patch in mmotm from Samium Gromoff.
-> mmotm patch file name is "serial-mmio32-support-for-8250_earlyc.patch".
+Hi All,
 
-Ah.  Samium, can you fold this into your original one?
+I've been using squid for a few months now.
 
-thanks,
+It worked great until recently, when we upgraded to kernel 2.6.34.
 
-greg k-h
+We're using squid on bridge scenario with TProxy.
+
+Squid simply hung up (connections with squidclient didn't work), and
+the process didn't respond to kill. I had to use "kill -9".
+
+The dmesg output was:
+
+kernel: general protection fault: 0000 [#1] SMP
+kernel: last sysfs file: /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/name
+kernel: CPU 1
+kernel: Modules linked in:
+
+kernel: Pid: 18351, comm: squid Not tainted 2.6.34 #1 DX58SO/
+kernel: RIP: 0010:[<ffffffff81360c2a>]  [<ffffffff81360c2a>]
+sock_rfree+0x26/0x37
+kernel: RSP: 0018:ffff88041c28fc20  EFLAGS: 00010206
+kernel: RAX: dce8dce85d415d41 RBX: ffff88038f098c00 RCX: 0000000000000720
+kernel: RDX: ffff8804053b2e00 RSI: ffff88032564ee0c RDI: ffff88038f098c00
+kernel: RBP: ffff8804051b2e00 R08: 0000000000000000 R09: 0000000000000000
+kernel: R10: 0000000000020860 R11: ffff8804051b2e00 R12: 00000000000005a8
+kernel: R13: 00000000000005a8 R14: 0000000000003d21 R15: 0000000000000000
+kernel: FS:  00007f214fa8c710(0000) GS:ffff880001840000(0000)
+knlGS:0000000000000000
+kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+kernel: CR2: 000000000b388000 CR3: 000000041c4c4000 CR4: 00000000000006e0
+kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+kernel: Process squid (pid: 18351, threadinfo ffff88041c28e000, task
+ffff88042e0fcec0)
+kernel: Stack:
+kernel: ffffffff81365dda ffff88038f098c00 ffffffff81365b8c ffff88038f098c00
+kernel: <0> ffffffff813a222a 00000000000000d0 ffffffff81366af9 000000002e0fcec0
+kernel: <0> ffff88042e0fcec0 ffff88042e0fcec0 ffff88042e0fcec0 0000000014d31cc0
+kernel: Call Trace:
+kernel: [<ffffffff81365dda>] ? skb_release_head_state+0x6d/0xb7
+kernel: [<ffffffff81365b8c>] ? __kfree_skb+0x9/0x7d
+kernel: [<ffffffff813a222a>] ? tcp_recvmsg+0x6a3/0x89a
+kernel: [<ffffffff81366af9>] ? __alloc_skb+0x5e/0x14e
+kernel: [<ffffffff81360ede>] ? sock_common_recvmsg+0x30/0x45
+kernel: [<ffffffff8135ec0f>] ? sock_aio_read+0xdd/0xf1
+kernel: [<ffffffff810ac500>] ? do_sync_read+0xb0/0xf2
+kernel: [<ffffffff8142a25e>] ? _raw_spin_lock_bh+0x9/0x1f
+kernel: [<ffffffff810acf32>] ? vfs_read+0xb9/0xff
+kernel: [<ffffffff810ad034>] ? sys_read+0x45/0x6e
+kernel: [<ffffffff8100292b>] ? system_call_fastpath+0x16/0x1b
+kernel: Code: ff ff ff ff c3 48 8b 57 18 8b 87 d8 00 00 00 48 8d 8a ac
+00 00 00 f0 29 82 ac 00 00 00 48 8b 57 18 8b 8f d8 00 00 00 48 8b 42
+38 <48> 83 b8 b0 00 00 00 00 74 06 01 8a f4 00 00 00 c3 41 57 41 89
+kernel: RIP  [<ffffffff81360c2a>] sock_rfree+0x26/0x37
+kernel: RSP <ffff88041c28fc20>
+kernel: ---[ end trace bcd320fe508cc071 ]---
+
+Can anybody help me?
+
+What information can I provide you to track down this issue?
+
+Cheers,
+
+Felipe Damasio
