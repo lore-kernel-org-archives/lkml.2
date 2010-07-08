@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab0GHLG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 07:06:59 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49965 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab0GHLG6 (ORCPT
+	id S1755993Ab0GHLNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 07:13:53 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57139 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab0GHLNw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 07:06:58 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: FYI: mmap_sem OOM patch
-Cc: kosaki.motohiro@jp.fujitsu.com, Michel Lespinasse <walken@google.com>,
-       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Divyesh Shah <dpshah@google.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1278586921.1900.67.camel@laptop>
-References: <20100708195421.CD48.A69D9226@jp.fujitsu.com> <1278586921.1900.67.camel@laptop>
-Message-Id: <20100708200324.CD4B.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
+	Thu, 8 Jul 2010 07:13:52 -0400
+Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Will Deacon <will.deacon@arm.com>, paulus <paulus@samba.org>,
+       stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <1277998793.1917.212.camel@laptop>
+References: <20100624142804.431553874@chello.nl>
+	 <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com>
+	 <1277464589.32034.276.camel@twins>
+	 <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com>
+	 <1277477401.32034.670.camel@twins> <1277994970.1917.184.camel@laptop>
+	 <1277996555.1917.205.camel@laptop>
+	 <20100701153112.GA13511@console-pimps.org>
+	 <1277998793.1917.212.camel@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  8 Jul 2010 20:06:52 +0900 (JST)
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 08 Jul 2010 13:13:42 +0200
+Message-ID: <1278587622.1900.79.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 2010-07-08 at 19:57 +0900, KOSAKI Motohiro wrote:
-> > > On Thu, 2010-07-08 at 03:39 -0700, Michel Lespinasse wrote:
-> > > > 
-> > > > 
-> > > >         One way to fix this is to have T4 wake from the oom queue and return an
-> > > >         allocation failure instead of insisting on going oom itself when T1
-> > > >         decides to take down the task.
-> > > > 
-> > > > How would you have T4 figure out the deadlock situation ? T1 is taking down T2, not T4... 
-> > > 
-> > > If T2 and T4 share a mmap_sem they belong to the same process. OOM takes
-> > > down the whole process by sending around signals of sorts (SIGKILL?), so
-> > > if T4 gets a fatal signal while it is waiting to enter the oom thingy,
-> > > have it abort and return an allocation failure.
-> > > 
-> > > That alloc failure (along with a pending fatal signal) will very likely
-> > > lead to the release of its mmap_sem (if not, there's more things to
-> > > cure).
-> > > 
-> > > At which point the cycle is broken an stuff continues as it was
-> > > intended.
-> > 
-> > Now, I've reread current code. I think mmotm already have this.
+On Thu, 2010-07-01 at 17:39 +0200, Peter Zijlstra wrote:
 > 
-> <snip code>
-> 
-> [ small note on that we really should kill __GFP_NOFAIL, its utter
-> deadlock potential ]
+> Ah, for sampling for sure, simply group a software perf event and a
+> hardware perf event together and use PERF_SAMPLE_READ. 
 
-I disagree. __GFP_NOFAIL mean this allocation failure can makes really
-dangerous result. Instead, OOM-Killer should try to kill next process.
-I think.
+So the idea is to sample using a software event (periodic timer of
+sorts, maybe randomize it) and weight its samples by the hardware event
+deltas.
 
-> > Thought?
-> 
-> So either its not working or google never tried that code?
+Suppose you have a workload consisting of two main parts:
 
-Michel?
+  my_important_work()
+  {
+     load_my_data();
+     compute_me_silly();
+  }
+
+Now, lets assume that both these functions take the same time to
+complete for each part of work. In that case a periodic timer generate
+samples that are about 50/50 distributed between these two functions.
+
+Now, let us further assume that load_my_data() is so slow because its
+missing all the caches and compute_me_silly() is slow because its
+defeating the branch predictor.
+
+So what we want to end up with, is that when we sample for cache-misses
+we get load_my_data() as the predominant function, not a nice 50/50
+relation. Idem for branch misses and compute_me_silly().
+
+By weighting the samples by the hw counter delta we get this, if we
+assume that the sampling frequency is not a harmonic of the runtime of
+these functions, then statistics will dtrt.
+
+It basically generates a massive skid on the sample, but as long as most
+of the samples end up hitting the right function we're good. For a
+periodic workload like: 
+  while (lots) { my_important_work() }
+that is even true for period > function_runtime with the exception of
+that harmonic thing. For less neat workloads like:
+  while (lots) { my_important_work(); other_random_things(); }
+This doesn't need to work unless period < function_runtime.
+
+Clearly we cannot attribute anything to the actual instruction hit due
+to the massive skid, but we can (possibly) say something about the
+function based on these statistical rules.
 
 
