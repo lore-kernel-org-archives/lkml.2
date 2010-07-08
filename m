@@ -1,381 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab0GHQoh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 12:44:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55633 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab0GHQoe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 12:44:34 -0400
-Date: Thu, 8 Jul 2010 09:42:08 -0700
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com, dan.magenheimer@oracle.com
-Subject: [PATCH] Cleancache: shim to Xen Transcendent Memory
-Message-ID: <20100708164208.GA11763@ca-server1.us.oracle.com>
-MIME-Version: 1.0
+	id S1755834Ab0GHQpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 12:45:08 -0400
+Received: from lo.gmane.org ([80.91.229.12]:39387 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754776Ab0GHQpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 12:45:06 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Michael Leun <lkml20100708@newton.leun.net>
+Subject: sysfs bug when using tun with network namespaces
+Date: Thu, 8 Jul 2010 16:40:09 +0000 (UTC)
+Message-ID: <loom.20100708T183152-326@post.gmane.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4C360039.01DC:SCFMA4539814,ss=1,fgs=0
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 109.91.220.65 (Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.6) Gecko/20100625 Firefox/3.6.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH] Cleancache: shim to Xen Transcendent Memory
+Hello,
 
-This companion patch to the cleancache V3 patchset (see
-http://lkml.org/lkml/2010/6/21/411) provides one consumer
-for the proposed cleancache internal kernel API.  This
-user is Xen Transcendent Memory ("tmem"), supported in Xen 4.0+.
-(A second user, zcache, will be posted by Nitin Gupta soon.)
+> # tunctl -u ml -t tap1
 
-This patch affects Xen directories only; while broader review
-is welcome, the patch is provided primarily to answer concerns
-expressed about the apparent non-existence of consumers for
-the proposed cleancache patch.
+works as expected, but
 
-Xen tmem provides "hypervisor RAM" as an ephemeral page-oriented
-pseudo-RAM store for cleancache pages, shared cleancache pages,
-and frontswap pages.  Tmem provides enterprise-quality concurrency,
-full save/restore and live migration support, compression
-and deduplication.
+> # unshare -n /bin/bash
+> # tunctl -u ml -t tap1
 
-A presentation showing up to 8% faster performance and up to 52%
-reduction in sectors read on a kernel compile workload, despite
-aggressive in-kernel page reclamation ("self-ballooning") can be
-found at:
+Jul  8 18:03:59 doris kernel: ------------[ cut here ]------------
+Jul  8 18:03:59 doris kernel: kernel BUG at fs/sysfs/file.c:540!
+Jul  8 18:03:59 doris kernel: invalid opcode: 0000 [#1] PREEMPT SMP 
+Jul  8 18:03:59 doris kernel: last sysfs file: /sys/devices/virtual/misc/tun/dev
+Jul  8 18:03:59 doris kernel: Modules linked in: tun snd_pcm_oss snd_mixer_oss
+snd_seq snd_seq_device vboxnetadp vboxnetflt vboxdrv ipv6 cpufreq_conservative
+cpufreq_ondemand cpufreq_userspace cpufreq_powersave acpi_cpufreq speedstep_lib
+freq_table ipt_REJECT ipt_LOG xt_limit xt_recent xt_state xt_tcpudp
+iptable_mangle iptable_nat iptable_filter nf_nat_ftp nf_nat nf_conntrack_ipv4
+nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack ip_tables x_tables fuse nls_utf8
+loop snd_hda_codec_realtek arc4 snd_hda_intel ecb snd_hda_codec iwlagn snd_pcm
+iwlcore snd_timer mac80211 snd cfg80211 soundcore intel_agp video usb_storage
+agpgart i2c_i801 rfkill snd_page_alloc output button battery ac joydev sg evdev
+tg3 edd ext4 jbd2 crc16 sha256_generic aes_i586 aes_generic cbc dm_crypt linear
+rtc_cmos uhci_hcd rtc_core rtc_lib sd_mod crc_t10dif ehci_hcd usbcore
+dm_snapshot dm_mod fan processor thermal [last unloaded: tun]
+Jul  8 18:03:59 doris kernel:
+Jul  8 18:03:59 doris kernel: Pid: 4320, comm: tunctl Not tainted 2.6.34.1 #3
+Kuril                           /40684JG         
+Jul  8 18:03:59 doris kernel: EIP: 0060:[<c03129e1>] EFLAGS: 00010246 CPU: 0
+Jul  8 18:03:59 doris kernel: EIP is at sysfs_create_file+0x21/0x30
+Jul  8 18:03:59 doris kernel: EAX: 00000000 EBX: f66a73c0 ECX: f66a72bc EDX:
+f81587b4
+Jul  8 18:03:59 doris kernel: ESI: 00000000 EDI: f67a7f00 EBP: f68ade90 ESP:
+f68ade90
+Jul  8 18:03:59 doris kernel: DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Jul  8 18:03:59 doris kernel: Process tunctl (pid: 4320, ti=f68ac000
+task=f66e8f40 task.ti=f68ac000)
+Jul  8 18:03:59 doris kernel: Stack:
+Jul  8 18:03:59 doris kernel: f68ade98 c03e6da3 f68adf00 f8157fe0 f8158700
+f48496c0 00000001 f66a7000
+Jul  8 18:03:59 doris kernel: <0> f6b63c00 bfe0fafc f68aded0 00000000 00000000
+000000ca b777a000 c1fbcca0
+Jul  8 18:03:59 doris kernel: <0> 356e7574 00000000 00000000 00000000 00001001
+00000000 00000000 00000000
+Jul  8 18:03:59 doris kernel: Call Trace:
+Jul  8 18:03:59 doris kernel: [<c03e6da3>] ? device_create_file+0x13/0x20
+Jul  8 18:03:59 doris kernel: [<f8157fe0>] ? tun_chr_ioctl+0x820/0xa26 [tun]
+Jul  8 18:03:59 doris kernel: [<c02cd91d>] ? vfs_ioctl+0x2d/0xc0
+Jul  8 18:03:59 doris kernel: [<f81577c0>] ? tun_chr_ioctl+0x0/0xa26 [tun]
+Jul  8 18:03:59 doris kernel: [<c02cdafa>] ? do_vfs_ioctl+0x6a/0x5a0
+Jul  8 18:03:59 doris kernel: [<c021fc10>] ? do_page_fault+0x0/0x370
+Jul  8 18:03:59 doris kernel: [<c021fdc4>] ? do_page_fault+0x1b4/0x370
+Jul  8 18:03:59 doris kernel: [<c02d5b8a>] ? alloc_fd+0xba/0x100
+Jul  8 18:03:59 doris kernel: [<c02ca976>] ? putname+0x26/0x40
+Jul  8 18:03:59 doris kernel: [<c02be80e>] ? do_sys_open+0xee/0x110
+Jul  8 18:03:59 doris kernel: [<c02ce08f>] ? sys_ioctl+0x5f/0x80
+Jul  8 18:03:59 doris kernel: [<c02be899>] ? sys_open+0x29/0x40
+Jul  8 18:03:59 doris kernel: [<c0202e13>] ? sysenter_do_call+0x12/0x22
+Jul  8 18:03:59 doris kernel: Code: 00 00 00 00 8d bf 00 00 00 00 55 85 c0 89 e5
+74 1a 8b 40 18 85 d2 74 13 85 c0 74 0f b9 02 00 00 00 e8 34 ff ff ff c9 8d 76 00
+c3 <0f> 0b eb fe 8d 74 26 00 8d bc 27 00 00 00 00 55 89 e5 57 31 ff 
+Jul  8 18:03:59 doris kernel: EIP: [<c03129e1>] sysfs_create_file+0x21/0x30
+SS:ESP 0068:f68ade90
+Jul  8 18:03:59 doris kernel: ---[ end trace 3ce86c182470888c ]---
 
-http://oss.oracle.com/projects/tmem/dist/documentation/presentations/TranscendentMemoryXenSummit2010.pdf
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+No vmlinux specified, assuming /lib/modules/2.6.34.1/build/vmlinux             
+                
+ c03129c3:      89 e5                   mov    %esp,%ebp           |  %esp =
+f68ade90           
+ c03129c5:      74 1a                   je     c03129e1 <sysfs_create_file+0x21>
+               
+ c03129c7:      8b 40 18                mov    0x18(%eax),%eax
+ c03129ca:      85 d2                   test   %edx,%edx           |  %edx =>
+f81587b4
+ c03129cc:      74 13                   je     c03129e1 <sysfs_create_file+0x21>
+ c03129ce:      85 c0                   test   %eax,%eax           |  %eax => 0
+ c03129d0:      74 0f                   je     c03129e1 <sysfs_create_file+0x21>
+ c03129d2:      b9 02 00 00 00          mov    $0x2,%ecx           |  %ecx =>
+f66a72bc
+ c03129d7:      e8 34 ff ff ff          call   c0312910 <sysfs_add_file>
+ c03129dc:      c9                      leave
+ c03129dd:      8d 76 00                lea    0x0(%esi),%esi      |  %esi => 0
+ c03129e0:      c3                      ret
+*c03129e1:      0f 0b                   ud2a    <--- faulting instruction
+ c03129e3:      eb fe                   jmp    c03129e3 <sysfs_create_file+0x23>
+ c03129e5:      8d 74 26 00             lea    0x0(%esi,%eiz,1),%esi
+ c03129e9:      8d bc 27 00 00 00 00    lea    0x0(%edi,%eiz,1),%edi
 
-Diffstat:
- arch/x86/include/asm/xen/hypercall.h     |    7 
- drivers/xen/Makefile                     |    2 
- drivers/xen/tmem.c                       |  238 +++++++++++++++++++++
- include/xen/interface/xen.h              |   20 +
- 4 files changed, 266 insertions(+), 1 deletion(-)
+ c03129f0 <sysfs_create_files>:
+ c03129f0:      55                      push   %ebp
+ c03129f1:      89 e5                   mov    %esp,%ebp
+ c03129f3:      57                      push   %edi
+ c03129f4:      31 ff                   xor    %edi,%edi
+ c03129f6:      56                      push   %esi
+ c03129f7:      89 d6                   mov    %edx,%esi
+ c03129f9:      53                      push   %ebx
+ c03129fa:      31 db                   xor    %ebx,%ebx
+ c03129fc:      83 ec 04                sub    $0x4,%esp
+ c03129ff:      89 45 f0                mov    %eax,-0x10(%ebp)
+ c0312a02:      8b 12                   mov    (%edx),%edx
+ c0312a04:      85 d2                   test   %edx,%edx
+ c0312a06:      74 3b                   je     c0312a43 <sysfs_create_files+0x53>
+ c0312a08:      90                      nop
+ c0312a09:      8d b4 26 00 00 00 00    lea    0x0(%esi,%eiz,1),%esi
+ c0312a10:      8b 45 f0                mov    -0x10(%ebp),%eax
+ c0312a13:      e8 a8 ff ff ff          call   c03129c0 <sysfs_create_file>
 
-diff -Napur linux-2.6.35-rc4/arch/x86/include/asm/xen/hypercall.h linux-2.6.35-rc4-cleancache_tmem/arch/x86/include/asm/xen/hypercall.h
---- linux-2.6.35-rc4/arch/x86/include/asm/xen/hypercall.h	2010-07-04 21:22:50.000000000 -0600
-+++ linux-2.6.35-rc4-cleancache_tmem/arch/x86/include/asm/xen/hypercall.h	2010-07-07 15:37:46.000000000 -0600
-@@ -417,6 +417,13 @@ HYPERVISOR_nmi_op(unsigned long op, unsi
- 	return _hypercall2(int, nmi_op, op, arg);
- }
- 
-+static inline int
-+HYPERVISOR_tmem_op(
-+	struct tmem_op *op)
-+{
-+	return _hypercall1(int, tmem_op, op);
-+}
-+
- static inline void
- MULTI_fpu_taskswitch(struct multicall_entry *mcl, int set)
- {
-diff -Napur linux-2.6.35-rc4/drivers/xen/Makefile linux-2.6.35-rc4-cleancache_tmem/drivers/xen/Makefile
---- linux-2.6.35-rc4/drivers/xen/Makefile	2010-07-04 21:22:50.000000000 -0600
-+++ linux-2.6.35-rc4-cleancache_tmem/drivers/xen/Makefile	2010-07-07 09:38:21.000000000 -0600
-@@ -1,5 +1,6 @@
- obj-y	+= grant-table.o features.o events.o manage.o
- obj-y	+= xenbus/
-+obj-y	+= tmem.o
- 
- nostackp := $(call cc-option, -fno-stack-protector)
- CFLAGS_features.o			:= $(nostackp)
-@@ -9,4 +10,4 @@ obj-$(CONFIG_XEN_XENCOMM)	+= xencomm.o
- obj-$(CONFIG_XEN_BALLOON)	+= balloon.o
- obj-$(CONFIG_XEN_DEV_EVTCHN)	+= evtchn.o
- obj-$(CONFIG_XENFS)		+= xenfs/
--obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
-\ No newline at end of file
-+obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
-diff -Napur linux-2.6.35-rc4/drivers/xen/tmem.c linux-2.6.35-rc4-cleancache_tmem/drivers/xen/tmem.c
---- linux-2.6.35-rc4/drivers/xen/tmem.c	1969-12-31 17:00:00.000000000 -0700
-+++ linux-2.6.35-rc4-cleancache_tmem/drivers/xen/tmem.c	2010-07-07 16:24:08.000000000 -0600
-@@ -0,0 +1,238 @@
-+/*
-+ * Xen implementation for transcendent memory (tmem)
-+ *
-+ * Copyright (C) 2009-2010 Oracle Corp.  All rights reserved.
-+ * Author: Dan Magenheimer
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/init.h>
-+#include <linux/pagemap.h>
-+#include <linux/cleancache.h>
-+
-+#include <xen/xen.h>
-+#include <xen/interface/xen.h>
-+#include <asm/xen/hypercall.h>
-+#include <asm/xen/page.h>
-+#include <asm/xen/hypervisor.h>
-+
-+#define TMEM_CONTROL               0
-+#define TMEM_NEW_POOL              1
-+#define TMEM_DESTROY_POOL          2
-+#define TMEM_NEW_PAGE              3
-+#define TMEM_PUT_PAGE              4
-+#define TMEM_GET_PAGE              5
-+#define TMEM_FLUSH_PAGE            6
-+#define TMEM_FLUSH_OBJECT          7
-+#define TMEM_READ                  8
-+#define TMEM_WRITE                 9
-+#define TMEM_XCHG                 10
-+
-+/* Bits for HYPERVISOR_tmem_op(TMEM_NEW_POOL) */
-+#define TMEM_POOL_PERSIST          1
-+#define TMEM_POOL_SHARED           2
-+#define TMEM_POOL_PAGESIZE_SHIFT   4
-+
-+
-+struct tmem_pool_uuid {
-+	u64 uuid_lo;
-+	u64 uuid_hi;
-+};
-+
-+#define TMEM_POOL_PRIVATE_UUID	{ 0, 0 }
-+
-+/* flags for tmem_ops.new_pool */
-+#define TMEM_POOL_PERSIST          1
-+#define TMEM_POOL_SHARED           2
-+
-+/* xen tmem foundation ops/hypercalls */
-+
-+static inline int xen_tmem_op(u32 tmem_cmd, u32 tmem_pool, u64 object,
-+	u32 index, unsigned long gmfn, u32 tmem_offset, u32 pfn_offset, u32 len)
-+{
-+	struct tmem_op op;
-+	int rc = 0;
-+
-+	op.cmd = tmem_cmd;
-+	op.pool_id = tmem_pool;
-+	op.u.gen.object = object;
-+	op.u.gen.index = index;
-+	op.u.gen.tmem_offset = tmem_offset;
-+	op.u.gen.pfn_offset = pfn_offset;
-+	op.u.gen.len = len;
-+	set_xen_guest_handle(op.u.gen.gmfn, (void *)gmfn);
-+	rc = HYPERVISOR_tmem_op(&op);
-+	return rc;
-+}
-+
-+static int xen_tmem_new_pool(struct tmem_pool_uuid uuid,
-+				u32 flags, unsigned long pagesize)
-+{
-+	struct tmem_op op;
-+	int rc = 0, pageshift;
-+
-+	for (pageshift = 0; pagesize != 1; pageshift++)
-+		pagesize >>= 1;
-+	flags |= (pageshift - 12) << TMEM_POOL_PAGESIZE_SHIFT;
-+	op.cmd = TMEM_NEW_POOL;
-+	op.u.new.uuid[0] = uuid.uuid_lo;
-+	op.u.new.uuid[1] = uuid.uuid_hi;
-+	op.u.new.flags = flags;
-+	rc = HYPERVISOR_tmem_op(&op);
-+	return rc;
-+}
-+
-+/* xen generic tmem ops */
-+
-+static int xen_tmem_put_page(u32 pool_id, u64 object, u32 index,
-+	unsigned long pfn)
-+{
-+	unsigned long gmfn = xen_pv_domain() ? pfn_to_mfn(pfn) : pfn;
-+
-+	return xen_tmem_op(TMEM_PUT_PAGE, pool_id, object, index,
-+		gmfn, 0, 0, 0);
-+}
-+
-+static int xen_tmem_get_page(u32 pool_id, u64 object, u32 index,
-+	unsigned long pfn)
-+{
-+	unsigned long gmfn = xen_pv_domain() ? pfn_to_mfn(pfn) : pfn;
-+
-+	return xen_tmem_op(TMEM_GET_PAGE, pool_id, object, index,
-+		gmfn, 0, 0, 0);
-+}
-+
-+static int xen_tmem_flush_page(u32 pool_id, u64 object, u32 index)
-+{
-+	return xen_tmem_op(TMEM_FLUSH_PAGE, pool_id, object, index,
-+		0, 0, 0, 0);
-+}
-+
-+static int xen_tmem_flush_object(u32 pool_id, u64 object)
-+{
-+	return xen_tmem_op(TMEM_FLUSH_OBJECT, pool_id, object, 0, 0, 0, 0, 0);
-+}
-+
-+static int xen_tmem_destroy_pool(u32 pool_id)
-+{
-+	return xen_tmem_op(TMEM_DESTROY_POOL, pool_id, 0, 0, 0, 0, 0, 0);
-+}
-+
-+int tmem_enabled;
-+
-+static int __init enable_tmem(char *s)
-+{
-+	tmem_enabled = 1;
-+	return 1;
-+}
-+
-+__setup("tmem", enable_tmem);
-+
-+/* cleancache ops */
-+
-+static void tmem_cleancache_put_page(int pool, ino_t inode, pgoff_t index,
-+				     struct page *page)
-+{
-+	u32 ind = (u32) index;
-+	unsigned long pfn = page_to_pfn(page);
-+
-+	if (pool < 0)
-+		return;
-+	if (ind != index)
-+		return;
-+	mb(); /* ensure page is quiescent; tmem may address it with an alias */
-+	(void)xen_tmem_put_page((u32)pool, (u64)inode, ind, pfn);
-+}
-+
-+static int tmem_cleancache_get_page(int pool, ino_t inode, pgoff_t index,
-+				    struct page *page)
-+{
-+	u32 ind = (u32) index;
-+	unsigned long pfn = page_to_pfn(page);
-+	int ret;
-+
-+	/* translate return values to linux semantics */
-+	if (pool < 0)
-+		return -1;
-+	if (ind != index)
-+		return -1;
-+	ret = xen_tmem_get_page((u32)pool, (u64)inode, ind, pfn);
-+	if (ret == 1)
-+		return 0;
-+	else
-+		return -1;
-+}
-+
-+static void tmem_cleancache_flush_page(int pool, ino_t inode, pgoff_t index)
-+{
-+	u32 ind = (u32) index;
-+
-+	if (pool < 0)
-+		return;
-+	if (ind != index)
-+		return;
-+	(void)xen_tmem_flush_page((u32)pool, (u64)inode, ind);
-+}
-+
-+static void tmem_cleancache_flush_inode(int pool, ino_t inode)
-+{
-+	if (pool < 0)
-+		return;
-+	(void)xen_tmem_flush_object((u32)pool, (u64)inode);
-+}
-+
-+static void tmem_cleancache_flush_fs(int pool)
-+{
-+	if (pool < 0)
-+		return;
-+	(void)xen_tmem_destroy_pool((u32)pool);
-+}
-+
-+static int tmem_cleancache_init_fs(size_t pagesize)
-+{
-+	struct tmem_pool_uuid uuid_private = TMEM_POOL_PRIVATE_UUID;
-+
-+	return xen_tmem_new_pool(uuid_private, 0, pagesize);
-+}
-+
-+static int tmem_cleancache_init_shared_fs(char *uuid, size_t pagesize)
-+{
-+	struct tmem_pool_uuid shared_uuid;
-+
-+	shared_uuid.uuid_lo = *(u64 *)uuid;
-+	shared_uuid.uuid_hi = *(u64 *)(&uuid[8]);
-+	return xen_tmem_new_pool(shared_uuid, TMEM_POOL_SHARED, pagesize);
-+}
-+
-+static int use_cleancache = 1;
-+
-+static int __init no_cleancache(char *s)
-+{
-+	use_cleancache = 0;
-+	return 1;
-+}
-+
-+__setup("nocleancache", no_cleancache);
-+
-+static int __init xen_tmem_init(void)
-+{
-+	if (!xen_domain())
-+		return 0;
-+#ifdef CONFIG_CLEANCACHE
-+	if (tmem_enabled && use_cleancache) {
-+		cleancache_ops.put_page = tmem_cleancache_put_page;
-+		cleancache_ops.get_page = tmem_cleancache_get_page;
-+		cleancache_ops.flush_page = tmem_cleancache_flush_page;
-+		cleancache_ops.flush_inode = tmem_cleancache_flush_inode;
-+		cleancache_ops.flush_fs = tmem_cleancache_flush_fs;
-+		cleancache_ops.init_shared_fs = tmem_cleancache_init_shared_fs;
-+		cleancache_ops.init_fs = tmem_cleancache_init_fs;
-+		printk(KERN_INFO "cleancache enabled, RAM provided by "
-+				 "Xen Transcendent Memory\n");
-+	}
-+#endif
-+	return 0;
-+}
-+
-+module_init(xen_tmem_init)
-diff -Napur linux-2.6.35-rc4/include/xen/interface/xen.h linux-2.6.35-rc4-cleancache_tmem/include/xen/interface/xen.h
---- linux-2.6.35-rc4/include/xen/interface/xen.h	2010-07-04 21:22:50.000000000 -0600
-+++ linux-2.6.35-rc4-cleancache_tmem/include/xen/interface/xen.h	2010-07-07 16:24:06.000000000 -0600
-@@ -58,6 +58,7 @@
- #define __HYPERVISOR_event_channel_op     32
- #define __HYPERVISOR_physdev_op           33
- #define __HYPERVISOR_hvm_op               34
-+#define __HYPERVISOR_tmem_op              38
- 
- /* Architecture-specific hypercall definitions. */
- #define __HYPERVISOR_arch_0               48
-@@ -461,6 +462,25 @@ typedef uint8_t xen_domain_handle_t[16];
- #define __mk_unsigned_long(x) x ## UL
- #define mk_unsigned_long(x) __mk_unsigned_long(x)
- 
-+struct tmem_op {
-+	uint32_t cmd;
-+	int32_t pool_id;
-+	union {
-+		struct {  /* for cmd == TMEM_NEW_POOL */
-+			uint64_t uuid[2];
-+			uint32_t flags;
-+		} new;
-+		struct {
-+			uint64_t object;
-+			uint32_t index;
-+			uint32_t tmem_offset;
-+			uint32_t pfn_offset;
-+			uint32_t len;
-+			GUEST_HANDLE(void) gmfn; /* guest machine page frame */
-+		} gen;
-+	} u;
-+};
-+
- #else /* __ASSEMBLY__ */
- 
- /* In assembly code we cannot use C numeric constant suffixes. */
+-- 
+Best Regards,
+
+Michael
+
