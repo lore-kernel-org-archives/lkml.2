@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab0GHLEB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 07:04:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22195 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866Ab0GHLD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 07:03:59 -0400
-Date: Thu, 8 Jul 2010 14:03:34 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Peter Palfrader <peter@palfrader.org>, Glauber Costa <glommer@redhat.com>,
-       Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Zachary Amsden <zamsden@redhat.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization
- point for pvclock
-Message-ID: <20100708110334.GT4689@redhat.com>
-References: <20100701175144.GA2116@kroah.com>
- <20100701173218.125822294@clark.site>
- <20100707124731.GJ15122@anguilla.noreply.org>
- <20100707135140.GI2707@mothafucka.localdomain>
- <20100707143338.GK15122@anguilla.noreply.org>
- <20100707151540.GH4689@redhat.com>
- <20100707200536.GL15122@anguilla.noreply.org>
- <20100708053100.GJ4689@redhat.com>
- <20100708085114.GM15122@anguilla.noreply.org>
+	id S1756196Ab0GHLG7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 07:06:59 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49965 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab0GHLG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 07:06:58 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: FYI: mmap_sem OOM patch
+Cc: kosaki.motohiro@jp.fujitsu.com, Michel Lespinasse <walken@google.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Divyesh Shah <dpshah@google.com>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1278586921.1900.67.camel@laptop>
+References: <20100708195421.CD48.A69D9226@jp.fujitsu.com> <1278586921.1900.67.camel@laptop>
+Message-Id: <20100708200324.CD4B.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100708085114.GM15122@anguilla.noreply.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  8 Jul 2010 20:06:52 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 10:51:14AM +0200, Peter Palfrader wrote:
-> On Thu, 08 Jul 2010, Gleb Natapov wrote:
-> 
-> > > > And what if you provide -cpu qemu64,-kvmclock to qemu command line?
+> On Thu, 2010-07-08 at 19:57 +0900, KOSAKI Motohiro wrote:
+> > > On Thu, 2010-07-08 at 03:39 -0700, Michel Lespinasse wrote:
+> > > > 
+> > > > 
+> > > >         One way to fix this is to have T4 wake from the oom queue and return an
+> > > >         allocation failure instead of insisting on going oom itself when T1
+> > > >         decides to take down the task.
+> > > > 
+> > > > How would you have T4 figure out the deadlock situation ? T1 is taking down T2, not T4... 
 > > > 
-> > > Adding that to the glob of options that already were there from libvirt
-> > > didn't disable it, but using an LD_PRELOAD wrapper[1] to that purpose on
-> > > the host when starting kvm did help.
+> > > If T2 and T4 share a mmap_sem they belong to the same process. OOM takes
+> > > down the whole process by sending around signals of sorts (SIGKILL?), so
+> > > if T4 gets a fatal signal while it is waiting to enter the oom thingy,
+> > > have it abort and return an allocation failure.
 > > > 
-> > Strange. -kvmclock should have had the same effect. What qemu is it?
-> > What is your command line?
+> > > That alloc failure (along with a pending fatal signal) will very likely
+> > > lead to the release of its mmap_sem (if not, there's more things to
+> > > cure).
+> > > 
+> > > At which point the cycle is broken an stuff continues as it was
+> > > intended.
+> > 
+> > Now, I've reread current code. I think mmotm already have this.
 > 
-> | QEMU PC emulator version 0.11.1 (qemu-kvm-0.11.1), Copyright (c) 2003-2008 Fabrice Bellard
-> from the debian package qemu-kvm (0.11.1+dfsg-1~bpo50+1)
-That explain it. 0.11 is really old. Don't have this ability.
+> <snip code>
+> 
+> [ small note on that we really should kill __GFP_NOFAIL, its utter
+> deadlock potential ]
 
-> [should we trim the CC list?  If yes, to what?]
-Better not to.
+I disagree. __GFP_NOFAIL mean this allocation failure can makes really
+dangerous result. Instead, OOM-Killer should try to kill next process.
+I think.
 
---
-			Gleb.
+> > Thought?
+> 
+> So either its not working or google never tried that code?
+
+Michel?
+
+
