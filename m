@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab0GHMXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 08:23:12 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:47827 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754969Ab0GHMXL convert rfc822-to-8bit (ORCPT
+	id S1756619Ab0GHMXo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 08:23:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:51228 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754969Ab0GHMXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 08:23:11 -0400
-Subject: Re: high power consumption in recent kernels
-From: Peter Zijlstra <peterz@infradead.org>
-To: Norbert Preining <preining@logic.at>
-Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, akpm <akpm@linux-foundation.org>,
-       Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20100708120421.GF20841@gamma.logic.tuwien.ac.at>
-References: <20100706164539.GA14783@gamma.logic.tuwien.ac.at>
-	 <1278579992.1900.17.camel@laptop> <20100708045711.398d4e26@infradead.org>
-	 <1278590303.1900.91.camel@laptop>
-	 <20100708120421.GF20841@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 08 Jul 2010 14:22:59 +0200
-Message-ID: <1278591779.1900.97.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 8 Jul 2010 08:23:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Boaz Harrosh <openosd@gmail.com>
+Subject: Re: [PATCH 16/18] llseek: automatically add .llseek fop
+Date: Thu, 8 Jul 2010 14:23:34 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Christoph Hellwig <hch@lst.de>, Julia Lawall <julia@diku.dk>,
+       Christoph Hellwig <hch@infradead.org>
+References: <1278538820-1392-1-git-send-email-arnd@arndb.de> <1278538820-1392-17-git-send-email-arnd@arndb.de> <4C35C1F6.70902@gmail.com>
+In-Reply-To: <4C35C1F6.70902@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007081423.34877.arnd@arndb.de>
+X-Provags-ID: V02:K0:PQRtgbgcwsARi+hYap9z0ooPxsidX1205gbp3aSbFzj
+ jRjZoY6a9lkjUj+zfihCEcN8qmLLs+qF4EYpEHDPiecCeCBvVB
+ G/5gcxz/QDI9T7YdtE6z7KYy13i+AaB0FADP6NFgIOuxIYBJ6r
+ kMfcjotsJssQzw45OxoMjq6g48jevlIku9Ko+A7IWnW864Eqqz
+ wSbrPpvXpw6SX/nAlC6Mw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 21:04 +0900, Norbert Preining wrote:
+On Thursday 08 July 2010, Boaz Harrosh wrote:
+> On 07/08/2010 12:40 AM, Arnd Bergmann wrote:
+> > 
+> > This specific posted version of the patch only
+> > covers first few files in order to avoid
+> > spamming everybody's inbox. I think you still
+> > get the point. The diffstat is complete, and
+> > the full patch is available in the 'llseek'
+> > branch of
+> > git://git.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git
+> > 
+> <snip>
+> 
+> I only got up to here in the email. (See ml sig below)
+> Do you have this on git or better gitweb somewhere?
 
-> Just one more point, searching a bit more in the net I found the following
-> patch (forgot who wrote it) which I merged into my current git:
+Yes. I was afraid people might reply the patch and quote the
+entire 500kb email without cutting the bits they haven't actually
+read ;-)
 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index a878b53..f26efba 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -3248,6 +3248,9 @@ int select_nohz_load_balancer(int stop_tick)
->         if (stop_tick) {
->                 cpu_rq(cpu)->in_nohz_recently = 1;
->  
-> +               if (!mc_capable())
-> +                       return 0;
-> +
->                 if (!cpu_active(cpu)) {
->                         if (atomic_read(&nohz.load_balancer) != cpu)
->                                 return 0;
-> @@ -3297,6 +3300,9 @@ int select_nohz_load_balancer(int stop_tick)
->                 if (!cpumask_test_cpu(cpu, nohz.cpu_mask))
->                         return 0;
->  
-> +               if (!mc_capable())
-> +                       return 0;
-> +
->                 cpumask_clear_cpu(cpu, nohz.cpu_mask);
->  
->                 if (atomic_read(&nohz.load_balancer) == cpu)
+FWIW, you can get the whole patch from
+http://git.kernel.org/?p=linux/kernel/git/arnd/bkl.git;a=patch;h=dc731e01d2a08eb66ae08c226c97aa0cb8cf7b7f
 
-Right, so that is a buggy patch, see the original discussion:
-  http://lkml.org/lkml/2010/4/26/249
-
-> which looks better
-
-The thing is, we didn't change that code recently, the patches that are
-supposed to cure the nohz balancer are still pending (in -tip and
--next).
-
-That said, we did frob something with the whole nohz thing, does the
-below cure anything:
-
----
- kernel/time/tick-sched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 813993b..9bc8029 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -325,7 +325,7 @@ void tick_nohz_stop_sched_tick(int inidle)
- 	} while (read_seqretry(&xtime_lock, seq));
- 
- 	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
--	    arch_needs_cpu(cpu) || nohz_ratelimit(cpu)) {
-+	    arch_needs_cpu(cpu) /* || nohz_ratelimit(cpu) */) {
- 		next_jiffies = last_jiffies + 1;
- 		delta_jiffies = 1;
- 	} else {
-
+	Arnd
