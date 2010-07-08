@@ -1,83 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758596Ab0GHU3c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 16:29:32 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36035 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755019Ab0GHU3a convert rfc822-to-8bit (ORCPT
+	id S1756770Ab0GHUdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 16:33:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49625 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752438Ab0GHUdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 16:29:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=IgeLWAMcPl9OzvWPd36iDvIhVqLfN84UCJFWpG1aSqAD4/gCE7OPMMy0dtMFimwd4a
-         q3qJRpFNxZUvYOo2yfr8nAhwjtEEC6JjS2RR4MXqJAdRys55PjRwKJlGTXBU1cHs1ebP
-         w74KrPInazFIC7nIlaxT2cHYlGluYuqpx3z2k=
-MIME-Version: 1.0
-In-Reply-To: <20100708193013.GA3464@kroah.com>
-References: <1277594847-19171-1-git-send-email-silvagustavo@users.sourceforge.net>
-	<4C29CF3F.4070500@ge.com>
-	<4C31A352.10807@ge.com>
-	<20100708193013.GA3464@kroah.com>
-Date: Thu, 8 Jul 2010 15:29:29 -0500
-Message-ID: <AANLkTikVdusBQePKK0C_txmto9bnD_s7QYEetPP4WlwR@mail.gmail.com>
-Subject: Re: [PATCH 4/4] Staging: vme: devices: fix coding style issues in 
-	vme_user.c
-From: Gustavo Silva <silvagustavosilva@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Martyn Welch <martyn.welch@ge.com>, devel@driverdev.osuosl.org,
-       gregkh@suse.de, linux-kernel@vger.kernel.org,
-       Gustavo Silva <silvagustavo@users.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 8 Jul 2010 16:33:03 -0400
+Date: Thu, 8 Jul 2010 13:31:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v2 2/2] vmscan: shrink_slab() require number of
+ lru_pages, not page order
+Message-Id: <20100708133152.5e556508.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1007080901460.9707@router.home>
+References: <20100708163401.CD34.A69D9226@jp.fujitsu.com>
+	<20100708163934.CD37.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1007080901460.9707@router.home>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/8 Greg KH <greg@kroah.com>:
-> On Mon, Jul 05, 2010 at 10:18:10AM +0100, Martyn Welch wrote:
->> Martyn Welch wrote:
->> > Gustavo Silva wrote:
->> >
->> >> This is a patch to the vme_user.c file that fixes up the following
->> >> issues:
->> >>
->> >> WARNING: please, no space before tabs                                              x 12
->> >> ERROR: code indent should use tabs where possible                          x 15
->> >> WARNING: braces {} are not necessary for single statement blocks           x  2
->> >> WARNING: printk() should include KERN_ facility level                              x  3
->> >> ERROR: "foo * bar" should be "foo *bar"                                            x  1
->> >> ERROR: space required before the open brace '{'                                    x  3
->> >> WARNING: space prohibited between function name and open parenthesis '('   x  1
->> >> ERROR: spaces required around that '=' (ctx:VxV)                           x  2
->> >> ERROR: spaces required around that '<' (ctx:VxV)                           x  2
->> >> ERROR: space required after that ',' (ctx:VxV)                                     x  3
->> >> ERROR: spaces required around that '?' (ctx:VxW)                           x  1
->> >> ERROR: space required before the open parenthesis '('                              x  1
->> >> WARNING: braces {} are not necessary for single statement blocks           x  2
->> >>
->> >>
->> >>
->> >
->> > This looks very familiar - I'm sure there was a patch already on the
->> > mailing list doing this, but it has some issues which I don't think were
->> > ever addressed. This one looks good though.
->> >
->> >
->> Hmm, seems the earlier patch was fixed up and is now in linux-next, sorry.
->
-> Yeah, this doesn't apply :(
->
-> thanks,
->
-> greg k-h
->
+On Thu, 8 Jul 2010 09:04:18 -0500 (CDT)
+Christoph Lameter <cl@linux-foundation.org> wrote:
 
-Oh OK,
+> On Thu, 8 Jul 2010, KOSAKI Motohiro wrote:
+> 
+> > Fix simple argument error. Usually 'order' is very small value than
+> > lru_pages. then it can makes unnecessary icache dropping.
+> 
+> AFAICT this is not argument error but someone changed the naming of the
+> parameter.
 
-Thanks everybody for your answers.
-I will still trying more patches :)
+It's been there since day zero:
 
-Thanks and best regards,
-Gustavo Silva
+: commit 2a16e3f4b0c408b9e50297d2ec27e295d490267a
+: Author:     Christoph Lameter <clameter@engr.sgi.com>
+: AuthorDate: Wed Feb 1 03:05:35 2006 -0800
+: Commit:     Linus Torvalds <torvalds@g5.osdl.org>
+: CommitDate: Wed Feb 1 08:53:16 2006 -0800
+: 
+:     [PATCH] Reclaim slab during zone reclaim
+:     
+:     If large amounts of zone memory are used by empty slabs then zone_reclaim
+:     becomes uneffective.  This patch shakes the slab a bit.
+:     
+:     The problem with this patch is that the slab reclaim is not containable to a
+:     zone.  Thus slab reclaim may affect the whole system and be extremely slow.
+:     This also means that we cannot determine how many pages were freed in this
+:     zone.  Thus we need to go off node for at least one allocation.
+:     
+:     The functionality is disabled by default.
+:     
+:     We could modify the shrinkers to take a zone parameter but that would be quite
+:     invasive.  Better ideas are welcome.
+:     
+:     Signed-off-by: Christoph Lameter <clameter@sgi.com>
+:     Signed-off-by: Andrew Morton <akpm@osdl.org>
+:     Signed-off-by: Linus Torvalds <torvalds@osdl.org>
+: 
+: diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+: index 4bca2a3..a46c10f 100644
+: --- a/Documentation/sysctl/vm.txt
+: +++ b/Documentation/sysctl/vm.txt
+: @@ -137,6 +137,7 @@ This is value ORed together of
+:  1	= Zone reclaim on
+:  2	= Zone reclaim writes dirty pages out
+:  4	= Zone reclaim swaps pages
+: +8	= Also do a global slab reclaim pass
+:  
+:  zone_reclaim_mode is set during bootup to 1 if it is determined that pages
+:  from remote zones will cause a measurable performance reduction. The
+: @@ -160,6 +161,11 @@ Allowing regular swap effectively restricts allocations to the local
+:  node unless explicitly overridden by memory policies or cpuset
+:  configurations.
+:  
+: +It may be advisable to allow slab reclaim if the system makes heavy
+: +use of files and builds up large slab caches. However, the slab
+: +shrink operation is global, may take a long time and free slabs
+: +in all nodes of the system.
+: +
+:  ================================================================
+:  
+:  zone_reclaim_interval:
+: diff --git a/mm/vmscan.c b/mm/vmscan.c
+: index 9e2ef36..aa4b80d 100644
+: --- a/mm/vmscan.c
+: +++ b/mm/vmscan.c
+: @@ -1596,6 +1596,7 @@ int zone_reclaim_mode __read_mostly;
+:  #define RECLAIM_ZONE (1<<0)	/* Run shrink_cache on the zone */
+:  #define RECLAIM_WRITE (1<<1)	/* Writeout pages during reclaim */
+:  #define RECLAIM_SWAP (1<<2)	/* Swap pages out during reclaim */
+: +#define RECLAIM_SLAB (1<<3)	/* Do a global slab shrink if the zone is out of memory */
+:  
+:  /*
+:   * Mininum time between zone reclaim scans
+: @@ -1666,6 +1667,19 @@ int zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+:  
+:  	} while (sc.nr_reclaimed < nr_pages && sc.priority > 0);
+:  
+: +	if (sc.nr_reclaimed < nr_pages && (zone_reclaim_mode & RECLAIM_SLAB)) {
+: +		/*
+: +		 * shrink_slab does not currently allow us to determine
+: +		 * how many pages were freed in the zone. So we just
+: +		 * shake the slab and then go offnode for a single allocation.
+: +		 *
+: +		 * shrink_slab will free memory on all zones and may take
+: +		 * a long time.
+: +		 */
+: +		shrink_slab(sc.nr_scanned, gfp_mask, order);
+: +		sc.nr_reclaimed = 1;    /* Avoid getting the off node timeout */
+: +	}
+: +
+:  	p->reclaim_state = NULL;
+:  	current->flags &= ~PF_MEMALLOC;
+
+> The "lru_pages" parameter is really a division factor affecting
+> the number of pages scanned. This patch increases this division factor
+> significantly and therefore reduces the number of items scanned during
+> zone_reclaim.
+> 
+
+And for that reason I won't apply the patch.  I'd be crazy to do so. 
+It tosses away four years testing, replacing it with something which
+could have a large effect on reclaim behaviour, with no indication
+whether that effect is good or bad.
+
