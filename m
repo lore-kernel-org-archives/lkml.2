@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073Ab0GHBPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 21:15:49 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58560 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757396Ab0GHBPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 21:15:48 -0400
-Date: Thu, 8 Jul 2010 11:15:36 +1000
-From: Neil Brown <neilb@suse.de>
-To: "Takeo Tung" <kernel@takeo.idv.tw>
-Cc: "Christoph Hellwig" <hch@lst.de>, "Michal Marek" <mmarek@suse.cz>,
-       <linux-kernel@vger.kernel.org>, <viro@zeniv.linux.org.uk>,
-       <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] struct io panic on raid1 - Re: block: unify flags for
- struct bio and struct request will kernel panic
-Message-ID: <20100708111536.6068ca58@notabene.brown>
-In-Reply-To: <F0921DE61714438C86A1AB46A4E7F22D@TAKEOW7NB1>
-References: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1>
-	<4C129778.7040409@suse.cz>
-	<F8C0125B8F424A279E9679EAC24AC983@TAKEOW7NB1>
-	<20100612094937.GA12455@lst.de>
-	<F2CA952B7B5A41259C5F950CA3454C3A@TAKEOW7NB1>
-	<1AEF19B8648844C983F583EEBE9C46F4@TAKEOW7NB1>
-	<20100707231732.GA30007@lst.de>
-	<20100708094851.6dc6199d@notabene.brown>
-	<F0921DE61714438C86A1AB46A4E7F22D@TAKEOW7NB1>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1757990Ab0GHBSf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 21:18:35 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47772
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755971Ab0GHBSd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 21:18:33 -0400
+Date: Wed, 07 Jul 2010 18:18:47 -0700 (PDT)
+Message-Id: <20100707.181847.62350965.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, joe@perches.com, gregkh@suse.de
+Subject: Re: linux-next: build warning after merge of the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100707.174522.148565561.davem@davemloft.net>
+References: <20100706142542.d723903f.sfr@canb.auug.org.au>
+	<20100707.174522.148565561.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jul 2010 08:43:38 +0800
-"Takeo Tung" <kernel@takeo.idv.tw> wrote:
+From: David Miller <davem@davemloft.net>
+Date: Wed, 07 Jul 2010 17:45:22 -0700 (PDT)
 
-> Hello,
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 6 Jul 2010 14:25:42 +1000
 > 
-> ok. I rewrite the patch back to bool and re-add bio_rw_flagged fucntion. pls 
-> review it and any comment?
-
-I'm not sure why you did that.
-I meant to say that I liked the fact that you had changed from 'bool' to
-'unsigned long' and that I thought using 'bool' was unnecessary.  Maybe I
-didn't say that very clearly.
-
-It doesn't matter to me particularly which approach is used, but please don't
-re-introduce bio_rw_flagged because you think I want it - I don't.
-
-Thanks,
-NeilBrown
-
+>> After merging the net tree, today's linux-next build (powerpc
+>> ppc64_defconfig) produced these warnings:
+>> 
+>> drivers/scsi/sym53c8xx_2/sym_hipd.c: In function 'sym_print_msg':
+>> drivers/scsi/sym53c8xx_2/sym_hipd.c:78: warning: zero-length gnu_printf format string
 > 
-> Thanks,
-> Takeo Tung
-> 
-> --------------------------------------------------
-> From: "Neil Brown" <neilb@suse.de>
-> Sent: Thursday, July 08, 2010 7:48 AM
-> To: "Christoph Hellwig" <hch@lst.de>
-> Cc: "Takeo Tung" <kernel@takeo.idv.tw>; "Michal Marek" <mmarek@suse.cz>; 
-> <linux-kernel@vger.kernel.org>; <viro@zeniv.linux.org.uk>; 
-> <sfr@canb.auug.org.au>
-> Subject: Re: [PATCH] struct io panic on raid1 - Re: block: unify flags for 
-> struct bio and struct request will kernel panic
-> 
-> > On Thu, 8 Jul 2010 01:17:32 +0200
-> > Christoph Hellwig <hch@lst.de> wrote:
-> >
-> >> On Thu, Jul 08, 2010 at 07:05:39AM +0800, Takeo Tung wrote:
-> >> > Dear Christoph,
-> >> >
-> >> > I was check the patch again. I found the panic status haapen on Soft 
-> >> > RAID
-> >> > 1. I review it. found some define using bool, so some like ( x & 
-> >> > REQ_SYNC)
-> >> > only 0 or 1.
-> >> > so if bi_rw = rw | sync will bi_rw = rw | 0 or rw | 1. not rw | ( 1 <<
-> >> > __REQ_SYNC).
-> >> >
-> >> > So I write a patch is fix it. seems normal now. could you review the 
-> >> > patch
-> >> > or any comment?
-> >>
-> >> The patch looks correct to me, although your mailer mangled the
-> >> whitespace badly.  If Neil wants to keep the flag as bool we could
-> >> also add a !! around the bit flag checks.
-> >
-> > I think it is best to make them "unsigned long" holding the actual but.
-> > They were only made 'bool' because that is was bio_rw_flagged() returned.
-> > Converting to a bool then back to a bit-flag is unnecessary.
-> >
-> > Thanks,
-> > NeilBrown
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> > 
+> Thanks Stephen I'll look into this.
+
+Yeah this is a bit ugly.
+
+It used to be that the dev_*() format string was CPP pasted to whatever
+format string the user gave.  So if the user gave an empty string it
+still looked like a non-empty printf string.
+
+But that no longer happens because we hide the implementation, and thus
+the top-level printf format string, in the external functions.
+
+It seems the construction:
+
+/*
+ * Stupid hackaround for existing uses of non-printk uses dev_info
+ *
+ * Note that the definition of dev_info below is actually _dev_info
+ * and a macro is used to avoid redefining dev_info
+ */
+
+#define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
+
+added to linux/device.h was meant to handle these cases, but as we see
+it doesn't.
+
+It looks like there are just a hand-ful of cases, so maybe we can tweak
+them by hand.  For example, in the sym53c8xx_2 driver bits we can replace
+the NULL labels passed to sym_print_msg() with a real string and therefore
+remove the "" case.
+
+Joe, any better ideas?
