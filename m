@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab0GHVIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 17:08:14 -0400
-Received: from kroah.org ([198.145.64.141]:36939 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755249Ab0GHVIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 17:08:13 -0400
-Date: Thu, 8 Jul 2010 14:02:44 -0700
-From: Greg KH <greg@kroah.com>
-To: Edgardo Hames <ehames@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Staging: wlan-ng: fix checkpatch warnings in
- hfa384x.h
-Message-ID: <20100708210244.GA2266@kroah.com>
-References: <1278207986-14309-1-git-send-email-ehames@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278207986-14309-1-git-send-email-ehames@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757078Ab0GHVL3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 17:11:29 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:51227 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829Ab0GHVL2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 17:11:28 -0400
+Subject: Re: [PATCH 2/8 v2]Bluetooth: Fix warning: variable 'tty' set but
+ not used
+From: Marcel Holtmann <marcel@holtmann.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org, gustavo@padovan.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1276565200-5583-1-git-send-email-justinmattock@gmail.com>
+References: <1276565200-5583-1-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Jul 2010 18:07:08 -0300
+Message-ID: <1278623228.10421.70.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 03, 2010 at 10:46:25PM -0300, Edgardo Hames wrote:
-> Fixed spaces before tabs, removed unused variables and all typedefs.
+Hi Justin,
+
+> Resend of this patch to fix whitespace issues
+> The patch below fixes a warning message
+> when using gcc 4.6.0
 > 
-> Signed-off-by: Edgardo Hames <ehames@gmail.com>
+>   CC [M]  drivers/bluetooth/hci_ldisc.o
+> drivers/bluetooth/hci_ldisc.c: In function 'hci_uart_send_frame':
+> drivers/bluetooth/hci_ldisc.c:213:21: warning: variable 'tty' set but not used
+> 
+> 
+>  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>  Reviewed-By: Gustavo F. Padovan <gustavo@padovan.org>
 
-This doesn't apply against the latest linux-next tree, care to respin it
-and resend both of these?
+patch has been applied to bluetooth-next-2.6 tree. Thanks.
 
-thanks,
+Regards
 
-greg k-h
+Marcel
+
+
