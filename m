@@ -1,236 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab0GHPdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 11:33:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51830 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753274Ab0GHPdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 11:33:02 -0400
-Date: Thu, 8 Jul 2010 11:32:35 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Nauman Rafique <nauman@google.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
-       Divyesh Shah <dpshah@google.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Moyer Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [RFC/RFT PATCH] cfq-iosched: Implement cfq group idling
-Message-ID: <20100708153234.GG5093@redhat.com>
-References: <20100707230521.GB7842@redhat.com>
- <AANLkTik9ubpcxaMe9DEjwLJBr2nyRxJDAx4fK1NidbHq@mail.gmail.com>
- <20100708131305.GB5093@redhat.com>
+	id S1757102Ab0GHPgl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 11:36:41 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46971 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756239Ab0GHPgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 11:36:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Kjq24ZlYDfkb+kSQB7ldyLdWTx9r/DkHTo51hSFXwRz1EI6UrMIjGmTr7+W2QxFswB
+         +QeqrLvgSUmuPKtKGXaREV/4uVQ1fYiuicmgY2QLYoCE0IKUf7pfww8EoXn7if9v9S7h
+         pTWSBsy06eMF/CNiTiCmITQp0GQZ/0QwOTXvM=
+Date: Thu, 8 Jul 2010 19:36:29 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ben Dooks <ben@simtec.co.uk>,
+       Richard =?utf-8?Q?R=C3=B6jfors?= <richard.rojfors@pelagicore.com>,
+       linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] sdhci-pltfm: Add support for CNS3xxx SoC devices
+Message-ID: <20100708153629.GA418@oksana.dev.rtsoft.ru>
+References: <20100625180527.GA11280@oksana.dev.rtsoft.ru>
+ <20100625180644.GC18241@oksana.dev.rtsoft.ru>
+ <20100701134839.d7cb4841.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100708131305.GB5093@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100701134839.d7cb4841.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 09:13:05AM -0400, Vivek Goyal wrote:
-> On Wed, Jul 07, 2010 at 10:53:48PM -0700, Nauman Rafique wrote:
-> > If group idling is enabled, wouldn't it lower the throughput on
-> > traditional drives that handle one IO at a time?
+Sorry for the delayed response,
+
+On Thu, Jul 01, 2010 at 01:48:39PM -0700, Andrew Morton wrote:
+> On Fri, 25 Jun 2010 22:06:44 +0400
+> Anton Vorontsov <avorontsov@mvista.com> wrote:
 > 
-> I did not understand why group idling is bad for SATA disk.
+> > There's nothing special, just SoC-specific ops and quirks.
+> > 
+> > ...
+> >
+> > +static void sdhci_cns3xxx_set_clock(struct sdhci_host *host, unsigned int clock)
+> > +{
+> > +	struct device *dev = mmc_dev(host->mmc);
+> > +	int div = 1;
+> > +	u16 clk;
+> > +	unsigned long timeout;
+> > +
+> > +	if (clock == host->clock)
+> > +		return;
 > 
-> In fact group idling will take place only if queue idling is not taking
-> place. Most of the time it will kick in only if slice_idle = 0. If
-> there are cases where we it kicks in, lets get rid of these.
+> I assume that mmc core prevents this function from being exectued twice
+> at the same time?
+
+Yep, it's called under spin_lock_irqsave(&host->lock, flags).
+
+[...]
+> > +	timeout = 20;
+> > +	while (!((clk = sdhci_readw(host, SDHCI_CLOCK_CONTROL))
+> > +			& SDHCI_CLOCK_INT_STABLE)) {
+> > +		if (timeout == 0) {
+> > +			dev_warn(dev, "clock is unstable");
+> > +			break;
+> > +		}
+> > +		timeout--;
+> > +		mdelay(1);
 > 
-> I am wondering about the case of sync-noidle queue where queue idle will
-> not kick in if other sync-noidle queues are on the tree. I need to
-> make sure group idle also does not come into the picture. I guess I 
-> need to check for only one queue in the group condition to make sure
-> group timer is not armed. I will look into it...
+> Could we have used the more polite msleep() here?
+
+Unfortunately not, we're in the atomic context.
+
+[...]
+> > --- a/drivers/mmc/host/sdhci-pltfm.c
+> > +++ b/drivers/mmc/host/sdhci-pltfm.c
+> > @@ -158,6 +158,9 @@ static int __devexit sdhci_pltfm_remove(struct platform_device *pdev)
+> >  
+> >  static const struct platform_device_id sdhci_pltfm_ids[] = {
+> >  	{ "sdhci", },
+> > +#ifdef CONFIG_MMC_SDHCI_CNS3XXX
+> > +	{ "sdhci-cns3xxx", (kernel_ulong_t)&sdhci_cns3xxx_pdata },
+> > +#endif
 > 
+> What the heck is this kernel_ulong_t thing and why did `struct
+> platform_device_id' see a need to invent it??
 
-I tried it but can't see it happening for various other conditions. But
-yes, theoritically for sync-noidle queues a whole existed where we did
-not idle on queue but could have idled on group.
+It's not only platform_device_id's thing. Sometimes drivers just
+pass a constant instead of a pointer (e.g. DEVICE_IS_FOO,
+DEVICE_IS_BAR), for example see drivers/hwmon/lm75.c (enum
+lm75_type).
 
-I have put anohter check to make sure we are last queue in the group
-before we arm the group idle timer.
+Other than this I don't think that there's a good reason for it.
 
-So now, practically there is no case where slice_idle is enabled and group
-idle timer will kick in. For async queues we will not even call arm_timer.
-For sync-idle queues we always idle. For sync-noidle queues we anyway idle
-on the last queue in the service tree.
+Thanks,
 
-Hence group idle will kick in only if slice_idle=0 and should not impact
-any of the slow SATA storage.
-
-Attaching the revised version of the patch.
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/cfq-iosched.c |   46 ++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 40 insertions(+), 6 deletions(-)
-
-Index: linux-2.6/block/cfq-iosched.c
-===================================================================
---- linux-2.6.orig/block/cfq-iosched.c
-+++ linux-2.6/block/cfq-iosched.c
-@@ -30,6 +30,7 @@ static const int cfq_slice_sync = HZ / 1
- static int cfq_slice_async = HZ / 25;
- static const int cfq_slice_async_rq = 2;
- static int cfq_slice_idle = HZ / 125;
-+static int cfq_group_idle = HZ / 125;
- static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
- static const int cfq_hist_divisor = 4;
- 
-@@ -198,6 +199,8 @@ struct cfq_group {
- 	struct hlist_node cfqd_node;
- 	atomic_t ref;
- #endif
-+	/* number of requests that are on the dispatch list or inside driver */
-+	int dispatched;
- };
- 
- /*
-@@ -271,6 +274,7 @@ struct cfq_data {
- 	unsigned int cfq_slice[2];
- 	unsigned int cfq_slice_async_rq;
- 	unsigned int cfq_slice_idle;
-+	unsigned int cfq_group_idle;
- 	unsigned int cfq_latency;
- 	unsigned int cfq_group_isolation;
- 
-@@ -1838,6 +1842,9 @@ static bool cfq_should_idle(struct cfq_d
- 	BUG_ON(!service_tree);
- 	BUG_ON(!service_tree->count);
- 
-+	if (!cfqd->cfq_slice_idle)
-+		return false;
-+
- 	/* We never do for idle class queues. */
- 	if (prio == IDLE_WORKLOAD)
- 		return false;
-@@ -1862,7 +1869,7 @@ static void cfq_arm_slice_timer(struct c
- {
- 	struct cfq_queue *cfqq = cfqd->active_queue;
- 	struct cfq_io_context *cic;
--	unsigned long sl;
-+	unsigned long sl, group_idle = 0;
- 
- 	/*
- 	 * SSD device without seek penalty, disable idling. But only do so
-@@ -1878,8 +1885,13 @@ static void cfq_arm_slice_timer(struct c
- 	/*
- 	 * idle is disabled, either manually or by past process history
- 	 */
--	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq))
--		return;
-+	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq)) {
-+		/* no queue idling. Check for group idling */
-+		if (cfqd->cfq_group_idle)
-+			group_idle = cfqd->cfq_group_idle;
-+		else
-+			return;
-+	}
- 
- 	/*
- 	 * still active requests from this queue, don't idle
-@@ -1906,13 +1918,21 @@ static void cfq_arm_slice_timer(struct c
- 		return;
- 	}
- 
-+	/* There are other queues in the group, don't do group idle */
-+	if (cfqq->cfqg->nr_cfqq > 1)
-+		return;
-+	
- 	cfq_mark_cfqq_wait_request(cfqq);
- 
--	sl = cfqd->cfq_slice_idle;
-+	if (group_idle)
-+		sl = cfqd->cfq_group_idle;
-+	else
-+		sl = cfqd->cfq_slice_idle;
- 
- 	mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
- 	cfq_blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
--	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
-+	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu group_idle: %d", sl,
-+			group_idle ? 1 : 0);
- }
- 
- /*
-@@ -1928,6 +1948,7 @@ static void cfq_dispatch_insert(struct r
- 	cfqq->next_rq = cfq_find_next_rq(cfqd, cfqq, rq);
- 	cfq_remove_request(rq);
- 	cfqq->dispatched++;
-+	(RQ_CFQG(rq))->dispatched++;
- 	elv_dispatch_sort(q, rq);
- 
- 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
-@@ -2231,6 +2252,16 @@ static struct cfq_queue *cfq_select_queu
- 		goto keep_queue;
- 	}
- 
-+	/*
-+	 * If group idle is enabled and there are requests dispatched from
-+	 * this group, wait for requests to complete.
-+	 */
-+	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
-+	    && cfqq->cfqg->dispatched) {
-+		cfqq = NULL;
-+		goto keep_queue;
-+	}
-+
- expire:
- 	cfq_slice_expired(cfqd, 0);
- new_queue:
-@@ -3373,6 +3404,7 @@ static void cfq_completed_request(struct
- 	WARN_ON(!cfqq->dispatched);
- 	cfqd->rq_in_driver--;
- 	cfqq->dispatched--;
-+	(RQ_CFQG(rq))->dispatched--;
- 	cfq_blkiocg_update_completion_stats(&cfqq->cfqg->blkg,
- 			rq_start_time_ns(rq), rq_io_start_time_ns(rq),
- 			rq_data_dir(rq), rq_is_sync(rq));
-@@ -3847,6 +3879,7 @@ static void *cfq_init_queue(struct reque
- 	cfqd->cfq_slice[1] = cfq_slice_sync;
- 	cfqd->cfq_slice_async_rq = cfq_slice_async_rq;
- 	cfqd->cfq_slice_idle = cfq_slice_idle;
-+	cfqd->cfq_group_idle = cfq_group_idle;
- 	cfqd->cfq_latency = 1;
- 	cfqd->cfq_group_isolation = 0;
- 	cfqd->hw_tag = -1;
-@@ -3919,6 +3952,7 @@ SHOW_FUNCTION(cfq_fifo_expire_async_show
- SHOW_FUNCTION(cfq_back_seek_max_show, cfqd->cfq_back_max, 0);
- SHOW_FUNCTION(cfq_back_seek_penalty_show, cfqd->cfq_back_penalty, 0);
- SHOW_FUNCTION(cfq_slice_idle_show, cfqd->cfq_slice_idle, 1);
-+SHOW_FUNCTION(cfq_group_idle_show, cfqd->cfq_group_idle, 1);
- SHOW_FUNCTION(cfq_slice_sync_show, cfqd->cfq_slice[1], 1);
- SHOW_FUNCTION(cfq_slice_async_show, cfqd->cfq_slice[0], 1);
- SHOW_FUNCTION(cfq_slice_async_rq_show, cfqd->cfq_slice_async_rq, 0);
-@@ -3951,6 +3985,7 @@ STORE_FUNCTION(cfq_back_seek_max_store, 
- STORE_FUNCTION(cfq_back_seek_penalty_store, &cfqd->cfq_back_penalty, 1,
- 		UINT_MAX, 0);
- STORE_FUNCTION(cfq_slice_idle_store, &cfqd->cfq_slice_idle, 0, UINT_MAX, 1);
-+STORE_FUNCTION(cfq_group_idle_store, &cfqd->cfq_group_idle, 0, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_sync_store, &cfqd->cfq_slice[1], 1, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_async_store, &cfqd->cfq_slice[0], 1, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_async_rq_store, &cfqd->cfq_slice_async_rq, 1,
-@@ -3972,6 +4007,7 @@ static struct elv_fs_entry cfq_attrs[] =
- 	CFQ_ATTR(slice_async),
- 	CFQ_ATTR(slice_async_rq),
- 	CFQ_ATTR(slice_idle),
-+	CFQ_ATTR(group_idle),
- 	CFQ_ATTR(low_latency),
- 	CFQ_ATTR(group_isolation),
- 	__ATTR_NULL
-@@ -4025,6 +4061,12 @@ static int __init cfq_init(void)
- 	if (!cfq_slice_idle)
- 		cfq_slice_idle = 1;
- 
-+#ifdef CONFIG_CFQ_GROUP_IOSCHED
-+	if (!cfq_group_idle)
-+		cfq_group_idle = 1;
-+#else
-+		cfq_group_idle = 0;
-+#endif
- 	if (cfq_slab_setup())
- 		return -ENOMEM;
- 
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
