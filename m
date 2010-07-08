@@ -1,137 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab0GHUdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 16:33:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49625 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752438Ab0GHUdD (ORCPT
+	id S1755917Ab0GHUgH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 16:36:07 -0400
+Received: from qsmtp.mc.surewest.net ([66.60.130.145]:46949 "HELO
+	smtp2.mc.surewest.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753208Ab0GHUgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 16:33:03 -0400
-Date: Thu, 8 Jul 2010 13:31:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v2 2/2] vmscan: shrink_slab() require number of
- lru_pages, not page order
-Message-Id: <20100708133152.5e556508.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1007080901460.9707@router.home>
-References: <20100708163401.CD34.A69D9226@jp.fujitsu.com>
-	<20100708163934.CD37.A69D9226@jp.fujitsu.com>
-	<alpine.DEB.2.00.1007080901460.9707@router.home>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 8 Jul 2010 16:36:04 -0400
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jul 2010 16:36:04 EDT
+X-Spam-CMAE-Analysis: v=1.0 c=1 a=xDSDEXTo-cEA:10 a=is5sIikfpoQA:10 
+	a=VphdPIyG4kEA:10 a=kj9zAlcOel0A:10 a=ntoLRZiSlfVt_33ShZIA:9 
+	a=YMY6cmKhoXZlD7WCWTIA:7 a=AWWj0vmB7gi523HKkLUxRusIZ1UA:4 
+	a=CjuIK1q_8ugA:10 a=7yoFmkfiHqEA:10
+From: Liu Qinggui <qin_ggui@yahoo.com.hk>
+Subject: Proposal
+To: liuqinggui@yahoo.com.hk
+Reply-To: liuqinggui@yahoo.com.hk
+X-Mailer: Mirapoint Webmail Direct 4.1.8-GA
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100708131522.AWS84004@ms1.mc.surewest.net>
+Date: Thu,  8 Jul 2010 13:15:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jul 2010 09:04:18 -0500 (CDT)
-Christoph Lameter <cl@linux-foundation.org> wrote:
+My Name Is Liu Qin Qinggui,
 
-> On Thu, 8 Jul 2010, KOSAKI Motohiro wrote:
-> 
-> > Fix simple argument error. Usually 'order' is very small value than
-> > lru_pages. then it can makes unnecessary icache dropping.
-> 
-> AFAICT this is not argument error but someone changed the naming of the
-> parameter.
 
-It's been there since day zero:
+I have a serious big business to propose to you, my late client Mr Henry Ting, left an unclaimed sum with my bank.
 
-: commit 2a16e3f4b0c408b9e50297d2ec27e295d490267a
-: Author:     Christoph Lameter <clameter@engr.sgi.com>
-: AuthorDate: Wed Feb 1 03:05:35 2006 -0800
-: Commit:     Linus Torvalds <torvalds@g5.osdl.org>
-: CommitDate: Wed Feb 1 08:53:16 2006 -0800
-: 
-:     [PATCH] Reclaim slab during zone reclaim
-:     
-:     If large amounts of zone memory are used by empty slabs then zone_reclaim
-:     becomes uneffective.  This patch shakes the slab a bit.
-:     
-:     The problem with this patch is that the slab reclaim is not containable to a
-:     zone.  Thus slab reclaim may affect the whole system and be extremely slow.
-:     This also means that we cannot determine how many pages were freed in this
-:     zone.  Thus we need to go off node for at least one allocation.
-:     
-:     The functionality is disabled by default.
-:     
-:     We could modify the shrinkers to take a zone parameter but that would be quite
-:     invasive.  Better ideas are welcome.
-:     
-:     Signed-off-by: Christoph Lameter <clameter@sgi.com>
-:     Signed-off-by: Andrew Morton <akpm@osdl.org>
-:     Signed-off-by: Linus Torvalds <torvalds@osdl.org>
-: 
-: diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-: index 4bca2a3..a46c10f 100644
-: --- a/Documentation/sysctl/vm.txt
-: +++ b/Documentation/sysctl/vm.txt
-: @@ -137,6 +137,7 @@ This is value ORed together of
-:  1	= Zone reclaim on
-:  2	= Zone reclaim writes dirty pages out
-:  4	= Zone reclaim swaps pages
-: +8	= Also do a global slab reclaim pass
-:  
-:  zone_reclaim_mode is set during bootup to 1 if it is determined that pages
-:  from remote zones will cause a measurable performance reduction. The
-: @@ -160,6 +161,11 @@ Allowing regular swap effectively restricts allocations to the local
-:  node unless explicitly overridden by memory policies or cpuset
-:  configurations.
-:  
-: +It may be advisable to allow slab reclaim if the system makes heavy
-: +use of files and builds up large slab caches. However, the slab
-: +shrink operation is global, may take a long time and free slabs
-: +in all nodes of the system.
-: +
-:  ================================================================
-:  
-:  zone_reclaim_interval:
-: diff --git a/mm/vmscan.c b/mm/vmscan.c
-: index 9e2ef36..aa4b80d 100644
-: --- a/mm/vmscan.c
-: +++ b/mm/vmscan.c
-: @@ -1596,6 +1596,7 @@ int zone_reclaim_mode __read_mostly;
-:  #define RECLAIM_ZONE (1<<0)	/* Run shrink_cache on the zone */
-:  #define RECLAIM_WRITE (1<<1)	/* Writeout pages during reclaim */
-:  #define RECLAIM_SWAP (1<<2)	/* Swap pages out during reclaim */
-: +#define RECLAIM_SLAB (1<<3)	/* Do a global slab shrink if the zone is out of memory */
-:  
-:  /*
-:   * Mininum time between zone reclaim scans
-: @@ -1666,6 +1667,19 @@ int zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
-:  
-:  	} while (sc.nr_reclaimed < nr_pages && sc.priority > 0);
-:  
-: +	if (sc.nr_reclaimed < nr_pages && (zone_reclaim_mode & RECLAIM_SLAB)) {
-: +		/*
-: +		 * shrink_slab does not currently allow us to determine
-: +		 * how many pages were freed in the zone. So we just
-: +		 * shake the slab and then go offnode for a single allocation.
-: +		 *
-: +		 * shrink_slab will free memory on all zones and may take
-: +		 * a long time.
-: +		 */
-: +		shrink_slab(sc.nr_scanned, gfp_mask, order);
-: +		sc.nr_reclaimed = 1;    /* Avoid getting the off node timeout */
-: +	}
-: +
-:  	p->reclaim_state = NULL;
-:  	current->flags &= ~PF_MEMALLOC;
+ 
+I want you to help me process and receive this fund, Rest assured I can make this transaction work perfectly and safely for us you understand,
+and with your co-operation for the success of this business I offer to you a good percentage of the fund as your share.
+ 
+If interested pls contact to me as soonest your convenience at my e-mail: liuqinggui@yahoo.com.hk
 
-> The "lru_pages" parameter is really a division factor affecting
-> the number of pages scanned. This patch increases this division factor
-> significantly and therefore reduces the number of items scanned during
-> zone_reclaim.
-> 
+I give you all necessary information on this business and how we make it work .
+ 
+I expect your reply and my response be swift. Thanking you much now.
+ 
 
-And for that reason I won't apply the patch.  I'd be crazy to do so. 
-It tosses away four years testing, replacing it with something which
-could have a large effect on reclaim behaviour, with no indication
-whether that effect is good or bad.
+Reply soon.
+ 
+Liu Qin Qinggui
 
