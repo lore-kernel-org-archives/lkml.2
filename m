@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab0GHQJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 12:09:27 -0400
-Received: from kroah.org ([198.145.64.141]:41682 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754362Ab0GHQJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 12:09:26 -0400
-Subject: patch "dmi-id: fix a memory leak in dmi_id_init error path" added to gregkh-2.6 tree
-To: axel.lin@gmail.com, dbrownell@users.sourceforge.net, gregkh@suse.de,
-       linux-kernel@vger.kernel.org, tj@kernel.org
-From: <gregkh@suse.de>
-Date: Thu, 08 Jul 2010 09:09:19 -0700
-In-Reply-To: <1277951707.30073.5.camel@mola>
-Message-ID: <1278605359932@site>
+	id S1757919Ab0GHQM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 12:12:28 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:27200 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753967Ab0GHQM1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 12:12:27 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEACaWNUyrR7Hu/2dsb2JhbACgMXGmX5p5hSUEg3k
+X-IronPort-AV: E=Sophos;i="4.53,559,1272844800"; 
+   d="scan'208";a="155746665"
+From: Roland Dreier <rdreier@cisco.com>
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+X-Message-Flag: Warning: May contain useful information
+Date: Thu, 08 Jul 2010 09:12:18 -0700
+Message-ID: <adapqyyymu5.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ANSI_X3.4-1968
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus, please pull from
 
-This is a note to let you know that I've just added the patch titled
+    master.kernel.org:/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
-    dmi-id: fix a memory leak in dmi_id_init error path
+This tree is also available from kernel.org mirrors at:
 
-to my gregkh-2.6 tree which can be found in directory form at:
-    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
- and in git form at:
-    git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/patches.git
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
-The filename of this patch is:
-    dmi-id-fix-a-memory-leak-in-dmi_id_init-error-path.patch
+This will get one security fix for IPoIB, and a bunch of relatively
+small fixes to drivers new in 2.6.35 (so perhaps not regression fixes,
+but not able to regress anything either ... and you don't care about
+RDMA anyway ;)
 
-The patch will show up in the next release of the linux-next tree
-(usually sometime within the next 24 hours during the week.)
+Dave Olson (1):
+      IB/qib: Don't mark VL15 bufs as WC to avoid a rare 7322 chip problem
 
-If this patch meets the merge guidelines for a bugfix, it should be
-merged into Linus's tree before the next major kernel release.
-If not, it will be merged into Linus's tree during the next merge window.
+FUJITA Tomonori (1):
+      RDMA/cxgb4: Use the DMA state API instead of the pci equivalents
 
-Either way, you will probably be copied on the patch when it gets sent
-to Linus for merging so that others can see what is happening in kernel
-development.
+Or Gerlitz (1):
+      IPoIB: Fix world-writable child interface control sysfs attributes
 
-If you have any questions about this process, please let me know.
+Ralph Campbell (6):
+      IB/qib: Mask hardware error during link reset
+      IB/qib: Clear eager buffer memory for each new process
+      IB/qib: Clear 6120 hardware error register
+      IB/qib: Update 7322 serdes tables
+      IB/qib: Completion queue callback needs to be single threaded
+      IB/qib: Clean up properly if qib_init() fails
 
+Roland Dreier (1):
+      Merge branches 'cxgb4', 'ipoib' and 'qib' into for-next
 
->From axel.lin@gmail.com  Thu Jul  8 08:56:03 2010
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 01 Jul 2010 10:35:07 +0800
-Subject: dmi-id: fix a memory leak in dmi_id_init error path
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, David Brownell <dbrownell@users.sourceforge.net>, Greg Kroah-Hartman <gregkh@suse.de>
-Message-ID: <1277951707.30073.5.camel@mola>
+Steve Wise (3):
+      RDMA/cxgb4: Don't call abort_connection() for active connect failures
+      RDMA/cxgb4: Avoid false GTS CIDX_INC overflows
+      RDMA/cxgb4: Derive smac_idx from port viid
 
+ drivers/infiniband/hw/cxgb4/cm.c          |   12 ++++---
+ drivers/infiniband/hw/cxgb4/cq.c          |   31 ++++++++++++++-----
+ drivers/infiniband/hw/cxgb4/iw_cxgb4.h    |    2 +-
+ drivers/infiniband/hw/cxgb4/mem.c         |    4 +-
+ drivers/infiniband/hw/cxgb4/qp.c          |   12 +++---
+ drivers/infiniband/hw/cxgb4/t4.h          |    6 ++--
+ drivers/infiniband/hw/qib/qib.h           |    1 +
+ drivers/infiniband/hw/qib/qib_7322_regs.h |   48 ++++++++++++++--------------
+ drivers/infiniband/hw/qib/qib_diag.c      |   19 +++++++++--
+ drivers/infiniband/hw/qib/qib_iba6120.c   |    3 +-
+ drivers/infiniband/hw/qib/qib_iba7322.c   |   43 +++++++++++++++++++++----
+ drivers/infiniband/hw/qib/qib_init.c      |   21 ++++++++++++-
+ drivers/infiniband/hw/qib/qib_pcie.c      |    2 +
+ drivers/infiniband/hw/qib/qib_tx.c        |    6 +++-
+ drivers/infiniband/ulp/ipoib/ipoib_main.c |    4 +-
+ 15 files changed, 148 insertions(+), 66 deletions(-)
 
-This patch adds a missing kfree(dmi_dev) in dmi_id_init error path.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/firmware/dmi-id.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/drivers/firmware/dmi-id.c
-+++ b/drivers/firmware/dmi-id.c
-@@ -229,10 +229,12 @@ static int __init dmi_id_init(void)
- 
- 	ret = device_register(dmi_dev);
- 	if (ret)
--		goto fail_class_unregister;
-+		goto fail_free_dmi_dev;
- 
- 	return 0;
- 
-+fail_free_dmi_dev:
-+	kfree(dmi_dev);
- fail_class_unregister:
- 
- 	class_unregister(&dmi_class);
-
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
