@@ -1,176 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab0GHWlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 18:41:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11061 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755966Ab0GHWls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 18:41:48 -0400
-Date: Fri, 9 Jul 2010 01:35:24 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-       James Morris <jmorris@namei.org>,
-       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-       linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-       netfilter@vger.kernel.org, coreteam@netfilter.org,
-       netdev@vger.kernel.org, herbert.xu@redhat.com, kvm@vger.kernel.org
-Subject: [PATCH] extensions: libipt_CHECKSUM extension
-Message-ID: <20100708223524.GA4614@redhat.com>
-References: <20100708222913.GA4475@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100708222913.GA4475@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1758690Ab0GHWok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 18:44:40 -0400
+Received: from smtp1.Stanford.EDU ([171.67.219.81]:58586 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755966Ab0GHWoi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 18:44:38 -0400
+Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+To: john stultz <johnstul@us.ibm.com>
+Cc: nando@ccrma.Stanford.EDU, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
+In-Reply-To: <1278628386.3008.11.camel@localhost.localdomain>
+References: <1278609590.7527.11.camel@localhost.localdomain>
+	 <1278628386.3008.11.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Jul 2010 15:44:04 -0700
+Message-ID: <1278629044.12059.6.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a `CHECKSUM' target, which can be used in the iptables mangle
-table.
+On Thu, 2010-07-08 at 15:33 -0700, john stultz wrote:
+> On Thu, 2010-07-08 at 10:19 -0700, Fernando Lopez-Lezcano wrote:
+> > We are having problems with 2.6.33.5+rt23, at least in our configuration
+> > while accessing an nfs automounted directory. This causes a complete
+> > machine lockup (press reset to exit as the only option). 
+> > 
+> > I simply use the Nautilus file manager (in Fedora 12) to navigate to an
+> > autofs mounted directory and the process monitor goes to 100% on one
+> > core (or maybe two), the mouse jerks a bit and the whole thing goes
+> > catatonic almost immediately. 
+> > 
+> > I get this in any open terminal at the time of the crash:
+> > 
+> > --------
+> > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> >  kernel:------------[ cut here ]------------
+> > 
+> > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> >  kernel:invalid opcode: 0000 [#1] PREEMPT SMP 
+> > 
+> > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> >  kernel:last sysfs
+> > file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+> > 
+> > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> >  kernel:Process nautilus (pid: 2874, ti=f0204000 task=f17dd1f0
+> > task.ti=f0204000)
+> > 
+> > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> >  kernel:Stack:
+> > 
+> > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> >  kernel:Call Trace:
+> > 
+> > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> >  kernel:Code: 7b 08 00 89 45 b8 75 12 8d 43 04 89 43 04 89 43 08 8d 43
+> > 0c 89 43 0c 89 43 10 8b 43 14 64 8b 15 2c d1 a5 c0 83 e0 fc 39 c2 75 04
+> > <0f> 0b eb fe 8b 3a 81 ff 08 01 00 00 74 0a 83 ff 02 b8 04 00 00 
+> > 
+> > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> >  kernel:EIP: [<c0792c0f>] rt_spin_lock_slowlock+0x43/0x1bb SS:ESP
+> > 0068:f0205cbc
+> > --------
+> > 
+> > And that's it... nothing else in the logs. 
+> 
+> Hrm. Not too much to go on there, but thanks for the report.
+> 
+> 
+> > For now we are booting into the normal Fedora kernel (this is on Fedora
+> > 12) as this makes the rt kernel not usable in our setup. 
+> > 
+> > Let me know if there is anything else I can do to help debug this...
+> 
+> Had you done any testing with earlier 2.6.33-rt kernels where this
+> didn't occur? If so what version?
 
-You can use this target to compute and fill in the checksum in
-an IP packet that lacks a checksum.  This is particularly useful,
-if you need to work around old applications such as dhcp clients,
-that do not work well with checksum offloads, but don't want to disable
-checksum offload in your device.
+I have been working with the whole series but my main usage case does
+not use nfs/autofs (see next paragraphs). 
 
-The problem happens in the field with virtualized applications.
-For reference, see Red Hat bz 605555, as well as
-http://www.spinics.net/lists/kvm/msg37660.html
+I have noticed that the problem does not appear to happen when I cd into
+an nfs automounted directory directly. It appears to happen only when
+listing the contents of a mount point (ie: when "/whatever/" is an
+autofs mount point where several directories are mounted, not
+necessarily from the same server). 
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+Before switching to Fedora 12 users were normally running 2.6.29 rt and
+I had been running 2.6.31.x and 2.6.33.x rt, but I don't think it ever
+happened to me personally (I'm always using the command line - this is
+completely reproducible with nautilus). After the switch it started
+happening almost immediately to regular users (using nautilus mostly). 
 
-This patch adds userspace support for the CHECKSUM kernel module I sent previously.
+How could I try to get more debugging information?
+-- Fernando
 
- extensions/libipt_CHECKSUM.c   |  100 ++++++++++++++++++++++++++++++++++++++++
- extensions/libipt_CHECKSUM.man |    8 +++
- 2 files changed, 108 insertions(+), 0 deletions(-)
- create mode 100644 extensions/libipt_CHECKSUM.c
- create mode 100644 extensions/libipt_CHECKSUM.man
 
-diff --git a/extensions/libipt_CHECKSUM.c b/extensions/libipt_CHECKSUM.c
-new file mode 100644
-index 0000000..93d3e3f
---- /dev/null
-+++ b/extensions/libipt_CHECKSUM.c
-@@ -0,0 +1,100 @@
-+/* Shared library add-on to iptables for CHECKSUM
-+ *
-+ * (C) 2002 by Harald Welte <laforge@gnumonks.org>
-+ * (C) 2010 by Red Hat, Inc
-+ * Author: Michael S. Tsirkin <mst@redhat.com>
-+ *
-+ * This program is distributed under the terms of GNU GPL v2, 1991
-+ *
-+ * libipt_CHECKSUM.c borrowed heavily from libipt_ECN.c
-+ *
-+ * $Id$
-+ */
-+#include <stdio.h>
-+#include <string.h>
-+#include <stdlib.h>
-+#include <getopt.h>
-+
-+#include <xtables.h>
-+#include <linux/netfilter_ipv4/ipt_CHECKSUM.h>
-+
-+static void CHECKSUM_help(void)
-+{
-+	printf(
-+"CHECKSUM target options\n"
-+"  --checksum-fill			Fill in packet checksum.\n");
-+}
-+
-+static const struct option CHECKSUM_opts[] = {
-+	{ "checksum-fill", 0, NULL, 'F' },
-+	{ .name = NULL }
-+};
-+
-+static int CHECKSUM_parse(int c, char **argv, int invert, unsigned int *flags,
-+                     const void *entry, struct xt_entry_target **target)
-+{
-+	unsigned int result;
-+	struct ipt_CHECKSUM_info *einfo
-+		= (struct ipt_CHECKSUM_info *)(*target)->data;
-+
-+	switch (c) {
-+	case 'F':
-+		if (*flags)
-+			xtables_error(PARAMETER_PROBLEM,
-+			        "CHECKSUM target: Only use --checksum-fill ONCE!");
-+		einfo->operation = IPT_CHECKSUM_OP_FILL;
-+		*flags |= IPT_CHECKSUM_OP_FILL;
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	return 1;
-+}
-+
-+static void CHECKSUM_check(unsigned int flags)
-+{
-+	if (!flags)
-+		xtables_error(PARAMETER_PROBLEM,
-+		           "CHECKSUM target: Parameter --checksum-fill is required");
-+}
-+
-+static void CHECKSUM_print(const void *ip, const struct xt_entry_target *target,
-+                      int numeric)
-+{
-+	const struct ipt_CHECKSUM_info *einfo =
-+		(const struct ipt_CHECKSUM_info *)target->data;
-+
-+	printf("CHECKSUM ");
-+
-+	if (einfo->operation & IPT_CHECKSUM_OP_FILL)
-+		printf("fill ");
-+}
-+
-+static void CHECKSUM_save(const void *ip, const struct xt_entry_target *target)
-+{
-+	const struct ipt_CHECKSUM_info *einfo =
-+		(const struct ipt_CHECKSUM_info *)target->data;
-+
-+	if (einfo->operation & IPT_CHECKSUM_OP_FILL)
-+		printf("--checksum-fill ");
-+}
-+
-+static struct xtables_target checksum_tg_reg = {
-+	.name		= "CHECKSUM",
-+	.version	= XTABLES_VERSION,
-+	.family		= NFPROTO_IPV4,
-+	.size		= XT_ALIGN(sizeof(struct ipt_CHECKSUM_info)),
-+	.userspacesize	= XT_ALIGN(sizeof(struct ipt_CHECKSUM_info)),
-+	.help		= CHECKSUM_help,
-+	.parse		= CHECKSUM_parse,
-+	.final_check	= CHECKSUM_check,
-+	.print		= CHECKSUM_print,
-+	.save		= CHECKSUM_save,
-+	.extra_opts	= CHECKSUM_opts,
-+};
-+
-+void _init(void)
-+{
-+	xtables_register_target(&checksum_tg_reg);
-+}
-diff --git a/extensions/libipt_CHECKSUM.man b/extensions/libipt_CHECKSUM.man
-new file mode 100644
-index 0000000..4f83335
---- /dev/null
-+++ b/extensions/libipt_CHECKSUM.man
-@@ -0,0 +1,8 @@
-+This target allows to selectively work around broken/old applications.
-+It can only be used in the mangle table.
-+.TP
-+\fB\-\-checksum\-fill\fP
-+Compute and fill in the checksum in an IP packet that lacks a checksum.
-+This is particularly useful, if you need to work around old applications
-+such as dhcp clients, that do not work well with checksum offloads,
-+but don't want to disable checksum offload in your device.
--- 
-1.7.2.rc0.14.g41c1c
