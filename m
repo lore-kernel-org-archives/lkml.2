@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab0GHQr0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 12:47:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52532 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752631Ab0GHQrZ (ORCPT
+	id S1755494Ab0GHQtz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 12:49:55 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18377 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab0GHQtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 12:47:25 -0400
-Date: Thu, 8 Jul 2010 09:46:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Ralf Baechle <ralf@linux-mips.org>, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH v2 16/26] fbdev: Add JZ4740 framebuffer driver
-Message-Id: <20100708094654.6fbeefe8.akpm@linux-foundation.org>
-In-Reply-To: <4C35D264.7080809@metafoo.de>
-References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
-	<1276924111-11158-17-git-send-email-lars@metafoo.de>
-	<4C310ACD.6040604@metafoo.de>
-	<20100707164148.d2a1f8c4.akpm@linux-foundation.org>
-	<4C35D264.7080809@metafoo.de>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Thu, 8 Jul 2010 12:49:53 -0400
+Date: Thu, 8 Jul 2010 09:48:42 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, David Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       dri-devel@lists.freedesktop.org
+Subject: Re: linux-next: Tree for July 8 (nouveau)
+Message-Id: <20100708094842.2753a194.randy.dunlap@oracle.com>
+In-Reply-To: <20100708151022.d2517577.sfr@canb.auug.org.au>
+References: <20100708151022.d2517577.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C3601A9.002D:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Jul 2010 15:28:04 +0200 Lars-Peter Clausen <lars@metafoo.de> wrote:
+On Thu, 8 Jul 2010 15:10:22 +1000 Stephen Rothwell wrote:
 
-> > Although I might whine about inappropriate use of
-> > ENOENT, which means "No such file or directory".
-> > 
+> Hi all,
 > 
-> That is due to to many bad examples, I guess. Would using ENXIO instead keep
-> you from whining?
+> Changes since 20100707:
+> 
+> The i.MX tree mismerge has been fixed.
+> 
+> The omap tree gained a conflict (involving serveral files) against the
+> arm tree.
+> 
+> ----------------------------------------------------------------------------
 
-Sounds a bit better.  It's hardly a huge issue though.
+
+Should nouveau depend on PCI?
+It has build errors when PCI is disabled:
+
+drivers/gpu/drm/nouveau/nouveau_bios.c: In function 'load_vbios_pci':
+drivers/gpu/drm/nouveau/nouveau_bios.c:167: error: implicit declaration of function 'pci_enable_rom'
+drivers/gpu/drm/nouveau/nouveau_bios.c:171: error: implicit declaration of function 'pci_map_rom'
+drivers/gpu/drm/nouveau/nouveau_bios.c:171: warning: assignment makes pointer from integer without a cast
+drivers/gpu/drm/nouveau/nouveau_bios.c:175: error: implicit declaration of function 'pci_unmap_rom'
+drivers/gpu/drm/nouveau/nouveau_bios.c:178: error: implicit declaration of function 'pci_disable_rom'
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
