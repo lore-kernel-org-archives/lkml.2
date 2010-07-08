@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693Ab0GHNYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 09:24:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38592 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757642Ab0GHNYA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 09:24:00 -0400
-Subject: Re: high power consumption in recent kernels
-From: Peter Zijlstra <peterz@infradead.org>
-To: Norbert Preining <preining@logic.at>
-Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, akpm <akpm@linux-foundation.org>,
-       Mike Galbraith <efault@gmx.de>, tglx <tglx@linutronix.de>
-In-Reply-To: <20100708124627.GA7754@gamma.logic.tuwien.ac.at>
-References: <20100706164539.GA14783@gamma.logic.tuwien.ac.at>
-	 <1278579992.1900.17.camel@laptop> <20100708045711.398d4e26@infradead.org>
-	 <1278590303.1900.91.camel@laptop>
-	 <20100708120421.GF20841@gamma.logic.tuwien.ac.at>
-	 <1278591779.1900.97.camel@laptop>
-	 <20100708124627.GA7754@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 08 Jul 2010 15:23:46 +0200
-Message-ID: <1278595426.1900.130.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757442Ab0GHNZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 09:25:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33841 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753987Ab0GHNZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 09:25:06 -0400
+Date: Thu, 8 Jul 2010 16:24:43 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       avi@redhat.com, mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+       riel@redhat.com, cl@linux-foundation.org, mtosatti@redhat.com
+Subject: Re: [PATCH v4 03/12] Add async PF initialization to PV guest.
+Message-ID: <20100708132443.GW4689@redhat.com>
+References: <1278433500-29884-1-git-send-email-gleb@redhat.com>
+ <1278433500-29884-4-git-send-email-gleb@redhat.com>
+ <1278517261.1946.8.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278517261.1946.8.camel@laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 21:46 +0900, Norbert Preining wrote:
-> Looks promising, reverting the old patch, adding that one, building,
-> running, unplugging ppower, powertop runs now since some time,
-> it seems that we are back to better situation: 
+On Wed, Jul 07, 2010 at 05:41:01PM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-07-06 at 19:24 +0300, Gleb Natapov wrote:
+> > @@ -329,6 +330,8 @@ notrace static void __cpuinit start_secondary(void *unused)
+> >         per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
+> >         x86_platform.nmi_init();
+> >  
+> > +       kvm_guest_cpu_init();
+> > +
+> >         /* enable local interrupts */
+> >         local_irq_enable(); 
+> 
+> CPU_STARTING hotplug notifier is too early?
+> 
+Actually no. I will move this call into cpu notifier.
 
-Hrmm, Mike seems you wrecked power usage.. 
+> called from:
+>    start_secondary()
+>      smp_callin()
+>        notify_cpu_starting() 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-So nohz_ratelimit() prevents us from entering NOHZ when the last attempt
-was less than 1/2 a jiffy ago (fwiw: NSEC_PER_SEC/HZ == TICK_NSEC).
-
-Its either entering idle or irq_exit trying to enter nohz state, if we
-keep skipping it it means that we get enough interrupt activity to
-render nohz useless anyway.. so not quite sure how this wrecks things..
+--
+			Gleb.
