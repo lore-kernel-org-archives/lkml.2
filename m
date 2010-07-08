@@ -1,113 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758917Ab0GHXQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 19:16:12 -0400
-Received: from claw.goop.org ([74.207.240.146]:43305 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758782Ab0GHXQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 19:16:06 -0400
-Message-ID: <4C365C30.2090001@goop.org>
-Date: Thu, 08 Jul 2010 16:16:00 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
+	id S1758928Ab0GHXQW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 19:16:22 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35002 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758782Ab0GHXQP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 19:16:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=U9MRPyniIRgXba3dd67VGL5C6K6cgylRyh/r9qkyuhecZsAOQ8WgzAnV6jkhhEcLL9
+         aGSZJ0QA6Yq6jZkqSFyn3G8yKY/0YL6/zlOyg3Yqh4rhLL8JE4rC/l3KsHzW5lx4uhYk
+         azbINyaPiC+Bq+a5OCC+toUH4Ml08VRfnTnPA=
 MIME-Version: 1.0
-To: Daniel Kiper <dkiper@net-space.pl>
-CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] GSoC 2010 - Migration from memory ballooning to memory
- hotplug in Xen
-References: <20100708194553.GA30124@router-fw-old.local.net-space.pl>
-In-Reply-To: <20100708194553.GA30124@router-fw-old.local.net-space.pl>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <20100708152656.34cfd24f.akpm@linux-foundation.org>
+References: <1278418937.1949.22.camel@jaunty>
+	<20100708152656.34cfd24f.akpm@linux-foundation.org>
+Date: Fri, 9 Jul 2010 09:16:07 +1000
+Message-ID: <AANLkTimKFMWzd3hVS7TBRTHkppgZF-ky4bGFDOeDBbhk@mail.gmail.com>
+Subject: Re: 2.6.35-rc4 Graphics performance issue and freeing invalid memtype 
+	messages on boot.
+From: Andrew Hendry <andrew.hendry@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       dri-devel@lists.freedesktop.org, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2010 12:45 PM, Daniel Kiper wrote:
-> Hello,
+Graphics hardware is NV250 type card.
+
+Some quick testing last night showed this patch fixed both the boot
+messages and graphics performance.
+[tip:x86/urgent] rbtree: Undo augmented trees performance damage and regression
+http://marc.info/?l=linux-kernel&m=127833440902862&w=2
+
+
+On Fri, Jul 9, 2010 at 8:26 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> (Rafael, Maciej: two probably-separate post-2.6.34 regressions here)
 >
-> My name is Daniel Kiper and I am a PhD student
-> at Warsaw University of Technology, Faculty of Electronics
-> and Information Technology (I am working on business continuity
-> and disaster recovery services with emphasis on Air Traffic Management).
+> On Tue, 06 Jul 2010 22:22:17 +1000
+> Andrew Hendry <andrew.hendry@gmail.com> wrote:
 >
-> This year I put an proposal regarding migration from memory ballooning
-> to memory hotplug in Xen to Google Summer of Code 2010 (it was one of
-> my two proposals). It was accepted and now I happy GSoC 2010 student.
-> My mentor is Jeremy Fitzhardinge. I would like to thank him
-> for his patience and supporting hand.
+>>
+>> Some extra messages when booting with -rc4. Didn't get them in -rc3.
+>> [    1.387013] swapper:1 freeing invalid memtype bf788000-bf789000
+>> [    1.387409] swapper:1 freeing invalid memtype bf789000-bf78a000
+>> [    5.999675] modprobe:548 freeing invalid memtype d0000000-d0040000
+>> [    6.068347] modprobe:548 freeing invalid memtype d0140000-d0150000
+>> [    6.068647] modprobe:548 freeing invalid memtype d0150000-d0160000
+>> [    6.069661] modprobe:548 freeing invalid memtype d0170000-d01f0000
+>> [    6.085969] modprobe:548 freeing invalid memtype d01f0000-d0200000
+>> [    6.087673] modprobe:548 freeing invalid memtype d0210000-d0220000
+>> [    6.087900] modprobe:548 freeing invalid memtype d0220000-d0230000
+>> [    6.088092] modprobe:548 freeing invalid memtype d0230000-d0240000
+>> [    6.088317] modprobe:548 freeing invalid memtype d0240000-d0250000
 >
-> OK, let's go to details. When I was playing with Xen I saw that
-> ballooning does not give possibility to extend memory over boundary
-> declared at the start of system. Yes, I know that is by desing however
-> I thought that it is a limitation which could by very annoing in some
-> enviroments (I think especially about servers). That is why I decided to
-> develop some code which remove that one. At the beggining I thought
-> that it should be replaced by memory hotplyg however after some test
-> and discussion with Jeremy we decided to link balooning (for memory
-> removal) with memory hotplug (for extending memory above boundary
-> declared at the startup of system). Additionaly, we decided to implement
-> this solution for Linux Xen gustes in all forms (PV/i386,x86_64 and
-> HVM/i386,x86_64).
+> hrmpf, one of those wonderful messages where neither it nor its source
+> code give you any clue regarding what caused it nor how to fix it.
 >
-> Now, I have done most of the planned tests and wrote a PoC.
+> please, apply this:
 >
-> Short description of current algorithm (it was prepared
-> for PoC and it will be changed to implement convenient
-> mechanism for user):
->   - find free (not claimed by another memory region or device)
->     memory region of PAGES_PER_SECTION << PAGE_SHIFT
->     size in iomem_resource,
->   
-
-Presumably in the common case this will be at the end of the memory
-map?  Since a typical PV domain has all its initial memory allocated low
-and doesn't have any holes.
-
->   - find all PFNs for choosen memory region
->     (addr >> PAGE_SHIFT),
->   - allocate memory from hypervisor by
->     HYPERVISOR_memory_op(XENMEM_populate_physmap, &memory_region),
->   
-
-Is it actually necessary to allocate the memory at this point?
-
->   - inform system about new memory region and reserve it by
->     mm/memory_hotplug.c:add_memory(memory_add_physaddr_to_nid(start_addr),
->                                    start_addr, PAGES_PER_SECTION << PAGE_SHIFT),
->   - online memory region by
->     mm/memory_hotplug.c:online_pages(start_addr >> PAGE_SHIFT,
->                                      PAGES_PER_SECTION << PAGE_SHIFT).
->   
-
-It seems to me you could add the memory (to get the new struct pages)
-and "online" it, but immediately take a reference to the page and give
-it over to the balloon driver to manage as a ballooned-out page.  Then,
-when you actually need the memory, the balloon driver can provide it in
-the normal way.
-
-(I'm not sure where it allocates the new page structures from, but if
-its out of the newly added memory you'll need to allocate that up-front,
-at least.)
-
-> Currently, memory is added and onlined in 128MiB blocks (section size
-> for x86), however I am going to do that in smaller chunks.
->   
-
-If you can avoid actually allocating the pages, then 128MiB isn't too
-bad.  I think that's only ~2MiB of page structures.
-
-> Additionally, some things are done manually however
-> it will be changed in final implementation.
-> I would like to mention that this solution
-> does not require any change in Xen hypervisor.
+> --- a/arch/x86/mm/pat.c~a
+> +++ a/arch/x86/mm/pat.c
+> @@ -359,7 +359,7 @@ int free_memtype(u64 start, u64 end)
+>        entry = rbt_memtype_erase(start, end);
+>        spin_unlock(&memtype_lock);
 >
-> I am going to send you first version of patch
-> (fully working) next week.
->   
-
-Looking forward to it.  What kernel is it based on?
-
-Thanks,
-    J
+> -       if (!entry) {
+> +       if (WARN_ON(!entry)) {
+>                printk(KERN_INFO "%s:%d freeing invalid memtype %Lx-%Lx\n",
+>                        current->comm, current->pid, start, end);
+>                return -EINVAL;
+>
+>
+> and let's at least see where it's coming from.
+>
+>> Not sure if its related, but also have a noticeable performance issue with graphics under rc4.
+>> Dragging and resizing windows, screen updates, and jumpy cursor are all slow.
+>> Playing a full screen video under vlc gets only 1-2 frames per second, but plays fine under rc3.
+>> Tested a kernel compile, it was roughly the same.
+>> Userspace is ubunutu 10.04 64bit.
+>>
+>> Any hints? Otherwise will start a bisect tomorrow night.
+>>
+>> Config attached, lspci, rc3 and rc4 boot messages below:
+>
+> What graphics hardware are you using?
+>
+>
