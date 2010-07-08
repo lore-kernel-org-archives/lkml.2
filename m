@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab0GHWdS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 18:33:18 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60269 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665Ab0GHWdQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 18:33:16 -0400
-Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
-From: john stultz <johnstul@us.ibm.com>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-In-Reply-To: <1278609590.7527.11.camel@localhost.localdomain>
-References: <1278609590.7527.11.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Jul 2010 15:33:06 -0700
-Message-ID: <1278628386.3008.11.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758679Ab0GHWeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 18:34:13 -0400
+Received: from tundra.namei.org ([65.99.196.166]:43272 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756282Ab0GHWeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 18:34:11 -0400
+Date: Fri, 9 Jul 2010 08:33:48 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, "Matthew N. Dodd" <matthew.dodd@sparta.com>,
+       trond.myklebust@fys.uio.no, bfields@fieldses.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+       linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 04/10] SELinux: Add new labeling type native labels
+In-Reply-To: <1278595878.2494.186.camel@moss-terrapins.epoch.ncsc.mil>
+Message-ID: <alpine.LRH.2.00.1007090824150.23354@tundra.namei.org>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>  <1278513086-23964-5-git-send-email-dpquigl@tycho.nsa.gov>  <alpine.LRH.2.00.1007080921200.14102@tundra.namei.org> <1278595878.2494.186.camel@moss-terrapins.epoch.ncsc.mil>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 10:19 -0700, Fernando Lopez-Lezcano wrote:
-> We are having problems with 2.6.33.5+rt23, at least in our configuration
-> while accessing an nfs automounted directory. This causes a complete
-> machine lockup (press reset to exit as the only option). 
-> 
-> I simply use the Nautilus file manager (in Fedora 12) to navigate to an
-> autofs mounted directory and the process monitor goes to 100% on one
-> core (or maybe two), the mouse jerks a bit and the whole thing goes
-> catatonic almost immediately. 
-> 
-> I get this in any open terminal at the time of the crash:
-> 
-> --------
-> Message from syslogd@localhost at Jul  8 10:13:54 ...
->  kernel:------------[ cut here ]------------
-> 
-> Message from syslogd@localhost at Jul  8 10:13:54 ...
->  kernel:invalid opcode: 0000 [#1] PREEMPT SMP 
-> 
-> Message from syslogd@localhost at Jul  8 10:13:54 ...
->  kernel:last sysfs
-> file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
-> 
-> Message from syslogd@localhost at Jul  8 10:13:54 ...
->  kernel:Process nautilus (pid: 2874, ti=f0204000 task=f17dd1f0
-> task.ti=f0204000)
-> 
-> Message from syslogd@localhost at Jul  8 10:13:54 ...
->  kernel:Stack:
-> 
-> Message from syslogd@localhost at Jul  8 10:13:54 ...
->  kernel:Call Trace:
-> 
-> Message from syslogd@localhost at Jul  8 10:13:54 ...
->  kernel:Code: 7b 08 00 89 45 b8 75 12 8d 43 04 89 43 04 89 43 08 8d 43
-> 0c 89 43 0c 89 43 10 8b 43 14 64 8b 15 2c d1 a5 c0 83 e0 fc 39 c2 75 04
-> <0f> 0b eb fe 8b 3a 81 ff 08 01 00 00 74 0a 83 ff 02 b8 04 00 00 
-> 
-> Message from syslogd@localhost at Jul  8 10:13:54 ...
->  kernel:EIP: [<c0792c0f>] rt_spin_lock_slowlock+0x43/0x1bb SS:ESP
-> 0068:f0205cbc
-> --------
-> 
-> And that's it... nothing else in the logs. 
+On Thu, 8 Jul 2010, David P. Quigley wrote:
 
-Hrm. Not too much to go on there, but thanks for the report.
+> > Otherwise, this is a global policy decision which affects all NFSv4 
+> > mounts, right?
+> > 
+> > 
+> 
+> I don't believe we have that ability in any other file system.
+
+NFS is quite different to other filesystems.  Your files are on other 
+systems, for example, which may or may not support security labeling.
+
+> If you want to decide that you want to use genfs style labels on NFSv4 
+> just use a context mount.
+
+So, we enable this feature, and virtually all existing mounts break 
+because the servers do not support labeling.
+
+> That way you can have the default behavior be 
+> use security label support unless you don't want to and then you can 
+> have a context mount.
+
+It needs to be the other way around.  This is a new feature, so the 
+default needs to be the existing behavior, with security labeling as an 
+option to enable at mount time.
 
 
-> For now we are booting into the normal Fedora kernel (this is on Fedora
-> 12) as this makes the rt kernel not usable in our setup. 
-> 
-> Let me know if there is anything else I can do to help debug this...
 
-Had you done any testing with earlier 2.6.33-rt kernels where this
-didn't occur? If so what version?
-
-thanks
--john
-
-
+- James
+-- 
+James Morris
+<jmorris@namei.org>
