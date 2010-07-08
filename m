@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab0GHX7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 19:59:00 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37922 "EHLO ogre.sisk.pl"
+	id S932219Ab0GHX7v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 19:59:51 -0400
+Received: from sh.osrg.net ([192.16.179.4]:36344 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160Ab0GHX6y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 19:58:54 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Christoph Lameter" <cl@linux-foundation.org>,
-       "Manfred Spraul" <manfred@colorfullife.com>
-References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
-In-Reply-To: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <TXb9XdQzJoD.A.mgC.3MmNMB@chimera>
-Subject: [Bug #16255] 2.6.35-rc3 deadlocks on semaphore operations
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri,  9 Jul 2010 01:41:36 +0200 (CEST)
+	id S1758995Ab0GHX7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 19:59:37 -0400
+Date: Fri, 9 Jul 2010 08:59:19 +0900
+To: axboe@kernel.dk, arnd@arndb.de
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] fix BLKTRACESETUP32 compile error
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100709085858U.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 09 Jul 2010 08:59:19 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+I got the following compile error with block's for-2.6.36 tree:
 
-The following bug entry is on the current list of known regressions
-from 2.6.34.  Please verify if it still should be listed and let the tracking team
-know (either way).
+block/compat_ioctl.c: In function compat_blkdev_ioctl:
+block/compat_ioctl.c:754: error: BLKTRACESETUP32 undeclared (first use in this function)
+block/compat_ioctl.c:754: error: (Each undeclared identifier is reported only once
+block/compat_ioctl.c:754: error: for each function it appears in.)
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16255
-Subject		: 2.6.35-rc3 deadlocks on semaphore operations
-Submitter	: Christoph Lameter <cl@linux-foundation.org>
-Date		: 2010-06-18 14:49 (21 days old)
-Message-ID	: <alpine.DEB.2.00.1006180940140.11575@router.home>
-References	: http://marc.info/?l=linux-kernel&m=127687262727707&w=2
-Handled-By	: Manfred Spraul <manfred@colorfullife.com>
-Patch		: http://marc.info/?l=linux-kernel&m=127731055203402&w=2
+This is due to "block: push BKL into blktrace ioctls" patch.
 
+=
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH] fix BLKTRACESETUP32 compile error
+
+We need BLKTRACESETUP32 even with CONFIG_BLK_DEV_IO_TRACE disabled.
+
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+---
+ include/linux/blktrace_api.h |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/include/linux/blktrace_api.h b/include/linux/blktrace_api.h
+index 07c6986..a19b85f 100644
+--- a/include/linux/blktrace_api.h
++++ b/include/linux/blktrace_api.h
+@@ -204,17 +204,6 @@ extern int blk_trace_init_sysfs(struct device *dev);
+ 
+ extern struct attribute_group blk_trace_attr_group;
+ 
+-struct compat_blk_user_trace_setup {
+-	char name[32];
+-	u16 act_mask;
+-	u32 buf_size;
+-	u32 buf_nr;
+-	compat_u64 start_lba;
+-	compat_u64 end_lba;
+-	u32 pid;
+-};
+-#define BLKTRACESETUP32 _IOWR(0x12, 115, struct compat_blk_user_trace_setup)
+-
+ #else /* !CONFIG_BLK_DEV_IO_TRACE */
+ # define blk_trace_ioctl(bdev, cmd, arg)		(-ENOTTY)
+ # define blk_trace_shutdown(q)				do { } while (0)
+@@ -232,6 +221,17 @@ static inline int blk_trace_init_sysfs(struct device *dev)
+ 
+ #endif /* CONFIG_BLK_DEV_IO_TRACE */
+ 
++struct compat_blk_user_trace_setup {
++	char name[32];
++	u16 act_mask;
++	u32 buf_size;
++	u32 buf_nr;
++	compat_u64 start_lba;
++	compat_u64 end_lba;
++	u32 pid;
++};
++#define BLKTRACESETUP32 _IOWR(0x12, 115, struct compat_blk_user_trace_setup)
++
+ #if defined(CONFIG_EVENT_TRACING) && defined(CONFIG_BLOCK)
+ 
+ static inline int blk_cmd_buf_len(struct request *rq)
+-- 
+1.6.5
 
