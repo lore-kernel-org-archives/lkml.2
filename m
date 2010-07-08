@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758494Ab0GHTDq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 15:03:46 -0400
-Received: from kroah.org ([198.145.64.141]:49742 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758468Ab0GHTDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 15:03:44 -0400
-Date: Thu, 8 Jul 2010 12:03:28 -0700
-From: Greg KH <greg@kroah.com>
-To: =?utf-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org,
-       Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-       stable <stable@kernel.org>
-Subject: Re: [PATCHv2 1/2] USB: gadget: mass/file storage: set serial number
-Message-ID: <20100708190328.GA6617@kroah.com>
-References: <c73431dbedd41f94c5f471fb5e466943cee870c1.1277974263.git.m.nazarewicz@samsung.com>
- <624a27be8a9a4492976afaa8df78c07051cc6e25.1277987700.git.m.nazarewicz@samsung.com>
- <20100708183425.GB31823@kroah.com>
- <op.vfjga9ie7p4s8u@pikus>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <op.vfjga9ie7p4s8u@pikus>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758480Ab0GHTGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 15:06:45 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:60470 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756682Ab0GHTGo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 15:06:44 -0400
+Subject: Re: high power consumption in recent kernels
+From: Peter Zijlstra <peterz@infradead.org>
+To: Norbert Preining <preining@logic.at>
+Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, akpm <akpm@linux-foundation.org>,
+       Mike Galbraith <efault@gmx.de>, tglx <tglx@linutronix.de>
+In-Reply-To: <1278604779.1900.157.camel@laptop>
+References: <20100706164539.GA14783@gamma.logic.tuwien.ac.at>
+	 <1278579992.1900.17.camel@laptop> <20100708045711.398d4e26@infradead.org>
+	 <1278590303.1900.91.camel@laptop>
+	 <20100708120421.GF20841@gamma.logic.tuwien.ac.at>
+	 <1278591779.1900.97.camel@laptop>
+	 <20100708124627.GA7754@gamma.logic.tuwien.ac.at>
+	 <1278595426.1900.130.camel@laptop>  <1278604779.1900.157.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 08 Jul 2010 21:06:31 +0200
+Message-ID: <1278615991.1900.187.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 08:58:11PM +0200, Michał Nazarewicz wrote:
-> >On Thu, Jul 01, 2010 at 03:42:19PM +0200, Michal Nazarewicz wrote:
-> >>This commit adds iSerialNumber to all gadgets that use the Mass
-> >>Storage Function.  It appears that Windows has problems when
-> >>it is not set.
-> >>
-> >>Not to copy the same code all over again, a fsg_string_serial_fill()
-> >>macro has been added to the storage_common.c file which is now also
-> >>used in the File Storage Gadget.
-> 
-> On Thu, 08 Jul 2010 20:34:25 +0200, Greg KH <greg@kroah.com> wrote:
-> >This patch conflicts with the patch in my tree:
-> >	Subject: USB: Add a serial number parameter to g_file_storage module
-> 
-> Ah, there it is...  I remembered this patch but couldn't find it so assumed
-> that it didn't make it to your tree after all.  But there it is...
-> 
-> >So, could you fix the above patch up to play nice with your change so
-> >that I can accept it?
-> 
-> Sure thing.  If I won't post it within 2h I'll do that after the weekend
-> (read Monday).
+On Thu, 2010-07-08 at 17:59 +0200, Peter Zijlstra wrote:
 
-Sounds good.
+> OK, so Arjan said the gain could come from tricking the idle governor
+> into not using deeper C states. He also said he significantly cured said
+> governor in .35.
+> 
+> Mike could you re-run your netperf tests that showed the 10% throughput
+> gain? Hopefully the fixed governor will yield the same result and we can
+> kill off this ratelimit thing.
 
-Note, Monday I'll be somewhere in Europe so my email access might be a
-bit limited for that week.
+FWIW, on my test-box, 35-rc4-tip, using ondemand:
 
-thanks,
+with    nohz_ratelimit() : ~2119.54 MB/s
+without nohz_ratelimit() : ~2353.03 MB/s
 
-greg k-h
+Seems to suggest we should simply kill the thing..
