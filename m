@@ -1,103 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757102Ab0GHPgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 11:36:41 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46971 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756239Ab0GHPgj (ORCPT
+	id S1756698Ab0GHPkP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 11:40:15 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:58353 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969Ab0GHPkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 11:36:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Kjq24ZlYDfkb+kSQB7ldyLdWTx9r/DkHTo51hSFXwRz1EI6UrMIjGmTr7+W2QxFswB
-         +QeqrLvgSUmuPKtKGXaREV/4uVQ1fYiuicmgY2QLYoCE0IKUf7pfww8EoXn7if9v9S7h
-         pTWSBsy06eMF/CNiTiCmITQp0GQZ/0QwOTXvM=
-Date: Thu, 8 Jul 2010 19:36:29 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ben Dooks <ben@simtec.co.uk>,
-       Richard =?utf-8?Q?R=C3=B6jfors?= <richard.rojfors@pelagicore.com>,
-       linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] sdhci-pltfm: Add support for CNS3xxx SoC devices
-Message-ID: <20100708153629.GA418@oksana.dev.rtsoft.ru>
-References: <20100625180527.GA11280@oksana.dev.rtsoft.ru>
- <20100625180644.GC18241@oksana.dev.rtsoft.ru>
- <20100701134839.d7cb4841.akpm@linux-foundation.org>
+	Thu, 8 Jul 2010 11:40:13 -0400
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+To: Chris Mason <chris.mason@oracle.com>
+Subject: Re: kernel BUG at fs/btrfs/extent-tree.c:1353
+Date: Thu, 8 Jul 2010 17:40:32 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc4; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+       zheng.yan@oracle.com
+References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <20100708143109.GR15984@think>
+In-Reply-To: <20100708143109.GR15984@think>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100701134839.d7cb4841.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007081740.34000.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the delayed response,
+Am Donnerstag 08 Juli 2010, 16:31:09 schrieb Chris Mason:
+> Neither Yan nor I have been able to reproduce this locally, but a few
+> people have now hit it.  Johannes, are you available to try out a
+> debugging kernel to try and track this down?
 
-On Thu, Jul 01, 2010 at 01:48:39PM -0700, Andrew Morton wrote:
-> On Fri, 25 Jun 2010 22:06:44 +0400
-> Anton Vorontsov <avorontsov@mvista.com> wrote:
-> 
-> > There's nothing special, just SoC-specific ops and quirks.
-> > 
-> > ...
-> >
-> > +static void sdhci_cns3xxx_set_clock(struct sdhci_host *host, unsigned int clock)
-> > +{
-> > +	struct device *dev = mmc_dev(host->mmc);
-> > +	int div = 1;
-> > +	u16 clk;
-> > +	unsigned long timeout;
-> > +
-> > +	if (clock == host->clock)
-> > +		return;
-> 
-> I assume that mmc core prevents this function from being exectued twice
-> at the same time?
+Sure, just tell me what to do. Is it enough to recompile the kernel with debug 
+options enabled or are special debug patches necessary?
 
-Yep, it's called under spin_lock_irqsave(&host->lock, flags).
-
-[...]
-> > +	timeout = 20;
-> > +	while (!((clk = sdhci_readw(host, SDHCI_CLOCK_CONTROL))
-> > +			& SDHCI_CLOCK_INT_STABLE)) {
-> > +		if (timeout == 0) {
-> > +			dev_warn(dev, "clock is unstable");
-> > +			break;
-> > +		}
-> > +		timeout--;
-> > +		mdelay(1);
-> 
-> Could we have used the more polite msleep() here?
-
-Unfortunately not, we're in the atomic context.
-
-[...]
-> > --- a/drivers/mmc/host/sdhci-pltfm.c
-> > +++ b/drivers/mmc/host/sdhci-pltfm.c
-> > @@ -158,6 +158,9 @@ static int __devexit sdhci_pltfm_remove(struct platform_device *pdev)
-> >  
-> >  static const struct platform_device_id sdhci_pltfm_ids[] = {
-> >  	{ "sdhci", },
-> > +#ifdef CONFIG_MMC_SDHCI_CNS3XXX
-> > +	{ "sdhci-cns3xxx", (kernel_ulong_t)&sdhci_cns3xxx_pdata },
-> > +#endif
-> 
-> What the heck is this kernel_ulong_t thing and why did `struct
-> platform_device_id' see a need to invent it??
-
-It's not only platform_device_id's thing. Sometimes drivers just
-pass a constant instead of a pointer (e.g. DEVICE_IS_FOO,
-DEVICE_IS_BAR), for example see drivers/hwmon/lm75.c (enum
-lm75_type).
-
-Other than this I don't think that there's a good reason for it.
-
-Thanks,
-
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+regards,
+  Johannes
