@@ -1,60 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758679Ab0GHWeN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 18:34:13 -0400
-Received: from tundra.namei.org ([65.99.196.166]:43272 "EHLO tundra.namei.org"
+	id S1758685Ab0GHWfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 18:35:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27320 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756282Ab0GHWeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 18:34:11 -0400
-Date: Fri, 9 Jul 2010 08:33:48 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
-       sds@tycho.nsa.gov, "Matthew N. Dodd" <matthew.dodd@sparta.com>,
-       trond.myklebust@fys.uio.no, bfields@fieldses.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 04/10] SELinux: Add new labeling type native labels
-In-Reply-To: <1278595878.2494.186.camel@moss-terrapins.epoch.ncsc.mil>
-Message-ID: <alpine.LRH.2.00.1007090824150.23354@tundra.namei.org>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>  <1278513086-23964-5-git-send-email-dpquigl@tycho.nsa.gov>  <alpine.LRH.2.00.1007080921200.14102@tundra.namei.org> <1278595878.2494.186.camel@moss-terrapins.epoch.ncsc.mil>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1755665Ab0GHWfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 18:35:36 -0400
+Date: Fri, 9 Jul 2010 01:29:13 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>, Patrick McHardy <kaber@trash.net>,
+       "David S. Miller" <davem@davemloft.net>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+       James Morris <jmorris@namei.org>,
+       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+       linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+       netfilter@vger.kernel.org, coreteam@netfilter.org,
+       netdev@vger.kernel.org, herbert.xu@redhat.com, kvm@vger.kernel.org
+Subject: [PATCH] netfilter: add CHECKSUM target
+Message-ID: <20100708222913.GA4475@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jul 2010, David P. Quigley wrote:
+This adds a `CHECKSUM' target, which can be used in the iptables mangle
+table.
 
-> > Otherwise, this is a global policy decision which affects all NFSv4 
-> > mounts, right?
-> > 
-> > 
-> 
-> I don't believe we have that ability in any other file system.
+You can use this target to compute and fill in the checksum in
+an IP packet that lacks a checksum.  This is particularly useful,
+if you need to work around old applications such as dhcp clients,
+that do not work well with checksum offloads, but don't want to
+disable checksum offload in your device.
 
-NFS is quite different to other filesystems.  Your files are on other 
-systems, for example, which may or may not support security labeling.
+The problem happens in the field with virtualized applications.
+For reference, see Red Hat bz 605555, as well as
+http://www.spinics.net/lists/kvm/msg37660.html
 
-> If you want to decide that you want to use genfs style labels on NFSv4 
-> just use a context mount.
+Typical expected use (helps old dhclient binary running in a VM):
+iptables -A POSTROUTING -t mangle -p udp --dport 68 -j CHECKSUM
+--checksum-fill
 
-So, we enable this feature, and virtually all existing mounts break 
-because the servers do not support labeling.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-> That way you can have the default behavior be 
-> use security label support unless you don't want to and then you can 
-> have a context mount.
+Lightly tested. Please review for 2.6.36. Thanks!
 
-It needs to be the other way around.  This is a new feature, so the 
-default needs to be the existing behavior, with security labeling as an 
-option to enable at mount time.
+ include/linux/netfilter_ipv4/ipt_CHECKSUM.h |   18 +++++++
+ net/ipv4/netfilter/Kconfig                  |   16 ++++++
+ net/ipv4/netfilter/Makefile                 |    1 +
+ net/ipv4/netfilter/ipt_CHECKSUM.c           |   72 +++++++++++++++++++++++++++
+ 4 files changed, 107 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/netfilter_ipv4/ipt_CHECKSUM.h
+ create mode 100644 net/ipv4/netfilter/ipt_CHECKSUM.c
 
-
-
-- James
+diff --git a/include/linux/netfilter_ipv4/ipt_CHECKSUM.h b/include/linux/netfilter_ipv4/ipt_CHECKSUM.h
+new file mode 100644
+index 0000000..0b0f660
+--- /dev/null
++++ b/include/linux/netfilter_ipv4/ipt_CHECKSUM.h
+@@ -0,0 +1,18 @@
++/* Header file for iptables ipt_CHECKSUM target
++ *
++ * (C) 2002 by Harald Welte <laforge@gnumonks.org>
++ * (C) 2010 Red Hat Inc
++ * Author: Michael S. Tsirkin <mst@redhat.com>
++ *
++ * This software is distributed under GNU GPL v2, 1991
++*/
++#ifndef _IPT_CHECKSUM_TARGET_H
++#define _IPT_CHECKSUM_TARGET_H
++
++#define IPT_CHECKSUM_OP_FILL	0x01	/* fill in checksum in IPv4 header */
++
++struct ipt_CHECKSUM_info {
++	u_int8_t operation;	/* bitset of operations */
++};
++
++#endif /* _IPT_CHECKSUM_TARGET_H */
+diff --git a/net/ipv4/netfilter/Kconfig b/net/ipv4/netfilter/Kconfig
+index 1833bdb..2fb979b 100644
+--- a/net/ipv4/netfilter/Kconfig
++++ b/net/ipv4/netfilter/Kconfig
+@@ -322,6 +322,22 @@ config IP_NF_TARGET_ECN
+ 
+ 	  To compile it as a module, choose M here.  If unsure, say N.
+ 
++config IP_NF_TARGET_CHECKSUM
++	tristate "CHECKSUM target support"
++	depends on IP_NF_MANGLE
++	depends on NETFILTER_ADVANCED
++	---help---
++	  This option adds a `CHECKSUM' target, which can be used in the iptables mangle
++	  table.  
++
++	  You can use this target to compute and fill in the checksum in
++	  an IP packet that lacks a checksum.  This is particularly useful,
++	  if you need to work around old applications such as dhcp clients,
++	  that do not work well with checksum offloads, but don't want to disable
++	  checksum offload in your device.
++
++	  To compile it as a module, choose M here.  If unsure, say N.
++
+ config IP_NF_TARGET_TTL
+ 	tristate '"TTL" target support'
+ 	depends on NETFILTER_ADVANCED
+diff --git a/net/ipv4/netfilter/Makefile b/net/ipv4/netfilter/Makefile
+index 4811159..d7047bb 100644
+--- a/net/ipv4/netfilter/Makefile
++++ b/net/ipv4/netfilter/Makefile
+@@ -55,6 +55,7 @@ obj-$(CONFIG_IP_NF_MATCH_ECN) += ipt_ecn.o
+ # targets
+ obj-$(CONFIG_IP_NF_TARGET_CLUSTERIP) += ipt_CLUSTERIP.o
+ obj-$(CONFIG_IP_NF_TARGET_ECN) += ipt_ECN.o
++obj-$(CONFIG_IP_NF_TARGET_CHECKSUM) += ipt_CHECKSUM.o
+ obj-$(CONFIG_IP_NF_TARGET_LOG) += ipt_LOG.o
+ obj-$(CONFIG_IP_NF_TARGET_MASQUERADE) += ipt_MASQUERADE.o
+ obj-$(CONFIG_IP_NF_TARGET_NETMAP) += ipt_NETMAP.o
+diff --git a/net/ipv4/netfilter/ipt_CHECKSUM.c b/net/ipv4/netfilter/ipt_CHECKSUM.c
+new file mode 100644
+index 0000000..b8346a1
+--- /dev/null
++++ b/net/ipv4/netfilter/ipt_CHECKSUM.c
+@@ -0,0 +1,72 @@
++/* iptables module for the IPv4 CHECKSUM
++ *
++ * (C) 2002 by Harald Welte <laforge@netfilter.org>
++ * (C) 2010 Red Hat, Inc.
++ *
++ * Author: Michael S. Tsirkin <mst@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#include <linux/in.h>
++#include <linux/module.h>
++#include <linux/skbuff.h>
++#include <linux/netdevice.h>
++
++#include <linux/netfilter/x_tables.h>
++#include <linux/netfilter_ipv4/ip_tables.h>
++#include <linux/netfilter_ipv4/ipt_CHECKSUM.h>
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Michael S. Tsirkin <mst@redhat.com>");
++MODULE_DESCRIPTION("Xtables: checksum modification");
++
++static unsigned int
++checksum_tg(struct sk_buff *skb, const struct xt_action_param *par)
++{
++	if (skb->ip_summed == CHECKSUM_PARTIAL) {
++		skb_checksum_help(skb);
++	}
++
++	return XT_CONTINUE;
++}
++
++static int checksum_tg_check(const struct xt_tgchk_param *par)
++{
++	const struct ipt_CHECKSUM_info *einfo = par->targinfo;
++
++	if (einfo->operation & ~IPT_CHECKSUM_OP_FILL) {
++		pr_info("unsupported CHECKSUM operation %x\n", einfo->operation);
++		return -EINVAL;
++	}
++	if (!einfo->operation) {
++		pr_info("no CHECKSUM operation enabled\n");
++		return -EINVAL;
++	}
++	return 0;
++}
++
++static struct xt_target checksum_tg_reg __read_mostly = {
++	.name		= "CHECKSUM",
++	.family		= NFPROTO_IPV4,
++	.target		= checksum_tg,
++	.targetsize	= sizeof(struct ipt_CHECKSUM_info),
++	.table		= "mangle",
++	.checkentry	= checksum_tg_check,
++	.me		= THIS_MODULE,
++};
++
++static int __init checksum_tg_init(void)
++{
++	return xt_register_target(&checksum_tg_reg);
++}
++
++static void __exit checksum_tg_exit(void)
++{
++	xt_unregister_target(&checksum_tg_reg);
++}
++
++module_init(checksum_tg_init);
++module_exit(checksum_tg_exit);
 -- 
-James Morris
-<jmorris@namei.org>
+1.7.2.rc0.14.g41c1c
