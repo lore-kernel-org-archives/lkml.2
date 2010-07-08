@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab0GHUgH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 16:36:07 -0400
-Received: from qsmtp.mc.surewest.net ([66.60.130.145]:46949 "HELO
-	smtp2.mc.surewest.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753208Ab0GHUgE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 16:36:04 -0400
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jul 2010 16:36:04 EDT
-X-Spam-CMAE-Analysis: v=1.0 c=1 a=xDSDEXTo-cEA:10 a=is5sIikfpoQA:10 
-	a=VphdPIyG4kEA:10 a=kj9zAlcOel0A:10 a=ntoLRZiSlfVt_33ShZIA:9 
-	a=YMY6cmKhoXZlD7WCWTIA:7 a=AWWj0vmB7gi523HKkLUxRusIZ1UA:4 
-	a=CjuIK1q_8ugA:10 a=7yoFmkfiHqEA:10
-From: Liu Qinggui <qin_ggui@yahoo.com.hk>
-Subject: Proposal
-To: liuqinggui@yahoo.com.hk
-Reply-To: liuqinggui@yahoo.com.hk
-X-Mailer: Mirapoint Webmail Direct 4.1.8-GA
+	id S1757037Ab0GHUg5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 16:36:57 -0400
+Received: from kroah.org ([198.145.64.141]:36659 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751743Ab0GHUgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 16:36:55 -0400
+Date: Thu, 8 Jul 2010 13:28:58 -0700
+From: Greg KH <greg@kroah.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: trivial@kernel.org, Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dan Carpenter <error27@gmail.com>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/16] trivial: use ARRAY_SIZE
+Message-ID: <20100708202858.GA2888@kroah.com>
+References: <1277726117-24699-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100708131522.AWS84004@ms1.mc.surewest.net>
-Date: Thu,  8 Jul 2010 13:15:22 -0700 (PDT)
+Content-Disposition: inline
+In-Reply-To: <1277726117-24699-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My Name Is Liu Qin Qinggui,
+Meta-comment:
 
+In the future, please provide a much better Subject: line so that I
+don't have to go and edit it to show exactly what it is affecting.
 
-I have a serious big business to propose to you, my late client Mr Henry Ting, left an unclaimed sum with my bank.
+thanks,
 
- 
-I want you to help me process and receive this fund, Rest assured I can make this transaction work perfectly and safely for us you understand,
-and with your co-operation for the success of this business I offer to you a good percentage of the fund as your share.
- 
-If interested pls contact to me as soonest your convenience at my e-mail: liuqinggui@yahoo.com.hk
-
-I give you all necessary information on this business and how we make it work .
- 
-I expect your reply and my response be swift. Thanking you much now.
- 
-
-Reply soon.
- 
-Liu Qin Qinggui
-
+greg k-h
