@@ -1,112 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab0GHJdb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 05:33:31 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58021 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754512Ab0GHJda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 05:33:30 -0400
-Date: Thu, 8 Jul 2010 11:32:41 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       Peter Zijlstra <peterz@infradead.org>, Darren Hart <dvhltc@us.ibm.com>
-Subject: Re: [PATCH] futex: futex_find_get_task remove credentails check
-Message-ID: <20100708093241.GB6057@elte.hu>
-References: <20100628153214.GA24127@tiehlicka.suse.cz>
- <20100628155845.GC24127@tiehlicka.suse.cz>
- <20100628163952.GD24127@tiehlicka.suse.cz>
- <1277743748.3561.139.camel@laptop>
- <20100629084230.GE6215@tiehlicka.suse.cz>
- <AANLkTinyoyZVg8iYOuUx6aA4XlUlLywl4q6GLXmeYP-x@mail.gmail.com>
- <20100630070115.GB3890@tiehlicka.suse.cz>
- <20100630095525.GA5840@tiehlicka.suse.cz>
- <4C2B742F.6050403@us.ibm.com>
- <20100708092819.GB4925@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100708092819.GB4925@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 1.0
-X-ELTE-SpamLevel: s
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
-	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
-	[score: 0.4709]
+	id S1755483Ab0GHJf2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 05:35:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59252 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab0GHJf1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 05:35:27 -0400
+Subject: Re: FYI: mmap_sem OOM patch
+From: Peter Zijlstra <peterz@infradead.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Michel Lespinasse <walken@google.com>, linux-mm <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>, Divyesh Shah <dpshah@google.com>
+In-Reply-To: <20100708182134.CD3F.A69D9226@jp.fujitsu.com>
+References: <20100707231134.GA26555@google.com>
+	 <1278579768.1900.14.camel@laptop>
+	 <20100708182134.CD3F.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 08 Jul 2010 11:35:17 +0200
+Message-ID: <1278581717.1900.20.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Michal Hocko <mhocko@suse.cz> wrote:
-
-> On Wed 30-06-10 09:43:27, Darren Hart wrote:
-> > On 06/30/2010 02:55 AM, Michal Hocko wrote:
-> > >On Wed 30-06-10 09:01:15, Michal Hocko wrote:
-> > >>On Tue 29-06-10 09:41:02, Linus Torvalds wrote:
-> > >>>On Tue, Jun 29, 2010 at 1:42 AM, Michal Hocko<mhocko@suse.cz>  wrote:
-> > >>>>
-> > >>>>futex_find_get_task is currently used (through lookup_pi_state) from two
-> > >>>>contexts, futex_requeue and futex_lock_pi_atomic. While credentials check
-> > >>>>makes sense in the first code path, the second one is more problematic
-> > >>>>because this check requires that the PI lock holder (pid parameter) has
-> > >>>>the same uid and euid as the process's euid which is trying to lock the
-> > >>>>same futex (current).
-> > >>>
-> > >>>So exactly why does it make sense to check the credentials in the
-> > >>>first code path then?
-> > >>
-> > >>I though that requeue needs this for security reasons (don't let requeue
-> > >>process for other user), but when I thought about that again you are
-> > >>right and the only what matters should be accessibility of the shared
-> > >>memory.
-> > >
-> > >And here is the patch which does the thing.
-> > >
-> > >--
-> > >
-> > > From 082c5ad2c482a8e78b61b17e213e750b006176aa Mon Sep 17 00:00:00 2001
-> > >From: Michal Hocko<mhocko@suse.cz>
-> > >Date: Wed, 30 Jun 2010 09:51:19 +0200
-> > >Subject: [PATCH] futex: futex_find_get_task remove credentails check
-> > >
-> > >futex_find_get_task is currently used (through lookup_pi_state) from two
-> > >contexts, futex_requeue and futex_lock_pi_atomic. None of the paths
-> > >looks it needs the credentials check, though. Different (e)uids
-> > >shouldn't matter at all because the only thing that is important for
-> > >shared futex is the accessibility of the shared memory.
-> > >
-> > >The credentail check results in glibc assert failure or process hang (if
-> > >glibc is compiled without assert support) for shared robust pthread
-> > >mutex with priority inheritance if a process tries to lock already held
-> > >lock owned by a process with a different euid:
-> > >
-> > >pthread_mutex_lock.c:312: __pthread_mutex_lock_full: Assertion `(-(e)) != 3 || !robust' failed.
-> > >
-> > >The problem is that futex_lock_pi_atomic which is called when we try to
-> > >lock already held lock checks the current holder (tid is stored in the
-> > >futex value) to get the PI state. It uses lookup_pi_state which in turn
-> > >gets task struct from futex_find_get_task. ESRCH is returned either when
-> > >the task is not found or if credentials check fails.
-> > >futex_lock_pi_atomic simply returns if it gets ESRCH. glibc code,
-> > >however,  doesn't expect that robust lock returns with ESRCH because it
-> > >should get either success or owner died.
-> > >
-> > >Signed-off-by: Michal Hocko<mhocko@suse.cz>
+On Thu, 2010-07-08 at 18:24 +0900, KOSAKI Motohiro wrote:
+> > On Wed, 2010-07-07 at 16:11 -0700, Michel Lespinasse wrote:
 > > 
-> > Without hearing back from Ingo on the original intent of the
-> > credentials check, this looks right to me.
+> > > diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> > > index f627779..4b3a1c7 100644
+> > > --- a/arch/x86/mm/fault.c
+> > > +++ b/arch/x86/mm/fault.c
+> > > @@ -1062,7 +1062,10 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+> > >  			bad_area_nosemaphore(regs, error_code, address);
+> > >  			return;
+> > >  		}
+> > > -		down_read(&mm->mmap_sem);
+> > > +		if (test_thread_flag(TIF_MEMDIE))
+> > > +			down_read_unfair(&mm->mmap_sem);
+> > > +		else
+> > > +			down_read(&mm->mmap_sem);
+> > >  	} else {
+> > >  		/*
+> > >  		 * The above down_read_trylock() might have succeeded in
+> > 
+> > I still think adding that _unfair interface is asking for trouble.
 > 
-> Could you comment on that Ingo, please?
+> Can you please explain trouble that you worry? Why do we need to keep
+> thread fairness when OOM case?
 
-I think that's more of a question to Thomas :-)
+Just the whole concept of the unfair thing offends me ;-) I didn't
+really look at the particular application in this case.
 
-My memories are hazy and nothing springs out as some credible original intent. 
-So please assume it doesnt exist :-)
 
-	Ingo
