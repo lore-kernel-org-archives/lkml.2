@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab0GHQOr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 12:14:47 -0400
-Received: from mx4.sophos.com ([74.202.89.161]:58070 "EHLO mx4.sophos.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758112Ab0GHQOo convert rfc822-to-8bit (ORCPT
+	id S1754776Ab0GHQV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 12:21:26 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:29833
+	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753534Ab0GHQVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 12:14:44 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: Greg KH <greg@kroah.com>
-Subject: Re: BUG: Securityfs and bind mounts (2.6.34)
-Date: Thu, 8 Jul 2010 17:14:40 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Al Viro <viro@zeniv.linux.org.uk>
-References: <201007081112.41252.tvrtko.ursulin@sophos.com> <201007081632.42069.tvrtko.ursulin@sophos.com> <20100708154648.GA13923@kroah.com>
-In-Reply-To: <20100708154648.GA13923@kroah.com>
+	Thu, 8 Jul 2010 12:21:24 -0400
+X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jul 2010 12:21:24 EDT
+X-SpamScore: -14
+X-BigFish: VPS-14(zz936eMzz1202hzz15d4Rz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L58Y0A-02-K8U-02
+X-M-MSG: 
+Date: Thu, 8 Jul 2010 18:05:14 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Dave Jones <davej@redhat.com>
+CC: "Langsdorf, Mark" <mark.langsdorf@amd.com>,
+       Thomas Renninger <trenn@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] powernow-k8: Fix misleading variable naming
+Message-ID: <20100708160514.GB3958@aftab>
 MIME-Version: 1.0
-Message-ID: <201007081714.40724.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 08/07/2010 17:14:41,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 08/07/2010 17:14:41,
-	Serialize complete at 08/07/2010 17:14:41
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+user-agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 Jul 2010 16:46:48 Greg KH wrote:
-> On Thu, Jul 08, 2010 at 04:32:42PM +0100, Tvrtko Ursulin wrote:
-> > On Thursday 08 Jul 2010 16:20:59 Greg KH wrote:
-> > > > :) Well I do not know, but, it kind of smelled like a bug in the
-> > > > : vfs/mount
-> > > >
-> > > > handling/securityfs area so I thought to let experts know. I _think_
-> > > > I did nothing that much wrong. Just used the exposed API
-> > > > (securityfs_remove) and some bind mount shuffling from userspace.
-> > >
-> > > securitfs just uses libfs underneath it, and really doesn't have any
-> > > bindings for module ownerships, so I wouldn't recommend doing what you
-> > > just did.
-> >
-> > Just do double check what you are saying, securityfs is not safe for use
-> > from modules? If so I would then recommend removing the exports otherwise
-> > it is an invitation to shoot yourself into the foot.
->
-> Hm, did you properly set the module owner of the file_operations that
-> you passed to securityfs?  That should protect if you have an open file,
+rdmsr() takes the lower 32 bits as a second argument and the high 32 as
+a third. Fix the names accordingly since they were swapped.
 
-I do not have it set (did not think it is strictly needed for filesystems
-(before mention TPM also does not set it)), but I am also pretty sure no one
-had a file open there at the time. I will try to repeat the test with it set
-and get back to you.
+There should be no functionality change resulting from this patch.
 
-> but I doubt anyone thought you would do crazy things like bind mounts on
-> top of a ramfs and then think it was safe to unload a lower module :)
->
-> > Also, in-three TPM driver can be built as a module so how does that
-> > work?
->
-> You have to be root to unload modules, and if you are that, you can do
-> worse things than this.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-That is beside the point, but I will let you off hook :) until I test the
-situation with the owner field set. Thanks for the discussion so far!
-
-Tvrtko
+diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+index 3e90cce..2258202 100644
+--- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
++++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+@@ -910,8 +910,8 @@ static int fill_powernow_table_pstate(struct powernow_k8_data *data,
+ {
+ 	int i;
+ 	u32 hi = 0, lo = 0;
+-	rdmsr(MSR_PSTATE_CUR_LIMIT, hi, lo);
+-	data->max_hw_pstate = (hi & HW_PSTATE_MAX_MASK) >> HW_PSTATE_MAX_SHIFT;
++	rdmsr(MSR_PSTATE_CUR_LIMIT, lo, hi);
++	data->max_hw_pstate = (lo & HW_PSTATE_MAX_MASK) >> HW_PSTATE_MAX_SHIFT;
+ 
+ 	for (i = 0; i < data->acpi_data.state_count; i++) {
+ 		u32 index;
+-- 
+1.7.1
 
 
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
+
