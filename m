@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430Ab0GHNgX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 09:36:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60076 "EHLO mx1.redhat.com"
+	id S1757671Ab0GHNgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 09:36:42 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:59365 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756838Ab0GHNgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 09:36:20 -0400
-Date: Thu, 8 Jul 2010 16:35:42 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-       tglx@linutronix.de, hpa@zytor.com, cl@linux-foundation.org,
-       mtosatti@redhat.com
-Subject: Re: [PATCH v4 11/12] Let host know whether the guest can handle
- async PF in non-userspace context.
-Message-ID: <20100708133542.GX4689@redhat.com>
-References: <1278433500-29884-1-git-send-email-gleb@redhat.com>
- <1278433500-29884-12-git-send-email-gleb@redhat.com>
- <4C3553E2.7020607@redhat.com>
+	id S1755743Ab0GHNgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 09:36:40 -0400
+Message-ID: <4C35D466.8060007@kernel.dk>
+Date: Thu, 08 Jul 2010 15:36:38 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C3553E2.7020607@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Miklos Szeredi <miklos@szeredi.hu>, xiaosuo@gmail.com,
+       tim.gardner@canonical.com, torvalds@linux-foundation.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       stable@kernel.org
+Subject: Re: [PATCH 0/3] splice fixes
+References: <E1OTYfk-0008GY-PJ@pomaz-ex.szeredi.hu>	<4C29D5B9.9040401@kernel.dk>	<E1OTZYn-0008Qk-El@pomaz-ex.szeredi.hu>	<4C29E1A0.7070601@kernel.dk> <20100707133851.7c805c2d.akpm@linux-foundation.org>
+In-Reply-To: <20100707133851.7c805c2d.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 12:28:18AM -0400, Rik van Riel wrote:
-> On 07/06/2010 12:24 PM, Gleb Natapov wrote:
-> >If guest can detect that it runs in non-preemptable context it can
-> >handle async PFs at any time, so let host know that it can send async
-> >PF even if guest cpu is not in userspace.
+On 2010-07-07 22:38, Andrew Morton wrote:
+> On Tue, 29 Jun 2010 14:05:52 +0200
+> Jens Axboe <axboe@kernel.dk> wrote:
 > 
-> The code looks correct.  One question though - is there a
-> reason to implement the userspace-only async PF path at
-> all, since the handling of async PF in non-userspace context
-> is introduced simultaneously?
+>> On 2010-06-29 14:05, Miklos Szeredi wrote:
+>>> On Tue, 29 Jun 2010, Jens Axboe wrote:
+>>>> On 2010-06-29 13:08, Miklos Szeredi wrote:
+>>>>> These patches fix bugs that affect real-world users of splice(2) and
+>>>>> sendfile(2) interfaces.
+>>>>>
+>>>>> Not sure if some or all of them are appropriate for 2.6.35 and/or
+>>>>> -stable?
+>>>>
+>>>> I think that 1-2 should go into 2.6.35 directly, and 3 for .36 with
+>>>> a stable backport as well. Agree?
+>>>
+>>> Yes, sounds good.
+>>
+>> Good, that is what I queued up. I haven't pushed out the updated
+>> for-linus yet, since I asked Linus to pull it this morning.
+>>
 > 
-Guest userspace-only async PF handling is added in patch 4 and
-non-userspace is added in patch 10. It is done for easy reviewing.
-If I implement everything in one patch it will be harder to see why
-things are done the way they are IMHO.
+> According to Tim's report on lkml
+> (http://lkml.org/lkml/2010/6/25/280),
+> cc56f7de7f00d188c7c4da1e9861581853b9e92f caused a regression. 
+> cc56f7de7f00d188c7c4da1e9861581853b9e92f is present in 2.6.33 and in
+> 2.6.34 hence the fix should be backported into -stable.
+> 
+> According to http://bugs.launchpad.net/bugs/588861, the patch "splice:
+> direct_splice_actor() should not use pos in sd" fixes the regression.
+> 
+> However this:
+> 
+> commit 4f9078afb4e083e033aafbbfabe729cb3832aa42
+> Author: Changli Gao <xiaosuo@gmail.com>
+> Date:   Tue Jun 29 13:09:18 2010 +0200
+> 
+>     splice: direct_splice_actor() should not use pos in sd
+> 
+> went into mainline without a cc:stable tag.
 
---
-			Gleb.
+I will send an email to stable@.
+
+-- 
+Jens Axboe
+
